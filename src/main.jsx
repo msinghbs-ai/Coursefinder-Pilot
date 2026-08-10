@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
-  Activity, Attribute, BookOpen, Boxes, Building2, ChevronRight, CircleGauge,
+  Activity, BookOpen, Boxes, Building2, ChevronRight, CircleGauge,
   Database, GraduationCap, LayoutDashboard, ListChecks, LogOut, MapPin,
   RefreshCw, Search, Settings2, Sparkles, Tags, Workflow, X
 } from 'lucide-react'
@@ -21,7 +21,7 @@ const nav = [
     ['Categories', Tags],
   ]],
   ['PIM Model', [
-    ['Attributes', Attribute],
+    ['Attributes', Tags],
   ]],
   ['Data Quality', [
     ['Completeness', CircleGauge],
@@ -160,7 +160,7 @@ function Dashboard({ onError }) {
     ['Providers', data?.providers ?? '—', Building2],
     ['Courses', data?.courses ?? '—', GraduationCap],
     ['Search documents', data?.search_documents ?? '—', Search],
-    ['Attributes', data?.attributes ?? '—', Attribute],
+    ['Attributes', data?.attributes ?? '—', Tags],
     ['Scholarships', data?.scholarships ?? '—', Sparkles],
     ['Open reviews', data?.open_reviews ?? '—', ListChecks],
     ['Jobs', data?.jobs ?? '—', Activity],
