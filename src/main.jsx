@@ -6,6 +6,7 @@ import {
   RefreshCw, Search, Settings2, Sparkles, Tags, Workflow, X
 } from 'lucide-react'
 import { api, supabase } from './lib/supabase'
+import RegulatorySettings from './RegulatorySettings'
 import './styles.css'
 import './catalogue.css'
 
@@ -39,13 +40,18 @@ function App() {
     api.context().then(setContext).catch(e => setError(e.message))
   }, [session])
 
+  const visibleNav = useMemo(() => nav.map(([group, items]) => [
+    group,
+    items.filter(([label]) => label !== 'Settings' || Number(context?.role_rank || 0) >= 6),
+  ]).filter(([, items]) => items.length), [context])
+
   if (loadingSession) return <div className="boot">Loading Coursefinder Pilot…</div>
   if (!session) return <Login error={error} onError={setError} />
 
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark">CF</div><div><strong>Coursefinder</strong><span>Pilot PIM</span></div></div>
-      <nav className="nav">{nav.map(([group, items]) => <div className="nav-group" key={group}>
+      <nav className="nav">{visibleNav.map(([group, items]) => <div className="nav-group" key={group}>
         <div className="nav-label">{group}</div>
         {items.map(([label, Icon]) => <button key={label} className={page === label ? 'nav-item active' : 'nav-item'} onClick={() => setPage(label)}><Icon size={17}/><span>{label}</span></button>)}
       </div>)}</nav>
@@ -54,7 +60,7 @@ function App() {
     <main className="main">
       <header className="topbar"><div><div className="eyebrow">Mumbai Pilot · v2.9.1 contract</div><h1>{page}</h1></div><div className="topbar-actions"><span className="status-pill"><i/>Connected</span></div></header>
       {error && <div className="alert"><span>{error}</span><button onClick={() => setError('')}><X size={16}/></button></div>}
-      <Page page={page} onError={setError}/>
+      <Page page={page} onError={setError} context={context}/>
     </main>
   </div>
 }
@@ -75,7 +81,8 @@ function Login({ error, onError }) {
   </div></div>
 }
 
-function Page({ page, onError }) {
+function Page({ page, onError, context }) {
+  if (page === 'Settings') return Number(context?.role_rank || 0) >= 6 ? <RegulatorySettings onError={onError}/> : <AccessDenied/>
   const map = {
     Dashboard: Dashboard, Providers, Campuses, 'Course Collections': CourseCollections,
     Courses, Scholarships, Categories, Attributes, Completeness, 'Review Queue': ReviewQueue,
@@ -153,6 +160,7 @@ function ChipList({items=[],label}){return items?.length?<div className="chip-li
 function ObjectList({items=[],primary,secondary}){return items?.length?<div className="object-list">{items.map((x,i)=><div key={x.id||i}><strong>{primary(x)}</strong><span>{secondary(x)}</span></div>)}</div>:<EmptyText/>}
 function EmptyText(){return <p className="muted">No pilot data yet.</p>}
 function ComingSoon({page}){return <section className="empty-state"><div className="empty-icon"><Boxes size={24}/></div><span className="kicker">UI contract next</span><h2>{page}</h2><p>This screen will use a dedicated API contract rather than direct internal-schema access.</p></section>}
+function AccessDenied(){return <section className="empty-state"><div className="empty-icon"><Settings2 size={24}/></div><span className="kicker">Platform Admin only</span><h2>Access restricted</h2><p>Regulatory source configuration is restricted to the Platform Admin role.</p></section>}
 function CellTitle({title,sub}){return <div className="cell-title"><strong>{title}</strong><span>{sub}</span></div>}
 function Badge({text='unknown'}){const v=String(text||'unknown');return <span className={`badge badge-${v.toLowerCase().replace(/[^a-z0-9]+/g,'-')}`}>{v.replaceAll('_',' ')}</span>}
 function Score({value=0}){const n=Math.round(Number(value||0));return <div className="score"><span><i style={{width:`${Math.max(0,Math.min(100,n))}%`}}/></span><b>{n}%</b></div>}
