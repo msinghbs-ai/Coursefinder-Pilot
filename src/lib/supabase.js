@@ -28,5 +28,6 @@ export const api = {
   attributes: () => rpc('ui_attributes_list'),
   jobs: (limit = 500) => rpc('ui_jobs_list', { p_limit: limit }),
   reviews: (limit = 500) => rpc('ui_review_queue', { p_limit: limit }),
+  regulatorySources: () => rpc('ui_regulatory_sources_list'),
   searchCourses: (query, limit = 50) => rpc('ui_search_courses', { p_query: query, p_limit: limit }),
 }
