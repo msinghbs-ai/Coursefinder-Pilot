@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "pilot-reset-v0.1.0";
+const VERSION = "pilot-reset-v0.2.0";
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -22,9 +22,17 @@ Deno.serve(async (req: Request) => {
 
   let body: any = {};
   try { body = await req.json(); } catch {}
-  if (String(body.confirm || "").toUpperCase() !== "RESET AU UAT") return json({ error: "Pass confirm: RESET AU UAT" }, 400);
+  if (String(body.confirm || "").toUpperCase() !== "RESET AU UAT") {
+    return json({ error: "Pass confirm: RESET AU UAT" }, 400);
+  }
 
   const { data, error } = await service.rpc("svc_layer1_reset_au_uat");
   if (error) return json({ error: error.message, version: VERSION }, 500);
-  return json({ ok: true, version: VERSION, ...data });
+
+  const { error: storageError } = await service.storage.emptyBucket("evidence");
+  if (storageError) {
+    return json({ error: `Database reset completed but evidence bucket cleanup failed: ${storageError.message}`, version: VERSION, ...data }, 500);
+  }
+
+  return json({ ok: true, version: VERSION, evidence_bucket_emptied: true, ...data });
 });
