@@ -1,14 +1,26 @@
 import { serviceClient, rpc, safeRpc } from './lib/service'
 import { runAuCricos } from './adapters/au-cricos'
 
-const VERSION = 'layer1-v0.1.0'
+const VERSION = 'layer1-v0.1.1'
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
 
     if (url.pathname === '/api/layer1/health') {
-      return json({ ok: true, service: 'coursefinder-layer1', version: VERSION, configured: Boolean(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) })
+      const bindings = {
+        supabaseUrl: Boolean(env.SUPABASE_URL),
+        serviceRoleKey: Boolean(env.SUPABASE_SERVICE_ROLE_KEY),
+        runKey: Boolean(env.LAYER1_RUN_KEY),
+        assets: Boolean(env.ASSETS),
+      }
+      return json({
+        ok: true,
+        service: 'coursefinder-layer1',
+        version: VERSION,
+        configured: bindings.supabaseUrl && bindings.serviceRoleKey && bindings.runKey,
+        bindings,
+      })
     }
 
     if (url.pathname === '/api/layer1/run' && request.method === 'POST') {
