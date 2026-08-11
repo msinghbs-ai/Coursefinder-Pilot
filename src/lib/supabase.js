@@ -15,6 +15,25 @@ async function rpc(name, args = {}) {
   return data
 }
 
+async function runLayer1({ country = 'AU', apply = false, maxRecords = 100 } = {}) {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  const token = sessionData?.session?.access_token
+  if (!token) throw new Error('No authenticated session')
+
+  const response = await fetch('/api/layer1/run', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ country, apply, maxRecords }),
+  })
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.error || `Layer 1 run failed: ${response.status}`)
+  return payload
+}
+
 export const api = {
   context: () => rpc('ui_context'),
   dashboard: () => rpc('ui_dashboard'),
@@ -29,5 +48,6 @@ export const api = {
   jobs: (limit = 500) => rpc('ui_jobs_list', { p_limit: limit }),
   reviews: (limit = 500) => rpc('ui_review_queue', { p_limit: limit }),
   regulatorySources: () => rpc('ui_regulatory_sources_list'),
+  runLayer1,
   searchCourses: (query, limit = 50) => rpc('ui_search_courses', { p_query: query, p_limit: limit }),
 }
