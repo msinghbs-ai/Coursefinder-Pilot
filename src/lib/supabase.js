@@ -48,7 +48,7 @@ export const api = {
   regulatorySources: () => rpc('ui_regulatory_sources_list'),
   layer1Job: (jobId) => rpc('ui_layer1_job', { p_job_id: jobId }),
   latestLayer1Job: (country = 'AU') => rpc('ui_layer1_latest_job', { p_country_code: country }),
-  runLayer1: ({ country = 'AU', apply = false, maxRecords = 100 } = {}) => invoke('layer1-register-etl', { country, apply, maxRecords }),
-  resetAuUat: () => invoke('pilot-reset', { confirm: 'RESET AU UAT' }),
+  runLayer1: ({ country = 'ALL', apply = false, maxRecords = 100 } = {}) => invoke('layer1-register-etl', { country, apply, maxRecords }),
+  resetDatabase: () => invoke('pilot-reset', { confirm: 'RESET DATABASE' }),
   searchCourses: (query, limit = 50) => rpc('ui_search_courses', { p_query: query, p_limit: limit }),
 }
