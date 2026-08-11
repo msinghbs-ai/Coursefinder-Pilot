@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Database, Play, RefreshCw, Search, Settings2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Database, Play, RefreshCw, Repeat2, Search, Settings2, ShieldCheck } from 'lucide-react'
 import { api } from './lib/supabase'
 import './settings.css'
+
+const AU_LIMIT = 100
 
 export default function RegulatorySettings({ onError }) {
   const [rows, setRows] = useState([])
@@ -9,6 +11,8 @@ export default function RegulatorySettings({ onError }) {
   const [busy, setBusy] = useState(true)
   const [runBusy, setRunBusy] = useState(false)
   const [runResult, setRunResult] = useState(null)
+  const [confirmApply, setConfirmApply] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
 
   const load = () => {
     setBusy(true)
@@ -17,18 +21,31 @@ export default function RegulatorySettings({ onError }) {
 
   useEffect(load, [])
 
-  const runAuDry = async () => {
+  const runAu = async (apply, kind = apply ? 'apply' : 'dry-run') => {
     setRunBusy(true)
     setRunResult(null)
     try {
-      const result = await api.runLayer1({ country: 'AU', apply: false, maxRecords: 100 })
-      setRunResult(result)
+      const result = await api.runLayer1({ country: 'AU', apply, maxRecords: AU_LIMIT })
+      setRunResult({ ...result, controlKind: kind })
       load()
+      return result
     } catch (e) {
       onError(e.message)
+      return null
     } finally {
       setRunBusy(false)
     }
+  }
+
+  const beginApply = () => {
+    setConfirmText('')
+    setConfirmApply(true)
+  }
+
+  const approveApply = async () => {
+    if (confirmText.trim().toUpperCase() !== 'APPLY 100') return
+    setConfirmApply(false)
+    await runAu(true, 'apply')
   }
 
   const shown = useMemo(() => rows.filter(r => [
@@ -40,6 +57,8 @@ export default function RegulatorySettings({ onError }) {
   const configured = new Set(rows.filter(r => r.source_id).map(r => r.country_code)).size
   const sources = rows.filter(r => r.source_id).length
   const healthy = rows.filter(r => r.last_success_at && (!r.last_failure_at || new Date(r.last_success_at) >= new Date(r.last_failure_at))).length
+  const reconciliation = runResult?.reconciliation || {}
+  const isApplyResult = runResult?.mode === 'apply'
 
   return <div className="stack">
     <div className="section-head">
@@ -48,21 +67,60 @@ export default function RegulatorySettings({ onError }) {
         <h2>Regulatory Sources</h2>
         <p>Authoritative country source registry used by the Layer 1 Worker. Source endpoints are configuration, not frontend code.</p>
       </div>
-      <div style={{display:'flex',gap:8}}>
-        <button className="secondary" onClick={load}><RefreshCw size={15} className={busy ? 'spin' : ''}/>Refresh</button>
-        <button onClick={runAuDry} disabled={runBusy}><Play size={15}/>{runBusy ? 'Running AU dry-run…' : 'Run AU dry-run (100)'}</button>
-      </div>
+      <button className="secondary" onClick={load}><RefreshCw size={15} className={busy ? 'spin' : ''}/>Refresh</button>
     </div>
 
-    {runResult && <section className="panel full">
-      <div className="panel-title"><div><span className="kicker">Latest Layer 1 result</span><h3>Australia · CRICOS dry-run</h3></div></div>
-      <div className="metric-grid compact-grid">
-        <Metric icon={Database} label="Parsed records" value={runResult.parsedRecords ?? '—'}/>
-        <Metric icon={Database} label="Selected records" value={runResult.selectedRecords ?? '—'}/>
-        <Metric icon={Database} label="Evidence" value={runResult.evidenceId ? 'Captured' : '—'}/>
-        <Metric icon={RefreshCw} label="Job" value={runResult.jobId ? String(runResult.jobId).slice(0,8) : '—'}/>
+    <section className="panel full ingestion-control">
+      <div className="panel-title control-title">
+        <div>
+          <span className="kicker">Australia · CRICOS · controlled UAT</span>
+          <h3>Layer 1 ingestion control</h3>
+          <p>Run the same deterministic first {AU_LIMIT} CRICOS course records through dry-run, controlled apply and idempotency re-run.</p>
+        </div>
+        <span className="control-badge"><ShieldCheck size={15}/>Platform Admin</span>
       </div>
-      <p className="muted">Dry-run does not change catalogue records. Evidence, source health and job telemetry are still recorded.</p>
+
+      <div className="control-steps">
+        <ControlStep number="1" title="Validate" text="Fetch, hash, store evidence and parse 100 records. No catalogue writes." status={runResult?.mode === 'dry-run' ? 'done' : 'ready'}>
+          <button className="secondary" onClick={() => runAu(false, 'dry-run')} disabled={runBusy}>
+            <Play size={15}/>{runBusy ? 'Worker running…' : 'Run dry-run (100)'}
+          </button>
+        </ControlStep>
+        <ControlStep number="2" title="Apply" text="Reconcile CRICOS provider/course identities and persist only the selected 100 records." status={isApplyResult ? 'done' : 'guarded'}>
+          <button className="danger-soft" onClick={beginApply} disabled={runBusy}>
+            <AlertTriangle size={15}/>Apply first 100
+          </button>
+        </ControlStep>
+        <ControlStep number="3" title="Prove idempotency" text="Run the same 100 again. Existing identities should link; duplicate creation should remain zero." status={isApplyResult ? 'ready' : 'waiting'}>
+          <button className="secondary" onClick={() => runAu(true, 'idempotency-rerun')} disabled={runBusy || !isApplyResult}>
+            <Repeat2 size={15}/>Re-run same 100
+          </button>
+        </ControlStep>
+      </div>
+
+      <div className="control-note"><AlertTriangle size={16}/><span><strong>Controlled write boundary:</strong> this control is fixed to Australia and {AU_LIMIT} records. Full-dataset ingestion remains unavailable from this screen until AU reconciliation UAT passes.</span></div>
+    </section>
+
+    {runResult && <section className={`panel full run-result ${isApplyResult ? 'apply-result' : ''}`}>
+      <div className="panel-title result-title">
+        <div>
+          <span className="kicker">Latest Layer 1 result</span>
+          <h3>Australia · CRICOS · {runResult.controlKind === 'idempotency-rerun' ? 'Idempotency re-run' : isApplyResult ? 'Controlled apply' : 'Dry-run'}</h3>
+          <p>Job {runResult.jobId || '—'} · Worker {runResult.workerVersion || '—'}</p>
+        </div>
+        <span className={`result-status ${isApplyResult ? 'write' : 'safe'}`}><CheckCircle2 size={15}/>{isApplyResult ? 'Catalogue write completed' : 'No catalogue writes'}</span>
+      </div>
+      <div className="metric-grid control-metrics">
+        <Metric icon={Database} label="Parsed" value={num(runResult.parsedRecords)}/>
+        <Metric icon={Database} label="Selected" value={num(runResult.selectedRecords)}/>
+        <Metric icon={Database} label="Providers created" value={num(reconciliation.provider_created)}/>
+        <Metric icon={Database} label="Providers linked" value={num(reconciliation.provider_linked)}/>
+        <Metric icon={Database} label="Courses created" value={num(reconciliation.course_created)}/>
+        <Metric icon={Database} label="Courses linked" value={num(reconciliation.course_linked)}/>
+        <Metric icon={AlertTriangle} label="Conflicts" value={num(reconciliation.conflicts)}/>
+        <Metric icon={ShieldCheck} label="Evidence files" value={runResult.evidenceIds?.length ?? (runResult.evidenceId ? 1 : 0)}/>
+      </div>
+      {runResult.controlKind === 'idempotency-rerun' && <div className="idempotency-hint"><ShieldCheck size={16}/><span>Idempotency passes when the second apply creates no duplicate entities or registrations and resolves the same regulator identities consistently.</span></div>}
     </section>}
 
     <div className="metric-grid compact-grid">
@@ -95,9 +153,32 @@ export default function RegulatorySettings({ onError }) {
 
     <section className="panel settings-note">
       <div><strong>Worker resolution rule</strong><span>Country → active source(s) ordered by trust rank → system configuration → runtime secret.</span></div>
-      <div><strong>Health telemetry</strong><span>Layer 1 dry-runs record source health, evidence and job telemetry without changing catalogue records.</span></div>
-      <div><strong>Security</strong><span>Platform Admin runs use the signed-in Supabase session. The Layer 1 run key remains server/operations only.</span></div>
+      <div><strong>Health telemetry</strong><span>Every Layer 1 run records source health, evidence and job telemetry. Dry-runs never change catalogue records.</span></div>
+      <div><strong>Security</strong><span>Platform Admin runs use the signed-in Supabase session. Full ingestion remains gated by UAT.</span></div>
     </section>
+
+    {confirmApply && <div className="confirm-backdrop" role="presentation" onMouseDown={() => setConfirmApply(false)}>
+      <div className="confirm-card" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
+        <div className="confirm-icon"><AlertTriangle size={22}/></div>
+        <span className="kicker">Controlled catalogue write</span>
+        <h3>Apply the first {AU_LIMIT} CRICOS records?</h3>
+        <p>This will reconcile regulator identities and may create or link Providers, Courses and CRICOS registrations in the Pilot catalogue. It does not run the full CRICOS dataset.</p>
+        <label>Type <strong>APPLY 100</strong> to confirm</label>
+        <input autoFocus value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder="APPLY 100"/>
+        <div className="confirm-actions">
+          <button className="secondary" onClick={() => setConfirmApply(false)}>Cancel</button>
+          <button className="danger-soft" disabled={confirmText.trim().toUpperCase() !== 'APPLY 100'} onClick={approveApply}><AlertTriangle size={15}/>Apply 100 records</button>
+        </div>
+      </div>
+    </div>}
+  </div>
+}
+
+function ControlStep({ number, title, text, status, children }) {
+  return <div className={`control-step step-${status}`}>
+    <div className="step-number">{status === 'done' ? <CheckCircle2 size={18}/> : number}</div>
+    <div className="step-copy"><strong>{title}</strong><span>{text}</span></div>
+    <div className="step-action">{children}</div>
   </div>
 }
 
@@ -106,3 +187,4 @@ function Metric({ icon: Icon, label, value }) {
 }
 
 function fmt(v) { return v ? new Date(v).toLocaleString() : 'Not checked yet' }
+function num(v) { return Number(v ?? 0).toLocaleString() }
