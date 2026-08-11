@@ -2,10 +2,11 @@ import { unzipSync, strFromU8 } from 'fflate'
 import { parseCsv, normaliseRow, pick, cleanCode, numericText } from '../lib/csv'
 import { rpc } from '../lib/service'
 
-const CKAN_PACKAGE = 'https://data.gov.au/data/api/3/action/package_show?id=cricos'
-
 export async function runAuCricos({ client, source, jobId, apply, maxRecords, version }) {
-  const metaResp = await fetch(CKAN_PACKAGE, { headers: { 'user-agent': 'Coursefinder-Layer1/0.1' } })
+  const discoveryUrl = source?.source_metadata?.discovery_url
+  if (!discoveryUrl) throw new Error('CRICOS discovery_url is not configured in Regulatory Settings')
+
+  const metaResp = await fetch(discoveryUrl, { headers: { 'user-agent': 'Coursefinder-Layer1/0.1' } })
   if (!metaResp.ok) throw new Error(`CRICOS metadata failed: ${metaResp.status}`)
   const meta = await metaResp.json()
   if (!meta.success || !meta.result) throw new Error('CRICOS package metadata invalid')
@@ -33,7 +34,7 @@ export async function runAuCricos({ client, source, jobId, apply, maxRecords, ve
     p_content_hash: hash,
     p_mime_type: 'application/zip',
     p_metadata: {
-      dataset: 'CRICOS', resource_id: resource.id, resource_name: resource.name,
+      dataset: 'CRICOS', discovery_url: discoveryUrl, resource_id: resource.id, resource_name: resource.name,
       resource_updated: resource.last_modified || resource.created || null,
       package_modified: meta.result.metadata_modified || null, byte_size: bytes.byteLength,
     },
