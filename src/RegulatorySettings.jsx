@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Database, RefreshCw, Search, Settings2 } from 'lucide-react'
+import { Database, Play, RefreshCw, Search, Settings2 } from 'lucide-react'
 import { api } from './lib/supabase'
 import './settings.css'
 
@@ -7,6 +7,8 @@ export default function RegulatorySettings({ onError }) {
   const [rows, setRows] = useState([])
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(true)
+  const [runBusy, setRunBusy] = useState(false)
+  const [runResult, setRunResult] = useState(null)
 
   const load = () => {
     setBusy(true)
@@ -14,6 +16,20 @@ export default function RegulatorySettings({ onError }) {
   }
 
   useEffect(load, [])
+
+  const runAuDry = async () => {
+    setRunBusy(true)
+    setRunResult(null)
+    try {
+      const result = await api.runLayer1({ country: 'AU', apply: false, maxRecords: 100 })
+      setRunResult(result)
+      load()
+    } catch (e) {
+      onError(e.message)
+    } finally {
+      setRunBusy(false)
+    }
+  }
 
   const shown = useMemo(() => rows.filter(r => [
     r.country_name, r.country_code, r.source_label, r.system_name, r.source_type,
@@ -32,8 +48,22 @@ export default function RegulatorySettings({ onError }) {
         <h2>Regulatory Sources</h2>
         <p>Authoritative country source registry used by the Layer 1 Worker. Source endpoints are configuration, not frontend code.</p>
       </div>
-      <button className="secondary" onClick={load}><RefreshCw size={15} className={busy ? 'spin' : ''}/>Refresh</button>
+      <div style={{display:'flex',gap:8}}>
+        <button className="secondary" onClick={load}><RefreshCw size={15} className={busy ? 'spin' : ''}/>Refresh</button>
+        <button onClick={runAuDry} disabled={runBusy}><Play size={15}/>{runBusy ? 'Running AU dry-run…' : 'Run AU dry-run (100)'}</button>
+      </div>
     </div>
+
+    {runResult && <section className="panel full">
+      <div className="panel-title"><div><span className="kicker">Latest Layer 1 result</span><h3>Australia · CRICOS dry-run</h3></div></div>
+      <div className="metric-grid compact-grid">
+        <Metric icon={Database} label="Parsed records" value={runResult.parsedRecords ?? '—'}/>
+        <Metric icon={Database} label="Selected records" value={runResult.selectedRecords ?? '—'}/>
+        <Metric icon={Database} label="Evidence" value={runResult.evidenceId ? 'Captured' : '—'}/>
+        <Metric icon={RefreshCw} label="Job" value={runResult.jobId ? String(runResult.jobId).slice(0,8) : '—'}/>
+      </div>
+      <p className="muted">Dry-run does not change catalogue records. Evidence, source health and job telemetry are still recorded.</p>
+    </section>}
 
     <div className="metric-grid compact-grid">
       <Metric icon={Settings2} label="Pilot countries" value={countries}/>
@@ -65,8 +95,8 @@ export default function RegulatorySettings({ onError }) {
 
     <section className="panel settings-note">
       <div><strong>Worker resolution rule</strong><span>Country → active source(s) ordered by trust rank → system configuration → runtime secret.</span></div>
-      <div><strong>Health telemetry</strong><span>Last check/success/failure remain empty until the Layer 1 Worker begins source health checks.</span></div>
-      <div><strong>Security</strong><span>This screen is available only to Platform Admin. Worker source resolution is service-role only.</span></div>
+      <div><strong>Health telemetry</strong><span>Layer 1 dry-runs record source health, evidence and job telemetry without changing catalogue records.</span></div>
+      <div><strong>Security</strong><span>Platform Admin runs use the signed-in Supabase session. The Layer 1 run key remains server/operations only.</span></div>
     </section>
   </div>
 }
