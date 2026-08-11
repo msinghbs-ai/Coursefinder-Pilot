@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "layer1-edge-v1.4.0";
+const VERSION = "layer1-edge-v1.4.1";
 const RPC_CHUNK = 250;
 const DEFAULT_BATCH = 2500;
 const MAX_BATCH = 5000;
@@ -60,7 +60,7 @@ async function fetchT(url: string, ms = 30000, init: RequestInit = {}) {
       ...init,
       signal: controller.signal,
       redirect: "follow",
-      headers: { "user-agent": "coursefinder-pilot/1.4", ...(init.headers || {}) },
+      headers: { "user-agent": "coursefinder-pilot/1.4.1", ...(init.headers || {}) },
     });
   } finally { clearTimeout(timer); }
 }
@@ -108,21 +108,22 @@ async function evidence(service: any, sourceId: string, jobId: string, sourceUrl
 async function sources(service: any, country: string) {
   return await rpc(service, "svc_layer1_resolve_sources", { p_country_code: country }) || [];
 }
-
 async function startJob(service: any, country: string, sourceId: string, payload: unknown) {
   return await rpc(service, "svc_layer1_start_job", { p_country_code: country, p_source_id: sourceId, p_payload: payload });
 }
-
 async function finishJob(service: any, id: string, status: string, result: unknown, error: string | null = null) {
   try { await rpc(service, "svc_layer1_finish_job", { p_job_id: id, p_status: status, p_result: result, p_error: error }); } catch {}
 }
-
 async function health(service: any, id: string, ok: boolean, error: string | null, metadata: unknown) {
   try { await rpc(service, "svc_layer1_source_health", { p_source_id: id, p_success: ok, p_error: error, p_metadata: metadata }); } catch {}
 }
 
 async function applyRecords(service: any, country: string, sourceId: string, evidenceId: string | null, scheme: string, records: any[], apply: boolean, offset: number, batchSize: number) {
   const selected = records.slice(offset, offset + batchSize);
+  return applySelectedRecords(service, country, sourceId, evidenceId, scheme, selected, apply);
+}
+
+async function applySelectedRecords(service: any, country: string, sourceId: string, evidenceId: string | null, scheme: string, selected: any[], apply: boolean) {
   const total: any = {
     records: selected.length,
     provider_created: 0,
@@ -149,14 +150,7 @@ async function applyRecords(service: any, country: string, sourceId: string, evi
 
 function progress(totalRecords: number, offset: number, selectedRecords: number, batchSize: number) {
   const nextOffset = offset + selectedRecords;
-  return {
-    offset,
-    batchSize,
-    totalRecords,
-    selectedRecords,
-    nextOffset,
-    hasMore: nextOffset < totalRecords,
-  };
+  return { offset, batchSize, totalRecords, selectedRecords, nextOffset, hasMore: nextOffset < totalRecords };
 }
 
 async function runAU(url: string, anon: string, token: string, apply: boolean, offset: number, batchSize: number) {
@@ -196,23 +190,15 @@ async function runSeed(service: any, country: string, sourceRows: any[], apply: 
 
   const scheme = clean(snapshot[0]?.s || source.system_code || country).toLowerCase();
   const jobId = await startJob(service, country, source.source_id, {
-    country_code: country,
-    apply,
-    offset,
-    batch_size: batchSize,
-    runtime: "supabase_edge",
-    version: VERSION,
-    mode: "seed_snapshot_bounded",
-    requested_by: userId,
+    country_code: country, apply, offset, batch_size: batchSize,
+    runtime: "supabase_edge", version: VERSION, mode: "seed_snapshot_bounded", requested_by: userId,
   });
 
   try {
     let reachable = false, httpStatus: number | null = null, liveError: string | null = null;
     try {
       const response = await fetchT(source.source_url || source.system_base_url, 12000);
-      httpStatus = response.status;
-      reachable = response.ok;
-      await response.body?.cancel();
+      httpStatus = response.status; reachable = response.ok; await response.body?.cancel();
     } catch (error) { liveError = String(error).slice(0, 300); }
 
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -220,20 +206,9 @@ async function runSeed(service: any, country: string, sourceRows: any[], apply: 
     const ev = await evidence(service, source.source_id, jobId, source.source_url || source.system_base_url,
       `regulatory/${country}/seed/${stamp}.json`, bytes, "application/json",
       { country, mode: "seed_snapshot", live_reachable: reachable, http_status: httpStatus, offset, batch_size: batchSize });
-
     const applied = await applyRecords(service, country, source.source_id, ev.id, scheme, records, apply, offset, batchSize);
     const p = progress(records.length, offset, applied.selected.length, batchSize);
-    const result = {
-      country,
-      mode: apply ? "apply" : "dry-run",
-      adapter: "seed_snapshot_bounded",
-      ...p,
-      parsedRecords: records.length,
-      reconciliation: applied.reconciliation,
-      evidenceIds: [ev.id],
-      freshness: { reachable, httpStatus, error: liveError },
-      workerVersion: VERSION,
-    };
+    const result = { country, mode: apply ? "apply" : "dry-run", adapter: "seed_snapshot_bounded", ...p, parsedRecords: records.length, reconciliation: applied.reconciliation, evidenceIds: [ev.id], freshness: { reachable, httpStatus, error: liveError }, workerVersion: VERSION };
     await health(service, source.source_id, reachable, liveError, { worker_version: VERSION, last_run_mode: result.mode, last_run_offset: offset, last_run_batch_size: batchSize, next_offset: p.nextOffset, has_more: p.hasMore, seed_snapshot: true });
     await finishJob(service, jobId, "completed", result);
     return { ...result, jobId };
@@ -289,46 +264,83 @@ async function runGB(service: any, sourceRows: any[], apply: boolean, offset: nu
   return { ...seed, liveProviderRegister };
 }
 
+function normaliseDaadCourse(c: any) {
+  return {
+    provider_code: slug(c.academy),
+    provider_name: c.academy,
+    city: c.city || null,
+    course_code: String(c.id),
+    course_name: c.courseName,
+    course_level: mapLevel(c.courseName),
+    field_of_study: c.subject || null,
+  };
+}
+
 async function runDE(service: any, sourceRows: any[], apply: boolean, offset: number, batchSize: number, userId: string) {
   const source = sourceRows.find((x: any) => x.system_code === "de_daad_programmes") || sourceRows[0];
   if (!source) throw new Error("DE source missing");
   const jobId = await startJob(service, "DE", source.source_id, {
     country_code: "DE", apply, offset, batch_size: batchSize,
-    runtime: "supabase_edge", version: VERSION, mode: "daad_live_bounded", requested_by: userId,
+    runtime: "supabase_edge", version: VERSION, mode: "daad_live_paged_bounded", requested_by: userId,
   });
 
   try {
     const apiUrl = source.system_config?.api_url || "https://www2.daad.de/deutschland/studienangebote/international-programmes/api/solr";
-    const endpoint = `${apiUrl}/en/search.json?q=&sort=4&page=1`;
-    const response = await fetchT(endpoint, 45000, { headers: { accept: "application/json" } });
-    if (!response.ok) throw new Error(`DAAD HTTP ${response.status}`);
-    const data = await response.json();
-    const courses = data.courses || [];
-    const records = courses.filter((c: any) => c.courseName && c.academy).map((c: any) => ({
-      provider_code: slug(c.academy),
-      provider_name: c.academy,
-      city: c.city || null,
-      course_code: String(c.id),
-      course_name: c.courseName,
-      course_level: mapLevel(c.courseName),
-      field_of_study: c.subject || null,
-    }));
+    const fetchPage = async (page: number) => {
+      const endpoint = `${apiUrl}/en/search.json?q=&sort=4&page=${page}`;
+      const response = await fetchT(endpoint, 45000, { headers: { accept: "application/json" } });
+      if (!response.ok) throw new Error(`DAAD HTTP ${response.status} page ${page}`);
+      return { endpoint, data: await response.json() };
+    };
+
+    const first = await fetchPage(1);
+    const firstCourses = first.data.courses || [];
+    const pageSize = Math.max(1, firstCourses.length);
+    const totalRecords = Number(first.data.numResults || firstCourses.length);
+    const startPage = Math.floor(offset / pageSize) + 1;
+    const skipOnFirstPage = offset % pageSize;
+    const selected: any[] = [];
+    const evidencePages: any[] = [];
+    let page = startPage;
+
+    while (selected.length < batchSize && ((page - 1) * pageSize) < totalRecords) {
+      const pageResult = page === 1 ? first : await fetchPage(page);
+      const pageCourses = pageResult.data.courses || [];
+      evidencePages.push({ page, endpoint: pageResult.endpoint, courses: pageCourses });
+      const start = page === startPage ? skipOnFirstPage : 0;
+      for (const course of pageCourses.slice(start)) {
+        if (!course?.courseName || !course?.academy) continue;
+        selected.push(normaliseDaadCourse(course));
+        if (selected.length >= batchSize) break;
+      }
+      if (!pageCourses.length) break;
+      page++;
+    }
+
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const ev = await evidence(service, source.source_id, jobId, endpoint, `regulatory/DE/daad/${stamp}.json`, new TextEncoder().encode(JSON.stringify({ numResults: data.numResults, courses })), "application/json", { num_results: data.numResults, offset, batch_size: batchSize });
-    const applied = await applyRecords(service, "DE", source.source_id, ev.id, "daad", records, apply, offset, batchSize);
-    const p = progress(records.length, offset, applied.selected.length, batchSize);
+    const evidencePayload = { numResults: totalRecords, pageSize, startPage, pages: evidencePages };
+    const ev = await evidence(service, source.source_id, jobId, first.endpoint,
+      `regulatory/DE/daad/${stamp}-offset-${offset}-batch-${batchSize}.json`,
+      new TextEncoder().encode(JSON.stringify(evidencePayload)), "application/json",
+      { num_results: totalRecords, page_size: pageSize, start_page: startPage, pages_fetched: evidencePages.length, offset, batch_size: batchSize });
+
+    const applied = await applySelectedRecords(service, "DE", source.source_id, ev.id, "daad", selected, apply);
+    const p = progress(totalRecords, offset, applied.selected.length, batchSize);
     const result = {
       country: "DE",
       mode: apply ? "apply" : "dry-run",
-      adapter: "daad_live_bounded",
+      adapter: "daad_live_paged_bounded",
       ...p,
-      parsedRecords: records.length,
-      availableRecords: data.numResults,
+      parsedRecords: applied.selected.length,
+      availableRecords: totalRecords,
+      pageSize,
+      startPage,
+      pagesFetched: evidencePages.length,
       reconciliation: applied.reconciliation,
       evidenceIds: [ev.id],
       workerVersion: VERSION,
     };
-    await health(service, source.source_id, true, null, { worker_version: VERSION, parsed_records: records.length, available_records: data.numResults, last_run_offset: offset, last_run_batch_size: batchSize });
+    await health(service, source.source_id, true, null, { worker_version: VERSION, available_records: totalRecords, page_size: pageSize, pages_fetched: evidencePages.length, last_run_offset: offset, last_run_batch_size: batchSize, next_offset: p.nextOffset, has_more: p.hasMore });
     await finishJob(service, jobId, "completed", result);
     return { ...result, jobId };
   } catch (error) {
