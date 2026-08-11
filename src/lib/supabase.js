@@ -15,36 +15,11 @@ async function rpc(name, args = {}) {
   return data
 }
 
-async function runLayer1({ country = 'AU', apply = false, maxRecords = 100 } = {}) {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-  if (sessionError) throw sessionError
-  const token = sessionData?.session?.access_token
-  if (!token) throw new Error('No authenticated session')
-
-  const response = await fetch('/api/layer1/run', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ country, apply, maxRecords }),
-  })
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(payload?.error || `Layer 1 run failed: ${response.status}`)
-  if (!payload?.jobId) throw new Error('Layer 1 job was accepted without a Job ID')
-  return payload
-}
-
-async function waitForLayer1Job(jobId, { intervalMs = 1500, timeoutMs = 180000 } = {}) {
-  const started = Date.now()
-  while (Date.now() - started < timeoutMs) {
-    const job = await rpc('ui_layer1_job', { p_job_id: jobId })
-    if (!job) throw new Error(`Layer 1 job not found: ${jobId}`)
-    if (job.status === 'completed') return { ...job.result, jobId: job.jobId, jobStatus: job.status }
-    if (job.status === 'failed') throw new Error(job.error || 'Layer 1 job failed')
-    await new Promise(resolve => setTimeout(resolve, intervalMs))
-  }
-  throw new Error(`Layer 1 job is still running after ${Math.round(timeoutMs / 1000)} seconds. Check Jobs for status.`)
+async function invoke(name, body) {
+  const { data, error } = await supabase.functions.invoke(name, { body })
+  if (error) throw new Error(error.message || `${name} failed`)
+  if (data?.error) throw new Error(data.error)
+  return data
 }
 
 function courseDetail(courseId) {
@@ -68,7 +43,7 @@ export const api = {
   regulatorySources: () => rpc('ui_regulatory_sources_list'),
   layer1Job: (jobId) => rpc('ui_layer1_job', { p_job_id: jobId }),
   latestLayer1Job: (country = 'AU') => rpc('ui_layer1_latest_job', { p_country_code: country }),
-  runLayer1,
-  waitForLayer1Job,
+  runLayer1: ({ country = 'AU', apply = false, maxRecords = 100 } = {}) => invoke('layer1-register-etl', { country, apply, maxRecords }),
+  resetAuUat: () => invoke('pilot-reset', { confirm: 'RESET AU UAT' }),
   searchCourses: (query, limit = 50) => rpc('ui_search_courses', { p_query: query, p_limit: limit }),
 }
