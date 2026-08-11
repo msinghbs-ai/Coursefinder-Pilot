@@ -27,13 +27,18 @@ function courseDetail(courseId) {
   return rpc('ui_course_detail', { p_course_id: courseId })
 }
 
+async function courses(limit = 1000) {
+  const rows = await rpc('ui_courses_list', { p_limit: limit })
+  return (rows || []).map(row => ({ ...row, id: row.id || row.course_id }))
+}
+
 export const api = {
   context: () => rpc('ui_context'),
   dashboard: () => rpc('ui_dashboard'),
   providers: (limit = 500) => rpc('ui_providers_list', { p_limit: limit }),
   campuses: (limit = 500) => rpc('ui_campuses_list', { p_limit: limit }),
   collections: (limit = 500) => rpc('ui_course_collections_list', { p_limit: limit }),
-  courses: (limit = 1000) => rpc('ui_courses_list', { p_limit: limit }),
+  courses,
   courseDetail,
   scholarships: (limit = 500) => rpc('ui_scholarships_list', { p_limit: limit }),
   categories: (limit = 1000) => rpc('ui_categories_list', { p_limit: limit }),
