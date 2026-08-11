@@ -12,6 +12,12 @@
   "vars": {
     "SUPABASE_URL": "https://fxcwkweaxjtknorudmwp.supabase.co"
   },
+  "secrets": {
+    "required": [
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "LAYER1_RUN_KEY"
+    ]
+  },
   "observability": {
     "enabled": true
   }
