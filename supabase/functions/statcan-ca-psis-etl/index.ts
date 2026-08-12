@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import JSZip from "npm:jszip@3.10.1";
 import Papa from "npm:papaparse@5.4.1";
 
-const VERSION = "statcan-ca-psis-etl-v0.2.0";
+const VERSION = "statcan-ca-psis-etl-v0.2.1";
 const PID = "37100278";
 const TABLE = "37-10-0278-01";
 const WDS = "https://www150.statcan.gc.ca/t1/wds/rest";
@@ -30,11 +30,20 @@ async function authAdmin(req: Request, service: any, url: string, anon: string) 
   if (!await rpc(service, "svc_layer1_authorize_platform_admin", { p_user_id: user.id })) throw new Error("platform_admin required");
   return user;
 }
-async function fetchOk(url: string, ms = 120000) {
+async function fetchOk(url: string, ms = 120000, init: RequestInit = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   try {
-    const r = await fetch(url, { signal: controller.signal, redirect: "follow", headers: { "user-agent": "coursefinder-pilot/statcan-ca-psis-0.2.0", accept: "application/json,application/zip,text/csv,*/*" } });
+    const r = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      redirect: "follow",
+      headers: {
+        "user-agent": "coursefinder-pilot/statcan-ca-psis-0.2.1",
+        accept: "application/json,application/zip,text/csv,*/*",
+        ...(init.headers || {}),
+      },
+    });
     if (!r.ok) throw new Error(`HTTP ${r.status}: ${url}`);
     return r;
   } finally { clearTimeout(timer); }
@@ -125,9 +134,14 @@ Deno.serve(async (req: Request) => {
 
     const jobId = await rpc(service, "svc_layer2a_start_job", { p_country_code: "CA", p_source_id: source.source_id, p_payload: { country: "CA", layer: "2A", source: "Statistics Canada PSIS", pid: PID, table: TABLE, apply: false, sample_rows: sampleRows, requested_by: user.id, version: VERSION } });
     try {
-      const metadataUrl = `${WDS}/getCubeMetadata/${PID}`;
+      const metadataUrl = `${WDS}/getCubeMetadata`;
       const downloadApiUrl = `${WDS}/getFullTableDownloadCSV/${PID}/en`;
-      const metadata = await (await fetchOk(metadataUrl, 45000)).json();
+      const metadataResponse = await fetchOk(metadataUrl, 45000, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([{ productId: Number(PID) }]),
+      });
+      const metadata = await metadataResponse.json();
       const downloadResponse = await (await fetchOk(downloadApiUrl, 45000)).json();
       const zipUrl = downloadResponse?.object;
       if (!zipUrl || typeof zipUrl !== "string") throw new Error("Statistics Canada WDS did not return a full-table CSV download URL");
@@ -140,7 +154,7 @@ Deno.serve(async (req: Request) => {
       const path = `layer2a/CA/statcan/psis/${PID}/${stamp}.zip`;
       const upload = await service.storage.from("evidence").upload(path, bytes, { contentType: "application/zip", upsert: true });
       if (upload.error) throw new Error(`evidence upload: ${upload.error.message}`);
-      const evidenceId = await rpc(service, "svc_layer2a_record_evidence", { p_source_id: source.source_id, p_job_id: jobId, p_source_url: zipUrl, p_storage_path: path, p_content_hash: hash, p_mime_type: "application/zip", p_metadata: { pid: PID, table: TABLE, bytes: bytes.length, metadata_url: metadataUrl, download_api_url: downloadApiUrl, worker_version: VERSION } });
+      const evidenceId = await rpc(service, "svc_layer2a_record_evidence", { p_source_id: source.source_id, p_job_id: jobId, p_source_url: zipUrl, p_storage_path: path, p_content_hash: hash, p_mime_type: "application/zip", p_metadata: { pid: PID, table: TABLE, bytes: bytes.length, metadata_url: metadataUrl, metadata_method: "POST", download_api_url: downloadApiUrl, worker_version: VERSION } });
 
       const zip = await JSZip.loadAsync(bytes);
       const csvEntry = Object.values(zip.files).find((f: any) => !f.dir && /\.csv$/i.test(f.name) && !/MetaData/i.test(f.name));
@@ -173,6 +187,11 @@ Deno.serve(async (req: Request) => {
         providerMappingRequired: true,
         canonicalIdentityWrite: false,
         applyEnabled: false,
+        identityBoundary: {
+          provider: "IRCC DLI only",
+          course: "DLI + stable local source key; title excluded",
+          provincialRegistration: "optional validation metadata",
+        },
         nextGate: "persist candidate source-provider mappings; validate exact IRCC DLI matches; validate CIP/study-level/audience transforms; then bounded provider_outcomes APPLY",
         workerVersion: VERSION,
       };
@@ -186,6 +205,7 @@ Deno.serve(async (req: Request) => {
       throw error;
     }
   } catch (error) {
+    console.error(error);
     return json({ error: String(error), workerVersion: VERSION }, 500);
   }
 });
