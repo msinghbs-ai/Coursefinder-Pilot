@@ -54,6 +54,10 @@ export const api = {
     batchSize,
     offset,
   }),
+  runLayer2AStatsCan: ({ apply = false, sampleRows = 1000 } = {}) => invoke('statcan-ca-psis-etl', {
+    apply,
+    sampleRows,
+  }),
   resetDatabase: () => invoke('pilot-reset', { confirm: 'RESET DATABASE' }),
   searchCourses: (query, limit = 50) => rpc('ui_search_courses', { p_query: query, p_limit: limit }),
 }
