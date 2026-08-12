@@ -48,7 +48,7 @@ export const api = {
   regulatorySources: () => rpc('ui_regulatory_sources_list'),
   layer1Job: (jobId) => rpc('ui_layer1_job', { p_job_id: jobId }),
   latestLayer1Job: (country = 'AU') => rpc('ui_layer1_latest_job', { p_country_code: country }),
-  runLayer1: ({ country = 'AU', apply = false, batchSize = 2500, offset = 0 } = {}) => invoke('layer1-register-etl', {
+  runLayer1: ({ country = 'AU', apply = false, batchSize = 2500, offset = 0 } = {}) => invoke(country === 'CA' ? 'layer1-ca-live' : 'layer1-register-etl', {
     country,
     apply,
     batchSize,
