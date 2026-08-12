@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "layer1-ca-live-v1.0.0";
+const VERSION = "layer1-ca-live-v1.1.0";
 const IRCC_DLI_URL = "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/study-permit/prepare/designated-learning-institutions-list.html";
 const DEFAULT_BATCH = 100;
 const MAX_BATCH = 500;
@@ -32,7 +32,7 @@ async function fetchT(url: string, ms = 45000) {
     return await fetch(url, {
       signal: controller.signal,
       redirect: "follow",
-      headers: { "user-agent": "coursefinder-pilot/ca-live-1.0.0", accept: "text/html,application/xhtml+xml" },
+      headers: { "user-agent": "coursefinder-pilot/ca-live-1.1.0", accept: "text/html,application/xhtml+xml" },
     });
   } finally { clearTimeout(timer); }
 }
@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
     const jobId = await rpc(service, "svc_layer1_start_job", {
       p_country_code: "CA",
       p_source_id: source.source_id,
-      p_payload: { country_code: "CA", apply, offset, batch_size: batchSize, runtime: "supabase_edge", version: VERSION, mode: "ircc_dli_live_gate", requested_by: user.id },
+      p_payload: { country_code: "CA", apply, offset, batch_size: batchSize, runtime: "supabase_edge", version: VERSION, mode: "ircc_dli_provider_gate", requested_by: user.id },
     });
 
     try {
@@ -149,23 +149,41 @@ Deno.serve(async (req: Request) => {
         p_storage_path: path,
         p_content_hash: hash,
         p_mime_type: "text/html",
-        p_metadata: { country: "CA", mode: "ircc_dli_live_gate", provider_rows: providers.length, offset, batch_size: batchSize, stable_provider_identifier: "IRCC DLI number", full_course_catalogue: false },
+        p_metadata: { country: "CA", mode: "ircc_dli_provider_gate", provider_rows: providers.length, offset, batch_size: batchSize, stable_provider_identifier: "IRCC DLI number", full_course_catalogue: false },
       });
 
+      let reconciliation = {
+        records: selected.length,
+        provider_created: 0,
+        provider_existing: 0,
+        conflicts: 0,
+        course_writes: 0,
+      };
+      if (apply && selected.length) {
+        const applied = await rpc(service, "svc_layer1_apply_ca_ircc_providers", {
+          p_source_id: source.source_id,
+          p_evidence_id: evidenceId,
+          p_records: selected,
+        });
+        reconciliation = { ...reconciliation, ...(applied || {}) };
+      }
+
       const blocker = {
-        code: "CA_COURSE_IDENTITY_SOURCE_BLOCKER",
-        summary: "IRCC DLI provides stable Provider identity but no Canada-wide authoritative course catalogue with stable regulator/source programme identifiers.",
+        code: "CA_FEDERATED_COURSE_SOURCE_COVERAGE_BLOCKER",
+        summary: "IRCC DLI Provider authority is independently ingestible; Canada Course coverage remains federated and must use verified DLI + stable local programme keys.",
         providerIdentity: "CA + ircc_dli + DLI number",
-        courseIdentityRequired: "Provider + authoritative registration scheme + stable regulator/source course code",
-        applyAllowed: false,
+        courseIdentity: "UUIDv5(verified DLI + namespaced stable local programme key)",
+        regionalIdentifiers: "APS/MTCU/CIP are validation/classification metadata only",
+        providerApplyAllowed: true,
+        courseApplyAllowed: false,
         architectureChangeRequired: false,
-        remediation: "Adopt and validate a complete federated provincial/territorial programme-source model with stable programme identifiers, or identify a Canada-wide authoritative programme register before canonical APPLY.",
+        remediation: "Approve and validate each federated Course source/local key namespace, then run Course-specific bounded UAT before country PASS.",
       };
 
       const result = {
         country: "CA",
-        mode: apply ? "blocked-apply" : "dry-run",
-        adapter: "ircc_dli_live_gate",
+        mode: apply ? "apply" : "dry-run",
+        adapter: "ircc_dli_live_provider",
         offset,
         batchSize,
         totalRecords: providers.length,
@@ -174,11 +192,16 @@ Deno.serve(async (req: Request) => {
         hasMore,
         parsedProviders: providers.length,
         selectedProviders: selected,
+        reconciliation,
         evidenceIds: [evidenceId],
         evidenceHash: hash,
         providerIdentityStable: true,
-        courseIdentityStable: false,
+        providerApplyAllowed: true,
+        courseIdentityStable: true,
+        courseIdentityModel: "DLI + namespaced stable local programme key -> UUIDv5",
         courseCatalogueAuthoritativeCoverage: false,
+        courseApplyAllowed: false,
+        countryProductionGate: "blocked_on_federated_course_source_coverage",
         blocker,
         workerVersion: VERSION,
       };
@@ -187,12 +210,11 @@ Deno.serve(async (req: Request) => {
         p_source_id: source.source_id,
         p_success: true,
         p_error: null,
-        p_metadata: { worker_version: VERSION, parsed_providers: providers.length, evidence_hash: hash, live_authoritative: true, seed_snapshot: false, course_gate_blocked: true, last_run_offset: offset, last_run_batch_size: batchSize },
+        p_metadata: { worker_version: VERSION, parsed_providers: providers.length, evidence_hash: hash, live_authoritative: true, seed_snapshot: false, provider_apply_allowed: true, course_gate_blocked: true, last_run_offset: offset, last_run_batch_size: batchSize },
       });
-      await rpc(service, "svc_layer1_finish_job", { p_job_id: jobId, p_status: apply ? "blocked" : "completed", p_result: result, p_error: apply ? blocker.summary : null });
+      await rpc(service, "svc_layer1_finish_job", { p_job_id: jobId, p_status: "completed", p_result: result, p_error: null });
 
-      if (apply) return json({ error: blocker.summary, ...result }, 409);
-      return json({ ok: true, status: "completed_with_blocker", requestedCountry: "CA", ...result });
+      return json({ ok: true, status: apply ? "provider_batch_applied_course_gate_open" : "provider_dry_run_course_gate_open", requestedCountry: "CA", ...result });
     } catch (error) {
       const message = String(error).slice(0, 1800);
       try { await rpc(service, "svc_layer1_source_health", { p_source_id: source.source_id, p_success: false, p_error: message, p_metadata: { worker_version: VERSION } }); } catch {}
@@ -200,6 +222,7 @@ Deno.serve(async (req: Request) => {
       throw error;
     }
   } catch (error) {
+    console.error(error);
     return json({ error: String(error), workerVersion: VERSION }, 500);
   }
 });
