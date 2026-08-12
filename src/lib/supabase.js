@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, FunctionsHttpError } from '@supabase/supabase-js'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
@@ -17,7 +17,17 @@ async function rpc(name, args = {}) {
 
 async function invoke(name, body) {
   const { data, error } = await supabase.functions.invoke(name, { body })
-  if (error) throw new Error(error.message || `${name} failed`)
+  if (error) {
+    if (error instanceof FunctionsHttpError && error.context) {
+      try {
+        const payload = await error.context.clone().json()
+        throw new Error(payload?.error || payload?.message || error.message || `${name} failed`)
+      } catch (parseError) {
+        if (parseError instanceof Error && parseError.message !== 'Unexpected end of JSON input') throw parseError
+      }
+    }
+    throw new Error(error.message || `${name} failed`)
+  }
   if (data?.error) throw new Error(data.error)
   return data
 }
