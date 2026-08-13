@@ -1,0 +1,4 @@
+-- Live Pilot migration version preserved for local/remote history alignment.
+-- Final Niagara source seed is environment data governed by Admin Architecture v2.10.10.
+-- Accepted identity scheme: niagara_program_page_id.
+-- Lifecycle-aware source configuration is active in coursefinder_Pilot.
