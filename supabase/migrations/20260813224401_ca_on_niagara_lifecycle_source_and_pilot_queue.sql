@@ -1,0 +1,7 @@
+-- Live migration version preserved for remote/local history alignment.
+-- This was a transient UAT registration using the superseded Vault-backed Pilot queue.
+-- It is intentionally a no-op on fresh rebuilds.
+-- Final Niagara source registration and current URL are established in
+-- 20260813225303_ca_on_niagara_current_availability_url.sql.
+-- Pilot automation is replaced by one-time nonces in
+-- 20260813225136_pilot_one_time_edge_nonce_runner.sql.
