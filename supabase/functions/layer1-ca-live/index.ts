@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const VERSION = "layer1-ca-live-v1.1.1";
-const IRCC_DLI_URL = "https://www.canada.ca/en/immigration-refugees-and-citizenship/services/study-canada/study-permit/prepare/designated-learning-institutions-list.html";
+const IRCC_DLI_URL = "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/study-permit/prepare/designated-learning-institutions-list.html";
 const DEFAULT_BATCH = 100;
 const MAX_BATCH = 500;
 
