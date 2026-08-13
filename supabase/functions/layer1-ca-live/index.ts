@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "layer1-ca-live-v1.1.0";
-const IRCC_DLI_URL = "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/study-permit/prepare/designated-learning-institutions-list.html";
+const VERSION = "layer1-ca-live-v1.1.1";
+const IRCC_DLI_URL = "https://www.canada.ca/en/immigration-refugees-and-citizenship/services/study-canada/study-permit/prepare/designated-learning-institutions-list.html";
 const DEFAULT_BATCH = 100;
 const MAX_BATCH = 500;
 
@@ -32,7 +32,7 @@ async function fetchT(url: string, ms = 45000) {
     return await fetch(url, {
       signal: controller.signal,
       redirect: "follow",
-      headers: { "user-agent": "coursefinder-pilot/ca-live-1.1.0", accept: "text/html,application/xhtml+xml" },
+      headers: { "user-agent": "coursefinder-pilot/ca-live-1.1.1", accept: "text/html,application/xhtml+xml" },
     });
   } finally { clearTimeout(timer); }
 }
@@ -136,8 +136,9 @@ Deno.serve(async (req: Request) => {
       if (providers.length < 100) throw new Error(`IRCC DLI parse returned implausible provider count ${providers.length}`);
 
       const selected = providers.slice(offset, offset + batchSize);
-      const nextOffset = offset + selected.length;
-      const hasMore = nextOffset < providers.length;
+      const candidateNextOffset = offset + selected.length;
+      const nextOffset = apply ? candidateNextOffset : offset;
+      const hasMore = candidateNextOffset < providers.length;
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
       const path = `regulatory/CA/ircc-dli/${stamp}.html`;
       const upload = await service.storage.from("evidence").upload(path, bytes, { contentType: "text/html", upsert: true });
@@ -189,6 +190,7 @@ Deno.serve(async (req: Request) => {
         totalRecords: providers.length,
         selectedRecords: selected.length,
         nextOffset,
+        candidateNextOffset,
         hasMore,
         parsedProviders: providers.length,
         selectedProviders: selected,
@@ -210,7 +212,7 @@ Deno.serve(async (req: Request) => {
         p_source_id: source.source_id,
         p_success: true,
         p_error: null,
-        p_metadata: { worker_version: VERSION, parsed_providers: providers.length, evidence_hash: hash, live_authoritative: true, seed_snapshot: false, provider_apply_allowed: true, course_gate_blocked: true, last_run_offset: offset, last_run_batch_size: batchSize },
+        p_metadata: { worker_version: VERSION, parsed_providers: providers.length, evidence_hash: hash, live_authoritative: true, seed_snapshot: false, provider_apply_allowed: true, course_gate_blocked: true, last_run_offset: offset, last_run_batch_size: batchSize, dry_run_advances_cursor: false },
       });
       await rpc(service, "svc_layer1_finish_job", { p_job_id: jobId, p_status: "completed", p_result: result, p_error: null });
 
