@@ -1,0 +1,6 @@
+-- Live migration version preserved for history alignment.
+-- During Pilot UAT, `niagara_program_code` was proven non-unique because code 0122
+-- represented three distinct Broadcasting streams. The temporary unpublished UAT
+-- rows were removed from the live Pilot.
+-- Fresh environments never create that rejected scheme, so this migration is a no-op.
+-- Accepted Niagara identity is `niagara_program_page_id`.
