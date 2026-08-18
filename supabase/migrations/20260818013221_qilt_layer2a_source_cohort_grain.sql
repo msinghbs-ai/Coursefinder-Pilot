@@ -1,0 +1,1 @@
+alter table catalogue.provider_outcomes add column if not exists source_cohort_code text not null default 'ALL'; create index if not exists idx_provider_outcomes_source_cohort on catalogue.provider_outcomes(source_cohort_code,survey_id,metric_id);
