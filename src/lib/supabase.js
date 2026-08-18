@@ -52,6 +52,7 @@ export const api = {
     p_sort: sort,
     p_direction: direction,
   }),
+  providerFilterOptions: (country = '') => rpc('ui_provider_filter_options', { p_country_code: country || null }),
   providerDetail: providerId => rpc('ui_provider_detail', { p_provider_id: providerId }),
   campuses: (limit = 1000) => rpc('ui_campuses_list', { p_limit: limit }),
   collections: (limit = 1000) => rpc('ui_course_collections_list', { p_limit: limit }),
