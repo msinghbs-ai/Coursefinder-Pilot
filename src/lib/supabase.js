@@ -41,6 +41,7 @@ export const api = {
   context: () => rpc('ui_context'),
   dashboard: () => rpc('ui_dashboard'),
   providers: (limit = 1000) => rpc('ui_providers_list', { p_limit: limit }),
+  providerPage: ({ limit = 50, offset = 0, query = '' } = {}) => rpc('ui_providers_page', { p_limit: limit, p_offset: offset, p_query: query || null }),
   providerDetail: providerId => rpc('ui_provider_detail', { p_provider_id: providerId }),
   campuses: (limit = 1000) => rpc('ui_campuses_list', { p_limit: limit }),
   collections: (limit = 1000) => rpc('ui_course_collections_list', { p_limit: limit }),
