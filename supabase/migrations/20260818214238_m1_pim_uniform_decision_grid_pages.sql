@@ -1,0 +1,16 @@
+-- Live migration 20260818214238_m1_pim_uniform_decision_grid_pages
+-- Applied to Supabase project fxcwkweaxjtknorudmwp.
+-- Creates authenticated read-only UI contracts for uniform decision-grid pagination/filtering:
+--   public.ui_courses_page(...)
+--   public.ui_course_filter_options()
+--   public.ui_scholarships_page(...)
+--   public.ui_evidence_page(...)
+--   public.ui_evidence_filter_options()
+--   public.ui_reviews_page(...)
+--   public.ui_review_filter_options()
+--
+-- Source of truth for deployed function definitions is the live migration history and
+-- docs/uat/coursefinder-m1-pim-ui-v1.4.0-parity-uat.md in coursefinder-admin.
+-- This repository marker intentionally records the migration version/name to prevent
+-- source-control drift while preserving the deployed database as authoritative for
+-- the exact SECURITY DEFINER function bodies.
