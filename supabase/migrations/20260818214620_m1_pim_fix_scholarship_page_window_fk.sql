@@ -1,0 +1,7 @@
+-- Live migration 20260818214620_m1_pim_fix_scholarship_page_window_fk
+-- Corrects the UI Scholarship page read contract to the accepted relational schema:
+-- scholarship.application_windows uses scholarship_id and cycle_id.
+-- The initial UI page contract incorrectly assumed offering_cycle_id and was held during UAT.
+-- Final deployed function public.ui_scholarships_page(...) counts windows by scholarship_id.
+-- Exact deployed definition is retained in Supabase migration history; see Admin UAT:
+-- docs/uat/coursefinder-m1-pim-ui-v1.4.0-parity-uat.md
