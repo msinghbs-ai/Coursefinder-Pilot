@@ -58,12 +58,15 @@ export const api = {
   campuses: (limit = 1000) => rpc('ui_campuses_list', { p_limit: limit }),
   collections: (limit = 1000) => rpc('ui_course_collections_list', { p_limit: limit }),
   courses,
-  coursePage: ({ limit = 50, offset = 0, query = '', country = '', level = '', lifecycle = '', publication = '', sort = 'course', direction = 'asc' } = {}) => rpc('ui_courses_page', {
+  coursePage: ({ limit = 50, offset = 0, query = '', country = '', subdivision = '', provider = '', level = '', field = '', delivery = '', lifecycle = '', publication = '', sort = 'course', direction = 'asc' } = {}) => rpc('ui_courses_page', {
     p_limit: limit, p_offset: offset, p_query: query || null, p_country_code: country || null,
-    p_level_code: level || null, p_lifecycle_status: lifecycle || null, p_publication_status: publication || null,
-    p_sort: sort, p_direction: direction,
+    p_subdivision_code: subdivision || null, p_provider_id: provider || null, p_level_code: level || null,
+    p_field_code: field || null, p_delivery_mode: delivery || null, p_lifecycle_status: lifecycle || null,
+    p_publication_status: publication || null, p_sort: sort, p_direction: direction,
   }),
-  courseFilterOptions: () => rpc('ui_course_filter_options'),
+  courseFilterOptions: ({ country = '', subdivision = '' } = {}) => rpc('ui_course_filter_options', {
+    p_country_code: country || null, p_subdivision_code: subdivision || null,
+  }),
   courseDetail: courseId => rpc('ui_course_detail', { p_course_id: courseId }),
   scholarships: (limit = 1000) => rpc('ui_scholarships_list', { p_limit: limit }),
   scholarshipPage: ({ limit = 50, offset = 0, query = '', country = '', lifecycle = '', publication = '', sort = 'scholarship', direction = 'asc' } = {}) => rpc('ui_scholarships_page', {
