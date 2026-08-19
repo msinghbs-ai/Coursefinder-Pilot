@@ -88,7 +88,9 @@ Semantic/hybrid HTTP endpoints remain gated until the accepted vector profile ex
 
 New Search functions are not executable by `anon`. Website execution is `service_role` only. Zoho execution is `authenticated` and the function enforces role rank >= 2. Search refresh/rebuild and hybrid candidate functions are service-only.
 
-Supabase security advisor reported no new warning attributable to these functions. Existing project warnings around Admin/PIM public `SECURITY DEFINER` RPCs and leaked-password protection remain separate work items.
+A final legacy-RPC audit found two older authenticated Search paths that could bypass the curated boundary: `api.search_courses` allowed rank-1 users to use an obsolete Search DTO, and `api.vector_candidates` did not apply a publication filter. Neither was referenced by current Pilot code. Migration `20260819050549_m1_search_retire_legacy_consumer_rpcs_v1` revoked `authenticated` execution and retained them only as explicitly deprecated `service_role` compatibility functions. General Admin `api.courses_list` / `api.providers_list` remain role-gated Admin contracts and are not Website/Zoho consumer Search contracts.
+
+Supabase security advisor reported no new warning attributable to the M1-SEARCH functions. Existing project warnings around Admin/PIM public `SECURITY DEFINER` RPCs and leaked-password protection remain separate work items.
 
 The performance advisor identified the new country-gate FK without a supporting index; migration `20260819045818_m1_search_country_gate_fk_index_v1` added that index before handover. Newly created Search indexes may appear as unused immediately after creation; this is expected until workload accumulates.
 
@@ -98,6 +100,7 @@ The performance advisor identified the new country-gate FK without a supporting 
 - `20260819045543_m1_search_consumer_contracts_v1`
 - `20260819045719_m1_search_hybrid_fallback_optimisation_v1`
 - `20260819045818_m1_search_country_gate_fk_index_v1`
+- `20260819050549_m1_search_retire_legacy_consumer_rpcs_v1`
 
 ## Gate decision
 
