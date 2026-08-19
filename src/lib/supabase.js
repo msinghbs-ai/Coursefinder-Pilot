@@ -58,12 +58,12 @@ export const api = {
   campuses: (limit = 1000) => rpc('ui_campuses_list', { p_limit: limit }),
   collections: (limit = 1000) => rpc('ui_course_collections_list', { p_limit: limit }),
   courses,
-  coursePage: ({ limit = 50, offset = 0, query = '', country = '', subdivision = '', provider = '', level = '', field = '', delivery = '', lifecycle = '', publication = '', hasFee = null, hasIntake = null, hasEnglish = null, hasScholarship = null, minCompleteness = '', freshness = '', sort = 'course', direction = 'asc' } = {}) => rpc('ui_courses_decision_page', {
+  coursePage: ({ limit = 50, offset = 0, query = '', country = '', subdivision = '', provider = '', level = '', field = '', delivery = '', lifecycle = '', publication = '', hasState = null, hasLink = null, hasFee = null, hasIntake = null, hasEnglish = null, hasScholarship = null, minCompleteness = '', freshness = '', sort = 'course', direction = 'asc' } = {}) => rpc('ui_courses_decision_page', {
     p_limit: limit, p_offset: offset, p_query: query || null, p_country_code: country || null,
     p_subdivision_code: subdivision || null, p_provider_id: provider || null, p_level_code: level || null,
     p_field_code: field || null, p_delivery_mode: delivery || null, p_lifecycle_status: lifecycle || null,
-    p_publication_status: publication || null, p_has_fee: hasFee, p_has_intake: hasIntake,
-    p_has_english: hasEnglish, p_has_scholarship: hasScholarship,
+    p_publication_status: publication || null, p_has_state: hasState, p_has_link: hasLink,
+    p_has_fee: hasFee, p_has_intake: hasIntake, p_has_english: hasEnglish, p_has_scholarship: hasScholarship,
     p_min_completeness: minCompleteness === '' ? null : Number(minCompleteness), p_freshness: freshness || null,
     p_sort: sort, p_direction: direction,
   }),
