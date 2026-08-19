@@ -1,0 +1,1 @@
+create index if not exists course_study_level_observations_evidence_idx on catalogue.course_study_level_observations(evidence_id);
