@@ -78,6 +78,18 @@ export const api = {
     p_lifecycle_status: lifecycle || null, p_publication_status: publication || null, p_sort: sort, p_direction: direction,
   }),
   scholarshipDetail: scholarshipId => rpc('ui_scholarship_detail', { p_scholarship_id: scholarshipId }),
+  qiltPage: ({ limit = 50, offset = 0, query = '', survey = '', metric = '', provider = '', status = '', year = '', sort = 'provider', direction = 'asc' } = {}) => rpc('ui_qilt_outcomes_page', {
+    p_limit: limit, p_offset: offset, p_query: query || null, p_survey_code: survey || null,
+    p_metric_code: metric || null, p_provider_id: provider || null, p_status: status || null,
+    p_year: year === '' ? null : Number(year), p_sort: sort, p_direction: direction,
+  }),
+  qiltFilterOptions: (survey = '') => rpc('ui_qilt_filter_options', { p_survey_code: survey || null }),
+  prismsPage: ({ limit = 50, offset = 0, query = '', subdivision = '', studyArea = '', sector = '', remoteness = '', suppressed = null, sort = 'geography', direction = 'asc' } = {}) => rpc('ui_prisms_student_flow_page', {
+    p_limit: limit, p_offset: offset, p_query: query || null, p_subdivision_code: subdivision || null,
+    p_study_area_code: studyArea || null, p_sector_code: sector || null, p_remoteness_area: remoteness || null,
+    p_suppressed: suppressed, p_sort: sort, p_direction: direction,
+  }),
+  prismsFilterOptions: () => rpc('ui_prisms_filter_options'),
   evidencePage: ({ limit = 50, offset = 0, query = '', evidenceType = '', sort = 'captured', direction = 'desc' } = {}) => rpc('ui_evidence_page', {
     p_limit: limit, p_offset: offset, p_query: query || null, p_evidence_type: evidenceType || null, p_sort: sort, p_direction: direction,
   }),
