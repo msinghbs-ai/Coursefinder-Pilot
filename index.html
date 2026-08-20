@@ -5,10 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101827" />
     <link rel="stylesheet" href="/src/country-ui.css" />
-    <title>Coursefinder Pilot</title>
+    <title>Coursefinder Pilot — Governed RPC Recovery r1</title>
+    <style>
+      #governed-runtime-marker {
+        position: fixed;
+        right: 10px;
+        bottom: 10px;
+        z-index: 10000;
+        padding: 4px 8px;
+        border: 1px solid rgba(15, 23, 42, .18);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .92);
+        color: #334155;
+        font: 600 10px/1.2 system-ui, sans-serif;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, .08);
+        pointer-events: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <div id="governed-runtime-marker">Governed RPC recovery r1</div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
