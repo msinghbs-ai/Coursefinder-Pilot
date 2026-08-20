@@ -93,7 +93,7 @@ export const api = {
 
   providers: async (limit = 200) => pageItems(await entityPage('providers_page', { limit })),
   providerPage: args => entityPage('providers_page', args),
-  providerFilterOptions: async () => ({ countries: [], subdivisions: [] }),
+  providerFilterOptions: (country = '') => adminRead('provider_filters', { country_code: country || null }),
   providerDetail: providerId => adminRead('provider_detail', { id: providerId }),
   providerRelatedCourses: args => providerRelated(args.providerId, 'courses', args),
   providerRelatedEvidence: args => providerRelated(args.providerId, 'evidence', args),
@@ -103,8 +103,9 @@ export const api = {
 
   courses: async (limit = 200) => pageItems(await entityPage('courses_page', { limit })),
   coursePage: args => entityPage('courses_page', args),
-  courseFilterOptions: async () => ({
-    countries: [], subdivisions: [], providers: [], levels: [], fields: [], delivery_modes: [],
+  courseFilterOptions: ({ country = '', subdivision = '' } = {}) => adminRead('course_filters', {
+    country_code: country || null,
+    subdivision_code: subdivision || null,
   }),
   courseDetail: courseId => adminRead('course_detail', { id: courseId }),
   courseRelatedCampuses: async courseId => {
