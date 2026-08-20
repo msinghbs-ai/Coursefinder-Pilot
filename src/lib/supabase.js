@@ -9,8 +9,18 @@ export const supabase = createClient(url ?? '', key ?? '', {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
 
-async function rpc(name, args = {}) {
-  const { data, error } = await supabase.rpc(name, args)
+/**
+ * Governed browser read boundary.
+ *
+ * Browser code must not execute legacy public.ui_* RPCs directly. All reads enter
+ * through public.admin_read, which is SECURITY INVOKER and delegates to private,
+ * server-side role-checked implementations.
+ */
+async function adminRead(operation, args = {}) {
+  const { data, error } = await supabase.rpc('admin_read', {
+    p_operation: operation,
+    p_args: args ?? {},
+  })
   if (error) throw error
   return data
 }
@@ -32,87 +42,140 @@ async function invoke(name, body) {
   return data
 }
 
-async function courses(limit = 1000) {
-  const rows = await rpc('ui_courses_list', { p_limit: limit })
-  return (rows || []).map(row => ({ ...row, id: row.id || row.course_id }))
+const pageItems = value => value?.items ?? value?.rows ?? (Array.isArray(value) ? value : [])
+const bounded = (value, fallback = 50) => Math.min(Math.max(Number(value) || fallback, 1), 200)
+
+async function entityPage(operation, args = {}) {
+  return adminRead(operation, {
+    limit: bounded(args.limit, 50),
+    offset: Math.max(Number(args.offset) || 0, 0),
+    query: args.query || null,
+    country_code: args.country || args.country_code || null,
+    subdivision_code: args.subdivision || args.subdivision_code || null,
+    provider_id: args.provider || args.provider_id || null,
+    level_code: args.level || args.level_code || null,
+    field_code: args.field || args.field_code || null,
+    delivery_mode: args.delivery || args.delivery_mode || null,
+    lifecycle_status: args.lifecycle || args.lifecycle_status || null,
+    publication_status: args.publication || args.publication_status || null,
+    status: args.status || null,
+    has_fee: args.hasFee ?? args.has_fee ?? null,
+    has_intake: args.hasIntake ?? args.has_intake ?? null,
+    has_english: args.hasEnglish ?? args.has_english ?? null,
+    has_scholarship: args.hasScholarship ?? args.has_scholarship ?? null,
+    has_state: args.hasState ?? args.has_state ?? null,
+    has_link: args.hasLink ?? args.has_link ?? null,
+    min_completeness: args.minCompleteness === '' ? null : (args.minCompleteness ?? args.min_completeness ?? null),
+    freshness: args.freshness || null,
+    sort: args.sort || null,
+    direction: args.direction || 'asc',
+  })
+}
+
+async function providerRelated(providerId, key, { limit = 25, offset = 0 } = {}) {
+  const detail = await adminRead('provider_detail', { id: providerId })
+  const container = detail?.[key]
+  const all = container?.items ?? container?.rows ?? (Array.isArray(container) ? container : [])
+  const start = Math.max(Number(offset) || 0, 0)
+  const size = bounded(limit, 25)
+  const items = all.slice(start, start + size)
+  const total = Number(detail?.[`related_${key === 'courses' ? 'course' : 'evidence'}_total`] ?? container?.total ?? all.length)
+  return { items, rows: items, total, limit: size, offset: start }
+}
+
+async function attributesBundle(limit = 200) {
+  return adminRead('attributes', { limit: bounded(limit, 200) })
 }
 
 export const api = {
-  context: () => rpc('ui_context'),
-  dashboard: () => rpc('ui_dashboard'),
-  providers: (limit = 1000) => rpc('ui_providers_list', { p_limit: limit }),
-  providerPage: ({ limit = 50, offset = 0, query = '', country = '', subdivision = '', lifecycle = '', publication = '', sort = 'provider', direction = 'asc' } = {}) => rpc('ui_providers_page', {
-    p_limit: limit, p_offset: offset, p_query: query || null, p_country_code: country || null,
-    p_subdivision_code: subdivision || null, p_lifecycle_status: lifecycle || null,
-    p_publication_status: publication || null, p_sort: sort, p_direction: direction,
+  context: () => adminRead('context'),
+  dashboard: () => adminRead('dashboard'),
+
+  providers: async (limit = 200) => pageItems(await entityPage('providers_page', { limit })),
+  providerPage: args => entityPage('providers_page', args),
+  providerFilterOptions: async () => ({ countries: [], subdivisions: [] }),
+  providerDetail: providerId => adminRead('provider_detail', { id: providerId }),
+  providerRelatedCourses: args => providerRelated(args.providerId, 'courses', args),
+  providerRelatedEvidence: args => providerRelated(args.providerId, 'evidence', args),
+
+  campuses: async (limit = 200) => pageItems(await entityPage('campuses_page', { limit })),
+  collections: async () => [],
+
+  courses: async (limit = 200) => pageItems(await entityPage('courses_page', { limit })),
+  coursePage: args => entityPage('courses_page', args),
+  courseFilterOptions: async () => ({
+    countries: [], subdivisions: [], providers: [], levels: [], fields: [], delivery_modes: [],
   }),
-  providerFilterOptions: (country = '') => rpc('ui_provider_filter_options', { p_country_code: country || null }),
-  providerDetail: providerId => rpc('ui_provider_detail', { p_provider_id: providerId }),
-  providerRelatedCourses: ({ providerId, limit = 25, offset = 0, query = '', lifecycle = '', publication = '' }) => rpc('ui_provider_related_courses', {
-    p_provider_id: providerId, p_limit: limit, p_offset: offset, p_query: query || null,
-    p_lifecycle_status: lifecycle || null, p_publication_status: publication || null,
-  }),
-  providerRelatedEvidence: ({ providerId, limit = 25, offset = 0, query = '', evidenceType = '' }) => rpc('ui_provider_related_evidence', {
-    p_provider_id: providerId, p_limit: limit, p_offset: offset, p_query: query || null, p_evidence_type: evidenceType || null,
-  }),
-  campuses: (limit = 1000) => rpc('ui_campuses_list', { p_limit: limit }),
-  collections: (limit = 1000) => rpc('ui_course_collections_list', { p_limit: limit }),
-  courses,
-  coursePage: ({ limit = 50, offset = 0, query = '', country = '', subdivision = '', provider = '', level = '', field = '', delivery = '', lifecycle = '', publication = '', hasState = null, hasLink = null, hasFee = null, hasIntake = null, hasEnglish = null, hasScholarship = null, minCompleteness = '', freshness = '', sort = 'course', direction = 'asc' } = {}) => rpc('ui_courses_decision_page', {
-    p_limit: limit, p_offset: offset, p_query: query || null, p_country_code: country || null,
-    p_subdivision_code: subdivision || null, p_provider_id: provider || null, p_level_code: level || null,
-    p_field_code: field || null, p_delivery_mode: delivery || null, p_lifecycle_status: lifecycle || null,
-    p_publication_status: publication || null, p_has_state: hasState, p_has_link: hasLink,
-    p_has_fee: hasFee, p_has_intake: hasIntake, p_has_english: hasEnglish, p_has_scholarship: hasScholarship,
-    p_min_completeness: minCompleteness === '' ? null : Number(minCompleteness), p_freshness: freshness || null,
-    p_sort: sort, p_direction: direction,
-  }),
-  courseFilterOptions: ({ country = '', subdivision = '' } = {}) => rpc('ui_course_filter_options', {
-    p_country_code: country || null, p_subdivision_code: subdivision || null,
-  }),
-  courseDetail: courseId => rpc('ui_course_detail', { p_course_id: courseId }),
-  courseRelatedCampuses: courseId => rpc('ui_course_related_campuses', { p_course_id: courseId }),
-  scholarships: (limit = 1000) => rpc('ui_scholarships_list', { p_limit: limit }),
-  scholarshipPage: ({ limit = 50, offset = 0, query = '', country = '', lifecycle = '', publication = '', sort = 'scholarship', direction = 'asc' } = {}) => rpc('ui_scholarships_page', {
-    p_limit: limit, p_offset: offset, p_query: query || null, p_country_code: country || null,
-    p_lifecycle_status: lifecycle || null, p_publication_status: publication || null, p_sort: sort, p_direction: direction,
-  }),
-  scholarshipDetail: scholarshipId => rpc('ui_scholarship_detail', { p_scholarship_id: scholarshipId }),
-  qiltPage: ({ limit = 50, offset = 0, query = '', survey = '', metric = '', provider = '', status = '', year = '', sort = 'provider', direction = 'asc' } = {}) => rpc('ui_qilt_outcomes_page', {
-    p_limit: limit, p_offset: offset, p_query: query || null, p_survey_code: survey || null,
-    p_metric_code: metric || null, p_provider_id: provider || null, p_status: status || null,
-    p_year: year === '' ? null : Number(year), p_sort: sort, p_direction: direction,
-  }),
-  qiltFilterOptions: (survey = '') => rpc('ui_qilt_filter_options', { p_survey_code: survey || null }),
-  prismsPage: ({ limit = 50, offset = 0, query = '', subdivision = '', studyArea = '', sector = '', remoteness = '', suppressed = null, sort = 'geography', direction = 'asc' } = {}) => rpc('ui_prisms_student_flow_page', {
-    p_limit: limit, p_offset: offset, p_query: query || null, p_subdivision_code: subdivision || null,
-    p_study_area_code: studyArea || null, p_sector_code: sector || null, p_remoteness_area: remoteness || null,
-    p_suppressed: suppressed, p_sort: sort, p_direction: direction,
-  }),
-  prismsFilterOptions: () => rpc('ui_prisms_filter_options'),
-  evidencePage: ({ limit = 50, offset = 0, query = '', evidenceType = '', sort = 'captured', direction = 'desc' } = {}) => rpc('ui_evidence_page', {
-    p_limit: limit, p_offset: offset, p_query: query || null, p_evidence_type: evidenceType || null, p_sort: sort, p_direction: direction,
-  }),
-  evidenceFilterOptions: () => rpc('ui_evidence_filter_options'),
-  reviewsPage: ({ limit = 50, offset = 0, query = '', domain = '', status = '', sort = 'priority', direction = 'desc' } = {}) => rpc('ui_reviews_page', {
-    p_limit: limit, p_offset: offset, p_query: query || null, p_domain: domain || null, p_status: status || null, p_sort: sort, p_direction: direction,
-  }),
-  reviewFilterOptions: () => rpc('ui_review_filter_options'),
-  categories: (limit = 1000) => rpc('ui_categories_list', { p_limit: limit }),
-  attributes: () => rpc('ui_attributes_list'),
-  attributeFamilies: () => rpc('ui_attribute_families_list'),
-  attributeGroups: () => rpc('ui_attribute_groups_list'),
-  attributeOptions: (limit = 5000) => rpc('ui_attribute_options_list', { p_limit: limit }),
-  completenessProfiles: () => rpc('ui_completeness_profiles_list'),
-  completenessCourses: (limit = 5000) => rpc('ui_course_completeness_list', { p_limit: limit }),
-  evidence: (limit = 2000) => rpc('ui_evidence_governance_list', { p_limit: limit }),
-  jobs: (limit = 500) => rpc('ui_jobs_list', { p_limit: limit }),
-  reviews: (limit = 500) => rpc('ui_review_queue', { p_limit: limit }),
-  regulatorySources: () => rpc('ui_regulatory_sources_list'),
-  layer1Job: jobId => rpc('ui_layer1_job', { p_job_id: jobId }),
-  latestLayer1Job: (country = 'AU') => rpc('ui_layer1_latest_job', { p_country_code: country }),
-  runLayer1: ({ country = 'AU', apply = false, batchSize = 2500, offset = 0 } = {}) => invoke(country === 'CA' ? 'layer1-ca-live' : 'layer1-register-etl', { country, apply, batchSize, offset }),
-  runLayer2AStatsCan: ({ apply = false, sampleRows = 1000 } = {}) => invoke('statcan-ca-psis-etl', { apply, sampleRows }),
+  courseDetail: courseId => adminRead('course_detail', { id: courseId }),
+  courseRelatedCampuses: async courseId => {
+    const detail = await adminRead('course_detail', { id: courseId })
+    return detail?.campuses ?? detail?.related_campuses ?? []
+  },
+
+  scholarships: async (limit = 200) => pageItems(await entityPage('scholarships_page', { limit })),
+  scholarshipPage: args => entityPage('scholarships_page', args),
+  scholarshipDetail: scholarshipId => adminRead('scholarship_detail', { id: scholarshipId }),
+
+  qiltPage: ({ limit = 50, offset = 0, query = '', survey = '', metric = '', provider = '', status = '', year = '', sort = 'provider', direction = 'asc' } = {}) =>
+    adminRead('qilt_outcomes', {
+      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
+      survey_code: survey || null, metric_code: metric || null, provider_id: provider || null,
+      status: status || null, year: year === '' ? null : Number(year), sort, direction,
+    }),
+  qiltFilterOptions: (survey = '') => adminRead('qilt_filters', { survey_code: survey || null }),
+  prismsPage: ({ limit = 50, offset = 0, query = '', subdivision = '', studyArea = '', sector = '', remoteness = '', suppressed = null, sort = 'geography', direction = 'asc' } = {}) =>
+    adminRead('prisms_student_flow', {
+      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
+      subdivision_code: subdivision || null, study_area_code: studyArea || null, sector_code: sector || null,
+      remoteness_area: remoteness || null, suppressed, sort, direction,
+    }),
+  prismsFilterOptions: () => adminRead('prisms_filters'),
+
+  evidencePage: ({ limit = 50, offset = 0, query = '', evidenceType = '', sort = 'captured', direction = 'desc' } = {}) =>
+    adminRead('evidence_page', {
+      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
+      evidence_type: evidenceType || null, sort, direction,
+    }),
+  evidenceFilterOptions: () => adminRead('evidence_filters'),
+  reviewsPage: ({ limit = 50, offset = 0, query = '', domain = '', status = '', sort = 'priority', direction = 'desc' } = {}) =>
+    adminRead('reviews_page', {
+      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
+      domain: domain || null, status: status || null, sort, direction,
+    }),
+  reviewFilterOptions: async () => ({ domains: [], statuses: [] }),
+
+  categories: async () => [],
+  attributes: async () => (await attributesBundle())?.attributes ?? [],
+  attributeFamilies: async () => (await attributesBundle())?.families ?? [],
+  attributeGroups: async () => (await attributesBundle())?.groups ?? [],
+  attributeOptions: async (limit = 200) => (await attributesBundle(limit))?.options ?? [],
+  completenessProfiles: async () => (await attributesBundle())?.completeness_profiles ?? [],
+  completenessCourses: async (limit = 200) => pageItems(await entityPage('courses_page', {
+    limit: bounded(limit, 200), sort: 'completeness', direction: 'asc',
+  })),
+
+  evidence: async (limit = 200) => pageItems(await adminRead('evidence_page', { limit: bounded(limit, 200), offset: 0 })),
+  jobs: (limit = 200) => adminRead('jobs', { limit: bounded(limit, 200) }),
+  reviews: (limit = 200) => adminRead('reviews', { limit: bounded(limit, 200) }),
+  regulatorySources: () => adminRead('sources'),
+
+  layer1Job: jobId => adminRead('pipeline_job_detail', { id: jobId }),
+  latestLayer1Job: async (country = 'AU') => {
+    const result = await adminRead('pipeline_jobs_page', {
+      limit: 50, offset: 0, country_code: country || null, sort: 'created', direction: 'desc',
+    })
+    return pageItems(result)[0] ?? null
+  },
+
+  runLayer1: ({ country = 'AU', apply = false, batchSize = 2500, offset = 0 } = {}) =>
+    invoke(country === 'CA' ? 'layer1-ca-live' : 'layer1-register-etl', { country, apply, batchSize, offset }),
+  runLayer2AStatsCan: ({ apply = false, sampleRows = 1000 } = {}) =>
+    invoke('statcan-ca-psis-etl', { apply, sampleRows }),
   resetDatabase: () => invoke('pilot-reset', { confirm: 'RESET DATABASE' }),
-  searchCourses: (query, limit = 50) => rpc('ui_search_courses', { p_query: query, p_limit: limit }),
+
+  searchCourses: async (query, limit = 50) => pageItems(await entityPage('courses_page', {
+    query, limit: bounded(limit, 50), sort: 'course', direction: 'asc',
+  })),
 }
+
+export { adminRead }
