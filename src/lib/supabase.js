@@ -44,6 +44,7 @@ async function invoke(name, body) {
 
 const pageItems = value => value?.items ?? value?.rows ?? (Array.isArray(value) ? value : [])
 const bounded = (value, fallback = 50) => Math.min(Math.max(Number(value) || fallback, 1), 200)
+const present = value => value === '' || value === null || value === undefined ? null : value
 
 async function entityPage(operation, args = {}) {
   return adminRead(operation, {
@@ -132,12 +133,33 @@ export const api = {
     }),
   prismsFilterOptions: () => adminRead('prisms_filters'),
 
-  evidencePage: ({ limit = 50, offset = 0, query = '', evidenceType = '', sort = 'captured', direction = 'desc' } = {}) =>
-    adminRead('evidence_page', {
-      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
-      evidence_type: evidenceType || null, sort, direction,
-    }),
+  evidencePage: ({
+    limit = 50, offset = 0, query = '', country = '', sourceId = '', layer = '', entityType = '', entityId = '', providerId = '', jobId = '',
+    evidenceType = '', mime = '', hash = '', jobStatus = '', status = '', extractionState = '', freshness = '', verifiedFrom = '', verifiedTo = '',
+    unresolvedConflicts = '', sort = 'captured', direction = 'desc',
+  } = {}) => adminRead('evidence_page', {
+    limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
+    country: country || null, source_id: sourceId || null, layer: layer || null, entity_type: entityType || null,
+    entity_id: entityId || null, provider_id: providerId || null, job_id: jobId || null,
+    evidence_type: evidenceType || null, mime: mime || null, hash: hash || null, job_status: jobStatus || null,
+    status: status || null, extraction_state: extractionState || null, freshness: freshness || null,
+    verified_from: verifiedFrom || null, verified_to: verifiedTo || null,
+    ...(unresolvedConflicts === '' || unresolvedConflicts === null || unresolvedConflicts === undefined ? {} : { unresolved_conflicts: unresolvedConflicts === true || unresolvedConflicts === 'true' }),
+    sort, direction,
+  }),
   evidenceFilterOptions: () => adminRead('evidence_filters'),
+  evidenceDetail: evidenceId => adminRead('evidence_detail', { id: evidenceId }),
+  evidenceObservations: (evidenceId, { limit = 100, offset = 0, entityType = '' } = {}) => adminRead('evidence_observations', {
+    id: evidenceId, limit: bounded(limit, 100), offset: Math.max(Number(offset) || 0, 0), entity_type: entityType || null,
+  }),
+  evidenceEntities: (evidenceId, { limit = 100, offset = 0, entityType = '' } = {}) => adminRead('evidence_entities', {
+    id: evidenceId, limit: bounded(limit, 100), offset: Math.max(Number(offset) || 0, 0), entity_type: entityType || null,
+  }),
+  evidenceAccess: (evidenceId, mode = 'preview') => invoke('admin-evidence-access', {
+    evidence_id: evidenceId,
+    mode: mode === 'download' ? 'download' : 'preview',
+  }),
+
   reviewsPage: ({ limit = 50, offset = 0, query = '', domain = '', status = '', sort = 'priority', direction = 'desc' } = {}) =>
     adminRead('reviews_page', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
