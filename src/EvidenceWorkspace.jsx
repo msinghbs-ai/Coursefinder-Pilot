@@ -1,13 +1,13 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{
-  AlertTriangle,ArrowLeft,BookOpen,CheckCircle2,ChevronDown,Clock3,Database,Download,
-  ExternalLink,FileCheck2,FileSearch,Filter,GitBranch,Hash,History,Layers3,Link2,
-  RefreshCw,Search,ShieldCheck,Workflow,X
+  ArrowLeft,BookOpen,ChevronDown,Database,Download,ExternalLink,FileCheck2,FileSearch,
+  Filter,GitBranch,History,Link2,RefreshCw,Search,ShieldCheck,Workflow,X
 }from'lucide-react'
 import{api}from'./lib/supabase'
 import'./evidence-workspace.css'
 
 const PAGE_SIZE=50
+const INLINE_OBSERVATION_LIMIT=500
 const ENTITY_PAGE={provider:'Providers',course:'Courses',campus:'Campuses',scholarship:'Scholarships'}
 const EMPTY_FILTERS={country:'',sourceId:'',layer:'',entityType:'',entityId:'',providerId:'',jobId:'',evidenceType:'',mime:'',jobStatus:'',status:'',extractionState:'',freshness:'',verifiedFrom:'',verifiedTo:'',hash:'',unresolvedConflicts:''}
 
@@ -30,9 +30,23 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   const args=useMemo(()=>({...filters,limit:PAGE_SIZE,offset,query:debounced,sort:'captured',direction:'desc'}),[offset,debounced,JSON.stringify(filters)])
   useEffect(()=>{let live=true;setBusy(true);api.evidencePage(args).then(x=>live&&setData(x)).catch(e=>onError(e.message)).finally(()=>live&&setBusy(false));return()=>{live=false}},[JSON.stringify(args)])
   useEffect(()=>setOffset(0),[debounced,JSON.stringify(filters)])
-  useEffect(()=>{if(!selected){setDetail(null);return}let live=true;setDetailBusy(true);Promise.all([
-    api.evidenceDetail(selected),api.evidenceObservations(selected,{limit:100}),api.evidenceEntities(selected,{limit:100})
-  ]).then(([base,observations,entities])=>{if(live)setDetail({...base,observations,entities})}).catch(e=>onError(e.message)).finally(()=>live&&setDetailBusy(false));return()=>{live=false}},[selected])
+  useEffect(()=>{
+    if(!selected){setDetail(null);return}
+    let live=true
+    setDetail(null);setDetailBusy(true)
+    Promise.all([api.evidenceDetail(selected),api.evidenceEntities(selected,{limit:100})])
+      .then(async([base,entities])=>{
+        const observationCount=Number(base?.artifact?.observation_count||0)
+        let observations={items:[],total:observationCount,limit:0,offset:0,scope_required:observationCount>INLINE_OBSERVATION_LIMIT}
+        if(observationCount>0&&observationCount<=INLINE_OBSERVATION_LIMIT){
+          observations=await api.evidenceObservations(selected,{limit:100})
+        }
+        if(live)setDetail({...base,observations,entities})
+      })
+      .catch(e=>onError(e.message))
+      .finally(()=>live&&setDetailBusy(false))
+    return()=>{live=false}
+  },[selected])
 
   const rows=rowsOf(data),total=Number(data?.total??rows.length),active=activeFilters(filters)
   const setFilter=(k,v)=>setFilters(f=>({...f,[k]:v}))
@@ -105,10 +119,11 @@ function EvidenceDrawer({id,data,busy,onClose,onError,navigate}){
   useEffect(()=>{const k=e=>e.key==='Escape'&&onClose();addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose])
   async function access(mode){setAccessBusy(mode);try{const x=await api.evidenceAccess(id,mode);if(!x?.url)throw new Error('Signed evidence URL was not returned.');window.open(x.url,'_blank','noopener,noreferrer')}catch(e){onError(e.message)}finally{setAccessBusy('')}}
   const a=data?.artifact||{},s=data?.source||{},j=data?.job||{},storage=data?.storage||{},obs=rowsOf(data?.observations),entities=rowsOf(data?.entities),claims=data?.claims||[],reviews=data?.reviews||[],actions=data?.review_actions||[]
+  const observationTotal=Number(data?.observations?.total??a.observation_count??obs.length),entityTotal=Number(data?.entities?.total??entities.length),observationScoped=Boolean(data?.observations?.scope_required)
   return <><button className="evidence-drawer-backdrop" onClick={onClose}/><aside className="evidence-drawer">
     <div className="evidence-drawer-head"><div><small>Evidence artifact</small><h2>{a.evidence_type?human(a.evidence_type):shortId(id)}</h2><span>{id}</span></div><button onClick={onClose} aria-label="Close"><X size={18}/></button></div>
     {busy?<div className="evidence-drawer-loading"><span className="evidence-spinner"/>Loading governed lineage…</div>:<div className="evidence-drawer-body">
-      <LineageStrip source={s} job={j} artifact={a} observationCount={obs.length} entityCount={entities.length} reviewCount={reviews.length}/>
+      <LineageStrip source={s} job={j} artifact={a} observationCount={observationTotal} entityCount={entityTotal} reviewCount={reviews.length}/>
       <section className="evidence-detail-hero">
         <div><span className="evidence-private"><ShieldCheck size={13}/>Private evidence boundary</span><h3>{s.label||'Evidence artifact'}</h3><p>{safeUrl(a.source_url)||safeUrl(s.authority_url)||'No public source URL recorded.'}</p><div className="evidence-state-row"><State value={a.status}/><State value={a.extraction_state}/><State value={a.freshness_state}/>{data?.unresolved_conflict&&<State value="conflict"/>}</div></div>
         <div className="evidence-access-actions"><button className="m-secondary" disabled={!storage.preview_allowed||accessBusy} onClick={()=>access('preview')}><FileSearch size={14}/>{accessBusy==='preview'?'Signing…':'Preview'}</button><button className="m-secondary" disabled={!storage.download_allowed||accessBusy} onClick={()=>access('download')}><Download size={14}/>{accessBusy==='download'?'Signing…':'Download'}</button></div>
@@ -127,14 +142,14 @@ function EvidenceDrawer({id,data,busy,onClose,onError,navigate}){
       </Section>
 
       <Section icon={Workflow} title="Acquisition job" subtitle="The execution that captured or associated this artifact.">
-        {j.id?<div className="evidence-job-card"><div><strong>{human(j.job_type||j.domain||'Acquisition job')}</strong><span>{j.id}</span></div><State value={j.status}/><KeyRows rows={[["Domain",j.domain],["Started",j.started_at?dateTime(j.started_at):null],["Completed",j.completed_at?dateTime(j.completed_at):null],["Attempts",j.attempt_count]]}/></div>:<Empty icon={Workflow} text="No acquisition job is linked to this artifact."/>}
+        {j.id?<div className="evidence-job-card"><div><strong>{human(j.type||j.job_type||j.domain||'Acquisition job')}</strong><span>{j.id}</span></div><State value={j.status}/><KeyRows rows={[["Domain",j.domain],["Started",j.started_at?dateTime(j.started_at):null],["Completed",j.completed_at?dateTime(j.completed_at):null],["Attempts",j.attempt_count]]}/></div>:<Empty icon={Workflow} text="No acquisition job is linked to this artifact."/>}
       </Section>
 
-      <Section icon={FileCheck2} title={`Extracted observations · ${fmt(data?.observations?.total??obs.length)}`} subtitle="Source-null, rejected and superseded values remain explicit and are not silently treated as missing.">
-        {obs.length?<div className="evidence-observation-list">{obs.map(x=><Observation key={x.observation_id} value={x} onCanonical={()=>openCanonical(x,navigate)}/>)}</div>:<Empty icon={FileSearch} text="No extracted canonical observation is linked. This is classified as missing extraction unless the artifact is rejected by an explicit claim/review state."/>}
+      <Section icon={FileCheck2} title={`Extracted observations · ${fmt(observationTotal)}`} subtitle={observationScoped?`High-volume snapshot: ${fmt(observationTotal)} extracted facts are retained, but bulk expansion is intentionally bounded to keep the operational detail responsive. Drill through the affected canonical entity/value for exact fact context.`:`Showing ${fmt(obs.length)} of ${fmt(observationTotal)} extracted facts. Source-null, rejected and superseded values remain explicit.`}>
+        {observationScoped?<Empty icon={FileSearch} text="Bulk inline expansion is suppressed for this high-volume snapshot. The observation count remains governed; use the canonical entity drill-through for exact value-level inspection."/>:obs.length?<div className="evidence-observation-list">{obs.map(x=><Observation key={x.observation_id} value={x} onCanonical={()=>openCanonical(x,navigate)}/>)}</div>:<Empty icon={FileSearch} text="No extracted canonical observation is linked. This is classified as missing extraction unless the artifact is rejected by an explicit claim/review state."/>}
       </Section>
 
-      <Section icon={Link2} title={`Affected canonical entities · ${fmt(data?.entities?.total??entities.length)}`} subtitle={data?.entities?.consequence_note||'Current downstream state is context, not an assertion of causal publication admission.'}>
+      <Section icon={Link2} title={`Affected canonical entities · ${fmt(entityTotal)}`} subtitle={`${entityTotal>entities.length?`Showing the first ${fmt(entities.length)} of ${fmt(entityTotal)} linked entities. `:''}${data?.entities?.consequence_note||'Current downstream state is context, not an assertion of causal publication admission.'}`}>
         {entities.length?<div className="evidence-entity-list">{entities.map(x=><EntityCard key={`${x.entity_type}:${x.entity_id}`} value={x} onOpen={()=>openCanonical(x,navigate)}/>)}</div>:<Empty icon={Link2} text="No canonical entity link is materialised for this artifact."/>}
       </Section>
 
@@ -153,7 +168,7 @@ function EvidenceDrawer({id,data,busy,onClose,onError,navigate}){
   </aside></>
 }
 
-function LineageStrip({source,job,artifact,observationCount,entityCount,reviewCount}){const steps=[['Source',source?.label||'Unlinked'],['Acquisition job',job?.job_type||'Unlinked'],['Artifact',artifact?.evidence_type||'Evidence'],['Observation / claim',`${observationCount} observation${observationCount===1?'':'s'}`],['Canonical entity',`${entityCount} linked`],['Review / decision',`${reviewCount} review${reviewCount===1?'':'s'}`],['Search / publication','Current consequence state']];return <div className="evidence-lineage">{steps.map(([a,b],i)=><React.Fragment key={a}><div><small>{a}</small><strong>{b}</strong></div>{i<steps.length-1&&<span>→</span>}</React.Fragment>)}</div>}
+function LineageStrip({source,job,artifact,observationCount,entityCount,reviewCount}){const steps=[['Source',source?.label||'Unlinked'],['Acquisition job',job?.type||job?.job_type||'Unlinked'],['Artifact',artifact?.evidence_type||'Evidence'],['Observation / claim',`${fmt(observationCount)} observation${Number(observationCount)===1?'':'s'}`],['Canonical entity',`${fmt(entityCount)} linked`],['Review / decision',`${reviewCount} review${reviewCount===1?'':'s'}`],['Search / publication','Current consequence state']];return <div className="evidence-lineage">{steps.map(([a,b],i)=><React.Fragment key={a}><div><small>{a}</small><strong>{b}</strong></div>{i<steps.length-1&&<span>→</span>}</React.Fragment>)}</div>}
 function Observation({value:x,onCanonical}){return <article className="evidence-observation"><div className="evidence-observation-head"><div><strong>{human(x.field_code||x.observation_type)}</strong><span>{human(x.observation_type)} · {x.entity_label||x.entity_code||'Unresolved entity'}</span></div><State value={x.value_state||x.status}/></div><pre>{pretty(x.value_json)}</pre><div className="evidence-observation-meta"><span>{x.verified_at?`Verified ${dateTime(x.verified_at)}`:x.observed_at?`Observed ${dateTime(x.observed_at)}`:'No observation timestamp'}</span>{x.entity_id&&<button onClick={onCanonical}><ArrowLeft size={12}/>Canonical {human(x.entity_type)}</button>}</div></article>}
 function EntityCard({value:x,onOpen}){return <article className="evidence-entity-card"><div><small>{human(x.entity_type)}</small><strong>{x.entity_label||x.entity_code||shortId(x.entity_id)}</strong><span>{x.provider_label&&x.provider_label!==x.entity_label?x.provider_label:''}</span></div><div className="evidence-entity-state"><State value={x.canonical_publication_status}/>{x.entity_type==='course'&&<span>{x.search_projected?'Search projected':'Not in Search'}{x.search_projected?` · fee ${yesNo(x.search_has_fee)} · intake ${yesNo(x.search_has_intake)} · English ${yesNo(x.search_has_english)}`:''}</span>}</div><button className="m-secondary compact" onClick={onOpen}>Open canonical →</button></article>}
 function Supersession({value}){const prev=value?.predecessor,next=value?.successors||[];if(!prev&&!next.length)return <Empty icon={GitBranch} text="This artifact has no explicit predecessor or successor link."/>;return <div className="evidence-history"><div><small>Predecessor</small><strong>{prev?shortId(prev.id):'None'}</strong>{prev?.captured_at&&<span>{dateTime(prev.captured_at)}</span>}</div><div><small>Successors</small><strong>{next.length}</strong>{next.map(x=><span key={x.id}>{shortId(x.id)} · {dateTime(x.captured_at)}</span>)}</div></div>}
