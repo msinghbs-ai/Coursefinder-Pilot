@@ -88,7 +88,7 @@ function DataQualityWorkspace({rank,role}){
   function openState(metric,state,count){if(!count)return;setSelected({domain:metric.domain,label:metric.label,entity_type:metric.entity_type,state});setOffset(0);setQuery('');setSubmittedQuery('')}
   function goAdmin(hash='#dashboard'){location.hash=hash}
   function openEntity(row){goAdmin(`#${ENTITY_ROUTE[row.entity_type]}?id=${encodeURIComponent(row.entity_id)}`)}
-  function openEvidence(row){if(row.evidence_id&&rank>=3)goAdmin(`#evidence?id=${encodeURIComponent(row.evidence_id)}`)}
+  function openEvidence(row){if(row.evidence_id&&rank>=3)goAdmin(`#evidence?evidence_id=${encodeURIComponent(row.evidence_id)}`)}
   function openReview(){if(rank>=3)goAdmin('#review-queue')}
 
   return <div className="dq-shell">
