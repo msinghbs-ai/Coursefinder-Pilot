@@ -34,6 +34,28 @@ document.addEventListener('click',event=>{
   location.hash=ROUTE
 },true)
 
+// The mature Course catalogue retains the historical six-signal percentage for backwards
+// compatibility. Browser UAT showed that calling it simply "Readiness" can be confused with
+// the governed domain-readiness model. Relabel the mature-shell display only; the underlying
+// value, filters and server contract are unchanged.
+function relabelLegacyCatalogue(){
+  document.querySelectorAll('.m-table th button').forEach(el=>{
+    const text=[...el.childNodes].find(n=>n.nodeType===3&&n.nodeValue?.trim()==='Readiness')
+    if(text)text.nodeValue='Legacy presence'
+  })
+  document.querySelectorAll('.m-filter-button small').forEach(el=>{
+    if(el.textContent?.trim()==='Min readiness')el.textContent='Min legacy presence'
+  })
+  document.querySelectorAll('.m-filter-chip').forEach(el=>{
+    ;[...el.childNodes].filter(n=>n.nodeType===3).forEach(n=>{
+      if(n.nodeValue?.includes('Min readiness'))n.nodeValue=n.nodeValue.replace('Min readiness','Min legacy presence')
+    })
+  })
+}
+const legacyLabelObserver=new MutationObserver(relabelLegacyCatalogue)
+legacyLabelObserver.observe(document.documentElement,{childList:true,subtree:true})
+queueMicrotask(relabelLegacyCatalogue)
+
 const host=document.getElementById('data-quality-root')
 const root=host?createRoot(host):null
 function render(){replaceLegacyHash();if(root)root.render(isActiveHash()?<DataQualityBootstrap/>:null)}
