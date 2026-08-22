@@ -90,10 +90,13 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
       await expect(evidenceButton).toBeVisible()
       await evidenceButton.click()
       await expect(page).toHaveURL(/#evidence\?evidence_id=/)
-      await expect(page.getByText('Evidence Artifact', { exact: true })).toBeVisible({ timeout: 45_000 })
-      await expect(page.getByText('Regulatory Snapshot', { exact: true })).toBeVisible()
-      await expect(page.getByText(expectations.evidence.regulatory_snapshot_source, { exact: true }).first()).toBeVisible()
-      await expect(page.getByText('PRIVATE EVIDENCE BOUNDARY', { exact: true })).toBeVisible()
+
+      const drawer = page.locator('aside.evidence-drawer')
+      await expect(drawer).toBeVisible({ timeout: 45_000 })
+      await expect(drawer.getByText(/^Evidence artifact$/i)).toBeVisible()
+      await expect(drawer.getByRole('heading', { name: 'Regulatory Snapshot', exact: true })).toBeVisible()
+      await expect(drawer.getByText(expectations.evidence.regulatory_snapshot_source, { exact: true }).first()).toBeVisible()
+      await expect(drawer.getByText(/^Private evidence boundary$/i)).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'evidence-regulatory-snapshot')
     } finally {
       await finish(testInfo, runtime)
