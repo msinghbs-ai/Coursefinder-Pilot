@@ -1,6 +1,8 @@
 name: CourseFinder Deployed UAT
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       base_url:
@@ -12,17 +14,21 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: coursefinder-deployed-uat-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   deployed-uat:
     name: Deployed UAT (${{ matrix.project }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         project: [chromium-desktop, chromium-mobile]
     env:
-      UAT_BASE_URL: ${{ inputs.base_url }}
+      UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
@@ -48,6 +54,23 @@ jobs:
             https://*) ;;
             *) echo "UAT_BASE_URL must use HTTPS for deployed acceptance"; exit 1 ;;
           esac
+
+      - name: Allow Worker deployment to settle
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          sleep 60
+          for attempt in $(seq 1 18); do
+            code=$(curl -L -sS -o /tmp/coursefinder-uat-home.html -w '%{http_code}' --max-time 20 "$UAT_BASE_URL/?uat_probe=${GITHUB_SHA}" || true)
+            if [ "$code" = "200" ]; then
+              echo "Worker reachable for deployed UAT"
+              exit 0
+            fi
+            echo "Worker not ready yet (HTTP ${code:-none}); retry ${attempt}/18"
+            sleep 10
+          done
+          echo "Worker did not become reachable within the deployment-settle window"
+          exit 1
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
