@@ -21,6 +21,26 @@ export async function writeRunEnvironment(extra = {}) {
   await fs.writeFile(path.join(ARTIFACT_DIR, 'environment.json'), JSON.stringify(payload, null, 2))
 }
 
+function governedOperation(request) {
+  try {
+    if (!request.url().includes('/rest/v1/rpc/admin_read')) return null
+    const body = request.postDataJSON()
+    return typeof body?.p_operation === 'string' ? body.p_operation : null
+  } catch {
+    return null
+  }
+}
+
+function responseEvidence(response) {
+  const request = response.request()
+  return {
+    status: response.status(),
+    url: response.url(),
+    method: request.method(),
+    operation: governedOperation(request),
+  }
+}
+
 export function observeRuntime(page) {
   const serverErrors = []
   const clientErrors = []
@@ -28,8 +48,8 @@ export function observeRuntime(page) {
 
   page.on('response', response => {
     const status = response.status()
-    if (status >= 500) serverErrors.push({ status, url: response.url(), method: response.request().method() })
-    else if (status >= 400) clientErrors.push({ status, url: response.url(), method: response.request().method() })
+    if (status >= 500) serverErrors.push(responseEvidence(response))
+    else if (status >= 400) clientErrors.push(responseEvidence(response))
   })
 
   page.on('console', message => {
