@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: coursefinder-deployed-uat-${{ github.ref }}
@@ -31,6 +32,7 @@ jobs:
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,6 +78,8 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run deployed governed acceptance
+        id: governed_uat
+        continue-on-error: true
         run: npx playwright test tests/uat/data-quality-deployed.spec.mjs --project="${{ matrix.project }}"
 
       - name: Upload UAT evidence
@@ -89,3 +93,27 @@ jobs:
             playwright-report/
             test-results/
             uat-artifacts/
+
+      - name: Publish deployed UAT commit status
+        if: always()
+        shell: bash
+        env:
+          UAT_OUTCOME: ${{ steps.governed_uat.outcome }}
+          UAT_PROJECT: ${{ matrix.project }}
+        run: |
+          if [ "$UAT_OUTCOME" = "success" ]; then
+            state=success
+            description="Governed deployed UAT passed"
+          else
+            state=failure
+            description="Governed deployed UAT failed"
+          fi
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="$state" \
+            -f context="coursefinder/deployed-uat/${UAT_PROJECT}" \
+            -f description="$description" \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+      - name: Enforce deployed UAT result
+        if: always() && steps.governed_uat.outcome != 'success'
+        run: exit 1
