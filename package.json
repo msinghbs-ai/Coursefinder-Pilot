@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "worker:dev": "wrangler dev"
+    "worker:dev": "wrangler dev",
+    "test:uat": "playwright test",
+    "test:uat:smoke": "playwright test tests/uat/smoke.spec.mjs --project=chromium-desktop",
+    "test:uat:deployed": "playwright test tests/uat/data-quality-deployed.spec.mjs --project=chromium-desktop",
+    "test:uat:deployed:mobile": "playwright test tests/uat/data-quality-deployed.spec.mjs --project=chromium-mobile",
+    "test:uat:report": "playwright show-report playwright-report"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -17,6 +22,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^6.0.5",
     "wrangler": "^4.120.1"

@@ -1,0 +1,68 @@
+name: CourseFinder Deployed UAT
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed CourseFinder Admin URL
+        required: true
+        default: https://coursefinder-pilot.techm.workers.dev
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deployed-uat:
+    name: Deployed UAT (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium-desktop, chromium-mobile]
+    env:
+      UAT_BASE_URL: ${{ inputs.base_url }}
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Preflight governed UAT credentials
+        shell: bash
+        run: |
+          if [ -z "$UAT_EMAIL" ] || [ -z "$UAT_PASSWORD" ]; then
+            echo "Required Actions secrets are missing: COURSEFINDER_UAT_EMAIL / COURSEFINDER_UAT_PASSWORD"
+            exit 1
+          fi
+          case "$UAT_BASE_URL" in
+            https://*) ;;
+            *) echo "UAT_BASE_URL must use HTTPS for deployed acceptance"; exit 1 ;;
+          esac
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run deployed governed acceptance
+        run: npx playwright test tests/uat/data-quality-deployed.spec.mjs --project="${{ matrix.project }}"
+
+      - name: Upload UAT evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coursefinder-deployed-uat-${{ matrix.project }}-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            playwright-report/
+            test-results/
+            uat-artifacts/

@@ -1,0 +1,19 @@
+{
+  "catalogue": {
+    "australia_courses": 26648,
+    "au_nz_courses": 33105,
+    "all_country_courses": 43461
+  },
+  "data_quality": {
+    "regulatory_fee": {
+      "present": 26326,
+      "source_null": 191,
+      "not_applicable": 6457,
+      "zero": 131,
+      "readiness_pct": 99.28
+    }
+  },
+  "evidence": {
+    "regulatory_snapshot_source": "CRICOS Providers, Courses and Locations"
+  }
+}
