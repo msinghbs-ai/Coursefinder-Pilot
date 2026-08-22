@@ -69,8 +69,9 @@ export async function attachRuntimeEvidence(testInfo, runtime) {
   const payload = {
     test: testInfo.title,
     project: testInfo.project.name,
-    status: testInfo.status,
+    status_at_capture: testInfo.status,
     expected_status: testInfo.expectedStatus,
+    final_status_source: 'Playwright JSON/JUnit report and GitHub job/commit status',
     server_errors: runtime.serverErrors,
     client_errors: runtime.clientErrors,
     console_errors: runtime.consoleErrors,
