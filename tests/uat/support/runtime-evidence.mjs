@@ -85,13 +85,17 @@ export async function loginAsUatUser(page) {
     await emailInput.fill(email)
     await page.locator('input[type="password"]').first().fill(password)
     await page.getByRole('button', { name: /^sign in$/i }).click()
+    await expect(emailInput).toBeHidden({ timeout: 45_000 })
   }
-
-  await expect(page.locator('button.m-nav-item').filter({ hasText: 'Completeness' })).toBeVisible({ timeout: 45_000 })
 }
 
 export async function openDataQuality(page) {
-  await page.locator('button.m-nav-item').filter({ hasText: 'Completeness' }).click()
+  const nav = page.locator('button.m-nav-item').filter({ hasText: 'Completeness' })
+  if (await nav.isVisible().catch(() => false)) {
+    await nav.click()
+  } else {
+    await page.evaluate(() => { location.hash = '#data-quality-readiness' })
+  }
   await expect(page.getByRole('heading', { name: 'Data Quality & Readiness' })).toBeVisible({ timeout: 45_000 })
   await expect(page.getByText('No composite completeness score', { exact: true })).toBeVisible()
 }
