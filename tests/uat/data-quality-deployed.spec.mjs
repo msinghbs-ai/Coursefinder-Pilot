@@ -20,8 +20,8 @@ async function start(page) {
 }
 
 async function finish(testInfo, runtime) {
-  assertNoServerErrors(runtime)
   await attachRuntimeEvidence(testInfo, runtime)
+  assertNoServerErrors(runtime)
 }
 
 test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
