@@ -53,6 +53,8 @@ test.describe('M1 performance and responsiveness @deployed', () => {
     const measures = []
     try {
       measures.push(await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') }))
+      measures.push(await measuredRpc(page, 'dashboard', async () => { await route(page, 'dashboard') }))
+      measures.push(await measuredRpc(page, 'dashboard', async () => { await page.reload() }))
 
       const courseFiltersPromise = page.waitForResponse(r => operationOf(r.request()) === 'course_filters', { timeout: 12_000 })
       measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }))
@@ -91,6 +93,9 @@ test.describe('M1 performance and responsiveness @deployed', () => {
       await expect(page.getByText('121174E', { exact: true }).first()).toBeVisible({ timeout: 12_000 })
 
       measures.push(await measuredRpc(page, 'course_detail', async () => { await page.locator('.m-table tbody tr').first().click() }))
+      await expect(page.locator('.m-drawer')).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(page.locator('.m-drawer')).toBeHidden()
 
       measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('') }))
       const next = page.getByRole('button', { name: /Next/i }).first()
