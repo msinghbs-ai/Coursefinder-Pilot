@@ -3,144 +3,97 @@
 **Date:** 23 August 2026  
 **Change Control:** `CF-CHG-20260823-023`  
 **Target:** CourseFinder Pilot Supabase `fxcwkweaxjtknorudmwp`  
-**Result:** PASS for governed Course-Fact admission to FTS projection; vector/hybrid remain NOT ADMITTED under the existing M1-SEARCH-VECTOR rejection.
+**Result:** **PASS** for governed Course-Fact admission to the FTS projection. Vector/hybrid remains **NOT ADMITTED** under the existing M1-SEARCH-VECTOR rejection.
 
-## Governing outcome
+## Accepted semantics
 
-The accepted Search projection is advanced from `course-v2` to `course-v3` without changing Provider/Course identity or publication state.
+- CRICOS registered tuition is a separate Layer 1 `registered_total_course` fact and is never represented as Provider-current/annual tuition.
+- Provider-current tuition is admitted only from Search-approved qualified first-party sources; structured options preserve year/basis/scope. Only `annual`/`indicative_annual` basis participates in the comparable annual scalar.
+- Official Course URL, Intake and English requirements are source-gated. Intake/English retain repeating structures.
+- Scholarships remain separately gated; current canonical Scholarships are unpublished, so admitted Search count is 0.
+- QILT and PRISMS remain excluded from Course-grain Search; provider/study-area/flow/cohort grain is not coerced to Course grain.
+- Legacy `has_fee` means Search-admitted Provider-current tuition presence only.
 
-Search admission remains source/domain gated. Canonical relational presence alone is insufficient.
-
-## Search semantics
-
-| Domain | Search representation | Filter | Sort | Display | Decision |
-| --- | --- | --- | --- | --- | --- |
-| CRICOS registered tuition | `regulatory_tuition_state/amount/currency/basis` | state/amount capable | amount | yes | admitted as Layer 1 registered-total-course fact; never labelled Provider-current/annual |
-| Provider-current tuition | `has_provider_current_tuition`, structured `provider_tuition_options`, comparable annual scalar only for `annual`/`indicative_annual` basis | presence / annual max | annual scalar only | full options | admitted only for Search-approved qualified first-party sources |
-| Official Course URL | `official_course_url` | presence | no | yes | admitted only from Search-approved first-party source |
-| Intake | repeating `intake_options`, `earliest_intake_date`, `has_intake` | presence | earliest future intake | full options | repeating/campus grain preserved |
-| English requirement | repeating `english_requirement_options`, `has_english` | presence | no | full options | no cross-test scalar sort because tests/components are not equivalent |
-| Scholarship | repeating `scholarship_options`, `has_scholarship` | presence | no | full options | existing scholarship gate retained; unpublished canonical Scholarships do not enter Search |
-| QILT | none | no | no | no | blocked: no accepted live outcome observations and provider/study-area grain is not coerced to Course grain |
-| PRISMS | none | no | no | no | blocked: no accepted live flow observations and cohort/flow grain is not coerced to Course grain |
-
-Legacy `has_fee` now means **Search-admitted Provider-current tuition presence**. It no longer conflates CRICOS regulatory fee rows with Provider-current tuition.
-
-## Source admission
-
-Search source gates were approved only for the already-qualified first-party Course Facts sources:
+Search-approved Course Facts sources:
 
 - `au_rmit_official_course_pages`;
 - `au_uq_official_program_pages`.
 
-The deferred QUT source is not admitted.
+Deferred QUT remains outside Search admission.
 
 ## Coverage after APPLY
 
 - Search Course Documents: **33,105**;
-- CRICOS registered tuition `present`: **26,326**;
-- CRICOS registered tuition `zero`: **131**;
-- CRICOS registered tuition `source_null`: **191**;
-- CRICOS registered tuition `not_applicable` (NZ): **6,457**;
+- CRICOS tuition: **26,326 present / 131 zero / 191 source-null / 6,457 not-applicable**;
 - Provider-current tuition: **10 Courses**;
-- comparable annual/indicative-annual Provider tuition scalar: **9 Courses**;
+- comparable annual/indicative-annual Provider tuition: **9 Courses**;
 - official Course URL: **10 Courses**;
-- Intake: **10 Courses / 18 intake observations**;
-- English: **10 Courses / 32 requirement observations**;
-- admitted Scholarships: **0** because current canonical Scholarship rows remain unpublished;
+- Intake: **10 Courses / 18 observations**;
+- English: **10 Courses / 32 observations**;
+- admitted Scholarships: **0**;
 - QILT active observations: **0**;
 - PRISMS active observations: **0**.
 
-The RMIT `103390B` Provider tuition is retained as `total_indicative` in structured options but deliberately has no annual-sort scalar.
+RMIT `103390B` retains `total_indicative` tuition in structured options but deliberately has no annual-sort scalar.
 
-## Deterministic projection UAT
+## Determinism / invalidation
 
-Initial dry-run:
+Accepted stage hash:
 
-- rows: 33,105;
-- changed: 33,105;
-- stage hash: `fb0585a82e9fe5bc43e9d34bb0f55968846fefba3cf5cc7a41cd0523814bfd3d`.
+`fb0585a82e9fe5bc43e9d34bb0f55968846fefba3cf5cc7a41cd0523814bfd3d`
 
-APPLY:
+- initial dry-run: 33,105 changed;
+- APPLY: same stage hash/coverage;
+- replay: **0 changed / 33,105 unchanged**;
+- controlled derived-hash invalidation on CRICOS `001942A`: exactly **1 changed / 33,104 unchanged**;
+- repair APPLY restored idempotency without mutating canonical Layer 1/Layer 2 facts.
 
-- rows: 33,105;
-- same coverage;
-- same stage hash.
+An initial hash-envelope implementation caused all-row semantic hash churn and was rejected during UAT. Final stability result:
 
-Immediate replay dry-run:
-
-- changed: **0**;
-- unchanged: **33,105**;
-- stage hash unchanged.
-
-Invalidation test:
-
-- derived enrichment hash for CRICOS `001942A` was deliberately replaced with a UAT-invalid value;
-- next dry-run detected exactly **1 changed / 33,104 unchanged**;
-- APPLY repaired the row;
-- canonical Layer 1/Layer 2 facts were not modified.
-
-## Semantic-hash stability UAT
-
-The first implementation attempt changed every semantic hash due to a hash-envelope shape change. This was rejected during UAT and corrected before closure.
-
-Final result:
-
-- Courses with new searchable enrichment semantic text: **10**;
+- searchable enrichment semantic text: **10 Courses**;
 - semantic hashes changed: **10**;
-- semantic hashes retained exactly: **33,095**.
+- prior semantic hashes retained exactly: **33,095**.
 
-This proves vector freshness invalidation is scoped to genuinely changed semantic content rather than projection-version churn.
+## FTS / vector / hybrid
 
-## FTS / vector / hybrid behaviour
+Representative full-projection FTS:
 
-Post-enrichment GIN/FTS benchmark on full 33,105-document projection:
+- `nursing`: 416 matches; top-20 execution ~**11 ms**;
+- `IELTS`: 164 matches; top-20 execution ~**3.6 ms**.
 
-- `nursing`: 416 matches; top-20 execution approximately **11 ms**;
-- `IELTS`: 164 matches; top-20 execution approximately **3.6 ms**.
+Existing vector gate remains unchanged:
 
-The vector gate remains unchanged from `docs/coursefinder-m1-search-vector-uat-v1.0.md`:
-
-- accepted embeddings: **0**;
+- embeddings: **0**;
 - active embedding jobs: **0**;
-- query embedding cache rows: **0**;
-- keyword request returns keyword candidates;
-- hybrid request without an admitted vector corpus returns `fts_fallback`;
-- vector-only request returns zero candidates.
+- query embedding cache: **0**;
+- hybrid without a vector corpus: `fts_fallback`;
+- vector-only: 0 candidates.
 
-No new embeddings were generated because the previous vector candidate was explicitly rejected. No production vector/hybrid latency or relevance claim is made.
+No new embeddings were generated and no vector/hybrid production latency/relevance claim is made.
 
-## Consumer contracts
+## Consumer / publication isolation
 
-### Website
+`api.website_course_search_v2` is versioned and exposes regulatory tuition separately from Provider-current tuition plus governed enrichment filters/sorts. Website v1 remains intact.
 
-A versioned `api.website_course_search_v2` contract was added. It exposes separate regulatory and Provider-current tuition objects plus admitted Course URL/intake/English/Scholarship structures and governed filters/sorts.
+All **33,105** Search documents remain `unpublished`; Website v2 therefore returns 0 public items in Pilot. Search admission did not broaden publication.
 
-Current Search publication state remains **33,105 unpublished**. Website v2 therefore returns zero published items, proving Search admission did not broaden Website publication.
-
-Website v1 remains intact.
-
-### Zoho
-
-No Zoho business DTO was changed. Existing Zoho contract v1.3 already states that Search admission is not canonical presence/publication authority. There is no genuine current consumer requirement that justifies adding these Search fields to Zoho.
+Zoho Consumer Contract v1.3 remains unchanged because no genuine consumer requirement justified new fields and Search state is not canonical presence/publication authority.
 
 ## Security / performance
 
-New Search admission relations/functions are private/service-role surfaces with explicit revoke/grant controls. No browser direct CRUD surface was opened.
+New Search admission relations/functions are private/service-role surfaces with explicit ACLs. The security advisor shows no new warning attributable to this work. The known leaked-password Pilot exception remains separate.
 
-Supabase security advisor shows no new warning attributable to this work. Existing programme-wide RLS informational findings and the known leaked-password-protection Pilot exception remain outside this lane.
+The new source-gate FK advisor finding was resolved with `enrichment_source_gates_source_idx` before closure.
 
-Performance advisor identified the new source-gate FK as initially uncovered; `enrichment_source_gates_source_idx` was added before closure.
-
-## Live migrations
+## Live migration ledger
 
 - `20260823015526_m1_search_enrichment_admission`;
 - `20260823015929_m1_search_enrichment_semantic_hash_stability`;
 - `20260823020120_m1_search_enrichment_source_admission_metadata`;
-- `20260823020800_m1_search_enrichment_source_gate_fk_index`.
+- `20260823020239_m1_search_enrichment_source_gate_fk_index`.
 
 ## Final gate
 
 **PASS — governed Course-Fact Search admission to `course-v3` FTS projection.**
 
-Semantic/vector/hybrid Search remains a separate rejected/not-admitted gate and was not silently reopened by this change.
+Semantic/vector/hybrid Search remains a separate rejected/not-admitted gate and was not reopened by this change.
