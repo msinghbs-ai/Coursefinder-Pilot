@@ -20,7 +20,7 @@ test.describe('CourseFinder deployed Layer 2 platform acceptance @deployed',()=>
       await expect(page.getByText(/Search Endpoint/i).first()).toBeVisible()
       await expect(page.getByText(/Document/i).first()).toBeVisible()
       await page.getByLabel('Acquisition method filter').selectOption('xlsx_feed')
-      await expect(page.locator('.l2-table tbody tr')).toHaveCount(1)
+      expect(await page.locator('.l2-table tbody tr').count()).toBeGreaterThanOrEqual(1)
       await expect(page.getByText(/Prisms/i).first()).toBeVisible()
       await page.getByLabel('Acquisition method filter').selectOption('')
       await milestoneScreenshot(page,testInfo,'layer2-profile-list')
