@@ -1,0 +1,2 @@
+-- Live migration: m2_1_completeness_trial_service_acl
+grant select,insert,update,delete on pipeline.layer2_country_completeness_profiles,pipeline.layer2_completeness_trials,pipeline.layer2_completeness_trial_courses,pipeline.layer2_provider_trial_results to service_role;
