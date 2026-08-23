@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
+async function openProviders(page){const nav=page.locator('.m-nav');await expect(nav.getByText('Data Acquisition',{exact:true})).toBeVisible({timeout:45000});await nav.getByRole('button',{name:'Acquisition Providers',exact:true}).click();await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers'})).toBeVisible()}
 
 test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @deployed',()=>{
   test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-provider',change_control:'CF-CHG-20260823-029'})})
@@ -10,10 +11,7 @@ test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @de
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
-      const launcher=page.getByRole('button',{name:/L2 Providers/i})
-      await expect(launcher).toBeVisible({timeout:45000})
-      await launcher.click()
-      await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers'})).toBeVisible()
+      await openProviders(page)
       await expect(page.getByText(/Credentials are write-only and acquisition URLs are source-bound/i)).toBeVisible()
       for(const name of ['Direct HTTP','Scrape.do','ScraperAPI','Firecrawl','ZenRows (JS render + premium proxy)','Custom gateway ({url} template)']) await expect(page.getByText(name,{exact:true}).first()).toBeVisible()
       await expect(page.getByText(/Credential missing/i).first()).toBeVisible()
@@ -29,7 +27,7 @@ test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @de
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
-      await page.getByRole('button',{name:/L2 Providers/i}).click()
+      await openProviders(page)
       const source=page.getByLabel('Layer 2 provider source profile')
       await source.selectOption({label:/PRISMS/i})
       await page.getByRole('button',{name:/Run bounded acquisition/i}).click()
@@ -45,7 +43,7 @@ test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @de
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
-      await page.getByRole('button',{name:/L2 Providers/i}).click()
+      await openProviders(page)
       await page.getByText('Scrape.do',{exact:true}).first().click()
       const password=page.locator('input[type="password"][placeholder*="Stored in Vault"]')
       if(await password.count()){
