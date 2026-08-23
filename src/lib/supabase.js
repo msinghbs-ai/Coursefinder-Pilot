@@ -17,6 +17,15 @@ export const supabase = createClient(url ?? '', key ?? '', {
  * server-side role-checked implementations.
  */
 async function adminRead(operation, args = {}) {
+  // CF-CHG-20260823-026: Jobs/Sources routes are owned by the Pipeline Ops overlay.
+  // The mature shell remains mounted underneath it, so suppress only its legacy
+  // duplicate reads while those exact routes are active. Pipeline Ops uses the
+  // paged pipeline_* contracts and is unaffected.
+  if (typeof window !== 'undefined' && (operation === 'jobs' || operation === 'sources')) {
+    const route = window.location.hash.replace(/^#/, '').split('?')[0]
+    if (route === operation) return []
+  }
+
   const { data, error } = await supabase.rpc('admin_read', {
     p_operation: operation,
     p_args: args ?? {},
