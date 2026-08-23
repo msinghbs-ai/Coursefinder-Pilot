@@ -52,13 +52,11 @@ test.describe('M1 performance and responsiveness @deployed', () => {
     const runtime = observeRuntime(page)
     const measures = []
     try {
-      await route(page, 'providers')
       measures.push(await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') }))
 
-      const coursesPage = measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') })
-      const courseFilters = page.waitForResponse(r => operationOf(r.request()) === 'course_filters', { timeout: 12_000 })
-      measures.push(await coursesPage)
-      const filterResponse = await courseFilters
+      const courseFiltersPromise = page.waitForResponse(r => operationOf(r.request()) === 'course_filters', { timeout: 12_000 })
+      measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }))
+      const filterResponse = await courseFiltersPromise
       measures.push({ operation: 'course_filters', elapsed_ms: null, status: filterResponse.status(), payload_bytes: (await filterResponse.body()).length })
 
       measures.push(await measuredRpc(page, 'campuses_page', async () => { await route(page, 'campuses') }))
@@ -83,27 +81,25 @@ test.describe('M1 performance and responsiveness @deployed', () => {
     }
   })
 
-  test('exact CRICOS lookup, paging, detail and back navigation stay interactive', async ({ page }, testInfo) => {
+  test('exact CRICOS lookup, detail, paging and browser back stay interactive', async ({ page }, testInfo) => {
     const runtime = observeRuntime(page)
     const measures = []
     try {
-      await route(page, 'courses')
-      await page.waitForResponse(r => operationOf(r.request()) === 'courses_page')
+      measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }))
       const search = page.getByPlaceholder('Search Course, Provider, CRICOS/course code or stable key')
-      const exact = measuredRpc(page, 'courses_page', async () => { await search.fill('121174E') })
-      measures.push(await exact)
+      measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('121174E') }))
       await expect(page.getByText('121174E', { exact: true }).first()).toBeVisible({ timeout: 12_000 })
 
-      const detail = measuredRpc(page, 'course_detail', async () => { await page.locator('.m-table tbody tr').first().click() })
-      measures.push(await detail)
-      await expect(page.locator('.m-drawer,.m-detail-drawer').first()).toBeVisible({ timeout: 12_000 }).catch(() => {})
+      measures.push(await measuredRpc(page, 'course_detail', async () => { await page.locator('.m-table tbody tr').first().click() }))
 
-      await page.goBack()
-      await expect(page).toHaveURL(/#courses/)
+      measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('') }))
       const next = page.getByRole('button', { name: /Next/i }).first()
-      if (await next.isEnabled().catch(() => false)) {
-        measures.push(await measuredRpc(page, 'courses_page', async () => { await next.click() }))
-      }
+      await expect(next).toBeEnabled()
+      measures.push(await measuredRpc(page, 'courses_page', async () => { await next.click() }))
+
+      await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') })
+      measures.push(await measuredRpc(page, 'courses_page', async () => { await page.goBack() }))
+      await expect(page).toHaveURL(/#courses/)
 
       for (const m of measures) {
         expect(m.status).toBe(200)
@@ -123,14 +119,12 @@ test.describe('M1 performance and responsiveness @deployed', () => {
     const listener = request => { const op = operationOf(request); if (op) operations.push(op) }
     page.on('request', listener)
     try {
-      const jobs = measuredRpc(page, 'pipeline_jobs_page', async () => { await route(page, 'jobs') })
-      const jobsMeasure = await jobs
+      const jobsMeasure = await measuredRpc(page, 'pipeline_jobs_page', async () => { await route(page, 'jobs') })
       expect(jobsMeasure.elapsed_ms).toBeLessThanOrEqual(RPC_BUDGET_MS)
       expect(operations).not.toContain('jobs')
 
       operations.length = 0
-      const sources = measuredRpc(page, 'pipeline_sources_page', async () => { await route(page, 'sources') })
-      const sourcesMeasure = await sources
+      const sourcesMeasure = await measuredRpc(page, 'pipeline_sources_page', async () => { await route(page, 'sources') })
       expect(sourcesMeasure.elapsed_ms).toBeLessThanOrEqual(RPC_BUDGET_MS)
       expect(operations).not.toContain('sources')
       await save(testInfo, 'pipeline-route-ownership', { jobs: jobsMeasure, sources: sourcesMeasure, operations })
@@ -147,8 +141,8 @@ test.describe('M1 performance and responsiveness @deployed', () => {
     try {
       for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 800 }]) {
         await page.setViewportSize(viewport)
-        await route(page, 'courses')
-        await page.waitForResponse(r => operationOf(r.request()) === 'courses_page')
+        if (locationHashIsCourses(await page.evaluate(() => location.hash))) await route(page, 'dashboard')
+        await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') })
         await expect(page.locator('.m-table-wrap').first()).toBeVisible()
         evidence.push({ viewport, ...(await assertViewportContained(page)) })
       }
@@ -159,3 +153,7 @@ test.describe('M1 performance and responsiveness @deployed', () => {
     }
   })
 })
+
+function locationHashIsCourses(hash) {
+  return String(hash).replace(/^#/, '').split('?')[0] === 'courses'
+}
