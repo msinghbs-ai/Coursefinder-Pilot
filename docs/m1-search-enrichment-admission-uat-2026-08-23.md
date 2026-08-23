@@ -38,13 +38,13 @@ RMIT `103390B` retains `total_indicative` tuition in structured options but deli
 
 ## Determinism / invalidation
 
-Accepted stage hash:
+Accepted enrichment stage hash:
 
 `fb0585a82e9fe5bc43e9d34bb0f55968846fefba3cf5cc7a41cd0523814bfd3d`
 
-- initial dry-run: 33,105 changed;
+- initial enrichment dry-run: 33,105 changed;
 - APPLY: same stage hash/coverage;
-- replay: **0 changed / 33,105 unchanged**;
+- enrichment replay: **0 changed / 33,105 unchanged**;
 - controlled derived-hash invalidation on CRICOS `001942A`: exactly **1 changed / 33,104 unchanged**;
 - repair APPLY restored idempotency without mutating canonical Layer 1/Layer 2 facts.
 
@@ -53,6 +53,30 @@ An initial hash-envelope implementation caused all-row semantic hash churn and w
 - searchable enrichment semantic text: **10 Courses**;
 - semantic hashes changed: **10**;
 - prior semantic hashes retained exactly: **33,095**.
+
+### Final automated full `course-v3` refresh UAT
+
+The final reconciliation identified that the original top-level v3 wrapper delegated its base comparison to `course-v2`, which caused an otherwise unchanged full refresh to report all 33,105 base rows changed. This was corrected with a native `search.refresh_course_base_v3(boolean)` and top-level idempotency patch.
+
+Automated post-fix APPLY:
+
+- projection: `courses` / `course-v3`;
+- resulting generation: **13**;
+- rows: **33,105**;
+- base content hash: `cd2c8422da31f2fa298053a40563c947780ebdaf09d7b41ff983bc6ef9649d9b`;
+- enrichment stage hash unchanged: `fb0585a82e9fe5bc43e9d34bb0f55968846fefba3cf5cc7a41cd0523814bfd3d`;
+- combined projection content hash: `b4660ebc15851620bd111c82a74a19899c43a4560e5d2eb571b40e3c64bf77ee`.
+
+Immediate automated dry replay:
+
+- base: **0 changed / 33,105 unchanged / 0 new / 0 removed**;
+- enrichment: **0 changed / 33,105 unchanged**;
+- projection version: `course-v3`;
+- generation remains **13**.
+
+`search.projection_state` now records `course-v3`, row count 33,105, the combined content hash, the base/enrichment hashes and `enrichment_gate=domain_and_source_explicit`.
+
+This closes the final top-level deterministic APPLY/replay blocker.
 
 ## FTS / vector / hybrid
 
@@ -90,10 +114,12 @@ The new source-gate FK advisor finding was resolved with `enrichment_source_gate
 - `20260823015526_m1_search_enrichment_admission`;
 - `20260823015929_m1_search_enrichment_semantic_hash_stability`;
 - `20260823020120_m1_search_enrichment_source_admission_metadata`;
-- `20260823020239_m1_search_enrichment_source_gate_fk_index`.
+- `20260823020239_m1_search_enrichment_source_gate_fk_index`;
+- `20260823021306_m1_search_enrichment_full_refresh_v3`;
+- `20260823021630_m1_search_enrichment_full_refresh_v3_idempotency`.
 
 ## Final gate
 
-**PASS — governed Course-Fact Search admission to `course-v3` FTS projection.**
+**PASS — governed Course-Fact Search admission to deterministic `course-v3` FTS projection.**
 
 Semantic/vector/hybrid Search remains a separate rejected/not-admitted gate and was not reopened by this change.
