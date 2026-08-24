@@ -1,4 +1,4 @@
-const VERSION='2.15.0'
+const VERSION='2.15.1'
 let attempts=0
 function sync(){
   document.querySelectorAll('.m-brand-copy small').forEach(el=>{if(el.textContent!==`PIM Admin v${VERSION}`)el.textContent=`PIM Admin v${VERSION}`})
