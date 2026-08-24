@@ -1,4 +1,3 @@
-import{utils as supabaseUtils}from'./lib/supabase'
 import{supabase}from'./lib/supabase'
 
 const PREFIX='coursefinder:pim:screen-state:v1'
