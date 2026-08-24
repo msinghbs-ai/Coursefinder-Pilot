@@ -1,0 +1,67 @@
+import { test, expect } from '@playwright/test'
+import {
+  attachRuntimeEvidence,
+  assertNoServerErrors,
+  loginAsUatUser,
+  milestoneScreenshot,
+  observeRuntime,
+  writeRunEnvironment,
+} from './support/runtime-evidence.mjs'
+
+const COURSE_ID='3ea5e651-dbcc-4ef4-8143-1de6900e012e'
+const COURSE_URL='https://www.federation.edu.au/courses/dhm5-bachelor-of-arts/'
+
+async function finish(testInfo,runtime){
+  await attachRuntimeEvidence(testInfo,runtime)
+  assertNoServerErrors(runtime)
+}
+
+test.describe('CourseFinder deployed Course Detail PIM v2.13 acceptance @deployed',()=>{
+  test.beforeAll(async()=>{
+    if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.')
+    if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.')
+    await writeRunEnvironment({suite:'deployed-course-detail-v2.13',course_id:COURSE_ID})
+  })
+
+  test('Federation Bachelor of Arts is concise, linked and evidence-reviewable',async({page},testInfo)=>{
+    const runtime=observeRuntime(page)
+    try{
+      await loginAsUatUser(page)
+      await page.goto(`${process.env.UAT_BASE_URL}/#courses?id=${COURSE_ID}`)
+      const drawer=page.locator('aside.m-drawer')
+      await expect(drawer).toBeVisible({timeout:45_000})
+      await expect(drawer.getByRole('heading',{name:'Bachelor of Arts',exact:true})).toBeVisible()
+      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.13')
+
+      const official=drawer.getByRole('link',{name:/Open first-party page/i})
+      await expect(official).toBeVisible()
+      await expect(official).toHaveAttribute('href',COURSE_URL)
+
+      await expect(drawer.getByRole('heading',{name:'Fees',exact:true})).toHaveCount(1)
+      await expect(drawer.getByText('Registered CRICOS course cost',{exact:true})).toBeVisible()
+      await expect(drawer.getByText('Current Provider tuition',{exact:true})).toBeVisible()
+      await expect(drawer.getByText('No evidence-backed current Provider tuition captured.',{exact:true})).toBeVisible()
+      await expect(drawer.getByText('Fee semantics',{exact:true})).toHaveCount(0)
+
+      await expect(drawer.getByRole('heading',{name:'Categories',exact:true})).toHaveCount(0)
+      await expect(drawer.getByRole('heading',{name:'Collections',exact:true})).toHaveCount(0)
+      await expect(drawer.getByRole('heading',{name:'Academic options',exact:true})).toHaveCount(0)
+
+      await expect(drawer.getByRole('heading',{name:'Regulatory facts',exact:true})).toBeVisible()
+      await expect(drawer.getByText(/Authoritative CRICOS observations retained from Layer 1/)).toBeVisible()
+      await expect(drawer.getByText(/CRICOS registration/i).first()).toBeVisible()
+
+      const evidenceSection=drawer.locator('section.m-detail-section').filter({has:drawer.getByRole('heading',{name:'Evidence',exact:true})})
+      await expect(evidenceSection).toBeVisible()
+      const openEvidence=evidenceSection.getByText('Open Evidence',{exact:true}).first()
+      await expect(openEvidence).toBeVisible()
+      await milestoneScreenshot(page,testInfo,'federation-course-detail-v2-13')
+      await openEvidence.click()
+      await expect(page).toHaveURL(/#evidence\?evidence_id=/)
+      await expect(page.locator('aside.evidence-drawer')).toBeVisible({timeout:45_000})
+      await milestoneScreenshot(page,testInfo,'federation-course-evidence-open')
+    }finally{
+      await finish(testInfo,runtime)
+    }
+  })
+})
