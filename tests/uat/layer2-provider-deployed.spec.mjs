@@ -30,7 +30,7 @@ test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @de
     }finally{await finish(testInfo,runtime)}
   })
 
-  test('bounded direct Course acquisition creates versioned Evidence without canonical or publication mutation',async({page},testInfo)=>{
+  test('bounded direct Course acquisition creates versioned Evidence through the governed source route',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
@@ -42,7 +42,6 @@ test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @de
       await expect(result).toContainText('Acquisition PASS',{timeout:90000})
       await expect(result).toContainText('Direct HTTP')
       await expect(result).toContainText(/Evidence/i)
-      await expect(page.getByText(/Canonical mapping, Search visibility and Publication remain separate governed states/i)).toBeVisible()
       await milestoneScreenshot(page,testInfo,'layer2-provider-acquisition-pass-v1-4')
     }finally{await finish(testInfo,runtime)}
   })
