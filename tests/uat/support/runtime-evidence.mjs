@@ -108,6 +108,12 @@ export async function loginAsUatUser(page) {
     await page.getByRole('button', { name: /^sign in$/i }).click()
     await expect(emailInput).toBeHidden({ timeout: 45_000 })
   }
+
+  // Authentication completing is not enough for role-gated injected workspaces. Wait for the
+  // governed application context and base navigation to settle before a test asserts M2.1 UI.
+  await expect(page.locator('.m-nav')).toBeVisible({ timeout: 45_000 })
+  await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i, { timeout: 45_000 })
+  await expect(page.locator('#governed-runtime-marker')).toBeVisible({ timeout: 45_000 })
 }
 
 export async function openDataQuality(page) {
