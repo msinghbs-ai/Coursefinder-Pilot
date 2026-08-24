@@ -1,129 +1,78 @@
-import React from 'react'
-import {BookOpen,ExternalLink} from 'lucide-react'
+import React,{useEffect,useMemo,useState}from'react'
+import{BookOpen,ExternalLink,Pencil,Save,X}from'lucide-react'
+import{api}from'./lib/supabase'
+import{resolveCourseScalar}from'./layer4-course-resolution'
 
 const empty=v=>v==null||v===''||(Array.isArray(v)&&v.length===0)||(typeof v==='object'&&!Array.isArray(v)&&Object.keys(v||{}).length===0)
 const money=x=>x?.amount==null?'—':`${x.currency||x.currency_code||'AUD'} ${Number(x.amount).toLocaleString()}`
 const fmtDate=v=>{const d=new Date(v);return Number.isNaN(+d)?String(v||'—'):d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'})}
 const bool=v=>v===true?'Yes':v===false?'No':'—'
 const evidenceIdOf=v=>v?.evidence_id||v?.source_evidence_id||(v?.storage_path&&v?.id?v.id:null)
+const stateMap=rows=>new Map((rows||[]).map(x=>[x.code,x]))
+const scalarEditable=new Set(['course_description','official_course_url','delivery_mode','duration'])
 
-function LayerBadge({layer}){const n=Number(layer);if(!n)return null;const label=n===1?'L1 Regulatory':n===2?'L2 Enrichment':n===3?'L3 AI interpreted':'L4 Human resolved';return <span title={label} style={{display:'inline-flex',alignItems:'center',padding:'2px 6px',borderRadius:999,border:'1px solid #cbd5e1',background:'#f8fafc',fontSize:9,fontWeight:800,color:'#475569',whiteSpace:'nowrap'}}>L{n}</span>}
+function LayerBadge({layer,struck=false,title}){
+  const n=Number(layer);if(!n)return null
+  const fallback=n===1?'Layer 1':n===2?'Layer 2':n===3?'Layer 3':'Layer 4'
+  return <span title={title||fallback} style={{display:'inline-flex',alignItems:'center',padding:'2px 6px',borderRadius:999,border:'1px solid #cbd5e1',background:'#f8fafc',fontSize:9,fontWeight:800,color:'#475569',whiteSpace:'nowrap',textDecoration:struck?'line-through':'none',opacity:struck?0.62:1}}>L{n}</span>
+}
+function StateTrail({state}){
+  const s=state?.value_state||'awaiting_l2'
+  if(s==='resolved')return <span style={{display:'inline-flex',alignItems:'center',gap:4}}><LayerBadge layer={state?.resolved_layer}/><small style={{color:'#64748b'}}>Resolved</small></span>
+  if(s==='source_missing')return <span style={{display:'inline-flex',gap:5,alignItems:'center'}}><LayerBadge layer={1} struck/><small style={{color:'#b45309',fontWeight:700}}>Regulatory correction</small></span>
+  if(s==='awaiting_l2')return <span style={{display:'inline-flex',gap:5,alignItems:'center'}}><LayerBadge layer={2}/><small style={{color:'#64748b',fontWeight:700}}>Awaiting L2</small></span>
+  if(s==='l2_unresolved'||s==='awaiting_l3')return <span style={{display:'inline-flex',gap:5,alignItems:'center'}} aria-label="Layer 2 attempted and unresolved; awaiting Layer 3"><LayerBadge layer={2} struck/><span>→</span><LayerBadge layer={3}/><small style={{color:'#7c3aed',fontWeight:700}}>Awaiting L3</small></span>
+  if(s==='awaiting_l4')return <span style={{display:'inline-flex',gap:5,alignItems:'center'}} aria-label="Layers 2 and 3 exhausted; awaiting Layer 4 input"><LayerBadge layer={2} struck/><LayerBadge layer={3} struck/><span>→</span><LayerBadge layer={4}/><small style={{color:'#b45309',fontWeight:800}}>L4 input</small></span>
+  return <small>{String(s).replaceAll('_',' ')}</small>
+}
 function EvidenceButton({id,navigate,courseId,label='Evidence'}){if(!id)return null;return <button className="m-secondary compact" style={{marginLeft:6,padding:'4px 7px',fontSize:9}} onClick={e=>{e.stopPropagation();navigate?.('Evidence',{evidence_id:id,return_course_id:courseId||''})}}><BookOpen size={11}/>{label}</button>}
-function Row({label,value,children,layer}){if(empty(value)&&!children)return null;return <div><span style={{display:'flex',alignItems:'center',gap:6}}>{label}<LayerBadge layer={layer}/></span><strong>{children??value}</strong></div>}
-function Section({title,children,help,layer}){return <section className="m-detail-section"><div style={{display:'flex',alignItems:'center',gap:7}}><h3 style={{margin:0}}>{title}</h3><LayerBadge layer={layer}/></div>{help&&<p className="m-help">{help}</p>}{children}</section>}
+function Section({title,children,help,layer}){return <section className="m-detail-section"><div style={{display:'flex',alignItems:'center',gap:7}}><h3 style={{margin:0}}>{title}</h3>{layer&&<LayerBadge layer={layer}/>}</div>{help&&<p className="m-help">{help}</p>}{children}</section>}
+function BlankValue({text='—'}){return <span style={{color:'#94a3b8',fontStyle:'italic'}}>{text}</span>}
 
-function Overview({data}){
-  const duration=data.duration_value?`${data.duration_value} ${data.duration_unit||''}`.trim():'—'
-  return <>
-    <div className="m-detail-grid">
-      <div><small style={{display:'flex',gap:5}}>Provider <LayerBadge layer={1}/></small><strong>{data.provider_name||'—'}</strong></div>
-      <div><small style={{display:'flex',gap:5}}>CRICOS / Course code <LayerBadge layer={1}/></small><strong>{data.course_code||'—'}</strong></div>
-      <div><small style={{display:'flex',gap:5}}>Study level <LayerBadge layer={1}/></small><strong>{data.level_name||data.level_code||'—'}</strong></div>
-      <div><small style={{display:'flex',gap:5}}>Field of study <LayerBadge layer={1}/></small><strong>{data.field_name||data.field_code||'—'}</strong></div>
-      <div><small>Duration</small><strong>{duration}</strong></div>
-      <div><small>Delivery</small><strong>{data.delivery_mode||'—'}</strong></div>
-      <div><small>Lifecycle</small><strong>{data.lifecycle_status||'—'}</strong></div>
-      <div><small>Publication</small><strong>{data.publication_status||'—'}</strong></div>
-      <div><small>Last verified</small><strong>{data.last_verified_at?fmtDate(data.last_verified_at):'—'}</strong></div>
-      <div><small style={{display:'flex',gap:5}}>Official Course URL <LayerBadge layer={2}/></small><strong>{data.course_url?<a href={data.course_url} target="_blank" rel="noreferrer" style={{display:'inline-flex',alignItems:'center',gap:4,color:'#4f46e5',wordBreak:'break-word'}}>Open first-party page <ExternalLink size={11}/></a>:'Not yet captured'}</strong></div>
-    </div>
-    {data.description&&<Section title="Course description" layer={2}><p style={{margin:0,lineHeight:1.55}}>{data.description}</p></Section>}
-  </>
-}
-
-function FeeRecord({x,registered,navigate,courseId}){
-  const type=String(x.fee_type||x.type||'tuition').toLowerCase()
-  const title=registered
-    ? type==='tuition'?'Registered tuition':type==='non_tuition'?'Registered non-tuition':type==='estimated_total_course_cost'?'Estimated total course cost':'Registered course cost'
-    : 'Current provider tuition'
-  return <div className="m-record" style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'4px 10px',alignItems:'center'}}>
-    <div style={{minWidth:0}}><strong>{title}</strong><div style={{fontSize:17,fontWeight:800,color:'#0f172a',marginTop:4}}>{money(x)}</div></div>
-    <LayerBadge layer={registered?1:2}/>
-    <div style={{gridColumn:'1 / -1',display:'flex',gap:10,flexWrap:'wrap',fontSize:10,color:'#64748b'}}>
-      {x.fee_year&&<span><b>Year:</b> {x.fee_year}</span>}
-      {x.audience&&<span><b>Audience:</b> {String(x.audience).replaceAll('_',' ')}</span>}
-      {x.basis&&<span><b>Basis:</b> {String(x.basis).replaceAll('_',' ')}</span>}
-    </div>
-    <div style={{gridColumn:'1 / -1'}}><EvidenceButton id={evidenceIdOf(x)} navigate={navigate} courseId={courseId}/></div>
-  </div>
-}
-function Fees({data,navigate}){
-  const f=data.fee_summary||{},registered=f.cricos_registered||[],current=f.provider_current||[]
-  return <Section title="Fees" help="Registered CRICOS course-cost facts and Provider-current tuition are separate facts. Layer 2 never replaces the registered CRICOS values.">
-    <div className="m-semantic-grid">
-      <div><small style={{display:'flex',alignItems:'center',gap:6}}>Registered CRICOS course cost <LayerBadge layer={1}/></small><strong>{registered.length}</strong><div className="m-record-list">{registered.length?registered.map((x,i)=><FeeRecord key={x.id||i} x={x} registered navigate={navigate} courseId={data.id}/>):<span>No current registered fee rows.</span>}</div></div>
-      <div><small style={{display:'flex',alignItems:'center',gap:6}}>Current Provider tuition <LayerBadge layer={2}/></small><strong>{current.length}</strong><div className="m-record-list">{current.length?current.map((x,i)=><FeeRecord key={x.id||i} x={x} navigate={navigate} courseId={data.id}/>):<span>No evidence-backed current Provider tuition captured.</span>}</div></div>
-    </div>
+function AttributeMatrix({data,states,rank,onEdit}){
+  const current=data.fee_summary?.provider_current||[],english=data.english||[],intakes=data.intakes||[]
+  const attrs=[
+    ['provider','Provider',data.provider_name],['course_code','CRICOS / Course code',data.course_code],['study_level','Study level',data.level_name||data.level_code],['field_of_study','Field of study',data.field_name||data.field_code],
+    ['duration','Duration',data.duration_value?`${data.duration_value} ${data.duration_unit||''}`.trim():null],['delivery_mode','Delivery mode',data.delivery_mode],['official_course_url','Official Course URL',data.course_url],['course_description','Course description',data.description],
+    ['provider_current_tuition','Current Provider tuition',current.length?current.map(money).join(', '):null],['intakes','Intakes',intakes.length?intakes.map(x=>[x.label,x.year].filter(Boolean).join(' ')).join(', '):null],['english_requirement','English requirement',english.length?english.map(x=>`${x.test_name||x.test_code||'English'}${x.overall_score!=null?` · Overall ${x.overall_score}`:''}`).join(', '):null],
+    ['campuses','Campuses',(data.campuses||[]).length?`${data.campuses.length} campus${data.campuses.length===1?'':'es'}`:null],['academic_options','Academic options',(data.academic_options||[]).length?`${data.academic_options.length} option${data.academic_options.length===1?'':'s'}`:null],['categories','Categories',(data.categories||[]).length?`${data.categories.length} categor${data.categories.length===1?'y':'ies'}`:null],['collections','Collections',(data.collections||[]).length?`${data.collections.length} collection${data.collections.length===1?'':'s'}`:null],['regulatory_facts','Regulatory facts',(data.regulatory_facts||[]).length?`${data.regulatory_facts.length} current observation${data.regulatory_facts.length===1?'':'s'}`:null]
+  ]
+  return <Section title="Course attributes" help="All governed attributes stay visible. Empty values show the last automation layer attempted and the next decision path. Layer 1 authority requires source correction rather than a Layer 4 enrichment override.">
+    <div style={{display:'grid',gap:7}}>{attrs.map(([code,label,value])=>{const st=states.get(code)||{};const l4=Boolean(st.editable_l4)&&rank>=3;const scalar=scalarEditable.has(code);return <div key={code} style={{display:'grid',gridTemplateColumns:'minmax(130px,.7fr) minmax(160px,1.4fr) minmax(150px,1fr) auto',gap:10,alignItems:'center',padding:'9px 10px',border:'1px solid #e2e8f0',borderRadius:8,background:'#fff'}}>
+      <strong style={{fontSize:11}}>{label}</strong>
+      <div style={{minWidth:0,fontSize:11,wordBreak:code==='official_course_url'?'break-all':'normal'}}>{empty(value)?<BlankValue/>:code==='official_course_url'?<a href={value} target="_blank" rel="noreferrer" style={{color:'#4f46e5'}}>Open first-party page <ExternalLink size={10}/></a>:String(value)}</div>
+      <StateTrail state={st}/>
+      <div>{l4&&scalar?<button className="m-secondary compact" onClick={()=>onEdit(code,label,value)} title="Resolve this scalar field in Layer 4"><Pencil size={12}/>L4 edit</button>:l4?<button className="m-secondary compact" onClick={()=>{location.hash=`#review-queue?entity_id=${encodeURIComponent(data.id)}&field=${encodeURIComponent(code)}`}} title="Open Layer 4 review for this compound field">L4 review</button>:null}</div>
+    </div>})}</div>
   </Section>
 }
 
-function EntryRequirements({data}){
-  const intakes=data.intakes||[],english=data.english||[]
-  if(!intakes.length&&!english.length)return null
-  const intakeValue=intakes.length?intakes.map(x=>[x.label,x.year].filter(Boolean).join(' ')).join(', '):'Not yet captured'
-  return <Section title="Intakes & English" layer={2}>
-    <div className="m-kv-list">
-      <Row label="Intakes" layer={2} value={intakeValue}/>
-      <div>
-        <span style={{display:'flex',alignItems:'center',gap:6}}>English requirement <LayerBadge layer={2}/></span>
-        {english.length?<div className="m-record-list" style={{marginTop:6}}>{english.map((x,i)=>{
-          const test=x.test_name||x.test_code||'English test'
-          const score=x.overall_score!=null?`Overall score ${x.overall_score}`:'Overall score not specified'
-          const confidence=x.confidence!=null?`Confidence ${x.confidence}`:null
-          return <div className="m-record" key={x.id||i}><strong>{test}</strong><span>{[score,confidence].filter(Boolean).join(' · ')}</span></div>
-        })}</div>:<strong style={{display:'block',marginTop:4}}>Not yet captured</strong>}
-      </div>
-    </div>
-  </Section>
-}
+function Overview({data}){return <div className="m-detail-grid"><div><small>Provider</small><strong>{data.provider_name||'—'}</strong></div><div><small>CRICOS / Course code</small><strong>{data.course_code||'—'}</strong></div><div><small>Lifecycle</small><strong>{data.lifecycle_status||'—'}</strong></div><div><small>Publication</small><strong>{data.publication_status||'—'}</strong></div><div><small>Last verified</small><strong>{data.last_verified_at?fmtDate(data.last_verified_at):'—'}</strong></div><div><small>Completeness</small><strong>{data.completeness_pct!=null?`${data.completeness_pct}%`:'See Quality & Review'}</strong></div></div>}
 
-function Campuses({rows}){if(!rows?.length)return null;return <Section title="Campuses" layer={1}><div className="m-record-list">{rows.map((x,i)=><div className="m-record" key={x.id||i}><strong>{x.name||x.campus_name||'Campus'}</strong><span>{[x.city,x.subdivision_name||x.state,x.postcode].filter(Boolean).join(' · ')}</span></div>)}</div></Section>}
+function FeeRecord({x,registered,navigate,courseId}){const type=String(x.fee_type||x.type||'tuition').toLowerCase();const title=registered?type==='tuition'?'Registered tuition':type==='non_tuition'?'Registered non-tuition':type==='estimated_total_course_cost'?'Estimated total course cost':'Registered course cost':'Current provider tuition';return <div className="m-record" style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'4px 10px',alignItems:'center'}}><div><strong>{title}</strong><div style={{fontSize:17,fontWeight:800,color:'#0f172a',marginTop:4}}>{money(x)}</div></div><LayerBadge layer={registered?1:2}/><div style={{gridColumn:'1 / -1',display:'flex',gap:10,flexWrap:'wrap',fontSize:10,color:'#64748b'}}>{x.fee_year&&<span><b>Year:</b> {x.fee_year}</span>}{x.audience&&<span><b>Audience:</b> {String(x.audience).replaceAll('_',' ')}</span>}{x.basis&&<span><b>Basis:</b> {String(x.basis).replaceAll('_',' ')}</span>}</div><div style={{gridColumn:'1 / -1'}}><EvidenceButton id={evidenceIdOf(x)} navigate={navigate} courseId={courseId}/></div></div>}
+function Fees({data,navigate,states}){const f=data.fee_summary||{},registered=f.cricos_registered||[],current=f.provider_current||[];return <Section title="Fees" help="Registered CRICOS course-cost facts and current Provider tuition remain separate."><div className="m-semantic-grid"><div><small>Registered CRICOS course cost <LayerBadge layer={1}/></small><strong>{registered.length}</strong><div className="m-record-list">{registered.length?registered.map((x,i)=><FeeRecord key={x.id||i} x={x} registered navigate={navigate} courseId={data.id}/>):<div className="m-record"><BlankValue/><StateTrail state={{value_state:'source_missing'}}/></div>}</div></div><div><small>Current Provider tuition</small><StateTrail state={states.get('provider_current_tuition')}/><div className="m-record-list">{current.length?current.map((x,i)=><FeeRecord key={x.id||i} x={x} navigate={navigate} courseId={data.id}/>):<div className="m-record"><BlankValue/></div>}</div></div></div></Section>}
 
-function Regulatory({data,navigate}){
-  const rows=data.regulatory_facts||[]
-  if(!rows.length)return null
-  return <Section title="Regulatory facts" layer={1} help="Authoritative CRICOS observations retained from Layer 1.">
-    <div className="m-record-list">{rows.map((x,i)=>{
-      const parts=[]
-      if(x.course_language)parts.push(`Language: ${x.course_language}`)
-      if(x.work_component!=null)parts.push(`Work component: ${bool(x.work_component)}`)
-      if(x.work_component_total_hours!=null)parts.push(`Work hours: ${Number(x.work_component_total_hours).toLocaleString()}`)
-      if(x.foundation_studies===true)parts.push('Foundation studies: Yes')
-      if(x.dual_qualification===true)parts.push('Dual qualification: Yes')
-      return <div className="m-record" key={x.evidence_id||i}><div style={{display:'flex',alignItems:'center',gap:6}}><strong>{String(x.scheme||'CRICOS').toUpperCase()} registration</strong><LayerBadge layer={1}/></div><span>{parts.join(' · ')||'Current regulatory registration.'}</span><EvidenceButton id={evidenceIdOf(x)} navigate={navigate} courseId={data.id}/></div>
-    })}</div>
-  </Section>
-}
+function EntryRequirements({data,states}){const intakes=data.intakes||[],english=data.english||[];const englishText=english.length?english.map(x=>[x.test_name||x.test_code||'English test',x.overall_score!=null?`Overall score ${x.overall_score}`:null,x.confidence!=null?`Confidence ${x.confidence}`:null].filter(Boolean).join(' · ')).join('; '):null;return <Section title="Intakes & English"><div className="m-kv-list"><div><span>Intakes</span><strong>{intakes.length?intakes.map(x=>[x.label,x.year].filter(Boolean).join(' ')).join(', '):<BlankValue/>}</strong><StateTrail state={states.get('intakes')}/></div><div><span>English requirement</span><strong>{englishText||<BlankValue/>}</strong><StateTrail state={states.get('english_requirement')}/></div></div></Section>}
+function Campuses({rows,state}){return <Section title="Campuses"><StateTrail state={state}/><div className="m-record-list">{rows?.length?rows.map((x,i)=><div className="m-record" key={x.id||i}><strong>{x.name||x.campus_name||'Campus'}</strong><span>{[x.city,x.subdivision_name||x.state,x.postcode].filter(Boolean).join(' · ')}</span></div>):<div className="m-record"><BlankValue/></div>}</div></Section>}
+function Regulatory({data,navigate,state}){const rows=data.regulatory_facts||[];return <Section title="Regulatory facts" help="Authoritative Layer 1 facts require source correction when missing; Layer 4 cannot overwrite them."><StateTrail state={state}/><div className="m-record-list">{rows.length?rows.map((x,i)=>{const parts=[];if(x.course_language)parts.push(`Language: ${x.course_language}`);if(x.work_component!=null)parts.push(`Work component: ${bool(x.work_component)}`);if(x.work_component_total_hours!=null)parts.push(`Work hours: ${Number(x.work_component_total_hours).toLocaleString()}`);return <div className="m-record" key={x.evidence_id||i}><strong>{String(x.scheme||'CRICOS').toUpperCase()} registration</strong><span>{parts.join(' · ')||'Current regulatory registration'}</span><EvidenceButton id={evidenceIdOf(x)} navigate={navigate} courseId={data.id}/></div>}):<div className="m-record"><BlankValue/></div>}</div></Section>}
+function Evidence({rows,navigate,courseId}){return <Section title="Evidence" help="Evidence is supporting provenance. Browser recovery UAT currently takes priority over Back-to-Course convenience."><div className="m-record-list">{rows?.length?rows.map((x,i)=><button key={x.id||i} className="m-record" style={{textAlign:'left',width:'100%',cursor:'pointer'}} onClick={()=>x.id&&navigate?.('Evidence',{evidence_id:x.id,return_course_id:courseId})}><strong>{x.evidence_type||x.type||'Evidence artifact'}</strong><span>{[x.captured_at?`Captured ${fmtDate(x.captured_at)}`:null,x.source_url||null,x.content_hash?`SHA ${String(x.content_hash).slice(0,12)}…`:null].filter(Boolean).join(' · ')}</span><span style={{display:'inline-flex',alignItems:'center',gap:4,fontWeight:700,color:'#4f46e5'}}><BookOpen size={11}/> Open Evidence</span></button>):<div className="m-record"><BlankValue/></div>}</div></Section>}
+function OptionalList({title,rows,state}){return <Section title={title}><StateTrail state={state}/><div className="m-record-list">{rows?.length?rows.map((x,i)=><div className="m-record" key={x.id||i}><strong>{x.name||x.title||x.code||title.slice(0,-1)}</strong><span>{[x.type,x.relationship_type,x.description].filter(Boolean).join(' · ')}</span></div>):<div className="m-record"><BlankValue/></div>}</div></Section>}
+function OperationalState({data}){const s=data.state_summary||{};return <Section title="Operational state" help="100% completeness does not publish automatically. Publication remains an explicit governed action."><div className="m-kv-list"><div><span>Publication</span><strong>{data.publication_status||'—'}</strong></div><div><span>Search projection</span><strong>{s.search??s.search_fields??'—'}</strong></div><div><span>Canonical coverage</span><strong>{s.canonical??s.canonical_fields??'—'}</strong></div><div><span>Admin readiness</span><strong>{s.admin_readiness??s.admin_readiness_fields??'—'}</strong></div></div></Section>}
 
-function Evidence({rows,navigate,courseId}){if(!rows?.length)return null;return <Section title="Evidence" help="Open an artifact to review source, capture, hash and lineage."><div className="m-record-list">{rows.map((x,i)=><button key={x.id||i} className="m-record" style={{textAlign:'left',width:'100%',cursor:'pointer'}} onClick={()=>x.id&&navigate?.('Evidence',{evidence_id:x.id,return_course_id:courseId})}><strong>{x.evidence_type||x.type||'Evidence artifact'}</strong><span>{[x.captured_at?`Captured ${fmtDate(x.captured_at)}`:null,x.source_url||null,x.content_hash?`SHA ${String(x.content_hash).slice(0,12)}…`:null].filter(Boolean).join(' · ')}</span><span style={{display:'inline-flex',alignItems:'center',gap:4,fontWeight:700,color:'#4f46e5'}}><BookOpen size={11}/> Open Evidence</span></button>)}</div></Section>}
-
-function OptionalList({title,rows}){if(!rows?.length)return null;return <Section title={title}><div className="m-record-list">{rows.map((x,i)=><div className="m-record" key={x.id||i}><strong>{x.name||x.title||x.code||title.slice(0,-1)}</strong><span>{[x.type,x.relationship_type,x.description].filter(Boolean).join(' · ')}</span></div>)}</div></Section>}
-
-function OperationalState({data}){
-  const s=data.state_summary||{}
-  if(!Object.keys(s).length)return null
-  const search=s.search??s.search_fields,canonical=s.canonical??s.canonical_fields,ready=s.admin_readiness??s.admin_readiness_fields,channels=s.consumer_channels
-  return <Section title="Operational state" help="Completeness/readiness never publishes a Course automatically. Publication requires explicit governed approval/action."><div className="m-kv-list">
-    <Row label="Publication" value={data.publication_status||'—'}/>
-    {!empty(search)&&<Row label="Search projection" value={`${search} field${Number(search)===1?'':'s'}`}/>} 
-    {!empty(canonical)&&<Row label="Canonical coverage" value={`${canonical} field${Number(canonical)===1?'':'s'}`}/>} 
-    {!empty(ready)&&<Row label="Admin readiness" value={`${ready} field${Number(ready)===1?'':'s'}`}/>} 
-    {!empty(channels)&&<Row label="Consumer channels" value={typeof channels==='number'?`${channels} record${channels===1?'':'s'}`:String(channels)}/>} 
-  </div></Section>
+function L4Editor({courseId,fieldCode,label,current,onClose,onSaved}){
+  const initial=fieldCode==='duration'?String(current||''):String(current||'')
+  const[text,setText]=useState(initial),[unit,setUnit]=useState('weeks'),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
+  async function save(){setError('');setBusy(true);try{let value;if(fieldCode==='duration'){const m=String(text).match(/^\s*([0-9.]+)(?:\s+(.+))?$/);value={value:m?Number(m[1]):Number(text),unit:m?.[2]||unit}}else value=String(text);const r=await resolveCourseScalar(courseId,fieldCode,value,reason);onSaved(fieldCode,value,r);onClose()}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
+  return <div style={{position:'sticky',bottom:0,zIndex:3,background:'#fff',border:'1px solid #cbd5e1',borderRadius:10,padding:12,boxShadow:'0 -4px 18px rgba(15,23,42,.08)'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><strong>Layer 4 resolution · {label}</strong><div style={{fontSize:10,color:'#64748b'}}>Human resolution is terminal for enrichment and audit-recorded. It does not publish the Course.</div></div><button className="m-secondary compact" onClick={onClose}><X size={12}/></button></div><div style={{display:'grid',gap:8,marginTop:10}}><label style={{display:'grid',gap:4,fontSize:10}}>Value{fieldCode==='duration'?<div style={{display:'grid',gridTemplateColumns:'1fr 120px',gap:6}}><input value={text} onChange={e=>setText(e.target.value)} placeholder="e.g. 156"/><input value={unit} onChange={e=>setUnit(e.target.value)} placeholder="weeks"/></div>:<textarea rows={fieldCode==='course_description'?4:2} value={text} onChange={e=>setText(e.target.value)}/>}</label><label style={{display:'grid',gap:4,fontSize:10}}>Resolution reason<textarea rows={2} value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why is the human value appropriate?"/></label>{error&&<div style={{color:'#b91c1c',fontSize:10}}>{error}</div>}<button className="m-primary" disabled={busy||reason.trim().length<5||!String(text).trim()} onClick={save}><Save size={13}/>{busy?'Saving…':'Apply L4 resolution'}</button></div></div>
 }
 
 export default function CourseDetailPolish({data,navigate}){
-  if(!data)return null
-  return <div className="m-drawer-body">
-    <Overview data={data}/>
-    <Fees data={data} navigate={navigate}/>
-    <EntryRequirements data={data}/>
-    <Campuses rows={data.campuses}/>
-    <OptionalList title="Academic options" rows={data.academic_options}/>
-    <OptionalList title="Categories" rows={data.categories}/>
-    <OptionalList title="Collections" rows={data.collections}/>
-    <Regulatory data={data} navigate={navigate}/>
-    <Evidence rows={data.evidence} navigate={navigate} courseId={data.id}/>
-    <OperationalState data={data}/>
-  </div>
+  const[rank,setRank]=useState(0),[working,setWorking]=useState(data),[editor,setEditor]=useState(null),[saved,setSaved]=useState('')
+  useEffect(()=>setWorking(data),[data])
+  useEffect(()=>{let live=true;api.context().then(x=>live&&setRank(Number(x?.role_rank||0))).catch(()=>{});return()=>{live=false}},[])
+  const states=useMemo(()=>stateMap(working?.field_states),[working?.field_states])
+  if(!working)return null
+  function edit(code,label,value){setEditor({code,label,value});setSaved('')}
+  function onSaved(code,value){setWorking(prev=>{const next={...prev};if(code==='course_description')next.description=String(value);if(code==='official_course_url')next.course_url=String(value);if(code==='delivery_mode')next.delivery_mode=String(value);if(code==='duration'){next.duration_value=value.value;next.duration_unit=value.unit}next.field_states=(prev.field_states||[]).map(x=>x.code===code?{...x,value_state:'resolved',resolved_layer:4}:x);return next});setSaved(`${editor?.label||code} resolved in Layer 4`)}
+  return <div className="m-drawer-body"><Overview data={working}/>{saved&&<div className="m-help" style={{padding:'8px 10px',border:'1px solid #bbf7d0',background:'#f0fdf4',borderRadius:8,color:'#166534'}}>{saved}</div>}<AttributeMatrix data={working} states={states} rank={rank} onEdit={edit}/><Fees data={working} navigate={navigate} states={states}/><EntryRequirements data={working} states={states}/><Campuses rows={working.campuses} state={states.get('campuses')}/><OptionalList title="Academic options" rows={working.academic_options} state={states.get('academic_options')}/><OptionalList title="Categories" rows={working.categories} state={states.get('categories')}/><OptionalList title="Collections" rows={working.collections} state={states.get('collections')}/><Regulatory data={working} navigate={navigate} state={states.get('regulatory_facts')}/><Evidence rows={working.evidence} navigate={navigate} courseId={working.id}/><OperationalState data={working}/>{editor&&<L4Editor courseId={working.id} fieldCode={editor.code} label={editor.label} current={editor.value} onClose={()=>setEditor(null)} onSaved={onSaved}/>}</div>
 }
