@@ -16,14 +16,14 @@ async function finish(testInfo,runtime){
   assertNoServerErrors(runtime)
 }
 
-test.describe('CourseFinder deployed Course Detail PIM v2.13 acceptance @deployed',()=>{
+test.describe('CourseFinder deployed Course Detail PIM v2.14 acceptance @deployed',()=>{
   test.beforeAll(async()=>{
     if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.')
     if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.')
-    await writeRunEnvironment({suite:'deployed-course-detail-v2.13',course_id:COURSE_ID})
+    await writeRunEnvironment({suite:'deployed-course-detail-v2.14',course_id:COURSE_ID})
   })
 
-  test('Federation Bachelor of Arts is concise, linked and evidence-reviewable',async({page},testInfo)=>{
+  test('Federation Bachelor of Arts shows concise facts, layer provenance and reversible Evidence navigation',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
@@ -31,7 +31,7 @@ test.describe('CourseFinder deployed Course Detail PIM v2.13 acceptance @deploye
       const drawer=page.locator('aside.m-drawer')
       await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.getByRole('heading',{name:'Bachelor of Arts',exact:true})).toBeVisible()
-      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.13')
+      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.14')
 
       const official=drawer.getByRole('link',{name:/Open first-party page/i})
       await expect(official).toBeVisible()
@@ -40,8 +40,12 @@ test.describe('CourseFinder deployed Course Detail PIM v2.13 acceptance @deploye
       await expect(drawer.getByRole('heading',{name:'Fees',exact:true})).toHaveCount(1)
       await expect(drawer.getByText('Registered CRICOS course cost',{exact:true})).toBeVisible()
       await expect(drawer.getByText('Current Provider tuition',{exact:true})).toBeVisible()
+      await expect(drawer.getByText('AUD 77,100',{exact:true})).toBeVisible()
       await expect(drawer.getByText('No evidence-backed current Provider tuition captured.',{exact:true})).toBeVisible()
       await expect(drawer.getByText('Fee semantics',{exact:true})).toHaveCount(0)
+
+      await expect(drawer.getByText('L1',{exact:true}).first()).toBeVisible()
+      await expect(drawer.getByText('L2',{exact:true}).first()).toBeVisible()
 
       await expect(drawer.getByRole('heading',{name:'Categories',exact:true})).toHaveCount(0)
       await expect(drawer.getByRole('heading',{name:'Collections',exact:true})).toHaveCount(0)
@@ -55,11 +59,16 @@ test.describe('CourseFinder deployed Course Detail PIM v2.13 acceptance @deploye
       await expect(evidenceSection).toBeVisible()
       const openEvidence=evidenceSection.getByText('Open Evidence',{exact:true}).first()
       await expect(openEvidence).toBeVisible()
-      await milestoneScreenshot(page,testInfo,'federation-course-detail-v2-13')
+      await milestoneScreenshot(page,testInfo,'federation-course-detail-v2-14')
       await openEvidence.click()
-      await expect(page).toHaveURL(/#evidence\?evidence_id=/)
+      await expect(page).toHaveURL(/#evidence\?evidence_id=.*return_course_id=/)
       await expect(page.locator('aside.evidence-drawer')).toBeVisible({timeout:45_000})
-      await milestoneScreenshot(page,testInfo,'federation-course-evidence-open')
+      const back=page.getByRole('button',{name:/Back to Course/i})
+      await expect(back).toBeVisible()
+      await milestoneScreenshot(page,testInfo,'federation-course-evidence-return')
+      await back.click()
+      await expect(page).toHaveURL(new RegExp(`#courses\\?id=${COURSE_ID}`))
+      await expect(page.locator('aside.m-drawer')).toBeVisible({timeout:45_000})
     }finally{
       await finish(testInfo,runtime)
     }
