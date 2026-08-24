@@ -3,46 +3,40 @@ import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneS
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
-test.describe('CourseFinder acquisition-centred navigation @deployed',()=>{
-  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'admin-acquisition-navigation',change_control:'CF-CHG-20260823-030'})})
+test.describe('CourseFinder simplified enrichment navigation @deployed',()=>{
+  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'admin-layer2-navigation',change_control:'CF-CHG-20260823-030'})})
 
-  test('primary sidebar exposes the acquisition lifecycle without floating launchers',async({page},testInfo)=>{
+  test('primary sidebar keeps Layer 2 management intentionally small',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
       const nav=page.locator('.m-nav')
-      await expect(nav.getByText('Data Acquisition',{exact:true})).toBeVisible({timeout:45000})
-      for(const label of ['Pipeline Control','Source Registry','Layer 2 Source Config','Acquisition Providers','Acquisition Trials','Jobs','Evidence'])await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible()
+      await expect(nav.getByText('Data Enrichment',{exact:true})).toBeVisible({timeout:45000})
+      await expect(nav.getByRole('button',{name:'Layer 2 Operations',exact:true})).toBeVisible()
+      await expect(nav.getByRole('button',{name:'Evidence',exact:true})).toBeVisible()
+      for(const label of ['Pipeline Control','Source Registry','Layer 2 Source Config','Acquisition Providers','Acquisition Trials','Jobs'])await expect(nav.getByRole('button',{name:label,exact:true})).toHaveCount(0)
       await expect(nav.getByText('Quality & Review',{exact:true})).toBeVisible()
       await expect(nav.getByText('Governance & Platform',{exact:true})).toBeVisible()
-      await expect(page.locator('.ops-launcher')).toBeHidden()
-      await expect(page.locator('.l2-launcher')).toBeHidden()
-      await expect(page.locator('.l2p-launcher')).toBeHidden()
-      await expect(page.locator('.l2t-launcher')).toBeHidden()
-      await milestoneScreenshot(page,testInfo,'admin-data-acquisition-navigation')
+      for(const sel of ['.ops-launcher','.l2-launcher','.l2p-launcher','.l2t-launcher','.l2o-launcher'])await expect(page.locator(sel)).toBeHidden()
+      await milestoneScreenshot(page,testInfo,'admin-layer2-simple-navigation')
     }finally{await finish(testInfo,runtime)}
   })
 
-  test('main menu opens governed Pipeline, Layer 2, Trials and Evidence workspaces',async({page},testInfo)=>{
+  test('Layer 2 Operations exposes concise policy, provider and Evidence drill-down',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
       const nav=page.locator('.m-nav')
-      await nav.getByRole('button',{name:'Pipeline Control',exact:true}).click()
-      await expect(page.getByRole('heading',{name:'Pipeline Operations'})).toBeVisible()
-      await page.getByRole('button',{name:/Close operations console/i}).click()
-      await nav.getByRole('button',{name:'Layer 2 Source Config',exact:true}).click()
-      await expect(page.getByRole('heading',{name:'Enrichment Source Configuration'})).toBeVisible()
-      await page.getByRole('button',{name:'Close',exact:true}).click()
-      await nav.getByRole('button',{name:'Acquisition Providers',exact:true}).click()
-      await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers'})).toBeVisible()
-      await page.locator('.l2p-top button').last().click()
-      await nav.getByRole('button',{name:'Acquisition Trials',exact:true}).click()
-      await expect(page.getByRole('heading',{name:'Acquisition & Course Completeness Trials'})).toBeVisible({timeout:45000})
-      await page.locator('.l2t-top button').last().click()
-      await nav.getByRole('button',{name:'Evidence',exact:true}).click()
-      await expect(page.getByRole('heading',{name:/Evidence/i}).first()).toBeVisible({timeout:45000})
-      await milestoneScreenshot(page,testInfo,'admin-acquisition-navigation-workspaces')
+      await nav.getByRole('button',{name:'Layer 2 Operations',exact:true}).click()
+      await expect(page.getByRole('heading',{name:'Layer 2 Operations'})).toBeVisible({timeout:45000})
+      await expect(page.getByText('Enrichment plan',{exact:true})).toBeVisible()
+      await expect(page.getByText('Provider health',{exact:true})).toBeVisible()
+      await expect(page.getByText('Evidence',{exact:true}).first()).toBeVisible()
+      await expect(page.getByText(/Courses and Scholarships only/i)).toBeVisible()
+      await expect(page.getByText(/QILT|PRISMS/i)).toHaveCount(0)
+      await expect(page.getByRole('button',{name:/Configure/i})).toBeVisible()
+      await expect(page.getByRole('button',{name:/Run bounded trial/i})).toBeVisible()
+      await milestoneScreenshot(page,testInfo,'layer2-operations-workspace')
     }finally{await finish(testInfo,runtime)}
   })
 })
