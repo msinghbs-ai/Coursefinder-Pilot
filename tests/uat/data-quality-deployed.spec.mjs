@@ -74,7 +74,7 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
       await expect(firstEntity).toBeVisible()
       await firstEntity.click()
       await expect(page).toHaveURL(/#courses\?id=/)
-      await expect(page.getByText('Fee semantics', { exact: true })).toBeVisible({ timeout: 45_000 })
+      await expect(page.getByRole('heading', { name: 'Fees', exact: true })).toBeVisible({ timeout: 45_000 })
       await milestoneScreenshot(page, testInfo, 'canonical-course-detail')
     } finally {
       await finish(testInfo, runtime)
