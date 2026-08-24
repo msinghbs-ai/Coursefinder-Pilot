@@ -23,9 +23,10 @@ jobs:
   deployed-uat:
     name: Deployed UAT (${{ matrix.project }})
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         project: [chromium-desktop, chromium-mobile]
     env:
