@@ -1,0 +1,1 @@
+const VERSION='2.14.0';function sync(){document.querySelectorAll('.m-brand-copy small,.m-login-version,.m-release-pill').forEach(el=>{if(/v2\.13(?:\.0)?/.test(el.textContent||''))el.textContent=(el.textContent||'').replace(/v2\.13(?:\.0)?/,'v'+VERSION)})}new MutationObserver(sync).observe(document.documentElement,{subtree:true,childList:true,characterData:true});sync();
