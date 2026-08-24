@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'
-import { loginAsUatUser, observeRuntime, attachRuntimeEvidence, assertNoServerErrors } from './support/runtime-evidence.mjs'
+import { clickPrimaryNav, loginAsUatUser, observeRuntime, attachRuntimeEvidence, assertNoServerErrors } from './support/runtime-evidence.mjs'
 
 const ARTIFACT_DIR = path.resolve('uat-artifacts')
 const RPC_BUDGET_MS = 3000
@@ -9,157 +9,17 @@ const DETAIL_BUDGET_MS = 3000
 const COURSE_FILTER_PAYLOAD_BUDGET = 350_000
 const PAGE_PAYLOAD_BUDGET = 250_000
 
-function operationOf(request) {
-  if (!request.url().includes('/rest/v1/rpc/admin_read')) return null
-  try { return request.postDataJSON()?.p_operation || null } catch { return null }
-}
-
-async function measuredRpc(page, operation, action, timeout = 12_000) {
-  const started = Date.now()
-  const responsePromise = page.waitForResponse(response => operationOf(response.request()) === operation, { timeout })
-  await action()
-  const response = await responsePromise
-  await response.finished()
-  const body = await response.body()
-  return { operation, elapsed_ms: Date.now() - started, status: response.status(), payload_bytes: body.length }
-}
-
-async function route(page, slug) {
-  await page.evaluate(next => { location.hash = `#${next}` }, slug)
-}
-
-async function save(testInfo, name, payload) {
-  await fs.mkdir(ARTIFACT_DIR, { recursive: true })
-  const file = path.join(ARTIFACT_DIR, `${testInfo.project.name}-${name}.json`)
-  await fs.writeFile(file, JSON.stringify(payload, null, 2))
-  await testInfo.attach(name, { path: file, contentType: 'application/json' })
-}
-
-async function assertViewportContained(page) {
-  const metrics = await page.evaluate(() => ({
-    innerWidth: window.innerWidth,
-    documentWidth: document.documentElement.scrollWidth,
-    tableWraps: [...document.querySelectorAll('.m-table-wrap,.ops-table-wrap')].map(x => ({ clientWidth: x.clientWidth, scrollWidth: x.scrollWidth })),
-  }))
-  expect(metrics.documentWidth, `Page-level horizontal overflow at ${metrics.innerWidth}px`).toBeLessThanOrEqual(metrics.innerWidth + 2)
-  return metrics
-}
+function operationOf(request) {if (!request.url().includes('/rest/v1/rpc/admin_read')) return null;try { return request.postDataJSON()?.p_operation || null } catch { return null }}
+async function measuredRpc(page, operation, action, timeout = 12_000) {const started = Date.now();const responsePromise = page.waitForResponse(response => operationOf(response.request()) === operation, { timeout });await action();const response = await responsePromise;await response.finished();const body = await response.body();return { operation, elapsed_ms: Date.now() - started, status: response.status(), payload_bytes: body.length }}
+async function route(page, slug) {await page.evaluate(next => { location.hash = `#${next}` }, slug)}
+async function save(testInfo, name, payload) {await fs.mkdir(ARTIFACT_DIR, { recursive: true });const file = path.join(ARTIFACT_DIR, `${testInfo.project.name}-${name}.json`);await fs.writeFile(file, JSON.stringify(payload, null, 2));await testInfo.attach(name, { path: file, contentType: 'application/json' })}
+async function assertViewportContained(page) {const metrics = await page.evaluate(() => ({innerWidth: window.innerWidth,documentWidth: document.documentElement.scrollWidth,tableWraps: [...document.querySelectorAll('.m-table-wrap,.ops-table-wrap')].map(x => ({ clientWidth: x.clientWidth, scrollWidth: x.scrollWidth }))}));expect(metrics.documentWidth, `Page-level horizontal overflow at ${metrics.innerWidth}px`).toBeLessThanOrEqual(metrics.innerWidth + 2);return metrics}
 
 test.describe('M1 performance and responsiveness @deployed', () => {
   test.beforeEach(async ({ page }) => { await loginAsUatUser(page) })
-
-  test('core workspaces stay within governed RPC and payload budgets', async ({ page }, testInfo) => {
-    const runtime = observeRuntime(page)
-    const measures = []
-    try {
-      measures.push(await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') }))
-      measures.push(await measuredRpc(page, 'dashboard', async () => { await route(page, 'dashboard') }))
-      measures.push(await measuredRpc(page, 'dashboard', async () => { await page.reload() }))
-
-      const courseFiltersPromise = page.waitForResponse(r => operationOf(r.request()) === 'course_filters', { timeout: 12_000 })
-      measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }))
-      const filterResponse = await courseFiltersPromise
-      measures.push({ operation: 'course_filters', elapsed_ms: null, status: filterResponse.status(), payload_bytes: (await filterResponse.body()).length })
-
-      measures.push(await measuredRpc(page, 'campuses_page', async () => { await route(page, 'campuses') }))
-      measures.push(await measuredRpc(page, 'scholarships_page', async () => { await route(page, 'scholarships') }))
-      measures.push(await measuredRpc(page, 'evidence_page', async () => { await route(page, 'evidence') }))
-      measures.push(await measuredRpc(page, 'data_quality_overview', async () => { await page.evaluate(() => { location.hash = '#data-quality-readiness' }) }))
-
-      for (const m of measures.filter(x => x.elapsed_ms != null)) {
-        expect(m.status, `${m.operation} HTTP status`).toBe(200)
-        expect(m.elapsed_ms, `${m.operation} latency`).toBeLessThanOrEqual(RPC_BUDGET_MS)
-      }
-      for (const m of measures.filter(x => x.operation.endsWith('_page'))) {
-        expect(m.payload_bytes, `${m.operation} payload`).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)
-      }
-      const filters = measures.find(x => x.operation === 'course_filters')
-      expect(filters.status).toBe(200)
-      expect(filters.payload_bytes, 'course_filters payload').toBeLessThanOrEqual(COURSE_FILTER_PAYLOAD_BUDGET)
-      await save(testInfo, 'workspace-performance', { budgets: { RPC_BUDGET_MS, COURSE_FILTER_PAYLOAD_BUDGET, PAGE_PAYLOAD_BUDGET }, measures })
-    } finally {
-      await attachRuntimeEvidence(testInfo, runtime)
-      assertNoServerErrors(runtime)
-    }
-  })
-
-  test('exact CRICOS lookup, detail, paging and browser back stay interactive', async ({ page }, testInfo) => {
-    const runtime = observeRuntime(page)
-    const measures = []
-    try {
-      measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }))
-      const search = page.getByPlaceholder('Search Course, Provider, CRICOS/course code or stable key')
-      measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('121174E') }))
-      await expect(page.getByText('121174E', { exact: true }).first()).toBeVisible({ timeout: 12_000 })
-
-      measures.push(await measuredRpc(page, 'course_detail', async () => { await page.locator('.m-table tbody tr').first().click() }))
-      await expect(page.locator('.m-drawer')).toBeVisible()
-      await page.keyboard.press('Escape')
-      await expect(page.locator('.m-drawer')).toBeHidden()
-
-      measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('') }))
-      const next = page.getByRole('button', { name: /Next/i }).first()
-      await expect(next).toBeEnabled()
-      measures.push(await measuredRpc(page, 'courses_page', async () => { await next.click() }))
-
-      await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') })
-      measures.push(await measuredRpc(page, 'courses_page', async () => { await page.goBack() }))
-      await expect(page).toHaveURL(/#courses/)
-
-      for (const m of measures) {
-        expect(m.status).toBe(200)
-        expect(m.elapsed_ms, `${m.operation} interaction latency`).toBeLessThanOrEqual(m.operation === 'course_detail' ? DETAIL_BUDGET_MS : RPC_BUDGET_MS)
-        expect(m.payload_bytes).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)
-      }
-      await save(testInfo, 'course-interactions', { budgets: { RPC_BUDGET_MS, DETAIL_BUDGET_MS, PAGE_PAYLOAD_BUDGET }, measures })
-    } finally {
-      await attachRuntimeEvidence(testInfo, runtime)
-      assertNoServerErrors(runtime)
-    }
-  })
-
-  test('Layer 2 Operations and advanced source drill-down stay within management-view budgets', async ({ page }, testInfo) => {
-    const runtime = observeRuntime(page)
-    const measures = []
-    try {
-      const nav=page.locator('.m-nav')
-      await expect(nav.getByText('Data Enrichment',{exact:true})).toBeVisible({timeout:45_000})
-      measures.push(await measuredRpc(page,'layer2_ops_overview',async()=>{await nav.getByRole('button',{name:'Layer 2 Operations',exact:true}).click()}))
-      const ops=page.getByRole('dialog',{name:'Layer 2 Operations'})
-      await expect(ops).toBeVisible()
-      measures.push(await measuredRpc(page,'layer2_profiles',async()=>{await ops.getByRole('button',{name:'Advanced',exact:true}).first().click()}))
-      await expect(page.getByRole('heading',{name:'Enrichment Source Configuration'})).toBeVisible()
-      for(const m of measures){
-        expect(m.status).toBe(200)
-        expect(m.elapsed_ms,`${m.operation} latency`).toBeLessThanOrEqual(RPC_BUDGET_MS)
-        expect(m.payload_bytes,`${m.operation} payload`).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)
-      }
-      await save(testInfo,'layer2-operations-performance',{budgets:{RPC_BUDGET_MS,PAGE_PAYLOAD_BUDGET},measures})
-    } finally {
-      await attachRuntimeEvidence(testInfo, runtime)
-      assertNoServerErrors(runtime)
-    }
-  })
-
-  test('common laptop and desktop widths contain horizontal overflow inside grids', async ({ page }, testInfo) => {
-    const runtime = observeRuntime(page)
-    const evidence = []
-    try {
-      for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 800 }]) {
-        await page.setViewportSize(viewport)
-        if (locationHashIsCourses(await page.evaluate(() => location.hash))) await route(page, 'dashboard')
-        await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') })
-        await expect(page.locator('.m-table-wrap').first()).toBeVisible()
-        evidence.push({ viewport, ...(await assertViewportContained(page)) })
-      }
-      await save(testInfo, 'responsive-widths', evidence)
-    } finally {
-      await attachRuntimeEvidence(testInfo, runtime)
-      assertNoServerErrors(runtime)
-    }
-  })
+  test('core workspaces stay within governed RPC and payload budgets', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') }));measures.push(await measuredRpc(page, 'dashboard', async () => { await route(page, 'dashboard') }));measures.push(await measuredRpc(page, 'dashboard', async () => { await page.reload() }));const courseFiltersPromise = page.waitForResponse(r => operationOf(r.request()) === 'course_filters', { timeout: 12_000 });measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }));const filterResponse = await courseFiltersPromise;measures.push({ operation: 'course_filters', elapsed_ms: null, status: filterResponse.status(), payload_bytes: (await filterResponse.body()).length });measures.push(await measuredRpc(page, 'campuses_page', async () => { await route(page, 'campuses') }));measures.push(await measuredRpc(page, 'scholarships_page', async () => { await route(page, 'scholarships') }));measures.push(await measuredRpc(page, 'evidence_page', async () => { await route(page, 'evidence') }));measures.push(await measuredRpc(page, 'data_quality_overview', async () => { await page.evaluate(() => { location.hash = '#data-quality-readiness' }) }));for (const m of measures.filter(x => x.elapsed_ms != null)) {expect(m.status, `${m.operation} HTTP status`).toBe(200);expect(m.elapsed_ms, `${m.operation} latency`).toBeLessThanOrEqual(RPC_BUDGET_MS)}for (const m of measures.filter(x => x.operation.endsWith('_page'))) expect(m.payload_bytes, `${m.operation} payload`).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET);const filters = measures.find(x => x.operation === 'course_filters');expect(filters.status).toBe(200);expect(filters.payload_bytes, 'course_filters payload').toBeLessThanOrEqual(COURSE_FILTER_PAYLOAD_BUDGET);await save(testInfo, 'workspace-performance', { budgets: { RPC_BUDGET_MS, COURSE_FILTER_PAYLOAD_BUDGET, PAGE_PAYLOAD_BUDGET }, measures })} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})
+  test('exact CRICOS lookup, detail, paging and browser back stay interactive', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') }));const search = page.getByPlaceholder('Search Course, Provider, CRICOS/course code or stable key');measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('121174E') }));await expect(page.getByText('121174E', { exact: true }).first()).toBeVisible({ timeout: 12_000 });measures.push(await measuredRpc(page, 'course_detail', async () => { await page.locator('.m-table tbody tr').first().click() }));await expect(page.locator('.m-drawer')).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('.m-drawer')).toBeHidden();measures.push(await measuredRpc(page, 'courses_page', async () => { await search.fill('') }));const next = page.getByRole('button', { name: /Next/i }).first();await expect(next).toBeEnabled();measures.push(await measuredRpc(page, 'courses_page', async () => { await next.click() }));await measuredRpc(page, 'providers_page', async () => { await route(page, 'providers') });measures.push(await measuredRpc(page, 'courses_page', async () => { await page.goBack() }));await expect(page).toHaveURL(/#courses/);for (const m of measures) {expect(m.status).toBe(200);expect(m.elapsed_ms, `${m.operation} interaction latency`).toBeLessThanOrEqual(m.operation === 'course_detail' ? DETAIL_BUDGET_MS : RPC_BUDGET_MS);expect(m.payload_bytes).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)}await save(testInfo, 'course-interactions', { budgets: { RPC_BUDGET_MS, DETAIL_BUDGET_MS, PAGE_PAYLOAD_BUDGET }, measures })} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})
+  test('Layer 2 Operations and advanced source drill-down stay within management-view budgets', async ({ page }, testInfo) => {const runtime = observeRuntime(page),measures = [];try {measures.push(await measuredRpc(page,'layer2_ops_overview',async()=>{await clickPrimaryNav(page,'Layer 2 Operations')}));const ops=page.getByRole('dialog',{name:'Layer 2 Operations'});await expect(ops).toBeVisible();measures.push(await measuredRpc(page,'layer2_profiles',async()=>{await ops.getByRole('button',{name:'Advanced',exact:true}).first().click()}));await expect(ops).toBeHidden({timeout:15_000});await expect(page.getByRole('heading',{name:'Enrichment Source Configuration'})).toBeVisible();for(const m of measures){expect(m.status).toBe(200);expect(m.elapsed_ms,`${m.operation} latency`).toBeLessThanOrEqual(RPC_BUDGET_MS);expect(m.payload_bytes,`${m.operation} payload`).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)}await save(testInfo,'layer2-operations-performance',{budgets:{RPC_BUDGET_MS,PAGE_PAYLOAD_BUDGET},measures})} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})
+  test('common laptop and desktop widths contain horizontal overflow inside grids', async ({ page }, testInfo) => {const runtime = observeRuntime(page),evidence = [];try {for (const viewport of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }, { width: 1280, height: 800 }]) {await page.setViewportSize(viewport);if (locationHashIsCourses(await page.evaluate(() => location.hash))) await route(page, 'dashboard');await measuredRpc(page, 'courses_page', async () => { await route(page, 'courses') });await expect(page.locator('.m-table-wrap').first()).toBeVisible();evidence.push({ viewport, ...(await assertViewportContained(page)) })}await save(testInfo, 'responsive-widths', evidence)} finally {await attachRuntimeEvidence(testInfo, runtime);assertNoServerErrors(runtime)}})
 })
-
-function locationHashIsCourses(hash) {
-  return String(hash).replace(/^#/, '').split('?')[0] === 'courses'
-}
+function locationHashIsCourses(hash) {return String(hash).replace(/^#/, '').split('?')[0] === 'courses'}
