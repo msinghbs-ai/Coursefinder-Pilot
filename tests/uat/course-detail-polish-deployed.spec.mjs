@@ -16,14 +16,14 @@ async function finish(testInfo,runtime){
   assertNoServerErrors(runtime)
 }
 
-test.describe('CourseFinder deployed Course Detail PIM v2.14.2 recovery acceptance @deployed',()=>{
+test.describe('CourseFinder deployed Course Detail PIM v2.14.3 recovery acceptance @deployed',()=>{
   test.beforeAll(async()=>{
     if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.')
     if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.')
-    await writeRunEnvironment({suite:'deployed-course-detail-v2.14.2-recovery',course_id:COURSE_ID})
+    await writeRunEnvironment({suite:'deployed-course-detail-v2.14.3-recovery',course_id:COURSE_ID})
   })
 
-  test('Federation Bachelor of Arts remains responsive and Evidence opens without locking the page',async({page},testInfo)=>{
+  test('Federation Bachelor of Arts remains responsive with explicit English requirement and Evidence drill-down',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
@@ -31,7 +31,7 @@ test.describe('CourseFinder deployed Course Detail PIM v2.14.2 recovery acceptan
       const drawer=page.locator('aside.m-drawer')
       await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.getByRole('heading',{name:'Bachelor of Arts',exact:true})).toBeVisible()
-      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.14.2')
+      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.14.3')
 
       const official=drawer.getByRole('link',{name:/Open first-party page/i})
       await expect(official).toBeVisible()
@@ -42,6 +42,10 @@ test.describe('CourseFinder deployed Course Detail PIM v2.14.2 recovery acceptan
       await expect(drawer.getByText('L1',{exact:true}).first()).toBeVisible()
       await expect(drawer.getByText('L2',{exact:true}).first()).toBeVisible()
 
+      await expect(drawer.getByText('English requirement',{exact:true})).toBeVisible()
+      await expect(drawer.getByText(/IELTS Academic/i)).toBeVisible()
+      await expect(drawer.getByText(/Overall score 6/i)).toBeVisible()
+
       const evidenceSection=drawer.locator('section.m-detail-section').filter({has:drawer.getByRole('heading',{name:'Evidence',exact:true})})
       const openEvidence=evidenceSection.getByText('Open Evidence',{exact:true}).first()
       await expect(openEvidence).toBeVisible()
@@ -49,7 +53,7 @@ test.describe('CourseFinder deployed Course Detail PIM v2.14.2 recovery acceptan
       await expect(page).toHaveURL(/#evidence\?evidence_id=/,{timeout:10_000})
       await expect(page.locator('aside.evidence-drawer')).toBeVisible({timeout:45_000})
       await expect(page.locator('.evidence-page')).toBeVisible()
-      await milestoneScreenshot(page,testInfo,'federation-course-evidence-v2-14-2-responsive')
+      await milestoneScreenshot(page,testInfo,'federation-course-evidence-v2-14-3-responsive')
     }finally{
       await finish(testInfo,runtime)
     }
