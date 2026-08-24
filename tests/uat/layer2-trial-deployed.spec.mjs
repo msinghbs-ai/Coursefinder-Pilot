@@ -40,6 +40,21 @@ test.describe('CourseFinder deployed Layer 2 completeness trial acceptance @depl
     }finally{await finish(testInfo,runtime)}
   })
 
+  test('enrichment source selector contains only Course and Scholarship Layer 2 targets',async({page},testInfo)=>{
+    const runtime=observeRuntime(page)
+    try{
+      await loginAsUatUser(page)
+      await openTrials(page)
+      await expect(page.getByText('Enrichment source',{exact:true}).first()).toBeVisible({timeout:15000})
+      const sourceSelector=page.locator('.l2t-controls select').first()
+      const sourceOptions=(await sourceSelector.locator('option').allTextContents()).join(' ')
+      expect(sourceOptions).toMatch(/Australia · Courses · RMIT University/)
+      expect(sourceOptions).toMatch(/Australia · Courses · The University of Queensland/)
+      expect(sourceOptions).not.toMatch(/QILT|PRISMS/i)
+      await milestoneScreenshot(page,testInfo,'layer2-enrichment-source-selector')
+    }finally{await finish(testInfo,runtime)}
+  })
+
   test('provider selector shows configured acquisition catalogue without exposing secrets',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
@@ -51,6 +66,7 @@ test.describe('CourseFinder deployed Layer 2 completeness trial acceptance @depl
       expect(options.join(' ')).toMatch(/Direct HTTP/)
       expect(options.join(' ')).toMatch(/Scrape\.do/)
       expect(options.join(' ')).toMatch(/Firecrawl/)
+      expect(options.join(' ')).toMatch(/ZenRows/)
       expect((await page.locator('body').innerText())).not.toMatch(/sb_secret_|service_role|SUPABASE_SERVICE_ROLE_KEY/i)
       await milestoneScreenshot(page,testInfo,'layer2-trial-provider-selector')
     }finally{await finish(testInfo,runtime)}
