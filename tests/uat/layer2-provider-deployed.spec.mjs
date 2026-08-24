@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
+async function selectMatching(select,re){const options=select.locator('option');const count=await options.count();for(let i=0;i<count;i++){const o=options.nth(i),label=(await o.textContent())||'';if(re.test(label)){const value=await o.getAttribute('value');await select.selectOption(value??{label});return}}throw new Error(`No option matched ${re}`)}
 async function openProviders(page){
   const nav=page.locator('.m-nav')
   await expect(nav.getByText('Data Enrichment',{exact:true})).toBeVisible({timeout:45000})
@@ -23,7 +24,7 @@ test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @de
       await expect(page.getByText(/Credentials are write-only and acquisition URLs are source-bound/i)).toBeVisible()
       for(const name of ['Direct HTTP','Scrape.do','ScraperAPI','Firecrawl','ZenRows (JS render + premium proxy)','Custom gateway ({url} template)']) await expect(page.getByText(name,{exact:true}).first()).toBeVisible()
       const source=page.getByLabel('Layer 2 provider source profile')
-      await source.selectOption({label:/RMIT/i})
+      await selectMatching(source,/RMIT/i)
       for(const name of ['Direct HTTP','Scrape.do','ScraperAPI','Firecrawl','ZenRows (JS render + premium proxy)']) await expect(page.getByText(name,{exact:true}).last()).toBeVisible()
       expect((await page.locator('body').innerText())).not.toMatch(/sb_secret_|service_role|SUPABASE_SERVICE_ROLE_KEY/i)
       await milestoneScreenshot(page,testInfo,'layer2-provider-routing-v1-4')
@@ -36,7 +37,7 @@ test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @de
       await loginAsUatUser(page)
       await openProviders(page)
       const source=page.getByLabel('Layer 2 provider source profile')
-      await source.selectOption({label:/RMIT/i})
+      await selectMatching(source,/RMIT/i)
       await page.getByRole('button',{name:/Run bounded acquisition/i}).click()
       const result=page.locator('.l2p-run')
       await expect(result).toContainText('Acquisition PASS',{timeout:90000})
@@ -46,18 +47,20 @@ test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @de
     }finally{await finish(testInfo,runtime)}
   })
 
-  test('Platform Admin sees write-only provider credential control when authorised',async({page},testInfo)=>{
+  test('provider detail preserves the write-only credential boundary for the UAT operator',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
       await openProviders(page)
-      await page.getByText('Scrape.do',{exact:true}).first().click()
-      const password=page.locator('input[type="password"][placeholder*="Stored in Vault"]')
-      if(await password.count()){
-        await expect(password).toBeVisible()
-        await expect(password).toHaveValue('')
-        await expect(page.getByText(/Configured in Vault|Not configured/)).toBeVisible()
-      }
+      const providerButton=page.locator('.l2p-provider-list > button').filter({hasText:'Scrape.do'}).first()
+      await expect(providerButton).toBeVisible()
+      await providerButton.click()
+      const drawer=page.locator('.l2p-drawer')
+      await expect(drawer).toBeVisible()
+      await expect(drawer.getByText(/Configured in Vault|Not configured/)).toBeVisible()
+      const password=drawer.locator('input[type="password"][placeholder*="Stored in Vault"]')
+      if(await password.count()){await expect(password).toHaveValue('')}
+      expect((await drawer.innerText())).not.toMatch(/sb_secret_|service_role|SUPABASE_SERVICE_ROLE_KEY/i)
       await milestoneScreenshot(page,testInfo,'layer2-provider-credential-boundary-v1-4')
     }finally{await finish(testInfo,runtime)}
   })
