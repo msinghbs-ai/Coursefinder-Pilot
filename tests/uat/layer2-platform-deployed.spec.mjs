@@ -2,28 +2,39 @@ import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
+async function openAdvanced(page){
+  const nav=page.locator('.m-nav')
+  await expect(nav.getByText('Data Enrichment',{exact:true})).toBeVisible({timeout:45000})
+  await nav.getByRole('button',{name:'Layer 2 Operations',exact:true}).click()
+  const ops=page.getByRole('dialog',{name:'Layer 2 Operations'})
+  await expect(ops).toBeVisible({timeout:45000})
+  const advanced=ops.getByRole('button',{name:'Advanced',exact:true}).first()
+  await expect(advanced).toBeVisible()
+  await advanced.click()
+  await expect(page.getByRole('heading',{name:'Enrichment Source Configuration'})).toBeVisible({timeout:45000})
+}
 
 test.describe('CourseFinder deployed Layer 2 platform acceptance @deployed',()=>{
-  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-platform',change_control:'CF-CHG-20260823-029'})})
+  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-platform-v1.4',change_control:'CF-CHG-20260823-029'})})
 
-  test('Layer 2 console exposes materially different governed acquisition profiles and filters',async({page},testInfo)=>{
+  test('advanced source configuration is reachable only through Layer 2 Operations and exposes governed Course/Scholarship profiles',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
-      const launcher=page.getByRole('button',{name:/Layer 2 Config/i})
-      await expect(launcher).toBeVisible({timeout:45000})
-      await launcher.click()
-      await expect(page.getByRole('heading',{name:'Enrichment Source Configuration'})).toBeVisible()
+      await openAdvanced(page)
       await expect(page.getByText('Configuration is separate from execution.')).toBeVisible()
-      await expect(page.getByText(/Course Detail/i).first()).toBeVisible()
-      await expect(page.getByText(/Xlsx Feed/i).first()).toBeVisible()
-      await expect(page.getByText(/Search Endpoint/i).first()).toBeVisible()
-      await expect(page.getByText(/Document/i).first()).toBeVisible()
-      await page.getByLabel('Acquisition method filter').selectOption('xlsx_feed')
-      expect(await page.locator('.l2-table tbody tr').count()).toBeGreaterThanOrEqual(1)
-      await expect(page.getByText(/Prisms/i).first()).toBeVisible()
-      await page.getByLabel('Acquisition method filter').selectOption('')
-      await milestoneScreenshot(page,testInfo,'layer2-profile-list')
+      await expect(page.getByText(/RMIT/i).first()).toBeVisible()
+      await expect(page.getByText(/Queensland/i).first()).toBeVisible()
+      await expect(page.getByText(/Federation/i).first()).toBeVisible()
+      await expect(page.getByText(/Study Australia/i).first()).toBeVisible()
+      await expect(page.getByLabel('Search profiles')).toBeVisible()
+      await expect(page.getByLabel('Country filter')).toBeVisible()
+      await expect(page.getByLabel('Acquisition method filter')).toBeVisible()
+      await expect(page.getByLabel('Health filter')).toBeVisible()
+      await page.getByLabel('Search profiles').fill('Federation')
+      await expect(page.locator('.l2-table tbody tr')).toHaveCount(1)
+      await expect(page.locator('.l2-table tbody tr').first()).toContainText(/Federation/i)
+      await milestoneScreenshot(page,testInfo,'layer2-profile-list-v1-4')
     }finally{await finish(testInfo,runtime)}
   })
 
@@ -31,7 +42,8 @@ test.describe('CourseFinder deployed Layer 2 platform acceptance @deployed',()=>
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
-      await page.getByRole('button',{name:/Layer 2 Config/i}).click()
+      await openAdvanced(page)
+      await page.getByLabel('Search profiles').fill('Federation')
       const row=page.locator('.l2-table tbody tr').first()
       await expect(row).toBeVisible({timeout:45000})
       await row.click()
@@ -52,7 +64,7 @@ test.describe('CourseFinder deployed Layer 2 platform acceptance @deployed',()=>
         await expect(drawer.getByRole('button',{name:'Validate & create version'})).toBeVisible()
         await drawer.getByRole('button',{name:'Cancel'}).click()
       }
-      await milestoneScreenshot(page,testInfo,'layer2-profile-detail')
+      await milestoneScreenshot(page,testInfo,'layer2-profile-detail-v1-4')
     }finally{await finish(testInfo,runtime)}
   })
 })
