@@ -16,14 +16,14 @@ async function finish(testInfo,runtime){
   assertNoServerErrors(runtime)
 }
 
-test.describe('CourseFinder deployed Course Detail PIM v2.14 acceptance @deployed',()=>{
+test.describe('CourseFinder deployed Course Detail PIM v2.14.1 acceptance @deployed',()=>{
   test.beforeAll(async()=>{
     if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.')
     if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.')
-    await writeRunEnvironment({suite:'deployed-course-detail-v2.14',course_id:COURSE_ID})
+    await writeRunEnvironment({suite:'deployed-course-detail-v2.14.1',course_id:COURSE_ID})
   })
 
-  test('Federation Bachelor of Arts shows concise facts, layer provenance and reversible Evidence navigation',async({page},testInfo)=>{
+  test('Federation Bachelor of Arts shows concise facts, layer provenance and responsive reversible Evidence navigation',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
@@ -31,7 +31,7 @@ test.describe('CourseFinder deployed Course Detail PIM v2.14 acceptance @deploye
       const drawer=page.locator('aside.m-drawer')
       await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.getByRole('heading',{name:'Bachelor of Arts',exact:true})).toBeVisible()
-      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.14')
+      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.14.1')
 
       const official=drawer.getByRole('link',{name:/Open first-party page/i})
       await expect(official).toBeVisible()
@@ -59,13 +59,16 @@ test.describe('CourseFinder deployed Course Detail PIM v2.14 acceptance @deploye
       await expect(evidenceSection).toBeVisible()
       const openEvidence=evidenceSection.getByText('Open Evidence',{exact:true}).first()
       await expect(openEvidence).toBeVisible()
-      await milestoneScreenshot(page,testInfo,'federation-course-detail-v2-14')
+      await milestoneScreenshot(page,testInfo,'federation-course-detail-v2-14-1')
+
+      const started=Date.now()
       await openEvidence.click()
-      await expect(page).toHaveURL(/#evidence\?evidence_id=.*return_course_id=/)
+      await expect(page).toHaveURL(/#evidence\?evidence_id=.*return_course_id=/,{timeout:10_000})
       await expect(page.locator('aside.evidence-drawer')).toBeVisible({timeout:45_000})
+      await expect.poll(()=>Date.now()-started,{timeout:10_000}).toBeLessThan(10_000)
       const back=page.getByRole('button',{name:/Back to Course/i})
       await expect(back).toBeVisible()
-      await milestoneScreenshot(page,testInfo,'federation-course-evidence-return')
+      await milestoneScreenshot(page,testInfo,'federation-course-evidence-return-v2-14-1')
       await back.click()
       await expect(page).toHaveURL(new RegExp(`#courses\\?id=${COURSE_ID}`))
       await expect(page.locator('aside.m-drawer')).toBeVisible({timeout:45_000})
