@@ -60,10 +60,19 @@ function Fees({data,navigate}){
 function EntryRequirements({data}){
   const intakes=data.intakes||[],english=data.english||[]
   if(!intakes.length&&!english.length)return null
+  const intakeValue=intakes.length?intakes.map(x=>[x.label,x.year].filter(Boolean).join(' ')).join(', '):'Not yet captured'
   return <Section title="Intakes & English" layer={2}>
     <div className="m-kv-list">
-      {intakes.length>0&&<Row label="Intakes" layer={2} value={intakes.map(x=>[x.label,x.year].filter(Boolean).join(' ')).join(', ')}/>} 
-      {english.map((x,i)=><Row key={i} label={x.test_name||x.test_code||'English test'} layer={2} value={[x.overall_score!=null?`Overall ${x.overall_score}`:null,x.confidence!=null?`Confidence ${x.confidence}`:null].filter(Boolean).join(' · ')||'Requirement captured'}/>)}
+      <Row label="Intakes" layer={2} value={intakeValue}/>
+      <div>
+        <span style={{display:'flex',alignItems:'center',gap:6}}>English requirement <LayerBadge layer={2}/></span>
+        {english.length?<div className="m-record-list" style={{marginTop:6}}>{english.map((x,i)=>{
+          const test=x.test_name||x.test_code||'English test'
+          const score=x.overall_score!=null?`Overall score ${x.overall_score}`:'Overall score not specified'
+          const confidence=x.confidence!=null?`Confidence ${x.confidence}`:null
+          return <div className="m-record" key={x.id||i}><strong>{test}</strong><span>{[score,confidence].filter(Boolean).join(' · ')}</span></div>
+        })}</div>:<strong style={{display:'block',marginTop:4}}>Not yet captured</strong>}
+      </div>
     </div>
   </Section>
 }
@@ -86,7 +95,7 @@ function Regulatory({data,navigate}){
   </Section>
 }
 
-function Evidence({rows,navigate,courseId}){if(!rows?.length)return null;return <Section title="Evidence" help="Open an artifact to review source, capture, hash and lineage. Use Back to Course in the Evidence workspace to return here."><div className="m-record-list">{rows.map((x,i)=><button key={x.id||i} className="m-record" style={{textAlign:'left',width:'100%',cursor:'pointer'}} onClick={()=>x.id&&navigate?.('Evidence',{evidence_id:x.id,return_course_id:courseId})}><strong>{x.evidence_type||x.type||'Evidence artifact'}</strong><span>{[x.captured_at?`Captured ${fmtDate(x.captured_at)}`:null,x.source_url||null,x.content_hash?`SHA ${String(x.content_hash).slice(0,12)}…`:null].filter(Boolean).join(' · ')}</span><span style={{display:'inline-flex',alignItems:'center',gap:4,fontWeight:700,color:'#4f46e5'}}><BookOpen size={11}/> Open Evidence</span></button>)}</div></Section>}
+function Evidence({rows,navigate,courseId}){if(!rows?.length)return null;return <Section title="Evidence" help="Open an artifact to review source, capture, hash and lineage."><div className="m-record-list">{rows.map((x,i)=><button key={x.id||i} className="m-record" style={{textAlign:'left',width:'100%',cursor:'pointer'}} onClick={()=>x.id&&navigate?.('Evidence',{evidence_id:x.id,return_course_id:courseId})}><strong>{x.evidence_type||x.type||'Evidence artifact'}</strong><span>{[x.captured_at?`Captured ${fmtDate(x.captured_at)}`:null,x.source_url||null,x.content_hash?`SHA ${String(x.content_hash).slice(0,12)}…`:null].filter(Boolean).join(' · ')}</span><span style={{display:'inline-flex',alignItems:'center',gap:4,fontWeight:700,color:'#4f46e5'}}><BookOpen size={11}/> Open Evidence</span></button>)}</div></Section>}
 
 function OptionalList({title,rows}){if(!rows?.length)return null;return <Section title={title}><div className="m-record-list">{rows.map((x,i)=><div className="m-record" key={x.id||i}><strong>{x.name||x.title||x.code||title.slice(0,-1)}</strong><span>{[x.type,x.relationship_type,x.description].filter(Boolean).join(' · ')}</span></div>)}</div></Section>}
 
