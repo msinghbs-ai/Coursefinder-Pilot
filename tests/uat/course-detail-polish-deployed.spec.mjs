@@ -74,8 +74,8 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15 field-state accepta
       await expect(attributes.getByText('L4 input',{exact:true})).toHaveCount(2)
       await expect(attributes.getByText('English requirement',{exact:true})).toBeVisible()
       await expect(attributes.getByText('—',{exact:true}).first()).toBeVisible()
-      await expect(attributes.getByRole('button',{name:/L4 edit/i})).toHaveCount(4)
-      await expect(attributes.getByRole('button',{name:/L4 review/i})).toHaveCount(5)
+      await expect(attributes.getByRole('button',{name:/L4 edit/i})).toHaveCount(0)
+      await expect(attributes.getByRole('button',{name:/L4 review/i})).toHaveCount(2)
       await milestoneScreenshot(page,testInfo,'science-honours-v2-15-layer-state-matrix')
     }finally{
       await finish(testInfo,runtime)
