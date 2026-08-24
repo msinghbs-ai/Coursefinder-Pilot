@@ -13,6 +13,7 @@ const ARTS_URL='https://www.federation.edu.au/courses/dhm5-bachelor-of-arts/'
 const SCIENCE_HONOURS_ID='87e23eda-5676-4601-b512-b337ee2b48e6'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
+async function clearCourseLayoutPreference(page){await page.evaluate(()=>{for(const k of Object.keys(localStorage))if(k.startsWith('coursefinder:pim:course-detail:section-order:'))localStorage.removeItem(k)})}
 
 test.describe('CourseFinder deployed Course Detail PIM v2.15.3 standardised operator UX @deployed',()=>{
   test.beforeAll(async()=>{
@@ -79,9 +80,11 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.3 standardised oper
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
+      await clearCourseLayoutPreference(page)
       await page.goto(`${process.env.UAT_BASE_URL}/#courses?id=${ARTS_ID}`)
       const drawer=page.locator('aside.m-drawer')
       await expect(drawer).toBeVisible({timeout:45_000})
+      await expect(drawer.locator('.cf-reorder-wrap section h3').first()).toHaveText('Fees & entry requirements')
       await drawer.getByRole('button',{name:'Arrange sections',exact:true}).click()
       await drawer.getByRole('button',{name:'Move Locations up',exact:true}).click()
       await drawer.getByRole('button',{name:'Done arranging',exact:true}).click()
@@ -91,10 +94,10 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.3 standardised oper
       await expect(drawer).toBeVisible({timeout:45_000})
       headings=drawer.locator('.cf-reorder-wrap section h3')
       await expect(headings.first()).toHaveText('Locations')
-      await drawer.getByRole('button',{name:'Arrange sections',exact:true}).click()
-      await drawer.getByRole('button',{name:'Move Locations down',exact:true}).click()
-      await drawer.getByRole('button',{name:'Done arranging',exact:true}).click()
+      await clearCourseLayoutPreference(page)
+      await page.reload()
+      await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.locator('.cf-reorder-wrap section h3').first()).toHaveText('Fees & entry requirements')
-    }finally{await finish(testInfo,runtime)}
+    }finally{await clearCourseLayoutPreference(page).catch(()=>{});await finish(testInfo,runtime)}
   })
 })
