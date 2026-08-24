@@ -14,11 +14,11 @@ const SCIENCE_HONOURS_ID='87e23eda-5676-4601-b512-b337ee2b48e6'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
-test.describe('CourseFinder deployed Course Detail PIM v2.15.1 recovery acceptance @deployed',()=>{
+test.describe('CourseFinder deployed Course Detail PIM v2.15.2 recovery + lightweight field-state acceptance @deployed',()=>{
   test.beforeAll(async()=>{
     if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.')
     if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.')
-    await writeRunEnvironment({suite:'deployed-course-detail-v2.15.1-stable-drawer-recovery'})
+    await writeRunEnvironment({suite:'deployed-course-detail-v2.15.2-lightweight-field-state'})
   })
 
   test('Federation Bachelor of Arts drawer renders and Evidence remains responsive',async({page},testInfo)=>{
@@ -29,14 +29,14 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.1 recovery acceptan
       const drawer=page.locator('aside.m-drawer')
       await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.getByRole('heading',{name:'Bachelor of Arts',exact:true})).toBeVisible()
-      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.1')
+      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.2')
       await expect(drawer.getByRole('link',{name:/Open first-party page/i}).first()).toHaveAttribute('href',ARTS_URL)
       await expect(drawer.getByRole('heading',{name:'Fees',exact:true})).toBeVisible()
       await expect(drawer.getByText('English requirement',{exact:true})).toBeVisible()
       await expect(drawer.getByText(/IELTS Academic/i)).toBeVisible()
       await expect(drawer.getByText(/Overall score 6/i)).toBeVisible()
       await expect(drawer.getByRole('heading',{name:'Operational state',exact:true})).toBeVisible()
-      await milestoneScreenshot(page,testInfo,'course-drawer-v2-15-1-recovery')
+      await milestoneScreenshot(page,testInfo,'course-drawer-v2-15-2-lightweight-state')
 
       const evidenceSection=drawer.locator('section.m-detail-section').filter({has:drawer.getByRole('heading',{name:'Evidence',exact:true})})
       const openEvidence=evidenceSection.getByText('Open Evidence',{exact:true}).first()
@@ -48,7 +48,7 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.1 recovery acceptan
     }finally{await finish(testInfo,runtime)}
   })
 
-  test('Federation Science Honours drawer renders despite unresolved enrichment gaps',async({page},testInfo)=>{
+  test('Federation Science Honours exposes field-specific L2 fall-out without blank drawer regression',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
@@ -56,10 +56,20 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.1 recovery acceptan
       const drawer=page.locator('aside.m-drawer')
       await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.getByRole('heading',{name:'Bachelor of Science (Honours)',exact:true})).toBeVisible()
+      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.2')
       await expect(drawer.getByRole('heading',{name:'Fees',exact:true})).toBeVisible()
+      await expect(drawer.getByText('Current Provider tuition',{exact:true})).toBeVisible()
       await expect(drawer.getByText('English requirement',{exact:true})).toBeVisible()
+      await expect(drawer.getByLabel('Layer 2 attempted and unresolved; awaiting Layer 3')).toHaveCount(2)
+      await expect(drawer.getByText('Awaiting L3',{exact:true})).toHaveCount(2)
+      await expect(drawer.getByText('Awaiting L2',{exact:true})).toHaveCount(2)
+      await expect(drawer.getByLabel('Direct Layer 4 input')).toHaveCount(2)
+      await expect(drawer.getByText('L4 input',{exact:true})).toHaveCount(2)
+      await expect(drawer.getByRole('heading',{name:'Academic options',exact:true})).toBeVisible()
+      await expect(drawer.getByRole('heading',{name:'Categories',exact:true})).toBeVisible()
+      await expect(drawer.getByRole('heading',{name:'Collections',exact:true})).toBeVisible()
       await expect(drawer.getByRole('heading',{name:'Operational state',exact:true})).toBeVisible()
-      await milestoneScreenshot(page,testInfo,'science-honours-v2-15-1-recovery')
+      await milestoneScreenshot(page,testInfo,'science-honours-v2-15-2-l2-to-l3-trails')
     }finally{await finish(testInfo,runtime)}
   })
 })
