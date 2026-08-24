@@ -2,10 +2,18 @@ import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
-async function openTrials(page){const nav=page.locator('.m-nav');await expect(nav.getByText('Data Acquisition',{exact:true})).toBeVisible({timeout:45000});await nav.getByRole('button',{name:'Acquisition Trials',exact:true}).click();await expect(page.getByRole('heading',{name:'Acquisition & Course Completeness Trials'})).toBeVisible({timeout:45000})}
+async function openTrials(page){
+  const nav=page.locator('.m-nav')
+  await expect(nav.getByText('Data Enrichment',{exact:true})).toBeVisible({timeout:45000})
+  await nav.getByRole('button',{name:'Layer 2 Operations',exact:true}).click()
+  const ops=page.getByRole('dialog',{name:'Layer 2 Operations'})
+  await expect(ops).toBeVisible({timeout:45000})
+  await ops.getByRole('button',{name:/Run bounded trial/i}).click()
+  await expect(page.getByRole('heading',{name:'Acquisition & Course Completeness Trials'})).toBeVisible({timeout:45000})
+}
 
 test.describe('CourseFinder deployed Layer 2 completeness trial acceptance @deployed',()=>{
-  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-trials',change_control:'CF-CHG-20260823-029'})})
+  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-trials-v1.4',change_control:'CF-CHG-20260823-029'})})
 
   test('AU RMIT and UQ learning cohorts expose 10 Courses with controls and gaps',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
@@ -21,7 +29,7 @@ test.describe('CourseFinder deployed Layer 2 completeness trial acceptance @depl
       await expect(page.locator('.l2t-table-wrap tbody tr')).toHaveCount(10)
       await expect(page.getByText(/control known coverage/i).first()).toBeVisible()
       await expect(page.getByText(/gap learning sample/i).first()).toBeVisible()
-      await milestoneScreenshot(page,testInfo,'layer2-au-completeness-cohort')
+      await milestoneScreenshot(page,testInfo,'layer2-au-completeness-cohort-v1-4')
     }finally{await finish(testInfo,runtime)}
   })
 
@@ -36,11 +44,11 @@ test.describe('CourseFinder deployed Layer 2 completeness trial acceptance @depl
       await expect(first).toContainText(/state/i)
       await expect(page.getByText(/Trial results are candidates and measurements, not canonical writes/i)).toBeVisible()
       await expect(page.getByText(/Layer 3 only when needed.*Layer 4 only when automation is exhausted/i)).toBeVisible()
-      await milestoneScreenshot(page,testInfo,'layer2-context-completeness-boundary')
+      await milestoneScreenshot(page,testInfo,'layer2-context-completeness-boundary-v1-4')
     }finally{await finish(testInfo,runtime)}
   })
 
-  test('enrichment source selector contains only Course and Scholarship Layer 2 targets',async({page},testInfo)=>{
+  test('enrichment source selector contains only Course Layer 2 targets while QILT/PRISMS remain context',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
@@ -50,8 +58,9 @@ test.describe('CourseFinder deployed Layer 2 completeness trial acceptance @depl
       const sourceOptions=(await sourceSelector.locator('option').allTextContents()).join(' ')
       expect(sourceOptions).toMatch(/Australia · Courses · RMIT University/)
       expect(sourceOptions).toMatch(/Australia · Courses · The University of Queensland/)
+      expect(sourceOptions).toMatch(/Federation/i)
       expect(sourceOptions).not.toMatch(/QILT|PRISMS/i)
-      await milestoneScreenshot(page,testInfo,'layer2-enrichment-source-selector')
+      await milestoneScreenshot(page,testInfo,'layer2-enrichment-source-selector-v1-4')
     }finally{await finish(testInfo,runtime)}
   })
 
@@ -68,7 +77,7 @@ test.describe('CourseFinder deployed Layer 2 completeness trial acceptance @depl
       expect(options.join(' ')).toMatch(/Firecrawl/)
       expect(options.join(' ')).toMatch(/ZenRows/)
       expect((await page.locator('body').innerText())).not.toMatch(/sb_secret_|service_role|SUPABASE_SERVICE_ROLE_KEY/i)
-      await milestoneScreenshot(page,testInfo,'layer2-trial-provider-selector')
+      await milestoneScreenshot(page,testInfo,'layer2-trial-provider-selector-v1-4')
     }finally{await finish(testInfo,runtime)}
   })
 })
