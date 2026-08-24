@@ -118,23 +118,24 @@ test.describe('M1 performance and responsiveness @deployed', () => {
     }
   })
 
-  test('Pipeline Ops owns Jobs and Sources without duplicate legacy reads', async ({ page }, testInfo) => {
+  test('Layer 2 Operations and advanced source drill-down stay within management-view budgets', async ({ page }, testInfo) => {
     const runtime = observeRuntime(page)
-    const operations = []
-    const listener = request => { const op = operationOf(request); if (op) operations.push(op) }
-    page.on('request', listener)
+    const measures = []
     try {
-      const jobsMeasure = await measuredRpc(page, 'pipeline_jobs_page', async () => { await route(page, 'jobs') })
-      expect(jobsMeasure.elapsed_ms).toBeLessThanOrEqual(RPC_BUDGET_MS)
-      expect(operations).not.toContain('jobs')
-
-      operations.length = 0
-      const sourcesMeasure = await measuredRpc(page, 'pipeline_sources_page', async () => { await route(page, 'sources') })
-      expect(sourcesMeasure.elapsed_ms).toBeLessThanOrEqual(RPC_BUDGET_MS)
-      expect(operations).not.toContain('sources')
-      await save(testInfo, 'pipeline-route-ownership', { jobs: jobsMeasure, sources: sourcesMeasure, operations })
+      const nav=page.locator('.m-nav')
+      await expect(nav.getByText('Data Enrichment',{exact:true})).toBeVisible({timeout:45_000})
+      measures.push(await measuredRpc(page,'layer2_ops_overview',async()=>{await nav.getByRole('button',{name:'Layer 2 Operations',exact:true}).click()}))
+      const ops=page.getByRole('dialog',{name:'Layer 2 Operations'})
+      await expect(ops).toBeVisible()
+      measures.push(await measuredRpc(page,'layer2_profiles',async()=>{await ops.getByRole('button',{name:'Advanced',exact:true}).first().click()}))
+      await expect(page.getByRole('heading',{name:'Enrichment Source Configuration'})).toBeVisible()
+      for(const m of measures){
+        expect(m.status).toBe(200)
+        expect(m.elapsed_ms,`${m.operation} latency`).toBeLessThanOrEqual(RPC_BUDGET_MS)
+        expect(m.payload_bytes,`${m.operation} payload`).toBeLessThanOrEqual(PAGE_PAYLOAD_BUDGET)
+      }
+      await save(testInfo,'layer2-operations-performance',{budgets:{RPC_BUDGET_MS,PAGE_PAYLOAD_BUDGET},measures})
     } finally {
-      page.off('request', listener)
       await attachRuntimeEvidence(testInfo, runtime)
       assertNoServerErrors(runtime)
     }
