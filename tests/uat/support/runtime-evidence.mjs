@@ -33,33 +33,18 @@ function governedOperation(request) {
 
 function responseEvidence(response) {
   const request = response.request()
-  return {
-    status: response.status(),
-    url: response.url(),
-    method: request.method(),
-    operation: governedOperation(request),
-  }
+  return { status: response.status(), url: response.url(), method: request.method(), operation: governedOperation(request) }
 }
 
 export function observeRuntime(page) {
-  const serverErrors = []
-  const clientErrors = []
-  const consoleErrors = []
-
+  const serverErrors = [], clientErrors = [], consoleErrors = []
   page.on('response', response => {
     const status = response.status()
     if (status >= 500) serverErrors.push(responseEvidence(response))
     else if (status >= 400) clientErrors.push(responseEvidence(response))
   })
-
-  page.on('console', message => {
-    if (message.type() === 'error') consoleErrors.push({ text: message.text(), location: message.location() })
-  })
-
-  page.on('pageerror', error => {
-    consoleErrors.push({ text: error.message, stack: error.stack || null, page_error: true })
-  })
-
+  page.on('console', message => { if (message.type() === 'error') consoleErrors.push({ text: message.text(), location: message.location() }) })
+  page.on('pageerror', error => { consoleErrors.push({ text: error.message, stack: error.stack || null, page_error: true }) })
   return { serverErrors, clientErrors, consoleErrors }
 }
 
@@ -67,14 +52,10 @@ export async function attachRuntimeEvidence(testInfo, runtime) {
   await ensureArtifacts()
   const safeTitle = testInfo.title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase()
   const payload = {
-    test: testInfo.title,
-    project: testInfo.project.name,
-    status_at_capture: testInfo.status,
+    test: testInfo.title, project: testInfo.project.name, status_at_capture: testInfo.status,
     expected_status: testInfo.expectedStatus,
     final_status_source: 'Playwright JSON/JUnit report and GitHub job/commit status',
-    server_errors: runtime.serverErrors,
-    client_errors: runtime.clientErrors,
-    console_errors: runtime.consoleErrors,
+    server_errors: runtime.serverErrors, client_errors: runtime.clientErrors, console_errors: runtime.consoleErrors,
   }
   const filePath = path.join(ARTIFACT_DIR, `${safeTitle || 'test'}-runtime.json`)
   await fs.writeFile(filePath, JSON.stringify(payload, null, 2))
@@ -95,12 +76,9 @@ export async function milestoneScreenshot(page, testInfo, name, options = {}) {
 }
 
 export async function loginAsUatUser(page) {
-  const email = process.env.UAT_EMAIL?.trim()
-  const password = process.env.UAT_PASSWORD
+  const email = process.env.UAT_EMAIL?.trim(), password = process.env.UAT_PASSWORD
   if (!email || !password) throw new Error('Missing UAT_EMAIL/UAT_PASSWORD. Configure repository Actions secrets COURSEFINDER_UAT_EMAIL and COURSEFINDER_UAT_PASSWORD.')
-
   await page.goto('/')
-
   const emailInput = page.locator('input[type="email"]').first()
   if (await emailInput.isVisible().catch(() => false)) {
     await emailInput.fill(email)
@@ -108,21 +86,45 @@ export async function loginAsUatUser(page) {
     await page.getByRole('button', { name: /^sign in$/i }).click()
     await expect(emailInput).toBeHidden({ timeout: 45_000 })
   }
-
-  // Authentication completing is not enough for role-gated injected workspaces. Wait for the
-  // governed application context and base navigation to settle before a test asserts M2.1 UI.
   await expect(page.locator('.m-nav')).toBeVisible({ timeout: 45_000 })
   await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i, { timeout: 45_000 })
   await expect(page.locator('#governed-runtime-marker')).toBeVisible({ timeout: 45_000 })
 }
 
-export async function openDataQuality(page) {
-  const nav = page.locator('button.m-nav-item').filter({ hasText: 'Completeness' })
-  if (await nav.isVisible().catch(() => false)) {
-    await nav.click()
-  } else {
-    await page.evaluate(() => { location.hash = '#data-quality-readiness' })
+async function inViewport(locator,page){
+  const box=await locator.boundingBox().catch(()=>null),vp=page.viewportSize()
+  return !!box&&!!vp&&box.x>=0&&box.y>=0&&box.x+box.width<=vp.width&&box.y+box.height<=vp.height
+}
+
+export async function clickPrimaryNav(page,label){
+  const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
+  await expect(item).toBeVisible({timeout:45_000})
+  if(!(await inViewport(item,page))){
+    const menu=page.locator('.m-mobile-menu')
+    await expect(menu).toBeVisible({timeout:15_000})
+    await menu.click()
+    await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/,{timeout:15_000})
+    await expect(item).toBeInViewport({timeout:15_000})
   }
+  await item.click()
+}
+
+export async function signOutUatUser(page){
+  const button=page.getByTitle('Sign out')
+  await expect(button).toBeVisible({timeout:15_000})
+  if(!(await inViewport(button,page))){
+    const menu=page.locator('.m-mobile-menu')
+    await expect(menu).toBeVisible({timeout:15_000})
+    await menu.click()
+    await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/,{timeout:15_000})
+    await expect(button).toBeInViewport({timeout:15_000})
+  }
+  await button.click()
+  await expect(page.locator('input[type="email"]').first()).toBeVisible({timeout:45_000})
+}
+
+export async function openDataQuality(page) {
+  await clickPrimaryNav(page,'Completeness')
   await expect(page.getByRole('heading', { name: 'Data Quality & Readiness' })).toBeVisible({ timeout: 45_000 })
   await expect(page.getByText('No composite completeness score', { exact: true })).toBeVisible()
 }
