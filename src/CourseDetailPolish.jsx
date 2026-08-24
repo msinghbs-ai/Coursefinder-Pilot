@@ -7,43 +7,52 @@ const fmtDate=v=>{const d=new Date(v);return Number.isNaN(+d)?String(v||'—'):d
 const bool=v=>v===true?'Yes':v===false?'No':'—'
 const evidenceIdOf=v=>v?.evidence_id||v?.source_evidence_id||(v?.storage_path&&v?.id?v.id:null)
 
-function EvidenceButton({id,navigate,label='Evidence'}){if(!id)return null;return <button className="m-secondary compact" style={{marginLeft:6,padding:'4px 7px',fontSize:9}} onClick={e=>{e.stopPropagation();navigate?.('Evidence',{evidence_id:id})}}><BookOpen size={11}/>{label}</button>}
-function Row({label,value,children}){if(empty(value)&&!children)return null;return <div><span>{label}</span><strong>{children??value}</strong></div>}
-function Section({title,children,help}){return <section className="m-detail-section"><h3>{title}</h3>{help&&<p className="m-help">{help}</p>}{children}</section>}
+function LayerBadge({layer}){const n=Number(layer);if(!n)return null;const label=n===1?'L1 Regulatory':n===2?'L2 Enrichment':n===3?'L3 AI interpreted':'L4 Human resolved';return <span title={label} style={{display:'inline-flex',alignItems:'center',padding:'2px 6px',borderRadius:999,border:'1px solid #cbd5e1',background:'#f8fafc',fontSize:9,fontWeight:800,color:'#475569',whiteSpace:'nowrap'}}>L{n}</span>}
+function EvidenceButton({id,navigate,courseId,label='Evidence'}){if(!id)return null;return <button className="m-secondary compact" style={{marginLeft:6,padding:'4px 7px',fontSize:9}} onClick={e=>{e.stopPropagation();navigate?.('Evidence',{evidence_id:id,return_course_id:courseId||''})}}><BookOpen size={11}/>{label}</button>}
+function Row({label,value,children,layer}){if(empty(value)&&!children)return null;return <div><span style={{display:'flex',alignItems:'center',gap:6}}>{label}<LayerBadge layer={layer}/></span><strong>{children??value}</strong></div>}
+function Section({title,children,help,layer}){return <section className="m-detail-section"><div style={{display:'flex',alignItems:'center',gap:7}}><h3 style={{margin:0}}>{title}</h3><LayerBadge layer={layer}/></div>{help&&<p className="m-help">{help}</p>}{children}</section>}
 
 function Overview({data}){
   const duration=data.duration_value?`${data.duration_value} ${data.duration_unit||''}`.trim():'—'
   return <>
     <div className="m-detail-grid">
-      <div><small>Provider</small><strong>{data.provider_name||'—'}</strong></div>
-      <div><small>CRICOS / Course code</small><strong>{data.course_code||'—'}</strong></div>
-      <div><small>Study level</small><strong>{data.level_name||data.level_code||'—'}</strong></div>
-      <div><small>Field of study</small><strong>{data.field_name||data.field_code||'—'}</strong></div>
+      <div><small style={{display:'flex',gap:5}}>Provider <LayerBadge layer={1}/></small><strong>{data.provider_name||'—'}</strong></div>
+      <div><small style={{display:'flex',gap:5}}>CRICOS / Course code <LayerBadge layer={1}/></small><strong>{data.course_code||'—'}</strong></div>
+      <div><small style={{display:'flex',gap:5}}>Study level <LayerBadge layer={1}/></small><strong>{data.level_name||data.level_code||'—'}</strong></div>
+      <div><small style={{display:'flex',gap:5}}>Field of study <LayerBadge layer={1}/></small><strong>{data.field_name||data.field_code||'—'}</strong></div>
       <div><small>Duration</small><strong>{duration}</strong></div>
       <div><small>Delivery</small><strong>{data.delivery_mode||'—'}</strong></div>
       <div><small>Lifecycle</small><strong>{data.lifecycle_status||'—'}</strong></div>
       <div><small>Publication</small><strong>{data.publication_status||'—'}</strong></div>
       <div><small>Last verified</small><strong>{data.last_verified_at?fmtDate(data.last_verified_at):'—'}</strong></div>
-      <div><small>Official Course URL</small><strong>{data.course_url?<a href={data.course_url} target="_blank" rel="noreferrer" style={{display:'inline-flex',alignItems:'center',gap:4,color:'#4f46e5',wordBreak:'break-word'}}>Open first-party page <ExternalLink size={11}/></a>:'Not yet captured'}</strong></div>
+      <div><small style={{display:'flex',gap:5}}>Official Course URL <LayerBadge layer={2}/></small><strong>{data.course_url?<a href={data.course_url} target="_blank" rel="noreferrer" style={{display:'inline-flex',alignItems:'center',gap:4,color:'#4f46e5',wordBreak:'break-word'}}>Open first-party page <ExternalLink size={11}/></a>:'Not yet captured'}</strong></div>
     </div>
-    {data.description&&<Section title="Course description"><p style={{margin:0,lineHeight:1.55}}>{data.description}</p></Section>}
+    {data.description&&<Section title="Course description" layer={2}><p style={{margin:0,lineHeight:1.55}}>{data.description}</p></Section>}
   </>
 }
 
-function FeeRecord({x,registered,navigate}){
+function FeeRecord({x,registered,navigate,courseId}){
   const type=String(x.fee_type||x.type||'tuition').toLowerCase()
   const title=registered
     ? type==='tuition'?'Registered tuition':type==='non_tuition'?'Registered non-tuition':type==='estimated_total_course_cost'?'Estimated total course cost':'Registered course cost'
     : 'Current provider tuition'
-  const meta=[x.fee_year?`Year ${x.fee_year}`:null,x.audience?String(x.audience).replaceAll('_',' '):null,x.basis?String(x.basis).replaceAll('_',' '):null].filter(Boolean).join(' · ')
-  return <div className="m-record"><strong>{title}</strong><span>{money(x)}{meta?` · ${meta}`:''}</span><EvidenceButton id={evidenceIdOf(x)} navigate={navigate}/></div>
+  return <div className="m-record" style={{display:'grid',gridTemplateColumns:'1fr auto',gap:'4px 10px',alignItems:'center'}}>
+    <div style={{minWidth:0}}><strong>{title}</strong><div style={{fontSize:17,fontWeight:800,color:'#0f172a',marginTop:4}}>{money(x)}</div></div>
+    <LayerBadge layer={registered?1:2}/>
+    <div style={{gridColumn:'1 / -1',display:'flex',gap:10,flexWrap:'wrap',fontSize:10,color:'#64748b'}}>
+      {x.fee_year&&<span><b>Year:</b> {x.fee_year}</span>}
+      {x.audience&&<span><b>Audience:</b> {String(x.audience).replaceAll('_',' ')}</span>}
+      {x.basis&&<span><b>Basis:</b> {String(x.basis).replaceAll('_',' ')}</span>}
+    </div>
+    <div style={{gridColumn:'1 / -1'}}><EvidenceButton id={evidenceIdOf(x)} navigate={navigate} courseId={courseId}/></div>
+  </div>
 }
 function Fees({data,navigate}){
   const f=data.fee_summary||{},registered=f.cricos_registered||[],current=f.provider_current||[]
   return <Section title="Fees" help="Registered CRICOS course-cost facts and Provider-current tuition are separate facts. Layer 2 never replaces the registered CRICOS values.">
     <div className="m-semantic-grid">
-      <div><small>Registered CRICOS course cost</small><strong>{registered.length}</strong><div className="m-record-list">{registered.length?registered.map((x,i)=><FeeRecord key={x.id||i} x={x} registered navigate={navigate}/>):<span>No current registered fee rows.</span>}</div></div>
-      <div><small>Current Provider tuition</small><strong>{current.length}</strong><div className="m-record-list">{current.length?current.map((x,i)=><FeeRecord key={x.id||i} x={x} navigate={navigate}/>):<span>No evidence-backed current Provider tuition captured.</span>}</div></div>
+      <div><small style={{display:'flex',alignItems:'center',gap:6}}>Registered CRICOS course cost <LayerBadge layer={1}/></small><strong>{registered.length}</strong><div className="m-record-list">{registered.length?registered.map((x,i)=><FeeRecord key={x.id||i} x={x} registered navigate={navigate} courseId={data.id}/>):<span>No current registered fee rows.</span>}</div></div>
+      <div><small style={{display:'flex',alignItems:'center',gap:6}}>Current Provider tuition <LayerBadge layer={2}/></small><strong>{current.length}</strong><div className="m-record-list">{current.length?current.map((x,i)=><FeeRecord key={x.id||i} x={x} navigate={navigate} courseId={data.id}/>):<span>No evidence-backed current Provider tuition captured.</span>}</div></div>
     </div>
   </Section>
 }
@@ -51,33 +60,33 @@ function Fees({data,navigate}){
 function EntryRequirements({data}){
   const intakes=data.intakes||[],english=data.english||[]
   if(!intakes.length&&!english.length)return null
-  return <Section title="Intakes & English">
+  return <Section title="Intakes & English" layer={2}>
     <div className="m-kv-list">
-      {intakes.length>0&&<Row label="Intakes" value={intakes.map(x=>[x.label,x.year].filter(Boolean).join(' ')).join(', ')}/>} 
-      {english.map((x,i)=><Row key={i} label={x.test_name||x.test_code||'English test'} value={[x.overall_score!=null?`Overall ${x.overall_score}`:null,x.confidence!=null?`Confidence ${x.confidence}`:null].filter(Boolean).join(' · ')||'Requirement captured'}/>)}
+      {intakes.length>0&&<Row label="Intakes" layer={2} value={intakes.map(x=>[x.label,x.year].filter(Boolean).join(' ')).join(', ')}/>} 
+      {english.map((x,i)=><Row key={i} label={x.test_name||x.test_code||'English test'} layer={2} value={[x.overall_score!=null?`Overall ${x.overall_score}`:null,x.confidence!=null?`Confidence ${x.confidence}`:null].filter(Boolean).join(' · ')||'Requirement captured'}/>)}
     </div>
   </Section>
 }
 
-function Campuses({rows}){if(!rows?.length)return null;return <Section title="Campuses"><div className="m-record-list">{rows.map((x,i)=><div className="m-record" key={x.id||i}><strong>{x.name||x.campus_name||'Campus'}</strong><span>{[x.city,x.subdivision_name||x.state,x.postcode].filter(Boolean).join(' · ')}</span></div>)}</div></Section>}
+function Campuses({rows}){if(!rows?.length)return null;return <Section title="Campuses" layer={1}><div className="m-record-list">{rows.map((x,i)=><div className="m-record" key={x.id||i}><strong>{x.name||x.campus_name||'Campus'}</strong><span>{[x.city,x.subdivision_name||x.state,x.postcode].filter(Boolean).join(' · ')}</span></div>)}</div></Section>}
 
 function Regulatory({data,navigate}){
   const rows=data.regulatory_facts||[]
   if(!rows.length)return null
-  return <Section title="Regulatory facts" help="Authoritative CRICOS observations retained from Layer 1. These are regulatory facts, not Layer 2 enrichment.">
+  return <Section title="Regulatory facts" layer={1} help="Authoritative CRICOS observations retained from Layer 1.">
     <div className="m-record-list">{rows.map((x,i)=>{
       const parts=[]
       if(x.course_language)parts.push(`Language: ${x.course_language}`)
       if(x.work_component!=null)parts.push(`Work component: ${bool(x.work_component)}`)
       if(x.work_component_total_hours!=null)parts.push(`Work hours: ${Number(x.work_component_total_hours).toLocaleString()}`)
-      if(x.foundation_studies!=null)parts.push(`Foundation studies: ${bool(x.foundation_studies)}`)
-      if(x.dual_qualification!=null)parts.push(`Dual qualification: ${bool(x.dual_qualification)}`)
-      return <div className="m-record" key={x.evidence_id||i}><strong>{String(x.scheme||'CRICOS').toUpperCase()} registration · {x.status||'current'}</strong><span>{parts.join(' · ')||'Current regulatory registration observation.'}</span><EvidenceButton id={evidenceIdOf(x)} navigate={navigate}/></div>
+      if(x.foundation_studies===true)parts.push('Foundation studies: Yes')
+      if(x.dual_qualification===true)parts.push('Dual qualification: Yes')
+      return <div className="m-record" key={x.evidence_id||i}><div style={{display:'flex',alignItems:'center',gap:6}}><strong>{String(x.scheme||'CRICOS').toUpperCase()} registration</strong><LayerBadge layer={1}/></div><span>{parts.join(' · ')||'Current regulatory registration.'}</span><EvidenceButton id={evidenceIdOf(x)} navigate={navigate} courseId={data.id}/></div>
     })}</div>
   </Section>
 }
 
-function Evidence({rows,navigate}){if(!rows?.length)return null;return <Section title="Evidence" help="Open an artifact to review the source, capture, hash and lineage in the Evidence workspace."><div className="m-record-list">{rows.map((x,i)=><button key={x.id||i} className="m-record" style={{textAlign:'left',width:'100%',cursor:'pointer'}} onClick={()=>x.id&&navigate?.('Evidence',{evidence_id:x.id})}><strong>{x.evidence_type||x.type||'Evidence artifact'}</strong><span>{[x.captured_at?`Captured ${fmtDate(x.captured_at)}`:null,x.source_url||null,x.content_hash?`SHA ${String(x.content_hash).slice(0,12)}…`:null].filter(Boolean).join(' · ')}</span><span style={{display:'inline-flex',alignItems:'center',gap:4,fontWeight:700,color:'#4f46e5'}}><BookOpen size={11}/> Open Evidence</span></button>)}</div></Section>}
+function Evidence({rows,navigate,courseId}){if(!rows?.length)return null;return <Section title="Evidence" help="Open an artifact to review source, capture, hash and lineage. Use Back to Course in the Evidence workspace to return here."><div className="m-record-list">{rows.map((x,i)=><button key={x.id||i} className="m-record" style={{textAlign:'left',width:'100%',cursor:'pointer'}} onClick={()=>x.id&&navigate?.('Evidence',{evidence_id:x.id,return_course_id:courseId})}><strong>{x.evidence_type||x.type||'Evidence artifact'}</strong><span>{[x.captured_at?`Captured ${fmtDate(x.captured_at)}`:null,x.source_url||null,x.content_hash?`SHA ${String(x.content_hash).slice(0,12)}…`:null].filter(Boolean).join(' · ')}</span><span style={{display:'inline-flex',alignItems:'center',gap:4,fontWeight:700,color:'#4f46e5'}}><BookOpen size={11}/> Open Evidence</span></button>)}</div></Section>}
 
 function OptionalList({title,rows}){if(!rows?.length)return null;return <Section title={title}><div className="m-record-list">{rows.map((x,i)=><div className="m-record" key={x.id||i}><strong>{x.name||x.title||x.code||title.slice(0,-1)}</strong><span>{[x.type,x.relationship_type,x.description].filter(Boolean).join(' · ')}</span></div>)}</div></Section>}
 
@@ -85,7 +94,7 @@ function OperationalState({data}){
   const s=data.state_summary||{}
   if(!Object.keys(s).length)return null
   const search=s.search??s.search_fields,canonical=s.canonical??s.canonical_fields,ready=s.admin_readiness??s.admin_readiness_fields,channels=s.consumer_channels
-  return <Section title="Operational state"><div className="m-kv-list">
+  return <Section title="Operational state" help="Completeness/readiness never publishes a Course automatically. Publication requires explicit governed approval/action."><div className="m-kv-list">
     <Row label="Publication" value={data.publication_status||'—'}/>
     {!empty(search)&&<Row label="Search projection" value={`${search} field${Number(search)===1?'':'s'}`}/>} 
     {!empty(canonical)&&<Row label="Canonical coverage" value={`${canonical} field${Number(canonical)===1?'':'s'}`}/>} 
@@ -105,7 +114,7 @@ export default function CourseDetailPolish({data,navigate}){
     <OptionalList title="Categories" rows={data.categories}/>
     <OptionalList title="Collections" rows={data.collections}/>
     <Regulatory data={data} navigate={navigate}/>
-    <Evidence rows={data.evidence} navigate={navigate}/>
+    <Evidence rows={data.evidence} navigate={navigate} courseId={data.id}/>
     <OperationalState data={data}/>
   </div>
 }
