@@ -42,10 +42,17 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.3 standardised oper
       await expect(drawer.getByRole('heading',{name:'Operational state',exact:true})).toBeVisible()
       await milestoneScreenshot(page,testInfo,'course-drawer-v2-15-3-standardised')
 
-      const evidenceSection=drawer.locator('section.m-detail-section').filter({has:drawer.getByRole('heading',{name:'Evidence',exact:true})})
-      const openEvidence=evidenceSection.getByText('Open Evidence',{exact:true}).first()
-      await expect(openEvidence).toBeVisible()
-      await openEvidence.click()
+      // Evidence may be attached contextually to a fee/regulatory fact without needing a separate
+      // generic Evidence blade. Either supported entry point must open the governed workspace.
+      const contextual=drawer.getByRole('button',{name:'Evidence',exact:true}).first()
+      const rowAction=drawer.getByText('Open Evidence',{exact:true}).first()
+      if(await contextual.count()){
+        await expect(contextual).toBeVisible()
+        await contextual.click()
+      }else{
+        await expect(rowAction).toBeVisible()
+        await rowAction.click()
+      }
       await expect(page).toHaveURL(/#evidence\?evidence_id=/,{timeout:10_000})
       await expect(page.locator('aside.evidence-drawer')).toBeVisible({timeout:45_000})
       await expect(page.locator('.evidence-page')).toBeVisible()
