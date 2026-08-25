@@ -5,6 +5,7 @@ const WORKER_ORIGIN = "https://coursefinder-pilot.techm.workers.dev";
 const LOCAL_ORIGINS = new Set(["http://localhost:5173", "http://127.0.0.1:5173"]);
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const STATE_ACTIONS = new Set(["validate", "pause", "resume", "disable", "enable"]);
+const POLICY_FIELDS = new Set(["schedule_mode","batch_size","routing_strategy","max_paid_attempts_per_entity","auto_handoff_layer3","stop_on_identity_mismatch"]);
 
 function cors(req: Request) {
   const origin = req.headers.get("origin") || "";
@@ -28,6 +29,17 @@ Deno.serve(async(req:Request)=>{
   if(!uuidRe.test(profileId))return reply(req,400,{error:"valid_profile_id_required"});
   if(!uuidRe.test(actorUserId))return reply(req,403,{error:"authorised_user_context_invalid"});
   const serviceClient=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  if(action==="update_policy"){
+    if(rank<5)return reply(req,403,{error:"pim_admin_role_required"});
+    const rawPatch=body?.patch;
+    if(!rawPatch||typeof rawPatch!=="object"||Array.isArray(rawPatch))return reply(req,400,{error:"policy_patch_object_required"});
+    const entries=Object.entries(rawPatch as Record<string,unknown>);
+    if(!entries.length||entries.some(([k])=>!POLICY_FIELDS.has(k)))return reply(req,400,{error:"unsupported_policy_field"});
+    const patch=Object.fromEntries(entries);
+    const{data,error}=await serviceClient.rpc("layer2_ops_policy_update",{p_actor:actorUserId,p_profile_id:profileId,p_patch:patch});
+    if(error)return reply(req,error.code==="42501"?403:400,{error:error.message||"layer2_ops_policy_update_failed"});
+    return reply(req,200,data||{ok:true,profile_id:profileId,action});
+  }
   if(action==="create_version"){
     if(rank<5)return reply(req,403,{error:"pim_admin_role_required"});
     const configuration=body?.configuration,changeControlRef=String(body?.change_control_ref||"").trim(),uatRef=String(body?.uat_ref||"").trim()||null;
