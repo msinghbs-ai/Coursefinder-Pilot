@@ -37,15 +37,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Install dependencies
         run: npm install --ignore-scripts
-
       - name: Preflight governed UAT credentials
         shell: bash
         run: |
@@ -57,7 +54,6 @@ jobs:
             https://*) ;;
             *) echo "UAT_BASE_URL must use HTTPS for deployed acceptance"; exit 1 ;;
           esac
-
       - name: Allow Worker deployment to settle
         if: github.event_name == 'push'
         shell: bash
@@ -65,23 +61,17 @@ jobs:
           sleep 60
           for attempt in $(seq 1 18); do
             code=$(curl -L -sS -o /tmp/coursefinder-uat-home.html -w '%{http_code}' --max-time 20 "$UAT_BASE_URL/?uat_probe=${GITHUB_SHA}" || true)
-            if [ "$code" = "200" ]; then
-              echo "Worker reachable for deployed UAT"
-              exit 0
-            fi
+            if [ "$code" = "200" ]; then echo "Worker reachable for deployed UAT"; exit 0; fi
             echo "Worker not ready yet (HTTP ${code:-none}); retry ${attempt}/18"
             sleep 10
           done
           echo "Worker did not become reachable within the deployment-settle window"
           exit 1
-
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-
       - name: Run deployed governed acceptance
         id: governed_uat
-        run: npx playwright test tests/uat/data-quality-deployed.spec.mjs tests/uat/performance-deployed.spec.mjs tests/uat/layer2-platform-deployed.spec.mjs tests/uat/layer2-provider-deployed.spec.mjs tests/uat/layer2-trial-deployed.spec.mjs tests/uat/admin-navigation-deployed.spec.mjs tests/uat/course-detail-polish-deployed.spec.mjs tests/uat/screen-state-persistence-deployed.spec.mjs tests/uat/m2-3-intelligence-deployed.spec.mjs tests/uat/scholarship-selection-deployed.spec.mjs --project="${{ matrix.project }}"
-
+        run: npx playwright test tests/uat/data-quality-deployed.spec.mjs tests/uat/performance-deployed.spec.mjs tests/uat/layer2-platform-deployed.spec.mjs tests/uat/layer2-provider-deployed.spec.mjs tests/uat/layer2-trial-deployed.spec.mjs tests/uat/admin-navigation-deployed.spec.mjs tests/uat/course-detail-polish-deployed.spec.mjs tests/uat/screen-state-persistence-deployed.spec.mjs tests/uat/m2-3-intelligence-deployed.spec.mjs tests/uat/layer3-provider-credential-deployed.spec.mjs tests/uat/scholarship-selection-deployed.spec.mjs tests/uat/release-notes-deployed.spec.mjs --project="${{ matrix.project }}"
       - name: Upload UAT evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -93,7 +83,6 @@ jobs:
             playwright-report/
             test-results/
             uat-artifacts/
-
       - name: Publish deployed UAT commit status
         if: always()
         shell: bash
@@ -101,13 +90,7 @@ jobs:
           UAT_OUTCOME: ${{ steps.governed_uat.outcome }}
           UAT_PROJECT: ${{ matrix.project }}
         run: |
-          if [ "$UAT_OUTCOME" = "success" ]; then
-            state=success
-            description="Governed deployed UAT passed"
-          else
-            state=failure
-            description="Governed deployed UAT failed"
-          fi
+          if [ "$UAT_OUTCOME" = "success" ]; then state=success; description="Governed deployed UAT passed"; else state=failure; description="Governed deployed UAT failed"; fi
           gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state="$state" \
             -f context="coursefinder/deployed-uat/${UAT_PROJECT}" \
