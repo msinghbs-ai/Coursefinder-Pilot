@@ -40,7 +40,7 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
     const runtime = observeRuntime(page)
     try {
       await start(page)
-      await expect(page.getByText(/Aggregate snapshot computed at .*refreshed every 15 minutes; exception drill-down is live\./)).toBeVisible()
+      await expect(page.getByText(/Aggregate snapshot computed at .*refreshed off-peak daily and after explicit post-ingestion refresh; exception drill-down is live\./)).toBeVisible()
       const card = page.locator('section.dq-domain-card').filter({ has: page.getByRole('heading', { name: 'Regulatory fee', exact: true }) })
       await expect(card.getByTitle(`Present: ${fee.present.toLocaleString('en-US')}`)).toBeVisible()
       await expect(card.getByTitle(`Source-null: ${fee.source_null.toLocaleString('en-US')}`)).toBeVisible()
