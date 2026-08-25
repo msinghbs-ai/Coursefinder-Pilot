@@ -75,20 +75,48 @@ export async function milestoneScreenshot(page, testInfo, name, options = {}) {
   return filePath
 }
 
+async function signIn(page,email,password){
+  const emailInput=page.locator('input[type="email"]').first()
+  await expect(emailInput).toBeVisible({timeout:45_000})
+  await emailInput.fill(email)
+  await page.locator('input[type="password"]').first().fill(password)
+  await page.getByRole('button',{name:/^sign in$/i}).click()
+  await expect(emailInput).toBeHidden({timeout:45_000})
+}
+
+async function shellReady(page,timeout=45_000){
+  try{
+    await expect(page.locator('.m-nav')).toBeVisible({timeout})
+    await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i,{timeout})
+    await expect(page.locator('#governed-runtime-marker')).toBeVisible({timeout})
+    return true
+  }catch{return false}
+}
+
 export async function loginAsUatUser(page) {
   const email = process.env.UAT_EMAIL?.trim(), password = process.env.UAT_PASSWORD
   if (!email || !password) throw new Error('Missing UAT_EMAIL/UAT_PASSWORD. Configure repository Actions secrets COURSEFINDER_UAT_EMAIL and COURSEFINDER_UAT_PASSWORD.')
   await page.goto('/')
   const emailInput = page.locator('input[type="email"]').first()
-  if (await emailInput.isVisible().catch(() => false)) {
-    await emailInput.fill(email)
-    await page.locator('input[type="password"]').first().fill(password)
-    await page.getByRole('button', { name: /^sign in$/i }).click()
-    await expect(emailInput).toBeHidden({ timeout: 45_000 })
+  if (await emailInput.isVisible().catch(() => false)) await signIn(page,email,password)
+  if(await shellReady(page,12_000))return
+
+  // Supabase auth and PostgREST can very occasionally disagree by a fraction of a second
+  // immediately after password sign-in ("JWT issued at future"). This is not an authority
+  // bypass: wait briefly, reload the same persisted authenticated session once, and require
+  // the governed shell/rank context to become fully ready. Any persistent auth failure still fails UAT.
+  const futureJwt=await page.getByText(/JWT issued at future/i).isVisible().catch(()=>false)
+  if(futureJwt){
+    await page.waitForTimeout(1500)
+    await page.reload({waitUntil:'domcontentloaded'})
   }
-  await expect(page.locator('.m-nav')).toBeVisible({ timeout: 45_000 })
-  await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i, { timeout: 45_000 })
-  await expect(page.locator('#governed-runtime-marker')).toBeVisible({ timeout: 45_000 })
+  if(!(await shellReady(page,30_000))){
+    const visibleEmail=await emailInput.isVisible().catch(()=>false)
+    if(visibleEmail)await signIn(page,email,password)
+    await expect(page.locator('.m-nav')).toBeVisible({timeout:45_000})
+    await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i,{timeout:45_000})
+    await expect(page.locator('#governed-runtime-marker')).toBeVisible({timeout:45_000})
+  }
 }
 
 async function inViewport(locator,page){
