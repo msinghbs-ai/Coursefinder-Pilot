@@ -81,7 +81,7 @@ jobs:
       - name: Run deployed governed acceptance
         id: governed_uat
         continue-on-error: true
-        run: npx playwright test tests/uat/data-quality-deployed.spec.mjs tests/uat/performance-deployed.spec.mjs tests/uat/layer2-platform-deployed.spec.mjs tests/uat/layer2-provider-deployed.spec.mjs tests/uat/layer2-trial-deployed.spec.mjs tests/uat/admin-navigation-deployed.spec.mjs tests/uat/course-detail-polish-deployed.spec.mjs tests/uat/screen-state-persistence-deployed.spec.mjs tests/uat/m2-3-intelligence-deployed.spec.mjs --project="${{ matrix.project }}"
+        run: npx playwright test tests/uat/data-quality-deployed.spec.mjs tests/uat/performance-deployed.spec.mjs tests/uat/layer2-platform-deployed.spec.mjs tests/uat/layer2-provider-deployed.spec.mjs tests/uat/layer2-trial-deployed.spec.mjs tests/uat/admin-navigation-deployed.spec.mjs tests/uat/course-detail-polish-deployed.spec.mjs tests/uat/screen-state-persistence-deployed.spec.mjs tests/uat/m2-3-intelligence-deployed.spec.mjs tests/uat/scholarship-selection-deployed.spec.mjs --project="${{ matrix.project }}"
 
       - name: Upload UAT evidence
         if: always()
