@@ -1,14 +1,19 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Content-Type": "application/json",
-};
-
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
+const ORIGIN = "https://coursefinder-pilot.techm.workers.dev";
+function cors(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": origin === ORIGIN || origin.startsWith("http://localhost") ? origin : ORIGIN,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json",
+    "Cache-Control": "no-store",
+    "Vary": "Origin",
+  };
+}
+const json = (req: Request, body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors(req) });
 
 function parseJsonContent(content: unknown): unknown {
   if (typeof content === "object" && content !== null) return content;
@@ -30,7 +35,6 @@ function validateCandidate(taskClass: string, result: any, validators: any) {
   const quotes = Array.isArray(result?.evidence_quotes) ? result.evidence_quotes : [];
   if (quotes.length > Number(validators?.max_quotes ?? 4)) errors.push("too many evidence quotes");
   for (const q of quotes) if (typeof q !== "string" || q.length > Number(validators?.max_quote_chars ?? 600)) errors.push("invalid evidence quote");
-
   const candidate = result?.candidate_value;
   if (candidate !== null && candidate !== undefined) {
     if (taskClass === "course_description" || taskClass === "delivery_mode") {
@@ -55,22 +59,19 @@ function evidenceToText(bytes: Uint8Array, mime: string | null, maxChars: number
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
-
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors(req) });
+  if (req.method !== "POST") return json(req, { error: "method not allowed" }, 405);
   const url = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || (() => {
     try { return JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}").default || ""; } catch { return ""; }
   })();
-  if (!url || !serviceKey) return json({ error: "server configuration unavailable" }, 500);
-
+  if (!url || !serviceKey) return json(req, { error: "server configuration unavailable" }, 500);
   const authHeader = req.headers.get("Authorization") || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  if (!token) return json({ error: "authentication required" }, 401);
-
+  if (!token) return json(req, { error: "authentication required" }, 401);
   const svc = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: userData, error: userError } = await svc.auth.getUser(token);
-  if (userError || !userData?.user?.id) return json({ error: "invalid user token" }, 401);
+  if (userError || !userData?.user?.id) return json(req, { error: "invalid user token" }, 401);
 
   let interpretationId: string | null = null;
   try {
@@ -80,7 +81,7 @@ Deno.serve(async (req: Request) => {
     const entityId = String(body?.entity_id || "");
     const taskClass = String(body?.task_class || "");
     const profileId = String(body?.profile_id || "");
-    if (!evidenceId || !entityType || !entityId || !taskClass || !profileId) return json({ error: "evidence_id, entity_type, entity_id, task_class and profile_id are required" }, 400);
+    if (!evidenceId || !entityType || !entityId || !taskClass || !profileId) return json(req, { error: "evidence_id, entity_type, entity_id, task_class and profile_id are required" }, 400);
 
     const { data: reservation, error: reserveError } = await svc.rpc("layer3_reserve_interpretation_service", {
       p_actor: userData.user.id,
@@ -95,9 +96,9 @@ Deno.serve(async (req: Request) => {
     if (reserveError) {
       const msg = reserveError.message || "reservation failed";
       const status = /role required|actor required/i.test(msg) ? 403 : /not executable|not allowed/i.test(msg) ? 409 : 400;
-      return json({ error: msg }, status);
+      return json(req, { error: msg }, status);
     }
-    if (!reservation?.call_required) return json({ ok: true, call_required: false, reason: reservation?.reason, prior_interpretation_id: reservation?.prior_interpretation_id, evidence_hash: reservation?.evidence_hash });
+    if (!reservation?.call_required) return json(req, { ok: true, call_required: false, reason: reservation?.reason, prior_interpretation_id: reservation?.prior_interpretation_id, evidence_hash: reservation?.evidence_hash });
 
     interpretationId = String(reservation.interpretation_id);
     const profile = reservation.profile || {};
@@ -107,7 +108,12 @@ Deno.serve(async (req: Request) => {
     if (Number(usage?.day_calls || 0) > Number(profile.requests_per_day || 1)) throw new Error("profile requests/day ceiling reached");
 
     const secretName = String(profile.secret_env_key || "");
-    const aggregatorKey = secretName ? Deno.env.get(secretName) : undefined;
+    let aggregatorKey = secretName ? Deno.env.get(secretName) : undefined;
+    if (!aggregatorKey) {
+      const { data: vaultKey, error: vaultError } = await svc.rpc("layer3_provider_credential_resolve_service", { p_profile_id: profile.id });
+      if (vaultError) throw new Error(`provider credential lookup failed: ${vaultError.message}`);
+      aggregatorKey = typeof vaultKey === "string" ? vaultKey : undefined;
+    }
     if (!aggregatorKey) throw new Error(`server-side aggregator credential ${secretName || "<unset>"} is not configured`);
 
     const { data: ev, error: evError } = await svc.schema("pipeline").from("evidence_artifacts").select("id,storage_path,mime_type,content_hash,source_url").eq("id", evidenceId).single();
@@ -175,7 +181,7 @@ Deno.serve(async (req: Request) => {
         p_response_model: providerResult?.model || null, p_input_tokens: providerResult?.usage?.prompt_tokens || null, p_output_tokens: providerResult?.usage?.completion_tokens || null, p_estimated_cost_usd: Number(providerResult?.usage?.cost || 0), p_expiry: null,
       });
       if (completeError) throw new Error(`validation rejection persistence failed: ${completeError.message}`);
-      return json({ ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validatorResult }, 422);
+      return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validatorResult }, 422);
     }
 
     const validation = validateCandidate(taskClass, parsed, profile.validators || {});
@@ -202,11 +208,11 @@ Deno.serve(async (req: Request) => {
       p_expiry: validation.valid ? expiry : null,
     });
     if (completeError) throw new Error(`completion persistence failed: ${completeError.message}`);
-    if (!validation.valid) return json({ ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validation }, 422);
-    return json({ ok: true, call_required: true, interpretation_id: interpretationId, review_item_id: completed?.review_item_id || null, status: parsed?.candidate_value == null ? "no_candidate" : "validated", model: providerResult?.model || profile.model_identifier, validator_result: validation, estimated_cost_usd: cost });
+    if (!validation.valid) return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validation }, 422);
+    return json(req, { ok: true, call_required: true, interpretation_id: interpretationId, review_item_id: completed?.review_item_id || null, status: parsed?.candidate_value == null ? "no_candidate" : "validated", model: providerResult?.model || profile.model_identifier, validator_result: validation, estimated_cost_usd: cost });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     if (interpretationId) await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message }).catch(() => undefined);
-    return json({ error: message, interpretation_id: interpretationId }, /credential|ceiling reached|not configured/i.test(message) ? 409 : 500);
+    return json(req, { error: message, interpretation_id: interpretationId }, /credential|ceiling reached|not configured/i.test(message) ? 409 : 500);
   }
 });
