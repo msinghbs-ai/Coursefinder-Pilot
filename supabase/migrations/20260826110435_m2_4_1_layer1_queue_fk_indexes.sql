@@ -1,0 +1,1 @@
+create index if not exists layer1_run_queue_actual_job_idx on pipeline.layer1_run_queue(actual_job_id) where actual_job_id is not null; create index if not exists layer1_run_queue_retry_of_idx on pipeline.layer1_run_queue(retry_of_run_id) where retry_of_run_id is not null;
