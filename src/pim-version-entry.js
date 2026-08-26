@@ -1,6 +1,17 @@
-const VERSION='2.15.5'
+const VERSION='2.15.6'
 
 const RELEASES=[
+  {
+    version:'2.15.6',
+    date:'26 Aug 2026',
+    title:'Streamlined Data Operations navigation',
+    changes:[
+      'Reorganised the primary Admin into Overview, Catalogue, Data Operations, Insights, Quality & Review, Decision Tools, Governance & Platform, and Help & Guides.',
+      'Moved Layer 1 — Regulatory out of the Settings journey and removed unrelated StatsCan qualification and Pilot reset controls from the normal Layer 1 view.',
+      'Unified Layer 2, Layer 3, Layer 4, Evidence, Jobs/Runs and Onboarding under Data Operations and moved Scholarship Selection into Decision Tools.',
+      'Added an in-product Guides & Runbooks workspace with role-oriented quick guidance and direct workflow entry points.',
+    ],
+  },
   {
     version:'2.15.5',
     date:'26 Aug 2026',
