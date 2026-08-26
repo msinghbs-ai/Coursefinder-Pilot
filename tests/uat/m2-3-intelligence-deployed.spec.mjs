@@ -30,18 +30,19 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
     await writeRunEnvironment({ suite: 'deployed-m2-3-intelligence', change_control: 'CF-CHG-20260825-036/037/038' })
   })
 
-  test('governed Layer 3 profile is visible and remains paused before provider benchmark', async ({ page }, testInfo) => {
+  test('governed Layer 3 profile exposes the benchmark-passed pinned model and is executable', async ({ page }, testInfo) => {
     const runtime = observeRuntime(page)
     try {
       const dialog = await openWorkspace(page)
       const profileCard = dialog.getByRole('article').filter({ hasText: 'openrouter-free-router-v1' })
       await expect(profileCard.getByText('openrouter-free-router-v1', { exact: true })).toBeVisible()
-      await expect(profileCard.getByText('Paused', { exact: true })).toBeVisible()
-      await expect(profileCard).toContainText(/Pending Credentials And Benchmark|Credential Configured Pending Benchmark|Credential Verified Pending Benchmark|Credential Verification Failed/i)
-      await expect(profileCard.getByRole('button', { name: /Benchmark required before resume/i })).toBeVisible()
+      await expect(profileCard).toContainText('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')
+      await expect(profileCard.getByText('Enabled', { exact: true })).toBeVisible()
+      await expect(profileCard).toContainText(/Validation:\s*Benchmark Passed/i)
+      await expect(profileCard.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
       await expect(dialog.getByText(/Unchanged Evidence is rejected before an LLM call/i)).toBeVisible()
       await expect(dialog.getByText(/Server credentials are never browser-visible/i)).toBeVisible()
-      await milestoneScreenshot(page, testInfo, 'm2-3-layer3-paused-profile')
+      await milestoneScreenshot(page, testInfo, 'm2-3-layer3-benchmark-passed-profile')
     } finally {
       await finish(testInfo, runtime)
     }
