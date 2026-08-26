@@ -3,6 +3,7 @@ import path from 'node:path'
 import { expect } from '@playwright/test'
 
 const ARTIFACT_DIR = path.resolve('uat-artifacts')
+export const DETERMINISTIC_UI_TIMEOUT = 6_000
 
 async function ensureArtifacts() {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true })
@@ -124,41 +125,38 @@ async function inViewport(locator,page){
   return !!box&&!!vp&&box.x>=0&&box.y>=0&&box.x+box.width<=vp.width&&box.y+box.height<=vp.height
 }
 
-const NAV_ALIASES={
-  'Layer 2 Operations':'Layer 2 — Enrichment',
-}
-
 export async function clickPrimaryNav(page,label){
-  const resolved=NAV_ALIASES[label]||label
-  const item=page.locator('button.m-nav-item').filter({hasText:resolved}).first()
-  await expect(item).toBeVisible({timeout:45_000})
+  const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
+  await expect(item,`Missing accepted primary navigation item: ${label}`).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   if(!(await inViewport(item,page))){
     const menu=page.locator('.m-mobile-menu')
-    await expect(menu).toBeVisible({timeout:15_000})
-    await menu.click()
-    await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/,{timeout:15_000})
-    await expect(item).toBeInViewport({timeout:15_000})
+    if(await menu.isVisible().catch(()=>false)){
+      await menu.click({timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/,{timeout:DETERMINISTIC_UI_TIMEOUT})
+    }
+    await item.scrollIntoViewIfNeeded({timeout:DETERMINISTIC_UI_TIMEOUT})
   }
-  await item.click()
+  await item.click({timeout:DETERMINISTIC_UI_TIMEOUT})
 }
 
 export async function signOutUatUser(page){
   const button=page.getByTitle('Sign out')
-  await expect(button).toBeVisible({timeout:15_000})
+  await expect(button).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   if(!(await inViewport(button,page))){
     const menu=page.locator('.m-mobile-menu')
-    await expect(menu).toBeVisible({timeout:15_000})
-    await menu.click()
-    await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/,{timeout:15_000})
-    await expect(button).toBeInViewport({timeout:15_000})
+    if(await menu.isVisible().catch(()=>false)){
+      await menu.click({timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/,{timeout:DETERMINISTIC_UI_TIMEOUT})
+    }
+    await button.scrollIntoViewIfNeeded({timeout:DETERMINISTIC_UI_TIMEOUT})
   }
-  await button.click()
+  await button.click({timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(page.locator('input[type="email"]').first()).toBeVisible({timeout:45_000})
 }
 
 export async function openDataQuality(page) {
   await clickPrimaryNav(page,'Completeness')
-  await expect(page.getByRole('heading', { name: 'Data Quality & Readiness' })).toBeVisible({ timeout: 45_000 })
+  await expect(page.getByRole('heading', { name: 'Data Quality & Readiness' })).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
   await expect(page.getByText('No composite completeness score', { exact: true })).toBeVisible()
 }
 
