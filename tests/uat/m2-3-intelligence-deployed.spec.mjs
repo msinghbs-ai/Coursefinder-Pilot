@@ -1,13 +1,6 @@
 import { test, expect } from '@playwright/test'
-import {
-  attachRuntimeEvidence,
-  assertNoServerErrors,
-  clickPrimaryNav,
-  loginAsUatUser,
-  milestoneScreenshot,
-  observeRuntime,
-  writeRunEnvironment,
-} from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { openLayer3, openLayer4, openOnboarding } from './support/navigation.mjs'
 
 async function finish(testInfo, runtime) {
   await attachRuntimeEvidence(testInfo, runtime)
@@ -16,12 +9,12 @@ async function finish(testInfo, runtime) {
 
 async function openWorkspace(page, targetTab='Layer 3') {
   await loginAsUatUser(page)
-  const navLabel = targetTab === 'Layer 4' ? 'Layer 4 — Human Resolution' : targetTab === 'Onboarding' ? 'Onboarding' : 'Layer 3 — AI Interpretation'
-  await clickPrimaryNav(page, navLabel)
-  const dialog = page.getByRole('dialog', { name: 'M2.3 Intelligence' })
-  await expect(dialog).toBeVisible({ timeout: 45_000 })
-  if (!['Layer 3','Layer 4','Onboarding'].includes(targetTab)) {
-    await dialog.locator('nav').getByRole('button', { name: targetTab, exact: true }).click()
+  if(targetTab==='Layer 4')return openLayer4(page)
+  if(targetTab==='Onboarding')return openOnboarding(page)
+  const dialog=await openLayer3(page)
+  if(targetTab!=='Layer 3'){
+    await dialog.locator('nav').getByRole('button',{name:targetTab,exact:true}).click({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(dialog.locator('nav').getByRole('button',{name:targetTab,exact:true})).toHaveClass(/active/,{timeout:DETERMINISTIC_UI_TIMEOUT})
   }
   return dialog
 }
@@ -30,7 +23,7 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
   test.beforeAll(async () => {
     if (!process.env.UAT_BASE_URL) throw new Error('UAT_BASE_URL is required for deployed acceptance.')
     if (!process.env.UAT_EMAIL || !process.env.UAT_PASSWORD) throw new Error('UAT_EMAIL and UAT_PASSWORD are required for deployed acceptance.')
-    await writeRunEnvironment({ suite: 'deployed-m2-3-intelligence-v2', change_control: 'CF-CHG-20260825-036/037/038 + CF-CHG-20260826-040' })
+    await writeRunEnvironment({ suite: 'deployed-m2-3-intelligence-v3', change_control: 'CF-CHG-20260825-036/037/038 + CF-CHG-20260826-040' })
   })
 
   test('governed Layer 3 profile exposes the benchmark-passed pinned model and is executable', async ({ page }, testInfo) => {
@@ -46,9 +39,7 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
       await expect(dialog.getByText(/Unchanged Evidence is rejected before an LLM call/i)).toBeVisible()
       await expect(dialog.getByText(/Server credentials are never browser-visible/i)).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'm2-3-layer3-benchmark-passed-profile')
-    } finally {
-      await finish(testInfo, runtime)
-    }
+    } finally { await finish(testInfo, runtime) }
   })
 
   test('terminal Layer 4 and refresh intelligence workspaces expose governed context and bounded targets', async ({ page }, testInfo) => {
@@ -64,9 +55,7 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
       await expect(dialog.getByRole('heading', { name: 'Downstream Search refresh signals', exact: true })).toBeVisible()
       await expect(dialog.getByText('UNBOUNDED', { exact: true })).toHaveCount(0)
       await milestoneScreenshot(page, testInfo, 'm2-3-layer4-refresh')
-    } finally {
-      await finish(testInfo, runtime)
-    }
+    } finally { await finish(testInfo, runtime) }
   })
 
   test('Important Links and Important Dates retain source precision and governance messaging', async ({ page }, testInfo) => {
@@ -83,9 +72,7 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
       await expect(dialog.getByText(/Date-only sources use date-only storage/i)).toBeVisible()
       await expect(dialog.getByText(/Country-reference events cannot trigger ingestion/i)).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'm2-3-important-links-dates')
-    } finally {
-      await finish(testInfo, runtime)
-    }
+    } finally { await finish(testInfo, runtime) }
   })
 
   test('reusable onboarding workspace exposes the accepted lifecycle and governed audit boundary', async ({ page }, testInfo) => {
@@ -95,13 +82,9 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
       await expect(dialog.getByRole('heading', { name: 'Country / Provider / Course Onboarding', exact: true })).toBeVisible()
       await expect(dialog.getByText(/Shared canonical lifecycle only/i)).toBeVisible()
       const stage = dialog.getByLabel('Stage')
-      for (const value of ['draft','source_qualification','adapter_assessment','schema_assessment','l1_uat','l2_uat','l3_ready','operational_certification','production_promotion_ready']) {
-        await expect(stage.getByRole('option', { name: value, exact: true })).toHaveCount(1)
-      }
+      for (const value of ['draft','source_qualification','adapter_assessment','schema_assessment','l1_uat','l2_uat','l3_ready','operational_certification','production_promotion_ready']) await expect(stage.getByRole('option', { name: value, exact: true })).toHaveCount(1)
       await expect(dialog.getByRole('heading', { name: 'Create governed onboarding case', exact: true })).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'm2-3-onboarding-lifecycle')
-    } finally {
-      await finish(testInfo, runtime)
-    }
+    } finally { await finish(testInfo, runtime) }
   })
 })
