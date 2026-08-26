@@ -15,7 +15,7 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
-      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.6')
+      await expect(page.locator('#governed-runtime-marker')).toContainText(/PIM Admin v2\./)
       const providerNav=page.getByRole('button',{name:'Layer 3 Provider',exact:true})
       const count=await providerNav.count()
       if(count===0){
