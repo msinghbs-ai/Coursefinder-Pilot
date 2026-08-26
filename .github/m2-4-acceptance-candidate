@@ -1,0 +1,5 @@
+M2.4.0 full deployed acceptance candidate after bounded integration desktop/mobile PASS.
+Base working SHA before integration marker: ecc81dfbf5e6e985eb84b4974c50b0657aac10a0
+Integration marker SHA: 70244120258cf47d25575bc8af4dbb71fee0daf3
+Integration UAT run: 32958008107
+Desktop first courses_page: 1985 ms <= 3000 ms budget.
