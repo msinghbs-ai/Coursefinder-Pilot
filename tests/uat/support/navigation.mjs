@@ -35,7 +35,7 @@ export async function openLayer2Advanced(page) {
 
 export async function openLayer2Providers(page) {
   const dialog = await openLayer2(page)
-  await dialog.getByRole('button', { name: /Configure/i }).click({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  await dialog.getByRole('button', { name: /Advanced provider config|Configure/i }).click({ timeout: DETERMINISTIC_UI_TIMEOUT })
   await expect(dialog).toBeHidden(ui)
   await expect(page.getByRole('heading', { name: 'Layer 2 Acquisition Providers' })).toBeVisible(ui)
 }
