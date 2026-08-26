@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import {
   attachRuntimeEvidence,
   assertNoServerErrors,
+  clickPrimaryNav,
   loginAsUatUser,
   milestoneScreenshot,
   observeRuntime,
@@ -22,8 +23,9 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
     try{
       await loginAsUatUser(page)
       await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.6')
-      const launcher=page.getByRole('button',{name:/OpenRouter API Key|Configure OpenRouter API key/i})
-      const count=await launcher.count()
+      const providerNav=page.getByRole('button',{name:'Layer 3 Provider',exact:true})
+      const count=await providerNav.count()
+      await expect(page.locator('.l3cred-launcher')).toBeHidden()
       if(count===0){
         await expect(page.getByLabel('API key')).toHaveCount(0)
         const layer3Nav=page.getByRole('button',{name:'Layer 3 — AI Interpretation',exact:true})
@@ -37,8 +39,7 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
         await milestoneScreenshot(page,testInfo,'layer3-provider-credential-lower-rank-denied')
         return
       }
-      await expect(launcher).toBeVisible({timeout:45_000})
-      await launcher.click()
+      await clickPrimaryNav(page,'Layer 3 Provider')
       const dialog=page.getByRole('dialog',{name:'Layer 3 provider credential'})
       await expect(dialog).toBeVisible()
       await expect(dialog.getByRole('option',{name:/Openrouter · openrouter-free-router-v1 · nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free/i})).toHaveCount(1)
