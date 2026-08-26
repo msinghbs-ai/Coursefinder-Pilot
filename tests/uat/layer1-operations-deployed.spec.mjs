@@ -17,9 +17,22 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   }finally{await finish(testInfo,runtime)}})
 
   test('authorised Layer 1 operator performs a real NZQA authority and count validation',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page);const nz=dialog.locator('article.l1o-source[data-country="NZ"]');
-    const result=await page.evaluate(async()=>{const {supabase}=await import('/src/lib/supabase.js');const read=await supabase.rpc('admin_read',{p_operation:'layer1_operations',p_args:{}});if(read.error)throw new Error(read.error.message);const source=(read.data?.sources||[]).find(s=>s.country_code==='NZ');if(!source?.source_id)throw new Error('NZ Layer 1 source not found');const response=await supabase.functions.invoke('layer1-operations-control',{body:{action:'validate',source_id:source.source_id}});if(response.error)throw new Error(response.error.message);if(response.data?.error)throw new Error(response.data.error);return response.data})
-    expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toContain('v1.0.1');
+    await loginAsUatUser(page)
+    const readResponsePromise=page.waitForResponse(response=>{
+      if(!response.url().includes('/rest/v1/rpc/admin_read'))return false
+      try{return response.request().postDataJSON()?.p_operation==='layer1_operations'}catch{return false}
+    },{timeout:DETERMINISTIC_UI_TIMEOUT})
+    const dialog=await openLayer1(page),nz=dialog.locator('article.l1o-source[data-country="NZ"]')
+    const readResponse=await readResponsePromise,readData=await readResponse.json(),source=(readData?.sources||[]).find(s=>s.country_code==='NZ')
+    expect(source?.source_id,'NZ Layer 1 source must be present in governed read contract').toBeTruthy()
+    const requestHeaders=await readResponse.request().allHeaders(),supabaseOrigin=new URL(readResponse.url()).origin
+    expect(requestHeaders.authorization,'authenticated Layer 1 read must carry bearer authority').toMatch(/^Bearer /i)
+    expect(requestHeaders.apikey,'authenticated Layer 1 read must carry publishable API key').toBeTruthy()
+    const result=await page.evaluate(async({origin,authorization,apikey,sourceId})=>{
+      const response=await fetch(`${origin}/functions/v1/layer1-operations-control`,{method:'POST',headers:{authorization,apikey,'content-type':'application/json'},body:JSON.stringify({action:'validate',source_id:sourceId})})
+      const data=await response.json().catch(()=>({}));if(!response.ok||data?.error)throw new Error(data?.error||`Layer 1 validation HTTP ${response.status}`);return data
+    },{origin:supabaseOrigin,authorization:requestHeaders.authorization,apikey:requestHeaders.apikey,sourceId:source.source_id})
+    expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toContain('v1.0.1')
     await page.getByRole('button',{name:'Refresh'}).click();await expect(nz).toContainText('passed',{timeout:DETERMINISTIC_UI_TIMEOUT});await expect(nz).toContainText(/409/);await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
