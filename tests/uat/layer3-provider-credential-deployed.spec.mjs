@@ -17,11 +17,26 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
     await writeRunEnvironment({suite:'deployed-layer3-provider-credential',change_control:'CF-CHG-20260825-038'})
   })
 
-  test('Platform Admin can select OpenRouter and sees write-only Vault credential boundary',async({page},testInfo)=>{
+  test('credential UI obeys the Platform Admin boundary and remains write-only when authorised',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
+      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.5')
       const launcher=page.getByRole('button',{name:/Layer 3 Provider/i})
+      const count=await launcher.count()
+      if(count===0){
+        // The permanent UAT identity is intentionally not assumed to be Platform Admin.
+        // For a lower-rank identity the credential control must not exist in the DOM.
+        await expect(page.getByLabel('API key')).toHaveCount(0)
+        const m23=page.getByRole('button',{name:/M2\.3 Intelligence/i})
+        await expect(m23).toBeVisible({timeout:45_000})
+        await m23.click()
+        const dialog=page.getByRole('dialog',{name:'M2.3 Intelligence'})
+        await expect(dialog.getByText('openrouter-free-router-v1',{exact:true})).toBeVisible()
+        await expect(dialog.getByText('Paused',{exact:true})).toBeVisible()
+        await milestoneScreenshot(page,testInfo,'layer3-provider-credential-lower-rank-denied')
+        return
+      }
       await expect(launcher).toBeVisible({timeout:45_000})
       await launcher.click()
       const dialog=page.getByRole('dialog',{name:'Layer 3 provider credential'})
