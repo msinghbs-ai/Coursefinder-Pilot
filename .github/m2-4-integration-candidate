@@ -1,4 +1,4 @@
-M2.4.1 bounded integration candidate after final targeted desktop PASS.
-Base working SHA before marker: fcb77befb797e98f9369b33a79ab29a4950717ff
-Targeted UAT run: 32968177074
-Scope: Layer 1 AU/NZ operations maturity, scheduling, recovery, housekeeping, authority boundaries and repo/runtime alignment.
+M2.4.1 bounded integration candidate after bridge-reconciliation targeted desktop PASS.
+Base working SHA before marker: 5b79fec0850119e5b2688dd07ddc7c00dd2eef51
+Targeted UAT run: 32970333702
+Scope: Layer 1 AU/NZ operations maturity plus restored accepted Data Quality/Layer 2 admin_read dispatches; desktop + mobile affected regression required.
