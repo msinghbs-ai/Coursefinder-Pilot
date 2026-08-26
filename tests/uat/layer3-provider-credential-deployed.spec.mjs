@@ -21,14 +21,14 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
-      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.5')
+      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.6')
       const launcher=page.getByRole('button',{name:/OpenRouter API Key|Configure OpenRouter API key/i})
       const count=await launcher.count()
       if(count===0){
         await expect(page.getByLabel('API key')).toHaveCount(0)
-        const m23=page.getByRole('button',{name:/M2\.3 Intelligence/i})
-        await expect(m23).toBeVisible({timeout:45_000})
-        await m23.click()
+        const layer3Nav=page.getByRole('button',{name:'Layer 3 — AI Interpretation',exact:true})
+        await expect(layer3Nav).toBeVisible({timeout:45_000})
+        await layer3Nav.click()
         const dialog=page.getByRole('dialog',{name:'M2.3 Intelligence'})
         const profileCard=dialog.getByRole('article').filter({hasText:'openrouter-free-router-v1'})
         await expect(profileCard.getByText('openrouter-free-router-v1',{exact:true})).toBeVisible()
