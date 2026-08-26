@@ -1,0 +1,56 @@
+name: CourseFinder Lightweight UX Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed CourseFinder Admin URL
+        required: true
+        default: https://coursefinder-pilot.techm.workers.dev
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coursefinder-m2-4-ux-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: UX audit (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        project: [chromium-desktop, chromium-mobile]
+    env:
+      UAT_BASE_URL: ${{ inputs.base_url }}
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --ignore-scripts
+      - name: Preflight
+        shell: bash
+        run: |
+          test -n "$UAT_EMAIL" && test -n "$UAT_PASSWORD"
+          case "$UAT_BASE_URL" in https://*) ;; *) exit 1;; esac
+      - run: npx playwright install --with-deps chromium
+      - name: Capture menu/content/timing/screenshots
+        run: npx playwright test tests/uat/m2-4-navigation-content-audit.spec.mjs --project="${{ matrix.project }}"
+      - name: Upload lightweight audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coursefinder-m2-4-ux-audit-${{ matrix.project }}-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            uat-artifacts/
+            test-results/
