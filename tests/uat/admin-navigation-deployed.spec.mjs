@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
-import { openGuides, openLayer2, openLayer3, openLayer4 } from './support/navigation.mjs'
+import { openGuides, openLayer1, openLayer2, openLayer3, openLayer4 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('CourseFinder streamlined Data Operations navigation @deployed',()=>{
-  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'admin-data-operations-navigation-v3',change_control:'CF-CHG-20260826-040'})})
+  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'admin-data-operations-navigation-v4',change_control:'CF-CHG-20260826-040'})})
 
   test('primary sidebar presents one logical operating model',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
@@ -20,7 +20,15 @@ test.describe('CourseFinder streamlined Data Operations navigation @deployed',()
     await expect(nav.getByText('Data Enrichment',{exact:true})).toHaveCount(0)
     await expect(nav.getByRole('button',{name:'Outcomes (QILT)',exact:true})).toBeVisible()
     await expect(nav.getByRole('button',{name:'Student Flow (PRISMS)',exact:true})).toBeVisible()
-    await milestoneScreenshot(page,testInfo,'admin-data-operations-navigation-v3')
+    await milestoneScreenshot(page,testInfo,'admin-data-operations-navigation-v4')
+  }finally{await finish(testInfo,runtime)}})
+
+  test('Layer 1 Regulatory opens as the normal operator journey without Settings',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+    await loginAsUatUser(page)
+    await openLayer1(page)
+    await expect(page.getByRole('button',{name:'Settings',exact:true})).toHaveCount(0)
+    await expect(page.getByRole('heading',{name:'Layer 1 — Regulatory'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await milestoneScreenshot(page,testInfo,'layer1-regulatory-primary-navigation')
   }finally{await finish(testInfo,runtime)}})
 
   test('Layer 2 Enrichment opens the governed operations workspace',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
