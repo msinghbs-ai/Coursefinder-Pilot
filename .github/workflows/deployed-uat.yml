@@ -10,6 +10,12 @@ on:
         required: true
         default: https://coursefinder-pilot.techm.workers.dev
         type: string
+      tier:
+        description: Validation tier
+        required: true
+        default: targeted
+        type: choice
+        options: [targeted, integration, acceptance]
 
 permissions:
   contents: read
@@ -37,6 +43,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Resolve validation tier
+        id: tier
+        shell: bash
+        run: |
+          tier='${{ inputs.tier || 'targeted' }}'
+          if [ "${{ github.event_name }}" = "push" ] && git rev-parse HEAD^ >/dev/null 2>&1; then
+            changed="$(git diff --name-only HEAD^ HEAD)"
+            if printf '%s\n' "$changed" | grep -qx '.github/m2-4-integration-candidate'; then tier='integration'; fi
+            if printf '%s\n' "$changed" | grep -qx '.github/m2-4-acceptance-candidate'; then tier='acceptance'; fi
+          fi
+          case "$tier" in targeted|integration|acceptance) ;; *) echo "Invalid tier: $tier"; exit 1;; esac
+          echo "tier=$tier" >> "$GITHUB_OUTPUT"
+          echo "Resolved deployed UAT tier: $tier"
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -58,25 +79,65 @@ jobs:
         if: github.event_name == 'push'
         shell: bash
         run: |
-          sleep 60
-          for attempt in $(seq 1 18); do
+          sleep 45
+          for attempt in $(seq 1 12); do
             code=$(curl -L -sS -o /tmp/coursefinder-uat-home.html -w '%{http_code}' --max-time 20 "$UAT_BASE_URL/?uat_probe=${GITHUB_SHA}" || true)
             if [ "$code" = "200" ]; then echo "Worker reachable for deployed UAT"; exit 0; fi
-            echo "Worker not ready yet (HTTP ${code:-none}); retry ${attempt}/18"
+            echo "Worker not ready yet (HTTP ${code:-none}); retry ${attempt}/12"
             sleep 10
           done
           echo "Worker did not become reachable within the deployment-settle window"
           exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run deployed governed acceptance
+      - name: Run deployed governed validation
         id: governed_uat
-        run: npx playwright test tests/uat/data-quality-deployed.spec.mjs tests/uat/performance-deployed.spec.mjs tests/uat/layer2-platform-deployed.spec.mjs tests/uat/layer2-provider-deployed.spec.mjs tests/uat/layer2-trial-deployed.spec.mjs tests/uat/admin-navigation-deployed.spec.mjs tests/uat/course-detail-polish-deployed.spec.mjs tests/uat/screen-state-persistence-deployed.spec.mjs tests/uat/m2-3-intelligence-deployed.spec.mjs tests/uat/layer3-provider-credential-deployed.spec.mjs tests/uat/scholarship-selection-deployed.spec.mjs tests/uat/release-notes-deployed.spec.mjs tests/uat/m2-4-navigation-content-audit.spec.mjs --project="${{ matrix.project }}"
+        shell: bash
+        env:
+          UAT_TIER: ${{ steps.tier.outputs.tier }}
+        run: |
+          targeted=(
+            tests/uat/admin-navigation-deployed.spec.mjs
+            tests/uat/layer2-platform-deployed.spec.mjs
+            tests/uat/layer2-provider-deployed.spec.mjs
+            tests/uat/layer2-trial-deployed.spec.mjs
+            tests/uat/m2-3-intelligence-deployed.spec.mjs
+            tests/uat/layer3-provider-credential-deployed.spec.mjs
+            tests/uat/scholarship-selection-deployed.spec.mjs
+            tests/uat/release-notes-deployed.spec.mjs
+          )
+          integration=(
+            "${targeted[@]}"
+            tests/uat/data-quality-deployed.spec.mjs
+            tests/uat/performance-deployed.spec.mjs
+            tests/uat/screen-state-persistence-deployed.spec.mjs
+          )
+          acceptance=(
+            tests/uat/data-quality-deployed.spec.mjs
+            tests/uat/performance-deployed.spec.mjs
+            tests/uat/layer2-platform-deployed.spec.mjs
+            tests/uat/layer2-provider-deployed.spec.mjs
+            tests/uat/layer2-trial-deployed.spec.mjs
+            tests/uat/admin-navigation-deployed.spec.mjs
+            tests/uat/course-detail-polish-deployed.spec.mjs
+            tests/uat/screen-state-persistence-deployed.spec.mjs
+            tests/uat/m2-3-intelligence-deployed.spec.mjs
+            tests/uat/layer3-provider-credential-deployed.spec.mjs
+            tests/uat/scholarship-selection-deployed.spec.mjs
+            tests/uat/release-notes-deployed.spec.mjs
+          )
+          case "$UAT_TIER" in
+            targeted) specs=("${targeted[@]}") ;;
+            integration) specs=("${integration[@]}") ;;
+            acceptance) specs=("${acceptance[@]}") ;;
+          esac
+          printf 'Running %s tier with %s permanent suite(s)\n' "$UAT_TIER" "${#specs[@]}"
+          npx playwright test "${specs[@]}" --project="${{ matrix.project }}"
       - name: Upload UAT evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coursefinder-deployed-uat-${{ matrix.project }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: coursefinder-${{ steps.tier.outputs.tier }}-${{ matrix.project }}-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: warn
           retention-days: 30
           path: |
@@ -89,10 +150,11 @@ jobs:
         env:
           UAT_OUTCOME: ${{ steps.governed_uat.outcome }}
           UAT_PROJECT: ${{ matrix.project }}
+          UAT_TIER: ${{ steps.tier.outputs.tier }}
         run: |
-          if [ "$UAT_OUTCOME" = "success" ]; then state=success; description="Governed deployed UAT passed"; else state=failure; description="Governed deployed UAT failed"; fi
+          if [ "$UAT_OUTCOME" = "success" ]; then state=success; description="${UAT_TIER} deployed UAT passed"; else state=failure; description="${UAT_TIER} deployed UAT failed"; fi
           gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state="$state" \
-            -f context="coursefinder/deployed-uat/${UAT_PROJECT}" \
+            -f context="coursefinder/deployed-uat/${UAT_TIER}/${UAT_PROJECT}" \
             -f description="$description" \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
