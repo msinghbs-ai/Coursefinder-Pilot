@@ -22,11 +22,9 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
     try{
       await loginAsUatUser(page)
       await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.5')
-      const launcher=page.getByRole('button',{name:/Layer 3 Provider/i})
+      const launcher=page.getByRole('button',{name:/OpenRouter API Key|Configure OpenRouter API key/i})
       const count=await launcher.count()
       if(count===0){
-        // The permanent UAT identity is intentionally not assumed to be Platform Admin.
-        // For a lower-rank identity the credential control must not exist in the DOM.
         await expect(page.getByLabel('API key')).toHaveCount(0)
         const m23=page.getByRole('button',{name:/M2\.3 Intelligence/i})
         await expect(m23).toBeVisible({timeout:45_000})
@@ -34,7 +32,8 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
         const dialog=page.getByRole('dialog',{name:'M2.3 Intelligence'})
         const profileCard=dialog.getByRole('article').filter({hasText:'openrouter-free-router-v1'})
         await expect(profileCard.getByText('openrouter-free-router-v1',{exact:true})).toBeVisible()
-        await expect(profileCard.getByText('Paused',{exact:true})).toBeVisible()
+        await expect(profileCard.getByText('Enabled',{exact:true})).toBeVisible()
+        await expect(profileCard).toContainText(/Benchmark Passed/i)
         await milestoneScreenshot(page,testInfo,'layer3-provider-credential-lower-rank-denied')
         return
       }
@@ -42,10 +41,11 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
       await launcher.click()
       const dialog=page.getByRole('dialog',{name:'Layer 3 provider credential'})
       await expect(dialog).toBeVisible()
-      await expect(dialog.getByRole('option',{name:/Openrouter · openrouter-free-router-v1 · openrouter\/free/i})).toHaveCount(1)
+      await expect(dialog.getByRole('option',{name:/Openrouter · openrouter-free-router-v1 · nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free/i})).toHaveCount(1)
       await expect(dialog.getByLabel('API key')).toHaveAttribute('type','password')
       await expect(dialog).toContainText(/Key value is write-only/i)
-      await expect(dialog).toContainText(/never unpauses the profile/i)
+      await expect(dialog).toContainText(/Saving or verifying never unpauses the profile/i)
+      await expect(dialog).toContainText(/Benchmark Passed/i)
       await expect(dialog.getByRole('button',{name:'Save credential'})).toBeDisabled()
       await milestoneScreenshot(page,testInfo,'layer3-provider-credential-write-only')
     }finally{await finish(testInfo,runtime)}
