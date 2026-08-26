@@ -392,6 +392,29 @@ end $$;
 revoke all on function security.layer2_discovery_scope_dispatch_v2(uuid,uuid[],integer,uuid,uuid[]) from public,anon,authenticated;
 grant execute on function security.layer2_discovery_scope_dispatch_v2(uuid,uuid[],integer,uuid,uuid[]) to service_role;
 
+create or replace function public.layer2_discovery_scope_dispatch_v2(
+  p_profile_id uuid,
+  p_course_ids uuid[],
+  p_limit integer,
+  p_actor uuid,
+  p_sync_course_ids uuid[]
+) returns jsonb
+language plpgsql
+security definer
+set search_path to 'pg_catalog','security'
+as $
+begin
+  if current_user not in ('service_role','postgres') then
+    raise exception 'service_role required' using errcode='42501';
+  end if;
+  return security.layer2_discovery_scope_dispatch_v2(
+    p_profile_id,p_course_ids,p_limit,p_actor,p_sync_course_ids
+  );
+end $;
+
+revoke all on function public.layer2_discovery_scope_dispatch_v2(uuid,uuid[],integer,uuid,uuid[]) from public,anon,authenticated;
+grant execute on function public.layer2_discovery_scope_dispatch_v2(uuid,uuid[],integer,uuid,uuid[]) to service_role;
+
 create or replace function public.layer2_operator_scope_service(
   p_actor uuid,
   p_action text,
