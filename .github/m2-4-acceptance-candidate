@@ -1,6 +1,6 @@
-M2.4.1 full deployed acceptance candidate after reconciled bounded integration desktop/mobile PASS.
-Base working SHA before integration marker: 5b79fec0850119e5b2688dd07ddc7c00dd2eef51
-Integration marker SHA: e23910d65edcc4c146be2f7278f46311132a0465
-Targeted UAT run: 32970333702
-Integration UAT run: 32970450566
-Scope: frozen M2.4.1 AU/NZ Layer 1 operations maturity plus complete accepted admin_read dispatch reconciliation.
+M2.4.1 final full deployed acceptance candidate after post-harness-fix bounded integration desktop/mobile PASS.
+Base working SHA before integration marker: 721658a732c763892179250fee1c0268bd27051d
+Integration marker SHA: 98172a4f616291212253c23f16fe1ab633b9c34b
+Targeted UAT run: 32971449084
+Integration UAT run: 32971584012
+Scope: frozen M2.4.1 AU/NZ Layer 1 operations maturity, reconciled admin_read bridge, and patch-tolerant Course Detail permanent release assertion only.
