@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.1.2";
+const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.2.1";
 const J=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:unknown)=>String(v??"").replace(/\s+/g," ").trim();
 const norm=(v:unknown)=>clean(v).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -15,13 +15,14 @@ function approvedUrl(raw:string,cfg:any){const u=new URL(raw);if(u.protocol!=="h
 function discoveryUrl(cfg:any,course:any){const d=cfg.discovery_strategy||{};if(d.type==="first_party_search"&&d.search_url_template){const q=encodeURIComponent(clean(`${course.course_code||""} ${course.canonical_title||course.display_title||""}`));return approvedUrl(String(d.search_url_template).replace("{query}",q),cfg)}const url=d.catalogue_url||cfg.discovery_url;if(!url)throw new Error("profile discovery URL missing");return approvedUrl(String(url),cfg)}
 function fallbackReason(status:number|null,error:string|null){if(error==="timeout")return"timeout";if(status===403)return"403";if(status===429)return"429";if(status&&status>=500)return"5xx";if(status&&status>=400)return String(status);return error?"blocked":"extraction_failed"}
 function canFallback(route:any,reason:string){const allowed=(route?.fallback_on||[]).map((x:any)=>String(x).toLowerCase());return allowed.includes(reason.toLowerCase())||allowed.includes("blocked")&&reason==="network_error"}
-async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string){
+async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,cfg:any){
  const failures:any[]=[];
  for(const route of (rt.routes||[])){
   const pc=await rpc(svc,"layer2_provider_runtime_config",{p_provider_id:route.provider_id});
   if(!pc?.enabled){failures.push({provider_id:route.provider_id,reason:"provider_disabled"});continue}
   if(pc.auth_scheme!=="none"&&!pc.secret){failures.push({provider_key:pc.provider_key,reason:"credential_missing"});continue}
   if(pc.budget_status?.allowed===false){failures.push({provider_key:pc.provider_key,reason:"budget_blocked"});continue}
+  if(pc.provider_key!=="direct-http"&&pc.estimated_request_cost_usd==null){failures.push({provider_key:pc.provider_key,reason:"cost_unknown"});continue}
   const attemptId=await rpc(svc,"layer2_provider_attempt_start",{p_job_id:jobId,p_provider_id:pc.id,p_request_url:target});
   const st=performance.now();let fetchUrl=target,method="GET",body:any=undefined,headers:any={"user-agent":ua||"CourseFinder Layer2 Discovery/1.1","accept":"text/html,application/xhtml+xml,application/json"};
   try{
@@ -62,6 +63,17 @@ async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string){
      if(canFallback(route,reason))continue;
      throw new Error(`route_stopped:${pc.provider_key}:${reason}`);
    }
+   const requiredPrefix=clean(cfg?.discovery_strategy?.require_url_prefix);
+   if(requiredPrefix){
+     const matchingLinks=extractLinks(html,target).filter((x:any)=>{try{return new URL(x.url).pathname.toLowerCase().startsWith(requiredPrefix.toLowerCase())}catch{return false}});
+     if(!matchingLinks.length){
+       const reason="extraction_failed";
+       await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:attemptId,p_status:"extraction_failed",p_http_status:res.status,p_mime:"text/html",p_raw_evidence:null,p_html_evidence:null,p_screenshot_evidence:null,p_extraction_status:"discovery_required_link_missing",p_blocker:`no discovery link matched required prefix ${requiredPrefix}`,p_metrics:{operation:"scope_discovery",provider_key:pc.provider_key,route_priority:route.priority,fallback_reason:reason,latency_ms:latency,worker_version:VERSION,required_url_prefix:requiredPrefix}});
+       failures.push({provider_key:pc.provider_key,reason,required_url_prefix:requiredPrefix});
+       if(canFallback(route,reason))continue;
+       throw new Error(`route_stopped:${pc.provider_key}:${reason}`);
+     }
+   }
    return{attemptId,providerId:pc.id,providerKey:pc.provider_key,httpStatus:res.status,mime:"text/html",html,sourceUrl:target,latency,routePriority:route.priority,failures};
   }catch(e:any){
    const isAbort=e?.name==="AbortError",msg=isAbort?"timeout":String(e.message||e);
@@ -84,7 +96,7 @@ Deno.serve(async(req:Request)=>{if(req.method!=="POST")return J(405,{ok:false,er
  await rpc(svc,"layer2_runtime_job_mark",{p_job_id:jobId,p_status:"running",p_payload:{layer:2,profile_id:profileId,operation:"scope_discovery",routing:"ordered_profile_routes"},p_result:{},p_error:null,p_attempt_count:0});
  const results:any[]=[];
  for(const course of courses){let acquired:any=null;try{
-   const target=discoveryUrl(cfg,course);acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent);
+   const target=discoveryUrl(cfg,course);acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent,cfg);
    const bytes=new TextEncoder().encode(acquired.html),rawHash=await digest(bytes),rawPath=`layer2/v2/discovery/${profileId}/${jobId}/${course.id}/source.html`,up=await svc.storage.from(BUCKET).upload(rawPath,bytes,{contentType:"text/html",upsert:false});if(up.error)throw new Error(`evidence upload: ${up.error.message}`);
    const raw=await rpc(svc,"layer2_evidence_capture",{p_source_id:rt.source_id,p_job_id:jobId,p_evidence_type:"layer2_html_snapshot",p_source_url:target,p_storage_path:rawPath,p_content_hash:rawHash,p_mime_type:"text/html",p_profile_version_id:rt.version_id,p_group_key:await digest(new TextEncoder().encode(`${rt.version_id}|${course.id}|discovery|${rawHash}`)),p_retention_class:"standard_365",p_retain_until:null,p_metadata:{layer:2,operation:"course_url_discovery",worker_version:VERSION,course_id:course.id,provider_key:acquired.providerKey,route_priority:acquired.routePriority,canonical_mutation_authorised:false}});
    const normalized={layer:2,runtime_version:VERSION,attempt_id:acquired.attemptId,job_id:jobId,provider_key:acquired.providerKey,source_evidence_id:raw.evidence_id,source_url:target,html:acquired.html,text:acquired.html,structured:null,canonical_mutation_authorised:false},normBytes=new TextEncoder().encode(JSON.stringify(normalized)),normHash=await digest(normBytes),normPath=`layer2/v2/discovery/${profileId}/${jobId}/${course.id}/extraction-input.json`,nu=await svc.storage.from(BUCKET).upload(normPath,normBytes,{contentType:"application/json",upsert:false});if(nu.error)throw new Error(`normalized upload: ${nu.error.message}`);
