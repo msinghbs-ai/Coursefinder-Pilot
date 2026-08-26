@@ -16,12 +16,14 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     await milestoneScreenshot(page,testInfo,'m2-4-1-layer1-operations')
   }finally{await finish(testInfo,runtime)}})
 
-  test('platform-admin controls are governed and source validation performs a real NZQA discovery check',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page);const nz=dialog.locator('article.l1o-source[data-country="NZ"]');const validate=nz.getByRole('button',{name:'Validate source'});await expect(validate).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await validate.click();await expect(validate).toHaveText('Validating…');await expect(validate).toHaveText('Validate source',{timeout:90000});await expect(nz).toContainText('passed');await expect(nz).toContainText(/409/);await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
+  test('authorised Layer 1 operator performs a real NZQA authority and count validation',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
+    await loginAsUatUser(page);const dialog=await openLayer1(page);const nz=dialog.locator('article.l1o-source[data-country="NZ"]');
+    const result=await page.evaluate(async()=>{const {supabase}=await import('/src/lib/supabase.js');const read=await supabase.rpc('admin_read',{p_operation:'layer1_operations',p_args:{}});if(read.error)throw new Error(read.error.message);const source=(read.data?.sources||[]).find(s=>s.country_code==='NZ');if(!source?.source_id)throw new Error('NZ Layer 1 source not found');const response=await supabase.functions.invoke('layer1-operations-control',{body:{action:'validate',source_id:source.source_id}});if(response.error)throw new Error(response.error.message);if(response.data?.error)throw new Error(response.data.error);return response.data})
+    expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toContain('v1.0.1');
+    await page.getByRole('button',{name:'Refresh'}).click();await expect(nz).toContainText('passed',{timeout:DETERMINISTIC_UI_TIMEOUT});await expect(nz).toContainText(/409/);await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
-  test('anonymous browser cannot execute Layer 1 read or command contracts',async({request},testInfo)=>{
+  test('anonymous browser cannot execute Layer 1 read or command contracts',async({request})=>{
     const base=process.env.UAT_BASE_URL;const home=await request.get(base);expect(home.ok()).toBeTruthy();const html=await home.text();expect(html).not.toContain('SUPABASE_SERVICE_ROLE_KEY')
-    // Database ACL/RLS negatives are also retained in migration evidence; this browser test ensures no public operational data is rendered without authentication.
   })
 })
