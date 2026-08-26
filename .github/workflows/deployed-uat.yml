@@ -109,24 +109,31 @@ jobs:
         env:
           UAT_TIER: ${{ steps.tier.outputs.tier }}
         run: |
-          targeted=(
-            tests/uat/layer1-operations-deployed.spec.mjs
-          )
+          changed=""
+          if git rev-parse HEAD^ >/dev/null 2>&1; then changed="$(git diff --name-only HEAD^ HEAD)"; fi
+          targeted=(tests/uat/layer1-operations-deployed.spec.mjs)
+          if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-|^supabase/(functions/layer2-|migrations/.*m2_4_2)|^tests/uat/layer2-)'; then
+            targeted=(tests/uat/layer2-operations-maturity-deployed.spec.mjs)
+          fi
           integration=(
+            tests/uat/layer2-operations-maturity-deployed.spec.mjs
+            tests/uat/layer2-platform-deployed.spec.mjs
+            tests/uat/layer2-provider-deployed.spec.mjs
             tests/uat/layer1-operations-deployed.spec.mjs
             tests/uat/admin-navigation-deployed.spec.mjs
             tests/uat/data-quality-deployed.spec.mjs
             tests/uat/performance-deployed.spec.mjs
             tests/uat/screen-state-persistence-deployed.spec.mjs
+            tests/uat/m2-3-intelligence-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
             tests/uat/data-quality-deployed.spec.mjs
             tests/uat/performance-deployed.spec.mjs
+            tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
             tests/uat/layer2-provider-deployed.spec.mjs
-            tests/uat/layer2-trial-deployed.spec.mjs
             tests/uat/admin-navigation-deployed.spec.mjs
             tests/uat/course-detail-polish-deployed.spec.mjs
             tests/uat/screen-state-persistence-deployed.spec.mjs
@@ -192,7 +199,7 @@ jobs:
             -f state="$desktop_state" \
             -f context="coursefinder/deployed-uat/${UAT_TIER}/chromium-desktop" \
             -f description="${UAT_TIER} deployed desktop UAT ${DESKTOP_OUTCOME}" \
-            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID"
           if [ "$UAT_TIER" != "targeted" ]; then
             if [ "$MOBILE_OUTCOME" = "success" ]; then mobile_state=success; else mobile_state=failure; fi
             gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
