@@ -19,7 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           curl -sS -o benchmark-response.json -w '%{http_code}' --max-time 180 \
-            'https://fxcwkweaxjtknorudmwp.supabase.co/functions/v1/layer3-benchmark-go5?job_id=f468baaf-4bb1-413b-b5c1-0f703a396e8a' \
+            'https://fxcwkweaxjtknorudmwp.supabase.co/functions/v1/layer3-benchmark-go5?job_id=6e4b9092-4ee5-42b9-a8ea-bb383c8a21c7' \
             > benchmark-status.txt
           cat benchmark-response.json
           code=$(cat benchmark-status.txt)
