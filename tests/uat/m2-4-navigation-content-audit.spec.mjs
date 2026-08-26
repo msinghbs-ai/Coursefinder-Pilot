@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'
-import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, loginAsUatUser, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 
 const ARTIFACT_DIR=path.resolve('uat-artifacts')
 const wait=ms=>new Promise(r=>setTimeout(r,ms))
@@ -42,16 +42,8 @@ async function visibleNavigation(page){return page.locator('.m-nav').evaluate(na
 
 async function openMenuItem(page,label){
   await closeAuxiliarySurface(page)
-  const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
-  await expect(item).toBeVisible({timeout:45_000})
-  const box=await item.boundingBox(),vp=page.viewportSize()
-  if(box&&vp&&(box.y<0||box.y+box.height>vp.height)){
-    const mobile=page.locator('.m-mobile-menu')
-    if(await mobile.isVisible().catch(()=>false)){await mobile.click();await expect(page.locator('.m-sidebar')).toHaveClass(/is-open/)}
-    await item.scrollIntoViewIfNeeded()
-  }
   const started=Date.now()
-  await item.click()
+  await clickPrimaryNav(page,label)
   await wait(650)
   return Date.now()-started
 }
@@ -70,6 +62,6 @@ async function captureSurface(page,label){
 }
 
 test.describe('M2.4 navigation/content audit @deployed',()=>{
- test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await fs.mkdir(ARTIFACT_DIR,{recursive:true});await writeRunEnvironment({suite:'m2-4-navigation-content-audit-v1.2',change_control:'CF-CHG-20260826-040'})})
+ test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await fs.mkdir(ARTIFACT_DIR,{recursive:true});await writeRunEnvironment({suite:'m2-4-navigation-content-audit-v1.3',change_control:'CF-CHG-20260826-040'})})
  test('capture visible menu, page content, navigation timing and screenshots',async({page},testInfo)=>{const runtime=observeRuntime(page);try{await loginAsUatUser(page);const navigation=await visibleNavigation(page);const pages=[];for(const group of navigation){for(const label of group.items)pages.push(await captureSurface(page,label))}const payload={captured_at:new Date().toISOString(),project:testInfo.project.name,viewport:page.viewportSize(),navigation,pages};const file=path.join(ARTIFACT_DIR,`${testInfo.project.name}-navigation-content-audit.json`);await fs.writeFile(file,JSON.stringify(payload,null,2));await testInfo.attach('navigation-content-audit',{path:file,contentType:'application/json'});expect(navigation.some(x=>x.group==='Data Operations')).toBeTruthy();expect(navigation.some(x=>x.group==='Help & Guides')).toBeTruthy()}finally{await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}})
 })
