@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const FN = "layer2-scope-discover-scheduled";
 const BUCKET = "evidence";
-const VERSION = "layer2-scope-discover-scheduled-v1.0.2";
+const VERSION = "layer2-scope-discover-scheduled-v1.0.3";
 const J = (status:number, body:unknown) => new Response(JSON.stringify(body), {status, headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean = (v:unknown) => String(v ?? "").replace(/\s+/g," ").trim();
 const norm = (v:unknown) => clean(v).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -45,7 +45,7 @@ Deno.serve(async(req:Request)=>{
     const ranked=rankCandidates(course,fetched.html,fetched.url);const rows:any[]=[];
     if(ranked.candidates.length){ranked.candidates.forEach((x:any,i:number)=>rows.push({course_id:course.id,source_profile_version_id:rt.version_id,provider_attempt_id:attemptId,evidence_id:nev.evidence_id,discovered_url:x.url,discovered_title:x.title,discovered_regulatory_code:x.regulatory_code_seen?ranked.expectedCode:null,match_score:x.match_score,match_basis:{title_score:x.title_score,regulatory_code_seen:x.regulatory_code_seen,expected_title:ranked.expectedTitle,expected_course_code:ranked.expectedCode,worker_version:VERSION},status:i===0?ranked.status:"candidate",selected:i===0&&ranked.selected,blocker:i===0?ranked.blocker:null}));}
     else rows.push({course_id:course.id,source_profile_version_id:rt.version_id,provider_attempt_id:attemptId,evidence_id:nev.evidence_id,status:"current_page_not_found",selected:false,match_basis:{expected_title:ranked.expectedTitle,expected_course_code:ranked.expectedCode,worker_version:VERSION},blocker:ranked.blocker});
-    const ins=await svc.schema("pipeline").from("layer2_course_discovery_candidates").insert(rows);if(ins.error)throw new Error(`candidate write: ${ins.error.message}`);
+    const written=await rpc(svc,"layer2_discovery_candidates_write",{p_rows:rows});if(Number(written)!==rows.length)throw new Error(`candidate write count mismatch: ${written}/${rows.length}`);
     await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:attemptId,p_status:"completed",p_http_status:fetched.status,p_mime:fetched.mime,p_raw_evidence:raw.evidence_id,p_html_evidence:raw.evidence_id,p_screenshot_evidence:null,p_extraction_status:"discovery_evaluated",p_blocker:ranked.blocker,p_metrics:{operation:"scope_discovery",candidate_count:ranked.candidates.length,selected:ranked.selected,worker_version:VERSION}});
     results.push({course_id:course.id,status:ranked.status,selected_url:ranked.selected?ranked.candidates[0]?.url:null,candidates:ranked.candidates.length});
   }catch(e:any){if(attemptId)try{await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:attemptId,p_status:"failed",p_http_status:null,p_mime:null,p_raw_evidence:null,p_html_evidence:null,p_screenshot_evidence:null,p_extraction_status:"blocked",p_blocker:String(e.message||e).slice(0,1000),p_metrics:{operation:"scope_discovery",worker_version:VERSION}});}catch{}results.push({course_id:course.id,status:"failed",error:String(e.message||e)});}}
