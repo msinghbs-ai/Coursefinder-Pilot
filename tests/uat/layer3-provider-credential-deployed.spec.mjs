@@ -32,8 +32,9 @@ test.describe('CourseFinder Layer 3 provider credential control @deployed',()=>{
         await expect(m23).toBeVisible({timeout:45_000})
         await m23.click()
         const dialog=page.getByRole('dialog',{name:'M2.3 Intelligence'})
-        await expect(dialog.getByText('openrouter-free-router-v1',{exact:true})).toBeVisible()
-        await expect(dialog.getByText('Paused',{exact:true})).toBeVisible()
+        const profileCard=dialog.getByRole('article').filter({hasText:'openrouter-free-router-v1'})
+        await expect(profileCard.getByText('openrouter-free-router-v1',{exact:true})).toBeVisible()
+        await expect(profileCard.getByText('Paused',{exact:true})).toBeVisible()
         await milestoneScreenshot(page,testInfo,'layer3-provider-credential-lower-rank-denied')
         return
       }
