@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import {
   attachRuntimeEvidence,
   assertNoServerErrors,
+  clickPrimaryNav,
   loginAsUatUser,
   milestoneScreenshot,
   observeRuntime,
@@ -13,13 +14,15 @@ async function finish(testInfo, runtime) {
   assertNoServerErrors(runtime)
 }
 
-async function openWorkspace(page) {
+async function openWorkspace(page, targetTab='Layer 3') {
   await loginAsUatUser(page)
-  const launcher = page.getByRole('button', { name: /M2\.3 Intelligence/i })
-  await expect(launcher).toBeVisible({ timeout: 45_000 })
-  await launcher.click()
+  const navLabel = targetTab === 'Layer 4' ? 'Layer 4 — Human Resolution' : targetTab === 'Onboarding' ? 'Onboarding' : 'Layer 3 — AI Interpretation'
+  await clickPrimaryNav(page, navLabel)
   const dialog = page.getByRole('dialog', { name: 'M2.3 Intelligence' })
-  await expect(dialog).toBeVisible()
+  await expect(dialog).toBeVisible({ timeout: 45_000 })
+  if (!['Layer 3','Layer 4','Onboarding'].includes(targetTab)) {
+    await dialog.locator('nav').getByRole('button', { name: targetTab, exact: true }).click()
+  }
   return dialog
 }
 
@@ -27,13 +30,13 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
   test.beforeAll(async () => {
     if (!process.env.UAT_BASE_URL) throw new Error('UAT_BASE_URL is required for deployed acceptance.')
     if (!process.env.UAT_EMAIL || !process.env.UAT_PASSWORD) throw new Error('UAT_EMAIL and UAT_PASSWORD are required for deployed acceptance.')
-    await writeRunEnvironment({ suite: 'deployed-m2-3-intelligence', change_control: 'CF-CHG-20260825-036/037/038' })
+    await writeRunEnvironment({ suite: 'deployed-m2-3-intelligence-v2', change_control: 'CF-CHG-20260825-036/037/038 + CF-CHG-20260826-040' })
   })
 
   test('governed Layer 3 profile exposes the benchmark-passed pinned model and is executable', async ({ page }, testInfo) => {
     const runtime = observeRuntime(page)
     try {
-      const dialog = await openWorkspace(page)
+      const dialog = await openWorkspace(page, 'Layer 3')
       const profileCard = dialog.getByRole('article').filter({ hasText: 'openrouter-free-router-v1' })
       await expect(profileCard.getByText('openrouter-free-router-v1', { exact: true })).toBeVisible()
       await expect(profileCard).toContainText('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')
@@ -51,9 +54,8 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
   test('terminal Layer 4 and refresh intelligence workspaces expose governed context and bounded targets', async ({ page }, testInfo) => {
     const runtime = observeRuntime(page)
     try {
-      const dialog = await openWorkspace(page)
+      const dialog = await openWorkspace(page, 'Layer 4')
       const tabs = dialog.locator('nav')
-      await tabs.getByRole('button', { name: 'Layer 4', exact: true }).click()
       await expect(dialog.getByRole('heading', { name: 'Terminal human resolution', exact: true })).toBeVisible()
       await expect(dialog.getByPlaceholder(/prioritise unresolved field/i)).toBeVisible()
       await tabs.getByRole('button', { name: 'Refresh', exact: true }).click()
@@ -70,9 +72,8 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
   test('Important Links and Important Dates retain source precision and governance messaging', async ({ page }, testInfo) => {
     const runtime = observeRuntime(page)
     try {
-      const dialog = await openWorkspace(page)
+      const dialog = await openWorkspace(page, 'Important Links')
       const tabs = dialog.locator('nav')
-      await tabs.getByRole('button', { name: 'Important Links', exact: true }).click()
       await expect(dialog.getByRole('heading', { name: 'Important Links directory', exact: true })).toBeVisible()
       await tabs.getByRole('button', { name: 'Important Dates', exact: true }).click()
       await expect(dialog.getByRole('heading', { name: 'Important Dates registry', exact: true })).toBeVisible()
@@ -90,8 +91,7 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', ()
   test('reusable onboarding workspace exposes the accepted lifecycle and governed audit boundary', async ({ page }, testInfo) => {
     const runtime = observeRuntime(page)
     try {
-      const dialog = await openWorkspace(page)
-      await dialog.locator('nav').getByRole('button', { name: 'Onboarding', exact: true }).click()
+      const dialog = await openWorkspace(page, 'Onboarding')
       await expect(dialog.getByRole('heading', { name: 'Country / Provider / Course Onboarding', exact: true })).toBeVisible()
       await expect(dialog.getByText(/Shared canonical lifecycle only/i)).toBeVisible()
       const stage = dialog.getByLabel('Stage')
