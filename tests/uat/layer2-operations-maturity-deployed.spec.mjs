@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 import { openLayer2, openLayer2Providers } from './support/navigation.mjs'
@@ -6,7 +7,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function firecrawlDrawer(page){const b=page.locator('.l2p-provider-list > button').filter({hasText:'Firecrawl'}).first();await expect(b).toBeVisible();await b.click();const d=page.locator('.l2p-drawer');await expect(d).toBeVisible();return d}
 
 test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>{
- test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-operations-m2-4-2-v1.5',change_control:'CF-CHG-20260827-044'})})
+ test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-operations-m2-4-2-v1.6',change_control:'CF-CHG-20260827-044'})})
 
  test('routine Layer 2 workspace exposes Country State University scope with one governed sync action',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const dialog=await openLayer2(page)
@@ -51,4 +52,24 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await expect(d.getByRole('button',{name:'Edit provider settings'})).toHaveCount(0)
   await milestoneScreenshot(page,testInfo,'layer2-firecrawl-provider-privileged')
  }finally{await finish(testInfo,runtime)}})
+
+ test('Layer 2 recovery and reference contracts remain checked in',async()=>{
+  const cancelSql=await fs.readFile('supabase/migrations/20260827221500_m2_4_2_cancel_reconcile_guard.sql','utf8')
+  expect(cancelSql).toContain("if v_existing='cancelled'")
+  expect(cancelSql).toContain("v_status:='cancelled'")
+  expect(cancelSql).toMatch(/revoke all on function public\.layer2_run_batch_reconcile\(uuid\) from public,anon,authenticated/i)
+  expect(cancelSql).toMatch(/grant execute on function public\.layer2_run_batch_reconcile\(uuid\) to service_role/i)
+
+  const toeflSql=await fs.readFile('supabase/migrations/20260827223000_m2_4_2_toefl_ibt_apply_mapping.sql','utf8')
+  expect(toeflSql).toContain("TOEFL_IBT")
+  expect(toeflSql).toContain("layer2_apply_course_candidate")
+  expect(toeflSql).toMatch(/grant execute on function public\.layer2_apply_course_candidate\(uuid,boolean\) to service_role/i)
+
+  const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
+  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.2.5')
+  expect(discovery).toContain('courseBudgetMs')
+  expect(discovery).toContain('invocationBudgetMs=85000')
+  expect(discovery).toContain('continuation_request_id')
+ })
+
 })
