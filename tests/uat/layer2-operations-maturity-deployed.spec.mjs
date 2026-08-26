@@ -6,8 +6,49 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function firecrawlDrawer(page){const b=page.locator('.l2p-provider-list > button').filter({hasText:'Firecrawl'}).first();await expect(b).toBeVisible();await b.click();const d=page.locator('.l2p-drawer');await expect(d).toBeVisible();return d}
 
 test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>{
- test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-operations-m2-4-2-v1.4',change_control:'CF-CHG-20260827-044'})})
- test('routine Layer 2 workspace exposes country to university sync and quarantines acquisition internals',async({page},testInfo)=>{const runtime=observeRuntime(page);try{await loginAsUatUser(page);const dialog=await openLayer2(page);await expect(dialog.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible();await expect(dialog.getByRole('heading',{name:'Sync Course enrichment'})).toBeVisible();const country=dialog.getByLabel('Layer 2 sync country'),uni=dialog.getByLabel('Layer 2 sync university');await expect(country).toBeVisible();await expect(country).toHaveValue('AU');await expect(uni).toBeVisible();const labels=await uni.locator('option').allTextContents();expect(labels.join(' ')).toMatch(/RMIT/i);expect(labels.join(' ')).toMatch(/Queensland/i);expect(labels.join(' ')).toMatch(/Federation/i);for(const label of ['Catalogue','Ready to sync','Needs discovery','Run concurrency'])await expect(dialog.getByText(label,{exact:true}).first()).toBeVisible();await expect(dialog.getByRole('button',{name:/Discover & sync|Sync now|Run active/})).toBeVisible();await expect(dialog.getByRole('button',{name:/Run bounded trial/i})).toHaveCount(0);await expect(dialog.getByText(/Acquisition vendors and routing stay automatic/i)).toBeVisible();await expect(dialog.getByText(/NZ Course enrichment:/)).toBeVisible();await milestoneScreenshot(page,testInfo,'layer2-simple-sync-m2-4-2')}finally{await finish(testInfo,runtime)}})
- test('governed profile policy distinguishes run concurrency from acquisition-vendor concurrency',async({page},testInfo)=>{const runtime=observeRuntime(page);try{await loginAsUatUser(page);const dialog=await openLayer2(page);await dialog.getByRole('button',{name:'Schedule & run policy'}).first().click();const modal=page.locator('.l2o-card');await expect(modal).toBeVisible();await expect(modal.getByText('Run concurrency',{exact:true})).toBeVisible();const c=modal.locator('input[type="number"]').nth(1);await expect(c).toHaveAttribute('min','1');await expect(c).toHaveAttribute('max','8');await expect(modal.getByText(/Acquisition-vendor concurrency.*configured separately/i)).toBeVisible();await expect(modal.getByRole('button',{name:/delete|reset|truncate/i})).toHaveCount(0);await modal.getByRole('button',{name:'Cancel'}).click()}finally{await finish(testInfo,runtime)}})
- test('Firecrawl vendor limits are visible while edit controls remain Platform Admin privileged',async({page},testInfo)=>{const runtime=observeRuntime(page);try{await loginAsUatUser(page);await openLayer2Providers(page);const d=await firecrawlDrawer(page);await expect(d.getByText('Vendor concurrency',{exact:true})).toBeVisible();await expect(d.locator('.l2p-info').filter({hasText:'Vendor concurrency'})).toContainText(/\d+/);await expect(d.getByText('Rate / timeout',{exact:true})).toBeVisible();await expect(page.getByText(/Credentials are write-only and provider concurrency is separate from run concurrency/i)).toBeVisible();await expect(d.getByRole('button',{name:'Edit provider settings'})).toHaveCount(0);await milestoneScreenshot(page,testInfo,'layer2-firecrawl-provider-privileged')}finally{await finish(testInfo,runtime)}})
+ test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-operations-m2-4-2-v1.5',change_control:'CF-CHG-20260827-044'})})
+
+ test('routine Layer 2 workspace exposes Country State University scope with one governed sync action',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const dialog=await openLayer2(page)
+  await expect(dialog.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible()
+  await expect(dialog.getByRole('heading',{name:'Sync Course enrichment'})).toBeVisible()
+  const country=dialog.getByLabel('Layer 2 sync country'),scope=dialog.getByLabel('Layer 2 fetch scope')
+  await expect(country).toHaveValue('AU');await expect(scope).toHaveValue('country')
+  const scopeLabels=await scope.locator('option').allTextContents();expect(scopeLabels.join(' ')).toMatch(/Country.*State.*University/i)
+  for(const label of ['Universities','Catalogue Courses','Ready to sync','Needs discovery'])await expect(dialog.getByText(label,{exact:true}).first()).toBeVisible()
+  await expect(dialog.getByRole('button',{name:/Discover & sync|Sync now/})).toBeVisible()
+
+  await scope.selectOption('state')
+  const state=dialog.getByLabel('Layer 2 sync state');await expect(state).toBeVisible()
+  const stateLabels=await state.locator('option').allTextContents();expect(stateLabels.join(' ')).toMatch(/Victoria/i);expect(stateLabels.join(' ')).toMatch(/Queensland/i)
+
+  await scope.selectOption('university')
+  const uni=dialog.getByLabel('Layer 2 sync university');await expect(uni).toBeVisible()
+  const uniLabels=await uni.locator('option').allTextContents();expect(uniLabels.join(' ')).toMatch(/RMIT/i);expect(uniLabels.join(' ')).toMatch(/Queensland/i);expect(uniLabels.join(' ')).toMatch(/Federation/i)
+  await expect(dialog.getByText(/Direct HTTP.*Firecrawl.*remaining configured providers/i)).toBeVisible()
+  await expect(dialog.getByRole('button',{name:/Run bounded trial/i})).toHaveCount(0)
+  await milestoneScreenshot(page,testInfo,'layer2-a9-scope-sync')
+ }finally{await finish(testInfo,runtime)}})
+
+ test('routine Layer 2 screen quarantines engineering controls behind one Advanced configuration entry',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const dialog=await openLayer2(page)
+  await expect(dialog.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(1)
+  await expect(dialog.getByRole('heading',{name:'Scope / eligible records'})).toHaveCount(0)
+  await expect(dialog.getByRole('heading',{name:'Provider / source performance'})).toHaveCount(0)
+  await expect(dialog.getByRole('heading',{name:'Queue / concurrency'})).toHaveCount(0)
+  await expect(dialog.getByRole('button',{name:/Schedule & run policy/i})).toHaveCount(0)
+  await expect(dialog.getByRole('button',{name:/Advanced provider config/i})).toHaveCount(0)
+  await expect(dialog.getByText(/provider credentials|route priority|vendor concurrency/i)).toHaveCount(0)
+  await expect(dialog.getByRole('button',{name:/delete|reset|truncate/i})).toHaveCount(0)
+ }finally{await finish(testInfo,runtime)}})
+
+ test('Firecrawl vendor limits remain visible only in privileged provider configuration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);await openLayer2Providers(page);const d=await firecrawlDrawer(page)
+  await expect(d.getByText('Vendor concurrency',{exact:true})).toBeVisible()
+  await expect(d.locator('.l2p-info').filter({hasText:'Vendor concurrency'})).toContainText(/\d+/)
+  await expect(d.getByText('Rate / timeout',{exact:true})).toBeVisible()
+  await expect(page.getByText(/Credentials are write-only and provider concurrency is separate from run concurrency/i)).toBeVisible()
+  await expect(d.getByRole('button',{name:'Edit provider settings'})).toHaveCount(0)
+  await milestoneScreenshot(page,testInfo,'layer2-firecrawl-provider-privileged')
+ }finally{await finish(testInfo,runtime)}})
 })
