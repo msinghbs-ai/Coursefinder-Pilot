@@ -1,0 +1,29 @@
+name: M2.3 Go5 Layer 3 Benchmark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/m2-3-go5-benchmark.yml
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run one-time governed Layer 3 benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sS -o benchmark-response.json -w '%{http_code}' --max-time 180 \
+            'https://fxcwkweaxjtknorudmwp.supabase.co/functions/v1/layer3-benchmark-go5?job_id=f468baaf-4bb1-413b-b5c1-0f703a396e8a' \
+            > benchmark-status.txt
+          cat benchmark-response.json
+          code=$(cat benchmark-status.txt)
+          if [ "$code" != "200" ]; then
+            echo "Benchmark gate did not pass (HTTP $code)"
+            exit 1
+          fi
