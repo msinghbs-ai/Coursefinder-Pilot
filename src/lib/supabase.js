@@ -9,6 +9,8 @@ export const supabase = createClient(url ?? '', key ?? '', {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
 
+let activeCoursePageRead = null
+
 /**
  * Governed browser read boundary.
  *
@@ -26,12 +28,27 @@ async function adminRead(operation, args = {}) {
     if (route === operation) return []
   }
 
-  const { data, error } = await supabase.rpc('admin_read', {
+  // M2.4.0: the first Courses render and its large filter catalogue used to hit
+  // admin_read concurrently. Preserve both exact governed reads, but allow the
+  // operator-visible page request to complete before filter metadata competes for
+  // the same database/API capacity. Subsequent filter refreshes remain exact.
+  if (operation === 'course_filters' && activeCoursePageRead) {
+    try { await activeCoursePageRead } catch { /* page caller owns its error */ }
+  }
+
+  const request = supabase.rpc('admin_read', {
     p_operation: operation,
     p_args: args ?? {},
+  }).then(({ data, error }) => {
+    if (error) throw error
+    return data
   })
-  if (error) throw error
-  return data
+
+  if (operation === 'courses_page') {
+    activeCoursePageRead = request
+    try { return await request } finally { if (activeCoursePageRead === request) activeCoursePageRead = null }
+  }
+  return request
 }
 
 async function invoke(name, body) {
