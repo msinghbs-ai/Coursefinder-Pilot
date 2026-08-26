@@ -124,8 +124,13 @@ async function inViewport(locator,page){
   return !!box&&!!vp&&box.x>=0&&box.y>=0&&box.x+box.width<=vp.width&&box.y+box.height<=vp.height
 }
 
+const NAV_ALIASES={
+  'Layer 2 Operations':'Layer 2 — Enrichment',
+}
+
 export async function clickPrimaryNav(page,label){
-  const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
+  const resolved=NAV_ALIASES[label]||label
+  const item=page.locator('button.m-nav-item').filter({hasText:resolved}).first()
   await expect(item).toBeVisible({timeout:45_000})
   if(!(await inViewport(item,page))){
     const menu=page.locator('.m-mobile-menu')
