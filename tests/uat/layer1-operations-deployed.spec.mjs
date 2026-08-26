@@ -33,7 +33,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
       const data=await response.json().catch(()=>({}));if(!response.ok||data?.error)throw new Error(data?.error||`Layer 1 validation HTTP ${response.status}`);return data
     },{origin:supabaseOrigin,authorization:requestHeaders.authorization,apikey:requestHeaders.apikey,sourceId:source.source_id})
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toContain('v1.0.1')
-    await page.getByRole('button',{name:'Refresh'}).click();await expect(nz).toContainText('passed',{timeout:DETERMINISTIC_UI_TIMEOUT});await expect(nz).toContainText(/409/);await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
+    await dialog.getByRole('button',{name:'Refresh'}).click();await expect(nz).toContainText('passed',{timeout:DETERMINISTIC_UI_TIMEOUT});await expect(nz).toContainText(String(result.validation.discovered.providers),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
   test('anonymous browser cannot execute Layer 1 read or command contracts',async({request})=>{
