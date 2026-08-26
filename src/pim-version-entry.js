@@ -1,57 +1,27 @@
-const VERSION='2.15.6'
+const VERSION='2.15.7'
 
 const RELEASES=[
-  {
-    version:'2.15.6',
-    date:'26 Aug 2026',
-    title:'Streamlined Data Operations navigation',
-    changes:[
-      'Reorganised the primary Admin into Overview, Catalogue, Data Operations, Insights, Quality & Review, Decision Tools, Governance & Platform, and Help & Guides.',
-      'Moved Layer 1 — Regulatory out of the Settings journey and removed unrelated StatsCan qualification and Pilot reset controls from the normal Layer 1 view.',
-      'Unified Layer 2, Layer 3, Layer 4, Evidence, Jobs/Runs and Onboarding under Data Operations and moved Scholarship Selection into Decision Tools.',
-      'Added an in-product Guides & Runbooks workspace with role-oriented quick guidance and direct workflow entry points.',
-    ],
-  },
-  {
-    version:'2.15.5',
-    date:'26 Aug 2026',
-    title:'Layer 3 provider credential control',
-    changes:[
-      'Added a Platform Admin Layer 3 Provider workspace for selecting the governed OpenRouter profile and entering its API key.',
-      'Provider credentials are write-only from the browser and stored encrypted in Supabase Vault; the key is never returned to the Admin UI.',
-      'Added bounded provider verification while keeping the Layer 3 profile paused until the separate quality benchmark passes.',
-      'M2.3 Intelligence continues to expose the governed Layer 4 terminal review workspace and six decision actions.',
-    ],
-  },
-  {
-    version:'2.15.4',
-    date:'26 Aug 2026',
-    title:'Release notes in the Admin UI',
-    changes:[
-      'The top-right version number is now interactive and opens governed release notes.',
-      'Release history shows the version, release date and operator-facing changes introduced.',
-      'Release notes can be closed with the close button, backdrop click or Escape key.',
-    ],
-  },
-  {
-    version:'2.15.3',
-    date:'26 Aug 2026',
-    title:'Course detail decision-workspace polish',
-    changes:[
-      'Standardised Course detail sections for fees, entry requirements, locations and operational state.',
-      'Kept required enrichment gaps visible while suppressing empty non-required sections.',
-      'Added operator-controlled Course detail section ordering with persisted screen preference.',
-    ],
-  },
-  {
-    version:'2.15.2',
-    date:'26 Aug 2026',
-    title:'M2.3 governed decision UX hardening',
-    changes:[
-      'Continued M2.3 browser hardening without changing Layer 1 identity or publication authority.',
-      'Preserved governed Evidence and Data Quality operational context across the Admin workspace.',
-    ],
-  },
+  {version:'2.15.7',date:'26 Aug 2026',title:'Layer 1 regulatory operations maturity',changes:[
+    'Matured Data Operations → Layer 1 — Regulatory into an AU/NZ operational control plane with source health, expected counts, variance guardrails, progress, reconciliation, Evidence and schedule visibility.',
+    'Platform Admins can validate approved regulatory sources, queue governed ingestion, pause/resume processing and maintain versioned source configuration without exposing service credentials or destructive Pilot controls.',
+    'Added duplicate/concurrent-run protection, retry/resume state, source-hash no-change handling, stuck-job heartbeat visibility and transient queue retention that explicitly excludes governed Evidence and source versions.',
+    'Optimised deployed UAT so targeted development uses one cached Chromium setup and desktop feedback loop; mobile remains a required integration and final acceptance gate.'
+  ]},
+  {version:'2.15.6',date:'26 Aug 2026',title:'Streamlined Data Operations navigation',changes:[
+    'Reorganised the primary Admin into Overview, Catalogue, Data Operations, Insights, Quality & Review, Decision Tools, Governance & Platform, and Help & Guides.',
+    'Moved Layer 1 — Regulatory out of the Settings journey and removed unrelated StatsCan qualification and Pilot reset controls from the normal Layer 1 view.',
+    'Unified Layer 2, Layer 3, Layer 4, Evidence, Jobs/Runs and Onboarding under Data Operations and moved Scholarship Selection into Decision Tools.',
+    'Added an in-product Guides & Runbooks workspace with role-oriented quick guidance and direct workflow entry points.'
+  ]},
+  {version:'2.15.5',date:'26 Aug 2026',title:'Layer 3 provider credential control',changes:[
+    'Added a Platform Admin Layer 3 Provider workspace for selecting the governed OpenRouter profile and entering its API key.',
+    'Provider credentials are write-only from the browser and stored encrypted in Supabase Vault; the key is never returned to the Admin UI.',
+    'Added bounded provider verification while keeping the Layer 3 profile paused until the separate quality benchmark passes.',
+    'M2.3 Intelligence continues to expose the governed Layer 4 terminal review workspace and six decision actions.'
+  ]},
+  {version:'2.15.4',date:'26 Aug 2026',title:'Release notes in the Admin UI',changes:['The top-right version number is now interactive and opens governed release notes.','Release history shows the version, release date and operator-facing changes introduced.','Release notes can be closed with the close button, backdrop click or Escape key.']},
+  {version:'2.15.3',date:'26 Aug 2026',title:'Course detail decision-workspace polish',changes:['Standardised Course detail sections for fees, entry requirements, locations and operational state.','Kept required enrichment gaps visible while suppressing empty non-required sections.','Added operator-controlled Course detail section ordering with persisted screen preference.']},
+  {version:'2.15.2',date:'26 Aug 2026',title:'M2.3 governed decision UX hardening',changes:['Continued M2.3 browser hardening without changing Layer 1 identity or publication authority.','Preserved governed Evidence and Data Quality operational context across the Admin workspace.']}
 ]
 let attempts=0,releaseUiMounted=false
 function releaseButton(el){el.setAttribute('role','button');el.setAttribute('tabindex','0');el.setAttribute('aria-haspopup','dialog');el.setAttribute('aria-label',`Open release notes for PIM Admin v${VERSION}`);el.title='View release notes';if(el.dataset.releaseNotesBound==='true')return;el.dataset.releaseNotesBound='true';el.addEventListener('click',openReleaseNotes);el.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openReleaseNotes()}})}

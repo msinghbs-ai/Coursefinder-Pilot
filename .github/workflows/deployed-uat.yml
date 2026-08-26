@@ -109,6 +109,7 @@ jobs:
           UAT_TIER: ${{ steps.tier.outputs.tier }}
         run: |
           targeted=(
+            tests/uat/layer1-operations-deployed.spec.mjs
             tests/uat/admin-navigation-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
             tests/uat/layer2-provider-deployed.spec.mjs
@@ -125,6 +126,7 @@ jobs:
             tests/uat/screen-state-persistence-deployed.spec.mjs
           )
           acceptance=(
+            tests/uat/layer1-operations-deployed.spec.mjs
             tests/uat/data-quality-deployed.spec.mjs
             tests/uat/performance-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs

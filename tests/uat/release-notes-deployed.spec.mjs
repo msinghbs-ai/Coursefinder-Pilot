@@ -1,41 +1,7 @@
 import { test, expect } from '@playwright/test'
-import {
-  attachRuntimeEvidence,
-  assertNoServerErrors,
-  loginAsUatUser,
-  milestoneScreenshot,
-  observeRuntime,
-  writeRunEnvironment,
-} from './support/runtime-evidence.mjs'
-
+import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
-
-test.describe('CourseFinder PIM Admin v2.15.6 release notes @deployed',()=>{
-  test.beforeAll(async()=>{
-    if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.')
-    if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.')
-    await writeRunEnvironment({suite:'deployed-pim-v2.15.6-release-notes',change_control:'CF-CHG-20260826-040'})
-  })
-
-  test('top-right version opens maintained release history and closes accessibly',async({page},testInfo)=>{
-    const runtime=observeRuntime(page)
-    try{
-      await loginAsUatUser(page)
-      await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.6')
-      const version=page.locator('.m-release-pill')
-      await expect(version).toContainText('v2.15.6')
-      await expect(version).toHaveAttribute('role','button')
-      await expect(version).toHaveAttribute('aria-haspopup','dialog')
-      await version.click()
-      const dialog=page.getByRole('dialog',{name:'Release notes'})
-      await expect(dialog).toBeVisible()
-      await expect(dialog.locator('[data-release-version="2.15.6"]')).toContainText('Streamlined Data Operations navigation')
-      await expect(dialog.locator('[data-release-version="2.15.5"]')).toContainText('Layer 3 provider credential control')
-      await expect(dialog).toContainText('Guides & Runbooks')
-      await milestoneScreenshot(page,testInfo,'pim-v2-15-6-release-notes')
-      await page.keyboard.press('Escape')
-      await expect(dialog).toBeHidden()
-      await expect(version).toBeFocused()
-    }finally{await finish(testInfo,runtime)}
-  })
+test.describe('CourseFinder PIM Admin v2.15.7 release notes @deployed',()=>{
+ test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.');await writeRunEnvironment({suite:'deployed-pim-v2.15.7-release-notes',change_control:'CF-CHG-20260826-043'})})
+ test('top-right version opens maintained release history and closes accessibly',async({page},testInfo)=>{const runtime=observeRuntime(page);try{await loginAsUatUser(page);await expect(page.locator('#governed-runtime-marker')).toContainText('PIM Admin v2.15.7');const version=page.locator('.m-release-pill');await expect(version).toContainText('v2.15.7');await expect(version).toHaveAttribute('role','button');await expect(version).toHaveAttribute('aria-haspopup','dialog');await version.click();const dialog=page.getByRole('dialog',{name:'Release notes'});await expect(dialog).toBeVisible();await expect(dialog.locator('[data-release-version="2.15.7"]')).toContainText('Layer 1 regulatory operations maturity');await expect(dialog.locator('[data-release-version="2.15.6"]')).toContainText('Streamlined Data Operations navigation');await expect(dialog).toContainText('Evidence');await milestoneScreenshot(page,testInfo,'pim-v2-15-7-release-notes');await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await expect(version).toBeFocused()}finally{await finish(testInfo,runtime)}})
 })
