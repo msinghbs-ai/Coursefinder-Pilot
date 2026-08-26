@@ -1,3 +1,4 @@
-M2.4.0 bounded integration candidate after targeted desktop/mobile PASS.
-Base working SHA before marker: ecc81dfbf5e6e985eb84b4974c50b0657aac10a0
-Targeted UAT run: 32954022764
+M2.4.1 bounded integration candidate after final targeted desktop PASS.
+Base working SHA before marker: fcb77befb797e98f9369b33a79ab29a4950717ff
+Targeted UAT run: 32968177074
+Scope: Layer 1 AU/NZ operations maturity, scheduling, recovery, housekeeping, authority boundaries and repo/runtime alignment.
