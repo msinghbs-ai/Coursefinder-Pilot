@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.2.4";
+const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.2.5";
 const J=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:unknown)=>String(v??"").replace(/\s+/g," ").trim();
 const norm=(v:unknown)=>clean(v).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -16,8 +16,10 @@ function discoveryUrl(cfg:any,course:any){const d=cfg.discovery_strategy||{};if(
 function fallbackReason(status:number|null,error:string|null){if(error==="timeout")return"timeout";if(status===403)return"403";if(status===429)return"429";if(status&&status>=500)return"5xx";if(status&&status>=400)return String(status);return error?"blocked":"extraction_failed"}
 function canFallback(route:any,reason:string){const allowed=(route?.fallback_on||[]).map((x:any)=>String(x).toLowerCase());return allowed.includes(reason.toLowerCase())||allowed.includes("blocked")&&reason==="network_error"}
 async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,cfg:any){
- const failures:any[]=[];
+ const failures:any[]=[],courseStarted=performance.now(),courseBudgetMs=Math.min(Math.max(Number(cfg?.discovery_strategy?.course_acquisition_budget_ms||70000),15000),90000);
  for(const route of (rt.routes||[])){
+  const remainingCourseBudget=courseBudgetMs-(performance.now()-courseStarted);
+  if(remainingCourseBudget<=5000){failures.push({reason:"course_acquisition_budget_exhausted"});break;}
   const pc=await rpc(svc,"layer2_provider_runtime_config",{p_provider_id:route.provider_id});
   if(!pc?.enabled){failures.push({provider_id:route.provider_id,reason:"provider_disabled"});continue}
   if(pc.auth_scheme!=="none"&&!pc.secret){failures.push({provider_key:pc.provider_key,reason:"credential_missing"});continue}
@@ -41,7 +43,7 @@ async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,c
     else if(pc.auth_scheme==="bearer")headers.authorization="Bearer "+pc.secret;
     else if(pc.auth_scheme==="header")headers[pc.auth_field_name||"X-Api-Key"]=pc.secret;
    }
-   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),Math.min(Math.max(Number(pc.timeout_seconds||30),5),120)*1000);let res:Response;
+   const providerTimeoutMs=Math.min(Math.max(Number(pc.timeout_seconds||30),5),120)*1000,fetchBudgetMs=Math.max(5000,Math.min(providerTimeoutMs,courseBudgetMs-(performance.now()-courseStarted))),ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),fetchBudgetMs);let res:Response;
    try{res=await fetch(fetchUrl,{method,body,headers,redirect:"follow",signal:ctl.signal})}finally{clearTimeout(timer)}
    const raw=await res.text(),latency=Math.round(performance.now()-st);
    if(!res.ok){
@@ -81,7 +83,7 @@ async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,c
      const reason=isAbort?"timeout":"blocked";
      try{await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:attemptId,p_status:isAbort?"failed":"blocked",p_http_status:null,p_mime:null,p_raw_evidence:null,p_html_evidence:null,p_screenshot_evidence:null,p_extraction_status:"not_attempted",p_blocker:msg.slice(0,1000),p_metrics:{operation:"scope_discovery",provider_key:pc.provider_key,route_priority:route.priority,fallback_reason:reason,worker_version:VERSION}})}catch{}
      failures.push({provider_key:pc.provider_key,reason});
-     if(canFallback(route,reason))continue;
+     if(canFallback(route,reason)&&(performance.now()-courseStarted)<courseBudgetMs-5000)continue;
    }
    throw e;
   }
@@ -94,7 +96,7 @@ Deno.serve(async(req:Request)=>{if(req.method!=="POST")return J(405,{ok:false,er
  const body=await req.json().catch(()=>({})),profileId=clean(body.profile_id),limit=Math.min(Math.max(Number(body.limit||50),1),50),courseIds=Array.isArray(body.course_ids)?body.course_ids.map((x:any)=>clean(x)).filter(Boolean).slice(0,1000):[],chunkIds=courseIds.slice(0,limit),autoSyncActor=clean(body.auto_sync_actor),syncCourseIds=Array.isArray(body.sync_course_ids)?body.sync_course_ids.map((x:any)=>clean(x)).filter(Boolean).slice(0,1000):courseIds;if(!profileId)throw new Error("profile_id required");
  const ctx=courseIds.length?await rpc(svc,"layer2_discovery_context_scope",{p_profile_id:profileId,p_course_ids:chunkIds,p_limit:limit}):await rpc(svc,"layer2_discovery_context",{p_profile_id:profileId,p_limit:limit}),rt=ctx.runtime,cfg=rt.configuration||{},courses=ctx.courses||[],actor=await rpc(svc,"layer2_automation_actor"),job=await rpc(svc,"layer2_prepare_job",{p_actor:actor,p_profile_id:profileId,p_job_type:"layer2_discovery"}),jobId=job.job_id;
  await rpc(svc,"layer2_runtime_job_mark",{p_job_id:jobId,p_status:"running",p_payload:{layer:2,profile_id:profileId,operation:"scope_discovery",routing:"ordered_profile_routes"},p_result:{},p_error:null,p_attempt_count:0});
- const results:any[]=[];
+ const results:any[]=[],invocationStarted=performance.now(),invocationBudgetMs=85000;
  for(const course of courses){let acquired:any=null;try{
    const target=discoveryUrl(cfg,course);acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent,cfg);
    const bytes=new TextEncoder().encode(acquired.html),rawHash=await digest(bytes),rawPath=`layer2/v2/discovery/${profileId}/${jobId}/${course.id}/source.html`,up=await svc.storage.from(BUCKET).upload(rawPath,bytes,{contentType:"text/html",upsert:false});if(up.error)throw new Error(`evidence upload: ${up.error.message}`);
@@ -107,8 +109,10 @@ Deno.serve(async(req:Request)=>{if(req.method!=="POST")return J(405,{ok:false,er
    const written=await rpc(svc,"layer2_discovery_candidates_write",{p_rows:rows});if(Number(written)!==rows.length)throw new Error(`candidate write count mismatch: ${written}/${rows.length}`);
    await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:acquired.attemptId,p_status:"succeeded",p_http_status:acquired.httpStatus,p_mime:"text/html",p_raw_evidence:raw.evidence_id,p_html_evidence:raw.evidence_id,p_screenshot_evidence:null,p_extraction_status:"discovery_evaluated",p_blocker:ranked.blocker,p_metrics:{operation:"scope_discovery",candidate_count:ranked.candidates.length,selected:ranked.selected,provider_key:acquired.providerKey,route_priority:acquired.routePriority,prior_failures:acquired.failures,latency_ms:acquired.latency,worker_version:VERSION}});
    results.push({course_id:course.id,status:ranked.status,provider_key:acquired.providerKey,selected_url:ranked.selected?ranked.candidates[0]?.url:null,candidates:ranked.candidates.length});
- }catch(e:any){if(acquired?.attemptId)try{await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:acquired.attemptId,p_status:"failed",p_http_status:null,p_mime:null,p_raw_evidence:null,p_html_evidence:null,p_screenshot_evidence:null,p_extraction_status:"blocked",p_blocker:String(e.message||e).slice(0,1000),p_metrics:{operation:"scope_discovery",worker_version:VERSION}})}catch{}results.push({course_id:course.id,status:"failed",error:String(e.message||e)})}}
+ }catch(e:any){if(acquired?.attemptId)try{await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:acquired.attemptId,p_status:"failed",p_http_status:null,p_mime:null,p_raw_evidence:null,p_html_evidence:null,p_screenshot_evidence:null,p_extraction_status:"blocked",p_blocker:String(e.message||e).slice(0,1000),p_metrics:{operation:"scope_discovery",worker_version:VERSION}})}catch{}results.push({course_id:course.id,status:"failed",error:String(e.message||e)})}
+   if((performance.now()-invocationStarted)>=invocationBudgetMs)break;
+ }
  const selected=results.filter(x=>x.selected_url).length,failed=results.filter(x=>x.status==="failed").length,finalStatus=results.length>0&&failed===results.length?"failed":"completed";
  await rpc(svc,"layer2_runtime_job_mark",{p_job_id:jobId,p_status:finalStatus,p_payload:{layer:2,profile_id:profileId,operation:"scope_discovery",routing:"ordered_profile_routes"},p_result:{processed:results.length,selected,failed,results},p_error:finalStatus==="failed"?"all discovery items failed":null,p_attempt_count:results.length});
- let continuation_request_id=null,auto_sync_result=null;const remaining=courseIds.slice(limit);if(remaining.length){const next=await rpc(svc,"layer2_discovery_scope_dispatch_v2",{p_profile_id:profileId,p_course_ids:remaining,p_limit:limit,p_actor:autoSyncActor||null,p_sync_course_ids:syncCourseIds});continuation_request_id=next?.request_id||null}else if(autoSyncActor&&syncCourseIds.length){auto_sync_result=await rpc(svc,"layer2_scope_profile_batch_service",{p_actor:autoSyncActor,p_profile_id:profileId,p_course_ids:syncCourseIds})}return J(200,{ok:true,workerVersion:VERSION,profile_id:profileId,job_id:jobId,processed:results.length,selected,failed,remaining:remaining.length,continuation_request_id,auto_sync_result,results});
+ let continuation_request_id=null,auto_sync_result=null;const actionableSet=new Set(courses.map((x:any)=>clean(x.id))),processedSet=new Set(results.map((x:any)=>clean(x.course_id)));let consumedPrefix=0;for(const id of chunkIds){if(!actionableSet.has(id)||processedSet.has(id))consumedPrefix++;else break}const remaining=courseIds.slice(consumedPrefix);if(remaining.length){const next=await rpc(svc,"layer2_discovery_scope_dispatch_v2",{p_profile_id:profileId,p_course_ids:remaining,p_limit:limit,p_actor:autoSyncActor||null,p_sync_course_ids:syncCourseIds});continuation_request_id=next?.request_id||null}else if(autoSyncActor&&syncCourseIds.length){auto_sync_result=await rpc(svc,"layer2_scope_profile_batch_service",{p_actor:autoSyncActor,p_profile_id:profileId,p_course_ids:syncCourseIds})}return J(200,{ok:true,workerVersion:VERSION,profile_id:profileId,job_id:jobId,processed:results.length,selected,failed,remaining:remaining.length,continuation_request_id,auto_sync_result,results});
 }catch(e:any){return J(500,{ok:false,error:String(e.message||e),workerVersion:VERSION})}});
