@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.2.7";
+const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.2.9";
 const J=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:unknown)=>String(v??"").replace(/\s+/g," ").trim();
 const norm=(v:unknown)=>clean(v).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -15,8 +15,8 @@ function approvedUrl(raw:string,cfg:any){const u=new URL(raw);if(u.protocol!=="h
 function discoveryUrl(cfg:any,course:any){const d=cfg.discovery_strategy||{};if(d.type==="first_party_search"&&d.search_url_template){const q=encodeURIComponent(clean(`${course.course_code||""} ${course.canonical_title||course.display_title||""}`));return approvedUrl(String(d.search_url_template).replace("{query}",q),cfg)}const url=d.catalogue_url||cfg.discovery_url;if(!url)throw new Error("profile discovery URL missing");return approvedUrl(String(url),cfg)}
 function fallbackReason(status:number|null,error:string|null){if(error==="timeout")return"timeout";if(status===403)return"403";if(status===429)return"429";if(status&&status>=500)return"5xx";if(status&&status>=400)return String(status);return error?"blocked":"extraction_failed"}
 function canFallback(route:any,reason:string){const allowed=(route?.fallback_on||[]).map((x:any)=>String(x).toLowerCase());return allowed.includes(reason.toLowerCase())||allowed.includes("blocked")&&reason==="network_error"}
-async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,cfg:any){
- const failures:any[]=[],courseStarted=performance.now(),courseBudgetMs=Math.min(Math.max(Number(cfg?.discovery_strategy?.course_acquisition_budget_ms||70000),15000),90000);
+async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,cfg:any,budgetCapMs:number=90000){
+ const failures:any[]=[],courseStarted=performance.now(),configuredBudgetMs=Math.min(Math.max(Number(cfg?.discovery_strategy?.course_acquisition_budget_ms||70000),15000),90000),courseBudgetMs=Math.max(5000,Math.min(configuredBudgetMs,budgetCapMs));
  for(const route of (rt.routes||[])){
   const remainingCourseBudget=courseBudgetMs-(performance.now()-courseStarted);
   if(remainingCourseBudget<=5000){failures.push({reason:"course_acquisition_budget_exhausted"});break;}
@@ -94,12 +94,11 @@ function rankCandidates(course:any,html:string,base:string,cfg:any){const expect
 Deno.serve(async(req:Request)=>{if(req.method!=="POST")return J(405,{ok:false,error:"POST required",workerVersion:VERSION});const sb=Deno.env.get("SUPABASE_URL")!,sk=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,svc=createClient(sb,sk,{auth:{persistSession:false}});try{
  const nonce=clean(req.headers.get("x-cf-run-nonce"));if(!nonce)throw new Error("one-time schedule nonce required");if(!await rpc(svc,"svc_pilot_consume_nonce",{p_function:FN,p_nonce:nonce}))throw new Error("invalid, expired or already-used schedule nonce");
  const body=await req.json().catch(()=>({})),profileId=clean(body.profile_id),limit=Math.min(Math.max(Number(body.limit||50),1),50),courseIds=Array.isArray(body.course_ids)?body.course_ids.map((x:any)=>clean(x)).filter(Boolean).slice(0,1000):[],chunkIds=courseIds.slice(0,limit),autoSyncActor=clean(body.auto_sync_actor),syncCourseIds=Array.isArray(body.sync_course_ids)?body.sync_course_ids.map((x:any)=>clean(x)).filter(Boolean).slice(0,1000):courseIds;if(!profileId)throw new Error("profile_id required");
- await rpc(svc,"layer2_assert_profile_executable",{p_profile_id:profileId});
  const ctx=courseIds.length?await rpc(svc,"layer2_discovery_context_scope",{p_profile_id:profileId,p_course_ids:chunkIds,p_limit:limit}):await rpc(svc,"layer2_discovery_context",{p_profile_id:profileId,p_limit:limit}),rt=ctx.runtime,cfg=rt.configuration||{},courses=ctx.courses||[],actor=await rpc(svc,"layer2_automation_actor"),job=await rpc(svc,"layer2_prepare_job",{p_actor:actor,p_profile_id:profileId,p_job_type:"layer2_discovery"}),jobId=job.job_id;
  await rpc(svc,"layer2_runtime_job_mark",{p_job_id:jobId,p_status:"running",p_payload:{layer:2,profile_id:profileId,operation:"scope_discovery",routing:"ordered_profile_routes"},p_result:{},p_error:null,p_attempt_count:0});
- const results:any[]=[],invocationStarted=performance.now(),invocationBudgetMs=85000;
- for(const course of courses){let acquired:any=null;try{
-   const target=discoveryUrl(cfg,course);acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent,cfg);
+ const results:any[]=[],invocationStarted=performance.now(),invocationBudgetMs=80000;
+ for(const course of courses){const invocationRemainingMs=invocationBudgetMs-(performance.now()-invocationStarted);if(invocationRemainingMs<20000)break;let acquired:any=null;try{
+   const target=discoveryUrl(cfg,course);acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent,cfg,invocationRemainingMs-10000);
    const bytes=new TextEncoder().encode(acquired.html),rawHash=await digest(bytes),rawPath=`layer2/v2/discovery/${profileId}/${jobId}/${course.id}/source.html`,up=await svc.storage.from(BUCKET).upload(rawPath,bytes,{contentType:"text/html",upsert:false});if(up.error)throw new Error(`evidence upload: ${up.error.message}`);
    const raw=await rpc(svc,"layer2_evidence_capture",{p_source_id:rt.source_id,p_job_id:jobId,p_evidence_type:"layer2_html_snapshot",p_source_url:target,p_storage_path:rawPath,p_content_hash:rawHash,p_mime_type:"text/html",p_profile_version_id:rt.version_id,p_group_key:await digest(new TextEncoder().encode(`${rt.version_id}|${course.id}|discovery|${rawHash}`)),p_retention_class:"standard_365",p_retain_until:null,p_metadata:{layer:2,operation:"course_url_discovery",worker_version:VERSION,course_id:course.id,provider_key:acquired.providerKey,route_priority:acquired.routePriority,canonical_mutation_authorised:false}});
    const normalized={layer:2,runtime_version:VERSION,attempt_id:acquired.attemptId,job_id:jobId,provider_key:acquired.providerKey,source_evidence_id:raw.evidence_id,source_url:target,html:acquired.html,text:acquired.html,structured:null,canonical_mutation_authorised:false},normBytes=new TextEncoder().encode(JSON.stringify(normalized)),normHash=await digest(normBytes),normPath=`layer2/v2/discovery/${profileId}/${jobId}/${course.id}/extraction-input.json`,nu=await svc.storage.from(BUCKET).upload(normPath,normBytes,{contentType:"application/json",upsert:false});if(nu.error)throw new Error(`normalized upload: ${nu.error.message}`);
