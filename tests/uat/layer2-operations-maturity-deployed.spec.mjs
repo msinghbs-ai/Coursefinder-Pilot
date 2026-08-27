@@ -7,17 +7,17 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function firecrawlDrawer(page){const b=page.locator('.l2p-provider-list > button').filter({hasText:'Firecrawl'}).first();await expect(b).toBeVisible();await b.click();const d=page.locator('.l2p-drawer');await expect(d).toBeVisible();return d}
 
 test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>{
- test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-operations-m2-4-2-v1.6',change_control:'CF-CHG-20260827-044'})})
+ test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-operations-m2-4-2-v1.7',change_control:'CF-CHG-20260827-044'})})
 
  test('routine Layer 2 workspace exposes Country State University scope with one governed sync action',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const dialog=await openLayer2(page)
   await expect(dialog.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible()
   await expect(dialog.getByRole('heading',{name:'Sync Course enrichment'})).toBeVisible()
   const country=dialog.getByLabel('Layer 2 sync country'),scope=dialog.getByLabel('Layer 2 fetch scope')
-  await expect(country).toHaveValue('AU');await expect(scope).toHaveValue('country')
+  await expect(country).toHaveValue('AU');await expect(scope).toHaveValue('country');const countryLabels=await country.locator('option').allTextContents();expect(countryLabels.join(' ')).toMatch(/Australia.*Canada.*New Zealand/i)
   const scopeLabels=await scope.locator('option').allTextContents();expect(scopeLabels.join(' ')).toMatch(/Country.*State.*University/i)
-  for(const label of ['Universities','Catalogue Courses','Ready to sync','Needs discovery'])await expect(dialog.getByText(label,{exact:true}).first()).toBeVisible()
-  await expect(dialog.getByRole('button',{name:/Discover & sync|Sync now/})).toBeVisible()
+  for(const label of ['Layer 1 Institutions','Layer 1 Courses','L2 Qualified','Needs qualification','Ready with governed URL'])await expect(dialog.getByText(label,{exact:true}).first()).toBeVisible()
+  await expect(dialog.getByRole('button',{name:/Qualify next wave|Discover & sync|Sync now/})).toBeVisible()
 
   await scope.selectOption('state')
   const state=dialog.getByLabel('Layer 2 sync state');await expect(state).toBeVisible()
@@ -25,18 +25,18 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   const stateList=dialog.getByRole('listbox',{name:'State options'});await expect(stateList).toBeVisible()
   await expect(stateList.getByRole('option',{name:'Queensland',exact:true})).toBeVisible()
   await stateList.getByRole('option',{name:'Queensland',exact:true}).click()
-  await expect(dialog.getByText('Universities included in this State',{exact:true})).toBeVisible()
+  await expect(dialog.getByText('Institutions included in this State',{exact:true})).toBeVisible()
   await expect(dialog.getByText('The University of Queensland',{exact:true})).toBeVisible()
 
   await scope.selectOption('university')
   const uni=dialog.getByLabel('Layer 2 sync university');await expect(uni).toBeVisible()
   await uni.click()
   const uniList=dialog.getByRole('listbox',{name:'University options'});await expect(uniList).toBeVisible()
-  await expect(uniList.getByRole('option',{name:'The University of Queensland',exact:true})).toBeVisible()
+  await expect(uniList.getByRole('option').filter({hasText:'The University of Queensland'})).toBeVisible()
   await expect(dialog.getByText(/Direct HTTP.*Firecrawl.*remaining configured providers/i)).toBeVisible()
   await expect(dialog.getByRole('button',{name:/Run bounded trial/i})).toHaveCount(0)
   await expect(dialog.getByRole('heading',{name:'Blockers / required actions'})).toBeVisible()
-  await expect(dialog.getByText(/Federation University Australia is paused/i)).toBeVisible()
+  await expect(dialog.getByText(/need Layer 2 source qualification before full sync/i)).toBeVisible()
   await milestoneScreenshot(page,testInfo,'layer2-a9-scope-sync')
  }finally{await finish(testInfo,runtime)}})
 
@@ -135,8 +135,15 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(layer2ScopeSql).toContain('layer2_scope_countries_service')
   expect(layer2ScopeSql).toContain('least(greatest(coalesce(p_limit,10),1),10)')
   expect(layer2ScopeSql).toContain("v_def:=replace(v_def,v_old,'')")
+  const scaleScopeSql=await fs.readFile('supabase/migrations/20260827235500_m2_4_2_a11_layer1_catalogue_scale_scope.sql','utf8')
+  expect(scaleScopeSql).toContain('layer2_scale_scope_service')
+  expect(scaleScopeSql).toContain("'scope_source','layer1_catalogue'")
+  expect(scaleScopeSql).toContain("p_action='qualify_wave'")
+  expect(scaleScopeSql).toContain("'canonical_mutation_authorised',false")
   const syncControl=await fs.readFile('supabase/functions/layer2-sync-control/index.ts','utf8')
   expect(syncControl).toContain("action==='scope_options_page'")
+  expect(syncControl).toContain("action==='qualify_scope'")
+  expect(syncControl).toContain("layer2_scale_scope_service")
   expect(syncControl).toContain("p_limit:pageLimit")
 
   const pagedFilterSql=await fs.readFile('supabase/migrations/20260827231500_a10_paged_catalogue_filters.sql','utf8')
