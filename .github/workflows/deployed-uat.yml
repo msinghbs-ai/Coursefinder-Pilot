@@ -115,6 +115,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-|^supabase/(functions/layer2-|migrations/.*m2_4_2)|^tests/uat/layer2-)'; then
             targeted=(tests/uat/layer2-operations-maturity-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|EvidenceWorkspace\.jsx|lib/supabase\.js)$|^supabase/migrations/.*a10_.*filter|^tests/uat/a10-paged-filters-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/a10-paged-filters-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -126,6 +129,7 @@ jobs:
             tests/uat/screen-state-persistence-deployed.spec.mjs
             tests/uat/m2-3-intelligence-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
+            tests/uat/a10-paged-filters-deployed.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -141,6 +145,7 @@ jobs:
             tests/uat/layer3-provider-credential-deployed.spec.mjs
             tests/uat/scholarship-selection-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
+            tests/uat/a10-paged-filters-deployed.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
