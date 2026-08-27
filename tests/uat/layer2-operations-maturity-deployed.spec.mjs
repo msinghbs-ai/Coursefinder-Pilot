@@ -59,6 +59,29 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await milestoneScreenshot(page,testInfo,'layer2-provider-controls-quarantined')
  }finally{await finish(testInfo,runtime)}})
 
+
+ test('A10 Course Provider filter is server-paged and does not auto-focus on coarse pointer',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await page.addInitScript(()=>{const native=window.matchMedia.bind(window);window.matchMedia=q=>q==='(pointer:fine)'?{matches:false,media:q,onchange:null,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){},dispatchEvent(){return false}}:native(q)})
+  await loginAsUatUser(page)
+  await page.evaluate(()=>{location.hash='#courses'})
+  await expect(page.getByRole('heading',{name:'Courses',exact:true})).toBeVisible()
+  const provider=page.locator('.m-filter-select').filter({hasText:'Provider'}).first()
+  const request1=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{const b=r.request().postDataJSON();return b?.p_operation==='catalogue_filter_page'&&b?.p_args?.filter_kind==='provider'}catch{return false}})
+  await provider.locator('button.m-filter-button').click()
+  const response1=await request1
+  const body1=await response1.json()
+  expect(body1.limit).toBe(10);expect(body1.items.length).toBeLessThanOrEqual(10)
+  const search=provider.locator('.m-filter-search input')
+  await expect(search).toBeVisible();await expect(search).not.toBeFocused()
+  if(Number(body1.total||0)>10)await expect(provider.getByText(/1 \/ \d+/)).toBeVisible()
+  const request2=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{const b=r.request().postDataJSON();return b?.p_operation==='catalogue_filter_page'&&b?.p_args?.filter_kind==='provider'&&String(b?.p_args?.query||'').includes('University')}catch{return false}})
+  await search.fill('University')
+  const response2=await request2
+  const body2=await response2.json()
+  expect(body2.limit).toBe(10);expect(body2.items.length).toBeLessThanOrEqual(10);expect(Number(body2.total||0)).toBeGreaterThan(10)
+  await milestoneScreenshot(page,testInfo,'a10-course-provider-paged-filter')
+ }finally{await finish(testInfo,runtime)}})
+
  test('Layer 2 recovery and reference contracts remain checked in',async()=>{
   const cancelSql=await fs.readFile('supabase/migrations/20260827221500_m2_4_2_cancel_reconcile_guard.sql','utf8')
   expect(cancelSql).toContain("if v_existing='cancelled'")
