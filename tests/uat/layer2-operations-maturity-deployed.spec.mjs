@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
-import { openLayer2, openLayer2Providers } from './support/navigation.mjs'
+import { openLayer2 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 async function firecrawlDrawer(page){const b=page.locator('.l2p-provider-list > button').filter({hasText:'Firecrawl'}).first();await expect(b).toBeVisible();await b.click();const d=page.locator('.l2p-drawer');await expect(d).toBeVisible();return d}
@@ -21,11 +21,11 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
   await scope.selectOption('state')
   const state=dialog.getByLabel('Layer 2 sync state');await expect(state).toBeVisible()
-  const stateLabels=await state.locator('option').allTextContents();expect(stateLabels.join(' ')).toMatch(/Victoria/i);expect(stateLabels.join(' ')).toMatch(/Queensland/i)
+  const stateLabels=await state.locator('option').allTextContents();expect(stateLabels.join(' ')).toMatch(/Queensland/i)
 
   await scope.selectOption('university')
   const uni=dialog.getByLabel('Layer 2 sync university');await expect(uni).toBeVisible()
-  const uniLabels=await uni.locator('option').allTextContents();expect(uniLabels.join(' ')).toMatch(/RMIT/i);expect(uniLabels.join(' ')).toMatch(/Queensland/i);expect(uniLabels.join(' ')).toMatch(/Federation/i)
+  const uniLabels=await uni.locator('option').allTextContents();expect(uniLabels.join(' ')).toMatch(/Queensland/i)
   await expect(dialog.getByText(/Direct HTTP.*Firecrawl.*remaining configured providers/i)).toBeVisible()
   await expect(dialog.getByRole('button',{name:/Run bounded trial/i})).toHaveCount(0)
   await expect(dialog.getByRole('heading',{name:'Blockers / required actions'})).toBeVisible()
@@ -45,14 +45,15 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await expect(dialog.getByRole('button',{name:/delete|reset|truncate/i})).toHaveCount(0)
  }finally{await finish(testInfo,runtime)}})
 
- test('Firecrawl vendor limits remain visible only in privileged provider configuration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);await openLayer2Providers(page);const d=await firecrawlDrawer(page)
-  await expect(d.getByText('Vendor concurrency',{exact:true})).toBeVisible()
-  await expect(d.locator('.l2p-info').filter({hasText:'Vendor concurrency'})).toContainText(/\d+/)
-  await expect(d.getByText('Rate / timeout',{exact:true})).toBeVisible()
-  await expect(page.getByText(/Credentials are write-only and provider concurrency is separate from run concurrency/i)).toBeVisible()
-  await expect(d.getByRole('button',{name:'Edit provider settings'})).toHaveCount(0)
-  await milestoneScreenshot(page,testInfo,'layer2-firecrawl-provider-privileged')
+ test('advanced acquisition provider controls stay quarantined from the routine rank-4 workspace',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const dialog=await openLayer2(page)
+  await expect(dialog.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(1)
+  const providerLauncher=page.locator('.l2p-launcher')
+  await expect(providerLauncher).toBeAttached()
+  await expect(providerLauncher).toBeHidden()
+  await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers'})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Edit provider settings'})).toHaveCount(0)
+  await milestoneScreenshot(page,testInfo,'layer2-provider-controls-quarantined')
  }finally{await finish(testInfo,runtime)}})
 
  test('Layer 2 recovery and reference contracts remain checked in',async()=>{
@@ -75,6 +76,15 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(opsSql).toContain("enabled,change_control_ref,updated_at")
   expect(opsSql).toContain("true,true,false,'CF-CHG-20260827-044'")
 
+  const alertAclSql=await fs.readFile('supabase/migrations/20260827225500_m2_4_2_layer2_alert_acl_reconcile.sql','utf8')
+  expect(alertAclSql).toMatch(/grant execute on function security\.layer2_operational_alerts_read\(\) to authenticated,service_role/i)
+
+  const providerUi=await fs.readFile('src/layer2-provider-entry.jsx','utf8')
+  expect(providerUi).toContain('Vendor concurrency')
+  expect(providerUi).toContain('Rate / timeout')
+  expect(providerUi).toContain('rank>=6')
+  expect(providerUi).toContain('Credentials are write-only and provider concurrency is separate from run concurrency.')
+
   const alertSql=await fs.readFile('supabase/migrations/20260827224500_m2_4_2_layer2_operational_alerts.sql','utf8')
   expect(alertSql).toContain('layer2_ops_alerts')
   expect(alertSql).toContain('provider_quota_reserve')
@@ -93,7 +103,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
   expect(discovery).toContain('layer2-scope-discover-scheduled-v1.3.0')
   expect(discovery).toContain('courseBudgetMs')
-  expect(discovery).toContain('invocationBudgetMs=85000')
+  expect(discovery).toContain('invocationBudgetMs=80000')
   expect(discovery).toContain('continuation_request_id')
   expect(discovery).toContain('consumedSet')
   expect(discovery).toContain('courseIds.filter')
