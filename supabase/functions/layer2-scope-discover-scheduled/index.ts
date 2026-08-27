@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.2.6";
+const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.2.7";
 const J=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:unknown)=>String(v??"").replace(/\s+/g," ").trim();
 const norm=(v:unknown)=>clean(v).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -94,6 +94,7 @@ function rankCandidates(course:any,html:string,base:string,cfg:any){const expect
 Deno.serve(async(req:Request)=>{if(req.method!=="POST")return J(405,{ok:false,error:"POST required",workerVersion:VERSION});const sb=Deno.env.get("SUPABASE_URL")!,sk=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,svc=createClient(sb,sk,{auth:{persistSession:false}});try{
  const nonce=clean(req.headers.get("x-cf-run-nonce"));if(!nonce)throw new Error("one-time schedule nonce required");if(!await rpc(svc,"svc_pilot_consume_nonce",{p_function:FN,p_nonce:nonce}))throw new Error("invalid, expired or already-used schedule nonce");
  const body=await req.json().catch(()=>({})),profileId=clean(body.profile_id),limit=Math.min(Math.max(Number(body.limit||50),1),50),courseIds=Array.isArray(body.course_ids)?body.course_ids.map((x:any)=>clean(x)).filter(Boolean).slice(0,1000):[],chunkIds=courseIds.slice(0,limit),autoSyncActor=clean(body.auto_sync_actor),syncCourseIds=Array.isArray(body.sync_course_ids)?body.sync_course_ids.map((x:any)=>clean(x)).filter(Boolean).slice(0,1000):courseIds;if(!profileId)throw new Error("profile_id required");
+ await rpc(svc,"layer2_assert_profile_executable",{p_profile_id:profileId});
  const ctx=courseIds.length?await rpc(svc,"layer2_discovery_context_scope",{p_profile_id:profileId,p_course_ids:chunkIds,p_limit:limit}):await rpc(svc,"layer2_discovery_context",{p_profile_id:profileId,p_limit:limit}),rt=ctx.runtime,cfg=rt.configuration||{},courses=ctx.courses||[],actor=await rpc(svc,"layer2_automation_actor"),job=await rpc(svc,"layer2_prepare_job",{p_actor:actor,p_profile_id:profileId,p_job_type:"layer2_discovery"}),jobId=job.job_id;
  await rpc(svc,"layer2_runtime_job_mark",{p_job_id:jobId,p_status:"running",p_payload:{layer:2,profile_id:profileId,operation:"scope_discovery",routing:"ordered_profile_routes"},p_result:{},p_error:null,p_attempt_count:0});
  const results:any[]=[],invocationStarted=performance.now(),invocationBudgetMs=85000;
