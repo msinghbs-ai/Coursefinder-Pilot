@@ -1,4 +1,5 @@
-M2.4.1 bounded integration candidate after stale permanent Course Detail patch pin correction.
-Base working SHA before marker: 721658a732c763892179250fee1c0268bd27051d
-Targeted UAT run: 32971449084
-Scope: unchanged M2.4.1 AU/NZ runtime and reconciled admin_read bridge; only permanent Course Detail release assertion was made patch-tolerant. Desktop + mobile affected regression required.
+M2.4.2 Stage B integration candidate after A12 contextual insight targeted PASS.
+Base working SHA before marker: c58cff1790e8be59b7256ce30e68aa8a1d7a1be0
+Targeted A12 UAT run: 33080519873
+Scope: M2.4.2 Layer 2 operations maturity + A8/A9/A10/A11/A12 accepted targeted slices; recovery/idempotency/security/navigation regression; desktop + mobile integration required.
+Exclusions: RMIT 212-record canonical promotion remains open; refresh-policy enablement remains pending canonical promotion; this marker does not authorize Stage C or Search/Publication mutation.
