@@ -6,7 +6,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function openCatalogue(page,hash,heading){await page.evaluate(h=>{location.hash=h},hash);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible()}
 
 test.describe('A12 contextual insights on catalogue detail blades @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'a12-contextual-insights-v1.1',change_control:'CF-CHG-20260827-044'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'a12-contextual-insights-v1.2',change_control:'CF-CHG-20260827-044'})})
 
  test('RMIT Provider blade relates QILT PRISMS context and Scholarships without flattening granularity',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await openCatalogue(page,'#providers','Providers')
@@ -32,7 +32,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
  test('Course blade labels Provider outcomes and Provider-scope Scholarships as context not Course truth',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await openCatalogue(page,'#courses','Courses')
   const search=page.locator('.m-searchbox input').first();await search.fill('Advanced Diploma of Accounting')
-  const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).first();await expect(row).toBeVisible()
+  const row=page.locator('.m-table tbody tr').filter({hasText:'Advanced Diploma of Accounting'}).filter({hasText:'RMIT University (RMIT)'}).first();await expect(row).toBeVisible()
   const response=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{const b=r.request().postDataJSON();return b?.p_operation==='course_detail'}catch{return false}})
   await row.click();const payload=await(await response).json();const ci=payload.contextual_insights
   expect(ci?.student_outcomes?.granularity).toBe('provider_context')
