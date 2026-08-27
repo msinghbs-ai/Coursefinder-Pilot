@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {createClient} from "npm:@supabase/supabase-js@2";
 
-const FN="layer3-source-pattern-benchmark",VERSION="layer3-source-pattern-benchmark-v1.0.4";
+const FN="layer3-source-pattern-benchmark",VERSION="layer3-source-pattern-benchmark-v1.0.5";
 const J=(s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:any)=>String(v??"").replace(/\s+/g," ").trim();
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw new Error(`${n}: ${error.message}`);return data}
@@ -52,7 +52,7 @@ async function callModel(profile:any,key:string,caseName:string,sourceUrl:string
    const res=await fetch(String(profile.base_url).replace(/\/$/,"")+"/chat/completions",{
     method:"POST",signal:ctl.signal,
     headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","HTTP-Referer":"https://coursefinder.app","X-Title":"CourseFinder Source Pattern Benchmark"},
-    body:JSON.stringify({model:profile.model_identifier,temperature:0,max_tokens:Number(profile.max_output_tokens||1200),response_format:{type:"json_object"},messages:[{role:"system",content:profile.prompt_system},{role:"user",content:prompt}]})
+    body:JSON.stringify({model:profile.model_identifier,temperature:0,seed:0,max_tokens:Number(profile.max_output_tokens||1200),reasoning:{effort:"none",exclude:true},messages:[{role:"system",content:profile.prompt_system},{role:"user",content:prompt}]})
    });
    const payload=await res.json().catch(()=>({}));
    if(!res.ok){last={payload,parsed:null,parse_error:`aggregator ${res.status}`,latency_ms:Math.round(performance.now()-st)};continue}
