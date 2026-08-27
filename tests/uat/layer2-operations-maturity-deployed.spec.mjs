@@ -104,7 +104,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(toeflSql).toMatch(/grant execute on function public\.layer2_apply_course_candidate\(uuid,boolean\) to service_role/i)
 
   const pagedFilterSql=await fs.readFile('supabase/migrations/20260827231500_a10_paged_catalogue_filters.sql','utf8')
-  expect(pagedFilterSql).toContain("least(greatest(coalesce(nullif(p_args->>'limit','')::integer, 10), 1), 10)")
+  expect(pagedFilterSql).toContain("v_limit integer:=least(greatest(coalesce(nullif(p_args->>'limit','')::integer,10),1),10)")
   expect(pagedFilterSql).toContain("'has_more'")
   expect(pagedFilterSql).toContain("p_operation='catalogue_filter_page'")
 
