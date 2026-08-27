@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {createClient} from "npm:@supabase/supabase-js@2";
 
-const FN="layer3-source-pattern-benchmark",VERSION="layer3-source-pattern-benchmark-v1.0.3";
+const FN="layer3-source-pattern-benchmark",VERSION="layer3-source-pattern-benchmark-v1.0.4";
 const J=(s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:any)=>String(v??"").replace(/\s+/g," ").trim();
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw new Error(`${n}: ${error.message}`);return data}
@@ -21,7 +21,7 @@ function validate(result:any,links:any[],host:string,expected:string|null,negati
  if(negative){
   if(cv!==null)errors.push("negative_control_must_be_null");
  } else {
-  const u=typeof cv==="object"&&cv?String(cv.catalogue_url||""):"";
+  const u=typeof cv==="string"?cv:"";
   if(!/^https:\/\//i.test(u))errors.push("https_catalogue_url_required");
   else {
    try{const x=new URL(u);if(x.hostname.toLowerCase()!==host.toLowerCase())errors.push("same_host_required")}catch{errors.push("url_invalid")}
@@ -40,21 +40,28 @@ async function callModel(profile:any,key:string,caseName:string,sourceUrl:string
   "The candidate URL MUST appear exactly in the supplied links and MUST stay on the governed host.",
   "Do not infer Course identity, regulatory codes, fees, admissions, Search actions or Publication actions.",
   negative?"This is a negative control. No Course/programme catalogue link is present, so candidate_value must be null.":"",
-  'Return exactly: {"candidate_value":null OR {"catalogue_url":"https://..."}, "confidence":0..1, "rationale":"...", "evidence_quotes":["..."]}.',
+  'Return exactly: {"candidate_value":null OR "https://...", "confidence":0..1, "rationale":"...", "evidence_quotes":["..."]}.',
   "Evidence links:",
-  ...links.slice(0,120).map((x:any)=>`- ${x.text||"(no text)"} :: ${x.url}`)
+  ...links.slice(0,60).map((x:any)=>`- ${x.text||"(no text)"} :: ${x.url}`)
  ].filter(Boolean).join("\n");
- const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),Number(profile.timeout_ms||30000)),st=performance.now();
- try{
-  const res=await fetch(String(profile.base_url).replace(/\/$/,"")+"/chat/completions",{
-   method:"POST",signal:ctl.signal,
-   headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","HTTP-Referer":"https://coursefinder.app","X-Title":"CourseFinder Source Pattern Benchmark"},
-   body:JSON.stringify({model:profile.model_identifier,temperature:0,max_tokens:Number(profile.max_output_tokens||800),response_format:{type:"json_object"},messages:[{role:"system",content:profile.prompt_system},{role:"user",content:prompt}]})
-  });
-  const payload=await res.json().catch(()=>({}));if(!res.ok)throw new Error(`aggregator ${res.status}: ${JSON.stringify(payload).slice(0,500)}`);
-  let parsed:any=null,parse_error:string|null=null;try{parsed=parseContent(payload?.choices?.[0]?.message?.content)}catch(e:any){parse_error=String(e.message||e)}
-  return {payload,parsed,parse_error,latency_ms:Math.round(performance.now()-st)};
- } finally{clearTimeout(tm)}
+ let last:any=null;
+ const attempts=Math.max(1,Math.min(Number(profile.retry_ceiling||0)+1,2));
+ for(let attempt=0;attempt<attempts;attempt++){
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),Number(profile.timeout_ms||30000)),st=performance.now();
+  try{
+   const res=await fetch(String(profile.base_url).replace(/\/$/,"")+"/chat/completions",{
+    method:"POST",signal:ctl.signal,
+    headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","HTTP-Referer":"https://coursefinder.app","X-Title":"CourseFinder Source Pattern Benchmark"},
+    body:JSON.stringify({model:profile.model_identifier,temperature:0,max_tokens:Number(profile.max_output_tokens||1200),response_format:{type:"json_object"},messages:[{role:"system",content:profile.prompt_system},{role:"user",content:prompt}]})
+   });
+   const payload=await res.json().catch(()=>({}));
+   if(!res.ok){last={payload,parsed:null,parse_error:`aggregator ${res.status}`,latency_ms:Math.round(performance.now()-st)};continue}
+   let parsed:any=null,parse_error:string|null=null;try{parsed=parseContent(payload?.choices?.[0]?.message?.content)}catch(e:any){parse_error=String(e.message||e)}
+   last={payload,parsed,parse_error,latency_ms:Math.round(performance.now()-st)};
+   if(parsed&&!parse_error)return last;
+  }finally{clearTimeout(tm)}
+ }
+ return last;
 }
 Deno.serve(async(req:Request)=>{
  if(req.method!=="POST")return J(405,{ok:false,error:"POST required",worker_version:VERSION});
