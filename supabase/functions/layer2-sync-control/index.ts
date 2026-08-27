@@ -4,7 +4,7 @@ const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 const H=(r:Request)=>{const o=r.headers.get('origin')||'';return{'content-type':'application/json','cache-control':'no-store','access-control-allow-origin':o===ORIGIN||o.startsWith('http://localhost')?o:ORIGIN,'access-control-allow-headers':'authorization, x-client-info, apikey, content-type','access-control-allow-methods':'POST, OPTIONS','vary':'origin'}};
 const J=(r:Request,s:number,b:unknown)=>new Response(JSON.stringify(b),{status:s,headers:H(r)});
 Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response(null,{status:204,headers:H(req)});if(req.method!=='POST')return J(req,405,{error:'method_not_allowed'});const ah=req.headers.get('authorization')||'';if(!/^Bearer /i.test(ah))return J(req,401,{error:'authentication_required'});const url=Deno.env.get('SUPABASE_URL'),anon=Deno.env.get('SUPABASE_ANON_KEY'),service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');if(!url||!anon||!service)return J(req,500,{error:'service_configuration_error'});const user=createClient(url,anon,{global:{headers:{Authorization:ah}},auth:{persistSession:false,autoRefreshToken:false}});const svc=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});const{data:ctx,error:ce}=await user.rpc('admin_read',{p_operation:'context',p_args:{}});if(ce||!ctx?.authenticated)return J(req,401,{error:'authentication_required'});if(Number(ctx.role_rank||0)<4)return J(req,403,{error:'pipeline_operator_role_required'});let b:any;try{b=await req.json()}catch{return J(req,400,{error:'invalid_json'})}const action=String(b?.action||''),profileId=String(b?.profile_id||''),limit=b?.limit==null?null:Number(b.limit);
-if(['options','scope_options_page','preview_scope','start_scope'].includes(action)){
+if(['options','scope_options_page','preview_scope','start_scope','qualify_scope'].includes(action)){
  const country=String(b?.country_code||'').trim()||null,scopeType=String(b?.scope_type||'country').toLowerCase(),scopeId=String(b?.scope_id||'').trim()||null;
  if(action==='scope_options_page'){
   if(!country)return J(req,400,{error:'country_required'});
@@ -20,7 +20,11 @@ if(['options','scope_options_page','preview_scope','start_scope'].includes(actio
  if(!country)return J(req,400,{error:'country_required'});
  if(!['country','state','university'].includes(scopeType))return J(req,400,{error:'invalid_scope_type'});
  if(['state','university'].includes(scopeType)&&!scopeId)return J(req,400,{error:'scope_id_required'});
- const{data,error}=await svc.rpc('layer2_operator_scope_service',{p_actor:String(ctx.user_id),p_action:action==='preview_scope'?'preview':'start',p_country_code:country,p_scope_type:scopeType,p_scope_id:scopeId});
+ if(action==='preview_scope'||action==='qualify_scope'){
+  const{data,error}=await svc.rpc('layer2_scale_scope_service',{p_actor:String(ctx.user_id),p_action:action==='preview_scope'?'preview':'qualify_wave',p_country_code:country,p_scope_type:scopeType,p_scope_id:scopeId,p_wave_size:Math.min(Math.max(Number(b?.wave_size||5),1),10),p_sample_size:Math.min(Math.max(Number(b?.sample_size||10),1),20)});
+  if(error)return J(req,error.code==='42501'?403:400,{error:error.message});return J(req,200,data||{ok:true});
+ }
+ const{data,error}=await svc.rpc('layer2_operator_scope_service',{p_actor:String(ctx.user_id),p_action:'start',p_country_code:country,p_scope_type:scopeType,p_scope_id:scopeId});
  if(error)return J(req,error.code==='42501'?403:400,{error:error.message});return J(req,200,data||{ok:true});
 }
 if(!['preview','discover','sync'].includes(action))return J(req,400,{error:'unsupported_action'});if(!profileId)return J(req,400,{error:'profile_id_required'});if(limit!=null&&(!Number.isInteger(limit)||limit<1||limit>100))return J(req,400,{error:'limit_out_of_range'});const{data,error}=await svc.rpc('layer2_operator_sync_service',{p_actor:String(ctx.user_id),p_action:action,p_profile_id:profileId,p_limit:limit});if(error)return J(req,error.code==='42501'?403:400,{error:error.message});return J(req,200,data||{ok:true})});
