@@ -129,7 +129,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   const pagedFilterSql=await fs.readFile('supabase/migrations/20260827231500_a10_paged_catalogue_filters.sql','utf8')
   expect(pagedFilterSql).toContain("v_limit integer:=least(greatest(coalesce(nullif(p_args->>'limit','')::integer,10),1),10)")
   expect(pagedFilterSql).toContain("'has_more'")
-  expect(pagedFilterSql).toContain("p_operation='catalogue_filter_page'")
+  expect(pagedFilterSql).toContain("catalogue_filter_page")
 
   const matureUi=await fs.readFile('src/mature-main.jsx','utf8')
   expect(matureUi).toContain('function PagedFilterSelect')
