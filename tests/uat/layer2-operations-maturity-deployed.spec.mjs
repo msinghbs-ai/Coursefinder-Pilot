@@ -21,14 +21,18 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
   await scope.selectOption('state')
   const state=dialog.getByLabel('Layer 2 sync state');await expect(state).toBeVisible()
-  const stateLabels=await state.locator('option').allTextContents();expect(stateLabels.join(' ')).toMatch(/Queensland/i)
-  await state.selectOption({label:'Queensland'})
+  await state.click()
+  const stateList=dialog.getByRole('listbox',{name:'State options'});await expect(stateList).toBeVisible()
+  await expect(stateList.getByRole('option',{name:'Queensland',exact:true})).toBeVisible()
+  await stateList.getByRole('option',{name:'Queensland',exact:true}).click()
   await expect(dialog.getByText('Universities included in this State',{exact:true})).toBeVisible()
   await expect(dialog.getByText('The University of Queensland',{exact:true})).toBeVisible()
 
   await scope.selectOption('university')
   const uni=dialog.getByLabel('Layer 2 sync university');await expect(uni).toBeVisible()
-  const uniLabels=await uni.locator('option').allTextContents();expect(uniLabels.join(' ')).toMatch(/Queensland/i)
+  await uni.click()
+  const uniList=dialog.getByRole('listbox',{name:'University options'});await expect(uniList).toBeVisible()
+  await expect(uniList.getByRole('option',{name:'The University of Queensland',exact:true})).toBeVisible()
   await expect(dialog.getByText(/Direct HTTP.*Firecrawl.*remaining configured providers/i)).toBeVisible()
   await expect(dialog.getByRole('button',{name:/Run bounded trial/i})).toHaveCount(0)
   await expect(dialog.getByRole('heading',{name:'Blockers / required actions'})).toBeVisible()
@@ -126,6 +130,15 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(toeflSql).toContain("layer2_apply_course_candidate")
   expect(toeflSql).toMatch(/grant execute on function public\.layer2_apply_course_candidate\(uuid,boolean\) to service_role/i)
 
+  const layer2ScopeSql=await fs.readFile('supabase/migrations/20260827232000_a10_layer2_paged_scope_options.sql','utf8')
+  expect(layer2ScopeSql).toContain('layer2_scope_options_page_service')
+  expect(layer2ScopeSql).toContain('layer2_scope_countries_service')
+  expect(layer2ScopeSql).toContain('least(greatest(coalesce(p_limit,10),1),10)')
+  expect(layer2ScopeSql).toContain("v_def:=replace(v_def,v_old,'')")
+  const syncControl=await fs.readFile('supabase/functions/layer2-sync-control/index.ts','utf8')
+  expect(syncControl).toContain("action==='scope_options_page'")
+  expect(syncControl).toContain("p_limit:pageLimit")
+
   const pagedFilterSql=await fs.readFile('supabase/migrations/20260827231500_a10_paged_catalogue_filters.sql','utf8')
   expect(pagedFilterSql).toContain("v_limit integer:=least(greatest(coalesce(nullif(p_args->>'limit','')::integer,10),1),10)")
   expect(pagedFilterSql).toContain("'has_more'")
@@ -139,7 +152,9 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
   const l2Ui=await fs.readFile('src/layer2-operations-entry.jsx','utf8')
   expect(l2Ui).toContain('Universities included in this State')
-  expect(l2Ui).toContain('slice(scopePage*10,scopePage*10+10)')
+  expect(l2Ui).toContain('function PagedScopeSelect')
+  expect(l2Ui).toContain('function ScopeUniversityList')
+  expect(l2Ui).toContain("action:'scope_options_page'")
 
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
   expect(discovery).toContain('layer2-scope-discover-scheduled-v1.3.0')
