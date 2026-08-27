@@ -16,6 +16,7 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   const[query,setQuery]=useState(routeParams?.get?.('q')||'')
   const[filters,setFilters]=useState(initial)
   const[opts,setOpts]=useState({})
+  const[sourceLabel,setSourceLabel]=useState('')
   const[data,setData]=useState(null)
   const[offset,setOffset]=useState(0)
   const[busy,setBusy]=useState(false)
@@ -49,18 +50,8 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   },[selected])
 
   const rows=rowsOf(data),total=Number(data?.total??rows.length),active=activeFilters(filters)
-  const sourceRows=useMemo(()=>{
-    const all=Array.isArray(opts.sources)?opts.sources:[]
-    if(!filters.country)return all
-    const country=String(filters.country).toUpperCase()
-    return all.filter(x=>String(x?.country_code||'').toUpperCase()===country)
-  },[opts.sources,filters.country])
-  useEffect(()=>{
-    if(!filters.country||!filters.sourceId||!(Array.isArray(opts.sources)&&opts.sources.length))return
-    if(!sourceRows.some(x=>String(x?.code??x?.id??x?.value)===String(filters.sourceId)))setFilters(f=>({...f,sourceId:''}))
-  },[filters.country,filters.sourceId,sourceRows,opts.sources])
   const setFilter=(k,v)=>setFilters(f=>({...f,[k]:v}))
-  const setCountry=v=>setFilters(f=>({...f,country:v,sourceId:''}))
+  const setCountry=v=>{setSourceLabel('');setFilters(f=>({...f,country:v,sourceId:''}))}
   const clear=()=>{setQuery('');setFilters({...EMPTY_FILTERS});setOffset(0)}
   const deepContext=filters.entityId||filters.providerId||filters.jobId
 
@@ -79,7 +70,7 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
 
       <div className="evidence-filter-grid">
         <Select label="Country" value={filters.country} onChange={setCountry} options={normalise(opts.countries)}/>
-        <Select label="Source" value={filters.sourceId} onChange={v=>setFilter('sourceId',v)} options={normalise(sourceRows)}/>
+        <PagedEvidenceSelect label="Source" value={filters.sourceId} valueLabel={sourceLabel} country={filters.country} onChange={(v,l)=>{setSourceLabel(l||'');setFilter('sourceId',v)}}/>
         <Select label="Layer" value={filters.layer} onChange={v=>setFilter('layer',v)} options={normalise(opts.layers)}/>
         <Select label="Entity type" value={filters.entityType} onChange={v=>setFilter('entityType',v)} options={normalise(opts.entity_types)}/>
         <Select label="Evidence type" value={filters.evidenceType} onChange={v=>setFilter('evidenceType',v)} options={normalise(opts.evidence_types)}/>
