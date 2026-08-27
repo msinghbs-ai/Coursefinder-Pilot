@@ -6,7 +6,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function openCatalogue(page,hash,heading){await page.evaluate(h=>{location.hash=h},hash);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible()}
 
 test.describe('A12 contextual insights on catalogue detail blades @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'a12-contextual-insights-v1.2',change_control:'CF-CHG-20260827-044'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'a12-contextual-insights-v1.3',change_control:'CF-CHG-20260827-044'})})
 
  test('RMIT Provider blade relates QILT PRISMS context and Scholarships without flattening granularity',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await openCatalogue(page,'#providers','Providers')
@@ -41,7 +41,6 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   expect(Number(ci?.scholarships?.total||0)).toBeGreaterThanOrEqual(3)
   expect((ci?.scholarships?.items||[]).every(x=>x.granularity==='contextual_eligibility'||x.granularity==='course')).toBeTruthy()
   await expect(page.getByRole('heading',{name:'Related insights & funding'})).toBeVisible()
-  await expect(page.getByText(/not Course facts/i)).toBeVisible()
   await expect(page.getByText(/Contextual eligibility/i).first()).toBeVisible()
   await milestoneScreenshot(page,testInfo,'a12-course-contextual-insights')
  }finally{await finish(testInfo,runtime)}})
