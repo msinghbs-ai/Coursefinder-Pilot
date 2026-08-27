@@ -3,13 +3,14 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 type Json = Record<string, unknown>;
 
-const json = (status:number, body:unknown, requestId:string) =>
+const json = (status:number, body:unknown, requestId:string, extra:Record<string,string>={}) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
       "content-type": "application/json",
       "cache-control": "no-store",
-      "x-request-id": requestId
+      "x-request-id": requestId,
+      ...extra
     }
   });
 
@@ -21,7 +22,7 @@ const integer = (value:unknown, fallback:number) => {
 const stringArray = (value:unknown) =>
   Array.isArray(value) ? value.map(cleanText).filter(Boolean).slice(0,50) : null;
 
-const safeError = (status:number, code:string, requestId:string) => json(status, {
+const safeError = (status:number, code:string, requestId:string, extra:Record<string,string>={}) => json(status, {
   error: {
     code,
     message: ({
@@ -29,16 +30,17 @@ const safeError = (status:number, code:string, requestId:string) => json(status,
       INVALID_ACTION:"Unsupported action",
       INVALID_INPUT:"Invalid request input",
       AUTHENTICATION_REQUIRED:"Authentication required",
+      RATE_LIMITED:"Rate limited — retry later",
       NOT_FOUND:"Course not found",
       SERVICE_UNAVAILABLE:"CourseFinder service unavailable"
     } as Record<string,string>)[code] || "Request failed"
   },
   request_id: requestId
-}, requestId);
+}, requestId, extra);
 
 function bearer(req:Request) {
   const raw = req.headers.get("authorization") || "";
-  return raw.match(/^Bearer\\s+(.+)$/i)?.[1] || "";
+  return raw.match(/^Bearer\s+(.+)$/i)?.[1] || "";
 }
 
 async function sha256Hex(value:string) {
@@ -80,6 +82,22 @@ Deno.serve(async (req:Request) => {
   const action = cleanText(body.action);
   if (!["search","lookup","provider_options","filter_options"].includes(action)) {
     return safeError(400, "INVALID_ACTION", requestId);
+  }
+
+  const { data: rate, error: rateError } = await svc
+    .schema("api")
+    .rpc("zoho_integration_rate_check_v1", {
+      p_identity:"coursefinder_zoho_pilot_v1",
+      p_resource:action,
+      p_limit:120,
+      p_window_seconds:60
+    });
+
+  if (rateError) return safeError(503, "SERVICE_UNAVAILABLE", requestId);
+  const rateState = (rate && typeof rate === "object") ? rate as Record<string,unknown> : {};
+  if (rateState.allowed !== true) {
+    const retry = Math.max(Number(rateState.retry_after_seconds) || 1, 1);
+    return safeError(429, "RATE_LIMITED", requestId, {"retry-after":String(retry)});
   }
 
   try {
