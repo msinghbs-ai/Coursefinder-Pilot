@@ -28,6 +28,8 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   const uniLabels=await uni.locator('option').allTextContents();expect(uniLabels.join(' ')).toMatch(/RMIT/i);expect(uniLabels.join(' ')).toMatch(/Queensland/i);expect(uniLabels.join(' ')).toMatch(/Federation/i)
   await expect(dialog.getByText(/Direct HTTP.*Firecrawl.*remaining configured providers/i)).toBeVisible()
   await expect(dialog.getByRole('button',{name:/Run bounded trial/i})).toHaveCount(0)
+  await expect(dialog.getByRole('heading',{name:'Blockers / required actions'})).toBeVisible()
+  await expect(dialog.getByText(/Federation University Australia is paused/i)).toBeVisible()
   await milestoneScreenshot(page,testInfo,'layer2-a9-scope-sync')
  }finally{await finish(testInfo,runtime)}})
 
@@ -59,6 +61,19 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(cancelSql).toContain("v_status:='cancelled'")
   expect(cancelSql).toMatch(/revoke all on function public\.layer2_run_batch_reconcile\(uuid\) from public,anon,authenticated/i)
   expect(cancelSql).toMatch(/grant execute on function public\.layer2_run_batch_reconcile\(uuid\) to service_role/i)
+
+  const opsSql=await fs.readFile('supabase/migrations/20260827224000_m2_4_2_layer2_refresh_housekeeping.sql','utf8')
+  expect(opsSql).toContain('coursefinder-layer2-refresh-dispatcher')
+  expect(opsSql).toContain('coursefinder-layer2-housekeeping')
+  expect(opsSql).toContain('governed_evidence_deleted')
+  expect(opsSql).toContain("enabled,change_control_ref,updated_at")
+  expect(opsSql).toContain("true,true,false,'CF-CHG-20260827-044'")
+
+  const alertSql=await fs.readFile('supabase/migrations/20260827224500_m2_4_2_layer2_operational_alerts.sql','utf8')
+  expect(alertSql).toContain('layer2_ops_alerts')
+  expect(alertSql).toContain('provider_quota_reserve')
+  expect(alertSql).toContain('provider_failure_streak')
+  expect(alertSql).toMatch(/grant execute on function security\.layer2_operational_alerts_read\(\) to authenticated,service_role/i)
 
   const idemSql=await fs.readFile('supabase/migrations/20260827223500_m2_4_2_discovery_terminal_outcome_idempotency.sql','utf8')
   expect(idemSql).toContain("dc.status in ('exact_match','likely_match','ambiguous','identity_mismatch','current_page_not_found')")
