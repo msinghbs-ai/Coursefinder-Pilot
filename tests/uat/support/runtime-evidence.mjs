@@ -89,7 +89,7 @@ async function shellReady(page,timeout=45_000){
   try{
     await expect(page.locator('.m-nav')).toBeVisible({timeout})
     await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i,{timeout})
-    await expect(page.locator('#governed-runtime-marker')).toBeVisible({timeout})
+    await expect(page.locator('.m-release-pill')).toBeVisible({timeout})
     return true
   }catch{return false}
 }
@@ -116,7 +116,7 @@ export async function loginAsUatUser(page) {
     if(visibleEmail)await signIn(page,email,password)
     await expect(page.locator('.m-nav')).toBeVisible({timeout:45_000})
     await expect(page.locator('.m-role-pill')).not.toContainText(/Loading/i,{timeout:45_000})
-    await expect(page.locator('#governed-runtime-marker')).toBeVisible({timeout:45_000})
+    await expect(page.locator('.m-release-pill')).toBeVisible({timeout:45_000})
   }
 }
 
