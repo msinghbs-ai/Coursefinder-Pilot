@@ -22,6 +22,9 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await scope.selectOption('state')
   const state=dialog.getByLabel('Layer 2 sync state');await expect(state).toBeVisible()
   const stateLabels=await state.locator('option').allTextContents();expect(stateLabels.join(' ')).toMatch(/Queensland/i)
+  await state.selectOption({label:'Queensland'})
+  await expect(dialog.getByText('Universities included in this State',{exact:true})).toBeVisible()
+  await expect(dialog.getByText('The University of Queensland',{exact:true})).toBeVisible()
 
   await scope.selectOption('university')
   const uni=dialog.getByLabel('Layer 2 sync university');await expect(uni).toBeVisible()
@@ -99,6 +102,21 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(toeflSql).toContain("TOEFL_IBT")
   expect(toeflSql).toContain("layer2_apply_course_candidate")
   expect(toeflSql).toMatch(/grant execute on function public\.layer2_apply_course_candidate\(uuid,boolean\) to service_role/i)
+
+  const pagedFilterSql=await fs.readFile('supabase/migrations/20260827231500_a10_paged_catalogue_filters.sql','utf8')
+  expect(pagedFilterSql).toContain("least(greatest(coalesce(nullif(p_args->>'limit','')::integer, 10), 1), 10)")
+  expect(pagedFilterSql).toContain("'has_more'")
+  expect(pagedFilterSql).toContain("p_operation='catalogue_filter_page'")
+
+  const matureUi=await fs.readFile('src/mature-main.jsx','utf8')
+  expect(matureUi).toContain('function PagedFilterSelect')
+  expect(matureUi).toContain("matchMedia?.('(pointer:fine)')")
+  expect(matureUi).not.toContain('<input autoFocus')
+  expect(matureUi).toContain('slice(safePage*10,safePage*10+10)')
+
+  const l2Ui=await fs.readFile('src/layer2-operations-entry.jsx','utf8')
+  expect(l2Ui).toContain('Universities included in this State')
+  expect(l2Ui).toContain('slice(scopePage*10,scopePage*10+10)')
 
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
   expect(discovery).toContain('layer2-scope-discover-scheduled-v1.3.0')
