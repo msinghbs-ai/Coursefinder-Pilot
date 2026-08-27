@@ -158,6 +158,14 @@ export const api = {
       survey_code: survey || null, metric_code: metric || null, provider_id: provider || null,
       status: status || null, year: year === '' ? null : Number(year), sort, direction,
     }),
+  filterOptionPage: ({ kind, query = '', country = '', survey = '', limit = 10, offset = 0 } = {}) => adminRead('admin_filter_option_page', {
+    kind,
+    query: query || null,
+    country_code: country || null,
+    survey_code: survey || null,
+    limit: Math.min(Math.max(Number(limit)||10,1),10),
+    offset: Math.max(Number(offset)||0,0),
+  }),
   qiltFilterOptions: (survey = '') => adminRead('qilt_filters', { survey_code: survey || null }),
   prismsPage: ({ limit = 50, offset = 0, query = '', subdivision = '', studyArea = '', sector = '', remoteness = '', suppressed = null, sort = 'geography', direction = 'asc' } = {}) =>
     adminRead('prisms_student_flow', {
