@@ -90,7 +90,7 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
         </>}
       </div>
 
-      {(query||active.length>0)&&<div className="evidence-chips">{query&&<Chip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><Chip key={k} label={`${labelFor(k)}: ${optionLabel(k,v,opts)}`} onRemove={()=>setFilter(k,'')}/>)}</div>}
+      {(query||active.length>0)&&<div className="evidence-chips">{query&&<Chip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><Chip key={k} label={`${labelFor(k)}: ${k==='sourceId'?(sourceLabel||String(v)):optionLabel(k,v,opts)}`} onRemove={()=>{if(k==='sourceId')setSourceLabel('');setFilter(k,'')}}/>)}</div>}
       {deepContext&&<div className="evidence-context"><Link2 size={14}/><span>Scoped from a governed operational/canonical deep link.</span><button onClick={()=>{setFilter('entityId','');setFilter('providerId','');setFilter('jobId','')}}>Remove scope</button></div>}
 
       <EvidenceTable rows={rows} loading={busy} selected={selected} onSelect={setSelected}/>
