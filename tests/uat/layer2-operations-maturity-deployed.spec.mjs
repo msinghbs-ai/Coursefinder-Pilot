@@ -165,11 +165,13 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(sourcePatternSql).toMatch(/grant execute on function public\.layer3_source_pattern_benchmark_profile_service\(\) to service_role/i)
 
   const sourcePatternWorker=await fs.readFile('supabase/functions/layer3-source-pattern-benchmark/index.ts','utf8')
-  expect(sourcePatternWorker).toContain('layer3-source-pattern-benchmark-v1.0.4')
+  expect(sourcePatternWorker).toContain('layer3-source-pattern-benchmark-v1.0.5')
   expect(sourcePatternWorker).toContain('x-cf-run-nonce')
   expect(sourcePatternWorker).toContain('candidate_not_in_evidence_links')
   expect(sourcePatternWorker).toContain('same_host_required')
   expect(sourcePatternWorker).toContain('negative_control_must_be_null')
+  expect(sourcePatternWorker).toContain('reasoning:{effort:"none",exclude:true}')
+  expect(sourcePatternWorker).not.toContain('response_format:{type:"json_object"}')
 
   const scaleWorker=await fs.readFile('supabase/functions/layer2-scale-qualify-scheduled/index.ts','utf8')
   expect(scaleWorker).toContain('layer2-scale-qualify-scheduled-v1.0.1')
