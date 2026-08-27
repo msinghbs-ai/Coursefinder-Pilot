@@ -60,19 +60,25 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(cancelSql).toMatch(/revoke all on function public\.layer2_run_batch_reconcile\(uuid\) from public,anon,authenticated/i)
   expect(cancelSql).toMatch(/grant execute on function public\.layer2_run_batch_reconcile\(uuid\) to service_role/i)
 
+  const idemSql=await fs.readFile('supabase/migrations/20260827223500_m2_4_2_discovery_terminal_outcome_idempotency.sql','utf8')
+  expect(idemSql).toContain("dc.status in ('exact_match','likely_match','ambiguous','identity_mismatch','current_page_not_found')")
+  expect(idemSql).toMatch(/grant execute on function public\.layer2_discovery_context\(uuid,integer\) to service_role/i)
+
   const toeflSql=await fs.readFile('supabase/migrations/20260827223000_m2_4_2_toefl_ibt_apply_mapping.sql','utf8')
   expect(toeflSql).toContain("TOEFL_IBT")
   expect(toeflSql).toContain("layer2_apply_course_candidate")
   expect(toeflSql).toMatch(/grant execute on function public\.layer2_apply_course_candidate\(uuid,boolean\) to service_role/i)
 
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
-  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.2.7')
+  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.2.8')
   expect(discovery).toContain('courseBudgetMs')
   expect(discovery).toContain('invocationBudgetMs=85000')
   expect(discovery).toContain('continuation_request_id')
   expect(discovery).toContain('consumedSet')
   expect(discovery).toContain('courseIds.filter')
   expect(discovery).toContain('layer2_assert_profile_executable')
+  expect(discovery).toContain('invocationRemainingMs')
+  expect(discovery).toContain('budgetCapMs')
  })
 
 })
