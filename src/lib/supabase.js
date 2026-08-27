@@ -134,6 +134,14 @@ export const api = {
     country_code: country || null,
     subdivision_code: subdivision || null,
   }),
+  catalogueFilterPage: ({ kind, country = '', subdivision = '', query = '', limit = 10, offset = 0 } = {}) => adminRead('catalogue_filter_page', {
+    filter_kind: kind,
+    country_code: country || null,
+    subdivision_code: subdivision || null,
+    query: query || null,
+    limit: Math.min(Math.max(Number(limit)||10,1),10),
+    offset: Math.max(Number(offset)||0,0),
+  }),
   courseDetail: courseId => adminRead('course_detail', { id: courseId }),
   courseRelatedCampuses: async courseId => {
     const detail = await adminRead('course_detail', { id: courseId })
