@@ -62,6 +62,12 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(cancelSql).toMatch(/revoke all on function public\.layer2_run_batch_reconcile\(uuid\) from public,anon,authenticated/i)
   expect(cancelSql).toMatch(/grant execute on function public\.layer2_run_batch_reconcile\(uuid\) to service_role/i)
 
+  const rmitReverifySql=await fs.readFile('supabase/migrations/20260827225000_m2_4_2_rmit_detail_cricos_reverification.sql','utf8')
+  expect(rmitReverifySql).toContain('pre_detail_verification_status')
+  expect(rmitReverifySql).toContain('layer2-scope-discover-scheduled-v1.3.0')
+  expect(rmitReverifySql).toContain("status='candidate'")
+  expect(rmitReverifySql).toContain('selected=false')
+
   const opsSql=await fs.readFile('supabase/migrations/20260827224000_m2_4_2_layer2_refresh_housekeeping.sql','utf8')
   expect(opsSql).toContain('coursefinder-layer2-refresh-dispatcher')
   expect(opsSql).toContain('coursefinder-layer2-housekeeping')
@@ -85,7 +91,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(toeflSql).toMatch(/grant execute on function public\.layer2_apply_course_candidate\(uuid,boolean\) to service_role/i)
 
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
-  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.2.9')
+  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.3.0')
   expect(discovery).toContain('courseBudgetMs')
   expect(discovery).toContain('invocationBudgetMs=85000')
   expect(discovery).toContain('continuation_request_id')
@@ -94,6 +100,10 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(discovery).toContain('invocationRemainingMs')
   expect(discovery).toContain('budgetCapMs')
   expect(discovery).toContain('layer2_discovery_context_scope')
+  expect(discovery).toContain('verifyCandidateDetail')
+  expect(discovery).toContain('detail_cricos_verified')
+  expect(discovery).toContain('course_url_identity_verification')
+  expect(discovery).toContain('identity-verification.html')
  })
 
 })
