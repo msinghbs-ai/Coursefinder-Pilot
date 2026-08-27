@@ -66,10 +66,12 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(toeflSql).toMatch(/grant execute on function public\.layer2_apply_course_candidate\(uuid,boolean\) to service_role/i)
 
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
-  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.2.5')
+  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.2.6')
   expect(discovery).toContain('courseBudgetMs')
   expect(discovery).toContain('invocationBudgetMs=85000')
   expect(discovery).toContain('continuation_request_id')
+  expect(discovery).toContain('consumedSet')
+  expect(discovery).toContain('courseIds.filter')
  })
 
 })
