@@ -169,16 +169,16 @@ const ENTITY={
 function Catalogue({type,onError,navigate,initialId='',completenessMode=false}){
   const cfg=ENTITY[type]
   const[query,setQuery]=useState(''),[filters,setFilters]=useState({}),[offset,setOffset]=useState(0),[sort,setSort]=useState(completenessMode?'completeness':cfg.sort),[direction,setDirection]=useState(completenessMode?'asc':'asc')
-  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[filterData,setFilterData]=useState({}),[filterBusy,setFilterBusy]=useState(false),[selected,setSelected]=useState(null),[detail,setDetail]=useState(null),[detailBusy,setDetailBusy]=useState(false),[advanced,setAdvanced]=useState(type==='course')
+  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[filterData,setFilterData]=useState({}),[filterLabels,setFilterLabels]=useState({}),[filterBusy,setFilterBusy]=useState(false),[selected,setSelected]=useState(null),[detail,setDetail]=useState(null),[detailBusy,setDetailBusy]=useState(false),[advanced,setAdvanced]=useState(type==='course')
   const debounced=useDebounce(query,280)
   const args=useMemo(()=>buildCatalogueArgs(type,{query:debounced,filters,offset,sort,direction}),[type,debounced,filters,offset,sort,direction])
   useEffect(()=>{let live=true;setBusy(true);adminRead(cfg.operation,args).then(x=>live&&setData(x)).catch(e=>onError(e.message)).finally(()=>live&&setBusy(false));return()=>{live=false}},[cfg.operation,JSON.stringify(args)])
-  useEffect(()=>{if(!['provider','course','campus','scholarship'].includes(type))return;let live=true;setFilterBusy(true);const p=type==='course'?api.courseFilterOptions({country:filters.country||'',subdivision:filters.subdivision||''}):api.providerFilterOptions(filters.country||'');p.then(x=>live&&setFilterData(x||{})).catch(e=>onError(e.message)).finally(()=>live&&setFilterBusy(false));return()=>{live=false}},[type,filters.country,filters.subdivision])
+  useEffect(()=>{if(!['provider','course','campus','scholarship'].includes(type))return;if(type==='course'){setFilterData({});setFilterBusy(false);return}let live=true;setFilterBusy(true);api.providerFilterOptions(filters.country||'').then(x=>live&&setFilterData(x||{})).catch(e=>onError(e.message)).finally(()=>live&&setFilterBusy(false));return()=>{live=false}},[type,filters.country,filters.subdivision])
   useEffect(()=>setOffset(0),[debounced,JSON.stringify(filters),sort,direction])
   useEffect(()=>{if(initialId&&String(initialId)!==String(selected))open({id:initialId,course_id:initialId})},[initialId,type])
   const rows=rowsOf(data),total=Number(data?.total??rows.length??0),active=activeFilters(filters)
   async function open(row){const id=row.id??row.course_id;setSelected(id);setDetailBusy(true);try{setDetail(await adminRead(cfg.detail,{id}))}catch(e){onError(e.message)}finally{setDetailBusy(false)}}
-  function patch(k,v){setFilters(f=>{const n={...f,[k]:v};if(k==='country'){n.subdivision='';if(type==='course')n.provider=''}if(k==='subdivision'&&type==='course')n.provider='';return n})}
+  function patch(k,v,label=''){setFilters(f=>{const n={...f,[k]:v};if(k==='country'){n.subdivision='';if(type==='course')n.provider=''}if(k==='subdivision'&&type==='course')n.provider='';return n});setFilterLabels(l=>{const n={...l,[k]:label||''};if(k==='country'){delete n.subdivision;if(type==='course')delete n.provider}if(k==='subdivision'&&type==='course')delete n.provider;return n})}
   function changeSort(k){if(!k)return;if(sort===k)setDirection(d=>d==='asc'?'desc':'asc');else{setSort(k);setDirection('asc')}}
   const cols=columns(type,completenessMode)
   return <div className="m-page-stack">
@@ -187,7 +187,7 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false}){
       <div className="m-workspace-head"><div><h2>{completenessMode?'Course readiness workspace':`${humanise(type)} catalogue`}</h2><p>{completenessMode?'Find missing core-presence signals without treating completeness as truth.':'Filter → inspect → cross-check → decide.'}</p></div><div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(total)}</strong><span>matching</span></>}</div></div>
       <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={cfg.search}/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label>{type==='course'&&<button className={`m-filter-toggle ${advanced?'active':''}`} onClick={()=>setAdvanced(x=>!x)}><SlidersHorizontal size={15}/>Filters{active.length?` · ${active.length}`:''}</button>}<button className="m-secondary compact" onClick={()=>{setQuery('');setFilters({});setOffset(0)}} disabled={!query&&!active.length}><RefreshCw size={14}/>Clear</button></div>
       <FilterBar type={type} filters={filters} patch={patch} data={filterData} busy={filterBusy} advanced={advanced}/>
-      {(query||active.length>0)&&<div className="m-chip-row">{query&&<FilterChip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><FilterChip key={k} label={`${filterLabel(k)}: ${filterValueLabel(k,v,filterData)}`} onRemove={()=>patch(k,'')}/>)}</div>}
+      {(query||active.length>0)&&<div className="m-chip-row">{query&&<FilterChip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><FilterChip key={k} label={`${filterLabel(k)}: ${filterLabels[k]||filterValueLabel(k,v,filterData)}`} onRemove={()=>patch(k,'')}/>)}</div>}
       <DataTable rows={rows} columns={cols} loading={busy} sort={sort} direction={direction} onSort={changeSort} onRow={open} selected={selected}/>
       <Pager offset={offset} limit={PAGE_SIZE} total={total} onOffset={setOffset}/>
     </section>
