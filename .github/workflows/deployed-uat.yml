@@ -150,6 +150,7 @@ jobs:
             tests/uat/scholarship-selection-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
+            tests/uat/a12-contextual-insights-deployed.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
