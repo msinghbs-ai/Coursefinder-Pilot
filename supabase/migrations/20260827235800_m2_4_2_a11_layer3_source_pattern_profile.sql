@@ -19,8 +19,8 @@ select
   array['source_pattern']::text[],
   'm2.4.2-source-pattern-v1',
   'Interpret only retained first-party Layer 2 Evidence links. Return JSON only. Select a Course/programme catalogue or discovery URL only when it is present in supplied Evidence links and on the exact governed first-party host. Never infer or redefine regulatory identity. Never return a Course identity, fee, intake, admission fact, Search instruction or Publication instruction. If no reliable Course discovery entrypoint is supported, set candidate_value to null.',
-  '{"type":"object","required":["candidate_value","confidence","rationale","evidence_quotes"],"candidate_value":{"oneOf":[{"type":"null"},{"type":"object","required":["catalogue_url"],"properties":{"catalogue_url":{"type":"string"}}}]}}'::jsonb,
-  '{"confidence_min":0,"confidence_max":1,"max_rationale_chars":1600,"max_quotes":4,"max_quote_chars":600,"candidate_required":false,"candidate_url_must_be_same_host":true,"candidate_url_must_be_evidence_link":true,"https_required":true}'::jsonb,
+  '{"type":"object","required":["candidate_value","confidence","rationale","evidence_quotes"],"candidate_value":{"oneOf":[{"type":"null"},{"type":"string","pattern":"^https://"}]}}'::jsonb,
+  '{"confidence_min":0,"confidence_max":1,"max_rationale_chars":1600,"max_quotes":4,"max_quote_chars":600,"candidate_required":false,"candidate_url_must_be_same_host":true,"candidate_url_must_be_evidence_link":true,"https_required":true,"candidate_shape":"https_url_string_or_null"}'::jsonb,
   8000,800,10,30,1,30000,null,0,
   true,true,
   jsonb_build_object(
