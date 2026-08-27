@@ -164,14 +164,21 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(sourcePatternSql).toMatch(/revoke all on function public\.layer3_source_pattern_benchmark_profile_service\(\) from public,anon,authenticated/i)
   expect(sourcePatternSql).toMatch(/grant execute on function public\.layer3_source_pattern_benchmark_profile_service\(\) to service_role/i)
 
+  const sourcePatternBlockedSql=await fs.readFile('supabase/migrations/20260827235900_m2_4_2_a11_source_pattern_benchmark_blocked.sql','utf8')
+  expect(sourcePatternBlockedSql).toContain("'source_pattern_benchmark_blocked'")
+  expect(sourcePatternBlockedSql).toContain("'canonical_mutation_authorised',false")
+  expect(sourcePatternBlockedSql).toContain("'search_mutation_authorised',false")
+  expect(sourcePatternBlockedSql).toContain("'publication_mutation_authorised',false")
+  expect(sourcePatternBlockedSql).toContain("paused=true")
+
   const sourcePatternWorker=await fs.readFile('supabase/functions/layer3-source-pattern-benchmark/index.ts','utf8')
-  expect(sourcePatternWorker).toContain('layer3-source-pattern-benchmark-v1.0.5')
+  expect(sourcePatternWorker).toContain('layer3-source-pattern-benchmark-v1.0.6')
   expect(sourcePatternWorker).toContain('x-cf-run-nonce')
   expect(sourcePatternWorker).toContain('candidate_not_in_evidence_links')
   expect(sourcePatternWorker).toContain('same_host_required')
   expect(sourcePatternWorker).toContain('negative_control_must_be_null')
   expect(sourcePatternWorker).toContain('reasoning:{effort:"none",exclude:true}')
-  expect(sourcePatternWorker).not.toContain('response_format:{type:"json_object"}')
+  expect(sourcePatternWorker).toContain('response_format:{type:"json_schema"')
 
   const scaleWorker=await fs.readFile('supabase/functions/layer2-scale-qualify-scheduled/index.ts','utf8')
   expect(scaleWorker).toContain('layer2-scale-qualify-scheduled-v1.0.1')
