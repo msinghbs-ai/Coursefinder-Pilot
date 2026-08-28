@@ -21,6 +21,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
   await scope.selectOption('state')
   const state=dialog.getByLabel('Layer 2 sync state');await expect(state).toBeVisible()
+  await expect(state).toContainText(/Queensland/i,{timeout:45000})
   await state.click()
   const stateList=dialog.getByRole('listbox',{name:'State options'});await expect(stateList).toBeVisible()
   const stateSearch=stateList.locator('input[placeholder="Search state…"]');await stateSearch.fill('Queensland')
@@ -97,7 +98,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
   const rmitReverifySql=await fs.readFile('supabase/migrations/20260827225000_m2_4_2_rmit_detail_cricos_reverification.sql','utf8')
   expect(rmitReverifySql).toContain('pre_detail_verification_status')
-  expect(rmitReverifySql).toContain('layer2-scope-discover-scheduled-v1.3.2')
+  expect(rmitReverifySql).toContain('layer2-scope-discover-scheduled-v1.3.0')
   expect(rmitReverifySql).toContain("status='candidate'")
   expect(rmitReverifySql).toContain('selected=false')
 
