@@ -1,19 +1,21 @@
-M2.4.2 Stage B integration candidate after UAT contract reconciliation and complete A14 telemetry coverage.
-Frozen source before marker: 0ae8fd85e42691e6074497157f3fb8c221ab57dc
+M2.4.2 Stage B integration candidate after residual runtime/UAT reconciliation and complete A14 telemetry coverage.
+Frozen source before marker: 7b51c1296b1b699eca35485ca8752b72a1771e2a
 Visible release: PIM Admin v2.15.9.
 
-The previous Stage B run 33210173798 produced 34 PASS, 6 FAIL and 1 flaky on desktop. The six failures were reconciled as follows:
-- obsolete Layer 2 navigation copy assertion aligned to accepted scope wording while retaining QILT/PRISMS exclusion;
-- State option UAT matches the paged option label rather than requiring an obsolete exact label shape;
-- A14 worker-version assertions updated to scale-qualify v1.0.2 and scope-discover v1.3.2;
-- advanced source-profile filtering now waits deterministically for the filtered table state;
-- acquisition-provider guard wording aligned to the accepted advanced-configuration UX.
-The A13 evidence_detail HTTP 500 passed on retry and remains classified flaky, not ignored.
+Prior integration run 33211966413: 36 PASS, 4 deterministic FAIL, 1 flaky on desktop; mobile skipped.
+Residual reconciliation:
+- Advanced Layer 2 configuration now shows governed paused/disabled Course/Scholarship profiles for operational visibility. Execution eligibility is unchanged and remains enforced by runtime/scope services. Federation remains paused and refresh-disabled.
+- State-scope UAT waits for the server-resolved Queensland selection before exercising the paged dropdown, removing the React async race without bypassing State paging.
+- Historical RMIT invalidation migration continues to assert its true v1.3.0 worker provenance; current deployed discovery worker assertion remains v1.3.2.
+- The A13 evidence_detail HTTP 500 remains visible as a retry-passing flaky and is not suppressed.
 
-A14 active runtime telemetry remains complete:
-Layer 2 attempt starters: acquire v9, scope-discover v19, scale-qualify v3.
+A14 telemetry remains complete:
+Layer 2 provider-attempt starters: acquire v9, scope-discover v19, scale-qualify v3.
 Layer 3 model callers: interpret v3, provider-control v2, source-pattern-benchmark v7.
-Security Advisor remains 0 WARN / 0 ERROR; Performance Advisor remains 0 WARN / 0 ERROR.
-RMIT canonical promotion remains formally BLOCKED; UQ refresh enabled; RMIT disabled; Federation disabled/paused.
+Post-A14 live attempt proof has vendor_units, estimated_request_cost_usd field and latency populated.
 
-This marker authorises Stage B integration only. Stage C and canonical/Search/Publication mutation remain unauthorised until Stage B desktop/mobile PASS.
+Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
+Performance Advisor: 167 INFO / 0 WARN / 0 ERROR.
+RMIT frozen 212-record promotion remains BLOCKED with 0 unsafe / 0 applied; UQ refresh enabled; RMIT disabled; Federation disabled/paused.
+
+This marker authorises Stage B integration only. No Stage C or canonical/Search/Publication mutation is authorised until desktop/mobile Stage B PASS.
