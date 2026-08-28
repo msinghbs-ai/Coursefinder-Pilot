@@ -118,7 +118,10 @@ function EvidenceTable({rows,loading,selected,onSelect}){
 
 function EvidenceDrawer({id,data,busy,onClose,onError,navigate}){
   const[accessBusy,setAccessBusy]=useState('')
+  const[visualUrl,setVisualUrl]=useState('')
   useEffect(()=>{const k=e=>e.key==='Escape'&&onClose();addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose])
+  const visual=data?.related_visual||null
+  useEffect(()=>{let live=true;setVisualUrl('');if(!visual?.id||!visual?.preview_allowed)return()=>{live=false};api.evidenceAccess(visual.id,'preview').then(x=>{if(live)setVisualUrl(x?.url||'')}).catch(()=>{});return()=>{live=false}},[visual?.id,visual?.preview_allowed])
   async function access(mode){setAccessBusy(mode);try{const x=await api.evidenceAccess(id,mode);if(!x?.url)throw new Error('Signed evidence URL was not returned.');window.open(x.url,'_blank','noopener,noreferrer')}catch(e){onError(e.message)}finally{setAccessBusy('')}}
   const a=data?.artifact||{},s=data?.source||{},j=data?.job||{},storage=data?.storage||{},obs=rowsOf(data?.observations),entities=rowsOf(data?.entities),claims=data?.claims||[],reviews=data?.reviews||[],actions=data?.review_actions||[]
   const observationTotal=Number(data?.observations?.total??a.observation_count??obs.length),entityTotal=Number(data?.entities?.total??entities.length),observationScoped=Boolean(data?.observations?.scope_required)
@@ -130,6 +133,8 @@ function EvidenceDrawer({id,data,busy,onClose,onError,navigate}){
         <div><span className="evidence-private"><ShieldCheck size={13}/>Private evidence boundary</span><h3>{s.label||'Evidence artifact'}</h3><p>{safeUrl(a.source_url)||safeUrl(s.authority_url)||'No public source URL recorded.'}</p><div className="evidence-state-row"><State value={a.status}/><State value={a.extraction_state}/><State value={a.freshness_state}/>{data?.unresolved_conflict&&<State value="conflict"/>}</div></div>
         <div className="evidence-access-actions"><button className="m-secondary" disabled={!storage.preview_allowed||accessBusy} onClick={()=>access('preview')}><FileSearch size={14}/>{accessBusy==='preview'?'Signing…':'Preview'}</button><button className="m-secondary" disabled={!storage.download_allowed||accessBusy} onClick={()=>access('download')}><Download size={14}/>{accessBusy==='download'?'Signing…':'Download'}</button></div>
       </section>
+
+      {visual?.id&&<section className="evidence-visual-card"><div className="evidence-visual-copy"><span className="evidence-private"><FileSearch size={13}/>Captured website screenshot</span><h3>Visual snapshot</h3><p>Secondary visual Evidence captured from the same governed acquisition attempt. The HTML/source artifact remains authoritative for extraction and audit.</p><small>{visual.mime_type||'image'} · {visual.captured_at?dateTime(visual.captured_at):'capture time unavailable'}</small><div className="evidence-access-actions"><button className="m-secondary" disabled={!visualUrl} onClick={()=>visualUrl&&window.open(visualUrl,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>View full screenshot</button><button className="m-secondary" onClick={()=>{location.hash=`#evidence?evidence_id=${encodeURIComponent(visual.id)}`}}><FileSearch size={14}/>Open screenshot Evidence</button></div></div><div className="evidence-visual-thumb">{visualUrl?<img src={visualUrl} alt="Captured website screenshot Evidence"/>:<div><span className="evidence-spinner"/>Signing private thumbnail…</div>}</div></section>}
 
       <DetailGrid items={[
         ['Acquired',dateTime(a.captured_at)],['Verified',a.verification_at?dateTime(a.verification_at):'Not verified'],['Snapshot / version',a.snapshot_version||'Not versioned'],['Content hash',a.content_hash||'—'],
