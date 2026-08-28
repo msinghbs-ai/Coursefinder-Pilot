@@ -1,6 +1,31 @@
-M2.4.1 final full deployed acceptance candidate after post-harness-fix bounded integration desktop/mobile PASS.
-Base working SHA before integration marker: 721658a732c763892179250fee1c0268bd27051d
-Integration marker SHA: 98172a4f616291212253c23f16fe1ab633b9c34b
-Targeted UAT run: 32971449084
-Integration UAT run: 32971584012
-Scope: frozen M2.4.1 AU/NZ Layer 1 operations maturity, reconciled admin_read bridge, and patch-tolerant Course Detail permanent release assertion only.
+M2.4.2 FINAL STAGE C acceptance candidate — single final acceptance run.
+
+Frozen Pilot head before this marker: e2eec9b8de0187a5373b506342316ea457b79a0b
+Frozen functional/UAT source before Stage B marker: 69cb9b465de0a00247db381bcbffcc98a6b1f30a
+Stage B integration run: 33214733610 — chromium-desktop PASS / chromium-mobile PASS.
+Visible release: PIM Admin v2.15.9.
+
+Final pre-Stage C runtime/governance freeze:
+- Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
+- Performance Advisor: 167 INFO / 0 WARN / 0 ERROR.
+- UQ Course refresh: weekly ENABLED; next due 2026-09-03 01:03:40 UTC.
+- RMIT Course refresh: weekly DISABLED.
+- Federation Course refresh: weekly DISABLED; source profile PAUSED/source-limited.
+- RMIT frozen promotion cohort: 212 records, 212/212 identity matched, 0 unsafe, 0 applied; fingerprint 627bb7daa62fe3bbfc3047ce2b57a88e.
+- RMIT canonical promotion remains formally BLOCKED because no already-authorised exact frozen-set executor exists. No privileged bypass is authorised.
+- Layer 3 source-pattern benchmark remains separately BLOCKED; threshold is not lowered.
+- A14 telemetry remains mandatory across all active Layer 2 provider-attempt and Layer 3 model-call paths.
+- Active relevant Edge versions: layer2-acquire-v2 v9; layer2-scope-discover-scheduled v19; layer2-scale-qualify-scheduled v3; layer3-interpret v3; layer3-provider-control v2; layer3-source-pattern-benchmark v7; admin-evidence-access v2; layer2-screenshot-backfill-scheduled v1.
+- Parallel zoho-course-api remains v9 and is untouched by this closure.
+- A10 paged/tablet filters, A12 contextual decision workspace, A13 screenshot Evidence and top-right release-note-only surface remain accepted.
+- Evidence-detail bounded 5xx recovery retains recovered errors separately; any unrecovered 5xx remains a hard UAT failure.
+- Canonical/Search/Publication mutation is not authorised by this marker.
+
+Frozen governance docs before marker:
+- coursefinder-admin head 93a9bad20d601237e0b51b9ba1c4221188e6d920;
+- Data Operations Admin Guide v1.3;
+- Operations Runbook v1.5;
+- Admin/PIM Design Decisions v1.19;
+- CF-CHG-20260827-044 remains ACTIVE pending this Stage C result.
+
+This is the one final M2.4.2 Stage C candidate. Do not create a second final candidate. If acceptance fails, M2.4.2 remains BLOCKED with evidence rather than silently replacing this final gate.
