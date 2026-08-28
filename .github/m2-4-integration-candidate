@@ -1,8 +1,14 @@
-M2.4.2 Stage B integration candidate after post-demo A12/A13 targeted PASS.
-Frozen runtime/source SHA before marker: c6756f2f96ecb8f766a0e14194446944a9adfd7c
-A12 targeted deployed UAT: 33175425752 PASS
-A13 targeted deployed UAT: 33174990072 PASS
-Release surface: PIM Admin v2.15.8 top-right release overlay only.
-Scope: Layer 1/2 operations, Admin navigation, Evidence, Data Quality, performance, screen-state, M2.3, release notes, A10, A12, A13; desktop + mobile integration required.
-RMIT 212-record canonical promotion is formally BLOCKED because no already-authorised exact frozen-set executor is available; RMIT refresh remains disabled. Federation remains disabled/paused; UQ weekly refresh remains enabled.
-This marker does not authorize Stage C, canonical/Search/Publication mutation, or a privileged bypass.
+M2.4.2 Stage B integration candidate after post-demo A12/A13 PASS and closure hardening.
+Frozen source before marker: 05d9f2d0d73802d35fa024f6c4bd3e6dc35ab535
+Release surface: PIM Admin v2.15.9.
+A12 targeted deployed UAT: 33175425752 PASS.
+A13 targeted deployed UAT: 33174990072 PASS.
+Stage B fixes included:
+- primary/advanced Layer 2 navigation semantics aligned;
+- paged State/University/Profile UAT made paging-safe;
+- visible Acquisition providers drill-down added under Advanced configuration;
+- per-user Course catalogue working-state persistence restored;
+- A14 Layer 2 provider-attempt telemetry added in deployed layer2-acquire-v2.9.
+A14 telemetry requirement: retain L2 scraper/provider performance, attempts, usage units, cost, retries, Evidence footprint and L3 model/token/call/cost/latency metrics.
+RMIT canonical promotion remains formally BLOCKED with frozen 212-record cohort; no privileged bypass is authorised. UQ refresh remains enabled; RMIT/Federation remain disabled as governed.
+This marker authorises Stage B integration only. It does not authorise Stage C or canonical/Search/Publication mutation.
