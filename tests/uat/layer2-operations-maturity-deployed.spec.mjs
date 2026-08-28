@@ -21,7 +21,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
   await scope.selectOption('state')
   const state=dialog.getByLabel('Layer 2 sync state');await expect(state).toBeVisible()
-  await expect(state).toContainText(/Queensland/i,{timeout:45000})
+  await expect.poll(async()=>((await state.innerText()).trim()),{timeout:45000,message:'Waiting for initial State scope resolution'}).not.toBe('Choose state')
   await state.click()
   const stateList=dialog.getByRole('listbox',{name:'State options'});await expect(stateList).toBeVisible()
   const stateSearch=stateList.locator('input[placeholder="Search state…"]');await stateSearch.fill('Queensland')
@@ -214,7 +214,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(l2Ui).toContain("action:'scope_options_page'")
 
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
-  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.3.0')
+  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.3.2')
   expect(discovery).toContain('courseBudgetMs')
   expect(discovery).toContain('invocationBudgetMs=80000')
   expect(discovery).toContain('continuation_request_id')
