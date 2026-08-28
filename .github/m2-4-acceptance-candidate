@@ -1,31 +1,30 @@
-M2.4.2 FINAL STAGE C acceptance candidate — single final acceptance run.
+M2.4.2 CORRECTIVE STAGE C acceptance candidate — explicitly authorised governance reopening.
 
-Frozen Pilot head before this marker: e2eec9b8de0187a5373b506342316ea457b79a0b
-Frozen functional/UAT source before Stage B marker: 69cb9b465de0a00247db381bcbffcc98a6b1f30a
-Stage B integration run: 33214733610 — chromium-desktop PASS / chromium-mobile PASS.
-Visible release: PIM Admin v2.15.9.
+Corrected Pilot head before this marker: 60e9e25a86a48522dbae7a29d6c2955c9d295761
+Historical Stage C candidate: 91b115ddf64b020563c7ae6bbd1ea395db866d3f
+Historical Stage C run: 33215640328 — desktop 45 PASS / 1 FAIL; mobile skipped.
+Historical failure cause: stale pre-A12 Course-card reorder assertion. Runtime one-step reorder semantics were correct.
+Corrected UAT contract: after one "Move Locations up" action, accepted A12 topology expects Fees first and Locations second; persistence is tested across reload and reset.
+Stage B integration remains accepted: run 33214733610 — desktop PASS / mobile PASS.
 
-Final pre-Stage C runtime/governance freeze:
+Governance reopening:
+- explicitly authorised by the user on 29 August 2026;
+- permits exactly one corrective Stage C acceptance run;
+- historical failed Stage C remains immutable evidence;
+- no further corrective Stage C attempt is authorised if this run fails without a new explicit governance decision.
+
+Corrective preflight:
 - Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
 - Performance Advisor: 167 INFO / 0 WARN / 0 ERROR.
-- UQ Course refresh: weekly ENABLED; next due 2026-09-03 01:03:40 UTC.
-- RMIT Course refresh: weekly DISABLED.
-- Federation Course refresh: weekly DISABLED; source profile PAUSED/source-limited.
-- RMIT frozen promotion cohort: 212 records, 212/212 identity matched, 0 unsafe, 0 applied; fingerprint 627bb7daa62fe3bbfc3047ce2b57a88e.
-- RMIT canonical promotion remains formally BLOCKED because no already-authorised exact frozen-set executor exists. No privileged bypass is authorised.
-- Layer 3 source-pattern benchmark remains separately BLOCKED; threshold is not lowered.
-- A14 telemetry remains mandatory across all active Layer 2 provider-attempt and Layer 3 model-call paths.
-- Active relevant Edge versions: layer2-acquire-v2 v9; layer2-scope-discover-scheduled v19; layer2-scale-qualify-scheduled v3; layer3-interpret v3; layer3-provider-control v2; layer3-source-pattern-benchmark v7; admin-evidence-access v2; layer2-screenshot-backfill-scheduled v1.
-- Parallel zoho-course-api remains v9 and is untouched by this closure.
-- A10 paged/tablet filters, A12 contextual decision workspace, A13 screenshot Evidence and top-right release-note-only surface remain accepted.
-- Evidence-detail bounded 5xx recovery retains recovered errors separately; any unrecovered 5xx remains a hard UAT failure.
+- UQ weekly Course refresh ENABLED.
+- RMIT weekly Course refresh DISABLED.
+- Federation weekly Course refresh DISABLED; profile PAUSED/source-limited.
+- RMIT frozen cohort: 212 records, 212/212 identity matched, 0 unsafe, 0 applied; fingerprint 627bb7daa62fe3bbfc3047ce2b57a88e.
+- RMIT canonical promotion remains formally BLOCKED with no privileged bypass.
+- Layer 3 source-pattern benchmark remains separately BLOCKED.
+- A14 Layer 2/Layer 3 telemetry remains mandatory.
 - Canonical/Search/Publication mutation is not authorised by this marker.
+- Parallel Zoho work is not modified by this corrective acceptance.
 
-Frozen governance docs before marker:
-- coursefinder-admin head 93a9bad20d601237e0b51b9ba1c4221188e6d920;
-- Data Operations Admin Guide v1.3;
-- Operations Runbook v1.5;
-- Admin/PIM Design Decisions v1.19;
-- CF-CHG-20260827-044 remains ACTIVE pending this Stage C result.
-
-This is the one final M2.4.2 Stage C candidate. Do not create a second final candidate. If acceptance fails, M2.4.2 remains BLOCKED with evidence rather than silently replacing this final gate.
+If corrective Stage C desktop and mobile both PASS, CF-CHG-044/M2.4.2 may close and Running Build/Master Project Plan may advance.
+If either fails, M2.4.2 returns to BLOCKED.
