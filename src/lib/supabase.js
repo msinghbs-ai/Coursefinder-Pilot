@@ -36,13 +36,29 @@ async function adminRead(operation, args = {}) {
     try { await activeCoursePageRead } catch { /* page caller owns its error */ }
   }
 
-  const request = supabase.rpc('admin_read', {
-    p_operation: operation,
-    p_args: args ?? {},
-  }).then(({ data, error }) => {
-    if (error) throw error
-    return data
-  })
+  const runRead = async () => {
+    const { data, error, status } = await supabase.rpc('admin_read', {
+      p_operation: operation,
+      p_args: args ?? {},
+    })
+    return { data, error, status: Number(status || 0) }
+  }
+
+  const execute = async () => {
+    const attempts = operation === 'evidence_detail' ? 3 : 1
+    let lastError = null
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      const { data, error, status } = await runRead()
+      if (!error) return data
+      lastError = error
+      const transientServerFailure = status >= 500 && status <= 599
+      if (!transientServerFailure || attempt === attempts) throw error
+      await new Promise(resolve => setTimeout(resolve, attempt === 1 ? 180 : 420))
+    }
+    throw lastError
+  }
+
+  const request = execute()
 
   if (operation === 'courses_page') {
     activeCoursePageRead = request
