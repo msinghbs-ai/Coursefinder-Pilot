@@ -1,36 +1,19 @@
-M2.4.2 FINAL Stage B integration candidate after post-demo acceptance, closure hardening and complete A14 Layer 2/Layer 3 telemetry coverage.
-Frozen source before marker: ecec7e6c87cfe325cafca5ead1324713cad782cb
+M2.4.2 Stage B integration candidate after UAT contract reconciliation and complete A14 telemetry coverage.
+Frozen source before marker: 0ae8fd85e42691e6074497157f3fb8c221ab57dc
 Visible release: PIM Admin v2.15.9.
 
-Accepted targeted UX gates:
-- A12 deployed UAT 33175425752 PASS.
-- A13 deployed UAT 33174990072 PASS.
+The previous Stage B run 33210173798 produced 34 PASS, 6 FAIL and 1 flaky on desktop. The six failures were reconciled as follows:
+- obsolete Layer 2 navigation copy assertion aligned to accepted scope wording while retaining QILT/PRISMS exclusion;
+- State option UAT matches the paged option label rather than requiring an obsolete exact label shape;
+- A14 worker-version assertions updated to scale-qualify v1.0.2 and scope-discover v1.3.2;
+- advanced source-profile filtering now waits deterministically for the filtered table state;
+- acquisition-provider guard wording aligned to the accepted advanced-configuration UX.
+The A13 evidence_detail HTTP 500 passed on retry and remains classified flaky, not ignored.
 
-Closure hardening:
-- accepted primary/advanced Layer 2 navigation;
-- paging-safe State/University/Profile UAT;
-- visible Acquisition providers drill-down;
-- per-user catalogue state + paged-filter labels restored.
+A14 active runtime telemetry remains complete:
+Layer 2 attempt starters: acquire v9, scope-discover v19, scale-qualify v3.
+Layer 3 model callers: interpret v3, provider-control v2, source-pattern-benchmark v7.
+Security Advisor remains 0 WARN / 0 ERROR; Performance Advisor remains 0 WARN / 0 ERROR.
+RMIT canonical promotion remains formally BLOCKED; UQ refresh enabled; RMIT disabled; Federation disabled/paused.
 
-A14 Layer 2 coverage:
-- layer2-acquire-v2.9 / Edge v9;
-- layer2-scope-discover-scheduled-v1.3.2 / Edge v19;
-- layer2-scale-qualify-scheduled-v1.0.2 / Edge v3.
-Audit confirms these are the only active Layer 2 Edge paths starting provider attempts. Each retains provider identity, request-unit usage basis/vendor units, latency and estimated request cost when available.
-
-A14 Layer 3 coverage:
-- layer3-interpret / Edge v3 retains returned model, external call count including retries, input/output tokens, measured call latency and cost on completion/rejection/failure;
-- layer3-provider-control / Edge v2 retains credential-verification model/call/token/latency/cost telemetry;
-- layer3-source-pattern-benchmark / Edge v7 already retains exact model, call count, input/output tokens, max latency and cost.
-Audit confirms these are the active Layer 3 chat-completion callers. Missing provider usage remains explicit unavailable and is never manufactured.
-
-New DB telemetry migrations:
-- m2_4_2_a14_layer3_provider_validation_telemetry;
-- m2_4_2_a14_layer3_interpretation_call_telemetry.
-
-Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
-Performance Advisor: 167 INFO / 0 WARN / 0 ERROR.
-
-RMIT frozen 212-record canonical promotion remains formally BLOCKED; no privileged bypass. UQ weekly refresh remains enabled; RMIT disabled; Federation disabled/paused. Layer 3 source-pattern benchmark threshold remains unchanged and profile paused.
-
-This marker authorises Stage B integration only. Stage C and canonical/Search/Publication mutation are not authorised by this marker.
+This marker authorises Stage B integration only. Stage C and canonical/Search/Publication mutation remain unauthorised until Stage B desktop/mobile PASS.
