@@ -124,6 +124,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature\.css|layer2-operations-entry\.jsx|layer2-operations\.css|EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^supabase/functions/(layer2-acquire-v2|layer2-scope-discover-scheduled|layer2-screenshot-backfill-scheduled|admin-evidence-access)/|^supabase/migrations/.*a13_.*(provider_attempt|screenshot)|^tests/uat/a13-filter-demo-trace-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a13-filter-demo-trace-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^supabase/functions/provider-contact-|^supabase/migrations/.*a15_|^tests/uat/a15-provider-contact-intelligence-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -138,6 +141,7 @@ jobs:
             tests/uat/a10-paged-filters-deployed.spec.mjs
             tests/uat/a12-contextual-insights-deployed.spec.mjs
             tests/uat/a13-filter-demo-trace-deployed.spec.mjs
+            tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
