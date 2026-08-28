@@ -121,6 +121,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(ContextualInsights\.jsx|CourseDetailPolish\.jsx)$|^supabase/migrations/.*a12_.*contextual|^tests/uat/a12-contextual-insights-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a12-contextual-insights-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature\.css|layer2-operations-entry\.jsx|layer2-operations\.css)$|^supabase/migrations/.*a13_.*provider_attempt|^tests/uat/a13-filter-demo-trace-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/a13-filter-demo-trace-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -134,6 +137,7 @@ jobs:
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
             tests/uat/a12-contextual-insights-deployed.spec.mjs
+            tests/uat/a13-filter-demo-trace-deployed.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -151,6 +155,7 @@ jobs:
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
             tests/uat/a12-contextual-insights-deployed.spec.mjs
+            tests/uat/a13-filter-demo-trace-deployed.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
