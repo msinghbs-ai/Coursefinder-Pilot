@@ -38,15 +38,25 @@ function responseEvidence(response) {
 }
 
 export function observeRuntime(page) {
-  const serverErrors = [], clientErrors = [], consoleErrors = []
+  const serverErrors = [], recoveredServerErrors = [], clientErrors = [], consoleErrors = []
   page.on('response', response => {
-    const status = response.status()
-    if (status >= 500) serverErrors.push(responseEvidence(response))
-    else if (status >= 400) clientErrors.push(responseEvidence(response))
+    const status = response.status(), evidence = { ...responseEvidence(response), observed_at_ms: Date.now() }
+    if (status >= 500) serverErrors.push(evidence)
+    else if (status >= 400) clientErrors.push(evidence)
+    else if (status >= 200 && status < 300 && evidence.operation) {
+      const now = Date.now(), recovered = []
+      for (let i = serverErrors.length - 1; i >= 0; i--) {
+        const prior = serverErrors[i]
+        if (prior.operation === evidence.operation && now - Number(prior.observed_at_ms || 0) <= 5000) {
+          recovered.unshift(...serverErrors.splice(i, 1))
+        }
+      }
+      for (const prior of recovered) recoveredServerErrors.push({ ...prior, recovered_by_status: status, recovered_at_ms: now })
+    }
   })
   page.on('console', message => { if (message.type() === 'error') consoleErrors.push({ text: message.text(), location: message.location() }) })
   page.on('pageerror', error => { consoleErrors.push({ text: error.message, stack: error.stack || null, page_error: true }) })
-  return { serverErrors, clientErrors, consoleErrors }
+  return { serverErrors, recoveredServerErrors, clientErrors, consoleErrors }
 }
 
 export async function attachRuntimeEvidence(testInfo, runtime) {
@@ -56,7 +66,7 @@ export async function attachRuntimeEvidence(testInfo, runtime) {
     test: testInfo.title, project: testInfo.project.name, status_at_capture: testInfo.status,
     expected_status: testInfo.expectedStatus,
     final_status_source: 'Playwright JSON/JUnit report and GitHub job/commit status',
-    server_errors: runtime.serverErrors, client_errors: runtime.clientErrors, console_errors: runtime.consoleErrors,
+    server_errors: runtime.serverErrors, recovered_server_errors: runtime.recoveredServerErrors ?? [], client_errors: runtime.clientErrors, console_errors: runtime.consoleErrors,
   }
   const filePath = path.join(ARTIFACT_DIR, `${safeTitle || 'test'}-runtime.json`)
   await fs.writeFile(filePath, JSON.stringify(payload, null, 2))
