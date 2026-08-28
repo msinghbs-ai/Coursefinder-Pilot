@@ -4,7 +4,7 @@ import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreen
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'a13-filter-demo-trace-v1.1',change_control:'CF-CHG-20260827-044'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'a13-filter-demo-trace-v1.2',change_control:'CF-CHG-20260827-044'})})
 
  test('tablet Course Provider filter stays anchored and does not auto-focus',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await page.setViewportSize({width:900,height:720})
@@ -53,6 +53,9 @@ test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
   await expect(page).toHaveURL(/#evidence\?evidence_id=eb305cd4-577e-4ced-988b-243fc3318f6e/)
   await expect(page.getByText('Evidence artifact',{exact:true})).toBeVisible({timeout:15000})
   await expect(page.getByText(/Private evidence boundary/)).toBeVisible()
+  await expect(page.getByText('Captured website screenshot',{exact:true})).toBeVisible({timeout:15000})
+  await expect(page.getByRole('img',{name:'Captured website screenshot Evidence'})).toBeVisible({timeout:15000})
+  await expect(page.getByRole('button',{name:/View full screenshot/})).toBeEnabled()
   await milestoneScreenshot(page,testInfo,'a13-uq-firecrawl-evidence-drawer')
  }finally{await finish(testInfo,runtime)}})
 })
