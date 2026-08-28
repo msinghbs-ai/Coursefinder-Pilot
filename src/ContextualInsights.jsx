@@ -31,7 +31,9 @@ function MiniTrend({values=[]}){const nums=values.map(num).filter(v=>v!=null);if
 function FlowPanel({group,navigate}){
  const rows=(group?.items||[]),visible=rows.slice(0,6),latest=visible.find(x=>!x.is_suppressed&&num(x.metric_value)!=null)
  const markets=[...new Set(rows.map(x=>x.nationality).filter(Boolean))].slice(0,6)
- const values=visible.filter(x=>!x.is_suppressed).map(x=>x.metric_value)
+ const metricKey=latest?.metric_code||latest?.metric_name||null
+ const trendRows=metricKey?rows.filter(x=>!x.is_suppressed&&(x.metric_code||x.metric_name)===metricKey&&num(x.metric_value)!=null).slice(0,8).reverse():[]
+ const values=trendRows.map(x=>x.metric_value)
  const direct=String(group?.relationship_state||'').startsWith('direct_')
  return <section className="ci-panel ci-prisms">
   <header className="ci-panel-head"><div className="ci-title"><span><CircleGauge size={16}/></span><div><h3>International student flow <b>({group?.source_label||'PRISMS'})</b></h3><p>{human(group?.granularity||'context')} · governed student-flow context</p></div></div><div className="ci-head-actions"><ContextPill tone={direct?'good':'info'}>{human(group?.relationship_state||'not available')}</ContextPill><WorkspaceButton target="Student Flow (PRISMS)" navigate={navigate}/></div></header>
