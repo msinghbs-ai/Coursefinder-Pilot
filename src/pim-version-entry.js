@@ -1,6 +1,12 @@
-const VERSION='2.15.8'
+const VERSION='2.15.9'
 
 const RELEASES=[
+  {version:'2.15.9',date:'29 Aug 2026',title:'M2.4.2 closure hardening and telemetry',changes:[
+    'Restored per-user catalogue working-state persistence across reload and sign-in, with Clear removing the saved screen state.',
+    'Advanced Layer 2 source configuration now exposes acquisition-provider controls through visible navigation rather than a hidden launcher dependency.',
+    'Layer 2 provider attempts now retain provider usage telemetry including request-unit basis, latency and estimated request cost when available.',
+    'Layer 2 and Layer 3 performance, scraper usage, AI token usage and cost telemetry are retained as standing operational evidence.'
+  ]},
   {version:'2.15.8',date:'28 Aug 2026',title:'Layer 2 demo trace and Course decision workspace',changes:[
     'The normal Layer 2 operator journey now explains the governed route: Direct HTTP → Firecrawl → governed fallback → Evidence without a hidden launcher.',
     'Accepted website Evidence can show a secondary screenshot thumbnail and short-lived signed full view while source/raw Evidence remains authoritative.',
