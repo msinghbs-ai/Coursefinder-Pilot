@@ -24,8 +24,8 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await state.click()
   const stateList=dialog.getByRole('listbox',{name:'State options'});await expect(stateList).toBeVisible()
   const stateSearch=stateList.locator('input[placeholder="Search state…"]');await stateSearch.fill('Queensland')
-  await expect(stateList.getByRole('option',{name:'Queensland',exact:true})).toBeVisible()
-  await stateList.getByRole('option',{name:'Queensland',exact:true}).click()
+  const qld=stateList.getByRole('option').filter({hasText:/^Queensland\b/i}).first();await expect(qld).toBeVisible()
+  await qld.click()
   await expect(dialog.getByText('Institutions included in this State',{exact:true})).toBeVisible()
   await expect(dialog.getByText('The University of Queensland',{exact:true})).toBeVisible()
 
@@ -97,7 +97,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
   const rmitReverifySql=await fs.readFile('supabase/migrations/20260827225000_m2_4_2_rmit_detail_cricos_reverification.sql','utf8')
   expect(rmitReverifySql).toContain('pre_detail_verification_status')
-  expect(rmitReverifySql).toContain('layer2-scope-discover-scheduled-v1.3.0')
+  expect(rmitReverifySql).toContain('layer2-scope-discover-scheduled-v1.3.2')
   expect(rmitReverifySql).toContain("status='candidate'")
   expect(rmitReverifySql).toContain('selected=false')
 
@@ -183,7 +183,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(sourcePatternWorker).toContain('response_format:{type:"json_schema"')
 
   const scaleWorker=await fs.readFile('supabase/functions/layer2-scale-qualify-scheduled/index.ts','utf8')
-  expect(scaleWorker).toContain('layer2-scale-qualify-scheduled-v1.0.1')
+  expect(scaleWorker).toContain('layer2-scale-qualify-scheduled-v1.0.2')
   expect(scaleWorker).toContain('x-cf-run-nonce')
   expect(scaleWorker).toContain('svc_pilot_consume_nonce')
   expect(scaleWorker).toContain('.schema("pipeline").rpc')
