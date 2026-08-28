@@ -1,6 +1,12 @@
-const VERSION='2.15.9'
+const VERSION='2.15.10'
 
 const RELEASES=[
+  {version:'2.15.10',date:'29 Aug 2026',title:'International recruitment contact intelligence',changes:[
+    'Provider detail now surfaces governed International contacts with territory assignments, institutional contact details, source freshness and Evidence links.',
+    'Added first-party AU/NZ university contact discovery using governed Provider domains/subdomains, sitemap discovery and structured regional-manager tables.',
+    'Added optional licensed Apollo professional-title enrichment by university domain without requesting personal email or phone reveal.',
+    'Contact title, territory and professional-contact changes are retained as governed watch signals while university-published contacts remain preferred over licensed enrichment.'
+  ]},
   {version:'2.15.9',date:'29 Aug 2026',title:'M2.4.2 closure hardening and telemetry',changes:[
     'Restored per-user catalogue working-state persistence across reload and sign-in, with Clear removing the saved screen state.',
     'Advanced Layer 2 source configuration now exposes acquisition-provider controls through visible navigation rather than a hidden launcher dependency.',
