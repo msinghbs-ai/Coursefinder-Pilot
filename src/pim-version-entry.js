@@ -1,6 +1,12 @@
-const VERSION='2.15.7'
+const VERSION='2.15.8'
 
 const RELEASES=[
+  {version:'2.15.8',date:'28 Aug 2026',title:'Layer 2 demo trace and Course decision workspace',changes:[
+    'The normal Layer 2 operator journey now explains the governed route: Direct HTTP → Firecrawl → governed fallback → Evidence without a hidden launcher.',
+    'Accepted website Evidence can show a secondary screenshot thumbnail and short-lived signed full view while source/raw Evidence remains authoritative.',
+    'Course detail uses the wider responsive decision workspace with contextual Student outcomes & benchmarks, International student flow and Scholarships & funding while preserving source granularity and authority labels.',
+    'Tablet filters remain trigger-anchored with bounded paging and no forced search focus.'
+  ]},
   {version:'2.15.7',date:'26 Aug 2026',title:'Layer 1 regulatory operations maturity',changes:[
     'Matured Data Operations → Layer 1 — Regulatory into an AU/NZ operational control plane with source health, expected counts, variance guardrails, progress, reconciliation, Evidence and schedule visibility.',
     'Platform Admins can validate approved regulatory sources, queue governed ingestion, pause/resume processing and maintain versioned source configuration without exposing service credentials or destructive Pilot controls.',
