@@ -6,7 +6,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function openCatalogue(page,hash,heading){await page.evaluate(h=>{location.hash=h},hash);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible()}
 
 test.describe('A12 contextual insights on catalogue detail blades @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'a12-contextual-insights-v1.3',change_control:'CF-CHG-20260827-044'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'a12-contextual-insights-v1.4',change_control:'CF-CHG-20260827-044'})})
 
  test('RMIT Provider blade relates QILT PRISMS context and Scholarships without flattening granularity',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await openCatalogue(page,'#providers','Providers')
@@ -22,9 +22,9 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   expect(ci?.student_flow?.granularity).toBe('regional')
   expect(Number(ci?.scholarships?.total||0)).toBeGreaterThanOrEqual(3)
   await expect(page.getByRole('heading',{name:'Related insights & funding'})).toBeVisible()
-  await expect(page.getByText('Student outcomes / benchmarks',{exact:true})).toBeVisible()
+  await expect(page.getByText(/Student outcomes & benchmarks/)).toBeVisible()
   await expect(page.getByText('International student flow',{exact:true})).toBeVisible()
-  await expect(page.getByText('Scholarships / funding',{exact:true})).toBeVisible()
+  await expect(page.getByText('Scholarships & funding',{exact:true})).toBeVisible()
   await expect(page.getByText(/Regional Context/i).first()).toBeVisible()
   await milestoneScreenshot(page,testInfo,'a12-provider-contextual-insights')
  }finally{await finish(testInfo,runtime)}})
@@ -42,7 +42,14 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   expect((ci?.scholarships?.items||[]).every(x=>x.granularity==='contextual_eligibility'||x.granularity==='course')).toBeTruthy()
   await expect(page.getByRole('heading',{name:'Related insights & funding'})).toBeVisible()
   await expect(page.getByText(/Contextual eligibility/i).first()).toBeVisible()
+  await expect(page.locator('.ci-outcome-card').first()).toBeVisible()
+  await expect(page.getByText(/vs benchmark/i).first()).toBeVisible()
+  const drawer=page.locator('.m-drawer-course')
+  const desktop=await drawer.boundingBox();expect(desktop).toBeTruthy()
+  const desktopViewport=page.viewportSize();expect(desktop.width).toBeLessThanOrEqual(950);expect(desktop.width/desktopViewport.width).toBeGreaterThan(0.54);expect(desktop.width/desktopViewport.width).toBeLessThan(0.61)
   await milestoneScreenshot(page,testInfo,'a12-course-contextual-insights')
+  await page.setViewportSize({width:900,height:720});const tablet=await drawer.boundingBox();expect(tablet.width/900).toBeGreaterThanOrEqual(0.9)
+  await page.setViewportSize({width:390,height:844});const mobile=await drawer.boundingBox();expect(Math.abs(mobile.width-390)).toBeLessThanOrEqual(2)
  }finally{await finish(testInfo,runtime)}})
 
  test('A12 source contract remains bounded and role checked',async()=>{
@@ -57,9 +64,9 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   expect(sql).toContain('do not authorise Search or Publication mutation')
   expect(sql).toMatch(/revoke all on function security\.admin_contextual_insights\(text,uuid\) from public,anon/i)
   const component=await fs.readFile('src/ContextualInsights.jsx','utf8')
-  expect(component).toContain('Student outcomes / benchmarks')
+  expect(component).toContain('Student outcomes & benchmarks')
   expect(component).toContain('International student flow')
-  expect(component).toContain('Scholarships / funding')
+  expect(component).toContain('Scholarships & funding')
   expect(component).toContain('not Course facts')
  })
 })
