@@ -74,6 +74,8 @@ Deno.serve(async (req: Request) => {
   if (userError || !userData?.user?.id) return json(req, { error: "invalid user token" }, 401);
 
   let interpretationId: string | null = null;
+  let externalCallCount = 0;
+  let callStartedMs: number | null = null;
   try {
     const body = await req.json();
     const evidenceId = String(body?.evidence_id || "");
@@ -137,11 +139,13 @@ Deno.serve(async (req: Request) => {
 
     const attempts = Math.max(1, Math.min(Number(profile.retry_ceiling || 0) + 1, 4));
     let providerResult: any = null;
+    callStartedMs = performance.now();
     let lastError: unknown = null;
     for (let attempt = 0; attempt < attempts; attempt++) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), Number(profile.timeout_ms || 30000));
       try {
+        externalCallCount += 1;
         const response = await fetch(`${String(profile.base_url).replace(/\/$/, "")}/chat/completions`, {
           method: "POST",
           signal: controller.signal,
@@ -170,6 +174,7 @@ Deno.serve(async (req: Request) => {
       finally { clearTimeout(timeout); }
     }
     if (!providerResult) throw lastError instanceof Error ? lastError : new Error("aggregator call failed");
+    const callLatencyMs = callStartedMs == null ? null : Math.round(performance.now() - callStartedMs);
 
     const rawContent = providerResult?.choices?.[0]?.message?.content;
     let parsed: any;
@@ -178,7 +183,7 @@ Deno.serve(async (req: Request) => {
       const validatorResult = { valid: false, errors: [e instanceof Error ? e.message : String(e)] };
       const { error: completeError } = await svc.rpc("layer3_complete_interpretation_service", {
         p_interpretation_id: interpretationId, p_raw_result: providerResult, p_candidate_value: null, p_confidence: null, p_rationale: "Malformed structured output", p_evidence_quotes: [], p_validator_result: validatorResult, p_valid: false,
-        p_response_model: providerResult?.model || null, p_input_tokens: providerResult?.usage?.prompt_tokens || null, p_output_tokens: providerResult?.usage?.completion_tokens || null, p_estimated_cost_usd: Number(providerResult?.usage?.cost || 0), p_expiry: null,
+        p_response_model: providerResult?.model || null, p_input_tokens: providerResult?.usage?.prompt_tokens || null, p_output_tokens: providerResult?.usage?.completion_tokens || null, p_estimated_cost_usd: Number(providerResult?.usage?.cost || 0), p_expiry: null, p_external_call_count: externalCallCount, p_call_latency_ms: callLatencyMs,
       });
       if (completeError) throw new Error(`validation rejection persistence failed: ${completeError.message}`);
       return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validatorResult }, 422);
@@ -206,13 +211,15 @@ Deno.serve(async (req: Request) => {
       p_output_tokens: providerResult?.usage?.completion_tokens || null,
       p_estimated_cost_usd: cost,
       p_expiry: validation.valid ? expiry : null,
+      p_external_call_count: externalCallCount,
+      p_call_latency_ms: callLatencyMs,
     });
     if (completeError) throw new Error(`completion persistence failed: ${completeError.message}`);
     if (!validation.valid) return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validation }, 422);
-    return json(req, { ok: true, call_required: true, interpretation_id: interpretationId, review_item_id: completed?.review_item_id || null, status: parsed?.candidate_value == null ? "no_candidate" : "validated", model: providerResult?.model || profile.model_identifier, validator_result: validation, estimated_cost_usd: cost });
+    return json(req, { ok: true, call_required: true, interpretation_id: interpretationId, review_item_id: completed?.review_item_id || null, status: parsed?.candidate_value == null ? "no_candidate" : "validated", model: providerResult?.model || profile.model_identifier, validator_result: validation, estimated_cost_usd: cost, external_call_count: externalCallCount, call_latency_ms: callLatencyMs });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    if (interpretationId) await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message }).catch(() => undefined);
+    if (interpretationId) await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message, p_external_call_count: externalCallCount, p_call_latency_ms: callStartedMs == null ? null : Math.round(performance.now() - callStartedMs) }).catch(() => undefined);
     return json(req, { error: message, interpretation_id: interpretationId }, /credential|ceiling reached|not configured/i.test(message) ? 409 : 500);
   }
 });
