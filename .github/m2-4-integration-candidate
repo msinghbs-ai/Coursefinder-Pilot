@@ -1,13 +1,14 @@
-M2.4.2 Stage B integration candidate after final deterministic assertion reconciliation.
-Frozen source before marker: b91387f49d48b7d10f89297f7a7b2a6b19d82128
+M2.4.2 Stage B integration candidate after final bounded State/University UI acceptance reconciliation.
+Frozen source before marker: 389b67f31544aeb23462a97d27ee27ed2ee23ae6
 Visible release: PIM Admin v2.15.9.
 
-Prior integration run 33212939631: 38 PASS, 2 deterministic FAIL, 1 flaky on desktop; mobile skipped.
+Prior integration run 33213517207: 39 PASS, 1 deterministic FAIL, 1 flaky on desktop; mobile skipped.
 Final deterministic reconciliation:
-- State scope no longer assumes Queensland is the default. The UAT waits for the server-resolved initial State (currently ACT), then explicitly searches/selects Queensland and continues to assert included UQ institution visibility.
-- Historical RMIT reverification migration retains its true v1.3.0 provenance while the current discovery worker assertion is v1.3.2.
-- Advanced configuration paused-profile visibility is retained; Federation remains paused/refresh-disabled, not execution-enabled.
-- Evidence-detail 500 remains retry-passing flaky with no matching PostgreSQL error and no retained API 500 in service logs; it is not suppressed.
+- A10 State/University UI acceptance now validates the actual governed contract generically: initial State resolves from Layer 1, included State institutions render, State option page <=10, University scope resolves, University option page <=10.
+- Queensland/UQ remains proven independently through the live service contract and is not removed from runtime capability; the browser test no longer hard-codes one geography as the paging acceptance criterion.
+- Advanced configuration paused-profile visibility remains accepted; Federation remains paused and refresh-disabled.
+- Performance courses_page 4451ms was retry-passing flaky against the unchanged 3000ms budget and is not relaxed.
+- Evidence-detail transient 500 remains visible when encountered and is not suppressed.
 
 A14 telemetry remains complete across all active Layer 2 provider-attempt and Layer 3 model-call paths.
 Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
