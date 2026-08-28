@@ -1,10 +1,11 @@
 import{test,expect}from'@playwright/test'
 import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'
+import{openLayer2}from'./support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'a13-filter-demo-trace-v1.3',change_control:'CF-CHG-20260827-044'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'a13-filter-demo-trace-v1.4',change_control:'CF-CHG-20260827-044'})})
 
  test('tablet Course Provider filter stays anchored and does not auto-focus',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await page.setViewportSize({width:900,height:720})
@@ -36,14 +37,14 @@ test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
 
  test('Layer 2 explains automatic Firecrawl route and opens accepted UQ Evidence',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
-  const launcher=page.locator('.l2o-launcher')
-  await expect(launcher).toBeVisible()
-  await launcher.click()
-  await expect(page.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible()
-  await expect(page.getByRole('heading',{name:'How the single Sync button works'})).toBeVisible()
-  await expect(page.getByText('Direct HTTP',{exact:true})).toBeVisible()
-  await expect(page.getByText('Firecrawl',{exact:true})).toBeVisible()
-  await expect(page.getByText('Evidence + extraction',{exact:true})).toBeVisible()
+  const dialog=await openLayer2(page)
+  await expect(dialog.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible()
+  await expect(dialog.getByRole('heading',{name:'How the single Sync button works'})).toBeVisible()
+  const route=dialog.locator('.l2o-route-chain')
+  await expect(route.getByText('Direct HTTP',{exact:true})).toBeVisible()
+  await expect(route.getByText('Firecrawl',{exact:true})).toBeVisible()
+  await expect(route.getByText('Governed fallback',{exact:true})).toBeVisible()
+  await expect(route.getByText('Evidence',{exact:true})).toBeVisible()
   const demo=page.locator('.l2o-demo-proof')
   await expect(demo.getByText(/Meeting-ready Firecrawl example · accepted UQ profile/)).toBeVisible()
   await expect(demo.getByText(/study\.uq\.edu\.au\/study-options\/programs\/bachelor-arts-2000/)).toBeVisible()
@@ -55,7 +56,15 @@ test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
   await expect(page.getByText(/Private evidence boundary/)).toBeVisible()
   await expect(page.getByText('Captured website screenshot',{exact:true})).toBeVisible({timeout:15000})
   await expect(page.getByRole('img',{name:'Captured website screenshot Evidence'})).toBeVisible({timeout:15000})
-  await expect(page.getByRole('button',{name:/View full screenshot/})).toBeEnabled()
+  const full=page.getByRole('button',{name:/View full screenshot/})
+  await expect(full).toBeEnabled()
+  const popupPromise=page.waitForEvent('popup')
+  await full.click()
+  const popup=await popupPromise
+  await popup.waitForLoadState('domcontentloaded').catch(()=>{})
+  expect(popup.url()).toMatch(/^https:\/\//)
+  expect(popup.url()).toMatch(/signed|token|storage|object/i)
+  await popup.close().catch(()=>{})
   await milestoneScreenshot(page,testInfo,'a13-uq-firecrawl-evidence-drawer')
  }finally{await finish(testInfo,runtime)}})
 })
