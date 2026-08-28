@@ -37,9 +37,9 @@ export async function openLayer2Providers(page) {
   const dialog = await openLayer2(page)
   await dialog.getByRole('button', { name: /Advanced configuration/i }).click({ timeout: DETERMINISTIC_UI_TIMEOUT })
   await expect(dialog).toBeHidden(ui)
-  const providerLauncher = page.locator('.l2p-launcher')
-  await expect(providerLauncher).toBeAttached(ui)
-  await providerLauncher.click({ force: true, timeout: DETERMINISTIC_UI_TIMEOUT })
+  const providerButton = page.getByRole('button', { name: 'Acquisition providers', exact: true })
+  await expect(providerButton).toBeVisible(ui)
+  await providerButton.click({ timeout: DETERMINISTIC_UI_TIMEOUT })
   await expect(page.getByRole('heading', { name: 'Layer 2 Acquisition Providers' })).toBeVisible(ui)
 }
 
