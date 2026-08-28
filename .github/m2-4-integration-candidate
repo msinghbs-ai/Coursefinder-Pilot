@@ -1,14 +1,19 @@
-M2.4.2 Stage B integration candidate after post-demo A12/A13 PASS and closure hardening.
-Frozen source before marker: 4247cd8e96f55e5b30cffa79ce0783cf4d470c6b
-Release surface: PIM Admin v2.15.9.
+M2.4.2 Stage B integration candidate after post-demo acceptance, closure hardening and complete A14 telemetry coverage.
+Frozen source before marker: c51b40951aba1da4edb0f01b47e68f8280520e06
+Visible release: PIM Admin v2.15.9.
 A12 targeted deployed UAT: 33175425752 PASS.
 A13 targeted deployed UAT: 33174990072 PASS.
-Stage B fixes included:
-- primary/advanced Layer 2 navigation semantics aligned;
+Closure hardening included:
+- primary/advanced Layer 2 navigation aligned to accepted semantics;
 - paged State/University/Profile UAT made paging-safe;
-- visible Acquisition providers drill-down added under Advanced configuration;
-- per-user Course catalogue working-state persistence and paged-filter display-label restoration completed;
-- A14 Layer 2 provider-attempt telemetry added in deployed layer2-acquire-v2.9.
-A14 telemetry requirement: retain L2 scraper/provider performance, attempts, usage units, cost, retries, Evidence footprint and L3 model/token/call/cost/latency metrics.
-RMIT canonical promotion remains formally BLOCKED with frozen 212-record cohort; no privileged bypass is authorised. UQ refresh remains enabled; RMIT/Federation remain disabled as governed.
-This marker authorises Stage B integration only. It does not authorise Stage C or canonical/Search/Publication mutation.
+- visible Acquisition providers drill-down under Advanced configuration;
+- per-user catalogue working-state and persisted paged-filter labels restored.
+A14 telemetry:
+- layer2-acquire-v2.9 records provider key, request-unit usage basis, vendor units, latency and estimated request cost where available;
+- layer2-scope-discover-scheduled-v1.3.2 / deployed v19 records the same telemetry for scheduled discovery, fallback and detail identity-verification attempts;
+- Layer 3 interpretation/benchmark token, model, call, latency and cost fields remain retained;
+- missing usage remains explicit and is never manufactured.
+Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
+Performance Advisor: 167 INFO / 0 WARN / 0 ERROR.
+RMIT exact 212-record canonical promotion remains formally BLOCKED with no privileged bypass; UQ refresh enabled, RMIT disabled, Federation disabled/paused.
+This marker authorises Stage B integration only. No Stage C or canonical/Search/Publication mutation is authorised by this marker.
