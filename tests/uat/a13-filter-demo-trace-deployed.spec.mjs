@@ -4,7 +4,7 @@ import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreen
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'a13-filter-demo-trace-v1',change_control:'CF-CHG-20260827-044'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'a13-filter-demo-trace-v1.1',change_control:'CF-CHG-20260827-044'})})
 
  test('tablet Course Provider filter stays anchored and does not auto-focus',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await page.setViewportSize({width:900,height:720})
