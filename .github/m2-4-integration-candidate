@@ -1,16 +1,19 @@
-M2.4.2 Stage B integration candidate after final bounded State/University UI acceptance reconciliation.
-Frozen source before marker: 389b67f31544aeb23462a97d27ee27ed2ee23ae6
+M2.4.2 Stage B integration candidate after mobile-only A12 and transient Evidence read hardening.
+Frozen source before marker: 69cb9b465de0a00247db381bcbffcc98a6b1f30a
 Visible release: PIM Admin v2.15.9.
 
-Prior integration run 33213517207: 39 PASS, 1 deterministic FAIL, 1 flaky on desktop; mobile skipped.
-Final deterministic reconciliation:
-- A10 State/University UI acceptance now validates the actual governed contract generically: initial State resolves from Layer 1, included State institutions render, State option page <=10, University scope resolves, University option page <=10.
-- Queensland/UQ remains proven independently through the live service contract and is not removed from runtime capability; the browser test no longer hard-codes one geography as the paging acceptance criterion.
-- Advanced configuration paused-profile visibility remains accepted; Federation remains paused and refresh-disabled.
-- Performance courses_page 4451ms was retry-passing flaky against the unchanged 3000ms budget and is not relaxed.
-- Evidence-detail transient 500 remains visible when encountered and is not suppressed.
+Prior integration run 33213959904:
+- desktop PASS;
+- mobile FAIL with 39 PASS / 2 FAIL.
+Mobile-only reconciliation:
+- A12 explicitly sets 1440x1100 before the desktop drawer-width assertion, making its desktop/tablet/mobile geometry sequence independent of the Playwright project starting viewport.
+- Accepted UQ Evidence detail succeeds directly under the governed rank-6 read path; 20 direct role-checked executions averaged ~182 ms, max ~913 ms, zero empty.
+- Browser evidence_detail now retries only HTTP 5xx responses, max three total attempts with bounded backoff.
+- UAT keeps recovered 5xx events in recovered_server_errors and removes them from the failure set only when the same governed operation returns 2xx within 5 seconds. Unrecovered 5xx remains a hard failure.
+- No authority, Evidence, Search, Publication or secret boundary is weakened.
+- A10 State/University bounded-paging acceptance remains generic and desktop PASS.
 
-A14 telemetry remains complete across all active Layer 2 provider-attempt and Layer 3 model-call paths.
+A14 telemetry remains complete across active Layer 2 provider-attempt and Layer 3 model-call paths.
 Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
 Performance Advisor: 167 INFO / 0 WARN / 0 ERROR.
 RMIT frozen 212-record canonical promotion remains BLOCKED; 0 unsafe, 0 applied. UQ refresh enabled; RMIT disabled; Federation disabled/paused.
