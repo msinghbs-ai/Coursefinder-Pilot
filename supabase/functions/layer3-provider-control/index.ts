@@ -41,10 +41,12 @@ Deno.serve(async(req:Request)=>{
     if(!profile) return reply(req,404,{error:'profile_not_found'});
     const{data:key,error:keyError}=await svc.rpc('layer3_provider_credential_resolve_service',{p_profile_id:profileId});
     if(keyError||!key) return reply(req,409,{error:'provider_credential_not_configured'});
-    let ok=false,providerModel:string|null=null,message='';
+    let ok=false,providerModel:string|null=null,message='',externalCallCount=0,inputTokens:number|null=null,outputTokens:number|null=null,estimatedCostUsd:number|null=null,latencyMs:number|null=null;
+    const callStarted=performance.now();
     try{
       const controller=new AbortController();
       const timer=setTimeout(()=>controller.abort(),Math.min(Math.max(Number(profile.timeout_ms||30000),5000),30000));
+      externalCallCount=1;
       const res=await fetch(`${String(profile.base_url).replace(/\/$/,'')}/chat/completions`,{
         method:'POST',signal:controller.signal,
         headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':'https://coursefinder.app','X-Title':'CourseFinder Layer 3 Credential Verification'},
@@ -52,13 +54,17 @@ Deno.serve(async(req:Request)=>{
       });
       clearTimeout(timer);
       const payload=await res.json().catch(()=>({}));
+      latencyMs=Math.round(performance.now()-callStarted);
+      inputTokens=payload?.usage?.prompt_tokens==null?null:Number(payload.usage.prompt_tokens);
+      outputTokens=payload?.usage?.completion_tokens==null?null:Number(payload.usage.completion_tokens);
+      estimatedCostUsd=payload?.usage?.cost==null?null:Number(payload.usage.cost);
       ok=res.ok;
       providerModel=payload?.model||profile.model_identifier||null;
       message=ok?'Provider credential verified; full quality benchmark still required.':`Provider returned HTTP ${res.status}`;
       if(!ok&&payload?.error?.message) message+=`: ${String(payload.error.message).slice(0,300)}`;
-    }catch(e){message=e instanceof Error?e.message:String(e)}
-    await svc.rpc('layer3_provider_validation_record_service',{p_actor:String(ctx.user_id),p_profile_id:profileId,p_ok:ok,p_provider_model:providerModel,p_message:message});
-    return reply(req,ok?200:409,{ok,profile_id:profileId,provider_model:providerModel,state:ok?'credential_verified_pending_benchmark':'credential_verification_failed',message});
+    }catch(e){latencyMs=Math.round(performance.now()-callStarted);message=e instanceof Error?e.message:String(e)}
+    await svc.rpc('layer3_provider_validation_record_service',{p_actor:String(ctx.user_id),p_profile_id:profileId,p_ok:ok,p_provider_model:providerModel,p_message:message,p_external_call_count:externalCallCount,p_input_tokens:inputTokens,p_output_tokens:outputTokens,p_estimated_cost_usd:estimatedCostUsd,p_latency_ms:latencyMs});
+    return reply(req,ok?200:409,{ok,profile_id:profileId,provider_model:providerModel,state:ok?'credential_verified_pending_benchmark':'credential_verification_failed',message,usage:{external_call_count:externalCallCount,input_tokens:inputTokens,output_tokens:outputTokens,estimated_cost_usd:estimatedCostUsd,latency_ms:latencyMs}});
   }
   return reply(req,400,{error:'unsupported_action'});
 });
