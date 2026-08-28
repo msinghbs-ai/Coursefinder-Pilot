@@ -40,7 +40,7 @@ test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
   const dialog=await openLayer2(page)
   await expect(dialog.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible()
   await expect(dialog.getByRole('heading',{name:'How the single Sync button works'})).toBeVisible()
-  const route=dialog.locator('.l2o-route-chain')
+  const route=page.locator('.l2o-route-chain')
   await expect(route.getByText('Direct HTTP',{exact:true})).toBeVisible()
   await expect(route.getByText('Firecrawl',{exact:true})).toBeVisible()
   await expect(route.getByText('Governed fallback',{exact:true})).toBeVisible()
