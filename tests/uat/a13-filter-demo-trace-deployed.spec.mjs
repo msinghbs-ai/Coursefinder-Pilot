@@ -1,0 +1,58 @@
+import{test,expect}from'@playwright/test'
+import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'
+
+async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
+
+test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'a13-filter-demo-trace-v1',change_control:'CF-CHG-20260827-044'})})
+
+ test('tablet Course Provider filter stays anchored and does not auto-focus',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await page.setViewportSize({width:900,height:720})
+  await page.addInitScript(()=>{const native=window.matchMedia.bind(window);window.matchMedia=q=>q==='(pointer:fine)'?{matches:false,media:q,onchange:null,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){},dispatchEvent(){return false}}:native(q)})
+  await loginAsUatUser(page)
+  await page.evaluate(()=>{location.hash='#courses'})
+  await expect(page.getByRole('heading',{name:'Courses',exact:true})).toBeVisible()
+  const provider=page.locator('.m-filter-select').filter({hasText:'Provider'}).first()
+  const trigger=provider.locator('button.m-filter-button')
+  await trigger.click()
+  const pop=provider.locator('.m-filter-popover')
+  await expect(pop).toBeVisible()
+  const search=provider.locator('.m-filter-search input')
+  await expect(search).not.toBeFocused()
+  const tb=await trigger.boundingBox(),pb=await pop.boundingBox()
+  expect(tb).toBeTruthy();expect(pb).toBeTruthy()
+  expect(Math.abs(pb.x-tb.x)).toBeLessThanOrEqual(3)
+  expect(pb.y).toBeGreaterThanOrEqual(tb.y+tb.height-2)
+  expect(pb.y).toBeLessThan(tb.y+tb.height+20)
+  expect(Math.abs((pb.y+pb.height/2)-360)).toBeGreaterThan(40)
+  await page.mouse.click(20,20)
+  await expect(pop).toBeHidden()
+  await trigger.click();await expect(pop).toBeVisible()
+  const pb2=await pop.boundingBox()
+  expect(Math.abs(pb2.x-pb.x)).toBeLessThanOrEqual(3)
+  expect(Math.abs(pb2.y-pb.y)).toBeLessThanOrEqual(3)
+  await milestoneScreenshot(page,testInfo,'a13-tablet-filter-anchored')
+ }finally{await finish(testInfo,runtime)}})
+
+ test('Layer 2 explains automatic Firecrawl route and opens accepted UQ Evidence',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page)
+  const launcher=page.locator('.l2o-launcher')
+  await expect(launcher).toBeVisible()
+  await launcher.click()
+  await expect(page.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'How the single Sync button works'})).toBeVisible()
+  await expect(page.getByText('Direct HTTP',{exact:true})).toBeVisible()
+  await expect(page.getByText('Firecrawl',{exact:true})).toBeVisible()
+  await expect(page.getByText('Evidence + extraction',{exact:true})).toBeVisible()
+  const demo=page.locator('.l2o-demo-proof')
+  await expect(demo.getByText(/Meeting-ready Firecrawl example · accepted UQ profile/)).toBeVisible()
+  await expect(demo.getByText(/study\.uq\.edu\.au\/study-options\/programs\/bachelor-arts-2000/)).toBeVisible()
+  await expect(demo.getByText(/Firecrawl · HTTP 200/)).toBeVisible()
+  await milestoneScreenshot(page,testInfo,'a13-layer2-firecrawl-demo-proof')
+  await demo.getByRole('button',{name:/Open captured Evidence/}).click()
+  await expect(page).toHaveURL(/#evidence\?evidence_id=eb305cd4-577e-4ced-988b-243fc3318f6e/)
+  await expect(page.getByText('Evidence artifact',{exact:true})).toBeVisible({timeout:15000})
+  await expect(page.getByText(/Private evidence boundary/)).toBeVisible()
+  await milestoneScreenshot(page,testInfo,'a13-uq-firecrawl-evidence-drawer')
+ }finally{await finish(testInfo,runtime)}})
+})
