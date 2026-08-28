@@ -46,6 +46,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   await expect(page.locator('.ci-outcome-card').first()).toBeVisible()
   await expect(page.getByText(/vs benchmark/i).first()).toBeVisible()
   const drawer=page.locator('.m-drawer-course')
+  await page.setViewportSize({width:1440,height:1100})
   const desktop=await drawer.boundingBox();expect(desktop).toBeTruthy()
   const desktopViewport=page.viewportSize();expect(desktop.width).toBeLessThanOrEqual(950);expect(desktop.width/desktopViewport.width).toBeGreaterThan(0.54);expect(desktop.width/desktopViewport.width).toBeLessThan(0.61)
   await milestoneScreenshot(page,testInfo,'a12-course-contextual-insights')
