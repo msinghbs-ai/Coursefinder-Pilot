@@ -121,7 +121,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(ContextualInsights\.jsx|CourseDetailPolish\.jsx)$|^supabase/migrations/.*a12_.*contextual|^tests/uat/a12-contextual-insights-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a12-contextual-insights-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature\.css|layer2-operations-entry\.jsx|layer2-operations\.css)$|^supabase/migrations/.*a13_.*provider_attempt|^tests/uat/a13-filter-demo-trace-deployed\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature\.css|layer2-operations-entry\.jsx|layer2-operations\.css|EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^supabase/functions/(layer2-acquire-v2|layer2-scope-discover-scheduled|layer2-screenshot-backfill-scheduled|admin-evidence-access)/|^supabase/migrations/.*a13_.*(provider_attempt|screenshot)|^tests/uat/a13-filter-demo-trace-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a13-filter-demo-trace-deployed.spec.mjs)
           fi
           integration=(
