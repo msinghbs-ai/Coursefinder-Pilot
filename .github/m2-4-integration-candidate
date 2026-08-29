@@ -1,49 +1,51 @@
-M2.4.3 A15 Institute International Contact Intelligence — third bounded integration candidate.
+M2.4.3 Layer 3 AI Operations Maturity — bounded integration candidate.
+
 Nominated: 29 August 2026.
 
-Frozen A15 contact baseline:
-- 52/52 AU profiles successful
-- 8/8 NZ profiles successful
-- 60/60 total successful
-- 0 current profile errors
-- 31 current first-party contacts across 11 Providers
-- 17 current territory/market-assigned contacts
-- 45 rejected/noisy historical observations retained
-- Apollo remains configuration-blocked/non-blocking; personal email/phone reveal disabled
+Candidate source before marker:
+- 1e7701c9a8dcb53228a292afc74e714a8c499c08
 
-Current Pilot source before marker:
-- 336db7bffe61f41588de1d2990d67e68ab1dc260
-Visible release:
-- PIM Admin v2.15.10
 Governance:
-- CF-CHG-20260829-046 / A15
-- bounded integration only; broader M2.4.3 Layer 3 maturity remains separate
+- CF-CHG-20260829-047
+- A15 / CF-CHG-20260829-046 remains CLOSED / PASS and frozen.
 
-Prior integration evidence:
-1. 8a49a265... / run 33230112004 — desktop PASS, mobile FAIL on inherited A13 evidence_detail HTTP 500.
-2. 1197099c... / run 33240261274 — desktop PASS, mobile FAIL on the same inherited evidence_detail HTTP 500.
+Layer 3 qualification:
+- source-pattern benchmark run 089befcf-a2f2-42ec-ad03-7bfe02816e1b
+- 4/4 real-provider cases PASS
+- 3/3 controls PASS
+- exact model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+- 8 actual calls; one malformed-output retry recovered
+- input/output tokens 4454/832
+- estimated cost USD 0
+- profile automatically unpaused only after full benchmark PASS
 
-Root-cause/performance correction:
-- provider-attempt raw/html/screenshot Evidence lookup indexes added;
-- helper profiling then isolated security.admin_evidence_operational_status as the remaining hotspot;
-- security.admin_evidence_has_extraction used a 23-branch UNION ALL EXISTS plan over the same tables as security.admin_evidence_observation_count;
-- replaced it with semantically equivalent admin_evidence_observation_count(p_evidence_id) > 0;
-- no Evidence output, authority, retry, UAT or access-control semantics changed;
-- existing bounded 5xx-only browser retry remains unchanged and unrecovered 5xx remains hard failure.
+Operating contract included:
+- deterministic Layer 2 Evidence selection into Layer 3;
+- screenshots excluded from AI text input;
+- benchmark-qualified enabled/unpaused profile enforcement;
+- layer2_resolved, unchanged_evidence and in_flight zero-call paths;
+- governed revalidation;
+- bounded structured-output retry with per-attempt provenance;
+- explicit benchmark-qualified fallback only when configured;
+- A14 model/call/token/latency/cost/outcome telemetry;
+- confidence threshold with low-confidence/no-candidate Layer 4 routing;
+- no direct canonical Layer 1/2 mutation;
+- entity/task/profile concurrency serialization and active-work dedupe;
+- stale reservation/call recovery housekeeping without deleting history;
+- operator view: Evidence → model/profile → result/confidence/provenance → human-review state;
+- permanent M2.4.3 deployed UAT.
 
-Performance proof after final fast-path:
-- has_extraction: 25/25, avg ~2.06 ms, p95 ~1.74 ms, max ~20.56 ms;
-- operational_status: 25/25, avg ~3.47 ms, p95 ~1.98 ms, max ~55.68 ms;
-- evidence_detail: 25/25, avg ~20.76 ms, p95 ~17.55 ms, max ~181.98 ms.
+Pre-integration evidence:
+- frontend build 33254225361 PASS
+- targeted deployed UAT 33254225454 PASS
+- Security Advisor: no current findings returned
+- Performance Advisor: no current findings returned
+- relevant Edge: layer3-interpret v4 JWT enforced; layer3-source-pattern-benchmark v9 nonce-governed; layer3-provider-control v2 JWT enforced
 
-Pre-integration gates:
-- targeted deployed UAT PASS on 336db7bf..., run 33240688558;
-- Security Advisor: 135 INFO / 0 WARN / 0 ERROR;
-- Performance Advisor: 170 INFO / 0 WARN / 0 ERROR.
+Protected accepted behaviour:
+- A10–A15 remains unchanged;
+- Search/Public/Zoho admission remains unauthorised;
+- secrets and raw provider credentials remain server-side/private;
+- production cutover remains outside this candidate.
 
-Authority boundaries unchanged:
-- Layer 1 Provider/Course identity unchanged
-- Evidence private/governed
-- Search/Publication mutation unauthorised
-- LinkedIn HTML scraping unauthorised
-- first-party university contacts preferred over licensed enrichment
+This marker triggers bounded integration desktop/mobile only. M2.4.3 remains ACTIVE until final acceptance and closure reconciliation.
