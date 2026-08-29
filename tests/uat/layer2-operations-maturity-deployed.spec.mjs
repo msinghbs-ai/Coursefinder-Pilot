@@ -174,7 +174,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(sourcePatternBlockedSql).toContain("paused=true")
 
   const sourcePatternWorker=await fs.readFile('supabase/functions/layer3-source-pattern-benchmark/index.ts','utf8')
-  expect(sourcePatternWorker).toContain('layer3-source-pattern-benchmark-v1.0.6')
+  expect(sourcePatternWorker).toContain('layer3-source-pattern-benchmark-v1.1.0')
   expect(sourcePatternWorker).toContain('x-cf-run-nonce')
   expect(sourcePatternWorker).toContain('candidate_not_in_evidence_links')
   expect(sourcePatternWorker).toContain('same_host_required')
