@@ -137,60 +137,33 @@ Deno.serve(async (req: Request) => {
       `Evidence:\n${evidenceText}`,
     ].join("\n\n");
 
-    const attempts = Math.max(1, Math.min(Number(profile.retry_ceiling || 0) + 1, 4));
     let providerResult: any = null;
+    let parsedDuringCall: any = null;
+    let totalInputTokens = 0, totalOutputTokens = 0, totalCostUsd = 0;
+    const executionTrace: any[] = [];
+    let fallbackProfileIdUsed: string | null = null;
     callStartedMs = performance.now();
-    let lastError: unknown = null;
-    for (let attempt = 0; attempt < attempts; attempt++) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), Number(profile.timeout_ms || 30000));
-      try {
-        externalCallCount += 1;
-        const response = await fetch(`${String(profile.base_url).replace(/\/$/, "")}/chat/completions`, {
-          method: "POST",
-          signal: controller.signal,
-          headers: {
-            "Authorization": `Bearer ${aggregatorKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://coursefinder.app",
-            "X-Title": "CourseFinder Layer 3 Evidence Interpretation",
-          },
-          body: JSON.stringify({
-            model: profile.model_identifier,
-            temperature: 0,
-            max_tokens: Number(profile.max_output_tokens || 1200),
-            response_format: { type: "json_object" },
-            messages: [
-              { role: "system", content: profile.prompt_system },
-              { role: "user", content: prompt },
-            ],
-          }),
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(`aggregator ${response.status}: ${JSON.stringify(payload).slice(0, 800)}`);
-        providerResult = payload;
-        break;
-      } catch (e) { lastError = e; }
-      finally { clearTimeout(timeout); }
-    }
-    if (!providerResult) throw lastError instanceof Error ? lastError : new Error("aggregator call failed");
-    const callLatencyMs = callStartedMs == null ? null : Math.round(performance.now() - callStartedMs);
+    const resolveCredential = async (p: any) => {const secretName=String(p.secret_env_key||"");let key=secretName?Deno.env.get(secretName):undefined;if(!key){const{data:vaultKey,error:vaultError}=await svc.rpc("layer3_provider_credential_resolve_service",{p_profile_id:p.id});if(vaultError)throw new Error(`provider credential lookup failed: ${vaultError.message}`);key=typeof vaultKey==="string"?vaultKey:undefined}if(!key)throw new Error(`server-side aggregator credential ${secretName||"<unset>"} is not configured`);return key};
+    const executeProfile=async(p:any,key:string,route:"primary"|"fallback")=>{const attempts=Math.max(1,Math.min(Number(p.retry_ceiling||0)+1,4));let lastError:unknown=null;for(let attempt=0;attempt<attempts;attempt++){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),Number(p.timeout_ms||30000)),started=performance.now();try{externalCallCount+=1;const response=await fetch(`${String(p.base_url).replace(/\/$/,"")}/chat/completions`,{method:"POST",signal:controller.signal,headers:{"Authorization":`Bearer ${key}`,"Content-Type":"application/json","HTTP-Referer":"https://coursefinder.app","X-Title":"CourseFinder Layer 3 Evidence Interpretation"},body:JSON.stringify({model:p.model_identifier,temperature:0,max_tokens:Number(p.max_output_tokens||1200),response_format:{type:"json_object"},messages:[{role:"system",content:p.prompt_system},{role:"user",content:prompt}]})});const payload=await response.json().catch(()=>({})),latencyMs=Math.round(performance.now()-started);totalInputTokens+=Number(payload?.usage?.prompt_tokens||0);totalOutputTokens+=Number(payload?.usage?.completion_tokens||0);totalCostUsd+=Number(payload?.usage?.cost||0);if(!response.ok){executionTrace.push({route,profile_id:p.id,model:p.model_identifier,attempt:attempt+1,http_status:response.status,latency_ms:latencyMs,outcome:"provider_error"});lastError=new Error(`aggregator ${response.status}: ${JSON.stringify(payload).slice(0,800)}`);continue}try{const parsed=parseJsonContent(payload?.choices?.[0]?.message?.content);executionTrace.push({route,profile_id:p.id,model:p.model_identifier,response_model:payload?.model||null,attempt:attempt+1,http_status:response.status,latency_ms:latencyMs,outcome:"structured_output"});return{payload,parsed}}catch(parseError){executionTrace.push({route,profile_id:p.id,model:p.model_identifier,response_model:payload?.model||null,attempt:attempt+1,http_status:response.status,latency_ms:latencyMs,outcome:"malformed_output"});lastError=parseError}}catch(err){const latencyMs=Math.round(performance.now()-started);executionTrace.push({route,profile_id:p.id,model:p.model_identifier,attempt:attempt+1,http_status:null,latency_ms:latencyMs,outcome:err instanceof DOMException&&err.name==="AbortError"?"timeout":"network_error"});lastError=err}finally{clearTimeout(timeout)}}throw lastError instanceof Error?lastError:new Error(`${route} model route exhausted`)};
+    let primaryError:unknown=null;try{const primary=await executeProfile(profile,aggregatorKey,"primary");providerResult=primary.payload;parsedDuringCall=primary.parsed}catch(err){primaryError=err;const{data:fallback,error:fallbackError}=await svc.rpc("layer3_fallback_profile_service",{p_profile_id:profile.id,p_task_class:taskClass});if(fallbackError)throw new Error(`fallback resolution failed: ${fallbackError.message}`);if(fallback?.id){fallbackProfileIdUsed=String(fallback.id);const fallbackKey=await resolveCredential(fallback),fallbackResult=await executeProfile(fallback,fallbackKey,"fallback");providerResult=fallbackResult.payload;parsedDuringCall=fallbackResult.parsed}else throw primaryError instanceof Error?primaryError:new Error("primary model route exhausted and no qualified fallback is configured")}
+    const callLatencyMs=callStartedMs==null?null:Math.round(performance.now()-callStartedMs);
+    providerResult={...providerResult,_coursefinder_trace:executionTrace,_coursefinder_meta:{primary_profile_id:profile.id,fallback_profile_id:fallbackProfileIdUsed,prompt_profile_version:profile.prompt_profile_version}};
 
     const rawContent = providerResult?.choices?.[0]?.message?.content;
     let parsed: any;
-    try { parsed = parseJsonContent(rawContent); }
+    try { parsed = parsedDuringCall ?? parseJsonContent(rawContent); }
     catch (e) {
       const validatorResult = { valid: false, errors: [e instanceof Error ? e.message : String(e)] };
       const { error: completeError } = await svc.rpc("layer3_complete_interpretation_service", {
         p_interpretation_id: interpretationId, p_raw_result: providerResult, p_candidate_value: null, p_confidence: null, p_rationale: "Malformed structured output", p_evidence_quotes: [], p_validator_result: validatorResult, p_valid: false,
-        p_response_model: providerResult?.model || null, p_input_tokens: providerResult?.usage?.prompt_tokens || null, p_output_tokens: providerResult?.usage?.completion_tokens || null, p_estimated_cost_usd: Number(providerResult?.usage?.cost || 0), p_expiry: null, p_external_call_count: externalCallCount, p_call_latency_ms: callLatencyMs,
+        p_response_model: providerResult?.model || null, p_input_tokens: totalInputTokens || null, p_output_tokens: totalOutputTokens || null, p_estimated_cost_usd: totalCostUsd, p_expiry: null, p_external_call_count: externalCallCount, p_call_latency_ms: callLatencyMs,
       });
       if (completeError) throw new Error(`validation rejection persistence failed: ${completeError.message}`);
       return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validatorResult }, 422);
     }
 
     const validation = validateCandidate(taskClass, parsed, profile.validators || {});
-    const cost = Number(providerResult?.usage?.cost || 0);
+    const cost = totalCostUsd;
     if (Number(profile.cost_ceiling_usd) >= 0 && cost > Number(profile.cost_ceiling_usd)) {
       validation.valid = false;
       validation.errors.push("response exceeded configured cost ceiling");
@@ -207,8 +180,8 @@ Deno.serve(async (req: Request) => {
       p_validator_result: validation,
       p_valid: validation.valid,
       p_response_model: providerResult?.model || null,
-      p_input_tokens: providerResult?.usage?.prompt_tokens || null,
-      p_output_tokens: providerResult?.usage?.completion_tokens || null,
+      p_input_tokens: totalInputTokens || null,
+      p_output_tokens: totalOutputTokens || null,
       p_estimated_cost_usd: cost,
       p_expiry: validation.valid ? expiry : null,
       p_external_call_count: externalCallCount,
@@ -216,7 +189,7 @@ Deno.serve(async (req: Request) => {
     });
     if (completeError) throw new Error(`completion persistence failed: ${completeError.message}`);
     if (!validation.valid) return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validation }, 422);
-    return json(req, { ok: true, call_required: true, interpretation_id: interpretationId, review_item_id: completed?.review_item_id || null, status: parsed?.candidate_value == null ? "no_candidate" : "validated", model: providerResult?.model || profile.model_identifier, validator_result: validation, estimated_cost_usd: cost, external_call_count: externalCallCount, call_latency_ms: callLatencyMs });
+    return json(req, { ok: true, call_required: true, interpretation_id: interpretationId, review_item_id: completed?.review_item_id || null, status: completed?.status || (parsed?.candidate_value == null ? "no_candidate" : "validated"), model: providerResult?.model || profile.model_identifier, validator_result: validation, estimated_cost_usd: cost, external_call_count: externalCallCount, call_latency_ms: callLatencyMs });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     if (interpretationId) await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message, p_external_call_count: externalCallCount, p_call_latency_ms: callStartedMs == null ? null : Math.round(performance.now() - callStartedMs) }).catch(() => undefined);

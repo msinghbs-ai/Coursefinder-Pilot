@@ -127,6 +127,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^supabase/functions/provider-contact-|^supabase/migrations/.*a15_|^tests/uat/a15-provider-contact-intelligence-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/m2-3-intelligence-entry\.jsx$|^supabase/functions/layer3-|^supabase/migrations/.*m2_4_3_|^tests/uat/m2-4-3-layer3-operations-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -137,6 +140,7 @@ jobs:
             tests/uat/performance-deployed.spec.mjs
             tests/uat/screen-state-persistence-deployed.spec.mjs
             tests/uat/m2-3-intelligence-deployed.spec.mjs
+            tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
             tests/uat/a12-contextual-insights-deployed.spec.mjs
@@ -155,6 +159,7 @@ jobs:
             tests/uat/screen-state-persistence-deployed.spec.mjs
             tests/uat/m2-3-intelligence-deployed.spec.mjs
             tests/uat/layer3-provider-credential-deployed.spec.mjs
+            tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs
             tests/uat/scholarship-selection-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
