@@ -58,6 +58,11 @@ function evidenceToText(bytes: Uint8Array, mime: string | null, maxChars: number
   return text.replace(/\s+/g, " ").trim().slice(0, maxChars);
 }
 
+async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors(req) });
   if (req.method !== "POST") return json(req, { error: "method not allowed" }, 405);
@@ -136,6 +141,35 @@ Deno.serve(async (req: Request) => {
       "Use null candidate_value if the evidence does not support a reliable candidate. Do not infer regulatory identity.",
       `Evidence:\n${evidenceText}`,
     ].join("\n\n");
+    const promptHash = await sha256Hex(prompt);
+    const profileSnapshot = {
+      profile_id: profile.id,
+      aggregator_provider: profile.aggregator_provider,
+      model_identifier: profile.model_identifier,
+      prompt_profile_version: profile.prompt_profile_version,
+      prompt_system: profile.prompt_system,
+      structured_output_schema: profile.schema || null,
+      validators: profile.validators || {},
+      max_input_tokens: profile.max_input_tokens,
+      max_output_tokens: profile.max_output_tokens,
+      retry_ceiling: profile.retry_ceiling,
+      timeout_ms: profile.timeout_ms,
+      cost_ceiling_usd: profile.cost_ceiling_usd,
+      response_format: "json_object",
+      temperature: 0,
+      prompt_contract_version: "m2.4.3-evidence-interpretation-v1",
+      evidence_id: ev.id,
+      evidence_hash: ev.content_hash,
+      evidence_source_url: ev.source_url || null,
+      evidence_mime_type: ev.mime_type || null,
+    };
+    const { error: provenanceError } = await svc.rpc("layer3_execution_provenance_service", {
+      p_interpretation_id: interpretationId,
+      p_profile_snapshot: profileSnapshot,
+      p_prompt_hash: promptHash,
+      p_prompt_input_chars: prompt.length,
+    });
+    if (provenanceError) throw new Error(`execution provenance persistence failed: ${provenanceError.message}`);
 
     let providerResult: any = null;
     let parsedDuringCall: any = null;
