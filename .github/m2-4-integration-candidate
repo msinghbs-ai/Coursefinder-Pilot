@@ -1,13 +1,20 @@
-M2.4.3 Layer 3 AI Operations Maturity — bounded integration candidate.
+M2.4.3 Layer 3 AI Operations Maturity — corrective bounded integration candidate.
 
-Nominated: 29 August 2026.
+Nominated: 30 August 2026.
 
-Candidate source before marker:
-- 1e7701c9a8dcb53228a292afc74e714a8c499c08
+Corrective candidate source before marker:
+- 3b43f0a8cb4d1758225b139a773b118be372be30
 
 Governance:
 - CF-CHG-20260829-047
 - A15 / CF-CHG-20260829-046 remains CLOSED / PASS and frozen.
+- Previous integration candidate b6318bdcbc657b4be524ee58e5728c2b84f91687 / run 33254320472 remains immutable FAIL evidence: 42 PASS / 2 stale assertion failures, mobile skipped.
+
+Corrections since failed candidate:
+- source-pattern worker assertion updated from v1.0.6 to accepted v1.1.0;
+- inherited M2.3 Layer 3 UI assertions aligned to matured Quality / zero-call / server-side credential wording;
+- repository migration filename aligned exactly with deployed ledger version 20260829130640;
+- no runtime authority, model-quality threshold, Evidence security, retry limit or Layer 4 routing rule weakened.
 
 Layer 3 qualification:
 - source-pattern benchmark run 089befcf-a2f2-42ec-ad03-7bfe02816e1b
@@ -17,35 +24,22 @@ Layer 3 qualification:
 - 8 actual calls; one malformed-output retry recovered
 - input/output tokens 4454/832
 - estimated cost USD 0
-- profile automatically unpaused only after full benchmark PASS
 
-Operating contract included:
-- deterministic Layer 2 Evidence selection into Layer 3;
-- screenshots excluded from AI text input;
-- benchmark-qualified enabled/unpaused profile enforcement;
-- layer2_resolved, unchanged_evidence and in_flight zero-call paths;
-- governed revalidation;
-- bounded structured-output retry with per-attempt provenance;
-- explicit benchmark-qualified fallback only when configured;
-- A14 model/call/token/latency/cost/outcome telemetry;
-- confidence threshold with low-confidence/no-candidate Layer 4 routing;
-- no direct canonical Layer 1/2 mutation;
-- entity/task/profile concurrency serialization and active-work dedupe;
-- stale reservation/call recovery housekeeping without deleting history;
-- operator view: Evidence → model/profile → result/confidence/provenance → human-review state;
-- permanent M2.4.3 deployed UAT.
+Corrective pre-integration evidence:
+- frontend build 33275763679 PASS
+- targeted deployed UAT 33275763729 PASS
+- prior targeted source validation 33254225454 PASS
+- Security/Performance advisor reconciliation after runtime changes returned no current findings
 
-Pre-integration evidence:
-- frontend build 33254225361 PASS
-- targeted deployed UAT 33254225454 PASS
-- Security Advisor: no current findings returned
-- Performance Advisor: no current findings returned
-- relevant Edge: layer3-interpret v4 JWT enforced; layer3-source-pattern-benchmark v9 nonce-governed; layer3-provider-control v2 JWT enforced
+Operating contract preserved:
+- deterministic Layer 2 Evidence selection;
+- zero-call resolved/unchanged/in-flight paths;
+- explicit revalidation;
+- attempt-level retry/fallback provenance;
+- confidence/quality fall-out to Layer 4;
+- entity/task/profile concurrency control;
+- stale execution recovery/housekeeping;
+- no canonical Layer 1/2, Search, Publication or Zoho admission mutation;
+- credentials remain private/server-side.
 
-Protected accepted behaviour:
-- A10–A15 remains unchanged;
-- Search/Public/Zoho admission remains unauthorised;
-- secrets and raw provider credentials remain server-side/private;
-- production cutover remains outside this candidate.
-
-This marker triggers bounded integration desktop/mobile only. M2.4.3 remains ACTIVE until final acceptance and closure reconciliation.
+This marker triggers the corrective bounded integration desktop/mobile matrix. M2.4.3 remains ACTIVE until both platforms PASS and a later final acceptance candidate also passes.
