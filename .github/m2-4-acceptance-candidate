@@ -1,30 +1,56 @@
-M2.4.2 CORRECTIVE STAGE C acceptance candidate — explicitly authorised governance reopening.
+M2.4.3 A15 FINAL ACCEPTANCE candidate — post-freeze contact intelligence closure gate.
 
-Corrected Pilot head before this marker: 60e9e25a86a48522dbae7a29d6c2955c9d295761
-Historical Stage C candidate: 91b115ddf64b020563c7ae6bbd1ea395db866d3f
-Historical Stage C run: 33215640328 — desktop 45 PASS / 1 FAIL; mobile skipped.
-Historical failure cause: stale pre-A12 Course-card reorder assertion. Runtime one-step reorder semantics were correct.
-Corrected UAT contract: after one "Move Locations up" action, accepted A12 topology expects Fees first and Locations second; persistence is tested across reload and reset.
-Stage B integration remains accepted: run 33214733610 — desktop PASS / mobile PASS.
+Frozen functional A15 source:
+- f9e4e530462b49cf5a83ad8e0d5137631255028a
 
-Governance reopening:
-- explicitly authorised by the user on 29 August 2026;
-- permits exactly one corrective Stage C acceptance run;
-- historical failed Stage C remains immutable evidence;
-- no further corrective Stage C attempt is authorised if this run fails without a new explicit governance decision.
+Current accepted integration source before this marker:
+- 70bd290154b7d5f16d8f04569b90b6074a239611
 
-Corrective preflight:
-- Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
-- Performance Advisor: 167 INFO / 0 WARN / 0 ERROR.
-- UQ weekly Course refresh ENABLED.
-- RMIT weekly Course refresh DISABLED.
-- Federation weekly Course refresh DISABLED; profile PAUSED/source-limited.
-- RMIT frozen cohort: 212 records, 212/212 identity matched, 0 unsafe, 0 applied; fingerprint 627bb7daa62fe3bbfc3047ce2b57a88e.
-- RMIT canonical promotion remains formally BLOCKED with no privileged bypass.
-- Layer 3 source-pattern benchmark remains separately BLOCKED.
-- A14 Layer 2/Layer 3 telemetry remains mandatory.
-- Canonical/Search/Publication mutation is not authorised by this marker.
-- Parallel Zoho work is not modified by this corrective acceptance.
+Permanent A15 acceptance-suite contract:
+- b0b00f3f26d1e07bc1adc69061b3b16f9125c565
+- A15 contact intelligence is included in targeted, bounded integration and final acceptance tiers.
 
-If corrective Stage C desktop and mobile both PASS, CF-CHG-044/M2.4.2 may close and Running Build/Master Project Plan may advance.
-If either fails, M2.4.2 returns to BLOCKED.
+Frozen first-party rollout baseline:
+- 52/52 AU profiles successful
+- 8/8 NZ profiles successful
+- 60/60 total successful
+- 0 current profile errors
+- 31 current first-party contacts across 11 Providers
+- 17 current territory/market-assigned contacts
+- 45 rejected/noisy historical observations retained
+- provider-contact-discover-scheduled v1.3.2 / deployed Edge v15
+- Apollo remains configuration-blocked/non-blocking; personal email/phone reveal disabled
+
+Accepted contact-quality reconciliation:
+- Victoria University: preferred source-backed email/phone observations retained; lower-quality phone-only parser duplicates rejected.
+- Otago: team-level International Marketing and Recruitment contact retained; parser-invented person/territory semantics removed.
+- Wellington: accepted International Student Experience team contact restored after transport proof.
+- Rejected history is preserved; future refresh must not manufacture unsupported person/territory semantics.
+
+Post-freeze transport/Evidence hardening:
+- Direct HTTP -> governed Firecrawl fallback remains separate and observable.
+- Layer 1 Provider/Course canonical identity is unchanged by transport corrections.
+- provider-attempt Evidence lookup indexes added.
+- security.admin_evidence_has_extraction simplified to semantically equivalent governed count fast-path.
+- no Evidence output, authority, retry, UAT or access-control semantics weakened.
+- unrecovered browser HTTP 5xx remains a hard UAT failure.
+
+Validation evidence before final acceptance:
+- targeted A15 PASS: run 33229889360 on frozen functional source.
+- post-hardening targeted PASS: run 33240688558.
+- bounded integration PASS: run 33240736705 — chromium-desktop PASS / chromium-mobile PASS.
+- Security Advisor: 135 INFO / 0 WARN / 0 ERROR.
+- Performance Advisor: 170 INFO / 0 WARN / 0 ERROR.
+
+Authority boundaries unchanged:
+- Layer 1 Provider/Course identity unchanged.
+- Evidence remains private/governed.
+- Search mutation unauthorised.
+- Publication mutation unauthorised.
+- LinkedIn HTML scraping unauthorised.
+- first-party university contact observations remain preferred over licensed enrichment.
+- broad cohort rerun solely to increase contact count is unauthorised.
+
+This marker nominates the exact post-hardening A15 lineage for final deployed acceptance.
+If final acceptance desktop and mobile both PASS, A15/CF-CHG-20260829-046 may proceed to closure reconciliation.
+If either fails, A15 remains ACTIVE/BLOCKED at final acceptance and the failure must remain immutable evidence.
