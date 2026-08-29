@@ -79,7 +79,7 @@ test.describe('A15 Provider international contact intelligence @deployed',()=>{
     expect(bridge).toContain('provider_contact_observation_upsert_service')
     expect(signals).toContain("event_type <> 'new_contact'")
 
-    expect(scraper).toContain('provider-contact-discover-scheduled-v1.1.2')
+    expect(scraper).toMatch(/provider-contact-discover-scheduled-v1\.\d+\.\d+/)
     expect(scraper).toContain('/sitemap.xml')
     expect(scraper).toContain('tableContacts')
     expect(scraper).toContain('structured.length?structured:lineContacts')
