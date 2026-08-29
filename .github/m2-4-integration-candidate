@@ -1,65 +1,49 @@
-M2.4.3 A15 Institute International Contact Intelligence — corrective bounded integration candidate.
+M2.4.3 A15 Institute International Contact Intelligence — third bounded integration candidate.
 Nominated: 29 August 2026.
 
-Functional A15 freeze:
-- f9e4e530462b49cf5a83ad8e0d5137631255028a
-Post-freeze transport/reconciliation/performance hardening:
-- Wellington live entry point + accepted team reconciliation restored
-- Evidence-detail provider-attempt lookup indexes added
-- current Pilot source before this marker: f3cf5001e5ac506d5edbac324bfbf25d706d4858
-Visible release:
-- PIM Admin v2.15.10
-
-Governance:
-- CF-CHG-20260829-046
-- Execution Addendum A15
-- bounded integration only; broader M2.4.3 Layer 3 maturity remains separate
-
-Frozen first-party rollout:
+Frozen A15 contact baseline:
 - 52/52 AU profiles successful
 - 8/8 NZ profiles successful
 - 60/60 total successful
-- 0 current contact-profile errors
-- 31 current accepted contacts across 11 Providers
+- 0 current profile errors
+- 31 current first-party contacts across 11 Providers
 - 17 current territory/market-assigned contacts
-- 45 rejected historical/noisy observations retained
-- Wellington reconciled current team contact: International Student Experience / international-support@vuw.ac.nz / +64 4 463 5350
+- 45 rejected/noisy historical observations retained
+- Apollo remains configuration-blocked/non-blocking; personal email/phone reveal disabled
 
-Acquisition telemetry baseline:
-- Direct HTTP: 319 attempts; 154 succeeded; 165 failed/fell through; avg 599.41 ms; p95 1944.5 ms; 0 vendor units
-- Firecrawl: 107 attempts; 107 succeeded; 107 page units; avg 3996.84 ms; p95 7132.2 ms
-- Firecrawl subscription cash price remains unrecorded; vendor-unit usage retained independently
-- provider-contact-discover-scheduled v1.3.2 / deployed Edge v15
+Current Pilot source before marker:
+- 336db7bffe61f41588de1d2990d67e68ab1dc260
+Visible release:
+- PIM Admin v2.15.10
+Governance:
+- CF-CHG-20260829-046 / A15
+- bounded integration only; broader M2.4.3 Layer 3 maturity remains separate
 
-Recovery evidence:
-- Wellington HTTP 410 recovered via live wgtn.ac.nz international contact entry point and governed fallback
-- CQU HTTP 403 recovered via governed Firecrawl fallback
-- Bond Evidence uniqueness failure recovered under serialized retry
-- no Layer 1 canonical Provider website mutation authorised by transport corrections
+Prior integration evidence:
+1. 8a49a265... / run 33230112004 — desktop PASS, mobile FAIL on inherited A13 evidence_detail HTTP 500.
+2. 1197099c... / run 33240261274 — desktop PASS, mobile FAIL on the same inherited evidence_detail HTTP 500.
 
-Evidence-detail integration hardening:
-- prior integration run 33230112004: desktop PASS, mobile FAIL only on recurring A13 evidence_detail HTTP 500
-- direct SQL proof remained correct but showed a 7.2s max latency outlier over 25 calls
-- additive indexes added for raw_evidence_id/html_evidence_id/screenshot_evidence_id on pipeline.layer2_provider_attempts
-- post-index proof: 25/25 PASS, avg ~164 ms, p95 ~134 ms, max ~2.04 s
-- existing bounded 5xx-only browser retry semantics remain unchanged; unrecovered 5xx remains a hard UAT failure
+Root-cause/performance correction:
+- provider-attempt raw/html/screenshot Evidence lookup indexes added;
+- helper profiling then isolated security.admin_evidence_operational_status as the remaining hotspot;
+- security.admin_evidence_has_extraction used a 23-branch UNION ALL EXISTS plan over the same tables as security.admin_evidence_observation_count;
+- replaced it with semantically equivalent admin_evidence_observation_count(p_evidence_id) > 0;
+- no Evidence output, authority, retry, UAT or access-control semantics changed;
+- existing bounded 5xx-only browser retry remains unchanged and unrecovered 5xx remains hard failure.
 
-Licensed enrichment:
-- Apollo adapter implemented
-- APOLLO_API_KEY absent in Pilot
-- personal_email_requested=false
-- phone_requested=false
-- configuration blocker is non-blocking for first-party A15 acceptance
+Performance proof after final fast-path:
+- has_extraction: 25/25, avg ~2.06 ms, p95 ~1.74 ms, max ~20.56 ms;
+- operational_status: 25/25, avg ~3.47 ms, p95 ~1.98 ms, max ~55.68 ms;
+- evidence_detail: 25/25, avg ~20.76 ms, p95 ~17.55 ms, max ~181.98 ms.
 
 Pre-integration gates:
-- targeted A15 deployed UAT PASS on f3cf5001..., run 33240216793
-- Security Advisor: 135 INFO / 0 WARN / 0 ERROR
-- Performance Advisor: 170 INFO / 0 WARN / 0 ERROR
+- targeted deployed UAT PASS on 336db7bf..., run 33240688558;
+- Security Advisor: 135 INFO / 0 WARN / 0 ERROR;
+- Performance Advisor: 170 INFO / 0 WARN / 0 ERROR.
 
 Authority boundaries unchanged:
 - Layer 1 Provider/Course identity unchanged
-- Evidence remains private/governed
-- Search mutation unauthorised
-- Publication mutation unauthorised
+- Evidence private/governed
+- Search/Publication mutation unauthorised
 - LinkedIn HTML scraping unauthorised
-- first-party university contact observations remain preferred over licensed enrichment
+- first-party university contacts preferred over licensed enrichment
