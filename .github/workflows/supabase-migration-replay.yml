@@ -1,0 +1,122 @@
+name: Supabase Migration Integrity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - '.github/workflows/supabase-migration-replay.yml'
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - '.github/workflows/supabase-migration-replay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-migration-replay-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migration-integrity:
+    name: Migration identity and replay readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require unique migration versions
+        shell: bash
+        run: |
+          mapfile -t duplicates < <(
+            find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
+              | sed -nE 's/^([0-9]{14})_.*/\1/p' \
+              | sort \
+              | uniq -d
+          )
+          if ((${#duplicates[@]})); then
+            printf 'Duplicate Supabase migration version: %s\n' "${duplicates[@]}"
+            exit 1
+          fi
+
+      - name: Require the reconciled A15 migration identities
+        shell: bash
+        run: |
+          expected=$(cat <<'EOF'
+          20260828233725
+          20260828234120
+          20260828234249
+          20260828234742
+          20260828234844
+          20260828235051
+          20260828235417
+          20260829014107
+          20260829014557
+          20260829014850
+          20260829015128
+          20260829020037
+          20260829020441
+          20260829023535
+          20260829023949
+          20260829024148
+          20260829024243
+          20260829024408
+          20260829024458
+          20260829024656
+          20260829024932
+          20260829070508
+          20260829070901
+          20260829071036
+          20260829072240
+          20260829113049
+          20260829113320
+          20260829113955
+          EOF
+          )
+          actual=$(
+            find supabase/migrations -maxdepth 1 -type f -name '*_a15_*.sql' -printf '%f\n' \
+              | sed -nE 's/^([0-9]{14})_.*/\1/p' \
+              | sort
+          )
+          if [ "$actual" != "$expected" ]; then
+            echo "A15 migration identities do not match the deployed history."
+            diff -u <(printf '%s\n' "$expected") <(printf '%s\n' "$actual") || true
+            exit 1
+          fi
+
+      - name: Detect fresh-replay readiness
+        id: replay-readiness
+        shell: bash
+        run: |
+          if [ -f supabase/migrations/.complete-foundation ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            first=$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort | head -1)
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Fresh replay deferred::The checked-in chain starts at ${first} and does not yet include the pre-12-August foundation. Unique-version and A15 identity checks passed; fresh-project replay remains blocked until the canonical foundation is committed."
+          fi
+
+      - name: Setup Supabase CLI
+        if: steps.replay-readiness.outputs.ready == 'true'
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.116.0
+
+      - name: Initialise isolated local stack
+        if: steps.replay-readiness.outputs.ready == 'true'
+        run: supabase init
+
+      - name: Start stack and apply migrations
+        if: steps.replay-readiness.outputs.ready == 'true'
+        run: supabase start
+
+      - name: Prove clean migration replay
+        if: steps.replay-readiness.outputs.ready == 'true'
+        run: supabase db reset --local
+
+      - name: Stop isolated local stack
+        if: always() && steps.replay-readiness.outputs.ready == 'true'
+        run: supabase stop

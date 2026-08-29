@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {createClient} from "npm:@supabase/supabase-js@2";
-const FN="provider-contact-discover-scheduled",VERSION="provider-contact-discover-scheduled-v1.3.2",BUCKET="evidence";
+const FN="provider-contact-discover-scheduled",VERSION="provider-contact-discover-scheduled-v1.4.0",BUCKET="evidence";
 const J=(s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:any)=>String(v??"").replace(/\s+/g," ").trim();
 const norm=(v:any)=>clean(v).toLowerCase().replace(/[^a-z0-9@.+-]+/g," ").trim();
@@ -30,5 +30,55 @@ function headingContacts(html:string,url:string,domain:string){const out:any[]=[
 function lineContacts(html:string,url:string,domain:string){const heading=pageHeading(html),pageStrong=/(international|future students)/i.test(heading+" "+url)&&/(contact|recruit|representative|regional|manager|team)/i.test(heading+" "+url),ls=html.replace(/<\/(p|div|li|tr|td|section|article|h[1-6])>/gi,"\n").replace(/<br\s*\/?\s*>/gi,"\n").split("\n").map(strip).filter(x=>x.length>2),out:any[]=[];for(let i=0;i<ls.length;i++){const w=clean(ls.slice(Math.max(0,i-2),Math.min(ls.length,i+3)).join(" | "));const title=(w.match(titleRe)||[])[0]||null,emails=[...w.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map(x=>x[0].toLowerCase()).filter(e=>emailAllowed(e,domain));if(!title&&!pageStrong)continue;if(!title&&!emails.some(e=>/(international|admission|recruit|future|study)/i.test(e)))continue;const territories=territoryTerms.filter(t=>new RegExp(t.replace(/\s+/g,"\\s+"),"i").test(w));let name:string|null=null;for(const part of ls.slice(Math.max(0,i-2),i+1)){const m=part.match(/\b((?:Mr|Ms|Mrs|Miss|Dr|Professor|Prof)\.?\s+)?([A-Z][A-Za-z'’-]+(?:\s+[A-Z][A-Za-z'’-]+){1,3})\b/);if(m){const n=cleanName(m[0]);if(!/(International|Regional|Manager|Director|Recruitment|Admissions|University|Contact|Team|Unit|Office|Students?|Research|Study|Available|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Call|Phone|Opening|Hours)/i.test(n)){name=n;break}}}if(title||emails.length)out.push({full_name:name,job_title:title,team_name:title&&/admission/i.test(title)?"International Admissions":title&&/recruit/i.test(title)?"International Recruitment":null,territory_text:territories.join(", ")||null,territory_codes:[],work_email:emails[0]||null,work_phone:validPhone((w.match(/(?:\+?\d[\d\s()-]{7,}\d)/)||[])[0]),source_url:url,confidence:title?.toLowerCase().includes("regional")?.93:pageStrong?.82:.72})}return out}
 function usefulContact(r:any){return Boolean(r?.work_email||r?.work_phone||(r?.full_name&&r?.territory_text&&Number(r?.confidence||0)>=.9))}
 function aggregate(rows:any[]){const m=new Map<string,any>();for(const r of rows){const key=norm(r.work_email||r.work_phone||r.full_name+"|"+r.job_title);if(!key)continue;const ex=m.get(key);if(!ex){m.set(key,{...r,_territories:new Set((r.territory_text||"").split(",").map((x:string)=>clean(x)).filter(Boolean))});continue}for(const t of (r.territory_text||"").split(",").map((x:string)=>clean(x)).filter(Boolean))ex._territories.add(t);ex.full_name=ex.full_name||r.full_name;ex.job_title=ex.job_title||r.job_title;ex.work_phone=ex.work_phone||r.work_phone;ex.confidence=Math.max(Number(ex.confidence||0),Number(r.confidence||0))}return[...m.values()].map(x=>({...x,territory_text:[...x._territories].join(", ")||null,_territories:undefined})).filter(usefulContact).slice(0,50)}
-async function upsert(svc:any,p:any,o:any,evidenceId:string){const personKey=norm(o.work_email||o.work_phone||o.full_name+"|"+o.job_title);if(!personKey)return null;const identity=await sha(p.provider_id+"|first_party|"+personKey),now=new Date().toISOString();return await rpc(svc,"provider_contact_observation_upsert_service",{p_payload:{provider_id:p.provider_id,profile_id:p.id,source_class:"first_party",source_provider:"university_website",source_url:o.source_url,external_person_id:null,full_name:o.full_name,job_title:o.job_title,team_name:o.team_name,territory_text:o.territory_text,territory_codes:o.territory_codes||[],work_email:o.work_email,work_phone:o.work_phone,professional_profile_url:null,evidence_id:evidenceId,identity_hash:identity,verification_state:"current",observed_at:now,last_verified_at:now,is_current:true,confidence:o.confidence,metadata:{worker_version:VERSION,business_contact:true,personal_contact_reveal:false,table_aware:true,sitemap_discovery:true}}})}
-Deno.serve(async(req)=>{if(req.method!=="POST")return J(405,{ok:false,error:"POST required",worker_version:VERSION});const sb=Deno.env.get("SUPABASE_URL")!,sk=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,svc=createClient(sb,sk,{auth:{persistSession:false}});try{const nonce=clean(req.headers.get("x-cf-run-nonce"));if(!nonce)throw new Error("one-time schedule nonce required");if(!await rpc(svc,"svc_pilot_consume_nonce",{p_function:FN,p_nonce:nonce}))throw new Error("invalid, expired or already-used schedule nonce");const b=await req.json().catch(()=>({})),limit=Math.min(Math.max(Number(b.limit||2),1),5),providerId=clean(b.provider_id)||null,profiles=await rpc(svc,"provider_contact_profiles_service",{p_provider_id:providerId,p_limit:limit}),results=[];for(const p of profiles||[]){const st=performance.now(),base=clean(p.base_url),domain=clean(p.domain);try{const homeRes=await fetchHtmlGoverned(svc,base,p.provider_id),candidates=await discoverCandidates(base,domain,homeRes.text,Array.isArray(p.governed_origins)?p.governed_origins:[]),sourceId=await rpc(svc,"provider_contact_source_service",{p_provider_id:p.provider_id,p_country_id:p.country_id,p_base_url:base,p_label:(p.provider_name||"Provider")+" international contacts"});let found=0,pages=0;for(const url of candidates){let res;try{res=await fetchHtmlGoverned(svc,url,p.provider_id)}catch{continue}if(!/html/i.test(res.contentType)&&!/<html/i.test(res.text))continue;pages++;const html=res.text,bytes=new TextEncoder().encode(html),hash=await sha(bytes),storagePath=`layer2/v2/provider-contacts/${p.provider_id}/${Date.now()}-${hash.slice(0,12)}.html`,up=await svc.storage.from(BUCKET).upload(storagePath,bytes,{contentType:"text/html",upsert:false});if(up.error)throw up.error;const ev=await rpc(svc,"layer2_evidence_capture",{p_source_id:sourceId,p_job_id:null,p_evidence_type:"provider_contact_html_snapshot",p_source_url:url,p_storage_path:storagePath,p_content_hash:hash,p_mime_type:"text/html",p_profile_version_id:null,p_group_key:await sha(p.provider_id+"|contact|"+url),p_retention_class:"standard_365",p_retain_until:null,p_metadata:{layer:2,operation:"provider_contact_discovery",worker_version:VERSION,canonical_mutation_authorised:false,search_mutation_authorised:false,publication_mutation_authorised:false}});const structured=[...tableContacts(html,url,domain),...headingContacts(html,url,domain)],contacts=aggregate(structured.length?structured:lineContacts(html,url,domain));for(const o of contacts){await upsert(svc,p,o,String(ev.evidence_id));found++}}await rpc(svc,"provider_contact_profile_finish_service",{p_profile_id:p.id,p_status:"succeeded",p_error:null});results.push({provider_id:p.provider_id,provider_name:p.provider_name,pages,contacts:found,latency_ms:Math.round(performance.now()-st),status:"succeeded",candidate_pages:candidates})}catch(e:any){await rpc(svc,"provider_contact_profile_finish_service",{p_profile_id:p.id,p_status:"failed",p_error:String(e.message||e)}).catch(()=>{});results.push({provider_id:p.provider_id,provider_name:p.provider_name,status:"failed",error:String(e.message||e),latency_ms:Math.round(performance.now()-st)})}}return J(200,{ok:true,worker_version:VERSION,processed:results.length,results})}catch(e:any){return J(500,{ok:false,error:String(e.message||e),worker_version:VERSION})}});
+async function upsert(svc:any,p:any,o:any,evidenceId:string){
+  const personKey=norm(o.work_email||o.work_phone||o.full_name+"|"+o.job_title);
+  if(!personKey)return null;
+  const identity=await sha(p.provider_id+"|first_party|"+personKey),now=new Date().toISOString();
+  const result=await rpc(svc,"provider_contact_observation_upsert_service",{p_payload:{provider_id:p.provider_id,profile_id:p.id,source_class:"first_party",source_provider:"university_website",source_url:o.source_url,external_person_id:null,full_name:o.full_name,job_title:o.job_title,team_name:o.team_name,territory_text:o.territory_text,territory_codes:o.territory_codes||[],work_email:o.work_email,work_phone:o.work_phone,professional_profile_url:null,evidence_id:evidenceId,identity_hash:identity,verification_state:"current",observed_at:now,last_verified_at:now,is_current:true,confidence:o.confidence,metadata:{worker_version:VERSION,business_contact:true,personal_contact_reveal:false,table_aware:true,sitemap_discovery:true}}});
+  return{identity,result};
+}
+
+Deno.serve(async(req)=>{
+  if(req.method!=="POST")return J(405,{ok:false,error:"POST required",worker_version:VERSION});
+  const sb=Deno.env.get("SUPABASE_URL")!,sk=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,svc=createClient(sb,sk,{auth:{persistSession:false}});
+  try{
+    const nonce=clean(req.headers.get("x-cf-run-nonce"));
+    if(!nonce)throw new Error("one-time schedule nonce required");
+    if(!await rpc(svc,"svc_pilot_consume_nonce",{p_function:FN,p_nonce:nonce}))throw new Error("invalid, expired or already-used schedule nonce");
+    const b=await req.json().catch(()=>({})),limit=Math.min(Math.max(Number(b.limit||2),1),5),providerId=clean(b.provider_id)||null,profiles=await rpc(svc,"provider_contact_profiles_service",{p_provider_id:providerId,p_limit:limit}),results=[];
+    for(const p of profiles||[]){
+      const st=performance.now(),base=clean(p.base_url),domain=clean(p.domain);
+      try{
+        const homeRes=await fetchHtmlGoverned(svc,base,p.provider_id),candidates=await discoverCandidates(base,domain,homeRes.text,Array.isArray(p.governed_origins)?p.governed_origins:[]),sourceId=await rpc(svc,"provider_contact_source_service",{p_provider_id:p.provider_id,p_country_id:p.country_id,p_base_url:base,p_label:(p.provider_name||"Provider")+" international contacts"});
+        const seenIdentityHashes=new Set<string>();
+        let pages=0,pageFailures=0;
+        for(const url of candidates){
+          let res;
+          try{res=await fetchHtmlGoverned(svc,url,p.provider_id)}catch{pageFailures++;continue}
+          if(!/html/i.test(res.contentType)&&!/<html/i.test(res.text)){pageFailures++;continue}
+          pages++;
+          const html=res.text,bytes=new TextEncoder().encode(html),hash=await sha(bytes),storagePath=`layer2/v2/provider-contacts/${p.provider_id}/${Date.now()}-${hash.slice(0,12)}.html`,up=await svc.storage.from(BUCKET).upload(storagePath,bytes,{contentType:"text/html",upsert:false});
+          if(up.error)throw up.error;
+          const ev=await rpc(svc,"layer2_evidence_capture",{p_source_id:sourceId,p_job_id:null,p_evidence_type:"provider_contact_html_snapshot",p_source_url:url,p_storage_path:storagePath,p_content_hash:hash,p_mime_type:"text/html",p_profile_version_id:null,p_group_key:await sha(p.provider_id+"|contact|"+url),p_retention_class:"standard_365",p_retain_until:null,p_metadata:{layer:2,operation:"provider_contact_discovery",worker_version:VERSION,canonical_mutation_authorised:false,search_mutation_authorised:false,publication_mutation_authorised:false}});
+          const structured=[...tableContacts(html,url,domain),...headingContacts(html,url,domain)],contacts=aggregate(structured.length?structured:lineContacts(html,url,domain));
+          for(const o of contacts){
+            const saved=await upsert(svc,p,o,String(ev.evidence_id));
+            if(saved?.identity)seenIdentityHashes.add(saved.identity);
+          }
+        }
+        const scanComplete=pages>0&&pageFailures===0;
+        const reconciliation=scanComplete
+          ?await rpc(svc,"provider_contact_profile_reconcile_service",{p_profile_id:p.id,p_seen_identity_hashes:[...seenIdentityHashes],p_pages_fetched:pages})
+          :{removed:0,scan_complete:false};
+        await rpc(svc,"provider_contact_profile_finish_service",{p_profile_id:p.id,p_status:"succeeded",p_error:null});
+        results.push({provider_id:p.provider_id,provider_name:p.provider_name,pages,page_failures:pageFailures,scan_complete:scanComplete,contacts:seenIdentityHashes.size,removed:Number(reconciliation?.removed||0),latency_ms:Math.round(performance.now()-st),status:"succeeded",candidate_pages:candidates});
+      }catch(e:any){
+        await rpc(svc,"provider_contact_profile_finish_service",{p_profile_id:p.id,p_status:"failed",p_error:String(e.message||e)}).catch(()=>{});
+        results.push({provider_id:p.provider_id,provider_name:p.provider_name,status:"failed",error:String(e.message||e),latency_ms:Math.round(performance.now()-st)});
+      }
+    }
+    return J(200,{ok:true,worker_version:VERSION,processed:results.length,results});
+  }catch(e:any){
+    return J(500,{ok:false,error:String(e.message||e),worker_version:VERSION});
+  }
+});

@@ -6,3 +6,5 @@ dist/
 playwright-report/
 test-results/
 uat-artifacts/
+supabase/.temp/
+supabase/.branches/
