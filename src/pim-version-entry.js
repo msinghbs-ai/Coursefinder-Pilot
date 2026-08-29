@@ -1,6 +1,7 @@
-const VERSION='2.15.10'
+const VERSION='2.15.11'
 
 const RELEASES=[
+  {version:'2.15.11',date:'30 Aug 2026',title:'Layer 3 AI operations maturity',changes:['Layer 3 now selects governed Layer 2 text Evidence deterministically and explains the Evidence → model/profile → result/confidence/provenance → human-review chain.','Model routes require enabled, unpaused and benchmark-passed profiles; unchanged, Layer-2-resolved and in-flight work use governed zero-call paths.','Retry attempts, model/provider, tokens, latency, estimated cost and outcomes are retained; low-confidence or no-candidate results remain non-canonical and route to Layer 4.','Added concurrency deduplication and stale-execution housekeeping while preserving Layer 1/2 authority, private Evidence, A15, Search/Publication and Zoho boundaries.']},
   {version:'2.15.10',date:'29 Aug 2026',title:'International recruitment contact intelligence',changes:[
     'Provider detail now surfaces governed International contacts with territory assignments, institutional contact details, source freshness and Evidence links.',
     'Added first-party AU/NZ university contact discovery using governed Provider domains/subdomains, sitemap discovery and structured regional-manager tables.',
