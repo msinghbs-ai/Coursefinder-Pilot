@@ -1,21 +1,56 @@
-M2.4.2 Stage B integration candidate after mobile-only A12 and transient Evidence read hardening.
-Frozen source before marker: 69cb9b465de0a00247db381bcbffcc98a6b1f30a
-Visible release: PIM Admin v2.15.9.
+M2.4.3 A15 Institute International Contact Intelligence — bounded integration candidate.
+Nominated: 29 August 2026.
 
-Prior integration run 33213959904:
-- desktop PASS;
-- mobile FAIL with 39 PASS / 2 FAIL.
-Mobile-only reconciliation:
-- A12 explicitly sets 1440x1100 before the desktop drawer-width assertion, making its desktop/tablet/mobile geometry sequence independent of the Playwright project starting viewport.
-- Accepted UQ Evidence detail succeeds directly under the governed rank-6 read path; 20 direct role-checked executions averaged ~182 ms, max ~913 ms, zero empty.
-- Browser evidence_detail now retries only HTTP 5xx responses, max three total attempts with bounded backoff.
-- UAT keeps recovered 5xx events in recovered_server_errors and removes them from the failure set only when the same governed operation returns 2xx within 5 seconds. Unrecovered 5xx remains a hard failure.
-- No authority, Evidence, Search, Publication or secret boundary is weakened.
-- A10 State/University bounded-paging acceptance remains generic and desktop PASS.
+Functional A15 freeze:
+- f9e4e530462b49cf5a83ad8e0d5137631255028a
+Workflow/UAT contract before marker:
+- b0b00f3f26d1e07bc1adc69061b3b16f9125c565
+Visible release:
+- PIM Admin v2.15.10
 
-A14 telemetry remains complete across active Layer 2 provider-attempt and Layer 3 model-call paths.
-Security Advisor: 131 INFO / 0 WARN / 0 ERROR.
-Performance Advisor: 167 INFO / 0 WARN / 0 ERROR.
-RMIT frozen 212-record canonical promotion remains BLOCKED; 0 unsafe, 0 applied. UQ refresh enabled; RMIT disabled; Federation disabled/paused.
+Governance:
+- CF-CHG-20260829-046
+- Execution Addendum A15
+- A15 is included in targeted, integration and final acceptance suites.
+- This marker nominates bounded integration only; it does not close broader M2.4.3 Layer 3 maturity.
 
-This marker authorises Stage B integration only. Stage C remains unauthorised until desktop/mobile Stage B PASS.
+Frozen first-party rollout:
+- 52/52 AU profiles successful
+- 8/8 NZ profiles successful
+- 60/60 total successful
+- 0 current contact-profile errors
+- 31 current accepted contacts across 11 Providers
+- 17 current territory/market-assigned contacts
+- 45 rejected historical/noisy observations retained
+
+Acquisition telemetry:
+- Direct HTTP: 319 attempts; 154 succeeded; 165 failed/fell through; avg 599.41 ms; p95 1944.5 ms; 0 vendor units
+- Firecrawl: 107 attempts; 107 succeeded; 107 page units; avg 3996.84 ms; p95 7132.2 ms
+- Firecrawl subscription cash price remains unrecorded; vendor-unit usage is retained independently
+- worker provider-contact-discover-scheduled-v1.3.2 / deployed Edge v15
+
+Recovery evidence:
+- Wellington HTTP 410 recovered via live wgtn.ac.nz International Office entry point + governed Firecrawl fallback
+- CQU HTTP 403 recovered via governed Firecrawl fallback
+- Bond Evidence uniqueness failure recovered under serialized retry
+- no Layer 1 canonical Provider website mutation authorised by these transport corrections
+
+Licensed enrichment:
+- Apollo adapter implemented
+- APOLLO_API_KEY absent in Pilot
+- personal_email_requested=false
+- phone_requested=false
+- configuration blocker is non-blocking for first-party A15 acceptance
+
+Post-freeze gates:
+- targeted A15 deployed UAT PASS on f9e4e530..., run 33229889360
+- Security Advisor: 135 INFO / 0 WARN / 0 ERROR
+- Performance Advisor: 171 INFO / 0 WARN / 0 ERROR
+
+Authority boundaries unchanged:
+- Layer 1 Provider/Course identity unchanged
+- Evidence remains private/governed
+- Search mutation unauthorised
+- Publication mutation unauthorised
+- LinkedIn HTML scraping unauthorised
+- first-party university contact observations remain preferred over licensed enrichment
