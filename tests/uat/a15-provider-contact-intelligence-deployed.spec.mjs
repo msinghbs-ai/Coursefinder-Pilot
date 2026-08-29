@@ -64,9 +64,9 @@ test.describe('A15 Provider international contact intelligence @deployed',()=>{
   })
 
   test('A15 data boundary keeps contact tables private and licensed search non-revealing',async()=>{
-    const schema=await fs.readFile('supabase/migrations/20260829003000_a15_provider_contact_intelligence.sql','utf8')
-    const bridge=await fs.readFile('supabase/migrations/20260829005500_a15_provider_contact_service_bridge.sql','utf8')
-    const signals=await fs.readFile('supabase/migrations/20260829009000_a15_contact_change_signal_semantics.sql','utf8')
+    const schema=await fs.readFile('supabase/migrations/20260828233725_a15_provider_contact_intelligence.sql','utf8')
+    const bridge=await fs.readFile('supabase/migrations/20260828234249_a15_provider_contact_service_bridge.sql','utf8')
+    const signals=await fs.readFile('supabase/migrations/20260828235417_a15_contact_change_signal_semantics.sql','utf8')
     const scraper=await fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8')
     const apollo=await fs.readFile('supabase/functions/provider-contact-enrich-apollo/index.ts','utf8')
     const hardening=await fs.readFile('supabase/migrations/20260829113049_a15_review_precedence_and_acceptance_contract.sql','utf8')
@@ -109,9 +109,12 @@ test.describe('A15 Provider international contact intelligence @deployed',()=>{
     expect(scraper).toContain('tableContacts')
     expect(scraper).toContain('structured.length?structured:lineContacts')
     expect(scraper).toContain('personal_contact_reveal:false')
-    expect(scraper).toContain('provider-contact-discover-scheduled-v1.4.0')
+    expect(scraper).toContain('provider-contact-discover-scheduled-v1.4.1')
     expect(scraper).toContain('seenIdentityHashes')
     expect(scraper).toContain('pageFailures===0')
+    expect(scraper).toContain('!discovery.truncated&&!contactTruncated')
+    expect(scraper).toContain('candidate_truncated:discovery.truncated')
+    expect(scraper).toContain('contact_truncated:contactTruncated')
     expect(scraper).toContain('provider_contact_profile_reconcile_service')
 
     expect(apollo).toContain('q_organization_domains_list[]')
