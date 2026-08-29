@@ -1,18 +1,19 @@
-M2.4.3 A15 Institute International Contact Intelligence — bounded integration candidate.
+M2.4.3 A15 Institute International Contact Intelligence — corrective bounded integration candidate.
 Nominated: 29 August 2026.
 
 Functional A15 freeze:
 - f9e4e530462b49cf5a83ad8e0d5137631255028a
-Workflow/UAT contract before marker:
-- b0b00f3f26d1e07bc1adc69061b3b16f9125c565
+Post-freeze transport/reconciliation/performance hardening:
+- Wellington live entry point + accepted team reconciliation restored
+- Evidence-detail provider-attempt lookup indexes added
+- current Pilot source before this marker: f3cf5001e5ac506d5edbac324bfbf25d706d4858
 Visible release:
 - PIM Admin v2.15.10
 
 Governance:
 - CF-CHG-20260829-046
 - Execution Addendum A15
-- A15 is included in targeted, integration and final acceptance suites.
-- This marker nominates bounded integration only; it does not close broader M2.4.3 Layer 3 maturity.
+- bounded integration only; broader M2.4.3 Layer 3 maturity remains separate
 
 Frozen first-party rollout:
 - 52/52 AU profiles successful
@@ -22,18 +23,26 @@ Frozen first-party rollout:
 - 31 current accepted contacts across 11 Providers
 - 17 current territory/market-assigned contacts
 - 45 rejected historical/noisy observations retained
+- Wellington reconciled current team contact: International Student Experience / international-support@vuw.ac.nz / +64 4 463 5350
 
-Acquisition telemetry:
+Acquisition telemetry baseline:
 - Direct HTTP: 319 attempts; 154 succeeded; 165 failed/fell through; avg 599.41 ms; p95 1944.5 ms; 0 vendor units
 - Firecrawl: 107 attempts; 107 succeeded; 107 page units; avg 3996.84 ms; p95 7132.2 ms
-- Firecrawl subscription cash price remains unrecorded; vendor-unit usage is retained independently
-- worker provider-contact-discover-scheduled-v1.3.2 / deployed Edge v15
+- Firecrawl subscription cash price remains unrecorded; vendor-unit usage retained independently
+- provider-contact-discover-scheduled v1.3.2 / deployed Edge v15
 
 Recovery evidence:
-- Wellington HTTP 410 recovered via live wgtn.ac.nz International Office entry point + governed Firecrawl fallback
+- Wellington HTTP 410 recovered via live wgtn.ac.nz international contact entry point and governed fallback
 - CQU HTTP 403 recovered via governed Firecrawl fallback
 - Bond Evidence uniqueness failure recovered under serialized retry
-- no Layer 1 canonical Provider website mutation authorised by these transport corrections
+- no Layer 1 canonical Provider website mutation authorised by transport corrections
+
+Evidence-detail integration hardening:
+- prior integration run 33230112004: desktop PASS, mobile FAIL only on recurring A13 evidence_detail HTTP 500
+- direct SQL proof remained correct but showed a 7.2s max latency outlier over 25 calls
+- additive indexes added for raw_evidence_id/html_evidence_id/screenshot_evidence_id on pipeline.layer2_provider_attempts
+- post-index proof: 25/25 PASS, avg ~164 ms, p95 ~134 ms, max ~2.04 s
+- existing bounded 5xx-only browser retry semantics remain unchanged; unrecovered 5xx remains a hard UAT failure
 
 Licensed enrichment:
 - Apollo adapter implemented
@@ -42,10 +51,10 @@ Licensed enrichment:
 - phone_requested=false
 - configuration blocker is non-blocking for first-party A15 acceptance
 
-Post-freeze gates:
-- targeted A15 deployed UAT PASS on f9e4e530..., run 33229889360
+Pre-integration gates:
+- targeted A15 deployed UAT PASS on f3cf5001..., run 33240216793
 - Security Advisor: 135 INFO / 0 WARN / 0 ERROR
-- Performance Advisor: 171 INFO / 0 WARN / 0 ERROR
+- Performance Advisor: 170 INFO / 0 WARN / 0 ERROR
 
 Authority boundaries unchanged:
 - Layer 1 Provider/Course identity unchanged
