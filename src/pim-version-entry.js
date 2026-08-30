@@ -1,6 +1,7 @@
-const VERSION='2.15.11'
+const VERSION='2.15.12'
 
 const RELEASES=[
+  {version:'2.15.12',date:'31 Aug 2026',title:'Canonical navigation regression correction',changes:['Removed the legacy browser DOM mutator that could rewrite the governed sidebar after render and route Layer 1 back through the experimental Settings surface.','Layer 1, Layer 2, Layer 3 and Layer 4 remain permanent canonical Operations routes, with Layer 3 and Layer 4 separated.','Fixed the shared Layer status summary to use current source/Evidence metadata and the accepted Layer 3 candidate helper, eliminating the cross-screen column layer error banner.','Users & Roles no longer injects itself into Operations; privileged access administration is entered from Administration.']},
   {version:'2.15.11',date:'30 Aug 2026',title:'Layer 3 AI operations maturity',changes:['Layer 3 now selects governed Layer 2 text Evidence deterministically and explains the Evidence → model/profile → result/confidence/provenance → human-review chain.','Model routes require enabled, unpaused and benchmark-passed profiles; unchanged, Layer-2-resolved and in-flight work use governed zero-call paths.','Retry attempts, model/provider, tokens, latency, estimated cost and outcomes are retained; low-confidence or no-candidate results remain non-canonical and route to Layer 4.','Added concurrency deduplication and stale-execution housekeeping while preserving Layer 1/2 authority, private Evidence, A15, Search/Publication and Zoho boundaries.']},
   {version:'2.15.10',date:'29 Aug 2026',title:'International recruitment contact intelligence',changes:[
     'Provider detail now surfaces governed International contacts with territory assignments, institutional contact details, source freshness and Evidence links.',
