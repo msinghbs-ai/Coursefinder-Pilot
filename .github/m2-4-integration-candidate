@@ -1,68 +1,50 @@
-M2.4.3 Layer 3 AI Operations Maturity — final bounded integration candidate.
+M2.4.3 Layer 3 AI Operations Maturity — corrective post-timeout bounded integration candidate.
 
 Nominated: 30 August 2026.
 
-Final source before marker:
-- 1ae251e8dd2ca3beeb1a51b931899ca7e1a1b8fa
+Exact corrective source before marker:
+- eaab5a7b6fc7bfaddb2b6863e23f5033184fa4b7
+- corrective migration 20260830011809_m2_4_3_acceptance_dashboard_timeout_hardening
 - PIM Admin v2.15.11
 
 Governance:
-- CF-CHG-20260829-047
+- CF-CHG-20260829-047 remains ACTIVE.
+- M2.4.2 / CF-CHG-20260827-044 remains CLOSED / PASS.
 - A15 / CF-CHG-20260829-046 remains CLOSED / PASS and frozen.
 - M2.4.4 remains unauthorised until M2.4.3 formally closes.
 
-Historical integration evidence retained:
-1. b6318bdcbc657b4be524ee58e5728c2b84f91687 / 33254320472 — FAIL: 42 PASS / 2 stale checked-in assertions; mobile skipped.
-2. af6fc6adc39f0d5a110af8a9a7631fc8665145bd / 33275837942 — FAIL: 43 PASS / 1 inherited Data Quality Evidence runtime 5xx; mobile skipped.
+Historical evidence retained:
+1. b6318bdcbc657b4be524ee58e5728c2b84f91687 / 33254320472 — FAIL: stale checked-in assertions; mobile skipped.
+2. af6fc6adc39f0d5a110af8a9a7631fc8665145bd / 33275837942 — FAIL: inherited Data Quality Evidence runtime 5xx; mobile skipped.
+3. first final acceptance 3a8a31310ea7147016374d6c818d08034ba0be64 / 33284867253 — desktop 50/50 PASS; mobile 48 PASS / 1 persistent inherited Layer 2 provider-acquisition failure caused by admin_read(operation=dashboard) statement timeout. This run remains immutable failure evidence.
 
-Corrections since the second failed candidate:
-- exact failing Regulatory Fee Evidence 11e23b34-f86e-42ee-8093-a5ab70bfdfd2 profiled;
-- course_fees Evidence verification branch reduced from ~1.24s sequential scan to ~3ms indexed path;
-- full admin_evidence_verification_at reduced from ~3.6s to ~0.5s;
-- authenticated full admin_evidence_detail on the same record measured ~102ms;
-- added purpose-built Evidence verification indexes without changing output/access semantics;
-- added immutable private Layer 3 effective profile snapshot and SHA-256 prompt provenance;
-- prompt/profile provenance rollback contract PASS with 0 persisted test interpretations;
-- layer3-interpret upgraded to Edge v5 with JWT enforced;
-- PIM Admin v2.15.11 release notes added;
-- permanent M2.4.3 source-contract UAT strengthened.
+Corrective hardening since first final acceptance:
+- deployed migration 20260830011809_m2_4_3_acceptance_dashboard_timeout_hardening;
+- added recent-activity expression indexes for pipeline jobs, Evidence and workflow review activity;
+- no dashboard output, access, authority or Evidence semantics changed;
+- top-10 Evidence recent-activity path verified at approximately 3.25 ms execution;
+- targeted deployed UAT 33285369673 PASS;
+- frontend build/local smoke 33285369676 PASS;
+- current deployed migration ledger confirms 20260830011809 as latest migration;
+- Layer 3 housekeeping cron remains active and completes successfully.
 
-Final deployed M2.4.3 migration ledger:
-- 20260829125553 m2_4_3_layer3_operations_maturity_foundation
-- 20260829125717 m2_4_3_source_pattern_benchmark_provenance
-- 20260829130640 m2_4_3_layer3_concurrency_recovery_housekeeping
-- 20260829212940 m2_4_3_evidence_verification_lookup_hardening
-- 20260829213038 m2_4_3_prompt_profile_provenance
+Model-quality authority remains unchanged:
+- source-pattern benchmark 089befcf-a2f2-42ec-ad03-7bfe02816e1b;
+- 4/4 governed provider cases PASS;
+- 3/3 controls PASS;
+- exact pinned model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free;
+- threshold not lowered.
 
-Model-quality authority:
-- source-pattern benchmark 089befcf-a2f2-42ec-ad03-7bfe02816e1b
-- 4/4 provider cases PASS
-- 3/3 controls PASS
-- exact model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
-- 8 actual calls; one malformed-output retry recovered
-- 4454 input / 832 output tokens
-- estimated cost USD 0
-- benchmark threshold was not lowered
+Layer 3 runtime/authority boundaries remain unchanged:
+- Layer 1 canonical/regulatory authority;
+- Layer 2 deterministic source and Evidence authority;
+- Layer 3 governed Evidence interpretation only, with no direct Layer 1/2 canonical mutation;
+- Layer 4 terminal human resolution;
+- Search, Publication, Website and Zoho admission separately governed;
+- A14 telemetry preserved;
+- A15 contact authority/privacy/quality boundaries preserved;
+- RMIT frozen 212-record canonical promotion remains separately BLOCKED;
+- NZ first-party Layer 2 Course enrichment remains DEFERRED.
 
-Runtime:
-- layer3-interpret Edge v5 / JWT enforced
-- layer3-provider-control Edge v2 / JWT enforced
-- layer3-source-pattern-benchmark Edge v9 / one-time nonce governed
-- Security Advisor: no current findings returned
-- Performance Advisor: no current findings returned
-
-Final pre-integration gates:
-- frontend build + local smoke 33276348929 PASS
-- targeted deployed UAT 33276348923 PASS
-- rollback zero-call/revalidation/concurrency/provenance contracts PASS
-- housekeeping proof: 0 stale executions recovered, history_deleted=false
-
-Authority boundaries unchanged:
-- Layer 1 canonical identity/regulatory authority
-- Layer 2 deterministic Evidence/source authority
-- Layer 3 interpretation only; no direct canonical mutation
-- Layer 4 human resolution
-- Search/Public/Zoho admission unauthorised
-- secrets/private Evidence remain governed
-
-This marker triggers bounded integration desktop/mobile. Both platforms must PASS before final acceptance may be nominated.
+This marker triggers the required corrective bounded integration desktop/mobile matrix.
+Both desktop and mobile must PASS before one replacement final acceptance candidate may be nominated.
