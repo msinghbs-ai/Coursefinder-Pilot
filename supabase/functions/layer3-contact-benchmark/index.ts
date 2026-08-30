@@ -1,11 +1,11 @@
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import {createClient} from "npm:@supabase/supabase-js@2";
 
-const FN="layer3-contact-benchmark",VERSION="layer3-contact-benchmark-v1.1.0";
+const FN="layer3-contact-benchmark",VERSION="layer3-contact-benchmark-v1.2.0";
 const J=(s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:any)=>String(v??"").replace(/\s+/g," ").trim();
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw new Error(`${n}: ${error.message}`);return data}
-function textify(s:string){return clean(s.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi," ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&")).slice(0,60000)}
+function textify(s:string){const t=clean(s.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi," ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&"));const hits=[...t.matchAll(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g)].map(m=>m.index||0);if(!hits.length)return t.slice(0,18000);const chunks=hits.slice(0,16).map(i=>t.slice(Math.max(0,i-900),Math.min(t.length,i+1800)));return clean(chunks.join(" ")).slice(0,24000)}
 function parse(v:any){if(typeof v==="object"&&v)return v;return JSON.parse(String(v||"").trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,""))}
 function occurs(v:any,text:string){if(v==null||v==="")return true;return text.toLowerCase().includes(String(v).trim().toLowerCase())}
 function validate(result:any,text:string,sourceUrl:string,expectFound:boolean){
@@ -15,7 +15,7 @@ function validate(result:any,text:string,sourceUrl:string,expectFound:boolean){
  if(typeof result?.rationale!=="string"||!result.rationale.trim())errors.push("rationale_required");
  if(!Array.isArray(result?.evidence_quotes))errors.push("evidence_quotes_required");
  if(!cv||typeof cv!=="object"||Array.isArray(cv))errors.push("candidate_object_required");
- if(cv&&typeof cv==="object"&&!Array.isArray(cv)){const hasPublished=Boolean(cv.general_email)||(Array.isArray(cv.contacts)&&cv.contacts.length>0);cv.disposition=hasPublished?"published_contact_found":(cv.disposition==="not_publicly_published"?"not_publicly_published":"not_found_in_qualified_evidence")}
+ if(cv&&typeof cv==="object"&&!Array.isArray(cv)){const hay=text.toLowerCase(),keep=(v:any)=>v==null||v===""?null:(hay.includes(String(v).trim().toLowerCase())?v:null);cv.general_email=keep(cv.general_email);if(Array.isArray(cv.contacts))cv.contacts=cv.contacts.map((x:any)=>({...x,name:keep(x?.name),title:keep(x?.title),email:keep(x?.email),phone:keep(x?.phone),territory:keep(x?.territory),source_url:x?.source_url===sourceUrl||hay.includes(String(x?.source_url||"").trim().toLowerCase())?x?.source_url:null})).filter((x:any)=>Boolean(x.name||x.email||x.phone||x.territory));for(const k of ["international_students_url","contact_team_url"]){const v=cv[k];if(v!=null&&v!==sourceUrl&&!hay.includes(String(v).trim().toLowerCase()))cv[k]=null}const hasPublished=Boolean(cv.general_email)||(Array.isArray(cv.contacts)&&cv.contacts.length>0);cv.disposition=hasPublished?"published_contact_found":(cv.disposition==="not_publicly_published"?"not_publicly_published":"not_found_in_qualified_evidence")}
  const disposition=String(cv?.disposition||"");
  if(!["published_contact_found","not_publicly_published","not_found_in_qualified_evidence"].includes(disposition))errors.push("disposition_invalid");
  const contacts=Array.isArray(cv?.contacts)?cv.contacts:[];
