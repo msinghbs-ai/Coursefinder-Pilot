@@ -14,6 +14,11 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await expect(page.locator('.l2o-launcher')).toHaveCount(0)
     await expect(page.locator('.m23-launcher')).toHaveCount(0)
     await expect(page.locator('.l3cred-launcher')).toHaveCount(0)
+    await expect(page.locator('.go7-nav-item')).toHaveCount(0)
+    await expect(page.locator('html[data-go7-navigation]')).toHaveCount(0)
+    await expect(nav.getByText('Data Operations',{exact:true})).toHaveCount(0)
+    await expect(nav.getByText('Governance & Platform',{exact:true})).toHaveCount(0)
+    await expect(page.locator('.m-alert')).not.toContainText(/column "layer" does not exist/i)
     await milestoneScreenshot(page,testInfo,'a21-canonical-layer-navigation')
   }finally{await finish(testInfo,runtime)}})
 
