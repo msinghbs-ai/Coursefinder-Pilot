@@ -5,7 +5,7 @@ const fmt=v=>{if(v==null)return'—';if(typeof v==='string')return v;try{return 
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
 const when=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(+d)?String(v):d.toLocaleString()}
 
-export default function Layer4Intervention({type,data}){
+export default function Layer4Intervention({type,data,publicationEnabled=true}){
  const[layer4,setLayer4]=useState(data?.layer4||{fields:[]})
  const[pub,setPub]=useState(data?.layer4_publication||{})
  const[history,setHistory]=useState(null)
@@ -85,7 +85,7 @@ export default function Layer4Intervention({type,data}){
     </div>
    </div>)}
   </div>
-  <div className="m-record" style={{marginTop:8}}>
+  {publicationEnabled&&<div className="m-record" style={{marginTop:8}}>
    <strong>Publication override · separate decision</strong>
    <span>{human(pub?.effective_decision||'no_override')}{pub?.actor_email?' · '+pub.actor_email:''}{pub?.decided_at?' · '+when(pub.decided_at):''}</span>
    {pub?.can_decide&&<div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
@@ -94,7 +94,7 @@ export default function Layer4Intervention({type,data}){
     {pub?.effective_decision!=='no_override'&&<button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('revert')}>Revert publication decision</button>}
    </div>}
    <small>This does not authorise Production, Website or Zoho cutover.</small>
-  </div>
+  </div>}
   {history&&<div className="m-record-list" style={{marginTop:8}}>
    <strong>Audit history · {history.field.display_label}</strong>
    {history.rows.map(x=><div className="m-record" key={x.id}><span>{human(x.event_type)} · {x.actor_email||x.actor_id} · {when(x.created_at)}</span><small>{human(x.reason_code)}{x.comment?' · '+x.comment:''}</small></div>)}
