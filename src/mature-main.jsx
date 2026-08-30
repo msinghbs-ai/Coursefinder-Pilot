@@ -73,7 +73,7 @@ const PAGE_META={
 function item(label,Icon,min){return{label,Icon,min,slug:slug(label)}}
 function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
 const HIDDEN_ROUTES=[item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
-function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
+function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Authority','layer-1-operations':'Layer 1 — Authority','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
 function App(){
   const[session,setSession]=useState(null),[booting,setBooting]=useState(true),[context,setContext]=useState(null)
