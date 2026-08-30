@@ -154,8 +154,8 @@ function ScholarshipFillControl({onError}){
 }
 
 function Dashboard({onError,navigate}){
-  const[data,setData]=useState(null),[busy,setBusy]=useState(true)
-  const load=()=>{setBusy(true);adminRead('dashboard').then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
+  const[data,setData]=useState(null),[layerStatus,setLayerStatus]=useState(null),[busy,setBusy]=useState(true)
+  const load=()=>{setBusy(true);Promise.all([adminRead('dashboard'),adminRead('layer_status_summary')]).then(([d,l])=>{setData(d);setLayerStatus(l)}).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
   useEffect(load,[])
   if(busy&&!data)return <DashboardSkeleton/>
   const op=data?.operational??{},failed=Number(op.failed_jobs_24h||0),running=Number(op.running_jobs||0),reviews=Number(data?.open_reviews||0)
@@ -169,6 +169,15 @@ function Dashboard({onError,navigate}){
   return <div className="m-page-stack">
     <section className="m-dashboard-intro"><div><span className={`m-health m-health-${health}`}><span/>{health==='healthy'?'Operationally healthy':health==='active'?'Pipeline activity in progress':'Attention required'}</span><h2>Operational command view</h2><p>Counts, freshness and human-attention signals from the governed canonical and pipeline layers.</p></div><button className="m-secondary" onClick={load}><RefreshCw size={15}/>Refresh</button></section>
     <div className="m-metric-grid">{metrics.map(([label,value,Icon,tone,target])=><button className={`m-metric-card tone-${tone}`} key={label} onClick={()=>navigate(target)}><span className="m-metric-icon"><Icon size={18}/></span><span className="m-metric-copy"><small>{label}</small><strong>{fmtNumber(value)}</strong></span><span className="m-metric-arrow">→</span></button>)}</div>
+    {layerStatus&&<section className="m-panel">
+      <PanelTitle icon={Layers3} title="Layer status" subtitle="Operational state across authority, enrichment, interpretation and human resolution"/>
+      <div className="m-grid-2">
+        <div className="m-record"><strong>Layer 1 · Authority</strong><span>{fmtNumber(layerStatus.layer1?.active_sources)} active source(s) · {fmtNumber(layerStatus.layer1?.running_jobs)} running job(s)</span><small>{fmtNumber(layerStatus.layer1?.failed_24h)} failed in 24h · latest {layerStatus.layer1?.latest_activity?relativeTime(layerStatus.layer1.latest_activity):'—'}</small></div>
+        <div className="m-record"><strong>Layer 2 · Enrichment</strong><span>{fmtNumber(layerStatus.layer2?.active_batches)} active batch(es) · {fmtNumber(layerStatus.layer2?.scheduled_wave_requests)} scheduled wave request(s)</span><small>{fmtNumber(layerStatus.layer2?.wave_pending_courses)} Courses pending · {fmtNumber(layerStatus.layer2?.processed_24h)} processed in 24h · {fmtNumber(layerStatus.layer2?.evidence_24h)} Evidence captures</small></div>
+        <div className="m-record"><strong>Layer 3 · AI interpretation</strong><span>{fmtNumber(layerStatus.layer3?.qualified_profiles)} qualified profile(s) · {fmtNumber(layerStatus.layer3?.pending_evidence_candidates)} pending Evidence candidate(s)</span><small>{fmtNumber(layerStatus.layer3?.interpretations_24h)} interpretations · {fmtNumber(layerStatus.layer3?.calls_24h)} calls · {fmtNumber(layerStatus.layer3?.tokens_24h)} tokens · USD {Number(layerStatus.layer3?.recorded_cost_24h||0).toFixed(4)} recorded</small></div>
+        <div className="m-record"><strong>Layer 4 · Human resolution</strong><span>{fmtNumber(layerStatus.layer4?.pending_reviews)} pending review(s) · {fmtNumber(layerStatus.layer4?.active_overrides)} active override(s)</span><small>{fmtNumber(layerStatus.layer4?.publication_decisions)} publication decision event(s) · {fmtNumber(layerStatus.scholarships?.course_mappings)} Course-Scholarship mappings</small></div>
+      </div>
+    </section>}
     <div className="m-grid-2 dashboard-grid">
       <section className="m-panel"><PanelTitle icon={Zap} title="Operational pulse" subtitle="What requires attention now"/>
         <div className="m-pulse-grid"><Pulse label="Running jobs" value={op.running_jobs} tone={running?'info':'neutral'} icon={Workflow}/><Pulse label="Failed jobs · 24h" value={op.failed_jobs_24h} tone={failed?'danger':'success'} icon={AlertTriangle}/><Pulse label="Completed jobs · 24h" value={op.completed_jobs_24h} tone="success" icon={CheckCircle2}/><Pulse label="Evidence captured · 24h" value={op.evidence_24h} tone="violet" icon={FileCheck2}/></div>
