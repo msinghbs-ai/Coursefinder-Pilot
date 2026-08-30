@@ -1,68 +1,74 @@
-M2.4.3 Layer 3 AI Operations Maturity — FINAL ACCEPTANCE candidate.
+M2.4.3 Layer 3 AI Operations Maturity — REPLACEMENT FINAL ACCEPTANCE candidate.
 
 Nominated: 30 August 2026.
 
-Accepted source before marker:
-- ea6077e8e443a4a43adbf9f3285dac3dd3e631fd
+Exact accepted corrective lineage before marker:
+- d1d5f78ab3673696845fedc96c1f467bd27b3e71
+- corrective implementation source eaab5a7b6fc7bfaddb2b6863e23f5033184fa4b7
+- corrective migration 20260830011809_m2_4_3_acceptance_dashboard_timeout_hardening
 - PIM Admin v2.15.11
 
 Governance:
-- CF-CHG-20260829-047
+- CF-CHG-20260829-047 remains ACTIVE pending this gate.
+- M2.4.2 / CF-CHG-20260827-044 remains CLOSED / PASS.
 - A15 / CF-CHG-20260829-046 remains CLOSED / PASS and frozen.
-- M2.4.4 remains unauthorised until this acceptance is terminal PASS and M2.4.3 closure reconciliation is committed.
+- M2.4.4 remains unauthorised until this final acceptance is terminal PASS and closure reconciliation is committed.
 
-Final bounded integration evidence:
-- run 33276423521
-- resolved tier: integration
-- 15 permanent suites
-- chromium-desktop: 45/45 PASS
-- chromium-mobile: 45/45 PASS
-- frontend build 33276423532 PASS
+Historical first final acceptance remains immutable failure evidence:
+- marker 3a8a31310ea7147016374d6c818d08034ba0be64
+- run 33284867253
+- desktop 50/50 PASS
+- mobile 48 PASS / 1 persistent inherited Layer 2 provider-acquisition failure
+- failure cause: admin_read(operation=dashboard) statement timeout
+- frontend build 33284867261 PASS
+- no Layer 3 threshold, Evidence authority, security or Layer 4 contract was weakened to correct it
+
+Corrective validation:
+- deployed migration 20260830011809_m2_4_3_acceptance_dashboard_timeout_hardening
+- targeted deployed UAT 33285369673 PASS
+- frontend build/local smoke 33285369676 PASS
+- bounded integration marker d1d5f78ab3673696845fedc96c1f467bd27b3e71
+- bounded integration run 33285703513
+- chromium-desktop PASS
+- chromium-mobile PASS
 
 Model-quality authority:
 - source-pattern benchmark 089befcf-a2f2-42ec-ad03-7bfe02816e1b
-- 4/4 governed real-provider cases PASS
+- 4/4 governed provider cases PASS
 - 3/3 controls PASS
 - exact pinned model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
 - 8 actual calls; one malformed-output retry recovered
 - 4454 input / 832 output tokens
 - estimated provider cost USD 0
-- acceptance threshold not lowered
+- benchmark threshold not lowered
+- profile remains enabled and unpaused
 
-Final Layer 3 operating contract:
+Runtime reconciliation immediately before nomination:
+- corrective migration present in deployed ledger
+- layer3-interpret Edge v5 / JWT enforced
+- layer3-provider-control Edge v2 / JWT enforced
+- layer3-source-pattern-benchmark Edge v9 / governed one-time nonce contract
+- Layer 3 housekeeping cron active every 15 minutes
+- Security Advisor: 135 INFO / 0 WARN / 0 ERROR
+- Performance Advisor: 169 INFO / 0 WARN / 0 ERROR
+
+Final Layer 3 operating contract remains:
 - deterministic governed Layer 2 Evidence selection
 - screenshot Evidence excluded from AI text input
 - enabled/unpaused/benchmark-passed profile enforcement
-- complete profile/prompt/model/version provenance, including immutable effective profile snapshot and SHA-256 prompt provenance
-- zero-call paths for resolved Layer 2, unchanged Evidence and in-flight duplicate work
-- governed revalidation/replay
-- bounded retry with attempt-level telemetry
-- explicit qualified fallback only when configured
-- A14 calls/tokens/latency/cost/outcome telemetry
-- confidence fall-out and no-candidate routing to Layer 4
-- entity/task/profile concurrency serialization
-- stale execution recovery/housekeeping without history deletion
-- operator Evidence → model/profile → result/confidence/provenance → human-review state
+- immutable effective profile and prompt provenance
+- zero-call paths for resolved/unchanged/in-flight duplicate work
+- governed replay/revalidation
+- bounded retry with attempt-level A14 telemetry
+- qualified fallback only when configured
+- confidence/no-candidate fall-out to Layer 4
+- concurrency serialization and stale-execution recovery
 - no direct Layer 1/Layer 2 canonical mutation
-- no Search/Publication/Zoho admission
-- secrets and private Evidence remain governed
+- no automatic Search/Publication/Website/Zoho admission
+- secrets/private Evidence remain governed
+- A15 first-party contact authority/privacy/quality boundaries preserved
+- RMIT frozen 212-record canonical promotion remains separately BLOCKED
+- NZ first-party Layer 2 Course enrichment remains DEFERRED
 
-Final migration ledger:
-- 20260829125553 m2_4_3_layer3_operations_maturity_foundation
-- 20260829125717 m2_4_3_source_pattern_benchmark_provenance
-- 20260829130640 m2_4_3_layer3_concurrency_recovery_housekeeping
-- 20260829212940 m2_4_3_evidence_verification_lookup_hardening
-- 20260829213038 m2_4_3_prompt_profile_provenance
-
-Relevant runtime:
-- layer3-interpret Edge v5 / JWT enforced
-- layer3-provider-control Edge v2 / JWT enforced
-- layer3-source-pattern-benchmark Edge v9 / one-time nonce governed
-- current Security Advisor: no findings returned
-- current Performance Advisor: no findings returned
-
-Historical failed bounded candidates remain immutable evidence:
-- b6318bdc... / 33254320472 — stale assertion contract drift
-- af6fc6ad... / 33275837942 — inherited Data Quality Evidence runtime 5xx
-
-This marker triggers the one final deployed acceptance desktop/mobile matrix. M2.4.3 may CLOSE / PASS only if both are terminal PASS and repository/runtime/advisor/documentation reconciliation remains clean.
+This marker triggers the one replacement final deployed acceptance desktop/mobile matrix.
+M2.4.3 may CLOSE / PASS only if both platforms PASS and the final repository/runtime/advisor/documentation reconciliation remains clean.
