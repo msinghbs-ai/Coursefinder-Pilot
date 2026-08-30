@@ -1,50 +1,52 @@
-M2.4.3 Layer 3 AI Operations Maturity — corrective post-timeout bounded integration candidate.
+M2.4.4 Cross-layer Operations, Housekeeping, Scheduling & Pre-blackout Acceptance — bounded integration candidate.
 
 Nominated: 30 August 2026.
 
-Exact corrective source before marker:
-- eaab5a7b6fc7bfaddb2b6863e23f5033184fa4b7
-- corrective migration 20260830011809_m2_4_3_acceptance_dashboard_timeout_hardening
-- PIM Admin v2.15.11
+Exact implementation source before marker:
+- 7ef74a0b787e50e46d4cf11300a0e27391f13e54
+- initial M2.4.4 Layer 1 corrective source 29cffeb1ad3824f7569d4b597e0103e3c880bb8a
 
 Governance:
-- CF-CHG-20260829-047 remains ACTIVE.
-- M2.4.2 / CF-CHG-20260827-044 remains CLOSED / PASS.
-- A15 / CF-CHG-20260829-046 remains CLOSED / PASS and frozen.
-- M2.4.4 remains unauthorised until M2.4.3 formally closes.
+- CF-CHG-20260830-048 remains ACTIVE.
+- M2.4.3 / CF-CHG-20260829-047 remains CLOSED / PASS.
+- A15 remains CLOSED / PASS and frozen.
+- no Production, broad Publication, Website or Zoho cutover is authorised.
+- RMIT frozen 212-record promotion remains blocked.
+- NZ first-party Layer 2 Course enrichment remains deferred.
 
-Historical evidence retained:
-1. b6318bdcbc657b4be524ee58e5728c2b84f91687 / 33254320472 — FAIL: stale checked-in assertions; mobile skipped.
-2. af6fc6adc39f0d5a110af8a9a7631fc8665145bd / 33275837942 — FAIL: inherited Data Quality Evidence runtime 5xx; mobile skipped.
-3. first final acceptance 3a8a31310ea7147016374d6c818d08034ba0be64 / 33284867253 — desktop 50/50 PASS; mobile 48 PASS / 1 persistent inherited Layer 2 provider-acquisition failure caused by admin_read(operation=dashboard) statement timeout. This run remains immutable failure evidence.
+Runtime migrations:
+- deployed history 20260830021159_m2_4_4_layer1_legacy_stale_job_recovery
+- repository mirror 20260830021400_m2_4_4_layer1_legacy_stale_job_recovery.sql
+- 20260830071523_m2_4_4_layer3_operational_alerts
+- 20260830072215_m2_4_4_layer3_alert_admin_read_bridge
 
-Corrective hardening since first final acceptance:
-- deployed migration 20260830011809_m2_4_3_acceptance_dashboard_timeout_hardening;
-- added recent-activity expression indexes for pipeline jobs, Evidence and workflow review activity;
-- no dashboard output, access, authority or Evidence semantics changed;
-- top-10 Evidence recent-activity path verified at approximately 3.25 ms execution;
-- targeted deployed UAT 33285369673 PASS;
-- frontend build/local smoke 33285369676 PASS;
-- current deployed migration ledger confirms 20260830011809 as latest migration;
-- Layer 3 housekeeping cron remains active and completes successfully.
+Reconciled operations:
+- Layer 1 legacy regulatory stale recovery: 45-minute age with live 30-minute L1 heartbeat exclusion.
+- Layer 2 provider attempt/orphan Job/managed-batch recovery remains provider/policy bounded.
+- Layer 3 stale reserved/calling recovery remains 20 minutes with retained history.
+- general/L1/L2 schedulers dedupe active governed targets.
+- no queued/running L1-L3 refresh duplication at checkpoint.
+- historical blocked L3 and Layer 4 human-resolution work retained.
+- governed Evidence/history not deleted by cross-layer recovery.
 
-Model-quality authority remains unchanged:
-- source-pattern benchmark 089befcf-a2f2-42ec-ad03-7bfe02816e1b;
-- 4/4 governed provider cases PASS;
-- 3/3 controls PASS;
-- exact pinned model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free;
-- threshold not lowered.
+Alerts and telemetry:
+- L1 and L2 accepted alert surfaces retained.
+- rank-4+ Layer 3 operational alerts now route through governed admin_read layer3_ops_alerts.
+- current L3 alert conditions: 0.
+- A14 active L2/L3 telemetry retained; unavailable usage is not invented.
+- Evidence footprint observation: 6,248 objects / 3,781,700,044 bytes; no artificial storage threshold introduced.
 
-Layer 3 runtime/authority boundaries remain unchanged:
-- Layer 1 canonical/regulatory authority;
-- Layer 2 deterministic source and Evidence authority;
-- Layer 3 governed Evidence interpretation only, with no direct Layer 1/2 canonical mutation;
-- Layer 4 terminal human resolution;
-- Search, Publication, Website and Zoho admission separately governed;
-- A14 telemetry preserved;
-- A15 contact authority/privacy/quality boundaries preserved;
-- RMIT frozen 212-record canonical promotion remains separately BLOCKED;
-- NZ first-party Layer 2 Course enrichment remains DEFERRED.
+Validation before nomination:
+- all seven operational cron jobs latest-success.
+- Security Advisor 135 INFO / 0 WARN / 0 ERROR.
+- Performance Advisor 169 INFO / 0 WARN / 0 ERROR.
+- permanent tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs added.
+- deployed UAT integration and acceptance tiers include the permanent M2.4.4 suite.
 
-This marker triggers the required corrective bounded integration desktop/mobile matrix.
-Both desktop and mobile must PASS before one replacement final acceptance candidate may be nominated.
+Documentation:
+- Operations Runbook v1.8
+- Data Operations Admin Guide v1.6
+- PIM Admin Guide v1.22
+
+This marker triggers the single M2.4.4 bounded integration desktop/mobile matrix.
+Both desktop and mobile must PASS before one final pre-blackout acceptance candidate may be nominated.
