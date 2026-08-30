@@ -115,7 +115,7 @@ function parseStudyAustraliaDetail(detailUrl:string,html:string,provider:any,pro
     const a=awardText.match(/(?:AUD\s*)?\$\s*([\d,]+(?:\.\d+)?)/i);
     if(a) awardTiers.push({tier_code:"published_award",label:"Published award",amount:Number(a[1].replace(/,/g,"")),currency_code:"AUD",percentage:null,basis:/annually|annual|per year/i.test(awardText)?"annual":"published",notes:awardText,display_order:10});
   }
-  // Percent is punctuation, so a trailing word-boundary after '%' is incorrect. Accept whitespace/punctuation/end-of-string explicitly.
+  // Percent is punctuation, so a trailing \b after '%' is incorrect. Accept whitespace/punctuation/end-of-string explicitly.
   const pct=(description||"").match(/\b(\d{1,3}(?:\.\d+)?)\s*%(?=\s|[.,;:)]|$)/);
   if(pct&&/fee|tuition/i.test(description||"")){
     const p=Number(pct[1]);
