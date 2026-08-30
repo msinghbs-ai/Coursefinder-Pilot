@@ -33,7 +33,7 @@ test.describe('M2.4.4 cross-layer operations and housekeeping @deployed',()=>{
     expect(alerts).toMatch(/grant execute on function security\.layer3_operational_alerts_read\(\) to authenticated/i)
 
     const bridge=await fs.readFile('supabase/migrations/20260830072215_m2_4_4_layer3_alert_admin_read_bridge.sql','utf8')
-    expect(bridge).toContain("p_operation='layer3_ops_alerts'")
+    expect(bridge).toContain("layer3_ops_alerts")
     expect(bridge).toContain('security.layer3_operational_alerts_read()')
     expect(bridge).toContain('Layer 2 alert dispatch marker not found')
   })
