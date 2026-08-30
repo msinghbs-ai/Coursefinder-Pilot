@@ -1,48 +1,32 @@
-M2.4.4 Cross-layer Operations, Housekeeping, Scheduling & Pre-blackout Acceptance — REPLACEMENT bounded integration candidate.
+# M2.4.4 A16 bounded integration candidate — 30 August 2026
 
-Nominated: 30 August 2026.
+Implementation source before marker:
+44960cc8a61c4ee743840bd5aca3cf25f7c10094
 
-Exact corrective source before marker:
-- 8494293f118bb9f8f3a5884ca4bde1a3331831f1
-- implementation source before first marker 7ef74a0b787e50e46d4cf11300a0e27391f13e54
+Change Control:
+CF-CHG-20260830-048
 
-Governance:
-- CF-CHG-20260830-048 remains ACTIVE.
-- first bounded integration candidate 55f867bc371fb961f38631129e746fad9d9ec00b / run 33299250997 remains immutable FAIL evidence.
-- M2.4.3 remains CLOSED / PASS.
-- A15 remains CLOSED / PASS and frozen.
-- no Production, broad Publication, Website or Zoho cutover is authorised.
-- RMIT frozen 212-record promotion remains blocked.
-- NZ first-party Layer 2 Course enrichment remains deferred.
+Scope:
+- A16 explicit 60/60 AU/NZ Provider international-contact dispositions
+- dedicated Evidence-bound Layer 3 international-contact qualification
+- append-only Layer 4 effective-value overlay
+- Provider / Course / Campus / Scholarship / Provider-contact intervention surfaces
+- separate role-gated publication decisions
+- immutable source/history field enforcement
+- SECURITY INVOKER browser RPC boundary through non-exposed l4_api
+- permanent A16 targeted/integration/acceptance UAT
 
-First bounded integration failure:
-- desktop 44 passed / 2 failed after retry;
-- M2.4.4 checked-in source-contract assertion incorrectly expected an unescaped SQL substring;
-- inherited Course interaction performance test exceeded unchanged 3,000 ms budget at 3,313 ms and 3,962 ms;
-- mobile was skipped after desktop failure.
+Pre-candidate proof:
+- frontend build 33308932790 PASS
+- targeted A16 deployed UAT 33308932765 PASS
+- contact benchmark b16d1801-977e-4aaf-84da-e3b2726ac7ba PASS
+- 60/60 Provider dispositions: 11 published_contact_found / 49 not_found_in_qualified_evidence
+- Security Advisor 139 INFO / 0 WARN / 0 ERROR
+- Performance Advisor 175 INFO / 0 WARN / 0 ERROR
+- seven active cron jobs latest-success
+- no active L1-L3 refresh work
 
-Corrective action:
-- corrected only tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs to assert the stable layer3_ops_alerts contract token;
-- no runtime, authority, Security, Evidence, Course-path or performance threshold change;
-- targeted deployed UAT run 33300234103 PASS.
+Decision rule:
+Both chromium-desktop and chromium-mobile integration status contexts must PASS before one final A16-aware acceptance candidate may be nominated.
 
-Runtime migrations remain:
-- deployed history 20260830021159_m2_4_4_layer1_legacy_stale_job_recovery
-- repository mirror 20260830021400_m2_4_4_layer1_legacy_stale_job_recovery.sql
-- 20260830071523_m2_4_4_layer3_operational_alerts
-- 20260830072215_m2_4_4_layer3_alert_admin_read_bridge
-
-Operational reconciliation remains:
-- Layer 1 45-minute legacy recovery with live heartbeat exclusion;
-- Layer 2 provider/orphan/batch policy-bounded recovery;
-- Layer 3 20-minute stale reserved/calling recovery;
-- no active L1-L3 refresh duplication;
-- governed Evidence/history preserved;
-- current L3 alert conditions 0;
-- A14 telemetry retained;
-- all seven operational cron jobs latest-success;
-- Security Advisor 135 INFO / 0 WARN / 0 ERROR;
-- Performance Advisor 169 INFO / 0 WARN / 0 ERROR.
-
-This marker triggers one replacement M2.4.4 bounded integration desktop/mobile matrix.
-Both desktop and mobile must PASS under unchanged performance budgets before final acceptance may be nominated.
+Historical failures remain immutable evidence; no performance, authority, Evidence, privacy or model-quality threshold is weakened.
