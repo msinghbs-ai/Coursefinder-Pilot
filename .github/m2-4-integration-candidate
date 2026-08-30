@@ -1,52 +1,48 @@
-M2.4.4 Cross-layer Operations, Housekeeping, Scheduling & Pre-blackout Acceptance — bounded integration candidate.
+M2.4.4 Cross-layer Operations, Housekeeping, Scheduling & Pre-blackout Acceptance — REPLACEMENT bounded integration candidate.
 
 Nominated: 30 August 2026.
 
-Exact implementation source before marker:
-- 7ef74a0b787e50e46d4cf11300a0e27391f13e54
-- initial M2.4.4 Layer 1 corrective source 29cffeb1ad3824f7569d4b597e0103e3c880bb8a
+Exact corrective source before marker:
+- 8494293f118bb9f8f3a5884ca4bde1a3331831f1
+- implementation source before first marker 7ef74a0b787e50e46d4cf11300a0e27391f13e54
 
 Governance:
 - CF-CHG-20260830-048 remains ACTIVE.
-- M2.4.3 / CF-CHG-20260829-047 remains CLOSED / PASS.
+- first bounded integration candidate 55f867bc371fb961f38631129e746fad9d9ec00b / run 33299250997 remains immutable FAIL evidence.
+- M2.4.3 remains CLOSED / PASS.
 - A15 remains CLOSED / PASS and frozen.
 - no Production, broad Publication, Website or Zoho cutover is authorised.
 - RMIT frozen 212-record promotion remains blocked.
 - NZ first-party Layer 2 Course enrichment remains deferred.
 
-Runtime migrations:
+First bounded integration failure:
+- desktop 44 passed / 2 failed after retry;
+- M2.4.4 checked-in source-contract assertion incorrectly expected an unescaped SQL substring;
+- inherited Course interaction performance test exceeded unchanged 3,000 ms budget at 3,313 ms and 3,962 ms;
+- mobile was skipped after desktop failure.
+
+Corrective action:
+- corrected only tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs to assert the stable layer3_ops_alerts contract token;
+- no runtime, authority, Security, Evidence, Course-path or performance threshold change;
+- targeted deployed UAT run 33300234103 PASS.
+
+Runtime migrations remain:
 - deployed history 20260830021159_m2_4_4_layer1_legacy_stale_job_recovery
 - repository mirror 20260830021400_m2_4_4_layer1_legacy_stale_job_recovery.sql
 - 20260830071523_m2_4_4_layer3_operational_alerts
 - 20260830072215_m2_4_4_layer3_alert_admin_read_bridge
 
-Reconciled operations:
-- Layer 1 legacy regulatory stale recovery: 45-minute age with live 30-minute L1 heartbeat exclusion.
-- Layer 2 provider attempt/orphan Job/managed-batch recovery remains provider/policy bounded.
-- Layer 3 stale reserved/calling recovery remains 20 minutes with retained history.
-- general/L1/L2 schedulers dedupe active governed targets.
-- no queued/running L1-L3 refresh duplication at checkpoint.
-- historical blocked L3 and Layer 4 human-resolution work retained.
-- governed Evidence/history not deleted by cross-layer recovery.
-
-Alerts and telemetry:
-- L1 and L2 accepted alert surfaces retained.
-- rank-4+ Layer 3 operational alerts now route through governed admin_read layer3_ops_alerts.
-- current L3 alert conditions: 0.
-- A14 active L2/L3 telemetry retained; unavailable usage is not invented.
-- Evidence footprint observation: 6,248 objects / 3,781,700,044 bytes; no artificial storage threshold introduced.
-
-Validation before nomination:
-- all seven operational cron jobs latest-success.
-- Security Advisor 135 INFO / 0 WARN / 0 ERROR.
+Operational reconciliation remains:
+- Layer 1 45-minute legacy recovery with live heartbeat exclusion;
+- Layer 2 provider/orphan/batch policy-bounded recovery;
+- Layer 3 20-minute stale reserved/calling recovery;
+- no active L1-L3 refresh duplication;
+- governed Evidence/history preserved;
+- current L3 alert conditions 0;
+- A14 telemetry retained;
+- all seven operational cron jobs latest-success;
+- Security Advisor 135 INFO / 0 WARN / 0 ERROR;
 - Performance Advisor 169 INFO / 0 WARN / 0 ERROR.
-- permanent tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs added.
-- deployed UAT integration and acceptance tiers include the permanent M2.4.4 suite.
 
-Documentation:
-- Operations Runbook v1.8
-- Data Operations Admin Guide v1.6
-- PIM Admin Guide v1.22
-
-This marker triggers the single M2.4.4 bounded integration desktop/mobile matrix.
-Both desktop and mobile must PASS before one final pre-blackout acceptance candidate may be nominated.
+This marker triggers one replacement M2.4.4 bounded integration desktop/mobile matrix.
+Both desktop and mobile must PASS under unchanged performance budgets before final acceptance may be nominated.
