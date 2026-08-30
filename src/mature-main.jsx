@@ -34,7 +34,7 @@ const NAV=[
     item('Completeness',CheckCircle2,1),item('Evidence',BookOpen,3),item('Review Queue',ListChecks,3),
   ]],
   ['Operations',[
-    item('Jobs',Workflow,4),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),
+    item('Layer 3 AI',Sparkles,3),item('Layer 4 Review',ListChecks,3),item('Important Links',ExternalLink,3),item('Important Dates',Clock3,3),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3),item('Jobs',Workflow,4),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),
   ]],
 ]
 
@@ -49,6 +49,12 @@ const PAGE_META={
   Completeness:['Completeness & readiness','Operational presence signals; not truth, approval or Search admission.'],
   Evidence:['Evidence & provenance','Source snapshots, evidence artifacts and canonical consequences.'],
   'Review Queue':['Review Queue','Human-resolution workload and exception state.'],
+  'Layer 3 AI':['Layer 3 AI','Evidence-bound AI interpretation, qualified model state and recent outcomes.'],
+  'Layer 4 Review':['Layer 4 Review','Human resolution queue, audited decisions and intervention state.'],
+  'Important Links':['Important Links','Governed operational and authority link registry.'],
+  'Important Dates':['Important Dates','Sourced regulatory and operational dates.'],
+  'Refresh & Scheduling':['Refresh & Scheduling','Targeted refresh policies, queues and downstream signals.'],
+  Onboarding:['Onboarding','Governed source/country onboarding lifecycle.'],
   Jobs:['Jobs','Pipeline execution history and operational status.'],
   Sources:['Sources','Governed regulatory and enrichment source inventory.'],
   Attributes:['PIM Configuration','Attribute families, groups, options and completeness profiles.'],
@@ -108,11 +114,17 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Providers')return <Catalogue type="provider" onError={onError} navigate={navigate} initialId={focusId}/>
   if(page==='Courses')return <Catalogue type="course" onError={onError} navigate={navigate} initialId={focusId}/>
   if(page==='Campuses')return <Catalogue type="campus" onError={onError} navigate={navigate} initialId={focusId}/>
-  if(page==='Scholarships')return <Catalogue type="scholarship" onError={onError} navigate={navigate} initialId={focusId}/>
+  if(page==='Scholarships')return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
   if(page==='Completeness')return <Completeness onError={onError} navigate={navigate}/>
   if(page==='Outcomes (QILT)')return <Qilt onError={onError}/>
   if(page==='Student Flow (PRISMS)')return <Prisms onError={onError}/>
   if(page==='Evidence'&&rank>=3)return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
+  if(page==='Layer 3 AI'&&rank>=3)return <OpsOverlayLauncher tab="Layer 3"/>
+  if(page==='Layer 4 Review'&&rank>=3)return <OpsOverlayLauncher tab="Layer 4"/>
+  if(page==='Important Links'&&rank>=3)return <OpsOverlayLauncher tab="Important Links"/>
+  if(page==='Important Dates'&&rank>=3)return <OpsOverlayLauncher tab="Important Dates"/>
+  if(page==='Refresh & Scheduling'&&rank>=3)return <OpsOverlayLauncher tab="Refresh"/>
+  if(page==='Onboarding'&&rank>=3)return <OpsOverlayLauncher tab="Onboarding"/>
   if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
   if(page==='Jobs'&&rank>=4)return <OperationalList operation="jobs" title="Pipeline jobs" onError={onError}/>
   if(page==='Sources'&&rank>=4)return <OperationalList operation="sources" title="Governed sources" onError={onError}/>
