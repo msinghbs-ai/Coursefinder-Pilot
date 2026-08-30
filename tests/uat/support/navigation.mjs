@@ -3,27 +3,20 @@ import { clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT } from './runtime-evidence.mj
 
 const ui = { timeout: DETERMINISTIC_UI_TIMEOUT }
 
-async function openM23(page, navLabel, tabLabel) {
-  await clickPrimaryNav(page, navLabel)
-  const dialog = page.getByRole('dialog', { name: 'M2.3 Intelligence' })
-  await expect(dialog).toBeVisible(ui)
-  await expect(dialog.getByRole('button', { name: tabLabel, exact: true })).toHaveClass(/active/, ui)
-  return dialog
-}
-
 export async function openLayer1(page) {
-  await clickPrimaryNav(page, 'Layer 1 — Regulatory')
-  const dialog = page.getByRole('dialog', { name: 'Layer 1 — Regulatory' })
-  await expect(dialog).toBeVisible(ui)
-  await expect(dialog.getByRole('heading', { name: 'Layer 1 — Regulatory' })).toBeVisible(ui)
-  return dialog
+  await clickPrimaryNav(page, 'Layer 1 — Authority')
+  const workspace = page.locator('.l1o-page .l1o-shell')
+  await expect(workspace).toBeVisible(ui)
+  await expect(workspace.getByRole('heading', { name: 'Layer 1 — Regulatory' })).toBeVisible(ui)
+  return workspace
 }
 
 export async function openLayer2(page) {
   await clickPrimaryNav(page, 'Layer 2 — Enrichment')
-  const dialog = page.getByRole('dialog', { name: 'Layer 2 Operations' })
-  await expect(dialog).toBeVisible(ui)
-  return dialog
+  const workspace = page.locator('.l2o-shell')
+  await expect(workspace).toBeVisible(ui)
+  await expect(workspace.getByRole('heading', { name: 'Layer 2 — Enrichment' })).toBeVisible(ui)
+  return workspace
 }
 
 export async function openLayer2Advanced(page) {
@@ -51,15 +44,21 @@ export async function openLayer2Trials(page) {
 }
 
 export async function openLayer3(page) {
-  return openM23(page, 'Layer 3 — AI Interpretation', 'Layer 3')
+  await clickPrimaryNav(page, 'Layer 3 — AI Interpretation')
+  const workspace = page.locator('.m23-stack').first()
+  await expect(workspace.getByRole('heading', { name: 'Layer 3 status' })).toBeVisible(ui)
+  return workspace
 }
 
 export async function openLayer4(page) {
-  return openM23(page, 'Layer 4 — Human Resolution', 'Layer 4')
+  await clickPrimaryNav(page, 'Layer 4 — Human Resolution')
+  const workspace = page.locator('.m23-stack').first()
+  await expect(workspace.getByRole('heading', { name: 'Layer 4 status' })).toBeVisible(ui)
+  return workspace
 }
 
 export async function openEvidence(page) {
-  await clickPrimaryNav(page, 'Evidence & Provenance')
+  await clickPrimaryNav(page, 'Evidence')
   await expect(page.locator('.m-title-wrap h1')).toContainText(/Evidence/i, ui)
 }
 
