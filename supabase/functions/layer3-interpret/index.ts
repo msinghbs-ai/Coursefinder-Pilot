@@ -43,6 +43,26 @@ function validateCandidate(taskClass: string, result: any, validators: any) {
       if (typeof candidate !== "string" || !/^https?:\/\/\S+$/i.test(candidate)) errors.push("candidate must be an http/https URL");
     } else if (taskClass === "duration") {
       if (!candidate || typeof candidate !== "object" || !(Number(candidate.value) > 0) || typeof candidate.unit !== "string" || !candidate.unit.trim()) errors.push("duration requires positive value and unit");
+    } else if (taskClass === "international_contact") {
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) errors.push("international contact candidate must be an object or null");
+      else {
+        const disposition = String(candidate.disposition || "");
+        if (!["published_contact_found","not_publicly_published","not_found_in_qualified_evidence"].includes(disposition)) errors.push("invalid international contact disposition");
+        for (const key of ["international_students_url","contact_team_url"]) {
+          const value = candidate[key];
+          if (value != null && (typeof value !== "string" || !/^https?:\/\/\S+$/i.test(value))) errors.push(`${key} must be an http/https URL or null`);
+        }
+        if (candidate.general_email != null && (typeof candidate.general_email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate.general_email))) errors.push("general_email must be an institutional email or null");
+        if (!Array.isArray(candidate.contacts)) errors.push("contacts must be an array");
+        else if (candidate.contacts.length > Number(validators?.max_contacts ?? 12)) errors.push("too many contacts");
+        else for (const contact of candidate.contacts) {
+          if (!contact || typeof contact !== "object" || Array.isArray(contact)) { errors.push("invalid contact object"); continue; }
+          if (contact.email != null && (typeof contact.email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email))) errors.push("invalid contact email");
+          if (contact.source_url != null && (typeof contact.source_url !== "string" || !/^https?:\/\/\S+$/i.test(contact.source_url))) errors.push("invalid contact source_url");
+          if (contact.territory != null && typeof contact.territory !== "string") errors.push("invalid contact territory");
+        }
+        if (disposition !== "published_contact_found" && Array.isArray(candidate.contacts) && candidate.contacts.length) errors.push("non-found disposition cannot include contacts");
+      }
     } else errors.push("unsupported task class");
   }
   return { valid: errors.length === 0, errors, confidence: Number.isFinite(confidence) ? confidence : null };
@@ -138,7 +158,9 @@ Deno.serve(async (req: Request) => {
       `Entity type: ${entityType}`,
       `Governed evidence source: ${ev.source_url || "retained evidence"}`,
       "Return exactly one JSON object with keys candidate_value, confidence, rationale, evidence_quotes.",
-      "Use null candidate_value if the evidence does not support a reliable candidate. Do not infer regulatory identity.",
+      taskClass === "international_contact"
+        ? "For international_contact, candidate_value must be an object with disposition, international_students_url, contact_team_url, general_email and contacts. Use only contact details explicitly present in the supplied first-party Evidence. If no qualifying contact is published, return an explicit not_publicly_published or not_found_in_qualified_evidence disposition. Never manufacture a person, email, phone, territory or URL."
+        : "Use null candidate_value if the evidence does not support a reliable candidate. Do not infer regulatory identity.",
       `Evidence:\n${evidenceText}`,
     ].join("\n\n");
     const promptHash = await sha256Hex(prompt);
@@ -157,7 +179,7 @@ Deno.serve(async (req: Request) => {
       cost_ceiling_usd: profile.cost_ceiling_usd,
       response_format: "json_object",
       temperature: 0,
-      prompt_contract_version: "m2.4.3-evidence-interpretation-v1",
+      prompt_contract_version: taskClass === "international_contact" ? "m2.4.4-a16-contact-interpretation-v1" : "m2.4.3-evidence-interpretation-v1",
       evidence_id: ev.id,
       evidence_hash: ev.content_hash,
       evidence_source_url: ev.source_url || null,
