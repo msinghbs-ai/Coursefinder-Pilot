@@ -13,23 +13,7 @@ const root=host?createRoot(host):null
 function isActive(){return location.hash===ROUTE||location.hash.startsWith(`${ROUTE}?`)}
 function goAdmin(hash='#dashboard'){location.hash=hash}
 
-function ensureNav(rank){
-  document.querySelectorAll(`.${NAV_CLASS}`).forEach(el=>{if(rank<6)el.remove()})
-  if(rank<6)return
-  const groups=[...document.querySelectorAll('.m-nav-group')]
-  const operations=groups.find(group=>group.querySelector('.m-nav-label')?.textContent?.trim()==='Operations')
-  if(!operations)return
-  let button=operations.querySelector(`.${NAV_CLASS}`)
-  if(!button){
-    button=document.createElement('button')
-    button.type='button'
-    button.className=`m-nav-item ${NAV_CLASS}`
-    button.innerHTML='<span class="access-admin-nav-icon">◎</span><span>Users & Roles</span>'
-    button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();location.hash=ROUTE})
-    operations.appendChild(button)
-  }
-  button.classList.toggle('active',isActive())
-}
+function ensureNav(){document.querySelectorAll(`.${NAV_CLASS}`).forEach(el=>el.remove())}
 
 function AccessBootstrap(){
   const[session,setSession]=useState(null),[context,setContext]=useState(null),[ready,setReady]=useState(false),[routeTick,setRouteTick]=useState(0)
