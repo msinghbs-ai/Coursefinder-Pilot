@@ -22,7 +22,7 @@ function parseJsonContent(content: unknown): unknown {
   return JSON.parse(cleaned);
 }
 
-function validateCandidate(taskClass: string, result: any, validators: any) {
+function validateCandidate(taskClass: string, result: any, validators: any, evidenceText = "", sourceUrl = "") {
   const errors: string[] = [];
   if (!result || typeof result !== "object" || Array.isArray(result)) errors.push("result must be an object");
   const confidence = Number(result?.confidence);
@@ -61,7 +61,14 @@ function validateCandidate(taskClass: string, result: any, validators: any) {
           if (contact.source_url != null && (typeof contact.source_url !== "string" || !/^https?:\/\/\S+$/i.test(contact.source_url))) errors.push("invalid contact source_url");
           if (contact.territory != null && typeof contact.territory !== "string") errors.push("invalid contact territory");
         }
-        if (disposition !== "published_contact_found" && Array.isArray(candidate.contacts) && candidate.contacts.length) errors.push("non-found disposition cannot include contacts");
+        if (disposition !== "published_contact_found" && ((Array.isArray(candidate.contacts) && candidate.contacts.length) || candidate.general_email)) errors.push("non-found disposition cannot include published contact values");
+        const haystack = evidenceText.toLowerCase();
+        const occurs = (v: unknown) => v == null || v === "" || haystack.includes(String(v).trim().toLowerCase());
+        for (const key of ["general_email"] as const) if (!occurs(candidate[key])) errors.push(`${key} not present in governed Evidence`);
+        for (const contact of Array.isArray(candidate.contacts) ? candidate.contacts : []) for (const key of ["name","title","email","phone","territory"] as const) if (!occurs(contact?.[key])) errors.push(`contact ${key} not present in governed Evidence`);
+        for (const key of ["international_students_url","contact_team_url"] as const) {
+          const v = candidate[key]; if (v != null && v !== sourceUrl && !occurs(v)) errors.push(`${key} not present in governed Evidence`);
+        }
       }
     } else errors.push("unsupported task class");
   }
@@ -218,7 +225,11 @@ Deno.serve(async (req: Request) => {
       return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validatorResult }, 422);
     }
 
-    const validation = validateCandidate(taskClass, parsed, profile.validators || {});
+    if (taskClass === "international_contact" && parsed?.candidate_value && typeof parsed.candidate_value === "object") {
+      const hasPublished = Boolean(parsed.candidate_value.general_email) || (Array.isArray(parsed.candidate_value.contacts) && parsed.candidate_value.contacts.length > 0);
+      parsed.candidate_value.disposition = hasPublished ? "published_contact_found" : (parsed.candidate_value.disposition === "not_publicly_published" ? "not_publicly_published" : "not_found_in_qualified_evidence");
+    }
+    const validation = validateCandidate(taskClass, parsed, profile.validators || {}, evidenceText, ev.source_url || "");
     const cost = totalCostUsd;
     if (Number(profile.cost_ceiling_usd) >= 0 && cost > Number(profile.cost_ceiling_usd)) {
       validation.valid = false;
