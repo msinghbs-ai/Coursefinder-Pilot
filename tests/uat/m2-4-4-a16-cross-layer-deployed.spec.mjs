@@ -62,6 +62,13 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     expect(l4ui).toContain('Effective:')
     expect(l4ui).toContain('Mark publishable')
     expect(l4ui).toContain('does not authorise Production, Website or Zoho cutover')
+    const rpcBoundary=await fs.readFile('supabase/migrations/20260830112408_m2_4_4_a16_rpc_security_invoker_boundary.sql','utf8')
+    expect(rpcBoundary).toContain('create schema if not exists l4_api')
+    expect(rpcBoundary).toContain('security invoker')
+    expect(rpcBoundary).toContain('revoke all on schema l4_api from public,anon,authenticated')
+    expect(rpcBoundary).toContain('curator role required')
+    expect(rpcBoundary).toContain('PIM Admin role required for publication override')
+    expect(rpcBoundary).toMatch(/revoke all on function public\.layer4_override_apply[\s\S]*from public,anon/i)
   })
 
   test('Provider blade shows explicit A16 disposition and Layer 4 intervention surface',async({page},testInfo)=>{
@@ -73,9 +80,10 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
       await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.getByRole('heading',{name:'International contacts',exact:true})).toBeVisible()
       await expect(drawer.getByText(/Published Contact Found/i)).toBeVisible()
-      await expect(drawer.getByRole('heading',{name:'Layer 4 governed intervention',exact:true})).toBeVisible()
-      await expect(drawer.getByText('Underlying:',{exact:false}).first()).toBeVisible()
-      await expect(drawer.getByText('Effective:',{exact:false}).first()).toBeVisible()
+      const providerL4=drawer.locator('section.cf-layer4-override:visible').first()
+      await expect(providerL4.getByRole('heading',{name:'Layer 4 governed intervention',exact:true})).toBeVisible()
+      await expect(providerL4.getByText('Underlying:',{exact:false}).first()).toBeVisible()
+      await expect(providerL4.getByText('Effective:',{exact:false}).first()).toBeVisible()
       await expect(drawer.getByText('Layer 4 resolve',{exact:true}).first()).toBeVisible()
       await milestoneScreenshot(page,testInfo,'a16-provider-contact-l4')
     }finally{await finish(testInfo,runtime)}
