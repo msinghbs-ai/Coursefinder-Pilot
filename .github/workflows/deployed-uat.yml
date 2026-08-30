@@ -133,6 +133,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_4_4_|^tests/uat/m2-4-4-cross-layer-operations-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Intervention\.jsx|mature-main\.jsx)$|^supabase/functions/layer3-(interpret|contact-benchmark)/|^supabase/migrations/.*a16_|^tests/uat/m2-4-4-a16-cross-layer-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -145,6 +148,7 @@ jobs:
             tests/uat/m2-3-intelligence-deployed.spec.mjs
             tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs
             tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs
+            tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
             tests/uat/a12-contextual-insights-deployed.spec.mjs
@@ -165,6 +169,7 @@ jobs:
             tests/uat/layer3-provider-credential-deployed.spec.mjs
             tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs
             tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs
+            tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
             tests/uat/scholarship-selection-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
