@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import {createClient} from "npm:@supabase/supabase-js@2";
 
-const FN="layer3-contact-benchmark",VERSION="layer3-contact-benchmark-v1.0.0";
+const FN="layer3-contact-benchmark",VERSION="layer3-contact-benchmark-v1.1.0";
 const J=(s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:any)=>String(v??"").replace(/\s+/g," ").trim();
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw new Error(`${n}: ${error.message}`);return data}
@@ -15,6 +15,7 @@ function validate(result:any,text:string,sourceUrl:string,expectFound:boolean){
  if(typeof result?.rationale!=="string"||!result.rationale.trim())errors.push("rationale_required");
  if(!Array.isArray(result?.evidence_quotes))errors.push("evidence_quotes_required");
  if(!cv||typeof cv!=="object"||Array.isArray(cv))errors.push("candidate_object_required");
+ if(cv&&typeof cv==="object"&&!Array.isArray(cv)){const hasPublished=Boolean(cv.general_email)||(Array.isArray(cv.contacts)&&cv.contacts.length>0);cv.disposition=hasPublished?"published_contact_found":(cv.disposition==="not_publicly_published"?"not_publicly_published":"not_found_in_qualified_evidence")}
  const disposition=String(cv?.disposition||"");
  if(!["published_contact_found","not_publicly_published","not_found_in_qualified_evidence"].includes(disposition))errors.push("disposition_invalid");
  const contacts=Array.isArray(cv?.contacts)?cv.contacts:[];
@@ -35,7 +36,7 @@ async function callModel(profile:any,key:string,name:string,sourceUrl:string,tex
   "Return exactly one JSON object with candidate_value, confidence, rationale, evidence_quotes.",
   "candidate_value must contain disposition, international_students_url, contact_team_url, general_email, contacts.",
   "contacts is an array of objects with name,title,email,phone,territory,source_url; use null for absent scalar values.",
-  "Every emitted person, title, email, phone, territory and URL must be explicitly present in Evidence. Never infer or manufacture.",
+  "Every emitted person, title, email, phone, territory and URL must be explicitly present in Evidence. Never infer or manufacture. If any general_email or contact is emitted, disposition MUST be published_contact_found.",
   expectFound?"This case contains a qualifying published international contact.":"This is a no-contact control. Do not emit any contact or email.",
   "Evidence:",text
  ].join("\n\n");
