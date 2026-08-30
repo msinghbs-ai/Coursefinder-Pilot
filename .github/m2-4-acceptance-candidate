@@ -1,56 +1,68 @@
-M2.4.3 A15 FINAL ACCEPTANCE candidate — post-freeze contact intelligence closure gate.
+M2.4.3 Layer 3 AI Operations Maturity — FINAL ACCEPTANCE candidate.
 
-Frozen functional A15 source:
-- f9e4e530462b49cf5a83ad8e0d5137631255028a
+Nominated: 30 August 2026.
 
-Current accepted integration source before this marker:
-- 70bd290154b7d5f16d8f04569b90b6074a239611
+Accepted source before marker:
+- ea6077e8e443a4a43adbf9f3285dac3dd3e631fd
+- PIM Admin v2.15.11
 
-Permanent A15 acceptance-suite contract:
-- b0b00f3f26d1e07bc1adc69061b3b16f9125c565
-- A15 contact intelligence is included in targeted, bounded integration and final acceptance tiers.
+Governance:
+- CF-CHG-20260829-047
+- A15 / CF-CHG-20260829-046 remains CLOSED / PASS and frozen.
+- M2.4.4 remains unauthorised until this acceptance is terminal PASS and M2.4.3 closure reconciliation is committed.
 
-Frozen first-party rollout baseline:
-- 52/52 AU profiles successful
-- 8/8 NZ profiles successful
-- 60/60 total successful
-- 0 current profile errors
-- 31 current first-party contacts across 11 Providers
-- 17 current territory/market-assigned contacts
-- 45 rejected/noisy historical observations retained
-- provider-contact-discover-scheduled v1.3.2 / deployed Edge v15
-- Apollo remains configuration-blocked/non-blocking; personal email/phone reveal disabled
+Final bounded integration evidence:
+- run 33276423521
+- resolved tier: integration
+- 15 permanent suites
+- chromium-desktop: 45/45 PASS
+- chromium-mobile: 45/45 PASS
+- frontend build 33276423532 PASS
 
-Accepted contact-quality reconciliation:
-- Victoria University: preferred source-backed email/phone observations retained; lower-quality phone-only parser duplicates rejected.
-- Otago: team-level International Marketing and Recruitment contact retained; parser-invented person/territory semantics removed.
-- Wellington: accepted International Student Experience team contact restored after transport proof.
-- Rejected history is preserved; future refresh must not manufacture unsupported person/territory semantics.
+Model-quality authority:
+- source-pattern benchmark 089befcf-a2f2-42ec-ad03-7bfe02816e1b
+- 4/4 governed real-provider cases PASS
+- 3/3 controls PASS
+- exact pinned model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+- 8 actual calls; one malformed-output retry recovered
+- 4454 input / 832 output tokens
+- estimated provider cost USD 0
+- acceptance threshold not lowered
 
-Post-freeze transport/Evidence hardening:
-- Direct HTTP -> governed Firecrawl fallback remains separate and observable.
-- Layer 1 Provider/Course canonical identity is unchanged by transport corrections.
-- provider-attempt Evidence lookup indexes added.
-- security.admin_evidence_has_extraction simplified to semantically equivalent governed count fast-path.
-- no Evidence output, authority, retry, UAT or access-control semantics weakened.
-- unrecovered browser HTTP 5xx remains a hard UAT failure.
+Final Layer 3 operating contract:
+- deterministic governed Layer 2 Evidence selection
+- screenshot Evidence excluded from AI text input
+- enabled/unpaused/benchmark-passed profile enforcement
+- complete profile/prompt/model/version provenance, including immutable effective profile snapshot and SHA-256 prompt provenance
+- zero-call paths for resolved Layer 2, unchanged Evidence and in-flight duplicate work
+- governed revalidation/replay
+- bounded retry with attempt-level telemetry
+- explicit qualified fallback only when configured
+- A14 calls/tokens/latency/cost/outcome telemetry
+- confidence fall-out and no-candidate routing to Layer 4
+- entity/task/profile concurrency serialization
+- stale execution recovery/housekeeping without history deletion
+- operator Evidence → model/profile → result/confidence/provenance → human-review state
+- no direct Layer 1/Layer 2 canonical mutation
+- no Search/Publication/Zoho admission
+- secrets and private Evidence remain governed
 
-Validation evidence before final acceptance:
-- targeted A15 PASS: run 33229889360 on frozen functional source.
-- post-hardening targeted PASS: run 33240688558.
-- bounded integration PASS: run 33240736705 — chromium-desktop PASS / chromium-mobile PASS.
-- Security Advisor: 135 INFO / 0 WARN / 0 ERROR.
-- Performance Advisor: 170 INFO / 0 WARN / 0 ERROR.
+Final migration ledger:
+- 20260829125553 m2_4_3_layer3_operations_maturity_foundation
+- 20260829125717 m2_4_3_source_pattern_benchmark_provenance
+- 20260829130640 m2_4_3_layer3_concurrency_recovery_housekeeping
+- 20260829212940 m2_4_3_evidence_verification_lookup_hardening
+- 20260829213038 m2_4_3_prompt_profile_provenance
 
-Authority boundaries unchanged:
-- Layer 1 Provider/Course identity unchanged.
-- Evidence remains private/governed.
-- Search mutation unauthorised.
-- Publication mutation unauthorised.
-- LinkedIn HTML scraping unauthorised.
-- first-party university contact observations remain preferred over licensed enrichment.
-- broad cohort rerun solely to increase contact count is unauthorised.
+Relevant runtime:
+- layer3-interpret Edge v5 / JWT enforced
+- layer3-provider-control Edge v2 / JWT enforced
+- layer3-source-pattern-benchmark Edge v9 / one-time nonce governed
+- current Security Advisor: no findings returned
+- current Performance Advisor: no findings returned
 
-This marker nominates the exact post-hardening A15 lineage for final deployed acceptance.
-If final acceptance desktop and mobile both PASS, A15/CF-CHG-20260829-046 may proceed to closure reconciliation.
-If either fails, A15 remains ACTIVE/BLOCKED at final acceptance and the failure must remain immutable evidence.
+Historical failed bounded candidates remain immutable evidence:
+- b6318bdc... / 33254320472 — stale assertion contract drift
+- af6fc6ad... / 33275837942 — inherited Data Quality Evidence runtime 5xx
+
+This marker triggers the one final deployed acceptance desktop/mobile matrix. M2.4.3 may CLOSE / PASS only if both are terminal PASS and repository/runtime/advisor/documentation reconciliation remains clean.
