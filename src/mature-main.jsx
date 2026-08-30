@@ -34,7 +34,10 @@ const NAV=[
     item('Completeness',CheckCircle2,1),item('Evidence',BookOpen,3),item('Review Queue',ListChecks,3),
   ]],
   ['Operations',[
-    item('Layer 3 AI',Sparkles,3),item('Layer 4 Review',ListChecks,3),item('Important Links',ExternalLink,3),item('Important Dates',Clock3,3),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3),item('Jobs',Workflow,4),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),
+    item('Layer 3 AI',Sparkles,3),item('Layer 4 Review',ListChecks,3),item('Important Links',ExternalLink,3),item('Important Dates',Clock3,3),item('Jobs',Workflow,4),
+  ]],
+  ['Administration',[
+    item('Administration',Settings2,4),
   ]],
 ]
 
@@ -53,6 +56,7 @@ const PAGE_META={
   'Layer 4 Review':['Layer 4 Review','Human resolution queue, audited decisions and intervention state.'],
   'Important Links':['Important Links','Governed operational and authority link registry.'],
   'Important Dates':['Important Dates','Sourced regulatory and operational dates.'],
+  Administration:['Administration','Central PIM, source, scheduling, acquisition and platform configuration.'],
   'Refresh & Scheduling':['Refresh & Scheduling','Targeted refresh policies, queues and downstream signals.'],
   Onboarding:['Onboarding','Governed source/country onboarding lifecycle.'],
   Jobs:['Jobs','Pipeline execution history and operational status.'],
@@ -63,7 +67,8 @@ const PAGE_META={
 
 function item(label,Icon,min){return{label,Icon,min,slug:slug(label)}}
 function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
-function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
+const HIDDEN_ROUTES=[item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
+function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
 function App(){
   const[session,setSession]=useState(null),[booting,setBooting]=useState(true),[context,setContext]=useState(null)
@@ -123,6 +128,7 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Layer 4 Review'&&rank>=3)return <OpsOverlayLauncher tab="Layer 4"/>
   if(page==='Important Links'&&rank>=3)return <OpsOverlayLauncher tab="Important Links"/>
   if(page==='Important Dates'&&rank>=3)return <OpsOverlayLauncher tab="Important Dates"/>
+  if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} navigate={navigate}/>
   if(page==='Refresh & Scheduling'&&rank>=3)return <OpsOverlayLauncher tab="Refresh"/>
   if(page==='Onboarding'&&rank>=3)return <OpsOverlayLauncher tab="Onboarding"/>
   if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
@@ -133,6 +139,20 @@ function Page({page,routeParams,rank,onError,navigate}){
   return <EmptyState icon={AlertTriangle} title="Not authorised" text="Your assigned CourseFinder role does not permit this workspace."/>
 }
 
+
+function AdministrationHome({rank,navigate}){
+ const cards=[
+  ['Sources & onboarding','Governed source inventory, qualification and onboarding lifecycle.',Database,()=>navigate('Sources'),rank>=4],
+  ['PIM configuration','Attributes, groups, families, options and completeness profiles.',Tags,()=>navigate('Attributes'),rank>=5],
+  ['Scheduling','Refresh cadence, targeted scheduling and policy controls.',RefreshCw,()=>navigate('Refresh & Scheduling'),rank>=4],
+  ['Onboarding','Country / Provider / Course source onboarding and immutable history.',Workflow,()=>navigate('Onboarding'),rank>=4],
+  ['Acquisition & AI','Provider routes, scraper/API ceilings and model configuration live in their advanced configuration surfaces.',SlidersHorizontal,()=>window.dispatchEvent(new CustomEvent('coursefinder:m23-open',{detail:{tab:'Layer 3'}})),rank>=5],
+  ['Platform settings','Privileged Pilot/platform configuration and diagnostics.',Settings2,()=>navigate('Settings'),rank>=6],
+ ]
+ return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Settings2} title="Administration" subtitle="Central configuration. Daily catalogue and layer operations stay outside this workspace."/>
+  <div className="m-attention-grid">{cards.filter(x=>x[4]).map(([title,textValue,Icon,action])=><Attention key={title} tone="info" icon={Icon} title={title} text={textValue} action="Open" onClick={action}/>)}</div>
+ </section></div>
+}
 
 function OpsOverlayLauncher({tab}){
   useEffect(()=>{window.dispatchEvent(new CustomEvent('coursefinder:m23-open',{detail:{tab}}))},[tab])
