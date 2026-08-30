@@ -226,6 +226,22 @@ Deno.serve(async (req: Request) => {
     }
 
     if (taskClass === "international_contact" && parsed?.candidate_value && typeof parsed.candidate_value === "object") {
+      const haystack = evidenceText.toLowerCase();
+      const keepIfPresent = (v: unknown) => v == null || v === "" ? null : (haystack.includes(String(v).trim().toLowerCase()) ? v : null);
+      parsed.candidate_value.general_email = keepIfPresent(parsed.candidate_value.general_email);
+      if (Array.isArray(parsed.candidate_value.contacts)) parsed.candidate_value.contacts = parsed.candidate_value.contacts.map((contact: any) => ({
+        ...contact,
+        name: keepIfPresent(contact?.name),
+        title: keepIfPresent(contact?.title),
+        email: keepIfPresent(contact?.email),
+        phone: keepIfPresent(contact?.phone),
+        territory: keepIfPresent(contact?.territory),
+        source_url: contact?.source_url === (ev.source_url || "") || haystack.includes(String(contact?.source_url || "").trim().toLowerCase()) ? contact?.source_url : null,
+      })).filter((contact: any) => Boolean(contact.name || contact.email || contact.phone || contact.territory));
+      for (const key of ["international_students_url","contact_team_url"]) {
+        const value = parsed.candidate_value[key];
+        if (value != null && value !== (ev.source_url || "") && !haystack.includes(String(value).trim().toLowerCase())) parsed.candidate_value[key] = null;
+      }
       const hasPublished = Boolean(parsed.candidate_value.general_email) || (Array.isArray(parsed.candidate_value.contacts) && parsed.candidate_value.contacts.length > 0);
       parsed.candidate_value.disposition = hasPublished ? "published_contact_found" : (parsed.candidate_value.disposition === "not_publicly_published" ? "not_publicly_published" : "not_found_in_qualified_evidence");
     }
