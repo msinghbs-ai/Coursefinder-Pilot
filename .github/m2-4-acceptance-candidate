@@ -1,74 +1,57 @@
-M2.4.3 Layer 3 AI Operations Maturity — REPLACEMENT FINAL ACCEPTANCE candidate.
+M2.4.4 Cross-layer Operations, Housekeeping, Scheduling & Pre-blackout Acceptance — FINAL ACCEPTANCE candidate.
 
 Nominated: 30 August 2026.
 
-Exact accepted corrective lineage before marker:
-- d1d5f78ab3673696845fedc96c1f467bd27b3e71
-- corrective implementation source eaab5a7b6fc7bfaddb2b6863e23f5033184fa4b7
-- corrective migration 20260830011809_m2_4_3_acceptance_dashboard_timeout_hardening
-- PIM Admin v2.15.11
+Exact accepted lineage before marker:
+- replacement bounded integration candidate a256283bb5751dda727d8a6e4ae057abbffdcbbf
+- bounded integration run 33300281890
+- corrective source 8494293f118bb9f8f3a5884ca4bde1a3331831f1
+- targeted corrective run 33300234103 PASS
+- implementation source before first marker 7ef74a0b787e50e46d4cf11300a0e27391f13e54
 
 Governance:
-- CF-CHG-20260829-047 remains ACTIVE pending this gate.
-- M2.4.2 / CF-CHG-20260827-044 remains CLOSED / PASS.
-- A15 / CF-CHG-20260829-046 remains CLOSED / PASS and frozen.
-- M2.4.4 remains unauthorised until this final acceptance is terminal PASS and closure reconciliation is committed.
+- CF-CHG-20260830-048 remains ACTIVE pending this gate.
+- M2.4.3 remains CLOSED / PASS.
+- A15 remains CLOSED / PASS and frozen.
+- Production, broad Publication, Website and Zoho cutover remain unauthorised.
+- RMIT frozen 212-record canonical promotion remains BLOCKED unless separately authorised.
+- NZ first-party Layer 2 Course enrichment remains DEFERRED.
 
-Historical first final acceptance remains immutable failure evidence:
-- marker 3a8a31310ea7147016374d6c818d08034ba0be64
-- run 33284867253
-- desktop 50/50 PASS
-- mobile 48 PASS / 1 persistent inherited Layer 2 provider-acquisition failure
-- failure cause: admin_read(operation=dashboard) statement timeout
-- frontend build 33284867261 PASS
-- no Layer 3 threshold, Evidence authority, security or Layer 4 contract was weakened to correct it
+Historical integration evidence retained:
+- first bounded integration marker 55f867bc371fb961f38631129e746fad9d9ec00b
+- first bounded integration run 33299250997
+- desktop 44 passed / 2 failed after retry
+- mobile skipped after desktop failure
+- one M2.4.4 failure was a checked-in assertion defect and was corrected without runtime change
+- inherited Course interaction performance failure was retained under the unchanged 3,000 ms budget
+- replacement bounded integration run 33300281890 then PASSed on both desktop and mobile.
 
-Corrective validation:
-- deployed migration 20260830011809_m2_4_3_acceptance_dashboard_timeout_hardening
-- targeted deployed UAT 33285369673 PASS
-- frontend build/local smoke 33285369676 PASS
-- bounded integration marker d1d5f78ab3673696845fedc96c1f467bd27b3e71
-- bounded integration run 33285703513
-- chromium-desktop PASS
-- chromium-mobile PASS
+M2.4.4 runtime contract:
+- Layer 1 legacy regulatory_sync recovery only after >45 minutes and only when no live Layer 1 queue heartbeat exists within 30 minutes.
+- Layer 2 provider-attempt/orphan-job/managed-batch recovery remains policy bounded.
+- Layer 3 stale reserved/calling recovery remains 20 minutes with history retained.
+- no governed Evidence, source-version, canonical or interpretation history is deleted by housekeeping.
+- scheduler ownership and dedupe remain layer-specific with no duplicate active Layer 1–3 refresh work.
+- Layer 3 operational alerts are exposed through the governed admin_read boundary and retain authenticated rank enforcement.
+- no invented storage quota threshold; storage is observational until a governed capacity policy is approved.
+- A14 latency/provider/token/unit/cost/Evidence telemetry remains required where applicable.
 
-Model-quality authority:
-- source-pattern benchmark 089befcf-a2f2-42ec-ad03-7bfe02816e1b
-- 4/4 governed provider cases PASS
-- 3/3 controls PASS
-- exact pinned model nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
-- 8 actual calls; one malformed-output retry recovered
-- 4454 input / 832 output tokens
-- estimated provider cost USD 0
-- benchmark threshold not lowered
-- profile remains enabled and unpaused
-
-Runtime reconciliation immediately before nomination:
-- corrective migration present in deployed ledger
-- layer3-interpret Edge v5 / JWT enforced
-- layer3-provider-control Edge v2 / JWT enforced
-- layer3-source-pattern-benchmark Edge v9 / governed one-time nonce contract
-- Layer 3 housekeeping cron active every 15 minutes
+Migration/runtime reconciliation:
+- deployed 20260830021159_m2_4_4_layer1_legacy_stale_job_recovery
+- repository alias 20260830021400_m2_4_4_layer1_legacy_stale_job_recovery.sql
+- deployed 20260830071523_m2_4_4_layer3_operational_alerts
+- deployed 20260830072215_m2_4_4_layer3_alert_admin_read_bridge
+- all seven active operational cron jobs latest-success immediately before nomination
+- no active Layer 1–3 refresh requests
+- seven retained Layer 4 human-resolution requests remain queued
+- Layer 3 stale reserved/calling executions: 0
 - Security Advisor: 135 INFO / 0 WARN / 0 ERROR
 - Performance Advisor: 169 INFO / 0 WARN / 0 ERROR
 
-Final Layer 3 operating contract remains:
-- deterministic governed Layer 2 Evidence selection
-- screenshot Evidence excluded from AI text input
-- enabled/unpaused/benchmark-passed profile enforcement
-- immutable effective profile and prompt provenance
-- zero-call paths for resolved/unchanged/in-flight duplicate work
-- governed replay/revalidation
-- bounded retry with attempt-level A14 telemetry
-- qualified fallback only when configured
-- confidence/no-candidate fall-out to Layer 4
-- concurrency serialization and stale-execution recovery
-- no direct Layer 1/Layer 2 canonical mutation
-- no automatic Search/Publication/Website/Zoho admission
-- secrets/private Evidence remain governed
-- A15 first-party contact authority/privacy/quality boundaries preserved
-- RMIT frozen 212-record canonical promotion remains separately BLOCKED
-- NZ first-party Layer 2 Course enrichment remains DEFERRED
+Permanent validation:
+- tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs is included in integration and acceptance tiers.
+- acceptance retains existing Layer 1/2/3, A10, A12, A13, A15, performance, navigation, screen-state and other governed acceptance suites.
+- no performance threshold is lowered.
 
-This marker triggers the one replacement final deployed acceptance desktop/mobile matrix.
-M2.4.3 may CLOSE / PASS only if both platforms PASS and the final repository/runtime/advisor/documentation reconciliation remains clean.
+This marker triggers exactly one final M2.4.4 deployed acceptance desktop/mobile matrix.
+M2.4.4 and CF-CHG-20260830-048 may CLOSE / PASS only if both desktop and mobile PASS and final repository/runtime/advisor/documentation reconciliation remains clean.
