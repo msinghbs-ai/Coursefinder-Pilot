@@ -12,6 +12,9 @@ import EvidenceWorkspace from'./EvidenceWorkspace'
 import CourseDetailPolish from'./CourseDetailPolish'
 import ContextualInsights from'./ContextualInsights'
 import Layer4Intervention from'./Layer4Intervention'
+import{Layer1Operations}from'./layer1-operations-entry'
+import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
+import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLinksWorkspace,Dates as ImportantDatesWorkspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
 import'./styles.css'
 import'./mature.css'
 
@@ -34,7 +37,7 @@ const NAV=[
     item('Completeness',CheckCircle2,1),item('Evidence',BookOpen,3),item('Review Queue',ListChecks,3),
   ]],
   ['Operations',[
-    item('Layer 3 AI',Sparkles,3),item('Layer 4 Review',ListChecks,3),item('Important Links',ExternalLink,3),item('Important Dates',Clock3,3),item('Jobs',Workflow,4),
+    item('Layer 1 — Authority',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Important Links',ExternalLink,3),item('Important Dates',Clock3,3),item('Jobs',Workflow,4),
   ]],
   ['Administration',[
     item('Administration',Settings2,4),
@@ -52,8 +55,10 @@ const PAGE_META={
   Completeness:['Completeness & readiness','Operational presence signals; not truth, approval or Search admission.'],
   Evidence:['Evidence & provenance','Source snapshots, evidence artifacts and canonical consequences.'],
   'Review Queue':['Review Queue','Human-resolution workload and exception state.'],
-  'Layer 3 AI':['Layer 3 AI','Evidence-bound AI interpretation, qualified model state and recent outcomes.'],
-  'Layer 4 Review':['Layer 4 Review','Human resolution queue, audited decisions and intervention state.'],
+  'Layer 1 — Authority':['Layer 1 — Authority','Authoritative source health, regulatory ingestion progress, exceptions and controlled run actions.'],
+  'Layer 2 — Enrichment':['Layer 2 — Enrichment','Scoped enrichment waves, governed acquisition routes, Evidence and deterministic fall-out.'],
+  'Layer 3 — AI Interpretation':['Layer 3 — AI Interpretation','Evidence-bound AI interpretation, qualified route health, usage and recent outcomes.'],
+  'Layer 4 — Human Resolution':['Layer 4 — Human Resolution','Human resolution queue, effective-value decisions, audit and reversibility.'],
   'Important Links':['Important Links','Governed operational and authority link registry.'],
   'Important Dates':['Important Dates','Sourced regulatory and operational dates.'],
   Administration:['Administration','Central PIM, source, scheduling, acquisition and platform configuration.'],
@@ -124,13 +129,15 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Outcomes (QILT)')return <Qilt onError={onError}/>
   if(page==='Student Flow (PRISMS)')return <Prisms onError={onError}/>
   if(page==='Evidence'&&rank>=3)return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
-  if(page==='Layer 3 AI'&&rank>=3)return <OpsOverlayLauncher tab="Layer 3"/>
-  if(page==='Layer 4 Review'&&rank>=3)return <OpsOverlayLauncher tab="Layer 4"/>
-  if(page==='Important Links'&&rank>=3)return <OpsOverlayLauncher tab="Important Links"/>
-  if(page==='Important Dates'&&rank>=3)return <OpsOverlayLauncher tab="Important Dates"/>
+  if(page==='Layer 1 — Authority'&&rank>=4)return <Layer1Operations embedded/>
+  if(page==='Layer 2 — Enrichment'&&rank>=4)return <Layer2Workspace rank={rank} embedded/>
+  if(page==='Layer 3 — AI Interpretation'&&rank>=3)return <div className="m-page-stack"><Layer3Workspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
+  if(page==='Layer 4 — Human Resolution'&&rank>=3)return <div className="m-page-stack"><Layer4Workspace onError={e=>onError(e?.message||String(e))}/></div>
+  if(page==='Important Links'&&rank>=3)return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
+  if(page==='Important Dates'&&rank>=3)return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} navigate={navigate}/>
-  if(page==='Refresh & Scheduling'&&rank>=3)return <OpsOverlayLauncher tab="Refresh"/>
-  if(page==='Onboarding'&&rank>=3)return <OpsOverlayLauncher tab="Onboarding"/>
+  if(page==='Refresh & Scheduling'&&rank>=3)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
+  if(page==='Onboarding'&&rank>=3)return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
   if(page==='Jobs'&&rank>=4)return <OperationalList operation="jobs" title="Pipeline jobs" onError={onError}/>
   if(page==='Sources'&&rank>=4)return <OperationalList operation="sources" title="Governed sources" onError={onError}/>
@@ -146,7 +153,7 @@ function AdministrationHome({rank,navigate}){
   ['PIM configuration','Attributes, groups, families, options and completeness profiles.',Tags,()=>navigate('Attributes'),rank>=5],
   ['Scheduling','Refresh cadence, targeted scheduling and policy controls.',RefreshCw,()=>navigate('Refresh & Scheduling'),rank>=4],
   ['Onboarding','Country / Provider / Course source onboarding and immutable history.',Workflow,()=>navigate('Onboarding'),rank>=4],
-  ['Acquisition & AI','Provider routes, scraper/API ceilings and model configuration live in their advanced configuration surfaces.',SlidersHorizontal,()=>window.dispatchEvent(new CustomEvent('coursefinder:m23-open',{detail:{tab:'Layer 3'}})),rank>=5],
+  ['Acquisition & AI','Provider routes, scraper/API ceilings, credentials and model configuration are central administration concerns.',SlidersHorizontal,()=>navigate('Settings'),rank>=6],
   ['Platform settings','Privileged Pilot/platform configuration and diagnostics.',Settings2,()=>navigate('Settings'),rank>=6],
  ]
  return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Settings2} title="Administration" subtitle="Central configuration. Daily catalogue and layer operations stay outside this workspace."/>
