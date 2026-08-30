@@ -133,6 +133,26 @@ function Page({page,routeParams,rank,onError,navigate}){
   return <EmptyState icon={AlertTriangle} title="Not authorised" text="Your assigned CourseFinder role does not permit this workspace."/>
 }
 
+
+function OpsOverlayLauncher({tab}){
+  useEffect(()=>{window.dispatchEvent(new CustomEvent('coursefinder:m23-open',{detail:{tab}}))},[tab])
+  return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Workflow} title={tab} subtitle="This governed operational registry is now launched from primary navigation."/>
+    <button className="m-primary" onClick={()=>window.dispatchEvent(new CustomEvent('coursefinder:m23-open',{detail:{tab}}))}>Open {tab}</button>
+  </section></div>
+}
+
+function ScholarshipWorkspace({rank,onError,navigate,initialId}){return <div className="m-page-stack">{rank>=4&&<ScholarshipFillControl onError={onError}/>}<Catalogue type="scholarship" onError={onError} navigate={navigate} initialId={initialId}/></div>}
+
+function ScholarshipFillControl({onError}){
+ const[country,setCountry]=useState('AU'),[busy,setBusy]=useState(false),[result,setResult]=useState(null)
+ const run=async action=>{setBusy(true);try{const{data,error}=await supabase.functions.invoke('scholarship-course-fill-control',{body:{action,country_code:country}});if(error)throw error;if(data?.error)throw new Error(data.error);setResult(data)}catch(e){onError(e.message||String(e))}finally{setBusy(false)}}
+ return <section className="m-panel"><PanelTitle icon={Sparkles} title="Fill Course Scholarships" subtitle="Materialises only explicit Course/Provider Scholarship scopes. Provider ownership alone is review-only."/>
+  <div className="m-filter-bar"><label className="m-filter-select"><span>Country</span><select aria-label="Scholarship fill country" value={country} onChange={e=>setCountry(e.target.value)}><option value="AU">Australia</option><option value="NZ">New Zealand</option></select></label></div>
+  <div className="m-attention-grid"><Attention tone="info" icon={SearchCheck} title="Preview mapping" text="Count Courses, explicit deterministic mappings and review-only candidates." action="Preview" onClick={()=>run('preview')}/><Attention tone="success" icon={CheckCircle2} title="Fill mapped Scholarships" text="Idempotently writes only explicit include-scope mappings; no Course canonical fields or publication state are changed." action="Fill now" onClick={()=>run('fill')}/><Attention tone="warning" icon={ClipboardCheck} title="Queue unresolved" text="Provider-owned Scholarships without explicit Course/Provider scope are retained for review rather than inferred." action="Queue review" onClick={()=>run('queue_review')}/></div>
+  {busy&&<div className="m-empty-inline">Running governed Scholarship mapping…</div>}{result&&<div className="m-summary-strip"><SummaryCard icon={GraduationCap} label="Courses" value={fmtNumber(result.courses??result.deterministic_mappings??0)} tone="blue"/><SummaryCard icon={Sparkles} label="Deterministic mappings" value={fmtNumber(result.deterministic_mappings??result.written_or_refreshed??0)} tone="green"/><SummaryCard icon={ClipboardCheck} label="Review candidates" value={fmtNumber(result.provider_level_candidates??0)} tone="amber"/><div className="m-summary-note"><strong>{humanise(result.status||'preview ready')}</strong><span>{result.rule||'No Scholarship eligibility is manufactured.'}</span></div></div>}
+ </section>
+}
+
 function Dashboard({onError,navigate}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(true)
   const load=()=>{setBusy(true);adminRead('dashboard').then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
