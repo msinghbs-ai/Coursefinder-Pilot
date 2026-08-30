@@ -18,7 +18,7 @@ import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLin
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.12'
+const UI_VERSION='2.15.13'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
