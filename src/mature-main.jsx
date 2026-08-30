@@ -18,7 +18,7 @@ import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLin
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.13.0'
+const UI_VERSION='2.15.12'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -154,6 +154,7 @@ function AdministrationHome({rank,navigate}){
   ['Scheduling','Refresh cadence, targeted scheduling and policy controls.',RefreshCw,()=>navigate('Refresh & Scheduling'),rank>=4],
   ['Onboarding','Country / Provider / Course source onboarding and immutable history.',Workflow,()=>navigate('Onboarding'),rank>=4],
   ['Acquisition & AI','Provider routes, scraper/API ceilings, credentials and model configuration are central administration concerns.',SlidersHorizontal,()=>navigate('Settings'),rank>=6],
+  ['Users & roles','Privileged CourseFinder identity and role administration.',UsersRound,()=>{location.hash='#users-roles'},rank>=6],
   ['Platform settings','Privileged Pilot/platform configuration and diagnostics.',Settings2,()=>navigate('Settings'),rank>=6],
  ]
  return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Settings2} title="Administration" subtitle="Central configuration. Daily catalogue and layer operations stay outside this workspace."/>
