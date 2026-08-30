@@ -11,6 +11,7 @@ import {
 
 const UQ_ID='e55396d2-869a-46ef-9d17-841c7eab1313'
 const COURSE_ID='3ea5e651-dbcc-4ef4-8143-1de6900e012e'
+const SCHOLARSHIP_ID='8c42b7a0-0ccf-5b64-a4ec-ec7b97b8c761'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',()=>{
@@ -44,6 +45,12 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     expect(profile).toContain('pending_contact_specific_qualification')
     expect(benchmark).toContain('layer3-contact-benchmark')
     expect(benchmark).toContain('contact-specific quality gate')
+    const expansion=await fs.readFile('supabase/migrations/20260830111812_m2_4_4_a16_scholarship_contact_layer4_expansion.sql','utf8')
+    expect(expansion).toContain("('scholarship','name'")
+    expect(expansion).toContain("('provider_contact','full_name'")
+    expect(expansion).toContain("when 'scholarship' then exists")
+    expect(expansion).toContain("when 'provider_contact' then exists")
+    expect(expansion).toContain("layer4_effective_entity_read('provider_contact',o.id)")
     expect(retry).toContain('retry_ceiling=2')
     expect(interpret).toContain('international_contact')
     expect(interpret).toContain('not present in governed Evidence')
@@ -69,7 +76,21 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
       await expect(drawer.getByRole('heading',{name:'Layer 4 governed intervention',exact:true})).toBeVisible()
       await expect(drawer.getByText('Underlying:',{exact:false}).first()).toBeVisible()
       await expect(drawer.getByText('Effective:',{exact:false}).first()).toBeVisible()
+      await expect(drawer.getByText('Layer 4 resolve',{exact:true}).first()).toBeVisible()
       await milestoneScreenshot(page,testInfo,'a16-provider-contact-l4')
+    }finally{await finish(testInfo,runtime)}
+  })
+
+  test('Scholarship blade exposes the same governed Layer 4 overlay',async({page},testInfo)=>{
+    const runtime=observeRuntime(page)
+    try{
+      await loginAsUatUser(page)
+      await page.goto(`${process.env.UAT_BASE_URL}/#scholarships?id=${SCHOLARSHIP_ID}`)
+      const drawer=page.locator('aside.m-drawer-scholarship')
+      await expect(drawer).toBeVisible({timeout:45_000})
+      await expect(drawer.getByRole('heading',{name:'Layer 4 governed intervention',exact:true})).toBeVisible()
+      await expect(drawer.getByText(/Publication override · separate decision/i)).toBeVisible()
+      await milestoneScreenshot(page,testInfo,'a16-scholarship-l4-overlay')
     }finally{await finish(testInfo,runtime)}
   })
 
