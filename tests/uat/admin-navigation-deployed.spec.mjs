@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 import { openLayer1, openLayer2, openLayer3, openLayer4, openLayer2Advanced } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -45,7 +45,7 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
 
   test('Administration opens non-empty and Layer 2 source configuration is centralised',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    await page.getByRole('button',{name:'Administration',exact:true}).click()
+    await clickPrimaryNav(page,'Administration')
     await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByRole('tab',{name:'Layer 2 sources',exact:true})).toBeVisible()
     await openLayer2Advanced(page)
