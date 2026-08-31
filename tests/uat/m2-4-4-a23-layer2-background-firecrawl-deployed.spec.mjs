@@ -10,14 +10,14 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0);await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
   await expect(ws.locator('.l2o-route-chain')).toContainText(/Firecrawl direct/i)
   await expect(ws.getByText(/Qualification Providers \/ batch/i)).toBeVisible()
-  await expect(ws.getByText(/Production Course wave/i)).toBeVisible()
+  await expect(ws.getByText('Production Course wave',{exact:true})).toBeVisible()
   await expect(ws).toContainText(/identity check|identity samples/i)
   await milestoneScreenshot(page,testInfo,'a23-layer2-background-policy')
  }finally{await finish(testInfo,runtime)}})
 
  test('Administration owns Layer 2 configuration with role-appropriate edit controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await page.locator('.m-nav').getByRole('button',{name:'Administration',exact:true}).click()
-  await expect(page.getByRole('heading',{name:'Administration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.locator('.m-title-wrap h1')).toHaveText('Administration',{timeout:DETERMINISTIC_UI_TIMEOUT})
   const sourceCard=page.locator('.m-attention').filter({hasText:'Layer 2 source profiles'}).first()
   const providerCard=page.locator('.m-attention').filter({hasText:'Layer 2 acquisition providers'}).first()
   await expect(sourceCard).toBeVisible();await expect(providerCard).toBeVisible()
