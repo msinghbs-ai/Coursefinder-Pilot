@@ -7,7 +7,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  test('operator Layer 2 shows effective background policy, not manual qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await page.locator('.m-nav').getByRole('button',{name:'Layer 2 — Enrichment',exact:true}).click()
   const ws=page.getByLabel('Layer 2 Operations');await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(ws.getByRole('button',{name:'Start background enrichment',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0);await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
   await expect(ws.locator('.l2o-route-chain')).toContainText(/Firecrawl direct/i)
   await expect(ws.getByText(/Qualification Providers \/ batch/i)).toBeVisible()
