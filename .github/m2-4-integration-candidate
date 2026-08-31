@@ -1,33 +1,33 @@
 # M2.4.4 A17–A28 replacement bounded integration candidate — 1 September 2026
 
 Implementation source before marker:
-09468fa5e51e152aa6cff36487d28dcb3292bb3f
+85d33b3481fb22d3a1c8fb8458ebf31800c2f5c5
 
 Change Control:
 CF-CHG-20260830-048
 
 Pre-integration proof:
-- frontend build 33441608240 PASS;
-- focused hard-gate UAT 33441608153 PASS;
-- A25 JSON Evidence no-screenshot inheritance PASS;
-- A25 HTML exact same-attempt screenshot PASS;
-- A25 screenshot-own-image PASS;
-- bounded Firecrawl-first Course acquisition creating governed versioned Evidence PASS;
-- core workspace performance PASS;
-- catalogue_filter_page restored and passing;
-- Layer 2 operations and paged Administration source registry remain under unchanged performance budgets.
+- build 33443025457 PASS;
+- focused A13/A16+A25+performance UAT 33443025460 PASS;
+- A13 tablet Provider filter anchoring/no-autofocus/reopen stability PASS;
+- A13 bounded accepted Firecrawl acquisition proof + governed Evidence navigation PASS;
+- A16 Layer 4 intervention surfaces PASS;
+- A25 JSON/HTML/screenshot Evidence lineage PASS;
+- core performance PASS;
+- Layer 2 operations/Admin profile paging performance PASS.
 
 Scope:
 - revalidate A17–A28 together on desktop and mobile;
+- preserve A10 paged catalogue filters and A12 contextual insights;
 - preserve A21 canonical four-Layer navigation;
 - preserve A22 responsive wider Provider/Course drawers;
 - preserve A23 Firecrawl-first quota-aware background production and scheduler continuation;
 - preserve A24 unified Layer headers;
 - preserve A25 Evidence type/lineage integrity;
 - validate A26 Layer 2 production run/job/Evidence/Dashboard consistency;
-- validate A27 non-empty Administration and role-aware sub-contexts with bounded paged source configuration;
-- validate A28 L2/L3 summaries and experimental UI hardening;
-- retain A10 paged catalogue filters and A12 contextual insights after admin_read reconciliation;
+- validate A27 non-empty Administration and bounded paged source configuration;
+- validate A28 L2/L3 summaries and production UI hardening;
+- retain bounded accepted acquisition proof in compact Layer 2 overview;
 - retain security/role/private Evidence boundaries.
 
 Hard gates unchanged:
@@ -35,12 +35,13 @@ Hard gates unchanged:
 - page/management payload <= 250,000 bytes;
 - filter-option payload <= 60,000 bytes;
 - no Evidence lineage weakening;
-- no role/security weakening.
+- no role/security weakening;
+- no Layer 1 authority bypass.
 
 Decision:
-- this is the single replacement integration candidate;
-- both chromium-desktop and chromium-mobile must PASS;
-- on failure, preserve exact evidence and correct only demonstrated defects;
+- this is the single replacement integration candidate after focused regression PASS;
+- chromium-desktop and chromium-mobile must both PASS;
+- any failure is immutable evidence and only demonstrated defects may be corrected;
 - no unchanged rerun;
 - only after integration PASS may exactly one final acceptance candidate be nominated.
 
@@ -48,6 +49,5 @@ Governance boundaries:
 - no Production cutover;
 - no broad Publication;
 - no Website/Zoho production cutover;
-- no bypass of Layer 1 authority;
 - no autonomous Layer 3 canonical mutation;
-- no rewriting or deletion of accepted Evidence/history.
+- no Evidence/history rewrite or deletion.
