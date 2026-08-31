@@ -184,6 +184,13 @@ jobs:
               tests/uat/layer2-platform-deployed.spec.mjs
             )
           fi
+          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-a25-layer-status-candidate'; then
+            targeted=(
+              tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
+              tests/uat/m2-4-4-layer-status-deployed.spec.mjs
+              tests/uat/performance-deployed.spec.mjs
+            )
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -202,6 +209,7 @@ jobs:
             tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
             tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
             tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
+            tests/uat/m2-4-4-layer-status-deployed.spec.mjs
             tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
@@ -229,6 +237,7 @@ jobs:
             tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
             tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
             tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
+            tests/uat/m2-4-4-layer-status-deployed.spec.mjs
             tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
             tests/uat/scholarship-selection-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
