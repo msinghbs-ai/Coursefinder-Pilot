@@ -18,7 +18,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await expect(page.locator('html[data-go7-navigation]')).toHaveCount(0)
     await expect(nav.getByText('Data Operations',{exact:true})).toHaveCount(0)
     await expect(nav.getByText('Governance & Platform',{exact:true})).toHaveCount(0)
-    await expect(page.locator('.m-alert')).not.toContainText(/column "layer" does not exist/i)
+    await expect(page.locator('.m-alert').filter({hasText:/column "layer" does not exist/i})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'a21-canonical-layer-navigation')
   }finally{await finish(testInfo,runtime)}})
 
@@ -35,7 +35,8 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
   test('Layer 2 is embedded with Wave 1 action and no close/config launcher',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await page.locator('.m-nav').getByRole('button',{name:'Layer 2 — Enrichment',exact:true}).click()
-    await expect(page.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    const workspace=page.getByLabel('Layer 2 Operations')
+    await expect(workspace.getByRole('heading',{name:'Layer 2 — Enrichment',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveValue('500')
     await expect(page.getByRole('button',{name:/Run Wave 1|Qualify next wave/})).toBeVisible()
     await expect(page.getByRole('button',{name:'Close Layer 2'})).toHaveCount(0)
