@@ -1,0 +1,12 @@
+# M2.4.4 focused hard-gate validation — 1 September 2026
+
+Source head before marker:
+ebe90bb1792359ea07f602d41144d584bfc475d0
+
+Purpose:
+Run only the remaining hard gates after targeted PASS:
+- A25 Evidence type/screenshot lineage integrity;
+- bounded direct Course acquisition creating governed versioned Evidence;
+- performance budgets, including Layer 2 operations <= 3,000 ms and <= 250,000 bytes.
+
+Do not interpret this marker as an integration or final acceptance nomination.
