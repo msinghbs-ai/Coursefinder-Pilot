@@ -29,6 +29,8 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   if(await policyHeading.count()){
     await expect(policyHeading).toBeVisible()
     await expect(page.getByLabel('Layer 2 qualification Providers per batch')).toBeVisible()
+    await expect(page.getByLabel('Layer 2 qualification finaliser runs per cycle')).toBeVisible()
+    await expect(page.getByLabel('Layer 2 pattern Providers per finaliser run')).toBeVisible()
     await expect(page.getByLabel('Layer 2 production target wave')).toBeVisible()
     await expect(page.getByLabel('Layer 2 production route mode')).toHaveValue('scraper_first')
     await expect(page.getByText('Firecrawl monthly limit')).toBeVisible()
@@ -57,6 +59,21 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   expect(acl).toMatch(/revoke all on function security\.layer2_qualification_continue_impl\(uuid\) from public,anon,authenticated/i)
   expect(acl).toMatch(/grant execute on function security\.layer2_qualification_continue_impl\(uuid\) to service_role/i)
   expect(acl).toMatch(/grant execute on function public\.layer2_qualification_continue_service\(uuid\) to service_role/i)
+ })
+
+ test('background finaliser completes deterministic controls and governed handoff without autonomous Layer 3 AI',async()=>{
+  const finalizer=await fs.readFile('supabase/migrations/20260831115800_m2_4_4_a23_qualification_finalizer_handoff.sql','utf8')
+  expect(finalizer).toContain('qualification_finalizer_run_limit')
+  expect(finalizer).toContain('qualification_pattern_provider_limit')
+  expect(finalizer).toMatch(/create or replace function security\.layer2_qualification_finalizer_tick_impl/i)
+  expect(finalizer).toContain('layer2_scale_pattern_dispatch')
+  expect(finalizer).toContain('layer2_scale_pattern_reconcile')
+  expect(finalizer).toContain('layer2_scale_cross_layer_handoff')
+  expect(finalizer).toContain("p.code='openrouter-source-pattern-v1'")
+  expect(finalizer).toContain("'queued_for_governed_operator_execution'")
+  expect(finalizer).not.toContain('functions/v1/layer3-interpret')
+  expect(finalizer).toContain("'coursefinder-layer2-qualification-finalizer'")
+  expect(finalizer).toContain("'2-59/5 * * * *'")
  })
 
 })
