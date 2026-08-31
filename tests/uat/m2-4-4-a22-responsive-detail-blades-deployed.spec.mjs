@@ -12,7 +12,7 @@ test.describe('A22 responsive detail blades @deployed',()=>{
 
  test('Provider blade is wide, scroll-owned and does not clip contextual cards',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await page.setViewportSize({width:1600,height:820});await loginAsUatUser(page);await openFirst(page,'Providers','Federation University')
-  const drawer=page.getByLabel('Provider detail'),content=drawer.locator('.m-drawer-content')
+  const drawer=page.getByRole('complementary',{name:'Provider detail',exact:true}),content=drawer.locator('.m-drawer-content')
   await expect(drawer).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const metrics=await drawer.evaluate(el=>({w:el.getBoundingClientRect().width,vw:innerWidth}))
   expect(metrics.w).toBeGreaterThan(800);expect(metrics.w).toBeLessThanOrEqual(1050)
@@ -27,16 +27,16 @@ test.describe('A22 responsive detail blades @deployed',()=>{
 
  test('Course blade owns vertical scrolling and remains usable on tablet and mobile',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await page.setViewportSize({width:1440,height:720});await loginAsUatUser(page);await openFirst(page,'Courses')
-  let drawer=page.getByLabel('Course detail'),content=drawer.locator('.m-drawer-content')
+  let drawer=page.getByRole('complementary',{name:'Course detail',exact:true}),content=drawer.locator('.m-drawer-content')
   await expect(drawer).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   let state=await content.evaluate(el=>({overflow:getComputedStyle(el).overflowY,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}))
   expect(state.overflow).toMatch(/scroll|auto/);expect(state.scrollHeight).toBeGreaterThan(state.clientHeight);expect(state.scrollWidth).toBeLessThanOrEqual(state.clientWidth+2)
   await content.evaluate(el=>{el.scrollTop=Math.min(500,el.scrollHeight-el.clientHeight)});await expect.poll(()=>content.evaluate(el=>el.scrollTop)).toBeGreaterThan(0)
   await page.getByRole('button',{name:/Close Course detail/i}).click()
-  await page.setViewportSize({width:900,height:820});await openFirst(page,'Courses');drawer=page.getByLabel('Course detail');content=drawer.locator('.m-drawer-content')
+  await page.setViewportSize({width:900,height:820});await openFirst(page,'Courses');drawer=page.getByRole('complementary',{name:'Course detail',exact:true});content=drawer.locator('.m-drawer-content')
   const tablet=await drawer.evaluate(el=>({w:el.getBoundingClientRect().width,vw:innerWidth}));expect(tablet.w/tablet.vw).toBeGreaterThan(.93);expect(tablet.w/tablet.vw).toBeLessThanOrEqual(1)
   await page.getByRole('button',{name:/Close Course detail/i}).click()
-  await page.setViewportSize({width:390,height:844});await openFirst(page,'Courses');drawer=page.getByLabel('Course detail');content=drawer.locator('.m-drawer-content')
+  await page.setViewportSize({width:390,height:844});await openFirst(page,'Courses');drawer=page.getByRole('complementary',{name:'Course detail',exact:true});content=drawer.locator('.m-drawer-content')
   const mobile=await drawer.evaluate(el=>({w:el.getBoundingClientRect().width,vw:innerWidth}));expect(Math.abs(mobile.w-mobile.vw)).toBeLessThanOrEqual(2)
   await expect(content).toBeVisible();const mobilePage=await page.evaluate(()=>({inner:innerWidth,doc:document.documentElement.scrollWidth}));expect(mobilePage.doc).toBeLessThanOrEqual(mobilePage.inner+2);await milestoneScreenshot(page,testInfo,'a22-course-mobile-drawer')
  }finally{await finish(testInfo,runtime)}})
