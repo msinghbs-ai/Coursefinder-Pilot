@@ -21,7 +21,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   const sourceCard=page.locator('.m-attention').filter({hasText:'Layer 2 source profiles'}).first()
   const providerCard=page.locator('.m-attention').filter({hasText:'Layer 2 acquisition providers'}).first()
   await expect(sourceCard).toBeVisible();await expect(providerCard).toBeVisible()
-  await sourceCard.getByRole('button',{name:'Open',exact:true}).click()
+  await sourceCard.getByRole('button',{name:/^Open/}).click()
   await expect(page.getByRole('heading',{name:'Enrichment Source Configuration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(page.getByText('Configuration is separate from execution.')).toBeVisible()
   const policyHeading=page.getByRole('heading',{name:'Layer 2 execution policy',exact:true})
