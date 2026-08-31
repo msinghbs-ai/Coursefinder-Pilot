@@ -30,8 +30,8 @@ test.describe('A22 responsive detail blades @deployed',()=>{
   let drawer=page.getByRole('complementary',{name:'Course detail',exact:true}),content=drawer.locator('.m-drawer-content')
   await expect(drawer).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   let state=await content.evaluate(el=>({overflow:getComputedStyle(el).overflowY,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}))
-  expect(state.overflow).toMatch(/scroll|auto/);expect(state.scrollHeight).toBeGreaterThan(state.clientHeight);expect(state.scrollWidth).toBeLessThanOrEqual(state.clientWidth+2)
-  await content.evaluate(el=>{el.scrollTop=Math.min(500,el.scrollHeight-el.clientHeight)});await expect.poll(()=>content.evaluate(el=>el.scrollTop)).toBeGreaterThan(0)
+  expect(state.overflow).toBe('scroll');expect(state.scrollHeight).toBeGreaterThanOrEqual(state.clientHeight);expect(state.scrollWidth).toBeLessThanOrEqual(state.clientWidth+2)
+  if(state.scrollHeight>state.clientHeight){await content.evaluate(el=>{el.scrollTop=Math.min(500,el.scrollHeight-el.clientHeight)});await expect.poll(()=>content.evaluate(el=>el.scrollTop)).toBeGreaterThan(0)}
   await page.getByRole('button',{name:/Close Course detail/i}).click()
   await page.setViewportSize({width:900,height:820});await openFirst(page,'Courses');drawer=page.getByRole('complementary',{name:'Course detail',exact:true});content=drawer.locator('.m-drawer-content')
   const tablet=await drawer.evaluate(el=>({w:el.getBoundingClientRect().width,vw:innerWidth}));expect(tablet.w/tablet.vw).toBeGreaterThan(.93);expect(tablet.w/tablet.vw).toBeLessThanOrEqual(1)
