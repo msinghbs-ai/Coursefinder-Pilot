@@ -23,7 +23,7 @@ async function openAdministrationTool(page,title,heading){
   await clickPrimaryNav(page,'Administration')
   const card=page.locator('.m-attention').filter({hasText:title}).first()
   await expect(card).toBeVisible(ui)
-  await card.getByRole('button',{name:'Open',exact:true}).click({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await card.getByRole('button',{name:/^Open/}).click({timeout:DETERMINISTIC_UI_TIMEOUT})
   const workspace=page.getByRole('region').filter({has:page.getByRole('heading',{name:heading,exact:true})}).first()
   await expect(workspace).toBeVisible(ui)
   return workspace
