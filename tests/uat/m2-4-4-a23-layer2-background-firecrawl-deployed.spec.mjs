@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -37,4 +38,17 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   }
   await milestoneScreenshot(page,testInfo,'a23-admin-layer2-configuration')
  }finally{await finish(testInfo,runtime)}})
+ test('background qualification self-continuation uses the service-only public bridge',async()=>{
+  const worker=await fs.readFile('supabase/functions/layer2-scale-qualify-scheduled/index.ts','utf8')
+  const bridge=await fs.readFile('supabase/migrations/20260831105700_m2_4_4_a23_qualification_continuation_bridge.sql','utf8')
+  expect(worker).toContain('layer2-scale-qualify-scheduled-v1.0.3')
+  expect(worker).toContain('layer2_qualification_continue_service')
+  expect(worker).not.toContain('prpc(svc,"svc_pilot_submit_nonce"')
+  expect(bridge).toMatch(/security invoker/i)
+  expect(bridge).toMatch(/revoke all on function public\.layer2_qualification_continue_service\(uuid\) from public,anon,authenticated/i)
+  expect(bridge).toMatch(/grant execute on function public\.layer2_qualification_continue_service\(uuid\) to service_role/i)
+  expect(bridge).toContain("q.status='running'")
+  expect(bridge).toContain("qi.status='qualifying'")
+ })
+
 })
