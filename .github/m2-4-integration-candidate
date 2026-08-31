@@ -1,37 +1,37 @@
 # M2.4.4 A17–A28 replacement bounded integration candidate — 1 September 2026
 
 Implementation source before marker:
-85d33b3481fb22d3a1c8fb8458ebf31800c2f5c5
+be590663a228d2f986e0707bc06e6a7a8db15edc
 
 Change Control:
 CF-CHG-20260830-048
 
 Pre-integration proof:
-- build 33443025457 PASS;
-- focused A13/A16+A25+performance UAT 33443025460 PASS;
-- A13 tablet Provider filter anchoring/no-autofocus/reopen stability PASS;
-- A13 bounded accepted Firecrawl acquisition proof + governed Evidence navigation PASS;
-- A16 Layer 4 intervention surfaces PASS;
-- A25 JSON/HTML/screenshot Evidence lineage PASS;
-- core performance PASS;
-- Layer 2 operations/Admin profile paging performance PASS.
+- build 33447611021 PASS;
+- focused Course performance UAT 33447610954 PASS;
+- prior targeted build 33447312341 PASS;
+- prior deployed UAT 33447312300 PASS;
+- default Course browse/detail correction proven without changing thresholds;
+- focused A13/A16+A25+performance UAT 33443025460 PASS.
 
 Scope:
-- revalidate A17–A28 together on desktop and mobile;
+- revalidate A17–A28 together on chromium-desktop and chromium-mobile;
 - preserve A10 paged catalogue filters and A12 contextual insights;
+- preserve A13 tablet anchoring and bounded accepted Firecrawl acquisition proof;
+- preserve A16 governed Layer 4 intervention;
 - preserve A21 canonical four-Layer navigation;
-- preserve A22 responsive wider Provider/Course drawers;
-- preserve A23 Firecrawl-first quota-aware background production and scheduler continuation;
+- preserve A22 wider responsive Provider/Course drawers;
+- preserve A23 Firecrawl-first quota-aware background production;
 - preserve A24 unified Layer headers;
 - preserve A25 Evidence type/lineage integrity;
-- validate A26 Layer 2 production run/job/Evidence/Dashboard consistency;
-- validate A27 non-empty Administration and bounded paged source configuration;
-- validate A28 L2/L3 summaries and production UI hardening;
-- retain bounded accepted acquisition proof in compact Layer 2 overview;
-- retain security/role/private Evidence boundaries.
+- validate A26 run/job/Evidence/Dashboard consistency;
+- validate A27 Administration reliability and bounded source paging;
+- validate A28 L2/L3 operator summaries and production UI hardening;
+- retain Course browse/detail performance correction;
+- retain security/private Evidence/role boundaries.
 
 Hard gates unchanged:
-- latency <= 3,000 ms;
+- RPC/detail latency <= 3,000 ms;
 - page/management payload <= 250,000 bytes;
 - filter-option payload <= 60,000 bytes;
 - no Evidence lineage weakening;
@@ -39,8 +39,8 @@ Hard gates unchanged:
 - no Layer 1 authority bypass.
 
 Decision:
-- this is the single replacement integration candidate after focused regression PASS;
-- chromium-desktop and chromium-mobile must both PASS;
+- this is the single replacement integration candidate after focused Course performance PASS;
+- desktop and mobile must both PASS;
 - any failure is immutable evidence and only demonstrated defects may be corrected;
 - no unchanged rerun;
 - only after integration PASS may exactly one final acceptance candidate be nominated.
