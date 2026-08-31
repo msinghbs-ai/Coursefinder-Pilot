@@ -169,6 +169,11 @@ jobs:
               tests/uat/performance-deployed.spec.mjs
             )
           fi
+          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-course-performance-candidate'; then
+            targeted=(
+              tests/uat/performance-deployed.spec.mjs
+            )
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
