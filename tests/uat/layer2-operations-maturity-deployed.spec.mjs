@@ -17,7 +17,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await expect(country).toHaveValue('AU');await expect(scope).toHaveValue('country');const countryLabels=await country.locator('option').allTextContents();expect(countryLabels.join(' ')).toMatch(/Australia.*Canada.*New Zealand/i)
   const scopeLabels=await scope.locator('option').allTextContents();expect(scopeLabels.join(' ')).toMatch(/Country.*State.*University/i)
   for(const label of ['Layer 1 Institutions','Layer 1 Courses','L2 Qualified','Needs qualification','Ready with governed URL'])await expect(workspace.getByText(label,{exact:true}).first()).toBeVisible()
-  await expect(workspace.getByRole('button',{name:'Start background enrichment',exact:true})).toBeVisible()
+  await expect(workspace.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible()
 
   await scope.selectOption('state')
   const state=workspace.getByLabel('Layer 2 sync state');await expect(state).toBeVisible()
@@ -32,8 +32,9 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await uni.click();const uniList=workspace.getByRole('listbox',{name:'University options'});await expect(uniList).toBeVisible();const uniOptions=uniList.getByRole('option');await expect(uniOptions.first()).toBeVisible({timeout:45000});expect(await uniOptions.count()).toBeLessThanOrEqual(10)
   await expect(workspace.locator('.l2o-route-chain')).toContainText(/Firecrawl direct.*Background scheduler.*Budget guard.*Evidence/i)
   await expect(workspace.getByRole('button',{name:/Run bounded trial|Qualify next wave|Discover & sync|Sync now/})).toHaveCount(0)
-  await expect(workspace.getByRole('heading',{name:'Blockers / required actions'})).toBeVisible()
-  await expect(workspace).toContainText(/background source qualification|no manual per-Provider action/i)
+  await expect(workspace.getByText(/no manual per-Provider action is required/i)).toHaveCount(0)
+  const blockerPanel=workspace.locator('.l2o-blockers')
+  if(await blockerPanel.count())await expect(blockerPanel.getByRole('heading',{name:'Action required',exact:true})).toBeVisible()
   await milestoneScreenshot(page,testInfo,'layer2-background-scope-enrichment')
  }finally{await finish(testInfo,runtime)}})
 
@@ -177,7 +178,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(sourcePatternWorker).toContain('response_format:{type:"json_schema"')
 
   const scaleWorker=await fs.readFile('supabase/functions/layer2-scale-qualify-scheduled/index.ts','utf8')
-  expect(scaleWorker).toContain('layer2-scale-qualify-scheduled-v1.0.2')
+  expect(scaleWorker).toContain('layer2-scale-qualify-scheduled-v1.0.3')
   expect(scaleWorker).toContain('x-cf-run-nonce')
   expect(scaleWorker).toContain('svc_pilot_consume_nonce')
   expect(scaleWorker).toContain('.schema("pipeline").rpc')
