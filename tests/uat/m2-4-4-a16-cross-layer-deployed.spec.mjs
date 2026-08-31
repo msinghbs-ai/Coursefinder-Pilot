@@ -82,8 +82,7 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
       await expect(drawer.getByText(/Published Contact Found/i)).toBeVisible()
       const providerL4=drawer.locator('section.cf-layer4-override:visible').first()
       await expect(providerL4.getByRole('heading',{name:'Layer 4 governed intervention',exact:true})).toBeVisible()
-      await expect(providerL4.getByText('Underlying:',{exact:false}).first()).toBeVisible()
-      await expect(providerL4.getByText('Effective:',{exact:false}).first()).toBeVisible()
+      await expect(providerL4.getByText(/Effective-value overlay only/i)).toBeVisible()
       await expect(drawer.getByText('Layer 4 resolve',{exact:true}).first()).toBeVisible()
       await milestoneScreenshot(page,testInfo,'a16-provider-contact-l4')
     }finally{await finish(testInfo,runtime)}
