@@ -1,47 +1,48 @@
-# M2.4.4 A17–A28 bounded integration candidate — 1 September 2026
+# M2.4.4 A17–A28 replacement bounded integration candidate — 1 September 2026
 
 Implementation source before marker:
-8309d6003c51767785f7c84ced0f6dfba61812cb
+09468fa5e51e152aa6cff36487d28dcb3292bb3f
 
 Change Control:
 CF-CHG-20260830-048
 
+Pre-integration proof:
+- frontend build 33441608240 PASS;
+- focused hard-gate UAT 33441608153 PASS;
+- A25 JSON Evidence no-screenshot inheritance PASS;
+- A25 HTML exact same-attempt screenshot PASS;
+- A25 screenshot-own-image PASS;
+- bounded Firecrawl-first Course acquisition creating governed versioned Evidence PASS;
+- core workspace performance PASS;
+- catalogue_filter_page restored and passing;
+- Layer 2 operations and paged Administration source registry remain under unchanged performance budgets.
+
 Scope:
-- retain standing A16 cross-layer contact/L4 foundation;
-- explicitly revalidate A17–A25 rather than assuming prior acceptance;
-- A21 canonical four-Layer navigation and production Layer 2 action wording;
-- A22 widened responsive Provider/Course detail blades with unchanged tablet/mobile containment;
-- A23 quota-aware Firecrawl-first background Layer 2 production, scheduler continuation, Administration configuration and governed cross-layer handoff;
-- A24 unified Layer 1–4 header architecture;
-- A25 type-aware Evidence preview and exact-attempt screenshot lineage integrity;
-- A26 stable Layer 2 production run/job/Evidence/Dashboard lineage and post-action scheduler messaging;
-- A27 non-empty Administration landing workspace and clickable role-aware sub-context navigation;
-- A28 Layer 2/3 blocker/info rationalisation, Jobs/Runs + Evidence summaries, experimental UI cleanup and bounded defect sweep;
-- v2.15.14 release metadata and maintained release history;
-- unchanged security, authority, Evidence, privacy and performance thresholds.
+- revalidate A17–A28 together on desktop and mobile;
+- preserve A21 canonical four-Layer navigation;
+- preserve A22 responsive wider Provider/Course drawers;
+- preserve A23 Firecrawl-first quota-aware background production and scheduler continuation;
+- preserve A24 unified Layer headers;
+- preserve A25 Evidence type/lineage integrity;
+- validate A26 Layer 2 production run/job/Evidence/Dashboard consistency;
+- validate A27 non-empty Administration and role-aware sub-contexts with bounded paged source configuration;
+- validate A28 L2/L3 summaries and experimental UI hardening;
+- retain A10 paged catalogue filters and A12 contextual insights after admin_read reconciliation;
+- retain security/role/private Evidence boundaries.
 
-Latest pre-candidate proof:
-- Pilot head 8309d6003c51767785f7c84ced0f6dfba61812cb.
-- Frontend build 33420469497 PASS.
-- Targeted deployed UAT 33420469521 PASS.
-- Prior failed integration 33416346862 remains immutable evidence.
-- Stale assertions from that run were corrected only where they conflicted with already-accepted A17–A28 product contracts.
+Hard gates unchanged:
+- latency <= 3,000 ms;
+- page/management payload <= 250,000 bytes;
+- filter-option payload <= 60,000 bytes;
+- no Evidence lineage weakening;
+- no role/security weakening.
 
-Hard gates retained unchanged:
-- A25 JSON Evidence must never inherit a website screenshot.
-- HTML Evidence may use only its exact same-attempt screenshot.
-- Screenshot Evidence must preview its own image.
-- Data Quality must open the real private Regulatory Snapshot Evidence.
-- bounded direct Course acquisition must create governed versioned Evidence.
-- Layer 2 management and Course interaction latency must remain <= 3,000 ms.
-- no role/security/Evidence boundary weakening.
-
-Decision rule:
-- exactly one replacement integration candidate is nominated by this marker;
-- both chromium-desktop and chromium-mobile integration contexts must PASS;
-- no threshold weakening is permitted;
-- if integration fails, preserve the failure and correct only the demonstrated defect/contract before any further candidate;
-- only after desktop + mobile integration PASS may exactly one final acceptance candidate be nominated.
+Decision:
+- this is the single replacement integration candidate;
+- both chromium-desktop and chromium-mobile must PASS;
+- on failure, preserve exact evidence and correct only demonstrated defects;
+- no unchanged rerun;
+- only after integration PASS may exactly one final acceptance candidate be nominated.
 
 Governance boundaries:
 - no Production cutover;
