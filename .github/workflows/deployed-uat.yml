@@ -139,6 +139,12 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^index\.html$|^src/(mature-main\.jsx|layer1-operations-entry\.jsx|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx)$|^tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|ContextualInsights\.jsx|CourseDetailPolish\.jsx)$|^tests/uat/m2-4-4-a22-responsive-detail-blades-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs)
+          fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(layer2-operations-entry\.jsx|mature-main\.jsx)$|^supabase/functions/layer2-sync-control/|^supabase/migrations/.*a23_|^tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -153,6 +159,8 @@ jobs:
             tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs
             tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
             tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs
+            tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
+            tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
             tests/uat/a12-contextual-insights-deployed.spec.mjs
@@ -175,6 +183,8 @@ jobs:
             tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs
             tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
             tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs
+            tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
+            tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
             tests/uat/scholarship-selection-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
