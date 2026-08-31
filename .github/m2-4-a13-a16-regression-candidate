@@ -1,0 +1,17 @@
+# M2.4.4 focused A13/A16 regression validation — 1 September 2026
+
+Source head before marker:
+6d6f627608fb6ee45b602817af55739ecbb87a49
+
+Pre-proof:
+- build 33442600012 PASS
+- targeted UAT 33442600014 PASS
+
+Focused scope:
+- A13 tablet Course Provider filter anchoring/no-autofocus/reopen stability;
+- A13 bounded accepted Firecrawl acquisition proof and governed Evidence navigation;
+- A16 cross-layer Layer 4 intervention surfaces;
+- A25 Evidence type/screenshot lineage safety;
+- performance regression safety including Layer 2 operations/Admin profile paging and catalogue filters.
+
+This is not an integration nomination.
