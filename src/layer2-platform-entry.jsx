@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState}from'react'
+import React,{useEffect,useMemo,useRef,useState}from'react'
 import{createRoot}from'react-dom/client'
 import{RefreshCw,Settings2,ShieldCheck,X}from'lucide-react'
 import{adminRead,api,supabase}from'./lib/supabase'
@@ -12,7 +12,8 @@ function Entry(){const[rank,setRank]=useState(0),[open,setOpen]=useState(false);
 
 export function Console({rank,onClose=()=>{},embedded=false,onOpenProviders=()=>{}}){
   const[rows,setRows]=useState([]),[busy,setBusy]=useState(true),[error,setError]=useState(''),[q,setQ]=useState(''),[country,setCountry]=useState(''),[method,setMethod]=useState(''),[health,setHealth]=useState(''),[offset,setOffset]=useState(0),[pageMeta,setPageMeta]=useState({total:0,limit:50,has_more:false,summary:{},options:{countries:[],methods:[],health:[]}}),[detail,setDetail]=useState(null),[controlBusy,setControlBusy]=useState(false)
-  const load=async(nextOffset=offset)=>{setBusy(true);setError('');try{const r=await adminRead('layer2_profiles',{limit:50,offset:nextOffset,query:q,country,method,health});setRows(r?.items||[]);setPageMeta({total:Number(r?.total||0),limit:Number(r?.limit||50),has_more:Boolean(r?.has_more),summary:r?.summary||{},options:r?.options||{countries:[],methods:[],health:[]}});setOffset(Number(r?.offset||0))}catch(e){setError(e.message)}finally{setBusy(false)}}
+  const requestSeq=useRef(0)
+  const load=async(nextOffset=offset)=>{const seq=++requestSeq.current;setBusy(true);setError('');try{const r=await adminRead('layer2_profiles',{limit:50,offset:nextOffset,query:q,country,method,health});if(seq!==requestSeq.current)return;setRows(r?.items||[]);setPageMeta({total:Number(r?.total||0),limit:Number(r?.limit||50),has_more:Boolean(r?.has_more),summary:r?.summary||{},options:r?.options||{countries:[],methods:[],health:[]}});setOffset(Number(r?.offset||0))}catch(e){if(seq===requestSeq.current)setError(e.message)}finally{if(seq===requestSeq.current)setBusy(false)}}
   useEffect(()=>{load(0)},[])
   useEffect(()=>{const t=setTimeout(()=>load(0),250);return()=>clearTimeout(t)},[q,country,method,health])
   const shown=rows
