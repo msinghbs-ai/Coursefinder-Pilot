@@ -1,0 +1,23 @@
+# M2.4.4 focused mobile navigation + profile registry regression — 1 September 2026
+
+Source head before marker:
+e899a478b9b9fa9ee1b2a53194f28bc8bf92688b
+
+Previous integration:
+- candidate 298057d19a1774d2e6f4cb58a08cd2879aea5902
+- desktop integration PASS
+- mobile integration FAIL
+
+Root causes corrected:
+1. remaining mobile tests directly clicked off-canvas .m-nav buttons instead of the existing hamburger-aware clickPrimaryNav helper;
+2. Layer 2 Administration profile paging allowed an older unfiltered response to overwrite a newer filtered search response.
+
+Focused scope:
+- Administration navigation
+- A21 canonical Layer navigation
+- A23 Layer 2/Admin navigation
+- A24 unified Layer headers
+- A26-A28 Administration/operator UX
+- Layer 2 profile list/detail search stability
+
+This is not an integration or final-acceptance nomination.
