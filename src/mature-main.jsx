@@ -15,6 +15,8 @@ import Layer4Intervention from'./Layer4Intervention'
 import{Layer1Operations}from'./layer1-operations-entry'
 import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
 import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLinksWorkspace,Dates as ImportantDatesWorkspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
+import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
+import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
 import'./styles.css'
 import'./mature.css'
 
@@ -148,20 +150,25 @@ function Page({page,routeParams,rank,onError,navigate}){
 
 
 function AdministrationHome({rank,navigate}){
+ const[tool,setTool]=useState('')
  const cards=[
   ['Sources & onboarding','Governed source inventory, qualification and onboarding lifecycle.',Database,()=>navigate('Sources'),rank>=4],
   ['PIM configuration','Attributes, groups, families, options and completeness profiles.',Tags,()=>navigate('Attributes'),rank>=5],
   ['Scheduling','Refresh cadence, targeted scheduling and policy controls.',RefreshCw,()=>navigate('Refresh & Scheduling'),rank>=4],
   ['Onboarding','Country / Provider / Course source onboarding and immutable history.',Workflow,()=>navigate('Onboarding'),rank>=4],
-  ['Acquisition & AI','Provider routes, scraper/API ceilings, credentials and model configuration are central administration concerns.',SlidersHorizontal,()=>navigate('Settings'),rank>=6],
+  ['Layer 2 source profiles','Versioned deterministic enrichment source configuration, validation and traceability.',Database,()=>setTool('layer2-sources'),rank>=4],
+  ['Layer 2 acquisition providers','Firecrawl/direct routes, vendor limits, fallback and write-only credential administration.',SlidersHorizontal,()=>setTool('layer2-providers'),rank>=4],
+  ['AI configuration','Qualified model routes and privileged AI configuration.',Sparkles,()=>navigate('Settings'),rank>=6],
   ['Users & roles','Privileged CourseFinder identity and role administration.',UsersRound,()=>{location.hash='#users-roles'},rank>=6],
   ['Platform settings','Privileged Pilot/platform configuration and diagnostics.',Settings2,()=>navigate('Settings'),rank>=6],
  ]
- return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Settings2} title="Administration" subtitle="Central configuration. Daily catalogue and layer operations stay outside this workspace."/>
+ return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Settings2} title="Administration" subtitle="Central configuration. Daily catalogue and Layer operations stay outside this workspace."/>
   <div className="m-attention-grid">{cards.filter(x=>x[4]).map(([title,textValue,Icon,action])=><Attention key={title} tone="info" icon={Icon} title={title} text={textValue} action="Open" onClick={action}/>)}</div>
- </section>{rank>=5&&<Layer2ExecutionPolicySettings/>}</div>
+ </section>{rank>=5&&<Layer2ExecutionPolicySettings/>}
+ {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>setTool('layer2-providers')}/>}
+ {tool==='layer2-providers'&&<Layer2ProviderConfig rank={rank} embedded/>}
+ </div>
 }
-
 function Layer2ExecutionPolicySettings(){
  const[data,setData]=useState(null),[form,setForm]=useState(null),[busy,setBusy]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState('')
  const invoke=async body=>{const{data:r,error:e}=await supabase.functions.invoke('layer2-sync-control',{body});if(e)throw e;if(r?.error)throw new Error(r.error);return r}
