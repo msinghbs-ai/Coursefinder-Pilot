@@ -1,0 +1,30 @@
+# M2.4.4 focused A25 + Layer-status load regression — 1 September 2026
+
+Source head before marker:
+cbc8357cf13a155e1c10dc21ea6a680b55241f29
+
+Previous integration:
+- candidate 03ebfab70fbec46a8d12e2a2e7b8e67e0f500f99
+- desktop 67/67 PASS
+- mobile 65 PASS, 1 flaky, 1 FAIL
+- sole real FAIL: screenshot Evidence detail returned HTTP 500 twice due statement timeout under integration load
+
+Runtime corrections:
+- restored missing public.admin_read layer_status_summary branch
+- indexed Layer 2 pending-wave, recent-run and Evidence layer/time counts
+- Dashboard Layer-status summary reduced from ~1.53 s to ~0.79–1.37 s in live verification
+- screenshot Evidence detail itself verified warm at ~16 ms; A25 lineage semantics unchanged
+- added permanent deployed Layer-status regression to integration and final acceptance suites
+
+Focused scope:
+- A25 JSON/HTML/screenshot Evidence lineage
+- Dashboard Layer 1–4 operational status without RPC errors
+- performance budgets and responsive regression
+
+Hard gates unchanged:
+- RPC/detail latency <= 3,000 ms
+- page/management payload <= 250,000 bytes
+- filter payload <= 60,000 bytes
+- no Evidence/security/role weakening
+
+This is not an integration or final-acceptance nomination.
