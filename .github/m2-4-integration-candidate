@@ -1,22 +1,30 @@
 # M2.4.4 A17–A28 replacement bounded integration candidate — 1 September 2026
 
 Implementation source before marker:
-0d7e8b9a3a97e4d53c0e5fb79142d7d889325c0d
+5b1725ed1d0775eb1543553374cbb55bf20d3525
 
 Change Control:
 CF-CHG-20260830-048
 
 Pre-integration proof:
-- build 33449532352 PASS;
-- focused mobile navigation/profile UAT 33449532351 PASS;
-- prior desktop integration 33447808931 desktop leg PASS 67/67;
-- focused Course performance UAT 33447610954 PASS;
-- focused A13/A16+A25+performance UAT 33443025460 PASS.
+- build 33452204866 PASS;
+- focused A25 + Layer-status + performance UAT 33452204859 PASS;
+- focused log: 8/8 PASS;
+- A25 JSON/HTML/screenshot Evidence PASS;
+- Dashboard Layer 1–4 operational status PASS without layer_status_summary RPC errors;
+- core, Course interaction, Layer 2/Admin and responsive performance gates PASS;
+- prior focused mobile navigation/profile UAT 33449532351 PASS;
+- prior focused Course performance UAT 33447610954 PASS;
+- prior focused A13/A16+A25+performance UAT 33443025460 PASS.
 
-Corrections proven before this candidate:
-- mobile canonical navigation uses the existing hamburger-aware clickPrimaryNav helper;
-- Layer 2 profile registry ignores stale out-of-order page/search responses;
-- Administration, A21, A23, A24, A26-A28 and Layer 2 profile list/detail focused regression PASS.
+Runtime corrections retained:
+- layer_status_summary public dispatcher restored;
+- Layer 2 status count indexes applied;
+- Dashboard Layer-status helper bounded below the unchanged 3,000 ms gate;
+- screenshot Evidence semantics unchanged;
+- Layer 2 profile stale-response race fixed;
+- mobile canonical navigation uses hamburger-aware clickPrimaryNav;
+- Course browse/detail performance headroom retained.
 
 Scope:
 - revalidate A17–A28 together on chromium-desktop and chromium-mobile;
@@ -28,6 +36,7 @@ Scope:
 - preserve A23 Firecrawl-first quota-aware background production;
 - preserve A24 unified Layer headers;
 - preserve A25 Evidence type/lineage integrity;
+- validate Dashboard Layer 1–4 operational status contract;
 - validate A26 run/job/Evidence/Dashboard consistency;
 - validate A27 Administration reliability, mobile navigation and bounded source paging;
 - validate A28 L2/L3 operator summaries and production UI hardening;
@@ -43,11 +52,11 @@ Hard gates unchanged:
 - no Layer 1 authority bypass.
 
 Decision:
-- this is the single replacement integration candidate after focused mobile regression PASS;
+- this is the single replacement integration candidate after focused PASS;
 - desktop and mobile must both PASS;
 - any failure is immutable evidence and only demonstrated defects may be corrected;
 - no unchanged rerun;
-- only after integration PASS may one runtime reconciliation and exactly one final acceptance candidate be nominated.
+- after integration PASS, perform the required runtime reconciliation for A26/A27/A28 and M244-FU-020 before final acceptance nomination.
 
 Governance boundaries:
 - no Production cutover;
