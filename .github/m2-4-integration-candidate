@@ -1,18 +1,22 @@
 # M2.4.4 A17–A28 replacement bounded integration candidate — 1 September 2026
 
 Implementation source before marker:
-be590663a228d2f986e0707bc06e6a7a8db15edc
+0d7e8b9a3a97e4d53c0e5fb79142d7d889325c0d
 
 Change Control:
 CF-CHG-20260830-048
 
 Pre-integration proof:
-- build 33447611021 PASS;
+- build 33449532352 PASS;
+- focused mobile navigation/profile UAT 33449532351 PASS;
+- prior desktop integration 33447808931 desktop leg PASS 67/67;
 - focused Course performance UAT 33447610954 PASS;
-- prior targeted build 33447312341 PASS;
-- prior deployed UAT 33447312300 PASS;
-- default Course browse/detail correction proven without changing thresholds;
 - focused A13/A16+A25+performance UAT 33443025460 PASS.
+
+Corrections proven before this candidate:
+- mobile canonical navigation uses the existing hamburger-aware clickPrimaryNav helper;
+- Layer 2 profile registry ignores stale out-of-order page/search responses;
+- Administration, A21, A23, A24, A26-A28 and Layer 2 profile list/detail focused regression PASS.
 
 Scope:
 - revalidate A17–A28 together on chromium-desktop and chromium-mobile;
@@ -25,7 +29,7 @@ Scope:
 - preserve A24 unified Layer headers;
 - preserve A25 Evidence type/lineage integrity;
 - validate A26 run/job/Evidence/Dashboard consistency;
-- validate A27 Administration reliability and bounded source paging;
+- validate A27 Administration reliability, mobile navigation and bounded source paging;
 - validate A28 L2/L3 operator summaries and production UI hardening;
 - retain Course browse/detail performance correction;
 - retain security/private Evidence/role boundaries.
@@ -39,11 +43,11 @@ Hard gates unchanged:
 - no Layer 1 authority bypass.
 
 Decision:
-- this is the single replacement integration candidate after focused Course performance PASS;
+- this is the single replacement integration candidate after focused mobile regression PASS;
 - desktop and mobile must both PASS;
 - any failure is immutable evidence and only demonstrated defects may be corrected;
 - no unchanged rerun;
-- only after integration PASS may exactly one final acceptance candidate be nominated.
+- only after integration PASS may one runtime reconciliation and exactly one final acceptance candidate be nominated.
 
 Governance boundaries:
 - no Production cutover;
