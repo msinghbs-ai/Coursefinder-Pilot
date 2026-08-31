@@ -1,11 +1,11 @@
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
-import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-4-4-a23-layer2-background-firecrawl',change_control:'CF-CHG-20260830-048'})})
  test('operator Layer 2 shows effective background policy, not manual qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);await page.locator('.m-nav').getByRole('button',{name:'Layer 2 — Enrichment',exact:true}).click()
+  await loginAsUatUser(page);await clickPrimaryNav(page,'Layer 2 — Enrichment')
   const ws=page.getByLabel('Layer 2 Operations');await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0);await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
@@ -17,7 +17,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  }finally{await finish(testInfo,runtime)}})
 
  test('Administration owns Layer 2 configuration with role-appropriate edit controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);await page.locator('.m-nav').getByRole('button',{name:'Administration',exact:true}).click()
+  await loginAsUatUser(page);await clickPrimaryNav(page,'Administration')
   await expect(page.locator('.m-title-wrap h1')).toHaveText('Administration',{timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const sourceTab=page.getByRole('tab',{name:'Layer 2 sources',exact:true})
