@@ -148,6 +148,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(layer1-operations-entry\.jsx|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx|mature\.css)$|^tests/uat/m2-4-4-a24-unified-layer-headers-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^supabase/migrations/.*a25_|^tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -165,6 +168,7 @@ jobs:
             tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
             tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
             tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
+            tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
             tests/uat/a12-contextual-insights-deployed.spec.mjs
@@ -190,6 +194,7 @@ jobs:
             tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
             tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
             tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
+            tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
             tests/uat/scholarship-selection-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
