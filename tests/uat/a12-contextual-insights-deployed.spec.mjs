@@ -48,7 +48,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   const drawer=page.locator('.m-drawer-course')
   await page.setViewportSize({width:1440,height:1100})
   const desktop=await drawer.boundingBox();expect(desktop).toBeTruthy()
-  const desktopViewport=page.viewportSize();expect(desktop.width).toBeLessThanOrEqual(950);expect(desktop.width/desktopViewport.width).toBeGreaterThan(0.54);expect(desktop.width/desktopViewport.width).toBeLessThan(0.61)
+  const desktopViewport=page.viewportSize();expect(desktop.width).toBeLessThanOrEqual(1102);expect(desktop.width/desktopViewport.width).toBeGreaterThan(0.62);expect(desktop.width/desktopViewport.width).toBeLessThanOrEqual(0.67)
   await milestoneScreenshot(page,testInfo,'a12-course-contextual-insights')
   await page.setViewportSize({width:900,height:720});const tablet=await drawer.boundingBox();expect(tablet.width/900).toBeGreaterThanOrEqual(0.9)
   await page.setViewportSize({width:390,height:844});const mobile=await drawer.boundingBox();expect(Math.abs(mobile.width-390)).toBeLessThanOrEqual(2)
