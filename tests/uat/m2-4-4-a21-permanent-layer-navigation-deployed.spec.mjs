@@ -42,7 +42,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await expect(page.locator('.m-sidebar')).toBeVisible()
     await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
     await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
-    await expect(workspace.getByRole('button',{name:'Start background enrichment',exact:true})).toBeVisible()
+    await expect(workspace.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible()
     await expect(workspace.getByText('Firecrawl direct',{exact:true})).toBeVisible()
     await expect(page.getByRole('button',{name:'Close Layer 2'})).toHaveCount(0)
     await expect(page.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
