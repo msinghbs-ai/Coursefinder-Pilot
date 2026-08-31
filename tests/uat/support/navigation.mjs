@@ -19,22 +19,23 @@ export async function openLayer2(page) {
   return workspace
 }
 
-async function openAdministrationTool(page,title,heading){
+async function openAdministrationTool(page,tabName,heading){
   await clickPrimaryNav(page,'Administration')
-  const card=page.locator('.m-attention').filter({hasText:title}).first()
-  await expect(card).toBeVisible(ui)
-  await card.getByRole('button',{name:/^Open/}).click({timeout:DETERMINISTIC_UI_TIMEOUT})
-  const workspace=page.getByRole('region').filter({has:page.getByRole('heading',{name:heading,exact:true})}).first()
-  await expect(workspace).toBeVisible(ui)
-  return workspace
+  await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible(ui)
+  const tab=page.getByRole('tab',{name:tabName,exact:true})
+  await expect(tab).toBeVisible(ui)
+  await tab.click({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const headingLocator=page.getByRole('heading',{name:heading,exact:true}).first()
+  await expect(headingLocator).toBeVisible(ui)
+  return headingLocator.locator('xpath=ancestor-or-self::*[@role="region"][1] | ancestor::section[1]').first()
 }
 
 export async function openLayer2Advanced(page) {
-  return openAdministrationTool(page,'Layer 2 source profiles','Enrichment Source Configuration')
+  return openAdministrationTool(page,'Layer 2 sources','Enrichment Source Configuration')
 }
 
 export async function openLayer2Providers(page) {
-  return openAdministrationTool(page,'Layer 2 acquisition providers','Layer 2 Acquisition Providers')
+  return openAdministrationTool(page,'Acquisition','Layer 2 Acquisition Providers')
 }
 
 export async function openLayer2Trials(page) {
