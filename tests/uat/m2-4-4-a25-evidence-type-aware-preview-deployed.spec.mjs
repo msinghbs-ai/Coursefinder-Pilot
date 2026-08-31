@@ -23,7 +23,7 @@ test.describe('A25 Evidence type-aware preview and screenshot lineage @deployed'
     await expect(preview).toBeVisible({timeout:20000})
     await expect(preview).toContainText(/Structured JSON Evidence/i)
     await expect(drawer.locator('.evidence-visual-card')).toHaveCount(0)
-    await expect(drawer.getByText('Layer2 Raw Json',{exact:true})).toBeVisible()
+    await expect(drawer.getByText('Layer2 Raw Json',{exact:true}).first()).toBeVisible()
     await milestoneScreenshot(page,testInfo,'a25-json-evidence')
   }finally{await finish(testInfo,runtime)}})
 
