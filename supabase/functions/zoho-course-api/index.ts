@@ -38,9 +38,11 @@ const safeError = (status:number, code:string, requestId:string, extra:Record<st
   request_id: requestId
 }, requestId, extra);
 
-function bearer(req:Request) {
+function integrationToken(req:Request) {
+  const direct = (req.headers.get("x-cf-token") || "").trim();
+  if (direct) return direct;
   const raw = req.headers.get("authorization") || "";
-  return raw.match(/^Bearer\s+(.+)$/i)?.[1] || "";
+  return raw.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || "";
 }
 
 async function sha256Hex(value:string) {
@@ -63,30 +65,32 @@ Deno.serve(async (req:Request) => {
     auth:{ persistSession:false, autoRefreshToken:false }
   });
 
-  const token = bearer(req);
+  let body:Json;
+  try { body = await req.json(); }
+  catch { return safeError(400, "INVALID_JSON", requestId); }
+
+  const bodyToken = cleanText(body.integration_token);
+  const headerToken = integrationToken(req);
+  const token = bodyToken || headerToken;
   if (!token || token.length > 512) return safeError(401, "AUTHENTICATION_REQUIRED", requestId);
 
   const tokenHash = await sha256Hex(token);
   const { data: authOk, error: authError } = await svc
-    .schema("api")
-    .rpc("zoho_integration_auth_v1", { p_token_sha256: tokenHash });
+    .rpc("zoho_edge_auth_v1", { p_token_sha256: tokenHash });
 
   if (authError || authOk !== true) {
     return safeError(401, "AUTHENTICATION_REQUIRED", requestId);
   }
 
-  let body:Json;
-  try { body = await req.json(); }
-  catch { return safeError(400, "INVALID_JSON", requestId); }
+  delete body.integration_token;
 
   const action = cleanText(body.action);
-  if (!["search","lookup","provider_options","filter_options"].includes(action)) {
+  if (!["search","lookup","provider_options","filter_options","reference_bundle"].includes(action)) {
     return safeError(400, "INVALID_ACTION", requestId);
   }
 
   const { data: rate, error: rateError } = await svc
-    .schema("api")
-    .rpc("zoho_integration_rate_check_v1", {
+    .rpc("zoho_edge_rate_check_v1", {
       p_identity:"coursefinder_zoho_pilot_v1",
       p_resource:action,
       p_limit:120,
@@ -108,7 +112,7 @@ Deno.serve(async (req:Request) => {
       const limit = Math.min(Math.max(integer(body.limit, 10), 1), 50);
       const offset = Math.max(integer(body.offset, 0), 0);
 
-      ({data,error} = await svc.schema("api").rpc("zoho_course_search_v1", {
+      ({data,error} = await svc.rpc("zoho_edge_course_search_v1", {
         p_query: cleanText(body.query) || null,
         p_country_codes: stringArray(body.country_codes),
         p_provider_ids: stringArray(body.provider_ids),
@@ -122,14 +126,14 @@ Deno.serve(async (req:Request) => {
       const identifier = cleanText(body.identifier);
       if (!identifier || identifier.length > 200) return safeError(400, "INVALID_INPUT", requestId);
 
-      ({data,error} = await svc.schema("api").rpc("zoho_course_lookup_v1", {
+      ({data,error} = await svc.rpc("zoho_edge_course_lookup_v1", {
         p_identifier: identifier
       }));
     } else if (action === "provider_options") {
       const limit = Math.min(Math.max(integer(body.limit, 10), 1), 50);
       const offset = Math.max(integer(body.offset, 0), 0);
 
-      ({data,error} = await svc.schema("api").rpc("zoho_provider_search_v1", {
+      ({data,error} = await svc.rpc("zoho_edge_provider_search_v1", {
         p_query: cleanText(body.query) || null,
         p_country_code: cleanText(body.country_code) || null,
         p_changed_since: null,
@@ -143,13 +147,15 @@ Deno.serve(async (req:Request) => {
       const limit = Math.min(Math.max(integer(body.limit, 10), 1), 50);
       const offset = Math.max(integer(body.offset, 0), 0);
 
-      ({data,error} = await svc.schema("api").rpc("zoho_filter_options_v1", {
+      ({data,error} = await svc.rpc("zoho_edge_filter_options_v1", {
         p_kind: kind,
         p_country_code: cleanText(body.country_code) || null,
         p_query: cleanText(body.query) || null,
         p_limit: limit,
         p_offset: offset
       }));
+    } else if (action === "reference_bundle") {
+      ({data,error} = await svc.rpc("zoho_edge_reference_bundle_v1"));
     }
 
     if (error) {
