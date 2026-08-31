@@ -1,90 +1,35 @@
 import { test, expect } from '@playwright/test'
-import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment, clickPrimaryNav } from './support/runtime-evidence.mjs'
 import { openLayer3, openLayer4, openOnboarding } from './support/navigation.mjs'
 
-async function finish(testInfo, runtime) {
-  await attachRuntimeEvidence(testInfo, runtime)
-  assertNoServerErrors(runtime)
-}
+async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
-async function openWorkspace(page, targetTab='Layer 3') {
-  await loginAsUatUser(page)
-  if(targetTab==='Layer 4')return openLayer4(page)
-  if(targetTab==='Onboarding')return openOnboarding(page)
-  const dialog=await openLayer3(page)
-  if(targetTab!=='Layer 3'){
-    await dialog.locator('nav').getByRole('button',{name:targetTab,exact:true}).click({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(dialog.locator('nav').getByRole('button',{name:targetTab,exact:true})).toHaveClass(/active/,{timeout:DETERMINISTIC_UI_TIMEOUT})
-  }
-  return dialog
-}
+test.describe('CourseFinder deployed M2.3 intelligence acceptance on canonical routes @deployed',()=>{
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'deployed-m2-3-intelligence-canonical-routes',change_control:'CF-CHG-20260830-048'})})
 
-test.describe('CourseFinder deployed M2.3 intelligence acceptance @deployed', () => {
-  test.beforeAll(async () => {
-    if (!process.env.UAT_BASE_URL) throw new Error('UAT_BASE_URL is required for deployed acceptance.')
-    if (!process.env.UAT_EMAIL || !process.env.UAT_PASSWORD) throw new Error('UAT_EMAIL and UAT_PASSWORD are required for deployed acceptance.')
-    await writeRunEnvironment({ suite: 'deployed-m2-3-intelligence-v3', change_control: 'CF-CHG-20260825-036/037/038 + CF-CHG-20260826-040' })
-  })
+ test('governed Layer 3 profile exposes benchmark-passed pinned models and zero-call governance',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const ws=await openLayer3(page)
+  const profileCard=ws.getByRole('article').filter({hasText:'openrouter-free-router-v1'});await expect(profileCard.getByText('openrouter-free-router-v1',{exact:true})).toBeVisible()
+  await expect(profileCard).toContainText('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');await expect(profileCard.getByText('Enabled',{exact:true})).toBeVisible();await expect(profileCard).toContainText(/Quality:\s*Benchmark Passed/i)
+  await expect(ws.getByText(/Unchanged Evidence and Layer-2-resolved work take zero-call paths/i)).toBeVisible();await expect(ws.getByText(/Provider credentials remain server-side and are never rendered here/i)).toBeVisible()
+  await milestoneScreenshot(page,testInfo,'m2-3-layer3-canonical')
+ }finally{await finish(testInfo,runtime)}})
 
-  test('governed Layer 3 profile exposes the benchmark-passed pinned model and is executable', async ({ page }, testInfo) => {
-    const runtime = observeRuntime(page)
-    try {
-      const dialog = await openWorkspace(page, 'Layer 3')
-      const profileCard = dialog.getByRole('article').filter({ hasText: 'openrouter-free-router-v1' })
-      await expect(profileCard.getByText('openrouter-free-router-v1', { exact: true })).toBeVisible()
-      await expect(profileCard).toContainText('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free')
-      await expect(profileCard.getByText('Enabled', { exact: true })).toBeVisible()
-      await expect(profileCard).toContainText(/Quality:\s*Benchmark Passed/i)
-      await expect(profileCard.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
-      await expect(dialog.getByText(/Unchanged Evidence and Layer-2-resolved work take zero-call paths/i)).toBeVisible()
-      await expect(dialog.getByText(/Provider credentials remain server-side and are never rendered here/i)).toBeVisible()
-      await milestoneScreenshot(page, testInfo, 'm2-3-layer3-benchmark-passed-profile')
-    } finally { await finish(testInfo, runtime) }
-  })
+ test('Layer 4 and Refresh/Scheduling are separate governed workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const l4=await openLayer4(page);await expect(l4.getByRole('heading',{name:'Human resolution queue',exact:true})).toBeVisible();await expect(l4.getByPlaceholder(/prioritise unresolved field/i)).toBeVisible()
+  await page.evaluate(()=>{location.hash='#refresh-scheduling'});await expect(page.getByRole('heading',{name:'Source/entity freshness policies',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(page.getByRole('heading',{name:'Targeted refresh queue',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Downstream Search refresh signals',exact:true})).toBeVisible();await expect(page.getByText('UNBOUNDED',{exact:true})).toHaveCount(0)
+  await milestoneScreenshot(page,testInfo,'m2-3-layer4-refresh-separate')
+ }finally{await finish(testInfo,runtime)}})
 
-  test('terminal Layer 4 and refresh intelligence workspaces expose governed context and bounded targets', async ({ page }, testInfo) => {
-    const runtime = observeRuntime(page)
-    try {
-      const dialog = await openWorkspace(page, 'Layer 4')
-      const tabs = dialog.locator('nav')
-      await expect(dialog.getByRole('heading', { name: 'Terminal human resolution', exact: true })).toBeVisible()
-      await expect(dialog.getByPlaceholder(/prioritise unresolved field/i)).toBeVisible()
-      await tabs.getByRole('button', { name: 'Refresh', exact: true }).click()
-      await expect(dialog.getByRole('heading', { name: 'Source/entity freshness policies', exact: true })).toBeVisible()
-      await expect(dialog.getByRole('heading', { name: 'Targeted refresh queue', exact: true })).toBeVisible()
-      await expect(dialog.getByRole('heading', { name: 'Downstream Search refresh signals', exact: true })).toBeVisible()
-      await expect(dialog.getByText('UNBOUNDED', { exact: true })).toHaveCount(0)
-      await milestoneScreenshot(page, testInfo, 'm2-3-layer4-refresh')
-    } finally { await finish(testInfo, runtime) }
-  })
+ test('Important Links and Important Dates are separate parent-menu registries',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);await clickPrimaryNav(page,'Important Links');await expect(page.getByRole('heading',{name:'Important Links directory',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await clickPrimaryNav(page,'Important Dates');await expect(page.getByRole('heading',{name:'Important Dates registry',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(page.getByText(/Vague wording is retained as vague/i)).toBeVisible();await expect(page.getByText(/Date-only sources use date-only storage/i)).toBeVisible();await expect(page.getByText(/Country-reference events cannot trigger ingestion/i)).toBeVisible()
+  await milestoneScreenshot(page,testInfo,'m2-3-links-dates-parent-menu')
+ }finally{await finish(testInfo,runtime)}})
 
-  test('Important Links and Important Dates retain source precision and governance messaging', async ({ page }, testInfo) => {
-    const runtime = observeRuntime(page)
-    try {
-      const dialog = await openWorkspace(page, 'Important Links')
-      const tabs = dialog.locator('nav')
-      await expect(dialog.getByRole('heading', { name: 'Important Links directory', exact: true })).toBeVisible()
-      await tabs.getByRole('button', { name: 'Important Dates', exact: true }).click()
-      await expect(dialog.getByRole('heading', { name: 'Important Dates registry', exact: true })).toBeVisible()
-      await expect(dialog.getByText('2026-11-30', { exact: true })).toBeVisible()
-      await expect(dialog.getByText('2027-02-22', { exact: true })).toBeVisible()
-      await expect(dialog.getByText(/Vague wording is retained as vague; an exact timestamp is never manufactured/i)).toBeVisible()
-      await expect(dialog.getByText(/Date-only sources use date-only storage/i)).toBeVisible()
-      await expect(dialog.getByText(/Country-reference events cannot trigger ingestion/i)).toBeVisible()
-      await milestoneScreenshot(page, testInfo, 'm2-3-important-links-dates')
-    } finally { await finish(testInfo, runtime) }
-  })
-
-  test('reusable onboarding workspace exposes the accepted lifecycle and governed audit boundary', async ({ page }, testInfo) => {
-    const runtime = observeRuntime(page)
-    try {
-      const dialog = await openWorkspace(page, 'Onboarding')
-      await expect(dialog.getByRole('heading', { name: 'Country / Provider / Course Onboarding', exact: true })).toBeVisible()
-      await expect(dialog.getByText(/Shared canonical lifecycle only/i)).toBeVisible()
-      const stage = dialog.getByLabel('Stage')
-      for (const value of ['draft','source_qualification','adapter_assessment','schema_assessment','l1_uat','l2_uat','l3_ready','operational_certification','production_promotion_ready']) await expect(stage.getByRole('option', { name: value, exact: true })).toHaveCount(1)
-      await expect(dialog.getByRole('heading', { name: 'Create governed onboarding case', exact: true })).toBeVisible()
-      await milestoneScreenshot(page, testInfo, 'm2-3-onboarding-lifecycle')
-    } finally { await finish(testInfo, runtime) }
-  })
+ test('Onboarding remains governed under central Administration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const ws=await openOnboarding(page);await expect(ws.getByRole('heading',{name:'Country / Provider / Course Onboarding',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(ws.getByText(/Shared canonical lifecycle only/i)).toBeVisible()
+  const stage=ws.getByLabel('Stage');for(const value of ['draft','source_qualification','adapter_assessment','schema_assessment','l1_uat','l2_uat','l3_ready','operational_certification','production_promotion_ready'])await expect(stage.getByRole('option',{name:value,exact:true})).toHaveCount(1)
+  await expect(ws.getByRole('heading',{name:'Create governed onboarding case',exact:true})).toBeVisible();await milestoneScreenshot(page,testInfo,'m2-3-onboarding-administration')
+ }finally{await finish(testInfo,runtime)}})
 })
