@@ -61,7 +61,7 @@ export async function openEvidence(page) {
 }
 
 export async function openOnboarding(page) {
-  return openM23(page, 'Onboarding', 'Onboarding')
+  return openAdministrationTool(page,'Onboarding','Country / Provider / Course Onboarding')
 }
 
 export async function openGuides(page) {
