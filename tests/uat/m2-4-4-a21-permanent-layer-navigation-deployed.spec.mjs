@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('A21 permanent Layer navigation @deployed',()=>{
@@ -24,7 +24,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
 
   test('Layer 1 is embedded and actionable, not a floating dialog',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    await page.locator('.m-nav').getByRole('button',{name:'Layer 1 — Authority',exact:true}).click()
+    await clickPrimaryNav(page,'Layer 1 — Authority')
     await expect(page.getByRole('heading',{name:'Layer 1 — Regulatory'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.locator('.l1o-page')).toBeVisible()
     await expect(page.locator('.l1o-backdrop')).toHaveCount(0)
@@ -34,7 +34,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
 
   test('Layer 2 is embedded with background action and no operator config knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    await page.locator('.m-nav').getByRole('button',{name:'Layer 2 — Enrichment',exact:true}).click()
+    await clickPrimaryNav(page,'Layer 2 — Enrichment')
     const workspace=page.getByLabel('Layer 2 Operations')
     await expect(workspace.getByRole('heading',{name:'Layer 2 — Enrichment',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(workspace).toHaveClass(/l2o-embedded/)
@@ -52,10 +52,10 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
   test('Layer 3 and Layer 4 are separate permanent routes',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const nav=page.locator('.m-nav')
-    await nav.getByRole('button',{name:'Layer 3 — AI Interpretation',exact:true}).click()
+    await clickPrimaryNav(page,'Layer 3 — AI Interpretation')
     await expect(page.getByRole('heading',{name:'Layer 3 status'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByRole('heading',{name:'Layer 4 status'})).toHaveCount(0)
-    await nav.getByRole('button',{name:'Layer 4 — Human Resolution',exact:true}).click()
+    await clickPrimaryNav(page,'Layer 4 — Human Resolution')
     await expect(page.getByRole('heading',{name:'Layer 4 status'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByRole('heading',{name:'Layer 3 status'})).toHaveCount(0)
     await expect(page.locator('.m23-shell[role="dialog"]')).toHaveCount(0)
@@ -63,7 +63,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
   }finally{await finish(testInfo,runtime)}})
   test('saved Course filters restore without opening or flashing popovers',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    await page.locator('.m-nav').getByRole('button',{name:'Courses',exact:true}).click()
+    await clickPrimaryNav(page,'Courses')
     await expect(page.getByRole('heading',{name:'Course catalogue'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     const key=await page.evaluate(async()=>{const raw=Object.keys(localStorage).find(k=>k.includes('coursefinder:pim:screen-state:v1:')&&k.endsWith(':course'));return raw||null})
     if(key)await page.evaluate(k=>localStorage.setItem(k,JSON.stringify({query:'',filters:{country:'AU'},filterLabels:{country:'Australia'},advanced:true,sort:'course',direction:'asc'})),key)
