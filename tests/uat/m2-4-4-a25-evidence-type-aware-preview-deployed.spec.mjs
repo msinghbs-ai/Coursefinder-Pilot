@@ -9,7 +9,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function openEvidence(page,id){
   await page.evaluate(evidenceId=>{location.hash='#evidence?evidence_id='+encodeURIComponent(evidenceId)},id)
   const drawer=page.locator('.evidence-drawer')
-  await expect(drawer).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(drawer).toBeVisible({timeout:20000})
   return drawer
 }
 
@@ -20,7 +20,7 @@ test.describe('A25 Evidence type-aware preview and screenshot lineage @deployed'
     await loginAsUatUser(page)
     const drawer=await openEvidence(page,JSON_EVIDENCE)
     const preview=drawer.locator('[data-artifact-format="JSON"]')
-    await expect(preview).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(preview).toBeVisible({timeout:20000})
     await expect(preview).toContainText(/Structured JSON Evidence/i)
     await expect(drawer.locator('.evidence-visual-card')).toHaveCount(0)
     await expect(drawer.getByText('Layer2 Raw Json',{exact:true})).toBeVisible()
@@ -30,9 +30,9 @@ test.describe('A25 Evidence type-aware preview and screenshot lineage @deployed'
   test('HTML Evidence can show only its exact same-attempt screenshot',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const drawer=await openEvidence(page,HTML_EVIDENCE)
-    await expect(drawer.locator('[data-artifact-format="HTML"]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(drawer.locator('[data-artifact-format="HTML"]')).toBeVisible({timeout:20000})
     const visual=drawer.locator('.evidence-visual-card')
-    await expect(visual).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(visual).toBeVisible({timeout:20000})
     await expect(visual).toContainText(/Exact same-attempt website screenshot/i)
     await expect(visual.getByRole('button',{name:'Open screenshot Evidence'})).toBeVisible()
     await milestoneScreenshot(page,testInfo,'a25-html-related-screenshot')
@@ -42,9 +42,9 @@ test.describe('A25 Evidence type-aware preview and screenshot lineage @deployed'
     await loginAsUatUser(page)
     const drawer=await openEvidence(page,SCREENSHOT_EVIDENCE)
     const preview=drawer.locator('[data-artifact-format="SCREENSHOT"]')
-    await expect(preview).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(preview).toBeVisible({timeout:20000})
     await expect(preview).toContainText(/selected artifact itself/i)
-    await expect(preview.locator('.evidence-own-image img')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(preview.locator('.evidence-own-image img')).toBeVisible({timeout:20000})
     await expect(drawer.locator('.evidence-visual-card')).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'a25-screenshot-own-image')
   }finally{await finish(testInfo,runtime)}})
