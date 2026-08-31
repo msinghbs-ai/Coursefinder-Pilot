@@ -32,7 +32,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await milestoneScreenshot(page,testInfo,'a21-layer1-embedded')
   }finally{await finish(testInfo,runtime)}})
 
-  test('Layer 2 is embedded with Wave 1 action and no close/config launcher',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('Layer 2 is embedded with background action and no operator config knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await page.locator('.m-nav').getByRole('button',{name:'Layer 2 — Enrichment',exact:true}).click()
     const workspace=page.getByLabel('Layer 2 Operations')
@@ -40,8 +40,10 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await expect(workspace).toHaveClass(/l2o-embedded/)
     await expect(workspace).toHaveAttribute('role','region')
     await expect(page.locator('.m-sidebar')).toBeVisible()
-    await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveValue('500')
-    await expect(page.getByRole('button',{name:/Run Wave 1|Qualify next wave/})).toBeVisible()
+    await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
+    await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
+    await expect(workspace.getByRole('button',{name:'Start background enrichment',exact:true})).toBeVisible()
+    await expect(workspace.getByText('Firecrawl direct',{exact:true})).toBeVisible()
     await expect(page.getByRole('button',{name:'Close Layer 2'})).toHaveCount(0)
     await expect(page.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'a21-layer2-embedded')
