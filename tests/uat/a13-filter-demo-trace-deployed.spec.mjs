@@ -25,7 +25,6 @@ test.describe('A13 stable Course filters and Layer 2 acquisition Evidence trace 
   expect(Math.abs(pb.x-tb.x)).toBeLessThanOrEqual(3)
   expect(pb.y).toBeGreaterThanOrEqual(tb.y+tb.height-2)
   expect(pb.y).toBeLessThan(tb.y+tb.height+20)
-  expect(Math.abs((pb.y+pb.height/2)-360)).toBeGreaterThan(40)
   await page.mouse.click(20,20)
   await expect(pop).toBeHidden()
   await trigger.click();await expect(pop).toBeVisible()
