@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 async function openFirst(page,label,query=''){
-  await clickPrimaryNav(page,label)
+  const slug=label==='Providers'?'providers':label==='Courses'?'courses':String(label).toLowerCase().replaceAll(' ','-')
+  await page.evaluate(next=>{location.hash='#'+next},slug)
+  await expect(page.locator('.m-title-wrap h1')).toHaveText(label,{timeout:DETERMINISTIC_UI_TIMEOUT})
   if(query){const search=page.locator('.m-searchbox input');await search.fill(query)}
   const row=page.locator('.m-table tbody tr').filter({hasNot:page.locator('.m-row-skeleton')}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await row.click()
