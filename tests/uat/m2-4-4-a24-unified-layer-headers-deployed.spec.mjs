@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('A24 unified Layer workspace headers @deployed',()=>{
@@ -14,7 +14,7 @@ test.describe('A24 unified Layer workspace headers @deployed',()=>{
       ['Layer 4 — Human Resolution','4','Layer 4 — Human Resolution',/governed human resolution/i],
     ]
     for(const [navLabel,layer,title,eyebrow] of cases){
-      await page.locator('.m-nav').getByRole('button',{name:navLabel,exact:true}).click()
+      await clickPrimaryNav(page,navLabel)
       const header=page.locator(`[data-layer-header="${layer}"]`)
       await expect(header).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
       await expect(header.getByRole('heading',{name:title,exact:true})).toBeVisible()
