@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
-import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
+import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 async function openFirst(page,label,query=''){
-  await page.locator('.m-nav').getByRole('button',{name:label,exact:true}).click()
+  await clickPrimaryNav(page,label)
   if(query){const search=page.locator('.m-searchbox input');await search.fill(query)}
   const row=page.locator('.m-table tbody tr').filter({hasNot:page.locator('.m-row-skeleton')}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await row.click()
