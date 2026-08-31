@@ -1,24 +1,22 @@
-# M2.4.4 focused A25 + Layer-status load regression — 1 September 2026
+# M2.4.4 focused A25 + Layer-status load regression retry — 1 September 2026
 
 Source head before marker:
-cbc8357cf13a155e1c10dc21ea6a680b55241f29
+e4b1b952b2ecc4a57de0024fc5fc8f2530b3a17d
 
-Previous integration:
-- candidate 03ebfab70fbec46a8d12e2a2e7b8e67e0f500f99
-- desktop 67/67 PASS
-- mobile 65 PASS, 1 flaky, 1 FAIL
-- sole real FAIL: screenshot Evidence detail returned HTTP 500 twice due statement timeout under integration load
+Previous focused run:
+- build 33451852402 PASS
+- UAT 33451852365 FAIL
+- A25 JSON/HTML/screenshot Evidence all PASS
+- performance suite all PASS
+- sole failure was test-label drift: production UI uses "Layer 3 · AI interpretation" and "Layer 4 · Human resolution"
 
-Runtime corrections:
-- restored missing public.admin_read layer_status_summary branch
-- indexed Layer 2 pending-wave, recent-run and Evidence layer/time counts
-- Dashboard Layer-status summary reduced from ~1.53 s to ~0.79–1.37 s in live verification
-- screenshot Evidence detail itself verified warm at ~16 ms; A25 lineage semantics unchanged
-- added permanent deployed Layer-status regression to integration and final acceptance suites
+Correction:
+- test contract aligned to exact production labels only
+- no runtime, Evidence, performance, role, security or navigation change
 
-Focused scope:
+Focused scope unchanged:
 - A25 JSON/HTML/screenshot Evidence lineage
-- Dashboard Layer 1–4 operational status without RPC errors
+- Dashboard Layer 1-4 operational status without RPC errors
 - performance budgets and responsive regression
 
 Hard gates unchanged:
