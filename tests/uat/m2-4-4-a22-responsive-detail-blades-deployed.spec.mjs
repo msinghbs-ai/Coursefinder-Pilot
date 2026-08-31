@@ -16,8 +16,10 @@ test.describe('A22 responsive detail blades @deployed',()=>{
   await expect(drawer).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const metrics=await drawer.evaluate(el=>({w:el.getBoundingClientRect().width,vw:innerWidth}))
   expect(metrics.w).toBeGreaterThan(800);expect(metrics.w).toBeLessThanOrEqual(1050)
+  await expect(content).toBeVisible()
   const scroll=await content.evaluate(el=>({overflow:getComputedStyle(el).overflowY,scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}))
   expect(scroll.overflow).toMatch(/scroll|auto/);expect(scroll.scrollHeight).toBeGreaterThanOrEqual(scroll.clientHeight);expect(scroll.scrollWidth).toBeLessThanOrEqual(scroll.clientWidth+2)
+  const pageWidth=await page.evaluate(()=>({inner:innerWidth,doc:document.documentElement.scrollWidth}));expect(pageWidth.doc).toBeLessThanOrEqual(pageWidth.inner+2)
   const cards=drawer.locator('.ci-outcome-card');if(await cards.count()){const right=await content.evaluate(el=>el.getBoundingClientRect().right);for(let i=0;i<Math.min(await cards.count(),5);i++){const b=await cards.nth(i).boundingBox();expect((b?.x||0)+(b?.width||0)).toBeLessThanOrEqual(right+2)}}
   await expect(drawer.getByRole('button',{name:/Close Provider detail/i})).toBeVisible()
   await milestoneScreenshot(page,testInfo,'a22-provider-wide-drawer')
@@ -36,6 +38,6 @@ test.describe('A22 responsive detail blades @deployed',()=>{
   await page.getByRole('button',{name:/Close Course detail/i}).click()
   await page.setViewportSize({width:390,height:844});await openFirst(page,'Courses');drawer=page.getByLabel('Course detail');content=drawer.locator('.m-drawer-content')
   const mobile=await drawer.evaluate(el=>({w:el.getBoundingClientRect().width,vw:innerWidth}));expect(Math.abs(mobile.w-mobile.vw)).toBeLessThanOrEqual(2)
-  await expect(content).toBeVisible();await milestoneScreenshot(page,testInfo,'a22-course-mobile-drawer')
+  await expect(content).toBeVisible();const mobilePage=await page.evaluate(()=>({inner:innerWidth,doc:document.documentElement.scrollWidth}));expect(mobilePage.doc).toBeLessThanOrEqual(mobilePage.inner+2);await milestoneScreenshot(page,testInfo,'a22-course-mobile-drawer')
  }finally{await finish(testInfo,runtime)}})
 })
