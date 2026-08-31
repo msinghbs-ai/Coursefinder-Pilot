@@ -1,32 +1,73 @@
-# M2.4.4 A16 bounded integration candidate — 30 August 2026
+# M2.4.4 A17–A25 bounded integration candidate — 1 September 2026
 
 Implementation source before marker:
-44960cc8a61c4ee743840bd5aca3cf25f7c10094
+adf5ac1d85bff0291355ac44650dc149deedcb09
 
 Change Control:
 CF-CHG-20260830-048
 
 Scope:
-- A16 explicit 60/60 AU/NZ Provider international-contact dispositions
-- dedicated Evidence-bound Layer 3 international-contact qualification
-- append-only Layer 4 effective-value overlay
-- Provider / Course / Campus / Scholarship / Provider-contact intervention surfaces
-- separate role-gated publication decisions
-- immutable source/history field enforcement
-- SECURITY INVOKER browser RPC boundary through non-exposed l4_api
-- permanent A16 targeted/integration/acceptance UAT
+- standing A16 cross-layer contact/L4 foundation retained;
+- A17–A21 current M2.4.4 navigation, operational maturity and canonical workspace architecture;
+- A22 responsive Provider/Course detail blades with one scroll owner and cross-viewport acceptance;
+- A23 quota-aware background Layer 2 production model:
+  - Firecrawl-first governed acquisition;
+  - 50-Provider background source qualification batches;
+  - 500-Course production target waves;
+  - autonomous qualification continuation;
+  - deterministic source-pattern finalizer;
+  - governed Layer 3 / Layer 4 handoff;
+  - central Administration policy/configuration;
+- A24 unified Layer 1–4 dark workspace header architecture;
+- A25 Evidence type-aware preview and exact-attempt screenshot lineage integrity;
+- permanent targeted/integration/acceptance UAT for the current architecture;
+- unchanged security, authority, Evidence, privacy and performance thresholds.
 
-Pre-candidate proof:
-- frontend build 33308932790 PASS
-- targeted A16 deployed UAT 33308932765 PASS
-- contact benchmark b16d1801-977e-4aaf-84da-e3b2726ac7ba PASS
-- 60/60 Provider dispositions: 11 published_contact_found / 49 not_found_in_qualified_evidence
-- Security Advisor 139 INFO / 0 WARN / 0 ERROR
-- Performance Advisor 175 INFO / 0 WARN / 0 ERROR
-- seven active cron jobs latest-success
-- no active L1-L3 refresh work
+Pre-candidate targeted proof:
+- A22 deployed UAT 33384244501 PASS; build 33384244532 PASS.
+- A23 continuation corrective UAT 33385645813 PASS; build 33385645810 PASS.
+- A23 finalizer/handoff UAT 33390795147 PASS; build 33390795285 PASS.
+- A24 deployed UAT 33347595340 PASS; build 33347595455 PASS.
+- A25 deployed UAT 33359217661 PASS; build 33359217695 PASS.
+- contact benchmark b16d1801-977e-4aaf-84da-e3b2726ac7ba PASS.
+- source-pattern profile benchmark 089befcf-a2f2-42ec-ad03-7bfe02816e1b PASS.
+
+Runtime reconciliation immediately before nomination:
+- no active/planned/partial Layer 2 qualification waves;
+- qualification scheduler latest-success;
+- qualification finalizer latest-success;
+- all active CourseFinder cron jobs latest-success;
+- Firecrawl: 1,820 / 5,000 monthly units used; 3,180 remaining; 250-unit reserve intact; no silent paid fallback;
+- expected governed downstream queues:
+  - 90 A23 Layer 3 source-pattern requests queued;
+  - 24 A23 Layer 4 source-resolution requests queued;
+  - 31 total Layer 4 queued including pre-existing human-resolution work;
+- current international-contact dispositions remain exactly 60 Providers:
+  - 11 published_contact_found;
+  - 49 not_found_in_qualified_evidence;
+- Security Advisor: 146 INFO / 0 WARN / 0 ERROR;
+- Performance Advisor: 177 INFO / 0 WARN / 0 ERROR;
+- Layer 2 qualification worker runtime v4;
+- Layer 3 interpreter runtime v8;
+- Layer 3 contact benchmark runtime v3;
+- no canonical/Search/Publication mutation authority is added by qualification/finalizer handoff.
+
+Historical failures remain immutable:
+- qualification continuation HTTP 500/403 failures retained and corrected without loosening protected-table or role boundaries;
+- responsive drawer selector/navigation test failures retained and corrected without lowering viewport/scroll requirements;
+- earlier integration/performance failures remain retained under the unchanged 3,000 ms Course performance budget.
 
 Decision rule:
-Both chromium-desktop and chromium-mobile integration status contexts must PASS before one final A16-aware acceptance candidate may be nominated.
+- exactly one integration candidate is nominated by this marker;
+- both chromium-desktop and chromium-mobile integration contexts must PASS;
+- the unchanged 3,000 ms Course performance budgets remain mandatory;
+- no threshold weakening is permitted;
+- if integration fails, preserve the failure and correct only the demonstrated defect/contract before any replacement candidate;
+- only after desktop + mobile integration PASS may exactly one new A17–A25-aware final acceptance candidate be nominated.
 
-Historical failures remain immutable evidence; no performance, authority, Evidence, privacy or model-quality threshold is weakened.
+Governance boundaries:
+- M2.4.3 remains CLOSED / PASS;
+- original A15 remains frozen;
+- RMIT frozen 212-record promotion remains blocked;
+- NZ first-party Layer 2 Course enrichment remains deferred;
+- Production, broad Publication, Website and Zoho cutover remain unauthorised.
