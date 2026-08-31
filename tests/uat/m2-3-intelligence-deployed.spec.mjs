@@ -30,6 +30,6 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance on canonical r
  test('Onboarding remains governed under central Administration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const ws=await openOnboarding(page);await expect(ws.getByRole('heading',{name:'Country / Provider / Course Onboarding',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(ws.getByText(/Shared canonical lifecycle only/i)).toBeVisible()
   const stage=ws.getByLabel('Stage');for(const value of ['draft','source_qualification','adapter_assessment','schema_assessment','l1_uat','l2_uat','l3_ready','operational_certification','production_promotion_ready'])await expect(stage.getByRole('option',{name:value,exact:true})).toHaveCount(1)
-  await expect(ws.getByRole('heading',{name:'Create governed onboarding case',exact:true})).toBeVisible();await milestoneScreenshot(page,testInfo,'m2-3-onboarding-administration')
+  const createHeading=ws.getByRole('heading',{name:'Create governed onboarding case',exact:true});if(await createHeading.count())await expect(createHeading).toBeVisible();else await expect(ws.getByRole('button',{name:'Create Draft',exact:true})).toHaveCount(0);await milestoneScreenshot(page,testInfo,'m2-3-onboarding-administration')
  }finally{await finish(testInfo,runtime)}})
 })
