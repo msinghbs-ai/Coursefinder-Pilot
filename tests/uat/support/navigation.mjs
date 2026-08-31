@@ -19,28 +19,26 @@ export async function openLayer2(page) {
   return workspace
 }
 
+async function openAdministrationTool(page,title,heading){
+  await clickPrimaryNav(page,'Administration')
+  const card=page.locator('.m-attention').filter({hasText:title}).first()
+  await expect(card).toBeVisible(ui)
+  await card.getByRole('button',{name:'Open',exact:true}).click({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const workspace=page.getByRole('region').filter({has:page.getByRole('heading',{name:heading,exact:true})}).first()
+  await expect(workspace).toBeVisible(ui)
+  return workspace
+}
+
 export async function openLayer2Advanced(page) {
-  const dialog = await openLayer2(page)
-  await dialog.getByRole('button', { name: /Advanced configuration/i }).click({ timeout: DETERMINISTIC_UI_TIMEOUT })
-  await expect(dialog).toBeHidden(ui)
-  await expect(page.getByRole('heading', { name: 'Enrichment Source Configuration' })).toBeVisible(ui)
+  return openAdministrationTool(page,'Layer 2 source profiles','Enrichment Source Configuration')
 }
 
 export async function openLayer2Providers(page) {
-  const dialog = await openLayer2(page)
-  await dialog.getByRole('button', { name: /Advanced configuration/i }).click({ timeout: DETERMINISTIC_UI_TIMEOUT })
-  await expect(dialog).toBeHidden(ui)
-  const providerButton = page.getByRole('button', { name: 'Acquisition providers', exact: true })
-  await expect(providerButton).toBeVisible(ui)
-  await providerButton.click({ timeout: DETERMINISTIC_UI_TIMEOUT })
-  await expect(page.getByRole('heading', { name: 'Layer 2 Acquisition Providers' })).toBeVisible(ui)
+  return openAdministrationTool(page,'Layer 2 acquisition providers','Layer 2 Acquisition Providers')
 }
 
 export async function openLayer2Trials(page) {
-  const dialog = await openLayer2(page)
-  await dialog.getByRole('button', { name: /Run bounded trial/i }).click({ timeout: DETERMINISTIC_UI_TIMEOUT })
-  await expect(dialog).toBeHidden(ui)
-  await expect(page.getByRole('heading', { name: 'Acquisition & Course Completeness Trials' })).toBeVisible(ui)
+  throw new Error('Layer 2 acquisition trials are not a canonical A23 operator route; use background enrichment and governed Evidence instead.')
 }
 
 export async function openLayer3(page) {
