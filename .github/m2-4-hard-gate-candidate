@@ -1,12 +1,15 @@
-# M2.4.4 focused hard-gate validation — 1 September 2026
+# M2.4.4 focused hard-gate validation — retry 2 — 1 September 2026
 
 Source head before marker:
-ebe90bb1792359ea07f602d41144d584bfc475d0
+bf412b7dc5f6156b28b646857a9c6a50e13690a1
 
-Purpose:
-Run only the remaining hard gates after targeted PASS:
-- A25 Evidence type/screenshot lineage integrity;
-- bounded direct Course acquisition creating governed versioned Evidence;
-- performance budgets, including Layer 2 operations <= 3,000 ms and <= 250,000 bytes.
+Pre-proof:
+- build 33439561990 PASS
+- targeted UAT 33439561973 PASS
 
-Do not interpret this marker as an integration or final acceptance nomination.
+Focused scope only:
+- A25 JSON/HTML/screenshot Evidence integrity;
+- bounded Firecrawl-first Course acquisition creating governed versioned Evidence;
+- performance budgets, including Layer 2 operations and Administration source registry <= 3,000 ms / <= 250,000 bytes.
+
+This is not an integration nomination.
