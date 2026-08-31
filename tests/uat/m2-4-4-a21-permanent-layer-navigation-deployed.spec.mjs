@@ -43,7 +43,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
     await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
     await expect(workspace.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible()
-    await expect(workspace.getByText('Firecrawl direct',{exact:true})).toBeVisible()
+    await expect(workspace.locator('.l2o-route-chain')).toContainText(/Firecrawl direct.*Background scheduler.*Budget guard.*Evidence/i)
     await expect(page.getByRole('button',{name:'Close Layer 2'})).toHaveCount(0)
     await expect(page.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'a21-layer2-embedded')
