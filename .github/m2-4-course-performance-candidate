@@ -1,0 +1,23 @@
+# M2.4.4 focused Course interaction performance validation — 1 September 2026
+
+Source head before marker:
+09a5e119d63cf9ad57e03464ca1b03e5853adb3c
+
+Pre-proof:
+- build 33447312341 PASS
+- deployed UAT 33447312300 PASS
+- live DB timing after correction: default Course page ~1.22 s; full Course detail ~0.98 s
+
+Focused scope:
+- performance-deployed.spec.mjs only
+- exact CRICOS lookup, Course detail, paging and browser-back interaction
+- core workspace budgets
+- Layer 2/Admin management-view budgets
+- responsive widths
+
+Hard gates unchanged:
+- RPC/detail latency <= 3,000 ms
+- page/management payload <= 250,000 bytes
+- filter-option payload <= 60,000 bytes
+
+This is not an integration nomination.
