@@ -29,7 +29,7 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible()
     await expect(ws.getByText(/no manual per-Provider action is required/i)).toHaveCount(0)
     await expect(ws.getByRole('button',{name:'Jobs',exact:true})).toBeVisible()
-    await expect(ws.getByRole('button',{name:/Open Evidence/i}).toBeVisible()
+    await expect(ws.getByRole('button',{name:/Open Evidence/i})).toBeVisible()
     const blockerPanel=ws.locator('.l2o-blockers')
     if(await blockerPanel.count())await expect(blockerPanel.getByRole('heading',{name:'Action required',exact:true})).toBeVisible()
     await expect(ws.getByText(/Meeting-ready Firecrawl example/i)).toHaveCount(0)
