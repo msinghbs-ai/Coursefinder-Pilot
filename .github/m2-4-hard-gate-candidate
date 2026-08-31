@@ -1,15 +1,16 @@
-# M2.4.4 focused hard-gate validation — retry 2 — 1 September 2026
+# M2.4.4 focused hard-gate validation — retry 3 — 1 September 2026
 
 Source head before marker:
-bf412b7dc5f6156b28b646857a9c6a50e13690a1
+6b5211d8e8100135afeda871553729100b82c8c5
 
-Pre-proof:
-- build 33439561990 PASS
-- targeted UAT 33439561973 PASS
+Fix in this retry:
+- restored A10/A12 public.admin_read dispatch branches (catalogue_filter_page, admin_filter_option_page, Layer 2 alerts and contextual detail projections);
+- retained A27 bounded Layer 2 profile paging;
+- live Supabase dispatcher verified.
 
 Focused scope only:
 - A25 JSON/HTML/screenshot Evidence integrity;
 - bounded Firecrawl-first Course acquisition creating governed versioned Evidence;
-- performance budgets, including Layer 2 operations and Administration source registry <= 3,000 ms / <= 250,000 bytes.
+- performance budgets including catalogue filter, Layer 2 operations and Administration profile paging.
 
 This is not an integration nomination.
