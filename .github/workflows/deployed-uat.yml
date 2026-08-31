@@ -154,6 +154,13 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx)$|^tests/uat/(support/navigation\.mjs|m2-4-4-a26-a28-operator-ux-deployed\.spec\.mjs)$)'; then
             targeted=(tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
+            targeted=(
+              tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
+              tests/uat/layer2-provider-deployed.spec.mjs
+              tests/uat/performance-deployed.spec.mjs
+            )
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
