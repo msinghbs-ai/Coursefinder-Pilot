@@ -4,7 +4,7 @@ import{openLayer2}from'./support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
-test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
+test.describe('A13 stable Course filters and Layer 2 acquisition Evidence trace @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'a13-filter-demo-trace-v1.4',change_control:'CF-CHG-20260827-044'})})
 
  test('tablet Course Provider filter stays anchored and does not auto-focus',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
@@ -35,20 +35,19 @@ test.describe('A13 stable Course filters and Layer 2 demo trace @deployed',()=>{
   await milestoneScreenshot(page,testInfo,'a13-tablet-filter-anchored')
  }finally{await finish(testInfo,runtime)}})
 
- test('Layer 2 explains automatic Firecrawl route and opens accepted UQ Evidence',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test('Layer 2 explains governed Firecrawl production route and opens accepted UQ Evidence',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   const dialog=await openLayer2(page)
   await expect(dialog.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible()
-  await expect(dialog.getByRole('heading',{name:'How the single Sync button works'})).toBeVisible()
+  await expect(dialog.getByRole('heading',{name:'Effective acquisition policy',exact:true})).toBeVisible()
   const route=page.locator('.l2o-route-chain')
-  await expect(route.getByText(/Direct HTTP/)).toBeVisible()
-  await expect(route.getByText(/Firecrawl/)).toBeVisible()
-  await expect(route.getByText(/Governed fallback/)).toBeVisible()
-  await expect(route.getByText(/Evidence/)).toBeVisible()
+  await expect(route).toContainText(/Firecrawl direct.*Background scheduler.*Budget guard.*Evidence/i)
   const demo=page.locator('.l2o-demo-proof')
-  await expect(demo.getByText(/Meeting-ready Firecrawl example · accepted UQ profile/)).toBeVisible()
+  await expect(demo.getByText(/Recent accepted acquisition example/i)).toBeVisible()
+  await demo.locator('summary').click()
+  await expect(demo.getByText(/Firecrawl acquisition evidence/i)).toBeVisible()
   await expect(demo.getByText(/study\.uq\.edu\.au\/study-options\/programs\/bachelor-arts-2000/)).toBeVisible()
-  await expect(demo.getByText(/Firecrawl · HTTP 200/)).toBeVisible()
+  await expect(demo.getByText(/HTTP 200/)).toBeVisible()
   await milestoneScreenshot(page,testInfo,'a13-layer2-firecrawl-demo-proof')
   await demo.getByRole('button',{name:/Open captured Evidence/}).click()
   await expect(page).toHaveURL(/#evidence\?evidence_id=eb305cd4-577e-4ced-988b-243fc3318f6e/)
