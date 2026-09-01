@@ -1,45 +1,36 @@
-# M2.4.4 final focused A23/A26/A27/A28 closure regression — 1 September 2026
+# M2.4.4 replacement final focused A23/A26/A27/A28 closure regression — 1 September 2026
 
 Source head before marker:
-8c7e24155426b77ac64939f023dc48d425b9e775
+a621dabc2bcd52dfe47a39b800ff10228f529ff4
 
-Accepted integrated baseline:
-- integration candidate 38203222a137d0aeac8aa69e64ed1b12bf874fff
-- build 33454842391 PASS
-- integration UAT 33454842388 PASS desktop + mobile
-- prior focused runtime build 33456205759 PASS
-- prior focused runtime UAT 33456205806 PASS
+Previous focused result:
+- build 33457383942 PASS
+- UAT 33457383894 FAIL
+- 20 tests PASS
+- sole failure was test-contract logic: the migration necessarily contains the old partial predicate as v_old so it can replace it at deploy time
+- runtime terminal-partial behaviour and Firecrawl route proof remain valid
+- no runtime or threshold change
 
-Runtime closure proof:
-- stable parent c65e67a6-3b2e-47e3-832a-57118fe5cf5f
-- scope wave 1bb1504d-7bad-42d9-b059-4adeaf9118c7
-- superseded direct-http batch 69be7f45-89b3-4e04-b26e-cd89a122a4b5 cancelled with Evidence retained
+Accepted runtime proof retained:
+- parent c65e67a6-3b2e-47e3-832a-57118fe5cf5f
+- wave 1bb1504d-7bad-42d9-b059-4adeaf9118c7
 - corrected Firecrawl batch accd42a2-f096-452b-a084-dc609bd45030
-- live Firecrawl child Job ed945d14-1458-41b7-bd75-0d1db77531a4
+- Firecrawl Job ed945d14-1458-41b7-bd75-0d1db77531a4
 - raw JSON Evidence 5bc09143-a8d7-477a-a446-570a2e49e451
 - screenshot Evidence e8a0ddf7-295c-46fd-b0c2-6392c28de0ee
 - extraction Evidence 567993f6-8918-46b7-bc0e-886327bf181d
-- Job and all Evidence above carry parent c65e67a6... and wave 1bb1504d...
-- batch runner v7 passes selected provider_id into layer2-acquire-v2
-- terminal partial batch duplicate guard corrected
-- parent-run aggregation reconciled without join fan-out
-- child item progress now refreshes batch heartbeat
-- A27 Administration deep-link/refresh/back-forward already proven
-- FU-020 resolved by direct schema/grant review
+- all share parent/wave lineage
+- runner v7 passes selected provider_id
+- terminal partial duplicate guard deployed
+- exact parent aggregation deployed
+- child heartbeat deployed
 
-Focused suites:
+Focused suites unchanged:
 - admin-navigation-deployed.spec.mjs
 - m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
 - m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
 - m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
 - performance-deployed.spec.mjs
 
-Hard gates unchanged:
-- RPC/detail latency <= 3000 ms
-- page/management payload <= 250000 bytes
-- filter payload <= 60000 bytes
-- Firecrawl-first production route retained
-- Evidence lineage/type integrity retained
-- role/security/L1 authority boundaries retained
-
-This is the final focused closure regression before any final acceptance nomination.
+Hard gates unchanged.
+This is not final acceptance.
