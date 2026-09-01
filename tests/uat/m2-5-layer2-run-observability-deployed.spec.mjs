@@ -4,6 +4,7 @@ import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINI
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
+// Permanent M2.5 corrective contract: terminal lineage must remain operator-visible.
 test.describe('M2.5 Layer 2 terminal run observability correction @deployed',()=>{
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-5-layer2-run-observability',change_control:'CF-CHG-20260901-052'})})
 
