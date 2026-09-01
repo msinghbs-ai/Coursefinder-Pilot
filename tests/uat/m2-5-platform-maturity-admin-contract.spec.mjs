@@ -40,13 +40,15 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(shell).toContain("<PlatformMaturity rank={rank} onError={onError}/>")
     expect(shell).not.toContain("{tool==='platform'&&rank>=6&&<div className=\"m-legacy-host\"><RegulatorySettings")
     expect(shell).toContain("action=\"Open PIM\" onClick={()=>selectTool('pim')}")
-    expect(shell).toContain("const UI_VERSION='2.15.18'")
-    expect(index).toContain('Coursefinder PIM Admin v2.15.18')
-    expect(versionEntry).toContain("const VERSION='2.15.18'")
+    const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
+    const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
+    expect(shellVersion).toBeTruthy()
+    expect(releaseVersion).toBe(shellVersion)
+    expect(index).toContain('Coursefinder PIM Admin v'+shellVersion)
     expect(versionEntry).toContain("version:'2.15.18'")
     expect(versionEntry).toContain('Platform maturity Administration workspace')
-    expect(releaseTest).toContain('v2.15.18')
-    expect(releaseTest).toContain('[data-release-version="2.15.18"]')
+    expect(releaseTest).toContain('v'+shellVersion)
+    expect(releaseTest).toContain('[data-release-version="'+shellVersion+'"]')
 
     expect(css).toContain('.pm-table-wrap')
     expect(css).toContain('overflow-x:auto')
