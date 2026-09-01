@@ -12,7 +12,7 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
    fs.readFile('src/ContextualInsights.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8'),
-   fs.readFile('supabase/migrations/20260901133212_cf_061_contextual_compare_qilt_prisms.sql','utf8'),
+   Promise.all([fs.readFile('supabase/migrations/20260901133212_cf_061_contextual_compare_qilt_prisms.sql','utf8'),fs.readFile('supabase/migrations/20260901134059_cf_061_contextual_compare_provider_city_fix.sql','utf8'),fs.readFile('supabase/migrations/20260901134137_cf_061_contextual_insights_study_area_code_fix.sql','utf8')]).then(xs=>xs.join('\n')),
    fs.readFile('src/pim-version-entry.js','utf8'),
    fs.readFile('index.html','utf8'),
   ])
@@ -43,6 +43,8 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(migration).toContain('confidence_low')
   expect(migration).toContain('confidence_high')
   expect(migration).toContain('maximum six comparison entities')
+  expect(migration).toContain("'city',p.primary_city")
+  expect(migration).toContain('esa.external_code study_area_code')
   expect(migration).toContain("catalogue reader role required")
   expect(migration).not.toMatch(/\b(delete|truncate)\s+from\b/i)
   expect(migration).not.toMatch(/\bupdate\s+(catalogue|search|publication)\./i)
