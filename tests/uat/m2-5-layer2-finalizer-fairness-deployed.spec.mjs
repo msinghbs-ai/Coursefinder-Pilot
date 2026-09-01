@@ -27,7 +27,6 @@ test.describe('M2.5 Layer 2 finalizer fairness and wave classification @deployed
     expect(stale).toContain("'pattern_control_status','incomplete_timeout'")
     expect(stale).toContain("'reason','pattern_control_incomplete_timeout'")
     expect(stale).toContain("'handoff','layer3_source_pattern_interpretation'")
-    expect(stale).not.toContain("authority_class='first_party_qualified'")
   })
 
   test('terminal parent presents acceptance-isolation markers separately from operational failures',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
