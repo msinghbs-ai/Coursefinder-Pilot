@@ -41,6 +41,15 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   await expect(page.locator('.cf-compare-value').first()).toBeVisible()
   await expect(page.getByText('International student flow',{exact:true})).toBeVisible()
   await milestoneScreenshot(page,testInfo,'cf-061-provider-comparison')
+  await page.setViewportSize({width:900,height:800})
+  await expect(page.locator('.cf-compare-shell')).toBeVisible()
+  await expect(page.locator('.cf-compare-scroll')).toBeVisible()
+  await page.setViewportSize({width:390,height:844})
+  await expect(page.getByRole('heading',{name:'Compare providers',exact:true})).toBeVisible()
+  const overflow=await page.evaluate(()=>({body:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth,inner:document.querySelector('.cf-compare-scroll')?.scrollWidth||0,innerClient:document.querySelector('.cf-compare-scroll')?.clientWidth||0}))
+  expect(overflow.body).toBeLessThanOrEqual(overflow.viewport+2)
+  expect(overflow.inner).toBeGreaterThanOrEqual(overflow.innerClient)
+  await milestoneScreenshot(page,testInfo,'cf-061-provider-comparison-mobile')
  }finally{await finish(testInfo,runtime)}})
 
  test('Course detail keeps QILT as Provider context and opens Course comparison',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
