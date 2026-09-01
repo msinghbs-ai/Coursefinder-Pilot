@@ -137,7 +137,7 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Layer 4 — Human Resolution'&&rank>=3)return <div className="m-page-stack"><Layer4Workspace onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Important Links'&&rank>=3)return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Important Dates'&&rank>=3)return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
-  if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} navigate={navigate}/>
+  if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} navigate={navigate} routeParams={routeParams}/>
   if(page==='Refresh & Scheduling'&&rank>=3)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Onboarding'&&rank>=3)return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
@@ -149,8 +149,7 @@ function Page({page,routeParams,rank,onError,navigate}){
 }
 
 
-function AdministrationHome({rank,navigate}){
- const[tool,setTool]=useState('overview')
+function AdministrationHome({rank,navigate,routeParams}){
  const sections=[
   ['overview','Overview',Settings2,rank>=4],
   ['layer2-sources','Layer 2 sources',Database,rank>=4],
@@ -161,18 +160,20 @@ function AdministrationHome({rank,navigate}){
   ['platform','Platform',Settings2,rank>=6],
  ]
  const allowed=sections.filter(x=>x[3])
- useEffect(()=>{if(!allowed.some(x=>x[0]===tool))setTool(allowed[0]?.[0]||'overview')},[rank])
+ const requested=routeParams?.get?.('section')||'overview'
+ const tool=allowed.some(x=>x[0]===requested)?requested:(allowed[0]?.[0]||'overview')
+ const selectTool=key=>navigate('Administration',key==='overview'?{}:{section:key})
  const openRoute=label=>navigate(label)
  return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Settings2} title="Administration" subtitle="Central configuration. Choose a section below; operational Layer workspaces remain separate."/>
-  <div className="m-admin-subnav" role="tablist" aria-label="Administration sections">{allowed.map(([key,label,Icon])=><button key={key} role="tab" aria-selected={tool===key} className={tool===key?'active':''} onClick={()=>setTool(key)}><Icon size={15}/><span>{label}</span></button>)}</div>
+  <div className="m-admin-subnav" role="tablist" aria-label="Administration sections">{allowed.map(([key,label,Icon])=><button key={key} role="tab" aria-selected={tool===key} className={tool===key?'active':''} onClick={()=>selectTool(key)}><Icon size={15}/><span>{label}</span></button>)}</div>
  </section>
  {tool==='overview'&&<section className="m-panel"><PanelTitle icon={Settings2} title="Administration overview" subtitle="Configuration is grouped here rather than scattered through Layer operations."/><div className="m-attention-grid">
   <Attention tone="info" icon={Database} title="Sources & onboarding" text="Governed sources, qualification and onboarding lifecycle." action="Open sources" onClick={()=>openRoute('Sources')}/>
-  <Attention tone="info" icon={RefreshCw} title="Scheduling" text="Refresh cadence, targeted scheduling and policy controls." action="Open scheduling" onClick={()=>setTool('scheduling')}/>
-  <Attention tone="info" icon={SlidersHorizontal} title="Acquisition" text="Layer 2 source profiles, Firecrawl/direct routes and execution policy." action="Open acquisition" onClick={()=>setTool('layer2-providers')}/>
+  <Attention tone="info" icon={RefreshCw} title="Scheduling" text="Refresh cadence, targeted scheduling and policy controls." action="Open scheduling" onClick={()=>selectTool('scheduling')}/>
+  <Attention tone="info" icon={SlidersHorizontal} title="Acquisition" text="Layer 2 source profiles, Firecrawl/direct routes and execution policy." action="Open acquisition" onClick={()=>selectTool('layer2-providers')}/>
   {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>setTool('pim')}/>}
  </div></section>}
- {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>setTool('layer2-providers')}/>}
+ {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>}
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<Layer2ExecutionPolicySettings/>}</>}
  {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={()=>{}}/></div>}
  {tool==='onboarding'&&<div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={()=>{}}/></div>}
