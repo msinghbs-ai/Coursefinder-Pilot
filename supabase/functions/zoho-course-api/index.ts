@@ -21,6 +21,13 @@ const integer = (value:unknown, fallback:number) => {
 };
 const stringArray = (value:unknown) =>
   Array.isArray(value) ? value.map(cleanText).filter(Boolean).slice(0,50) : null;
+const integerArray = (value:unknown) =>
+  Array.isArray(value) ? value.map(Number).filter(Number.isInteger).slice(0,50) : null;
+const numberOrNull = (value:unknown) => {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
 
 const safeError = (status:number, code:string, requestId:string, extra:Record<string,string>={}) => json(status, {
   error: {
@@ -112,12 +119,28 @@ Deno.serve(async (req:Request) => {
       const limit = Math.min(Math.max(integer(body.limit, 10), 1), 50);
       const offset = Math.max(integer(body.offset, 0), 0);
 
-      ({data,error} = await svc.rpc("zoho_edge_course_search_v1", {
+      ({data,error} = await svc.rpc("zoho_edge_course_search_v2", {
         p_query: cleanText(body.query) || null,
         p_country_codes: stringArray(body.country_codes),
         p_provider_ids: stringArray(body.provider_ids),
         p_subdivision_codes: stringArray(body.subdivision_codes),
+        p_study_level_codes: stringArray(body.study_level_codes),
+        p_primary_field_codes: stringArray(body.primary_field_codes),
+        p_delivery_modes: stringArray(body.delivery_modes),
         p_has_scholarship: typeof body.has_scholarship === "boolean" ? body.has_scholarship : null,
+        p_has_intake: typeof body.has_intake === "boolean" ? body.has_intake : null,
+        p_has_english: typeof body.has_english === "boolean" ? body.has_english : null,
+        p_has_provider_current_tuition: typeof body.has_provider_current_tuition === "boolean" ? body.has_provider_current_tuition : null,
+        p_has_regulatory_tuition: typeof body.has_regulatory_tuition === "boolean" ? body.has_regulatory_tuition : null,
+        p_has_link: typeof body.has_link === "boolean" ? body.has_link : null,
+        p_intake_years: integerArray(body.intake_years),
+        p_intake_labels: stringArray(body.intake_labels),
+        p_english_test_codes: stringArray(body.english_test_codes),
+        p_min_provider_annual_tuition: numberOrNull(body.min_provider_annual_tuition),
+        p_max_provider_annual_tuition: numberOrNull(body.max_provider_annual_tuition),
+        p_min_regulatory_total_tuition: numberOrNull(body.min_regulatory_total_tuition),
+        p_max_regulatory_total_tuition: numberOrNull(body.max_regulatory_total_tuition),
+        p_publication_statuses: stringArray(body.publication_statuses),
         p_changed_since: null,
         p_limit: limit,
         p_offset: offset
