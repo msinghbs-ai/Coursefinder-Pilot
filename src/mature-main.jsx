@@ -158,22 +158,24 @@ function Page({page,routeParams,rank,onError,navigate}){
 
 
 function StatisticsRankings({onError,navigate,rank}){
- const[qilt,setQilt]=useState(null),[prisms,setPrisms]=useState(null),[busy,setBusy]=useState(true)
+ const[qilt,setQilt]=useState(null),[prisms,setPrisms]=useState(null),[ranking,setRanking]=useState(null),[busy,setBusy]=useState(true)
  useEffect(()=>{let live=true;setBusy(true);Promise.all([
   api.qiltPage({limit:1,offset:0,sort:'year',direction:'desc'}).catch(e=>({error:e})),
-  api.prismsPage({limit:1,offset:0,sort:'period',direction:'desc'}).catch(e=>({error:e}))
- ]).then(([q,p])=>{if(!live)return;if(q?.error)onError?.(q.error.message);else setQilt(q);if(p?.error)onError?.(p.error.message);else setPrisms(p)}).finally(()=>live&&setBusy(false));return()=>{live=false}},[])
+  api.prismsPage({limit:1,offset:0,sort:'period',direction:'desc'}).catch(e=>({error:e})),
+  api.rankingSummary().catch(e=>({error:e}))
+ ]).then(([q,p,r])=>{if(!live)return;if(q?.error)onError?.(q.error.message);else setQilt(q);if(p?.error)onError?.(p.error.message);else setPrisms(p);if(r?.error)onError?.(r.error.message);else setRanking(r)}).finally(()=>live&&setBusy(false));return()=>{live=false}},[])
  const q=qilt?.items?.[0]||qilt?.rows?.[0]||null,p=prisms?.items?.[0]||prisms?.rows?.[0]||null
  const qYear=q?[q.collection_year_from,q.collection_year_to].filter(Boolean).join('–'):'—'
  const pPeriod=p?[p.period_start,p.period_end].filter(Boolean).map(x=>String(x).slice(0,10)).join(' → '):'—'
+ const systems=ranking?.systems||[],qs=systems.find(x=>x.code==='qs_wur'),the=systems.find(x=>x.code==='the_wur')
  return <div className="m-page-stack">
   <section className="m-panel">
    <PanelTitle icon={BarChart3} title="Statistics & Rankings" subtitle="One verification workspace for contextual statistics, ranking editions, coverage and provenance."/>
    <div className="m-stats-grid">
     <article className="m-stats-card"><span>QILT</span><strong>{busy?'…':Number(qilt?.total||0).toLocaleString()}</strong><small>observations · latest period {qYear}</small><div><button onClick={()=>navigate('Outcomes (QILT)')}>Open dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
     <article className="m-stats-card"><span>PRISMS</span><strong>{busy?'…':Number(prisms?.total||0).toLocaleString()}</strong><small>observations · latest period {pPeriod}</small><div><button onClick={()=>navigate('Student Flow (PRISMS)')}>Open dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
-    <article className="m-stats-card pending"><span>QS World University Rankings</span><strong>2026 / 2027</strong><small>Layer 1 ranking editions designed; ingestion not yet applied.</small><div><button disabled>Awaiting ingestion</button></div></article>
-    <article className="m-stats-card pending"><span>Times Higher Education</span><strong>2026</strong><small>Layer 1 ranking edition designed; ingestion not yet applied.</small><div><button disabled>Awaiting ingestion</button></div></article>
+    <article className={`m-stats-card ${qs?.accepted_editions?'':'pending'}`}><span>QS World University Rankings</span><strong>{qs?.latest_edition||'2026 / 2027'}</strong><small>{qs?.accepted_editions?`${Number(qs.observations||0).toLocaleString()} observations · ${Number(qs.mapped_observations||0).toLocaleString()} mapped`:'Schema ready · no accepted edition ingested yet.'}</small><div><button disabled={!qs?.accepted_editions} onClick={()=>navigate('Statistics & Rankings')}>{qs?.accepted_editions?'View coverage':'Awaiting ingestion'}</button></div></article>
+    <article className={`m-stats-card ${the?.accepted_editions?'':'pending'}`}><span>Times Higher Education</span><strong>{the?.latest_edition||'2026'}</strong><small>{the?.accepted_editions?`${Number(the.observations||0).toLocaleString()} observations · ${Number(the.mapped_observations||0).toLocaleString()} mapped`:'Schema ready · no accepted edition ingested yet.'}</small><div><button disabled={!the?.accepted_editions} onClick={()=>navigate('Statistics & Rankings')}>{the?.accepted_editions?'View coverage':'Awaiting ingestion'}</button></div></article>
    </div>
   </section>
   <section className="m-panel">
@@ -214,7 +216,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   <Attention tone="info" icon={SlidersHorizontal} title="Acquisition" text="Layer 2 source profiles, Firecrawl/direct routes and execution policy." action="Open acquisition" onClick={()=>selectTool('layer2-providers')}/>
   {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>}
  </div></section>}
- {tool==='sources-imports'&&<section className="m-panel"><PanelTitle icon={Database} title="Sources & Imports" subtitle="Governed source inventory and controlled publisher-file fallback."/><div className="m-attention-grid"><Attention tone="info" icon={Database} title="Source inventory" text="Inspect governed regulatory, enrichment and contextual sources." action="Open sources" onClick={()=>openRoute('Sources')}/><Attention tone="info" icon={FileCheck2} title="Historical ranking files" text="Private Evidence import is designed for authorised QS/THE files when automated retrieval is restricted. Registration/parse/apply backend is pending CF-064." action="View statistics" onClick={()=>openRoute('Statistics & Rankings')}/></div></section>}
+ {tool==='sources-imports'&&<RankingImportPanel onError={onError}/>} 
  {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>} 
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<Layer2ExecutionPolicySettings/>}</>}
  {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={()=>{}}/></div>}
@@ -223,6 +225,43 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
  {tool==='platform'&&rank>=6&&<PlatformMaturity rank={rank} onError={onError}/>} 
  </div>
 }
+function RankingImportPanel({onError}){
+ const empty={systemCode:'qs_wur',editionYear:'2026',publisherName:'QS Quacquarelli Symonds',sourceUrl:'',methodologyUrl:'',licensingNote:'Authorised publisher file obtained for CourseFinder ingestion.',revisionNote:''}
+ const[form,setForm]=useState(empty),[file,setFile]=useState(null),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([])
+ const load=()=>api.rankingImports({limit:20}).then(x=>setImports(x?.items||[])).catch(e=>onError?.(e.message))
+ useEffect(()=>{load()},[])
+ const patch=(k,v)=>setForm(x=>({...x,[k]:v}))
+ async function submit(e){
+  e.preventDefault();setSaved('')
+  if(!file){onError?.('Choose an authorised publisher file.');return}
+  setBusy(true)
+  try{
+   const r=await api.uploadRankingPublisherFile({...form,editionYear:Number(form.editionYear),file})
+   setSaved(r?.duplicate?'Duplicate file already registered; no new Evidence created.':'Publisher file uploaded and registered as private Evidence.')
+   setFile(null);e.currentTarget.reset();setForm(x=>({...x,sourceUrl:'',methodologyUrl:'',revisionNote:''}));await load()
+  }catch(err){onError?.(err?.message||String(err))}
+  finally{setBusy(false)}
+ }
+ return <div className="m-page-stack">
+  <section className="m-panel"><PanelTitle icon={FileCheck2} title="Historical ranking publisher files" subtitle="Use only an authorised QS/THE artifact when automated publisher retrieval is restricted."/>
+   <form className="m-ranking-import-form" onSubmit={submit}>
+    <label>Ranking system<select value={form.systemCode} onChange={e=>{const v=e.target.value;patch('systemCode',v);patch('publisherName',v==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds')}}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education World University Rankings</option></select></label>
+    <label>Edition year<input type="number" min="2000" max="2100" value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)} required/></label>
+    <label>Publisher<input value={form.publisherName} onChange={e=>patch('publisherName',e.target.value)} required/></label>
+    <label className="wide">Publisher/source URL<input type="url" value={form.sourceUrl} onChange={e=>patch('sourceUrl',e.target.value)} placeholder="https://…" required/></label>
+    <label className="wide">Methodology URL<input type="url" value={form.methodologyUrl} onChange={e=>patch('methodologyUrl',e.target.value)} placeholder="Optional"/></label>
+    <label className="wide">Access / licence note<textarea value={form.licensingNote} onChange={e=>patch('licensingNote',e.target.value)} required/></label>
+    <label className="wide">Revision note<input value={form.revisionNote} onChange={e=>patch('revisionNote',e.target.value)} placeholder="Optional edition/correction note"/></label>
+    <label className="wide">Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.zip" onChange={e=>setFile(e.target.files?.[0]||null)} required/><small>Private Evidence · CSV/XLSX/PDF/JSON/ZIP · maximum 50 MB.</small></label>
+    <div className="wide m-ranking-import-actions"><button className="m-primary" disabled={busy}>{busy?'Uploading…':'Upload & register Evidence'}</button>{saved&&<span>{saved}</span>}</div>
+   </form>
+  </section>
+  <section className="m-panel"><PanelTitle icon={History} title="Recent ranking imports" subtitle="Upload is only the first state; validation, parsing, reconciliation and apply remain separate."/>
+   <div className="m-ranking-import-list">{imports.length?imports.map(x=><article key={x.id}><div><strong>{x.system_code?.toUpperCase()} {x.edition_year}</strong><span>{x.original_filename}</span></div><div><b>{humanise(x.status)}</b><small>{x.uploaded_at?new Date(x.uploaded_at).toLocaleString():'—'}</small></div></article>):<EmptyState icon={FileCheck2} title="No ranking files uploaded" text="Historical publisher files will appear here after governed registration."/>}</div>
+  </section>
+ </div>
+}
+
 function Layer2ExecutionPolicySettings(){
  const[data,setData]=useState(null),[form,setForm]=useState(null),[busy,setBusy]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState('')
  const invoke=async body=>{const{data:r,error:e}=await supabase.functions.invoke('layer2-sync-control',{body});if(e)throw e;if(r?.error)throw new Error(r.error);return r}
