@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
-const VERSION = "scholarships-au-etl-v0.1.1";
+const VERSION = "scholarships-au-etl-v0.1.2";
 const STUDY_SEARCH = "https://search.studyaustralia.gov.au/scholarships";
 const DFAT_AWARDS = "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships";
 const DFAT_DATES = "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships-opening-and-closing-dates";
@@ -42,12 +42,20 @@ async function rpc(client:any,name:string,args:Record<string,unknown>={}) {
   if(error) throw new Error(`${name}: ${error.message}`);
   return data;
 }
+async function cleanupDuplicateRegisteredObject(client:any,evidenceId:string,path:string){
+  try{
+    const {data,error}=await client.schema("pipeline").from("evidence_artifacts").select("storage_path").eq("id",evidenceId).single();
+    if(error||!data?.storage_path||data.storage_path===path)return;
+    const rm=await client.storage.from("evidence").remove([path]);
+    if(rm.error)console.warn("CF-055 duplicate Scholarship cleanup failed",path,rm.error.message);
+  }catch(e){console.warn("CF-055 duplicate Scholarship cleanup failed",path,e instanceof Error?e.message:String(e));}
+}
 async function sha256(bytes:Uint8Array) {
   const hash=await crypto.subtle.digest("SHA-256",bytes);
   return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 async function fetchBytes(url:string) {
-  const res=await fetch(url,{redirect:"follow",headers:{"user-agent":"CourseFinder-Pilot/Scholarships-0.1.1"}});
+  const res=await fetch(url,{redirect:"follow",headers:{"user-agent":"CourseFinder-Pilot/Scholarships-0.1.2"}});
   if(!res.ok) throw new Error(`source HTTP ${res.status}: ${url}`);
   const bytes=new Uint8Array(await res.arrayBuffer());
   return {url:res.url,bytes,hash:await sha256(bytes),contentType:res.headers.get("content-type")||"application/octet-stream"};
@@ -181,12 +189,12 @@ async function registerBundle(client:any,sourceId:string,recordPath:string,sourc
   for(const p of parts){
     const baseType=p.contentType.split(";")[0],ext=baseType.includes("pdf")?"pdf":baseType.includes("html")?"html":"bin",path=`layer2a/AU/scholarships/${recordPath}/${p.name}-${p.hash}.${ext}`;
     const up=await client.storage.from("evidence").upload(path,p.bytes,{contentType:baseType,upsert:true}); if(up.error) throw up.error;
-    const evidenceId=await rpc(client,"svc_scholarship_register_evidence",{p_source_id:sourceId,p_source_url:p.url,p_storage_path:path,p_content_hash:p.hash,p_mime_type:baseType,p_metadata:{component:p.name,source_record_id:recordPath,worker_version:VERSION}});
+    const evidenceId=await rpc(client,"svc_scholarship_register_evidence",{p_source_id:sourceId,p_source_url:p.url,p_storage_path:path,p_content_hash:p.hash,p_mime_type:baseType,p_metadata:{component:p.name,source_record_id:recordPath,worker_version:VERSION}});await cleanupDuplicateRegisteredObject(client,String(evidenceId),path);
     components.push({name:p.name,url:p.url,sha256:p.hash,storage_path:path,evidence_id:evidenceId});
   }
   const bytes=new TextEncoder().encode(JSON.stringify({source_record_id:recordPath,worker_version:VERSION,components})),hash=await sha256(bytes),path=`layer2a/AU/scholarships/${recordPath}/manifest-${hash}.json`;
   const up=await client.storage.from("evidence").upload(path,bytes,{contentType:"application/json",upsert:true}); if(up.error) throw up.error;
-  const evidenceId=await rpc(client,"svc_scholarship_register_evidence",{p_source_id:sourceId,p_source_url:sourceUrl,p_storage_path:path,p_content_hash:hash,p_mime_type:"application/json",p_metadata:{source_record_id:recordPath,worker_version:VERSION,component_evidence_ids:components.map(x=>x.evidence_id),components}});
+  const evidenceId=await rpc(client,"svc_scholarship_register_evidence",{p_source_id:sourceId,p_source_url:sourceUrl,p_storage_path:path,p_content_hash:hash,p_mime_type:"application/json",p_metadata:{source_record_id:recordPath,worker_version:VERSION,component_evidence_ids:components.map(x=>x.evidence_id),components}});await cleanupDuplicateRegisteredObject(client,String(evidenceId),path);
   return {evidenceId,manifestHash:hash};
 }
 async function persist(client:any,sourceId:string,record:any,parts:any[],recordPath:string){
