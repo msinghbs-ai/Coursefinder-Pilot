@@ -1,53 +1,53 @@
-# M2.4.4 replacement final focused closure regression after timeout-safe Firecrawl continuation — 1 September 2026
+# M2.4.4 replacement focused corrective gate after final acceptance FAIL — 1 September 2026
 
 Source head before marker:
-454058ffcc5d3c2a6ec795991fbf3237c5a0f0fb
+c8c2d396a337017ec5d0040e67872b2218b9a2d5
 
-Previous focused result:
-- build 33457383942 PASS
-- UAT 33457383894 FAIL only on an invalid source assertion
-- assertion corrected at a621dabc...
-- subsequent runtime inspection exposed a genuine production timeout issue before final acceptance could be nominated
+Immutable final acceptance evidence:
+- candidate 41428941a1bae18f6e53ac37f81ae54ef5704b1a
+- build 33460038601 PASS
+- acceptance UAT 33460038608 FAIL
+- desktop failed; mobile skipped
 
-Production timeout finding:
-- runner v7 processed up to 10 Firecrawl items per invocation
-- one invocation hit Edge 504 at ~150103 ms
-- stale item 60322b65... remained acquiring while its Firecrawl Job 81a09da3... had actually succeeded
-- continuation dispatch therefore stopped
+Demonstrated final-acceptance defects:
+1. stale Scholarship Selection acceptance helper expected a removed top-level primary-nav item;
+2. concurrent Firecrawl production workload caused acceptance latency overruns:
+   - courses_page 3122 ms > 3000
+   - course_detail 3876 ms > 3000
+   - layer2_ops_overview 7571 ms > 3000
+   - evidence_page 5418 ms > 3000
+   Direct DB verification while reconciling showed healthy query paths (about 67 ms Course lookup, 106 ms Course detail, 396 ms Evidence, 1.1 s Layer2 ops), confirming contention rather than query-plan regression.
 
 Corrections:
-- service-only stale acquisition recovery 20260901105500_m2_4_4_a26_stale_item_recovery.sql
-- service-only resume context 20260901110000_m2_4_4_a26_resume_context.sql
-- layer2-batch-runner v8 deployed
-- scraper_first chunk capped at 2 items per Edge invocation
-- stale acquiring items first attach a matching successful Job, then resume extraction
-- no duplicate scrape when a reusable successful acquisition exists
-- child progress continues to refresh batch heartbeat
-
-Live recovery proof:
-- stale item 60322b65-f0a1-476b-8c5c-5685c90083d0 reused existing Firecrawl Job 81a09da3-3a9d-4a61-bf32-99810c9a356a
-- item completed layer3_required at 2026-09-01 01:39:47+00
-- no replacement Firecrawl attempt was required for that item
-- batch accd42a2-f096-452b-a084-dc609bd45030 reconciled to 7/261 processed with 0 blocked
-- heartbeat advanced to 2026-09-01 01:40:05+00
-- next Firecrawl acquisition continued under the same batch/parent
-
-Stable parent runtime proof retained:
-- parent c65e67a6-3b2e-47e3-832a-57118fe5cf5f
-- wave 1bb1504d-7bad-42d9-b059-4adeaf9118c7
-- corrected Firecrawl batch accd42a2-f096-452b-a084-dc609bd45030
-- Firecrawl Job ed945d14-1458-41b7-bd75-0d1db77531a4
-- raw JSON Evidence 5bc09143-a8d7-477a-a446-570a2e49e451
-- screenshot Evidence e8a0ddf7-295c-46fd-b0c2-6392c28de0ee
-- extraction Evidence 567993f6-8918-46b7-bc0e-886327bf181d
-- all share parent/wave lineage
+- Scholarship decision support is restored under canonical Scholarships workspace, not as a top-level route:
+  - exported ScholarshipSelectionWorkspace
+  - Scholarships page offers Open Course decision support
+  - acceptance helper navigates to Scholarships then opens decision support
+- corrected Firecrawl batch accd42a2-f096-452b-a084-dc609bd45030 administratively paused after runtime proof;
+- 65 valid Firecrawl-processed items retained;
+- 196 unfinished RMIT items rescheduled one hour later under the same parent/wave;
+- direct-http and cancelled corrective Evidence/history retained;
+- request counters restored to queueable production grain: 261 total / 65 completed / 196 scheduled remainder;
+- parent projection now separates missing-URL state inventory and splits item metrics from Evidence aggregation:
+  - 65 processed
+  - 65 Layer3 required
+  - 0 blocked
+  - 65 child Jobs
+  - 195 Evidence
+  - 196 scheduled remainder
 
 Focused suites:
 - admin-navigation-deployed.spec.mjs
+- scholarship-selection-deployed.spec.mjs
 - m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
 - m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
 - m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
 - performance-deployed.spec.mjs
 
-Hard gates unchanged.
-This is the replacement final focused closure regression. It is not final acceptance.
+Hard gates unchanged:
+- RPC/detail <= 3000 ms
+- page/management payload <= 250000 bytes
+- filter payload <= 60000 bytes
+- no Evidence/security/navigation threshold weakening
+
+This is a focused corrective gate, not final acceptance.
