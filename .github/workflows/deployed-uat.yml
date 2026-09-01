@@ -166,6 +166,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/m2-3-intelligence-entry\.jsx$|^supabase/functions/layer3-interpret/|^supabase/migrations/.*m2_5_layer3_source_pattern|^tests/uat/m2-5-layer3-source-pattern-operator-contract\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '^tests/uat/m2-5-pilot-deployment-currentness-deployed\.spec\.mjs$'; then
+            targeted=(tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs)
+          fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
             targeted=(
               tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
@@ -242,6 +245,7 @@ jobs:
             tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
             tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs
             tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs
+            tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -275,6 +279,7 @@ jobs:
             tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
             tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs
             tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs
+            tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
