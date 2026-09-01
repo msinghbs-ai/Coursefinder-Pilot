@@ -24,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.21'
+const UI_VERSION='2.15.22'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -36,14 +36,14 @@ const NAV=[
   ['Catalogue',[
     item('Providers',Building2,1),item('Courses',GraduationCap,1),item('Campuses',MapPin,1),item('Scholarships',Sparkles,1),
   ]],
-  ['Enrichment & Insights',[
-    item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),
+  ['Statistics & Insights',[
+    item('Statistics & Rankings',BarChart3,1),item('Compare',ArrowLeftRight,1),
   ]],
-  ['Data Quality',[
-    item('Completeness',CheckCircle2,1),item('Evidence',BookOpen,3),item('Review Queue',ListChecks,3),
+  ['Data Operations',[
+    item('Layer 1 — Authority',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Evidence',BookOpen,3),item('Jobs',Workflow,4),
   ]],
-  ['Operations',[
-    item('Layer 1 — Authority',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Important Links',ExternalLink,3),item('Important Dates',Clock3,3),item('Jobs',Workflow,4),
+  ['Quality & Review',[
+    item('Completeness',CheckCircle2,1),item('Review Queue',ListChecks,3),
   ]],
   ['Administration',[
     item('Administration',Settings2,4),
@@ -56,9 +56,10 @@ const PAGE_META={
   Courses:['Courses','Decision-grade course catalogue with authoritative identity and enrichment signals.'],
   Campuses:['Campuses','Campus geography and Provider relationships without synthetic identity.'],
   Scholarships:['Scholarships','Relational scholarship catalogue and publication state.'],
+  'Statistics & Rankings':['Statistics & Rankings','Coverage, years, observations and provenance for QILT, PRISMS, QS and THE.'],
   'Outcomes (QILT)':['Outcomes (QILT)','Structured provider outcomes enrichment.'],
   'Student Flow (PRISMS)':['Student Flow (PRISMS)','Time-scoped international student-flow observations.'],
-  Compare:['Compare providers & courses','Like-for-like QILT outcomes and governed PRISMS context for up to six selected entities.'],
+  Compare:['Compare providers & courses','Choose entities, datasets and aligned periods for a governed comparison.'],
   Completeness:['Completeness & readiness','Operational presence signals; not truth, approval or Search admission.'],
   Evidence:['Evidence & provenance','Source snapshots, evidence artifacts and canonical consequences.'],
   'Review Queue':['Review Queue','Human-resolution workload and exception state.'],
@@ -79,7 +80,7 @@ const PAGE_META={
 
 function item(label,Icon,min){return{label,Icon,min,slug:slug(label)}}
 function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
-const HIDDEN_ROUTES=[item('Compare',Activity,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
+const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
 function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Authority','layer-1-operations':'Layer 1 — Authority','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
 function App(){
@@ -133,6 +134,7 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Campuses')return <Catalogue type="campus" onError={onError} navigate={navigate} initialId={focusId}/>
   if(page==='Scholarships')return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
   if(page==='Completeness')return <Completeness onError={onError} navigate={navigate}/>
+  if(page==='Statistics & Rankings')return <StatisticsRankings onError={onError} navigate={navigate} rank={rank}/>
   if(page==='Outcomes (QILT)')return <Qilt onError={onError}/>
   if(page==='Student Flow (PRISMS)')return <Prisms onError={onError}/>
   if(page==='Compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
@@ -155,9 +157,42 @@ function Page({page,routeParams,rank,onError,navigate}){
 }
 
 
+function StatisticsRankings({onError,navigate,rank}){
+ const[qilt,setQilt]=useState(null),[prisms,setPrisms]=useState(null),[busy,setBusy]=useState(true)
+ useEffect(()=>{let live=true;setBusy(true);Promise.all([
+  api.qiltPage({limit:1,offset:0,sort:'year',direction:'desc'}).catch(e=>({error:e})),
+  api.prismsPage({limit:1,offset:0,sort:'period',direction:'desc'}).catch(e=>({error:e}))
+ ]).then(([q,p])=>{if(!live)return;if(q?.error)onError?.(q.error.message);else setQilt(q);if(p?.error)onError?.(p.error.message);else setPrisms(p)}).finally(()=>live&&setBusy(false));return()=>{live=false}},[])
+ const q=qilt?.items?.[0]||qilt?.rows?.[0]||null,p=prisms?.items?.[0]||prisms?.rows?.[0]||null
+ const qYear=q?[q.collection_year_from,q.collection_year_to].filter(Boolean).join('–'):'—'
+ const pPeriod=p?[p.period_start,p.period_end].filter(Boolean).map(x=>String(x).slice(0,10)).join(' → '):'—'
+ return <div className="m-page-stack">
+  <section className="m-panel">
+   <PanelTitle icon={BarChart3} title="Statistics & Rankings" subtitle="One verification workspace for contextual statistics, ranking editions, coverage and provenance."/>
+   <div className="m-stats-grid">
+    <article className="m-stats-card"><span>QILT</span><strong>{busy?'…':Number(qilt?.total||0).toLocaleString()}</strong><small>observations · latest period {qYear}</small><div><button onClick={()=>navigate('Outcomes (QILT)')}>Open dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
+    <article className="m-stats-card"><span>PRISMS</span><strong>{busy?'…':Number(prisms?.total||0).toLocaleString()}</strong><small>observations · latest period {pPeriod}</small><div><button onClick={()=>navigate('Student Flow (PRISMS)')}>Open dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
+    <article className="m-stats-card pending"><span>QS World University Rankings</span><strong>2026 / 2027</strong><small>Layer 1 ranking editions designed; ingestion not yet applied.</small><div><button disabled>Awaiting ingestion</button></div></article>
+    <article className="m-stats-card pending"><span>Times Higher Education</span><strong>2026</strong><small>Layer 1 ranking edition designed; ingestion not yet applied.</small><div><button disabled>Awaiting ingestion</button></div></article>
+   </div>
+  </section>
+  <section className="m-panel">
+   <div className="m-stats-section-head"><div><h3>Coverage & verification</h3><p>Use dataset drill-downs to inspect exact observations now. Ranking coverage, edition filters and mapping reconciliation appear here when CF-063 ingestion is applied.</p></div><button className="m-secondary" onClick={()=>navigate('Compare',{type:'provider'})}><ArrowLeftRight size={15}/>Open Compare</button></div>
+   <div className="m-stats-notes">
+    <div><b>Provider context</b><span>QILT, PRISMS and institutional rankings retain their native source grain.</span></div>
+    <div><b>Years / editions</b><span>Comparison will use latest common period by default, with explicit dataset/year selection.</span></div>
+    <div><b>Evidence</b><span>Every accepted observation remains traceable to governed source Evidence.</span></div>
+    <div><b>Historical publisher files</b><span>{rank>=4?'Authorised CSV/XLSX/PDF/JSON/ZIP artifacts will be registered through Administration → Sources & Imports.':'Import controls are restricted to authorised operator roles.'}</span></div>
+   </div>
+  </section>
+ </div>
+}
+
+
 function AdministrationHome({rank,navigate,routeParams,onError}){
  const sections=[
   ['overview','Overview',Settings2,rank>=4],
+  ['sources-imports','Sources & Imports',Database,rank>=4],
   ['layer2-sources','Layer 2 sources',Database,rank>=4],
   ['layer2-providers','Acquisition',SlidersHorizontal,rank>=4],
   ['scheduling','Scheduling',RefreshCw,rank>=4],
@@ -179,7 +214,8 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   <Attention tone="info" icon={SlidersHorizontal} title="Acquisition" text="Layer 2 source profiles, Firecrawl/direct routes and execution policy." action="Open acquisition" onClick={()=>selectTool('layer2-providers')}/>
   {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>}
  </div></section>}
- {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>}
+ {tool==='sources-imports'&&<section className="m-panel"><PanelTitle icon={Database} title="Sources & Imports" subtitle="Governed source inventory and controlled publisher-file fallback."/><div className="m-attention-grid"><Attention tone="info" icon={Database} title="Source inventory" text="Inspect governed regulatory, enrichment and contextual sources." action="Open sources" onClick={()=>openRoute('Sources')}/><Attention tone="info" icon={FileCheck2} title="Historical ranking files" text="Private Evidence import is designed for authorised QS/THE files when automated retrieval is restricted. Registration/parse/apply backend is pending CF-064." action="View statistics" onClick={()=>openRoute('Statistics & Rankings')}/></div></section>}
+ {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>} 
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<Layer2ExecutionPolicySettings/>}</>}
  {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={()=>{}}/></div>}
  {tool==='onboarding'&&<div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={()=>{}}/></div>}
