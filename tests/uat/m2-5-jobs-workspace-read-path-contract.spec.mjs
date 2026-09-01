@@ -1,3 +1,4 @@
+// CF-060 targeted validation trigger — canonical Jobs route must remain server-paged.
 import fs from'node:fs/promises'
 import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
