@@ -80,7 +80,11 @@ export async function openGovernanceProvider(page) {
 }
 
 export async function openScholarshipSelection(page) {
-  await clickPrimaryNav(page, 'Scholarship Selection')
+  await clickPrimaryNav(page, 'Scholarships')
+  await expect(page.locator('.m-title-wrap h1')).toContainText(/Scholarships/i, ui)
+  const open = page.getByRole('button', { name: 'Open Course decision support', exact: true })
+  await expect(open).toBeVisible(ui)
+  await open.click()
   const dialog = page.getByRole('dialog', { name: 'Scholarship Selection' })
   await expect(dialog).toBeVisible(ui)
   return dialog
