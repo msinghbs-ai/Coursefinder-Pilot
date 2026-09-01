@@ -11,6 +11,7 @@ import RegulatorySettings from'./RegulatorySettings'
 import EvidenceWorkspace from'./EvidenceWorkspace'
 import CourseDetailPolish from'./CourseDetailPolish'
 import ContextualInsights from'./ContextualInsights'
+import ComparisonWorkspace from'./ComparisonWorkspace'
 import Layer4Intervention from'./Layer4Intervention'
 import{Layer1Operations}from'./layer1-operations-entry'
 import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
@@ -23,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.20'
+const UI_VERSION='2.15.21'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -57,6 +58,7 @@ const PAGE_META={
   Scholarships:['Scholarships','Relational scholarship catalogue and publication state.'],
   'Outcomes (QILT)':['Outcomes (QILT)','Structured provider outcomes enrichment.'],
   'Student Flow (PRISMS)':['Student Flow (PRISMS)','Time-scoped international student-flow observations.'],
+  Compare:['Compare providers & courses','Like-for-like QILT outcomes and governed PRISMS context for up to six selected entities.'],
   Completeness:['Completeness & readiness','Operational presence signals; not truth, approval or Search admission.'],
   Evidence:['Evidence & provenance','Source snapshots, evidence artifacts and canonical consequences.'],
   'Review Queue':['Review Queue','Human-resolution workload and exception state.'],
@@ -77,7 +79,7 @@ const PAGE_META={
 
 function item(label,Icon,min){return{label,Icon,min,slug:slug(label)}}
 function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
-const HIDDEN_ROUTES=[item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
+const HIDDEN_ROUTES=[item('Compare',Activity,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
 function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Authority','layer-1-operations':'Layer 1 — Authority','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
 function App(){
@@ -133,6 +135,7 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Completeness')return <Completeness onError={onError} navigate={navigate}/>
   if(page==='Outcomes (QILT)')return <Qilt onError={onError}/>
   if(page==='Student Flow (PRISMS)')return <Prisms onError={onError}/>
+  if(page==='Compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
   if(page==='Evidence'&&rank>=3)return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
   if(page==='Layer 1 — Authority'&&rank>=4)return <Layer1Operations embedded/>
   if(page==='Layer 2 — Enrichment'&&rank>=4)return <Layer2Workspace rank={rank} embedded/>
@@ -309,7 +312,7 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false}){
     {completenessMode&&<CompletenessSummary onError={onError}/>} 
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>{completenessMode?'Course readiness workspace':`${humanise(type)} catalogue`}</h2><p>{completenessMode?'Find missing core-presence signals without treating completeness as truth.':'Filter → inspect → cross-check → decide.'}</p></div><div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(total)}</strong><span>matching</span></>}</div></div>
-      <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={cfg.search}/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label>{type==='course'&&<button className={`m-filter-toggle ${advanced?'active':''}`} onClick={()=>setAdvanced(x=>!x)}><SlidersHorizontal size={15}/>Filters{active.length?` · ${active.length}`:''}</button>}<button className="m-secondary compact" onClick={()=>{setQuery('');setFilters({});setFilterLabels({});setOffset(0);if(screenStateKey)localStorage.removeItem(screenStateKey)}} disabled={!query&&!active.length}><RefreshCw size={14}/>Clear</button></div>
+      <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={cfg.search}/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label>{type==='course'&&<button className={`m-filter-toggle ${advanced?'active':''}`} onClick={()=>setAdvanced(x=>!x)}><SlidersHorizontal size={15}/>Filters{active.length?` · ${active.length}`:''}</button>}<button className="m-secondary compact" onClick={()=>{setQuery('');setFilters({});setFilterLabels({});setOffset(0);if(screenStateKey)localStorage.removeItem(screenStateKey)}} disabled={!query&&!active.length}><RefreshCw size={14}/>Clear</button>{!completenessMode&&['provider','course'].includes(type)&&<button className="m-secondary compact" onClick={()=>navigate?.('Compare',{type})}><Activity size={14}/>Compare {type}s</button>}</div>
       <FilterBar type={type} filters={filters} filterLabels={filterLabels} patch={patch} data={filterData} busy={filterBusy} advanced={advanced}/>
       {(query||active.length>0)&&<div className="m-chip-row">{query&&<FilterChip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><FilterChip key={k} label={`${filterLabel(k)}: ${filterLabels[k]||filterValueLabel(k,v,filterData)}`} onRemove={()=>patch(k,'')}/>)}</div>}
       <DataTable rows={rows} columns={cols} loading={busy} sort={sort} direction={direction} onSort={changeSort} onRow={open} selected={selected}/>
@@ -357,7 +360,7 @@ function statusTone(s){if(['completed','succeeded','published','active','resolve
 
 function Pager({offset,limit,total,onOffset}){const page=Math.floor(offset/limit)+1,pages=Math.max(1,Math.ceil(total/limit));return <div className="m-pager"><span>Page <strong>{page}</strong> of {pages} · {fmtNumber(total)} records</span><div><button disabled={offset<=0} onClick={()=>onOffset(Math.max(0,offset-limit))}>Previous</button><button disabled={offset+limit>=total} onClick={()=>onOffset(offset+limit)}>Next</button></div></div>}
 
-function DetailDrawer({type,data,busy,onClose,navigate}){useEffect(()=>{const k=e=>e.key==='Escape'&&onClose();addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose]);return <><button className="m-drawer-backdrop" onClick={onClose}/><aside className={"m-drawer m-drawer-"+type} aria-label={humanise(type)+" detail"}><div className="m-drawer-head"><div><small>{humanise(type)} detail</small><h2>{detailTitle(data,type)}</h2></div><div style={{display:'flex',gap:6}}>{data?.id&&['provider','course','campus','scholarship'].includes(type)&&<button title="Open supporting evidence" onClick={()=>navigate?.('Evidence',{entity_type:type,entity_id:data.id})}><BookOpen size={17}/></button>}<button onClick={onClose} aria-label={"Close "+humanise(type)+" detail"}><X size={18}/></button></div></div><div className="m-drawer-content">{busy?<div className="m-drawer-loading"><span className="m-spinner"/>Loading governed detail…</div>:<DetailBody type={type} data={data} navigate={navigate}/>}</div></aside></>}
+function DetailDrawer({type,data,busy,onClose,navigate}){useEffect(()=>{const k=e=>e.key==='Escape'&&onClose();addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose]);return <><button className="m-drawer-backdrop" onClick={onClose}/><aside className={"m-drawer m-drawer-"+type} aria-label={humanise(type)+" detail"}><div className="m-drawer-head"><div><small>{humanise(type)} detail</small><h2>{detailTitle(data,type)}</h2></div><div style={{display:'flex',gap:6}}>{data?.id&&['provider','course'].includes(type)&&<button title={`Compare this ${type}`} onClick={()=>navigate?.('Compare',{type,ids:data.id})}><Activity size={17}/></button>}{data?.id&&['provider','course','campus','scholarship'].includes(type)&&<button title="Open supporting evidence" onClick={()=>navigate?.('Evidence',{entity_type:type,entity_id:data.id})}><BookOpen size={17}/></button>}<button onClick={onClose} aria-label={"Close "+humanise(type)+" detail"}><X size={18}/></button></div></div><div className="m-drawer-content">{busy?<div className="m-drawer-loading"><span className="m-spinner"/>Loading governed detail…</div>:<DetailBody type={type} data={data} navigate={navigate}/>}</div></aside></>}
 function detailTitle(d,type){if(!d)return'Loading…';return d.display_title||d.canonical_title||d.canonical_name||d.name||d.stable_key||humanise(type)}
 function InternationalContacts({data,navigate}){const block=data?.international_contacts||{},items=Array.isArray(block.items)?block.items:[],events=Array.isArray(block.events)?block.events:[],summary=block.summary||{},profile=block.profile||{},disposition=block.disposition||{};return <section className="m-detail-section cf-contact-intel"><style>{`
 .cf-contact-intel{display:grid;gap:10px}.cf-contact-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cf-contact-head h3{margin:0;font-size:13px}.cf-contact-head p{margin:4px 0 0;color:#64748b;font-size:10px;line-height:1.45}.cf-contact-summary{display:flex;gap:6px;flex-wrap:wrap}.cf-contact-summary span{border:1px solid #e2e8f0;background:#f8fafc;border-radius:999px;padding:4px 7px;font-size:9px;color:#475569;font-weight:750}.cf-contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cf-contact-card{border:1px solid #e2e8f0;border-radius:10px;background:#fff;padding:10px;display:grid;gap:7px}.cf-contact-card.primary{border-color:#c7d2fe;background:#fafaff}.cf-contact-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.cf-contact-name{display:grid;gap:2px}.cf-contact-name strong{font-size:12px;color:#0f172a}.cf-contact-name small{font-size:9px;color:#64748b}.cf-contact-badge{white-space:nowrap;border-radius:999px;padding:3px 6px;font-size:8px;font-weight:850;background:#eef2ff;color:#4338ca}.cf-contact-badge.enriched{background:#f1f5f9;color:#475569}.cf-contact-territory{display:grid;gap:2px;padding:7px 8px;border-radius:8px;background:#f8fafc}.cf-contact-territory small{font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8;font-weight:800}.cf-contact-territory strong{font-size:10px;color:#334155;line-height:1.45}.cf-contact-links{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.cf-contact-links a{font-size:9px;color:#4f46e5;text-decoration:none}.cf-contact-meta{font-size:8px;color:#94a3b8;line-height:1.4}.cf-contact-changes{border-top:1px solid #eef2f7;padding-top:8px}.cf-contact-changes strong{font-size:9px;color:#475569}.cf-contact-changes span{display:block;font-size:8px;color:#64748b;margin-top:3px}@media(max-width:760px){.cf-contact-grid{grid-template-columns:1fr}.cf-contact-head{display:grid}.cf-contact-summary{justify-content:flex-start}}
