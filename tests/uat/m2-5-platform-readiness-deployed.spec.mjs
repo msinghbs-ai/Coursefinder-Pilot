@@ -1,0 +1,52 @@
+import fs from 'node:fs/promises'
+import { test, expect } from '@playwright/test'
+
+test.describe('M2.5 platform readiness foundation @deployed',()=>{
+  test('environment separation, capacity, retention, workload and Layer 4 blocking contracts remain governed',async()=>{
+    const foundation=await fs.readFile('supabase/migrations/20260901162500_m2_5_platform_operations_maturity_foundation.sql','utf8')
+    const capacity=await fs.readFile('supabase/migrations/20260901164000_m2_5_capacity_integrity_alert_classification.sql','utf8')
+    const gates=await fs.readFile('supabase/migrations/20260901165500_m2_5_environment_gate_reconcile_layer4_blocking.sql','utf8')
+
+    expect(foundation).toContain('pipeline.environment_source_gates')
+    expect(foundation).toContain("'seed_only','source_identified','source_qualified','pilot_ingestion'")
+    expect(foundation).toContain("'pilot_uat_pass','production_approved','production_enabled','monitored'")
+    expect(foundation).toContain("'provider_ingestion','course_ingestion','scholarship_ingestion'")
+    expect(foundation).toContain("'layer2_enrichment','consumer_search_exposure'")
+    expect(foundation).toContain('pipeline.layer2_provider_environment_gates')
+    expect(foundation).toContain('pipeline.layer3_profile_environment_gates')
+    expect(foundation).toContain('pipeline.retention_class_policies')
+    expect(foundation).toContain("'regulatory_evidence'")
+    expect(foundation).toContain("'layer4_decisions'")
+    expect(foundation).toContain("'publication_decisions'")
+    expect(foundation).toContain("'mode','dry_run_only'")
+    expect(foundation).toContain("'delete_performed',false")
+    expect(foundation).toContain('pipeline.platform_uat_catalogue')
+    expect(foundation).toContain("'M25-RESTORE'")
+    expect(foundation).toContain('pipeline.performance_workload_profiles')
+    expect(foundation).toContain('rpc_detail_budget_ms integer not null default 3000')
+    expect(foundation).toContain('management_payload_budget_bytes integer not null default 250000')
+    expect(foundation).toContain('filter_payload_budget_bytes integer not null default 60000')
+    expect(foundation).toContain('check (not acquisition_on_read_allowed)')
+    expect(foundation).toContain('coursefinder-platform-capacity-observation')
+    expect(foundation).toContain("'platform_api_required'")
+
+    expect(capacity).toContain('integrity_warn_count')
+    expect(capacity).toContain('integrity_high_count')
+    expect(capacity).toContain('integrity_critical_count')
+    expect(capacity).toContain('evidence_planning_capacity_pct')
+    expect(capacity).toContain('temp_bytes_since_previous_observation')
+
+    expect(gates).toContain("'pilot_uat_pass',true,'33468512515'")
+    expect(gates).toContain("p.provider_key in ('direct-http','firecrawl')")
+    expect(gates).toContain("coalesce((p.quality_benchmark->>'pass')::boolean,false)")
+    expect(gates).not.toMatch(/insert into pipeline\.environment_source_gates[\s\S]{0,800}'production'/i)
+
+    expect(gates).toContain('pipeline.layer4_block_decisions')
+    for(const scope of ['operational','publication','search','data_quality_quarantine']) expect(gates).toContain(`'${scope}'`)
+    expect(gates).toContain("p_event_type not in ('block','unblock')")
+    expect(gates).toContain('PIM Admin role required for block/unblock')
+    expect(gates).toContain("'deletion_performed',false")
+    expect(gates).toContain("'canonical_changed',false")
+    expect(gates).toMatch(/revoke all on function public\.layer4_block_decide[\s\S]*from public,anon/i)
+  })
+})
