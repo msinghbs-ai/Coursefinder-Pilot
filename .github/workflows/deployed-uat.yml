@@ -160,6 +160,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx)$|^tests/uat/(support/navigation\.mjs|m2-4-4-a26-a28-operator-ux-deployed\.spec\.mjs)$)'; then
             targeted=(tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-operations-entry\.jsx$|^supabase/migrations/.*m2_5_layer2_finalizer_fairness|^tests/uat/m2-5-layer2-finalizer-fairness-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs)
+          fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
             targeted=(
               tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
@@ -234,6 +237,7 @@ jobs:
             tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
             tests/uat/m2-5-platform-readiness-deployed.spec.mjs
             tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
+            tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -265,6 +269,7 @@ jobs:
             tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
             tests/uat/m2-5-platform-readiness-deployed.spec.mjs
             tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
+            tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
