@@ -22,8 +22,10 @@ function parseJsonContent(content: unknown): unknown {
   return JSON.parse(cleaned);
 }
 
-function validateCandidate(taskClass: string, result: any, validators: any, evidenceText = "", sourceUrl = "") {
+function validateCandidate(taskClass: string, result: any, validators: any, evidenceText = "", sourceUrl = "", evidenceLinks: string[] = []) {
   const errors: string[] = [];
+  let sourcePatternSameHost: boolean | null = null;
+  let sourcePatternEvidenceLinkMatch: boolean | null = null;
   if (!result || typeof result !== "object" || Array.isArray(result)) errors.push("result must be an object");
   const confidence = Number(result?.confidence);
   const min = Number(validators?.confidence_min ?? 0);
@@ -43,6 +45,19 @@ function validateCandidate(taskClass: string, result: any, validators: any, evid
       if (typeof candidate !== "string" || !/^https?:\/\/\S+$/i.test(candidate)) errors.push("candidate must be an http/https URL");
     } else if (taskClass === "duration") {
       if (!candidate || typeof candidate !== "object" || !(Number(candidate.value) > 0) || typeof candidate.unit !== "string" || !candidate.unit.trim()) errors.push("duration requires positive value and unit");
+    } else if (taskClass === "source_pattern") {
+      if (typeof candidate !== "string" || !/^https:\/\/\S+$/i.test(candidate)) errors.push("source_pattern candidate must be an HTTPS URL or null");
+      else {
+        try {
+          const candidateUrl = new URL(candidate);
+          const evidenceUrl = new URL(sourceUrl);
+          sourcePatternSameHost = candidateUrl.hostname.toLowerCase() === evidenceUrl.hostname.toLowerCase();
+        } catch { sourcePatternSameHost = false; }
+        sourcePatternEvidenceLinkMatch = evidenceLinks.includes(candidate);
+        if (validators?.https_required === true && !/^https:\/\//i.test(candidate)) errors.push("source_pattern candidate must use HTTPS");
+        if (validators?.candidate_url_must_be_same_host === true && sourcePatternSameHost !== true) errors.push("source_pattern candidate is not on the governed Evidence host");
+        if (validators?.candidate_url_must_be_evidence_link === true && sourcePatternEvidenceLinkMatch !== true) errors.push("source_pattern candidate is not an exact governed Evidence link");
+      }
     } else if (taskClass === "international_contact") {
       if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) errors.push("international contact candidate must be an object or null");
       else {
@@ -72,7 +87,13 @@ function validateCandidate(taskClass: string, result: any, validators: any, evid
       }
     } else errors.push("unsupported task class");
   }
-  return { valid: errors.length === 0, errors, confidence: Number.isFinite(confidence) ? confidence : null };
+  return {
+    valid: errors.length === 0,
+    errors,
+    confidence: Number.isFinite(confidence) ? confidence : null,
+    source_pattern_same_host: sourcePatternSameHost,
+    source_pattern_evidence_link_match: sourcePatternEvidenceLinkMatch,
+  };
 }
 
 function evidenceToText(bytes: Uint8Array, mime: string | null, maxChars: number) {
@@ -83,6 +104,25 @@ function evidenceToText(bytes: Uint8Array, mime: string | null, maxChars: number
     text = text.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&");
   }
   return text.replace(/\s+/g, " ").trim().slice(0, maxChars);
+}
+
+function governedEvidenceLinks(raw: string, sourceUrl: string, maxLinks = 160) {
+  let base: URL;
+  try { base = new URL(sourceUrl); } catch { return []; }
+  const links: string[] = [];
+  const seen = new Set<string>();
+  const re = /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) && links.length < maxLinks) {
+    try {
+      const u = new URL(m[1], base);
+      u.hash = "";
+      if (u.protocol !== "https:" || u.hostname.toLowerCase() !== base.hostname.toLowerCase()) continue;
+      const value = u.toString();
+      if (!seen.has(value)) { seen.add(value); links.push(value); }
+    } catch {}
+  }
+  return links;
 }
 
 async function sha256Hex(value: string) {
@@ -106,15 +146,36 @@ Deno.serve(async (req: Request) => {
   if (userError || !userData?.user?.id) return json(req, { error: "invalid user token" }, 401);
 
   let interpretationId: string | null = null;
+  let sourcePatternRequestId: string | null = null;
   let externalCallCount = 0;
   let callStartedMs: number | null = null;
   try {
     const body = await req.json();
-    const evidenceId = String(body?.evidence_id || "");
-    const entityType = String(body?.entity_type || "").toLowerCase();
-    const entityId = String(body?.entity_id || "");
-    const taskClass = String(body?.task_class || "");
-    const profileId = String(body?.profile_id || "");
+    sourcePatternRequestId = String(body?.source_pattern_request_id || "") || null;
+    let evidenceId = String(body?.evidence_id || "");
+    let entityType = String(body?.entity_type || "").toLowerCase();
+    let entityId = String(body?.entity_id || "");
+    let taskClass = String(body?.task_class || "");
+    let profileId = String(body?.profile_id || "");
+    let layer2State = body?.layer2_state || {};
+    let revalidationRef: string | null = body?.revalidation_ref || null;
+
+    if (sourcePatternRequestId) {
+      const { data: sourcePatternContext, error: sourcePatternContextError } = await svc.rpc("layer3_source_pattern_request_context_service", {
+        p_actor: userData.user.id,
+        p_request_id: sourcePatternRequestId,
+      });
+      if (sourcePatternContextError) return json(req, { error: sourcePatternContextError.message || "source-pattern request validation failed" }, 400);
+      if (!sourcePatternContext?.executable) return json(req, { ok: true, call_required: false, reason: sourcePatternContext?.reason || "source_pattern_request_not_executable", source_pattern_request_id: sourcePatternRequestId });
+      evidenceId = String(sourcePatternContext.evidence_id || "");
+      entityType = "provider";
+      entityId = String(sourcePatternContext.entity_id || "");
+      taskClass = "source_pattern";
+      profileId = String(sourcePatternContext.profile_id || "");
+      layer2State = sourcePatternContext.layer2_state || { status: "layer3_required" };
+      revalidationRef = String(sourcePatternContext.revalidation_ref || "") || null;
+    }
+
     if (!evidenceId || !entityType || !entityId || !taskClass || !profileId) return json(req, { error: "evidence_id, entity_type, entity_id, task_class and profile_id are required" }, 400);
 
     const { data: reservation, error: reserveError } = await svc.rpc("layer3_reserve_interpretation_service", {
@@ -124,8 +185,8 @@ Deno.serve(async (req: Request) => {
       p_entity_id: entityId,
       p_task_class: taskClass,
       p_profile_id: profileId,
-      p_layer2_state: body?.layer2_state || {},
-      p_revalidation_ref: body?.revalidation_ref || null,
+      p_layer2_state: layer2State,
+      p_revalidation_ref: revalidationRef,
     });
     if (reserveError) {
       const msg = reserveError.message || "reservation failed";
@@ -157,7 +218,9 @@ Deno.serve(async (req: Request) => {
     if (storageError || !blob) throw new Error(`evidence download failed: ${storageError?.message || "not found"}`);
     const bytes = new Uint8Array(await blob.arrayBuffer());
     const maxChars = Math.min(Number(profile.max_input_tokens || 12000) * 4, 120000);
+    const rawEvidenceText = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
     const evidenceText = evidenceToText(bytes, ev.mime_type, maxChars);
+    const sourcePatternLinks = taskClass === "source_pattern" ? governedEvidenceLinks(rawEvidenceText, ev.source_url || "") : [];
     if (evidenceText.length < 20) throw new Error("evidence text is too short to interpret");
 
     const prompt = [
@@ -167,7 +230,10 @@ Deno.serve(async (req: Request) => {
       "Return exactly one JSON object with keys candidate_value, confidence, rationale, evidence_quotes.",
       taskClass === "international_contact"
         ? "For international_contact, candidate_value must be an object with disposition, international_students_url, contact_team_url, general_email and contacts. Use only contact details explicitly present in the supplied first-party Evidence. If no qualifying contact is published, return an explicit not_publicly_published or not_found_in_qualified_evidence disposition. Never manufacture a person, email, phone, territory or URL."
-        : "Use null candidate_value if the evidence does not support a reliable candidate. Do not infer regulatory identity.",
+        : taskClass === "source_pattern"
+          ? "For source_pattern, candidate_value must be exactly one HTTPS URL from the Governed first-party links list below, or null. Never invent, normalise, shorten, expand or change a URL. Never return a Course identity, fee, intake, Search instruction or Publication instruction."
+          : "Use null candidate_value if the evidence does not support a reliable candidate. Do not infer regulatory identity.",
+      taskClass === "source_pattern" ? `Governed first-party links:\n${sourcePatternLinks.join("\n") || "(none)"}` : "",
       `Evidence:\n${evidenceText}`,
     ].join("\n\n");
     const promptHash = await sha256Hex(prompt);
@@ -186,7 +252,7 @@ Deno.serve(async (req: Request) => {
       cost_ceiling_usd: profile.cost_ceiling_usd,
       response_format: "json_object",
       temperature: 0,
-      prompt_contract_version: taskClass === "international_contact" ? "m2.4.4-a16-contact-interpretation-v1" : "m2.4.3-evidence-interpretation-v1",
+      prompt_contract_version: taskClass === "international_contact" ? "m2.4.4-a16-contact-interpretation-v1" : taskClass === "source_pattern" ? "m2.5-cf054-source-pattern-v1" : "m2.4.3-evidence-interpretation-v1",
       evidence_id: ev.id,
       evidence_hash: ev.content_hash,
       evidence_source_url: ev.source_url || null,
@@ -222,6 +288,7 @@ Deno.serve(async (req: Request) => {
         p_response_model: providerResult?.model || null, p_input_tokens: totalInputTokens || null, p_output_tokens: totalOutputTokens || null, p_estimated_cost_usd: totalCostUsd, p_expiry: null, p_external_call_count: externalCallCount, p_call_latency_ms: callLatencyMs,
       });
       if (completeError) throw new Error(`validation rejection persistence failed: ${completeError.message}`);
+      if (sourcePatternRequestId) await svc.rpc("layer3_source_pattern_request_error_service", { p_request_id: sourcePatternRequestId, p_error: "Malformed structured output" });
       return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validatorResult }, 422);
     }
 
@@ -245,7 +312,7 @@ Deno.serve(async (req: Request) => {
       const hasPublished = Boolean(parsed.candidate_value.general_email) || (Array.isArray(parsed.candidate_value.contacts) && parsed.candidate_value.contacts.length > 0);
       parsed.candidate_value.disposition = hasPublished ? "published_contact_found" : (parsed.candidate_value.disposition === "not_publicly_published" ? "not_publicly_published" : "not_found_in_qualified_evidence");
     }
-    const validation = validateCandidate(taskClass, parsed, profile.validators || {}, evidenceText, ev.source_url || "");
+    const validation = validateCandidate(taskClass, parsed, profile.validators || {}, evidenceText, ev.source_url || "", sourcePatternLinks);
     const cost = totalCostUsd;
     if (Number(profile.cost_ceiling_usd) >= 0 && cost > Number(profile.cost_ceiling_usd)) {
       validation.valid = false;
@@ -271,11 +338,24 @@ Deno.serve(async (req: Request) => {
       p_call_latency_ms: callLatencyMs,
     });
     if (completeError) throw new Error(`completion persistence failed: ${completeError.message}`);
-    if (!validation.valid) return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validation }, 422);
-    return json(req, { ok: true, call_required: true, interpretation_id: interpretationId, review_item_id: completed?.review_item_id || null, status: completed?.status || (parsed?.candidate_value == null ? "no_candidate" : "validated"), model: providerResult?.model || profile.model_identifier, validator_result: validation, estimated_cost_usd: cost, external_call_count: externalCallCount, call_latency_ms: callLatencyMs });
+    if (!validation.valid) {
+      if (sourcePatternRequestId) await svc.rpc("layer3_source_pattern_request_error_service", { p_request_id: sourcePatternRequestId, p_error: "source_pattern_validation_rejected: " + validation.errors.join("; ").slice(0, 900) });
+      return json(req, { ok: false, call_required: true, interpretation_id: interpretationId, status: "rejected_validation", validator_result: validation }, 422);
+    }
+    let sourcePatternHandback: any = null;
+    if (sourcePatternRequestId) {
+      const { data: handback, error: handbackError } = await svc.rpc("layer3_source_pattern_handoff_service", {
+        p_refresh_request_id: sourcePatternRequestId,
+        p_interpretation_id: interpretationId,
+      });
+      if (handbackError) throw new Error(`source-pattern Layer 2 hand-back failed: ${handbackError.message}`);
+      sourcePatternHandback = handback;
+    }
+    return json(req, { ok: true, call_required: true, interpretation_id: interpretationId, review_item_id: completed?.review_item_id || null, status: completed?.status || (parsed?.candidate_value == null ? "no_candidate" : "validated"), model: providerResult?.model || profile.model_identifier, validator_result: validation, estimated_cost_usd: cost, external_call_count: externalCallCount, call_latency_ms: callLatencyMs, source_pattern_handback: sourcePatternHandback });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     if (interpretationId) await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message, p_external_call_count: externalCallCount, p_call_latency_ms: callStartedMs == null ? null : Math.round(performance.now() - callStartedMs) }).catch(() => undefined);
+    if (sourcePatternRequestId) await svc.rpc("layer3_source_pattern_request_error_service", { p_request_id: sourcePatternRequestId, p_error: message }).catch(() => undefined);
     return json(req, { error: message, interpretation_id: interpretationId }, /credential|ceiling reached|not configured/i.test(message) ? 409 : 500);
   }
 });
