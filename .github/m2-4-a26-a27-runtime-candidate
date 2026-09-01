@@ -1,7 +1,7 @@
-# M2.4.4 focused A23/A26/A27/A28 closure regression — 1 September 2026
+# M2.4.4 final focused A23/A26/A27/A28 closure regression — 1 September 2026
 
 Source head before marker:
-47b158af85293116038b1e1b29d434c00cebcb4b
+8c7e24155426b77ac64939f023dc48d425b9e775
 
 Accepted integrated baseline:
 - integration candidate 38203222a137d0aeac8aa69e64ed1b12bf874fff
@@ -13,15 +13,19 @@ Accepted integrated baseline:
 Runtime closure proof:
 - stable parent c65e67a6-3b2e-47e3-832a-57118fe5cf5f
 - scope wave 1bb1504d-7bad-42d9-b059-4adeaf9118c7
-- corrected production batch accd42a2-f096-452b-a084-dc609bd45030
+- superseded direct-http batch 69be7f45-89b3-4e04-b26e-cd89a122a4b5 cancelled with Evidence retained
+- corrected Firecrawl batch accd42a2-f096-452b-a084-dc609bd45030
 - live Firecrawl child Job ed945d14-1458-41b7-bd75-0d1db77531a4
-- Job provider_key=firecrawl with parent/scope-wave lineage
-- Evidence 5bc09143... raw JSON, e8a0ddf7... screenshot, 567993f6... extraction input all carry same parent/scope-wave lineage
-- superseded direct-http batch 69be7f45... cancelled and preserved as immutable corrective history
-- batch runner deployed v7 and passes selected provider_id into layer2-acquire-v2
+- raw JSON Evidence 5bc09143-a8d7-477a-a446-570a2e49e451
+- screenshot Evidence e8a0ddf7-295c-46fd-b0c2-6392c28de0ee
+- extraction Evidence 567993f6-8918-46b7-bc0e-886327bf181d
+- Job and all Evidence above carry parent c65e67a6... and wave 1bb1504d...
+- batch runner v7 passes selected provider_id into layer2-acquire-v2
 - terminal partial batch duplicate guard corrected
-- parent-run projection aggregation reconciled to avoid Evidence join fan-out
-- FU-020 resolved by grants/schema exposure evidence
+- parent-run aggregation reconciled without join fan-out
+- child item progress now refreshes batch heartbeat
+- A27 Administration deep-link/refresh/back-forward already proven
+- FU-020 resolved by direct schema/grant review
 
 Focused suites:
 - admin-navigation-deployed.spec.mjs
@@ -38,4 +42,4 @@ Hard gates unchanged:
 - Evidence lineage/type integrity retained
 - role/security/L1 authority boundaries retained
 
-This is a focused closure regression, not final acceptance.
+This is the final focused closure regression before any final acceptance nomination.
