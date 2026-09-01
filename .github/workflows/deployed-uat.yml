@@ -172,6 +172,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-scope-discover-scheduled|layer2-screenshot-backfill-scheduled|provider-contact-discover-scheduled|scholarships-au-etl)/|^supabase/migrations/.*m2_5_evidence_lineage|^tests/uat/m2-5-evidence-lineage-contract\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-evidence-lineage-contract.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_universal_layer4_block|^tests/uat/m2-5-layer4-block-enforcement-contract\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs)
+          fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
             targeted=(
               tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
@@ -250,6 +253,7 @@ jobs:
             tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs
             tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs
             tests/uat/m2-5-evidence-lineage-contract.spec.mjs
+            tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -285,6 +289,7 @@ jobs:
             tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs
             tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs
             tests/uat/m2-5-evidence-lineage-contract.spec.mjs
+            tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
