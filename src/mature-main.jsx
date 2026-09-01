@@ -22,7 +22,7 @@ import PlatformMaturity from'./platform-maturity-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.18'
+const UI_VERSION='2.15.19'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
