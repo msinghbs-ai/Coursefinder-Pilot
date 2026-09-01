@@ -1,30 +1,29 @@
 # M2.4.4 A17–A28 replacement bounded integration candidate — 1 September 2026
 
 Implementation source before marker:
-5b1725ed1d0775eb1543553374cbb55bf20d3525
+f07f354d8b3842c02dde04cff31e576924fc989f
 
 Change Control:
 CF-CHG-20260830-048
 
 Pre-integration proof:
-- build 33452204866 PASS;
-- focused A25 + Layer-status + performance UAT 33452204859 PASS;
-- focused log: 8/8 PASS;
-- A25 JSON/HTML/screenshot Evidence PASS;
-- Dashboard Layer 1–4 operational status PASS without layer_status_summary RPC errors;
-- core, Course interaction, Layer 2/Admin and responsive performance gates PASS;
+- build 33454525548 PASS;
+- focused Campus/Course performance UAT 33454525536 PASS, 4/4;
+- core workspace budgets PASS including campuses_page;
+- exact Course lookup/detail/paging/back PASS;
+- Layer 2/Admin management performance PASS;
+- responsive widths PASS;
+- prior focused A25 + Layer-status + performance UAT 33452204859 PASS;
 - prior focused mobile navigation/profile UAT 33449532351 PASS;
-- prior focused Course performance UAT 33447610954 PASS;
 - prior focused A13/A16+A25+performance UAT 33443025460 PASS.
 
-Runtime corrections retained:
-- layer_status_summary public dispatcher restored;
-- Layer 2 status count indexes applied;
-- Dashboard Layer-status helper bounded below the unchanged 3,000 ms gate;
-- screenshot Evidence semantics unchanged;
+Corrections retained:
+- common Campus browse is page-first with lower(name),id index;
+- common Course browse/detail performance headroom retained;
+- Dashboard layer_status_summary route restored and bounded;
+- A25 Evidence semantics unchanged;
 - Layer 2 profile stale-response race fixed;
-- mobile canonical navigation uses hamburger-aware clickPrimaryNav;
-- Course browse/detail performance headroom retained.
+- mobile canonical navigation uses hamburger-aware clickPrimaryNav.
 
 Scope:
 - revalidate A17–A28 together on chromium-desktop and chromium-mobile;
@@ -36,11 +35,11 @@ Scope:
 - preserve A23 Firecrawl-first quota-aware background production;
 - preserve A24 unified Layer headers;
 - preserve A25 Evidence type/lineage integrity;
-- validate Dashboard Layer 1–4 operational status contract;
+- validate Dashboard Layer 1–4 operational status;
 - validate A26 run/job/Evidence/Dashboard consistency;
 - validate A27 Administration reliability, mobile navigation and bounded source paging;
 - validate A28 L2/L3 operator summaries and production UI hardening;
-- retain Course browse/detail performance correction;
+- retain Campus/Course performance headroom;
 - retain security/private Evidence/role boundaries.
 
 Hard gates unchanged:
@@ -52,7 +51,7 @@ Hard gates unchanged:
 - no Layer 1 authority bypass.
 
 Decision:
-- this is the single replacement integration candidate after focused PASS;
+- this is the single replacement integration candidate after focused performance PASS;
 - desktop and mobile must both PASS;
 - any failure is immutable evidence and only demonstrated defects may be corrected;
 - no unchanged rerun;
