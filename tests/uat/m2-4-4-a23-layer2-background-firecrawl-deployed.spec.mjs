@@ -69,8 +69,9 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   const terminal=await fs.readFile('supabase/migrations/20260901092500_m2_4_4_a26_partial_batch_terminal_dispatch.sql','utf8')
   expect(runner).toContain('provider_id:priorProvider||undefined')
   expect(runner).toContain('route_mode==="scraper_first"&&!priorProvider')
-  expect(terminal).toContain("b.status in(''queued'',''running'')")
-  expect(terminal).not.toContain("b.status in(''queued'',''running'',''partial'')")
+  expect(terminal).toContain("v_old text := 'if exists(select 1 from pipeline.layer2_run_batches b where b.profile_id=r.profile_id and b.status in(''queued'',''running'',''partial'')) then'")
+  expect(terminal).toContain("v_new text := 'if exists(select 1 from pipeline.layer2_run_batches b where b.profile_id=r.profile_id and b.status in(''queued'',''running'')) then'")
+  expect(terminal).toContain("v_def:=replace(v_def,v_old,v_new)")
  })
 
  test('background finaliser completes deterministic controls and governed handoff without autonomous Layer 3 AI',async()=>{
