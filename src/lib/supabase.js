@@ -185,6 +185,30 @@ export const api = {
     }),
   prismsFilterOptions: () => adminRead('prisms_filters'),
 
+  rankingSummary: () => adminRead('ranking_summary'),
+  rankingFilters: () => adminRead('ranking_filters'),
+  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '' } = {}) =>
+    adminRead('ranking_observations', {
+      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
+      system_code: systemCode || null, edition_year: editionYear === '' ? null : Number(editionYear),
+      provider_id: providerId || null,
+    }),
+  rankingImports: ({ limit = 50, offset = 0 } = {}) => adminRead('ranking_imports', {
+    limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0),
+  }),
+  uploadRankingPublisherFile: async ({ systemCode, editionYear, publisherName, sourceUrl, methodologyUrl = '', licensingNote, revisionNote = '', file }) => {
+    const form = new FormData()
+    form.set('system_code', systemCode)
+    form.set('edition_year', String(editionYear))
+    form.set('publisher_name', publisherName)
+    form.set('source_url', sourceUrl)
+    form.set('methodology_url', methodologyUrl || '')
+    form.set('licensing_note', licensingNote)
+    form.set('revision_note', revisionNote || '')
+    form.set('file', file)
+    return invoke('ranking-publisher-import', form)
+  },
+
   evidencePage: ({
     limit = 50, offset = 0, query = '', country = '', sourceId = '', layer = '', entityType = '', entityId = '', providerId = '', jobId = '',
     evidenceType = '', mime = '', hash = '', jobStatus = '', status = '', extractionState = '', freshness = '', verifiedFrom = '', verifiedTo = '',
