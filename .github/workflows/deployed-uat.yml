@@ -194,6 +194,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-a26-a27-runtime-candidate'; then
             targeted=(
               tests/uat/admin-navigation-deployed.spec.mjs
+              tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
               tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
               tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
               tests/uat/performance-deployed.spec.mjs
