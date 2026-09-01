@@ -19,10 +19,11 @@ import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
 import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
 import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'
 import PlatformMaturity from'./platform-maturity-entry'
+import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.19'
+const UI_VERSION='2.15.20'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -143,8 +144,8 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Refresh & Scheduling'&&rank>=3)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Onboarding'&&rank>=3)return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
-  if(page==='Jobs'&&rank>=4)return <OperationalList operation="jobs" title="Pipeline jobs" onError={onError}/>
-  if(page==='Sources'&&rank>=4)return <OperationalList operation="sources" title="Governed sources" onError={onError}/>
+  if(page==='Jobs'&&rank>=4)return <JobsWorkspace/>
+  if(page==='Sources'&&rank>=4)return <SourcesWorkspace/>
   if(page==='Attributes'&&rank>=5)return <Attributes onError={onError}/>
   if(page==='Settings'&&rank>=6)return <div className="m-legacy-host"><RegulatorySettings onError={onError}/></div>
   return <EmptyState icon={AlertTriangle} title="Not authorised" text="Your assigned CourseFinder role does not permit this workspace."/>
