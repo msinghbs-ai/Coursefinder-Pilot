@@ -64,6 +64,15 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   expect(acl).toMatch(/grant execute on function public\.layer2_qualification_continue_service\(uuid\) to service_role/i)
  })
 
+ test('background production runner preserves the selected Firecrawl route and terminal partial batches do not block later waves',async()=>{
+  const runner=await fs.readFile('supabase/functions/layer2-batch-runner/index.ts','utf8')
+  const terminal=await fs.readFile('supabase/migrations/20260901092500_m2_4_4_a26_partial_batch_terminal_dispatch.sql','utf8')
+  expect(runner).toContain('provider_id:priorProvider||undefined')
+  expect(runner).toContain('route_mode==="scraper_first"&&!priorProvider')
+  expect(terminal).toContain("b.status in(''queued'',''running'')")
+  expect(terminal).not.toContain("b.status in(''queued'',''running'',''partial'')")
+ })
+
  test('background finaliser completes deterministic controls and governed handoff without autonomous Layer 3 AI',async()=>{
   const finalizer=await fs.readFile('supabase/migrations/20260831115800_m2_4_4_a23_qualification_finalizer_handoff.sql','utf8')
   expect(finalizer).toContain('qualification_finalizer_run_limit')
