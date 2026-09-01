@@ -3,6 +3,7 @@ import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
 import{writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
+// Permanent CF-061 source/build contract.
 test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-061-qilt-prisms-comparison-contract',change_control:'CF-CHG-20260901-061'})})
 
