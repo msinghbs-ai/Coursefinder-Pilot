@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { writeRunEnvironment } from './support/runtime-evidence.mjs'
 
+// Final CF-054 source-contract trigger from v2.15.17 head.
 test.describe('M2.5 Layer 3 source-pattern operator execution contract',()=>{
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-5-layer3-source-pattern-operator-contract',change_control:'CF-CHG-20260901-054'})})
 
