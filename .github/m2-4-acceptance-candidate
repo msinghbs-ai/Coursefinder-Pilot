@@ -1,85 +1,103 @@
-M2.4.4 Cross-layer Operations, Production Lineage & Administration Reliability — FINAL ACCEPTANCE candidate.
+M2.4.4 Cross-layer Operations, Production Lineage & Administration Reliability — REPLACEMENT FINAL ACCEPTANCE candidate.
 
 Nominated: 1 September 2026.
 
-Exact accepted lineage before marker:
-- integrated candidate 38203222a137d0aeac8aa69e64ed1b12bf874fff
-- integration build 33454842391 PASS
-- integration UAT 33454842388 PASS desktop + mobile
-- runtime reconciliation focused build 33456205759 PASS
-- runtime reconciliation focused UAT 33456205806 PASS
-- timeout-safe closure source ccb5db220e7e34ab0f0f16cf04228f78b45f6ad9
-- timeout-safe closure build 33459679420 PASS
-- timeout-safe closure UAT 33459679417 PASS
+Immutable previous final acceptance:
+- candidate 41428941a1bae18f6e53ac37f81ae54ef5704b1a
+- build 33460038601 PASS
+- acceptance UAT 33460038608 FAIL desktop; mobile skipped
+- do not rerun unchanged
 
-Governance:
-- CF-CHG-20260830-048 remains ACTIVE pending this gate.
-- M2.4.3 remains CLOSED / PASS.
-- A15 remains CLOSED / PASS and frozen.
-- Production cutover, broad Publication, Website and Zoho production cutover remain unauthorised.
-- no autonomous Layer 3 canonical mutation.
-- no Evidence/history rewrite or deletion.
+Demonstrated previous-final defects and corrections:
+1. stale Scholarship Selection acceptance expected a removed top-level nav item.
+   - Scholarship decision support now lives under canonical Scholarships workspace.
+   - no removed top-level route was reintroduced.
+2. full acceptance performance contention while Firecrawl background production was active.
+   - unchanged hard gates retained.
+   - direct DB paths remained healthy.
+   - background runtime proof was already complete before acceptance isolation.
+3. parent projection production-grain and Evidence aggregation were reconciled.
 
-A26 stable parent lineage:
+Focused corrective proof:
+- source/head fb7715031d089a1d95511589726da913dbb8f821
+- build 33461321738 PASS
+- focused UAT 33461321744 PASS
+- targeted job 99711879878 PASS
+
+Quiet replacement-final runtime state:
 - stable parent c65e67a6-3b2e-47e3-832a-57118fe5cf5f
 - scope wave 1bb1504d-7bad-42d9-b059-4adeaf9118c7
-- corrected Firecrawl batch accd42a2-f096-452b-a084-dc609bd45030
-- Firecrawl Job ed945d14-1458-41b7-bd75-0d1db77531a4
-- raw JSON Evidence 5bc09143-a8d7-477a-a446-570a2e49e451
-- screenshot Evidence e8a0ddf7-295c-46fd-b0c2-6392c28de0ee
-- extraction Evidence 567993f6-8918-46b7-bc0e-886327bf181d
-- Job and Evidence above share the same parent and scope-wave lineage.
-- cancelled direct-http corrective batch 69be7f45-89b3-4e04-b26e-cd89a122a4b5 and its completed history remain immutable.
+- route scraper_first
+- production grain 261 Courses
+- completed/dispatched 219
+- failed 0
+- scheduled remainder 42
+- next wave not before 2026-09-01 05:03:19.957195+00
+- no active production batch/vendor attempt at nomination
+- boundary-crossing Firecrawl call 7a881999-dbf3-4959-baf0-5ee0fb775589 completed successfully and remains immutable history
 
-A23/A26 production execution hardening:
-- terminal reconciled partial batches no longer block later scheduled waves.
-- layer2-batch-runner v8 passes the selected Firecrawl provider under scraper_first.
-- scraper_first invocation chunks are capped at 2 items to remain inside the Edge execution envelope.
-- stale acquiring items first reuse an already-succeeded matching acquisition Job when available; extraction resumes from the original attempt/Evidence rather than consuming a duplicate scrape.
-- child item progress refreshes the owning batch heartbeat.
-- live timeout recovery proved item 60322b65-f0a1-476b-8c5c-5685c90083d0 reused Firecrawl Job 81a09da3-3a9d-4a61-bf32-99810c9a356a.
-- the production batch is healthy background work and does not need to finish all 261 Courses before acceptance.
+A26 runtime proof retained:
+- qualification root -> wave request -> batch -> Firecrawl Job -> Evidence parent lineage proven
+- runner v8 selected-provider handoff, timeout-safe chunks, stale acquisition recovery, lossless resume and child heartbeat proven
+- direct-http corrective history preserved
+- cancelled batch history preserved
+- parent projection now separates queueable production work from missing-URL state inventory and splits item metrics from Evidence aggregation
 
-A27 Administration reliability:
-- #administration remains default Overview.
-- subcontext uses #administration?section=<key>.
-- direct links, refresh, browser back and forward restore the selected section.
-- no parallel top-level navigation or floating launcher.
+A27:
+- #administration defaults Overview
+- #administration?section=<key> canonical subcontext
+- refresh/back/forward restoration proven
+- no parallel top-level navigation or floating launcher
 
-A28 operator summaries:
-- Layer 2 current progress uses the stable parent projection.
-- scheduled work no longer appears falsely Idle.
-- parent ID, scope, progress, L2/L3/blocked, child Jobs, Evidence, scheduled remainder and next scheduler action are visible.
-- parent aggregation avoids Evidence fan-out and separately labels cancelled corrective history.
-- existing concise Layer 3 and blocker-hardening semantics remain retained.
+A28:
+- parent-linked Layer2 progress
+- exact current/scheduled state
+- Jobs/Evidence links
+- concise actionable blockers
+- no false Idle state for scheduled work
+- Layer3 concise operations retained
+
+Scholarship decision support:
+- canonical Scholarships page contains Open Course decision support
+- decision-support contract still labels SOURCE FACT, DERIVED SCORE and MISSING / UNRESOLVED
+- eligibility inference remains prohibited
+- acceptance helper follows canonical Scholarships navigation
 
 Evidence:
-- A25 JSON/text own preview retained.
-- screenshot previews only own image or exact same-attempt HTML relation.
-- no null/empty/provider-wide screenshot inheritance.
-- Firecrawl raw JSON, screenshot and extraction Evidence preserve type/MIME/lineage.
+- A25 JSON/text own preview retained
+- screenshot lineage remains own or exact same-attempt HTML relation only
+- no null/empty/provider-wide screenshot inheritance
+- Firecrawl raw JSON/screenshot/extraction Evidence lineage retained
 
 Security:
-- M244-FU-020 resolved: inspected RLS-disabled tables have no anon/authenticated table grants; anon/authenticated have no pipeline schema USAGE.
-- no blanket RLS enablement.
-- fresh Security Advisor after closure reconciliation is INFO-only; no WARN/ERROR security condition introduced.
-- role/private Evidence boundaries remain unchanged.
+- FU-020 remains resolved
+- no blanket RLS change
+- fresh Security Advisor: 146 INFO / 0 WARN / 0 ERROR
+- role/private Evidence boundaries unchanged
 
 Performance:
-- unchanged RPC/detail latency gate <= 3,000 ms.
-- unchanged page/management payload gate <= 250,000 bytes.
-- unchanged filter payload gate <= 60,000 bytes.
-- Campus and Course page-first performance corrections retained.
-- fresh Performance Advisor after closure reconciliation is INFO-only.
+- hard gates unchanged:
+  - RPC/detail <= 3000 ms
+  - page/management payload <= 250000 bytes
+  - filter payload <= 60000 bytes
+- fresh Performance Advisor: 172 INFO / 0 WARN / 0 ERROR
+- no threshold weakening
 
-Permanent validation:
-- Administration deep-link/history coverage included.
-- A23 Firecrawl route/terminal-partial/timeout-safe recovery coverage included.
-- A26/A28 parent operator UX and heartbeat coverage included.
-- A25 Evidence integrity coverage included.
-- performance and responsive budgets included.
-- acceptance retains the broader governed A17-A28, Layer 1-4, navigation, release-note and security-related suites.
-- no performance, Evidence or security threshold is weakened.
+Accepted prerequisite evidence:
+- integration candidate 38203222a137d0aeac8aa69e64ed1b12bf874fff
+- integration build 33454842391 PASS
+- integration UAT 33454842388 PASS desktop + mobile
+- runtime reconciliation 33456205759 / 33456205806 PASS/PASS
+- timeout-safe closure 33459679420 / 33459679417 PASS/PASS
+- focused final correction 33461321738 / 33461321744 PASS/PASS
 
-This marker triggers exactly one final M2.4.4 deployed acceptance desktop/mobile matrix.
-M2.4.4 and CF-CHG-20260830-048 may CLOSE / PASS only if both desktop and mobile PASS and the final repository/runtime/advisor/documentation reconciliation remains clean.
+Governance:
+- CF-CHG-20260830-048 remains ACTIVE pending this gate
+- M2.4.3 remains CLOSED/PASS
+- A15 remains CLOSED/PASS and frozen
+- production cutover, broad Publication, Website and Zoho production cutover remain unauthorised
+- no autonomous Layer3 canonical mutation
+- no Evidence/history rewrite/deletion
+
+This marker triggers exactly one replacement final deployed acceptance desktop/mobile matrix.
+M2.4.4 and CF-CHG-20260830-048 may CLOSE/PASS only if build and desktop/mobile acceptance PASS and the final repository/runtime/advisor/documentation reconciliation remains clean.
