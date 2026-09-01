@@ -17,6 +17,7 @@ import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
 import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLinksWorkspace,Dates as ImportantDatesWorkspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
 import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
 import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
+import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'
 import'./styles.css'
 import'./mature.css'
 
@@ -217,7 +218,7 @@ function OpsOverlayLauncher({tab}){
   </section></div>
 }
 
-function ScholarshipWorkspace({rank,onError,navigate,initialId}){return <div className="m-page-stack">{rank>=4&&<ScholarshipFillControl onError={onError}/>}<Catalogue type="scholarship" onError={onError} navigate={navigate} initialId={initialId}/></div>}
+function ScholarshipWorkspace({rank,onError,navigate,initialId}){const[selectionOpen,setSelectionOpen]=useState(false);return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Sparkles} title="Scholarship decision support" subtitle="Structural candidate scoring only. Student eligibility remains unresolved unless separately verified."/><button className="m-secondary" onClick={()=>setSelectionOpen(true)}><GraduationCap size={15}/>Open Course decision support</button></section>{rank>=4&&<ScholarshipFillControl onError={onError}/>}<Catalogue type="scholarship" onError={onError} navigate={navigate} initialId={initialId}/>{selectionOpen&&<ScholarshipSelectionWorkspace onClose={()=>setSelectionOpen(false)}/>}</div>}
 
 function ScholarshipFillControl({onError}){
  const[country,setCountry]=useState('AU'),[busy,setBusy]=useState(false),[result,setResult]=useState(null)
