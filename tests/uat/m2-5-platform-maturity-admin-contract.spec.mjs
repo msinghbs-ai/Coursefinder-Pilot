@@ -3,7 +3,7 @@ import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
 import{writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
-// CF-058 targeted source/build validation trigger.
+// CF-058 targeted source/build validation trigger — rerun after Layer 2 source corruption repair.
 test.describe('M2.5 Platform maturity Administration source/server contract',()=>{
   test.beforeAll(async()=>{
     await writeRunEnvironment({
