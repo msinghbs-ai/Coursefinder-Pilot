@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 import { openLayer2, openLayer3 } from './support/navigation.mjs'
@@ -36,6 +37,12 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     if(await blockerPanel.count())await expect(blockerPanel.getByRole('heading',{name:'Action required',exact:true})).toBeVisible()
     await expect(ws.getByText(/Meeting-ready Firecrawl example/i)).toHaveCount(0)
   }finally{await finish(testInfo,runtime)}})
+
+  test('A26 child progress refreshes the owning batch heartbeat',async()=>{
+    const sql=await fs.readFile('supabase/migrations/20260901101500_m2_4_4_a26_child_heartbeat.sql','utf8')
+    expect(sql).toContain('set heartbeat_at=now(),updated_at=now()')
+    expect(sql).toContain("where id=v_batch and status in('queued','running')")
+  })
 
   test('Layer 3 exposes concise current operations and governed Evidence summary without profile mutation controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
