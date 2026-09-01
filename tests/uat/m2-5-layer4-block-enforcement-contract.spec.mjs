@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { writeRunEnvironment } from './support/runtime-evidence.mjs'
 
+// CF-057 runtime rollback proof and post-DDL advisors were clean before this trigger.
 test.describe('M2.5 universal Layer 4 block enforcement contract',()=>{
   test.beforeAll(async()=>{
     await writeRunEnvironment({
