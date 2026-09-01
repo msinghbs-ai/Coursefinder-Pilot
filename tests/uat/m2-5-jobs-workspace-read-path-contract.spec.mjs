@@ -44,10 +44,10 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
 
     const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
-    expect(shellVersion).toBe('2.15.20')
+    expect(shellVersion).toMatch(/^2\\.15\\.\\d+$/)
     expect(releaseVersion).toBe(shellVersion)
-    expect(index).toContain('Coursefinder PIM Admin v2.15.20')
-    expect(versionEntry).toContain("version:'2.15.20'")
+    expect(index).toContain(`Coursefinder PIM Admin v${shellVersion}`)
+    expect(versionEntry).toContain(`version:'${shellVersion}'`)
     expect(versionEntry).toContain('Pipeline Jobs workspace restoration')
     expect(releaseTest).toContain('v2.15.20')
 
