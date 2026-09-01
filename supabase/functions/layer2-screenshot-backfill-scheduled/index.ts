@@ -1,9 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {createClient} from "npm:@supabase/supabase-js@2";
-const FN="layer2-screenshot-backfill-scheduled",BUCKET="evidence",VERSION="layer2-screenshot-backfill-scheduled-v1.0.0";
+const FN="layer2-screenshot-backfill-scheduled",BUCKET="evidence",VERSION="layer2-screenshot-backfill-scheduled-v1.0.1";
 const J=(s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:any)=>String(v??"").trim();
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw new Error(`${n}: ${error.message}`);return data}
+async function cleanupDuplicateUpload(c:any,ev:any,path:string){
+ try{
+  const duplicate=clean(ev?.duplicate_upload_path),retained=clean(ev?.storage_path);
+  if(duplicate!==path||!retained||retained===path)return;
+  const rm=await c.storage.from(BUCKET).remove([path]);
+  if(rm.error)console.warn("CF-055 duplicate screenshot cleanup failed",path,rm.error.message);
+ }catch(e:any){console.warn("CF-055 duplicate screenshot cleanup failed",path,String(e?.message||e))}
+}
 async function hash(bytes:Uint8Array){const d=await crypto.subtle.digest("SHA-256",bytes);return[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 Deno.serve(async(req:Request)=>{
  if(req.method!=="POST")return J(405,{ok:false,error:"POST required",worker_version:VERSION});
@@ -27,7 +35,7 @@ Deno.serve(async(req:Request)=>{
   const mime=(img.headers.get("content-type")||"image/png").split(";")[0].trim().toLowerCase();if(!["image/png","image/jpeg","image/webp"].includes(mime))throw new Error("unexpected screenshot MIME "+mime);
   const bytes=new Uint8Array(await img.arrayBuffer()),digest=await hash(bytes),ext=mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg",path=`layer2/v2/screenshot-backfill/${ctx.job_id}/${ctx.attempt_id}/visual.${ext}`;
   const up=await svc.storage.from(BUCKET).upload(path,bytes,{contentType:mime,upsert:false});if(up.error)throw new Error("screenshot upload failed: "+up.error.message);
-  const ev=await rpc(svc,"layer2_evidence_capture",{p_source_id:ctx.source_id,p_job_id:ctx.job_id,p_evidence_type:"layer2_screenshot",p_source_url:ctx.source_url,p_storage_path:path,p_content_hash:digest,p_mime_type:mime,p_profile_version_id:ctx.profile_version_id,p_group_key:await hash(new TextEncoder().encode(`${evidenceId}|screenshot-backfill|${digest}`)),p_retention_class:"standard_365",p_retain_until:null,p_metadata:{layer:2,worker_version:VERSION,provider_key:"firecrawl",attempt_id:ctx.attempt_id,source_evidence_id:evidenceId,screenshot_origin:"firecrawl_backfill",visual_evidence:true,canonical_mutation_authorised:false,search_mutation_authorised:false,publication_mutation_authorised:false}});
+  const ev=await rpc(svc,"layer2_evidence_capture",{p_source_id:ctx.source_id,p_job_id:ctx.job_id,p_evidence_type:"layer2_screenshot",p_source_url:ctx.source_url,p_storage_path:path,p_content_hash:digest,p_mime_type:mime,p_profile_version_id:ctx.profile_version_id,p_group_key:await hash(new TextEncoder().encode(`${evidenceId}|screenshot-backfill|${digest}`)),p_retention_class:"standard_365",p_retain_until:null,p_metadata:{layer:2,worker_version:VERSION,provider_key:"firecrawl",attempt_id:ctx.attempt_id,source_evidence_id:evidenceId,screenshot_origin:"firecrawl_backfill",visual_evidence:true,canonical_mutation_authorised:false,search_mutation_authorised:false,publication_mutation_authorised:false}});await cleanupDuplicateUpload(svc,ev,path);
   await rpc(svc,"layer2_screenshot_backfill_attach",{p_attempt_id:ctx.attempt_id,p_screenshot_evidence_id:ev.evidence_id,p_metrics:{screenshot_backfill_worker:VERSION,screenshot_evidence_id:ev.evidence_id,screenshot_bytes:bytes.length,screenshot_mime:mime}});
   return J(200,{ok:true,status:"captured",evidence_id:evidenceId,screenshot_evidence_id:ev.evidence_id,mime_type:mime,bytes:bytes.length,worker_version:VERSION,canonical_mutation_authorised:false,search_mutation_authorised:false,publication_mutation_authorised:false});
  }catch(e:any){return J(500,{ok:false,error:String(e?.message||e),worker_version:VERSION})}
