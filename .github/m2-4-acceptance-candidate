@@ -1,57 +1,85 @@
-M2.4.4 Cross-layer Operations, Housekeeping, Scheduling & Pre-blackout Acceptance — FINAL ACCEPTANCE candidate.
+M2.4.4 Cross-layer Operations, Production Lineage & Administration Reliability — FINAL ACCEPTANCE candidate.
 
-Nominated: 30 August 2026.
+Nominated: 1 September 2026.
 
 Exact accepted lineage before marker:
-- replacement bounded integration candidate a256283bb5751dda727d8a6e4ae057abbffdcbbf
-- bounded integration run 33300281890
-- corrective source 8494293f118bb9f8f3a5884ca4bde1a3331831f1
-- targeted corrective run 33300234103 PASS
-- implementation source before first marker 7ef74a0b787e50e46d4cf11300a0e27391f13e54
+- integrated candidate 38203222a137d0aeac8aa69e64ed1b12bf874fff
+- integration build 33454842391 PASS
+- integration UAT 33454842388 PASS desktop + mobile
+- runtime reconciliation focused build 33456205759 PASS
+- runtime reconciliation focused UAT 33456205806 PASS
+- timeout-safe closure source ccb5db220e7e34ab0f0f16cf04228f78b45f6ad9
+- timeout-safe closure build 33459679420 PASS
+- timeout-safe closure UAT 33459679417 PASS
 
 Governance:
 - CF-CHG-20260830-048 remains ACTIVE pending this gate.
 - M2.4.3 remains CLOSED / PASS.
 - A15 remains CLOSED / PASS and frozen.
-- Production, broad Publication, Website and Zoho cutover remain unauthorised.
-- RMIT frozen 212-record canonical promotion remains BLOCKED unless separately authorised.
-- NZ first-party Layer 2 Course enrichment remains DEFERRED.
+- Production cutover, broad Publication, Website and Zoho production cutover remain unauthorised.
+- no autonomous Layer 3 canonical mutation.
+- no Evidence/history rewrite or deletion.
 
-Historical integration evidence retained:
-- first bounded integration marker 55f867bc371fb961f38631129e746fad9d9ec00b
-- first bounded integration run 33299250997
-- desktop 44 passed / 2 failed after retry
-- mobile skipped after desktop failure
-- one M2.4.4 failure was a checked-in assertion defect and was corrected without runtime change
-- inherited Course interaction performance failure was retained under the unchanged 3,000 ms budget
-- replacement bounded integration run 33300281890 then PASSed on both desktop and mobile.
+A26 stable parent lineage:
+- stable parent c65e67a6-3b2e-47e3-832a-57118fe5cf5f
+- scope wave 1bb1504d-7bad-42d9-b059-4adeaf9118c7
+- corrected Firecrawl batch accd42a2-f096-452b-a084-dc609bd45030
+- Firecrawl Job ed945d14-1458-41b7-bd75-0d1db77531a4
+- raw JSON Evidence 5bc09143-a8d7-477a-a446-570a2e49e451
+- screenshot Evidence e8a0ddf7-295c-46fd-b0c2-6392c28de0ee
+- extraction Evidence 567993f6-8918-46b7-bc0e-886327bf181d
+- Job and Evidence above share the same parent and scope-wave lineage.
+- cancelled direct-http corrective batch 69be7f45-89b3-4e04-b26e-cd89a122a4b5 and its completed history remain immutable.
 
-M2.4.4 runtime contract:
-- Layer 1 legacy regulatory_sync recovery only after >45 minutes and only when no live Layer 1 queue heartbeat exists within 30 minutes.
-- Layer 2 provider-attempt/orphan-job/managed-batch recovery remains policy bounded.
-- Layer 3 stale reserved/calling recovery remains 20 minutes with history retained.
-- no governed Evidence, source-version, canonical or interpretation history is deleted by housekeeping.
-- scheduler ownership and dedupe remain layer-specific with no duplicate active Layer 1–3 refresh work.
-- Layer 3 operational alerts are exposed through the governed admin_read boundary and retain authenticated rank enforcement.
-- no invented storage quota threshold; storage is observational until a governed capacity policy is approved.
-- A14 latency/provider/token/unit/cost/Evidence telemetry remains required where applicable.
+A23/A26 production execution hardening:
+- terminal reconciled partial batches no longer block later scheduled waves.
+- layer2-batch-runner v8 passes the selected Firecrawl provider under scraper_first.
+- scraper_first invocation chunks are capped at 2 items to remain inside the Edge execution envelope.
+- stale acquiring items first reuse an already-succeeded matching acquisition Job when available; extraction resumes from the original attempt/Evidence rather than consuming a duplicate scrape.
+- child item progress refreshes the owning batch heartbeat.
+- live timeout recovery proved item 60322b65-f0a1-476b-8c5c-5685c90083d0 reused Firecrawl Job 81a09da3-3a9d-4a61-bf32-99810c9a356a.
+- the production batch is healthy background work and does not need to finish all 261 Courses before acceptance.
 
-Migration/runtime reconciliation:
-- deployed 20260830021159_m2_4_4_layer1_legacy_stale_job_recovery
-- repository alias 20260830021400_m2_4_4_layer1_legacy_stale_job_recovery.sql
-- deployed 20260830071523_m2_4_4_layer3_operational_alerts
-- deployed 20260830072215_m2_4_4_layer3_alert_admin_read_bridge
-- all seven active operational cron jobs latest-success immediately before nomination
-- no active Layer 1–3 refresh requests
-- seven retained Layer 4 human-resolution requests remain queued
-- Layer 3 stale reserved/calling executions: 0
-- Security Advisor: 135 INFO / 0 WARN / 0 ERROR
-- Performance Advisor: 169 INFO / 0 WARN / 0 ERROR
+A27 Administration reliability:
+- #administration remains default Overview.
+- subcontext uses #administration?section=<key>.
+- direct links, refresh, browser back and forward restore the selected section.
+- no parallel top-level navigation or floating launcher.
+
+A28 operator summaries:
+- Layer 2 current progress uses the stable parent projection.
+- scheduled work no longer appears falsely Idle.
+- parent ID, scope, progress, L2/L3/blocked, child Jobs, Evidence, scheduled remainder and next scheduler action are visible.
+- parent aggregation avoids Evidence fan-out and separately labels cancelled corrective history.
+- existing concise Layer 3 and blocker-hardening semantics remain retained.
+
+Evidence:
+- A25 JSON/text own preview retained.
+- screenshot previews only own image or exact same-attempt HTML relation.
+- no null/empty/provider-wide screenshot inheritance.
+- Firecrawl raw JSON, screenshot and extraction Evidence preserve type/MIME/lineage.
+
+Security:
+- M244-FU-020 resolved: inspected RLS-disabled tables have no anon/authenticated table grants; anon/authenticated have no pipeline schema USAGE.
+- no blanket RLS enablement.
+- fresh Security Advisor after closure reconciliation is INFO-only; no WARN/ERROR security condition introduced.
+- role/private Evidence boundaries remain unchanged.
+
+Performance:
+- unchanged RPC/detail latency gate <= 3,000 ms.
+- unchanged page/management payload gate <= 250,000 bytes.
+- unchanged filter payload gate <= 60,000 bytes.
+- Campus and Course page-first performance corrections retained.
+- fresh Performance Advisor after closure reconciliation is INFO-only.
 
 Permanent validation:
-- tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs is included in integration and acceptance tiers.
-- acceptance retains existing Layer 1/2/3, A10, A12, A13, A15, performance, navigation, screen-state and other governed acceptance suites.
-- no performance threshold is lowered.
+- Administration deep-link/history coverage included.
+- A23 Firecrawl route/terminal-partial/timeout-safe recovery coverage included.
+- A26/A28 parent operator UX and heartbeat coverage included.
+- A25 Evidence integrity coverage included.
+- performance and responsive budgets included.
+- acceptance retains the broader governed A17-A28, Layer 1-4, navigation, release-note and security-related suites.
+- no performance, Evidence or security threshold is weakened.
 
 This marker triggers exactly one final M2.4.4 deployed acceptance desktop/mobile matrix.
-M2.4.4 and CF-CHG-20260830-048 may CLOSE / PASS only if both desktop and mobile PASS and final repository/runtime/advisor/documentation reconciliation remains clean.
+M2.4.4 and CF-CHG-20260830-048 may CLOSE / PASS only if both desktop and mobile PASS and the final repository/runtime/advisor/documentation reconciliation remains clean.
