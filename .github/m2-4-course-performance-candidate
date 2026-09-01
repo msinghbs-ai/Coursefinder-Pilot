@@ -1,23 +1,34 @@
-# M2.4.4 focused Course interaction performance validation — 1 September 2026
+# M2.4.4 focused Campus + Course performance validation — 1 September 2026
 
 Source head before marker:
-09a5e119d63cf9ad57e03464ca1b03e5853adb3c
+104980b1d5b678eed376644b9eaed65015e356fc
 
-Pre-proof:
-- build 33447312341 PASS
-- deployed UAT 33447312300 PASS
-- live DB timing after correction: default Course page ~1.22 s; full Course detail ~0.98 s
+Previous integration:
+- candidate 2c548673383920b1f134c809269d218042237de0
+- build 33452687372 PASS
+- integration UAT 33452687369 FAIL
+- 66 passed, 1 flaky
+- repeatable real failure: campuses_page 3863 ms > 3000 ms
+- one transient courses_page 3752 ms overrun passed on retry
+
+Correction:
+- default unfiltered Campus browse now pages first, then enriches only returned rows
+- added campuses_lower_name_id_idx
+- non-default Campus filters/sorts retain existing accepted fallback
+- direct live campuses_page timing after change ~4 ms
+- direct Course default/exact path verification ~71 ms
+- no latency/payload threshold changed
 
 Focused scope:
-- performance-deployed.spec.mjs only
-- exact CRICOS lookup, Course detail, paging and browser-back interaction
-- core workspace budgets
-- Layer 2/Admin management-view budgets
+- tests/uat/performance-deployed.spec.mjs only
+- core workspace budgets including campuses_page
+- exact Course lookup/detail/paging/back
+- Layer 2/Admin management budgets
 - responsive widths
 
 Hard gates unchanged:
 - RPC/detail latency <= 3,000 ms
 - page/management payload <= 250,000 bytes
-- filter-option payload <= 60,000 bytes
+- filter payload <= 60,000 bytes
 
-This is not an integration nomination.
+This is not an integration or final-acceptance nomination.
