@@ -126,12 +126,15 @@ function Capacity({capacity,integrity,policy,evidencePolicy}){
       <Metric Icon={AlertTriangle} label="Integrity severity" value={title(capacity?.severity||'unknown')} detail={'Severity input '+fmtNumber(capacity?.integrity_count_for_severity)} tone={toneFor(capacity?.severity)}/>
     </div>
 
-    <section className="pm-panel"><SectionTitle icon={AlertTriangle} title="Evidence lineage classification" subtitle="CF-055 separates duplicate objects from unresolved provenance. No cleanup is authorised here."/>
+    <section className="pm-panel"><SectionTitle icon={AlertTriangle} title="Evidence lineage classification" subtitle="CF-055/059 preserve raw lineage counts while separating proven duplicates, governed historical reconciliations and unresolved faults. No cleanup is authorised here."/>
       <div className="pm-kv-grid">
         <div><span>Raw unlinked Storage objects</span><strong>{fmtNumber(capacity?.unlinked_storage_object_count_raw)}</strong></div>
         <div><span>Proven duplicates</span><strong>{fmtNumber(capacity?.duplicate_unlinked_storage_object_count)}</strong></div>
+        <div><span>Reconciled historical orphans</span><strong>{fmtNumber(capacity?.reconciled_historical_orphan_count)}</strong></div>
         <div><span>Unresolved orphan objects</span><strong>{fmtNumber(integrity?.unresolved_orphan_objects)}</strong></div>
-        <div><span>Missing Storage objects</span><strong>{fmtNumber(capacity?.missing_storage_object_count)}</strong></div>
+        <div><span>Raw missing Storage refs</span><strong>{fmtNumber(capacity?.missing_storage_object_count_raw)}</strong></div>
+        <div><span>Reconciled legacy refs</span><strong>{fmtNumber(capacity?.reconciled_legacy_reference_count)}</strong></div>
+        <div><span>Unresolved missing Storage objects</span><strong>{fmtNumber(capacity?.missing_storage_object_count)}</strong></div>
         <div><span>Virtual/external Evidence refs</span><strong>{fmtNumber(capacity?.virtual_evidence_reference_count)}</strong></div>
         <div><span>Evidence artifact rows</span><strong>{fmtNumber(capacity?.evidence_artifact_count)}</strong></div>
       </div>
