@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { writeRunEnvironment } from './support/runtime-evidence.mjs'
 
+// CF-055 deployed Edge revisions compiled before this source-contract trigger.
 test.describe('M2.5 Evidence lineage classification and duplicate prevention contract',()=>{
   test.beforeAll(async()=>{
     await writeRunEnvironment({
