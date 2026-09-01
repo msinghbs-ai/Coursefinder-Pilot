@@ -48,3 +48,21 @@ html,body,#root{height:100%}body{margin:0;background:var(--m-bg);color:var(--m-t
 @media(max-width:560px){.cf-layer-header{gap:12px;flex-wrap:wrap}.cf-layer-header-actions{margin-left:auto}.cf-layer-header p{max-width:100%}}
 
 .m-admin-subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.m-admin-subnav button{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 12px;font:inherit;font-weight:700;cursor:pointer}.m-admin-subnav button.active,.m-admin-subnav button[aria-selected="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.m-admin-subnav button:focus-visible{outline:2px solid currentColor;outline-offset:2px}@media(max-width:720px){.m-admin-subnav{display:grid;grid-template-columns:1fr 1fr}.m-admin-subnav button{justify-content:flex-start;min-width:0}}
+
+/* CF-064 — Statistics & Rankings */
+.m-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+.m-stats-card{display:grid;gap:8px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.m-stats-card>span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;color:var(--muted)}
+.m-stats-card>strong{font-size:24px;color:var(--text)}
+.m-stats-card>small{min-height:34px;color:var(--muted);line-height:1.45}
+.m-stats-card>div{display:flex;gap:7px;flex-wrap:wrap}
+.m-stats-card button{border:1px solid var(--line);border-radius:8px;background:#fff;padding:7px 9px;font-weight:700;cursor:pointer}
+.m-stats-card button:disabled{cursor:not-allowed;opacity:.6}
+.m-stats-card.pending{background:#f8fafc}
+.m-stats-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.m-stats-section-head h3{margin:0 0 4px}.m-stats-section-head p{margin:0;color:var(--muted);max-width:900px}
+.m-stats-notes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.m-stats-notes>div{display:grid;gap:5px;padding:13px;border:1px solid var(--line);border-radius:10px}
+.m-stats-notes span{font-size:12px;line-height:1.45;color:var(--muted)}
+@media(max-width:1100px){.m-stats-grid,.m-stats-notes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.m-stats-grid,.m-stats-notes{grid-template-columns:1fr}.m-stats-section-head{flex-direction:column}}
