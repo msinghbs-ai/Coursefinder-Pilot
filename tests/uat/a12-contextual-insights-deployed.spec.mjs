@@ -44,7 +44,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   await expect(page.getByText(/Governed scope · exclusions override broad inclusion/i)).toBeVisible()
   await expect(page.getByText(/Provider\/regional statistics retain their actual granularity and are not Course facts/i)).toBeVisible()
   await expect(page.locator('.ci-outcome-card').first()).toBeVisible()
-  await expect(page.getByText(/vs benchmark/i).first()).toBeVisible()
+  await expect(page.getByText(/National benchmark/i).first()).toBeVisible()
   const drawer=page.locator('.m-drawer-course')
   await page.setViewportSize({width:1440,height:1100})
   const desktop=await drawer.boundingBox();expect(desktop).toBeTruthy()
