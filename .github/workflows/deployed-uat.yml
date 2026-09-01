@@ -187,6 +187,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -qx '.github/m2-5-jobs-workspace-deployed-candidate'; then
             targeted=(tests/uat/m2-5-jobs-workspace-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(ComparisonWorkspace\\.jsx|ContextualInsights\\.jsx|mature-main\\.jsx|pim-version-entry\\.js)$|^index\\.html$|^supabase/migrations/.*cf_061_contextual_compare|^tests/uat/cf-061-qilt-prisms-comparison-contract\\.spec\\.mjs$)'; then
+            targeted=(tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs)
+          fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
             targeted=(
               tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
@@ -270,6 +273,7 @@ jobs:
             tests/uat/m2-5-evidence-lineage-reconciliation-contract.spec.mjs
             tests/uat/m2-5-jobs-workspace-read-path-contract.spec.mjs
             tests/uat/m2-5-jobs-workspace-deployed.spec.mjs
+            tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -310,6 +314,7 @@ jobs:
             tests/uat/m2-5-evidence-lineage-reconciliation-contract.spec.mjs
             tests/uat/m2-5-jobs-workspace-read-path-contract.spec.mjs
             tests/uat/m2-5-jobs-workspace-deployed.spec.mjs
+            tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
