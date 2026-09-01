@@ -5,6 +5,7 @@ import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINI
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 // Permanent CF-053 corrective contract.
+// Includes stale-control handoff coverage.
 
 test.describe('M2.5 Layer 2 finalizer fairness and wave classification @deployed',()=>{
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-5-layer2-finalizer-fairness',change_control:'CF-CHG-20260901-053'})})
