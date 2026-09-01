@@ -136,6 +136,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_|^tests/uat/m2-5-platform-readiness-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-platform-readiness-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-operations-entry\.jsx$|^supabase/migrations/.*m2_5_layer2_run_observability|^tests/uat/m2-5-layer2-run-observability-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs)
+          fi
           if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Intervention\.jsx|mature-main\.jsx)$|^supabase/functions/layer3-(interpret|contact-benchmark)/|^supabase/migrations/.*a16_|^tests/uat/m2-4-4-a16-cross-layer-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs)
           fi
@@ -230,6 +233,7 @@ jobs:
             tests/uat/a13-filter-demo-trace-deployed.spec.mjs
             tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
             tests/uat/m2-5-platform-readiness-deployed.spec.mjs
+            tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -260,6 +264,7 @@ jobs:
             tests/uat/a13-filter-demo-trace-deployed.spec.mjs
             tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
             tests/uat/m2-5-platform-readiness-deployed.spec.mjs
+            tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
