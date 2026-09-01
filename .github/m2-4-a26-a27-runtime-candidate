@@ -1,17 +1,38 @@
-# M2.4.4 replacement final focused A23/A26/A27/A28 closure regression — 1 September 2026
+# M2.4.4 replacement final focused closure regression after timeout-safe Firecrawl continuation — 1 September 2026
 
 Source head before marker:
-a621dabc2bcd52dfe47a39b800ff10228f529ff4
+454058ffcc5d3c2a6ec795991fbf3237c5a0f0fb
 
 Previous focused result:
 - build 33457383942 PASS
-- UAT 33457383894 FAIL
-- 20 tests PASS
-- sole failure was test-contract logic: the migration necessarily contains the old partial predicate as v_old so it can replace it at deploy time
-- runtime terminal-partial behaviour and Firecrawl route proof remain valid
-- no runtime or threshold change
+- UAT 33457383894 FAIL only on an invalid source assertion
+- assertion corrected at a621dabc...
+- subsequent runtime inspection exposed a genuine production timeout issue before final acceptance could be nominated
 
-Accepted runtime proof retained:
+Production timeout finding:
+- runner v7 processed up to 10 Firecrawl items per invocation
+- one invocation hit Edge 504 at ~150103 ms
+- stale item 60322b65... remained acquiring while its Firecrawl Job 81a09da3... had actually succeeded
+- continuation dispatch therefore stopped
+
+Corrections:
+- service-only stale acquisition recovery 20260901105500_m2_4_4_a26_stale_item_recovery.sql
+- service-only resume context 20260901110000_m2_4_4_a26_resume_context.sql
+- layer2-batch-runner v8 deployed
+- scraper_first chunk capped at 2 items per Edge invocation
+- stale acquiring items first attach a matching successful Job, then resume extraction
+- no duplicate scrape when a reusable successful acquisition exists
+- child progress continues to refresh batch heartbeat
+
+Live recovery proof:
+- stale item 60322b65-f0a1-476b-8c5c-5685c90083d0 reused existing Firecrawl Job 81a09da3-3a9d-4a61-bf32-99810c9a356a
+- item completed layer3_required at 2026-09-01 01:39:47+00
+- no replacement Firecrawl attempt was required for that item
+- batch accd42a2-f096-452b-a084-dc609bd45030 reconciled to 7/261 processed with 0 blocked
+- heartbeat advanced to 2026-09-01 01:40:05+00
+- next Firecrawl acquisition continued under the same batch/parent
+
+Stable parent runtime proof retained:
 - parent c65e67a6-3b2e-47e3-832a-57118fe5cf5f
 - wave 1bb1504d-7bad-42d9-b059-4adeaf9118c7
 - corrected Firecrawl batch accd42a2-f096-452b-a084-dc609bd45030
@@ -20,12 +41,8 @@ Accepted runtime proof retained:
 - screenshot Evidence e8a0ddf7-295c-46fd-b0c2-6392c28de0ee
 - extraction Evidence 567993f6-8918-46b7-bc0e-886327bf181d
 - all share parent/wave lineage
-- runner v7 passes selected provider_id
-- terminal partial duplicate guard deployed
-- exact parent aggregation deployed
-- child heartbeat deployed
 
-Focused suites unchanged:
+Focused suites:
 - admin-navigation-deployed.spec.mjs
 - m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
 - m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
@@ -33,4 +50,4 @@ Focused suites unchanged:
 - performance-deployed.spec.mjs
 
 Hard gates unchanged.
-This is not final acceptance.
+This is the replacement final focused closure regression. It is not final acceptance.
