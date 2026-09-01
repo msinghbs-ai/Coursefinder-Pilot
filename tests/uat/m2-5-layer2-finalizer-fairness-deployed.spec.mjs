@@ -10,7 +10,10 @@ test.describe('M2.5 Layer 2 finalizer fairness and wave classification @deployed
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-5-layer2-finalizer-fairness',change_control:'CF-CHG-20260901-053'})})
 
   test('source contract prioritises dispatchable pattern work without deleting pending controls',async()=>{
-    const sql=await fs.readFile('supabase/migrations/20260901083800_m2_5_layer2_finalizer_fairness.sql','utf8')
+    const [sql,stale]=await Promise.all([
+      fs.readFile('supabase/migrations/20260901083800_m2_5_layer2_finalizer_fairness.sql','utf8'),
+      fs.readFile('supabase/migrations/20260901085000_m2_5_layer2_stale_pattern_control_handoff.sql','utf8')
+    ])
     expect(sql).toContain("then 'pending_dispatch'")
     expect(sql).toContain("then 'pending_control'")
     expect(sql).toContain("coalesce(nullif(q.result_summary->>'qualification_finalizer_at','')::timestamptz")
@@ -20,6 +23,11 @@ test.describe('M2.5 Layer 2 finalizer fairness and wave classification @deployed
     expect(sql).toContain("'rescheduled_items',coalesce(classify.acceptance_isolation_items,0)")
     expect(sql).toContain("lower(coalesce(ai.blocker,'')) like '%acceptance isolation%'")
     expect(sql).not.toContain("delete from pipeline.layer2_scale_qualification_items")
+    expect(stale).toContain("now()-interval '30 minutes'")
+    expect(stale).toContain("'pattern_control_status','incomplete_timeout'")
+    expect(stale).toContain("'reason','pattern_control_incomplete_timeout'")
+    expect(stale).toContain("'handoff','layer3_source_pattern_interpretation'")
+    expect(stale).not.toContain("authority_class='first_party_qualified'")
   })
 
   test('terminal parent presents acceptance-isolation markers separately from operational failures',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
