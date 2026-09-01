@@ -19,14 +19,8 @@ let activeCoursePageRead = null
  * server-side role-checked implementations.
  */
 async function adminRead(operation, args = {}) {
-  // CF-CHG-20260823-026: Jobs/Sources routes are owned by the Pipeline Ops overlay.
-  // The mature shell remains mounted underneath it, so suppress only its legacy
-  // duplicate reads while those exact routes are active. Pipeline Ops uses the
-  // paged pipeline_* contracts and is unaffected.
-  if (typeof window !== 'undefined' && (operation === 'jobs' || operation === 'sources')) {
-    const route = window.location.hash.replace(/^#/, '').split('?')[0]
-    if (route === operation) return []
-  }
+  // CF-060: Jobs/Sources are canonical shell workspaces again.
+  // Never manufacture empty operational results based on the current hash route.
 
   // M2.4.0: the first Courses render and its large filter catalogue used to hit
   // admin_read concurrently. Preserve both exact governed reads, but allow the
