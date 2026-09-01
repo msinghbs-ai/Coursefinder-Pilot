@@ -240,6 +240,9 @@ jobs:
               tests/uat/performance-deployed.spec.mjs
             )
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/layer1-operations-entry\\.jsx$|^tests/uat/cf-065-layer1-operations-v2-contract\\.spec\\.mjs$)'; then
+            targeted=(tests/uat/cf-065-layer1-operations-v2-contract.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
