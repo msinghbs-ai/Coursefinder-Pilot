@@ -13,7 +13,7 @@ import CourseDetailPolish from'./CourseDetailPolish'
 import ContextualInsights from'./ContextualInsights'
 import ComparisonWorkspace from'./ComparisonWorkspace'
 import Layer4Intervention from'./Layer4Intervention'
-import{Layer1Operations}from'./layer1-operations-entry'
+import{Layer1Operations,Layer1SourceSettings}from'./layer1-operations-entry'
 import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
 import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLinksWorkspace,Dates as ImportantDatesWorkspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
 import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
@@ -24,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.23'
+const UI_VERSION='2.15.24'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -195,6 +195,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
  const sections=[
   ['overview','Overview',Settings2,rank>=4],
   ['sources-imports','Sources & Imports',Database,rank>=4],
+  ['layer1-sources','Layer 1 sources',Database,rank>=6],
   ['layer2-sources','Layer 2 sources',Database,rank>=4],
   ['layer2-providers','Acquisition',SlidersHorizontal,rank>=4],
   ['scheduling','Scheduling',RefreshCw,rank>=4],
@@ -217,6 +218,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>}
  </div></section>}
  {tool==='sources-imports'&&<RankingImportPanel onError={onError}/>} 
+ {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>} 
  {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>} 
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<Layer2ExecutionPolicySettings/>}</>}
  {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={()=>{}}/></div>}
