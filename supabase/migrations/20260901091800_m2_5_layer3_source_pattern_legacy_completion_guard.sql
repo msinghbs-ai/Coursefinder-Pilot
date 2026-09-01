@@ -30,7 +30,7 @@ begin
       jsonb_build_object('profile_id',v_i.profile_id,'prompt_profile_version',v_i.prompt_profile_version,'candidate_value',p_candidate_value,'confidence',p_confidence,'rationale',p_rationale,'validator_result',p_validator_result,'response_model',p_response_model),'validated Layer 3 candidate requires human decision') returning id into v_review;
   end if;
   return jsonb_build_object('ok',true,'interpretation_id',p_interpretation_id,'validated',p_valid,'review_item_id',v_review);
-end $function$
+end $function$;
 
 revoke all on function public.layer3_complete_interpretation_service(uuid,jsonb,jsonb,numeric,text,jsonb,jsonb,boolean,text,integer,integer,numeric,timestamptz) from public,anon,authenticated;
 grant execute on function public.layer3_complete_interpretation_service(uuid,jsonb,jsonb,numeric,text,jsonb,jsonb,boolean,text,integer,integer,numeric,timestamptz) to service_role;
