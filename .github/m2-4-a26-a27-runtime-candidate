@@ -1,0 +1,36 @@
+# M2.4.4 focused A26/A27/A28 runtime reconciliation — 1 September 2026
+
+Source head before marker:
+06ca76524a1a8aeb388fd531af6d52fa633d91d9
+
+Integrated baseline:
+- candidate 38203222a137d0aeac8aa69e64ed1b12bf874fff
+- build 33454842391 PASS
+- integration UAT 33454842388 PASS
+- desktop gate PASS
+- mobile gate PASS
+
+Runtime reconciliation changes:
+- A26 stable parent lineage reuses qualification root -> scope wave request -> batch -> job -> Evidence
+- current AU scheduled request 1bb1504d... now has parent c65e67a6...
+- parent-run projection exposed through admin_read layer2_parent_runs
+- Layer 2 current progress shows parent ID, scheduled remainder, child Jobs and Evidence counts
+- A27 Administration section stored in canonical #administration?section=... URL
+- refresh/back/forward restore subcontext
+- A28 operator summary now prefers parent run over legacy batch-only idle state
+- FU-020 direct exposure review found no anon/authenticated table grants on the 15 RLS-disabled tables and no pipeline schema USAGE for anon/authenticated
+
+Focused scope:
+- admin-navigation-deployed.spec.mjs
+- m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
+- m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
+- performance-deployed.spec.mjs
+
+Hard gates unchanged:
+- RPC/detail <= 3000 ms
+- page/management payload <= 250000 bytes
+- filter payload <= 60000 bytes
+- no Evidence lineage weakening
+- no role/security weakening
+
+This is not final acceptance.
