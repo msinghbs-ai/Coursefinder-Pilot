@@ -27,6 +27,8 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     await loginAsUatUser(page)
     const ws=await openLayer2(page)
     await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible()
+    await expect(ws.getByText(/Parent [0-9a-f]{8}…/i).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(ws.getByText(/scheduled remainder/i).first()).toBeVisible()
     await expect(ws.getByText(/no manual per-Provider action is required/i)).toHaveCount(0)
     await expect(ws.getByRole('button',{name:'Jobs',exact:true})).toBeVisible()
     await expect(ws.getByRole('button',{name:/Open Evidence/i})).toBeVisible()
