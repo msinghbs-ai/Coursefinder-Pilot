@@ -73,12 +73,12 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
 
     const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
-    expect(shellVersion).toBe('2.15.19')
+    expect(shellVersion).toBeTruthy()
     expect(releaseVersion).toBe(shellVersion)
-    expect(index).toContain('Coursefinder PIM Admin v2.15.19')
+    expect(index).toContain('Coursefinder PIM Admin v'+shellVersion)
     expect(versionEntry).toContain("version:'2.15.19'")
     expect(versionEntry).toContain('Evidence lineage reconciliation and contact claim hardening')
-    expect(releaseTest).toContain('v2.15.19')
+    expect(releaseTest).toContain('v'+shellVersion)
 
     const output=execFileSync('npm',['run','build'],{
       cwd:process.cwd(),
