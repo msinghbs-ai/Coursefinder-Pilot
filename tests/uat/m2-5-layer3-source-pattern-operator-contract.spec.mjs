@@ -31,26 +31,7 @@ test.describe('M2.5 Layer 3 source-pattern operator execution contract',()=>{
     expect(handoff).not.toContain("set authority_class='first_party_qualified'")
 
     expect(legacy).toContain("v_i.task_class<>'source_pattern'")
-    expect(legacyHost).toContain("v_candidate!~'^https://[^[:space:]]+
-
-    expect(worker).toContain('source_pattern_request_id')
-    expect(worker).toContain('layer3_source_pattern_request_context_service')
-    expect(worker).toContain('governedEvidenceLinks')
-    expect(worker).toContain('candidate_url_must_be_same_host')
-    expect(worker).toContain('candidate_url_must_be_evidence_link')
-    expect(worker).toContain('source_pattern_same_host')
-    expect(worker).toContain('source_pattern_evidence_link_match')
-    expect(worker).toContain('layer3_source_pattern_handoff_service')
-    expect(worker).toContain('m2.5-cf054-source-pattern-v1')
-
-    expect(ui).toContain('data-layer3-source-pattern-queue')
-    expect(ui).toContain("rpc('layer3_source_pattern_queue',{p_limit:50})")
-    expect(ui).toContain("body:{source_pattern_request_id:requestId}")
-    expect(ui).toContain('Run source-pattern interpretation')
-    expect(ui).not.toContain('Run all source-pattern')
-  })
-})
-")
+    expect(legacyHost).toContain("v_candidate!~'^https://[^[:space:]]+$'")
     expect((legacyHost.match(/\^https\?:\/\/\(\[\^\/:\?\#\]\+\)/g)||[]).length).toBeGreaterThanOrEqual(3)
     expect(legacyHost).toContain("'source-pattern candidate host mismatch'")
     expect(legacyHost).toContain("'provider_qualified',false")
