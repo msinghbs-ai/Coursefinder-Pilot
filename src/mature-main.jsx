@@ -24,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.25'
+const UI_VERSION='2.15.26'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -217,7 +217,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   <Attention tone="info" icon={SlidersHorizontal} title="Acquisition" text="Layer 2 source profiles, Firecrawl/direct routes and execution policy." action="Open acquisition" onClick={()=>selectTool('layer2-providers')}/>
   {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>}
  </div></section>}
- {tool==='sources-imports'&&<RankingImportPanel onError={onError}/>} 
+ {tool==='sources-imports'&&<RankingImportPanel onError={onError} routeParams={routeParams}/>} 
  {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>} 
  {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>} 
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<Layer2ExecutionPolicySettings/>}</>}
@@ -227,8 +227,9 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
  {tool==='platform'&&rank>=6&&<PlatformMaturity rank={rank} onError={onError}/>} 
  </div>
 }
-function RankingImportPanel({onError}){
- const empty={systemCode:'qs_wur',editionYear:'2026',publisherName:'QS Quacquarelli Symonds',sourceUrl:'',methodologyUrl:'',licensingNote:'Authorised publisher file obtained for CourseFinder ingestion.',revisionNote:''}
+function RankingImportPanel({onError,routeParams}){
+ const presetSystem=routeParams?.get?.('system')==='the_wur'?'the_wur':'qs_wur',presetYear=routeParams?.get?.('year')||'2026'
+ const empty={systemCode:presetSystem,editionYear:presetYear,publisherName:presetSystem==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:'',methodologyUrl:'',licensingNote:'Authorised publisher file obtained for CourseFinder ingestion.',revisionNote:''}
  const[form,setForm]=useState(empty),[file,setFile]=useState(null),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([])
  const load=()=>api.rankingImports({limit:20}).then(x=>setImports(x?.items||[])).catch(e=>onError?.(e.message))
  useEffect(()=>{load()},[])
