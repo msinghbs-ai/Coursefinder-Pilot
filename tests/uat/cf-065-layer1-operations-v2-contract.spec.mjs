@@ -11,8 +11,8 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
     ])
-    expect(layer1).toContain('Layer 1 — Authority & Statistical Ingestion')
-    expect(layer1).toContain('Operate authoritative regulatory and statistical data ingestion.')
+    expect(layer1).toContain('Layer 1 Operations')
+    expect(layer1).toContain('Operate governed regulatory, statistical and ranking ingestion by country, source health, schedule and Evidence.')
     expect(layer1).toContain('label="Country"')
     expect(layer1).toContain('label="Dataset"')
     expect(layer1).toContain('label="Status"')
@@ -21,6 +21,7 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(layer1).toContain('Layer 1 source configuration')
     expect(layer1).toContain('Safe maintenance boundary')
     expect(layer1).not.toContain('Advanced source configuration')
+    expect(shell).toContain("item('Layer 1 — Operations',Database,4)")
     expect(shell).toContain("['layer1-sources','Layer 1 sources',Database,rank>=6]")
     expect(shell).toContain("tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>")
     const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
@@ -29,7 +30,7 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(releaseVersion).toBe(shellVersion)
     expect(index).toContain(`Coursefinder PIM Admin v${shellVersion}`)
     expect(versionEntry).toContain(`version:'${shellVersion}'`)
-    expect(versionEntry).toContain('Layer 1 authority operations v2')
+    expect(versionEntry).toContain('Layer 1 Operations naming and navigation alignment')
     const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
     expect(output).toContain('built in')
   })
