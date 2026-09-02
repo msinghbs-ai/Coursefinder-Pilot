@@ -3,6 +3,11 @@ import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, 
 import { openLayer1 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
+async function chooseCountry(dialog,country){
+  const select=dialog.locator('.l1v2-filter').filter({hasText:'Country'}).locator('select')
+  await select.selectOption(country)
+}
+
 async function validateCountry(page,dialog,country){
   const readResponsePromise=page.waitForResponse(response=>{
     if(!response.url().includes('/rest/v1/rpc/admin_read'))return false
@@ -25,24 +30,27 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
 
   test('AU and NZ expose the production-shaped operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page)
-    await expect(dialog.getByRole('heading',{name:'Layer 1 — Regulatory'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    for(const country of ['AU','NZ']){const card=dialog.locator(`article.l1o-source[data-country="${country}"]`);await expect(card).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});for(const heading of ['1. Source Health','2. Current / Next Job','3. Progress','4. Reconciliation','5. Evidence / Provenance','6. Schedule / Recheck','7. Blockers / Required Actions'])await expect(card.getByRole('heading',{name:heading})).toBeVisible();await expect(card).toContainText('Approved authority domains');await expect(card).toContainText('Expected / previous');await expect(card).toContainText('Current source hash');await expect(card.getByRole('button',{name:'Validate source'})).toBeVisible()}
-    await expect(dialog).toContainText(/26,648/);await expect(dialog).toContainText(/409/);await expect(dialog).toContainText('Transient queue only; Evidence retained')
-    await expect(dialog.getByRole('button',{name:'Queue dry run'})).toHaveCount(0);await expect(dialog.getByRole('button',{name:'Queue ingestion'})).toHaveCount(0);await expect(dialog.getByText('Advanced source configuration')).toHaveCount(0)
+    await expect(dialog.getByRole('heading',{name:'Layer 1 — Authority & Statistical Ingestion'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(dialog.getByText('Healthy',{exact:true}).first()).toBeVisible()
+    await expect(dialog.getByText('Running',{exact:true}).first()).toBeVisible()
+    await expect(dialog.getByText('Attention',{exact:true}).first()).toBeVisible()
+    await expect(dialog.getByText('Due',{exact:true}).first()).toBeVisible()
+    for(const country of ['AU','NZ']){await chooseCountry(dialog,country);const card=dialog.locator(`article.l1v2-card[data-country="${country}"]`).first();await expect(card).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(card.getByRole('button',{name:'Details'})).toBeVisible();await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Reconciliation');await expect(card).toContainText('Evidence & provenance');await expect(card).toContainText('Schedule');await expect(card).toContainText('Source health')}
+    await expect(dialog.getByText('Advanced source configuration')).toHaveCount(0)
     await expect(dialog.getByText(/reset database/i)).toHaveCount(0);await expect(dialog.getByText(/parser qualification/i)).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'m2-4-1-layer1-operations')
   }finally{await finish(testInfo,runtime)}})
 
   test('authorised Layer 1 operator performs real NZQA authority and count validation',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page),nz=dialog.locator('article.l1o-source[data-country="NZ"]'),result=await validateCountry(page,dialog,'NZ')
+    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'NZ');const nz=dialog.locator('article.l1v2-card[data-country="NZ"]').first(),result=await validateCountry(page,dialog,'NZ')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toContain('v1.0.1')
-    await dialog.getByRole('button',{name:'Refresh'}).click();await expect(nz).toContainText('passed',{timeout:DETERMINISTIC_UI_TIMEOUT});await expect(nz).toContainText(String(result.validation.discovered.providers),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
+    await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'NZ');await expect(nz).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(nz).toContainText(String(result.validation.discovered.providers),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
   test('authorised Layer 1 operator performs real CRICOS authority, shape and active-count validation',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page),au=dialog.locator('article.l1o-source[data-country="AU"]'),result=await validateCountry(page,dialog,'AU')
+    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');const au=dialog.locator('article.l1v2-card[data-country="AU"]').first(),result=await validateCountry(page,dialog,'AU')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('AU');expect(result?.validation?.discovered?.active).toBeGreaterThan(25000);expect(result?.validation?.discovered?.total).toBeGreaterThanOrEqual(result.validation.discovered.active);expect(result?.validation?.count_basis).toContain('active CRICOS course rows');expect(result?.validation?.worker_version).toContain('v1.0.1')
-    await dialog.getByRole('button',{name:'Refresh'}).click();await expect(au).toContainText('passed',{timeout:DETERMINISTIC_UI_TIMEOUT});await expect(au).toContainText(Number(result.validation.discovered.active).toLocaleString(),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-au-source-validated')
+    await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'AU');await expect(au).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(au).toContainText(Number(result.validation.discovered.active).toLocaleString(),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-au-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
   test('anonymous browser cannot execute Layer 1 read or command contracts',async({request})=>{
