@@ -41,6 +41,26 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     await milestoneScreenshot(page,testInfo,'m2-4-1-layer1-operations')
   }finally{await finish(testInfo,runtime)}})
 
+  test('Administration Layer 1 sources uses the governed card UI',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+    await loginAsUatUser(page)
+    await page.goto(new URL('/#administration?section=layer1-sources',process.env.UAT_BASE_URL).toString())
+    const shell=page.locator('.l1s-shell')
+    await expect(shell).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.locator('.m-release-pill')).toContainText('v2.15.30')
+    await expect(shell.getByRole('heading',{name:'Layer 1 source configuration'})).toBeVisible()
+    const card=shell.locator('.l1s-card').first();await expect(card).toBeVisible()
+    await expect(card.getByText('Source & authority',{exact:true})).toBeVisible()
+    await expect(card.getByText('Cadence & guardrails',{exact:true})).toBeVisible()
+    const visual=await shell.evaluate(el=>{const toolbar=el.querySelector('.l1s-toolbar'),card=el.querySelector('.l1s-card'),field=el.querySelector('.l1s-form label');return{toolbarBackground:getComputedStyle(toolbar).backgroundImage,cardRadius:getComputedStyle(card).borderRadius,fieldRadius:getComputedStyle(field).borderRadius,grid:getComputedStyle(el.querySelector('.l1s-grid')).display}})
+    expect(visual.toolbarBackground).not.toBe('none')
+    expect(visual.cardRadius).not.toBe('0px')
+    expect(visual.fieldRadius).not.toBe('0px')
+    expect(visual.grid).toBe('grid')
+    await page.setViewportSize({width:900,height:900})
+    await expect(card).toBeVisible()
+    await milestoneScreenshot(page,testInfo,'cf-072-layer1-source-settings-card-ui')
+  }finally{await finish(testInfo,runtime)}})
+
   test('authorised Layer 1 operator performs real NZQA authority and count validation',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'NZ');const nz=dialog.locator('article.l1v2-card[data-country="NZ"]').first(),result=await validateSource(page,dialog,s=>s.country_code==='NZ','NZQA')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toMatch(/^layer1-operations-control-v1\./)
