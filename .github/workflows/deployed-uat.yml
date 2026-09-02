@@ -249,6 +249,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(ranking-layer1-etl|layer1-operations-control)/|^supabase/migrations/.*cf_068_qs_xhr|^tests/uat/cf-068-qs-xhr-layer1-deployed\.spec\.mjs$|^\.github/cf-068-qs-xhr-deployed-candidate$)'; then
             targeted=(tests/uat/cf-068-qs-xhr-layer1-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^tests/uat/cf-073-administration-acquisition-route-deployed\.spec\.mjs$|^\.github/cf-073-administration-acquisition-route-candidate$)'; then
+            targeted=(tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
@@ -287,6 +290,7 @@ jobs:
             tests/uat/m2-5-jobs-workspace-deployed.spec.mjs
             tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs
             tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs
+            tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs
           )
           acceptance=(
             tests/uat/layer1-operations-deployed.spec.mjs
@@ -329,6 +333,7 @@ jobs:
             tests/uat/m2-5-jobs-workspace-deployed.spec.mjs
             tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs
             tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs
+            tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs
           )
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;

@@ -4,7 +4,7 @@ import{
   Activity,AlertTriangle,ArrowDown,ArrowUp,ArrowLeftRight,BarChart3,BookOpen,Building2,CheckCircle2,ChevronDown,
   CircleGauge,ClipboardCheck,Database,FileCheck2,Filter,GraduationCap,History,LayoutDashboard,
   ListChecks,LogOut,Menu,RefreshCw,Search,SearchCheck,Settings2,SlidersHorizontal,Sparkles,
-  Tags,UsersRound,Workflow,X,Zap,MapPin,Layers3,Clock3,PanelLeftClose,PanelLeftOpen,ExternalLink
+  ShieldCheck,Tags,UsersRound,Workflow,X,Zap,MapPin,Layers3,Clock3,PanelLeftClose,PanelLeftOpen,ExternalLink
 }from'lucide-react'
 import{adminRead,api,supabase}from'./lib/supabase'
 import RegulatorySettings from'./RegulatorySettings'
@@ -24,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.30'
+const UI_VERSION='2.15.31'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -83,6 +83,14 @@ function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').repla
 const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
 function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
+class WorkspaceErrorBoundary extends React.Component{
+  constructor(props){super(props);this.state={error:null}}
+  static getDerivedStateFromError(error){return{error}}
+  componentDidCatch(error,info){console.error('CourseFinder workspace render failed',error,info);this.props.onError?.(`Workspace render failed: ${error?.message||String(error)}`)}
+  componentDidUpdate(prev){if(prev.routeKey!==this.props.routeKey&&this.state.error)this.setState({error:null})}
+  render(){if(!this.state.error)return this.props.children;return <section className="m-workspace-error m-panel" role="alert"><PanelTitle icon={AlertTriangle} title="Workspace could not render" subtitle="The Administration shell remains available. Navigate to another section or retry this workspace."/><div className="m-alert compact"><AlertTriangle size={15}/><span>{this.state.error?.message||'Unexpected workspace render error'}</span></div><button className="m-primary" onClick={this.props.onRecover}>Return to Dashboard</button></section>}
+}
+
 function App(){
   const[session,setSession]=useState(null),[booting,setBooting]=useState(true),[context,setContext]=useState(null)
   const initialRoute=routeFromHash()
@@ -119,7 +127,7 @@ function App(){
         <div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/>v{UI_VERSION}</span><span className="m-role-pill">{humanise(context?.role||'Loading')}</span></div>
       </header>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
-      <Page page={page} routeParams={routeParams} rank={rank} onError={setError} navigate={go}/>
+      <WorkspaceErrorBoundary routeKey={`${page}?${routeParams.toString()}`} onError={setError} onRecover={()=>go('Dashboard')}><Page page={page} routeParams={routeParams} rank={rank} onError={setError} navigate={go}/></WorkspaceErrorBoundary>
     </main>
   </div>
 }
