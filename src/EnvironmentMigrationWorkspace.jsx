@@ -40,7 +40,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
   <IntegrationSecrets data={data} onSaved={refresh}/>
 
   <section className="env-panel"><h3>Production environment</h3><p className="env-help">These are non-secret target values used for cutover planning. Project-generated keys are shown as checklist items only.</p>
-   <div className="env-settings">{settings.filter(x=>x.environment_scope==='production').map(s=><SettingRow key={s.setting_key} setting={s} onSaved={refresh}/>)}</div>
+   <div className="env-settings">{settings.filter(x=>x.environment_scope!=='current').map(s=><SettingRow key={s.setting_key} setting={s} onSaved={refresh}/>)}</div>
   </section>
 
   <section className="env-panel"><h3>Supabase Production migration manifest</h3><div className="env-warn"><ShieldCheck size={16}/><span>Database clone/restore alone is not enough: Storage objects, Edge Functions, Auth/API keys and project settings require explicit target work.</span></div>
