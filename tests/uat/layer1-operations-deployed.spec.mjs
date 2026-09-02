@@ -30,7 +30,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
 
   test('AU and NZ expose the production-shaped operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page)
-    await expect(dialog.getByRole('heading',{name:'Layer 1 — Authority & Statistical Ingestion'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(dialog.getByRole('heading',{name:'Layer 1 Operations'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(dialog.locator('.l1v2-summary.healthy')).toContainText('Healthy')
     await expect(dialog.locator('.l1v2-summary.running')).toContainText('Running')
     await expect(dialog.locator('.l1v2-summary.attention')).toContainText('Attention')
