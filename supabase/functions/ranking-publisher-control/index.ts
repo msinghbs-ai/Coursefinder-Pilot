@@ -28,9 +28,9 @@ Deno.serve(async(req:Request)=>{
  if(!["validate","apply"].includes(action))return json(req,400,{error:"unsupported_action"});
  if(!/^[0-9a-f-]{36}$/i.test(importId))return json(req,400,{error:"valid_import_id_required"});
  const svc=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
- const {data:imp,error:impErr}=await svc.from("manual_imports").select("id,system_id,edition_year,original_filename,status,evidence_artifact_id,source_url,methodology_url,content_hash").eq("id",importId).single();
+ const {data:imp,error:impErr}=await svc.schema("ranking").from("manual_imports").select("id,system_id,edition_year,original_filename,status,evidence_artifact_id,source_url,methodology_url,content_hash").eq("id",importId).single();
  if(impErr||!imp)return json(req,404,{error:"ranking_import_not_found"});
- const {data:system,error:sysErr}=await svc.from("systems").select("code").eq("id",imp.system_id).single();
+ const {data:system,error:sysErr}=await svc.schema("ranking").from("systems").select("code").eq("id",imp.system_id).single();
  if(sysErr||!system)return json(req,500,{error:"ranking_system_lookup_failed"});
  const systemCode=clean(system.code),sourceSystem=systemCode==="the_wur"?"THE":"QS";
  const {data:sources,error:sourceErr}=await svc.schema("pipeline").from("sources").select("id,label,metadata").eq("metadata->>source_system",sourceSystem);
