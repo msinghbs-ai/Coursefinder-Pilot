@@ -243,6 +243,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/layer1-operations-entry\.jsx$|^tests/uat/(layer1-operations-deployed\.spec\.mjs|support/navigation\.mjs|cf-065-layer1-operations-v2-contract\.spec\.mjs)$)'; then
             targeted=(tests/uat/layer1-operations-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(ranking-layer1-etl|layer1-operations-control)/|^supabase/migrations/.*cf_068_qs_xhr|^tests/uat/cf-068-qs-xhr-layer1-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-068-qs-xhr-layer1-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
