@@ -113,7 +113,7 @@ Deno.serve(async(req:Request)=>{
   const {data:dry,error:dryErr}=await svc.rpc("svc_provider_contact_import_validate",{p_batch_id:batchId,p_rows:rows,p_actor:actor});
   if(dryErr){
     await svc.schema("pipeline").from("provider_contact_import_batches").update({
-      status:"failed",metadata:{change_control:"CF-CHG-20260902-077",validation_error:dryErr.message}
+      status:"failed",metadata:{change_control:"CF-CHG-20260902-080",validation_error:dryErr.message}
     }).eq("id",batchId);
     return json(req,422,{ok:false,error:"contact_import_validation_failed",detail:dryErr.message,batch_id:batchId})
   }
