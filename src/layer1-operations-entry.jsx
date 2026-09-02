@@ -10,7 +10,7 @@ const pct=v=>v===null||v===undefined?'—':`${Number(v).toFixed(1)}%`
 const shortHash=v=>v?`${String(v).slice(0,12)}…`:'—'
 const seconds=v=>v===null||v===undefined?'—':`${Number(v).toLocaleString()} s`
 const human=v=>String(v||'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
-const sourceClass=s=>String(s.dataset_class||s.source_class||(/qilt|prisms|statistic|ranking|outcome/i.test(`${s.source_label||''} ${s.authority_name||''}`)?'statistics':'regulatory')).toLowerCase()
+const sourceClass=s=>{const raw=String(s.dataset_class||s.source_class||(/qilt|prisms|statistic|ranking|outcome/i.test(`${s.source_label||''} ${s.authority_name||''}`)?'statistics':'regulatory')).toLowerCase();return raw==='rankings'?'statistics':raw}
 const healthOf=s=>{const run=String(s.latest_run?.status||'').toLowerCase();if(['queued','running'].includes(run))return'running';if(s.paused)return'paused';if(['stale','stuck','unhealthy','never_verified'].includes(String(s.source_health||'').toLowerCase())||['blocked','failed'].includes(String(s.verification_status||'').toLowerCase()))return'attention';if(s.schedule_enabled&&(s.schedule_next_due_at||s.next_ingestion_at)&&new Date(s.schedule_next_due_at||s.next_ingestion_at)<=new Date())return'due';return String(s.source_health||'healthy').toLowerCase()}
 
 async function readLayer1(){const{data,error}=await supabase.rpc('admin_read',{p_operation:'layer1_operations',p_args:{}});if(error)throw error;return data||{sources:[]}}
