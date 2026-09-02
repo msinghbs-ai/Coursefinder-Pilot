@@ -51,6 +51,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     const card=shell.locator('.l1s-card').first();await expect(card).toBeVisible()
     await expect(card.getByText('Source & authority',{exact:true})).toBeVisible()
     await expect(card.getByText('Cadence & guardrails',{exact:true})).toBeVisible()
+    const editionLifecycle=card.getByText('Edition lifecycle',{exact:true});if(await editionLifecycle.count())await expect(editionLifecycle).toBeVisible()
     const visual=await shell.evaluate(el=>{const toolbar=el.querySelector('.l1s-toolbar'),card=el.querySelector('.l1s-card'),field=el.querySelector('.l1s-form label');return{toolbarBackground:getComputedStyle(toolbar).backgroundImage,cardRadius:getComputedStyle(card).borderRadius,fieldRadius:getComputedStyle(field).borderRadius,grid:getComputedStyle(el.querySelector('.l1s-grid')).display}})
     expect(visual.toolbarBackground).not.toBe('none')
     expect(visual.cardRadius).not.toBe('0px')
@@ -78,7 +79,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     const datasetSelect=dialog.locator('.l1v2-filter').filter({hasText:'Dataset'}).locator('select');await datasetSelect.selectOption('statistics')
     const cards=dialog.locator('article.l1v2-card[data-country="AU"]');await expect(cards).toHaveCount(5,{timeout:DETERMINISTIC_UI_TIMEOUT})
     for(const [label,edition] of [['QILT Graduate Outcomes Survey','2025'],['QILT Student Experience Survey','2024'],['QILT Graduate Outcomes Survey – Longitudinal','2025'],['QILT Employer Satisfaction Survey','2025'],['PRISMS International Student Flow','2025-12']]){
-      const card=cards.filter({hasText:label});await expect(card).toBeVisible();await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card).toContainText(`current ${edition}`);await expect(card.getByRole('button',{name:'Details'})).toBeVisible();await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Edition history & comparison retention');await expect(card).toContainText('retained rather than overwritten')
+      const card=cards.filter({hasText:label});await expect(card).toBeVisible();await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card).toContainText(`current ${edition}`);await expect(card.getByRole('button',{name:'Details'})).toBeVisible();await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Edition history & comparison retention');await expect(card).toContainText('retained rather than overwritten');await expect(card.getByRole('button',{name:'Open Compare'})).toBeVisible()
     }
     const qilt=await validateSource(page,dialog,s=>/QILT GOS 2025 National Report Tables/i.test(s.source_label||''),'QILT GOS');expect(qilt?.ok).toBe(true);expect(qilt?.validation?.source_system).toBe('QILT');expect(qilt?.validation?.discovered?.candidate_observations).toBeGreaterThan(100)
     const prisms=await validateSource(page,dialog,s=>/PRISMS/i.test(s.source_label||''),'PRISMS');expect(prisms?.ok).toBe(true);expect(prisms?.validation?.source_system).toBe('PRISMS');expect(prisms?.validation?.discovered?.candidate_observations).toBeGreaterThan(1000)
