@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION="ranking-layer1-etl-v1.3.0";
+const VERSION="ranking-layer1-etl-v1.4.0";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -34,7 +34,21 @@ function qsRows(data:any[]){
   overall_score:score(r.overall),source_row_ordinal:i+1,indicators,source_row_payload:r
  }}).filter((r:any)=>r.institution_name)
 }
-function rowsFromWorkbook(bytes:Uint8Array,year:number){const wb=XLSX.read(bytes,{type:"array",cellDates:false,raw:false});let best:any[]=[];for(const name of wb.SheetNames){const rows=XLSX.utils.sheet_to_json<Record<string,unknown>>(wb.Sheets[name],{defval:"",raw:false});if(rows.length>best.length)best=rows}const out:any[]=[];let ordinal=0;for(const row of best){ordinal++;const institution=pick(row,["institution name","university","university name","name","institution"]);if(!institution)continue;const country=pick(row,["location","country territory","country/territory","country region","country/region","country"]);const parsed=parseRank(findRank(row,year));out.push({institution_name:institution,country_text:country||null,rank_display:parsed.rank_display||null,rank_exact:parsed.rank_exact,rank_low:parsed.rank_low,rank_high:parsed.rank_high,is_tied:parsed.is_tied,rank_status:parsed.rank_status,overall_score:score(pick(row,["overall score","overall","score"])),source_row_ordinal:ordinal,indicators:{},source_row_payload:row})}return out}
+function rowsFromWorkbook(bytes:Uint8Array,year:number,systemCode:string,originalFilename:string){
+ const wb=XLSX.read(bytes,{type:"array",cellDates:false,raw:false});let best:any[]=[];for(const name of wb.SheetNames){const rows=XLSX.utils.sheet_to_json<Record<string,unknown>>(wb.Sheets[name],{defval:"",raw:false});if(rows.length>best.length)best=rows}
+ const headers=best.length?Object.keys(best[0]).map(key):[],qsCompact=headers.includes(key(`qs_world_rank_${year}`)),theCompact=headers.includes(key(`the_world_rank_${year}`));
+ const compact=qsCompact||theCompact,scopeCountry=/australia/i.test(originalFilename)?"Australia":null;
+ if(compact&&!scopeCountry&&!headers.some(h=>/^(country|location|country territory|country region)$/.test(h)))throw new Error("Compact ranking CSV requires an explicit country/location column or a country-scoped filename such as Australia");
+ const out:any[]=[];let ordinal=0;
+ for(const row of best){ordinal++;const institution=pick(row,["institution name","university","university name","name","institution"]);if(!institution)continue;
+  const country=pick(row,["location","country territory","country/territory","country region","country/region","country"])||scopeCountry||"";
+  const rankRaw=qsCompact?pick(row,[`qs_world_rank_${year}`]):theCompact?pick(row,[`the_world_rank_${year}`]):findRank(row,year),parsed=parseRank(rankRaw);
+  const overallRaw=theCompact?pick(row,[`the_overall_score_${year}`]):pick(row,["overall score","overall","score"]),overall=scoreParts(overallRaw);
+  const indicators=theCompact?{overall:indicator("Overall",overallRaw,"score",String(year))}:{};
+  out.push({institution_name:institution,country_text:country||null,rank_display:parsed.rank_display||null,rank_exact:parsed.rank_exact,rank_low:parsed.rank_low,rank_high:parsed.rank_high,is_tied:parsed.is_tied,rank_status:parsed.rank_status,overall_score:overall.numeric,overall_score_display:overall.display,overall_score_low:overall.low,overall_score_high:overall.high,source_row_ordinal:ordinal,indicators,source_row_payload:row})
+ }
+ return out
+}
 
 function scoreParts(raw:unknown){
  const display=stripHtml(raw);if(!display||display==="-"||display==="—")return{display:null,numeric:null,low:null,high:null};
@@ -115,7 +129,7 @@ Deno.serve(async(req:Request)=>{
    if(!imp?.storage_path)return json({ok:false,error:"authorised publisher file required; upload it in Administration → Sources & Imports, then revalidate this Layer 1 source",requiresPublisherFile:true,systemCode,editionYear,workerVersion:VERSION},409);
    const original=String(imp.original_filename||"");const isWorkbook=/\.(csv|xlsx)$/i.test(original),isTheJson=systemCode==="the_wur"&&/\.(json|txt)$/i.test(original);if(!isWorkbook&&!isTheJson)return json({ok:false,error:"Ranking parser accepts CSV/XLSX for QS/THE and native THE JSON/TXT exports. PDF/ZIP remain retained Evidence only.",requiresParserAdapter:true,systemCode,editionYear,filename:imp.original_filename,workerVersion:VERSION},422);
    const dl=await service.storage.from("evidence").download(imp.storage_path);if(dl.error||!dl.data)throw new Error(dl.error?.message||"publisher Evidence download failed");
-   const bytes=new Uint8Array(await dl.data.arrayBuffer());rows=isTheJson?theRowsFromNativeJson(bytes,editionYear).rows:rowsFromWorkbook(bytes,editionYear);sourceHash=imp.content_hash;evidenceArtifactId=imp.evidence_artifact_id;filename=imp.original_filename;sourceUrl=imp.source_url;acquisitionMode=isTheJson?"manual_the_native_json":"manual_file";
+   const bytes=new Uint8Array(await dl.data.arrayBuffer());rows=isTheJson?theRowsFromNativeJson(bytes,editionYear).rows:rowsFromWorkbook(bytes,editionYear,systemCode,original);sourceHash=imp.content_hash;evidenceArtifactId=imp.evidence_artifact_id;filename=imp.original_filename;sourceUrl=imp.source_url;acquisitionMode=isTheJson?"manual_the_native_json":"manual_file";
   }
   if(!rows.length)throw new Error("publisher source parsed zero ranking observations");
   const unknown=rows.filter(x=>x.rank_status==="unknown").length,indicatorCells=rows.reduce((n,r)=>n+Object.values(r.indicators||{}).filter(v=>v!==null).length,0);
