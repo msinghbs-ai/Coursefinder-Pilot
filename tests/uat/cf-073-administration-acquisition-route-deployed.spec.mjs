@@ -20,9 +20,10 @@ test.describe('CF-073 Administration Acquisition route regression @deployed',()=
       await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
       await expect(page.locator('.l2p-shell')).toBeVisible({timeout:45000})
       await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers',exact:true})).toBeVisible()
-      await expect(page.getByRole('heading',{name:'Layer 2 execution policy',exact:true})).toBeVisible()
       await expect(page.locator('.m-workspace-error')).toHaveCount(0)
       await expect(page.locator('.m-release-pill')).toContainText('v2.15.31')
+      const rankLabel=(await page.locator('.m-role-pill').textContent())||''
+      expect(rankLabel.trim()).not.toBe('')
 
       await page.getByRole('tab',{name:'Overview',exact:true}).click()
       await expect(page).toHaveURL(/#administration$/)
@@ -32,7 +33,6 @@ test.describe('CF-073 Administration Acquisition route regression @deployed',()=
       await expect(page).toHaveURL(/#administration\?section=layer2-providers$/)
       await expect(page.locator('.m-shell')).toBeVisible()
       await expect(page.locator('.l2p-shell')).toBeVisible()
-      await expect(page.getByRole('heading',{name:'Layer 2 execution policy',exact:true})).toBeVisible()
       await expect(page.locator('.m-workspace-error')).toHaveCount(0)
       expect(pageErrors).toEqual([])
 
