@@ -48,4 +48,30 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
     expect(client).toContain("invoke('provider-contact-control'")
     expect(client).toContain("provider_contact_export_audit")
   })
+
+  test('Provider Contacts remains contained at tablet and mobile widths',async({page},testInfo)=>{
+    const runtime=observeRuntime(page)
+    try{
+      await loginAsUatUser(page)
+      for(const viewport of [{width:768,height:1024},{width:390,height:844}]){
+        await page.setViewportSize(viewport)
+        await page.goto(new URL('/#provider-contacts',process.env.UAT_BASE_URL).toString())
+        await expect(page.getByRole('heading',{name:'Provider Contacts'}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+        const overflow=await page.evaluate(()=>({
+          viewport:window.innerWidth,
+          doc:document.documentElement.scrollWidth,
+          tableClient:document.querySelector('.pc-table-wrap')?.clientWidth||0,
+          tableScroll:document.querySelector('.pc-table-wrap')?.scrollWidth||0,
+        }))
+        expect(overflow.doc).toBeLessThanOrEqual(overflow.viewport+2)
+        expect(overflow.tableScroll).toBeGreaterThanOrEqual(overflow.tableClient)
+        await page.getByRole('button',{name:/Import CSV/}).click()
+        await expect(page.getByRole('heading',{name:'Provider Contact CSV'})).toBeVisible()
+        const modal=await page.locator('.pc-import-modal').boundingBox()
+        expect(modal?.width||9999).toBeLessThanOrEqual(viewport.width)
+        await page.locator('.pc-modal-head > button').click()
+      }
+    }finally{await finish(testInfo,runtime)}
+  })
+
 })
