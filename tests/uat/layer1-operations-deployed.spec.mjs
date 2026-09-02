@@ -58,7 +58,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     const datasetSelect=dialog.locator('.l1v2-filter').filter({hasText:'Dataset'}).locator('select');await datasetSelect.selectOption('statistics')
     const cards=dialog.locator('article.l1v2-card[data-country="AU"]');await expect(cards).toHaveCount(5,{timeout:DETERMINISTIC_UI_TIMEOUT})
     for(const label of ['QILT GOS 2025 National Report Tables','QILT SES 2024 National Report Tables','QILT GOS-L 2025 National Report Tables','QILT ESS 2025 National Report Tables','Department of Education PRISMS SA4 December 2025']){
-      const card=cards.filter({hasText:label});await expect(card).toBeVisible();await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card.getByRole('button',{name:'Run now'})).toBeVisible()
+      const card=cards.filter({hasText:label});await expect(card).toBeVisible();await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card.getByRole('button',{name:'Details'})).toBeVisible()
     }
     const qilt=await validateSource(page,dialog,s=>/QILT GOS 2025 National Report Tables/i.test(s.source_label||''),'QILT GOS');expect(qilt?.ok).toBe(true);expect(qilt?.validation?.source_system).toBe('QILT');expect(qilt?.validation?.discovered?.candidate_observations).toBeGreaterThan(100)
     const prisms=await validateSource(page,dialog,s=>/PRISMS/i.test(s.source_label||''),'PRISMS');expect(prisms?.ok).toBe(true);expect(prisms?.validation?.source_system).toBe('PRISMS');expect(prisms?.validation?.discovered?.candidate_observations).toBeGreaterThan(1000)
