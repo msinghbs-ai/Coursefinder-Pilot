@@ -45,7 +45,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     await loginAsUatUser(page)
     await page.goto(new URL('/#administration?section=layer1-sources',process.env.UAT_BASE_URL).toString())
     await expect(page.locator('.m-release-pill')).toContainText(/^v2\.15\.\d+$/)
-    const admin=page.getByRole('heading',{name:'Administration',exact:true});await expect(admin).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    const admin=page.locator('main h1').filter({hasText:/^Administration$/});await expect(admin).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByRole('tab',{name:'Layer 1 sources'})).toHaveCount(0)
     await expect(page.locator('.l1s-shell')).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'cf-067-layer1-source-settings-role-boundary')
