@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION = "prisms-au-etl-v0.1.0";
+const VERSION = "prisms-au-etl-v0.1.1";
 const SOURCE_URL = "https://www.education.gov.au/download/15221/international-student-enrolment-and-commencement-data-abs-sa4-publication/44345/document/xlsx";
 const SOURCE_PAGE = "https://www.education.gov.au/international-education-data-and-research/resources/international-student-enrolment-and-commencement-data-abs-sa4";
 const SHEET = "Data";
@@ -339,15 +339,17 @@ Deno.serve(async (req: Request) => {
 
   let sourceId: string | null = null;
   try {
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const internal = text(req.headers.get("x-cf-layer1-service-key"));
+    const internalOk = Boolean(internal) && internal === serviceKey;
     const nonce = text(req.headers.get("x-cf-run-nonce"));
-    if (
-      !nonce ||
-      !(await rpc(client, "svc_pilot_consume_nonce", {
+    const nonceOk = Boolean(nonce) &&
+      (await rpc(client, "svc_pilot_consume_nonce", {
         p_function: "prisms-au-etl",
         p_nonce: nonce,
-      }))
-    ) {
-      return json({ error: "valid one-time Pilot nonce required" }, 401);
+      }));
+    if (!internalOk && !nonceOk) {
+      return json({ error: "valid one-time Pilot nonce or governed Layer 1 service authority required" }, 401);
     }
 
     const body = await req.json().catch(() => ({}));
