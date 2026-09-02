@@ -24,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.38'
+const UI_VERSION='2.15.39'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -92,7 +92,7 @@ function pageBreadcrumbs(page,routeParams){
  if(page==='Administration'){
   crumbs.push({label:'Administration',page:'Administration'})
   const section=routeParams?.get?.('section')||'overview'
-  const labels={overview:'Overview','sources-imports':'Sources & Imports','layer1-sources':'Layer 1 sources','layer2-sources':'Layer 2 sources','layer2-providers':'Acquisition',scheduling:'Scheduling',onboarding:'Onboarding',pim:'PIM configuration',platform:'Platform'}
+  const labels={overview:'Overview','sources-imports':'Sources & Imports','layer1-sources':'Layer 1 sources','layer2-sources':'Layer 2 sources','layer2-providers':'Acquisition',scheduling:'Scheduling',onboarding:'Onboarding',pim:'PIM configuration','users-roles':'Users & Roles',platform:'Platform'}
   if(section!=='overview')crumbs.push({label:labels[section]||section})
   return crumbs
  }
@@ -232,12 +232,13 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   ['scheduling','Scheduling',RefreshCw,rank>=4],
   ['onboarding','Onboarding',Workflow,rank>=4],
   ['pim','PIM configuration',Tags,rank>=5],
+  ['users-roles','Users & Roles',UsersRound,rank>=6],
   ['platform','Platform',Settings2,rank>=6],
  ]
  const allowed=sections.filter(x=>x[3])
  const requested=routeParams?.get?.('section')||'overview'
  const tool=allowed.some(x=>x[0]===requested)?requested:(allowed[0]?.[0]||'overview')
- const selectTool=key=>navigate('Administration',key==='overview'?{}:{section:key})
+ const selectTool=key=>{if(key==='users-roles'){location.hash='#users-roles';return}navigate('Administration',key==='overview'?{}:{section:key})}
  const openRoute=label=>navigate(label)
  return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Settings2} title="Administration" subtitle="Central configuration. Choose a section below; operational Layer workspaces remain separate."/>
   <div className="m-admin-subnav" role="tablist" aria-label="Administration sections">{allowed.map(([key,label,Icon])=><button key={key} role="tab" aria-selected={tool===key} className={tool===key?'active':''} onClick={()=>selectTool(key)}><Icon size={15}/><span>{label}</span></button>)}</div>
@@ -246,7 +247,8 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   <Attention tone="info" icon={Database} title="Sources & onboarding" text="Governed sources, qualification and onboarding lifecycle." action="Open sources" onClick={()=>openRoute('Sources')}/>
   <Attention tone="info" icon={RefreshCw} title="Scheduling" text="Refresh cadence, targeted scheduling and policy controls." action="Open scheduling" onClick={()=>selectTool('scheduling')}/>
   <Attention tone="info" icon={SlidersHorizontal} title="Acquisition" text="Layer 2 source profiles, Firecrawl/direct routes and execution policy." action="Open acquisition" onClick={()=>selectTool('layer2-providers')}/>
-  {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>}
+  {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>} 
+  {rank>=6&&<Attention tone="info" icon={UsersRound} title="Users & Roles" text="Create users and assign governed CourseFinder roles, including PIM Operator." action="Open users & roles" onClick={()=>selectTool('users-roles')}/>} 
  </div></section>}
  {tool==='sources-imports'&&<RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>} 
  {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>} 
