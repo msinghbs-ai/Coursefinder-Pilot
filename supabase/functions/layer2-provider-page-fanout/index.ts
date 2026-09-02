@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION="layer2-provider-page-fanout-v1";
+const VERSION="layer2-provider-page-fanout-v1.1";
 const BUCKET="evidence";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 const H=(r:Request)=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":r.headers.get("origin")===ORIGIN?ORIGIN:ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key","access-control-allow-methods":"POST,OPTIONS"});
@@ -36,9 +36,6 @@ function logoCandidates(html:string,base:string){
   const tag=m[0],prop=(attr(tag,"property")||attr(tag,"name")||"").toLowerCase();
   if(prop!=="og:image"&&prop!=="twitter:image")continue;const u=abs(base,attr(tag,"content")||"");if(u)out.push({url:u,score:0.45,kind:prop});
  }
- for(const m of html.matchAll(/<link\b[^>]*>/gi)){
-  const tag=m[0],rel=(attr(tag,"rel")||"").toLowerCase();if(!/icon/.test(rel))continue;const u=abs(base,attr(tag,"href")||"");if(u)out.push({url:u,score:0.25,kind:"icon"});
- }
  const best=new Map<string,any>();for(const x of out){const p=best.get(x.url);if(!p||x.score>p.score)best.set(x.url,x)}
  return [...best.values()].sort((a,b)=>b.score-a.score).slice(0,12);
 }
@@ -58,31 +55,12 @@ Deno.serve(async(req:Request)=>{
  const svc=createClient(sb,sk,{auth:{persistSession:false}});
  try{await auth(req,svc,sb,anon)}catch(e:any){return J(req,String(e.message).includes("role")?403:401,{error:String(e.message)})}
  const b=await req.json().catch(()=>({}));const sfid=String(b.shared_fetch_id||"");if(!sfid)return J(req,400,{error:"shared_fetch_id_required"});
- const{data:f,error:fe}=await svc.schema("pipeline").from("layer2_shared_fetches").select("id,source_url,evidence_id,source_profile_id,content_hash,mime_type").eq("id",sfid).single();
- if(fe||!f)return J(req,404,{error:"shared_fetch_not_found"});
- const{data:e,error:ee}=await svc.schema("pipeline").from("evidence_artifacts").select("id,source_id,storage_path,mime_type,content_hash,source_profile_version_id").eq("id",f.evidence_id).single();
- if(ee||!e)return J(req,404,{error:"evidence_not_found"});
- const{data:s,error:se}=await svc.schema("pipeline").from("sources").select("id,provider_id,url").eq("id",e.source_id).single();
- if(se||!s?.provider_id)return J(req,409,{error:"provider_source_required"});
- const{data:blob,error:de}=await svc.storage.from(BUCKET).download(e.storage_path);if(de||!blob)return J(req,500,{error:"evidence_download_failed"});
- const raw=await blob.text(),html=htmlFrom(raw,String(e.mime_type||f.mime_type||""));if(!html)return J(req,422,{error:"html_not_available"});
- const base=String(f.source_url||s.url||"");
+ let ctx:any;try{ctx=await rpc(svc,"layer2_shared_fetch_fanout_context",{p_shared_fetch_id:sfid})}catch(e:any){return J(req,500,{error:"fanout_context_failed",detail:String(e.message)})}
+ if(!ctx?.evidence_id)return J(req,404,{error:"shared_fetch_not_found"});
+ const{data:blob,error:de}=await svc.storage.from(BUCKET).download(String(ctx.storage_path||""));if(de||!blob)return J(req,500,{error:"evidence_download_failed",detail:de?.message||null});
+ const raw=await blob.text(),html=htmlFrom(raw,String(ctx.mime_type||""));if(!html)return J(req,422,{error:"html_not_available"});
+ const base=String(ctx.source_url||"");
  const logos=logoCandidates(html,base),links=scholarshipLinks(html,base);
- const{data:profiles}=await svc.schema("pipeline").from("layer2_source_profiles").select("id,domain,current_version_id").eq("source_id",e.source_id).in("domain",["provider_asset","scholarship"]);
- const logoProfile=profiles?.find((x:any)=>x.domain==="provider_asset"),schProfile=profiles?.find((x:any)=>x.domain==="scholarship");
- let logoInserted=0,schInserted=0;
- for(const x of logos){
-  const{error}=await svc.schema("pipeline").from("provider_asset_candidates").upsert({
-   provider_id:s.provider_id,profile_id:logoProfile?.id||null,source_url:base,asset_url:x.url,asset_type:"logo",evidence_id:e.id,content_hash:null,
-   confidence:x.score,status:x.score>=0.88?"accepted":x.score>=0.65?"needs_review":"discovered",
-   metadata:{worker_version:VERSION,kind:x.kind,alt:x.alt||null,selector_hint:x.selector_hint||null,canonical_mutation_authorised:false}
-  },{onConflict:"provider_id,asset_url",ignoreDuplicates:false});if(!error)logoInserted++;
- }
- for(const x of links){
-  const{error}=await svc.schema("pipeline").from("layer2_scholarship_discovery_candidates").upsert({
-   source_id:e.source_id,evidence_id:e.id,source_profile_version_id:schProfile?.current_version_id||null,scholarship_url:x.url,observed_title:x.title,status:"discovered"
-  },{onConflict:"evidence_id,scholarship_url",ignoreDuplicates:true});if(!error)schInserted++;
- }
- await svc.schema("pipeline").from("layer2_fanout_tasks").update({status:"completed",completed_at:new Date().toISOString(),metadata:{worker_version:VERSION,logo_candidates:logos.length,scholarship_links:links.length}}).eq("shared_fetch_id",sfid).in("task_type",["provider_asset","scholarship_discovery"]);
- return J(req,200,{ok:true,worker_version:VERSION,shared_fetch_id:sfid,provider_id:s.provider_id,logo_candidates:logos.length,logo_rows_written:logoInserted,scholarship_links:links.length,scholarship_rows_written:schInserted,top_logo:logos[0]||null});
+ let applied:any;try{applied=await rpc(svc,"layer2_provider_page_fanout_apply",{p_shared_fetch_id:sfid,p_logo_candidates:logos,p_scholarship_links:links})}catch(e:any){return J(req,500,{error:"fanout_apply_failed",detail:String(e.message)})}
+ return J(req,200,{ok:true,worker_version:VERSION,shared_fetch_id:sfid,provider_id:ctx.provider_id,logo_candidates:logos.length,scholarship_links:links.length,top_logo:logos[0]||null,applied});
 });
