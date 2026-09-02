@@ -18,6 +18,11 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   ])
 
   expect(ui).toContain('const MAX=6')
+  expect(ui).toContain('Search universities or providers')
+  expect(ui).toContain("adminRead('providers_page'")
+  expect(ui).toContain('provider_id:scopedCourse?providerId:null')
+  expect(ui).toContain('Choose any governed provider first')
+  expect(ui).toContain('Showing the first governed courses for')
   expect(ui).toContain("adminRead('contextual_compare'")
   expect(ui).toContain('Like-for-like QILT rows only')
   expect(ui).toContain('International student flow')
@@ -35,7 +40,10 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(shell).toContain("import ComparisonWorkspace from'./ComparisonWorkspace'")
   expect(shell).toContain("if(page==='Compare')return <ComparisonWorkspace")
   expect(shell).toContain("navigate?.('Compare',{type,ids:data.id})")
-  expect(shell).toContain("const UI_VERSION='2.15.21'")
+  const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
+  const releaseVersion=version.match(/const VERSION='([^']+)'/)?.[1]
+  expect(shellVersion).toMatch(/^2\.15\.\d+$/)
+  expect(releaseVersion).toBe(shellVersion)
 
   expect(migration).toContain('security.admin_contextual_insights_v2')
   expect(migration).toContain('security.admin_contextual_compare')
@@ -49,10 +57,9 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(migration).not.toMatch(/\b(delete|truncate)\s+from\b/i)
   expect(migration).not.toMatch(/\bupdate\s+(catalogue|search|publication)\./i)
 
-  expect(version).toContain("const VERSION='2.15.21'")
-  expect(version).toContain("version:'2.15.21'")
-  expect(version).toContain('QILT & PRISMS comparison experience')
-  expect(index).toContain('Coursefinder PIM Admin v2.15.21')
+  expect(version).toContain(`version:'${shellVersion}'`)
+  expect(version).toContain('Course comparison provider coverage correction')
+  expect(index).toContain(`Coursefinder PIM Admin v${shellVersion}`)
 
   const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
   expect(output).toContain('built in')
