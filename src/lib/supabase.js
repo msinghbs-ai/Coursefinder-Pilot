@@ -210,6 +210,40 @@ export const api = {
   },
   rankingPublisherControl: ({ action, importId }) => invoke('ranking-publisher-control', { action, import_id: importId }),
 
+  providerContactsPage: ({ limit = 50, offset = 0, query = '', country = '', providerId = '', lifecycle = '', recordType = '', sourceAuthority = '', verification = '', hasEmail = '', hasPhone = '', freshness = '', sort = 'provider', direction = 'asc' } = {}) =>
+    adminRead('provider_contacts_page', {
+      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
+      country_code: country || null, provider_id: providerId || null, lifecycle_status: lifecycle || null,
+      record_type: recordType || null, source_authority: sourceAuthority || null, verification_state: verification || null,
+      has_email: hasEmail === '' ? null : String(hasEmail), has_phone: hasPhone === '' ? null : String(hasPhone),
+      freshness: freshness || null, sort, direction,
+    }),
+  providerContactDetail: id => adminRead('provider_contact_detail', { id }),
+  providerContactImports: ({ limit = 50, offset = 0, country = '' } = {}) => adminRead('provider_contact_imports', {
+    limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), country_code: country || null,
+  }),
+  providerContactImportDetail: id => adminRead('provider_contact_import_detail', { id }),
+  providerContactManage: async (action, payload = {}) => {
+    const { data, error } = await supabase.rpc('provider_contact_manage', { p_action: action, p_payload: payload ?? {} })
+    if (error) throw error
+    return data
+  },
+  uploadProviderContactFile: async ({ countryCode = 'AU', dateFormat = 'mdy', file }) => {
+    const form = new FormData()
+    form.set('country_code', countryCode)
+    form.set('date_format', dateFormat)
+    form.set('file', file)
+    return invoke('provider-contact-import', form)
+  },
+  providerContactImportControl: ({ action = 'apply', batchId }) => invoke('provider-contact-control', { action, batch_id: batchId }),
+  providerContactExportAudit: async ({ rowCount = 0, filters = {}, columns = [], format = 'csv', reason = 'Provider Contacts export' } = {}) => {
+    const { data, error } = await supabase.rpc('provider_contact_export_audit', {
+      p_payload: { row_count: Number(rowCount) || 0, filters, columns, format, reason },
+    })
+    if (error) throw error
+    return data
+  },
+
   evidencePage: ({
     limit = 50, offset = 0, query = '', country = '', sourceId = '', layer = '', entityType = '', entityId = '', providerId = '', jobId = '',
     evidenceType = '', mime = '', hash = '', jobStatus = '', status = '', extractionState = '', freshness = '', verifiedFrom = '', verifiedTo = '',
