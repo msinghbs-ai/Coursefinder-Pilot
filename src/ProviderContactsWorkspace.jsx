@@ -68,7 +68,7 @@ function ContactForm({initial,isNew,providerLabel,onCancel,onSave,busy}){
  return <div className="pc-form"><div className="pc-form-grid">
   <label className="wide"><span>Provider *</span><ProviderPicker value={form.provider_id} label={pLabel} disabled={!isNew} onChange={(v,l)=>{patch('provider_id',v);setPLabel(l)}}/></label>
   <label><span>Record type *</span><select value={form.record_type} disabled={!isNew} onChange={e=>patch('record_type',e.target.value)}><option value="named_staff">Named staff</option><option value="team_contact">Team contact</option></select></label>
-  <label><span>{form.record_type==='team_contact'?'Team / staff label':'Staff name *'}</span><input value={form.full_name} onChange={e=>patch('full_name',e.target.value)}/></label>
+  <label><span>{form.record_type==='team_contact'?'Team name':'Staff name *'}</span><input value={form.record_type==='team_contact'?form.team_name:form.full_name} onChange={e=>patch(form.record_type==='team_contact'?'team_name':'full_name',e.target.value)}/></label>
   <label><span>Job title</span><input value={form.job_title} onChange={e=>patch('job_title',e.target.value)}/></label>
   <label><span>Functional area</span><input value={form.functional_area} onChange={e=>patch('functional_area',e.target.value)}/></label>
   <label><span>Region scope</span><input value={form.region_scope} onChange={e=>patch('region_scope',e.target.value)}/></label>
