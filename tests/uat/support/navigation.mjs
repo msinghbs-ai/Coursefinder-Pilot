@@ -5,9 +5,9 @@ const ui = { timeout: DETERMINISTIC_UI_TIMEOUT }
 
 export async function openLayer1(page) {
   await clickPrimaryNav(page, 'Layer 1 — Authority')
-  const workspace = page.locator('.l1o-page .l1o-shell')
+  const workspace = page.locator('.l1v2-page .l1v2-shell')
   await expect(workspace).toBeVisible(ui)
-  await expect(workspace.getByRole('heading', { name: 'Layer 1 — Regulatory' })).toBeVisible(ui)
+  await expect(workspace.getByRole('heading', { name: 'Layer 1 — Authority & Statistical Ingestion' })).toBeVisible(ui)
   return workspace
 }
 
