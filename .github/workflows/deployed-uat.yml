@@ -252,6 +252,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^tests/uat/cf-073-administration-acquisition-route-deployed\.spec\.mjs$|^\.github/cf-073-administration-acquisition-route-candidate$)'; then
             targeted=(tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css)$|^supabase/functions/ranking-publisher-import/|^tests/uat/cf-076-ranking-import-ux-deployed\.spec\.mjs$|^\.github/cf-076-ranking-import-ux-candidate$)'; then
+            targeted=(tests/uat/cf-076-ranking-import-ux-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
