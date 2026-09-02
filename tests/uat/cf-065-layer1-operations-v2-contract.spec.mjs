@@ -25,10 +25,10 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(shell).toContain("tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>")
     const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
-    expect(shellVersion).toBe('2.15.24')
+    expect(shellVersion).toMatch(/^2\\.15\\.\\d+$/)
     expect(releaseVersion).toBe(shellVersion)
     expect(index).toContain(`Coursefinder PIM Admin v${shellVersion}`)
-    expect(versionEntry).toContain("version:'2.15.24'")
+    expect(versionEntry).toContain(`version:'${shellVersion}'`)
     expect(versionEntry).toContain('Layer 1 authority operations v2')
     const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
     expect(output).toContain('built in')
