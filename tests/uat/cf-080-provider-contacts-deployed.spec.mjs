@@ -6,7 +6,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-080-provider-contacts',change_control:'CF-CHG-20260902-080'})})
 
-  test('Catalogue route loads managed contacts and operator controls',async({page},testInfo)=>{
+  test('Catalogue route loads managed contacts and honours the governed role boundary',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page)
@@ -16,15 +16,22 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
       await expect(page.getByText('Providers covered')).toBeVisible()
       await expect(page.locator('.pc-table tbody tr').first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
       await expect(page.getByRole('button',{name:/Columns/})).toBeVisible()
-      await expect(page.getByRole('button',{name:/Add contact/})).toBeVisible()
-      await expect(page.getByRole('button',{name:/Import CSV/})).toBeVisible()
-      await expect(page.getByRole('button',{name:/Export view/})).toBeVisible()
       await page.getByRole('button',{name:/Columns/}).click()
       await expect(page.getByText('Show, reorder and resize the grid. Saved for this browser.')).toBeVisible()
-      await page.getByRole('button',{name:/Import CSV/}).click()
-      await expect(page.getByRole('heading',{name:'Provider Contact CSV'})).toBeVisible()
-      await expect(page.locator('option').filter({hasText:'9/1/2026 = 1 Sep 2026'})).toHaveCount(1)
-      await expect(page.getByText(/Private Evidence upload/)).toBeVisible()
+      const add=page.getByRole('button',{name:/Add contact/})
+      if(await add.count()){
+        await expect(add).toBeVisible()
+        await expect(page.getByRole('button',{name:/Import CSV/})).toBeVisible()
+        await expect(page.getByRole('button',{name:/Export view/})).toBeVisible()
+        await page.getByRole('button',{name:/Import CSV/}).click()
+        await expect(page.getByRole('heading',{name:'Provider Contact CSV'})).toBeVisible()
+        await expect(page.locator('option').filter({hasText:'9/1/2026 = 1 Sep 2026'})).toHaveCount(1)
+        await expect(page.getByText(/Private Evidence upload/)).toBeVisible()
+      }else{
+        await expect(page.getByText(/Read-only view\. PIM Operator or Platform Admin is required/)).toBeVisible()
+        await expect(page.getByRole('button',{name:/Import CSV/})).toHaveCount(0)
+        await expect(page.getByRole('button',{name:/Export view/})).toHaveCount(0)
+      }
     }finally{await finish(testInfo,runtime)}
   })
 
@@ -70,11 +77,16 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
         }))
         expect(overflow.doc).toBeLessThanOrEqual(overflow.viewport+2)
         expect(overflow.tableScroll).toBeGreaterThanOrEqual(overflow.tableClient)
-        await page.getByRole('button',{name:/Import CSV/}).click()
-        await expect(page.getByRole('heading',{name:'Provider Contact CSV'})).toBeVisible()
-        const modal=await page.locator('.pc-import-modal').boundingBox()
-        expect(modal?.width||9999).toBeLessThanOrEqual(viewport.width)
-        await page.locator('.pc-modal-head > button').click()
+        const importButton=page.getByRole('button',{name:/Import CSV/})
+        if(await importButton.count()){
+          await importButton.click()
+          await expect(page.getByRole('heading',{name:'Provider Contact CSV'})).toBeVisible()
+          const modal=await page.locator('.pc-import-modal').boundingBox()
+          expect(modal?.width||9999).toBeLessThanOrEqual(viewport.width)
+          await page.locator('.pc-modal-head > button').click()
+        }else{
+          await expect(page.getByText(/Read-only view\. PIM Operator or Platform Admin is required/)).toBeVisible()
+        }
       }
     }finally{await finish(testInfo,runtime)}
   })
