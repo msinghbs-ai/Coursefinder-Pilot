@@ -208,6 +208,7 @@ export const api = {
     form.set('file', file)
     return invoke('ranking-publisher-import', form)
   },
+  rankingPublisherControl: ({ action, importId }) => invoke('ranking-publisher-control', { action, import_id: importId }),
 
   evidencePage: ({
     limit = 50, offset = 0, query = '', country = '', sourceId = '', layer = '', entityType = '', entityId = '', providerId = '', jobId = '',
