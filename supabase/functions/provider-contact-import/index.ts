@@ -117,6 +117,14 @@ Deno.serve(async(req:Request)=>{
     }).eq("id",batchId);
     return json(req,422,{ok:false,error:"contact_import_validation_failed",detail:dryErr.message,batch_id:batchId})
   }
+  const {data:parked,error:parkErr}=await svc.rpc("svc_provider_contact_import_park_layer4",{p_batch_id:batchId,p_actor:actor});
+  if(parkErr){
+    await svc.schema("pipeline").from("provider_contact_import_batches").update({
+      status:"failed",metadata:{change_control:"CF-CHG-20260902-080",layer4_parking_error:parkErr.message}
+    }).eq("id",batchId);
+    return json(req,422,{ok:false,error:"contact_import_layer4_parking_failed",detail:parkErr.message,batch_id:batchId})
+  }
   return json(req,201,{ok:true,duplicate:false,batch_id:batchId,evidence_id:reg.evidence_id,content_hash:hash,
-    original_filename:file.name,row_count:rows.length,date_format:dateFormat,dry_run:dry});
+    original_filename:file.name,row_count:rows.length,date_format:dateFormat,
+    dry_run:{...(dry||{}),...(parked||{}),layer4_review_pending:Number(parked?.layer4_review_pending||0)}});
 });
