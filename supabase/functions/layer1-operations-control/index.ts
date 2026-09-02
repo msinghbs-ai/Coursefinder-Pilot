@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { unzipSync } from "npm:fflate@0.8.2";
 
-const VERSION="layer1-operations-control-v1.2.1";
+const VERSION="layer1-operations-control-v1.2.2";
 const FN="layer1-operations-control";
 const TYPES=["UNI","POLLY","WANA","PTE","GTE"];
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
@@ -49,4 +49,4 @@ Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("o
  await requirePlatformAdmin(service,auth.userId);
  if(action==="run"){const sourceId=clean(body.source_id);if(!sourceId)throw new Error("source_id required");const mode=clean(body.mode||"dry_run").toLowerCase();const validation=await validateSource(service,url,serviceKey,sourceId);if(validation.variance_decision==="block")return json({ok:false,error:"source variance is blocked",validation},409);const {data,error}=await auth.user.rpc("layer1_admin_command",{p_operation:"queue_run",p_args:{source_id:sourceId,mode,reason:clean(body.reason||"M2.4.1 governed Layer 1 operation"),resume_cursor:Number(body.offset||0),acknowledge_warning:body.acknowledge_warning===true,idempotency_key:body.idempotency_key||null,retry_of_run_id:body.retry_of_run_id||null}});if(error)throw error;const runId=data?.run_id;if(!runId)throw new Error("queue command did not return run_id");EdgeRuntime.waitUntil(processRun(service,url,serviceKey,auth.token,runId));return json({ok:true,run_id:runId,status:"queued",validation,workerVersion:VERSION},202);}
  if(action==="continue"){const runId=clean(body.run_id);if(!runId)throw new Error("run_id required");EdgeRuntime.waitUntil(processRun(service,url,serviceKey,auth.token,runId));return json({ok:true,run_id:runId,status:"continuation_accepted",workerVersion:VERSION},202);}
- throw new Error("unsupported action");}catch(e){const message=e instanceof Error?e.message:String(e);const denied=/required|invalid|operator/i.test(message);return json({ok:false,error:message,workerVersion:VERSION},denied?403:500);}});
+ throw new Error("unsupported action");}catch(e){const message=e instanceof Error?e.message:String(e);const denied=/required|invalid user|operator/i.test(message),qualifiedBlock=/cloudflare|challenge|publisher file required|approved access route|requires.*file/i.test(message);return json({ok:false,error:message,workerVersion:VERSION},denied?403:qualifiedBlock?409:500);}});
