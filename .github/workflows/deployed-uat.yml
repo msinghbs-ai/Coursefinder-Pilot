@@ -193,7 +193,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^tests/uat/cf-061-qilt-prisms-comparison-deployed\\.spec\\.mjs$|^\\.github/cf-061-comparison-deployed-candidate$)'; then
             targeted=(tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -qx '.github/cf-070-provider-compare-candidate'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^\.github/cf-070-provider-compare-candidate$|^\.github/cf-079-course-compare-candidate$)'; then
             targeted=(tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
