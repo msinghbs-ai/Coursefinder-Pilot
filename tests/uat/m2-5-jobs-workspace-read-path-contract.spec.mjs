@@ -49,7 +49,7 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     expect(index).toContain(`Coursefinder PIM Admin v${shellVersion}`)
     expect(versionEntry).toContain(`version:'${shellVersion}'`)
     expect(versionEntry).toContain('Pipeline Jobs workspace restoration')
-    expect(releaseTest).toContain('v2.15.20')
+    expect(releaseTest).toContain('release notes @deployed')
 
     const output=execFileSync('npm',['run','build'],{
       cwd:process.cwd(),
