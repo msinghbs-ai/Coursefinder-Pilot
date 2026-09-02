@@ -14,7 +14,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
  if(rank<6)return null
  if(busy&&!data)return <section className="env-panel">Loading environment controls…</section>
  const providers=data?.layer2_providers||[],settings=data?.settings||[],manifest=data?.migration_manifest||[],runtime=data?.runtime||{}
- const parsebot=providers.find(x=>x.provider_key==='parsebot'),firecrawl=providers.find(x=>x.provider_key==='firecrawl'),zenrows=providers.find(x=>x.provider_key==='zenrows')
+ const parsebot=providers.find(x=>x.provider_key==='parsebot'),firecrawl=providers.find(x=>x.provider_key==='firecrawl'),zenrows=providers.find(x=>x.provider_key==='zenrows'),otherProviders=providers.filter(x=>['scrape-do','scraperapi'].includes(x.provider_key))
  const refresh=async text=>{setMsg(text);await load()}
  return <div className="env-stack">
   <section className="env-panel"><div className="env-head"><div><small>Administration / Environment & Migration</small><h2>Integration credentials & production portability</h2><p>Secret values are write-only. Production-specific Supabase keys remain target-generated and are never copied from Pilot.</p></div><button onClick={load}><RefreshCw size={15}/>Refresh</button></div>
@@ -33,6 +33,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
     {parsebot&&<ProviderCard provider={parsebot} title="Parse.bot" hint="Trial adapter — configure endpoint/key, then enable only after bounded UAT." onSaved={refresh}/>}
     {firecrawl&&<ProviderCard provider={firecrawl} title="Firecrawl" hint="Update the recorded monthly entitlement to match the increased vendor limit." quota onSaved={refresh}/>}
     {zenrows&&<ProviderCard provider={zenrows} title="ZenRows" hint="Terminal governed fallback." onSaved={refresh}/>}
+    {otherProviders.map(p=><ProviderCard key={p.id} provider={p} title={p.display_name} hint="Additional governed Layer 2 acquisition provider." onSaved={refresh}/>)}
    </div>
   </section>
 
