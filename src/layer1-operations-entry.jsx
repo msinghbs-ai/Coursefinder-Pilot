@@ -30,7 +30,8 @@ const collapseRankingFamilies=rows=>{
 
 async function readLayer1(){const{data,error}=await supabase.rpc('admin_read',{p_operation:'layer1_operations',p_args:{}});if(error)throw error;return data||{sources:[]}}
 async function command(operation,args){const{data,error}=await supabase.rpc('layer1_admin_command',{p_operation:operation,p_args:args});if(error)throw error;return data}
-async function control(body){const{data,error}=await supabase.functions.invoke('layer1-operations-control',{body});if(error){let message=error.message||'Layer 1 operation failed';try{const payload=await error.context?.clone()?.json();message=payload?.error||payload?.message||message}catch{}throw new Error(message)}if(data?.error)throw new Error(data.error);return data}
+const errorText=v=>{if(!v)return'';if(typeof v==='string')return v;if(v instanceof Error)return v.message;try{return v.message||v.error||JSON.stringify(v)}catch{return String(v)}}
+async function control(body){const{data,error}=await supabase.functions.invoke('layer1-operations-control',{body});if(error){let message=errorText(error)||'Layer 1 operation failed';try{const payload=await error.context?.clone()?.json();message=errorText(payload?.error||payload?.message)||message}catch{}throw new Error(message)}if(data?.error)throw new Error(errorText(data.error)||'Layer 1 operation failed');return data}
 
 function Badge({value,className=''}){const v=String(value||'unknown').toLowerCase();return <span className={`l1v2-badge ${v} ${className}`}>{String(value||'unknown').replaceAll('_',' ')}</span>}
 function Summary({icon:Icon,label,value,tone}){return <article className={`l1v2-summary ${tone}`}><span><Icon/></span><div><small>{label}</small><b>{value}</b></div></article>}
