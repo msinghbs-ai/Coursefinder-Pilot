@@ -11,7 +11,7 @@ const host=document.getElementById('access-roles-root')
 const root=host?createRoot(host):null
 
 function isActive(){return location.hash===ROUTE||location.hash.startsWith(`${ROUTE}?`)}
-function goAdmin(hash='#dashboard'){location.hash=hash}
+function goAdmin(hash='#administration'){location.hash=hash}
 
 function ensureNav(){document.querySelectorAll(`.${NAV_CLASS}`).forEach(el=>el.remove())}
 
