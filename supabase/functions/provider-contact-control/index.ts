@@ -20,5 +20,7 @@ Deno.serve(async(req:Request)=>{
  const svc=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
  const {data,error}=await svc.rpc("svc_provider_contact_import_apply",{p_batch_id:batchId,p_actor:actor});
  if(error)return json(req,422,{ok:false,error:"provider_contact_import_apply_failed",detail:error.message,batch_id:batchId});
- return json(req,200,{ok:true,action:"apply",batch_id:batchId,result:data});
+ const {data:reviewState,error:reviewErr}=await svc.rpc("svc_provider_contact_import_finalize_review_state",{p_batch_id:batchId});
+ if(reviewErr)return json(req,422,{ok:false,error:"provider_contact_review_state_finalize_failed",detail:reviewErr.message,batch_id:batchId,result:data});
+ return json(req,200,{ok:true,action:"apply",batch_id:batchId,result:data,review_state:reviewState});
 });
