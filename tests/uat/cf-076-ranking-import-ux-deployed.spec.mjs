@@ -40,6 +40,20 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
   await expect(page.locator('body')).toContainText(/ranking_import_validate|Ranking/i,{timeout:DETERMINISTIC_UI_TIMEOUT})
  }finally{await finish(testInfo,runtime)}})
 
+ test('Layer 1 source settings recognises the selected retained ranking edition and can validate it',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page)
+  await page.goto(new URL('/#administration?section=layer1-sources&country=GLOBAL',process.env.UAT_BASE_URL).toString())
+  const card=page.locator('.l1s-card').filter({hasText:'Times Higher Education World University Rankings'}).first()
+  await expect(card).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const edition=card.locator('.l1s-ranking-edition select');await edition.selectOption('2015')
+  await expect(card.locator('.l1s-import-state')).toContainText(/Evidence: (Uploaded|Validated|Applied|Needs review)/i)
+  await expect(card.locator('.l1s-import-state')).toContainText('THE_year2015.txt')
+  await card.getByRole('button',{name:'Validate'}).click()
+  await expect(card).toContainText(/Action completed|validated/i,{timeout:30000})
+  await page.goto(new URL('/#jobs',process.env.UAT_BASE_URL).toString())
+  await expect(page.locator('body')).toContainText(/ranking_import_validate|Ranking/i,{timeout:DETERMINISTIC_UI_TIMEOUT})
+ }finally{await finish(testInfo,runtime)}})
+
  test('service source derives THE native JSON system/year from file content',async()=>{
   const src=await fs.readFile('supabase/functions/ranking-publisher-import/index.ts','utf8')
   expect(src).toContain('detectedNativeThe')
