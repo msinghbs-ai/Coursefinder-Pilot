@@ -26,7 +26,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.43'
+const UI_VERSION='2.15.44'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -95,7 +95,7 @@ function pageBreadcrumbs(page,routeParams){
  if(page==='Administration'){
   crumbs.push({label:'Administration',page:'Administration'})
   const section=routeParams?.get?.('section')||'overview'
-  const labels={overview:'Overview','sources-imports':'Sources & Imports','layer1-sources':'Layer 1 sources','layer2-sources':'Layer 2 sources','layer2-providers':'Acquisition','environment-migration':'Environment & Migration',scheduling:'Scheduling',onboarding:'Onboarding',pim:'PIM configuration','users-roles':'Users & Roles',platform:'Platform'}
+  const labels={overview:'Overview','sources-imports':'Sources & Imports','layer1-sources':'Layer 1 sources','layer2-sources':'Layer 2 sources','layer2-providers':'Scraper Config','environment-migration':'Environment & Migration',scheduling:'Scheduling',onboarding:'Onboarding',pim:'PIM configuration','users-roles':'Users & Roles',platform:'Platform'}
   if(section!=='overview')crumbs.push({label:labels[section]||section})
   return crumbs
  }
@@ -232,7 +232,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   ['sources-imports','Sources & Imports',Database,rank>=4],
   ['layer1-sources','Layer 1 sources',Database,rank>=6],
   ['layer2-sources','Layer 2 sources',Database,rank>=4],
-  ['layer2-providers','Acquisition',SlidersHorizontal,rank>=4],
+  ['layer2-providers','Scraper Config',SlidersHorizontal,rank>=4],
   ['environment-migration','Environment & Migration',ShieldCheck,rank>=6],
   ['scheduling','Scheduling',RefreshCw,rank>=4],
   ['onboarding','Onboarding',Workflow,rank>=4],
@@ -251,7 +251,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
  {tool==='overview'&&<section className="m-panel"><PanelTitle icon={Settings2} title="Administration overview" subtitle="Configuration is grouped here rather than scattered through Layer operations."/><div className="m-attention-grid">
   <Attention tone="info" icon={Database} title="Sources & onboarding" text="Governed sources, qualification and onboarding lifecycle." action="Open sources" onClick={()=>openRoute('Sources')}/>
   <Attention tone="info" icon={RefreshCw} title="Scheduling" text="Refresh cadence, targeted scheduling and policy controls." action="Open scheduling" onClick={()=>selectTool('scheduling')}/>
-  <Attention tone="info" icon={SlidersHorizontal} title="Acquisition" text="Layer 2 source profiles, Firecrawl/direct routes and execution policy." action="Open acquisition" onClick={()=>selectTool('layer2-providers')}/>
+  <Attention tone="info" icon={SlidersHorizontal} title="Scraper Config" text="Layer 2 acquisition providers, credentials, Firecrawl quota, routes and execution policy." action="Open scraper config" onClick={()=>selectTool('layer2-providers')}/>
   {rank>=6&&<Attention tone="info" icon={ShieldCheck} title="Environment & Migration" text="Production tenancy, API credentials, quotas and migration manifest." action="Open environment" onClick={()=>selectTool('environment-migration')}/>} 
   {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>} 
   {rank>=6&&<Attention tone="info" icon={UsersRound} title="Users & Roles" text="Create users and assign governed CourseFinder roles, including PIM Operator." action="Open users & roles" onClick={()=>selectTool('users-roles')}/>} 
@@ -358,8 +358,8 @@ function Layer2ExecutionPolicySettings(){
  useEffect(()=>{load()},[])
  const save=async()=>{if(!form)return;setSaving(true);setError('');setSaved('');try{const r=await invoke({action:'update_policy',patch:{...form,qualification_provider_wave_size:Number(form.qualification_provider_wave_size),qualification_sample_size:Number(form.qualification_sample_size),qualification_retry_hours:Number(form.qualification_retry_hours),qualification_finalizer_run_limit:Number(form.qualification_finalizer_run_limit),qualification_pattern_provider_limit:Number(form.qualification_pattern_provider_limit),production_target_wave_size:Number(form.production_target_wave_size),production_max_wave_size:Number(form.production_max_wave_size)}});setData(r);setSaved('Layer 2 execution policy saved. New background requests use these limits.')}catch(e){setError(e.message||String(e))}finally{setSaving(false)}}
  const b=data?.firecrawl?.budget_status||{},fc=data?.firecrawl||{}
- return <section className="m-panel"><PanelTitle icon={Activity} title="Layer 2 execution policy" subtitle="Central source-qualification, production wave and Firecrawl budget policy. Operators see effective values in Layer 2; they do not edit them there." action={<button className="m-secondary compact" onClick={load} disabled={busy||saving}><RefreshCw size={13}/>Refresh</button>}/>
-  {busy&&!form?<div className="m-empty-inline">Loading Layer 2 policy…</div>:form&&<><div className="m-summary-strip"><SummaryCard icon={Database} label="Firecrawl monthly limit" value={fmtNumber(b.limit_units)} tone="blue"/><SummaryCard icon={Activity} label="Used this period" value={fmtNumber(b.used_units)} tone="violet"/><SummaryCard icon={ShieldCheck} label="Safety reserve" value={fmtNumber(b.stop_at_remaining_units)} tone="amber"/><div className="m-summary-note"><strong>{fc.enabled?'Firecrawl enabled':'Firecrawl disabled'}</strong><span>{fmtNumber(fc.rate_limit_per_minute)} requests/min · concurrency {fmtNumber(fc.concurrency)} · credential {fc.credential_configured?'configured':'missing'}.</span></div></div>
+ return <section className="m-panel"><PanelTitle icon={Activity} title="Layer 2 execution policy" subtitle="Source-qualification and production-wave policy. Firecrawl quota is read from Scraper Config and shown here as an effective value." action={<button className="m-secondary compact" onClick={load} disabled={busy||saving}><RefreshCw size={13}/>Refresh</button>}/>
+  {busy&&!form?<div className="m-empty-inline">Loading Layer 2 policy…</div>:form&&<><div className="m-summary-strip"><SummaryCard icon={Database} label="Firecrawl monthly limit" value={fmtNumber(b.limit_units)} tone="blue"/><SummaryCard icon={Activity} label="Used this period" value={fmtNumber(b.used_units)} tone="violet"/><SummaryCard icon={ShieldCheck} label="Safety reserve" value={fmtNumber(b.stop_at_remaining_units)} tone="amber"/><div className="m-summary-note"><strong>{fc.enabled?'Firecrawl enabled':'Firecrawl disabled'}</strong><span>{fmtNumber(fc.rate_limit_per_minute)} requests/min · concurrency {fmtNumber(fc.concurrency)} · credential {fc.credential_configured?'configured':'missing'} · quota managed in Scraper Config above.</span></div></div>
   <div className="m-grid-2">
    <div className="m-detail-section"><h3>Background qualification</h3><p className="m-help">Each Provider requires one seed acquisition; Course samples are identity controls, not individual scrapes.</p><div className="m-kv-list">
     <label><span>Providers per scheduler batch</span><input aria-label="Layer 2 qualification Providers per batch" type="number" min="1" max="500" value={form.qualification_provider_wave_size} onChange={e=>setForm(x=>({...x,qualification_provider_wave_size:e.target.value}))}/></label>
