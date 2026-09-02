@@ -45,21 +45,15 @@ Deno.serve(async(req:Request)=>{
   let form:FormData;
   try{form=await req.formData()}catch{return reply(req,400,{error:"multipart_form_required"})}
 
-  const systemCode=txt(form.get("system_code")).toLowerCase();
-  const editionYear=Number(txt(form.get("edition_year")));
-  const publisherName=txt(form.get("publisher_name"));
-  const sourceUrl=txt(form.get("source_url"));
+  let systemCode=txt(form.get("system_code")).toLowerCase();
+  let editionYear=Number(txt(form.get("edition_year")));
+  let publisherName=txt(form.get("publisher_name"));
+  let sourceUrl=txt(form.get("source_url"));
   const methodologyUrl=txt(form.get("methodology_url"));
   const licensingNote=txt(form.get("licensing_note"));
   const revisionNote=txt(form.get("revision_note"));
   const file=form.get("file");
 
-  if(!["qs_wur","the_wur"].includes(systemCode)) return reply(req,400,{error:"unsupported_ranking_system"});
-  if(!Number.isInteger(editionYear)||editionYear<2000||editionYear>2100) return reply(req,400,{error:"valid_edition_year_required"});
-  if(!publisherName) return reply(req,400,{error:"publisher_name_required"});
-  if(!validHttpUrl(sourceUrl)) return reply(req,400,{error:"valid_source_url_required"});
-  if(methodologyUrl&&!validHttpUrl(methodologyUrl)) return reply(req,400,{error:"valid_methodology_url_required"});
-  if(licensingNote.length<5) return reply(req,400,{error:"licensing_access_note_required"});
   if(!(file instanceof File)) return reply(req,400,{error:"publisher_file_required"});
   if(file.size<=0||file.size>MAX_BYTES) return reply(req,400,{error:"file_size_out_of_range",max_bytes:MAX_BYTES});
 
@@ -71,16 +65,34 @@ Deno.serve(async(req:Request)=>{
   if(!allowedMimes.has(mime)) return reply(req,400,{error:"mime_extension_mismatch",mime_type:mime,extension:ext});
 
   const bytes=await file.arrayBuffer();
-  if(ext===".txt"&&systemCode!=="the_wur") return reply(req,400,{error:"txt_native_json_is_the_only"});
-  if(systemCode==="the_wur"&&(ext===".json"||ext===".txt")){
+  let detectedNativeThe=false,detectedYear:number|null=null;
+  if(ext===".json"||ext===".txt"){
     try{
       let text=new TextDecoder().decode(bytes).replace(/^\uFEFF/,"").trim();
       const hm=text.match(/^Year\s+(\d{4})\s*[\r\n]+/i);
-      if(hm){const fileYear=Number(hm[1]);if(fileYear!==editionYear)return reply(req,400,{error:"edition_year_mismatch",selected_year:editionYear,file_year:fileYear});text=text.slice(hm[0].length);}
+      if(hm){detectedYear=Number(hm[1]);text=text.slice(hm[0].length);}
       const parsed=JSON.parse(text);
-      if(String(parsed?.status||"").toLowerCase()!=="success"||!Array.isArray(parsed?.data?.data))return reply(req,400,{error:"the_native_json_shape_invalid"});
-    }catch(error){return reply(req,400,{error:"the_native_json_invalid",detail:error instanceof Error?error.message:String(error)})}
+      detectedNativeThe=String(parsed?.status||"").toLowerCase()==="success"&&Array.isArray(parsed?.data?.data);
+      if(detectedNativeThe){
+        systemCode="the_wur";
+        if(detectedYear!==null)editionYear=detectedYear;
+        publisherName="Times Higher Education";
+        sourceUrl="https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking";
+      }
+    }catch(error){
+      if(ext===".txt"||systemCode==="the_wur")return reply(req,400,{error:"the_native_json_invalid",detail:error instanceof Error?error.message:String(error)});
+    }
   }
+
+  if(!["qs_wur","the_wur"].includes(systemCode)) return reply(req,400,{error:"unsupported_ranking_system"});
+  if(!Number.isInteger(editionYear)||editionYear<2000||editionYear>2100) return reply(req,400,{error:"valid_edition_year_required"});
+  if(!publisherName) return reply(req,400,{error:"publisher_name_required"});
+  if(!validHttpUrl(sourceUrl)) return reply(req,400,{error:"valid_source_url_required"});
+  if(methodologyUrl&&!validHttpUrl(methodologyUrl)) return reply(req,400,{error:"valid_methodology_url_required"});
+  if(licensingNote.length<5) return reply(req,400,{error:"licensing_access_note_required"});
+
+  if((ext===".json"||ext===".txt")&&systemCode==="the_wur"&&!detectedNativeThe)return reply(req,400,{error:"the_native_json_shape_invalid"});
+  if(ext===".txt"&&!detectedNativeThe)return reply(req,400,{error:"txt_native_json_is_the_only"});
   const hash=await sha256Hex(bytes);
   const nonce=crypto.randomUUID();
   const path="ranking/"+systemCode+"/"+editionYear+"/"+hash.slice(0,16)+"-"+nonce+"-"+safeFileName(file.name);
