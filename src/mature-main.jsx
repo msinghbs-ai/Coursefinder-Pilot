@@ -24,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.28'
+const UI_VERSION='2.15.29'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -40,7 +40,7 @@ const NAV=[
     item('Statistics & Rankings',BarChart3,1),item('Compare',ArrowLeftRight,1),
   ]],
   ['Data Operations',[
-    item('Layer 1 — Authority',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Evidence',BookOpen,3),item('Jobs',Workflow,4),
+    item('Layer 1 — Operations',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Evidence',BookOpen,3),item('Jobs',Workflow,4),
   ]],
   ['Quality & Review',[
     item('Completeness',CheckCircle2,1),item('Review Queue',ListChecks,3),
@@ -63,7 +63,7 @@ const PAGE_META={
   Completeness:['Completeness & readiness','Operational presence signals; not truth, approval or Search admission.'],
   Evidence:['Evidence & provenance','Source snapshots, evidence artifacts and canonical consequences.'],
   'Review Queue':['Review Queue','Human-resolution workload and exception state.'],
-  'Layer 1 — Authority':['Layer 1 — Authority','Authoritative source health, regulatory ingestion progress, exceptions and controlled run actions.'],
+  'Layer 1 — Operations':['Layer 1 — Operations','Country-first regulatory, statistical and ranking ingestion operations with source health, governed runs, Evidence and reconciliation.'],
   'Layer 2 — Enrichment':['Layer 2 — Enrichment','Scoped enrichment waves, governed acquisition routes, Evidence and deterministic fall-out.'],
   'Layer 3 — AI Interpretation':['Layer 3 — AI Interpretation','Evidence-bound AI interpretation, qualified route health, usage and recent outcomes.'],
   'Layer 4 — Human Resolution':['Layer 4 — Human Resolution','Human resolution queue, effective-value decisions, audit and reversibility.'],
@@ -81,7 +81,7 @@ const PAGE_META={
 function item(label,Icon,min){return{label,Icon,min,slug:slug(label)}}
 function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
 const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
-function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Authority','layer-1-operations':'Layer 1 — Authority','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
+function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
 function App(){
   const[session,setSession]=useState(null),[booting,setBooting]=useState(true),[context,setContext]=useState(null)
@@ -139,7 +139,7 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Student Flow (PRISMS)')return <Prisms onError={onError}/>
   if(page==='Compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
   if(page==='Evidence'&&rank>=3)return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
-  if(page==='Layer 1 — Authority'&&rank>=4)return <Layer1Operations embedded/>
+  if(page==='Layer 1 — Operations'&&rank>=4)return <Layer1Operations embedded/>
   if(page==='Layer 2 — Enrichment'&&rank>=4)return <Layer2Workspace rank={rank} embedded/>
   if(page==='Layer 3 — AI Interpretation'&&rank>=3)return <div className="m-page-stack"><Layer3Workspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Layer 4 — Human Resolution'&&rank>=3)return <div className="m-page-stack"><Layer4Workspace onError={e=>onError(e?.message||String(e))}/></div>
