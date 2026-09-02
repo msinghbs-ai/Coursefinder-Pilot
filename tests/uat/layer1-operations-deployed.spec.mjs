@@ -31,10 +31,10 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   test('AU and NZ expose the production-shaped operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page)
     await expect(dialog.getByRole('heading',{name:'Layer 1 — Authority & Statistical Ingestion'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(dialog.getByText('Healthy',{exact:true}).first()).toBeVisible()
-    await expect(dialog.getByText('Running',{exact:true}).first()).toBeVisible()
-    await expect(dialog.getByText('Attention',{exact:true}).first()).toBeVisible()
-    await expect(dialog.getByText('Due',{exact:true}).first()).toBeVisible()
+    await expect(dialog.locator('.l1v2-summary.healthy')).toContainText('Healthy')
+    await expect(dialog.locator('.l1v2-summary.running')).toContainText('Running')
+    await expect(dialog.locator('.l1v2-summary.attention')).toContainText('Attention')
+    await expect(dialog.locator('.l1v2-summary.due')).toContainText('Due')
     for(const country of ['AU','NZ']){await chooseCountry(dialog,country);const card=dialog.locator(`article.l1v2-card[data-country="${country}"]`).first();await expect(card).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(card.getByRole('button',{name:'Details'})).toBeVisible();await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Reconciliation');await expect(card).toContainText('Evidence & provenance');await expect(card).toContainText('Schedule');await expect(card).toContainText('Source health')}
     await expect(dialog.getByText('Advanced source configuration')).toHaveCount(0)
     await expect(dialog.getByText(/reset database/i)).toHaveCount(0);await expect(dialog.getByText(/parser qualification/i)).toHaveCount(0)
