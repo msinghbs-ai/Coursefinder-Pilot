@@ -31,7 +31,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
   <section className="env-panel"><h3>Acquisition providers</h3><p className="env-help">Configure keys, quotas and endpoints here. Parse.bot remains disabled until its trial endpoint/key is supplied and bounded UAT passes.</p>
    <div className="env-grid">
     {parsebot&&<ProviderCard provider={parsebot} title="Parse.bot" hint="Trial adapter — configure endpoint/key, then enable only after bounded UAT." onSaved={refresh}/>}
-    {firecrawl&&<ProviderCard provider={firecrawl} title="Firecrawl" hint="Update the recorded monthly entitlement to match the increased vendor limit." quota onSaved={refresh}/>}
+    {firecrawl&&<ProviderCard provider={firecrawl} title="Firecrawl" hint="Credential and endpoint status only. Monthly entitlement and reserve are managed in Administration → Scraper Config." onSaved={refresh}/>}
     {zenrows&&<ProviderCard provider={zenrows} title="ZenRows" hint="Terminal governed fallback." onSaved={refresh}/>}
     {otherProviders.map(p=><ProviderCard key={p.id} provider={p} title={p.display_name} hint="Additional governed Layer 2 acquisition provider." onSaved={refresh}/>)}
    </div>
