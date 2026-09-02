@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION = "prisms-au-etl-v0.1.1";
+const VERSION = "prisms-au-etl-v0.1.2";
 const SOURCE_URL = "https://www.education.gov.au/download/15221/international-student-enrolment-and-commencement-data-abs-sa4-publication/44345/document/xlsx";
 const SOURCE_PAGE = "https://www.education.gov.au/international-education-data-and-research/resources/international-student-enrolment-and-commencement-data-abs-sa4";
 const SHEET = "Data";
@@ -459,6 +459,9 @@ Deno.serve(async (req: Request) => {
       p_source_id: sourceId,
       p_ok: true,
       p_error: null,
+    });
+    await rpc(client, "sync_layer1_statistical_edition", {
+      p_source_id: sourceId,
     });
 
     return json({
