@@ -199,6 +199,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(ProviderContactsWorkspace\\.jsx|provider-contacts\\.css|mature-main\\.jsx|pim-version-entry\\.js|m2-3-intelligence-entry\\.jsx)$|^src/lib/supabase\\.js$|^supabase/functions/provider-contact-(import|control)/|^supabase/migrations/.*cf_080_provider_contacts|^tests/uat/cf-080-provider-contacts-deployed\\.spec\\.mjs$|^\\.github/cf-080-provider-contacts-candidate$)'; then
             targeted=(tests/uat/cf-080-provider-contacts-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -qx '.github/cf-080-provider-contacts-candidate'; then
+            targeted=(tests/uat/cf-080-provider-contacts-deployed.spec.mjs)
+          fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
             targeted=(
               tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
