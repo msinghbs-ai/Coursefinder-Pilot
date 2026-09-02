@@ -49,6 +49,6 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
   const ctl=await fs.readFile('supabase/functions/ranking-publisher-control/index.ts','utf8')
   expect(ctl).toContain('ranking_import_validate')
   expect(ctl).toContain('ranking_import_apply')
-  expect(ctl).toContain('pipeline').toBeTruthy()
+  expect(ctl).toContain('schema("pipeline")')
  })
 })
