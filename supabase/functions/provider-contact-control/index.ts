@@ -1,0 +1,24 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+const ORIGIN="https://coursefinder-pilot.techm.workers.dev",LOCAL=new Set(["http://localhost:5173","http://127.0.0.1:5173"]);
+const cors=(req:Request)=>{const o=req.headers.get("origin")||"";const a=o===ORIGIN||LOCAL.has(o)?o:ORIGIN;return {"access-control-allow-origin":a,"access-control-allow-headers":"authorization, x-client-info, apikey, content-type","access-control-allow-methods":"POST, OPTIONS","cache-control":"no-store","vary":"origin"}};
+const json=(req:Request,s:number,b:unknown)=>new Response(JSON.stringify(b),{status:s,headers:{...cors(req),"content-type":"application/json; charset=utf-8"}});
+Deno.serve(async(req:Request)=>{
+ if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors(req)});
+ if(req.method!=="POST")return json(req,405,{error:"method_not_allowed"});
+ const auth=req.headers.get("authorization")||"";if(!auth.toLowerCase().startsWith("bearer "))return json(req,401,{error:"authentication_required"});
+ const url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+ if(!url||!anon||!service)return json(req,500,{error:"service_configuration_error"});
+ const user=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+ const {data:ctx,error:ctxErr}=await user.rpc("admin_read",{p_operation:"context",p_args:{}});
+ if(ctxErr||!ctx?.authenticated)return json(req,401,{error:"authentication_required"});
+ if(Number(ctx.role_rank||0)<5)return json(req,403,{error:"pim_admin_role_required"});
+ const actor=String(ctx.user_id||"");if(!/^[0-9a-f-]{36}$/i.test(actor))return json(req,403,{error:"operator_context_invalid"});
+ const body=await req.json().catch(()=>({})),action=String(body.action||"").toLowerCase(),batchId=String(body.batch_id||"");
+ if(action!=="apply")return json(req,400,{error:"unsupported_action"});
+ if(!/^[0-9a-f-]{36}$/i.test(batchId))return json(req,400,{error:"valid_batch_id_required"});
+ const svc=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+ const {data,error}=await svc.rpc("svc_provider_contact_import_apply",{p_batch_id:batchId,p_actor:actor});
+ if(error)return json(req,422,{ok:false,error:"provider_contact_import_apply_failed",detail:error.message,batch_id:batchId});
+ return json(req,200,{ok:true,action:"apply",batch_id:batchId,result:data});
+});
