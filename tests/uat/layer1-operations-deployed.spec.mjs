@@ -8,14 +8,14 @@ async function chooseCountry(dialog,country){
   await select.selectOption(country)
 }
 
-async function validateCountry(page,dialog,country){
+async function validateSource(page,dialog,predicate,label){
   const readResponsePromise=page.waitForResponse(response=>{
     if(!response.url().includes('/rest/v1/rpc/admin_read'))return false
     try{return response.request().postDataJSON()?.p_operation==='layer1_operations'}catch{return false}
   },{timeout:DETERMINISTIC_UI_TIMEOUT})
   await dialog.getByRole('button',{name:'Refresh'}).click()
-  const readResponse=await readResponsePromise,readData=await readResponse.json(),source=(readData?.sources||[]).find(s=>s.country_code===country)
-  expect(source?.source_id,`${country} Layer 1 source must be present in governed read contract`).toBeTruthy()
+  const readResponse=await readResponsePromise,readData=await readResponse.json(),source=(readData?.sources||[]).find(predicate)
+  expect(source?.source_id,`${label} Layer 1 source must be present in governed read contract`).toBeTruthy()
   const requestHeaders=await readResponse.request().allHeaders(),supabaseOrigin=new URL(readResponse.url()).origin
   expect(requestHeaders.authorization,'authenticated Layer 1 read must carry bearer authority').toMatch(/^Bearer /i)
   expect(requestHeaders.apikey,'authenticated Layer 1 read must carry publishable API key').toBeTruthy()
@@ -42,15 +42,27 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   }finally{await finish(testInfo,runtime)}})
 
   test('authorised Layer 1 operator performs real NZQA authority and count validation',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'NZ');const nz=dialog.locator('article.l1v2-card[data-country="NZ"]').first(),result=await validateCountry(page,dialog,'NZ')
+    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'NZ');const nz=dialog.locator('article.l1v2-card[data-country="NZ"]').first(),result=await validateSource(page,dialog,s=>s.country_code==='NZ','NZQA')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toContain('v1.0.1')
     await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'NZ');await expect(nz).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(nz).toContainText(String(result.validation.discovered.providers),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
   test('authorised Layer 1 operator performs real CRICOS authority, shape and active-count validation',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');const au=dialog.locator('article.l1v2-card[data-country="AU"]').first(),result=await validateCountry(page,dialog,'AU')
+    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');const au=dialog.locator('article.l1v2-card[data-country="AU"]').first(),result=await validateSource(page,dialog,s=>s.country_code==='AU'&&!/QILT|PRISMS/i.test(s.source_label||''),'CRICOS')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('AU');expect(result?.validation?.discovered?.active).toBeGreaterThan(25000);expect(result?.validation?.discovered?.total).toBeGreaterThanOrEqual(result.validation.discovered.active);expect(result?.validation?.count_basis).toContain('active CRICOS course rows');expect(result?.validation?.worker_version).toContain('v1.0.1')
     await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'AU');await expect(au).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(au).toContainText(Number(result.validation.discovered.active).toLocaleString(),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-au-source-validated')
+  }finally{await finish(testInfo,runtime)}})
+
+  test('AU Statistics filter exposes QILT and PRISMS as governed runnable sources',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
+    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU')
+    const datasetSelect=dialog.locator('.l1v2-filter').filter({hasText:'Dataset'}).locator('select');await datasetSelect.selectOption('statistics')
+    const cards=dialog.locator('article.l1v2-card[data-country="AU"]');await expect(cards).toHaveCount(5,{timeout:DETERMINISTIC_UI_TIMEOUT})
+    for(const label of ['QILT GOS 2025 National Report Tables','QILT SES 2024 National Report Tables','QILT GOS-L 2025 National Report Tables','QILT ESS 2025 National Report Tables','Department of Education PRISMS SA4 December 2025']){
+      const card=cards.filter({hasText:label});await expect(card).toBeVisible();await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card.getByRole('button',{name:'Run now'})).toBeVisible()
+    }
+    const qilt=await validateSource(page,dialog,s=>/QILT GOS 2025 National Report Tables/i.test(s.source_label||''),'QILT GOS');expect(qilt?.ok).toBe(true);expect(qilt?.validation?.source_system).toBe('QILT');expect(qilt?.validation?.discovered?.candidate_observations).toBeGreaterThan(100)
+    const prisms=await validateSource(page,dialog,s=>/PRISMS/i.test(s.source_label||''),'PRISMS');expect(prisms?.ok).toBe(true);expect(prisms?.validation?.source_system).toBe('PRISMS');expect(prisms?.validation?.discovered?.candidate_observations).toBeGreaterThan(1000)
+    await milestoneScreenshot(page,testInfo,'cf-066-layer1-statistics-sources')
   }finally{await finish(testInfo,runtime)}})
 
   test('anonymous browser cannot execute Layer 1 read or command contracts',async({request})=>{
