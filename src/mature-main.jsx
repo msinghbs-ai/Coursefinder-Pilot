@@ -21,11 +21,12 @@ import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
 import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
 import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'
 import PlatformMaturity from'./platform-maturity-entry'
+import EnvironmentMigrationWorkspace from'./EnvironmentMigrationWorkspace'
 import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.42'
+const UI_VERSION='2.15.43'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -94,7 +95,7 @@ function pageBreadcrumbs(page,routeParams){
  if(page==='Administration'){
   crumbs.push({label:'Administration',page:'Administration'})
   const section=routeParams?.get?.('section')||'overview'
-  const labels={overview:'Overview','sources-imports':'Sources & Imports','layer1-sources':'Layer 1 sources','layer2-sources':'Layer 2 sources','layer2-providers':'Acquisition',scheduling:'Scheduling',onboarding:'Onboarding',pim:'PIM configuration','users-roles':'Users & Roles',platform:'Platform'}
+  const labels={overview:'Overview','sources-imports':'Sources & Imports','layer1-sources':'Layer 1 sources','layer2-sources':'Layer 2 sources','layer2-providers':'Acquisition','environment-migration':'Environment & Migration',scheduling:'Scheduling',onboarding:'Onboarding',pim:'PIM configuration','users-roles':'Users & Roles',platform:'Platform'}
   if(section!=='overview')crumbs.push({label:labels[section]||section})
   return crumbs
  }
@@ -232,6 +233,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   ['layer1-sources','Layer 1 sources',Database,rank>=6],
   ['layer2-sources','Layer 2 sources',Database,rank>=4],
   ['layer2-providers','Acquisition',SlidersHorizontal,rank>=4],
+  ['environment-migration','Environment & Migration',ShieldCheck,rank>=6],
   ['scheduling','Scheduling',RefreshCw,rank>=4],
   ['onboarding','Onboarding',Workflow,rank>=4],
   ['pim','PIM configuration',Tags,rank>=5],
@@ -250,6 +252,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
   <Attention tone="info" icon={Database} title="Sources & onboarding" text="Governed sources, qualification and onboarding lifecycle." action="Open sources" onClick={()=>openRoute('Sources')}/>
   <Attention tone="info" icon={RefreshCw} title="Scheduling" text="Refresh cadence, targeted scheduling and policy controls." action="Open scheduling" onClick={()=>selectTool('scheduling')}/>
   <Attention tone="info" icon={SlidersHorizontal} title="Acquisition" text="Layer 2 source profiles, Firecrawl/direct routes and execution policy." action="Open acquisition" onClick={()=>selectTool('layer2-providers')}/>
+  {rank>=6&&<Attention tone="info" icon={ShieldCheck} title="Environment & Migration" text="Production tenancy, API credentials, quotas and migration manifest." action="Open environment" onClick={()=>selectTool('environment-migration')}/>} 
   {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>} 
   {rank>=6&&<Attention tone="info" icon={UsersRound} title="Users & Roles" text="Create users and assign governed CourseFinder roles, including PIM Operator." action="Open users & roles" onClick={()=>selectTool('users-roles')}/>} 
  </div></section>}
@@ -257,6 +260,7 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
  {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>} 
  {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>} 
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<Layer2ExecutionPolicySettings/>}</>}
+ {tool==='environment-migration'&&rank>=6&&<EnvironmentMigrationWorkspace rank={rank} onError={onError}/>}
  {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={()=>{}}/></div>}
  {tool==='onboarding'&&<div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={()=>{}}/></div>}
  {tool==='pim'&&rank>=5&&<Attributes onError={()=>{}}/>}
