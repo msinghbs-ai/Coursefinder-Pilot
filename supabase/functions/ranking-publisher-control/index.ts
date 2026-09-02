@@ -39,11 +39,7 @@ Deno.serve(async(req:Request)=>{
  const family=(sources||[]).find((s:any)=>s.metadata?.multi_year_family===true);
  const source=exact||family||sources?.[0]||null;
  const jobType=action==="apply"?"ranking_import_apply":"ranking_import_validate";
- const {data:job,error:jobErr}=await svc.schema("pipeline").from("jobs").insert({
-   job_type:jobType,domain:"ranking",source_id:source?.id||null,status:"running",requested_by:actor,
-   started_at:new Date().toISOString(),attempt_count:1,
-   payload:{import_id:imp.id,system_code:systemCode,edition_year:imp.edition_year,original_filename:imp.original_filename,action}
- }).select("id").single();
+ const {data:jobId,error:jobErr}=await svc.rpc("svc_ranking_job_start",{p_job_type:jobType,p_source_id:source?.id||null,p_requested_by:actor,p_payload:{import_id:imp.id,system_code:systemCode,edition_year:imp.edition_year,original_filename:imp.original_filename,action}});
  if(jobErr)return json(req,500,{error:"ranking_job_create_failed",detail:jobErr.message});
  try{
    const res=await fetch(url+"/functions/v1/ranking-layer1-etl",{method:"POST",headers:{
@@ -59,12 +55,12 @@ Deno.serve(async(req:Request)=>{
        updated_at:new Date().toISOString()
      }).eq("id",importId);
    }
-   await svc.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),result:out}).eq("id",job.id);
-   return json(req,200,{ok:true,action,job_id:job.id,import_id:importId,system_code:systemCode,edition_year:imp.edition_year,result:out});
+   const {error:finishErr}=await svc.rpc("svc_ranking_job_finish",{p_job_id:jobId,p_status:"completed",p_result:out,p_error_text:null});if(finishErr)throw new Error(finishErr.message||"ranking job completion failed");
+   return json(req,200,{ok:true,action,job_id:jobId,import_id:importId,system_code:systemCode,edition_year:imp.edition_year,result:out});
  }catch(e){
    const message=e instanceof Error?e.message:String(e);
-   await svc.schema("pipeline").from("jobs").update({status:"failed",completed_at:new Date().toISOString(),error_text:message}).eq("id",job.id);
+   await svc.rpc("svc_ranking_job_finish",{p_job_id:jobId,p_status:"failed",p_result:{},p_error_text:message});
    await svc.schema("ranking").from("manual_imports").update({validation_summary:{error:message,failed_at:new Date().toISOString()},updated_at:new Date().toISOString()}).eq("id",importId);
-   return json(req,422,{ok:false,error:message,job_id:job.id,import_id:importId});
+   return json(req,422,{ok:false,error:message,job_id:jobId,import_id:importId});
  }
 });
