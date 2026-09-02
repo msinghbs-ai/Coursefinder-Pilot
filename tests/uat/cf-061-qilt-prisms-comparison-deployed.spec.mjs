@@ -9,7 +9,7 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
 
  test('Provider comparison aligns QILT cards for two selected universities',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
-  await expect(page.locator('.m-release-pill')).toContainText('v2.15.28')
+  await expect(page.locator('.m-release-pill')).toContainText('v2.15.40')
   await openCatalogue(page,'#providers','Providers')
   const search=page.locator('.m-searchbox input').first()
   await search.fill('Charles Darwin University')
@@ -54,6 +54,29 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   expect(overflow.body).toBeLessThanOrEqual(overflow.viewport+2)
   expect(overflow.inner).toBeGreaterThanOrEqual(overflow.innerClient)
   await milestoneScreenshot(page,testInfo,'cf-061-provider-comparison-mobile')
+ }finally{await finish(testInfo,runtime)}})
+
+ test('Course comparison can select any university before choosing courses',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page)
+  await page.evaluate(()=>{location.hash='#compare?type=course'})
+  await expect(page.getByRole('heading',{name:'Compare courses',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const providerSearch=page.getByLabel('Search universities or providers')
+  await expect(providerSearch).toBeVisible()
+  const providerResponse=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{return r.request().postDataJSON()?.p_operation==='providers_page'}catch{return false}})
+  await providerSearch.fill('Adelaide University')
+  const providerPayload=await(await providerResponse).json()
+  const provider=(providerPayload?.items||[]).find(x=>(x.canonical_name||x.display_name||x.name)==='Adelaide University')||(providerPayload?.items||[])[0]
+  expect(provider?.id).toBeTruthy()
+  const choose=page.locator('.cf-compare-results.provider-results button').filter({hasText:'Adelaide University'}).first()
+  await expect(choose).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const coursesResponse=page.waitForResponse(r=>{if(!r.url().includes('/rest/v1/rpc/admin_read'))return false;try{const b=r.request().postDataJSON();return b?.p_operation==='courses_page'&&b?.p_args?.provider_id===String(provider.id)}catch{return false}})
+  await choose.click()
+  await expect(page.locator('.cf-provider-selected')).toContainText('Adelaide University')
+  const coursePayload=await(await coursesResponse).json()
+  expect((coursePayload?.items||[]).length).toBeGreaterThan(0)
+  expect((coursePayload?.items||[]).every(x=>x.provider_name==='Adelaide University')).toBeTruthy()
+  await expect(page.locator('.cf-compare-results.course-results button').first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await milestoneScreenshot(page,testInfo,'cf-079-course-compare-provider-first')
  }finally{await finish(testInfo,runtime)}})
 
  test('Course detail keeps QILT as Provider context and opens Course comparison',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
