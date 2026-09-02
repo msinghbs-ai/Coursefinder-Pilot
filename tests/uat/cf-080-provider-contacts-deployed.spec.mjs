@@ -37,7 +37,7 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
     ])
     expect(shell).toContain("item('Provider Contacts',UsersRound,1)")
     expect(shell).toContain("navigate?.('Provider Contacts',{provider_id:data.id})")
-    expect(workspace).toContain('provider-contact-import')
+    expect(workspace).toContain('uploadProviderContactFile')
     expect(workspace).toContain('PIM Operator or Platform Admin')
     expect(workspace).toContain('provider_ambiguous')
     expect(workspace).toContain('provider_unmatched')
