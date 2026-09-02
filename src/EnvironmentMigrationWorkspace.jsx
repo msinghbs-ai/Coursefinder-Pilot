@@ -38,6 +38,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
   </section>
 
   <IntegrationSecrets data={data} onSaved={refresh}/>
+  <ConsumerCredentials data={data} onSaved={refresh}/>
 
   <section className="env-panel"><h3>Production environment</h3><p className="env-help">These are non-secret target values used for cutover planning. Project-generated keys are shown as checklist items only.</p>
    <div className="env-settings">{settings.filter(x=>x.environment_scope!=='current').map(s=><SettingRow key={s.setting_key} setting={s} onSaved={refresh}/>)}</div>
@@ -79,6 +80,14 @@ function IntegrationSecrets({data,onSaved}){
   <article className="env-card"><strong>OpenRouter / Layer 3</strong><label>Profile<select value={profileId} onChange={e=>setProfileId(e.target.value)}>{profiles.map(p=><option key={p.id} value={p.id}>{p.code} · {p.model_identifier}</option>)}</select></label><label>API key<input type="password" value={openrouter} onChange={e=>setOpenrouter(e.target.value)} placeholder="Write-only"/></label><label>Reason<input value={reason} onChange={e=>setReason(e.target.value)}/></label><button disabled={busy||!profileId||openrouter.length<20} onClick={saveOpenRouter}>Save OpenRouter key</button></article>
   <article className="env-card"><strong>Production automation</strong><p>Create a new Production-only automation key. Do not reuse the Pilot automation credential.</p><label>New key<input type="password" value={automation} onChange={e=>setAutomation(e.target.value)} placeholder="Production only"/></label><button disabled={busy||automation.length<20} onClick={()=>setIntegration('production_automation',automation,()=>setAutomation(''))}>Store Production automation key</button></article>
  </div>{err&&<div className="env-error">{err}</div>}</section>
+}
+
+
+function ConsumerCredentials({data,onSaved}){
+ const rows=data?.consumer_credentials||[]
+ const[values,setValues]=useState({zoho_api:'',website_api:''}),[busy,setBusy]=useState(false),[err,setErr]=useState('')
+ const save=async key=>{const token=values[key]||'';if(token.length<24)return;setBusy(true);setErr('');try{const row=rows.find(x=>x.integration_key===key);const credentialName=row?.credential_name||`${key.replace('_api','')}-current`;const{data:r,error}=await supabase.functions.invoke('platform-environment-control',{body:{action:'set_consumer_token',payload:{integration_key:key,credential_name:credentialName,token}}});if(error)throw error;if(r?.error)throw new Error(r.error);setValues(v=>({...v,[key]:''}));await onSaved(human(key)+' token rotated for the current environment.')}catch(e){setErr(e.message)}finally{setBusy(false)}}
+ return <section className="env-panel"><h3>Current-environment consumer API tokens</h3><div className="env-warn"><AlertTriangle size={16}/><span>These token hashes authenticate the environment you are currently logged into. Do not enter Production tokens while using Pilot. After the Production project is created, rotate them from this same page in Production.</span></div><div className="env-grid">{rows.map(row=><article className="env-card" key={row.integration_key}><strong>{row.display_name}</strong><span>{row.configured?'Configured':'Not configured'} · {human(row.storage_mode)}</span><small>Raw token is never stored or returned. Production requires rotation because the existing hash cannot recover the Pilot token.</small><label>Set / rotate current-environment token<input type="password" autoComplete="new-password" value={values[row.integration_key]||''} onChange={e=>setValues(v=>({...v,[row.integration_key]:e.target.value}))} placeholder="Write-only bearer token"/></label><button disabled={busy||(values[row.integration_key]||'').length<24} onClick={()=>save(row.integration_key)}>Rotate token</button></article>)}</div>{err&&<div className="env-error">{err}</div>}</section>
 }
 
 function SettingRow({setting:s,onSaved}){
