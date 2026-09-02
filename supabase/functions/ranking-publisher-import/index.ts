@@ -9,6 +9,7 @@ const ALLOWED = new Map<string,Set<string>>([
   [".xlsx",new Set(["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/octet-stream"])],
   [".pdf",new Set(["application/pdf"])],
   [".json",new Set(["application/json","text/plain"])],
+  [".txt",new Set(["text/plain","application/json","application/octet-stream"])],
   [".zip",new Set(["application/zip","application/x-zip-compressed","application/octet-stream"])],
 ]);
 
@@ -70,6 +71,16 @@ Deno.serve(async(req:Request)=>{
   if(!allowedMimes.has(mime)) return reply(req,400,{error:"mime_extension_mismatch",mime_type:mime,extension:ext});
 
   const bytes=await file.arrayBuffer();
+  if(ext===".txt"&&systemCode!=="the_wur") return reply(req,400,{error:"txt_native_json_is_the_only"});
+  if(systemCode==="the_wur"&&(ext===".json"||ext===".txt")){
+    try{
+      let text=new TextDecoder().decode(bytes).replace(/^\uFEFF/,"").trim();
+      const hm=text.match(/^Year\s+(\d{4})\s*[\r\n]+/i);
+      if(hm){const fileYear=Number(hm[1]);if(fileYear!==editionYear)return reply(req,400,{error:"edition_year_mismatch",selected_year:editionYear,file_year:fileYear});text=text.slice(hm[0].length);}
+      const parsed=JSON.parse(text);
+      if(String(parsed?.status||"").toLowerCase()!=="success"||!Array.isArray(parsed?.data?.data))return reply(req,400,{error:"the_native_json_shape_invalid"});
+    }catch(error){return reply(req,400,{error:"the_native_json_invalid",detail:error instanceof Error?error.message:String(error)})}
+  }
   const hash=await sha256Hex(bytes);
   const nonce=crypto.randomUUID();
   const path="ranking/"+systemCode+"/"+editionYear+"/"+hash.slice(0,16)+"-"+nonce+"-"+safeFileName(file.name);
