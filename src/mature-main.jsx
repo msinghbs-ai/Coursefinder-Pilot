@@ -260,38 +260,68 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
 }
 function RankingImportPanel({onError,routeParams}){
  const presetSystem=routeParams?.get?.('system')==='the_wur'?'the_wur':'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
- const empty={systemCode:presetSystem,editionYear:presetYear,publisherName:presetSystem==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:rankingSourceUrl(presetSystem),methodologyUrl:'',licensingNote:'Authorised publisher file obtained for CourseFinder ingestion.',revisionNote:''}
- const[form,setForm]=useState(empty),[file,setFile]=useState(null),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([])
- const load=()=>api.rankingImports({limit:20}).then(x=>setImports(x?.items||[])).catch(e=>onError?.(e.message))
+ const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:system==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher file obtained for CourseFinder ingestion.',revisionNote:''})
+ const[form,setForm]=useState(makeForm()),[file,setFile]=useState(null),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([]),[detected,setDetected]=useState(null),[advanced,setAdvanced]=useState(false)
+ const load=()=>api.rankingImports({limit:12}).then(x=>setImports(x?.items||[])).catch(e=>onError?.(e.message))
  useEffect(()=>{load()},[])
  const patch=(k,v)=>setForm(x=>({...x,[k]:v}))
+ const chooseSystem=v=>setForm(x=>({...x,systemCode:v,editionYear:String(rankingDefaultYear(v)),publisherName:v==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:rankingSourceUrl(v)}))
+ async function inspectFile(next){
+  setFile(next);setSaved('');setDetected(null)
+  if(!next||!/\.(txt|json)$/i.test(next.name))return
+  try{
+   const head=await next.slice(0,256*1024).text(),clean=head.replace(/^\uFEFF/,'').trim(),m=clean.match(/^Year\s+(\d{4})\s*[\r\n]+/i),year=m?Number(m[1]):null,body=m?clean.slice(m[0].length):clean
+   const payload=JSON.parse(body)
+   if(String(payload?.status||'').toLowerCase()==='success'&&Array.isArray(payload?.data?.data)){
+    const y=year||Number(form.editionYear)||2026
+    setDetected({system:'Times Higher Education',year:y,format:'Native JSON/TXT',rows:payload.data.data.length})
+    setForm(x=>({...x,systemCode:'the_wur',editionYear:String(y),publisherName:'Times Higher Education',sourceUrl:rankingSourceUrl('the_wur')}))
+   }
+  }catch{}
+ }
+ function readableError(err){
+  const raw=String(err?.message||err||'Upload failed')
+  const map={txt_native_json_is_the_only:'This TXT file is supported only when it contains a Times Higher Education native JSON export.',edition_year_mismatch:'The selected edition does not match the year declared in the file.',the_native_json_invalid:'The file is not a valid Times Higher Education native JSON export.',the_native_json_shape_invalid:'The JSON file does not contain the expected Times Higher Education data structure.'}
+  return map[raw]||raw.replaceAll('_',' ')
+ }
  async function submit(e){
   e.preventDefault();setSaved('')
   if(!file){onError?.('Choose an authorised publisher file.');return}
   setBusy(true)
   try{
    const r=await api.uploadRankingPublisherFile({...form,editionYear:Number(form.editionYear),file})
-   setSaved(r?.duplicate?'Duplicate file already registered; no new Evidence created.':'Publisher file uploaded and registered as private Evidence.')
-   setFile(null);e.currentTarget.reset();setForm(x=>({...x,sourceUrl:'',methodologyUrl:'',revisionNote:''}));await load()
-  }catch(err){onError?.(err?.message||String(err))}
+   setSaved(r?.duplicate?'Duplicate file already registered; existing Evidence retained.':'Publisher file registered as private Evidence.')
+   setFile(null);setDetected(null);e.currentTarget.reset();setForm(makeForm(form.systemCode,form.editionYear));await load()
+  }catch(err){onError?.(readableError(err))}
   finally{setBusy(false)}
  }
- return <div className="m-page-stack">
-  <section className="m-panel"><PanelTitle icon={FileCheck2} title="Historical ranking publisher files" subtitle="Use only an authorised QS/THE artifact when automated publisher retrieval is restricted."/>
-   <form className="m-ranking-import-form" onSubmit={submit}>
-    <label>Ranking system<select value={form.systemCode} onChange={e=>{const v=e.target.value;setForm(x=>({...x,systemCode:v,editionYear:String(rankingDefaultYear(v)),publisherName:v==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:rankingSourceUrl(v)}))}}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education World University Rankings</option></select></label>
-    <label>Edition year<select value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)}>{rankingYearOptions(form.systemCode).map((y,i)=><option key={y} value={y}>{y}{i===0?' · current':''}</option>)}</select></label>
-    <label>Publisher<input value={form.publisherName} onChange={e=>patch('publisherName',e.target.value)} required/></label>
-    <label className="wide">Publisher/source URL<input type="url" value={form.sourceUrl} onChange={e=>patch('sourceUrl',e.target.value)} placeholder="https://…" required/></label>
-    <label className="wide">Methodology URL<input type="url" value={form.methodologyUrl} onChange={e=>patch('methodologyUrl',e.target.value)} placeholder="Optional"/></label>
-    <label className="wide">Access / licence note<textarea value={form.licensingNote} onChange={e=>patch('licensingNote',e.target.value)} required/></label>
-    <label className="wide">Revision note<input value={form.revisionNote} onChange={e=>patch('revisionNote',e.target.value)} placeholder="Optional edition/correction note"/></label>
-    <label className="wide">Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>setFile(e.target.files?.[0]||null)} required/><small>Private Evidence · QS compact CSV/XLSX and THE native JSON/TXT or compact CSV supported · maximum 50 MB.</small></label>
-    <div className="wide m-ranking-import-actions"><button className="m-primary" disabled={busy}>{busy?'Uploading…':'Upload & register Evidence'}</button>{saved&&<span>{saved}</span>}</div>
+ return <div className="m-page-stack m-ranking-import-page">
+  <section className="m-panel m-ranking-import-compact">
+   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Administration / Sources & Imports</div><h2>Register ranking publisher file</h2><p>Drop an authorised QS/THE file. Native THE JSON/TXT declares its year in the first line and is detected automatically.</p></div><FileCheck2 size={22}/></div>
+   <form className="m-ranking-import-form compact" onSubmit={submit}>
+    <label className="m-ranking-drop">
+      <input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>inspectFile(e.target.files?.[0]||null)} required/>
+      <FileCheck2 size={20}/><span><b>{file?file.name:'Choose publisher file'}</b><small>{file?Math.max(1,Math.round(file.size/1024))+' KB · ready to register':'CSV/XLSX, THE native JSON/TXT, PDF/ZIP Evidence · max 50 MB'}</small></span>
+    </label>
+    {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'}</small></span></div>}
+    <div className="m-ranking-essentials">
+      <label>Ranking system<select value={form.systemCode} onChange={e=>chooseSystem(e.target.value)}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education</option></select></label>
+      <label>Edition year<input type="number" min="2000" max="2100" value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)} required/></label>
+    </div>
+    <button type="button" className="m-ranking-advanced-toggle" aria-expanded={advanced} onClick={()=>setAdvanced(x=>!x)}><Settings2 size={14}/>{advanced?'Hide metadata':'Advanced metadata'}<ChevronDown size={14}/></button>
+    {advanced&&<div className="m-ranking-advanced">
+      <label>Publisher<input value={form.publisherName} onChange={e=>patch('publisherName',e.target.value)} required/></label>
+      <label>Publisher/source URL<input type="url" value={form.sourceUrl} onChange={e=>patch('sourceUrl',e.target.value)} placeholder="https://…" required/></label>
+      <label>Methodology URL<input type="url" value={form.methodologyUrl} onChange={e=>patch('methodologyUrl',e.target.value)} placeholder="Optional"/></label>
+      <label>Access / licence note<input value={form.licensingNote} onChange={e=>patch('licensingNote',e.target.value)} required/></label>
+      <label className="wide">Revision note<input value={form.revisionNote} onChange={e=>patch('revisionNote',e.target.value)} placeholder="Optional edition/correction note"/></label>
+    </div>}
+    <div className="m-ranking-import-actions"><button className="m-primary" disabled={busy}>{busy?'Registering…':'Register Evidence'}</button>{saved&&<span className="success">{saved}</span>}</div>
    </form>
   </section>
-  <section className="m-panel"><PanelTitle icon={History} title="Recent ranking imports" subtitle="Upload is only the first state; validation, parsing, reconciliation and apply remain separate."/>
-   <div className="m-ranking-import-list">{imports.length?imports.map(x=><article key={x.id}><div><strong>{x.system_code?.toUpperCase()} {x.edition_year}</strong><span>{x.original_filename}</span></div><div><b>{humanise(x.status)}</b><small>{x.uploaded_at?new Date(x.uploaded_at).toLocaleString():'—'}</small></div></article>):<EmptyState icon={FileCheck2} title="No ranking files uploaded" text="Historical publisher files will appear here after governed registration."/>}</div>
+  <section className="m-panel m-ranking-import-history">
+   <div className="m-ranking-history-head"><div><h3>Recent ranking imports</h3><p>Registration history; validation and APPLY remain governed separately.</p></div><span>{imports.length+' recent'}</span></div>
+   <div className="m-ranking-import-list">{imports.length?imports.slice(0,8).map(x=><article key={x.id}><div><strong>{String(x.system_code||'').toUpperCase()+' '+x.edition_year}</strong><span>{x.original_filename}</span></div><div><b>{humanise(x.status)}</b><small>{x.uploaded_at?new Date(x.uploaded_at).toLocaleString():'—'}</small></div></article>):<EmptyState icon={FileCheck2} title="No ranking files uploaded" text="Historical publisher files will appear here after governed registration."/>}</div>
   </section>
  </div>
 }
