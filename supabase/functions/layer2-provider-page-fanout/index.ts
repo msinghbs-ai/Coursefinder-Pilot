@@ -22,7 +22,7 @@ function htmlFrom(raw:string,mime:string){
 }
 function abs(base:string,href:string){try{return new URL(href,base).toString()}catch{return null}}
 function attr(tag:string,name:string){const m=tag.match(new RegExp(name+"\\s*=\\s*([\"'])([\\s\\S]*?)\\1","i"));return m?clean(m[2]):null}
-function logoCandidates(html:string,base:string){
+function logoCandidates(html:string,base:string,providerName:string){\n const providerTokens=clean(providerName).toLowerCase().split(/[^a-z0-9]+/).filter((x:string)=>x.length>=4&&!["university","college","limited","australia","australian"].includes(x));\n const initials=clean(providerName).split(/[^A-Za-z0-9]+/).filter((x:string)=>x.length>2&&!/^(university|college|limited|australia|australian)$/i.test(x)).map((x:string)=>x[0]).join("").toLowerCase();
  const out:any[]=[];
  for(const m of html.matchAll(/<img\b[^>]*>/gi)){
   const tag=m[0],src=attr(tag,"src")||attr(tag,"data-src")||attr(tag,"data-lazy-src");if(!src)continue;
@@ -60,7 +60,7 @@ Deno.serve(async(req:Request)=>{
  const{data:blob,error:de}=await svc.storage.from(BUCKET).download(String(ctx.storage_path||""));if(de||!blob)return J(req,500,{error:"evidence_download_failed",detail:de?.message||null});
  const raw=await blob.text(),html=htmlFrom(raw,String(ctx.mime_type||""));if(!html)return J(req,422,{error:"html_not_available"});
  const base=String(ctx.source_url||"");
- const logos=logoCandidates(html,base),links=scholarshipLinks(html,base);
+ const logos=logoCandidates(html,base,String(ctx.provider_name||"")),links=scholarshipLinks(html,base);
  let applied:any;try{applied=await rpc(svc,"layer2_provider_page_fanout_apply",{p_shared_fetch_id:sfid,p_logo_candidates:logos,p_scholarship_links:links})}catch(e:any){return J(req,500,{error:"fanout_apply_failed",detail:String(e.message)})}
  return J(req,200,{ok:true,worker_version:VERSION,shared_fetch_id:sfid,provider_id:ctx.provider_id,logo_candidates:logos.length,scholarship_links:links.length,top_logo:logos[0]||null,applied});
 });
