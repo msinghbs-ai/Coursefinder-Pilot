@@ -27,11 +27,28 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
   const box=await page.locator('.m-ranking-import-compact').boundingBox();expect(box?.height||9999).toBeLessThan(520)
  }finally{await finish(testInfo,runtime)}})
 
+ test('existing uploaded ranking import can be parsed and records a governed job',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page)
+  await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
+  const row=page.locator('.m-ranking-import-row').filter({hasText:'THE 2015'}).first()
+  await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const action=row.getByRole('button',{name:'Parse & validate'})
+  if(await action.count()){await action.click();await expect(row).toContainText('Validated',{timeout:30000});await expect(row).toContainText(/parsed observations/i)}
+  else await expect(row).toContainText(/Validated|Applied|Needs review/i)
+  await page.getByRole('button',{name:'Jobs'}).click()
+  await expect(page).toHaveURL(/#jobs/)
+  await expect(page.locator('body')).toContainText(/ranking_import_validate|Ranking/i,{timeout:DETERMINISTIC_UI_TIMEOUT})
+ }finally{await finish(testInfo,runtime)}})
+
  test('service source derives THE native JSON system/year from file content',async()=>{
   const src=await fs.readFile('supabase/functions/ranking-publisher-import/index.ts','utf8')
   expect(src).toContain('detectedNativeThe')
   expect(src).toContain('systemCode="the_wur"')
   expect(src).toContain('editionYear=detectedYear')
   expect(src).toContain('Times Higher Education')
+  const ctl=await fs.readFile('supabase/functions/ranking-publisher-control/index.ts','utf8')
+  expect(ctl).toContain('ranking_import_validate')
+  expect(ctl).toContain('ranking_import_apply')
+  expect(ctl).toContain('pipeline').toBeTruthy()
  })
 })
