@@ -30,10 +30,11 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
 
   test('Provider deep-link contract and governed client wiring are retained',async()=>{
     const fs=await import('node:fs/promises')
-    const [shell,workspace,client]=await Promise.all([
+    const [shell,workspace,client,layer4]=await Promise.all([
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('src/ProviderContactsWorkspace.jsx','utf8'),
       fs.readFile('src/lib/supabase.js','utf8'),
+      fs.readFile('src/m2-3-intelligence-entry.jsx','utf8'),
     ])
     expect(shell).toContain("item('Provider Contacts',UsersRound,1)")
     expect(shell).toContain("navigate?.('Provider Contacts',{provider_id:data.id})")
@@ -47,6 +48,10 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
     expect(client).toContain("invoke('provider-contact-import'")
     expect(client).toContain("invoke('provider-contact-control'")
     expect(client).toContain("provider_contact_export_audit")
+    expect(workspace).toContain('contact reconciliation item(s) parked in Layer 4')
+    expect(layer4).toContain("provider_contact_reconciliation_decide")
+    expect(layer4).toContain("Map & apply")
+    expect(layer4).toContain("Keep separate")
   })
 
   test('Provider Contacts remains contained at tablet and mobile widths',async({page},testInfo)=>{
@@ -71,6 +76,18 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
         expect(modal?.width||9999).toBeLessThanOrEqual(viewport.width)
         await page.locator('.pc-modal-head > button').click()
       }
+    }finally{await finish(testInfo,runtime)}
+  })
+
+
+  test('Layer 4 route exposes Provider Contact reconciliation workload',async({page},testInfo)=>{
+    const runtime=observeRuntime(page)
+    try{
+      await loginAsUatUser(page)
+      await page.goto(new URL('/#layer-4-review',process.env.UAT_BASE_URL).toString())
+      await expect(page.getByRole('heading',{name:'Layer 4 — Human Resolution'}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(page.getByText('Provider Contact reconciliation').first()).toBeVisible()
+      await expect(page.getByText('Duplicate, Provider ambiguity or import/PIM conflict.')).toBeVisible()
     }finally{await finish(testInfo,runtime)}
   })
 
