@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION="layer2-provider-page-fanout-v1.2";
+const VERSION="layer2-provider-page-fanout-v1.3";
 const BUCKET="evidence";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 
@@ -64,9 +64,12 @@ function logoCandidates(html:string,base:string,providerName:string){
     const alt=clean(attr(tag,"alt")||""),cls=clean(attr(tag,"class")||""),id=clean(attr(tag,"id")||"");
     const u=abs(base,src);if(!u)continue;
     const s=(u+" "+alt+" "+cls+" "+id).toLowerCase(),compact=s.replace(/[^a-z0-9]/g,"");
+    const logoSemantic=/logo|brand|wordmark|crest/.test(s);
+    const navSemantic=/header|navbar|navigation|site-logo|navigationlogo/.test(s);
+    if(!logoSemantic&&!navSemantic)continue;
     let score=0.25;
-    if(/logo|brand|wordmark|crest/.test(s))score+=0.25;
-    if(/header|navbar|navigation|site-logo|navigationlogo/.test(s))score+=0.30;
+    if(logoSemantic)score+=0.25;
+    if(navSemantic)score+=0.30;
     if(sig.words.some((t:string)=>s.includes(t)))score+=0.25;
     if(sig.initials.length>=2&&compact.includes(sig.initials))score+=0.15;
     if(/footer/.test(s))score-=0.15;
