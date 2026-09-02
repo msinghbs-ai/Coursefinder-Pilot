@@ -23,7 +23,7 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
       await expect(page.getByText('Show, reorder and resize the grid. Saved for this browser.')).toBeVisible()
       await page.getByRole('button',{name:/Import CSV/}).click()
       await expect(page.getByRole('heading',{name:'Provider Contact CSV'})).toBeVisible()
-      await expect(page.getByText('9/1/2026 = 1 Sep 2026')).toBeVisible()
+      await expect(page.locator('option').filter({hasText:'9/1/2026 = 1 Sep 2026'})).toHaveCount(1)
       await expect(page.getByText(/Private Evidence upload/)).toBeVisible()
     }finally{await finish(testInfo,runtime)}
   })
