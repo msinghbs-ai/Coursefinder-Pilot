@@ -139,7 +139,7 @@ function App(){
       <div className="m-nav-scroll"><nav className="m-nav">{NAV.map(([group,items])=>{const allowed=items.filter(i=>rank>=i.min);if(!allowed.length)return null;return <div className="m-nav-group" key={group}><div className="m-nav-label">{group}</div>{allowed.map(({label,Icon})=><button key={label} title={collapsed?label:undefined} className={`m-nav-item ${page===label?'active':''}`} onClick={()=>go(label)}><Icon size={17}/><span>{label}</span></button>)}</div>})}</nav></div>
       <div className="m-account">
         <div className="m-avatar">{(session.user.email?.[0]||'U').toUpperCase()}</div>
-        <div className="m-account-copy"><strong>{humanise(context?.role||'Authorised user')}</strong><small>{session.user.email}</small></div>
+        <div className="m-account-copy"><strong>{roleLabel(context?.role||'Authorised user')}</strong><small>{session.user.email}</small></div>
         <button className="m-icon-button" title="Sign out" onClick={()=>supabase.auth.signOut()}><LogOut size={17}/></button>
       </div>
     </aside>
@@ -147,7 +147,7 @@ function App(){
     <main className="m-main" ref={mainRef}>
       <header className="m-topbar">
         <div className="m-title-wrap"><button className="m-mobile-menu" onClick={()=>setNavOpen(true)}><Menu size={20}/></button><div><div className="m-eyebrow">Canonical governance · governed browser RPC</div><AppBreadcrumbs page={page} routeParams={routeParams} navigate={go}/><h1>{title}</h1><p>{subtitle}</p></div></div>
-        <div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/>v{UI_VERSION}</span><span className="m-role-pill">{humanise(context?.role||'Loading')}</span></div>
+        <div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/>v{UI_VERSION}</span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></div>
       </header>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
       <WorkspaceErrorBoundary routeKey={`${page}?${routeParams.toString()}`} onError={setError} onRecover={()=>go('Dashboard')}><Page page={page} routeParams={routeParams} rank={rank} onError={setError} navigate={go}/></WorkspaceErrorBoundary>
@@ -562,6 +562,7 @@ function EmptyInline({text}){return <div className="m-empty-inline"><Database si
 function useDebounce(value,delay){const[v,setV]=useState(value);useEffect(()=>{const t=setTimeout(()=>setV(value),delay);return()=>clearTimeout(t)},[value,delay]);return v}
 function rowsOf(data){if(Array.isArray(data))return data;return data?.items??data?.rows??data?.data??[]}
 function normaliseOptions(list){if(!Array.isArray(list))return[];return list.map(x=>{if(x==null)return null;if(typeof x!=='object')return opt(String(x),humanise(x));const value=x.id??x.code??x.value??x.name??x.label;return opt(String(value),x.name??x.label??humanise(value),x.code&&x.code!==value?x.code:'')}).filter(Boolean)}
+function roleLabel(value){return value==='pim_admin'?'PIM Operator':humanise(value)}
 function humanise(v){if(v==null)return'—';return String(v).replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}
 function fmtNumber(v){const n=Number(v);return Number.isFinite(n)?n.toLocaleString():'—'}
 function fmtDate(v){const d=new Date(v);return Number.isNaN(+d)?String(v):d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'})}
