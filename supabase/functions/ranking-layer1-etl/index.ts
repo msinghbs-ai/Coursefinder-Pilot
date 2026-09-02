@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION="ranking-layer1-etl-v1.1.0";
+const VERSION="ranking-layer1-etl-v1.2.0";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -88,7 +88,9 @@ Deno.serve(async(req:Request)=>{
   }
   if(!rows.length)throw new Error("publisher source parsed zero ranking observations");
   const unknown=rows.filter(x=>x.rank_status==="unknown").length,indicatorCells=rows.reduce((n,r)=>n+Object.values(r.indicators||{}).filter(v=>v!==null).length,0);
-  if(mode!=="apply")return json({ok:true,mode:"dry_run",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,sample:rows.slice(0,5).map(({source_row_payload,...x})=>x),workerVersion:VERSION});
+  let reconciliationPreview=null;
+  if(systemCode==="qs_wur"){const {data:preview,error:previewErr}=await service.rpc("svc_ranking_reconciliation_preview",{p_rows:rows,p_country_code:"AU"});if(previewErr)throw previewErr;reconciliationPreview=preview;}
+  if(mode!=="apply")return json({ok:true,mode:"dry_run",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,reconciliationPreview,sample:rows.slice(0,5).map(({source_row_payload,...x})=>x),workerVersion:VERSION});
   if(acquisitionMode!=="manual_file")return json({ok:false,error:"Direct QS JSON APPLY is intentionally disabled until the first dry-run and reuse/access review are accepted. Evidence has been retained; no ranking observations were written.",dryRunRequired:true,systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,sourceHash,evidenceArtifactId,workerVersion:VERSION},409);
   const {data:applied,error:applyErr}=await service.rpc("svc_ranking_ingest_apply",{p_system_code:systemCode,p_edition_year:editionYear,p_source_url:sourceUrl,p_methodology_url:null,p_source_artifact_id:evidenceArtifactId,p_source_fingerprint:sourceHash,p_source_revision:"initial",p_rows:rows});if(applyErr)throw applyErr;
   return json({ok:true,mode:"apply",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,reconciliation:applied,workerVersion:VERSION});
