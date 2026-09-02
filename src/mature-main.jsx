@@ -24,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.35'
+const UI_VERSION='2.15.36'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -86,6 +86,26 @@ function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').repla
 const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
 function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
+function pageBreadcrumbs(page,routeParams){
+ const crumbs=[{label:'Home',page:'Dashboard'}]
+ if(page==='Dashboard')return[]
+ if(page==='Administration'){
+  crumbs.push({label:'Administration',page:'Administration'})
+  const section=routeParams?.get?.('section')||'overview'
+  const labels={overview:'Overview','sources-imports':'Sources & Imports','layer1-sources':'Layer 1 sources','layer2-sources':'Layer 2 sources','layer2-providers':'Acquisition',scheduling:'Scheduling',onboarding:'Onboarding',pim:'PIM configuration',platform:'Platform'}
+  if(section!=='overview')crumbs.push({label:labels[section]||section})
+  return crumbs
+ }
+ crumbs.push({label:page})
+ return crumbs
+}
+
+function AppBreadcrumbs({page,routeParams,navigate}){
+ const crumbs=pageBreadcrumbs(page,routeParams)
+ if(!crumbs.length)return null
+ return <nav className="m-breadcrumbs" aria-label="Breadcrumb">{crumbs.map((x,i)=><React.Fragment key={x.label}><button disabled={!x.page||i===crumbs.length-1} onClick={()=>x.page&&navigate(x.page)}>{x.label}</button>{i<crumbs.length-1&&<span>/</span>}</React.Fragment>)}</nav>
+}
+
 class WorkspaceErrorBoundary extends React.Component{
   constructor(props){super(props);this.state={error:null}}
   static getDerivedStateFromError(error){return{error}}
@@ -126,7 +146,7 @@ function App(){
     {navOpen&&<button className="m-backdrop" onClick={()=>setNavOpen(false)} aria-label="Close navigation"/>}
     <main className="m-main" ref={mainRef}>
       <header className="m-topbar">
-        <div className="m-title-wrap"><button className="m-mobile-menu" onClick={()=>setNavOpen(true)}><Menu size={20}/></button><div><div className="m-eyebrow">Canonical governance · governed browser RPC</div><h1>{title}</h1><p>{subtitle}</p></div></div>
+        <div className="m-title-wrap"><button className="m-mobile-menu" onClick={()=>setNavOpen(true)}><Menu size={20}/></button><div><div className="m-eyebrow">Canonical governance · governed browser RPC</div><AppBreadcrumbs page={page} routeParams={routeParams} navigate={go}/><h1>{title}</h1><p>{subtitle}</p></div></div>
         <div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/>v{UI_VERSION}</span><span className="m-role-pill">{humanise(context?.role||'Loading')}</span></div>
       </header>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
