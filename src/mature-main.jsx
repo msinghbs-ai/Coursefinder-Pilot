@@ -24,7 +24,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.31'
+const UI_VERSION='2.15.32'
 const PAGE_SIZE=50
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
@@ -263,7 +263,7 @@ function RankingImportPanel({onError,routeParams}){
     <label className="wide">Methodology URL<input type="url" value={form.methodologyUrl} onChange={e=>patch('methodologyUrl',e.target.value)} placeholder="Optional"/></label>
     <label className="wide">Access / licence note<textarea value={form.licensingNote} onChange={e=>patch('licensingNote',e.target.value)} required/></label>
     <label className="wide">Revision note<input value={form.revisionNote} onChange={e=>patch('revisionNote',e.target.value)} placeholder="Optional edition/correction note"/></label>
-    <label className="wide">Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.zip" onChange={e=>setFile(e.target.files?.[0]||null)} required/><small>Private Evidence · CSV/XLSX/PDF/JSON/ZIP · maximum 50 MB.</small></label>
+    <label className="wide">Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>setFile(e.target.files?.[0]||null)} required/><small>Private Evidence · CSV/XLSX/PDF/JSON/TXT/ZIP · native THE JSON/TXT supported · maximum 50 MB.</small></label>
     <div className="wide m-ranking-import-actions"><button className="m-primary" disabled={busy}>{busy?'Uploading…':'Upload & register Evidence'}</button>{saved&&<span>{saved}</span>}</div>
    </form>
   </section>
