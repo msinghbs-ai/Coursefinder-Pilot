@@ -46,7 +46,7 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     await page.goto(new URL('/#administration?section=layer1-sources',process.env.UAT_BASE_URL).toString())
     const shell=page.locator('.l1s-shell')
     await expect(shell).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.locator('.m-release-pill')).toContainText('v2.15.30')
+    await expect(page.locator('.m-release-pill')).toContainText(/^v2\.15\.\d+$/)
     await expect(shell.getByRole('heading',{name:'Layer 1 source configuration'})).toBeVisible()
     const card=shell.locator('.l1s-card').first();await expect(card).toBeVisible()
     await expect(card.getByText('Source & authority',{exact:true})).toBeVisible()
@@ -77,8 +77,8 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU')
     const datasetSelect=dialog.locator('.l1v2-filter').filter({hasText:'Dataset'}).locator('select');await datasetSelect.selectOption('statistics')
     const cards=dialog.locator('article.l1v2-card[data-country="AU"]');await expect(cards).toHaveCount(5,{timeout:DETERMINISTIC_UI_TIMEOUT})
-    for(const label of ['QILT GOS 2025 National Report Tables','QILT SES 2024 National Report Tables','QILT GOS-L 2025 National Report Tables','QILT ESS 2025 National Report Tables','Department of Education PRISMS SA4 December 2025']){
-      const card=cards.filter({hasText:label});await expect(card).toBeVisible();await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card.getByRole('button',{name:'Details'})).toBeVisible()
+    for(const [label,edition] of [['QILT Graduate Outcomes Survey','2025'],['QILT Student Experience Survey','2024'],['QILT Graduate Outcomes Survey – Longitudinal','2025'],['QILT Employer Satisfaction Survey','2025'],['PRISMS International Student Flow','2025-12']]){
+      const card=cards.filter({hasText:label});await expect(card).toBeVisible();await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card).toContainText(`current ${edition}`);await expect(card.getByRole('button',{name:'Details'})).toBeVisible();await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Edition history & comparison retention');await expect(card).toContainText('retained rather than overwritten')
     }
     const qilt=await validateSource(page,dialog,s=>/QILT GOS 2025 National Report Tables/i.test(s.source_label||''),'QILT GOS');expect(qilt?.ok).toBe(true);expect(qilt?.validation?.source_system).toBe('QILT');expect(qilt?.validation?.discovered?.candidate_observations).toBeGreaterThan(100)
     const prisms=await validateSource(page,dialog,s=>/PRISMS/i.test(s.source_label||''),'PRISMS');expect(prisms?.ok).toBe(true);expect(prisms?.validation?.source_system).toBe('PRISMS');expect(prisms?.validation?.discovered?.candidate_observations).toBeGreaterThan(1000)
