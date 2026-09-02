@@ -26,6 +26,9 @@ import'./mature.css'
 
 const UI_VERSION='2.15.34'
 const PAGE_SIZE=50
+const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
+const rankingDefaultYear=system=>rankingYearOptions(system)[0]
+const rankingSourceUrl=system=>system==='the_wur'?'https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking':'https://www.topuniversities.com/world-university-rankings'
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
 
@@ -236,8 +239,8 @@ function AdministrationHome({rank,navigate,routeParams,onError}){
  </div>
 }
 function RankingImportPanel({onError,routeParams}){
- const presetSystem=routeParams?.get?.('system')==='the_wur'?'the_wur':'qs_wur',presetYear=routeParams?.get?.('year')||'2026'
- const empty={systemCode:presetSystem,editionYear:presetYear,publisherName:presetSystem==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:'',methodologyUrl:'',licensingNote:'Authorised publisher file obtained for CourseFinder ingestion.',revisionNote:''}
+ const presetSystem=routeParams?.get?.('system')==='the_wur'?'the_wur':'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
+ const empty={systemCode:presetSystem,editionYear:presetYear,publisherName:presetSystem==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:rankingSourceUrl(presetSystem),methodologyUrl:'',licensingNote:'Authorised publisher file obtained for CourseFinder ingestion.',revisionNote:''}
  const[form,setForm]=useState(empty),[file,setFile]=useState(null),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([])
  const load=()=>api.rankingImports({limit:20}).then(x=>setImports(x?.items||[])).catch(e=>onError?.(e.message))
  useEffect(()=>{load()},[])
@@ -256,14 +259,14 @@ function RankingImportPanel({onError,routeParams}){
  return <div className="m-page-stack">
   <section className="m-panel"><PanelTitle icon={FileCheck2} title="Historical ranking publisher files" subtitle="Use only an authorised QS/THE artifact when automated publisher retrieval is restricted."/>
    <form className="m-ranking-import-form" onSubmit={submit}>
-    <label>Ranking system<select value={form.systemCode} onChange={e=>{const v=e.target.value;patch('systemCode',v);patch('publisherName',v==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds')}}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education World University Rankings</option></select></label>
-    <label>Edition year<input type="number" min="2000" max="2100" value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)} required/></label>
+    <label>Ranking system<select value={form.systemCode} onChange={e=>{const v=e.target.value;setForm(x=>({...x,systemCode:v,editionYear:String(rankingDefaultYear(v)),publisherName:v==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:rankingSourceUrl(v)}))}}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education World University Rankings</option></select></label>
+    <label>Edition year<select value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)}>{rankingYearOptions(form.systemCode).map((y,i)=><option key={y} value={y}>{y}{i===0?' · current':''}</option>)}</select></label>
     <label>Publisher<input value={form.publisherName} onChange={e=>patch('publisherName',e.target.value)} required/></label>
     <label className="wide">Publisher/source URL<input type="url" value={form.sourceUrl} onChange={e=>patch('sourceUrl',e.target.value)} placeholder="https://…" required/></label>
     <label className="wide">Methodology URL<input type="url" value={form.methodologyUrl} onChange={e=>patch('methodologyUrl',e.target.value)} placeholder="Optional"/></label>
     <label className="wide">Access / licence note<textarea value={form.licensingNote} onChange={e=>patch('licensingNote',e.target.value)} required/></label>
     <label className="wide">Revision note<input value={form.revisionNote} onChange={e=>patch('revisionNote',e.target.value)} placeholder="Optional edition/correction note"/></label>
-    <label className="wide">Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>setFile(e.target.files?.[0]||null)} required/><small>Private Evidence · CSV/XLSX/PDF/JSON/TXT/ZIP · native THE JSON/TXT supported · maximum 50 MB.</small></label>
+    <label className="wide">Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>setFile(e.target.files?.[0]||null)} required/><small>Private Evidence · QS compact CSV/XLSX and THE native JSON/TXT or compact CSV supported · maximum 50 MB.</small></label>
     <div className="wide m-ranking-import-actions"><button className="m-primary" disabled={busy}>{busy?'Uploading…':'Upload & register Evidence'}</button>{saved&&<span>{saved}</span>}</div>
    </form>
   </section>
