@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION="layer2-provider-page-fanout-v1.6";
+const VERSION="layer2-provider-page-fanout-v1.7";
 const BUCKET="evidence";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 
@@ -82,6 +82,18 @@ function logoCandidates(html:string,base:string,providerName:string){
     if(src)add(src,0.35,"img",alt,clean([id,cls].filter(Boolean).join(" ")));
     const srcset=attr(tag,"data-srcset")||attr(tag,"srcset");
     if(srcset){const first=clean(srcset.split(",")[0]?.trim().split(/\s+/)[0]||"");if(first)add(first,0.32,"img-srcset",alt,clean([id,cls].filter(Boolean).join(" ")))}
+    const altNorm=alt.toLowerCase(),nameNorm=clean(providerName).toLowerCase();
+    const providerAlt=!!altNorm&&(altNorm===nameNorm||altNorm.includes(nameNorm)||nameNorm.includes(altNorm));
+    if(providerAlt){
+      for(const am of tag.matchAll(/\b([:\w-]+)\s*=\s*(["'])([\s\S]*?)\2/g)){
+        const an=String(am[1]||"").toLowerCase(),av=clean(am[3]||"");
+        if(!av||/^(alt|class|id|title|width|height|loading|decoding|role|aria-)/.test(an))continue;
+        const first=clean(av.split(",")[0]?.trim().split(/\s+/)[0]||"");
+        if(/\.(?:svg|png|webp|jpe?g|gif)(?:[?#]|$)/i.test(first)||/images-intl\.prod\.aws\.idp-connect\.com/i.test(first)){
+          add(first,0.62,"provider-alt-image-attr",alt,an+" "+id+" "+cls);
+        }
+      }
+    }
   }
   for(const m of html.matchAll(/<(?:source|object|embed)\b[^>]*>/gi)){
     const tag=m[0],src=attr(tag,"src")||attr(tag,"data")||attr(tag,"srcset");
