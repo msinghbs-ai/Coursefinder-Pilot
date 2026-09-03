@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION="layer2-provider-asset-promote-v1";
+const VERSION="layer2-provider-asset-promote-v2";
 const BUCKET="provider-assets";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 const H=(r:Request)=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":r.headers.get("origin")===ORIGIN?ORIGIN:ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key","access-control-allow-methods":"POST,OPTIONS"});
@@ -25,10 +25,23 @@ Deno.serve(async(req:Request)=>{
  let ctx:any;try{ctx=await rpc(svc,"layer2_provider_asset_promotion_context",{p_candidate_id:cid})}catch(e:any){return J(req,500,{error:"candidate_context_failed",detail:String(e.message)})}
  if(!ctx?.candidate_id)return J(req,404,{error:"candidate_not_found"});
  if(ctx.candidate_status!=="accepted"||Number(ctx.confidence||0)<0.90)return J(req,409,{error:"candidate_not_approved_for_promotion",confidence:ctx.confidence,status:ctx.candidate_status});
- let res:Response;try{res=await fetch(String(ctx.asset_url),{headers:{"user-agent":"CourseFinder Provider Asset Validator/1.0"},redirect:"follow"})}catch(e:any){return J(req,502,{error:"asset_fetch_failed",detail:String(e.message)})}
- if(!res.ok)return J(req,502,{error:"asset_fetch_http_error",http_status:res.status});
- const buf=new Uint8Array(await res.arrayBuffer());if(buf.byteLength<100||buf.byteLength>5_000_000)return J(req,422,{error:"asset_size_invalid",bytes:buf.byteLength});
- const mime=(res.headers.get("content-type")||"application/octet-stream").split(";")[0].trim().toLowerCase();
+ let buf:Uint8Array,mime:string;
+ const inlineSvg=String(ctx?.metadata?.inline_svg||"").trim();
+ if(inlineSvg){
+   if(!/^<svg\b/i.test(inlineSvg)||inlineSvg.length<100||inlineSvg.length>500000)return J(req,422,{error:"inline_svg_invalid"});
+   let safeSvg=inlineSvg
+     .replace(/<script\b[\s\S]*?<\/script>/gi,"")
+     .replace(/<foreignObject\b[\s\S]*?<\/foreignObject>/gi,"")
+     .replace(/\s+on[a-z]+\s*=\s*(["'])[\s\S]*?\1/gi,"")
+     .replace(/(href|xlink:href)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi,'$1="#"');
+   buf=new TextEncoder().encode(safeSvg);mime="image/svg+xml";
+ }else{
+   let res:Response;try{res=await fetch(String(ctx.asset_url),{headers:{"user-agent":"CourseFinder Provider Asset Validator/2.0"},redirect:"follow"})}catch(e:any){return J(req,502,{error:"asset_fetch_failed",detail:String(e.message)})}
+   if(!res.ok)return J(req,502,{error:"asset_fetch_http_error",http_status:res.status});
+   buf=new Uint8Array(await res.arrayBuffer());
+   mime=(res.headers.get("content-type")||"application/octet-stream").split(";")[0].trim().toLowerCase();
+ }
+ if(buf.byteLength<100||buf.byteLength>5_000_000)return J(req,422,{error:"asset_size_invalid",bytes:buf.byteLength});
  if(!["image/svg+xml","image/png","image/jpeg","image/webp"].includes(mime))return J(req,422,{error:"unsupported_asset_mime",mime});
  const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",buf))).map(x=>x.toString(16).padStart(2,"0")).join("");
  const storagePath=`providers/${ctx.provider_id}/logo/${digest}.${ext(mime,String(ctx.asset_url))}`;
