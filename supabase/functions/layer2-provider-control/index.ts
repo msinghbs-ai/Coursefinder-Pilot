@@ -49,14 +49,9 @@ Deno.serve(async(req:Request)=>{
    if(!res.ok)probeError=res.status===401?'authentication_failed':res.status===404?'parsebot_endpoint_not_found':('http_'+res.status);
   }catch(e:any){probeError=e?.name==='AbortError'?'timeout':String(e?.message||e)}
   const passed=!probeError&&status!==null&&status>=200&&status<300;
-  await svc.schema('pipeline').from('layer2_acquisition_providers').update({
-   last_tested_at:new Date().toISOString(),
-   last_test_status:passed?'passed':'failed',
-   last_test_http_status:status,
-   last_test_error:passed?null:probeError,
-   updated_at:new Date().toISOString()
-  }).eq('id',id);
-  return reply(req,passed?200:502,{ok:passed,provider_key:'parsebot',status:passed?'connected':'failed',http_status:status,latency_ms:Date.now()-started,error:probeError,execution_qualified:false,note:'Connectivity validates Parse API base URL and API key only. CourseFinder execution still requires a generated Parse API route (scraper_id + endpoint_name) per source profile.'});
+  const{error:re}=await svc.rpc('layer2_provider_probe_record_service',{p_provider_id:id,p_status:passed?'passed':'failed',p_http_status:status,p_error:passed?null:probeError});
+  if(re)return reply(req,500,{error:'probe_telemetry_write_failed',detail:re.message});
+  return reply(req,200,{ok:passed,provider_key:'parsebot',status:passed?'connected':'failed',http_status:status,latency_ms:Date.now()-started,probe_error:probeError,execution_qualified:false,note:'Connectivity validates Parse API base URL and API key only. CourseFinder execution still requires a generated Parse API route (scraper_id + endpoint_name) per source profile.'});
  }
 
  if(['create_provider','update_provider','set_secret'].includes(action)&&rank<6)return reply(req,403,{error:'platform_admin_role_required'});
