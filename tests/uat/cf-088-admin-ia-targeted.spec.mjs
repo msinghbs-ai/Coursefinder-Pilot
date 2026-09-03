@@ -30,7 +30,7 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
       await loginAsUatUser(page)
       await page.goto(new URL('/#administration',process.env.UAT_BASE_URL).toString())
       await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
-      await expect(page.getByRole('heading',{name:'Configuration map',exact:true})).toBeVisible({timeout:45000})
+      await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:45000})
       await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toBeVisible()
       await expect(page.locator('.m-release-pill')).toContainText('v2.15.45')
       await expect(page.locator('.ar-overlay:not(.ar-embedded)')).toHaveCount(0)
@@ -41,7 +41,7 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
       const role=((await page.locator('.m-role-pill').textContent())||'').trim()
       if(role!=='Platform Admin'){
         await expect(page.getByRole('tab',{name:'Users & Roles',exact:true})).toHaveCount(0)
-        await expect(page.getByRole('heading',{name:'Configuration map',exact:true})).toBeVisible()
+        await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible()
       }
       await milestoneScreenshot(page,testInfo,'cf-088-admin-ia-standardised')
     }finally{await finish(testInfo,runtime)}
