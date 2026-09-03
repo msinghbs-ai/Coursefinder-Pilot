@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION="layer2-provider-page-fanout-v1.3";
+const VERSION="layer2-provider-page-fanout-v1.4";
 const BUCKET="evidence";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 
@@ -58,40 +58,71 @@ function providerSignals(providerName:string){
 function logoCandidates(html:string,base:string,providerName:string){
   const out:any[]=[];
   const sig=providerSignals(providerName);
+  const add=(url:string|null,score:number,kind:string,alt:string="",selector_hint:string="")=>{
+    if(!url)return;const u=abs(base,url);if(!u)return;
+    const s=(u+" "+alt+" "+selector_hint).toLowerCase(),compact=s.replace(/[^a-z0-9]/g,"");
+    let x=score;
+    if(/logo|brand|wordmark|crest/.test(s))x+=0.20;
+    if(/header|navbar|navigation|site-logo|navigationlogo|masthead/.test(s))x+=0.15;
+    if(sig.words.some((t:string)=>s.includes(t)))x+=0.18;
+    if(sig.initials.length>=2&&compact.includes(sig.initials))x+=0.10;
+    if(/footer/.test(s))x-=0.10;
+    if(/partnership|partner|alliance|network|sponsor/.test(s))x-=0.40;
+    if(/avatar|social|facebook|instagram|youtube|linkedin|twitter|x-logo/.test(s))x-=0.45;
+    if(/favicon|apple-touch-icon/.test(s))x-=0.20;
+    if(/\.svg(?:[?#]|$)/i.test(u))x+=0.05;
+    x=Math.max(0,Math.min(0.99,x));
+    if(x>=0.55)out.push({url:u,score:x,kind,alt,selector_hint});
+  };
   for(const m of html.matchAll(/<img\b[^>]*>/gi)){
     const tag=m[0],src=attr(tag,"src")||attr(tag,"data-src")||attr(tag,"data-lazy-src");
-    if(!src)continue;
     const alt=clean(attr(tag,"alt")||""),cls=clean(attr(tag,"class")||""),id=clean(attr(tag,"id")||"");
-    const u=abs(base,src);if(!u)continue;
-    const s=(u+" "+alt+" "+cls+" "+id).toLowerCase(),compact=s.replace(/[^a-z0-9]/g,"");
-    const logoSemantic=/logo|brand|wordmark|crest/.test(s);
-    const navSemantic=/header|navbar|navigation|site-logo|navigationlogo/.test(s);
-    if(!logoSemantic&&!navSemantic)continue;
-    let score=0.25;
-    if(logoSemantic)score+=0.25;
-    if(navSemantic)score+=0.30;
-    if(sig.words.some((t:string)=>s.includes(t)))score+=0.25;
-    if(sig.initials.length>=2&&compact.includes(sig.initials))score+=0.15;
-    if(/footer/.test(s))score-=0.15;
-    if(/partnership|partner|alliance|network|sponsor/.test(s))score-=0.35;
-    if(/avatar|icon|favicon|social|facebook|instagram|youtube|linkedin|twitter|x-logo/.test(s))score-=0.40;
-    if(/\.svg(?:\?|$)/i.test(u))score+=0.05;
-    if(score>=0.55)out.push({
-      url:u,
-      score:Math.max(0,Math.min(0.99,score)),
-      kind:"img",
-      alt,
-      selector_hint:clean([id,cls].filter(Boolean).join(" "))
-    });
+    if(src)add(src,0.35,"img",alt,clean([id,cls].filter(Boolean).join(" ")));
+    const srcset=attr(tag,"srcset")||attr(tag,"data-srcset");
+    if(srcset){const first=clean(srcset.split(",")[0]?.trim().split(/\s+/)[0]||"");if(first)add(first,0.32,"img-srcset",alt,clean([id,cls].filter(Boolean).join(" ")))}
+  }
+  for(const m of html.matchAll(/<(?:source|object|embed)\b[^>]*>/gi)){
+    const tag=m[0],src=attr(tag,"src")||attr(tag,"data")||attr(tag,"srcset");
+    if(src){const first=clean(src.split(",")[0]?.trim().split(/\s+/)[0]||"");add(first,0.35,"structured-image","",clean((attr(tag,"class")||"")+" "+(attr(tag,"id")||"")))}
+  }
+  for(const m of html.matchAll(/<(?:a|div|span|header)\b[^>]*(?:class|id)\s*=\s*["'][^"']*(?:logo|brand|wordmark|masthead)[^"']*["'][^>]*>[\s\S]{0,1800}?(?:<img\b[^>]*>|<use\b[^>]*>)/gi)){
+    const block=m[0],img=block.match(/<img\b[^>]*>/i)?.[0]||"",use=block.match(/<use\b[^>]*>/i)?.[0]||"";
+    const src=img?(attr(img,"src")||attr(img,"data-src")||attr(img,"data-lazy-src")||attr(img,"srcset")):(attr(use,"href")||attr(use,"xlink:href"));
+    const hint=clean((attr(block,"class")||"")+" "+(attr(block,"id")||""));
+    if(src)add(clean(src.split(",")[0]?.trim().split(/\s+/)[0]||""),0.62,"logo-container",attr(img,"alt")||"",hint);
   }
   for(const m of html.matchAll(/<meta\b[^>]*>/gi)){
-    const tag=m[0],prop=(attr(tag,"property")||attr(tag,"name")||"").toLowerCase();
-    if(prop!=="og:image"&&prop!=="twitter:image")continue;
-    const u=abs(base,attr(tag,"content")||"");
-    if(u)out.push({url:u,score:0.45,kind:prop});
+    const tag=m[0],prop=(attr(tag,"property")||attr(tag,"name")||attr(tag,"itemprop")||"").toLowerCase();
+    const content=attr(tag,"content")||"";
+    if(prop==="logo")add(content,0.78,"meta-logo");
+    else if(prop==="og:image"||prop==="twitter:image")add(content,0.25,prop);
   }
+  for(const m of html.matchAll(/<link\b[^>]*>/gi)){
+    const tag=m[0],rel=(attr(tag,"rel")||"").toLowerCase(),href=attr(tag,"href")||"";
+    if(/logo|brand/.test(tag.toLowerCase()))add(href,0.60,"link-logo");
+    else if(/icon/.test(rel))add(href,0.32,"site-icon");
+  }
+  for(const m of html.matchAll(/<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)){
+    try{
+      const root=JSON.parse(m[1]);
+      const walk=(v:any)=>{
+        if(!v)return;
+        if(Array.isArray(v)){v.forEach(walk);return}
+        if(typeof v!=="object")return;
+        const typ=String(v["@type"]||"").toLowerCase();
+        if(typ.includes("organization")||typ.includes("college")||typ.includes("university")||typ.includes("educationalorganization")){
+          const logo=v.logo;
+          if(typeof logo==="string")add(logo,0.80,"jsonld-logo");
+          else if(logo&&typeof logo==="object")add(logo.url||logo.contentUrl,0.80,"jsonld-logo",String(logo.caption||""));
+        }
+        Object.values(v).forEach(walk);
+      };
+      walk(root);
+    }catch{}
+  }
+  for(const m of html.matchAll(/(?:background-image\s*:\s*url\(|["'])([^"'()\s>]{1,500}(?:logo|wordmark|brand)[^"'()\s>]*\.(?:svg|png|webp|jpe?g)(?:\?[^"'()\s>]*)?)/gi))add(m[1],0.48,"markup-logo-url");
   const best=new Map<string,any>();
-  for(const x of out){const p=best.get(x.url);if(!p||x.score>p.score)best.set(x.url,x)}
+  for(const x of out){const key=x.url.split("#")[0];const p=best.get(key);if(!p||x.score>p.score)best.set(key,x)}
   return [...best.values()].sort((a,b)=>b.score-a.score).slice(0,12);
 }
 function scholarshipLinks(html:string,base:string){
