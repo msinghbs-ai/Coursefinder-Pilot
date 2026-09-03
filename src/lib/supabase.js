@@ -61,20 +61,31 @@ async function adminRead(operation, args = {}) {
   return request
 }
 
+function functionErrorText(value,fallback='Request failed'){
+  if(typeof value==='string'&&value.trim())return value
+  if(value&&typeof value==='object'){
+    for(const key of ['message','error','detail','hint','code']){
+      const nested=value[key]
+      if(typeof nested==='string'&&nested.trim())return nested
+    }
+    try{return JSON.stringify(value)}catch{}
+  }
+  return fallback
+}
 async function invoke(name, body) {
   const { data, error } = await supabase.functions.invoke(name, { body })
   if (error) {
     if (error instanceof FunctionsHttpError && error.context) {
       try {
         const payload = await error.context.clone().json()
-        throw new Error(payload?.error || payload?.message || error.message || `${name} failed`)
+        throw new Error(functionErrorText(payload?.error??payload?.message??payload,error.message||`${name} failed`))
       } catch (parseError) {
         if (parseError instanceof Error && parseError.message !== 'Unexpected end of JSON input') throw parseError
       }
     }
-    throw new Error(error.message || `${name} failed`)
+    throw new Error(functionErrorText(error,error.message||`${name} failed`))
   }
-  if (data?.error) throw new Error(data.error)
+  if (data?.error) throw new Error(functionErrorText(data.error,`${name} failed`))
   return data
 }
 
