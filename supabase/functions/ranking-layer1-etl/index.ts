@@ -2,10 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION="ranking-layer1-etl-v1.4.0";
+const VERSION="ranking-layer1-etl-v1.4.1";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
+const errText=(e:any,fallback="ranking operation failed")=>{if(e instanceof Error&&e.message)return e.message;if(e&&typeof e==="object"){for(const k of["message","error","details","detail","hint","code"]){const v=e[k];if(typeof v==="string"&&v.trim())return v}try{return JSON.stringify(e)}catch{}}return String(e||fallback)}
 const clean=(v:unknown)=>String(v??"").replace(/^\uFEFF/,"").trim();
 const key=(v:unknown)=>clean(v).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 async function sha(bytes:Uint8Array){const d=await crypto.subtle.digest("SHA-256",bytes);return[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join("")}
@@ -137,7 +138,15 @@ Deno.serve(async(req:Request)=>{
   if(["qs_wur","the_wur"].includes(systemCode)){const {data:preview,error:previewErr}=await service.rpc("svc_ranking_reconciliation_preview_system",{p_rows:rows,p_country_code:"AU",p_system_code:systemCode});if(previewErr)throw previewErr;reconciliationPreview=preview;}
   if(mode!=="apply")return json({ok:true,mode:"dry_run",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,reconciliationPreview,sample:rows.slice(0,5).map(({source_row_payload,...x})=>x),workerVersion:VERSION});
   if(!["manual_file","manual_the_native_json"].includes(acquisitionMode))return json({ok:false,error:"Direct QS JSON APPLY is intentionally disabled until the first dry-run and reuse/access review are accepted. Evidence has been retained; no ranking observations were written.",dryRunRequired:true,systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,sourceHash,evidenceArtifactId,workerVersion:VERSION},409);
-  const {data:applied,error:applyErr}=await service.rpc("svc_ranking_ingest_apply",{p_system_code:systemCode,p_edition_year:editionYear,p_source_url:sourceUrl,p_methodology_url:null,p_source_artifact_id:evidenceArtifactId,p_source_fingerprint:sourceHash,p_source_revision:"initial",p_rows:rows});if(applyErr)throw applyErr;
-  return json({ok:true,mode:"apply",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,reconciliation:applied,workerVersion:VERSION});
- }catch(e){return json({ok:false,error:e instanceof Error?e.message:String(e),workerVersion:VERSION},500)}
+  const batchSize=200;let appliedBatches=0,partialMapped=0,partialUnmapped=0;
+  for(let offset=0;offset<rows.length;offset+=batchSize){
+   const batch=rows.slice(offset,offset+batchSize);
+   const {data:part,error:applyErr}=await service.rpc("svc_ranking_ingest_apply",{p_system_code:systemCode,p_edition_year:editionYear,p_source_url:sourceUrl,p_methodology_url:null,p_source_artifact_id:evidenceArtifactId,p_source_fingerprint:sourceHash,p_source_revision:"initial",p_rows:batch});
+   if(applyErr)throw new Error(errText(applyErr));
+   appliedBatches++;partialMapped+=Number(part?.mapped||0);partialUnmapped+=Number(part?.unmapped||0);
+  }
+  const {data:finalized,error:finalizeErr}=await service.rpc("svc_ranking_ingest_finalize",{p_system_code:systemCode,p_edition_year:editionYear,p_source_artifact_id:evidenceArtifactId});
+  if(finalizeErr)throw new Error(errText(finalizeErr));
+  return json({ok:true,mode:"apply",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,reconciliation:finalized,applyBatches:appliedBatches,batchSize,partialMapped,partialUnmapped,workerVersion:VERSION});
+ }catch(e){return json({ok:false,error:errText(e),workerVersion:VERSION},500)}
 });
