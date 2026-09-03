@@ -4,23 +4,39 @@ create or replace function public.svc_ranking_import_control_context(p_import_id
 returns jsonb
 language sql
 security definer
-set search_path='pg_catalog','ranking'
+set search_path='pg_catalog','ranking','pipeline'
 as $$
- select jsonb_build_object(
-   'id',mi.id,
-   'system_id',mi.system_id,
-   'system_code',rs.code,
-   'edition_year',mi.edition_year,
-   'original_filename',mi.original_filename,
-   'status',mi.status,
-   'evidence_artifact_id',mi.evidence_artifact_id,
-   'source_url',mi.source_url,
-   'methodology_url',mi.methodology_url,
-   'content_hash',mi.content_hash
+ with x as (
+   select mi.*,rs.code system_code,
+          case when rs.code='the_wur' then 'THE' else 'QS' end source_system
+   from ranking.manual_imports mi
+   join ranking.systems rs on rs.id=mi.system_id
+   where mi.id=p_import_id
  )
- from ranking.manual_imports mi
- join ranking.systems rs on rs.id=mi.system_id
- where mi.id=p_import_id
+ select jsonb_build_object(
+   'id',x.id,
+   'system_id',x.system_id,
+   'system_code',x.system_code,
+   'edition_year',x.edition_year,
+   'original_filename',x.original_filename,
+   'status',x.status,
+   'evidence_artifact_id',x.evidence_artifact_id,
+   'source_url',x.source_url,
+   'methodology_url',x.methodology_url,
+   'content_hash',x.content_hash,
+   'source_id',(
+     select s.id
+     from pipeline.sources s
+     where upper(coalesce(s.metadata->>'source_system',''))=x.source_system
+     order by
+       case when nullif(s.metadata->>'edition_year','')::integer=x.edition_year then 0
+            when coalesce((s.metadata->>'multi_year_family')::boolean,false) then 1
+            else 2 end,
+       s.updated_at desc
+     limit 1
+   )
+ )
+ from x
 $$;
 
 revoke all on function public.svc_ranking_import_control_context(uuid) from public,anon,authenticated;
