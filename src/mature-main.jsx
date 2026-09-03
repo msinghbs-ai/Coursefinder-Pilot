@@ -22,11 +22,12 @@ import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
 import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'
 import PlatformMaturity from'./platform-maturity-entry'
 import EnvironmentMigrationWorkspace from'./EnvironmentMigrationWorkspace'
+import{AccessRolesEmbedded}from'./access-roles-entry'
 import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.44'
+const UI_VERSION='2.15.45'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -86,8 +87,23 @@ const PAGE_META={
 
 function item(label,Icon,min){return{label,Icon,min,slug:slug(label)}}
 function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+const ADMIN_SECTIONS=[
+ {key:'overview',label:'Overview',Icon:Settings2,min:4,group:'Overview',description:'Administration landing page and governed configuration map.'},
+ {key:'sources-imports',label:'Sources & Imports',Icon:Database,min:4,group:'Data setup',description:'Register governed publisher files and inspect import history.'},
+ {key:'layer1-sources',label:'Layer 1 sources',Icon:Database,min:6,group:'Data setup',description:'Authoritative source configuration and Layer 1 guardrails.'},
+ {key:'layer2-sources',label:'Layer 2 sources',Icon:Database,min:4,group:'Data setup',description:'Versioned enrichment-source profiles and qualification state.'},
+ {key:'layer2-providers',label:'Scraper Config',Icon:SlidersHorizontal,min:4,group:'Acquisition',description:'Acquisition providers, credentials, quotas, routing and execution policy.'},
+ {key:'scheduling',label:'Scheduling',Icon:RefreshCw,min:4,group:'Operations',description:'Refresh cadence, targeted scheduling and due-work policy.'},
+ {key:'onboarding',label:'Onboarding',Icon:Workflow,min:4,group:'Operations',description:'Governed country and source onboarding lifecycle.'},
+ {key:'pim',label:'PIM configuration',Icon:Tags,min:5,group:'PIM',description:'Attributes, families, groups, options and completeness profiles.'},
+ {key:'users-roles',label:'Users & Roles',Icon:UsersRound,min:6,group:'Security',description:'Auth identities, role assignment and access audit.'},
+ {key:'environment-migration',label:'Environment & Migration',Icon:ShieldCheck,min:6,group:'Platform',description:'Environment bindings, write-only credentials and Production migration inventory.'},
+ {key:'platform',label:'Platform',Icon:Settings2,min:6,group:'Platform',description:'Readiness, capacity, retention and governed platform controls.'},
+]
+const ADMIN_SECTION_LABELS=Object.fromEntries(ADMIN_SECTIONS.map(x=>[x.key,x.label]))
+const LEGACY_ADMIN_ROUTES={'users-roles':'users-roles','attributes':'pim','settings':'platform'}
 const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
-function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
+function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(LEGACY_ADMIN_ROUTES[route]){const params=new URLSearchParams(query);params.set('section',LEGACY_ADMIN_ROUTES[route]);return{page:'Administration',params}}if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
 function pageBreadcrumbs(page,routeParams){
  const crumbs=[{label:'Home',page:'Dashboard'}]
@@ -95,8 +111,7 @@ function pageBreadcrumbs(page,routeParams){
  if(page==='Administration'){
   crumbs.push({label:'Administration',page:'Administration'})
   const section=routeParams?.get?.('section')||'overview'
-  const labels={overview:'Overview','sources-imports':'Sources & Imports','layer1-sources':'Layer 1 sources','layer2-sources':'Layer 2 sources','layer2-providers':'Scraper Config','environment-migration':'Environment & Migration',scheduling:'Scheduling',onboarding:'Onboarding',pim:'PIM configuration','users-roles':'Users & Roles',platform:'Platform'}
-  if(section!=='overview')crumbs.push({label:labels[section]||section})
+  if(section!=='overview')crumbs.push({label:ADMIN_SECTION_LABELS[section]||section})
   return crumbs
  }
  crumbs.push({label:page})
@@ -153,14 +168,14 @@ function App(){
         <div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/>v{UI_VERSION}</span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></div>
       </header>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
-      <WorkspaceErrorBoundary routeKey={`${page}?${routeParams.toString()}`} onError={setError} onRecover={()=>go('Dashboard')}><Page page={page} routeParams={routeParams} rank={rank} onError={setError} navigate={go}/></WorkspaceErrorBoundary>
+      <WorkspaceErrorBoundary routeKey={`${page}?${routeParams.toString()}`} onError={setError} onRecover={()=>go('Dashboard')}><Page page={page} routeParams={routeParams} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/></WorkspaceErrorBoundary>
     </main>
   </div>
 }
 
 function Login({error,onError}){const[email,setEmail]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false);async function submit(e){e.preventDefault();setBusy(true);onError('');const{error:x}=await supabase.auth.signInWithPassword({email,password});if(x)onError(x.message);setBusy(false)}return <div className="m-login"><form className="m-login-card" onSubmit={submit}><div className="m-login-brand"><span className="m-brand-mark large">CF</span><div><strong>Coursefinder Admin</strong><small>Governed operational workspace</small></div></div><div className="m-login-copy"><h1>Sign in</h1><p>Authorised staff access only. Canonical catalogue, provenance and pipeline operations.</p></div>{error&&<div className="m-alert compact"><AlertTriangle size={15}/><span>{error}</span></div>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="m-primary" disabled={busy}>{busy?'Signing in…':'Sign in'}</button><small className="m-login-version">PIM Admin v{UI_VERSION}</small></form></div>}
 
-function Page({page,routeParams,rank,onError,navigate}){
+function Page({page,routeParams,rank,actorId,onError,navigate}){
   const focusId=routeParams?.get?.('id')||''
   if(page==='Dashboard')return <Dashboard onError={onError} navigate={navigate}/>
   if(page==='Providers')return <Catalogue type="provider" onError={onError} navigate={navigate} initialId={focusId}/>
@@ -180,7 +195,7 @@ function Page({page,routeParams,rank,onError,navigate}){
   if(page==='Layer 4 — Human Resolution'&&rank>=3)return <div className="m-page-stack"><Layer4Workspace onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Important Links'&&rank>=3)return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Important Dates'&&rank>=3)return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
-  if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} navigate={navigate} routeParams={routeParams} onError={onError}/>
+  if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} actorId={actorId} navigate={navigate} routeParams={routeParams} onError={onError}/>
   if(page==='Refresh & Scheduling'&&rank>=3)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Onboarding'&&rank>=3)return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
@@ -226,45 +241,25 @@ function StatisticsRankings({onError,navigate,rank}){
 }
 
 
-function AdministrationHome({rank,navigate,routeParams,onError}){
- const sections=[
-  ['overview','Overview',Settings2,rank>=4],
-  ['sources-imports','Sources & Imports',Database,rank>=4],
-  ['layer1-sources','Layer 1 sources',Database,rank>=6],
-  ['layer2-sources','Layer 2 sources',Database,rank>=4],
-  ['layer2-providers','Scraper Config',SlidersHorizontal,rank>=4],
-  ['environment-migration','Environment & Migration',ShieldCheck,rank>=6],
-  ['scheduling','Scheduling',RefreshCw,rank>=4],
-  ['onboarding','Onboarding',Workflow,rank>=4],
-  ['pim','PIM configuration',Tags,rank>=5],
-  ['users-roles','Users & Roles',UsersRound,rank>=6],
-  ['platform','Platform',Settings2,rank>=6],
- ]
- const allowed=sections.filter(x=>x[3])
+function AdministrationHome({rank,actorId,navigate,routeParams,onError}){
+ const allowed=ADMIN_SECTIONS.filter(x=>rank>=x.min)
  const requested=routeParams?.get?.('section')||'overview'
- const tool=allowed.some(x=>x[0]===requested)?requested:(allowed[0]?.[0]||'overview')
- const selectTool=key=>{if(key==='users-roles'){location.hash='#users-roles';return}navigate('Administration',key==='overview'?{}:{section:key})}
- const openRoute=label=>navigate(label)
- return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Settings2} title="Administration" subtitle="Central configuration. Choose a section below; operational Layer workspaces remain separate."/>
-  <div className="m-admin-subnav" role="tablist" aria-label="Administration sections">{allowed.map(([key,label,Icon])=><button key={key} role="tab" aria-selected={tool===key} className={tool===key?'active':''} onClick={()=>selectTool(key)}><Icon size={15}/><span>{label}</span></button>)}</div>
+ const tool=allowed.some(x=>x.key===requested)?requested:(allowed[0]?.key||'overview')
+ const selectTool=key=>navigate('Administration',key==='overview'?{}:{section:key})
+ return <div className="m-page-stack"><section className="m-panel m-admin-shell"><PanelTitle icon={Settings2} title="Administration" subtitle="One governed configuration workspace. Operational Layer execution remains in Data Operations; legacy deep links resolve here without a second control plane."/>
+  <div className="m-admin-subnav" role="tablist" aria-label="Administration sections">{allowed.map(({key,label,Icon,group})=><button key={key} role="tab" aria-selected={tool===key} className={tool===key?'active':''} onClick={()=>selectTool(key)} title={group}><Icon size={15}/><span>{label}</span></button>)}</div>
  </section>
- {tool==='overview'&&<section className="m-panel"><PanelTitle icon={Settings2} title="Administration overview" subtitle="Configuration is grouped here rather than scattered through Layer operations."/><div className="m-attention-grid">
-  <Attention tone="info" icon={Database} title="Sources & onboarding" text="Governed sources, qualification and onboarding lifecycle." action="Open sources" onClick={()=>openRoute('Sources')}/>
-  <Attention tone="info" icon={RefreshCw} title="Scheduling" text="Refresh cadence, targeted scheduling and policy controls." action="Open scheduling" onClick={()=>selectTool('scheduling')}/>
-  <Attention tone="info" icon={SlidersHorizontal} title="Scraper Config" text="Layer 2 acquisition providers, credentials, Firecrawl quota, routes and execution policy." action="Open scraper config" onClick={()=>selectTool('layer2-providers')}/>
-  {rank>=6&&<Attention tone="info" icon={ShieldCheck} title="Environment & Migration" text="Production tenancy, API credentials, quotas and migration manifest." action="Open environment" onClick={()=>selectTool('environment-migration')}/>} 
-  {rank>=5&&<Attention tone="info" icon={Tags} title="PIM configuration" text="Attributes, groups, families, options and completeness profiles." action="Open PIM" onClick={()=>selectTool('pim')}/>} 
-  {rank>=6&&<Attention tone="info" icon={UsersRound} title="Users & Roles" text="Create users and assign governed CourseFinder roles, including PIM Operator." action="Open users & roles" onClick={()=>selectTool('users-roles')}/>} 
- </div></section>}
- {tool==='sources-imports'&&<RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>} 
- {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>} 
- {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>} 
+ {tool==='overview'&&<section className="m-panel"><PanelTitle icon={Settings2} title="Configuration map" subtitle="Compact entry points follow the same role gates as their destination workspaces."/><div className="m-admin-card-grid">{allowed.filter(x=>x.key!=='overview').map(({key,label,Icon,group,description})=><button className="m-admin-card" key={key} onClick={()=>selectTool(key)}><span className="m-admin-card-icon"><Icon size={16}/></span><span className="m-admin-card-copy"><small>{group}</small><strong>{label}</strong><span>{description}</span></span><b>Open →</b></button>)}</div></section>}
+ {tool==='sources-imports'&&<RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>}
+ {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>}
+ {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>}
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<Layer2ExecutionPolicySettings/>}</>}
  {tool==='environment-migration'&&rank>=6&&<EnvironmentMigrationWorkspace rank={rank} onError={onError}/>}
- {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={()=>{}}/></div>}
- {tool==='onboarding'&&<div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={()=>{}}/></div>}
- {tool==='pim'&&rank>=5&&<Attributes onError={()=>{}}/>}
- {tool==='platform'&&rank>=6&&<PlatformMaturity rank={rank} onError={onError}/>} 
+ {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={e=>onError?.(e?.message||String(e))}/></div>}
+ {tool==='onboarding'&&<div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError?.(e?.message||String(e))}/></div>}
+ {tool==='pim'&&rank>=5&&<Attributes onError={onError}/>}
+ {tool==='users-roles'&&rank>=6&&<AccessRolesEmbedded actorId={actorId}/>}
+ {tool==='platform'&&rank>=6&&<PlatformMaturity rank={rank} onError={onError}/>}
  </div>
 }
 function RankingImportPanel({onError,routeParams,navigate}){
