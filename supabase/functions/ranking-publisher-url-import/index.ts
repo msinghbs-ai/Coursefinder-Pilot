@@ -16,6 +16,16 @@ const json=(req:Request,status:number,body:unknown)=>new Response(JSON.stringify
 const clean=(v:unknown)=>String(v??"").trim();
 const safeRef=(v:string)=>v.startsWith("https://parse.bot")?new URL(v).pathname:v;
 async function sha256Hex(bytes:Uint8Array){const hash=await crypto.subtle.digest("SHA-256",bytes);return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("")}
+function apiError(payload:any,fallback:string){
+ const e=payload?.error;
+ if(typeof e==="string"&&e.trim())return e;
+ if(e&&typeof e==="object"){
+  for(const k of["message","detail","error","kind","status"]){const v=e[k];if(typeof v==="string"&&v.trim())return v}
+  try{return JSON.stringify(e)}catch{}
+ }
+ if(typeof payload?.message==="string"&&payload.message.trim())return payload.message;
+ return fallback;
+}
 
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{"access-control-allow-origin":ORIGIN,"access-control-allow-headers":"authorization, x-client-info, apikey, content-type","access-control-allow-methods":"POST, OPTIONS"}});
@@ -45,10 +55,10 @@ Deno.serve(async(req:Request)=>{
   if(systemCode==="qs_wur"){
    let page=0,guard=0;
    do{
-    endpointUrl=`https://api.parse.bot/scraper/${QS_EXEC}/get_world_rankings?year=${editionYear}&page=${page}&items_per_page=500`;
+    endpointUrl=`https://api.parse.bot/scraper/${QS_EXEC}/get_world_rankings?year=${editionYear}&page=${page}&items_per_page=100`;
     const r=await fetch(endpointUrl,{headers:{"X-API-Key":key,"Accept":"application/json"}});
     const payload=await r.json().catch(()=>({}));
-    if(!r.ok||payload?.status!=="success")throw new Error(`QS Parse.bot HTTP ${r.status}: ${payload?.error||"unexpected response"}`);
+    if(!r.ok||payload?.status!=="success")throw new Error(`QS Parse.bot HTTP ${r.status}: ${apiError(payload,"unexpected response")}`);
     if(String(payload?.data?.edition_year||"")!==String(editionYear))throw new Error("QS edition year mismatch");
     const universities=Array.isArray(payload?.data?.universities)?payload.data.universities:[];
     responses.push(payload);totalRows+=universities.length;
@@ -60,7 +70,7 @@ Deno.serve(async(req:Request)=>{
    endpointUrl=`https://api.parse.bot/scraper/${ARWU_EXEC}/get_arwu_rankings?year=${editionYear}`;
    const r=await fetch(endpointUrl,{headers:{"X-API-Key":key,"API-Snapshot-Version":"10","Accept":"application/json"}});
    const payload=await r.json().catch(()=>({}));
-   if(!r.ok||payload?.status!=="success")throw new Error(`ARWU Parse.bot HTTP ${r.status}: ${payload?.error||"unexpected response"}`);
+   if(!r.ok||payload?.status!=="success")throw new Error(`ARWU Parse.bot HTTP ${r.status}: ${apiError(payload,"unexpected response")}`);
    if(String(payload?.data?.year||"")!==String(editionYear))throw new Error("ARWU edition year mismatch");
    responses.push(payload);totalRows=Array.isArray(payload?.data?.rankings)?payload.data.rankings.length:0;
   }
