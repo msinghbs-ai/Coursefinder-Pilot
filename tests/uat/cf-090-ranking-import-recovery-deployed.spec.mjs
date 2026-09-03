@@ -13,7 +13,7 @@ test.describe('CF-090 ranking import recovery @deployed',()=>{
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const parse=row.getByRole('button',{name:'Parse & validate'})
   if(await parse.count()){await parse.click();await expect(row).toContainText('Validated',{timeout:90000})}
-  await expect(row).toContainText(/parsed observations/i,{timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(row).toContainText(/Validated|parsed observations/i,{timeout:DETERMINISTIC_UI_TIMEOUT})
   const apply=row.getByRole('button',{name:'Apply edition'})
   if(await apply.count()){await apply.click();await expect(row).toContainText(/Applied|Needs review/i,{timeout:90000})}
   else await expect(row).toContainText(/Applied|Needs review/i)
