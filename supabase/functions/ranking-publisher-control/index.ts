@@ -38,7 +38,7 @@ Deno.serve(async(req:Request)=>{
  try{
    const res=await fetch(url+"/functions/v1/ranking-layer1-etl",{method:"POST",headers:{
      "authorization":"Bearer "+serviceKey,"apikey":serviceKey,"x-cf-layer1-service-key":serviceKey,"content-type":"application/json"
-   },body:JSON.stringify({system_code:systemCode,edition_year:Number(imp.edition_year),mode:action==="apply"?"apply":"dry_run",source_id:sourceId||""})});
+   },body:JSON.stringify({system_code:systemCode,edition_year:Number(imp.edition_year),mode:action==="apply"?"apply":"dry_run",source_id:sourceId||"",import_id:importId})});
    const out=await res.json().catch(()=>({}));
    if(!res.ok||out?.ok===false||out?.error)throw new Error(out?.error||("ranking-layer1-etl HTTP "+res.status));
    if(action==="validate"){
