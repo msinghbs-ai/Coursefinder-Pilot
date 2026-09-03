@@ -23,6 +23,8 @@ function txt(v:FormDataEntryValue|null){return String(v??"").trim()}
 function safeFileName(v:string){return v.replace(/[^a-zA-Z0-9._-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,120)||"publisher-file"}
 function validHttpUrl(v:string){try{const u=new URL(v);return u.protocol==="https:"||u.protocol==="http:"}catch{return false}}
 async function sha256Hex(bytes:ArrayBuffer){const hash=await crypto.subtle.digest("SHA-256",bytes);return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("")}
+function jsonPayloads(root:any){if(Array.isArray(root))return root;if(Array.isArray(root?.responses))return root.responses;if(Array.isArray(root?.pages))return root.pages;if(root?.source==="manual_ranking_bundle"&&Array.isArray(root?.files))return root.files.map((x:any)=>x?.payload).filter(Boolean);return [root]}
+function detectRankingJson(root:any){const payloads=jsonPayloads(root);let system="",year:number|null=null,rows=0;const countries=new Set<string>();for(const payload of payloads){const d=payload?.data??payload;if(Array.isArray(d?.universities)){if(system&&system!=="qs_wur")return null;system="qs_wur";rows+=d.universities.length;const y=Number(d?.edition_year??payload?.edition_year);if(Number.isInteger(y)){if(year&&year!==y)return null;year=y}for(const r of d.universities){const v=String(r?.country||"").trim();if(v)countries.add(v)}continue}if(Array.isArray(d?.rankings)){if(system&&system!=="arwu")return null;system="arwu";rows+=d.rankings.length;const y=Number(d?.year??payload?.year);if(Number.isInteger(y)){if(year&&year!==y)return null;year=y}for(const r of d.rankings){const v=String(r?.country||r?.region||"").trim();if(v)countries.add(v)}continue}const theRows=Array.isArray(payload?.data?.data)?payload.data.data:(Array.isArray(d?.data)?d.data:null);if(Array.isArray(theRows)){if(system&&system!=="the_wur")return null;system="the_wur";rows+=theRows.length;const y=Number(payload?.edition_year??payload?.year);if(Number.isInteger(y)){if(year&&year!==y)return null;year=y}for(const r of theRows){const v=String(r?.location||r?.country||"").trim();if(v)countries.add(v)}}}return system?{system,year,rows,countries:[...countries]}:null}
 
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS") return new Response(null,{status:204,headers:cors(req)});
@@ -52,10 +54,29 @@ Deno.serve(async(req:Request)=>{
   const methodologyUrl=txt(form.get("methodology_url"));
   const licensingNote=txt(form.get("licensing_note"));
   const revisionNote=txt(form.get("revision_note"));
-  const file=form.get("file");
-
-  if(!(file instanceof File)) return reply(req,400,{error:"publisher_file_required"});
-  if(file.size<=0||file.size>MAX_BYTES) return reply(req,400,{error:"file_size_out_of_range",max_bytes:MAX_BYTES});
+  const entries=form.getAll("files").filter((x):x is File=>x instanceof File);
+  const legacy=form.get("file"); if(!entries.length&&legacy instanceof File)entries.push(legacy);
+  if(!entries.length) return reply(req,400,{error:"publisher_file_required"});
+  const aggregateBytes=entries.reduce((n,x)=>n+x.size,0);
+  if(entries.some(x=>x.size<=0)||aggregateBytes>MAX_BYTES) return reply(req,400,{error:"file_size_out_of_range",max_bytes:MAX_BYTES,aggregate_bytes:aggregateBytes});
+  let file:File=entries[0];
+  if(entries.length>1){
+    const bundleFiles:any[]=[];
+    for(const item of entries){
+      if(!/\.(json|txt)$/i.test(item.name))return reply(req,400,{error:"multi_file_ranking_upload_requires_json_or_txt",filename:item.name});
+      try{const payload=JSON.parse((await item.text()).replace(/^\uFEFF/,"").trim());bundleFiles.push({name:item.name,mime_type:item.type||"application/json",payload})}
+      catch(error){return reply(req,400,{error:"ranking_json_invalid",filename:item.name,detail:error instanceof Error?error.message:String(error)})}
+    }
+    const detections=bundleFiles.map(x=>detectRankingJson(x.payload));
+    if(detections.some(x=>!x))return reply(req,400,{error:"unrecognised_ranking_json_shape"});
+    const systems=[...new Set(detections.map(x=>x!.system))],years=[...new Set(detections.map(x=>x!.year).filter(Boolean))];
+    if(systems.length!==1)return reply(req,400,{error:"mixed_ranking_systems_in_multi_file_upload",systems});
+    if(years.length>1)return reply(req,400,{error:"mixed_edition_years_in_multi_file_upload",years});
+    if(systemCode!==systems[0])return reply(req,400,{error:"ranking_system_mismatch",selected:systemCode,detected:systems[0]});
+    if(years.length===1&&editionYear!==years[0])return reply(req,400,{error:"edition_year_mismatch",selected:editionYear,detected:years[0]});
+    const bundle={source:"manual_ranking_bundle",system_code:systemCode,edition_year:editionYear,file_count:entries.length,files:bundleFiles};
+    file=new File([JSON.stringify(bundle)],"ranking-bundle-"+systemCode+"-"+editionYear+"-"+entries.length+"-files.json",{type:"application/json"});
+  }
 
   const lower=file.name.toLowerCase();
   const ext=[...ALLOWED.keys()].find(x=>lower.endsWith(x));
@@ -65,23 +86,18 @@ Deno.serve(async(req:Request)=>{
   if(!allowedMimes.has(mime)) return reply(req,400,{error:"mime_extension_mismatch",mime_type:mime,extension:ext});
 
   const bytes=await file.arrayBuffer();
-  let detectedNativeThe=false,detectedYear:number|null=null;
+  let detected:any=null;
   if(ext===".json"||ext===".txt"){
     try{
       let text=new TextDecoder().decode(bytes).replace(/^\uFEFF/,"").trim();
-      const hm=text.match(/^Year\s+(\d{4})\s*[\r\n]+/i);
-      if(hm){detectedYear=Number(hm[1]);text=text.slice(hm[0].length);}
-      const parsed=JSON.parse(text);
-      detectedNativeThe=String(parsed?.status||"").toLowerCase()==="success"&&Array.isArray(parsed?.data?.data);
-      if(detectedNativeThe){
-        systemCode="the_wur";
-        if(detectedYear!==null)editionYear=detectedYear;
-        publisherName="Times Higher Education";
-        sourceUrl="https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking";
-      }
-    }catch(error){
-      if(ext===".txt"||systemCode==="the_wur")return reply(req,400,{error:"the_native_json_invalid",detail:error instanceof Error?error.message:String(error)});
-    }
+      const hm=text.match(/^Year\s+(\d{4})\s*[\r\n]+/i);let headerYear:number|null=null;
+      if(hm){headerYear=Number(hm[1]);text=text.slice(hm[0].length);}
+      const parsed=JSON.parse(text);detected=detectRankingJson(parsed);
+      if(!detected)return reply(req,400,{error:"unrecognised_ranking_json_shape"});
+      if(detected.system!==systemCode)return reply(req,400,{error:"ranking_system_mismatch",selected:systemCode,detected:detected.system});
+      const detectedYear=headerYear||detected.year;
+      if(detectedYear&&editionYear!==Number(detectedYear))return reply(req,400,{error:"edition_year_mismatch",selected:editionYear,detected:Number(detectedYear)});
+    }catch(error){return reply(req,400,{error:"ranking_json_invalid",detail:error instanceof Error?error.message:String(error)})}
   }
 
   if(!["qs_wur","the_wur","arwu"].includes(systemCode)) return reply(req,400,{error:"unsupported_ranking_system"});
@@ -91,8 +107,6 @@ Deno.serve(async(req:Request)=>{
   if(methodologyUrl&&!validHttpUrl(methodologyUrl)) return reply(req,400,{error:"valid_methodology_url_required"});
   if(licensingNote.length<5) return reply(req,400,{error:"licensing_access_note_required"});
 
-  if((ext===".json"||ext===".txt")&&systemCode==="the_wur"&&!detectedNativeThe)return reply(req,400,{error:"the_native_json_shape_invalid"});
-  if(ext===".txt"&&!detectedNativeThe)return reply(req,400,{error:"txt_native_json_is_the_only"});
   const hash=await sha256Hex(bytes);
   const nonce=crypto.randomUUID();
   const path="ranking/"+systemCode+"/"+editionYear+"/"+hash.slice(0,16)+"-"+nonce+"-"+safeFileName(file.name);
@@ -100,7 +114,7 @@ Deno.serve(async(req:Request)=>{
   const serviceClient=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
   const jobInsert=await serviceClient.schema("pipeline").from("jobs").insert({
     job_type:"ranking_import_acquire",domain:"ranking",status:"running",requested_by:actor,started_at:new Date().toISOString(),
-    payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name}
+    payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,file_count:entries.length,detected_scope:detected?.countries||[]}
   }).select("id").single();
   const jobId=jobInsert.data?.id||null;
   const upload=await serviceClient.storage.from("evidence").upload(path,new Uint8Array(bytes),{contentType:mime,upsert:false,cacheControl:"0"});
@@ -121,7 +135,7 @@ Deno.serve(async(req:Request)=>{
       if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data.import_id},result:{ok:true,duplicate:true,import_id:data.import_id}}).eq("id",jobId);
       return reply(req,200,{ok:true,duplicate:true,import_id:data.import_id,content_hash:hash,job_id:jobId});
     }
-    if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data?.import_id||null},result:{ok:true,duplicate:false,import_id:data?.import_id||null,evidence_id:data?.evidence_id||null}}).eq("id",jobId);
+    if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data?.import_id||null},result:{ok:true,duplicate:false,import_id:data?.import_id||null,evidence_id:data?.evidence_id||null,file_count:entries.length,detected_rows:detected?.rows||null,detected_scope:detected?.countries||[]}}).eq("id",jobId);
     return reply(req,201,{ok:true,duplicate:false,...data,content_hash:hash,original_filename:file.name,byte_size:file.size,job_id:jobId});
   }catch(error){
     await serviceClient.storage.from("evidence").remove([path]);
