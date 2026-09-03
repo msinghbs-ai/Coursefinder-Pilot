@@ -285,11 +285,13 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_100_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^tests/uat/cf-100-ranking-country-extension-deployed\.spec\.mjs$|^\.github/cf-100-ranking-country-extension-candidate$)'; then
             targeted=(tests/uat/cf-100-ranking-country-extension-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-provider-page-fanout|layer2-provider-asset-promote|layer2-acquire-v2)/|^supabase/migrations/.*cf_101_h11_|^tests/uat/cf-091-h11-provider-assets-deployed\.spec\.mjs$|^\.github/cf-101-h11-provider-assets-candidate$)'; then
-            targeted=(tests/uat/cf-091-h11-provider-assets-deployed.spec.mjs)
-          fi
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_097_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/functions/(ranking-publisher-url-import|ranking-publisher-import)/|^tests/uat/cf-097-ranking-workflow-history-deployed\.spec\.mjs$|^\.github/cf-097-ranking-workflow-history-candidate$)'; then
             targeted=(tests/uat/cf-097-ranking-workflow-history-deployed.spec.mjs)
+          fi
+          # CF-101 must resolve after the generic Admin/Scraper workflow-file routes so
+          # H11 changes cannot be overwritten by older routing precedence.
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-provider-page-fanout|layer2-provider-asset-promote|layer2-acquire-v2)/|^supabase/migrations/.*cf_101_h11_|^tests/uat/cf-091-h11-provider-assets-deployed\.spec\.mjs$|^\.github/cf-101-h11-provider-assets-candidate$|^\.github/workflows/deployed-uat\.yml$)'; then
+            targeted=(tests/uat/cf-091-h11-provider-assets-deployed.spec.mjs)
           fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
