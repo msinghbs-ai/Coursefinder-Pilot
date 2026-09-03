@@ -47,7 +47,7 @@ async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,c
   if(remainingCourseBudget<=5000){failures.push({reason:"course_acquisition_budget_exhausted"});break;}
   const pc=await rpc(svc,"layer2_provider_runtime_config",{p_provider_id:route.provider_id});
   if(!pc?.enabled){failures.push({provider_id:route.provider_id,reason:"provider_disabled"});continue}
-  if(pc.auth_scheme!=="none"&&!pc.secret){failures.push({provider_key:pc.provider_key,reason:"credential_missing"});continue}
+  if(pc.auth_scheme!=="none"&&!pc.secret){failures.push({provider_key:pc.provider_key,reason:"credential_missing"});continue}if(pc.provider_key==="parsebot"){failures.push({provider_key:"parsebot",reason:"parsebot_generated_api_route_not_qualified"});continue}
   if(pc.budget_status?.allowed===false){failures.push({provider_key:pc.provider_key,reason:"budget_blocked"});continue}
   if(pc.provider_key!=="direct-http"&&pc.estimated_request_cost_usd==null){failures.push({provider_key:pc.provider_key,reason:"cost_unknown"});continue}
   const attemptId=await rpc(svc,"layer2_provider_attempt_start",{p_job_id:jobId,p_provider_id:pc.id,p_request_url:target});
