@@ -44,7 +44,7 @@ function AccessBootstrap(){
 
 function AccessDenied(){return <div className="ar-overlay"><div className="ar-denied"><LockKeyhole size={30}/><h1>Platform Admin required</h1><p>User and role administration is restricted to Platform Admin rank 6.</p><button onClick={()=>goAdmin()}><ArrowLeft size={15}/>Back to Admin</button></div></div>}
 
-function AccessWorkspace({actorId}){
+function AccessWorkspace({actorId,embedded=false}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[query,setQuery]=useState(''),[createOpen,setCreateOpen]=useState(false),[editUser,setEditUser]=useState(null),[actingId,setActingId]=useState('')
   const load=()=>{setBusy(true);setError('');accessApi.list().then(setData).catch(e=>setError(e.message||String(e))).finally(()=>setBusy(false))}
   useEffect(load,[])
@@ -56,7 +56,7 @@ function AccessWorkspace({actorId}){
   async function saveRoles(payload){setError('');setNotice('');try{await accessApi.replaceRoles(payload);setEditUser(null);setNotice('Role assignments updated. Effective access follows the highest active role.');await load()}catch(e){setError(e.message||String(e));throw e}}
   async function toggleDisabled(user){const next=!user.disabled;const verb=next?'disable':'re-enable';if(!confirm(`${verb[0].toUpperCase()+verb.slice(1)} ${user.email}?`))return;setActingId(user.id);setError('');setNotice('');try{await accessApi.setDisabled(user.id,next);setNotice(next?'Account disabled. Existing access tokens expire normally; new sign-in is blocked.':'Account re-enabled.');await load()}catch(e){setError(e.message||String(e))}finally{setActingId('')}}
 
-  return <div className="ar-overlay"><div className="ar-shell">
+  return <div className={`ar-overlay${embedded?' ar-embedded':''}`}><div className="ar-shell">
     <aside className="ar-rail"><div className="ar-brand"><span>CF</span><div><strong>Coursefinder</strong><small>Access Admin v1.0</small></div></div><div className="ar-rail-copy"><ShieldCheck size={18}/><div><strong>Platform administration</strong><small>Auth identities, governed roles and access audit.</small></div></div><nav><button className="active"><UsersRound size={16}/>Users & Roles</button></nav><div className="ar-rail-foot"><small>Authority</small><strong>Platform Admin</strong><button onClick={()=>goAdmin()}><ArrowLeft size={15}/>Back to Admin</button></div></aside>
     <main className="ar-main"><header className="ar-topbar"><div><div className="ar-eyebrow">Privileged identity administration · rank 6</div><h1>Users & Roles</h1><p>Supabase Auth identities with governed CourseFinder role assignments. Effective access is the highest active role.</p></div><div className="ar-actions"><button className="ar-secondary" onClick={load} disabled={busy}><RefreshCw size={16}/>Refresh</button><button className="ar-primary" onClick={()=>setCreateOpen(true)}><UserPlus size={16}/>Create user</button><button className="ar-secondary" onClick={()=>goAdmin()}><ArrowLeft size={16}/>Admin</button></div></header>
     {error&&<div className="ar-alert error"><AlertTriangle size={16}/><span>{prettyError(error)}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
@@ -72,6 +72,8 @@ function AccessWorkspace({actorId}){
     {editUser&&<AccessModal title={`Edit roles · ${editUser.email}`} roles={roles} mode="edit" user={editUser} actorId={actorId} onClose={()=>setEditUser(null)} onSubmit={saveRoles}/>} 
   </div></div>
 }
+
+export function AccessRolesEmbedded({actorId}){return <AccessWorkspace actorId={actorId} embedded/>}
 
 function Metric({label,value}){return <div className="ar-metric"><small>{label}</small><strong>{Number(value||0).toLocaleString()}</strong></div>}
 function Status({user}){if(user.disabled)return <div className="ar-status disabled"><span/>Disabled<small>{user.banned_until?`Until ${formatDate(user.banned_until)}`:''}</small></div>;if(!user.email_confirmed_at)return <div className="ar-status invited"><span/>Invited<small>Confirmation pending</small></div>;return <div className="ar-status enabled"><span/>Enabled<small>Confirmed</small></div>}
