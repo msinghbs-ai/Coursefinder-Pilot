@@ -19,3 +19,15 @@
 @keyframes ar-shimmer{to{background-position:-200% 0}}
 @media(max-width:900px){.ar-shell{grid-template-columns:1fr}.ar-rail{display:none}.ar-main{padding:0 12px 28px}.ar-topbar{margin:0 -12px;padding:14px 12px;position:relative;flex-direction:column}.ar-actions{justify-content:flex-start}.ar-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.ar-panel-head{align-items:stretch;flex-direction:column}.ar-search{min-width:0}.ar-role-grid,.ar-mode-grid{grid-template-columns:1fr}.ar-table{min-width:900px}.ar-audit-row{grid-template-columns:32px 1fr}.ar-audit-row time{grid-column:2}.ar-modal-backdrop{padding:8px}.ar-modal{width:96vw;max-height:96vh}}
 @media(max-width:520px){.ar-topbar h1{font-size:22px}.ar-metrics{grid-template-columns:1fr 1fr}.ar-actions button{padding:8px 9px}.ar-policy{font-size:11px}}
+
+/* CF-088 — canonical Administration embedding. Legacy full-screen styles remain rollback-compatible but are no longer the primary route. */
+.ar-overlay.ar-embedded{position:relative;inset:auto;z-index:auto;background:transparent;color:var(--m-text,#172033);font-family:inherit}
+.ar-embedded .ar-shell{height:auto;display:block}
+.ar-embedded .ar-rail{display:none}
+.ar-embedded .ar-main{overflow:visible;padding:0}
+.ar-embedded .ar-topbar{position:relative;top:auto;z-index:auto;margin:0;padding:0 0 14px;background:transparent;backdrop-filter:none;border-bottom:0}
+.ar-embedded .ar-topbar h1{font-size:18px}
+.ar-embedded .ar-topbar p{font-size:11px}
+.ar-embedded .ar-policy{margin-top:0}
+.ar-embedded .ar-panel:last-child{margin-bottom:0}
+@media(max-width:900px){.ar-embedded .ar-main{padding:0}.ar-embedded .ar-topbar{margin:0;padding:0 0 12px}}
