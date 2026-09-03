@@ -279,6 +279,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/ranking-publisher-control/|^supabase/migrations/.*cf_090_|^src/lib/supabase\.js$|^tests/uat/cf-090-ranking-import-recovery-deployed\.spec\.mjs$|^\.github/cf-090-ranking-import-recovery-candidate$)'; then
             targeted=(tests/uat/cf-090-ranking-import-recovery-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_097_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/functions/(ranking-publisher-url-import|ranking-publisher-import)/|^tests/uat/cf-097-ranking-workflow-history-deployed\.spec\.mjs$|^\.github/cf-097-ranking-workflow-history-candidate$)'; then
+            targeted=(tests/uat/cf-097-ranking-workflow-history-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
