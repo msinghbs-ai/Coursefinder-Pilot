@@ -98,8 +98,16 @@ Deno.serve(async(req:Request)=>{
   const path="ranking/"+systemCode+"/"+editionYear+"/"+hash.slice(0,16)+"-"+nonce+"-"+safeFileName(file.name);
 
   const serviceClient=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const jobInsert=await serviceClient.schema("pipeline").from("jobs").insert({
+    job_type:"ranking_import_acquire",domain:"ranking",status:"running",requested_by:actor,started_at:new Date().toISOString(),
+    payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name}
+  }).select("id").single();
+  const jobId=jobInsert.data?.id||null;
   const upload=await serviceClient.storage.from("evidence").upload(path,new Uint8Array(bytes),{contentType:mime,upsert:false,cacheControl:"0"});
-  if(upload.error) return reply(req,500,{error:"evidence_upload_failed",detail:upload.error.message});
+  if(upload.error){
+    if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"failed",completed_at:new Date().toISOString(),error_text:upload.error.message,result:{ok:false,error:"evidence_upload_failed"}}).eq("id",jobId);
+    return reply(req,500,{error:"evidence_upload_failed",detail:upload.error.message,job_id:jobId});
+  }
 
   try{
     const {data,error}=await serviceClient.rpc("svc_ranking_manual_import_register",{
@@ -108,10 +116,17 @@ Deno.serve(async(req:Request)=>{
       p_original_filename:file.name,p_mime_type:mime,p_byte_size:file.size,p_content_hash:hash,p_storage_path:path,p_uploaded_by:actor
     });
     if(error) throw new Error(error.message||"import_registration_failed");
-    if(data?.duplicate){await serviceClient.storage.from("evidence").remove([path]);return reply(req,200,{ok:true,duplicate:true,import_id:data.import_id,content_hash:hash});}
-    return reply(req,201,{ok:true,duplicate:false,...data,content_hash:hash,original_filename:file.name,byte_size:file.size});
+    if(data?.duplicate){
+      await serviceClient.storage.from("evidence").remove([path]);
+      if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data.import_id},result:{ok:true,duplicate:true,import_id:data.import_id}}).eq("id",jobId);
+      return reply(req,200,{ok:true,duplicate:true,import_id:data.import_id,content_hash:hash,job_id:jobId});
+    }
+    if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data?.import_id||null},result:{ok:true,duplicate:false,import_id:data?.import_id||null,evidence_id:data?.evidence_id||null}}).eq("id",jobId);
+    return reply(req,201,{ok:true,duplicate:false,...data,content_hash:hash,original_filename:file.name,byte_size:file.size,job_id:jobId});
   }catch(error){
     await serviceClient.storage.from("evidence").remove([path]);
-    return reply(req,500,{error:"import_registration_failed",detail:error instanceof Error?error.message:String(error)});
+    const message=error instanceof Error?error.message:String(error);
+    if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"failed",completed_at:new Date().toISOString(),error_text:message,result:{ok:false,error:"import_registration_failed"}}).eq("id",jobId);
+    return reply(req,500,{error:"import_registration_failed",detail:message,job_id:jobId});
   }
 });
