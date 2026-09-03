@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION="layer2-provider-page-fanout-v1.5";
+const VERSION="layer2-provider-page-fanout-v1.6";
 const BUCKET="evidence";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 
@@ -69,16 +69,18 @@ function logoCandidates(html:string,base:string,providerName:string){
     if(/footer/.test(s))x-=0.10;
     if(/partnership|partner|alliance|network|sponsor/.test(s))x-=0.40;
     if(/avatar|social|facebook|instagram|youtube|linkedin|twitter|x-logo/.test(s))x-=0.45;
-    if(/favicon|apple-touch-icon/.test(s))x-=0.20;
+    if(/hotcourses|idp connect|idp hotcourses|newheader_logo|newfooter_logo|idp_logo/.test(s))x-=0.70;
+    if(/favicon|apple-touch-icon|img_px\.gif|default\/img_px/.test(s))x-=0.75;
     if(/\.svg(?:[?#]|$)/i.test(u))x+=0.05;
     x=Math.max(0,Math.min(0.99,x));
     if(x>=0.55)out.push({url:u,score:x,kind,alt,selector_hint});
   };
   for(const m of html.matchAll(/<img\b[^>]*>/gi)){
-    const tag=m[0],src=attr(tag,"src")||attr(tag,"data-src")||attr(tag,"data-lazy-src");
+    const tag=m[0],rawSrc=attr(tag,"src")||"",lazy=attr(tag,"data-src")||attr(tag,"data-original")||attr(tag,"data-lazy-src")||attr(tag,"data-cfsrc")||"";
+    const src=(lazy&&/img_px\.gif|default\/img_px|placeholder|blank\.gif/i.test(rawSrc))?lazy:(lazy||rawSrc);
     const alt=clean(attr(tag,"alt")||""),cls=clean(attr(tag,"class")||""),id=clean(attr(tag,"id")||"");
     if(src)add(src,0.35,"img",alt,clean([id,cls].filter(Boolean).join(" ")));
-    const srcset=attr(tag,"srcset")||attr(tag,"data-srcset");
+    const srcset=attr(tag,"data-srcset")||attr(tag,"srcset");
     if(srcset){const first=clean(srcset.split(",")[0]?.trim().split(/\s+/)[0]||"");if(first)add(first,0.32,"img-srcset",alt,clean([id,cls].filter(Boolean).join(" ")))}
   }
   for(const m of html.matchAll(/<(?:source|object|embed)\b[^>]*>/gi)){
