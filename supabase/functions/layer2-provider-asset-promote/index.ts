@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION="layer2-provider-asset-promote-v3";
+const VERSION="layer2-provider-asset-promote-v3.1";
 const BUCKET="provider-assets";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 const H=(r:Request)=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":r.headers.get("origin")===ORIGIN?ORIGIN:ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key","access-control-allow-methods":"POST,OPTIONS"});
@@ -52,15 +52,24 @@ Deno.serve(async(req:Request)=>{
          if(!pc?.enabled||!pc?.base_url||!pc?.secret)continue;
          const u=new URL(String(pc.base_url)),tpl=pc.request_template||{},headers:any={...ua};
          u.searchParams.set(String(tpl.target_url_parameter||"url"),target);
-         for(const[k,v]of Object.entries(tpl.static_query||{}))u.searchParams.set(k,String(v));
+         // Asset-byte mode deliberately omits page-render/static query flags.
+         // The target is an already reconciled image URL, not an HTML page.
          if(pc.auth_scheme==="query_param")u.searchParams.set(String(pc.auth_field_name||"apikey"),String(pc.secret));
          else if(pc.auth_scheme==="bearer")headers.authorization="Bearer "+pc.secret;
          else if(pc.auth_scheme==="header")headers[String(pc.auth_field_name||"X-Api-Key")]=pc.secret;
          const rr=await fetch(u.toString(),{headers,redirect:"follow"});
          if(!rr.ok)continue;
-         const rm=(rr.headers.get("content-type")||"application/octet-stream").split(";")[0].trim().toLowerCase();
+         let rm=(rr.headers.get("content-type")||"application/octet-stream").split(";")[0].trim().toLowerCase();
          const rb=new Uint8Array(await rr.arrayBuffer());
-         if(!["image/svg+xml","image/png","image/jpeg","image/webp"].includes(rm)||rb.byteLength<100)continue;
+         if(rb.byteLength<100)continue;
+         if(!["image/svg+xml","image/png","image/jpeg","image/webp"].includes(rm)){
+           const head=new TextDecoder().decode(rb.slice(0,800)).trimStart().toLowerCase();
+           if(rb[0]===0x89&&rb[1]===0x50&&rb[2]===0x4e&&rb[3]===0x47)rm="image/png";
+           else if(rb[0]===0xff&&rb[1]===0xd8&&rb[2]===0xff)rm="image/jpeg";
+           else if(rb[0]===0x52&&rb[1]===0x49&&rb[2]===0x46&&rb[3]===0x46&&new TextDecoder().decode(rb.slice(8,12))==="WEBP")rm="image/webp";
+           else if(head.startsWith("<svg")||(head.startsWith("<?xml")&&head.includes("<svg")))rm="image/svg+xml";
+         }
+         if(!["image/svg+xml","image/png","image/jpeg","image/webp"].includes(rm))continue;
          buf=rb;mime=rm;fetchProvider=String(pc.provider_key||route.provider_key||"proxy");break;
        }catch{}
      }
