@@ -122,3 +122,12 @@ html,body,#root{height:100%}body{margin:0;background:var(--m-bg);color:var(--m-t
 @media(max-width:680px){.m-ranking-essentials,.m-ranking-advanced{grid-template-columns:1fr}.m-ranking-advanced label.wide{grid-column:auto}.m-ranking-import-list article{flex-direction:column}.m-breadcrumbs{display:none}}
 
 @media(max-width:720px){.m-admin-card-grid{grid-template-columns:1fr}.m-admin-card{grid-template-columns:32px minmax(0,1fr) auto}}
+
+/* CF-089 — progressive Layer 2 workload defaults */
+.m-admin-advanced{border:1px solid var(--m-border);border-radius:12px;background:#fff;box-shadow:var(--m-shadow);overflow:hidden}
+.m-admin-advanced>summary{cursor:pointer;padding:12px 15px;font-size:10.5px;font-weight:800;color:#475569;background:#fbfcfe;list-style:none}
+.m-admin-advanced>summary::-webkit-details-marker{display:none}.m-admin-advanced>summary:after{content:'+';float:right;color:#64748b}.m-admin-advanced[open]>summary:after{content:'−'}
+.m-admin-advanced>.m-panel{border:0;border-top:1px solid var(--m-border);border-radius:0;box-shadow:none;margin:0}
+.m-kv-readonly{display:grid;grid-template-columns:minmax(150px,.7fr) minmax(0,1fr);gap:8px 12px;align-items:start;padding:7px 0;border-bottom:1px solid #edf1f6}
+.m-kv-readonly>span{font-size:9.5px;color:var(--m-muted)}.m-kv-readonly>strong{font-size:10.5px}.m-kv-readonly>small{grid-column:2;font-size:9px;color:var(--m-muted)}
+@media(max-width:620px){.m-kv-readonly{grid-template-columns:1fr}.m-kv-readonly>small{grid-column:1}}
