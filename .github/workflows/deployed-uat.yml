@@ -264,6 +264,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|access-roles-entry\.jsx|access-roles\.css|pim-version-entry\.js)$|^index\.html$|^tests/uat/cf-088-admin-ia-targeted\.spec\.mjs$|^\.github/workflows/deployed-uat\.yml$)'; then
             targeted=(tests/uat/cf-088-admin-ia-targeted.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(layer2-provider-entry\.jsx|layer2-provider\.css|mature-main\.jsx|mature\.css|pim-version-entry\.js)$|^index\.html$|^supabase/functions/(layer2-provider-control|layer2-acquire-v2|layer2-scope-discover-scheduled)/|^supabase/migrations/.*cf_089_|^tests/uat/cf-089-scraper-config-parsebot-targeted\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-089-scraper-config-parsebot-targeted.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
