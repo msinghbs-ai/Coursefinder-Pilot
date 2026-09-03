@@ -3,9 +3,21 @@ import{Building2}from'lucide-react'
 import{api,supabase}from'./lib/supabase'
 
 const cache=new Map()
+const listCache=new Map()
 const now=()=>Date.now()
 const initials=name=>String(name||'University').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()
 const cacheTtl=expires=>now()+Math.max(60,Number(expires||600)-60)*1000
+const listCacheKey='coursefinder:provider-list-logo-cache:v1'
+function restoreListCache(){
+ if(typeof sessionStorage==='undefined')return
+ try{const raw=JSON.parse(sessionStorage.getItem(listCacheKey)||'{}');for(const[k,v]of Object.entries(raw))if(v?.expiresAt>now()&&typeof v?.url==='string')listCache.set(k,v)}catch{}
+}
+function persistListCache(){
+ if(typeof sessionStorage==='undefined')return
+ try{const out={};for(const[k,v]of listCache.entries())if(v?.expiresAt>now())out[k]=v;sessionStorage.setItem(listCacheKey,JSON.stringify(out))}catch{}
+}
+function clearListCache(){listCache.clear();if(typeof sessionStorage!=='undefined')try{sessionStorage.removeItem(listCacheKey)}catch{}}
+restoreListCache()
 
 export default function ProviderLogo({providerId,name,size=44,className='',showFallback=true}){
  const[url,setUrl]=useState(()=>providerId&&cache.get(providerId)?.expiresAt>now()?cache.get(providerId).url:'')
@@ -46,14 +58,19 @@ const getRoleRank=()=>roleRankPromise||(roleRankPromise=api.context().then(x=>Nu
 function ensureStyles(){
  if(document.getElementById('cf-provider-logo-ui-style'))return
  const s=document.createElement('style');s.id='cf-provider-logo-ui-style';s.textContent=`
-.cf-provider-brand{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}.cf-provider-brand-copy{display:grid!important;gap:2px!important;min-width:0!important}.cf-provider-brand-copy strong,.m-drawer-provider .cf-provider-brand-copy strong,.m-drawer-provider .m-drawer-head strong{color:#0f172a!important;font-weight:850!important;text-shadow:none!important}.cf-provider-brand-copy small{color:#64748b!important;font-weight:600!important}.m-drawer-provider .cf-provider-brand{color:#0f172a!important}
+.cf-provider-brand{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}.cf-provider-brand-copy{display:grid!important;gap:2px!important;min-width:0!important}.m-drawer-provider .cf-provider-brand-copy strong,.m-drawer-provider .m-drawer-head strong{color:#0f172a!important;font-weight:850!important;text-shadow:none!important}.cf-provider-brand-copy small{color:#64748b!important;font-weight:600!important}.m-drawer-provider .cf-provider-brand{color:#0f172a!important}
 .cf-provider-logo{display:grid;place-items:center;border-radius:9px;overflow:hidden;background:#fff;border:1px solid #e2e8f0;flex:0 0 auto}.cf-provider-logo img{display:block;width:100%;height:100%;object-fit:contain;background:#fff}.cf-provider-logo.fallback{background:#f8fafc;color:#475569;font-size:10px;font-weight:850}
-.cf-provider-list-cell{display:flex!important;align-items:center!important;gap:9px!important;color:#0f172a!important}.cf-provider-list-logo{width:34px!important;height:34px!important;min-width:34px!important;display:grid!important}.cf-provider-list-cell>.m-cell-title{min-width:0!important}.cf-provider-list-cell>.m-cell-title strong{color:#0f172a!important;font-weight:850!important;text-shadow:none!important}
+.cf-provider-list-cell{display:flex!important;align-items:center!important;gap:9px!important}.cf-provider-list-logo{width:34px!important;height:34px!important;min-width:34px!important;display:grid!important;flex:0 0 34px!important}.cf-provider-list-cell>.m-cell-title{min-width:0!important}.cf-provider-list-cell>.m-cell-title strong{font-weight:500!important;text-shadow:none!important}
 .m-drawer-provider .cf-provider-logo.cf-logo-editable{cursor:pointer;outline-offset:2px;transition:box-shadow .15s,border-color .15s}.m-drawer-provider .cf-provider-logo.cf-logo-editable:hover,.m-drawer-provider .cf-provider-logo.cf-logo-editable:focus-visible{border-color:#818cf8;box-shadow:0 0 0 3px rgba(99,102,241,.14);outline:none}.cf-logo-upload-note{display:block;margin:5px 0 0 63px;font-size:9px;color:#64748b;font-weight:650}.cf-logo-upload-note.success{color:#15803d}.cf-logo-upload-note.error{color:#b42318}
 .cf-logo-editor-backdrop{position:fixed;inset:0;z-index:60000;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:18px}.cf-logo-editor{width:min(520px,100%);background:#fff;border-radius:14px;border:1px solid #dfe5ee;box-shadow:0 28px 80px rgba(15,23,42,.3);padding:18px;color:#0f172a}.cf-logo-editor h3{margin:0 0 5px;font-size:16px;color:#0f172a;font-weight:850}.cf-logo-editor p{margin:0 0 14px;font-size:11px;color:#64748b;line-height:1.5}.cf-logo-editor label{display:grid;gap:5px;font-size:10px;font-weight:800;color:#475569;margin:10px 0}.cf-logo-editor input[type=url]{height:36px;border:1px solid #dbe3ec;border-radius:8px;padding:0 9px;color:#0f172a;background:#fff}.cf-logo-editor-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.cf-logo-editor button{border:1px solid #dbe3ec;border-radius:8px;background:#fff;padding:8px 11px;font-weight:750;color:#334155;cursor:pointer}.cf-logo-editor button.primary{background:#25324a;color:#fff;border-color:#25324a}.cf-logo-editor-or{text-align:center;font-size:9px;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
 `;document.head.appendChild(s)
 }
 function listFallback(name){const s=document.createElement('span');s.className='cf-provider-logo fallback cf-provider-list-logo';s.innerHTML=`<b>${initials(name)}</b>`;return s}
+function applyListLogo(slot,item,name){
+ if(!slot?.isConnected)return
+ if(!item?.url){slot.className='cf-provider-logo fallback cf-provider-list-logo';slot.innerHTML=`<b>${initials(name)}</b>`;return}
+ slot.className='cf-provider-logo cf-provider-list-logo';slot.replaceChildren();const img=document.createElement('img');img.src=item.url;img.alt=name+' logo';img.loading='eager';img.decoding='async';img.addEventListener('error',()=>{slot.className='cf-provider-logo fallback cf-provider-list-logo';slot.innerHTML=`<b>${initials(name)}</b>`},{once:true});slot.appendChild(img)
+}
 async function decorateProviderList(){
  ensureStyles()
  if(!location.hash.startsWith('#providers'))return
@@ -62,21 +79,24 @@ async function decorateProviderList(){
  for(const row of rows){
    const cell=row.querySelector('td:first-child'),title=cell?.querySelector('.m-cell-title'),stable=title?.querySelector('small')?.textContent?.trim()
    if(!cell||!title||!stable||cell.dataset.cfLogoDecorated==='1')continue
-   targets.push({cell,title,stable,name:title.querySelector('strong')?.textContent?.trim()||'Provider'})
+   const name=title.querySelector('strong')?.textContent?.trim()||'Provider',slot=listFallback(name),wrap=document.createElement('span')
+   wrap.className='cf-provider-list-cell';wrap.appendChild(slot);wrap.appendChild(title);cell.replaceChildren(wrap);cell.dataset.cfLogoDecorated='1'
+   const cached=listCache.get(stable);if(cached?.expiresAt>now())applyListLogo(slot,cached,name)
+   targets.push({cell,title,stable,name,slot,cached:cached?.expiresAt>now()})
  }
- if(!targets.length)return
- const keys=[...new Set(targets.map(x=>x.stable))]
- let byKey=new Map()
+ const misses=targets.filter(x=>!x.cached)
+ if(!misses.length)return
+ const keys=[...new Set(misses.map(x=>x.stable))]
  try{
    const{data,error}=await supabase.functions.invoke('provider-asset-access',{body:{stable_keys:keys}})
-   if(!error)byKey=new Map((data?.items||[]).map(x=>[String(x.stable_key),x]))
+   if(error)return
+   const expiresAt=cacheTtl(data?.expires_in||600),byKey=new Map((data?.items||[]).map(x=>[String(x.stable_key),x]))
+   for(const t of misses){
+     const item=byKey.get(t.stable)||null
+     listCache.set(t.stable,{url:String(item?.url||''),expiresAt});applyListLogo(t.slot,item,t.name)
+   }
+   persistListCache()
  }catch{}
- for(const t of targets){
-   if(!t.cell.isConnected||t.cell.dataset.cfLogoDecorated==='1')continue
-   const item=byKey.get(t.stable),logo=item?.url?document.createElement('span'):listFallback(t.name)
-   if(item?.url){logo.className='cf-provider-logo cf-provider-list-logo';const img=document.createElement('img');img.src=item.url;img.alt=t.name+' logo';img.loading='lazy';img.addEventListener('error',()=>{logo.replaceWith(listFallback(t.name))},{once:true});logo.appendChild(img)}
-   const wrap=document.createElement('span');wrap.className='cf-provider-list-cell';wrap.appendChild(logo);wrap.appendChild(t.title);t.cell.replaceChildren(wrap);t.cell.dataset.cfLogoDecorated='1'
- }
 }
 function setUploadNote(logo,text,tone=''){
  const brand=logo.closest('.cf-provider-brand');if(!brand)return
@@ -88,7 +108,7 @@ async function uploadLogo(logo,providerId,{file=null,sourceUrl=''}){
  const form=new FormData();form.set('provider_id',providerId);if(file)form.set('file',file);if(sourceUrl)form.set('source_url',sourceUrl)
  try{
    const{data,error}=await supabase.functions.invoke('provider-asset-upload',{body:form});if(error)throw error;if(data?.error)throw new Error(data.error)
-   cache.delete(providerId);dispatchEvent(new CustomEvent('coursefinder:provider-logo-refresh',{detail:{providerId,url:data?.url||'',expiresIn:data?.expires_in||600}}));setUploadNote(logo,'Logo updated · managed primary asset','success');queueDecorate()
+   cache.delete(providerId);clearListCache();dispatchEvent(new CustomEvent('coursefinder:provider-logo-refresh',{detail:{providerId,url:data?.url||'',expiresIn:data?.expires_in||600}}));setUploadNote(logo,'Logo updated · managed primary asset','success');queueDecorate()
  }catch(e){setUploadNote(logo,'Logo update failed: '+String(e?.message||e),'error')}
 }
 function openLogoEditor(logo,providerId){
