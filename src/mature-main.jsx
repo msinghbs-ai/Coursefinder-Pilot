@@ -27,7 +27,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.53'
+const UI_VERSION='2.15.54'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -295,26 +295,38 @@ function AdministrationHome({rank,actorId,navigate,routeParams,onError}){
 }
 function RankingImportPanel({onError,routeParams,navigate}){
  const requested=routeParams?.get?.('system'),presetSystem=['qs_wur','the_wur','arwu'].includes(requested)?requested:'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
- const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for CourseFinder ingestion.',revisionNote:'',mode:system==='the_wur'?'file':'url',parsebotRef:rankingParsebotRef(system)})
- const[form,setForm]=useState(makeForm()),[file,setFile]=useState(null),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([]),[detected,setDetected]=useState(null),[advanced,setAdvanced]=useState(false),[processingId,setProcessingId]=useState(''),[lastParsedKey,setLastParsedKey]=useState(''),[overwriteKey,setOverwriteKey]=useState(''),[historySystem,setHistorySystem]=useState('all')
+ const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for CourseFinder ingestion.',revisionNote:'',mode:'file',parsebotRef:rankingParsebotRef(system)})
+ const[form,setForm]=useState(makeForm()),[files,setFiles]=useState([]),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([]),[detected,setDetected]=useState(null),[advanced,setAdvanced]=useState(false),[processingId,setProcessingId]=useState(''),[lastParsedKey,setLastParsedKey]=useState(''),[overwriteKey,setOverwriteKey]=useState(''),[historySystem,setHistorySystem]=useState('all')
  const load=async()=>{try{const x=await api.rankingImports({limit:100});setImports(x?.items||[]);return x?.items||[]}catch(e){onError?.(e.message);return[]}}
  useEffect(()=>{load()},[])
  const editionKey=(system=form.systemCode,year=form.editionYear)=>system+':'+String(year)
  const clearOutcome=()=>{setSaved('');setOverwriteKey('')}
  const patch=(k,v)=>{if(k==='editionYear'||k==='systemCode')clearOutcome();setForm(x=>({...x,[k]:v}))}
- const chooseSystem=v=>{clearOutcome();setForm(x=>({...x,systemCode:v,editionYear:String(rankingDefaultYear(v)),publisherName:rankingPublisherName(v),sourceUrl:rankingSourceUrl(v),mode:v==='the_wur'?'file':'url',parsebotRef:rankingParsebotRef(v)}))}
- async function inspectFile(next){
-  setFile(next);setSaved('');setDetected(null)
-  if(!next||!/\.(txt|json)$/i.test(next.name))return
+ const chooseSystem=v=>{clearOutcome();setFiles([]);setDetected(null);setForm(x=>({...x,systemCode:v,editionYear:String(rankingDefaultYear(v)),publisherName:rankingPublisherName(v),sourceUrl:rankingSourceUrl(v),mode:'file',parsebotRef:rankingParsebotRef(v)}))}
+ async function inspectFiles(nextList){
+  const selected=Array.from(nextList||[]);setFiles(selected);setSaved('');setDetected(null)
+  if(!selected.length)return
   try{
-   const head=await next.slice(0,256*1024).text(),clean=head.replace(/^\uFEFF/,'').trim(),m=clean.match(/^Year\s+(\d{4})\s*[\r\n]+/i),year=m?Number(m[1]):null,body=m?clean.slice(m[0].length):clean
-   const payload=JSON.parse(body)
-   if(String(payload?.status||'').toLowerCase()==='success'&&Array.isArray(payload?.data?.data)){
-    const y=year||Number(form.editionYear)||2026
-    setDetected({system:'Times Higher Education',year:y,format:'Native JSON/TXT',rows:payload.data.data.length})
-    setForm(x=>({...x,systemCode:'the_wur',editionYear:String(y),publisherName:'Times Higher Education',sourceUrl:rankingSourceUrl('the_wur'),mode:'file'}))
+   let system=null,year=null,rows=0;const countries=new Set()
+   for(const next of selected){
+    if(!/\.(txt|json)$/i.test(next.name))continue
+    const clean=(await next.text()).replace(/^\uFEFF/,'').trim(),m=clean.match(/^Year\s+(\d{4})\s*[\r\n]+/i),headerYear=m?Number(m[1]):null,body=m?clean.slice(m[0].length):clean,payload=JSON.parse(body),d=payload?.data??payload
+    let detectedSystem=null,detectedRows=[],detectedYear=headerYear
+    if(Array.isArray(d?.universities)){detectedSystem='qs_wur';detectedRows=d.universities;detectedYear=detectedYear||Number(d?.edition_year||payload?.edition_year)}
+    else if(Array.isArray(d?.rankings)){detectedSystem='arwu';detectedRows=d.rankings;detectedYear=detectedYear||Number(d?.year||payload?.year)}
+    else if(Array.isArray(payload?.data?.data)){detectedSystem='the_wur';detectedRows=payload.data.data}
+    if(!detectedSystem)continue
+    if(system&&system!==detectedSystem)throw new Error('Selected files contain mixed ranking systems.')
+    if(year&&detectedYear&&year!==detectedYear)throw new Error('Selected files contain mixed edition years.')
+    system=detectedSystem;year=detectedYear||year;rows+=detectedRows.length
+    detectedRows.forEach(r=>{const country=String(r?.country||r?.location||r?.region||'').trim();if(country)countries.add(country)})
    }
-  }catch{}
+   if(system){
+    const y=year||Number(form.editionYear)||2026,label=system==='qs_wur'?'QS World University Rankings':system==='the_wur'?'Times Higher Education':'Academic Ranking of World Universities'
+    setDetected({system:label,year:y,format:selected.length>1?'Country/multi-page bundle':'Publisher JSON/TXT',rows,countries:[...countries]})
+    setForm(x=>({...x,systemCode:system,editionYear:String(y),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),mode:'file'}))
+   }
+  }catch(err){onError?.(readableError(err))}
  }
  function readableError(err){
   const raw=String(err?.message||err||'Import failed')
@@ -346,9 +358,9 @@ function RankingImportPanel({onError,routeParams,navigate}){
     if(form.systemCode==='the_wur')throw new Error('THE currently uses file upload parsing.')
     r=await api.importRankingPublisherUrl({systemCode:form.systemCode,editionYear:Number(form.editionYear),referencePath:form.parsebotRef})
    }else{
-    if(!file)throw new Error('Choose an authorised publisher file.')
-    r=await api.uploadRankingPublisherFile({...form,editionYear:Number(form.editionYear),file})
-    setFile(null);setDetected(null);e.currentTarget?.reset?.()
+    if(!files.length)throw new Error('Choose at least one authorised publisher file.')
+    r=await api.uploadRankingPublisherFile({...form,editionYear:Number(form.editionYear),files})
+    setFiles([]);setDetected(null);e.currentTarget?.reset?.()
    }
    await load()
    if(r?.import_id)await processImport(r.import_id,'validate')
@@ -360,18 +372,18 @@ function RankingImportPanel({onError,routeParams,navigate}){
  }
  return <div className="m-page-stack m-ranking-import-page">
   <section className="m-panel m-ranking-import-compact">
-   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Administration / Sources & Imports</div><h2>Register ranking publisher file</h2><p>Choose a ranking system and edition, then register either an approved Parse.bot source or an authorised publisher file. Both routes use the same Parse & validate → Apply workflow.</p></div><FileCheck2 size={22}/></div>
+   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Administration / Sources & Imports</div><h2>Register ranking publisher file</h2><p>File upload is the preferred ranking acquisition route. Upload one global file or combine multiple country/page JSON/TXT files for the same publisher and edition. Parse.bot remains an optional metered fallback.</p></div><FileCheck2 size={22}/></div>
    <form className="m-ranking-import-form compact" onSubmit={submit}>
     <div className="m-ranking-essentials">
       <label>Ranking system<select value={form.systemCode} onChange={e=>chooseSystem(e.target.value)}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education</option><option value="arwu">Academic Ranking of World Universities</option></select></label>
       <label>Edition year<select value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)}>{rankingYearOptions(form.systemCode).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
     </div>
     <div className="m-ranking-essentials">
-      <label>Import method<select value={form.mode} onChange={e=>patch('mode',e.target.value)}><option value="url" disabled={form.systemCode==='the_wur'}>Parse.bot URL</option><option value="file">File upload</option></select></label>
-      {form.mode==='url'?<label>Parse.bot scraper URL<input value={form.parsebotRef} onChange={e=>patch('parsebotRef',e.target.value)} placeholder="/scrapers/…" required/></label>:<label>Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>inspectFile(e.target.files?.[0]||null)} required/></label>}
+      <label>Import method<select value={form.mode} onChange={e=>patch('mode',e.target.value)}><option value="file">File upload (recommended)</option><option value="url" disabled={form.systemCode==='the_wur'}>Parse.bot URL (metered)</option></select></label>
+      {form.mode==='url'?<label>Parse.bot scraper URL<input value={form.parsebotRef} onChange={e=>patch('parsebotRef',e.target.value)} placeholder="/scrapers/…" required/></label>:<label>Publisher file(s)<input type="file" multiple accept=".csv,.xlsx,.json,.txt" onChange={e=>inspectFiles(e.target.files)} required/><small>Select one global file or multiple country/page JSON/TXT files for the same ranking system and year.</small></label>}
     </div>
     {form.mode==='url'&&form.systemCode==='qs_wur'&&String(form.editionYear)==='2027'?<div className="m-ranking-detected warning"><AlertTriangle size={16}/><span><b>QS 2027 Parse.bot source currently unavailable</b><small>Parse.bot currently returns extraction_failed for the 2027 publisher payload. Select 2026 or use File upload for 2027.</small></span></div>:form.mode==='url'&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>Parse.bot established API</b><small>{form.parsebotRef} · year {form.editionYear} · Evidence retained before parsing</small></span></div>}
-    {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'}</small></span></div>}
+    {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'+(detected.countries?.length?' · '+detected.countries.join(', '):'')}</small></span></div>}
     <button type="button" className="m-ranking-advanced-toggle" aria-expanded={advanced} onClick={()=>setAdvanced(x=>!x)}><Settings2 size={14}/>{advanced?'Hide metadata':'Advanced metadata'}<ChevronDown size={14}/></button>
     {advanced&&<div className="m-ranking-advanced">
       <label>Publisher<input value={form.publisherName} onChange={e=>patch('publisherName',e.target.value)} required/></label>
