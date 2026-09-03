@@ -49,6 +49,11 @@ Deno.serve(async(req:Request)=>{
  const {data:pc,error:pe}=await svc.rpc("layer2_provider_runtime_config_by_key",{p_provider_key:"parsebot"});
  if(pe||!pc?.secret)return json(req,409,{error:"parsebot_credential_unavailable"});
  const key=String(pc.secret),started=Date.now();
+ const jobInsert=await svc.schema("pipeline").from("jobs").insert({
+   job_type:"ranking_import_acquire",domain:"ranking",status:"running",requested_by:actor,started_at:new Date().toISOString(),
+   payload:{action:"acquire",acquisition_mode:"parsebot_api",system_code:systemCode,edition_year:editionYear,reference_path:referencePath}
+ }).select("id").single();
+ const jobId=jobInsert.data?.id||null;
  try{
   const responses:any[]=[];
   let endpointUrl="",totalRows=0;
@@ -92,8 +97,17 @@ Deno.serve(async(req:Request)=>{
   });
   if(re){await svc.storage.from("evidence").remove([storagePath]);throw new Error(re.message)}
   if(reg?.duplicate){await svc.storage.from("evidence").remove([storagePath]);}
-  return json(req,200,{ok:true,duplicate:!!reg?.duplicate,import_id:reg?.import_id,evidence_id:reg?.evidence_id||null,
+  if(jobId)await svc.schema("pipeline").from("jobs").update({
+    status:"completed",completed_at:new Date().toISOString(),
+    payload:{action:"acquire",acquisition_mode:"parsebot_api",system_code:systemCode,edition_year:editionYear,reference_path:referencePath,import_id:reg?.import_id||null},
+    result:{ok:true,duplicate:!!reg?.duplicate,import_id:reg?.import_id||null,evidence_id:reg?.evidence_id||null,total_rows:totalRows,pages:responses.length,latency_ms:Date.now()-started}
+  }).eq("id",jobId);
+  return json(req,200,{ok:true,duplicate:!!reg?.duplicate,import_id:reg?.import_id,evidence_id:reg?.evidence_id||null,job_id:jobId,
    system_code:systemCode,edition_year:editionYear,total_rows:totalRows,pages:responses.length,latency_ms:Date.now()-started,
    reference_path:referencePath,endpoint_name:envelope.endpoint_name,execution_qualified:true});
- }catch(e){return json(req,422,{ok:false,error:e instanceof Error?e.message:String(e),system_code:systemCode,edition_year:editionYear})}
+ }catch(e){
+   const message=e instanceof Error?e.message:String(e);
+   if(jobId)await svc.schema("pipeline").from("jobs").update({status:"failed",completed_at:new Date().toISOString(),error_text:message,result:{ok:false,error:message}}).eq("id",jobId);
+   return json(req,422,{ok:false,error:message,job_id:jobId,system_code:systemCode,edition_year:editionYear})
+  }
 });
