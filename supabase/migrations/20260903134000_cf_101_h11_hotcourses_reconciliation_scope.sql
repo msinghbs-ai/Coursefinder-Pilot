@@ -27,8 +27,10 @@ select 'third_party_directory',h.provider_id,p.country_id,h.hotcourses_url,
          'directory_slug',h.hotcourses_slug,
          'purpose','provider_logo_discovery_and_reconciliation_only',
          'canonical_asset_authority',false,
-         'commercial_reuse_authorised',false,
-         'terms_basis','Hotcourses Website Terms of Use prohibit commercial use without prior written consent',
+         'operator_fallback_reuse_approved',true,
+         'rights_owner_basis','university_provider_mark',
+         'source_host_role','aggregator_transport_copy',
+         'terms_note','operator approved use of exact university-owned logo copy; preserve source provenance',
          'change_control_ref','CF-CHG-20260903-101'
        )
 from hc h join catalogue.providers p on p.id=h.provider_id
@@ -92,7 +94,7 @@ begin
         'needs_review',count(*) filter(where discovered and not accepted_candidate and not approved_primary),
         'hotcourses_matched',count(*) filter(where hotcourses_matched),
         'refresh_cadence','quarterly','authority','first_party_provider',
-        'third_party_discovery_policy','Hotcourses references never become canonical assets without explicit reuse authority'
+        'third_party_discovery_policy','Exact university-logo copies from Hotcourses may be promoted as operator-approved fallbacks; canonical ownership remains the Provider and Hotcourses provenance is retained'
       ) from base
     );
   elsif p_operation='provider_asset_coverage' then
@@ -151,7 +153,7 @@ begin
         'primary_asset',case when pa.id is null then null else jsonb_build_object('id',pa.id,'source_url',pa.source_url,'evidence_id',pa.evidence_id,'storage_path',pa.storage_path,'mime_type',pa.mime_type,'content_hash',pa.content_hash,'verified_at',pa.verified_at) end,
         'candidate_count',(select count(*) from pipeline.provider_asset_candidates pc where pc.provider_id=p.id and pc.asset_type ilike 'logo%'),
         'accepted_candidate_count',(select count(*) from pipeline.provider_asset_candidates pc where pc.provider_id=p.id and pc.asset_type ilike 'logo%' and pc.status='accepted'),
-        'hotcourses_reference',(select jsonb_build_object('id',s.metadata->>'directory_id','url',s.url,'reuse_authorised',false) from pipeline.sources s where s.provider_id=p.id and s.source_type='third_party_directory' and s.metadata->>'directory'='hotcourses_abroad' order by s.updated_at desc limit 1),
+        'hotcourses_reference',(select jsonb_build_object('id',s.metadata->>'directory_id','url',s.url,'fallback_reuse_approved',coalesce((s.metadata->>'operator_fallback_reuse_approved')::boolean,false),'rights_owner_basis',s.metadata->>'rights_owner_basis' from pipeline.sources s where s.provider_id=p.id and s.source_type='third_party_directory' and s.metadata->>'directory'='hotcourses_abroad' order by s.updated_at desc limit 1),
         'latest_candidate_at',(select max(pc.discovered_at) from pipeline.provider_asset_candidates pc where pc.provider_id=p.id and pc.asset_type ilike 'logo%'),
         'authority','first_party_provider','refresh_cadence','quarterly')
       from catalogue.providers p
