@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { unzipSync } from "npm:fflate@0.8.2";
 
-const VERSION="layer2-provider-asset-promote-v4";
+const VERSION="layer2-provider-asset-promote-v4.1";
 const BUCKET="provider-assets";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 const H=(r:Request)=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":r.headers.get("origin")===ORIGIN?ORIGIN:ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key","access-control-allow-methods":"POST,OPTIONS"});
@@ -70,8 +70,9 @@ Deno.serve(async(req:Request)=>{
            else if(rb[0]===0x52&&rb[1]===0x49&&rb[2]===0x46&&rb[3]===0x46&&new TextDecoder().decode(rb.slice(8,12))==="WEBP")rm="image/webp";
            else if(head.startsWith("<svg")||(head.startsWith("<?xml")&&head.includes("<svg")))rm="image/svg+xml";
          }
-         if(!["image/svg+xml","image/png","image/jpeg","image/webp"].includes(rm))continue;
-         buf=rb;mime=rm;fetchProvider=String(pc.provider_key||route.provider_key||"proxy");break;
+         const archiveOk=ctx?.metadata?.archive_bundle===true&&(rm==="application/zip"||target.toLowerCase().endsWith(".zip"));
+         if(!archiveOk&&!["image/svg+xml","image/png","image/jpeg","image/webp"].includes(rm))continue;
+         buf=rb;mime=archiveOk?"application/zip":rm;fetchProvider=String(pc.provider_key||route.provider_key||"proxy");break;
        }catch{}
      }
      if(!buf!)return J(req,502,{error:"asset_fetch_http_error",http_status:directStatus,direct_error:String(directError?.message||directError||""),fallback_exhausted:true});
