@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js@2.4.4/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors={
@@ -87,21 +87,10 @@ Deno.serve(async(req:Request)=>{
   if(upload.error)return reply(500,{error:"asset_storage_failed",detail:upload.error.message});
 
   const {data:applied,error:applyError}=await serviceClient.rpc("svc_provider_asset_manual_upload_apply",{
-    p_provider_id:providerId,
-    p_storage_path:storagePath,
-    p_mime_type:mime,
-    p_content_hash:digest,
-    p_actor_id:context.user_id,
-    p_source_url:originalSourceUrl,
+    p_provider_id:providerId,p_storage_path:storagePath,p_mime_type:mime,p_content_hash:digest,p_actor_id:context.user_id,p_source_url:originalSourceUrl,
   });
-  if(applyError){
-    await serviceClient.storage.from("provider-assets").remove([storagePath]);
-    return reply(500,{error:"provider_asset_apply_failed",detail:applyError.message});
-  }
+  if(applyError){await serviceClient.storage.from("provider-assets").remove([storagePath]);return reply(500,{error:"provider_asset_apply_failed",detail:applyError.message});}
 
   const {data:signed,error:signedError}=await serviceClient.storage.from("provider-assets").createSignedUrl(storagePath,600);
-  return reply(200,{
-    ok:true,provider_id:providerId,provider_asset_id:applied?.provider_asset_id,content_hash:digest,mime_type:mime,
-    bytes:bytes.byteLength,storage_path:storagePath,source_url:originalSourceUrl,expires_in:600,url:!signedError?signed?.signedUrl:null,
-  });
+  return reply(200,{ok:true,provider_id:providerId,provider_asset_id:applied?.provider_asset_id,content_hash:digest,mime_type:mime,bytes:bytes.byteLength,storage_path:storagePath,source_url:originalSourceUrl,expires_in:600,url:!signedError?signed?.signedUrl:null});
 });
