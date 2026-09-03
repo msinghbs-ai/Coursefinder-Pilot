@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION="ranking-layer1-etl-v1.5.0";
+const VERSION="ranking-layer1-etl-v1.6.0";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -124,6 +124,49 @@ function parsebotRowsFromJson(bytes:Uint8Array,systemCode:string,expectedYear:nu
  throw new Error("Parse.bot JSON parser supports QS and ARWU only");
 }
 
+function rankingJsonRowsFromEvidence(bytes:Uint8Array,systemCode:string,expectedYear:number){
+ const text=new TextDecoder().decode(bytes).replace(/^\uFEFF/,"").trim();
+ const root=JSON.parse(text);
+ if(root?.source==="parsebot")return parsebotRowsFromJson(bytes,systemCode,expectedYear);
+ const payloads=Array.isArray(root)?root:Array.isArray(root?.responses)?root.responses:Array.isArray(root?.pages)?root.pages:root?.source==="manual_ranking_bundle"&&Array.isArray(root?.files)?root.files.map((x:any)=>x?.payload).filter(Boolean):[root];
+ const raw:any[]=[];const countries=new Set<string>();
+ if(systemCode==="qs_wur"){
+  for(const payload of payloads){
+   const d=payload?.data??payload;
+   const y=Number(d?.edition_year??payload?.edition_year);if(Number.isInteger(y)&&y!==expectedYear)throw new Error("QS file edition mismatch");
+   const rows=Array.isArray(d?.universities)?d.universities:[];raw.push(...rows);
+  }
+  const seen=new Set<string>();const rows=raw.map((r:any,i:number)=>{const parsed=parseRank(r.rank||r.rank_display||""),overall=scoreParts(r.overall_score);const indicators:any={};
+   for(const it of Array.isArray(r.indicators)?r.indicators:[]){const k=key(it?.indicator_name||it?.indicator_id||("indicator_"+i));indicators[k]={label:clean(it?.indicator_name)||k,value_display:clean(it?.score)||null,value_numeric:score(it?.score),unit:"score",methodology_version:String(expectedYear),rank:clean(it?.rank)||null,group:clean(it?.group)||null};}
+   const country=clean(r.country);if(country)countries.add(country);
+   return{publisher_institution_id:clean(r.university_id||r.core_id)||null,institution_name:clean(r.name),profile_url:clean(r.profile_url)||null,country_text:country||null,location_text:[clean(r.city),country].filter(Boolean).join(", ")||null,
+    rank_display:parsed.rank_display||null,rank_exact:parsed.rank_exact,rank_low:parsed.rank_low,rank_high:parsed.rank_high,is_tied:parsed.is_tied,rank_status:parsed.rank_status,
+    overall_score:overall.numeric,overall_score_display:overall.display,overall_score_low:overall.low,overall_score_high:overall.high,source_row_ordinal:i+1,indicators,source_row_payload:r};
+  }).filter((r:any)=>{if(!r.institution_name)return false;const k=(r.publisher_institution_id||key(r.institution_name))+"|"+(r.rank_display||"");if(seen.has(k))return false;seen.add(k);return true});
+  if(!rows.length)throw new Error("QS JSON/TXT file contains no universities");
+  return{rows,declaredYear:expectedYear,publisherStatus:"success",scopeCountries:[...countries]};
+ }
+ if(systemCode==="arwu"){
+  for(const payload of payloads){const d=payload?.data??payload;const y=Number(d?.year??payload?.year);if(Number.isInteger(y)&&y!==expectedYear)throw new Error("ARWU file edition mismatch");const rows=Array.isArray(d?.rankings)?d.rankings:[];raw.push(...rows)}
+  const seen=new Set<string>();const rows=raw.map((r:any,i:number)=>{const parsed=parseRank(r.rank||""),overall=scoreParts(r.score);const country=clean(r.country||r.region);if(country)countries.add(country);return{
+   publisher_institution_id:clean(r.slug||r.id)||null,institution_name:clean(r.name),profile_url:clean(r.profile_url)||null,country_text:country||null,location_text:country||null,
+   rank_display:parsed.rank_display||null,rank_exact:parsed.rank_exact,rank_low:parsed.rank_low,rank_high:parsed.rank_high,is_tied:parsed.is_tied,rank_status:parsed.rank_status,
+   overall_score:overall.numeric,overall_score_display:overall.display,overall_score_low:overall.low,overall_score_high:overall.high,source_row_ordinal:i+1,
+   indicators:{national_rank:{label:"National rank",value_display:clean(r.national_rank)||null,value_numeric:score(r.national_rank),unit:"rank",methodology_version:String(expectedYear)}},source_row_payload:r};
+  }).filter((r:any)=>{if(!r.institution_name)return false;const k=(r.publisher_institution_id||key(r.institution_name))+"|"+(r.rank_display||"");if(seen.has(k))return false;seen.add(k);return true});
+  if(!rows.length)throw new Error("ARWU JSON/TXT file contains no rankings");
+  return{rows,declaredYear:expectedYear,publisherStatus:"success",scopeCountries:[...countries]};
+ }
+ if(systemCode==="the_wur"){
+  for(const payload of payloads){const d=payload?.data??payload;const rows=Array.isArray(payload?.data?.data)?payload.data.data:(Array.isArray(d?.data)?d.data:[]);raw.push(...rows)}
+  if(!raw.length)throw new Error("THE JSON/TXT file contains no ranking rows");
+  const wrapped={status:"success",data:{data:raw}};const merged=new TextEncoder().encode(JSON.stringify(wrapped));
+  const parsed=theRowsFromNativeJson(merged,expectedYear);for(const r of parsed.rows){if(r.country_text)countries.add(r.country_text)}
+  return{...parsed,scopeCountries:[...countries]};
+ }
+ throw new Error("Unsupported ranking JSON/TXT system");
+}
+
 async function fetchQsStatic(year:number){
  const nid=QS_STATIC[year];if(!nid)return null;
  const url=`https://www.topuniversities.com/sites/default/files/qs-rankings-data/en/${nid}_indicators.txt`;
@@ -175,12 +218,11 @@ Deno.serve(async(req:Request)=>{
   if(!rows.length){
    if(!imp){const latest=await service.rpc("svc_ranking_latest_import",{p_system_code:systemCode,p_edition_year:editionYear});if(latest.error)throw latest.error;imp=latest.data;}
    if(!imp?.storage_path)return json({ok:false,error:"ranking Evidence required; register a Parse.bot URL import or upload a publisher file in Administration → Sources & Imports",requiresPublisherFile:true,systemCode,editionYear,workerVersion:VERSION},409);
-   const original=String(imp.original_filename||""),isWorkbook=/\.(csv|xlsx)$/i.test(original),isTheJson=systemCode==="the_wur"&&/\.(json|txt)$/i.test(original),isParsebotJson=/^parsebot-/.test(original)&&/\.json$/i.test(original);
-   if(!isWorkbook&&!isTheJson&&!isParsebotJson)return json({ok:false,error:"Ranking parser accepts CSV/XLSX, native THE JSON/TXT, and governed Parse.bot QS/ARWU JSON Evidence.",requiresParserAdapter:true,systemCode,editionYear,filename:imp.original_filename,workerVersion:VERSION},422);
+   const original=String(imp.original_filename||""),isWorkbook=/\.(csv|xlsx)$/i.test(original),isJsonText=/\.(json|txt)$/i.test(original);
+   if(!isWorkbook&&!isJsonText)return json({ok:false,error:"Ranking parser accepts CSV/XLSX and governed JSON/TXT Evidence for QS, THE and ARWU.",requiresParserAdapter:true,systemCode,editionYear,filename:imp.original_filename,workerVersion:VERSION},422);
    const dl=await service.storage.from("evidence").download(imp.storage_path);if(dl.error||!dl.data)throw new Error(dl.error?.message||"publisher Evidence download failed");
    const bytes=new Uint8Array(await dl.data.arrayBuffer());
-   if(isParsebotJson){rows=parsebotRowsFromJson(bytes,systemCode,editionYear).rows;acquisitionMode="parsebot_api";}
-   else if(isTheJson){rows=theRowsFromNativeJson(bytes,editionYear).rows;acquisitionMode="manual_the_native_json";}
+   if(isJsonText){const parsed=rankingJsonRowsFromEvidence(bytes,systemCode,editionYear);rows=parsed.rows;acquisitionMode=/^parsebot-/.test(original)?"parsebot_api":"manual_file";}
    else {rows=rowsFromWorkbook(bytes,editionYear,systemCode,original);acquisitionMode="manual_file";}
    sourceHash=imp.content_hash;evidenceArtifactId=imp.evidence_artifact_id;filename=imp.original_filename;sourceUrl=imp.source_url;
   }
