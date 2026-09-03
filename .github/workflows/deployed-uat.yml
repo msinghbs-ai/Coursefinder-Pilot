@@ -293,6 +293,11 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-provider-page-fanout|layer2-provider-asset-promote|layer2-acquire-v2)/|^supabase/migrations/.*cf_101_h11_|^tests/uat/cf-091-h11-provider-assets-deployed\.spec\.mjs$|^\.github/cf-101-h11-provider-assets-candidate$|^\.github/workflows/deployed-uat\.yml$)'; then
             targeted=(tests/uat/cf-091-h11-provider-assets-deployed.spec.mjs)
           fi
+          # CF-102 resolves last among targeted routes because it spans Admin, Course detail,
+          # Compare, Layer 2 and workflow files that also match older generic suites.
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(ProviderLogo\.jsx|mature-main\.jsx|CourseDetailPolish\.jsx|ComparisonWorkspace\.jsx|mature\.css|lib/supabase\.js)$|^supabase/functions/(provider-asset-access|layer2-hotcourses-directory-parse)/|^supabase/migrations/.*cf_102_|^tests/uat/cf-102-provider-logo-surfaces-deployed\.spec\.mjs$|^\.github/cf-102-provider-logo-surfaces-candidate$|^\.github/workflows/deployed-uat\.yml$)'; then
+            targeted=(tests/uat/cf-102-provider-logo-surfaces-deployed.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
