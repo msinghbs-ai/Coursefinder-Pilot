@@ -27,7 +27,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.47'
+const UI_VERSION='2.15.48'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -92,6 +92,7 @@ const ADMIN_SECTIONS=[
  {key:'sources-imports',label:'Sources & Imports',Icon:Database,min:4,group:'Data setup',description:'Register governed publisher files and inspect import history.'},
  {key:'layer1-sources',label:'Layer 1 sources',Icon:Database,min:6,group:'Data setup',description:'Authoritative source configuration and Layer 1 guardrails.'},
  {key:'layer2-providers',label:'Scraper Config',Icon:SlidersHorizontal,min:4,group:'Acquisition',description:'Acquisition providers, credentials, quotas and profile routing.'},
+ {key:'provider-assets',label:'Provider Assets',Icon:Building2,min:4,group:'Acquisition',description:'Provider logo coverage, Evidence, approval state and first-party source completeness.'},
  {key:'layer2-sources',label:'Extraction Profiles',Icon:Database,min:4,group:'Advanced',description:'Versioned non-secret extraction rules and source-specific qualification state.'},
  {key:'scheduling',label:'Scheduling',Icon:RefreshCw,min:4,group:'Operations',description:'Refresh cadence, targeted scheduling and due-work policy.'},
  {key:'onboarding',label:'Onboarding',Icon:Workflow,min:4,group:'Operations',description:'Governed country and source onboarding lifecycle.'},
@@ -241,6 +242,33 @@ function StatisticsRankings({onError,navigate,rank}){
 }
 
 
+function ProviderAssetsWorkspace({onError,navigate}){
+ const[summary,setSummary]=useState(null),[data,setData]=useState(null),[country,setCountry]=useState('AU'),[state,setState]=useState(''),[query,setQuery]=useState(''),[offset,setOffset]=useState(0),[busy,setBusy]=useState(false)
+ const debounced=useDebounce(query,260)
+ const countries=[{value:'AU',label:'Australia'},{value:'NZ',label:'New Zealand'},{value:'CA',label:'Canada'},{value:'',label:'All countries'}]
+ const states=[{value:'',label:'All states'},{value:'blocked',label:'Blocked'},{value:'needs_review',label:'Needs review'},{value:'missing',label:'Missing'},{value:'approved',label:'Approved'}]
+ function load(){setBusy(true);return Promise.all([api.providerAssetSummary({countryCode:country,query:debounced}),api.providerAssetCoverage({limit:50,offset,countryCode:country,query:debounced,state})]).then(([s,p])=>{setSummary(s);setData(p)}).catch(e=>onError?.(e.message)).finally(()=>setBusy(false))}
+ useEffect(()=>{load()},[country,state,debounced,offset])
+ useEffect(()=>setOffset(0),[country,state,debounced])
+ const rows=data?.items||[],total=Number(data?.total||0)
+ return <div className="m-page-stack">
+  <section className="m-panel">
+   <PanelTitle icon={Building2} title="Provider Assets" subtitle="H11 logo completeness across canonical Providers. First-party Provider sources remain authoritative; discovery never creates or merges Provider identity."/>
+   <div className="m-stats-grid">
+    {[['Expected',summary?.expected],['Discovered',summary?.discovered],['Acquired',summary?.acquired],['Approved',summary?.approved],['Blocked',summary?.blocked],['Missing',summary?.missing]].map(([label,value])=><article className="m-stats-card" key={label}><span>{label}</span><strong>{busy?'…':Number(value||0).toLocaleString()}</strong><small>{label==='Approved'?'Managed primary logos':label==='Blocked'?'Accepted candidate not promoted':label==='Missing'?'No logo candidate yet':'Current filtered scope'}</small></article>)}
+   </div>
+   <div className="m-alert compact" style={{marginTop:12}}><AlertTriangle size={14}/><span>{summary?.scope_basis||'Coverage denominator is the active canonical Provider set for the selected country.'}</span></div>
+  </section>
+  <section className="m-panel">
+   <div className="m-workspace-head"><div><h2>Coverage matrix</h2><p>Prioritises blocked and review cases before missing coverage. Approved assets retain source URL, Evidence, hash and verification time.</p></div><button className="m-secondary compact" onClick={load}><RefreshCw size={14}/>Refresh</button></div>
+   <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search Provider or stable key…"/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label></div>
+   <div className="m-filter-bar"><FilterSelect label="Country" value={country} onChange={v=>setCountry(v)} options={countries}/><FilterSelect label="Coverage state" value={state} onChange={v=>setState(v)} options={states}/></div>
+   <div className="dense-table-wrap"><table className="dense-table"><thead><tr><th><span>Provider</span></th><th><span>Country</span></th><th><span>State</span></th><th><span>Candidates</span></th><th><span>Evidence-backed</span></th><th><span>Primary asset</span></th><th><span>Verified</span></th><th><span>Actions</span></th></tr></thead><tbody>{rows.length?rows.map(r=><tr key={r.provider_id}><td className="primary-cell">{r.provider_name}<small style={{display:'block',color:'#94a3b8'}}>{r.stable_key}</small></td><td>{r.country_code}</td><td><Status value={r.coverage_state}/></td><td>{r.candidate_count}</td><td>{r.evidence_candidate_count}</td><td>{r.primary_mime_type||'—'}</td><td>{r.primary_verified_at?fmtDate(r.primary_verified_at):'—'}</td><td><button className="m-secondary compact" onClick={()=>navigate?.('Providers',{id:r.provider_id})}>Open Provider</button>{r.primary_evidence_id&&<EvidenceButton id={r.primary_evidence_id} navigate={navigate}/>}</td></tr>):<tr><td colSpan="8"><EmptyInline text={busy?'Loading Provider asset coverage…':'No matching Providers.'}/></td></tr>}</tbody></table></div>
+   <Pager offset={offset} limit={50} total={total} onOffset={setOffset}/>
+  </section>
+ </div>
+}
+
 function AdministrationHome({rank,actorId,navigate,routeParams,onError}){
  const allowed=ADMIN_SECTIONS.filter(x=>rank>=x.min)
  const requested=routeParams?.get?.('section')||'overview'
@@ -251,6 +279,7 @@ function AdministrationHome({rank,actorId,navigate,routeParams,onError}){
  </section>
  {tool==='overview'&&<section className="m-panel"><PanelTitle icon={Settings2} title="Administration overview" subtitle="Compact entry points follow the same role gates as their destination workspaces."/><div className="m-admin-card-grid">{allowed.filter(x=>x.key!=='overview').map(({key,label,Icon,group,description})=><button className="m-admin-card" key={key} onClick={()=>selectTool(key)}><span className="m-admin-card-icon"><Icon size={16}/></span><span className="m-admin-card-copy"><small>{group}</small><strong>{label}</strong><span>{description}</span></span><b>Open →</b></button>)}</div></section>}
  {tool==='sources-imports'&&<RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>}
+ {tool==='provider-assets'&&<ProviderAssetsWorkspace onError={onError} navigate={navigate}/>}
  {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>}
  {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>}
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>}
