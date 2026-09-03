@@ -1,0 +1,26 @@
+.ci-workbench{--cf-insight-ink:#172033;--cf-insight-navy:#25324a;--cf-insight-accent:#5b5ce2;--cf-insight-accent-soft:#eef2ff;--cf-insight-border:#dbe3ee;--cf-insight-surface:#f8fafc}
+.ci-panel{border-color:var(--cf-insight-border)!important;box-shadow:0 1px 3px rgba(15,23,42,.04)!important}
+.ci-title>span{background:var(--cf-insight-accent-soft)!important;color:var(--cf-insight-accent)!important}
+.ci-outcome-card,.ci-flow-state,.ci-flow-feature,.ci-markets,.ci-sch-row{border-color:var(--cf-insight-border)!important;background:linear-gradient(180deg,#fff,#f8fafc)!important}
+.ci-outcome-value,.ci-flow-feature>strong{color:var(--cf-insight-navy)!important}
+.ci-benchmark-track{background:#e2e8f0!important}
+.ci-benchmark-track span{background:linear-gradient(90deg,var(--cf-insight-accent),#818cf8)!important}
+.ci-benchmark-track i{background:var(--cf-insight-ink)!important}
+.ci-big-icon{background:var(--cf-insight-accent-soft)!important;color:var(--cf-insight-accent)!important}
+.ci-trend polyline{stroke:var(--cf-insight-accent)!important}
+.ci-market-chips span{background:var(--cf-insight-accent-soft)!important;color:#4338ca!important}
+.ci-pill.info{background:var(--cf-insight-accent-soft)!important;color:#4338ca!important}
+.ci-workspace,.ci-evidence{border-color:var(--cf-insight-border)!important;color:#334155!important;background:#fff!important}
+
+.cf-compare-page{--cf-insight-ink:#172033;--cf-insight-navy:#25324a;--cf-insight-accent:#5b5ce2;--cf-insight-accent-soft:#eef2ff;--cf-insight-border:#dbe3ee;--cf-insight-surface:#f8fafc}
+.cf-compare-shell{border-color:var(--cf-insight-border)!important}
+.cf-compare-tabs button.active{border-color:var(--cf-insight-accent)!important;color:var(--cf-insight-ink)!important}
+.cf-compare-controls>span{color:#4338ca!important}
+.cf-compare-value>strong{color:var(--cf-insight-navy)!important}
+.cf-flow-compare{border-color:var(--cf-insight-border)!important;background:linear-gradient(135deg,#fff,var(--cf-insight-surface))!important}
+.cf-flow-title>span{background:var(--cf-insight-navy)!important;color:#fff!important}
+.cf-flow-cards article{border-color:var(--cf-insight-border)!important;background:#fff!important}
+.cf-flow-cards b{color:var(--cf-insight-navy)!important}
+.cf-ranking-line>b,.cf-ranking-trend b{color:#172554!important}
+.cf-view-mode button.active,.cf-provider-selected{background:var(--cf-insight-accent-soft)!important;border-color:#c7d2fe!important}
+.cf-dataset-toggles button.active{background:var(--cf-insight-navy)!important;border-color:var(--cf-insight-navy)!important}
