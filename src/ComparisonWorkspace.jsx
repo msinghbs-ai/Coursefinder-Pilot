@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{Activity,ArrowLeftRight,BarChart3,GraduationCap,Search,Trash2,UsersRound,X}from'lucide-react'
 import{adminRead}from'./lib/supabase'
+import ProviderLogo from'./ProviderLogo'
 
 const MAX=6
 const human=v=>String(v??'').replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase())
@@ -86,7 +87,7 @@ export default function ComparisonWorkspace({routeParams,navigate,onError}){
    <div className="cf-compare-picker-head"><div><strong>{ids.length} / {MAX} selected</strong><span>Add {type}s to build a like-for-like comparison.</span></div>{ids.length>0&&<button onClick={clear}><Trash2 size={14}/>Clear</button>}</div>
    {type==='course'&&<div className="cf-course-provider-picker">
     <div className="cf-course-provider-label"><span><strong>University / provider</strong><small>Choose any governed provider first, then browse or search its courses.</small></span>{providerId&&<button type="button" onClick={clearProvider}>All providers</button>}</div>
-    {providerId?<div className="cf-provider-selected"><UsersRound size={15}/><span><small>Selected provider</small><strong>{providerName}</strong></span><button type="button" aria-label="Clear selected provider" onClick={clearProvider}><X size={14}/></button></div>:<label className="cf-compare-search provider"><Search size={16}/><input aria-label="Search universities or providers" value={providerQuery} onChange={e=>setProviderQuery(e.target.value)} placeholder="Search university or provider…"/>{providerBusy&&<span className="m-spinner tiny"/>}</label>}
+    {providerId?<div className="cf-provider-selected"><ProviderLogo providerId={providerId} name={providerName} size={34}/><span><small>Selected provider</small><strong>{providerName}</strong></span><button type="button" aria-label="Clear selected provider" onClick={clearProvider}><X size={14}/></button></div>:<label className="cf-compare-search provider"><Search size={16}/><input aria-label="Search universities or providers" value={providerQuery} onChange={e=>setProviderQuery(e.target.value)} placeholder="Search university or provider…"/>{providerBusy&&<span className="m-spinner tiny"/>}</label>}
     {providerRows.length>0&&<div className="cf-compare-results provider-results">{providerRows.map(r=><button type="button" key={r.id} onClick={()=>chooseProvider(r)}><span><strong>{r.canonical_name||r.display_name||r.name}</strong><small>{[r.country_code,r.subdivision_name,r.city].filter(Boolean).join(' · ')}</small></span><b>Choose</b></button>)}</div>}
    </div>}
    <label className="cf-compare-search"><Search size={16}/><input aria-label={`Search ${type}s to compare`} value={query} onChange={e=>setQuery(e.target.value)} placeholder={type==='course'?(providerId?`Search courses at ${providerName}…`:'Search course title, code or university…'):`Search ${type}s to compare…`}/>{searchBusy&&<span className="m-spinner tiny"/>}</label>
@@ -113,7 +114,7 @@ export default function ComparisonWorkspace({routeParams,navigate,onError}){
     <div className="cf-compare-scroll">
      <div className="cf-compare-grid" style={{'--cf-columns':Math.max(items.length,1)}}>
       <div className="cf-compare-label cf-compare-sticky">Selected</div>
-      {items.map(e=><article className="cf-compare-entity" key={e.id}><button aria-label="Remove from comparison" onClick={()=>remove(e.id)}><X size={13}/></button><strong>{e.name}</strong><small>{type==='course'?[e.provider_name,e.course_code,e.study_level].filter(Boolean).join(' · '):[e.country_code,e.subdivision,e.city].filter(Boolean).join(' · ')}</small></article>)}
+      {items.map(e=>{const logoProviderId=type==='provider'?e.id:e.provider_id;const logoName=type==='provider'?e.name:e.provider_name;return <article className="cf-compare-entity" key={e.id}><button aria-label="Remove from comparison" onClick={()=>remove(e.id)}><X size={13}/></button><div className="cf-compare-entity-head"><ProviderLogo providerId={logoProviderId} name={logoName} size={42}/><span><strong>{e.name}</strong><small>{type==='course'?[e.provider_name,e.course_code,e.study_level].filter(Boolean).join(' · '):[e.country_code,e.subdivision,e.city].filter(Boolean).join(' · ')}</small></span></div></article>})}
       {rows.length?rows.flatMap((r,ri)=>{
         const heading=<div className="cf-compare-metric-label cf-compare-sticky" key={`h-${outcomeKey(r)}`}><strong>{r.metric_name||r.metric_code}</strong><small>{[r.source_label,level(r),r.study_area,period(r)].filter(Boolean).join(' · ')}</small></div>
         const cells=items.map(e=>{
@@ -129,7 +130,7 @@ export default function ComparisonWorkspace({routeParams,navigate,onError}){
 
    {datasets.prisms&&<section className="cf-flow-compare">
     <div className="cf-flow-title"><div><h3>International student flow</h3><p>PRISMS context retains Provider / geography / study-area / cohort grain and is never promoted to a Course outcome.</p></div><span>PRISMS</span></div>
-    <div className="cf-flow-cards">{items.map(e=>{const g=e.contextual_insights?.student_flow||{},xs=g.items||[],x=xs.find(z=>!z.is_suppressed&&num(z.metric_value)!=null)||xs[0];return <article key={e.id}><strong>{e.name}</strong><small>{human(g.relationship_state||'not available')} · {human(g.granularity||'none')}</small><b>{x?.is_suppressed?'Suppressed':x?fmtNumber(x.metric_value):'—'}</b><span>{x?[x.metric_name||x.metric_code,x.subdivision,x.study_area,x.period_end].filter(Boolean).join(' · '):'No governed student-flow observation related at the accepted grain.'}</span></article>})}</div>
+    <div className="cf-flow-cards">{items.map(e=>{const g=e.contextual_insights?.student_flow||{},xs=g.items||[],x=xs.find(z=>!z.is_suppressed&&num(z.metric_value)!=null)||xs[0],logoProviderId=type==='provider'?e.id:e.provider_id,logoName=type==='provider'?e.name:e.provider_name;return <article key={e.id}><div className="cf-compare-entity-head"><ProviderLogo providerId={logoProviderId} name={logoName} size={34}/><span><strong>{e.name}</strong><small>{human(g.relationship_state||'not available')} · {human(g.granularity||'none')}</small></span></div><b>{x?.is_suppressed?'Suppressed':x?fmtNumber(x.metric_value):'—'}</b><span>{x?[x.metric_name||x.metric_code,x.subdivision,x.study_area,x.period_end].filter(Boolean).join(' · '):'No governed student-flow observation related at the accepted grain.'}</span></article>})}</div>
    </section>}
 
    {(datasets.qs||datasets.the)&&<section className="cf-flow-compare">
