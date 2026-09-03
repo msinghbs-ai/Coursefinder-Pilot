@@ -27,11 +27,13 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.48'
+const UI_VERSION='2.15.49'
 const PAGE_SIZE=50
-const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
+const rankingYearOptions=system=>system==='qs_wur'?[2027,...Array.from({length:12},(_,i)=>2026-i)]:Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
-const rankingSourceUrl=system=>system==='the_wur'?'https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking':'https://www.topuniversities.com/world-university-rankings'
+const rankingPublisherName=system=>system==='the_wur'?'Times Higher Education':system==='arwu'?'ShanghaiRanking Consultancy':'QS Quacquarelli Symonds'
+const rankingSourceUrl=system=>system==='the_wur'?'https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking':system==='arwu'?'https://www.shanghairanking.com/rankings/arwu/2026':'https://www.topuniversities.com/world-university-rankings'
+const rankingParsebotRef=system=>system==='arwu'?'/scrapers/0f6d2cb9-c7eb-4f31-9216-f7be578e9f96':'/scrapers/e3ecc5de-f530-478a-b464-867d43099420'
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
 
@@ -292,13 +294,13 @@ function AdministrationHome({rank,actorId,navigate,routeParams,onError}){
  </div>
 }
 function RankingImportPanel({onError,routeParams,navigate}){
- const presetSystem=routeParams?.get?.('system')==='the_wur'?'the_wur':'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
- const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:system==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher file obtained for CourseFinder ingestion.',revisionNote:''})
+ const requested=routeParams?.get?.('system'),presetSystem=['qs_wur','the_wur','arwu'].includes(requested)?requested:'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
+ const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for CourseFinder ingestion.',revisionNote:'',mode:system==='the_wur'?'file':'url',parsebotRef:rankingParsebotRef(system)})
  const[form,setForm]=useState(makeForm()),[file,setFile]=useState(null),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([]),[detected,setDetected]=useState(null),[advanced,setAdvanced]=useState(false),[processingId,setProcessingId]=useState('')
  const load=()=>api.rankingImports({limit:12}).then(x=>setImports(x?.items||[])).catch(e=>onError?.(e.message))
  useEffect(()=>{load()},[])
  const patch=(k,v)=>setForm(x=>({...x,[k]:v}))
- const chooseSystem=v=>setForm(x=>({...x,systemCode:v,editionYear:String(rankingDefaultYear(v)),publisherName:v==='the_wur'?'Times Higher Education':'QS Quacquarelli Symonds',sourceUrl:rankingSourceUrl(v)}))
+ const chooseSystem=v=>setForm(x=>({...x,systemCode:v,editionYear:String(rankingDefaultYear(v)),publisherName:rankingPublisherName(v),sourceUrl:rankingSourceUrl(v),mode:v==='the_wur'?'file':'url',parsebotRef:rankingParsebotRef(v)}))
  async function inspectFile(next){
   setFile(next);setSaved('');setDetected(null)
   if(!next||!/\.(txt|json)$/i.test(next.name))return
@@ -308,13 +310,13 @@ function RankingImportPanel({onError,routeParams,navigate}){
    if(String(payload?.status||'').toLowerCase()==='success'&&Array.isArray(payload?.data?.data)){
     const y=year||Number(form.editionYear)||2026
     setDetected({system:'Times Higher Education',year:y,format:'Native JSON/TXT',rows:payload.data.data.length})
-    setForm(x=>({...x,systemCode:'the_wur',editionYear:String(y),publisherName:'Times Higher Education',sourceUrl:rankingSourceUrl('the_wur')}))
+    setForm(x=>({...x,systemCode:'the_wur',editionYear:String(y),publisherName:'Times Higher Education',sourceUrl:rankingSourceUrl('the_wur'),mode:'file'}))
    }
   }catch{}
  }
  function readableError(err){
-  const raw=String(err?.message||err||'Upload failed')
-  const map={txt_native_json_is_the_only:'This TXT file is supported only when it contains a Times Higher Education native JSON export.',edition_year_mismatch:'The selected edition does not match the year declared in the file.',the_native_json_invalid:'The file is not a valid Times Higher Education native JSON export.',the_native_json_shape_invalid:'The JSON file does not contain the expected Times Higher Education data structure.'}
+  const raw=String(err?.message||err||'Import failed')
+  const map={txt_native_json_is_the_only:'This TXT file is supported only when it contains a Times Higher Education native JSON export.',edition_year_mismatch:'The selected edition does not match the year declared in the file.',the_native_json_invalid:'The file is not a valid Times Higher Education native JSON export.',the_native_json_shape_invalid:'The JSON file does not contain the expected Times Higher Education data structure.',unapproved_parsebot_reference:'Use the approved Parse.bot scraper reference for this ranking system.'}
   return map[raw]||raw.replaceAll('_',' ')
  }
  async function processImport(importId,action='validate'){
@@ -322,55 +324,59 @@ function RankingImportPanel({onError,routeParams,navigate}){
   setProcessingId(importId);onError?.('')
   try{
    const r=await api.rankingPublisherControl({action,importId})
-   if(action==='validate')setSaved('File parsed and validated. Review reconciliation, then Apply edition when ready.')
+   if(action==='validate')setSaved('Evidence parsed and validated. Review reconciliation, then Apply edition when ready.')
    else setSaved('Edition applied to Statistics & Rankings. Mapping exceptions remain reviewable.')
-   await load()
-   return r
+   await load();return r
   }catch(err){onError?.(readableError(err));throw err}
   finally{setProcessingId('')}
  }
  async function submit(e){
-  e.preventDefault();setSaved('')
-  const formEl=e.currentTarget
-  if(!file){onError?.('Choose an authorised publisher file.');return}
-  setBusy(true)
+  e.preventDefault();setSaved('');setBusy(true)
   try{
-   const r=await api.uploadRankingPublisherFile({...form,editionYear:Number(form.editionYear),file})
-   const importId=r?.import_id
-   setSaved(r?.duplicate?'Duplicate Evidence found; validating the existing import.':'Evidence registered; parsing and validation started.')
-   setFile(null);setDetected(null);formEl?.reset?.();setForm(makeForm(form.systemCode,form.editionYear))
+   let r
+   if(form.mode==='url'){
+    if(form.systemCode==='the_wur')throw new Error('THE currently uses file upload parsing.')
+    r=await api.importRankingPublisherUrl({systemCode:form.systemCode,editionYear:Number(form.editionYear),referencePath:form.parsebotRef})
+    setSaved(r?.duplicate?'Existing Parse.bot Evidence found; validating the registered import.':'Parse.bot Evidence registered; parsing and validation started.')
+   }else{
+    if(!file)throw new Error('Choose an authorised publisher file.')
+    r=await api.uploadRankingPublisherFile({...form,editionYear:Number(form.editionYear),file})
+    setSaved(r?.duplicate?'Duplicate Evidence found; validating the existing import.':'Publisher file registered; parsing and validation started.')
+    setFile(null);setDetected(null);e.currentTarget?.reset?.()
+   }
    await load()
-   if(importId)await processImport(importId,'validate')
+   if(r?.import_id)await processImport(r.import_id,'validate')
   }catch(err){onError?.(readableError(err))}
   finally{setBusy(false)}
  }
  return <div className="m-page-stack m-ranking-import-page">
   <section className="m-panel m-ranking-import-compact">
-   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Administration / Sources & Imports</div><h2>Register ranking publisher file</h2><p>Drop an authorised QS/THE file. Native THE JSON/TXT declares its year in the first line and is detected automatically.</p></div><FileCheck2 size={22}/></div>
+   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Administration / Sources & Imports</div><h2>Register ranking publisher file</h2><p>Choose a ranking system and edition, then register either an approved Parse.bot source or an authorised publisher file. Both routes use the same Parse & validate → Apply workflow.</p></div><FileCheck2 size={22}/></div>
    <form className="m-ranking-import-form compact" onSubmit={submit}>
-    <label className="m-ranking-drop">
-      <input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>inspectFile(e.target.files?.[0]||null)} required/>
-      <FileCheck2 size={20}/><span><b>{file?file.name:'Choose publisher file'}</b><small>{file?Math.max(1,Math.round(file.size/1024))+' KB · ready to register':'CSV/XLSX, THE native JSON/TXT, PDF/ZIP Evidence · max 50 MB'}</small></span>
-    </label>
-    {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'}</small></span></div>}
     <div className="m-ranking-essentials">
-      <label>Ranking system<select value={form.systemCode} onChange={e=>chooseSystem(e.target.value)}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education</option></select></label>
-      <label>Edition year<input type="number" min="2000" max="2100" value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)} required/></label>
+      <label>Ranking system<select value={form.systemCode} onChange={e=>chooseSystem(e.target.value)}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education</option><option value="arwu">Academic Ranking of World Universities</option></select></label>
+      <label>Edition year<select value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)}>{rankingYearOptions(form.systemCode).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
     </div>
+    <div className="m-ranking-essentials">
+      <label>Import method<select value={form.mode} onChange={e=>patch('mode',e.target.value)}><option value="url" disabled={form.systemCode==='the_wur'}>Parse.bot URL</option><option value="file">File upload</option></select></label>
+      {form.mode==='url'?<label>Parse.bot scraper URL<input value={form.parsebotRef} onChange={e=>patch('parsebotRef',e.target.value)} placeholder="/scrapers/…" required/></label>:<label>Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>inspectFile(e.target.files?.[0]||null)} required/></label>}
+    </div>
+    {form.mode==='url'&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>Parse.bot established API</b><small>{form.parsebotRef} · year {form.editionYear} · Evidence retained before parsing</small></span></div>}
+    {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'}</small></span></div>}
     <button type="button" className="m-ranking-advanced-toggle" aria-expanded={advanced} onClick={()=>setAdvanced(x=>!x)}><Settings2 size={14}/>{advanced?'Hide metadata':'Advanced metadata'}<ChevronDown size={14}/></button>
     {advanced&&<div className="m-ranking-advanced">
       <label>Publisher<input value={form.publisherName} onChange={e=>patch('publisherName',e.target.value)} required/></label>
-      <label>Publisher/source URL<input type="url" value={form.sourceUrl} onChange={e=>patch('sourceUrl',e.target.value)} placeholder="https://…" required/></label>
+      <label>Publisher/source URL<input type="url" value={form.sourceUrl} onChange={e=>patch('sourceUrl',e.target.value)} required/></label>
       <label>Methodology URL<input type="url" value={form.methodologyUrl} onChange={e=>patch('methodologyUrl',e.target.value)} placeholder="Optional"/></label>
       <label>Access / licence note<input value={form.licensingNote} onChange={e=>patch('licensingNote',e.target.value)} required/></label>
       <label className="wide">Revision note<input value={form.revisionNote} onChange={e=>patch('revisionNote',e.target.value)} placeholder="Optional edition/correction note"/></label>
     </div>}
-    <div className="m-ranking-import-actions"><button className="m-primary" disabled={busy}>{busy?'Registering…':'Register Evidence'}</button>{saved&&<span className="success">{saved}</span>}</div>
+    <div className="m-ranking-import-actions"><button className="m-primary" disabled={busy}>{busy?(form.mode==='url'?'Fetching & parsing…':'Registering…'):(form.mode==='url'?'Parse import':'Register file & parse')}</button>{saved&&<span className="success">{saved}</span>}</div>
    </form>
   </section>
   <section className="m-panel m-ranking-import-history">
-   <div className="m-ranking-history-head"><div><h3>Recent ranking imports</h3><p>Evidence → Parse & validate → Apply edition. Every processing action records a Pipeline Job.</p></div><button className="m-secondary compact" onClick={()=>navigate?.('Jobs')}><Workflow size={13}/>Jobs</button></div>
-   <div className="m-ranking-import-list">{imports.length?imports.slice(0,8).map(x=>{const validating=processingId===x.id,validated=['validated','parsed','reconciled'].includes(x.status),available=['applied','needs_review'].includes(x.status),count=x.validation_summary?.candidate_observations??x.parse_summary?.rows??x.parse_summary?.candidate_observations;return <article key={x.id} className="m-ranking-import-row"><div className="m-ranking-import-identity"><strong>{String(x.system_code||'').toUpperCase()+' '+x.edition_year}</strong><span>{x.original_filename}</span>{count!=null&&<small>{Number(count).toLocaleString()} parsed observations</small>}</div><div className="m-ranking-import-state"><b className={'status '+x.status}>{humanise(x.status)}</b><small>{x.uploaded_at?new Date(x.uploaded_at).toLocaleString():'—'}</small></div><div className="m-ranking-import-row-actions">{x.status==='uploaded'&&<button disabled={validating} onClick={()=>processImport(x.id,'validate')}>{validating?'Parsing…':'Parse & validate'}</button>}{validated&&<button className="primary" disabled={validating} onClick={()=>processImport(x.id,'apply')}>{validating?'Applying…':'Apply edition'}</button>}{available&&<button onClick={()=>navigate?.('Statistics & Rankings')}>View module</button>}</div></article>}):<EmptyState icon={FileCheck2} title="No ranking files uploaded" text="Historical publisher files will appear here after governed registration."/>}</div>
+   <div className="m-ranking-history-head"><div><h3>Recent ranking imports</h3><p>Evidence → Parse & validate → Apply edition. URL and file imports share the same governed history.</p></div><button className="m-secondary compact" onClick={()=>navigate?.('Jobs')}><Workflow size={13}/>Jobs</button></div>
+   <div className="m-ranking-import-list">{imports.length?imports.slice(0,8).map(x=>{const validating=processingId===x.id,validated=['validated','parsed','reconciled'].includes(x.status),available=['applied','needs_review'].includes(x.status),count=x.validation_summary?.candidate_observations??x.parse_summary?.rows??x.parse_summary?.candidate_observations;return <article key={x.id} className="m-ranking-import-row"><div className="m-ranking-import-identity"><strong>{String(x.system_code||'').toUpperCase()+' '+x.edition_year}</strong><span>{x.original_filename}</span>{count!=null&&<small>{Number(count).toLocaleString()} parsed observations</small>}</div><div className="m-ranking-import-state"><b className={'status '+x.status}>{humanise(x.status)}</b><small>{x.uploaded_at?new Date(x.uploaded_at).toLocaleString():'—'}</small></div><div className="m-ranking-import-row-actions">{x.status==='uploaded'&&<button disabled={validating} onClick={()=>processImport(x.id,'validate')}>{validating?'Parsing…':'Parse & validate'}</button>}{validated&&<button className="primary" disabled={validating} onClick={()=>processImport(x.id,'apply')}>{validating?'Applying…':'Apply edition'}</button>}{available&&<button onClick={()=>navigate?.('Statistics & Rankings')}>View module</button>}</div></article>}):<EmptyState icon={FileCheck2} title="No ranking imports" text="Parse.bot and publisher-file Evidence will appear here after governed registration."/>}</div>
   </section>
  </div>
 }
