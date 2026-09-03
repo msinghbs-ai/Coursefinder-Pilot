@@ -56,7 +56,7 @@ insert into pipeline.layer2_source_profiles(
  source_id,profile_key,domain,acquisition_method,target_entity_type,authority_class,
  enabled,paused,operational_owner,freshness_sla_hours,schedule_text
 )
-select source_id,lower(code)||'-hotcourses-provider-directory','provider_asset','website','provider','third_party_discovery',
+select source_id,lower(code)||'-hotcourses-provider-directory','provider_asset','website','provider_asset','third_party_discovery',
  true,false,'PIM/Data Operations',720,'monthly directory reconciliation; manual on demand'
 from s
 on conflict(profile_key) do update set source_id=excluded.source_id,enabled=true,paused=false,updated_at=now();
@@ -82,7 +82,7 @@ begin
      'robots_policy','respect',
      'allowed_mime_types',jsonb_build_array('text/html','application/json'),
      'max_payload_mb',25,
-     'target_entity_type','provider',
+     'target_entity_type','provider_asset',
      'evidence_required',true,
      'freshness_sla_hours',720,
      'schedule','monthly directory reconciliation; manual on demand',
