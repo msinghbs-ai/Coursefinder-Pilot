@@ -19,7 +19,7 @@ test.describe('CF-097 ranking workflow and history @deployed',()=>{
   await expect(y2024).toContainText('Validated')
   await expect(y2024.getByRole('button',{name:'Apply edition'})).toBeVisible()
   const y2025=page.locator('.m-ranking-import-row').filter({hasText:'THE_WUR 2025'}).first()
-  await expect(y2025).toContainText('Needs review')
+  await expect(y2025).toContainText(/Needs Review/i)
   await expect(y2025.getByRole('button',{name:'Apply edition'})).toHaveCount(0)
   await expect(y2025.getByRole('button',{name:'Review edition'})).toBeVisible()
  }finally{await finish(testInfo,runtime)}})
