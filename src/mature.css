@@ -47,6 +47,7 @@ html,body,#root{height:100%}body{margin:0;background:var(--m-bg);color:var(--m-t
 @media(max-width:900px){.cf-layer-header{padding:15px 16px;align-items:flex-start}.cf-layer-header h1{font-size:20px}}
 @media(max-width:560px){.cf-layer-header{gap:12px;flex-wrap:wrap}.cf-layer-header-actions{margin-left:auto}.cf-layer-header p{max-width:100%}}
 
+.m-admin-card-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.m-admin-card{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:10px;border:1px solid var(--m-border);border-radius:10px;background:#fbfcfe;padding:11px;text-align:left;color:var(--m-text);cursor:pointer}.m-admin-card:hover{background:#fff;border-color:#cbd5e1;box-shadow:var(--m-shadow)}.m-admin-card-icon{width:33px;height:33px;border-radius:9px;display:grid;place-items:center;background:#eef2ff;color:#4f46e5}.m-admin-card-copy{display:grid;gap:2px;min-width:0}.m-admin-card-copy small{font-size:8px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;color:var(--m-muted)}.m-admin-card-copy strong{font-size:10.5px}.m-admin-card-copy>span{font-size:9px;line-height:1.35;color:var(--m-muted)}.m-admin-card>b{font-size:9px;color:#4f46e5;white-space:nowrap}.m-admin-shell{padding-bottom:13px}
 .m-admin-subnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.m-admin-subnav button{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 12px;font:inherit;font-weight:700;cursor:pointer}.m-admin-subnav button.active,.m-admin-subnav button[aria-selected="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.m-admin-subnav button:focus-visible{outline:2px solid currentColor;outline-offset:2px}@media(max-width:720px){.m-admin-subnav{display:grid;grid-template-columns:1fr 1fr}.m-admin-subnav button{justify-content:flex-start;min-width:0}}
 
 /* CF-064 — Statistics & Rankings */
@@ -119,3 +120,5 @@ html,body,#root{height:100%}body{margin:0;background:var(--m-bg);color:var(--m-t
 .m-ranking-import-row-actions button:disabled{opacity:.55;cursor:wait}
 @media(max-width:760px){.m-ranking-import-row{grid-template-columns:1fr!important}.m-ranking-import-row-actions{justify-content:flex-start!important;flex-wrap:wrap}}
 @media(max-width:680px){.m-ranking-essentials,.m-ranking-advanced{grid-template-columns:1fr}.m-ranking-advanced label.wide{grid-column:auto}.m-ranking-import-list article{flex-direction:column}.m-breadcrumbs{display:none}}
+
+@media(max-width:720px){.m-admin-card-grid{grid-template-columns:1fr}.m-admin-card{grid-template-columns:32px minmax(0,1fr) auto}}
