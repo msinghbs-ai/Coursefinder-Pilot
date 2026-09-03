@@ -1,6 +1,7 @@
 import React,{useEffect,useState}from'react'
 import{Building2}from'lucide-react'
 import{api,supabase}from'./lib/supabase'
+import'./contextual-theme.css'
 
 const cache=new Map()
 const listCache=new Map()
