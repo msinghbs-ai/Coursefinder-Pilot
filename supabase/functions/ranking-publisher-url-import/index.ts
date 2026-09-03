@@ -36,7 +36,7 @@ Deno.serve(async(req:Request)=>{
  const expected=systemCode==="qs_wur"?QS_REF:ARWU_REF;
  if(referencePath!==expected)return json(req,400,{error:"unapproved_parsebot_reference",expected_reference:expected});
  const svc=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
- const {data:pc,error:pe}=await svc.rpc("layer2_provider_runtime_config",{p_provider_id:"1f5b36f5-4e8b-4f30-a0c2-0769b4ce8266"});
+ const {data:pc,error:pe}=await svc.rpc("layer2_provider_runtime_config_by_key",{p_provider_key:"parsebot"});
  if(pe||!pc?.secret)return json(req,409,{error:"parsebot_credential_unavailable"});
  const key=String(pc.secret),started=Date.now();
  try{
