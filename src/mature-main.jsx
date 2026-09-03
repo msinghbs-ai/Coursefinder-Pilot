@@ -27,7 +27,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.55'
+const UI_VERSION='2.15.56'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -297,6 +297,11 @@ function RankingImportPanel({onError,routeParams,navigate}){
  const requested=routeParams?.get?.('system'),presetSystem=['qs_wur','the_wur','arwu'].includes(requested)?requested:'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
  const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for CourseFinder ingestion.',revisionNote:'',mode:'file',parsebotRef:rankingParsebotRef(system)})
  const[form,setForm]=useState(makeForm()),[files,setFiles]=useState([]),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([]),[detected,setDetected]=useState(null),[advanced,setAdvanced]=useState(false),[processingId,setProcessingId]=useState(''),[lastParsedKey,setLastParsedKey]=useState(''),[overwriteKey,setOverwriteKey]=useState(''),[historySystem,setHistorySystem]=useState('all')
+ const sameEditionImports=imports.filter(x=>x.system_code===form.systemCode&&String(x.edition_year)===String(form.editionYear))
+ const existingCountries=[...new Set(sameEditionImports.flatMap(x=>Array.isArray(x.detected_scope)?x.detected_scope:[]).map(x=>String(x||'').trim()).filter(Boolean))]
+ const selectedCountries=Array.isArray(detected?.countries)?detected.countries:[]
+ const newCountries=selectedCountries.filter(x=>!existingCountries.includes(x)),overlapCountries=selectedCountries.filter(x=>existingCountries.includes(x))
+ const addingCountryScope=!!sameEditionImports.length&&!!selectedCountries.length&&newCountries.length===selectedCountries.length
  const load=async()=>{try{const x=await api.rankingImports({limit:100});setImports(x?.items||[]);return x?.items||[]}catch(e){onError?.(e.message);return[]}}
  useEffect(()=>{load()},[])
  const editionKey=(system=form.systemCode,year=form.editionYear)=>system+':'+String(year)
@@ -347,8 +352,13 @@ function RankingImportPanel({onError,routeParams,navigate}){
  async function submit(e){
   e.preventDefault();setSaved('')
   const key=editionKey(),existing=imports.find(x=>x.system_code===form.systemCode&&String(x.edition_year)===String(form.editionYear))
-  if(existing&&overwriteKey!==key){
-   setSaved('WARNING:'+humanise(form.systemCode)+' '+form.editionYear+' already exists ('+humanise(existing.status)+'). Registering again creates a new Evidence revision; applying it may replace the accepted edition. Review the warning below before continuing.')
+  if(existing&&!addingCountryScope&&overwriteKey!==key){
+   const scopeText=selectedCountries.length
+    ?(newCountries.length&&overlapCountries.length
+      ?'This upload mixes new country scope ('+newCountries.join(', ')+') with already-loaded scope ('+overlapCountries.join(', ')+').'
+      :'This upload overlaps already-loaded country scope'+(overlapCountries.length?' ('+overlapCountries.join(', ')+')':'')+'.')
+    :'Country scope could not be proven from this file.'
+   setSaved('WARNING:'+humanise(form.systemCode)+' '+form.editionYear+' already exists ('+humanise(existing.status)+'). '+scopeText+' Registering it creates a new Evidence revision; Apply remains manual and must not overwrite unrelated countries.')
    return
   }
   setBusy(true)
@@ -366,7 +376,7 @@ function RankingImportPanel({onError,routeParams,navigate}){
    if(r?.import_id)await processImport(r.import_id,'validate')
    await load()
    setLastParsedKey(key);setOverwriteKey('')
-   setSaved((r?.duplicate?'Existing Evidence reused. ':'')+humanise(form.systemCode)+' '+form.editionYear+' parsed and validated successfully. Change the edition year before running another import.')
+   setSaved((r?.duplicate?'Existing Evidence reused. ':'')+humanise(form.systemCode)+' '+form.editionYear+(addingCountryScope&&newCountries.length?' extended with '+newCountries.join(', '):'')+' parsed and validated successfully. '+(addingCountryScope?'Existing country scope was preserved; Apply remains manual.':'Change the edition year or add another country scope before running another import.'))
   }catch(err){onError?.(readableError(err))}
   finally{setBusy(false)}
  }
@@ -383,7 +393,7 @@ function RankingImportPanel({onError,routeParams,navigate}){
       {form.mode==='url'?<label>Parse.bot scraper URL<input value={form.parsebotRef} onChange={e=>patch('parsebotRef',e.target.value)} placeholder="/scrapers/…" required/></label>:<label>Publisher file(s)<input type="file" multiple accept=".csv,.xlsx,.json,.txt" onChange={e=>inspectFiles(e.target.files)} required/><small>Select one global file or multiple country/page JSON/TXT files for the same ranking system and year.</small></label>}
     </div>
     {form.mode==='url'&&form.systemCode==='qs_wur'&&String(form.editionYear)==='2027'?<div className="m-ranking-detected warning"><AlertTriangle size={16}/><span><b>QS 2027 Parse.bot source currently unavailable</b><small>Parse.bot currently returns extraction_failed for the 2027 publisher payload. Select 2026 or use File upload for 2027.</small></span></div>:form.mode==='url'&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>Parse.bot established API</b><small>{form.parsebotRef} · year {form.editionYear} · Evidence retained before parsing</small></span></div>}
-    {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'+(detected.countries?.length?' · '+detected.countries.join(', '):'')}</small></span></div>}
+    {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'+(detected.countries?.length?' · '+detected.countries.join(', '):'')}</small>{sameEditionImports.length&&selectedCountries.length?<small className="m-ranking-scope-note">{addingCountryScope?'Add country data · new scope: '+newCountries.join(', '):(newCountries.length?'Mixed scope · new: '+newCountries.join(', ')+' · existing: '+overlapCountries.join(', '):'Existing country scope · this will be treated as a source revision')}</small>:null}</span></div>}
     <button type="button" className="m-ranking-advanced-toggle" aria-expanded={advanced} onClick={()=>setAdvanced(x=>!x)}><Settings2 size={14}/>{advanced?'Hide metadata':'Advanced metadata'}<ChevronDown size={14}/></button>
     {advanced&&<div className="m-ranking-advanced">
       <label>Publisher<input value={form.publisherName} onChange={e=>patch('publisherName',e.target.value)} required/></label>
@@ -393,12 +403,12 @@ function RankingImportPanel({onError,routeParams,navigate}){
       <label className="wide">Revision note<input value={form.revisionNote} onChange={e=>patch('revisionNote',e.target.value)} placeholder="Optional edition/correction note"/></label>
     </div>}
     {saved?.startsWith('WARNING:')&&<div className="m-ranking-detected warning"><AlertTriangle size={16}/><span><b>Existing edition</b><small>{saved.slice(8)}</small><button type="button" className="m-secondary compact" onClick={()=>{setOverwriteKey(editionKey());setSaved('Ready to register a new revision for '+humanise(form.systemCode)+' '+form.editionYear+'.')}}>Continue with new revision</button></span></div>}
-    <div className="m-ranking-import-actions"><button className="m-primary" disabled={busy||lastParsedKey===editionKey()||(form.mode==='url'&&form.systemCode==='qs_wur'&&String(form.editionYear)==='2027')}>{busy?(form.mode==='url'?'Fetching & parsing…':'Registering…'):(lastParsedKey===editionKey()?'Parsed successfully — change year':form.mode==='url'?'Parse import':'Register file & parse')}</button>{saved&&!saved.startsWith('WARNING:')&&<span className="success">{saved}</span>}</div>
+    <div className="m-ranking-import-actions"><button className="m-primary" disabled={busy||lastParsedKey===editionKey()||(form.mode==='url'&&form.systemCode==='qs_wur'&&String(form.editionYear)==='2027')}>{busy?(form.mode==='url'?'Fetching & parsing…':'Registering…'):(lastParsedKey===editionKey()?'Parsed successfully — change year':form.mode==='url'?'Parse import':addingCountryScope?'Add country data & parse':'Register file & parse')}</button>{saved&&!saved.startsWith('WARNING:')&&<span className="success">{saved}</span>}</div>
    </form>
   </section>
   <section className="m-panel m-ranking-import-history">
    <div className="m-ranking-history-head"><div><h3>Ranking import workflow</h3><p>Acquire Evidence → Parse & validate → Apply edition → Review exceptions. All editions remain visible here.</p></div><div className="m-ranking-import-row-actions"><label className="m-compact-filter">Publisher<select value={historySystem} onChange={e=>setHistorySystem(e.target.value)}><option value="all">All</option><option value="qs_wur">QS</option><option value="the_wur">THE</option><option value="arwu">ARWU</option></select></label><button className="m-secondary compact" onClick={()=>navigate?.('Jobs')}><Workflow size={13}/>Jobs</button></div></div>
-   <div className="m-ranking-import-list">{imports.filter(x=>historySystem==='all'||x.system_code===historySystem).length?imports.filter(x=>historySystem==='all'||x.system_code===historySystem).map(x=>{const validating=processingId===x.id,validated=['validated','parsed','reconciled'].includes(x.status),available=['applied','needs_review'].includes(x.status),count=x.validation_summary?.candidate_observations??x.parse_summary?.rows??x.parse_summary?.candidate_observations,job=x.latest_job;return <article key={x.id} className="m-ranking-import-row"><div className="m-ranking-import-identity"><strong>{String(x.system_code||'').toUpperCase()+' '+x.edition_year}</strong><span>{x.original_filename}</span>{count!=null&&<small>{Number(count).toLocaleString()} parsed observations</small>}{job&&<small>Latest Job: {humanise(job.job_type)} · {humanise(job.status)}{Number(x.job_count||0)>1?' · '+x.job_count+' jobs':''}</small>}</div><div className="m-ranking-import-state"><b className={'status '+x.status}>{humanise(x.status)}</b><small>{(x.updated_at||x.uploaded_at)?'Updated '+new Date(x.updated_at||x.uploaded_at).toLocaleString():'—'}</small></div><div className="m-ranking-import-row-actions">{x.status==='uploaded'&&<button disabled={validating} onClick={()=>processImport(x.id,'validate')}>{validating?'Parsing…':'Parse & validate'}</button>}{validated&&<button className="primary" disabled={validating} onClick={()=>processImport(x.id,'apply')}>{validating?'Applying…':'Apply edition'}</button>}{available&&<button onClick={()=>navigate?.('Statistics & Rankings')}>{x.status==='needs_review'?'Review edition':'View module'}</button>}<button className="m-secondary compact" onClick={()=>navigate?.('Jobs')}>Jobs{Number(x.job_count||0)>0?' ('+x.job_count+')':''}</button></div></article>}):<EmptyState icon={FileCheck2} title="No ranking imports for this publisher" text="Change the publisher filter or register a new governed ranking Evidence source."/>}</div>
+   <div className="m-ranking-import-list">{imports.filter(x=>historySystem==='all'||x.system_code===historySystem).length?imports.filter(x=>historySystem==='all'||x.system_code===historySystem).map(x=>{const validating=processingId===x.id,validated=['validated','parsed','reconciled'].includes(x.status),available=['applied','needs_review'].includes(x.status),count=x.validation_summary?.candidate_observations??x.parse_summary?.rows??x.parse_summary?.candidate_observations,job=x.latest_job;return <article key={x.id} className="m-ranking-import-row"><div className="m-ranking-import-identity"><strong>{String(x.system_code||'').toUpperCase()+' '+x.edition_year}</strong><span>{x.original_filename}</span>{Array.isArray(x.detected_scope)&&x.detected_scope.length?<small>Country scope: {x.detected_scope.join(', ')}{Number(x.logical_revision_count||0)>1?' · '+x.logical_revision_count+' source revisions':''}</small>:null}{count!=null&&<small>{Number(count).toLocaleString()} parsed observations</small>}{job&&<small>Latest Job: {humanise(job.job_type)} · {humanise(job.status)}{Number(x.job_count||0)>1?' · '+x.job_count+' jobs':''}</small>}</div><div className="m-ranking-import-state"><b className={'status '+x.status}>{humanise(x.status)}</b><small>{(x.updated_at||x.uploaded_at)?'Updated '+new Date(x.updated_at||x.uploaded_at).toLocaleString():'—'}</small></div><div className="m-ranking-import-row-actions">{x.status==='uploaded'&&<button disabled={validating} onClick={()=>processImport(x.id,'validate')}>{validating?'Parsing…':'Parse & validate'}</button>}{validated&&<button className="primary" disabled={validating} onClick={()=>processImport(x.id,'apply')}>{validating?'Applying…':'Apply edition'}</button>}{available&&<button onClick={()=>navigate?.('Statistics & Rankings')}>{x.status==='needs_review'?'Review edition':'View module'}</button>}<button className="m-secondary compact" onClick={()=>navigate?.('Jobs')}>Jobs{Number(x.job_count||0)>0?' ('+x.job_count+')':''}</button></div></article>}):<EmptyState icon={FileCheck2} title="No ranking imports for this publisher" text="Change the publisher filter or register a new governed ranking Evidence source."/>}</div>
   </section>
  </div>
 }
