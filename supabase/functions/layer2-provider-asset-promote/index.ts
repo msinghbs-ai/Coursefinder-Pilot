@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION="layer2-provider-asset-promote-v2";
+const VERSION="layer2-provider-asset-promote-v3";
 const BUCKET="provider-assets";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 const H=(r:Request)=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":r.headers.get("origin")===ORIGIN?ORIGIN:ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key","access-control-allow-methods":"POST,OPTIONS"});
@@ -36,10 +36,37 @@ Deno.serve(async(req:Request)=>{
      .replace(/(href|xlink:href)\s*=\s*(["'])\s*javascript:[\s\S]*?\2/gi,'$1="#"');
    buf=new TextEncoder().encode(safeSvg);mime="image/svg+xml";
  }else{
-   let res:Response;try{res=await fetch(String(ctx.asset_url),{headers:{"user-agent":"CourseFinder Provider Asset Validator/2.0"},redirect:"follow"})}catch(e:any){return J(req,502,{error:"asset_fetch_failed",detail:String(e.message)})}
-   if(!res.ok)return J(req,502,{error:"asset_fetch_http_error",http_status:res.status});
-   buf=new Uint8Array(await res.arrayBuffer());
-   mime=(res.headers.get("content-type")||"application/octet-stream").split(";")[0].trim().toLowerCase();
+   const target=String(ctx.asset_url),ua={"user-agent":"CourseFinder Provider Asset Validator/3.0"};
+   let res:Response|null=null,directError:any=null,fetchProvider="direct-http";
+   try{res=await fetch(target,{headers:ua,redirect:"follow"})}catch(e:any){directError=e}
+   if(res?.ok){
+     buf=new Uint8Array(await res.arrayBuffer());
+     mime=(res.headers.get("content-type")||"application/octet-stream").split(";")[0].trim().toLowerCase();
+   }else{
+     const directStatus=res?.status??null;
+     let routes:any[]=[];
+     try{routes=await rpc(svc,"layer2_provider_asset_fetch_routes")}catch{}
+     for(const route of Array.isArray(routes)?routes:[]){
+       try{
+         const pc=await rpc(svc,"layer2_provider_runtime_config",{p_provider_id:String(route.id)});
+         if(!pc?.enabled||!pc?.base_url||!pc?.secret)continue;
+         const u=new URL(String(pc.base_url)),tpl=pc.request_template||{},headers:any={...ua};
+         u.searchParams.set(String(tpl.target_url_parameter||"url"),target);
+         for(const[k,v]of Object.entries(tpl.static_query||{}))u.searchParams.set(k,String(v));
+         if(pc.auth_scheme==="query_param")u.searchParams.set(String(pc.auth_field_name||"apikey"),String(pc.secret));
+         else if(pc.auth_scheme==="bearer")headers.authorization="Bearer "+pc.secret;
+         else if(pc.auth_scheme==="header")headers[String(pc.auth_field_name||"X-Api-Key")]=pc.secret;
+         const rr=await fetch(u.toString(),{headers,redirect:"follow"});
+         if(!rr.ok)continue;
+         const rm=(rr.headers.get("content-type")||"application/octet-stream").split(";")[0].trim().toLowerCase();
+         const rb=new Uint8Array(await rr.arrayBuffer());
+         if(!["image/svg+xml","image/png","image/jpeg","image/webp"].includes(rm)||rb.byteLength<100)continue;
+         buf=rb;mime=rm;fetchProvider=String(pc.provider_key||route.provider_key||"proxy");break;
+       }catch{}
+     }
+     if(!buf!)return J(req,502,{error:"asset_fetch_http_error",http_status:directStatus,direct_error:String(directError?.message||directError||""),fallback_exhausted:true});
+   }
+   (ctx as any)._fetch_provider=fetchProvider;
  }
  if(buf.byteLength<100||buf.byteLength>5_000_000)return J(req,422,{error:"asset_size_invalid",bytes:buf.byteLength});
  if(!["image/svg+xml","image/png","image/jpeg","image/webp"].includes(mime))return J(req,422,{error:"unsupported_asset_mime",mime});
@@ -48,5 +75,5 @@ Deno.serve(async(req:Request)=>{
  const up=await svc.storage.from(BUCKET).upload(storagePath,buf,{contentType:mime,upsert:true,cacheControl:"31536000"});
  if(up.error)return J(req,500,{error:"asset_storage_failed",detail:up.error.message});
  let applied:any;try{applied=await rpc(svc,"layer2_provider_asset_promote_apply",{p_candidate_id:cid,p_storage_path:storagePath,p_mime_type:mime,p_content_hash:digest,p_width:null,p_height:null})}catch(e:any){return J(req,500,{error:"promotion_apply_failed",detail:String(e.message)})}
- return J(req,200,{ok:true,worker_version:VERSION,candidate_id:cid,provider_id:ctx.provider_id,bytes:buf.byteLength,mime_type:mime,content_hash:digest,storage_path:storagePath,applied});
+ return J(req,200,{ok:true,worker_version:VERSION,candidate_id:cid,provider_id:ctx.provider_id,bytes:buf.byteLength,mime_type:mime,content_hash:digest,storage_path:storagePath,fetch_provider:ctx._fetch_provider||"inline-evidence",applied});
 });
