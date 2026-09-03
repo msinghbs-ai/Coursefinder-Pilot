@@ -31,19 +31,14 @@ Deno.serve(async(req:Request)=>{
  const {data:imp,error:impErr}=await svc.rpc("svc_ranking_import_control_context",{p_import_id:importId});
  if(impErr)return json(req,500,{error:"ranking_import_lookup_failed",detail:impErr.message});
  if(!imp?.id)return json(req,404,{error:"ranking_import_not_found"});
- const systemCode=clean(imp.system_code),sourceSystem=systemCode==="the_wur"?"THE":"QS";
- const {data:sources,error:sourceErr}=await svc.schema("pipeline").from("sources").select("id,label,metadata").eq("metadata->>source_system",sourceSystem);
- if(sourceErr)return json(req,500,{error:"ranking_source_lookup_failed",detail:sourceErr.message});
- const exact=(sources||[]).find((s:any)=>Number(s.metadata?.edition_year)===Number(imp.edition_year));
- const family=(sources||[]).find((s:any)=>s.metadata?.multi_year_family===true);
- const source=exact||family||sources?.[0]||null;
+ const systemCode=clean(imp.system_code),sourceId=clean(imp.source_id);
  const jobType=action==="apply"?"ranking_import_apply":"ranking_import_validate";
- const {data:jobId,error:jobErr}=await svc.rpc("svc_ranking_job_start",{p_job_type:jobType,p_source_id:source?.id||null,p_requested_by:actor,p_payload:{import_id:imp.id,system_code:systemCode,edition_year:imp.edition_year,original_filename:imp.original_filename,action}});
+ const {data:jobId,error:jobErr}=await svc.rpc("svc_ranking_job_start",{p_job_type:jobType,p_source_id:sourceId||null,p_requested_by:actor,p_payload:{import_id:imp.id,system_code:systemCode,edition_year:imp.edition_year,original_filename:imp.original_filename,action}});
  if(jobErr)return json(req,500,{error:"ranking_job_create_failed",detail:jobErr.message});
  try{
    const res=await fetch(url+"/functions/v1/ranking-layer1-etl",{method:"POST",headers:{
      "authorization":"Bearer "+serviceKey,"apikey":serviceKey,"x-cf-layer1-service-key":serviceKey,"content-type":"application/json"
-   },body:JSON.stringify({system_code:systemCode,edition_year:Number(imp.edition_year),mode:action==="apply"?"apply":"dry_run",source_id:source?.id||""})});
+   },body:JSON.stringify({system_code:systemCode,edition_year:Number(imp.edition_year),mode:action==="apply"?"apply":"dry_run",source_id:sourceId||""})});
    const out=await res.json().catch(()=>({}));
    if(!res.ok||out?.ok===false||out?.error)throw new Error(out?.error||("ranking-layer1-etl HTTP "+res.status));
    if(action==="validate"){
