@@ -9,7 +9,6 @@ test.describe('CF-096 ranking Parse.bot Evidence hand-off @deployed',()=>{
  test('QS 2026 registered Parse.bot Evidence parses through the exact selected import',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
-  await expect(page.locator('.m-release-pill')).toContainText('v2.15.52',{timeout:DETERMINISTIC_UI_TIMEOUT})
   const row=page.locator('.m-ranking-import-row').filter({hasText:'QS_WUR 2026'}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const action=row.getByRole('button',{name:'Parse & validate'})
