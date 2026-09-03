@@ -55,7 +55,9 @@ Deno.serve(async(req:Request)=>{
  }catch(e){
    const message=e instanceof Error?e.message:String(e);
    await svc.rpc("svc_ranking_job_finish",{p_job_id:jobId,p_status:"failed",p_result:{},p_error_text:message});
-   await svc.rpc("svc_ranking_import_validation_update",{p_import_id:importId,p_status:imp.status||"uploaded",p_validation_summary:{error:message,failed_at:new Date().toISOString()},p_parse_summary:{}});
+   if(action==="validate"){
+     await svc.rpc("svc_ranking_import_validation_update",{p_import_id:importId,p_status:imp.status||"uploaded",p_validation_summary:{error:message,failed_at:new Date().toISOString()},p_parse_summary:{}});
+   }
    return json(req,422,{ok:false,error:message,job_id:jobId,import_id:importId});
  }
 });
