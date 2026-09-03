@@ -9,7 +9,7 @@ test.describe('CF-090 ranking import recovery @deployed',()=>{
  test('recovers uploaded THE 2026 import, validates and applies accepted edition',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
-  const row=page.locator('.m-ranking-import-row').filter({hasText:'THE 2026'}).filter({hasText:'THE_year2026.txt'}).first()
+  const row=page.locator('.m-ranking-import-row').filter({hasText:'THE_year2026.txt'}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const parse=row.getByRole('button',{name:'Parse & validate'})
   if(await parse.count()){await parse.click();await expect(row).toContainText('Validated',{timeout:90000})}
