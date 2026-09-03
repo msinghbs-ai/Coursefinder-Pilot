@@ -19,6 +19,6 @@ test.describe('CF-096 ranking Parse.bot Evidence hand-off @deployed',()=>{
   }else{
     await expect(row).toContainText(/Validated|Needs review|Applied/i)
   }
-  await expect(page.locator('.m-alert')).not.toContainText(/ranking Evidence required/i)
+  await expect(page.locator('.m-alert').filter({hasText:/ranking Evidence required/i})).toHaveCount(0)
  }finally{await finish(testInfo,runtime)}})
 })
