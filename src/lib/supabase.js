@@ -217,7 +217,30 @@ export const api = {
     form.set('licensing_note', licensingNote)
     form.set('revision_note', revisionNote || '')
     const selected = Array.isArray(files) && files.length ? files : (file ? [file] : [])
-    selected.forEach(item => form.append('files', item))
+    if (!selected.length) throw new Error('publisher file required')
+    let transportFile = selected[0]
+    if (selected.length > 1) {
+      const bundled = []
+      for (const item of selected) {
+        const text = (await item.text()).replace(/^\uFEFF/, '').trim()
+        let payload
+        try { payload = JSON.parse(text) } catch { throw new Error(`Invalid ranking JSON/TXT: ${item.name}`) }
+        bundled.push({ name: item.name, mime_type: item.type || 'application/json', payload })
+      }
+      const bundle = {
+        source: 'manual_ranking_bundle',
+        system_code: systemCode,
+        edition_year: Number(editionYear),
+        file_count: bundled.length,
+        files: bundled,
+      }
+      transportFile = new File(
+        [JSON.stringify(bundle)],
+        `ranking-bundle-${systemCode}-${editionYear}-${bundled.length}-files.json`,
+        { type: 'application/json' },
+      )
+    }
+    form.set('file', transportFile)
     return invoke('ranking-publisher-import', form)
   },
   importRankingPublisherUrl: ({ systemCode, editionYear, referencePath }) => invoke('ranking-publisher-url-import', {
