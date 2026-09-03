@@ -18,10 +18,12 @@ Deno.serve(async(req:Request)=>{
   const authHeader=req.headers.get("authorization")||"";
   if(!authHeader.toLowerCase().startsWith("bearer "))return reply(401,{error:"authentication_required"});
 
-  let body:{provider_id?:string};
+  let body:{provider_id?:string;stable_keys?:string[]};
   try{body=await req.json()}catch{return reply(400,{error:"invalid_json"})}
   const providerId=String(body?.provider_id||"").trim();
-  if(!uuidRe.test(providerId))return reply(400,{error:"invalid_provider_id"});
+  const stableKeys=Array.isArray(body?.stable_keys)?[...new Set(body.stable_keys.map(x=>String(x||"").trim()).filter(Boolean))].slice(0,100):[];
+  if(!providerId&&!stableKeys.length)return reply(400,{error:"provider_id_or_stable_keys_required"});
+  if(providerId&&!uuidRe.test(providerId))return reply(400,{error:"invalid_provider_id"});
 
   const url=Deno.env.get("SUPABASE_URL");
   const anon=Deno.env.get("SUPABASE_ANON_KEY");
@@ -37,6 +39,19 @@ Deno.serve(async(req:Request)=>{
   if(Number(context?.role_rank||0)<1)return reply(403,{error:"catalogue_reader_role_required"});
 
   const serviceClient=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+
+  if(stableKeys.length){
+    const {data:descriptors,error}=await serviceClient.rpc("svc_provider_asset_access_descriptors",{p_stable_keys:stableKeys});
+    if(error)return reply(500,{error:"provider_asset_batch_lookup_failed"});
+    const items=[];
+    for(const d of Array.isArray(descriptors)?descriptors:[]){
+      if(!d?.provider_asset_id||!d?.storage_path){items.push({...d,url:null,expires_in:600});continue}
+      const {data:signed,error:signedError}=await serviceClient.storage.from("provider-assets").createSignedUrl(d.storage_path,600);
+      items.push({...d,url:!signedError&&signed?.signedUrl?signed.signedUrl:null,expires_in:600});
+    }
+    return reply(200,{items,expires_in:600});
+  }
+
   const {data:descriptor,error:descriptorError}=await serviceClient.rpc("svc_provider_asset_access_descriptor",{p_provider_id:providerId});
   if(descriptorError)return reply(500,{error:"provider_asset_lookup_failed"});
   if(!descriptor?.provider_asset_id||!descriptor?.storage_path)return reply(404,{error:"provider_logo_not_available"});
