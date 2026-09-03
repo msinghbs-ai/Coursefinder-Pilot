@@ -11,15 +11,17 @@ test.describe('CF-103 Provider logo and display-name quality @targeted',()=>{
   test('source contract keeps logo replacement Provider-only and supports managed URL import',async()=>{
     const logo=fs.readFileSync('src/ProviderLogo.jsx','utf8')
     const worker=fs.readFileSync('supabase/functions/provider-asset-upload/index.ts','utf8')
+    const migration=fs.readFileSync('supabase/migrations/20260904090500_cf_103_provider_logo_url_import.sql','utf8')
     expect(logo).toContain("location.hash.startsWith('#providers')")
     expect(logo).toContain('Image URL')
     expect(logo).toContain("form.set('source_url',sourceUrl)")
     expect(logo).toContain('cf-provider-list-logo')
     expect(logo).toContain('color:#0f172a!important')
     expect(logo).toContain('font-weight:850!important')
-    expect(worker).toContain('manual_admin_url_import')
+    expect(worker).toContain('p_source_url:originalSourceUrl')
     expect(worker).toContain('unsafe_source_url')
-    expect(worker).toContain('managed Provider Assets')
+    expect(migration).toContain('manual_admin_url_import')
+    expect(migration).toContain("'managed_storage',true")
   })
 
   test('Provider catalogue renders a logo/fallback and a non-geographic bold dark Provider name',async({page},testInfo)=>{
