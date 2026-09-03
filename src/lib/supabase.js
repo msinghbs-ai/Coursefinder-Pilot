@@ -207,7 +207,7 @@ export const api = {
   rankingImports: ({ limit = 50, offset = 0 } = {}) => adminRead('ranking_imports', {
     limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0),
   }),
-  uploadRankingPublisherFile: async ({ systemCode, editionYear, publisherName, sourceUrl, methodologyUrl = '', licensingNote, revisionNote = '', file }) => {
+  uploadRankingPublisherFile: async ({ systemCode, editionYear, publisherName, sourceUrl, methodologyUrl = '', licensingNote, revisionNote = '', file, files = [] }) => {
     const form = new FormData()
     form.set('system_code', systemCode)
     form.set('edition_year', String(editionYear))
@@ -216,7 +216,8 @@ export const api = {
     form.set('methodology_url', methodologyUrl || '')
     form.set('licensing_note', licensingNote)
     form.set('revision_note', revisionNote || '')
-    form.set('file', file)
+    const selected = Array.isArray(files) && files.length ? files : (file ? [file] : [])
+    selected.forEach(item => form.append('files', item))
     return invoke('ranking-publisher-import', form)
   },
   importRankingPublisherUrl: ({ systemCode, editionYear, referencePath }) => invoke('ranking-publisher-url-import', {
