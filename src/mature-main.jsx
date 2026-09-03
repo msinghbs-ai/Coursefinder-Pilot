@@ -27,9 +27,9 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.50'
+const UI_VERSION='2.15.51'
 const PAGE_SIZE=50
-const rankingYearOptions=system=>system==='qs_wur'?[2027,...Array.from({length:12},(_,i)=>2026-i)]:Array.from({length:12},(_,i)=>2026-i)
+const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
 const rankingPublisherName=system=>system==='the_wur'?'Times Higher Education':system==='arwu'?'ShanghaiRanking Consultancy':'QS Quacquarelli Symonds'
 const rankingSourceUrl=system=>system==='the_wur'?'https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking':system==='arwu'?'https://www.shanghairanking.com/rankings/arwu/2026':'https://www.topuniversities.com/world-university-rankings'
@@ -370,7 +370,7 @@ function RankingImportPanel({onError,routeParams,navigate}){
       <label>Import method<select value={form.mode} onChange={e=>patch('mode',e.target.value)}><option value="url" disabled={form.systemCode==='the_wur'}>Parse.bot URL</option><option value="file">File upload</option></select></label>
       {form.mode==='url'?<label>Parse.bot scraper URL<input value={form.parsebotRef} onChange={e=>patch('parsebotRef',e.target.value)} placeholder="/scrapers/…" required/></label>:<label>Publisher file<input type="file" accept=".csv,.xlsx,.pdf,.json,.txt,.zip" onChange={e=>inspectFile(e.target.files?.[0]||null)} required/></label>}
     </div>
-    {form.mode==='url'&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>Parse.bot established API</b><small>{form.parsebotRef} · year {form.editionYear} · Evidence retained before parsing</small></span></div>}
+    {form.mode==='url'&&form.systemCode==='qs_wur'&&String(form.editionYear)==='2027'?<div className="m-ranking-detected warning"><AlertTriangle size={16}/><span><b>QS 2027 Parse.bot source currently unavailable</b><small>Parse.bot currently returns extraction_failed for the 2027 publisher payload. Select 2026 or use File upload for 2027.</small></span></div>:form.mode==='url'&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>Parse.bot established API</b><small>{form.parsebotRef} · year {form.editionYear} · Evidence retained before parsing</small></span></div>}
     {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'}</small></span></div>}
     <button type="button" className="m-ranking-advanced-toggle" aria-expanded={advanced} onClick={()=>setAdvanced(x=>!x)}><Settings2 size={14}/>{advanced?'Hide metadata':'Advanced metadata'}<ChevronDown size={14}/></button>
     {advanced&&<div className="m-ranking-advanced">
@@ -381,7 +381,7 @@ function RankingImportPanel({onError,routeParams,navigate}){
       <label className="wide">Revision note<input value={form.revisionNote} onChange={e=>patch('revisionNote',e.target.value)} placeholder="Optional edition/correction note"/></label>
     </div>}
     {saved?.startsWith('WARNING:')&&<div className="m-ranking-detected warning"><AlertTriangle size={16}/><span><b>Existing edition</b><small>{saved.slice(8)}</small><button type="button" className="m-secondary compact" onClick={()=>{setOverwriteKey(editionKey());setSaved('Ready to register a new revision for '+humanise(form.systemCode)+' '+form.editionYear+'.')}}>Continue with new revision</button></span></div>}
-    <div className="m-ranking-import-actions"><button className="m-primary" disabled={busy||lastParsedKey===editionKey()}>{busy?(form.mode==='url'?'Fetching & parsing…':'Registering…'):(lastParsedKey===editionKey()?'Parsed successfully — change year':form.mode==='url'?'Parse import':'Register file & parse')}</button>{saved&&!saved.startsWith('WARNING:')&&<span className="success">{saved}</span>}</div>
+    <div className="m-ranking-import-actions"><button className="m-primary" disabled={busy||lastParsedKey===editionKey()||(form.mode==='url'&&form.systemCode==='qs_wur'&&String(form.editionYear)==='2027')}>{busy?(form.mode==='url'?'Fetching & parsing…':'Registering…'):(lastParsedKey===editionKey()?'Parsed successfully — change year':form.mode==='url'?'Parse import':'Register file & parse')}</button>{saved&&!saved.startsWith('WARNING:')&&<span className="success">{saved}</span>}</div>
    </form>
   </section>
   <section className="m-panel m-ranking-import-history">
