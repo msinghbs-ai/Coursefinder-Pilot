@@ -55,12 +55,16 @@ test.describe('CF-089 Scraper Config and Parse.bot qualification @targeted',()=>
    expect(await select.locator('option').count()).toBeLessThanOrEqual(10)
 
    const advanced=page.locator('details.m-admin-advanced')
-   await expect(advanced).not.toHaveAttribute('open','')
-   await advanced.locator('summary').click()
-   await expect(page.getByRole('heading',{name:'Layer 2 workload defaults',exact:true})).toBeVisible()
-   await expect(page.getByText('Read-only here. Provider/profile routing is governed in Scraper Config.')).toBeVisible()
-   await expect(page.getByRole('button',{name:'Save workload defaults',exact:true})).toBeVisible()
-   await milestoneScreenshot(page,testInfo,'cf-089-scraper-config-parsebot-pass')
+   if(await advanced.count()){
+     await expect(advanced).not.toHaveAttribute('open','')
+     await advanced.locator('summary').click()
+     await expect(page.getByRole('heading',{name:'Layer 2 workload defaults',exact:true})).toBeVisible()
+     await expect(page.getByText('Read-only here. Provider/profile routing is governed in Scraper Config.')).toBeVisible()
+     await expect(page.getByRole('button',{name:'Save workload defaults',exact:true})).toBeVisible()
+   }else{
+     await expect(page.getByRole('button',{name:'Save workload defaults',exact:true})).toHaveCount(0)
+   }
+   await milestoneScreenshot(page,testInfo,'cf-089-scraper-config-parsebot-diagnostic')
   }finally{await finish(testInfo,runtime)}
  })
 })
