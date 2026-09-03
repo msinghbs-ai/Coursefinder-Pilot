@@ -255,6 +255,7 @@ export const api = {
     limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0),
     country_code: countryCode || null, query: query || null, state: state || null,
   }),
+  providerAssetAccess: providerId => invoke('provider-asset-access', { provider_id: providerId }),
 
   providerContactsPage: ({ limit = 50, offset = 0, query = '', country = '', providerId = '', lifecycle = '', recordType = '', sourceAuthority = '', verification = '', hasEmail = '', hasPhone = '', freshness = '', sort = 'provider', direction = 'asc' } = {}) =>
     adminRead('provider_contacts_page', {
