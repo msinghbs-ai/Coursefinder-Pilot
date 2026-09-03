@@ -84,7 +84,7 @@ Deno.serve(async(req:Request)=>{
     }
   }
 
-  if(!["qs_wur","the_wur"].includes(systemCode)) return reply(req,400,{error:"unsupported_ranking_system"});
+  if(!["qs_wur","the_wur","arwu"].includes(systemCode)) return reply(req,400,{error:"unsupported_ranking_system"});
   if(!Number.isInteger(editionYear)||editionYear<2000||editionYear>2100) return reply(req,400,{error:"valid_edition_year_required"});
   if(!publisherName) return reply(req,400,{error:"publisher_name_required"});
   if(!validHttpUrl(sourceUrl)) return reply(req,400,{error:"valid_source_url_required"});
