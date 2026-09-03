@@ -261,6 +261,9 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css)$|^supabase/functions/(ranking-publisher-import|ranking-publisher-control)/|^tests/uat/cf-076-ranking-import-ux-deployed\.spec\.mjs$|^\.github/cf-076-ranking-import-ux-candidate$)'; then
             targeted=(tests/uat/cf-076-ranking-import-ux-deployed.spec.mjs)
           fi
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|access-roles-entry\.jsx|access-roles\.css|pim-version-entry\.js)$|^index\.html$|^tests/uat/cf-088-admin-ia-targeted\.spec\.mjs$|^\.github/workflows/deployed-uat\.yml$)'; then
+            targeted=(tests/uat/cf-088-admin-ia-targeted.spec.mjs)
+          fi
           integration=(
             tests/uat/layer2-operations-maturity-deployed.spec.mjs
             tests/uat/layer2-platform-deployed.spec.mjs
