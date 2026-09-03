@@ -27,7 +27,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.45'
+const UI_VERSION='2.15.46'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='the_wur'?Array.from({length:12},(_,i)=>2026-i):[2027,2026]
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -91,8 +91,8 @@ const ADMIN_SECTIONS=[
  {key:'overview',label:'Overview',Icon:Settings2,min:4,group:'Overview',description:'Administration landing page and governed configuration map.'},
  {key:'sources-imports',label:'Sources & Imports',Icon:Database,min:4,group:'Data setup',description:'Register governed publisher files and inspect import history.'},
  {key:'layer1-sources',label:'Layer 1 sources',Icon:Database,min:6,group:'Data setup',description:'Authoritative source configuration and Layer 1 guardrails.'},
- {key:'layer2-sources',label:'Layer 2 sources',Icon:Database,min:4,group:'Data setup',description:'Versioned enrichment-source profiles and qualification state.'},
- {key:'layer2-providers',label:'Scraper Config',Icon:SlidersHorizontal,min:4,group:'Acquisition',description:'Acquisition providers, credentials, quotas, routing and execution policy.'},
+ {key:'layer2-providers',label:'Scraper Config',Icon:SlidersHorizontal,min:4,group:'Acquisition',description:'Acquisition providers, credentials, quotas and profile routing.'},
+ {key:'layer2-sources',label:'Extraction Profiles',Icon:Database,min:4,group:'Advanced',description:'Versioned non-secret extraction rules and source-specific qualification state.'},
  {key:'scheduling',label:'Scheduling',Icon:RefreshCw,min:4,group:'Operations',description:'Refresh cadence, targeted scheduling and due-work policy.'},
  {key:'onboarding',label:'Onboarding',Icon:Workflow,min:4,group:'Operations',description:'Governed country and source onboarding lifecycle.'},
  {key:'pim',label:'PIM configuration',Icon:Tags,min:5,group:'PIM',description:'Attributes, families, groups, options and completeness profiles.'},
@@ -253,7 +253,7 @@ function AdministrationHome({rank,actorId,navigate,routeParams,onError}){
  {tool==='sources-imports'&&<RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>}
  {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>}
  {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>}
- {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<Layer2ExecutionPolicySettings/>}</>}
+ {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>}
  {tool==='environment-migration'&&rank>=6&&<EnvironmentMigrationWorkspace rank={rank} onError={onError}/>}
  {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={e=>onError?.(e?.message||String(e))}/></div>}
  {tool==='onboarding'&&<div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError?.(e?.message||String(e))}/></div>}
@@ -349,11 +349,11 @@ function RankingImportPanel({onError,routeParams,navigate}){
 function Layer2ExecutionPolicySettings(){
  const[data,setData]=useState(null),[form,setForm]=useState(null),[busy,setBusy]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState('')
  const invoke=async body=>{const{data:r,error:e}=await supabase.functions.invoke('layer2-sync-control',{body});if(e)throw e;if(r?.error)throw new Error(r.error);return r}
- const load=async()=>{setBusy(true);setError('');try{const r=await invoke({action:'policy'}),p=r?.policy||{};setData(r);setForm({qualification_provider_wave_size:p.qualification_provider_wave_size??50,qualification_sample_size:p.qualification_sample_size??10,qualification_retry_hours:p.qualification_retry_hours??168,qualification_finalizer_run_limit:p.qualification_finalizer_run_limit??2,qualification_pattern_provider_limit:p.qualification_pattern_provider_limit??3,production_target_wave_size:p.production_target_wave_size??500,production_max_wave_size:p.production_max_wave_size??1000,route_mode:p.route_mode||'scraper_first',schedule_remaining:p.schedule_remaining!==false})}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
+ const load=async()=>{setBusy(true);setError('');try{const r=await invoke({action:'policy'}),p=r?.policy||{};setData(r);setForm({qualification_provider_wave_size:p.qualification_provider_wave_size??50,qualification_sample_size:p.qualification_sample_size??10,qualification_retry_hours:p.qualification_retry_hours??168,qualification_finalizer_run_limit:p.qualification_finalizer_run_limit??2,qualification_pattern_provider_limit:p.qualification_pattern_provider_limit??3,production_target_wave_size:p.production_target_wave_size??500,production_max_wave_size:p.production_max_wave_size??1000,schedule_remaining:p.schedule_remaining!==false})}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  useEffect(()=>{load()},[])
  const save=async()=>{if(!form)return;setSaving(true);setError('');setSaved('');try{const r=await invoke({action:'update_policy',patch:{...form,qualification_provider_wave_size:Number(form.qualification_provider_wave_size),qualification_sample_size:Number(form.qualification_sample_size),qualification_retry_hours:Number(form.qualification_retry_hours),qualification_finalizer_run_limit:Number(form.qualification_finalizer_run_limit),qualification_pattern_provider_limit:Number(form.qualification_pattern_provider_limit),production_target_wave_size:Number(form.production_target_wave_size),production_max_wave_size:Number(form.production_max_wave_size)}});setData(r);setSaved('Layer 2 execution policy saved. New background requests use these limits.')}catch(e){setError(e.message||String(e))}finally{setSaving(false)}}
  const b=data?.firecrawl?.budget_status||{},fc=data?.firecrawl||{}
- return <section className="m-panel"><PanelTitle icon={Activity} title="Scraper routing & execution policy" subtitle="Global wave routing, qualification and continuation policy. Provider order and credentials are governed above; Firecrawl quota is read from Scraper Config and shown here as an effective value." action={<button className="m-secondary compact" onClick={load} disabled={busy||saving}><RefreshCw size={13}/>Refresh</button>}/>
+ return <section className="m-panel"><PanelTitle icon={Activity} title="Layer 2 workload defaults" subtitle="Scheduler batch sizes, qualification cadence and enrichment wave limits. Scraper routing is governed in Scraper Config above." action={<button className="m-secondary compact" onClick={load} disabled={busy||saving}><RefreshCw size={13}/>Refresh</button>}/>
   {busy&&!form?<div className="m-empty-inline">Loading Layer 2 policy…</div>:form&&<><div className="m-summary-strip"><SummaryCard icon={Database} label="Firecrawl monthly limit" value={fmtNumber(b.limit_units)} tone="blue"/><SummaryCard icon={Activity} label="Used this period" value={fmtNumber(b.used_units)} tone="violet"/><SummaryCard icon={ShieldCheck} label="Safety reserve" value={fmtNumber(b.stop_at_remaining_units)} tone="amber"/><div className="m-summary-note"><strong>{fc.enabled?'Firecrawl enabled':'Firecrawl disabled'}</strong><span>{fmtNumber(fc.rate_limit_per_minute)} requests/min · concurrency {fmtNumber(fc.concurrency)} · credential {fc.credential_configured?'configured':'missing'} · quota managed in Scraper Config above.</span></div></div>
   <div className="m-grid-2">
    <div className="m-detail-section"><h3>Background qualification</h3><p className="m-help">Each Provider requires one seed acquisition; Course samples are identity controls, not individual scrapes.</p><div className="m-kv-list">
@@ -366,11 +366,11 @@ function Layer2ExecutionPolicySettings(){
    <div className="m-detail-section"><h3>Production enrichment</h3><p className="m-help">The accepted wave is automatically clamped by the current Firecrawl entitlement and reserve.</p><div className="m-kv-list">
     <label><span>Target Courses per wave</span><input aria-label="Layer 2 production target wave" type="number" min="1" max="5000" value={form.production_target_wave_size} onChange={e=>setForm(x=>({...x,production_target_wave_size:e.target.value}))}/></label>
     <label><span>Maximum Courses per wave</span><input aria-label="Layer 2 production maximum wave" type="number" min="1" max="5000" value={form.production_max_wave_size} onChange={e=>setForm(x=>({...x,production_max_wave_size:e.target.value}))}/></label>
-    <label><span>Primary route</span><select aria-label="Layer 2 production route mode" value={form.route_mode} onChange={e=>setForm(x=>({...x,route_mode:e.target.value}))}><option value="scraper_first">Firecrawl direct / scraper-first</option><option value="managed">Managed route</option></select></label>
+    <div className="m-kv-readonly"><span>Legacy global route mode</span><strong>{humanise(data?.policy?.route_mode||'managed')}</strong><small>Read-only here. Provider/profile routing is governed in Scraper Config.</small></div>
     <label style={{display:'flex',alignItems:'center',gap:8}}><input aria-label="Layer 2 schedule remaining waves policy" type="checkbox" checked={form.schedule_remaining} onChange={e=>setForm(x=>({...x,schedule_remaining:e.target.checked}))}/><span>Schedule remaining waves automatically</span></label>
    </div></div>
   </div>
-  <div style={{display:'flex',alignItems:'center',gap:10,marginTop:12}}><button className="m-primary" onClick={save} disabled={saving}>{saving?'Saving…':'Save Layer 2 policy'}</button>{saved&&<span style={{fontSize:10,color:'#15803d'}}>{saved}</span>}</div></>}
+  <div style={{display:'flex',alignItems:'center',gap:10,marginTop:12}}><button className="m-primary" onClick={save} disabled={saving}>{saving?'Saving…':'Save workload defaults'}</button>{saved&&<span style={{fontSize:10,color:'#15803d'}}>{saved}</span>}</div></>}
   {error&&<div className="m-alert compact" style={{marginTop:10}}><AlertTriangle size={14}/><span>{error}</span><span/></div>}
  </section>
 }
