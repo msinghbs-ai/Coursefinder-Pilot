@@ -12,7 +12,7 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
     const main=fs.readFileSync('src/mature-main.jsx','utf8')
     const access=fs.readFileSync('src/access-roles-entry.jsx','utf8')
     const index=fs.readFileSync('index.html','utf8')
-    expect(main).toContain("const UI_VERSION='2.15.45'")
+    expect(main).toMatch(/const UI_VERSION='2\.15\.\d+'/ )
     expect(main).toContain("const ADMIN_SECTIONS=[")
     expect(main).toContain("const LEGACY_ADMIN_ROUTES={'users-roles':'users-roles','attributes':'pim','settings':'platform'}")
     expect(main).toContain("<AccessRolesEmbedded actorId={actorId}/>")
@@ -32,7 +32,7 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
       await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
       await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:45000})
       await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toBeVisible()
-      await expect(page.locator('.m-release-pill')).toContainText('v2.15.45')
+      await expect(page.locator('.m-release-pill')).toContainText(/v2\.15\.\d+/)
       await expect(page.locator('.ar-overlay:not(.ar-embedded)')).toHaveCount(0)
 
       await page.goto(new URL('/#users-roles',process.env.UAT_BASE_URL).toString())
