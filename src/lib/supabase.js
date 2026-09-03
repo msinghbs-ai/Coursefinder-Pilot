@@ -221,6 +221,14 @@ export const api = {
   },
   rankingPublisherControl: ({ action, importId }) => invoke('ranking-publisher-control', { action, import_id: importId }),
 
+  providerAssetSummary: ({ countryCode = '', query = '' } = {}) => adminRead('provider_asset_summary', {
+    country_code: countryCode || null, query: query || null,
+  }),
+  providerAssetCoverage: ({ limit = 50, offset = 0, countryCode = '', query = '', state = '' } = {}) => adminRead('provider_asset_coverage', {
+    limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0),
+    country_code: countryCode || null, query: query || null, state: state || null,
+  }),
+
   providerContactsPage: ({ limit = 50, offset = 0, query = '', country = '', providerId = '', lifecycle = '', recordType = '', sourceAuthority = '', verification = '', hasEmail = '', hasPhone = '', freshness = '', sort = 'provider', direction = 'asc' } = {}) =>
     adminRead('provider_contacts_page', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
