@@ -44,12 +44,12 @@ Deno.serve(async(req:Request)=>{
   if(stableKeys.length){
     const {data:descriptors,error}=await serviceClient.rpc("svc_provider_asset_access_descriptors",{p_stable_keys:stableKeys});
     if(error)return reply(500,{error:"provider_asset_batch_lookup_failed"});
-    const items=[];
-    for(const d of Array.isArray(descriptors)?descriptors:[]){
-      if(!d?.provider_asset_id||!d?.storage_path){items.push({...d,url:null,expires_in:SIGNED_URL_TTL_SECONDS});continue}
+    const rows=Array.isArray(descriptors)?descriptors:[];
+    const items=await Promise.all(rows.map(async d=>{
+      if(!d?.provider_asset_id||!d?.storage_path)return {...d,url:null,expires_in:SIGNED_URL_TTL_SECONDS};
       const {data:signed,error:signedError}=await serviceClient.storage.from("provider-assets").createSignedUrl(d.storage_path,SIGNED_URL_TTL_SECONDS);
-      items.push({...d,url:!signedError&&signed?.signedUrl?signed.signedUrl:null,expires_in:SIGNED_URL_TTL_SECONDS});
-    }
+      return {...d,url:!signedError&&signed?.signedUrl?signed.signedUrl:null,expires_in:SIGNED_URL_TTL_SECONDS};
+    }));
     return reply(200,{items,expires_in:SIGNED_URL_TTL_SECONDS});
   }
 
