@@ -1,5 +1,5 @@
 -- CF-142 — Evidence acquisition provenance.
--- Evidence detail must distinguish live scraper/direct acquisition from artifacts derived from retained private Evidence.
+-- Distinguish live acquisition from artifacts derived from retained private Evidence without widening browser grants.
 
 create or replace function security.admin_evidence_acquisition_provenance(p_evidence_id uuid)
 returns jsonb
@@ -10,7 +10,8 @@ set search_path='pg_catalog','security','pipeline','auth'
 as $$
   with artifact as (
     select e.id,e.storage_path,e.metadata,e.job_id,
-           nullif(e.metadata->>'source_evidence_id','')::uuid as source_evidence_id
+           case when coalesce(e.metadata->>'source_evidence_id','') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                then (e.metadata->>'source_evidence_id')::uuid end as source_evidence_id
     from pipeline.evidence_artifacts e where e.id=p_evidence_id
   ), origin as (
     select a.*,coalesce(src.id,a.id) origin_evidence_id,
@@ -22,7 +23,11 @@ as $$
            ap.provider_key,ap.display_name,ap.adapter_type
     from origin o
     left join pipeline.layer2_shared_fetches f on f.evidence_id=o.origin_evidence_id
-    left join pipeline.layer2_acquisition_providers ap on ap.id=coalesce(f.acquisition_provider_id,nullif(o.origin_metadata->>'provider_id','')::uuid)
+    left join pipeline.layer2_acquisition_providers ap on ap.id=coalesce(
+      f.acquisition_provider_id,
+      case when coalesce(o.origin_metadata->>'provider_id','') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+           then (o.origin_metadata->>'provider_id')::uuid end
+    )
   )
   select jsonb_strip_nulls(jsonb_build_object(
     'mode',case when source_evidence_id is not null then 'stored_evidence_derived' when coalesce(reuse_count,0)>0 then 'live_capture_with_storage_reuse' else 'live_acquisition' end,
@@ -37,9 +42,3 @@ as $$
 $$;
 revoke all on function security.admin_evidence_acquisition_provenance(uuid) from public,anon,authenticated;
 grant execute on function security.admin_evidence_acquisition_provenance(uuid) to service_role;
-
--- `security.admin_evidence_detail(uuid)` is replaced in the Pilot runtime so its existing JSON contract now includes:
---   acquisition_provenance := security.admin_evidence_acquisition_provenance(e.id)
--- alongside artifact/source/job/storage/supersession/claim/review lineage.
--- The browser continues to access this through the existing guarded `public.admin_read('evidence_detail', ...)` path;
--- no raw Evidence/shared-fetch/provider table grant is introduced.
