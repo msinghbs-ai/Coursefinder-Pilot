@@ -1,13 +1,13 @@
-const VERSION='2.15.59'
+const VERSION='2.15.60'
 const RELEASE={
   version:VERSION,
   date:'4 Sep 2026',
-  title:'QILT 2023 comparison reconciliation',
+  title:'Provider logo hydration performance correction',
   changes:[
-    'Provider comparison now retains QILT Student Experience Survey cohort grain when study_level_id is absent: UG is shown as Undergraduate and PGC as Postgraduate coursework instead of collapsing both into All study levels.',
-    'Official QILT 2023 SES comparison observations for Monash University, RMIT University and La Trobe University are retained for the meeting proof alongside existing 2024 observations, with published confidence bounds and national benchmarks at the matching cohort/metric grain.',
-    'The governed comparison read strips absent statistical fields before browser delivery, preventing missing 2024 confidence-high or national-benchmark values from being rendered as false 0.0% statistics.',
-    'QILT remains contextual statistical intelligence only; no Provider/Course identity, Scholarship, Search, Publication, Website or Zoho authority changed.'
+    'Provider logo loading now de-duplicates concurrent asset requests by Provider ID so detail and comparison surfaces reuse the same in-flight lookup instead of issuing duplicate signed-asset requests.',
+    'The Provider list keeps its bounded bulk logo resolver but removes the 90 ms reset-on-every-mutation hydration loop; relevant Provider-table and Provider-drawer changes are coalesced into a single animation-frame pass.',
+    'Provider list logo images now use lazy loading, asynchronous decoding and low fetch priority, while the session cache is retained for repeat navigation.',
+    'Provider logo upload/replace capability remains available to authorised PIM/Admin operators; no Provider identity, QILT, PRISMS, Scholarship, Search, Publication, Website or Zoho authority changed.'
   ]
 }
 let pending=false
