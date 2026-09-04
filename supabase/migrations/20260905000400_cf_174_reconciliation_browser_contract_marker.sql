@@ -1,0 +1,1 @@
+comment on function scholarship.reconcile_verified_detail_records(uuid,text,text,uuid,integer) is 'CF-171/174 guarded verified first-party Scholarship detail reconciliation. Service-role only; PIM Admin access is mediated by scholarship-runtime-control; publication remains blocked.';
