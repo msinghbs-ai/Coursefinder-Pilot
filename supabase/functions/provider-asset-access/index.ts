@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+const SIGNED_URL_TTL_SECONDS=1800;
 const cors={
   "access-control-allow-origin":"*",
   "access-control-allow-headers":"authorization, x-client-info, apikey, content-type",
@@ -45,18 +46,18 @@ Deno.serve(async(req:Request)=>{
     if(error)return reply(500,{error:"provider_asset_batch_lookup_failed"});
     const items=[];
     for(const d of Array.isArray(descriptors)?descriptors:[]){
-      if(!d?.provider_asset_id||!d?.storage_path){items.push({...d,url:null,expires_in:600});continue}
-      const {data:signed,error:signedError}=await serviceClient.storage.from("provider-assets").createSignedUrl(d.storage_path,600);
-      items.push({...d,url:!signedError&&signed?.signedUrl?signed.signedUrl:null,expires_in:600});
+      if(!d?.provider_asset_id||!d?.storage_path){items.push({...d,url:null,expires_in:SIGNED_URL_TTL_SECONDS});continue}
+      const {data:signed,error:signedError}=await serviceClient.storage.from("provider-assets").createSignedUrl(d.storage_path,SIGNED_URL_TTL_SECONDS);
+      items.push({...d,url:!signedError&&signed?.signedUrl?signed.signedUrl:null,expires_in:SIGNED_URL_TTL_SECONDS});
     }
-    return reply(200,{items,expires_in:600});
+    return reply(200,{items,expires_in:SIGNED_URL_TTL_SECONDS});
   }
 
   const {data:descriptor,error:descriptorError}=await serviceClient.rpc("svc_provider_asset_access_descriptor",{p_provider_id:providerId});
   if(descriptorError)return reply(500,{error:"provider_asset_lookup_failed"});
   if(!descriptor?.provider_asset_id||!descriptor?.storage_path)return reply(404,{error:"provider_logo_not_available"});
 
-  const {data:signed,error:signedError}=await serviceClient.storage.from("provider-assets").createSignedUrl(descriptor.storage_path,600);
+  const {data:signed,error:signedError}=await serviceClient.storage.from("provider-assets").createSignedUrl(descriptor.storage_path,SIGNED_URL_TTL_SECONDS);
   if(signedError||!signed?.signedUrl)return reply(500,{error:"signed_access_failed"});
 
   return reply(200,{
@@ -66,7 +67,7 @@ Deno.serve(async(req:Request)=>{
     mime_type:descriptor.mime_type,
     content_hash:descriptor.content_hash,
     verified_at:descriptor.verified_at,
-    expires_in:600,
+    expires_in:SIGNED_URL_TTL_SECONDS,
     url:signed.signedUrl,
   });
 });
