@@ -1,0 +1,1 @@
+comment on view pipeline.scholarship_verified_detail_reconciliation_candidates is 'CF-171 verified-detail reconciliation gate: first-party international detail records are classified ready vs review/duplicate before any unpublished canonical root is created.';
