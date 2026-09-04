@@ -1,13 +1,13 @@
-const VERSION='2.15.61'
+const VERSION='2.15.62'
 const RELEASE={
   version:VERSION,
   date:'5 Sep 2026',
-  title:'International Scholarship selector — University and Course search',
+  title:'Provider logo retention and cache hardening',
   changes:[
-    'Scholarship Selection now enforces an international-students-only audience boundary in the governed backend selector.',
-    'Operators can search and test by University/provider name or by Course title, CRICOS/course code or university name; raw Course UUID entry is no longer required.',
-    'University mode shows the current international Scholarship inventory count for direct coverage reconciliation, while Course mode limits unscoped Provider-owned Scholarships to the Course Provider and admits Provider-neutral Scholarships only through an explicit recorded scope.',
-    'Scholarship selection remains decision support only: exact Course eligibility and individual student eligibility remain unresolved unless supported by governed scopes/criteria; no Publication, Search, Website or Zoho admission is changed.'
+    'CF-102 Provider logo surfaces remain mandatory across Provider detail, Course detail and comparison while coexisting with the newer international Scholarship selector.',
+    'Provider list logo hydration remains bounded to one bulk stable-key request per page wave, with in-flight de-duplication, lazy image decoding and sessionStorage reuse retained.',
+    'Private Provider logo signed URLs now use a 30-minute lifetime to reduce unnecessary re-signing during longer Admin sessions; the provider-assets bucket remains private and JWT role validation remains required.',
+    'The permanent CF-102 regression test is no longer pinned to an old UI version and now asserts logo wiring, cache controls, bulk hydration and Scholarship-selector coexistence so future releases cannot silently drop the feature.'
   ]
 }
 let pending=false
