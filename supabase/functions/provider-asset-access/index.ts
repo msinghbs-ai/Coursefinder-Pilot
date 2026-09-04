@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SIGNED_URL_TTL_SECONDS=1800;
+const SIGNING_CONCURRENCY=8;
 const cors={
   "access-control-allow-origin":"*",
   "access-control-allow-headers":"authorization, x-client-info, apikey, content-type",
@@ -12,6 +13,20 @@ const cors={
 const jsonHeaders={...cors,"content-type":"application/json; charset=utf-8"};
 const uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const reply=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:jsonHeaders});
+
+async function mapLimit<T,R>(rows:T[],limit:number,fn:(row:T)=>Promise<R>):Promise<R[]> {
+  const out=new Array<R>(rows.length);
+  let cursor=0;
+  const worker=async()=>{
+    while(true){
+      const index=cursor++;
+      if(index>=rows.length)return;
+      out[index]=await fn(rows[index]);
+    }
+  };
+  await Promise.all(Array.from({length:Math.min(limit,rows.length)},()=>worker()));
+  return out;
+}
 
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
@@ -45,11 +60,11 @@ Deno.serve(async(req:Request)=>{
     const {data:descriptors,error}=await serviceClient.rpc("svc_provider_asset_access_descriptors",{p_stable_keys:stableKeys});
     if(error)return reply(500,{error:"provider_asset_batch_lookup_failed"});
     const rows=Array.isArray(descriptors)?descriptors:[];
-    const items=await Promise.all(rows.map(async d=>{
+    const items=await mapLimit(rows,SIGNING_CONCURRENCY,async d=>{
       if(!d?.provider_asset_id||!d?.storage_path)return {...d,url:null,expires_in:SIGNED_URL_TTL_SECONDS};
       const {data:signed,error:signedError}=await serviceClient.storage.from("provider-assets").createSignedUrl(d.storage_path,SIGNED_URL_TTL_SECONDS);
       return {...d,url:!signedError&&signed?.signedUrl?signed.signedUrl:null,expires_in:SIGNED_URL_TTL_SECONDS};
-    }));
+    });
     return reply(200,{items,expires_in:SIGNED_URL_TTL_SECONDS});
   }
 
