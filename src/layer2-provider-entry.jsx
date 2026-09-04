@@ -2,6 +2,7 @@ import React,{useEffect,useState}from'react'
 import{createRoot}from'react-dom/client'
 import{KeyRound,Network,Play,Plus,RefreshCw,Route,Search,ShieldCheck,X}from'lucide-react'
 import{adminRead,api,supabase}from'./lib/supabase'
+import ScholarshipRuntimeWorkspace from'./ScholarshipRuntimeWorkspace'
 import'./layer2-provider.css'
 
 const CC='CF-CHG-20260827-044'
@@ -36,6 +37,7 @@ export function Console({rank,onClose=()=>{},embedded=false}){
  {run&&<div className="l2p-run"><strong>Acquisition PASS · {run.provider_key}</strong><span>HTTP {run.http_status}</span><code>Job {run.job_id} · Evidence {run.evidence_id}</code></div>}
  {rank>=5&&<div className="l2p-add-route"><h3>Add/ensure route</h3>{providers.map(p=><button key={p.id} disabled={busy||routes.some(r=>r.provider_id===p.id)} onClick={()=>routeProvider(p)}><Route size={13}/>{p.display_name}</button>)}</div>}
  </>}</section></div>
+ {embedded&&<details className="m-admin-advanced" style={{marginTop:12}}><summary>Scholarship runtime settings</summary><ScholarshipRuntimeWorkspace rank={rank} adminOnly onError={setError}/></details>}
  {selected&&<ProviderDrawer provider={selected} rank={rank} busy={busy} probeBusy={probeBusyId===selected.id} onClose={()=>setSelected(null)} onSecret={setSecret} onUpdate={updateProvider} onProbe={probeProvider}/>} {newOpen&&<NewProvider busy={busy} onClose={()=>setNewOpen(false)} onSave={saveProvider}/>}</main></div>
 }
 function ProviderDrawer({provider:p,rank,busy,probeBusy,onClose,onSecret,onUpdate,onProbe}){
