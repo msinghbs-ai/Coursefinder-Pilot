@@ -1,13 +1,13 @@
-const VERSION='2.15.60'
+const VERSION='2.15.61'
 const RELEASE={
   version:VERSION,
-  date:'4 Sep 2026',
-  title:'Provider logo hydration performance correction',
+  date:'5 Sep 2026',
+  title:'International Scholarship selector — University and Course search',
   changes:[
-    'Provider logo loading now de-duplicates concurrent asset requests by Provider ID so detail and comparison surfaces reuse the same in-flight lookup instead of issuing duplicate signed-asset requests.',
-    'The Provider list keeps its bounded bulk logo resolver but removes the 90 ms reset-on-every-mutation hydration loop; relevant Provider-table and Provider-drawer changes are coalesced into a single animation-frame pass.',
-    'Provider list logo images now use lazy loading, asynchronous decoding and low fetch priority, while the session cache is retained for repeat navigation.',
-    'Provider logo upload/replace capability remains available to authorised PIM/Admin operators; no Provider identity, QILT, PRISMS, Scholarship, Search, Publication, Website or Zoho authority changed.'
+    'Scholarship Selection now enforces an international-students-only audience boundary in the governed backend selector.',
+    'Operators can search and test by University/provider name or by Course title, CRICOS/course code or university name; raw Course UUID entry is no longer required.',
+    'University mode shows the current international Scholarship inventory count for direct coverage reconciliation, while Course mode limits unscoped Provider-owned Scholarships to the Course Provider and admits Provider-neutral Scholarships only through an explicit recorded scope.',
+    'Scholarship selection remains decision support only: exact Course eligibility and individual student eligibility remain unresolved unless supported by governed scopes/criteria; no Publication, Search, Website or Zoho admission is changed.'
   ]
 }
 let pending=false
