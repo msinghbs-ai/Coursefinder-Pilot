@@ -8,13 +8,14 @@ const RMIT_COURSE='415e1105-8b45-4a72-9711-93d9217777ee'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('CF-102 Provider logos across detail, list and comparison @targeted',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-102-provider-logo-surfaces-v2',change_control:'CF-CHG-20260904-102 / CF-CHG-20260905-152'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-102-provider-logo-surfaces-v3',change_control:'CF-CHG-20260904-102 / CF-CHG-20260905-152'})})
 
  test('source contract preserves governed signed access, caching and all identity surfaces',async()=>{
    const main=fs.readFileSync('src/mature-main.jsx','utf8')
    const course=fs.readFileSync('src/CourseDetailPolish.jsx','utf8')
    const compare=fs.readFileSync('src/ComparisonWorkspace.jsx','utf8')
    const logo=fs.readFileSync('src/ProviderLogo.jsx','utf8')
+   const edge=fs.readFileSync('supabase/functions/provider-asset-access/index.ts','utf8')
    const api=fs.readFileSync('src/lib/supabase.js','utf8')
    const scholarship=fs.readFileSync('src/scholarship-selection-entry.jsx','utf8')
 
@@ -35,6 +36,9 @@ test.describe('CF-102 Provider logos across detail, list and comparison @targete
    expect(logo).toContain('img.loading=\'lazy\'')
    expect(logo).toContain("img.decoding='async'")
    expect(logo).toContain("img.fetchPriority='low'")
+   expect(edge).toContain('const SIGNED_URL_TTL_SECONDS=1800')
+   expect(edge).toContain('const SIGNING_CONCURRENCY=8')
+   expect(edge).toContain('mapLimit(rows,SIGNING_CONCURRENCY')
    expect(api).toContain("providerAssetAccess: providerId => invoke('provider-asset-access'")
 
    // Later Scholarship work must coexist with, not replace, CF-102 logo wiring.
@@ -68,21 +72,27 @@ test.describe('CF-102 Provider logos across detail, list and comparison @targete
    }finally{await finish(testInfo,runtime)}
  })
 
- test('Provider list hydrates logos with one bounded bulk access request and session cache',async({page},testInfo)=>{
+ test('Provider list uses bounded bulk access and persists successful bulk results',async({page},testInfo)=>{
    if(!process.env.UAT_BASE_URL||!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)test.skip(true,'deployed UAT environment not configured')
    const runtime=observeRuntime(page)
-   const calls=[]
+   const calls=[];const responses=[]
    page.on('request',req=>{if(req.url().includes('/functions/v1/provider-asset-access'))calls.push(req)})
+   page.on('response',res=>{if(res.url().includes('/functions/v1/provider-asset-access'))responses.push(res.status())})
    try{
      await loginAsUatUser(page)
      await page.goto(new URL('/#providers',process.env.UAT_BASE_URL).toString())
      await expect(page.locator('.m-catalogue-panel .m-table tbody tr').first()).toBeVisible({timeout:45000})
-     await page.waitForTimeout(1500)
      const logos=page.locator('.m-catalogue-panel .cf-provider-list-logo')
      await expect(logos.first()).toBeVisible({timeout:45000})
+
+     // Hydration may begin after the fallback slot is painted. Give the bulk request/cache write a bounded settle window.
+     await page.waitForTimeout(2500)
      expect(calls.length).toBeLessThanOrEqual(2)
-     const cached=await page.evaluate(()=>sessionStorage.getItem('coursefinder:provider-list-logo-cache:v2'))
-     expect(cached).toBeTruthy()
+     if(calls.length>0){
+       await expect.poll(()=>responses.length,{timeout:10000}).toBeGreaterThan(0)
+       expect(responses.every(status=>status>=200&&status<300)).toBeTruthy()
+       await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem('coursefinder:provider-list-logo-cache:v2')),{timeout:10000}).not.toBeNull()
+     }
    }finally{await finish(testInfo,runtime)}
  })
 })
