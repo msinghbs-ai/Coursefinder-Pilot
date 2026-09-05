@@ -30,11 +30,11 @@ import'./mature.css'
 
 const UI_VERSION='2.15.57'
 const PAGE_SIZE=50
-const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:Array.from({length:12},(_,i)=>2026-i)
+const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:system==='the_wur'?Array.from({length:16},(_,i)=>2026-i):Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
 const rankingPublisherName=system=>system==='the_wur'?'Times Higher Education':system==='arwu'?'ShanghaiRanking Consultancy':'QS Quacquarelli Symonds'
 const rankingSourceUrl=system=>system==='the_wur'?'https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking':system==='arwu'?'https://www.shanghairanking.com/rankings/arwu/2026':'https://www.topuniversities.com/world-university-rankings'
-const rankingParsebotRef=system=>system==='arwu'?'/scrapers/0f6d2cb9-c7eb-4f31-9216-f7be578e9f96':system==='qs_wur'?'https://www.topuniversities.com/world-university-rankings':'/scrapers/e3ecc5de-f530-478a-b464-867d43099420'
+const rankingParsebotRef=system=>system==='arwu'?'/scrapers/0f6d2cb9-c7eb-4f31-9216-f7be578e9f96':system==='qs_wur'?'https://www.topuniversities.com/world-university-rankings':system==='the_wur'?'https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking':'/scrapers/e3ecc5de-f530-478a-b464-867d43099420'
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
 
@@ -390,8 +390,8 @@ function RankingImportPanel({onError,routeParams,navigate}){
       <label>Edition year<select value={form.editionYear} onChange={e=>patch('editionYear',e.target.value)}>{rankingYearOptions(form.systemCode).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
     </div>
     <div className="m-ranking-essentials">
-      <label>Import method<select value={form.mode} onChange={e=>patch('mode',e.target.value)}><option value="file">File upload (recommended)</option><option value="url" disabled={form.systemCode==='the_wur'}>{form.systemCode==='qs_wur'?'Publisher URL → Evidence XLSX':'Parse.bot URL (metered)'}</option></select></label>
-      {form.mode==='url'?<label>{form.systemCode==='qs_wur'?'QS publisher URL':'Parse.bot scraper URL'}<input value={form.parsebotRef} onChange={e=>patch('parsebotRef',e.target.value)} placeholder="/scrapers/…" required/></label>:<label>Publisher file(s)<input type="file" multiple accept=".csv,.xlsx,.json,.txt" onChange={e=>inspectFiles(e.target.files)} required/><small>Select one global file or multiple country/page JSON/TXT files for the same ranking system and year.</small></label>}
+      <label>Import method<select value={form.mode} onChange={e=>patch('mode',e.target.value)}><option value="file">File upload (recommended)</option><option value="url">{['qs_wur','the_wur'].includes(form.systemCode)?'Publisher URL → Evidence XLSX':'Parse.bot URL (metered)'}</option></select></label>
+      {form.mode==='url'?<label>{form.systemCode==='qs_wur'?'QS publisher URL':form.systemCode==='the_wur'?'THE publisher URL':'Parse.bot scraper URL'}<input value={form.parsebotRef} onChange={e=>patch('parsebotRef',e.target.value)} placeholder="/scrapers/…" required/></label>:<label>Publisher file(s)<input type="file" multiple accept=".csv,.xlsx,.json,.txt" onChange={e=>inspectFiles(e.target.files)} required/><small>Select one global file or multiple country/page JSON/TXT files for the same ranking system and year.</small></label>}
     </div>
     {form.mode==='url'&&form.systemCode==='qs_wur'&&String(form.editionYear)==='2027'?<div className="m-ranking-detected warning"><AlertTriangle size={16}/><span><b>QS 2027 Parse.bot source currently unavailable</b><small>Parse.bot currently returns extraction_failed for the 2027 publisher payload. Select 2026 or use File upload for 2027.</small></span></div>:form.mode==='url'&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>Parse.bot established API</b><small>{form.parsebotRef} · year {form.editionYear} · Evidence retained before parsing</small></span></div>}
     {detected&&<div className="m-ranking-detected"><CheckCircle2 size={16}/><span><b>{detected.system+' · '+detected.year}</b><small>{detected.format+' · '+Number(detected.rows||0).toLocaleString()+' source rows detected'+(detected.countries?.length?' · '+detected.countries.join(', '):'')}</small>{sameEditionImports.length&&selectedCountries.length?<small className="m-ranking-scope-note">{addingCountryScope?'Add country data · new scope: '+newCountries.join(', '):(newCountries.length?'Mixed scope · new: '+newCountries.join(', ')+' · existing: '+overlapCountries.join(', '):'Existing country scope · this will be treated as a source revision')}</small>:null}</span></div>}
