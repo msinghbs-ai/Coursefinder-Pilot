@@ -57,11 +57,18 @@ Deno.serve(async(req:Request)=>{
      return J(200,{ok:true,job_id:jobId,...result});
    }
    const ar=await postJson(`${sb}/functions/v1/layer2-acquire-v2`,key,{profile_id:ctx.profile_id,target_url:ctx.target_url});
+   let sharedFetchId=String(ar?.shared_fetch_id||"");
+   let sharedFetchBridge:any=null;
+   const isDetail=String(ctx?.payload?.acquisition_stage||"")==="first_party_detail";
+   if(!isDetail&&!sharedFetchId&&ar?.evidence_id){
+     sharedFetchBridge=await rpc(svc,"scholarship_catalogue_shared_fetch_from_evidence",{p_job_id:jobId,p_evidence_id:String(ar.evidence_id)});
+     sharedFetchId=String(sharedFetchBridge?.shared_fetch_id||"");
+   }
    let fanout:any=null;
-   if(ar?.shared_fetch_id){try{fanout=await postJson(`${sb}/functions/v1/layer2-provider-page-fanout`,key,{shared_fetch_id:ar.shared_fetch_id})}catch(e:any){fanout={error:String(e.message)}}}
+   if(sharedFetchId){try{fanout=await postJson(`${sb}/functions/v1/layer2-provider-page-fanout`,key,{shared_fetch_id:sharedFetchId})}catch(e:any){fanout={error:String(e.message)}}}
    let extraction:any=null;
-   if(String(ctx?.payload?.acquisition_stage||"")==="first_party_detail"&&ar?.evidence_id){extraction=await extractChain(sb,key,svc,jobId,String(ar.evidence_id));}
-   const result={acquisition_job_id:ar?.job_id||null,evidence_id:ar?.evidence_id||null,shared_fetch_id:ar?.shared_fetch_id||null,provider_key:ar?.provider_key||null,shared_fetch_reused:ar?.shared_fetch_reused||false,fanout,extraction,publication_changed:false,canonical_mutation_authorised:false};
+   if(isDetail&&ar?.evidence_id){extraction=await extractChain(sb,key,svc,jobId,String(ar.evidence_id));}
+   const result={acquisition_job_id:ar?.job_id||null,evidence_id:ar?.evidence_id||null,shared_fetch_id:sharedFetchId||null,shared_fetch_bridge:sharedFetchBridge,provider_key:ar?.provider_key||null,shared_fetch_reused:ar?.shared_fetch_reused||false,fanout,extraction,publication_changed:false,canonical_mutation_authorised:false};
    await rpc(svc,"scholarship_scope_job_mark",{p_job_id:jobId,p_status:"succeeded",p_result:result,p_error:null,p_execution:execution});
    return J(200,{ok:true,job_id:jobId,...result});
  }catch(e:any){const msg=String(e?.message||e);await rpc(svc,"scholarship_scope_job_mark",{p_job_id:jobId,p_status:"failed",p_result:{publication_changed:false,canonical_mutation_authorised:false},p_error:msg,p_execution:execution});return J(500,{error:"scoped_scholarship_execution_failed",detail:msg})}
