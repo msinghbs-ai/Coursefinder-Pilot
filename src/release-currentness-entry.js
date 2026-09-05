@@ -1,13 +1,14 @@
-const VERSION='2.15.62'
+const VERSION='2.15.63'
 const RELEASE={
   version:VERSION,
   date:'5 Sep 2026',
-  title:'Provider logo retention and cache hardening',
+  title:'International Scholarship runtime and queue hardening',
   changes:[
-    'CF-102 Provider logo surfaces remain mandatory across Provider detail, Course detail and comparison while coexisting with the newer international Scholarship selector.',
-    'Provider list logo hydration remains bounded to one bulk stable-key request per page wave, with in-flight de-duplication, lazy image decoding and sessionStorage reuse retained.',
-    'Private Provider logo signed URLs now use a 30-minute lifetime to reduce unnecessary re-signing during longer Admin sessions; the provider-assets bucket remains private and JWT role validation remains required.',
-    'The permanent CF-102 regression test is no longer pinned to an old UI version and now asserts logo wiring, cache controls, bulk hydration and Scholarship-selector coexistence so future releases cannot silently drop the feature.'
+    'Scholarship Operations now supports governed Country and University acquisition, international-only detail qualification, Evidence-backed canonical-unpublished reconciliation, provider/course cross-reference and live UAT/statistics.',
+    'The automatic detail queue now contains only active discovered candidates. Acquired, superseded, catalogue/filter, support/navigation and external records cannot silently re-enter firing.',
+    'Existing first-party source records, Evidence and canonical unpublished Scholarships are reused instead of re-scraped; duplicate Provider/detail URL observations are retained for audit but removed from executable work.',
+    'Runtime statistics now distinguish active detail-ready/review work from historical classification state. The AU active detail-ready queue is currently zero after reconciliation while canonical Scholarships remain unpublished.',
+    'CF-102 Provider logo display and private cached signed-logo access remain unchanged and protected by their permanent regression gate.'
   ]
 }
 let pending=false
