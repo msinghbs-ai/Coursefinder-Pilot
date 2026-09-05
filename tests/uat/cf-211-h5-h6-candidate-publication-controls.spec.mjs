@@ -24,6 +24,22 @@ test('CF-211 H5 operator workspace states candidate boundary clearly',async()=>{
  assert.match(src,/Ready for acquisition/)
 })
 
+test('CF-211 public browser RPCs are invoker wrappers over private implementations',async()=>{
+ const sql=await read('supabase/migrations/20260905074000_cf_211_h5_h6_private_impl_wrappers.sql')
+ assert.match(sql,/create schema if not exists pim_api/)
+ assert.match(sql,/set schema pim_api/)
+ assert.match(sql,/set schema l4_api/)
+ assert.match(sql,/language sql security invoker/g)
+ assert.match(sql,/revoke all on function public\.manual_pim_candidate_register[\s\S]*from public,anon/)
+ assert.match(sql,/revoke all on function public\.publication_control_execute[\s\S]*from public,anon/)
+})
+
+test('CF-211 H5 Evidence FK has a covering review index',async()=>{
+ const sql=await read('supabase/migrations/20260905075000_cf_211_h5_candidate_evidence_index.sql')
+ assert.match(sql,/pim_source_candidates_evidence_idx/)
+ assert.match(sql,/pim_source_candidates\(evidence_id\)/)
+})
+
 test('CF-211 H6 publication requires preview token and remains non-cutover',async()=>{
  const sql=await read('supabase/migrations/20260905073000_cf_211_h5_h6_candidate_publication_controls.sql')
  assert.match(sql,/publication_control_preview/)
