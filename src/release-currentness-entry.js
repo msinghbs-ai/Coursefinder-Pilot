@@ -1,14 +1,14 @@
-const VERSION='2.15.63'
+const VERSION='2.15.64'
 const RELEASE={
   version:VERSION,
   date:'5 Sep 2026',
-  title:'International Scholarship runtime and queue hardening',
+  title:'Scholarship queue truth and reconciliation precision',
   changes:[
-    'Scholarship Operations now supports governed Country and University acquisition, international-only detail qualification, Evidence-backed canonical-unpublished reconciliation, provider/course cross-reference and live UAT/statistics.',
-    'The automatic detail queue now contains only active discovered candidates. Acquired, superseded, catalogue/filter, support/navigation and external records cannot silently re-enter firing.',
-    'Existing first-party source records, Evidence and canonical unpublished Scholarships are reused instead of re-scraped; duplicate Provider/detail URL observations are retained for audit but removed from executable work.',
-    'Runtime statistics now distinguish active detail-ready/review work from historical classification state. The AU active detail-ready queue is currently zero after reconciliation while canonical Scholarships remain unpublished.',
-    'CF-102 Provider logo display and private cached signed-logo access remain unchanged and protected by their permanent regression gate.'
+    'Scholarship Operations now reports only active discovered detail-ready and review candidates; historical acquired classifications no longer inflate the executable queue.',
+    'Already captured or applied first-party Scholarship Evidence is reconciled to acquired state and reused instead of being fetched again.',
+    'Structural candidate and reconciliation gates now keep catalogue roots, navigation, finance/support pages, sponsor/information hubs, domestic pages, filters and supporting documents out of individual Scholarship canonicalisation.',
+    'The AU verified-detail queue is currently clear after reconciliation: 263 canonical international Scholarships, zero automatically published, zero active detail-ready jobs and zero reconciliation-ready records.',
+    'CF-102 Provider logo display, signed access and cache behaviour remain unchanged.'
   ]
 }
 let pending=false
