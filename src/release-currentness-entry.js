@@ -1,15 +1,15 @@
-const VERSION='2.15.65'
+const VERSION='2.15.66'
 const RELEASE={
   version:VERSION,
   date:'5 Sep 2026',
-  title:'Layer 4 mass operations and quality cross-check',
+  title:'Reusable Layer 4 Scholarship scope rules',
   changes:[
-    'Layer 4 Human Resolution now groups repeatable Scholarship Course-scope and generic review work into governed cohorts so operators do not need to process thousands of rows one by one.',
-    'Scholarship cohorts show Evidence coverage, Provider mismatch, existing mappings, study-level spread, semantic-scope warnings and a bounded course sample before any mass decision.',
-    'Mass accept/reject requires an audited reason plus an exact count confirmation; structural blockers prevent cohort acceptance and every mass operation is retained in an audit ledger.',
-    'Generic Layer 4 cohorts can be rejected or returned to Layer 2/3 in bounded batches; bulk scalar approval remains intentionally unavailable where proposed values may differ.',
-    'Layer 4 now includes cross-check diagnostics and a tracked Errors / Issues / Improvements register for structural integrity, stale review work and workflow-improvement opportunities.',
-    'Publication remains separate and unchanged, and CF-102 Provider logo display, signed access and cache behaviour are retained.'
+    'Layer 4 can now convert a reviewed Scholarship Course-scope cohort into one reusable accept/reject rule instead of recreating the same row-level review after every refresh.',
+    'Reusable rules are bound to the exact Scholarship, candidate reason, Provider and first-party Evidence ID; any changed Evidence version deliberately falls back to Layer 4 review.',
+    'Future matching Course-scope candidates are resolved automatically through the retained rule, with Evidence, actor, mapping basis and rule-use counters preserved for audit.',
+    'Operators can inspect, apply, enable or disable retained rules from Layer 4; rule creation requires Pipeline Operator authority, audited reason and exact SAVE RULE N confirmation.',
+    'No rule can bypass Provider mismatch or missing Evidence controls, and Publication/Search admission remains separate.',
+    'CF-102 Provider logo display, private signed access and cache behaviour remain unchanged.'
   ]
 }
 let pending=false
