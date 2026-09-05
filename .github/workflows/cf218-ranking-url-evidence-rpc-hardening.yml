@@ -1,0 +1,61 @@
+name: CF-218 ranking URL Evidence RPC hardening
+on:
+  push:
+    paths: ['.github/workflows/cf218-ranking-url-evidence-rpc-hardening.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Replace private-schema Data API access with service RPCs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def patch(path):
+              p=Path(path); s=p.read_text()
+              before=s
+              # Raw Evidence registration: Storage stays in worker; private pipeline table registration goes through service-role RPC.
+              pat=r'''const\{data:existing\}=await svc\.schema\("pipeline"\)\.from\("evidence_artifacts"\)\.select\("id"\)\.eq\("storage_path",path\)\.maybeSingle\(\);if\(existing\?\.id\)return\{id:existing\.id,path,hash\};const ins=await svc\.schema\("pipeline"\)\.from\("evidence_artifacts"\)\.insert\(\{evidence_type:"ranking_publisher_raw",source_url:src,storage_path:path,content_hash:hash,mime_type:"application/json",captured_at:new Date\(\)\.toISOString\(\),metadata:\{ranking_system:"([^"]+)",edition_year:year,acquisition_mode:mode,([^}]*)\},retention_class:"source_evidence",review_state:"pending_review",capture_version:1,evidence_group_key:`[^`]+`\}\)\.select\("id"\)\.single\(\);if\(ins\.error\)throw new Error\(`raw_evidence_register_failed: \$\{ins\.error\.message\}`\);return\{id:ins\.data\.id,path,hash\}'''
+              m=re.search(pat,s)
+              if m:
+                  system=m.group(1); extra=m.group(2).strip().rstrip(',')
+                  meta='{' + ('acquisition_mode:mode,'+extra if extra else 'acquisition_mode:mode') + '}'
+                  repl=f'''const reg=await svc.rpc("svc_ranking_raw_evidence_register",{{p_system_code:"{system}",p_edition_year:year,p_source_url:src,p_storage_path:path,p_content_hash:hash,p_mime_type:"application/json",p_metadata:{meta}}});if(reg.error)throw new Error(`raw_evidence_register_failed: ${{reg.error.message}}`);return{{id:reg.data,path,hash}}'''
+                  s=s[:m.start()]+repl+s[m.end():]
+              # THE variant uses ex instead of existing and a slightly different error prefix.
+              pat2=r'''const\{data:ex\}=await svc\.schema\("pipeline"\)\.from\("evidence_artifacts"\)\.select\("id"\)\.eq\("storage_path",path\)\.maybeSingle\(\);if\(!ex\?\.id\)\{const ins=await svc\.schema\("pipeline"\)\.from\("evidence_artifacts"\)\.insert\(\{evidence_type:"ranking_publisher_raw",source_url:src,storage_path:path,content_hash:hash,mime_type:"application/json",captured_at:new Date\(\)\.toISOString\(\),metadata:\{ranking_system:"([^"]+)",edition_year:year,acquisition_mode:"([^"]+)",([^}]*)\},retention_class:"source_evidence",review_state:"pending_review",capture_version:1,evidence_group_key:`[^`]+`\}\)\.select\("id"\)\.single\(\);if\(ins\.error\)throw new Error\(`raw_evidence_register_failed: \$\{ins\.error\.message\}`\)\}return\{path,hash\}'''
+              m=re.search(pat2,s)
+              if m:
+                  system,mode,extra=m.group(1),m.group(2),m.group(3).strip().rstrip(',')
+                  meta='{' + f'acquisition_mode:"{mode}",' + extra + '}'
+                  repl=f'''const reg=await svc.rpc("svc_ranking_raw_evidence_register",{{p_system_code:"{system}",p_edition_year:year,p_source_url:src,p_storage_path:path,p_content_hash:hash,p_mime_type:"application/json",p_metadata:{meta}}});if(reg.error)throw new Error(`raw_evidence_register_failed: ${{reg.error.message}}`);return{{path,hash,id:reg.data}}'''
+                  s=s[:m.start()]+repl+s[m.end():]
+
+              # Ranking acquisition jobs must also use service RPCs because pipeline is private.
+              s=re.sub(r'''ji=await svc\.schema\("pipeline"\)\.from\("jobs"\)\.insert\(\{job_type:"ranking_import_acquire",domain:"ranking",status:"running",requested_by:actor,started_at:new Date\(\)\.toISOString\(\),payload:(\{.*?apply_requested:apply\})\}\)\.select\("id"\)\.single\(\),jobId=ji\.data\?\.id\|\|null''',
+                       r'''ji=await svc.rpc("svc_ranking_job_start",{p_job_type:"ranking_import_acquire",p_source_id:null,p_requested_by:actor,p_payload:\1}),jobId=ji.data||null''',s)
+              s=re.sub(r'''if\(jobId\)await svc\.schema\("pipeline"\)\.from\("jobs"\)\.update\(\{status:"completed",completed_at:new Date\(\)\.toISOString\(\),result:(\{.*?\})\}\)\.eq\("id",jobId\)''',
+                       r'''if(jobId)await svc.rpc("svc_ranking_job_finish",{p_job_id:jobId,p_status:"completed",p_result:\1,p_error_text:null})''',s)
+              s=re.sub(r'''if\(jobId\)await svc\.schema\("pipeline"\)\.from\("jobs"\)\.update\(\{status:"failed",completed_at:new Date\(\)\.toISOString\(\),error_text:message,result:\{ok:false,error:message\}\}\)\.eq\("id",jobId\)''',
+                       r'''if(jobId)await svc.rpc("svc_ranking_job_finish",{p_job_id:jobId,p_status:"failed",p_result:{ok:false,error:message},p_error_text:message})''',s)
+              if s==before:
+                  raise SystemExit(f'{path}: no asserted CF-218 replacements made')
+              if '.schema("pipeline").from("jobs")' in s or '.schema("pipeline").from("evidence_artifacts")' in s:
+                  raise SystemExit(f'{path}: private pipeline Data API access remains')
+              p.write_text(s)
+
+          patch('supabase/functions/ranking-qs-url-import/index.ts')
+          patch('supabase/functions/ranking-the-url-import/index.ts')
+          PY
+          rm .github/workflows/cf218-ranking-url-evidence-rpc-hardening.yml
+          git config user.name coursefinder-cf218-bot
+          git config user.email actions@users.noreply.github.com
+          git add supabase/functions/ranking-qs-url-import/index.ts supabase/functions/ranking-the-url-import/index.ts .github/workflows/cf218-ranking-url-evidence-rpc-hardening.yml
+          git commit -m 'CF-218 harden ranking URL Evidence private-schema access'
+          git push origin HEAD:main
