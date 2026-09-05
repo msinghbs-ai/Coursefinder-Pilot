@@ -1,19 +1,22 @@
 import React,{useEffect,useState}from'react'
-import{supabase}from'./lib/supabase'
+import{supabase,api}from'./lib/supabase'
 
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
 const when=v=>v?new Date(v).toLocaleString():'—'
 
-export default function ManualPimCandidateWorkspace({rank=0,onError}){
+export default function ManualPimCandidateWorkspace({rank=null,onError,initialEntityType='',initialProviderId=''}){
+ const[resolvedRank,setResolvedRank]=useState(rank==null?0:Number(rank)||0)
  const[items,setItems]=useState([]),[busy,setBusy]=useState(false),[status,setStatus]=useState(''),[type,setType]=useState('')
- const[form,setForm]=useState({entity_type:'provider',target_provider_id:'',source_kind:'authority',external_identifier:'',source_url:'',evidence_id:'',reason:'Register source-backed candidate for governed acquisition/reconciliation.'})
+ const[form,setForm]=useState({entity_type:initialEntityType||'provider',target_provider_id:initialProviderId||'',source_kind:'authority',external_identifier:'',source_url:'',evidence_id:'',reason:'Register source-backed candidate for governed acquisition/reconciliation.'})
  const rpc=async(name,args={})=>{const{data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
+ useEffect(()=>{let live=true;if(rank!=null){setResolvedRank(Number(rank)||0);return()=>{live=false}}api.context().then(x=>live&&setResolvedRank(Number(x?.role_rank)||0)).catch(e=>onError?.(e));return()=>{live=false}},[rank])
+ useEffect(()=>{setForm(x=>({...x,entity_type:initialEntityType||x.entity_type,target_provider_id:initialProviderId||x.target_provider_id}))},[initialEntityType,initialProviderId])
  const load=async()=>{setBusy(true);try{const r=await rpc('manual_pim_candidates_read',{p_status:status||null,p_entity_type:type||null,p_limit:100});setItems(r?.items||[])}catch(e){onError?.(e)}finally{setBusy(false)}}
- useEffect(()=>{if(rank>=5)load()},[rank,status,type])
+ useEffect(()=>{if(resolvedRank>=5)load()},[resolvedRank,status,type])
  const patch=(k,v)=>setForm(x=>({...x,[k]:v}))
  const submit=async e=>{e.preventDefault();setBusy(true);try{await rpc('manual_pim_candidate_register',{p_entity_type:form.entity_type,p_target_provider_id:form.target_provider_id||null,p_source_kind:form.source_kind,p_external_identifier:form.external_identifier||null,p_source_url:form.source_url||null,p_evidence_id:form.evidence_id||null,p_candidate_payload:{surface:'manual_pim_candidate_workspace'},p_reason:form.reason});setForm(x=>({...x,external_identifier:'',source_url:'',evidence_id:'',reason:'Register source-backed candidate for governed acquisition/reconciliation.'}));await load()}catch(err){onError?.(err)}finally{setBusy(false)}}
  const decide=async(id,action)=>{const reason=window.prompt(`${human(action)} candidate — reason`,'Governed PIM candidate decision');if(!reason)return;setBusy(true);try{await rpc('manual_pim_candidate_decide',{p_candidate_id:id,p_action:action,p_reason:reason});await load()}catch(err){onError?.(err)}finally{setBusy(false)}}
- if(rank<5)return <section className="m-panel"><h2>Manual PIM candidates</h2><p>PIM Operator rank 5 or higher is required.</p></section>
+ if(resolvedRank<5)return <section className="m-panel"><h2>Source-backed PIM candidates</h2><p>PIM Operator rank 5 or higher is required.</p></section>
  return <div className="m-page-stack">
   <section className="m-panel">
    <div className="m-workspace-head"><div><h2>Add source-backed candidate</h2><p>Provider, Course, Campus and Scholarship records remain candidates until governed source validation and reconciliation succeed. This form never writes canonical catalogue tables or publishes records.</p></div></div>
