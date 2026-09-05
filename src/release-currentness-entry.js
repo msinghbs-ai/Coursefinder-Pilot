@@ -1,14 +1,15 @@
-const VERSION='2.15.64'
+const VERSION='2.15.65'
 const RELEASE={
   version:VERSION,
   date:'5 Sep 2026',
-  title:'Scholarship queue truth and reconciliation precision',
+  title:'Layer 4 mass operations and quality cross-check',
   changes:[
-    'Scholarship Operations now reports only active discovered detail-ready and review candidates; historical acquired classifications no longer inflate the executable queue.',
-    'Already captured or applied first-party Scholarship Evidence is reconciled to acquired state and reused instead of being fetched again.',
-    'Structural candidate and reconciliation gates now keep catalogue roots, navigation, finance/support pages, sponsor/information hubs, domestic pages, filters and supporting documents out of individual Scholarship canonicalisation.',
-    'The AU verified-detail queue is currently clear after reconciliation: 263 canonical international Scholarships, zero automatically published, zero active detail-ready jobs and zero reconciliation-ready records.',
-    'CF-102 Provider logo display, signed access and cache behaviour remain unchanged.'
+    'Layer 4 Human Resolution now groups repeatable Scholarship Course-scope and generic review work into governed cohorts so operators do not need to process thousands of rows one by one.',
+    'Scholarship cohorts show Evidence coverage, Provider mismatch, existing mappings, study-level spread, semantic-scope warnings and a bounded course sample before any mass decision.',
+    'Mass accept/reject requires an audited reason plus an exact count confirmation; structural blockers prevent cohort acceptance and every mass operation is retained in an audit ledger.',
+    'Generic Layer 4 cohorts can be rejected or returned to Layer 2/3 in bounded batches; bulk scalar approval remains intentionally unavailable where proposed values may differ.',
+    'Layer 4 now includes cross-check diagnostics and a tracked Errors / Issues / Improvements register for structural integrity, stale review work and workflow-improvement opportunities.',
+    'Publication remains separate and unchanged, and CF-102 Provider logo display, signed access and cache behaviour are retained.'
   ]
 }
 let pending=false
