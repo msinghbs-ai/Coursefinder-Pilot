@@ -1,0 +1,33 @@
+name: CF-218 Compare ranking availability fix
+on:
+  push:
+    paths: ['.github/workflows/cf218-compare-ranking-availability.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Apply asserted ranking availability patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/ComparisonWorkspace.jsx')
+          s=p.read_text()
+          old=" const hasQS=items.some(e=>e.ranking_context?.qs_wur?.latest)\n const hasTHE=items.some(e=>e.ranking_context?.the_wur?.latest)"
+          new=" const hasQS=qsRankingYears.length>0||items.some(e=>e.ranking_context?.qs_wur?.latest)\n const hasTHE=theRankingYears.length>0||items.some(e=>e.ranking_context?.the_wur?.latest)"
+          if s.count(old)!=1: raise SystemExit(f'expected one availability block, found {s.count(old)}')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+          grep -q "const hasQS=qsRankingYears.length>0" src/ComparisonWorkspace.jsx
+          grep -q "const hasTHE=theRankingYears.length>0" src/ComparisonWorkspace.jsx
+          rm .github/workflows/cf218-compare-ranking-availability.yml
+          git config user.name coursefinder-cf218-bot
+          git config user.email actions@users.noreply.github.com
+          git add src/ComparisonWorkspace.jsx .github/workflows/cf218-compare-ranking-availability.yml
+          git commit -m 'CF-218 enable ranking selectors from retained history'
+          git push origin HEAD:main
