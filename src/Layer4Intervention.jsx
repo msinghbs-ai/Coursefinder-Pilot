@@ -1,5 +1,6 @@
 import React,{useEffect,useState}from'react'
 import{supabase}from'./lib/supabase'
+import ManualPimCandidateWorkspace from'./ManualPimCandidateWorkspace'
 
 const fmt=v=>{if(v==null)return'—';if(typeof v==='string')return v;try{return JSON.stringify(v)}catch{return String(v)}}
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
@@ -10,8 +11,9 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
  const[pub,setPub]=useState(data?.layer4_publication||{})
  const[pubScope,setPubScope]=useState('governed_publication')
  const[history,setHistory]=useState(null)
+ const[candidatesOpen,setCandidatesOpen]=useState(false)
  const[busy,setBusy]=useState('')
- useEffect(()=>{setLayer4(data?.layer4||{fields:[]});setPub(data?.layer4_publication||{});setHistory(null);setPubScope('governed_publication')},[data?.id])
+ useEffect(()=>{setLayer4(data?.layer4||{fields:[]});setPub(data?.layer4_publication||{});setHistory(null);setPubScope('governed_publication');setCandidatesOpen(false)},[data?.id])
  async function refresh(){
   const{data:r,error}=await supabase.rpc('layer4_effective_entity',{p_entity_type:type,p_entity_id:data.id})
   if(error)throw error
@@ -75,6 +77,7 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
   }catch(e){window.alert(e.message||String(e))}
  }
  const fields=Array.isArray(layer4?.fields)?layer4.fields:[]
+ const providerContext=type==='provider'?data?.id:(data?.provider_id||data?.provider?.id||'')
  return <section className="m-detail-section cf-layer4-override">
   <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start'}}>
    <div><h3>Layer 4 governed intervention</h3><p className="m-help">Effective-value overlay only. Underlying source and canonical history remain preserved.</p></div>
@@ -108,6 +111,12 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
     {pub?.effective_decision!=='no_override'&&<button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('rollback')}>Preview & rollback</button>}
    </div>}
    <small>Automatic publication is disabled. This control records an audited Layer 4 decision; it does not itself authorise Production, Website or Zoho cutover.</small>
+  </div>}
+  {['provider','course','campus','scholarship'].includes(type)&&<div className="m-record" style={{marginTop:8}}>
+   <strong>Source-backed PIM candidate workflow</strong>
+   <span>Register a new governed source candidate without writing canonical identity or publication state.</span>
+   <button className="m-secondary compact" onClick={()=>setCandidatesOpen(x=>!x)}>{candidatesOpen?'Close candidate workspace':'Open candidate workspace'}</button>
+   {candidatesOpen&&<div style={{marginTop:8}}><ManualPimCandidateWorkspace initialEntityType={type} initialProviderId={providerContext} onError={e=>window.alert(e?.message||String(e))}/></div>}
   </div>}
   {history&&<div className="m-record-list" style={{marginTop:8}}>
    <strong>Audit history · {history.field.display_label}</strong>
