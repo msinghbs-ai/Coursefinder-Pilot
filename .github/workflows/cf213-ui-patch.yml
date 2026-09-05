@@ -20,7 +20,6 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
 
           p = Path('src/mature-main.jsx')
           s = p.read_text()
@@ -33,7 +32,6 @@ jobs:
                   raise SystemExit(f'{label}: expected exactly 1 match, found {count}')
               s = s.replace(old, new, 1)
 
-          # QS URL mode now represents the governed publisher URL -> XLSX Evidence path.
           exact(
               "const rankingParsebotRef=system=>system==='arwu'?'/scrapers/0f6d2cb9-c7eb-4f31-9216-f7be578e9f96':'/scrapers/e3ecc5de-f530-478a-b464-867d43099420'",
               "const rankingParsebotRef=system=>system==='arwu'?'/scrapers/0f6d2cb9-c7eb-4f31-9216-f7be578e9f96':system==='qs_wur'?'https://www.topuniversities.com/world-university-rankings':'/scrapers/e3ecc5de-f530-478a-b464-867d43099420'",
@@ -52,25 +50,40 @@ jobs:
               'URL input label'
           )
 
-          # The old hard-disable was tied to direct Parse.bot acquisition. CF-213 now fails closed inside the governed URL worker.
           old_disable = "disabled={busy||lastParsedKey===editionKey()||(form.mode==='url'&&form.systemCode==='qs_wur'&&String(form.editionYear)==='2027')}"
           if old_disable in s:
               s = s.replace(old_disable, "disabled={busy||lastParsedKey===editionKey()}", 1)
 
-          # Add XLSX Evidence export to each ranking import row, immediately before the existing Jobs action.
-          jobs_matches = list(re.finditer(r'(<button[^>]+onClick=\{\(\)=>goJobs\([^)]*\)\}[^>]*>Jobs</button>)', s))
-          if len(jobs_matches) != 1:
-              raise SystemExit(f'Jobs action: expected exactly 1 match, found {len(jobs_matches)}')
-          jobs = jobs_matches[0].group(1)
+          # Limit export insertion to RankingImportPanel, independent of the Jobs handler shape.
+          panel_start = s.find('function RankingImportPanel')
+          if panel_start < 0:
+              raise SystemExit('RankingImportPanel not found')
+          next_function = s.find('\nfunction ', panel_start + len('function RankingImportPanel'))
+          panel_end = next_function if next_function > panel_start else len(s)
+          jobs_text = '>Jobs</button>'
+          jobs_positions = []
+          pos = panel_start
+          while True:
+              pos = s.find(jobs_text, pos, panel_end)
+              if pos < 0:
+                  break
+              jobs_positions.append(pos)
+              pos += len(jobs_text)
+          if len(jobs_positions) != 1:
+              raise SystemExit(f'RankingImportPanel Jobs action: expected exactly 1 match, found {len(jobs_positions)}')
+          jobs_end = jobs_positions[0] + len(jobs_text)
+          jobs_start = s.rfind('<button', panel_start, jobs_positions[0])
+          if jobs_start < panel_start:
+              raise SystemExit('RankingImportPanel Jobs button start not found')
+          jobs = s[jobs_start:jobs_end]
           export = "<button className=\"m-link-button\" disabled={processingId===x.id} onClick={async()=>{try{const{data,error}=await supabase.functions.invoke('ranking-evidence-export',{body:{system_code:x.system_code,edition_year:Number(x.edition_year),import_id:x.id}});if(error)throw error;if(!data?.signed_url)throw new Error('Exportable XLSX Evidence not found');const a=document.createElement('a');a.href=data.signed_url;a.download=data.filename||'';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}catch(e){setSaved(`Export failed: ${e.message||String(e)}`)}}}>Export XLSX</button>"
-          s = s[:jobs_matches[0].start()] + export + jobs + s[jobs_matches[0].end():]
+          s = s[:jobs_start] + export + jobs + s[jobs_end:]
 
           if s == original:
               raise SystemExit('CF-213 UI patch produced no changes')
           p.write_text(s)
           PY
 
-          # Source-level assertions before committing.
           grep -q "Publisher URL → Evidence XLSX" src/mature-main.jsx
           grep -q "QS publisher URL" src/mature-main.jsx
           grep -q "Export XLSX" src/mature-main.jsx
