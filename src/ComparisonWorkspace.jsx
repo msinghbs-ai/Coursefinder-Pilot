@@ -59,8 +59,8 @@ export default function ComparisonWorkspace({routeParams,navigate,onError}){
  const theRankingYears=useMemo(()=>rankingYearsFor('the_wur'),[items])
  useEffect(()=>{if(year===''&&years.length)setYear(years[0])},[years.join('|')])
  useEffect(()=>{setRankingSelection(x=>({...x,qs:x.qs&&qsRankingYears.includes(x.qs)?x.qs:(qsRankingYears[0]||''),the:x.the&&theRankingYears.includes(x.the)?x.the:(theRankingYears[0]||'')}))},[qsRankingYears.join('|'),theRankingYears.join('|')])
- const hasQS=items.some(e=>e.ranking_context?.qs_wur?.latest)
- const hasTHE=items.some(e=>e.ranking_context?.the_wur?.latest)
+ const hasQS=qsRankingYears.length>0||items.some(e=>e.ranking_context?.qs_wur?.latest)
+ const hasTHE=theRankingYears.length>0||items.some(e=>e.ranking_context?.the_wur?.latest)
  useEffect(()=>{if(categories.length&&!categories.includes(category))setCategory(categories[0])},[categories.join('|')])
  const rows=useMemo(()=>{
    const map=new Map()
