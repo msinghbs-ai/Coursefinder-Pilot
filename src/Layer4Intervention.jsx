@@ -8,9 +8,10 @@ const when=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(+d)?Str
 export default function Layer4Intervention({type,data,publicationEnabled=true}){
  const[layer4,setLayer4]=useState(data?.layer4||{fields:[]})
  const[pub,setPub]=useState(data?.layer4_publication||{})
+ const[pubScope,setPubScope]=useState('governed_publication')
  const[history,setHistory]=useState(null)
  const[busy,setBusy]=useState('')
- useEffect(()=>{setLayer4(data?.layer4||{fields:[]});setPub(data?.layer4_publication||{});setHistory(null)},[data?.id])
+ useEffect(()=>{setLayer4(data?.layer4||{fields:[]});setPub(data?.layer4_publication||{});setHistory(null);setPubScope('governed_publication')},[data?.id])
  async function refresh(){
   const{data:r,error}=await supabase.rpc('layer4_effective_entity',{p_entity_type:type,p_entity_id:data.id})
   if(error)throw error
@@ -49,17 +50,29 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
    setHistory({field:f,rows:r||[]})
   }catch(e){window.alert(e.message||String(e))}finally{setBusy('')}
  }
- async function publication(event){
-  const reason=window.prompt('Publication decision reason code',event==='revert'?'revert_publication_override':'manual_publication_decision');if(!reason)return
+ async function publication(action){
+  const reason=window.prompt('Publication decision reason code',action==='rollback'?'rollback_publication_decision':'manual_publication_decision');if(!reason)return
   const comment=window.prompt('Publication decision note (optional)','')||null
   setBusy('publication')
   try{
-   const{error}=await supabase.rpc('layer4_publication_decide',{p_entity_type:type,p_entity_id:data.id,p_target_scope:'governed_publication',p_event_type:event,p_readiness_snapshot:data?.state_summary||{},p_overridden_checks:[],p_reason_code:reason,p_comment:comment,p_approval_context:{surface:'admin_detail_blade'}})
+   const{data:preview,error:previewError}=await supabase.rpc('publication_control_preview',{p_entity_type:type,p_entity_ids:[data.id],p_target_scope:pubScope,p_action:action})
+   if(previewError)throw previewError
+   const label=`${human(action)} 1 ${human(type)} for ${human(pubScope)}?\n\nAutomatic publication: ${preview?.auto_publication_enabled?'ENABLED':'DISABLED'}\nThis records the governed publication decision only; consumer cutover remains separately controlled.`
+   if(!window.confirm(label))return
+   const{error}=await supabase.rpc('publication_control_execute',{p_entity_type:type,p_entity_ids:[data.id],p_target_scope:pubScope,p_action:action,p_confirmation_token:preview.confirmation_token,p_reason_code:reason,p_comment:comment})
    if(error)throw error
-   const{data:r,error:e2}=await supabase.rpc('layer4_publication_state',{p_entity_type:type,p_entity_id:data.id,p_target_scope:'governed_publication'})
+   const{data:r,error:e2}=await supabase.rpc('layer4_publication_state',{p_entity_type:type,p_entity_id:data.id,p_target_scope:pubScope})
    if(e2)throw e2
    setPub(r||{})
   }catch(e){window.alert(e.message||String(e))}finally{setBusy('')}
+ }
+ async function changePublicationScope(next){
+  setPubScope(next)
+  try{
+   const{data:r,error}=await supabase.rpc('layer4_publication_state',{p_entity_type:type,p_entity_id:data.id,p_target_scope:next})
+   if(error)throw error
+   setPub(r||{})
+  }catch(e){window.alert(e.message||String(e))}
  }
  const fields=Array.isArray(layer4?.fields)?layer4.fields:[]
  return <section className="m-detail-section cf-layer4-override">
@@ -86,14 +99,15 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
    </div>)}
   </div>
   {publicationEnabled&&<div className="m-record" style={{marginTop:8}}>
-   <strong>Publication override · separate decision</strong>
+   <strong>Publication control · preview required</strong>
+   <label style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>Target<select value={pubScope} onChange={e=>changePublicationScope(e.target.value)} disabled={busy==='publication'}><option value="governed_publication">Governed publication</option><option value="search_api">Search / API</option><option value="website">Website</option><option value="zoho">Zoho</option></select></label>
    <span>{human(pub?.effective_decision||'no_override')}{pub?.actor_email?' · '+pub.actor_email:''}{pub?.decided_at?' · '+when(pub.decided_at):''}</span>
    {pub?.can_decide&&<div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-    <button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('publishable')}>Mark publishable</button>
-    <button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('not_publishable')}>Mark not publishable</button>
-    {pub?.effective_decision!=='no_override'&&<button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('revert')}>Revert publication decision</button>}
+    <button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('publish')}>Preview & mark publishable</button>
+    <button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('unpublish')}>Preview & mark not publishable</button>
+    {pub?.effective_decision!=='no_override'&&<button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('rollback')}>Preview & rollback</button>}
    </div>}
-   <small>This does not authorise Production, Website or Zoho cutover.</small>
+   <small>Automatic publication is disabled. This control records an audited Layer 4 decision; it does not itself authorise Production, Website or Zoho cutover.</small>
   </div>}
   {history&&<div className="m-record-list" style={{marginTop:8}}>
    <strong>Audit history · {history.field.display_label}</strong>
