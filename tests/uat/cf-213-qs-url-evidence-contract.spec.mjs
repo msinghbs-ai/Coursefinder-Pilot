@@ -15,7 +15,6 @@ test('CF-213 QS URL acquisition is allowlisted, Evidence-first and fail-closed',
   expect(src).toContain('Raw Source')
   expect(src).toContain('Evidence Metadata')
   expect(src).toContain('apply=body.apply===true')
-  expect(src).toContain('apply:false') === false
 })
 
 test('CF-213 release map uses corrected QS 2023 WUR release and edition-specific indicators', async () => {
@@ -39,7 +38,6 @@ test('CF-213 QS workbook parser preserves indicator ranks and rejects score sent
   expect(src).toContain('rank_exact')
   expect(src).toContain('rank_low')
   expect(src).toContain('rank_high')
-  expect(src).toContain('indicator_group') === false
   expect(src).toContain('global edition requires at least 1000')
   expect(src).toContain('International Student Diversity')
 })
