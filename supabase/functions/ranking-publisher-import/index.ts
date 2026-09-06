@@ -113,8 +113,8 @@ Deno.serve(async(req:Request)=>{
 
   const serviceClient=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
   const jobInsert=await serviceClient.schema("pipeline").from("jobs").insert({
-    job_type:"ranking_import_acquire",domain:"ranking",status:"running",requested_by:actor,started_at:new Date().toISOString(),
-    payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,file_count:entries.length,detected_scope:detected?.countries||[]}
+    job_type:"layer1_ranking_etl",domain:"ranking",status:"running",requested_by:actor,started_at:new Date().toISOString(),
+    payload:{layer:"layer1",classification:"Layer 1 Ranking ETL",action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,file_count:entries.length,detected_scope:detected?.countries||[]}
   }).select("id").single();
   const jobId=jobInsert.data?.id||null;
   const upload=await serviceClient.storage.from("evidence").upload(path,new Uint8Array(bytes),{contentType:mime,upsert:false,cacheControl:"0"});
@@ -132,10 +132,10 @@ Deno.serve(async(req:Request)=>{
     if(error) throw new Error(error.message||"import_registration_failed");
     if(data?.duplicate){
       await serviceClient.storage.from("evidence").remove([path]);
-      if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data.import_id},result:{ok:true,duplicate:true,import_id:data.import_id}}).eq("id",jobId);
+      if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{layer:"layer1",classification:"Layer 1 Ranking ETL",action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data.import_id},result:{ok:true,duplicate:true,import_id:data.import_id}}).eq("id",jobId);
       return reply(req,200,{ok:true,duplicate:true,import_id:data.import_id,content_hash:hash,job_id:jobId});
     }
-    if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data?.import_id||null},result:{ok:true,duplicate:false,import_id:data?.import_id||null,evidence_id:data?.evidence_id||null,file_count:entries.length,detected_rows:detected?.rows||null,detected_scope:detected?.countries||[]}}).eq("id",jobId);
+    if(jobId)await serviceClient.schema("pipeline").from("jobs").update({status:"completed",completed_at:new Date().toISOString(),payload:{layer:"layer1",classification:"Layer 1 Ranking ETL",action:"acquire",acquisition_mode:"manual_file",system_code:systemCode,edition_year:editionYear,original_filename:file.name,import_id:data?.import_id||null},result:{ok:true,duplicate:false,import_id:data?.import_id||null,evidence_id:data?.evidence_id||null,file_count:entries.length,detected_rows:detected?.rows||null,detected_scope:detected?.countries||[]}}).eq("id",jobId);
     return reply(req,201,{ok:true,duplicate:false,...data,content_hash:hash,original_filename:file.name,byte_size:file.size,job_id:jobId});
   }catch(error){
     await serviceClient.storage.from("evidence").remove([path]);
