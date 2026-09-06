@@ -23,6 +23,13 @@ jobs:
         run: npm install --ignore-scripts
       - name: Build
         run: npm run build
+      - name: Upload built Pilot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coursefinder-pilot-dist-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: dist/
 
   browser-smoke:
     needs: build
