@@ -1,0 +1,56 @@
+name: CF-223 Statistics ranking edition picker
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cf223-statistics-edition-picker.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Add dataset edition selectors
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('src/lib/supabase.js')
+          s=p.read_text()
+          old="  rankingFilters: () => adminRead('ranking_filters'),"
+          new="  rankingFilters: (systemCode = '') => adminRead('ranking_filters', { system_code: systemCode || null }),"
+          if s.count(old)!=1: raise SystemExit(f'expected rankingFilters wrapper once, found {s.count(old)}')
+          p.write_text(s.replace(old,new,1))
+
+          p=Path('src/StatisticsDatasetEnhancer.js')
+          s=p.read_text()
+          old="let ranking={};try{ranking=await api.rankingSummary()||{}}catch{}"
+          new="let ranking={},rankingFilters={};try{ranking=await api.rankingSummary()||{};const[qs,the]=await Promise.all([api.rankingFilters('qs_wur'),api.rankingFilters('the_wur')]);rankingFilters={qs_wur:qs||{},the_wur:the||{}}}catch{}"
+          if s.count(old)!=1: raise SystemExit(f'expected ranking load once, found {s.count(old)}')
+          s=s.replace(old,new,1)
+          old="c.dataset.datasetKey=k}"
+          new="""c.dataset.datasetKey=k;if(k==='qs_wur'||k==='the_wur'){const r=ranking?.[k]||ranking?.systems?.find?.(x=>x.code===k||x.system_code===k)||null,f=rankingFilters[k]||{},years=(f.years||[]).map(String),editions=f.editions||[],headline=c.querySelector(':scope>strong'),detail=c.querySelector(':scope>small');if(years.length&&actions){let picker=c.querySelector('.cf-ranking-card-picker');if(!picker){picker=document.createElement('label');picker.className='cf-ranking-card-picker';picker.innerHTML='Edition <select aria-label=\"Ranking edition\"></select>';actions.prepend(picker)}const select=picker.querySelector('select');select.innerHTML=years.map((y,i)=>`<option value=\"${esc(y)}\">${esc(y)}${i===0?' · latest':''}</option>`).join('');const renderEdition=y=>{const e=editions.find(x=>String(x.year)===String(y));if(headline)headline.textContent=String(y);if(detail)detail.textContent=e?`${Number(e.observations||0).toLocaleString()} observations · ${Number(e.mapped_observations||0).toLocaleString()} mapped`:(r?.observations?`${Number(r.observations).toLocaleString()} observations`:'No accepted observations')};select.onchange=()=>renderEdition(select.value);renderEdition(years[0])}}}"""
+          if s.count(old)!=1: raise SystemExit(f'expected dataset-key tail once, found {s.count(old)}')
+          s=s.replace(old,new,1)
+          old=".m-stats-card>div button:hover{background:#f8fafc}"
+          new=".m-stats-card>div button:hover{background:#f8fafc}.cf-ranking-card-picker{display:flex;align-items:center;gap:5px;font-size:8.5px;font-weight:800;color:#475569}.cf-ranking-card-picker select{border:1px solid #dbe3ee;border-radius:7px;background:#fff;padding:5px 7px;font-size:8.5px;color:#334155}"
+          if s.count(old)!=1: raise SystemExit(f'expected stats style anchor once, found {s.count(old)}')
+          p.write_text(s.replace(old,new,1))
+
+          i=Path('index.html')
+          x=i.read_text()
+          if 'v2.15.67' not in x: raise SystemExit('expected visible release v2.15.67')
+          i.write_text(x.replace('v2.15.67','v2.15.68',1))
+          PY
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run build
+          grep -q "cf-ranking-card-picker" src/StatisticsDatasetEnhancer.js
+          grep -q "rankingFilters: (systemCode" src/lib/supabase.js
+          rm .github/workflows/cf223-statistics-edition-picker.yml
+          git config user.name coursefinder-cf223-bot
+          git config user.email actions@users.noreply.github.com
+          git add src/StatisticsDatasetEnhancer.js src/lib/supabase.js index.html .github/workflows/cf223-statistics-edition-picker.yml
+          git commit -m 'CF-223 add QS THE edition selectors to Statistics'
+          git push origin HEAD:main
