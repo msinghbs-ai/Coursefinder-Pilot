@@ -28,7 +28,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.57'
+const UI_VERSION='2.15.58'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:system==='the_wur'?Array.from({length:16},(_,i)=>2026-i):Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -463,8 +463,8 @@ function ScholarshipFillControl({onError}){
 }
 
 function Dashboard({onError,navigate}){
-  const[data,setData]=useState(null),[layerStatus,setLayerStatus]=useState(null),[busy,setBusy]=useState(true)
-  const load=()=>{setBusy(true);Promise.all([adminRead('dashboard'),adminRead('layer_status_summary')]).then(([d,l])=>{setData(d);setLayerStatus(l)}).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
+  const[data,setData]=useState(null),[layerStatus,setLayerStatus]=useState(null),[platformHealth,setPlatformHealth]=useState(null),[busy,setBusy]=useState(true)
+  const load=()=>{setBusy(true);Promise.all([adminRead('dashboard'),adminRead('layer_status_summary'),adminRead('platform_health')]).then(([d,l,h])=>{setData(d);setLayerStatus(l);setPlatformHealth(h)}).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
   useEffect(load,[])
   if(busy&&!data)return <DashboardSkeleton/>
   const op=data?.operational??{},failed=Number(op.failed_jobs_24h||0),running=Number(op.running_jobs||0),reviews=Number(data?.open_reviews||0)
@@ -478,6 +478,7 @@ function Dashboard({onError,navigate}){
   return <div className="m-page-stack">
     <section className="m-dashboard-intro"><div><span className={`m-health m-health-${health}`}><span/>{health==='healthy'?'Operationally healthy':health==='active'?'Pipeline activity in progress':'Attention required'}</span><h2>Operational command view</h2><p>Counts, freshness and human-attention signals from the governed canonical and pipeline layers.</p></div><button className="m-secondary" onClick={load}><RefreshCw size={15}/>Refresh</button></section>
     <div className="m-metric-grid">{metrics.map(([label,value,Icon,tone,target])=><button className={`m-metric-card tone-${tone}`} key={label} onClick={()=>navigate(target)}><span className="m-metric-icon"><Icon size={18}/></span><span className="m-metric-copy"><small>{label}</small><strong>{fmtNumber(value)}</strong></span><span className="m-metric-arrow">→</span></button>)}</div>
+    {platformHealth&&<section className="m-panel"><PanelTitle icon={ShieldCheck} title="Platform health" subtitle="Role-filtered runtime, Edge workload, security and data-movement signals"/><div className="m-pulse-grid"><Pulse label="Running jobs" value={platformHealth.jobs?.running} tone={platformHealth.jobs?.running?'info':'neutral'} icon={Workflow}/><Pulse label="Failed · 24h" value={platformHealth.jobs?.failed_24h} tone={platformHealth.jobs?.failed_24h?'danger':'success'} icon={AlertTriangle}/><Pulse label="Evidence fetched · 24h" value={platformHealth.data?.evidence_fetched_24h} tone="violet" icon={FileCheck2}/><Pulse label="Edge workloads · 24h" value={platformHealth.edge_runtime?.completed_24h} tone="teal" icon={Activity}/></div>{platformHealth.api_activity&&<div className="m-freshness"><Fresh label="Layer 2 provider API calls · 24h" value={platformHealth.api_activity.layer2_provider_requests_24h} number/><Fresh label="Layer 3 model calls · 24h" value={platformHealth.api_activity.layer3_external_calls_24h} number/><Fresh label="Layer 3 cost · 24h" value={`$${Number(platformHealth.api_activity.layer3_cost_24h_usd||0).toFixed(4)}`}/><Fresh label="Scholarship AI active runs" value={platformHealth.scholarship_ai?.active_runs} number/></div>}{platformHealth.security&&<div className="m-summary-note"><strong>Security · {humanise(platformHealth.security.status)}</strong><span>{platformHealth.security.note}</span></div>}</section>}
     {layerStatus&&<section className="m-panel">
       <PanelTitle icon={Layers3} title="Layer status" subtitle="Operational state across authority, enrichment, interpretation and human resolution"/>
       <div className="m-grid-2">
