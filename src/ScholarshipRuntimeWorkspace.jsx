@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{Activity,AlertTriangle,BookOpen,Building2,CheckCircle2,ChevronDown,ExternalLink,GraduationCap,Play,RefreshCw,Save,Search,Settings2,ShieldCheck,Sparkles,Workflow,X}from'lucide-react'
 import{adminRead,api,supabase}from'./lib/supabase'
+import ScholarshipAiControl from'./ScholarshipAiControl'
 import'./scholarship-runtime.css'
 
 const fmt=n=>Number.isFinite(Number(n))?Number(n).toLocaleString():'—'
@@ -37,6 +38,7 @@ export default function ScholarshipRuntimeWorkspace({rank=4,onError=()=>{},navig
    <div className="sr-policy"><ShieldCheck size={17}/><div><strong>Locked acquisition safeguards</strong><span>International-only · no automatic canonical mutation · no publication · scraper routes remain in Administration → Scraper Config.</span></div></div>
    {(preview||runResult)&&<RuntimeResult value={preview||runResult}/>} 
   </section>
+  <ScholarshipAiControl rank={rank} country={country} onError={onError}/>
   <section className="sr-panel"><Header title="Reconcile verified details" text="Promote only verified individual first-party detail records into linked or new unpublished canonical Scholarship roots. Catalogue pages, navigation fragments and duplicates stay out."/>
    <div className="sr-run-actions"><button className="secondary" disabled={runBusy} onClick={()=>invokeRuntime('reconcile_preview')}><Search size={14}/>Preview verified details</button>{rank>=5?<button className="primary" disabled={runBusy} onClick={()=>invokeRuntime('reconcile_apply')}><CheckCircle2 size={14}/>Reconcile unpublished</button>:<span className="sr-policy"><ShieldCheck size={14}/>PIM Admin required to change canonical records.</span>}</div>
    <div className="sr-policy"><ShieldCheck size={17}/><div><strong>Canonical gate</strong><span>First-party detail URL + international audience + Evidence + confidence threshold + navigation/catalogue exclusion. Publication remains blocked.</span></div></div>
