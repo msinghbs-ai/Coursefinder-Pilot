@@ -13,7 +13,11 @@ function yearsOf(value){
 }
 function cardFor(label){return [...document.querySelectorAll('.m-stats-card')].find(c=>String(c.querySelector(':scope>span')?.textContent||c.textContent||'').toLowerCase().includes(label.toLowerCase()))||null}
 async function filters(system){if(!cache.has(system))cache.set(system,api.rankingFilters(system).catch(()=>({})));return cache.get(system)}
-function openDataset(system,year){const p=new URLSearchParams();p.set('dataset',system);if(year)p.set('year',year);location.hash='#statistics-rankings?'+p.toString()}
+function openDataset(system,year){
+ const hook=globalThis.__cfOpenRankingDataset
+ if(typeof hook==='function'){hook(system,year);return}
+ const p=new URLSearchParams();p.set('dataset',system);if(year)p.set('year',year);location.hash='#statistics-rankings?'+p.toString()
+}
 async function enhance(system,config){
  const card=cardFor(config.label);if(!card)return false
  const actions=card.querySelector(':scope>div');if(!actions)return false
