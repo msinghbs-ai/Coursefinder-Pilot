@@ -1,3 +1,3 @@
 CF-097 ranking workflow history gate
-final ranking workflow route
-final status assertion retry
+CF-228 recovery rerun after Cloudflare build progression restored
+validate ranking workflow, history, Statistics dataset selectors and imported observation viewer
