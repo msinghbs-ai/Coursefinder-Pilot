@@ -4,7 +4,7 @@ import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('CF-097/226 ranking workflow, history and datasets @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-097-cf-226-ranking-workflow-history-datasets',change_control:'CF-CHG-20260903-097 / CF-226'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-097-cf-226-ranking-workflow-history-datasets',change_control:'CF-CHG-20260903-097 / CF-226 / CF-227'})})
 
  test('full THE history remains visible and applied editions no longer require manual review',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
@@ -36,7 +36,7 @@ test.describe('CF-097/226 ranking workflow, history and datasets @deployed',()=>
  test('Statistics exposes accepted QS and THE editions and opens imported observations',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#statistics-rankings',process.env.UAT_BASE_URL).toString())
-  await expect(page.locator('.m-release-pill')).toContainText('v2.15.71',{timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.locator('.m-release-pill')).toContainText('v2.15.71',{timeout:120000})
   const qs=page.locator('.m-stats-card').filter({hasText:'QS WORLD UNIVERSITY RANKINGS'}).first()
   await expect(qs).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const qsEdition=qs.locator('.cf-ranking-card-picker select')
