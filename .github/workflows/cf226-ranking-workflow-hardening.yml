@@ -1,0 +1,36 @@
+name: CF-226 ranking workflow hardening
+on:
+  push:
+    paths: ['.github/workflows/cf226-ranking-workflow-hardening.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Harden ranking import workflow
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/mature-main.jsx')
+          s=p.read_text()
+          storm="useEffect(()=>{if(busy||processingId||!imports.length)return;const pending=imports.find(x=>['validated','parsed','reconciled','needs_review'].includes(x.status));if(!pending)return;const action=pending.status==='needs_review'?'validate':'apply';const t=setTimeout(()=>processImport(pending.id,action),300);return()=>clearTimeout(t)},[imports,processingId,busy])\n "
+          if storm in s:
+              s=s.replace(storm,'',1)
+          s=s.replace("Acquire Evidence → Parse & validate → Apply edition → Review exceptions. All editions remain visible here.","Acquire Evidence → Layer 1 Ranking ETL validates and applies automatically → mapping exceptions remain traceable separately. All editions remain visible here.",1)
+          old="{available&&<button onClick={()=>navigate?.('Statistics & Rankings')}>{x.status==='needs_review'?'Review edition':'View module'}</button>}"
+          new="{available&&<button disabled={validating||String(x.storage_path||'').startsWith('inline://')} onClick={()=>x.status==='needs_review'?processImport(x.id,'validate'):navigate?.('Statistics & Rankings')}>{String(x.storage_path||'').startsWith('inline://')?'Source Evidence required':x.status==='needs_review'?(validating?'Processing…':'Process & apply'):'View module'}</button>}"
+          if old in s:
+              s=s.replace(old,new,1)
+          s=s.replace("const UI_VERSION='2.15.70'","const UI_VERSION='2.15.71'",1)
+          p.write_text(s)
+          Path('.github/workflows/cf226-ranking-workflow-hardening.yml').unlink()
+          PY
+          git config user.name coursefinder-cf226-bot
+          git config user.email actions@users.noreply.github.com
+          git add -A
+          git commit -m 'CF-226 stop ranking retry storm and harden auto-apply UX'
+          git push origin HEAD:main
