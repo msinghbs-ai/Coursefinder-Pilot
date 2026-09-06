@@ -1,0 +1,5 @@
+CF-230 ranking Evidence-only Admin candidate
+validate Sources & Imports exposes publisher Evidence upload only
+validate QS and THE imports continue through Layer 1 Ranking ETL
+validate historical ranking imports remain visible and exportable
+validate retired URL/Parse.bot ranking routes remain non-operational
