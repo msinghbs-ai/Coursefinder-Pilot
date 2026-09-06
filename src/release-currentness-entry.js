@@ -1,15 +1,14 @@
-const VERSION='2.15.66'
+const VERSION='2.15.71'
 const RELEASE={
   version:VERSION,
-  date:'5 Sep 2026',
-  title:'Reusable Layer 4 Scholarship scope rules',
+  date:'6 Sep 2026',
+  title:'Ranking dataset visibility and deployment currentness recovery',
   changes:[
-    'Layer 4 can now convert a reviewed Scholarship Course-scope cohort into one reusable accept/reject rule instead of recreating the same row-level review after every refresh.',
-    'Reusable rules are bound to the exact Scholarship, candidate reason, Provider and first-party Evidence ID; any changed Evidence version deliberately falls back to Layer 4 review.',
-    'Future matching Course-scope candidates are resolved automatically through the retained rule, with Evidence, actor, mapping basis and rule-use counters preserved for audit.',
-    'Operators can inspect, apply, enable or disable retained rules from Layer 4; rule creation requires Pipeline Operator authority, audited reason and exact SAVE RULE N confirmation.',
-    'No rule can bypass Provider mismatch or missing Evidence controls, and Publication/Search admission remains separate.',
-    'CF-102 Provider logo display, private signed access and cache behaviour remain unchanged.'
+    'Synchronised the visible PIM Admin release badge, login/version labels, browser title and release metadata to v2.15.71 so the deployed UI no longer reports the superseded v2.15.66 release after a successful Cloudflare deployment.',
+    'Statistics & Rankings now exposes imported QS and THE dataset editions and the accepted-observation viewer, including search, pagination, Provider mapping, rank, score, country and Evidence references.',
+    'Ranking workflow history identifies governed Layer 1 Ranking ETL activity while accepted publisher observations remain separate from canonical Provider identity and mapping exceptions stay traceable.',
+    'Cloudflare deployment remains the native repository-connected build path; GitHub Actions retains the exact dist artifact and browser-smoke evidence without introducing a second automatic Worker deployment path.',
+    'No regulatory source authority, Provider/Course identity, Publication/Search admission or Website/Zoho contract is changed by this release-currentness correction.'
   ]
 }
 let pending=false
