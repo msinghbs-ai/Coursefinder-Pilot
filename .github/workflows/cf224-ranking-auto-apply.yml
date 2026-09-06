@@ -1,0 +1,67 @@
+name: CF-224 ranking auto-apply and dataset selectors
+on:
+  push:
+    paths: ['.github/workflows/cf224-ranking-auto-apply.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Patch ranking ETL lifecycle and statistics dataset selectors
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # 1) Ranking control: one Layer 1 Ranking ETL job, validate then auto-apply,
+          # and always mark a successful canonical apply as applied even when mapping
+          # exceptions remain for separate reconciliation.
+          p=Path('supabase/functions/ranking-publisher-control/index.ts')
+          s=p.read_text()
+          old='const systemCode=clean(imp.system_code),sourceId=clean(imp.source_id),jobType=action==="apply"?"ranking_import_apply":"ranking_import_validate",{data:jobId,error:jobErr}=await svc.rpc("svc_ranking_job_start",{p_job_type:jobType,p_source_id:sourceId||null,p_requested_by:actor,p_payload:{import_id:imp.id,system_code:systemCode,edition_year:imp.edition_year,original_filename:imp.original_filename,action}});'
+          new='const systemCode=clean(imp.system_code),sourceId=clean(imp.source_id),jobType="layer1_ranking_etl",{data:jobId,error:jobErr}=await svc.rpc("svc_ranking_job_start",{p_job_type:jobType,p_source_id:sourceId||null,p_requested_by:actor,p_payload:{layer:"layer1",classification:"Layer 1 Ranking ETL",import_id:imp.id,system_code:systemCode,edition_year:imp.edition_year,original_filename:imp.original_filename,action:action==="validate"?"validate_apply":"apply"}});'
+          if old not in s: raise SystemExit('ranking control job block not found')
+          s=s.replace(old,new,1)
+          old='if(action==="validate"){const{error:updateErr}=await svc.rpc("svc_ranking_import_validation_update",{p_import_id:importId,p_status:"validated",p_validation_summary:{candidate_observations:out.candidateObservations,unknown_rank_semantics:out.unknownRankSemantics,indicator_cells:out.indicatorCells,reconciliation_preview:out.reconciliationPreview,worker_version:out.workerVersion,validated_at:new Date().toISOString()},p_parse_summary:{candidate_observations:out.candidateObservations,filename:out.filename,acquisition_mode:out.acquisitionMode}});if(updateErr)throw new Error(updateErr.message||"ranking import validation update failed")}const{error:finishErr}=await svc.rpc("svc_ranking_job_finish",{p_job_id:jobId,p_status:"completed",p_result:out,p_error_text:null});if(finishErr)throw new Error(finishErr.message||"ranking job completion failed");return json(req,200,{ok:true,action,job_id:jobId,import_id:importId,system_code:systemCode,edition_year:imp.edition_year,worker,result:out})'
+          new='let finalOut:any=out,finalAction=action;if(action==="validate"){const validationSummary={candidate_observations:out.candidateObservations,unknown_rank_semantics:out.unknownRankSemantics,indicator_cells:out.indicatorCells,reconciliation_preview:out.reconciliationPreview,worker_version:out.workerVersion,validated_at:new Date().toISOString()};const parseSummary={candidate_observations:out.candidateObservations,filename:out.filename,acquisition_mode:out.acquisitionMode};const{error:updateErr}=await svc.rpc("svc_ranking_import_validation_update",{p_import_id:importId,p_status:"validated",p_validation_summary:validationSummary,p_parse_summary:parseSummary});if(updateErr)throw new Error(updateErr.message||"ranking import validation update failed");const applyRes=await fetch(url+"/functions/v1/"+worker,{method:"POST",headers:{"authorization":"Bearer "+serviceKey,"apikey":serviceKey,"x-cf-layer1-service-key":serviceKey,"content-type":"application/json"},body:JSON.stringify({system_code:systemCode,edition_year:Number(imp.edition_year),mode:"apply",source_id:sourceId||"",import_id:importId})});const applied=await applyRes.json().catch(()=>({}));if(!applyRes.ok||applied?.ok===false||applied?.error)throw new Error(applied?.error||(worker+" APPLY HTTP "+applyRes.status));const appliedSummary={...parseSummary,rows:applied.candidateObservations,mapped:applied.reconciliation?.mapped??applied.partialMapped??null,global_unmapped:applied.reconciliation?.global_unmapped??applied.partialUnmapped??null,supported_scope_unmapped:applied.reconciliation?.supported_scope_unmapped??null,finalized_at:new Date().toISOString(),worker_version:applied.workerVersion};const{error:markErr}=await svc.rpc("svc_ranking_manual_import_mark_applied",{p_import_id:importId,p_validation_summary:validationSummary,p_parse_summary:appliedSummary,p_supersede_inline:true});if(markErr)throw new Error(markErr.message||"ranking import applied-state update failed");finalOut={ok:true,mode:"validate_apply",validation:out,apply:applied,reconciliation:applied.reconciliation,workerVersion:applied.workerVersion};finalAction="validate_apply"}else{const{error:markErr}=await svc.rpc("svc_ranking_manual_import_mark_applied",{p_import_id:importId,p_validation_summary:imp.validation_summary||{},p_parse_summary:{...(imp.parse_summary||{}),rows:out.candidateObservations,mapped:out.reconciliation?.mapped??out.partialMapped??null,global_unmapped:out.reconciliation?.global_unmapped??out.partialUnmapped??null,supported_scope_unmapped:out.reconciliation?.supported_scope_unmapped??null,finalized_at:new Date().toISOString(),worker_version:out.workerVersion},p_supersede_inline:true});if(markErr)throw new Error(markErr.message||"ranking import applied-state update failed")}const{error:finishErr}=await svc.rpc("svc_ranking_job_finish",{p_job_id:jobId,p_status:"completed",p_result:finalOut,p_error_text:null});if(finishErr)throw new Error(finishErr.message||"ranking job completion failed");return json(req,200,{ok:true,action:finalAction,job_id:jobId,import_id:importId,system_code:systemCode,edition_year:imp.edition_year,worker,result:finalOut})'
+          if old not in s: raise SystemExit('ranking control completion block not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          # 2) Acquisition jobs use the same Layer 1 Ranking ETL classification;
+          # stage/action remains in payload for operational drill-down.
+          p=Path('supabase/functions/ranking-publisher-import/index.ts')
+          s=p.read_text()
+          s2=s.replace('job_type:"ranking_import_acquire",domain:"ranking"','job_type:"layer1_ranking_etl",domain:"ranking"',1)
+          if s2==s: raise SystemExit('ranking publisher acquisition job block not found')
+          s=s2.replace('payload:{action:"acquire",acquisition_mode:"manual_file"','payload:{layer:"layer1",classification:"Layer 1 Ranking ETL",action:"acquire",acquisition_mode:"manual_file"')
+          s=s.replace('payload:{action:"acquire",acquisition_mode:"manual_file"','payload:{layer:"layer1",classification:"Layer 1 Ranking ETL",action:"acquire",acquisition_mode:"manual_file"')
+          p.write_text(s)
+
+          # 3) Statistics enhancement must not disappear if the configurable registry
+          # read is unavailable. Fall back to the four governed built-in datasets so
+          # QS/THE edition selectors are always rendered from accepted editions.
+          p=Path('src/StatisticsDatasetEnhancer.js')
+          s=p.read_text()
+          old='const rows=await loadRegistry();const enabled=rows.filter(x=>x.display_enabled).sort((a,b)=>a.display_order-b.display_order);'
+          new='let rows=[];try{rows=await loadRegistry()}catch{rows=[{dataset_key:"qilt",label:"QILT",dataset_type:"statistics",description:"Quality Indicators for Learning and Teaching",display_enabled:true,display_order:10,compare_enabled:true},{dataset_key:"prisms",label:"PRISMS",dataset_type:"statistics",description:"International student-flow observations",display_enabled:true,display_order:20,compare_enabled:true},{dataset_key:"qs_wur",label:"QS World University Rankings",dataset_type:"ranking",description:"Imported QS World University Ranking editions",display_enabled:true,display_order:30,compare_enabled:true,source_system_code:"qs_wur"},{dataset_key:"the_wur",label:"Times Higher Education",dataset_type:"ranking",description:"Imported Times Higher Education ranking editions",display_enabled:true,display_order:40,compare_enabled:true,source_system_code:"the_wur"}]};const enabled=rows.filter(x=>x.display_enabled).sort((a,b)=>a.display_order-b.display_order);'
+          if old not in s: raise SystemExit('statistics registry load block not found')
+          s=s.replace(old,new,1)
+          s=s.replace('picker.innerHTML=\'Edition <select aria-label="Ranking edition"></select>\'','picker.innerHTML=\'Dataset / edition <select aria-label="Ranking dataset edition"></select>\'',1)
+          p.write_text(s)
+
+          # 4) Visible release bump.
+          p=Path('index.html');s=p.read_text();s=s.replace('v2.15.68','v2.15.69');p.write_text(s)
+          p=Path('src/mature-main.jsx');s=p.read_text();s=s.replace("const UI_VERSION='2.15.58'","const UI_VERSION='2.15.69'");p.write_text(s)
+
+          # Self-remove workflow after patch.
+          Path('.github/workflows/cf224-ranking-auto-apply.yml').unlink()
+          PY
+          git config user.name coursefinder-cf224-bot
+          git config user.email actions@users.noreply.github.com
+          git add -A
+          git commit -m 'CF-224 automate Layer 1 ranking ETL apply and dataset editions'
+          git push origin HEAD:main
