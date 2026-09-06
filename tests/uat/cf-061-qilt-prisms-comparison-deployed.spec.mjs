@@ -5,11 +5,11 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function openCatalogue(page,hash,heading){await page.evaluate(h=>{location.hash=h},hash);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})}
 
 test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-061-qilt-prisms-comparison-deployed',change_control:'CF-CHG-20260901-061'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-061-qilt-prisms-comparison-deployed',change_control:'CF-CHG-20260901-061 / CF-228 recovery'})})
 
  test('Provider comparison aligns QILT cards for two selected universities',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
-  await expect(page.locator('.m-release-pill')).toContainText('v2.15.40')
+  await expect(page.locator('.m-release-pill')).toContainText('v2.15.71')
   await openCatalogue(page,'#providers','Providers')
   const search=page.locator('.m-searchbox input').first()
   await search.fill('Charles Darwin University')
