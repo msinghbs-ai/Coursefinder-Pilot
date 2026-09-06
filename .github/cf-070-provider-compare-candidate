@@ -1,2 +1,3 @@
 CF-CHG-20260902-070 Provider compare interaction/theme corrective candidate
 CF-228 recovery rerun against restored v2.15.71 deployment after stale release-contract correction
+CF-232 rerun after role-safe Layer Status summary fix and optional governed QILT benchmark contract
