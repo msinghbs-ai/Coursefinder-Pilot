@@ -3,12 +3,12 @@ import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
-test.describe('CF-095 ranking release currentness @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-095-ranking-release-currentness',change_control:'CF-CHG-20260903-095'})})
+test.describe('CF-095 / CF-228 ranking release currentness @deployed',()=>{
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-095-ranking-release-currentness',change_control:'CF-CHG-20260903-095 / CF-228'})})
 
- test('deployed Admin reports v2.15.51 and defaults QS Parse.bot to qualified 2026',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test('deployed Admin reports v2.15.71 and defaults QS Parse.bot to qualified 2026',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
-  await expect(page.locator('.m-release-pill')).toContainText('v2.15.51',{timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.locator('.m-release-pill')).toContainText('v2.15.71',{timeout:DETERMINISTIC_UI_TIMEOUT})
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
   await expect(page.getByRole('heading',{name:'Register ranking publisher file'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const selects=page.locator('.m-ranking-essentials select')
