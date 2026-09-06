@@ -1,0 +1,53 @@
+name: CF-223 Ranking dataset year availability
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/cf223-ranking-dataset-years.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Make ranking availability dataset-scoped
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/ComparisonWorkspace.jsx')
+          s=p.read_text()
+          old="[year,setYear]=useState(''),[rankingSelection,setRankingSelection]=useState({qs:'',the:''}),[viewMode,setViewMode]"
+          new="[year,setYear]=useState(''),[rankingSelection,setRankingSelection]=useState({qs:'',the:''}),[rankingAvailability,setRankingAvailability]=useState({qs:[],the:[]}),[viewMode,setViewMode]"
+          if s.count(old)!=1: raise SystemExit(f'expected state block once, found {s.count(old)}')
+          s=s.replace(old,new,1)
+          old=" useEffect(()=>{persistSelection(type,ids)},[type,ids.join(',')])\n"
+          new=" useEffect(()=>{persistSelection(type,ids)},[type,ids.join(',')])\n useEffect(()=>{let live=true;Promise.all([adminRead('ranking_filters',{system_code:'qs_wur'}),adminRead('ranking_filters',{system_code:'the_wur'})]).then(([qs,the])=>{if(live)setRankingAvailability({qs:(qs?.years||[]).map(String),the:(the?.years||[]).map(String)})}).catch(e=>onError?.(e.message));return()=>{live=false}},[])\n"
+          if s.count(old)!=1: raise SystemExit(f'expected persist block once, found {s.count(old)}')
+          s=s.replace(old,new,1)
+          old=" const rankingYearsFor=system=>[...new Set(items.flatMap(e=>(e.ranking_context?.[system]?.history||[]).map(x=>String(x.edition_year))))].sort((a,b)=>Number(b)-Number(a))\n const qsRankingYears=useMemo(()=>rankingYearsFor('qs_wur'),[items])\n const theRankingYears=useMemo(()=>rankingYearsFor('the_wur'),[items])"
+          new=" const rankingYearsFor=system=>[...new Set(items.flatMap(e=>(e.ranking_context?.[system]?.history||[]).map(x=>String(x.edition_year))))].sort((a,b)=>Number(b)-Number(a))\n const qsRankingYears=useMemo(()=>rankingAvailability.qs.length?[...rankingAvailability.qs]:rankingYearsFor('qs_wur'),[items,rankingAvailability.qs.join('|')])\n const theRankingYears=useMemo(()=>rankingAvailability.the.length?[...rankingAvailability.the]:rankingYearsFor('the_wur'),[items,rankingAvailability.the.join('|')])"
+          if s.count(old)!=1: raise SystemExit(f'expected ranking year block once, found {s.count(old)}')
+          s=s.replace(old,new,1)
+          old=" const hasQS=qsRankingYears.length>0||items.some(e=>e.ranking_context?.qs_wur?.latest)\n const hasTHE=theRankingYears.length>0||items.some(e=>e.ranking_context?.the_wur?.latest)"
+          new=" const hasQS=qsRankingYears.length>0\n const hasTHE=theRankingYears.length>0"
+          if s.count(old)!=1: raise SystemExit(f'expected ranking availability block once, found {s.count(old)}')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          i=Path('index.html')
+          x=i.read_text()
+          if 'v2.15.66' not in x: raise SystemExit('expected visible release v2.15.66')
+          i.write_text(x.replace('v2.15.66','v2.15.67',1))
+          PY
+          grep -q "rankingAvailability.qs.length" src/ComparisonWorkspace.jsx
+          grep -q "ranking_filters',{system_code:'qs_wur'" src/ComparisonWorkspace.jsx
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run build
+          rm .github/workflows/cf223-ranking-dataset-years.yml
+          git config user.name coursefinder-cf223-bot
+          git config user.email actions@users.noreply.github.com
+          git add src/ComparisonWorkspace.jsx index.html .github/workflows/cf223-ranking-dataset-years.yml
+          git commit -m 'CF-223 make ranking availability dataset-scoped'
+          git push origin HEAD:main
