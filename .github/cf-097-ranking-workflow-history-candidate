@@ -3,3 +3,4 @@ CF-228 recovery rerun after Cloudflare build progression restored
 validate ranking workflow, history, Statistics dataset selectors and imported observation viewer
 rerun after deterministic Statistics ranking edition control recovery
 rerun after imported ranking viewer stabilisation outside React shell
+CF-229 rerun after direct viewer hook and QS canonical indicator field promotion hardening
