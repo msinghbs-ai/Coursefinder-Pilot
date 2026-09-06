@@ -63,3 +63,8 @@ Governance boundaries:
 - no Website/Zoho production cutover;
 - no autonomous Layer 3 canonical mutation;
 - no Evidence/history rewrite or deletion.
+
+Recovery addendum — 7 September 2026:
+- rerun integration after Cloudflare build progression restoration;
+- explicitly revalidate Provider/Course Compare, QILT/PRISMS comparison surfaces, provider logos, and current comparison navigation;
+- preserve closed CF-097 ranking recovery evidence and do not reopen ranking unless integration demonstrates a regression.
