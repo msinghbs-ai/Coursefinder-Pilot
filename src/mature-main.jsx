@@ -28,7 +28,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.70'
+const UI_VERSION='2.15.71'
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:system==='the_wur'?Array.from({length:16},(_,i)=>2026-i):Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -298,7 +298,6 @@ function RankingImportPanel({onError,routeParams,navigate}){
  const requested=routeParams?.get?.('system'),presetSystem=['qs_wur','the_wur','arwu'].includes(requested)?requested:'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
  const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for CourseFinder ingestion.',revisionNote:'',mode:'file',parsebotRef:rankingParsebotRef(system)})
  const[form,setForm]=useState(makeForm()),[files,setFiles]=useState([]),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([]),[detected,setDetected]=useState(null),[advanced,setAdvanced]=useState(false),[processingId,setProcessingId]=useState(''),[lastParsedKey,setLastParsedKey]=useState(''),[overwriteKey,setOverwriteKey]=useState(''),[historySystem,setHistorySystem]=useState('all')
- useEffect(()=>{if(busy||processingId||!imports.length)return;const pending=imports.find(x=>['validated','parsed','reconciled','needs_review'].includes(x.status));if(!pending)return;const action=pending.status==='needs_review'?'validate':'apply';const t=setTimeout(()=>processImport(pending.id,action),300);return()=>clearTimeout(t)},[imports,processingId,busy])
  const sameEditionImports=imports.filter(x=>x.system_code===form.systemCode&&String(x.edition_year)===String(form.editionYear))
  const existingCountries=[...new Set(sameEditionImports.flatMap(x=>Array.isArray(x.detected_scope)?x.detected_scope:[]).map(x=>String(x||'').trim()).filter(Boolean))]
  const selectedCountries=Array.isArray(detected?.countries)?detected.countries:[]
