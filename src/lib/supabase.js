@@ -197,7 +197,7 @@ export const api = {
   prismsFilterOptions: () => adminRead('prisms_filters'),
 
   rankingSummary: () => adminRead('ranking_summary'),
-  rankingFilters: () => adminRead('ranking_filters'),
+  rankingFilters: (systemCode = '') => adminRead('ranking_filters', { system_code: systemCode || null }),
   rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '' } = {}) =>
     adminRead('ranking_observations', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
