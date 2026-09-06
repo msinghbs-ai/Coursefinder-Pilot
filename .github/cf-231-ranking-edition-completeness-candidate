@@ -1,0 +1,5 @@
+CF-231 ranking edition completeness candidate
+validate accepted QS/THE edition selectors reflect runtime accepted editions only
+validate QS/THE ranking history remains available in Statistics and Provider Compare
+validate needs_review/validated imports remain visible with governed actions and Evidence export
+validate CF-230 retired ranking URL/Parse.bot controls remain non-operational
