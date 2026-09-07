@@ -1,46 +1,34 @@
-# M2.4.4 A17–A28 replacement bounded integration candidate — 1 September 2026
+# M2.4.5 recovery bounded integration candidate — 7 September 2026
 
 Implementation source before marker:
-f07f354d8b3842c02dde04cff31e576924fc989f
+9edb848ae0bb087dda26aa72708483f9bff8896e
 
-Change Control:
-CF-CHG-20260830-048
+Recovery ownership:
+CF-CHG-20260907-234
+CF-CHG-20260907-235
+CF-CHG-20260907-236
+CF-238 bounded integration nomination
 
 Pre-integration proof:
-- build 33454525548 PASS;
-- focused Campus/Course performance UAT 33454525536 PASS, 4/4;
-- core workspace budgets PASS including campuses_page;
-- exact Course lookup/detail/paging/back PASS;
-- Layer 2/Admin management performance PASS;
-- responsive widths PASS;
-- prior focused A25 + Layer-status + performance UAT 33452204859 PASS;
-- prior focused mobile navigation/profile UAT 33449532351 PASS;
-- prior focused A13/A16+A25+performance UAT 33443025460 PASS.
-
-Corrections retained:
-- common Campus browse is page-first with lower(name),id index;
-- common Course browse/detail performance headroom retained;
-- Dashboard layer_status_summary route restored and bounded;
-- A25 Evidence semantics unchanged;
-- Layer 2 profile stale-response race fixed;
-- mobile canonical navigation uses hamburger-aware clickPrimaryNav.
+- v2.15.72 Compare currentness build/deployed UAT PASS at 8bc6960d05e5521ff6ae44ad0ee49e7c07ef80ff;
+- CF-235 Layer 4 public RPC security-boundary correction applied and targeted deployed smoke PASS;
+- CF-236 remaining pre-production RPC hardening applied; Security Advisor 0 WARN; build 34070155296 PASS; deployed UAT 34070155325 PASS;
+- H3 Scholarship retained CLOSED because accepted component/entry contract is unchanged;
+- H4 Jobs retained CLOSED because accepted entry contract is unchanged;
+- H5 Manual PIM retained CLOSED because accepted workspace blob is unchanged;
+- H6 Publication Controls retained CLOSED because accepted Layer 4 host blob is unchanged and auto publication remains disabled;
+- H11 provider-logo surfaces re-proved after shared-host changes: build 34070290328 PASS; deployed targeted UAT 34070290310 PASS.
 
 Scope:
-- revalidate A17–A28 together on chromium-desktop and chromium-mobile;
-- preserve A10 paged catalogue filters and A12 contextual insights;
-- preserve A13 tablet anchoring and bounded accepted Firecrawl acquisition proof;
-- preserve A16 governed Layer 4 intervention;
-- preserve A21 canonical four-Layer navigation;
-- preserve A22 wider responsive Provider/Course drawers;
-- preserve A23 Firecrawl-first quota-aware background production;
-- preserve A24 unified Layer headers;
-- preserve A25 Evidence type/lineage integrity;
-- validate Dashboard Layer 1–4 operational status;
-- validate A26 run/job/Evidence/Dashboard consistency;
-- validate A27 Administration reliability, mobile navigation and bounded source paging;
-- validate A28 L2/L3 operator summaries and production UI hardening;
-- retain Campus/Course performance headroom;
-- retain security/private Evidence/role boundaries.
+- run the bounded M2.4 integration set on chromium-desktop and chromium-mobile;
+- revalidate Provider/Course Compare and QILT/PRISMS comparison context;
+- revalidate provider logos across Provider, Course and Compare surfaces;
+- revalidate current canonical navigation and responsive/mobile behaviour;
+- retain A17–A28 platform, Evidence, pipeline, administration and performance invariants already encoded by the integration suite;
+- retain role/private-schema/security boundaries and the new public SECURITY INVOKER wrapper boundaries;
+- preserve H3/H4/H5/H6 accepted functional semantics;
+- preserve Layer 4 evidence/rank/exact-confirmation fail-closed semantics;
+- preserve publication isolation and auto_publication_enabled=false.
 
 Hard gates unchanged:
 - RPC/detail latency <= 3,000 ms;
@@ -48,23 +36,20 @@ Hard gates unchanged:
 - filter-option payload <= 60,000 bytes;
 - no Evidence lineage weakening;
 - no role/security weakening;
-- no Layer 1 authority bypass.
+- no Layer 1 authority bypass;
+- no autonomous Layer 3 canonical mutation;
+- no publication/search/consumer cutover side effect.
 
 Decision:
-- this is the single replacement integration candidate after focused performance PASS;
+- this is the single bounded integration escalation after targeted recovery gates passed;
 - desktop and mobile must both PASS;
 - any failure is immutable evidence and only demonstrated defects may be corrected;
+- do not weaken existing contracts to obtain green;
 - no unchanged rerun;
-- after integration PASS, perform the required runtime reconciliation for A26/A27/A28 and M244-FU-020 before final acceptance nomination.
+- only after this bounded integration passes may release/version duplication be reconciled and one nominated M2.4.5 acceptance be considered.
 
 Governance boundaries:
 - no Production cutover;
 - no broad Publication;
 - no Website/Zoho production cutover;
-- no autonomous Layer 3 canonical mutation;
 - no Evidence/history rewrite or deletion.
-
-Recovery addendum — 7 September 2026:
-- rerun integration after Cloudflare build progression restoration;
-- explicitly revalidate Provider/Course Compare, QILT/PRISMS comparison surfaces, provider logos, and current comparison navigation;
-- preserve closed CF-097 ranking recovery evidence and do not reopen ranking unless integration demonstrates a regression.
