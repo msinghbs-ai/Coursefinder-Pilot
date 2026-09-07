@@ -11,49 +11,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: cf-m245-version-pill-ui-fixes-20260907
-      - name: Add expandable UI fixes to version pill
-        shell: bash
+      - name: Patch version pill
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          p=Path('src/mature-main.jsx')
-          s=p.read_text()
-          if 'const UI_FIXES=[' not in s:
-              old="const UI_VERSION='2.15.74'\nconst PAGE_SIZE=50"
-              new="""const UI_VERSION='2.15.74'
-const UI_FIXES=[
- 'Independent QILT, PRISMS, QS and THE year/edition controls in Provider Compare.',
- 'Frozen Provider/university identity headers across comparison statistics and rankings.',
- 'Standard Statistics & Rankings breadcrumbs with dedicated QILT, PRISMS, QS and THE dataset subpages.',
- 'QS/THE dataset pages aligned to the standard CourseFinder dataset table theme.'
-]
-const PAGE_SIZE=50"""
-              if old not in s: raise SystemExit('UI_VERSION target not found')
-              s=s.replace(old,new,1)
-          if 'm-release-fixes-popover' not in s:
-              old2='<div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/>v{UI_VERSION}</span><span className="m-role-pill">{roleLabel(context?.role||\'Loading\')}</span></div>'
-              new2='''<div className="m-topbar-actions"><details className="m-release-menu"><summary className="m-release-pill" aria-label={`Open UI fixes for PIM Admin v${UI_VERSION}`}><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span><ChevronDown size={12}/></summary><div className="m-release-fixes-popover"><div className="m-release-fixes-head"><strong>UI fixes</strong><span>v{UI_VERSION}</span></div><ul>{UI_FIXES.map(x=><li key={x}>{x}</li>)}</ul></div></details><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></div>'''
-              if old2 not in s: raise SystemExit('release pill target not found')
-              s=s.replace(old2,new2,1)
-          p.write_text(s)
-
-          p=Path('src/mature.css')
-          s=p.read_text()
-          css='''
-/* Compact current-release UI fix notes exposed from the version pill. */
-.m-release-menu{position:relative}.m-release-menu>summary{list-style:none}.m-release-menu>summary::-webkit-details-marker{display:none}.m-release-menu .m-release-pill{cursor:pointer}.m-release-menu[open] .m-release-pill{border-color:#c7d2fe;background:#f8f9ff;color:#4338ca}.m-release-menu[open] .m-release-pill>svg{transform:rotate(180deg)}.m-release-menu .m-release-pill>svg{transition:transform .15s}.m-release-fixes-popover{position:absolute;right:0;top:calc(100% + 8px);z-index:120;width:min(360px,calc(100vw - 32px));background:#fff;border:1px solid var(--m-border);border-radius:11px;box-shadow:0 18px 45px rgba(15,23,42,.16);padding:11px 12px;color:var(--m-text)}.m-release-fixes-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid #edf1f6}.m-release-fixes-head strong{font-size:10.5px}.m-release-fixes-head span{font-size:8.5px;color:var(--m-muted);font-weight:750}.m-release-fixes-popover ul{margin:8px 0 0;padding-left:16px}.m-release-fixes-popover li{font-size:9.5px;line-height:1.45;color:#526078;margin:5px 0}.m-release-version-label{white-space:nowrap}@media(max-width:700px){.m-release-fixes-popover{position:fixed;right:12px;top:64px;width:min(360px,calc(100vw - 24px));box-sizing:border-box}.m-release-fixes-popover li{font-size:10px}}
-'''
-          if 'm-release-fixes-popover' not in s:s += css
-          p.write_text(s)
-
-          p=Path('src/release-currentness-entry.js')
-          s=p.read_text()
-          old3="document.querySelectorAll('.m-release-pill').forEach(el=>{el.textContent=`v${VERSION}`;el.setAttribute('aria-label',`Open release notes for PIM Admin v${VERSION}`)})"
-          new3="document.querySelectorAll('.m-release-pill').forEach(el=>{const label=el.querySelector('.m-release-version-label');if(label)label.textContent=`v${VERSION}`;else el.textContent=`v${VERSION}`;el.setAttribute('aria-label',`Open UI fixes for PIM Admin v${VERSION}`)})"
-          if old3 in s:s=s.replace(old3,new3,1)
-          p.write_text(s)
-          PY
+          echo 'CmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAoKcD1QYXRoKCdzcmMvbWF0dXJlLW1haW4uanN4JykKcz1wLnJlYWRfdGV4dCgpCmlmICdjb25zdCBVSV9GSVhFUz1bJyBub3QgaW4gczoKICAgIG9sZD0iY29uc3QgVUlfVkVSU0lPTj0nMi4xNS43NCdcblxuY29uc3QgUEFHRV9TSVpFPTUwIgogICAgbmV3PSJjb25zdCBVSV9WRVJTSU9OPSycJzIuMTUuNzRcJ1xuY29uc3QgVUlfRklYRVM9W1xuICdJbmRlcGVuZGVudCBRSUxULCBQUklTTVMsIFFTIGFuZCBUSEUgeWVhci9lZGl0aW9uIGNvbnRyb2xzIGluIFByb3ZpZGVyIENvbXBhcmUuJyxcbiAnRnJvemVuIFByb3ZpZGVyL3VuaXZlcnNpdHkgaWRlbnRpdHkgaGVhZGVycyBhY3Jvc3MgY29tcGFyaXNvbiBzdGF0aXN0aWNzIGFuZCByYW5raW5ncy4nLFxuICdTdGFuZGFyZCBTdGF0aXN0aWNzICYgUmFua2luZ3MgYnJlYWRjcnVtYnMgd2l0aCBkZWRpY2F0ZWQgUUlMVCwgUFJJU01TLCBRUyBhbmQgVEhFIGRhdGFzZXQgc3VicGFnZXMuJyxcbiAnUVMvVEhFIGRhdGFzZXQgcGFnZXMgYWxpZ25lZCB0byB0aGUgc3RhbmRhcmQgQ291cnNlRmluZGVyIGRhdGFzZXQgdGFibGUgdGhlbWUuJ1xuXVxuY29uc3QgUEFHRV9TSVpFPTUwIgogICAgaWYgb2xkIG5vdCBpbiBzOgogICAgICAgIHJhaXNlIFN5c3RlbUV4aXQoJ1VJX1ZFUlNJT04gdGFyZ2V0IG5vdCBmb3VuZCcpCiAgICBzPXMucmVwbGFjZShvbGQsbmV3LDEpCmlmICdtLXJlbGVhc2UtZml4ZXMtcG9wb3Zlcicgbm90IGluIHM6CiAgICBvbGQyPSc8ZGl2IGNsYXNzTmFtZT0ibS10b3BiYXItYWN0aW9ucyI+PHNwYW4gY2xhc3NOYW1lPSJtLXJlbGVhc2UtcGlsbCI+PHNwYW4gY2xhc3NOYW1lPSJtLWxpdmUtZG90Ii8+dntVSV9WRVJTSU9OfTwvc3Bhbj48c3BhbiBjbGFzc05hbWU9Im0tcm9sZS1waWxsIj57cm9sZUxhYmVsKGNvbnRleHQ/LnJvbGV8fFwnTG9hZGluZ1wnKX08L3NwYW4+PC9kaXY+JwogICAgbmV3Mj0nPGRpdiBjbGFzc05hbWU9Im0tdG9wYmFyLWFjdGlvbnMiPjxkZXRhaWxzIGNsYXNzTmFtZT0ibS1yZWxlYXNlLW1lbnUiPjxzdW1tYXJ5IGNsYXNzTmFtZT0ibS1yZWxlYXNlLXBpbGwiIGFyaWEtbGFiZWw9e2BPcGVuIFVJIGZpeGVzIGZvciBQSU0gQWRtaW4gdiR7VUlfVkVSU0lPTn1gfT48c3BhbiBjbGFzc05hbWU9Im0tbGl2ZS1kb3QiLz48c3BhbiBjbGFzc05hbWU9Im0tcmVsZWFzZS12ZXJzaW9uLWxhYmVsIj52e1VJX1ZFUlNJT059PC9zcGFuPjxDaGV2cm9uRG93biBzaXplPXsxMn0vPjwvc3VtbWFyeT48ZGl2IGNsYXNzTmFtZT0ibS1yZWxlYXNlLWZpeGVzLXBvcG92ZXIiPjxkaXYgY2xhc3NOYW1lPSJtLXJlbGVhc2UtZml4ZXMtaGVhZCI+PHN0cm9uZz5VSSBmaXhlczwvc3Ryb25nPjxzcGFuPnZ7VUlfVkVSU0lPTn08L3NwYW4+PC9kaXY+PHVsPntVSV9GSVhFUy5tYXAoeD0+PGxpIGtleT17eH0+e3h9PC9saT4pfTwvdWw+PC9kaXY+PC9kZXRhaWxzPjxzcGFuIGNsYXNzTmFtZT0ibS1yb2xlLXBpbGwiPnty b2xlTGFiZWwoY29udGV4dD8ucm9sZXx8XCdMb2FkaW5nXCcpfTwvc3Bhbj48L2Rpdj4nLnJlcGxhY2UoJyAnLCcnKQogICAgaWYgb2xkMiBub3QgaW4gczoKICAgICAgICByYWlzZSBTeXN0ZW1FeGl0KCdyZWxlYXNlIHBpbGwgdGFyZ2V0IG5vdCBmb3VuZCcpCiAgICBzPXMucmVwbGFjZShvbGQyLG5ldzIsMSkKcC53cml0ZV90ZXh0KHMpCgpwPVBhdGgoJ3NyYy9tYXR1cmUuY3NzJykKcz1wLnJlYWRfdGV4dCgpCmNzcz0iXG4vKiBDb21wYWN0IGN1cnJlbnQtcmVsZWFzZSBVSSBmaXggbm90ZXMgZXhwb3NlZCBmcm9tIHRoZSB2ZXJzaW9uIHBpbGwuICovXG4ubS1yZWxlYXNlLW1lbnV7cG9zaXRpb246cmVsYXRpdmV9Lm0tcmVsZWFzZS1tZW51PnN1bW1hcnl7bGlzdC1zdHlsZTpub25lfS5tLXJlbGVhc2UtbWVudT5zdW1tYXJ5Ojotd2Via2l0LWRldGFpbHMtbWFya2Vye2Rpc3BsYXk6bm9uZX0ubS1yZWxlYXNlLW1lbnUgLm0tcmVsZWFzZS1waWxse2N1cnNvcjpwb2ludGVyfS5tLXJlbGVhc2UtbWVudVtvcGVuXSAubS1yZWxlYXNlLXBpbGx7Ym9yZGVyLWNvbG9yOiNjN2QyZmU7YmFja2dyb3VuZDojZjhmOWZmO2NvbG9yOiM0MzM4Y2F9Lm0tcmVsZWFzZS1tZW51W29wZW5dIC5tLXJlbGVhc2UtcGlsbD5zdmd7dHJhbnNmb3JtOnJvdGF0ZSgxODBkZWcpfS5tLXJlbGVhc2UtbWVudSAubS1yZWxlYXNlLXBpbGw+c3Zne3RyYW5zaXRpb246dHJhbnNmb3JtIC4xNXN9Lm0tcmVsZWFzZS1maXhlcy1wb3BvdmVye3Bvc2l0aW9uOmFic29sdXRlO3JpZ2h0OjA7dG9wOmNhbGMoMTAwJSArIDhweCk7ei1pbmRleDoxMjA7d2lkdGg6bWluKDM2MHB4LGNhbGMoMTAwdncgLSAzMnB4KSk7YmFja2dyb3VuZDojZmZmO2JvcmRlcjoxcHggc29saWQgdmFyKC0tbS1ib3JkZXIpO2JvcmRlci1yYWRpdXM6MTFweDtib3gtc2hhZG93OjAgMThweCA0NXB4IHJnYmEoMTUsMjMsNDIsLjE2KTtwYWRkaW5nOjExcHggMTJweDtjb2xvcjp2YXIoLS1tLXRleHQpfS5tLXJlbGVhc2UtZml4ZXMtaGVhZHtkaXNwbGF5OmZsZXg7YWxpZ24taXRlbXM6Y2VudGVyO2p1c3RpZnktY29udGVudDpzcGFjZS1iZXR3ZWVuO2dhcDoxMHB4O3BhZGRpbmctYm90dG9tOjhweDtib3JkZXItYm90dG9tOjFweCBzb2xpZCAjZWRmMWY2fS5tLXJlbGVhc2UtZml4ZXMtaGVhZCBzdHJvbmd7Zm9udC1zaXplOjEwLjVweH0ubS1yZWxlYXNlLWZpeGVzLWhlYWQgc3Bhbntmb250LXNpemU6OC41cHg7Y29sb3I6dmFyKC0tbS1tdXRlZCk7Zm9udC13ZWlnaHQ6NzUwfS5tLXJlbGVhc2UtZml4ZXMtcG9wb3ZlciB1bHttYXJnaW46OHB4IDAgMDtwYWRkaW5nLWxlZnQ6MTZweH0ubS1yZWxlYXNlLWZpeGVzLXBvcG92ZXIgbGl7Zm9udC1zaXplOjkuNXB4O2xpbmUtaGVpZ2h0OjEuNDU7Y29sb3I6IzUyNjA3ODttYXJnaW46NXB4IDB9Lm0tcmVsZWFzZS12ZXJzaW9uLWxhYmVse3doaXRlLXNwYWNlOm5vd3JhcH1AbWVkaWEobWF4LXdpZHRoOjcwMHB4KXs ubS1yZWxlYXNlLWZpeGVzLXBvcG92ZXJ7cG9zaXRpb246Zml4ZWQ7cmlnaHQ6MTJweDt0b3A6NjRweDt3aWR0aDptaW4oMzYwcHgsY2FsYygxMDB2dyAtIDI0cHgpKTtib3gtc2l6aW5nOmJvcmRlci1ib3h9Lm0tcmVsZWFzZS1maXhlcy1wb3BvdmVyIGxpe2ZvbnQtc2l6ZToxMHB4fX1cbiIKaWYgJ20tcmVsZWFzZS1maXhlcy1wb3BvdmVyJyBub3QgaW4gczoKICAgIHMgKz0gY3NzCnAud3JpdGVfdGV4dChzKQoKcD1QYXRoKCdzcmMvcmVsZWFzZS1jdXJyZW50bmVzcy1lbnRyeS5qcycpCnM9cC5yZWFkX3RleHQoKQpvbGQzPSJkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcubS1yZWxlYXNlLXBpbGwnKS5mb3JFYWNoKGVsPT57ZWwudGV4dENvbnRlbnQ9YHYke1ZFUlNJT059YDtlbC5zZXRBdHRyaWJ1dGUoJ2FyaWEtbGFiZWwnLGBPcGVuIHJlbGVhc2Ugbm90ZXMgZm9yIFBJTSBBZG1pbiB2JHtWRVJTSU9OfWApfSkiCm5ldzM9ImRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJy5tLXJlbGVhc2UtcGlsbCcpLmZvckVhY2goZWw9Pntjb25zdCBsYWJlbD1lbC5xdWVyeVNlbGVjdG9yKCcubS1yZWxlYXNlLXZlcnNpb24tbGFiZWwnKTtpZihsYWJlbClsYWJlbC50ZXh0Q29udGVudD1gdiR7VkVSU0lPTn1gO2Vsc2UgZWwudGV4dENvbnRlbnQ9YHYke1ZFUlNJT059YDtlbC5zZXRBdHRyaWJ1dGUoJ2FyaWEtbGFiZWwnLGBPcGVuIFVJIGZpeGVzIGZvciBQSU0gQWRtaW4gdiR7VkVSU0lPTn1gKX0pIgppZiBvbGQzIGluIHM6CiAgICBzPXMucmVwbGFjZShvbGQzLG5ldzMsMSkKcC53cml0ZV90ZXh0KHMpCg==' | base64 -d > /tmp/patch.py
+          python /tmp/patch.py
       - name: Commit version pill UI fixes
         run: |
           if git diff --quiet; then exit 0; fi
