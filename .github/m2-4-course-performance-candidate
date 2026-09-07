@@ -1,18 +1,21 @@
 # CF-239 M2.4.5 targeted performance recovery — 7 September 2026
 
-Source head before marker:
-7b4baadbc8ec1d700739015bad1e6b8b8d284981
+Runtime prerequisite now confirmed applied:
+- 20260907023220 cf_239_m245_bounded_runtime_performance_recovery
+- 20260907024414 cf_239_targeted_performance_recovery_followup
+- 20260907024936 cf_239_layer2_overview_index_headroom
 
-Trigger:
-- CF-238 bounded integration run 34070394953 failed desktop.
-- retained Playwright evidence showed evidence_page 3544 ms > 3000 ms, PostgreSQL 57014 statement-timeout 500s under concurrent admin reads, and stale Layer 2 sources test terminology.
+Prior targeted deployed run 34076738567:
+- PASS exact CRICOS/detail/paging/back interaction.
+- PASS responsive widths.
+- FAIL Evidence HTTP 403 due private-helper EXECUTE chain under SECURITY INVOKER.
+- FAIL layer2_ops_overview at 4654 ms / 5235 ms retry against unchanged 3000 ms ceiling.
 
-Correction:
-- default unfiltered Evidence browse now pages first, then enriches only returned rows;
-- filtered/non-default Evidence requests retain the existing governed implementation;
-- added supporting captured/created/status indexes for existing health/status projections;
-- CF-089 Administration helper now targets the governed Extraction Profiles label while retaining the layer2-sources route/backend contract;
-- direct Pilot measurements after migration: evidence_page ~193 ms, layer_status_summary ~537 ms, dashboard ~216 ms, courses_page ~65 ms, platform_health ~21 ms.
+Corrections now deployed:
+- Evidence fast helper executable by authenticated/service_role only; public/anon denied; helper auth/rank checks retained.
+- existing governed Layer 2 overview semantics retained with JIT suppression in the optimized dispatcher path.
+- exact-predicate/covering indexes added for Layer-2 Evidence, selected course discovery and provider-attempt overview reads.
+- governed Extraction Profiles terminology retained.
 
 Focused scope:
 - tests/uat/performance-deployed.spec.mjs only.
@@ -23,4 +26,4 @@ Hard gates unchanged:
 - filter payload <= 60,000 bytes;
 - zero unexpected HTTP 5xx responses.
 
-This is targeted recovery proof only, not bounded integration or final acceptance.
+This is targeted recovery proof only. Bounded desktop+mobile integration remains blocked unless this exact gate passes.
