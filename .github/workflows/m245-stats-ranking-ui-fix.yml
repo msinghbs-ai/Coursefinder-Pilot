@@ -1,0 +1,29 @@
+name: m245-stats-ranking-ui-fix
+on:
+  push:
+    branches:
+      - cf-m245-stats-ranking-ui-fix-20260907
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cf-m245-stats-ranking-ui-fix-20260907
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: python .github/scripts/m245_stats_ranking_ui_fix.py
+      - run: npm install --no-package-lock
+      - run: npx playwright test tests/uat/m245-stats-ranking-ui-fix.spec.mjs --reporter=line
+      - run: npm run build
+      - run: |
+          rm .github/workflows/m245-stats-ranking-ui-fix.yml
+          rm .github/scripts/m245_stats_ranking_ui_fix.py
+          git config user.name coursefinder-ui-bot
+          git config user.email coursefinder-ui-bot@users.noreply.github.com
+          git add -A
+          git commit -m 'M2.4.5 fix Statistics ranking edition controls and dataset drilldown'
+          git push origin HEAD:cf-m245-stats-ranking-ui-fix-20260907
