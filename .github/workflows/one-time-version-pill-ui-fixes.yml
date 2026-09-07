@@ -1,0 +1,63 @@
+name: One-time version pill UI fixes
+on:
+  push:
+    branches: [cf-m245-version-pill-ui-fixes-20260907]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[version-pill-fixes]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cf-m245-version-pill-ui-fixes-20260907
+      - name: Add expandable UI fixes to version pill
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('src/mature-main.jsx')
+          s=p.read_text()
+          old="const UI_VERSION='2.15.74'\nconst PAGE_SIZE=50"
+          new="""const UI_VERSION='2.15.74'
+const UI_FIXES=[
+ 'Independent QILT, PRISMS, QS and THE year/edition controls in Provider Compare.',
+ 'Frozen Provider/university identity headers across comparison statistics and rankings.',
+ 'Standard Statistics & Rankings breadcrumbs with dedicated QILT, PRISMS, QS and THE dataset subpages.',
+ 'QS/THE dataset pages aligned to the standard CourseFinder dataset table theme.'
+]
+const PAGE_SIZE=50"""
+          if old not in s: raise SystemExit('UI_VERSION target not found')
+          s=s.replace(old,new,1)
+          old2='<div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/>v{UI_VERSION}</span><span className="m-role-pill">{roleLabel(context?.role||\'Loading\')}</span></div>'
+          new2='''<div className="m-topbar-actions"><details className="m-release-menu"><summary className="m-release-pill" aria-label={`Open UI fixes for PIM Admin v${UI_VERSION}`}><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span><ChevronDown size={12}/></summary><div className="m-release-fixes-popover"><div className="m-release-fixes-head"><strong>UI fixes</strong><span>v{UI_VERSION}</span></div><ul>{UI_FIXES.map(x=><li key={x}>{x}</li>)}</ul></div></details><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></div>'''
+          if old2 not in s: raise SystemExit('release pill target not found')
+          s=s.replace(old2,new2,1)
+          p.write_text(s)
+
+          p=Path('src/mature.css')
+          s=p.read_text()
+          css='''
+/* Compact current-release UI fix notes exposed from the version pill. */
+.m-release-menu{position:relative}.m-release-menu>summary{list-style:none}.m-release-menu>summary::-webkit-details-marker{display:none}.m-release-menu .m-release-pill{cursor:pointer}.m-release-menu[open] .m-release-pill{border-color:#c7d2fe;background:#f8f9ff;color:#4338ca}.m-release-menu[open] .m-release-pill>svg{transform:rotate(180deg)}.m-release-menu .m-release-pill>svg{transition:transform .15s}.m-release-fixes-popover{position:absolute;right:0;top:calc(100% + 8px);z-index:120;width:min(360px,calc(100vw - 32px));background:#fff;border:1px solid var(--m-border);border-radius:11px;box-shadow:0 18px 45px rgba(15,23,42,.16);padding:11px 12px;color:var(--m-text)}.m-release-fixes-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid #edf1f6}.m-release-fixes-head strong{font-size:10.5px}.m-release-fixes-head span{font-size:8.5px;color:var(--m-muted);font-weight:750}.m-release-fixes-popover ul{margin:8px 0 0;padding-left:16px}.m-release-fixes-popover li{font-size:9.5px;line-height:1.45;color:#526078;margin:5px 0}.m-release-version-label{white-space:nowrap}@media(max-width:700px){.m-release-fixes-popover{position:fixed;right:12px;top:64px;width:min(360px,calc(100vw - 24px));box-sizing:border-box}.m-release-fixes-popover li{font-size:10px}}
+'''
+          if 'm-release-fixes-popover' not in s:s += css
+          p.write_text(s)
+
+          p=Path('src/release-currentness-entry.js')
+          s=p.read_text()
+          old3="document.querySelectorAll('.m-release-pill').forEach(el=>{el.textContent=`v${VERSION}`;el.setAttribute('aria-label',`Open release notes for PIM Admin v${VERSION}`)})"
+          new3="document.querySelectorAll('.m-release-pill').forEach(el=>{const label=el.querySelector('.m-release-version-label');if(label)label.textContent=`v${VERSION}`;else el.textContent=`v${VERSION}`;el.setAttribute('aria-label',`Open UI fixes for PIM Admin v${VERSION}`)})"
+          if old3 not in s: raise SystemExit('release currentness target not found')
+          s=s.replace(old3,new3,1)
+          p.write_text(s)
+          PY
+      - name: Commit version pill UI fixes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/mature-main.jsx src/mature.css src/release-currentness-entry.js
+          git commit -m "CF M2.4.5 show UI fixes from version pill [version-pill-fixes]"
+          git push
