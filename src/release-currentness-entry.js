@@ -1,14 +1,14 @@
-const VERSION='2.15.71'
+const VERSION='2.15.72'
 const RELEASE={
   version:VERSION,
-  date:'6 Sep 2026',
-  title:'Ranking dataset visibility and deployment currentness recovery',
+  date:'7 Sep 2026',
+  title:'Compare recovery and governed currentness promotion',
   changes:[
-    'Synchronised the visible PIM Admin release badge, login/version labels, browser title and release metadata to v2.15.71 so the deployed UI no longer reports the superseded v2.15.66 release after a successful Cloudflare deployment.',
-    'Statistics & Rankings now exposes imported QS and THE dataset editions and the accepted-observation viewer, including search, pagination, Provider mapping, rank, score, country and Evidence references.',
-    'Ranking workflow history identifies governed Layer 1 Ranking ETL activity while accepted publisher observations remain separate from canonical Provider identity and mapping exceptions stay traceable.',
-    'Cloudflare deployment remains the native repository-connected build path; GitHub Actions retains the exact dist artifact and browser-smoke evidence without introducing a second automatic Worker deployment path.',
-    'No regulatory source authority, Provider/Course identity, Publication/Search admission or Website/Zoho contract is changed by this release-currentness correction.'
+    'Promoted the accepted Compare recovery after exact deployed CF-061 targeted UAT passed 3/3 on run 34068759607.',
+    'Provider Compare now recovers from an unavailable default QILT category/year combination by selecting the next retained governed year only when the initial global-latest combination has no aligned rows.',
+    'Course-detail benchmark validation now follows the same visible governed QILT observation set as the UI and continues to reject fabricated National benchmark zero values.',
+    'Layer Status summary remains role-safe for assigned lower-ranked operators without exposing curator-only Layer 3 detail.',
+    'No Layer 1 identity, source authority, Publication/Search admission, Website/Zoho contract or canonical ranking semantics are changed by this release.'
   ]
 }
 let pending=false
