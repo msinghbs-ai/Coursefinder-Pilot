@@ -1,0 +1,63 @@
+name: M2.4.5 Compare UI Bugfix
+on:
+  push:
+    branches: [cf-m245-compare-ui-bugfix-20260907]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'coursefinder-ui-bot'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cf-m245-compare-ui-bugfix-20260907
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Patch Compare UI
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('src/ComparisonWorkspace.jsx')
+          s=p.read_text()
+          s=re.sub(r",\[viewMode,setViewMode\]=useState\(idsFrom\(routeParams\)\.length===1\?'trend':'snapshot'\)","",s)
+          s=s.replace(";if(nextIds.length===1)setViewMode('trend');else if(nextIds.length>1)setViewMode('snapshot')","")
+          s=s.replace("if(viewMode==='snapshot'&&year&&String(x.collection_year_to||x.collection_year_from||'')!==year)continue;","if(year&&String(x.collection_year_to||x.collection_year_from||'')!==year)continue;")
+          s=s.replace(",[allOutcomes,category,studyLevel,year,viewMode]",",[allOutcomes,category,studyLevel,year]")
+          start=s.index('  <section className="cf-compare-config">')
+          end=s.index('  {!ids.length?',start)
+          new_config='''  <section className="cf-compare-config"><div><strong>2. Choose statistics</strong><span>Select the governed datasets to compare. Ranking editions are controlled independently inside each ranking section.</span></div><div className="cf-dataset-toggles"><button className={datasets.qilt?'active':''} onClick={()=>setDatasets(x=>({...x,qilt:!x.qilt}))}>QILT</button><button className={datasets.prisms?'active':''} onClick={()=>setDatasets(x=>({...x,prisms:!x.prisms}))}>PRISMS</button><button disabled={!hasQS} className={datasets.qs&&hasQS?'active':''} onClick={()=>setDatasets(x=>({...x,qs:!x.qs}))}>{hasQS?'QS':'QS · unavailable'}</button><button disabled={!hasTHE} className={datasets.the&&hasTHE?'active':''} onClick={()=>setDatasets(x=>({...x,the:!x.the}))}>{hasTHE?'THE':'THE · unavailable'}</button></div><label>QILT year<select aria-label="QILT comparison year" value={year} onChange={e=>setYear(e.target.value)}>{years.map((y,i)=><option key={y} value={y}>{y}{i===0?' · current':''}</option>)}</select></label></section>\n'''
+          s=s[:start]+new_config+s[end:]
+          old_rank=re.search(r'   \{\(\(datasets\.qs&&hasQS\)\|\|\(datasets\.the&&hasTHE\)\)&&<section className="cf-flow-compare">.*?</section>\}',s)
+          if not old_rank:
+              raise SystemExit('ranking section not found')
+          new_rank='''   {datasets.qs&&hasQS&&<section className="cf-flow-compare cf-ranking-system"><div className="cf-flow-title cf-ranking-system-head"><div><h3>QS World University Rankings</h3><p>QS editions are selected independently from THE.</p></div><label>Edition<select aria-label="QS ranking edition" value={rankingSelection.qs||qsRankingYears[0]||''} onChange={e=>setRankingSelection(x=>({...x,qs:e.target.value}))}><option value="multi">Multi-year</option>{qsRankingYears.map((y,i)=><option key={y} value={y}>{y}{i===0?' · latest':''}</option>)}</select></label></div><div className="cf-flow-cards" style={{'--cf-flow-columns':flowColumns}}>{items.map(e=>{const logoProviderId=type==='provider'?e.id:e.provider_id,logoName=type==='provider'?e.name:e.provider_name;return <article key={e.id}><div className="cf-compare-entity-head cf-flow-sticky cf-university-sticky" style={{position:'sticky',top:0,zIndex:8,background:'#fff'}}><ProviderLogo providerId={logoProviderId} name={logoName} size={34}/><span><strong>{e.name}</strong><small>Provider identity · QS</small></span></div>{rankingSelection.qs==='multi'?<RankingTrend label="QS" series={e.ranking_context?.qs_wur} currentEdition=""/>:<RankingLine label="QS" series={e.ranking_context?.qs_wur} edition={rankingSelection.qs}/>}</article>})}</div></section>}
+   {datasets.the&&hasTHE&&<section className="cf-flow-compare cf-ranking-system"><div className="cf-flow-title cf-ranking-system-head"><div><h3>THE World University Rankings</h3><p>THE editions are selected independently from QS.</p></div><label>Edition<select aria-label="THE ranking edition" value={rankingSelection.the||theRankingYears[0]||''} onChange={e=>setRankingSelection(x=>({...x,the:e.target.value}))}><option value="multi">Multi-year</option>{theRankingYears.map((y,i)=><option key={y} value={y}>{y}{i===0?' · latest':''}</option>)}</select></label></div><div className="cf-flow-cards" style={{'--cf-flow-columns':flowColumns}}>{items.map(e=>{const logoProviderId=type==='provider'?e.id:e.provider_id,logoName=type==='provider'?e.name:e.provider_name;return <article key={e.id}><div className="cf-compare-entity-head cf-flow-sticky cf-university-sticky" style={{position:'sticky',top:0,zIndex:8,background:'#fff'}}><ProviderLogo providerId={logoProviderId} name={logoName} size={34}/><span><strong>{e.name}</strong><small>Provider identity · THE</small></span></div>{rankingSelection.the==='multi'?<RankingTrend label="THE" series={e.ranking_context?.the_wur} currentEdition=""/>:<RankingLine label="THE" series={e.ranking_context?.the_wur} edition={rankingSelection.the}/>}</article>})}</div></section>}'''
+          s=s[:old_rank.start()]+new_rank+s[old_rank.end():]
+          s=s.replace('className="cf-compare-label cf-compare-sticky cf-compare-top-sticky cf-compare-corner-sticky"','className="cf-compare-label cf-compare-sticky cf-compare-top-sticky cf-compare-corner-sticky cf-university-sticky" style={{position:\'sticky\',top:0,left:0,zIndex:10}}')
+          s=s.replace('className="cf-compare-entity cf-compare-top-sticky" key={e.id}','className="cf-compare-entity cf-compare-top-sticky cf-university-sticky" style={{position:\'sticky\',top:0,zIndex:8,background:\'#fff\'}} key={e.id}')
+          s=s.replace('className="cf-compare-entity-head cf-flow-sticky"><ProviderLogo','className="cf-compare-entity-head cf-flow-sticky cf-university-sticky" style={{position:\'sticky\',top:0,zIndex:8,background:\'#fff\'}}><ProviderLogo')
+          p.write_text(s)
+          PY
+          cat > tests/uat/m245-compare-ui-bugfix-contract.spec.mjs <<'EOF'
+          import{test,expect}from'@playwright/test'
+          import fs from'node:fs'
+          const source=()=>fs.readFileSync('src/ComparisonWorkspace.jsx','utf8')
+          test('ranking systems expose independent edition selectors including multi-year',()=>{const s=source();expect(s).toContain('aria-label="QS ranking edition"');expect(s).toContain('aria-label="THE ranking edition"');expect((s.match(/<option value="multi">Multi-year<\/option>/g)||[]).length).toBe(2);expect(s).toContain("rankingSelection.qs==='multi'");expect(s).toContain("rankingSelection.the==='multi'")})
+          test('shared snapshot and multi-year trend controls are removed',()=>{const s=source();expect(s).not.toContain('Current snapshot');expect(s).not.toContain('Multi-year trend');expect(s).not.toContain('setViewMode');expect(s).toContain('aria-label="QILT comparison year"')})
+          test('QILT and PRISMS provider identity headers are sticky',()=>{const s=source();expect(s).toContain('cf-university-sticky');expect(s).toContain("style={{position:'sticky',top:0,zIndex:8,background:'#fff'}}")})
+          EOF
+          npm ci
+          npx playwright test tests/uat/m245-compare-ui-bugfix-contract.spec.mjs --reporter=line
+          npm run build
+      - name: Remove one-time workflow and commit
+        run: |
+          rm .github/workflows/m245-compare-ui-bugfix.yml
+          git config user.name coursefinder-ui-bot
+          git config user.email coursefinder-ui-bot@users.noreply.github.com
+          git add src/ComparisonWorkspace.jsx tests/uat/m245-compare-ui-bugfix-contract.spec.mjs .github/workflows/m245-compare-ui-bugfix.yml
+          git commit -m "M2.4.5 fix Compare ranking years and sticky provider headers"
+          git push origin HEAD:cf-m245-compare-ui-bugfix-20260907
