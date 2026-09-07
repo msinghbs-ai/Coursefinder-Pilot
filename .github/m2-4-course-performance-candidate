@@ -1,34 +1,26 @@
-# M2.4.4 focused Campus + Course performance validation — 1 September 2026
+# CF-239 M2.4.5 targeted performance recovery — 7 September 2026
 
 Source head before marker:
-104980b1d5b678eed376644b9eaed65015e356fc
+7b4baadbc8ec1d700739015bad1e6b8b8d284981
 
-Previous integration:
-- candidate 2c548673383920b1f134c809269d218042237de0
-- build 33452687372 PASS
-- integration UAT 33452687369 FAIL
-- 66 passed, 1 flaky
-- repeatable real failure: campuses_page 3863 ms > 3000 ms
-- one transient courses_page 3752 ms overrun passed on retry
+Trigger:
+- CF-238 bounded integration run 34070394953 failed desktop.
+- retained Playwright evidence showed evidence_page 3544 ms > 3000 ms, PostgreSQL 57014 statement-timeout 500s under concurrent admin reads, and stale Layer 2 sources test terminology.
 
 Correction:
-- default unfiltered Campus browse now pages first, then enriches only returned rows
-- added campuses_lower_name_id_idx
-- non-default Campus filters/sorts retain existing accepted fallback
-- direct live campuses_page timing after change ~4 ms
-- direct Course default/exact path verification ~71 ms
-- no latency/payload threshold changed
+- default unfiltered Evidence browse now pages first, then enriches only returned rows;
+- filtered/non-default Evidence requests retain the existing governed implementation;
+- added supporting captured/created/status indexes for existing health/status projections;
+- CF-089 Administration helper now targets the governed Extraction Profiles label while retaining the layer2-sources route/backend contract;
+- direct Pilot measurements after migration: evidence_page ~193 ms, layer_status_summary ~537 ms, dashboard ~216 ms, courses_page ~65 ms, platform_health ~21 ms.
 
 Focused scope:
-- tests/uat/performance-deployed.spec.mjs only
-- core workspace budgets including campuses_page
-- exact Course lookup/detail/paging/back
-- Layer 2/Admin management budgets
-- responsive widths
+- tests/uat/performance-deployed.spec.mjs only.
 
 Hard gates unchanged:
-- RPC/detail latency <= 3,000 ms
-- page/management payload <= 250,000 bytes
-- filter payload <= 60,000 bytes
+- RPC/detail latency <= 3,000 ms;
+- page/management payload <= 250,000 bytes;
+- filter payload <= 60,000 bytes;
+- zero unexpected HTTP 5xx responses.
 
-This is not an integration or final-acceptance nomination.
+This is targeted recovery proof only, not bounded integration or final acceptance.
