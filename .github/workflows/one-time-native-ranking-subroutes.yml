@@ -1,0 +1,46 @@
+name: One-time native ranking subroutes
+on:
+  push:
+    branches: [cf-m245-native-ranking-subroutes-20260907]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[native-hotfix]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cf-m245-native-ranking-subroutes-20260907
+      - name: Patch native routing and breadcrumbs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/mature-main.jsx')
+          s=p.read_text()
+          old="""function pageBreadcrumbs(page,routeParams){\n const crumbs=[{label:'Home',page:'Dashboard'}]\n if(page==='Dashboard')return[]\n if(page==='Administration'){\n  crumbs.push({label:'Administration',page:'Administration'})\n  const section=routeParams?.get?.('section')||'overview'\n  if(section!=='overview')crumbs.push({label:ADMIN_SECTION_LABELS[section]||section})\n  return crumbs\n }\n crumbs.push({label:page})\n return crumbs\n}"""
+          new="""function pageBreadcrumbs(page,routeParams){\n const crumbs=[{label:'Home',page:'Dashboard'}]\n if(page==='Dashboard')return[]\n if(page==='Administration'){\n  crumbs.push({label:'Administration',page:'Administration'})\n  const section=routeParams?.get?.('section')||'overview'\n  if(section!=='overview')crumbs.push({label:ADMIN_SECTION_LABELS[section]||section})\n  return crumbs\n }\n if(page==='Outcomes (QILT)')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'QILT'}]\n if(page==='Student Flow (PRISMS)')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'PRISMS'}]\n if(page==='Compare')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Compare'}]\n if(page==='Statistics & Rankings'){\n  const dataset=routeParams?.get?.('dataset')||''\n  if(dataset==='qs_wur')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'QS'}]\n  if(dataset==='the_wur')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'THE'}]\n }\n crumbs.push({label:page})\n return crumbs\n}"""
+          if old not in s: raise SystemExit('pageBreadcrumbs target not found')
+          s=s.replace(old,new,1)
+          marker=""" const openRanking=(system,key)=>{const selected=rankingSelection[key]||rankingYears[key][0]||'';if(selected)navigate('Statistics & Rankings',{dataset:system,year:selected})}\n return <div className=\"m-page-stack\">"""
+          replacement=""" const openRanking=(system,key)=>{const selected=rankingSelection[key]||rankingYears[key][0]||'';if(selected)navigate('Statistics & Rankings',{dataset:system,year:selected})}\n if(['qs_wur','the_wur'].includes(activeDataset))return <div className=\"m-page-stack\"><RankingDatasetPanel system={activeDataset} year={activeYear} navigate={navigate} onError={onError}/></div>\n return <div className=\"m-page-stack\">"""
+          if marker not in s: raise SystemExit('ranking route marker not found')
+          s=s.replace(marker,replacement,1)
+          inline="  {['qs_wur','the_wur'].includes(activeDataset)&&<RankingDatasetPanel system={activeDataset} year={activeYear} navigate={navigate} onError={onError}/>} \n"
+          if inline not in s: raise SystemExit('inline ranking panel target not found')
+          s=s.replace(inline,'',1)
+          p.write_text(s)
+
+          i=Path('index.html')
+          x=i.read_text()
+          x=x.replace('<script type=\"module\" src=\"/src/ranking-page-presentation.js\"></script>','')
+          i.write_text(x)
+          PY
+      - name: Commit native fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/mature-main.jsx index.html
+          git commit -m "CF M2.4.5 native ranking subroutes and breadcrumbs [native-hotfix]"
+          git push
