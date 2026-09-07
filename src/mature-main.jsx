@@ -118,6 +118,14 @@ function pageBreadcrumbs(page,routeParams){
   if(section!=='overview')crumbs.push({label:ADMIN_SECTION_LABELS[section]||section})
   return crumbs
  }
+ if(page==='Outcomes (QILT)')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'QILT'}]
+ if(page==='Student Flow (PRISMS)')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'PRISMS'}]
+ if(page==='Compare')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Compare'}]
+ if(page==='Statistics & Rankings'){
+  const dataset=routeParams?.get?.('dataset')||''
+  if(dataset==='qs_wur')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'QS'}]
+  if(dataset==='the_wur')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'THE'}]
+ }
  crumbs.push({label:page})
  return crumbs
 }
@@ -228,6 +236,7 @@ function StatisticsRankings({onError,navigate,rank,routeParams}){
  const activeDataset=routeParams?.get?.('dataset')||'',activeYear=routeParams?.get?.('year')||''
  useEffect(()=>{if(activeDataset==='qs_wur'&&activeYear&&rankingYears.qs.includes(String(activeYear)))setRankingSelection(x=>({...x,qs:String(activeYear)}));if(activeDataset==='the_wur'&&activeYear&&rankingYears.the.includes(String(activeYear)))setRankingSelection(x=>({...x,the:String(activeYear)}))},[activeDataset,activeYear,rankingYears.qs.join('|'),rankingYears.the.join('|')])
  const openRanking=(system,key)=>{const selected=rankingSelection[key]||rankingYears[key][0]||'';if(selected)navigate('Statistics & Rankings',{dataset:system,year:selected})}
+ if(['qs_wur','the_wur'].includes(activeDataset))return <div className="m-page-stack"><RankingDatasetPanel system={activeDataset} year={activeYear} navigate={navigate} onError={onError}/></div>
  return <div className="m-page-stack">
   <section className="m-panel">
    <PanelTitle icon={BarChart3} title="Statistics & Rankings" subtitle="One verification workspace for contextual statistics, ranking editions, coverage and provenance."/>
@@ -238,7 +247,6 @@ function StatisticsRankings({onError,navigate,rank,routeParams}){
     <article className="m-stats-card"><span>Times Higher Education</span><div className="m-ranking-card-picker"><label>Edition<select aria-label="THE ranking edition" value={rankingSelection.the||rankingYears.the[0]||''} onChange={e=>setRankingSelection(x=>({...x,the:e.target.value}))}>{rankingYears.the.map((y,i)=><option key={y} value={y}>{y}{i===0?' · latest':''}</option>)}</select></label></div><strong>{rankingSelection.the||the?.latest_edition||'—'}</strong><small>{the?.accepted_editions?`${Number(the.observations||0).toLocaleString()} observations · ${Number(the.mapped_observations||0).toLocaleString()} mapped`:'No accepted edition applied yet.'}</small><div><button disabled={!rankingYears.the.length} onClick={()=>openRanking('the_wur','the')}>Open Dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
    </div>
   </section>
-  {['qs_wur','the_wur'].includes(activeDataset)&&<RankingDatasetPanel system={activeDataset} year={activeYear} navigate={navigate} onError={onError}/>} 
   <section className="m-panel">
    <div className="m-stats-section-head"><div><h3>Coverage & verification</h3><p>Use dataset drill-downs to inspect exact observations. Ranking coverage, edition filters, Provider mapping and Evidence remain publisher-specific.</p></div><button className="m-secondary" onClick={()=>navigate('Compare',{type:'provider'})}><ArrowLeftRight size={15}/>Open Compare</button></div>
    <div className="m-stats-notes">
