@@ -1,23 +1,20 @@
 # M2.4.5 recovery bounded integration candidate — 7 September 2026
 
-Implementation source before marker:
-9edb848ae0bb087dda26aa72708483f9bff8896e
-
 Recovery ownership:
 CF-CHG-20260907-234
 CF-CHG-20260907-235
 CF-CHG-20260907-236
-CF-238 bounded integration nomination
+CF-CHG-20260907-239
 
-Pre-integration proof:
-- v2.15.72 Compare currentness build/deployed UAT PASS at 8bc6960d05e5521ff6ae44ad0ee49e7c07ef80ff;
-- CF-235 Layer 4 public RPC security-boundary correction applied and targeted deployed smoke PASS;
-- CF-236 remaining pre-production RPC hardening applied; Security Advisor 0 WARN; build 34070155296 PASS; deployed UAT 34070155325 PASS;
-- H3 Scholarship retained CLOSED because accepted component/entry contract is unchanged;
-- H4 Jobs retained CLOSED because accepted entry contract is unchanged;
-- H5 Manual PIM retained CLOSED because accepted workspace blob is unchanged;
-- H6 Publication Controls retained CLOSED because accepted Layer 4 host blob is unchanged and auto publication remains disabled;
-- H11 provider-logo surfaces re-proved after shared-host changes: build 34070290328 PASS; deployed targeted UAT 34070290310 PASS.
+CF-239 targeted recovery proof:
+- Pilot runtime migrations confirmed applied through `20260907024936 cf_239_layer2_overview_index_headroom`.
+- targeted deployed performance run `34077761500`, job `101607120247`, at Pilot commit `f1c3e7c4099fa9206b22dc680f471cff41944788` completed SUCCESS.
+- core workspace budgets PASS: evidence_page 622 ms; scholarships_page 2480 ms; courses_page 709 ms; dashboard 401/659 ms; no unexpected 5xx.
+- Layer 2 management budgets PASS: layer2_ops_overview 2085 ms; layer2_profiles 1488 ms.
+- exact CRICOS/detail/paging/back test had one transient first-attempt course_detail measurement of 3022 ms, then passed retry at 2011 ms; this is retained as evidence rather than hidden. The accepted job status is SUCCESS, and the repaired CF-239 paths show material headroom.
+- responsive width gate PASS.
+- Evidence helper ACL is authenticated/service_role only; public/anon denied; helper auth/rank checks retained.
+- Security Advisor after final index DDL reported informational RLS-no-policy notices only; the index-only change introduced no new exposed function/table surface.
 
 Scope:
 - run the bounded M2.4 integration set on chromium-desktop and chromium-mobile;
@@ -25,7 +22,7 @@ Scope:
 - revalidate provider logos across Provider, Course and Compare surfaces;
 - revalidate current canonical navigation and responsive/mobile behaviour;
 - retain A17–A28 platform, Evidence, pipeline, administration and performance invariants already encoded by the integration suite;
-- retain role/private-schema/security boundaries and the new public SECURITY INVOKER wrapper boundaries;
+- retain role/private-schema/security boundaries and public SECURITY INVOKER wrapper boundaries;
 - preserve H3/H4/H5/H6 accepted functional semantics;
 - preserve Layer 4 evidence/rank/exact-confirmation fail-closed semantics;
 - preserve publication isolation and auto_publication_enabled=false.
@@ -34,6 +31,7 @@ Hard gates unchanged:
 - RPC/detail latency <= 3,000 ms;
 - page/management payload <= 250,000 bytes;
 - filter-option payload <= 60,000 bytes;
+- zero unexpected HTTP 5xx;
 - no Evidence lineage weakening;
 - no role/security weakening;
 - no Layer 1 authority bypass;
@@ -41,7 +39,7 @@ Hard gates unchanged:
 - no publication/search/consumer cutover side effect.
 
 Decision:
-- this is the single bounded integration escalation after targeted recovery gates passed;
+- this is the single bounded integration escalation after the exact CF-239 targeted job completed SUCCESS;
 - desktop and mobile must both PASS;
 - any failure is immutable evidence and only demonstrated defects may be corrected;
 - do not weaken existing contracts to obtain green;
