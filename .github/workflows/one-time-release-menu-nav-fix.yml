@@ -1,0 +1,83 @@
+name: One-time release menu and breadcrumb fix
+on:
+  push:
+    branches: [cf-m245-release-menu-nav-fix-20260908]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[release-menu-nav-fix]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cf-m245-release-menu-nav-fix-20260908
+      - name: Patch native navigation and single release menu
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p=Path('src/mature-main.jsx')
+          s=p.read_text()
+          if 'const RELEASE_NOTES=[' not in s:
+              marker="]\nconst PAGE_SIZE=50"
+              insert="]\nconst RELEASE_NOTES=[\n 'Provider Compare uses independent QILT, PRISMS, QS and THE period controls.',\n 'Statistics & Rankings provides dedicated dataset subpages with standard breadcrumbs.',\n 'QS/THE dataset tables use the same governed list/table presentation as QILT/PRISMS.'\n]\nconst PAGE_SIZE=50"
+              idx=s.find(marker,s.find('const UI_FIXES=['))
+              if idx<0: raise SystemExit('UI fixes marker not found')
+              s=s[:idx]+s[idx:].replace(marker,insert,1)
+
+          old="function go(label,params={}){const target=slug(label),q=new URLSearchParams(Object.entries(params||{}).filter(([,v])=>v!==''&&v!=null)).toString(),next=`#${target}${q?`?${q}`:''}`;if(location.hash!==next)location.hash=next;else{setPage(label);setRouteParams(new URLSearchParams(q))}setNavOpen(false);requestAnimationFrame(()=>{if(mainRef.current)mainRef.current.scrollTop=0})}"
+          new="function go(label,params={}){const target=slug(label),q=new URLSearchParams(Object.entries(params||{}).filter(([,v])=>v!==''&&v!=null)).toString(),next=`#${target}${q?`?${q}`:''}`;setPage(label);setRouteParams(new URLSearchParams(q));if(location.hash!==next)location.hash=next;setNavOpen(false);requestAnimationFrame(()=>{if(mainRef.current)mainRef.current.scrollTop=0})}"
+          if old not in s: raise SystemExit('go() target not found')
+          s=s.replace(old,new,1)
+
+          old2='<div className="m-topbar-actions"><details className="m-release-menu"><summary className="m-release-pill" aria-label={`Open UI fixes for PIM Admin v${UI_VERSION}`}><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span><ChevronDown size={12}/></summary><div className="m-release-fixes-popover"><div className="m-release-fixes-head"><strong>UI fixes</strong><span>v{UI_VERSION}</span></div><ul>{UI_FIXES.map(x=><li key={x}>{x}</li>)}</ul></div></details><span className="m-role-pill">{roleLabel(context?.role||\'Loading\')}</span></div>'
+          new2='<div className="m-topbar-actions"><details className="m-release-menu"><summary className="m-release-pill" aria-label={`Open release notes for PIM Admin v${UI_VERSION}`}><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span><ChevronDown size={12}/></summary><div className="m-release-fixes-popover"><div className="m-release-fixes-head"><strong>Release notes</strong><span>v{UI_VERSION}</span></div><div className="m-release-section"><b>Release notes</b><ul>{RELEASE_NOTES.map(x=><li key={x}>{x}</li>)}</ul></div><div className="m-release-section m-release-bugfixes"><b>Bug / UI fixes</b><ul>{UI_FIXES.map(x=><li key={x}>{x}</li>)}</ul></div></div></details><span className="m-role-pill">{roleLabel(context?.role||\'Loading\')}</span></div>'
+          if old2 not in s: raise SystemExit('release menu target not found')
+          s=s.replace(old2,new2,1)
+          p.write_text(s)
+
+          p=Path('src/pim-version-entry.js')
+          s=p.read_text()
+          count=s.count('.m-release-pill')
+          if count<1: raise SystemExit('legacy release-pill selector not found')
+          s=s.replace('.m-release-pill','.m-release-pill-legacy')
+          p.write_text(s)
+
+          p=Path('src/mature.css')
+          s=p.read_text()
+          s=s.replace('.m-release-menu{position:relative}', '.m-release-menu{position:relative;z-index:300}', 1)
+          s=s.replace('z-index:120;width:min(360px', 'z-index:1000;width:min(390px', 1)
+          if '.m-release-section{' not in s:
+              s += '\n.m-release-section{padding-top:9px}.m-release-section+.m-release-section{margin-top:7px;border-top:1px solid #edf1f6}.m-release-section>b{display:block;font-size:9.5px;color:#344054;text-transform:uppercase;letter-spacing:.04em}.m-release-section ul{margin-top:6px}.m-release-bugfixes>b{color:#4338ca}\n'
+          p.write_text(s)
+
+          p=Path('src/release-currentness-entry.js')
+          s=p.read_text().replace('Open UI fixes for PIM Admin v${VERSION}','Open release notes for PIM Admin v${VERSION}')
+          p.write_text(s)
+          PY
+      - name: Add focused source contract
+        run: |
+          cat > tests/uat/m245-release-menu-nav-contract.spec.mjs <<'EOF'
+          import {test,expect} from '@playwright/test'
+          import fs from 'node:fs'
+          test('breadcrumb navigation and release pill have one native authority',()=>{
+            const ui=fs.readFileSync('src/mature-main.jsx','utf8')
+            const legacy=fs.readFileSync('src/pim-version-entry.js','utf8')
+            expect(ui).toContain('setPage(label);setRouteParams(new URLSearchParams(q));if(location.hash!==next)location.hash=next')
+            expect(ui).toContain('Bug / UI fixes')
+            expect(ui).toContain('Release notes')
+            expect(ui).toContain('RELEASE_NOTES.map')
+            expect(ui).toContain('UI_FIXES.map')
+            expect(legacy).not.toContain("querySelector('.m-release-pill')")
+            expect(legacy).not.toContain("querySelectorAll('.m-release-pill')")
+          })
+          EOF
+      - name: Commit correction
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/mature-main.jsx src/mature.css src/pim-version-entry.js src/release-currentness-entry.js tests/uat/m245-release-menu-nav-contract.spec.mjs
+          git commit -m "CF M2.4.5 fix breadcrumb heading and unify release pill [release-menu-nav-fix]"
+          git push
