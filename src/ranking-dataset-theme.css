@@ -1,0 +1,167 @@
+/* CF M2.4.5 — QS/THE dataset visual alignment with the standard QILT/PRISMS workspace. */
+[data-react-ranking-viewer="1"]{
+  background:var(--m-surface);
+  border-color:var(--m-border);
+  border-radius:13px;
+  box-shadow:var(--m-shadow);
+  color:var(--m-text);
+}
+[data-react-ranking-viewer="1"] .m-workspace-head{
+  padding:16px 16px 12px;
+  align-items:flex-start;
+}
+[data-react-ranking-viewer="1"] .m-workspace-head h2{
+  margin:0 0 3px;
+  font-size:15px;
+  color:var(--m-text);
+  letter-spacing:0;
+}
+[data-react-ranking-viewer="1"] .m-workspace-head p{
+  margin:0;
+  color:var(--m-muted);
+  font-size:10.5px;
+  line-height:1.45;
+}
+[data-react-ranking-viewer="1"] .m-section-kicker{
+  color:#7c8ba0;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-bottom:3px;
+}
+[data-react-ranking-viewer="1"] .m-ranking-dataset-edition{
+  min-width:145px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  color:#8a97aa;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+[data-react-ranking-viewer="1"] .m-ranking-dataset-edition select{
+  min-height:43px;
+  border:1px solid var(--m-border);
+  border-radius:8px;
+  background:#f9fafc;
+  color:#334155;
+  padding:6px 8px;
+  font:inherit;
+  font-size:9.5px;
+  font-weight:700;
+  text-transform:none;
+  letter-spacing:0;
+  outline:0;
+}
+[data-react-ranking-viewer="1"] .m-ranking-dataset-edition select:focus{
+  border-color:#9ba4f8;
+  box-shadow:0 0 0 3px #eef0ff;
+  background:#fff;
+}
+[data-react-ranking-viewer="1"] .dense-table-wrap{
+  overflow:auto;
+  max-width:100%;
+  border-top:1px solid #e8edf4;
+  border-bottom:1px solid #e8edf4;
+  scrollbar-width:thin;
+}
+[data-react-ranking-viewer="1"] .dense-table{
+  border-collapse:separate;
+  border-spacing:0;
+  width:100%;
+  min-width:900px;
+  background:#fff;
+}
+[data-react-ranking-viewer="1"] .dense-table th,
+[data-react-ranking-viewer="1"] .dense-table td{
+  text-align:left;
+  vertical-align:middle;
+  border:0;
+  border-bottom:1px solid #edf1f6;
+  padding:9px;
+  background:#fff;
+}
+[data-react-ranking-viewer="1"] .dense-table th{
+  position:sticky;
+  top:0;
+  z-index:6;
+  background:#f8fafc;
+  color:#728096;
+  font-size:8.5px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+[data-react-ranking-viewer="1"] .dense-table th button{
+  border:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  font-weight:inherit;
+  letter-spacing:inherit;
+  text-transform:inherit;
+  padding:0;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  cursor:pointer;
+}
+[data-react-ranking-viewer="1"] .dense-table td{
+  color:#475569;
+  font-size:10px;
+}
+[data-react-ranking-viewer="1"] .dense-table tbody tr:hover td{
+  background:#fafbfe;
+}
+[data-react-ranking-viewer="1"] .dense-table th:first-child,
+[data-react-ranking-viewer="1"] .dense-table td:first-child{
+  position:sticky;
+  left:0;
+  z-index:4;
+  box-shadow:1px 0 0 #edf1f6;
+}
+[data-react-ranking-viewer="1"] .dense-table th:first-child{
+  z-index:9;
+  background:#f8fafc;
+}
+[data-react-ranking-viewer="1"] .dense-table tbody tr:hover td:first-child{
+  background:#fafbfe;
+}
+[data-react-ranking-viewer="1"] .primary-cell{
+  color:#1e293b;
+  font-size:10.5px;
+  font-weight:650;
+}
+[data-react-ranking-viewer="1"] .primary-cell small{
+  font-size:8px!important;
+  font-weight:500;
+  color:#94a3b8!important;
+  margin-top:2px;
+}
+[data-react-ranking-viewer="1"] .m-secondary.compact{
+  border:1px solid var(--m-border);
+  border-radius:7px;
+  background:#fff;
+  color:#475569;
+  padding:6px 9px;
+  font-size:9px;
+  font-weight:700;
+}
+[data-react-ranking-viewer="1"] .m-secondary.compact:hover{
+  background:#f8fafc;
+}
+@media(max-width:700px){
+  [data-react-ranking-viewer="1"] .m-workspace-head{
+    flex-direction:column;
+  }
+  [data-react-ranking-viewer="1"] .m-ranking-dataset-edition{
+    width:100%;
+    min-width:0;
+  }
+  [data-react-ranking-viewer="1"] .dense-table{
+    min-width:720px;
+  }
+}
