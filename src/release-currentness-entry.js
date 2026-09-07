@@ -1,14 +1,14 @@
-const VERSION='2.15.71'
+const VERSION='2.15.73'
 const RELEASE={
   version:VERSION,
-  date:'6 Sep 2026',
-  title:'Ranking dataset visibility and deployment currentness recovery',
+  date:'7 Sep 2026',
+  title:'Fluid catalogues, ranking datasets and Provider comparison',
   changes:[
-    'Synchronised the visible PIM Admin release badge, login/version labels, browser title and release metadata to v2.15.71 so the deployed UI no longer reports the superseded v2.15.66 release after a successful Cloudflare deployment.',
-    'Statistics & Rankings now exposes imported QS and THE dataset editions and the accepted-observation viewer, including search, pagination, Provider mapping, rank, score, country and Evidence references.',
-    'Ranking workflow history identifies governed Layer 1 Ranking ETL activity while accepted publisher observations remain separate from canonical Provider identity and mapping exceptions stay traceable.',
-    'Cloudflare deployment remains the native repository-connected build path; GitHub Actions retains the exact dist artifact and browser-smoke evidence without introducing a second automatic Worker deployment path.',
-    'No regulatory source authority, Provider/Course identity, Publication/Search admission or Website/Zoho contract is changed by this release-currentness correction.'
+    'Scholarship Catalogue now includes a bounded Provider filter and fluid columns while server authority continues to own filtering, paging and meaningful ordering.',
+    'QILT and PRISMS datasets use governed server-backed sorting with fluid tables; QS and THE provide Open Dataset and Compare with edition-aware, server-backed ordering.',
+    'Provider Compare enables QS and THE by default when accepted data exists, defaults each system to its latest retained edition and shows historical editions independently beneath the current observation.',
+    'Provider identity stays visible while wide comparison data scrolls, and the accepted UI passed targeted source/build/browser gates, bounded 1600/1366/900/390 viewport validation and deployed Pilot UAT.',
+    'The Scholarship provider_id and ranking sort/direction read-contract reconciliation preserves role/rank, Provider equivalence, Evidence and publication semantics. Production is unchanged; superseded v2.15.72 remains forensic history only.'
   ]
 }
 let pending=false
