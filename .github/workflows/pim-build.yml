@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-smoke:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -19,8 +19,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: pilot-npm-${{ runner.os }}-node22-${{ hashFiles('package.json') }}
+          restore-keys: |
+            pilot-npm-${{ runner.os }}-node22-
       - name: Install dependencies
-        run: npm install --ignore-scripts
+        run: npm install --ignore-scripts --prefer-offline --no-audit --no-fund
       - name: Build
         run: npm run build
       - name: Upload built Pilot artifact
@@ -30,23 +37,22 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: dist/
-
-  browser-smoke:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Install dependencies
-        run: npm install --ignore-scripts
       - name: Validate UAT suite discovery
         run: npx playwright test --list
+      - name: Restore Playwright browser cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pilot-playwright-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: |
+            pilot-playwright-${{ runner.os }}-
       - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+      - name: Install Chromium system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - name: Run local browser smoke
         run: npm run test:uat:smoke
       - name: Upload smoke evidence
