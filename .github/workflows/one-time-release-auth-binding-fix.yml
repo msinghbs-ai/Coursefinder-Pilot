@@ -1,0 +1,74 @@
+name: One-time release auth binding fix
+on:
+  push:
+    branches: [cf-m245-release-auth-binding-fix-20260908]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, '[release-auth-binding-fix]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cf-m245-release-auth-binding-fix-20260908
+      - name: Make release pill binding authentication-safe
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/pim-version-entry.js')
+          s=p.read_text()
+          old="let attempts=0,releaseUiMounted=false"
+          new="let releaseUiMounted=false"
+          if old not in s: raise SystemExit('attempts declaration not found')
+          s=s.replace(old,new,1)
+          old_sync="function sync(){document.querySelectorAll('.m-brand-copy small').forEach(el=>el.textContent=`PIM Admin v${VERSION}`);document.querySelectorAll('.m-login-version').forEach(el=>el.textContent=`PIM Admin v${VERSION}`);document.querySelectorAll('.m-release-pill').forEach(el=>{const label=el.querySelector('.m-release-version-label');if(label)label.textContent=`v${VERSION}`;else el.textContent=`v${VERSION}`;releaseButton(el)});attempts+=1;if(attempts<20)setTimeout(sync,150)}\nif(document.readyState==='loading')addEventListener('DOMContentLoaded',sync,{once:true});else sync()"
+          new_sync="function bindReleasePill(el){if(!el?.matches?.('.m-release-pill'))return;const label=el.querySelector('.m-release-version-label');if(label)label.textContent=`v${VERSION}`;else el.textContent=`v${VERSION}`;releaseButton(el)}\nfunction sync(){document.querySelectorAll('.m-brand-copy small').forEach(el=>el.textContent=`PIM Admin v${VERSION}`);document.querySelectorAll('.m-login-version').forEach(el=>el.textContent=`PIM Admin v${VERSION}`);document.querySelectorAll('.m-release-pill').forEach(bindReleasePill)}\nfunction watchReleasePills(){sync();const observer=new MutationObserver(records=>{for(const record of records){for(const node of record.addedNodes){if(node.nodeType!==1)continue;bindReleasePill(node);node.querySelectorAll?.('.m-release-pill').forEach(bindReleasePill)}}});observer.observe(document.documentElement,{childList:true,subtree:true})}\nif(document.readyState==='loading')addEventListener('DOMContentLoaded',watchReleasePills,{once:true});else watchReleasePills()"
+          if old_sync not in s: raise SystemExit('finite sync block not found')
+          s=s.replace(old_sync,new_sync,1)
+          p.write_text(s)
+          PY
+      - name: Replace superseded release-menu contract
+        run: |
+          cat > tests/uat/m245-release-menu-nav-contract.spec.mjs <<'EOF'
+          import {test,expect} from '@playwright/test'
+          import fs from 'node:fs'
+          test('breadcrumb navigation and release pill use maintained dialog authority',()=>{
+            const ui=fs.readFileSync('src/mature-main.jsx','utf8')
+            const release=fs.readFileSync('src/pim-version-entry.js','utf8')
+            expect(ui).toContain('setPage(label);setRouteParams(new URLSearchParams(q));if(location.hash!==next)location.hash=next')
+            expect(ui).toContain('<span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span>')
+            expect(ui).not.toContain('<details className="m-release-menu">')
+            expect(release).toContain("querySelectorAll('.m-release-pill')")
+            expect(release).toContain('m-release-notes-list')
+            expect(release).toContain('Bug / UI fixes')
+            expect(release).toContain('release.bugFixes')
+            expect(release).toContain('new MutationObserver')
+            expect(release).toContain("node.querySelectorAll?.('.m-release-pill').forEach(bindReleasePill)")
+            expect(release).not.toContain('attempts<20')
+            expect(release).not.toContain('setTimeout(sync,150)')
+          })
+          EOF
+      - name: Add authentication timing contract
+        run: |
+          cat > tests/uat/m245-release-auth-binding-contract.spec.mjs <<'EOF'
+          import {test,expect} from '@playwright/test'
+          import fs from 'node:fs'
+          test('release pill remains bindable after delayed authentication',()=>{
+            const release=fs.readFileSync('src/pim-version-entry.js','utf8')
+            expect(release).toContain('function bindReleasePill(el)')
+            expect(release).toContain('function watchReleasePills()')
+            expect(release).toContain("observer.observe(document.documentElement,{childList:true,subtree:true})")
+            expect(release).toContain("if(el.dataset.releaseNotesBound==='true')return")
+            expect(release).toContain("el.addEventListener('click',openReleaseNotes)")
+            expect(release).toContain("event.key==='Enter'||event.key===' '")
+          })
+          EOF
+      - name: Commit correction
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/pim-version-entry.js tests/uat/m245-release-menu-nav-contract.spec.mjs tests/uat/m245-release-auth-binding-contract.spec.mjs
+          git commit -m "CF M2.4.5 bind release pill after delayed auth [release-auth-binding-fix]"
+          git push
