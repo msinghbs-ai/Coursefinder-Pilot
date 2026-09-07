@@ -1,0 +1,5 @@
+import{test,expect}from'@playwright/test'
+import fs from'node:fs'
+const shell=()=>fs.readFileSync('src/mature-main.jsx','utf8')
+test('Statistics ranking cards expose independent edition selectors and no import controls',()=>{const s=shell(),a=s.indexOf('function StatisticsRankings('),b=s.indexOf('function RankingDatasetPanel(',a),block=s.slice(a,b);expect(block).toContain('aria-label=\"QS ranking edition\"');expect(block).toContain('aria-label=\"THE ranking edition\"');expect(block).not.toContain('Manage imports');expect(block).not.toContain("section:'sources-imports'")})
+test('Open Dataset is a native React route with selected publisher edition',()=>{const s=shell();expect(s).toContain("navigate('Statistics & Rankings',{dataset:system,year:selected})");expect(s).toContain('function RankingDatasetPanel({system,year,navigate,onError})');expect(s).toContain("api.rankingObservations({limit:50,offset,query:debounced,systemCode:system,editionYear:selectedYear,sort,direction})");const index=fs.readFileSync('index.html','utf8');expect(index).not.toContain('/src/RankingDatasetViewer.js')})
