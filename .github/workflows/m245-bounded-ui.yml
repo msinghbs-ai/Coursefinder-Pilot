@@ -25,10 +25,10 @@ jobs:
           for spec in '1600 900 desktop' '1366 768 laptop' '900 820 tablet' '390 844 mobile'; do
             set -- $spec
             W=$1 H=$2 NAME=$3
-            cat > /tmp/bounded.config.mjs <<EOF
+            cat > .bounded.config.mjs <<EOF
           import { defineConfig } from '@playwright/test'
           export default defineConfig({
-            testDir: '${GITHUB_WORKSPACE}/tests/uat',
+            testDir: './tests/uat',
             timeout: 120000,
             retries: 0,
             workers: 1,
@@ -39,7 +39,8 @@ jobs:
           })
           EOF
             echo "Bounded viewport: $NAME ${W}x${H}"
-            npx playwright test tests/uat/smoke.spec.mjs --config=/tmp/bounded.config.mjs
+            npx playwright test tests/uat/smoke.spec.mjs --config=.bounded.config.mjs
+            rm -f .bounded.config.mjs
           done
       - name: Remove one-time workflow
         if: success()
