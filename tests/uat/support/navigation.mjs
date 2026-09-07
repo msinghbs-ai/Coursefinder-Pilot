@@ -31,7 +31,7 @@ async function openAdministrationTool(page,tabName,heading){
 }
 
 export async function openLayer2Advanced(page) {
-  return openAdministrationTool(page,'Layer 2 sources','Enrichment Source Configuration')
+  return openAdministrationTool(page,'Extraction Profiles','Enrichment Source Configuration')
 }
 
 export async function openLayer2Providers(page) {
