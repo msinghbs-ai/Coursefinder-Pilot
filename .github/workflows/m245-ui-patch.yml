@@ -1,0 +1,29 @@
+name: M2.4.5 Native UI Patch
+on:
+  push:
+    branches:
+      - cf-m245-ui-improvements-20260907
+    paths:
+      - .github/workflows/m245-ui-patch.yml
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cf-m245-ui-improvements-20260907
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply bounded native UI patch
+        run: python .github/scripts/m245_ui_patch.py
+      - name: Commit bounded patch and remove one-time tooling
+        run: |
+          rm .github/scripts/m245_ui_patch.py .github/workflows/m245-ui-patch.yml
+          git config user.name "coursefinder-ui-bot"
+          git config user.email "coursefinder-ui-bot@users.noreply.github.com"
+          git add src/mature-main.jsx .github/scripts/m245_ui_patch.py .github/workflows/m245-ui-patch.yml
+          git commit -m "M2.4.5 apply native catalogue and dataset UI improvements"
+          git push origin HEAD:cf-m245-ui-improvements-20260907
