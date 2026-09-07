@@ -5,7 +5,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 async function openCatalogue(page,hash,heading){await page.evaluate(h=>{location.hash=h},hash);await expect(page.getByRole('heading',{name:heading,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})}
 
 test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-061-qilt-prisms-comparison-deployed',change_control:'CF-CHG-20260901-061 / CF-228 recovery / CF-232'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-061-qilt-prisms-comparison-deployed',change_control:'CF-CHG-20260901-061 / CF-228 recovery / CF-232 / CF-233'})})
 
  test('Provider comparison aligns QILT cards for two selected universities',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
@@ -92,9 +92,9 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   expect(detail.contextual_insights?.student_outcomes?.granularity).toBe('provider_context')
   expect(Number(detail.contextual_insights?.student_outcomes?.total||0)).toBeGreaterThan(0)
   await expect(page.locator('.ci-outcome-card').first()).toBeVisible()
-  const outcomeItems=detail.contextual_insights?.student_outcomes?.items||[]
-  const hasNationalBenchmark=outcomeItems.some(x=>x?.national_benchmark!==null&&x?.national_benchmark!==undefined&&x?.national_benchmark!=='')
-  if(hasNationalBenchmark)await expect(page.getByText(/National benchmark/i).first()).toBeVisible()
+  const visibleOutcomeItems=(detail.contextual_insights?.student_outcomes?.items||[]).slice(0,5)
+  const hasVisibleNationalBenchmark=visibleOutcomeItems.some(x=>x?.national_benchmark!==null&&x?.national_benchmark!==undefined&&x?.national_benchmark!=='')
+  if(hasVisibleNationalBenchmark)await expect(page.getByText(/National benchmark/i).first()).toBeVisible()
   else await expect(page.getByText(/National benchmark\s+0(?:\.0+)?%?/i)).toHaveCount(0)
 
   const compare=page.getByTitle('Compare this course')
