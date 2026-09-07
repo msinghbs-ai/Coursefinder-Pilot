@@ -1,0 +1,68 @@
+name: M2.4.5 Reconcile UI Contracts
+on:
+  push:
+    paths: ['.github/workflows/m245-reconcile-ui.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cf-m245-ui-improvements-20260907
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply reconciliation UI patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def sub1(text, pattern, repl, label, flags=0):
+              out,n=re.subn(pattern,repl,text,count=1,flags=flags)
+              if n!=1: raise SystemExit(f'{label}: expected 1 replacement, got {n}')
+              return out
+
+          p=Path('src/mature-main.jsx'); s=p.read_text()
+          s=s.replace("if(k==='country'){n.subdivision='';if(type==='course')n.provider=''}","if(k==='country'){n.subdivision='';if(['course','scholarship'].includes(type))n.provider=''}")
+          s=s.replace("if(k==='country'){delete n.subdivision;if(type==='course')delete n.provider}","if(k==='country'){delete n.subdivision;if(['course','scholarship'].includes(type))delete n.provider}")
+          s=sub1(s,r"if\(type==='scholarship'\)return <div className=\"m-filter-bar\">.*?</div>\n  if\(type!=='course'\)","if(type==='scholarship')return <div className=\"m-filter-bar\"><FilterSelect label=\"Country\" value={filters.country||''} onChange={(v,l)=>patch('country',v,l)} options={countries} loading={busy}/><PagedFilterSelect kind=\"provider\" label=\"Provider\" value={filters.provider||''} valueLabel={filterLabels.provider||''} country={filters.country||''} onChange={(v,l)=>patch('provider',v,l)}/><FilterSelect label=\"Lifecycle\" value={filters.lifecycle||''} onChange={(v,l)=>patch('lifecycle',v,l)} options={STATUS_OPTIONS}/><FilterSelect label=\"Publication\" value={filters.publication||''} onChange={(v,l)=>patch('publication',v,l)} options={PUBLICATION_OPTIONS}/></div>\n  if(type!=='course')",'scholarship FilterBar',re.S)
+          s=sub1(s,r"function buildCatalogueArgs\(type,\{query,filters,offset,sort,direction\}\)\{const a=\{limit:PAGE_SIZE,offset,query:query\|\|null,sort,direction\};(.*?)if\(type==='course'\)\{",lambda m:"function buildCatalogueArgs(type,{query,filters,offset,sort,direction}){const a={limit:PAGE_SIZE,offset,query:query||null,sort,direction};"+m.group(1)+"if(type==='scholarship'&&filters.provider)a.provider_id=filters.provider;if(type==='course'){",'scholarship provider arg',re.S)
+          s=sub1(s,r"return\[\{key:'name',label:'Scholarship'.*?\]\}\nfunction cell", "return[{key:'name',label:'Scholarship',width:310,sortKey:'scholarship'},{key:'provider_name',label:'Provider',width:250,sortKey:'provider'},{key:'scholarship_type',label:'Type',width:170,sortKey:'type'},{key:'audience',label:'Audience',width:150,sortKey:'audience'},{key:'award_value_text',label:'Award',width:180,sortKey:'award'},{key:'publication_status',label:'Publication',width:130,sortKey:'publication'}]}\nfunction cell",'scholarship sortable columns',re.S)
+          p.write_text(s)
+
+          p=Path('src/lib/supabase.js'); s=p.read_text()
+          old="""  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '' } = {}) =>\n    adminRead('ranking_observations', {\n      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,\n      system_code: systemCode || null, edition_year: editionYear === '' ? null : Number(editionYear),\n      provider_id: providerId || null,\n    }),"""
+          new="""  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '', sort = 'rank', direction = 'asc' } = {}) =>\n    adminRead('ranking_observations', {\n      limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,\n      system_code: systemCode || null, edition_year: editionYear === '' ? null : Number(editionYear),\n      provider_id: providerId || null, sort, direction,\n    }),"""
+          if old not in s: raise SystemExit('rankingObservations wrapper: expected source not found')
+          p.write_text(s.replace(old,new,1))
+
+          p=Path('src/RankingDatasetViewer.js'); s=p.read_text()
+          s=s.replace("state={dataset:'',year:'',query:'',offset:0}","state={dataset:'',year:'',query:'',offset:0,sort:'rank',direction:'asc'}",1)
+          s=s.replace(".cf-ranking-table th{background:#f8fafc;color:#475569;font-weight:850;position:sticky;top:0}",".cf-ranking-table th{background:#f8fafc;color:#475569;font-weight:850;position:sticky;top:0}.cf-ranking-table th button{border:0;background:transparent;padding:0;color:inherit;font:inherit;font-weight:850;cursor:pointer}.cf-ranking-table th button[data-active=\"true\"]{text-decoration:underline;text-underline-offset:3px}",1)
+          old="const query=p.get('query')||'',offset=Math.max(Number(p.get('offset')||0),0),data=await api.rankingObservations({limit:50,offset,query,systemCode:dataset,editionYear:year});const items=data?.items||[],total=Number(data?.total||0);state={dataset,year,query,offset};"
+          new="const query=p.get('query')||'',offset=Math.max(Number(p.get('offset')||0),0),sort=p.get('sort')||'rank',direction=p.get('direction')==='desc'?'desc':'asc',data=await api.rankingObservations({limit:50,offset,query,systemCode:dataset,editionYear:year,sort,direction});const items=data?.items||[],total=Number(data?.total||0);state={dataset,year,query,offset,sort,direction};"
+          if old not in s: raise SystemExit('ranking viewer read source not found')
+          s=s.replace(old,new,1)
+          oldh='<th>Publisher institution</th><th>Canonical Provider</th><th>Rank</th><th>Overall score</th><th>Country</th><th>Evidence</th>'
+          newh='${[["institution","Publisher institution"],["provider","Canonical Provider"],["rank","Rank"],["score","Overall score"],["country","Country"]].map(([k,l])=>`<th><button data-sort="${k}" data-active="${sort===k}">${l}${sort===k?(direction===\'asc\'?\' ↑\':\' ↓\'):\'\'}</button></th>`).join(\'\')}<th>Evidence</th>'
+          if oldh not in s: raise SystemExit('ranking viewer headers not found')
+          s=s.replace(oldh,newh,1)
+          anchor="panel.querySelector('[data-next]')?.addEventListener('click',()=>setParams({offset:offset+50}))"
+          repl=anchor+";panel.querySelectorAll('[data-sort]').forEach(btn=>btn.addEventListener('click',()=>{const next=btn.dataset.sort;setParams({sort:next,direction:sort===next&&direction==='asc'?'desc':'asc',offset:0})}))"
+          if anchor not in s: raise SystemExit('ranking viewer event anchor not found')
+          p.write_text(s.replace(anchor,repl,1))
+          PY
+      - name: Remove one-time workflow and commit
+        shell: bash
+        run: |
+          rm .github/workflows/m245-reconcile-ui.yml
+          git config user.name coursefinder-ui-bot
+          git config user.email coursefinder-ui-bot@users.noreply.github.com
+          git add src/mature-main.jsx src/lib/supabase.js src/RankingDatasetViewer.js .github/workflows/m245-reconcile-ui.yml
+          git commit -m "M2.4.5 wire reconciled Scholarship and ranking reads"
+          git push origin HEAD:cf-m245-ui-improvements-20260907
