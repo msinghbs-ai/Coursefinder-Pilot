@@ -4,7 +4,7 @@ import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('M2.4.5 v2.15.73 release currentness @deployed',()=>{
- test.beforeAll(async()=>{await writeRunEnvironment({suite:'m245-v2-15-73-release-currentness',change_control:'CF-CHG-20260907-241'})})
+ test.beforeAll(async()=>{await writeRunEnvironment({suite:'m245-v2-15-73-release-currentness',change_control:'CF-CHG-20260907-242'})})
  test('accepted Pilot UI reports one synchronized v2.15.73 release',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await expect(page.locator('.m-release-pill')).toContainText('v2.15.73',{timeout:DETERMINISTIC_UI_TIMEOUT})
