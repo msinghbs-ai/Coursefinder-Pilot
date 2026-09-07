@@ -1,0 +1,5 @@
+CF-237 targeted recovery candidate
+Pilot baseline: fc9734f4fa1fd3364a7821af7e096d1da560e029
+Purpose: re-run the permanent CF-102 provider-logo surface contract after later shared mature-main changes.
+No Provider asset semantics, approval state, evidence rule or release version is changed by this candidate.
+Date: 2026-09-07
