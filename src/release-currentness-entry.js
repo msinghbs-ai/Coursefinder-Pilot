@@ -1,14 +1,13 @@
-const VERSION='2.15.73'
+const VERSION='2.15.74'
 const RELEASE={
   version:VERSION,
   date:'7 Sep 2026',
-  title:'Fluid catalogues, ranking datasets and Provider comparison',
+  title:'Compare ranking year controls and frozen university headers',
   changes:[
-    'Scholarship Catalogue now includes a bounded Provider filter and fluid columns while server authority continues to own filtering, paging and meaningful ordering.',
-    'QILT and PRISMS datasets use governed server-backed sorting with fluid tables; QS and THE provide Open Dataset and Compare with edition-aware, server-backed ordering.',
-    'Provider Compare enables QS and THE by default when accepted data exists, defaults each system to its latest retained edition and shows historical editions independently beneath the current observation.',
-    'Provider identity stays visible while wide comparison data scrolls, and the accepted UI passed targeted source/build/browser gates, bounded 1600/1366/900/390 viewport validation and deployed Pilot UAT.',
-    'The Scholarship provider_id and ranking sort/direction read-contract reconciliation preserves role/rank, Provider equivalence, Evidence and publication semantics. Production is unchanged; superseded v2.15.72 remains forensic history only.'
+    'Provider Compare now presents QS and THE as independent ranking sections, each with its own edition selector and Multi-year option.',
+    'The shared Current snapshot / Multi-year trend control has been removed from QILT/PRISMS comparison; QILT retains an explicit year selector.',
+    'University/provider identity headers are explicitly sticky across QILT, PRISMS and ranking comparison surfaces while comparison content scrolls.',
+    'The focused source contract, frontend build/browser smoke and deployed Pilot UAT passed on 7 Sep 2026. No database, ranking, QILT/PRISMS grain, publication, Search, Website/Zoho or Production semantics changed.'
   ]
 }
 let pending=false
