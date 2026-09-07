@@ -1,21 +1,21 @@
 name: One-time ranking dataset theme alignment
 on:
   push:
-    branches: [cf-m245-ranking-theme-align-20260907]
+    branches:
+      - cf-m245-ranking-theme-align-20260907
 permissions:
   contents: write
 jobs:
   patch:
-    if: ${{ !contains(github.event.head_commit.message, '[ranking-theme-align]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: cf-m245-ranking-theme-align-20260907
-      - name: Align ranking dataset UI with QILT/PRISMS
+      - name: Patch UI
         shell: bash
         run: |
-          python - <<'PY'
+          python <<'PY'
           from pathlib import Path
           p=Path('src/mature-main.jsx')
           s=p.read_text()
@@ -23,10 +23,9 @@ jobs:
           new="""  const rank=Number(context?.role_rank||0)\n  const activeDataset=page==='Statistics & Rankings'?(routeParams?.get?.('dataset')||''):''\n  const datasetMeta=activeDataset==='qs_wur'?['QS World University Rankings','Accepted QS ranking observations by edition, mapped to canonical Providers with Evidence retained.']:activeDataset==='the_wur'?['Times Higher Education','Accepted THE ranking observations by edition, mapped to canonical Providers with Evidence retained.']:null\n  const[title,subtitle]=datasetMeta??PAGE_META[page]??[page,'Governed CourseFinder administration.']"""
           if old not in s: raise SystemExit('App title target not found')
           s=s.replace(old,new,1)
-
           start=s.index('function RankingDatasetPanel({system,year,navigate,onError}){')
           end=s.index('\n\n\nfunction ProviderAssetsWorkspace',start)
-          new_block=r'''function RankingDatasetPanel({system,year,navigate,onError}){
+          new_block='''function RankingDatasetPanel({system,year,navigate,onError}){
  const[filters,setFilters]=useState(null),[data,setData]=useState(null),[query,setQuery]=useState(''),[offset,setOffset]=useState(0),[sort,setSort]=useState('rank'),[direction,setDirection]=useState('asc'),[busy,setBusy]=useState(false)
  const debounced=useDebounce(query,260),label=system==='qs_wur'?'QS World University Rankings':'Times Higher Education'
  useEffect(()=>{let live=true;api.rankingFilters(system).then(x=>live&&setFilters(x)).catch(e=>onError?.(e.message));return()=>{live=false}},[system])
@@ -36,22 +35,24 @@ jobs:
  const rows=data?.items||[],total=Number(data?.total||0)
  const changeSort=key=>{if(sort===key)setDirection(x=>x==='asc'?'desc':'asc');else{setSort(key);setDirection('asc')}}
  const sortHead=(key,title)=><button type="button" onClick={()=>changeSort(key)}>{title}{sort===key?(direction==='asc'?<ArrowUp size={12}/>:<ArrowDown size={12}/>):null}</button>
- const editionOptions=years.map((y,i)=>({value:y,label:`${y}${i===0?' · latest':''}`}))
+ const editionOptions=years.map((y,i)=>({value:y,label:y+(i===0?' · latest':'')}))
  return <div className="m-page-stack"><section className="m-panel" data-react-ranking-viewer="1">
   <div className="m-workspace-head"><div><h2>{label}</h2><p>Accepted Layer 1 ranking observations remain publisher-specific and separate from canonical Provider identity. Sort controls use the governed dataset contract.</p></div><div className="m-result-count"><strong>{fmtNumber(total)}</strong><span>matching</span></div></div>
   <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search publisher institution or mapped Provider…"/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label></div>
   <div className="m-filter-bar"><FilterSelect label="Edition" value={selectedYear} onChange={v=>navigate('Statistics & Rankings',{dataset:system,year:v})} options={editionOptions}/></div>
-  <div className="m-table-wrap"><table className="m-table dynamic m-fluid-table" style={{width:'100%',minWidth:'max-content'}}><thead><tr><th className="sticky-col" style={{minWidth:'clamp(160px,24vw,360px)'}}>{sortHead('institution','Publisher institution')}</th><th style={{minWidth:'clamp(150px,20vw,320px)'}}>{sortHead('provider','Canonical Provider')}</th><th>{sortHead('rank','Rank')}</th><th>{sortHead('score','Overall score')}</th><th>{sortHead('country','Country')}</th><th><span>Evidence</span></th></tr></thead><tbody>{busy&&rows.length===0?Array.from({length:6}).map((_,i)=><tr key={i}><td className="sticky-col"><span className="m-row-skeleton"/></td>{Array.from({length:5}).map((_,j)=><td key={j}><span className="m-row-skeleton"/></td>)}</tr>):rows.length?rows.map((x,i)=><tr key={`${x.publisher_institution_name||i}-${x.rank_display||x.rank_exact||''}`}><td className="sticky-col primary-cell">{x.publisher_institution_name||'—'}<small style={{display:'block',color:'#94a3b8'}}>{x.ranking_name||label}</small></td><td>{x.provider_name||'Unmapped'}</td><td>{x.rank_display||x.rank_exact||'—'}</td><td>{x.overall_score==null?'—':x.overall_score}</td><td>{x.country_text||'—'}</td><td>{x.evidence_artifact_id?<button className="m-secondary compact" onClick={()=>navigate('Evidence',{id:x.evidence_artifact_id})}>Open Evidence</button>:'—'}</td></tr>):<tr><td colSpan="6"><EmptyInline text={busy?'Loading ranking observations…':'No accepted observations match this edition and search.'}/></td></tr>}</tbody></table></div>
+  <div className="m-table-wrap"><table className="m-table dynamic m-fluid-table" style={{width:'100%',minWidth:'max-content'}}><thead><tr><th className="sticky-col" style={{minWidth:'clamp(160px,24vw,360px)'}}>{sortHead('institution','Publisher institution')}</th><th style={{minWidth:'clamp(150px,20vw,320px)'}}>{sortHead('provider','Canonical Provider')}</th><th>{sortHead('rank','Rank')}</th><th>{sortHead('score','Overall score')}</th><th>{sortHead('country','Country')}</th><th><span>Evidence</span></th></tr></thead><tbody>{busy&&rows.length===0?Array.from({length:6}).map((_,i)=><tr key={i}><td className="sticky-col"><span className="m-row-skeleton"/></td>{Array.from({length:5}).map((_,j)=><td key={j}><span className="m-row-skeleton"/></td>)}</tr>):rows.length?rows.map((x,i)=><tr key={(x.publisher_institution_name||i)+'-'+(x.rank_display||x.rank_exact||'')}><td className="sticky-col primary-cell">{x.publisher_institution_name||'—'}<small style={{display:'block',color:'#94a3b8'}}>{x.ranking_name||label}</small></td><td>{x.provider_name||'Unmapped'}</td><td>{x.rank_display||x.rank_exact||'—'}</td><td>{x.overall_score==null?'—':x.overall_score}</td><td>{x.country_text||'—'}</td><td>{x.evidence_artifact_id?<button className="m-secondary compact" onClick={()=>navigate('Evidence',{id:x.evidence_artifact_id})}>Open Evidence</button>:'—'}</td></tr>):<tr><td colSpan="6"><EmptyInline text={busy?'Loading ranking observations…':'No accepted observations match this edition and search.'}/></td></tr>}</tbody></table></div>
   <Pager offset={offset} limit={50} total={total} onOffset={setOffset}/>
  </section></div>
 }'''
           s=s[:start]+new_block+s[end:]
           p.write_text(s)
           PY
-      - name: Commit theme alignment
+      - name: Commit and remove one-time workflow
+        shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/one-time-ranking-theme-align.yml
           git add src/mature-main.jsx
-          git commit -m "CF M2.4.5 align ranking dataset theme [ranking-theme-align]"
+          git commit -m "CF M2.4.5 align ranking dataset theme"
           git push
