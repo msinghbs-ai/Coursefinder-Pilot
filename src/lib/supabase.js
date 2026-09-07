@@ -198,11 +198,11 @@ export const api = {
 
   rankingSummary: () => adminRead('ranking_summary'),
   rankingFilters: (systemCode = '') => adminRead('ranking_filters', { system_code: systemCode || null }),
-  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '' } = {}) =>
+  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '', sort = 'rank', direction = 'asc' } = {}) =>
     adminRead('ranking_observations', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
       system_code: systemCode || null, edition_year: editionYear === '' ? null : Number(editionYear),
-      provider_id: providerId || null,
+      provider_id: providerId || null, sort, direction,
     }),
   rankingImports: ({ limit = 50, offset = 0 } = {}) => adminRead('ranking_imports', {
     limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0),
