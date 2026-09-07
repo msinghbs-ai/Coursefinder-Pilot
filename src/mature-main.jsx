@@ -29,6 +29,12 @@ import'./styles.css'
 import'./mature.css'
 
 const UI_VERSION='2.15.74'
+const UI_FIXES=[
+ 'Independent QILT, PRISMS, QS and THE year/edition controls in Provider Compare.',
+ 'Frozen Provider/university identity headers across comparison statistics and rankings.',
+ 'Standard Statistics & Rankings breadcrumbs with dedicated QILT, PRISMS, QS and THE dataset subpages.',
+ 'QS/THE dataset pages aligned to the standard CourseFinder dataset table theme.'
+]
 const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:system==='the_wur'?Array.from({length:16},(_,i)=>2026-i):Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
@@ -177,7 +183,7 @@ function App(){
     <main className="m-main" ref={mainRef}>
       <header className="m-topbar">
         <div className="m-title-wrap"><button className="m-mobile-menu" onClick={()=>setNavOpen(true)}><Menu size={20}/></button><div><div className="m-eyebrow">Canonical governance · governed browser RPC</div><AppBreadcrumbs page={page} routeParams={routeParams} navigate={go}/><h1>{title}</h1><p>{subtitle}</p></div></div>
-        <div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/>v{UI_VERSION}</span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></div>
+        <div className="m-topbar-actions"><details className="m-release-menu"><summary className="m-release-pill" aria-label={`Open UI fixes for PIM Admin v${UI_VERSION}`}><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span><ChevronDown size={12}/></summary><div className="m-release-fixes-popover"><div className="m-release-fixes-head"><strong>UI fixes</strong><span>v{UI_VERSION}</span></div><ul>{UI_FIXES.map(x=><li key={x}>{x}</li>)}</ul></div></details><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></div>
       </header>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
       <WorkspaceErrorBoundary routeKey={`${page}?${routeParams.toString()}`} onError={setError} onRecover={()=>go('Dashboard')}><Page page={page} routeParams={routeParams} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/></WorkspaceErrorBoundary>
