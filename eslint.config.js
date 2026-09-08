@@ -34,7 +34,7 @@ export default [
         paths: [{
           name: '@supabase/supabase-js',
           importNames: ['createClient'],
-          message: 'Browser Supabase client creation is restricted to src/lib/supabase.js or src/lib/supabase.ts.',
+          message: 'Browser Supabase client creation is restricted to src/lib/supabase.ts.',
         }],
       }],
       'no-restricted-syntax': [
@@ -55,7 +55,7 @@ export default [
     },
   },
   {
-    files: ['src/lib/supabase.js', 'src/lib/supabase.ts'],
+    files: ['src/lib/supabase.ts'],
     rules: {
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
