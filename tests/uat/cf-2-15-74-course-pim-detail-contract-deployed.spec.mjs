@@ -6,7 +6,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 test.describe('CF 2.15.74 governed course PIM detail contract @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-2-15-74-course-pim-detail-contract',change_control:'PR-46'})})
 
- test('course_detail supplies display-safe PIM family and value metadata through admin_read',async({page},testInfo)=>{const runtime=observeRuntime(page);let detailPayload=null;try{
+ test('course_detail supplies only currently effective display-safe PIM values through admin_read',async({page},testInfo)=>{const runtime=observeRuntime(page);let detailPayload=null;try{
   page.on('response',async response=>{
    try{
     if(!response.url().includes('/rest/v1/rpc/admin_read')||response.request().method()!=='POST')return
@@ -34,6 +34,11 @@ test.describe('CF 2.15.74 governed course PIM detail contract @deployed',()=>{
   expect(value.attribute_name).toBeTruthy()
   expect(value.attribute_data_type).toBeTruthy()
   expect(value.option_labels&&typeof value.option_labels==='object').toBe(true)
+  const today=new Date().toISOString().slice(0,10)
+  for(const item of detailPayload.pim_attribute_values){
+   if(item.valid_from)expect(item.valid_from<=today).toBe(true)
+   if(item.valid_to)expect(item.valid_to>=today).toBe(true)
+  }
   expect(detailPayload.pim_attribute_values.some(x=>x.attribute_code==='course_description')).toBe(true)
   await expect(page.locator('[data-pim-dynamic-fields]')).toHaveCount(0)
  }finally{await finish(testInfo,runtime)}})
