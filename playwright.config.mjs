@@ -5,6 +5,11 @@ const localBaseUrl = 'http://127.0.0.1:5173'
 
 export default defineConfig({
   testDir: './tests/uat',
+  // Deployed suites require an explicitly governed UAT target. When no
+  // UAT_BASE_URL is supplied, the default UAT command is the local/contract
+  // validation surface only. Governed deployed workflows set UAT_BASE_URL and
+  // continue to run the nominated *-deployed.spec.mjs suites unchanged.
+  testIgnore: deployedBaseUrl ? [] : ['**/*-deployed.spec.mjs'],
   timeout: 120_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
