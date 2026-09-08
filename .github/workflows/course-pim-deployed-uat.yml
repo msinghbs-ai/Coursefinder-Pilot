@@ -36,7 +36,7 @@ permissions:
   contents: read
   checks: read
 
-a concurrency:
+concurrency:
   group: course-pim-deployed-uat-${{ github.ref }}
   cancel-in-progress: true
 
