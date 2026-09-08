@@ -6,26 +6,36 @@ on:
       - '.github/workflows/course-pim-deployed-uat.yml'
       - '.github/cf-2-15-74-course-pim-candidate'
       - 'vite.config.js'
+      - 'playwright.config.mjs'
+      - 'src/mature-main.jsx'
       - 'src/Layer4Intervention.jsx'
+      - 'src/lib/supabase.js'
+      - 'src/data/supabase.ts'
       - 'src/components/pim/**'
       - 'src/domain/pim*'
       - 'src/types/pim.ts'
       - 'src/types/admin-read.ts'
       - 'supabase/migrations/20260908032500_course_detail_pim_payload.sql'
       - 'tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs'
+      - 'tests/uat/support/runtime-evidence.mjs'
   push:
     branches: [main]
     paths:
       - '.github/workflows/course-pim-deployed-uat.yml'
       - '.github/cf-2-15-74-course-pim-candidate'
       - 'vite.config.js'
+      - 'playwright.config.mjs'
+      - 'src/mature-main.jsx'
       - 'src/Layer4Intervention.jsx'
+      - 'src/lib/supabase.js'
+      - 'src/data/supabase.ts'
       - 'src/components/pim/**'
       - 'src/domain/pim*'
       - 'src/types/pim.ts'
       - 'src/types/admin-read.ts'
       - 'supabase/migrations/20260908032500_course_detail_pim_payload.sql'
       - 'tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs'
+      - 'tests/uat/support/runtime-evidence.mjs'
   workflow_dispatch:
     inputs:
       base_url:
