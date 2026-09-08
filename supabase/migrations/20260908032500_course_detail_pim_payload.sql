@@ -1,5 +1,6 @@
 -- Extend the existing governed course-detail projection with display-safe PIM family/value metadata.
 -- Browser access remains through public.admin_read('course_detail'); no direct PIM table grants are added.
+-- PIM values are limited to rows whose validity window includes current_date.
 
 create or replace function public.ui_course_detail(p_course_id uuid)
 returns jsonb
