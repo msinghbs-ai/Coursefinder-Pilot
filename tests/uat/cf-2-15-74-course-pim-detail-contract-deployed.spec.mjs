@@ -35,10 +35,17 @@ test.describe('CF 2.15.74 governed course PIM detail contract @deployed',()=>{
   expect(value.attribute_data_type).toBeTruthy()
   expect(value.option_labels&&typeof value.option_labels==='object').toBe(true)
   const today=new Date().toISOString().slice(0,10)
+  const singleValueCounts=new Map()
   for(const item of detailPayload.pim_attribute_values){
    if(item.valid_from)expect(item.valid_from<=today).toBe(true)
    if(item.valid_to)expect(item.valid_to>=today).toBe(true)
+   if(!item.attribute_is_multivalue){
+    expect(item.is_preferred).toBe(true)
+    const key=String(item.attribute_id)
+    singleValueCounts.set(key,(singleValueCounts.get(key)||0)+1)
+   }
   }
+  for(const count of singleValueCounts.values())expect(count).toBe(1)
   expect(detailPayload.pim_attribute_values.some(x=>x.attribute_code==='course_description')).toBe(true)
   await expect(page.locator('[data-pim-dynamic-fields]')).toHaveCount(0)
  }finally{await finish(testInfo,runtime)}})
