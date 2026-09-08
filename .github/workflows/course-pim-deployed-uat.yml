@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts --prefer-offline --no-audit --no-fund
 
-      - name: Resolve exact deployment target
+      - name: Resolve governed deployment target
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -98,21 +98,53 @@ jobs:
                   -H "X-GitHub-Api-Version: 2022-11-28" \
                   "$api" || true)
                 cloudflare=$(printf '%s' "$comments" | jq -r '[.[] | select(.user.login=="cloudflare-workers-and-pages[bot]")] | last | .body // ""' 2>/dev/null || true)
+                preview=$(printf '%s' "$cloudflare" | grep -oE 'https://[a-f0-9]{8}-coursefinder-pilot\.techm\.workers\.dev' | head -n 1 || true)
+
                 if printf '%s' "$cloudflare" | grep -Fq 'Deployment successful' \
-                  && printf '%s' "$cloudflare" | grep -Fq "$short_sha"; then
-                  preview=$(printf '%s' "$cloudflare" | grep -oE 'https://[a-f0-9]{8}-coursefinder-pilot\.techm\.workers\.dev' | head -n 1 || true)
-                  if [ -n "$preview" ]; then
-                    echo "TARGET_SHA=$PR_HEAD_SHA" >> "$GITHUB_ENV"
-                    echo "UAT_BASE_URL=$preview" >> "$GITHUB_ENV"
-                    echo "DEPLOYMENT_MODE=preview" >> "$GITHUB_ENV"
-                    echo "Resolved exact commit preview $preview for $PR_HEAD_SHA"
-                    exit 0
+                  && printf '%s' "$cloudflare" | grep -Fq "$short_sha" \
+                  && [ -n "$preview" ]; then
+                  echo "TARGET_SHA=$PR_HEAD_SHA" >> "$GITHUB_ENV"
+                  echo "UAT_BASE_URL=$preview" >> "$GITHUB_ENV"
+                  echo "DEPLOYMENT_MODE=preview" >> "$GITHUB_ENV"
+                  echo "Resolved exact commit preview $preview for $PR_HEAD_SHA"
+                  exit 0
+                fi
+
+                # Cloudflare may skip builds for validation-only commits. Reuse
+                # the prior preview only if GitHub proves there are no runtime
+                # changes between that deployment and the current PR head.
+                deployed_short=$(printf '%s' "$cloudflare" | grep -oE '\| [a-f0-9]{8} \|' | head -n 1 | tr -d '| ' || true)
+                if printf '%s' "$cloudflare" | grep -Fq 'Deployment successful' \
+                  && [ -n "$preview" ] && [ -n "$deployed_short" ]; then
+                  deployed_json=$(curl -fsS \
+                    -H "Authorization: Bearer $GH_TOKEN" \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${deployed_short}" || true)
+                  deployed_sha=$(printf '%s' "$deployed_json" | jq -r '.sha // empty' 2>/dev/null || true)
+                  if [ -n "$deployed_sha" ]; then
+                    comparison=$(curl -fsS \
+                      -H "Authorization: Bearer $GH_TOKEN" \
+                      -H "Accept: application/vnd.github+json" \
+                      -H "X-GitHub-Api-Version: 2022-11-28" \
+                      "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${deployed_sha}...${PR_HEAD_SHA}" || true)
+                    status=$(printf '%s' "$comparison" | jq -r '.status // empty' 2>/dev/null || true)
+                    changed=$(printf '%s' "$comparison" | jq -r '.files[]?.filename' 2>/dev/null || true)
+                    unsafe=$(printf '%s\n' "$changed" | grep -Ev '^(\.github/workflows/|tests/)' || true)
+                    if { [ "$status" = "ahead" ] || [ "$status" = "identical" ]; } && [ -z "$unsafe" ]; then
+                      echo "TARGET_SHA=$deployed_sha" >> "$GITHUB_ENV"
+                      echo "UAT_BASE_URL=$preview" >> "$GITHUB_ENV"
+                      echo "DEPLOYMENT_MODE=runtime_equivalent" >> "$GITHUB_ENV"
+                      echo "Using runtime-equivalent preview $preview at $deployed_sha; intervening PR changes are validation-only"
+                      exit 0
+                    fi
                   fi
                 fi
-                echo "Cloudflare exact commit preview not available yet for $short_sha; retry ${attempt}/18"
+
+                echo "Governed deployment target not ready for $short_sha; retry ${attempt}/18"
                 sleep 10
               done
-              echo "Unable to resolve Cloudflare exact commit preview for $PR_HEAD_SHA"
+              echo "Unable to resolve an exact or proven runtime-equivalent Cloudflare preview for $PR_HEAD_SHA"
               exit 1
               ;;
             push)
@@ -166,7 +198,7 @@ jobs:
             exit 1
           fi
 
-      - name: Wait for exact deployed revision at target URL
+      - name: Wait for deployed runtime revision at target URL
         shell: bash
         run: |
           for attempt in $(seq 1 18); do
@@ -193,14 +225,14 @@ jobs:
           raise SystemExit(0 if parser.found else 1)
           PY
               then
-                echo "Target URL $UAT_BASE_URL is serving exact $DEPLOYMENT_MODE revision $TARGET_SHA"
+                echo "Target URL $UAT_BASE_URL is serving $DEPLOYMENT_MODE runtime revision $TARGET_SHA"
                 exit 0
               fi
             fi
-            echo "Exact revision $TARGET_SHA not served yet on $UAT_BASE_URL (HTTP ${code:-none}); retry ${attempt}/18"
+            echo "Runtime revision $TARGET_SHA not served yet on $UAT_BASE_URL (HTTP ${code:-none}); retry ${attempt}/18"
             sleep 10
           done
-          echo "Target URL $UAT_BASE_URL did not serve exact revision $TARGET_SHA"
+          echo "Target URL $UAT_BASE_URL did not serve runtime revision $TARGET_SHA"
           exit 1
 
       - name: Install Chromium browser
