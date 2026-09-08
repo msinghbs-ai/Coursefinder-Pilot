@@ -8,7 +8,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
    fs.readFile('src/mature-main.jsx','utf8'),
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
    fs.readFile('src/RankingDatasetViewer.js','utf8'),
-   fs.readFile('src/lib/supabase.js','utf8'),
+   fs.readFile('src/lib/supabase.ts','utf8'),
    fs.readFile('supabase/migrations/20260907064251_m245_ui_read_contract_reconciliation.sql','utf8'),
   ])
 
@@ -50,6 +50,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   // QS/THE use server ordering across the full paged ranking dataset.
   expect(api).toContain("sort = 'rank', direction = 'asc'")
   expect(api).toContain('provider_id: providerId || null, sort, direction')
+  expect(api).toContain("supabase.rpc('admin_read'")
   expect(ranking).toContain("sort=p.get('sort')||'rank'")
   expect(ranking).toContain('data-sort="${k}"')
   expect(ranking).toContain('setParams({sort:next,direction:')
