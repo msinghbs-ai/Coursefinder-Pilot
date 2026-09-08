@@ -73,6 +73,11 @@ export interface PimAttributeValue {
   entity_id?: string
   attribute_id: string
   attribute_code?: string
+  attribute_name?: string
+  attribute_data_type?: string
+  attribute_display_order?: number | null
+  attribute_is_multivalue?: boolean
+  option_labels?: Record<string, string>
   value_text?: string | null
   value_number?: number | null
   value_boolean?: boolean | null
@@ -83,10 +88,13 @@ export interface PimAttributeValue {
   locale?: string | null
   channel_code?: string | null
   position?: number
+  source_id?: string | null
   evidence_id?: string | null
   confidence?: number | null
   review_status?: string | null
   is_preferred?: boolean
+  valid_from?: string | null
+  valid_to?: string | null
 }
 
 export interface PimGovernanceBundle {
