@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const migrationUrl = new URL('../../supabase/migrations/20260908115100_cf_241_evidence_entity_links_replay.sql', import.meta.url)
+const migrationUrl = new URL('../../supabase/migrations/20260908111700_cf_241_evidence_entity_links_replay.sql', import.meta.url)
 const sql = readFileSync(fileURLToPath(migrationUrl), 'utf8')
 
 describe('CF-241 Evidence entity-link replay contract', () => {
@@ -12,6 +12,10 @@ describe('CF-241 Evidence entity-link replay contract', () => {
     expect(table).toBeGreaterThanOrEqual(0)
     expect(helper).toBeGreaterThan(table)
     expect(sql).toContain("entity_type in ('provider','course','campus','scholarship')")
+  })
+
+  it('runs before the Evidence replay-completion migration', () => {
+    expect('20260908111700').toBeLessThan('20260908111800')
   })
 
   it('restores and protects the maintenance path', () => {
