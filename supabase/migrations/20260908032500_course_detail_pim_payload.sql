@@ -1,7 +1,7 @@
 -- Extend the existing governed course-detail projection with display-safe PIM family/value metadata.
 -- Browser access remains through public.admin_read('course_detail'); no direct PIM table grants are added.
 -- PIM values are limited to accepted rows whose validity window includes current_date and whose attribute is visible in the assigned family.
--- Single-valued attributes expose at most one currently effective accepted preferred row; multivalue attributes retain the governed accepted effective set.
+-- Single-valued attributes expose at most one currently effective accepted preferred row per locale/channel partition; multivalue attributes retain the governed accepted effective set across partitions.
 -- Top-level SQL null fields are stripped without recursively mutating governed value_json or option_labels JSON semantics.
 
 create or replace function public.ui_course_detail(p_course_id uuid)
@@ -75,7 +75,7 @@ as $function$
         ))
         || case when av.value_json is not null then jsonb_build_object('value_json', av.value_json) else '{}'::jsonb end
         || jsonb_build_object('option_labels', coalesce((select jsonb_object_agg(ao.code,ao.label order by ao.display_order nulls last,ao.code) from pim.attribute_options ao where ao.attribute_id=ad.id and coalesce(ao.status,'active')='active'),'{}'::jsonb))
-      ) order by coalesce(fa.display_order,ad.display_order), av.position nulls first, av.created_at)
+      ) order by coalesce(fa.display_order,ad.display_order), av.locale nulls first, av.channel_code nulls first, av.position nulls first, av.created_at)
       from pim.entity_registry er2
       join pim.attribute_values av on av.entity_id=er2.id
       join pim.attribute_definitions ad on ad.id=av.attribute_id
@@ -95,6 +95,8 @@ as $function$
             from pim.attribute_values avp
             where avp.entity_id=av.entity_id
               and avp.attribute_id=av.attribute_id
+              and avp.locale is not distinct from av.locale
+              and avp.channel_code is not distinct from av.channel_code
               and avp.review_status='accepted'
               and avp.is_preferred is true
               and (avp.valid_from is null or avp.valid_from <= current_date)
