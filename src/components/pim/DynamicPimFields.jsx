@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{api}from'../../data/supabase'
-import{dynamicCourseAttributes,hasRenderablePimValues,pimDisplayValue,valuesByAttribute}from'../../domain/pim'
+import{dynamicCourseAttributes,hasRenderablePimValues,pimDisplayValue,pimScopeLabel,valuesByAttribute,valuesByScope}from'../../domain/pim'
 
 const text=value=>{
  if(value==null)return'—'
@@ -32,7 +32,15 @@ export default function DynamicPimFields({entityType='course',familyId=null,fami
   for(const value of values||[])for(const[code,label]of Object.entries(value?.option_labels||{}))map.set(`${value.attribute_id}:${code}`,String(label))
   return map
  },[options,values])
- const rows=useMemo(()=>definitions.map(attribute=>{const matches=grouped.get(attribute.code)||grouped.get(attribute.id)||[];const rendered=matches.map(value=>{const display=pimDisplayValue(attribute,value,optionLabels);return display==null?null:text(display)}).filter(Boolean);return rendered.length?{attribute,rendered}:null}).filter(Boolean),[definitions,grouped,optionLabels])
+ const rows=useMemo(()=>definitions.flatMap(attribute=>{
+  const matches=grouped.get(attribute.code)||grouped.get(attribute.id)||[]
+  return[...valuesByScope(matches).values()].map(partition=>{
+   const rendered=partition.map(value=>{const display=pimDisplayValue(attribute,value,optionLabels);return display==null?null:text(display)}).filter(Boolean)
+   if(!rendered.length)return null
+   const scope=pimScopeLabel(partition[0])
+   return{attribute,rendered,scope,key:`${attribute.id}:${partition[0]?.locale??''}:${partition[0]?.channel_code??''}`}
+  }).filter(Boolean)
+ }),[definitions,grouped,optionLabels])
  if(!enabled||!family||rows.length===0)return null
- return <section className="m-detail-section cf-section" data-pim-dynamic-fields><div className="cf-section-title"><h3>{family.name||'Additional PIM attributes'}</h3></div><div className="m-detail-grid">{rows.map(({attribute,rendered})=><div className="cf-field" key={attribute.id}><div className="cf-field-label"><span>{attribute.name}</span></div><div className="cf-field-value">{rendered.join(', ')}</div></div>)}</div></section>
+ return <section className="m-detail-section cf-section" data-pim-dynamic-fields><div className="cf-section-title"><h3>{family.name||'Additional PIM attributes'}</h3></div><div className="m-detail-grid">{rows.map(({attribute,rendered,scope,key})=><div className="cf-field" key={key} data-pim-locale={scope?undefined:''}><div className="cf-field-label"><span>{attribute.name}{scope?` · ${scope}`:''}</span></div><div className="cf-field-value">{rendered.join(', ')}</div></div>)}</div></section>
 }
