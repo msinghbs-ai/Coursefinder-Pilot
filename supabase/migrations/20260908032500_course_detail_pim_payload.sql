@@ -1,6 +1,7 @@
 -- Extend the existing governed course-detail projection with display-safe PIM family/value metadata.
 -- Browser access remains through public.admin_read('course_detail'); no direct PIM table grants are added.
 -- PIM values are limited to rows whose validity window includes current_date.
+-- Single-valued attributes expose at most one currently effective preferred row; multivalue attributes retain the governed effective set.
 
 create or replace function public.ui_course_detail(p_course_id uuid)
 returns jsonb
@@ -83,6 +84,20 @@ as $function$
         and coalesce(fa.is_visible,true)
         and (av.valid_from is null or av.valid_from <= current_date)
         and (av.valid_to is null or av.valid_to >= current_date)
+        and (
+          coalesce(ad.is_multivalue,false)
+          or av.id = (
+            select avp.id
+            from pim.attribute_values avp
+            where avp.entity_id=av.entity_id
+              and avp.attribute_id=av.attribute_id
+              and avp.is_preferred is true
+              and (avp.valid_from is null or avp.valid_from <= current_date)
+              and (avp.valid_to is null or avp.valid_to >= current_date)
+            order by avp.valid_from desc nulls last, avp.created_at desc, avp.id
+            limit 1
+          )
+        )
     ), '[]'::jsonb),
     'field_states', security.admin_course_field_states(c.id)
   ) end
