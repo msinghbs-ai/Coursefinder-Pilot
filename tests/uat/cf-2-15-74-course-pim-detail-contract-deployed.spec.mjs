@@ -40,7 +40,7 @@ test.describe('CF 2.15.74 governed course PIM detail contract @deployed',()=>{
    if(item.valid_to)expect(item.valid_to>=today).toBe(true)
    if(!item.attribute_is_multivalue){
     expect(item.is_preferred).toBe(true)
-    const key=String(item.attribute_id)
+    const key=`${item.attribute_id}:${item.locale??''}:${item.channel_code??''}`
     singleValueCounts.set(key,(singleValueCounts.get(key)||0)+1)
    }
   }
