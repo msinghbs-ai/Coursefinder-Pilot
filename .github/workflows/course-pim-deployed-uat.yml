@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/course-pim-deployed-uat.yml'
       - '.github/cf-2-15-74-course-pim-candidate'
+      - 'vite.config.js'
       - 'src/Layer4Intervention.jsx'
       - 'src/components/pim/**'
       - 'src/domain/pim*'
@@ -17,6 +18,7 @@ on:
     paths:
       - '.github/workflows/course-pim-deployed-uat.yml'
       - '.github/cf-2-15-74-course-pim-candidate'
+      - 'vite.config.js'
       - 'src/Layer4Intervention.jsx'
       - 'src/components/pim/**'
       - 'src/domain/pim*'
@@ -34,7 +36,6 @@ on:
 
 permissions:
   contents: read
-  checks: read
 
 concurrency:
   group: course-pim-deployed-uat-${{ github.ref }}
@@ -47,10 +48,8 @@ jobs:
     env:
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
-      GH_TOKEN: ${{ github.token }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       PR_HEAD_REF: ${{ github.head_ref }}
-      PUSH_HEAD_TIMESTAMP: ${{ github.event.head_commit.timestamp }}
     steps:
       - name: Checkout exact revision under test
         uses: actions/checkout@v4
@@ -84,14 +83,9 @@ jobs:
               echo "DEPLOYMENT_MODE=preview" >> "$GITHUB_ENV"
               ;;
             push)
-              if [ -z "$PUSH_HEAD_TIMESTAMP" ]; then
-                echo "Push head timestamp is unavailable"
-                exit 1
-              fi
               echo "TARGET_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
               echo "UAT_BASE_URL=https://coursefinder-pilot.techm.workers.dev" >> "$GITHUB_ENV"
               echo "DEPLOYMENT_MODE=main_push" >> "$GITHUB_ENV"
-              echo "DEPLOYMENT_ANCHOR_EPOCH=$(date -u -d "$PUSH_HEAD_TIMESTAMP" +%s)" >> "$GITHUB_ENV"
               ;;
             workflow_dispatch)
               echo "TARGET_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
@@ -120,48 +114,41 @@ jobs:
             exit 1
           fi
 
-      - name: Wait for Cloudflare deployment of exact revision
+      - name: Wait for exact deployed revision at target URL
         shell: bash
         run: |
-          checks_api="https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${TARGET_SHA}/check-runs?per_page=100"
-
           for attempt in $(seq 1 18); do
-            checks=$(curl -fsS \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "$checks_api" || true)
-
-            match=$(printf '%s' "$checks" | jq -c \
-              --arg mode "$DEPLOYMENT_MODE" \
-              --arg url "$UAT_BASE_URL" \
-              --argjson anchor "${DEPLOYMENT_ANCHOR_EPOCH:-0}" '
-                [.check_runs[]?
-                  | select(.name == "Workers Builds: coursefinder-pilot")
-                  | select(.app.slug == "cloudflare-workers-and-pages")
-                  | select(.head_sha == env.TARGET_SHA)
-                  | select(.status == "completed" and .conclusion == "success")
-                  | . + {started_epoch: ((.started_at | fromdateiso8601) // 0)}
-                  | select(
-                      if $mode == "preview" then
-                        ((.output.summary // "") | contains("Preview Alias URL: " + $url))
-                      elif $mode == "main_push" then
-                        (.started_epoch >= ($anchor - 10))
-                      else
-                        true
-                      end
-                    )
-                ] | sort_by(.started_at) | last // empty' 2>/dev/null || true)
-
             code=$(curl -L -sS -o /tmp/coursefinder-pim-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?pim_uat_probe=${TARGET_SHA}" || true)
-            if [ -n "$match" ] && [ "$code" = "200" ]; then
-              echo "Cloudflare confirms exact $DEPLOYMENT_MODE revision $TARGET_SHA for $UAT_BASE_URL"
-              exit 0
+            if [ "$code" = "200" ]; then
+              if python - <<'PY'
+          import os
+          from html.parser import HTMLParser
+
+          class BuildShaParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.found = False
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() != 'meta':
+                      return
+                  values = dict(attrs)
+                  if values.get('name') == 'coursefinder-build-sha' and values.get('content') == os.environ['TARGET_SHA']:
+                      self.found = True
+
+          parser = BuildShaParser()
+          with open('/tmp/coursefinder-pim-home.html', encoding='utf-8') as handle:
+              parser.feed(handle.read())
+          raise SystemExit(0 if parser.found else 1)
+          PY
+              then
+                echo "Target URL $UAT_BASE_URL is serving exact $DEPLOYMENT_MODE revision $TARGET_SHA"
+                exit 0
+              fi
             fi
-            echo "Waiting for Cloudflare exact revision $TARGET_SHA on $UAT_BASE_URL; retry ${attempt}/18"
+            echo "Waiting for exact revision $TARGET_SHA on $UAT_BASE_URL (HTTP ${code:-none}); retry ${attempt}/18"
             sleep 10
           done
-          echo "Cloudflare did not confirm exact revision $TARGET_SHA on $UAT_BASE_URL"
+          echo "Target URL $UAT_BASE_URL did not serve exact revision $TARGET_SHA"
           exit 1
 
       - name: Install Chromium browser
