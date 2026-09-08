@@ -18,4 +18,10 @@ describe('course detail PIM SQL contract',()=>{
   expect(strippedOuterSegment).not.toContain("'value_json'")
   expect(strippedOuterSegment).not.toContain("'option_labels'")
  })
+
+ it('selects preferred single values within locale and channel partitions',()=>{
+  expect(migration).toContain('avp.locale is not distinct from av.locale')
+  expect(migration).toContain('avp.channel_code is not distinct from av.channel_code')
+  expect(migration).toContain('av.locale nulls first, av.channel_code nulls first')
+ })
 })
