@@ -3,6 +3,7 @@
 -- PIM values are limited to accepted rows whose validity window includes current_date and whose attribute is visible in the assigned family.
 -- Single-valued attributes expose at most one currently effective accepted preferred row per locale/channel partition; multivalue attributes retain the governed accepted effective set across partitions.
 -- Top-level SQL null fields are stripped without recursively mutating governed value_json or option_labels JSON semantics.
+-- Embedded option labels use the value locale first, fall back only to global labels, and never borrow another locale.
 
 create or replace function public.ui_course_detail(p_course_id uuid)
 returns jsonb
@@ -74,7 +75,25 @@ as $function$
           'valid_to', av.valid_to
         ))
         || case when av.value_json is not null then jsonb_build_object('value_json', av.value_json) else '{}'::jsonb end
-        || jsonb_build_object('option_labels', coalesce((select jsonb_object_agg(ao.code,ao.label order by ao.display_order nulls last,ao.code) from pim.attribute_options ao where ao.attribute_id=ad.id and coalesce(ao.status,'active')='active'),'{}'::jsonb))
+        || jsonb_build_object('option_labels', coalesce((
+          select jsonb_object_agg(opt.code,opt.label order by opt.display_order nulls last,opt.code)
+          from (
+            select distinct on (ao.code)
+              ao.code,
+              ao.label,
+              ao.display_order
+            from pim.attribute_options ao
+            where ao.attribute_id=ad.id
+              and coalesce(ao.status,'active')='active'
+              and (ao.locale is not distinct from av.locale or ao.locale is null)
+              and (av.locale is not null or ao.locale is null)
+            order by ao.code,
+              (ao.locale is not distinct from av.locale) desc,
+              ao.display_order nulls last,
+              ao.updated_at desc,
+              ao.id
+          ) opt
+        ),'{}'::jsonb))
       ) order by coalesce(fa.display_order,ad.display_order), av.locale nulls first, av.channel_code nulls first, av.position nulls first, av.created_at)
       from pim.entity_registry er2
       join pim.attribute_values av on av.entity_id=er2.id
