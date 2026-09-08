@@ -16,7 +16,7 @@ test.describe('CF-102 Provider logos across detail, list and comparison @targete
    const compare=fs.readFileSync('src/ComparisonWorkspace.jsx','utf8')
    const logo=fs.readFileSync('src/ProviderLogo.jsx','utf8')
    const edge=fs.readFileSync('supabase/functions/provider-asset-access/index.ts','utf8')
-   const api=fs.readFileSync('src/lib/supabase.js','utf8')
+   const api=fs.readFileSync('src/lib/supabase.ts','utf8')
    const scholarship=fs.readFileSync('src/scholarship-selection-entry.jsx','utf8')
 
    // Feature contract, deliberately NOT pinned to an old UI version.
@@ -33,13 +33,13 @@ test.describe('CF-102 Provider logos across detail, list and comparison @targete
    expect(logo).toContain("supabase.functions.invoke('provider-asset-access',{body:{stable_keys:keys}})")
    expect(logo).toContain('persistListCache()')
    expect(logo).toContain('requestAnimationFrame')
-   expect(logo).toContain('img.loading=\'lazy\'')
+   expect(logo).toContain("img.loading='lazy'")
    expect(logo).toContain("img.decoding='async'")
    expect(logo).toContain("img.fetchPriority='low'")
    expect(edge).toContain('const SIGNED_URL_TTL_SECONDS=1800')
    expect(edge).toContain('const SIGNING_CONCURRENCY=8')
    expect(edge).toContain('mapLimit(rows,SIGNING_CONCURRENCY')
-   expect(api).toContain("providerAssetAccess: providerId => invoke('provider-asset-access'")
+   expect(api).toContain("providerAssetAccess: (providerId: any) => invoke('provider-asset-access'")
 
    // Later Scholarship work must coexist with, not replace, CF-102 logo wiring.
    expect(main).toContain("import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'")
