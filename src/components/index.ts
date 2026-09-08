@@ -1,0 +1,7 @@
+export { default as CourseDetailPolish } from '../CourseDetailPolish.jsx'
+export { default as ContextualInsights } from '../ContextualInsights.jsx'
+export { default as ComparisonWorkspace } from '../ComparisonWorkspace.jsx'
+export { default as EvidenceWorkspace } from '../EvidenceWorkspace.jsx'
+export { default as ProviderContactsWorkspace } from '../ProviderContactsWorkspace.jsx'
+export { default as DynamicPimFields } from './pim/DynamicPimFields.jsx'
+export { default as CourseDetailPimBridge } from './pim/CourseDetailPimBridge.jsx'
