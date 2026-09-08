@@ -80,6 +80,8 @@ as $function$
         and ad.entity_type='course'
         and coalesce(ad.status,'active')='active'
         and coalesce(fa.is_visible,true)
+        and (av.valid_from is null or av.valid_from <= current_date)
+        and (av.valid_to is null or av.valid_to >= current_date)
     ), '[]'::jsonb),
     'field_states', security.admin_course_field_states(c.id)
   ) end
