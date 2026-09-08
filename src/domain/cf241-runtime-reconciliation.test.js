@@ -13,8 +13,17 @@ describe('CF-241 forward runtime reconciliation contract', () => {
     expect(sql).toContain('admin_layer2_ops_overview_fast')
   })
 
-  it('fails closed on unknown dispatcher shapes and is replay-safe', () => {
-    expect(sql).toContain('dispatcher shape is neither superseded nor reconciled')
+  it('accepts the checked-in pre-CF-239 dispatcher shape for clean migration replay', () => {
+    expect(sql).toContain('v_evidence_checked_in')
+    expect(sql).toContain("'evidence_page'',''evidence_filters'',''evidence_detail'',''evidence_observations'',''evidence_entities''")
+    expect(sql).toContain('v_layer2_checked_in')
+    expect(sql).toContain("'layer2_ops_overview'',''layer2_ops_run_detail''")
+    expect(sql).toContain('v_evidence_checked_in_reconciled')
+    expect(sql).toContain('v_layer2_checked_in_reconciled')
+  })
+
+  it('fails closed on unknown dispatcher shapes and remains replay-safe', () => {
+    expect(sql).toContain('dispatcher shape is neither checked-in, superseded nor reconciled')
     expect(sql).toContain('position(v_evidence_new in v_definition)')
     expect(sql).toContain('position(v_layer2_new in v_definition)')
   })
