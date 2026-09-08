@@ -1,7 +1,7 @@
 -- Extend the existing governed course-detail projection with display-safe PIM family/value metadata.
 -- Browser access remains through public.admin_read('course_detail'); no direct PIM table grants are added.
--- PIM values are limited to rows whose validity window includes current_date.
--- Single-valued attributes expose at most one currently effective preferred row; multivalue attributes retain the governed effective set.
+-- PIM values are limited to accepted rows whose validity window includes current_date and whose attribute is visible in the assigned family.
+-- Single-valued attributes expose at most one currently effective accepted preferred row; multivalue attributes retain the governed accepted effective set.
 
 create or replace function public.ui_course_detail(p_course_id uuid)
 returns jsonb
@@ -76,12 +76,13 @@ as $function$
       from pim.entity_registry er2
       join pim.attribute_values av on av.entity_id=er2.id
       join pim.attribute_definitions ad on ad.id=av.attribute_id
-      left join pim.family_attributes fa on fa.family_id=er2.family_id and fa.attribute_id=ad.id
+      join pim.family_attributes fa on fa.family_id=er2.family_id and fa.attribute_id=ad.id
       where er2.entity_type='course'
         and er2.stable_key=c.stable_key
         and ad.entity_type='course'
         and coalesce(ad.status,'active')='active'
-        and coalesce(fa.is_visible,true)
+        and fa.is_visible is true
+        and av.review_status='accepted'
         and (av.valid_from is null or av.valid_from <= current_date)
         and (av.valid_to is null or av.valid_to >= current_date)
         and (
@@ -91,6 +92,7 @@ as $function$
             from pim.attribute_values avp
             where avp.entity_id=av.entity_id
               and avp.attribute_id=av.attribute_id
+              and avp.review_status='accepted'
               and avp.is_preferred is true
               and (avp.valid_from is null or avp.valid_from <= current_date)
               and (avp.valid_to is null or avp.valid_to >= current_date)
