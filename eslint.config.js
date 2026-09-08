@@ -47,8 +47,8 @@ export default [
           message: 'Raw SQL strings are prohibited in frontend source. Use governed admin_read RPC contracts.',
         },
         {
-          selector: "CallExpression[callee.property.name='from']",
-          message: 'Direct browser table reads/writes are prohibited. Route frontend data access through governed RPC/API methods.',
+          selector: "NewExpression[callee.name='Client']",
+          message: 'Do not instantiate database clients in frontend source. Use the governed data-access boundary.',
         },
       ],
     },
