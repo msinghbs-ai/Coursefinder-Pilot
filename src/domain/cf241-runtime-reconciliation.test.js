@@ -6,11 +6,31 @@ const migrationUrl = new URL('../../supabase/migrations/20260908103500_cf_241_fo
 const sql = readFileSync(fileURLToPath(migrationUrl), 'utf8')
 
 describe('CF-241 forward runtime reconciliation contract', () => {
-  it('restores the governed evidence page implementation before routing to it', () => {
-    const definition = sql.indexOf('create or replace function security.admin_evidence_page')
+  it('restores the governed lineage subsystem before routing Evidence reads to it', () => {
+    const lineageTable = sql.indexOf('create table if not exists pipeline.evidence_lineage_stats')
+    const evidencePage = sql.indexOf('create or replace function security.admin_evidence_page')
     const dispatcher = sql.indexOf("v_evidence_new constant text := 'if p_operation=''evidence_page'' then return security.admin_evidence_page(p_args); end if;'")
-    expect(definition).toBeGreaterThanOrEqual(0)
-    expect(dispatcher).toBeGreaterThan(definition)
+
+    expect(lineageTable).toBeGreaterThanOrEqual(0)
+    expect(evidencePage).toBeGreaterThan(lineageTable)
+    expect(dispatcher).toBeGreaterThan(evidencePage)
+    expect(sql).toContain('create or replace function security.adjust_evidence_lineage_stats')
+    expect(sql).toContain('create or replace function security.sync_evidence_lineage_stats')
+    expect(sql).toContain('create or replace function security.evidence_row_source_null')
+    expect(sql).toContain('create or replace function security.evidence_row_rejected')
+    expect(sql).toContain('cf241_evidence_lineage_rebuild')
+    expect(sql).toContain('evidence_lineage_stats_sync')
+  })
+
+  it('keeps Evidence freshness filters aligned with returned state precedence', () => {
+    const nonStale = "lower(coalesce(e.metadata->>'freshness_state',''))<>'stale' and lower(coalesce(e.metadata->>'stale','false'))<>'true'"
+    expect(sql).toContain(`v_freshness='expired' and ${nonStale}`)
+    expect(sql).toContain(`v_freshness='current' and ${nonStale}`)
+    expect(sql).toContain(`v_freshness='no_policy' and ${nonStale}`)
+    expect(sql).toContain("'freshness_state',case when x.explicit_stale then 'stale'")
+  })
+
+  it('restores the governed evidence page contract', () => {
     expect(sql).toContain("security.admin_evidence_layer(e.storage_path,e.evidence_type,e.metadata,s.source_type)")
     expect(sql).toContain("if v_rank<3 then raise exception 'curator role required'")
     expect(sql).toContain("set search_path to 'pg_catalog','security','pipeline','ref','auth','storage'")
