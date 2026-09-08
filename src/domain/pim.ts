@@ -15,12 +15,20 @@ export const CORE_COURSE_ATTRIBUTE_CODES = new Set([
   'provider_name',
   'course_code',
   'study_level',
+  'level_name',
   'field_of_study',
   'duration',
   'delivery_mode',
   'lifecycle_status',
   'publication_status',
   'official_course_url',
+  'fees',
+  'course_fees',
+  'intakes',
+  'course_intakes',
+  'english_requirement',
+  'english_requirements',
+  'course_english_requirements',
 ])
 
 export function pimValue(value: PimAttributeValue): unknown {
