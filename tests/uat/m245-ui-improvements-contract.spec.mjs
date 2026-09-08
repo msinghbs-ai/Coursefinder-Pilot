@@ -62,8 +62,10 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   expect(migration).toContain("'sort',v_sort,'direction',v_dir")
 
   // Open Dataset / Compare and provider comparison defaults remain publisher-specific.
-  expect(shell).toContain('dataset=qs_wur&year=')
-  expect(shell).toContain('dataset=the_wur&year=')
+  expect(shell).toContain("navigate('Statistics & Rankings',{dataset:system,year:selected})")
+  expect(shell).toContain("openRanking('qs_wur','qs')")
+  expect(shell).toContain("openRanking('the_wur','the')")
+  expect(shell).toContain("navigate('Statistics & Rankings',{dataset:system,year:e.target.value})")
   expect(shell).toMatch(/QS World University Rankings[\s\S]*Open Dataset[\s\S]*Compare/)
   expect(shell).toMatch(/Times Higher Education[\s\S]*Open Dataset[\s\S]*Compare/)
   expect(compare).toContain("datasets,setDatasets]=useState({qilt:true,prisms:true,qs:true,the:true})")
