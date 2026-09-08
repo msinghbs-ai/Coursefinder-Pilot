@@ -51,6 +51,14 @@ export function pimDisplayValue(attribute: Attribute, value: PimAttributeValue, 
   return raw
 }
 
+export function pimOptionLabelsForValue(value: PimAttributeValue, fallback: Map<string, string>): Map<string, string> {
+  const map = new Map(fallback)
+  for (const [code, label] of Object.entries(value.option_labels || {})) {
+    map.set(`${value.attribute_id}:${code}`, String(label))
+  }
+  return map
+}
+
 export function activeAttributes(attributes: Attribute[], entityType: string): Attribute[] {
   return attributes
     .filter(attribute => attribute.entity_type === entityType)
