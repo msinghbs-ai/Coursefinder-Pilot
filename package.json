@@ -15,7 +15,9 @@
     "test:uat:report": "playwright show-report playwright-report",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "release:check": "node scripts/verify-release-notes.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -31,8 +33,13 @@
     "wrangler": "^4.120.1",
     "eslint": "^9.35.0",
     "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0",
     "vitest": "^3.2.4"
+  },
+  "lint-staged": {
+    "*.{js,jsx,mjs,ts,tsx}": "eslint --max-warnings=0 --no-warn-ignored"
   }
 }
