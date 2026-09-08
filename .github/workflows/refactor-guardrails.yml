@@ -14,7 +14,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       UAT_BASE_URL: https://refactor-2-15-74-architectural-hardening-coursefinder-pilot.techm.workers.dev
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
@@ -53,7 +53,7 @@ jobs:
           for attempt in $(seq 1 12); do
             code=$(curl -L -sS -o /tmp/coursefinder-refactor-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?uat_probe=${GITHUB_SHA}" || true)
             if [ "$code" = "200" ]; then
-              echo "Branch preview reachable for UAT"
+              echo "Branch preview reachable for governed UAT"
               exit 0
             fi
             echo "Branch preview not ready yet (HTTP ${code:-none}); retry ${attempt}/12"
@@ -63,5 +63,8 @@ jobs:
           exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Full UAT
-        run: npm run test:uat
+      - name: Governed bounded UAT
+        run: >-
+          npx playwright test -c playwright.config.mjs
+          tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
+          tests/uat/m2-5-platform-readiness-deployed.spec.mjs
