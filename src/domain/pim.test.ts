@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dynamicCourseAttributes, hasRenderablePimValues, pimDisplayValue, pimScopeKey, pimScopeLabel, pimValue, valuesByAttribute, valuesByScope } from './pim'
+import { dynamicCourseAttributes, hasRenderablePimValues, pimDisplayValue, pimOptionLabelsForValue, pimScopeKey, pimScopeLabel, pimValue, valuesByAttribute, valuesByScope } from './pim'
 
 const attributes = [
   { id: 'a1', code: 'course_description', name: 'Description', entity_type: 'course', data_type: 'richtext', display_order: 40, status: 'active' },
@@ -21,6 +21,15 @@ describe('PIM value normalization', () => {
     const optionLabels = new Map([['a3:engineering', 'Engineering'], ['a3:technology', 'Technology']])
     expect(pimDisplayValue(attributes[2], { attribute_id: 'a3', value_json: ['engineering', 'technology'] }, optionLabels)).toEqual(['Engineering', 'Technology'])
     expect(pimDisplayValue(attributes[2], { attribute_id: 'a3', value_code: 'engineering' }, optionLabels)).toBe('Engineering')
+  })
+
+  it('keeps embedded option labels scoped to each value', () => {
+    const fallback = new Map([['a3:engineering', 'Engineering']])
+    const au = { attribute_id: 'a3', locale: 'en-AU', channel_code: 'website', value_code: 'engineering', option_labels: { engineering: 'Engineering' } }
+    const fr = { attribute_id: 'a3', locale: 'fr-FR', channel_code: 'website', value_code: 'engineering', option_labels: { engineering: 'Ingénierie' } }
+    expect(pimDisplayValue(attributes[2], au, pimOptionLabelsForValue(au, fallback))).toBe('Engineering')
+    expect(pimDisplayValue(attributes[2], fr, pimOptionLabelsForValue(fr, fallback))).toBe('Ingénierie')
+    expect(fallback.get('a3:engineering')).toBe('Engineering')
   })
 
   it('groups multi-value rows by attribute and preserves position', () => {
