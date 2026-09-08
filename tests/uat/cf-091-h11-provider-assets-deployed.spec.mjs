@@ -9,7 +9,7 @@ test.describe('CF-091 H11 Provider Assets coverage @targeted',()=>{
 
   test('source contract exposes governed Provider Assets read surface',async()=>{
     const main=fs.readFileSync('src/mature-main.jsx','utf8')
-    const api=fs.readFileSync('src/lib/supabase.js','utf8')
+    const api=fs.readFileSync('src/lib/supabase.ts','utf8')
     expect(main).toContain("key:'provider-assets',label:'Provider Assets'")
     expect(main).toContain('function ProviderAssetsWorkspace')
     expect(main).toContain("const UI_VERSION='2.15.56'")

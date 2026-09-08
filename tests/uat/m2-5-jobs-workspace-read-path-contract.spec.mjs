@@ -16,7 +16,7 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     const[shell,ops,supa,versionEntry,index,releaseTest]=await Promise.all([
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('src/pipeline-ops-entry.jsx','utf8'),
-      fs.readFile('src/lib/supabase.js','utf8'),
+      fs.readFile('src/lib/supabase.ts','utf8'),
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('tests/uat/release-notes-deployed.spec.mjs','utf8'),
@@ -38,9 +38,11 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     expect(ops).toContain('Evidence linked or referenced by this job')
     expect(ops).toContain('No generic mutation is exposed by this console.')
 
+    expect(supa).toContain("supabase.rpc('admin_read'")
+    expect(supa).toContain("adminReadImpl('pipeline_jobs_page'")
+    expect(supa).toContain("adminReadImpl('pipeline_job_detail'")
     expect(supa).not.toContain("if (route === operation) return []")
     expect(supa).not.toContain("Jobs/Sources routes are owned by the Pipeline Ops overlay")
-    expect(supa).toContain("Jobs/Sources are canonical shell workspaces again")
 
     const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]

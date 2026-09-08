@@ -11,6 +11,12 @@ it('keeps hardcoded course description out of dynamic PIM fields', () => {
   expect(dynamicCourseAttributes(attributes).map(x => x.code)).toEqual(['course_prerequisites', 'course_keywords'])
 })
 
+it('keeps relational course identity, fee, intake and English fields out of dynamic PIM fields', () => {
+  const core = ['course_code', 'level_name', 'fees', 'course_fees', 'intakes', 'course_intakes', 'english_requirement', 'english_requirements', 'course_english_requirements']
+    .map((code, index) => ({ id: `core-${index}`, code, name: code, entity_type: 'course', data_type: 'text', status: 'active' }))
+  expect(dynamicCourseAttributes([...core, attributes[1]]).map(x => x.code)).toEqual(['course_prerequisites'])
+})
+
 describe('PIM value normalization', () => {
   it('returns the first populated typed value', () => {
     expect(pimValue({ attribute_id: 'a2', value_text: 'Maths required' })).toBe('Maths required')

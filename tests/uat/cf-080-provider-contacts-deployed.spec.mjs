@@ -40,7 +40,7 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
     const [shell,workspace,client,layer4]=await Promise.all([
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('src/ProviderContactsWorkspace.jsx','utf8'),
-      fs.readFile('src/lib/supabase.js','utf8'),
+      fs.readFile('src/lib/supabase.ts','utf8'),
       fs.readFile('src/m2-3-intelligence-entry.jsx','utf8'),
     ])
     expect(shell).toContain("item('Provider Contacts',UsersRound,1)")
@@ -50,7 +50,7 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
     expect(workspace).toContain('provider_ambiguous')
     expect(workspace).toContain('provider_unmatched')
     expect(workspace).toContain('CSV date format')
-    expect(client).toContain("adminRead('provider_contacts_page'")
+    expect(client).toContain("adminReadImpl('provider_contacts_page'")
     expect(client).toContain("supabase.rpc('provider_contact_manage'")
     expect(client).toContain("invoke('provider-contact-import'")
     expect(client).toContain("invoke('provider-contact-control'")

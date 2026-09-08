@@ -5,15 +5,16 @@ import{readFile}from'node:fs/promises'
 const read=p=>readFile(new URL(`../../${p}`,import.meta.url),'utf8')
 
 test('CF-208 Scholarship PIM catalogue is wired through the mature governed shell',async()=>{
- const[index,main,api]=await Promise.all([read('index.html'),read('src/mature-main.jsx'),read('src/lib/supabase.js')])
+ const[index,main,api]=await Promise.all([read('index.html'),read('src/mature-main.jsx'),read('src/lib/supabase.ts')])
  assert.match(index,/src\/mature-main\.jsx/)
  assert.match(main,/item\('Scholarships',Sparkles,1\)/)
  assert.match(main,/if\(page==='Scholarships'\)return <ScholarshipWorkspace/)
  assert.match(main,/function ScholarshipWorkspace/)
  assert.match(main,/<Catalogue type="scholarship"/)
  assert.match(main,/scholarship:\{operation:'scholarships_page',detail:'scholarship_detail',sort:'scholarship'/)
- assert.match(api,/scholarshipPage:\s*args\s*=>\s*entityPage\('scholarships_page',args\)/)
- assert.match(api,/scholarshipDetail:\s*scholarshipId\s*=>\s*adminRead\('scholarship_detail'/)
+ assert.match(api,/scholarshipPage:\s*\(args:\s*AnyArgs\)\s*=>\s*entityPage\('scholarships_page',\s*args\)/)
+ assert.match(api,/scholarshipDetail:\s*\(scholarshipId:\s*any\)\s*=>\s*adminReadImpl\('scholarship_detail'/)
+ assert.match(api,/supabase\.rpc\('admin_read'/)
 })
 
 test('CF-208 Scholarship PIM catalogue keeps operator search filter sort pagination and detail controls',async()=>{

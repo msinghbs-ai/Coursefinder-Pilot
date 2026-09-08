@@ -8,7 +8,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
    fs.readFile('src/mature-main.jsx','utf8'),
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
    fs.readFile('src/RankingDatasetViewer.js','utf8'),
-   fs.readFile('src/lib/supabase.js','utf8'),
+   fs.readFile('src/lib/supabase.ts','utf8'),
    fs.readFile('supabase/migrations/20260907064251_m245_ui_read_contract_reconciliation.sql','utf8'),
   ])
 
@@ -50,6 +50,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   // QS/THE use server ordering across the full paged ranking dataset.
   expect(api).toContain("sort = 'rank', direction = 'asc'")
   expect(api).toContain('provider_id: providerId || null, sort, direction')
+  expect(api).toContain("supabase.rpc('admin_read'")
   expect(ranking).toContain("sort=p.get('sort')||'rank'")
   expect(ranking).toContain('data-sort="${k}"')
   expect(ranking).toContain('setParams({sort:next,direction:')
@@ -61,12 +62,14 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   expect(migration).toContain("'sort',v_sort,'direction',v_dir")
 
   // Open Dataset / Compare and provider comparison defaults remain publisher-specific.
-  expect(shell).toContain('dataset=qs_wur&year=')
-  expect(shell).toContain('dataset=the_wur&year=')
+  expect(shell).toContain("navigate('Statistics & Rankings',{dataset:system,year:selected})")
+  expect(shell).toContain("openRanking('qs_wur','qs')")
+  expect(shell).toContain("openRanking('the_wur','the')")
+  expect(shell).toContain("navigate('Statistics & Rankings',{dataset:system,year:e.target.value})")
   expect(shell).toMatch(/QS World University Rankings[\s\S]*Open Dataset[\s\S]*Compare/)
   expect(shell).toMatch(/Times Higher Education[\s\S]*Open Dataset[\s\S]*Compare/)
   expect(compare).toContain("datasets,setDatasets]=useState({qilt:true,prisms:true,qs:true,the:true})")
-  expect(compare).toContain('historical editions')
+  expect(compare).toContain('retained editions')
   expect(compare).toContain('No accepted observation for edition')
   expect(compare).toContain('cf-flow-sticky')
   expect(compare).toContain('<ProviderLogo providerId={logoProviderId}')
