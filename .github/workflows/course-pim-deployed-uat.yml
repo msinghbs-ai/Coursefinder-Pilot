@@ -99,8 +99,27 @@ jobs:
               echo "DEPLOYMENT_MODE=main_push" >> "$GITHUB_ENV"
               ;;
             workflow_dispatch)
+              python - <<'PY'
+          import os
+          from urllib.parse import urlsplit
+
+          raw = os.environ.get('DISPATCH_BASE_URL', '')
+          if '\r' in raw or '\n' in raw:
+              raise SystemExit('Dispatch base_url must be a single line')
+          parsed = urlsplit(raw)
+          if parsed.scheme != 'https':
+              raise SystemExit('Dispatch base_url must use HTTPS')
+          if parsed.username is not None or parsed.password is not None:
+              raise SystemExit('Dispatch base_url must not contain userinfo')
+          if parsed.hostname != 'coursefinder-pilot.techm.workers.dev':
+              raise SystemExit('Dispatch base_url must use the governed CourseFinder Pilot origin')
+          if parsed.port not in (None, 443):
+              raise SystemExit('Dispatch base_url must use the default HTTPS port')
+          if parsed.path not in ('', '/') or parsed.query or parsed.fragment:
+              raise SystemExit('Dispatch base_url must be the governed origin only')
+          PY
               echo "TARGET_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
-              printf 'UAT_BASE_URL=%s\n' "$DISPATCH_BASE_URL" >> "$GITHUB_ENV"
+              echo "UAT_BASE_URL=https://coursefinder-pilot.techm.workers.dev" >> "$GITHUB_ENV"
               echo "DEPLOYMENT_MODE=dispatch" >> "$GITHUB_ENV"
               ;;
             *)
