@@ -10,7 +10,7 @@ if (!base) {
 }
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
-const changed = git('diff', '--name-only', `${base}...${head}`)
+const changed = git('diff', '--no-renames', '--name-only', `${base}...${head}`)
   .split('\n')
   .map((value) => value.trim())
   .filter(Boolean)
