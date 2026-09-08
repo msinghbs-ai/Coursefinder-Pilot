@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{api}from'../../data/supabase'
-import{dynamicCourseAttributes,hasRenderablePimValues,pimValue,valuesByAttribute}from'../../domain/pim'
+import{dynamicCourseAttributes,hasRenderablePimValues,pimDisplayValue,valuesByAttribute}from'../../domain/pim'
 
 const text=value=>{
  if(value==null)return'—'
@@ -18,7 +18,7 @@ export default function DynamicPimFields({entityType='course',familyId=null,valu
  const definitions=useMemo(()=>entityType==='course'?dynamicCourseAttributes(attributes):attributes.filter(x=>x.entity_type===entityType&&(!x.status||x.status==='active')),[attributes,entityType])
  const grouped=useMemo(()=>valuesByAttribute(values||[]),[values])
  const optionLabels=useMemo(()=>new Map((options||[]).map(x=>[`${x.attribute_id}:${x.code}`,x.label||x.code])),[options])
- const rows=useMemo(()=>definitions.map(attribute=>{const matches=grouped.get(attribute.code)||grouped.get(attribute.id)||[];const rendered=matches.map(value=>{const raw=pimValue(value);if(raw==null)return null;if(value.value_code!=null)return optionLabels.get(`${attribute.id}:${value.value_code}`)||text(raw);return text(raw)}).filter(Boolean);return rendered.length?{attribute,rendered}:null}).filter(Boolean),[definitions,grouped,optionLabels])
+ const rows=useMemo(()=>definitions.map(attribute=>{const matches=grouped.get(attribute.code)||grouped.get(attribute.id)||[];const rendered=matches.map(value=>{const display=pimDisplayValue(attribute,value,optionLabels);return display==null?null:text(display)}).filter(Boolean);return rendered.length?{attribute,rendered}:null}).filter(Boolean),[definitions,grouped,optionLabels])
  if(!enabled||!family||rows.length===0)return null
  return <section className="m-detail-section cf-section" data-pim-dynamic-fields><div className="cf-section-title"><h3>{family.name||'Additional PIM attributes'}</h3></div><div className="m-detail-grid">{rows.map(({attribute,rendered})=><div className="cf-field" key={attribute.id}><div className="cf-field-label"><span>{attribute.name}</span></div><div className="cf-field-value">{rendered.join(', ')}</div></div>)}</div></section>
 }
