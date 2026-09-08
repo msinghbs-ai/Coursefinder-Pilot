@@ -1,0 +1,5 @@
+export { default as CourseDetailPolish } from '../CourseDetailPolish.jsx'
+export { default as ContextualInsights } from '../ContextualInsights.jsx'
+export { default as ComparisonWorkspace } from '../ComparisonWorkspace.jsx'
+export { default as EvidenceWorkspace } from '../EvidenceWorkspace.jsx'
+export { default as ProviderContactsWorkspace } from '../ProviderContactsWorkspace.jsx'
