@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 30
     env:
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_HEAD_REF: ${{ github.head_ref }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
@@ -42,7 +43,7 @@ jobs:
       - name: Resolve current pull-request preview
         shell: bash
         run: |
-          branch='${{ github.head_ref }}'
+          branch="$PR_HEAD_REF"
           if [ -z "$branch" ] || [ -z "$PR_HEAD_SHA" ]; then
             echo "Pull-request head branch/SHA is unavailable"
             exit 1
