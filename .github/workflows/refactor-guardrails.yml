@@ -16,7 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      UAT_BASE_URL: https://refactor-2-15-74-architectural-hardening-coursefinder-pilot.techm.workers.dev
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
@@ -36,6 +35,21 @@ jobs:
         run: npm run test:unit
       - name: Build
         run: npm run build
+      - name: Resolve current pull-request preview
+        shell: bash
+        run: |
+          branch='${{ github.head_ref }}'
+          if [ -z "$branch" ]; then
+            echo "Pull-request head branch is unavailable"
+            exit 1
+          fi
+          slug=$(printf '%s' "$branch" | tr '[:upper:]' '[:lower:]' | sed -E 's#[/._]+#-#g; s#[^a-z0-9-]+#-#g; s#-+#-#g; s#^-+|-+$##g')
+          if [ -z "$slug" ]; then
+            echo "Unable to derive Cloudflare preview slug from $branch"
+            exit 1
+          fi
+          echo "UAT_BASE_URL=https://${slug}-coursefinder-pilot.techm.workers.dev" >> "$GITHUB_ENV"
+          echo "Resolved current PR preview: ${slug}-coursefinder-pilot.techm.workers.dev"
       - name: Preflight governed UAT credentials
         shell: bash
         run: |
@@ -47,19 +61,23 @@ jobs:
             https://*) ;;
             *) echo "UAT_BASE_URL must use HTTPS"; exit 1 ;;
           esac
-      - name: Wait for branch preview
+      - name: Wait for exact branch preview revision
         shell: bash
         run: |
           for attempt in $(seq 1 12); do
             code=$(curl -L -sS -o /tmp/coursefinder-refactor-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?uat_probe=${GITHUB_SHA}" || true)
-            if [ "$code" = "200" ]; then
-              echo "Branch preview reachable for governed UAT"
+            if [ "$code" = "200" ] && cmp -s dist/index.html /tmp/coursefinder-refactor-home.html; then
+              echo "Current PR preview matches the locally built index exactly"
               exit 0
             fi
-            echo "Branch preview not ready yet (HTTP ${code:-none}); retry ${attempt}/12"
+            if [ "$code" = "200" ]; then
+              echo "Preview reachable but does not yet match this PR build; retry ${attempt}/12"
+            else
+              echo "Preview not ready yet (HTTP ${code:-none}); retry ${attempt}/12"
+            fi
             sleep 10
           done
-          echo "Branch preview did not become reachable within the deployment-settle window"
+          echo "Current PR preview did not serve the exact built revision within the deployment-settle window"
           exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
