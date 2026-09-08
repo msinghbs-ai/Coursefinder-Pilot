@@ -1,0 +1,200 @@
+name: Course PIM Deployed UAT
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/course-pim-deployed-uat.yml'
+      - '.github/cf-2-15-74-course-pim-candidate'
+      - 'vite.config.js'
+      - 'playwright.config.mjs'
+      - 'src/mature-main.jsx'
+      - 'src/Layer4Intervention.jsx'
+      - 'src/lib/supabase.js'
+      - 'src/data/supabase.ts'
+      - 'src/components/pim/**'
+      - 'src/domain/pim*'
+      - 'src/types/pim.ts'
+      - 'src/types/admin-read.ts'
+      - 'supabase/migrations/20260908032500_course_detail_pim_payload.sql'
+      - 'tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs'
+      - 'tests/uat/support/runtime-evidence.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/course-pim-deployed-uat.yml'
+      - '.github/cf-2-15-74-course-pim-candidate'
+      - 'vite.config.js'
+      - 'playwright.config.mjs'
+      - 'src/mature-main.jsx'
+      - 'src/Layer4Intervention.jsx'
+      - 'src/lib/supabase.js'
+      - 'src/data/supabase.ts'
+      - 'src/components/pim/**'
+      - 'src/domain/pim*'
+      - 'src/types/pim.ts'
+      - 'src/types/admin-read.ts'
+      - 'supabase/migrations/20260908032500_course_detail_pim_payload.sql'
+      - 'tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs'
+      - 'tests/uat/support/runtime-evidence.mjs'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed CourseFinder Admin URL
+        required: true
+        default: https://coursefinder-pilot.techm.workers.dev
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-pim-deployed-uat-${{ github.event_name }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  course-pim-deployed-uat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_HEAD_REF: ${{ github.head_ref }}
+      DISPATCH_BASE_URL: ${{ inputs.base_url }}
+    steps:
+      - name: Checkout exact revision under test
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --prefer-offline --no-audit --no-fund
+
+      - name: Resolve exact deployment target
+        shell: bash
+        run: |
+          case "${{ github.event_name }}" in
+            pull_request)
+              if [ -z "$PR_HEAD_SHA" ] || [ -z "$PR_HEAD_REF" ]; then
+                echo "Pull-request head branch/SHA is unavailable"
+                exit 1
+              fi
+              slug=$(printf '%s' "$PR_HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed -E 's#[/._]+#-#g; s#[^a-z0-9-]+#-#g; s#-+#-#g; s#^-+|-+$##g')
+              if [ -z "$slug" ]; then
+                echo "Unable to derive Cloudflare preview slug from $PR_HEAD_REF"
+                exit 1
+              fi
+              echo "TARGET_SHA=$PR_HEAD_SHA" >> "$GITHUB_ENV"
+              echo "UAT_BASE_URL=https://${slug}-coursefinder-pilot.techm.workers.dev" >> "$GITHUB_ENV"
+              echo "DEPLOYMENT_MODE=preview" >> "$GITHUB_ENV"
+              ;;
+            push)
+              echo "TARGET_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
+              echo "UAT_BASE_URL=https://coursefinder-pilot.techm.workers.dev" >> "$GITHUB_ENV"
+              echo "DEPLOYMENT_MODE=main_push" >> "$GITHUB_ENV"
+              ;;
+            workflow_dispatch)
+              python - <<'PY'
+          import os
+          from urllib.parse import urlsplit
+
+          raw = os.environ.get('DISPATCH_BASE_URL', '')
+          if '\r' in raw or '\n' in raw:
+              raise SystemExit('Dispatch base_url must be a single line')
+          parsed = urlsplit(raw)
+          if parsed.scheme != 'https':
+              raise SystemExit('Dispatch base_url must use HTTPS')
+          if parsed.username is not None or parsed.password is not None:
+              raise SystemExit('Dispatch base_url must not contain userinfo')
+          if parsed.hostname != 'coursefinder-pilot.techm.workers.dev':
+              raise SystemExit('Dispatch base_url must use the governed CourseFinder Pilot origin')
+          if parsed.port not in (None, 443):
+              raise SystemExit('Dispatch base_url must use the default HTTPS port')
+          if parsed.path not in ('', '/') or parsed.query or parsed.fragment:
+              raise SystemExit('Dispatch base_url must be the governed origin only')
+          PY
+              echo "TARGET_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
+              echo "UAT_BASE_URL=https://coursefinder-pilot.techm.workers.dev" >> "$GITHUB_ENV"
+              echo "DEPLOYMENT_MODE=dispatch" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "Unsupported event: ${{ github.event_name }}"
+              exit 1
+              ;;
+          esac
+
+      - name: Preflight governed UAT credentials
+        shell: bash
+        run: |
+          if [ -z "$UAT_EMAIL" ] || [ -z "$UAT_PASSWORD" ]; then
+            echo "Required Actions secrets are missing: COURSEFINDER_UAT_EMAIL / COURSEFINDER_UAT_PASSWORD"
+            exit 1
+          fi
+          case "$UAT_BASE_URL" in
+            https://*) ;;
+            *) echo "UAT_BASE_URL must use HTTPS for deployed acceptance"; exit 1 ;;
+          esac
+          if [ -z "$TARGET_SHA" ] || [ -z "$DEPLOYMENT_MODE" ]; then
+            echo "TARGET_SHA and DEPLOYMENT_MODE are required"
+            exit 1
+          fi
+
+      - name: Wait for exact deployed revision at target URL
+        shell: bash
+        run: |
+          for attempt in $(seq 1 18); do
+            code=$(curl -L -sS -o /tmp/coursefinder-pim-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?pim_uat_probe=${TARGET_SHA}" || true)
+            if [ "$code" = "200" ]; then
+              if python - <<'PY'
+          import os
+          from html.parser import HTMLParser
+
+          class BuildShaParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.found = False
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() != 'meta':
+                      return
+                  values = dict(attrs)
+                  if values.get('name') == 'coursefinder-build-sha' and values.get('content') == os.environ['TARGET_SHA']:
+                      self.found = True
+
+          parser = BuildShaParser()
+          with open('/tmp/coursefinder-pim-home.html', encoding='utf-8') as handle:
+              parser.feed(handle.read())
+          raise SystemExit(0 if parser.found else 1)
+          PY
+              then
+                echo "Target URL $UAT_BASE_URL is serving exact $DEPLOYMENT_MODE revision $TARGET_SHA"
+                exit 0
+              fi
+            fi
+            echo "Waiting for exact revision $TARGET_SHA on $UAT_BASE_URL (HTTP ${code:-none}); retry ${attempt}/18"
+            sleep 10
+          done
+          echo "Target URL $UAT_BASE_URL did not serve exact revision $TARGET_SHA"
+          exit 1
+
+      - name: Install Chromium browser
+        run: npx playwright install chromium
+
+      - name: Run governed Course PIM deployed contract
+        run: npx playwright test tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs --project=chromium-desktop
+
+      - name: Upload Course PIM UAT evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: course-pim-deployed-uat-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            playwright-report/
+            test-results/
+            uat-artifacts/
