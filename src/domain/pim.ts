@@ -62,10 +62,31 @@ export function dynamicCourseAttributes(attributes: Attribute[]): Attribute[] {
   return activeAttributes(attributes, 'course').filter(attribute => !CORE_COURSE_ATTRIBUTE_CODES.has(attribute.code))
 }
 
+export function pimScopeKey(value: PimAttributeValue): string {
+  return `${value.locale ?? ''}\u0000${value.channel_code ?? ''}`
+}
+
+export function pimScopeLabel(value: PimAttributeValue): string {
+  const parts = [value.locale, value.channel_code].filter(Boolean)
+  return parts.length ? parts.join(' · ') : ''
+}
+
 export function valuesByAttribute(values: PimAttributeValue[]): Map<string, PimAttributeValue[]> {
   const map = new Map<string, PimAttributeValue[]>()
   for (const value of values) {
     const key = value.attribute_code || value.attribute_id
+    const existing = map.get(key) || []
+    existing.push(value)
+    existing.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    map.set(key, existing)
+  }
+  return map
+}
+
+export function valuesByScope(values: PimAttributeValue[]): Map<string, PimAttributeValue[]> {
+  const map = new Map<string, PimAttributeValue[]>()
+  for (const value of values) {
+    const key = pimScopeKey(value)
     const existing = map.get(key) || []
     existing.push(value)
     existing.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
