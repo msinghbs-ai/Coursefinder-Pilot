@@ -10,17 +10,26 @@ export interface PagePayload<T> {
   [key: string]: unknown
 }
 
-export interface ProviderDetailPayload extends Provider {
+export interface PimDetailEnvelope {
+  pim_family_id?: string | null
+  pim_attribute_values?: PimAttributeValue[]
+  pim?: {
+    family_id?: string | null
+    attribute_values?: PimAttributeValue[]
+    [key: string]: unknown
+  }
+}
+
+export interface ProviderDetailPayload extends Provider, PimDetailEnvelope {
   courses?: Course[] | PagePayload<Course>
   evidence?: Evidence[] | PagePayload<Evidence>
   contextual_insights?: unknown
   ranking_context?: unknown
   provider_asset_context?: unknown
   scholarship_context?: unknown
-  pim_attribute_values?: PimAttributeValue[]
 }
 
-export interface CourseDetailPayload extends Course {
+export interface CourseDetailPayload extends Course, PimDetailEnvelope {
   campuses?: Campus[]
   related_campuses?: Campus[]
   evidence?: Evidence[]
@@ -31,12 +40,10 @@ export interface CourseDetailPayload extends Course {
   contextual_insights?: unknown
   ranking_context?: unknown
   field_states?: Array<Record<string, unknown>>
-  pim_attribute_values?: PimAttributeValue[]
 }
 
-export interface ScholarshipDetailPayload extends Scholarship {
+export interface ScholarshipDetailPayload extends Scholarship, PimDetailEnvelope {
   semantic_summary?: unknown
-  pim_attribute_values?: PimAttributeValue[]
 }
 
 export interface AdminReadPayloadMap {
