@@ -1,6 +1,7 @@
 import React,{useEffect,useState}from'react'
 import{supabase}from'./lib/supabase'
 import ManualPimCandidateWorkspace from'./ManualPimCandidateWorkspace'
+import DynamicPimFields from'./components/pim/DynamicPimFields'
 
 const fmt=v=>{if(v==null)return'—';if(typeof v==='string')return v;try{return JSON.stringify(v)}catch{return String(v)}}
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
@@ -78,7 +79,11 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
  }
  const fields=Array.isArray(layer4?.fields)?layer4.fields:[]
  const providerContext=type==='provider'?data?.id:(data?.provider_id||data?.provider?.id||'')
- return <section className="m-detail-section cf-layer4-override">
+ const pimFamilyId=type==='course'?(data?.pim_family_id??data?.pim?.family_id??null):null
+ const pimValues=type==='course'?(data?.pim_attribute_values??data?.attribute_values??data?.pim?.attribute_values??[]):[]
+ return <>
+  {type==='course'&&<DynamicPimFields entityType="course" familyId={pimFamilyId} values={Array.isArray(pimValues)?pimValues:[]}/>} 
+  <section className="m-detail-section cf-layer4-override">
   <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start'}}>
    <div><h3>Layer 4 governed intervention</h3><p className="m-help">Effective-value overlay only. Underlying source and canonical history remain preserved.</p></div>
    <span className="m-role-pill">{Number(layer4?.active_override_count||0)} active L4</span>
@@ -123,4 +128,5 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
    {history.rows.map(x=><div className="m-record" key={x.id}><span>{human(x.event_type)} · {x.actor_email||x.actor_id} · {when(x.created_at)}</span><small>{human(x.reason_code)}{x.comment?' · '+x.comment:''}</small></div>)}
   </div>}
  </section>
+ </>
 }
