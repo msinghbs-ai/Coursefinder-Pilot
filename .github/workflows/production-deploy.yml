@@ -1,0 +1,94 @@
+name: Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      region:
+        description: Production region to deploy
+        required: true
+        type: choice
+        options:
+          - au
+          - uk
+          - us
+          - ca
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-${{ inputs.region }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-deploy:
+    name: Validate and deploy (${{ inputs.region }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production-${{ inputs.region }}
+    env:
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Require main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Production deployments must run from main; got $GITHUB_REF" >&2
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Validate environment boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY CLOUDFLARE_PAGES_PROJECT CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Required environment-scoped value is missing: $name" >&2
+              exit 1
+            fi
+          done
+          if [[ ! "$VITE_SUPABASE_URL" =~ ^https://[a-z0-9]+\.supabase\.co$ ]]; then
+            echo "SUPABASE_URL must be the environment's canonical Supabase project URL." >&2
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Build production artifact
+        run: npm run build
+
+      - name: Deploy Cloudflare Pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler pages deploy dist \
+            --project-name "$CLOUDFLARE_PAGES_PROJECT" \
+            --branch main
