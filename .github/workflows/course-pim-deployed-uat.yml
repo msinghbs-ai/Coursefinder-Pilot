@@ -50,6 +50,7 @@ jobs:
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       PR_HEAD_REF: ${{ github.head_ref }}
+      DISPATCH_BASE_URL: ${{ inputs.base_url }}
     steps:
       - name: Checkout exact revision under test
         uses: actions/checkout@v4
@@ -89,7 +90,7 @@ jobs:
               ;;
             workflow_dispatch)
               echo "TARGET_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
-              echo "UAT_BASE_URL=${{ inputs.base_url }}" >> "$GITHUB_ENV"
+              printf 'UAT_BASE_URL=%s\n' "$DISPATCH_BASE_URL" >> "$GITHUB_ENV"
               echo "DEPLOYMENT_MODE=dispatch" >> "$GITHUB_ENV"
               ;;
             *)
