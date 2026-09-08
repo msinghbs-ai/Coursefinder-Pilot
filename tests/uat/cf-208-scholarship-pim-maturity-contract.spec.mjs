@@ -12,8 +12,9 @@ test('CF-208 Scholarship PIM catalogue is wired through the mature governed shel
  assert.match(main,/function ScholarshipWorkspace/)
  assert.match(main,/<Catalogue type="scholarship"/)
  assert.match(main,/scholarship:\{operation:'scholarships_page',detail:'scholarship_detail',sort:'scholarship'/)
- assert.match(api,/scholarshipPage:\s*args\s*=>\s*entityPage\('scholarships_page',args\)/)
- assert.match(api,/scholarshipDetail:\s*scholarshipId\s*=>\s*adminRead\('scholarship_detail'/)
+ assert.match(api,/scholarshipPage:\s*\(args:\s*AnyArgs\)\s*=>\s*entityPage\('scholarships_page',\s*args\)/)
+ assert.match(api,/scholarshipDetail:\s*\(scholarshipId:\s*any\)\s*=>\s*adminReadImpl\('scholarship_detail'/)
+ assert.match(api,/supabase\.rpc\('admin_read'/)
 })
 
 test('CF-208 Scholarship PIM catalogue keeps operator search filter sort pagination and detail controls',async()=>{
