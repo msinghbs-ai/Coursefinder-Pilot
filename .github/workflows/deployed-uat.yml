@@ -111,283 +111,77 @@ jobs:
         run: |
           changed=""
           if git rev-parse HEAD^ >/dev/null 2>&1; then changed="$(git diff --name-only HEAD^ HEAD)"; fi
-          targeted=(tests/uat/layer1-operations-deployed.spec.mjs)
-          if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-|^supabase/(functions/layer2-|migrations/.*m2_4_2)|^tests/uat/layer2-)'; then
-            targeted=(tests/uat/layer2-operations-maturity-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|EvidenceWorkspace\.jsx|lib/supabase\.js)$|^supabase/migrations/.*a10_.*filter|^tests/uat/a10-paged-filters-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/a10-paged-filters-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(ContextualInsights\.jsx|CourseDetailPolish\.jsx)$|^supabase/migrations/.*a12_.*contextual|^tests/uat/a12-contextual-insights-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/a12-contextual-insights-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature\.css|layer2-operations-entry\.jsx|layer2-operations\.css|EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^supabase/functions/(layer2-acquire-v2|layer2-scope-discover-scheduled|layer2-screenshot-backfill-scheduled|admin-evidence-access)/|^supabase/migrations/.*a13_.*(provider_attempt|screenshot)|^tests/uat/a13-filter-demo-trace-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/a13-filter-demo-trace-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^supabase/functions/provider-contact-|^supabase/migrations/.*a15_|^tests/uat/a15-provider-contact-intelligence-deployed\.spec\.mjs$)'; then
+
+          # Routine deployed UAT is deliberately limited to retained, read-only
+          # suites under tests/uat. State-changing and superseded suites live in
+          # tests/retired-uat and must never be selected here.
+          targeted=(tests/uat/m2-5-platform-readiness-deployed.spec.mjs)
+
+          if printf '%s\n' "$changed" | grep -Eq '(^src/components/pim/|^src/domain/pim|^src/types/(pim|admin-read)\.ts$|^supabase/migrations/20260908032500_course_detail_pim_payload\.sql$|^tests/uat/cf-2-15-74-course-pim-detail-contract-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs)
+          elif printf '%s\n' "$changed" | grep -Eq '(^src/(ProviderContactsWorkspace\.jsx|provider-contacts\.css)|^supabase/functions/provider-contact-|^tests/uat/(a15-provider-contact-intelligence-deployed|cf-080-provider-contacts-deployed)\.spec\.mjs$)'; then
             targeted=(tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/m2-3-intelligence-entry\.jsx$|^supabase/functions/layer3-|^supabase/migrations/.*m2_4_3_|^tests/uat/m2-4-3-layer3-operations-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_4_4_|^tests/uat/m2-4-4-cross-layer-operations-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_|^tests/uat/m2-5-platform-readiness-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-platform-readiness-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-operations-entry\.jsx$|^supabase/migrations/.*m2_5_layer2_run_observability|^tests/uat/m2-5-layer2-run-observability-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Intervention\.jsx|mature-main\.jsx)$|^supabase/functions/layer3-(interpret|contact-benchmark)/|^supabase/migrations/.*a16_|^tests/uat/m2-4-4-a16-cross-layer-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^index\.html$|^src/(mature-main\.jsx|layer1-operations-entry\.jsx|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx)$|^tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|ContextualInsights\.jsx|CourseDetailPolish\.jsx)$|^tests/uat/m2-4-4-a22-responsive-detail-blades-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(layer2-operations-entry\.jsx|mature-main\.jsx)$|^supabase/functions/layer2-sync-control/|^supabase/migrations/.*a23_|^tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(layer1-operations-entry\.jsx|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx|mature\.css)$|^tests/uat/m2-4-4-a24-unified-layer-headers-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^supabase/migrations/.*a25_|^tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed\.spec\.mjs$)'; then
+          elif printf '%s\n' "$changed" | grep -Eq '(^src/ProviderLogo\.jsx$|^tests/uat/(cf-091-h11-provider-assets-deployed|cf-102-provider-logo-surfaces-deployed)\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-102-provider-logo-surfaces-deployed.spec.mjs)
+          elif printf '%s\n' "$changed" | grep -Eq '(^src/(ComparisonWorkspace\.jsx|ContextualInsights\.jsx|RankingDatasetViewer\.js|StatisticsDatasetEnhancer\.js)$|^tests/uat/cf-061-qilt-prisms-comparison-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs)
+          elif printf '%s\n' "$changed" | grep -Eq '(^src/(ScholarshipRuntimeWorkspace\.jsx|ScholarshipAiControl\.jsx)$|^tests/uat/(cf-208-scholarship-pim-maturity-deployed|scholarship-selection-deployed)\.spec\.mjs$)'; then
+            targeted=(tests/uat/cf-208-scholarship-pim-maturity-deployed.spec.mjs)
+          elif printf '%s\n' "$changed" | grep -Eq '(^src/(EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx)$|^tests/uat/(support/navigation\.mjs|m2-4-4-a26-a28-operator-ux-deployed\.spec\.mjs)$)'; then
-            targeted=(tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-operations-entry\.jsx$|^supabase/migrations/.*m2_5_layer2_finalizer_fairness|^tests/uat/m2-5-layer2-finalizer-fairness-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/m2-3-intelligence-entry\.jsx$|^supabase/functions/layer3-interpret/|^supabase/migrations/.*m2_5_layer3_source_pattern|^tests/uat/m2-5-layer3-source-pattern-operator-contract\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '^tests/uat/m2-5-pilot-deployment-currentness-deployed\.spec\.mjs$'; then
-            targeted=(tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-scope-discover-scheduled|layer2-screenshot-backfill-scheduled|provider-contact-discover-scheduled|scholarships-au-etl)/|^supabase/migrations/.*m2_5_evidence_lineage|^tests/uat/m2-5-evidence-lineage-contract\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-evidence-lineage-contract.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_universal_layer4_block|^tests/uat/m2-5-layer4-block-enforcement-contract\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(platform-maturity-entry\.jsx|platform-maturity\.css|mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/migrations/.*m2_5_platform_maturity_admin_read|^tests/uat/m2-5-platform-maturity-admin-contract\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-platform-maturity-admin-contract.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_evidence_lineage_reconciliation_contact_claim|^supabase/functions/provider-contact-discover-scheduled/|^src/(platform-maturity-entry\.jsx|mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^tests/uat/m2-5-evidence-lineage-reconciliation-contract\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-evidence-lineage-reconciliation-contract.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pipeline-ops-entry\.jsx|pim-version-entry\.js)$|^src/lib/supabase\.js$|^index\.html$|^tests/uat/m2-5-jobs-workspace-read-path-contract\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-jobs-workspace-read-path-contract.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -qx '.github/m2-5-jobs-workspace-deployed-candidate'; then
+          elif printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|CourseDetailPolish\.jsx)$|^tests/uat/m2-4-4-a22-responsive-detail-blades-deployed\.spec\.mjs$)'; then
+            targeted=(tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs)
+          elif printf '%s\n' "$changed" | grep -Eq '(^src/(pipeline-ops-entry\.jsx|mature-main\.jsx)$|^tests/uat/m2-5-jobs-workspace-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-jobs-workspace-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(ComparisonWorkspace\\.jsx|ContextualInsights\\.jsx|mature-main\\.jsx|pim-version-entry\\.js)$|^index\\.html$|^supabase/migrations/.*cf_061_contextual_compare|^tests/uat/cf-061-qilt-prisms-comparison-contract\\.spec\\.mjs$)'; then
-            targeted=(tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^tests/uat/cf-061-qilt-prisms-comparison-deployed\\.spec\\.mjs$|^\\.github/cf-061-comparison-deployed-candidate$)'; then
-            targeted=(tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^\.github/cf-070-provider-compare-candidate$|^\.github/cf-079-course-compare-candidate$)'; then
-            targeted=(tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(ProviderContactsWorkspace\\.jsx|provider-contacts\\.css|mature-main\\.jsx|pim-version-entry\\.js|m2-3-intelligence-entry\\.jsx)$|^src/lib/supabase\\.js$|^supabase/functions/provider-contact-(import|control)/|^supabase/migrations/.*cf_080_provider_contacts|^tests/uat/cf-080-provider-contacts-deployed\\.spec\\.mjs$|^\\.github/cf-080-provider-contacts-candidate$)'; then
-            targeted=(tests/uat/cf-080-provider-contacts-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -qx '.github/cf-080-provider-contacts-candidate'; then
-            targeted=(tests/uat/cf-080-provider-contacts-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-hard-gate-candidate'; then
-            targeted=(
-              tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
-              tests/uat/layer2-provider-deployed.spec.mjs
-              tests/uat/performance-deployed.spec.mjs
-            )
-          fi
-          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-a13-a16-regression-candidate'; then
-            targeted=(
-              tests/uat/a13-filter-demo-trace-deployed.spec.mjs
-              tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
-              tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
-              tests/uat/performance-deployed.spec.mjs
-            )
-          fi
-          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-course-performance-candidate'; then
-            targeted=(
-              tests/uat/performance-deployed.spec.mjs
-            )
-          fi
-          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-mobile-nav-profile-candidate'; then
-            targeted=(
-              tests/uat/admin-navigation-deployed.spec.mjs
-              tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs
-              tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
-              tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
-              tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
-              tests/uat/layer2-platform-deployed.spec.mjs
-            )
-          fi
-          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-a25-layer-status-candidate'; then
-            targeted=(
-              tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
-              tests/uat/m2-4-4-layer-status-deployed.spec.mjs
-              tests/uat/performance-deployed.spec.mjs
-            )
-          fi
-          if printf '%s\n' "$changed" | grep -qx '.github/m2-4-a26-a27-runtime-candidate'; then
-            targeted=(
-              tests/uat/admin-navigation-deployed.spec.mjs
-              tests/uat/scholarship-selection-deployed.spec.mjs
-              tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
-              tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
-              tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
-              tests/uat/performance-deployed.spec.mjs
-            )
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/layer1-operations-entry\.jsx$|^tests/uat/(layer1-operations-deployed\.spec\.mjs|support/navigation\.mjs|cf-065-layer1-operations-v2-contract\.spec\.mjs)$)'; then
-            targeted=(tests/uat/layer1-operations-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(ranking-layer1-etl|layer1-operations-control)/|^supabase/migrations/.*cf_068_qs_xhr|^tests/uat/cf-068-qs-xhr-layer1-deployed\.spec\.mjs$|^\.github/cf-068-qs-xhr-deployed-candidate$)'; then
-            targeted=(tests/uat/cf-068-qs-xhr-layer1-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^tests/uat/cf-073-administration-acquisition-route-deployed\.spec\.mjs$|^\.github/cf-073-administration-acquisition-route-candidate$)'; then
-            targeted=(tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css)$|^supabase/functions/(ranking-publisher-import|ranking-publisher-control)/|^tests/uat/cf-076-ranking-import-ux-deployed\.spec\.mjs$|^\.github/cf-076-ranking-import-ux-candidate$)'; then
-            targeted=(tests/uat/cf-076-ranking-import-ux-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/functions/ranking-publisher-url-import/|^tests/uat/cf-095-ranking-release-currentness-deployed\.spec\.mjs$|^\.github/cf-095-ranking-release-currentness-candidate$)'; then
-            targeted=(tests/uat/cf-095-ranking-release-currentness-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_096_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^tests/uat/cf-096-ranking-parsebot-handoff-deployed\.spec\.mjs$|^\.github/cf-096-ranking-parsebot-handoff-candidate$)'; then
-            targeted=(tests/uat/cf-096-ranking-parsebot-handoff-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_097_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/functions/(ranking-publisher-url-import|ranking-publisher-import)/|^tests/uat/cf-097-ranking-workflow-history-deployed\.spec\.mjs$|^\.github/cf-097-ranking-workflow-history-candidate$)'; then
-            targeted=(tests/uat/cf-097-ranking-workflow-history-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|access-roles-entry\.jsx|access-roles\.css|pim-version-entry\.js)$|^index\.html$|^tests/uat/cf-088-admin-ia-targeted\.spec\.mjs$|^\.github/workflows/deployed-uat\.yml$)'; then
-            targeted=(tests/uat/cf-088-admin-ia-targeted.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(layer2-provider-entry\.jsx|layer2-provider\.css|mature-main\.jsx|mature\.css|pim-version-entry\.js)$|^index\.html$|^supabase/functions/(layer2-provider-control|layer2-acquire-v2|layer2-scope-discover-scheduled)/|^supabase/migrations/.*cf_089_|^tests/uat/cf-089-scraper-config-parsebot-targeted\.spec\.mjs$|^\.github/workflows/deployed-uat\.yml$)'; then
-            targeted=(tests/uat/cf-089-scraper-config-parsebot-targeted.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/ranking-publisher-control/|^supabase/migrations/.*cf_090_|^src/lib/supabase\.js$|^tests/uat/cf-090-ranking-import-recovery-deployed\.spec\.mjs$|^\.github/cf-090-ranking-import-recovery-candidate$)'; then
-            targeted=(tests/uat/cf-090-ranking-import-recovery-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^src/lib/supabase\.js$|^index\.html$|^supabase/functions/(ranking-publisher-import|ranking-layer1-etl)/|^tests/uat/cf-098-ranking-file-bundle-deployed\.spec\.mjs$|^\.github/cf-098-ranking-file-bundle-candidate$)'; then
-            targeted=(tests/uat/cf-098-ranking-file-bundle-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_100_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^tests/uat/cf-100-ranking-country-extension-deployed\.spec\.mjs$|^\.github/cf-100-ranking-country-extension-candidate$)'; then
-            targeted=(tests/uat/cf-100-ranking-country-extension-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_097_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/functions/(ranking-publisher-url-import|ranking-publisher-import)/|^tests/uat/cf-097-ranking-workflow-history-deployed\.spec\.mjs$|^\.github/cf-097-ranking-workflow-history-candidate$)'; then
-            targeted=(tests/uat/cf-097-ranking-workflow-history-deployed.spec.mjs)
-          fi
-          # CF-101 must resolve after the generic Admin/Scraper workflow-file routes so
-          # H11 changes cannot be overwritten by older routing precedence.
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-provider-page-fanout|layer2-provider-asset-promote|layer2-acquire-v2)/|^supabase/migrations/.*cf_101_h11_|^tests/uat/cf-091-h11-provider-assets-deployed\.spec\.mjs$|^\.github/cf-101-h11-provider-assets-candidate$|^\.github/workflows/deployed-uat\.yml$)'; then
-            targeted=(tests/uat/cf-091-h11-provider-assets-deployed.spec.mjs)
-          fi
-          # CF-102 resolves last among targeted routes because it spans Admin, Course detail,
-          # Compare, Layer 2 and workflow files that also match older generic suites.
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(ProviderLogo\.jsx|mature-main\.jsx|CourseDetailPolish\.jsx|ComparisonWorkspace\.jsx|mature\.css|lib/supabase\.js)$|^supabase/functions/(provider-asset-access|layer2-hotcourses-directory-parse)/|^supabase/migrations/.*cf_102_|^tests/uat/cf-102-provider-logo-surfaces-deployed\.spec\.mjs$|^\.github/cf-102-provider-logo-surfaces-candidate$|^\.github/workflows/deployed-uat\.yml$)'; then
-            targeted=(tests/uat/cf-102-provider-logo-surfaces-deployed.spec.mjs)
-          fi
+
           integration=(
-            tests/uat/layer2-operations-maturity-deployed.spec.mjs
-            tests/uat/layer2-platform-deployed.spec.mjs
-            tests/uat/layer2-provider-deployed.spec.mjs
-            tests/uat/layer1-operations-deployed.spec.mjs
-            tests/uat/admin-navigation-deployed.spec.mjs
-            tests/uat/data-quality-deployed.spec.mjs
-            tests/uat/performance-deployed.spec.mjs
-            tests/uat/screen-state-persistence-deployed.spec.mjs
-            tests/uat/m2-3-intelligence-deployed.spec.mjs
-            tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs
-            tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs
-            tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
-            tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs
-            tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
-            tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
-            tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
-            tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
-            tests/uat/m2-4-4-layer-status-deployed.spec.mjs
-            tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
-            tests/uat/release-notes-deployed.spec.mjs
-            tests/uat/a10-paged-filters-deployed.spec.mjs
-            tests/uat/a12-contextual-insights-deployed.spec.mjs
-            tests/uat/a13-filter-demo-trace-deployed.spec.mjs
-            tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
             tests/uat/m2-5-platform-readiness-deployed.spec.mjs
-            tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
-            tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs
-            tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs
-            tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs
-            tests/uat/m2-5-evidence-lineage-contract.spec.mjs
-            tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs
-            tests/uat/m2-5-platform-maturity-admin-contract.spec.mjs
-            tests/uat/m2-5-evidence-lineage-reconciliation-contract.spec.mjs
-            tests/uat/m2-5-jobs-workspace-read-path-contract.spec.mjs
-            tests/uat/m2-5-jobs-workspace-deployed.spec.mjs
-            tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs
-            tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs
-            tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs
-          )
-          acceptance=(
-            tests/uat/layer1-operations-deployed.spec.mjs
+            tests/uat/admin-navigation-deployed.spec.mjs
             tests/uat/data-quality-deployed.spec.mjs
             tests/uat/performance-deployed.spec.mjs
-            tests/uat/layer2-operations-maturity-deployed.spec.mjs
-            tests/uat/layer2-platform-deployed.spec.mjs
-            tests/uat/layer2-provider-deployed.spec.mjs
-            tests/uat/admin-navigation-deployed.spec.mjs
             tests/uat/course-detail-polish-deployed.spec.mjs
             tests/uat/screen-state-persistence-deployed.spec.mjs
-            tests/uat/m2-3-intelligence-deployed.spec.mjs
-            tests/uat/layer3-provider-credential-deployed.spec.mjs
-            tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs
-            tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs
-            tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
-            tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs
-            tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
-            tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
-            tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
-            tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
-            tests/uat/m2-4-4-layer-status-deployed.spec.mjs
-            tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
-            tests/uat/scholarship-selection-deployed.spec.mjs
             tests/uat/release-notes-deployed.spec.mjs
             tests/uat/a10-paged-filters-deployed.spec.mjs
             tests/uat/a12-contextual-insights-deployed.spec.mjs
             tests/uat/a13-filter-demo-trace-deployed.spec.mjs
             tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
-            tests/uat/m2-5-platform-readiness-deployed.spec.mjs
-            tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
-            tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs
-            tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs
-            tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs
-            tests/uat/m2-5-evidence-lineage-contract.spec.mjs
-            tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs
-            tests/uat/m2-5-platform-maturity-admin-contract.spec.mjs
-            tests/uat/m2-5-evidence-lineage-reconciliation-contract.spec.mjs
-            tests/uat/m2-5-jobs-workspace-read-path-contract.spec.mjs
-            tests/uat/m2-5-jobs-workspace-deployed.spec.mjs
-            tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs
+            tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs
+            tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
+            tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
+            tests/uat/m2-4-4-a25-evidence-type-aware-preview-deployed.spec.mjs
+            tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
             tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs
-            tests/uat/cf-073-administration-acquisition-route-deployed.spec.mjs
+            tests/uat/cf-080-provider-contacts-deployed.spec.mjs
+            tests/uat/cf-091-h11-provider-assets-deployed.spec.mjs
+            tests/uat/cf-102-provider-logo-surfaces-deployed.spec.mjs
+            tests/uat/cf-208-scholarship-pim-maturity-deployed.spec.mjs
+            tests/uat/m2-5-jobs-workspace-deployed.spec.mjs
           )
+
+          acceptance=(
+            "${integration[@]}"
+            tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs
+            tests/uat/m245-v2-15-74-release-currentness-deployed.spec.mjs
+            tests/uat/scholarship-selection-deployed.spec.mjs
+          )
+
           case "$UAT_TIER" in
             targeted) specs=("${targeted[@]}") ;;
             integration) specs=("${integration[@]}") ;;
             acceptance) specs=("${acceptance[@]}") ;;
           esac
+
+          for spec in "${specs[@]}"; do
+            if [ ! -f "$spec" ]; then
+              echo "Governed UAT suite is missing: $spec"
+              exit 1
+            fi
+          done
+
           printf '%s\n' "${specs[@]}" > /tmp/uat-specs.txt
-          printf 'Resolved %s tier with %s permanent suite(s)\n' "$UAT_TIER" "${#specs[@]}"
+          printf 'Resolved %s tier with %s active suite(s)\n' "$UAT_TIER" "${#specs[@]}"
 
       - name: Run deployed governed validation — desktop
         id: desktop_uat
@@ -446,4 +240,3 @@ jobs:
               -f context="coursefinder/deployed-uat/${UAT_TIER}/chromium-mobile" \
               -f description="${UAT_TIER} deployed mobile UAT ${MOBILE_OUTCOME}" \
               -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          fi
