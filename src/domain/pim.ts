@@ -31,6 +31,26 @@ export function pimValue(value: PimAttributeValue): unknown {
   return null
 }
 
+export function pimDisplayValue(attribute: Attribute, value: PimAttributeValue, optionLabels: Map<string, string>): unknown {
+  const raw = pimValue(value)
+  if (raw === null) return null
+  if (attribute.data_type !== 'select' && attribute.data_type !== 'multiselect') return raw
+
+  const labelFor = (code: unknown) => {
+    if (typeof code !== 'string' && typeof code !== 'number') return code
+    const normalized = String(code)
+    return optionLabels.get(`${attribute.id}:${normalized}`) ?? normalized
+  }
+
+  if (value.value_code !== null && value.value_code !== undefined && value.value_code !== '') {
+    return labelFor(value.value_code)
+  }
+  if (value.value_json !== null && value.value_json !== undefined) {
+    return Array.isArray(raw) ? raw.map(labelFor) : labelFor(raw)
+  }
+  return raw
+}
+
 export function activeAttributes(attributes: Attribute[], entityType: string): Attribute[] {
   return attributes
     .filter(attribute => attribute.entity_type === entityType)
