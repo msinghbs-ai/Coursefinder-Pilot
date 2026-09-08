@@ -38,9 +38,11 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     expect(ops).toContain('Evidence linked or referenced by this job')
     expect(ops).toContain('No generic mutation is exposed by this console.')
 
+    expect(supa).toContain("supabase.rpc('admin_read'")
+    expect(supa).toContain("adminReadImpl('pipeline_jobs_page'")
+    expect(supa).toContain("adminReadImpl('pipeline_job_detail'")
     expect(supa).not.toContain("if (route === operation) return []")
     expect(supa).not.toContain("Jobs/Sources routes are owned by the Pipeline Ops overlay")
-    expect(supa).toContain("Jobs/Sources are canonical shell workspaces again")
 
     const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
