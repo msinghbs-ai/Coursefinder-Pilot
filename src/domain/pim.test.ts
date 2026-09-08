@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dynamicCourseAttributes, hasRenderablePimValues, pimValue, valuesByAttribute } from './pim'
+import { dynamicCourseAttributes, hasRenderablePimValues, pimDisplayValue, pimValue, valuesByAttribute } from './pim'
 
 const attributes = [
   { id: 'a1', code: 'course_description', name: 'Description', entity_type: 'course', data_type: 'richtext', display_order: 40, status: 'active' },
@@ -15,6 +15,12 @@ describe('PIM value normalization', () => {
   it('returns the first populated typed value', () => {
     expect(pimValue({ attribute_id: 'a2', value_text: 'Maths required' })).toBe('Maths required')
     expect(pimValue({ attribute_id: 'a3', value_json: ['engineering'] })).toEqual(['engineering'])
+  })
+
+  it('maps select and multiselect JSON codes to configured labels', () => {
+    const optionLabels = new Map([['a3:engineering', 'Engineering'], ['a3:technology', 'Technology']])
+    expect(pimDisplayValue(attributes[2], { attribute_id: 'a3', value_json: ['engineering', 'technology'] }, optionLabels)).toEqual(['Engineering', 'Technology'])
+    expect(pimDisplayValue(attributes[2], { attribute_id: 'a3', value_code: 'engineering' }, optionLabels)).toBe('Engineering')
   })
 
   it('groups multi-value rows by attribute and preserves position', () => {
