@@ -1,16 +1,191 @@
 -- CF-241 — forward reconciliation of superseded CF-239 admin_read helper routing.
 --
 -- Scope is intentionally narrow:
+--   * restore the governed Evidence lineage cache subsystem missing from migration history;
 --   * restore the governed security.admin_evidence_page implementation missing from migration history;
 --   * restore evidence_page to the governed security.admin_evidence_page implementation;
 --   * restore layer2_ops_overview to security.admin_layer2_ops_read;
 --   * preserve all other current admin_read routes, including later accepted Course PIM work;
---   * leave CF-239 helper definitions and indexes in place for separate planner/latency review;
+--   * leave CF-239 fast-helper definitions and indexes in place for separate planner/latency review;
 --   * do not mutate canonical data.
 --
 -- This migration is replay-safe across the checked-in pre-CF-239 dispatcher, the live
 -- superseded CF-239 dispatcher, and the already-reconciled dispatcher. It fails closed
 -- on any other shape rather than guessing.
+
+create table if not exists pipeline.evidence_lineage_stats (
+  evidence_id uuid primary key references pipeline.evidence_artifacts(id) on delete cascade,
+  observation_count bigint not null default 0 check (observation_count >= 0),
+  source_null_count bigint not null default 0 check (source_null_count >= 0),
+  rejected_count bigint not null default 0 check (rejected_count >= 0),
+  updated_at timestamptz not null default now()
+);
+
+create or replace function security.evidence_row_rejected(p_row jsonb)
+returns boolean
+language sql
+immutable
+set search_path to 'pg_catalog'
+as $function$
+  select lower(coalesce(p_row->>'status',p_row->>'lifecycle_status',''))='rejected'
+$function$;
+
+create or replace function security.evidence_row_source_null(p_table text,p_row jsonb)
+returns boolean
+language plpgsql
+immutable
+set search_path to 'pg_catalog'
+as $function$
+begin
+  return case p_table
+    when 'catalogue.course_fees' then (p_row->'amount') is null or jsonb_typeof(p_row->'amount')='null'
+    when 'catalogue.course_intakes' then coalesce(p_row->>'intake_label','')='' and (p_row->'intake_year' is null or jsonb_typeof(p_row->'intake_year')='null') and (p_row->'start_date' is null or jsonb_typeof(p_row->'start_date')='null')
+    when 'catalogue.course_english_requirements' then (p_row->'overall_score' is null or jsonb_typeof(p_row->'overall_score')='null') and coalesce(p_row->'component_scores','{}'::jsonb)='{}'::jsonb
+    when 'catalogue.course_links' then coalesce(p_row->>'url','')=''
+    when 'catalogue.course_registrations' then coalesce(p_row->>'registration_code','')=''
+    when 'catalogue.course_study_level_observations' then coalesce(p_row->>'source_value','')=''
+    when 'catalogue.course_field_observations' then coalesce(p_row->>'source_field_code','')='' and coalesce(p_row->>'source_field_name','')=''
+    when 'catalogue.provider_outcomes' then (p_row->'metric_value' is null or jsonb_typeof(p_row->'metric_value')='null')
+    when 'catalogue.student_flow_observations' then (p_row->'metric_value' is null or jsonb_typeof(p_row->'metric_value')='null') and coalesce((p_row->>'is_suppressed')::boolean,false)=false
+    when 'scholarship.criteria' then (p_row->'value_text' is null or jsonb_typeof(p_row->'value_text')='null') and (p_row->'value_number' is null or jsonb_typeof(p_row->'value_number')='null') and (p_row->'value_codes' is null or jsonb_typeof(p_row->'value_codes')='null') and (p_row->'value_json' is null or jsonb_typeof(p_row->'value_json')='null')
+    when 'scholarship.award_tiers' then (p_row->'amount' is null or jsonb_typeof(p_row->'amount')='null') and (p_row->'percentage' is null or jsonb_typeof(p_row->'percentage')='null') and (p_row->'maximum_amount' is null or jsonb_typeof(p_row->'maximum_amount')='null')
+    else false
+  end;
+end
+$function$;
+
+create or replace function security.adjust_evidence_lineage_stats(
+  p_evidence_id uuid,
+  p_observation_delta bigint,
+  p_source_null_delta bigint,
+  p_rejected_delta bigint
+)
+returns void
+language plpgsql
+security definer
+set search_path to 'pg_catalog','pipeline'
+as $function$
+begin
+  if p_evidence_id is null then return; end if;
+  insert into pipeline.evidence_lineage_stats(evidence_id,observation_count,source_null_count,rejected_count,updated_at)
+  values(p_evidence_id,greatest(p_observation_delta,0),greatest(p_source_null_delta,0),greatest(p_rejected_delta,0),now())
+  on conflict(evidence_id) do update set
+    observation_count=greatest(0,pipeline.evidence_lineage_stats.observation_count+p_observation_delta),
+    source_null_count=greatest(0,pipeline.evidence_lineage_stats.source_null_count+p_source_null_delta),
+    rejected_count=greatest(0,pipeline.evidence_lineage_stats.rejected_count+p_rejected_delta),
+    updated_at=now();
+end
+$function$;
+
+create or replace function security.sync_evidence_lineage_stats()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'pg_catalog','security'
+as $function$
+declare
+  v_old jsonb;
+  v_new jsonb;
+  v_old_evidence uuid;
+  v_new_evidence uuid;
+  v_table text:=tg_table_schema||'.'||tg_table_name;
+begin
+  if tg_op in ('UPDATE','DELETE') then
+    v_old:=to_jsonb(old);
+    v_old_evidence:=nullif(v_old->>'evidence_id','')::uuid;
+    perform security.adjust_evidence_lineage_stats(
+      v_old_evidence,
+      -1,
+      case when security.evidence_row_source_null(v_table,v_old) then -1 else 0 end,
+      case when security.evidence_row_rejected(v_old) then -1 else 0 end
+    );
+  end if;
+  if tg_op in ('INSERT','UPDATE') then
+    v_new:=to_jsonb(new);
+    v_new_evidence:=nullif(v_new->>'evidence_id','')::uuid;
+    perform security.adjust_evidence_lineage_stats(
+      v_new_evidence,
+      1,
+      case when security.evidence_row_source_null(v_table,v_new) then 1 else 0 end,
+      case when security.evidence_row_rejected(v_new) then 1 else 0 end
+    );
+  end if;
+  return case when tg_op='DELETE' then old else new end;
+end
+$function$;
+
+-- A clean replay has no lineage cache rows. Rebuild the derived cache once from the
+-- same 30 relations maintained by the accepted live trigger topology. Existing Pilot
+-- cache rows are preserved and are never cleared or rewritten by this migration.
+do $$
+declare
+  v_rel text;
+  v_relations text[] := array[
+    'catalogue.campuses','catalogue.course_academic_options','catalogue.course_campuses',
+    'catalogue.course_collection_memberships','catalogue.course_english_requirements','catalogue.course_fees',
+    'catalogue.course_field_observations','catalogue.course_identifiers','catalogue.course_intakes',
+    'catalogue.course_links','catalogue.course_registrations','catalogue.course_regulatory_observations',
+    'catalogue.course_study_level_observations','catalogue.outcome_benchmarks','catalogue.provider_associations',
+    'catalogue.provider_collection_memberships','catalogue.provider_identifiers','catalogue.provider_outcomes',
+    'catalogue.provider_rankings','catalogue.provider_registrations','catalogue.student_flow_observations',
+    'scholarship.application_windows','scholarship.award_tiers','scholarship.coverage','scholarship.criteria',
+    'scholarship.criterion_groups','scholarship.identifiers','scholarship.offering_cycles',
+    'scholarship.scholarships','scholarship.scopes'
+  ];
+begin
+  if not exists(select 1 from pipeline.evidence_lineage_stats) then
+    create temporary table cf241_evidence_lineage_rebuild (
+      evidence_id uuid primary key,
+      observation_count bigint not null default 0,
+      source_null_count bigint not null default 0,
+      rejected_count bigint not null default 0
+    ) on commit drop;
+
+    foreach v_rel in array v_relations loop
+      if to_regclass(v_rel) is not null and exists(
+        select 1 from pg_attribute
+        where attrelid=to_regclass(v_rel) and attname='evidence_id' and attnum>0 and not attisdropped
+      ) then
+        execute format($sql$
+          insert into cf241_evidence_lineage_rebuild(evidence_id,observation_count,source_null_count,rejected_count)
+          select t.evidence_id,
+                 count(*)::bigint,
+                 count(*) filter(where security.evidence_row_source_null(%L,to_jsonb(t)))::bigint,
+                 count(*) filter(where security.evidence_row_rejected(to_jsonb(t)))::bigint
+          from %s t
+          where t.evidence_id is not null
+          group by t.evidence_id
+          on conflict(evidence_id) do update set
+            observation_count=cf241_evidence_lineage_rebuild.observation_count+excluded.observation_count,
+            source_null_count=cf241_evidence_lineage_rebuild.source_null_count+excluded.source_null_count,
+            rejected_count=cf241_evidence_lineage_rebuild.rejected_count+excluded.rejected_count
+        $sql$,v_rel,v_rel);
+      end if;
+    end loop;
+
+    insert into pipeline.evidence_lineage_stats(evidence_id,observation_count,source_null_count,rejected_count,updated_at)
+    select evidence_id,observation_count,source_null_count,rejected_count,now()
+    from cf241_evidence_lineage_rebuild
+    on conflict(evidence_id) do update set
+      observation_count=excluded.observation_count,
+      source_null_count=excluded.source_null_count,
+      rejected_count=excluded.rejected_count,
+      updated_at=now();
+  end if;
+
+  foreach v_rel in array v_relations loop
+    if to_regclass(v_rel) is not null and exists(
+      select 1 from pg_attribute
+      where attrelid=to_regclass(v_rel) and attname='evidence_id' and attnum>0 and not attisdropped
+    ) and not exists(
+      select 1 from pg_trigger
+      where tgrelid=to_regclass(v_rel) and tgname='evidence_lineage_stats_sync' and not tgisinternal
+    ) then
+      execute format('create trigger evidence_lineage_stats_sync after insert or delete or update on %s for each row execute function security.sync_evidence_lineage_stats()',v_rel);
+    end if;
+  end loop;
+end
+$$;
 
 create or replace function security.admin_evidence_page(p_args jsonb default '{}'::jsonb)
 returns jsonb
@@ -91,9 +266,9 @@ begin
       and (v_conflicts is null or (cf.evidence_id is not null)=v_conflicts)
       and (v_freshness is null
         or (v_freshness='stale' and (lower(coalesce(e.metadata->>'freshness_state',''))='stale' or lower(coalesce(e.metadata->>'stale','false'))='true'))
-        or (v_freshness='expired' and e.valid_to is not null and e.valid_to<now())
-        or (v_freshness='current' and e.valid_to is not null and e.valid_to>=now())
-        or (v_freshness='no_policy' and e.valid_to is null and lower(coalesce(e.metadata->>'freshness_state',''))<>'stale' and lower(coalesce(e.metadata->>'stale','false'))<>'true'))
+        or (v_freshness='expired' and lower(coalesce(e.metadata->>'freshness_state',''))<>'stale' and lower(coalesce(e.metadata->>'stale','false'))<>'true' and e.valid_to is not null and e.valid_to<now())
+        or (v_freshness='current' and lower(coalesce(e.metadata->>'freshness_state',''))<>'stale' and lower(coalesce(e.metadata->>'stale','false'))<>'true' and e.valid_to is not null and e.valid_to>=now())
+        or (v_freshness='no_policy' and lower(coalesce(e.metadata->>'freshness_state',''))<>'stale' and lower(coalesce(e.metadata->>'stale','false'))<>'true' and e.valid_to is null))
       and (v_verified_from is null or security.admin_evidence_verification_at(e.id)>=v_verified_from)
       and (v_verified_to is null or security.admin_evidence_verification_at(e.id)<v_verified_to)
   ),
@@ -191,6 +366,8 @@ begin
 end
 $$;
 
+comment on table pipeline.evidence_lineage_stats is
+  'Derived Evidence lineage counters restored to migration history by CF-241; maintained by evidence_lineage_stats_sync triggers.';
 comment on function security.admin_evidence_page(jsonb) is
   'Governed Evidence catalogue page implementation restored to migration history by CF-241 from current accepted Pilot runtime truth.';
 comment on function public.admin_read(text,jsonb) is
