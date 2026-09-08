@@ -3,7 +3,8 @@
 -- This forward-only completion migration:
 --   * restores remaining live Evidence helper functions missing from migration history;
 --   * atomically rebuilds the derived Evidence lineage cache under write-blocking locks;
---   * aligns extraction-state and freshness filters with returned DTO precedence;
+--   * aligns rejected/extracted state with returned DTO precedence;
+--   * relies on the preceding CF-241 migration for stale/current/expired freshness precedence;
 --   * does not mutate canonical catalogue/scholarship content.
 
 create or replace function security.admin_evidence_layer(
@@ -155,8 +156,7 @@ begin
 end
 $$;
 
--- Patch the governed Evidence page in place so later accepted behaviour is preserved while
--- extraction/freshness filters use the same precedence as the returned DTO.
+-- Patch only the extraction-state inconsistency left after the preceding CF-241 migration.
 do $$
 declare
   v_oid oid := to_regprocedure('security.admin_evidence_page(jsonb)');
@@ -170,14 +170,6 @@ begin
 
   select pg_get_functiondef(v_oid) into v_definition;
 
-  v_old := '(v_freshness=''expired'' and e.valid_to is not null and e.valid_to<now())';
-  v_new := '(v_freshness=''expired'' and not (lower(coalesce(e.metadata->>''freshness_state'',''''))=''stale'' or lower(coalesce(e.metadata->>''stale'',''false''))=''true'') and e.valid_to is not null and e.valid_to<now())';
-  if position(v_old in v_definition)>0 then v_definition:=replace(v_definition,v_old,v_new); end if;
-
-  v_old := '(v_freshness=''current'' and e.valid_to is not null and e.valid_to>=now())';
-  v_new := '(v_freshness=''current'' and not (lower(coalesce(e.metadata->>''freshness_state'',''''))=''stale'' or lower(coalesce(e.metadata->>''stale'',''false''))=''true'') and e.valid_to is not null and e.valid_to>=now())';
-  if position(v_old in v_definition)>0 then v_definition:=replace(v_definition,v_old,v_new); end if;
-
   v_old := '(v_extraction_state=''extracted'' and observation_count>0)';
   v_new := '(v_extraction_state=''extracted'' and observation_count>0 and rejected_count=0)';
   if position(v_old in v_definition)>0 then v_definition:=replace(v_definition,v_old,v_new); end if;
@@ -187,10 +179,8 @@ begin
   if position(v_old in v_definition)>0 then v_definition:=replace(v_definition,v_old,v_new); end if;
 
   if position('(v_extraction_state=''extracted'' and observation_count>0 and rejected_count=0)' in v_definition)=0
-     or position('case when x.rejected_count>0 then ''rejected'' when x.observation_count>0 then ''extracted'' else ''missing_extraction'' end' in v_definition)=0
-     or position('(v_freshness=''expired'' and not (lower(coalesce(e.metadata->>''freshness_state'',''''))=''stale'' or lower(coalesce(e.metadata->>''stale'',''false''))=''true'')' in v_definition)=0
-     or position('(v_freshness=''current'' and not (lower(coalesce(e.metadata->>''freshness_state'',''''))=''stale'' or lower(coalesce(e.metadata->>''stale'',''false''))=''true'')' in v_definition)=0 then
-    raise exception 'CF-241: Evidence page semantic patch did not converge to expected shape' using errcode='55000';
+     or position('case when x.rejected_count>0 then ''rejected'' when x.observation_count>0 then ''extracted'' else ''missing_extraction'' end' in v_definition)=0 then
+    raise exception 'CF-241: Evidence extraction-state patch did not converge to expected shape' using errcode='55000';
   end if;
 
   execute v_definition;
