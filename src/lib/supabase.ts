@@ -1,7 +1,12 @@
 import { createClient, FunctionsHttpError } from '@supabase/supabase-js'
+import type { AdminReadOperation, AdminReadPayload } from '../types/admin-read'
+import type { CourseFinderApi } from '../types/api'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+type AnyArgs = Record<string, any>
+type AdminReadFunction = <T extends AdminReadOperation>(operation: T, args?: Record<string, unknown>) => Promise<AdminReadPayload<T>>
 
 if (!url || !key) console.warn('Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY')
 
@@ -9,7 +14,7 @@ export const supabase = createClient(url ?? '', key ?? '', {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
 
-let activeCoursePageRead = null
+let activeCoursePageRead: Promise<any> | null = null
 
 /**
  * Governed browser read boundary.
@@ -18,14 +23,7 @@ let activeCoursePageRead = null
  * through public.admin_read, which is SECURITY INVOKER and delegates to private,
  * server-side role-checked implementations.
  */
-async function adminRead(operation, args = {}) {
-  // CF-060: Jobs/Sources are canonical shell workspaces again.
-  // Never manufacture empty operational results based on the current hash route.
-
-  // M2.4.0: the first Courses render and its large filter catalogue used to hit
-  // admin_read concurrently. Preserve both exact governed reads, but allow the
-  // operator-visible page request to complete before filter metadata competes for
-  // the same database/API capacity. Subsequent filter refreshes remain exact.
+async function adminReadImpl(operation: string, args: AnyArgs = {}): Promise<any> {
   if (operation === 'course_filters' && activeCoursePageRead) {
     try { await activeCoursePageRead } catch { /* page caller owns its error */ }
   }
@@ -61,7 +59,7 @@ async function adminRead(operation, args = {}) {
   return request
 }
 
-function functionErrorText(value,fallback='Request failed'){
+function functionErrorText(value: any,fallback='Request failed'){
   if(typeof value==='string'&&value.trim())return value
   if(value&&typeof value==='object'){
     for(const key of ['message','error','detail','hint','code']){
@@ -72,7 +70,7 @@ function functionErrorText(value,fallback='Request failed'){
   }
   return fallback
 }
-async function invoke(name, body) {
+async function invoke(name: string, body: any) {
   const { data, error } = await supabase.functions.invoke(name, { body })
   if (error) {
     if (error instanceof FunctionsHttpError && error.context) {
@@ -89,12 +87,12 @@ async function invoke(name, body) {
   return data
 }
 
-const pageItems = value => value?.items ?? value?.rows ?? (Array.isArray(value) ? value : [])
-const bounded = (value, fallback = 50) => Math.min(Math.max(Number(value) || fallback, 1), 200)
-const present = value => value === '' || value === null || value === undefined ? null : value
+const pageItems = (value: any): any[] => value?.items ?? value?.rows ?? (Array.isArray(value) ? value : [])
+const bounded = (value: any, fallback = 50) => Math.min(Math.max(Number(value) || fallback, 1), 200)
+const present = (value: any) => value === '' || value === null || value === undefined ? null : value
 
-async function entityPage(operation, args = {}) {
-  return adminRead(operation, {
+async function entityPage(operation: string, args: AnyArgs = {}) {
+  return adminReadImpl(operation, {
     limit: bounded(args.limit, 50),
     offset: Math.max(Number(args.offset) || 0, 0),
     query: args.query || null,
@@ -120,8 +118,8 @@ async function entityPage(operation, args = {}) {
   })
 }
 
-async function providerRelated(providerId, key, { limit = 25, offset = 0 } = {}) {
-  const detail = await adminRead('provider_detail', { id: providerId })
+async function providerRelated(providerId: any, key: string, { limit = 25, offset = 0 }: AnyArgs = {}) {
+  const detail = await adminReadImpl('provider_detail', { id: providerId })
   const container = detail?.[key]
   const all = container?.items ?? container?.rows ?? (Array.isArray(container) ? container : [])
   const start = Math.max(Number(offset) || 0, 0)
@@ -132,30 +130,30 @@ async function providerRelated(providerId, key, { limit = 25, offset = 0 } = {})
 }
 
 async function attributesBundle(limit = 200) {
-  return adminRead('attributes', { limit: bounded(limit, 200) })
+  return adminReadImpl('attributes', { limit: bounded(limit, 200) })
 }
 
-export const api = {
-  context: () => adminRead('context'),
-  dashboard: () => adminRead('dashboard'),
+const apiImplementation = {
+  context: () => adminReadImpl('context'),
+  dashboard: () => adminReadImpl('dashboard'),
 
   providers: async (limit = 200) => pageItems(await entityPage('providers_page', { limit })),
-  providerPage: args => entityPage('providers_page', args),
-  providerFilterOptions: (country = '') => adminRead('provider_filters', { country_code: country || null }),
-  providerDetail: providerId => adminRead('provider_detail', { id: providerId }),
-  providerRelatedCourses: args => providerRelated(args.providerId, 'courses', args),
-  providerRelatedEvidence: args => providerRelated(args.providerId, 'evidence', args),
+  providerPage: (args: AnyArgs) => entityPage('providers_page', args),
+  providerFilterOptions: (country = '') => adminReadImpl('provider_filters', { country_code: country || null }),
+  providerDetail: (providerId: any) => adminReadImpl('provider_detail', { id: providerId }),
+  providerRelatedCourses: (args: AnyArgs) => providerRelated(args.providerId, 'courses', args),
+  providerRelatedEvidence: (args: AnyArgs) => providerRelated(args.providerId, 'evidence', args),
 
   campuses: async (limit = 200) => pageItems(await entityPage('campuses_page', { limit })),
   collections: async () => [],
 
   courses: async (limit = 200) => pageItems(await entityPage('courses_page', { limit })),
-  coursePage: args => entityPage('courses_page', args),
-  courseFilterOptions: ({ country = '', subdivision = '' } = {}) => adminRead('course_filters', {
+  coursePage: (args: AnyArgs) => entityPage('courses_page', args),
+  courseFilterOptions: ({ country = '', subdivision = '' }: AnyArgs = {}) => adminReadImpl('course_filters', {
     country_code: country || null,
     subdivision_code: subdivision || null,
   }),
-  catalogueFilterPage: ({ kind, country = '', subdivision = '', query = '', limit = 10, offset = 0 } = {}) => adminRead('catalogue_filter_page', {
+  catalogueFilterPage: ({ kind, country = '', subdivision = '', query = '', limit = 10, offset = 0 }: AnyArgs = {}) => adminReadImpl('catalogue_filter_page', {
     filter_kind: kind,
     country_code: country || null,
     subdivision_code: subdivision || null,
@@ -163,23 +161,23 @@ export const api = {
     limit: Math.min(Math.max(Number(limit)||10,1),10),
     offset: Math.max(Number(offset)||0,0),
   }),
-  courseDetail: courseId => adminRead('course_detail', { id: courseId }),
-  courseRelatedCampuses: async courseId => {
-    const detail = await adminRead('course_detail', { id: courseId })
+  courseDetail: (courseId: any) => adminReadImpl('course_detail', { id: courseId }),
+  courseRelatedCampuses: async (courseId: any) => {
+    const detail = await adminReadImpl('course_detail', { id: courseId })
     return detail?.campuses ?? detail?.related_campuses ?? []
   },
 
   scholarships: async (limit = 200) => pageItems(await entityPage('scholarships_page', { limit })),
-  scholarshipPage: args => entityPage('scholarships_page', args),
-  scholarshipDetail: scholarshipId => adminRead('scholarship_detail', { id: scholarshipId }),
+  scholarshipPage: (args: AnyArgs) => entityPage('scholarships_page', args),
+  scholarshipDetail: (scholarshipId: any) => adminReadImpl('scholarship_detail', { id: scholarshipId }),
 
-  qiltPage: ({ limit = 50, offset = 0, query = '', survey = '', metric = '', provider = '', status = '', year = '', sort = 'provider', direction = 'asc' } = {}) =>
-    adminRead('qilt_outcomes', {
+  qiltPage: ({ limit = 50, offset = 0, query = '', survey = '', metric = '', provider = '', status = '', year = '', sort = 'provider', direction = 'asc' }: AnyArgs = {}) =>
+    adminReadImpl('qilt_outcomes', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
       survey_code: survey || null, metric_code: metric || null, provider_id: provider || null,
       status: status || null, year: year === '' ? null : Number(year), sort, direction,
     }),
-  filterOptionPage: ({ kind, query = '', country = '', survey = '', limit = 10, offset = 0 } = {}) => adminRead('admin_filter_option_page', {
+  filterOptionPage: ({ kind, query = '', country = '', survey = '', limit = 10, offset = 0 }: AnyArgs = {}) => adminReadImpl('admin_filter_option_page', {
     kind,
     query: query || null,
     country_code: country || null,
@@ -187,27 +185,27 @@ export const api = {
     limit: Math.min(Math.max(Number(limit)||10,1),10),
     offset: Math.max(Number(offset)||0,0),
   }),
-  qiltFilterOptions: (survey = '') => adminRead('qilt_filters', { survey_code: survey || null }),
-  prismsPage: ({ limit = 50, offset = 0, query = '', subdivision = '', studyArea = '', sector = '', remoteness = '', suppressed = null, sort = 'geography', direction = 'asc' } = {}) =>
-    adminRead('prisms_student_flow', {
+  qiltFilterOptions: (survey = '') => adminReadImpl('qilt_filters', { survey_code: survey || null }),
+  prismsPage: ({ limit = 50, offset = 0, query = '', subdivision = '', studyArea = '', sector = '', remoteness = '', suppressed = null, sort = 'geography', direction = 'asc' }: AnyArgs = {}) =>
+    adminReadImpl('prisms_student_flow', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
       subdivision_code: subdivision || null, study_area_code: studyArea || null, sector_code: sector || null,
       remoteness_area: remoteness || null, suppressed, sort, direction,
     }),
-  prismsFilterOptions: () => adminRead('prisms_filters'),
+  prismsFilterOptions: () => adminReadImpl('prisms_filters'),
 
-  rankingSummary: () => adminRead('ranking_summary'),
-  rankingFilters: (systemCode = '') => adminRead('ranking_filters', { system_code: systemCode || null }),
-  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '', sort = 'rank', direction = 'asc' } = {}) =>
-    adminRead('ranking_observations', {
+  rankingSummary: () => adminReadImpl('ranking_summary'),
+  rankingFilters: (systemCode = '') => adminReadImpl('ranking_filters', { system_code: systemCode || null }),
+  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '', sort = 'rank', direction = 'asc' }: AnyArgs = {}) =>
+    adminReadImpl('ranking_observations', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
       system_code: systemCode || null, edition_year: editionYear === '' ? null : Number(editionYear),
       provider_id: providerId || null, sort, direction,
     }),
-  rankingImports: ({ limit = 50, offset = 0 } = {}) => adminRead('ranking_imports', {
+  rankingImports: ({ limit = 50, offset = 0 }: AnyArgs = {}) => adminReadImpl('ranking_imports', {
     limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0),
   }),
-  uploadRankingPublisherFile: async ({ systemCode, editionYear, publisherName, sourceUrl, methodologyUrl = '', licensingNote, revisionNote = '', file, files = [] }) => {
+  uploadRankingPublisherFile: async ({ systemCode, editionYear, publisherName, sourceUrl, methodologyUrl = '', licensingNote, revisionNote = '', file, files = [] }: AnyArgs) => {
     const form = new FormData()
     form.set('system_code', systemCode)
     form.set('edition_year', String(editionYear))
@@ -243,47 +241,47 @@ export const api = {
     form.set('file', transportFile)
     return invoke('ranking-publisher-import', form)
   },
-  importRankingPublisherUrl: ({ systemCode, editionYear, referencePath }) => invoke('ranking-publisher-url-import', {
+  importRankingPublisherUrl: ({ systemCode, editionYear, referencePath }: AnyArgs) => invoke('ranking-publisher-url-import', {
     system_code: systemCode, edition_year: Number(editionYear), reference_path: referencePath,
   }),
-  rankingPublisherControl: ({ action, importId }) => invoke('ranking-publisher-control', { action, import_id: importId }),
+  rankingPublisherControl: ({ action, importId }: AnyArgs) => invoke('ranking-publisher-control', { action, import_id: importId }),
 
-  providerAssetSummary: ({ countryCode = '', query = '' } = {}) => adminRead('provider_asset_summary', {
+  providerAssetSummary: ({ countryCode = '', query = '' }: AnyArgs = {}) => adminReadImpl('provider_asset_summary', {
     country_code: countryCode || null, query: query || null,
   }),
-  providerAssetCoverage: ({ limit = 50, offset = 0, countryCode = '', query = '', state = '' } = {}) => adminRead('provider_asset_coverage', {
+  providerAssetCoverage: ({ limit = 50, offset = 0, countryCode = '', query = '', state = '' }: AnyArgs = {}) => adminReadImpl('provider_asset_coverage', {
     limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0),
     country_code: countryCode || null, query: query || null, state: state || null,
   }),
-  providerAssetAccess: providerId => invoke('provider-asset-access', { provider_id: providerId }),
+  providerAssetAccess: (providerId: any) => invoke('provider-asset-access', { provider_id: providerId }),
 
-  providerContactsPage: ({ limit = 50, offset = 0, query = '', country = '', providerId = '', lifecycle = '', recordType = '', sourceAuthority = '', verification = '', hasEmail = '', hasPhone = '', freshness = '', sort = 'provider', direction = 'asc' } = {}) =>
-    adminRead('provider_contacts_page', {
+  providerContactsPage: ({ limit = 50, offset = 0, query = '', country = '', providerId = '', lifecycle = '', recordType = '', sourceAuthority = '', verification = '', hasEmail = '', hasPhone = '', freshness = '', sort = 'provider', direction = 'asc' }: AnyArgs = {}) =>
+    adminReadImpl('provider_contacts_page', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
       country_code: country || null, provider_id: providerId || null, lifecycle_status: lifecycle || null,
       record_type: recordType || null, source_authority: sourceAuthority || null, verification_state: verification || null,
       has_email: hasEmail === '' ? null : String(hasEmail), has_phone: hasPhone === '' ? null : String(hasPhone),
       freshness: freshness || null, sort, direction,
     }),
-  providerContactDetail: id => adminRead('provider_contact_detail', { id }),
-  providerContactImports: ({ limit = 50, offset = 0, country = '' } = {}) => adminRead('provider_contact_imports', {
+  providerContactDetail: (id: any) => adminReadImpl('provider_contact_detail', { id }),
+  providerContactImports: ({ limit = 50, offset = 0, country = '' }: AnyArgs = {}) => adminReadImpl('provider_contact_imports', {
     limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), country_code: country || null,
   }),
-  providerContactImportDetail: id => adminRead('provider_contact_import_detail', { id }),
-  providerContactManage: async (action, payload = {}) => {
+  providerContactImportDetail: (id: any) => adminReadImpl('provider_contact_import_detail', { id }),
+  providerContactManage: async (action: any, payload: AnyArgs = {}) => {
     const { data, error } = await supabase.rpc('provider_contact_manage', { p_action: action, p_payload: payload ?? {} })
     if (error) throw error
     return data
   },
-  uploadProviderContactFile: async ({ countryCode = 'AU', dateFormat = 'mdy', file }) => {
+  uploadProviderContactFile: async ({ countryCode = 'AU', dateFormat = 'mdy', file }: AnyArgs) => {
     const form = new FormData()
     form.set('country_code', countryCode)
     form.set('date_format', dateFormat)
     form.set('file', file)
     return invoke('provider-contact-import', form)
   },
-  providerContactImportControl: ({ action = 'apply', batchId }) => invoke('provider-contact-control', { action, batch_id: batchId }),
-  providerContactExportAudit: async ({ rowCount = 0, filters = {}, columns = [], format = 'csv', reason = 'Provider Contacts export' } = {}) => {
+  providerContactImportControl: ({ action = 'apply', batchId }: AnyArgs) => invoke('provider-contact-control', { action, batch_id: batchId }),
+  providerContactExportAudit: async ({ rowCount = 0, filters = {}, columns = [], format = 'csv', reason = 'Provider Contacts export' }: AnyArgs = {}) => {
     const { data, error } = await supabase.rpc('provider_contact_export_audit', {
       p_payload: { row_count: Number(rowCount) || 0, filters, columns, format, reason },
     })
@@ -295,7 +293,7 @@ export const api = {
     limit = 50, offset = 0, query = '', country = '', sourceId = '', layer = '', entityType = '', entityId = '', providerId = '', jobId = '',
     evidenceType = '', mime = '', hash = '', jobStatus = '', status = '', extractionState = '', freshness = '', verifiedFrom = '', verifiedTo = '',
     unresolvedConflicts = '', sort = 'captured', direction = 'desc',
-  } = {}) => adminRead('evidence_page', {
+  }: AnyArgs = {}) => adminReadImpl('evidence_page', {
     limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
     country: country || null, source_id: sourceId || null, layer: layer || null, entity_type: entityType || null,
     entity_id: entityId || null, provider_id: providerId || null, job_id: jobId || null,
@@ -305,21 +303,21 @@ export const api = {
     ...(unresolvedConflicts === '' || unresolvedConflicts === null || unresolvedConflicts === undefined ? {} : { unresolved_conflicts: unresolvedConflicts === true || unresolvedConflicts === 'true' }),
     sort, direction,
   }),
-  evidenceFilterOptions: () => adminRead('evidence_filters'),
-  evidenceDetail: evidenceId => adminRead('evidence_detail', { id: evidenceId }),
-  evidenceObservations: (evidenceId, { limit = 100, offset = 0, entityType = '' } = {}) => adminRead('evidence_observations', {
+  evidenceFilterOptions: () => adminReadImpl('evidence_filters'),
+  evidenceDetail: (evidenceId: any) => adminReadImpl('evidence_detail', { id: evidenceId }),
+  evidenceObservations: (evidenceId: any, { limit = 100, offset = 0, entityType = '' }: AnyArgs = {}) => adminReadImpl('evidence_observations', {
     id: evidenceId, limit: bounded(limit, 100), offset: Math.max(Number(offset) || 0, 0), entity_type: entityType || null,
   }),
-  evidenceEntities: (evidenceId, { limit = 100, offset = 0, entityType = '' } = {}) => adminRead('evidence_entities', {
+  evidenceEntities: (evidenceId: any, { limit = 100, offset = 0, entityType = '' }: AnyArgs = {}) => adminReadImpl('evidence_entities', {
     id: evidenceId, limit: bounded(limit, 100), offset: Math.max(Number(offset) || 0, 0), entity_type: entityType || null,
   }),
-  evidenceAccess: (evidenceId, mode = 'preview') => invoke('admin-evidence-access', {
+  evidenceAccess: (evidenceId: any, mode = 'preview') => invoke('admin-evidence-access', {
     evidence_id: evidenceId,
     mode: mode === 'download' ? 'download' : 'preview',
   }),
 
-  reviewsPage: ({ limit = 50, offset = 0, query = '', domain = '', status = '', sort = 'priority', direction = 'desc' } = {}) =>
-    adminRead('reviews_page', {
+  reviewsPage: ({ limit = 50, offset = 0, query = '', domain = '', status = '', sort = 'priority', direction = 'desc' }: AnyArgs = {}) =>
+    adminReadImpl('reviews_page', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
       domain: domain || null, status: status || null, sort, direction,
     }),
@@ -335,28 +333,29 @@ export const api = {
     limit: bounded(limit, 200), sort: 'completeness', direction: 'asc',
   })),
 
-  evidence: async (limit = 200) => pageItems(await adminRead('evidence_page', { limit: bounded(limit, 200), offset: 0 })),
-  jobs: (limit = 200) => adminRead('jobs', { limit: bounded(limit, 200) }),
-  reviews: (limit = 200) => adminRead('reviews', { limit: bounded(limit, 200) }),
-  regulatorySources: () => adminRead('sources'),
+  evidence: async (limit = 200) => pageItems(await adminReadImpl('evidence_page', { limit: bounded(limit, 200), offset: 0 })),
+  jobs: (limit = 200) => adminReadImpl('jobs', { limit: bounded(limit, 200) }),
+  reviews: (limit = 200) => adminReadImpl('reviews', { limit: bounded(limit, 200) }),
+  regulatorySources: () => adminReadImpl('sources'),
 
-  layer1Job: jobId => adminRead('pipeline_job_detail', { id: jobId }),
+  layer1Job: (jobId: any) => adminReadImpl('pipeline_job_detail', { id: jobId }),
   latestLayer1Job: async (country = 'AU') => {
-    const result = await adminRead('pipeline_jobs_page', {
+    const result = await adminReadImpl('pipeline_jobs_page', {
       limit: 50, offset: 0, country_code: country || null, sort: 'created', direction: 'desc',
     })
     return pageItems(result)[0] ?? null
   },
 
-  runLayer1: ({ country = 'AU', apply = false, batchSize = 2500, offset = 0 } = {}) =>
+  runLayer1: ({ country = 'AU', apply = false, batchSize = 2500, offset = 0 }: AnyArgs = {}) =>
     invoke(country === 'CA' ? 'layer1-ca-live' : 'layer1-register-etl', { country, apply, batchSize, offset }),
-  runLayer2AStatsCan: ({ apply = false, sampleRows = 1000 } = {}) =>
+  runLayer2AStatsCan: ({ apply = false, sampleRows = 1000 }: AnyArgs = {}) =>
     invoke('statcan-ca-psis-etl', { apply, sampleRows }),
   resetDatabase: () => invoke('pilot-reset', { confirm: 'RESET DATABASE' }),
 
-  searchCourses: async (query, limit = 50) => pageItems(await entityPage('courses_page', {
+  searchCourses: async (query: string, limit = 50) => pageItems(await entityPage('courses_page', {
     query, limit: bounded(limit, 50), sort: 'course', direction: 'asc',
   })),
 }
 
-export { adminRead }
+export const api = apiImplementation as CourseFinderApi
+export const adminRead = adminReadImpl as AdminReadFunction
