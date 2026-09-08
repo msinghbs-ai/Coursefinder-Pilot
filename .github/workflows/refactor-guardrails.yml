@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: architectural-refactor-${{ github.event.pull_request.number || github.ref }}
@@ -16,11 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
-      - name: Checkout
+      - name: Checkout PR head
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -39,8 +43,8 @@ jobs:
         shell: bash
         run: |
           branch='${{ github.head_ref }}'
-          if [ -z "$branch" ]; then
-            echo "Pull-request head branch is unavailable"
+          if [ -z "$branch" ] || [ -z "$PR_HEAD_SHA" ]; then
+            echo "Pull-request head branch/SHA is unavailable"
             exit 1
           fi
           slug=$(printf '%s' "$branch" | tr '[:upper:]' '[:lower:]' | sed -E 's#[/._]+#-#g; s#[^a-z0-9-]+#-#g; s#-+#-#g; s#^-+|-+$##g')
@@ -50,6 +54,7 @@ jobs:
           fi
           echo "UAT_BASE_URL=https://${slug}-coursefinder-pilot.techm.workers.dev" >> "$GITHUB_ENV"
           echo "Resolved current PR preview: ${slug}-coursefinder-pilot.techm.workers.dev"
+          echo "PR head: $PR_HEAD_SHA"
       - name: Preflight governed UAT credentials
         shell: bash
         run: |
@@ -61,23 +66,33 @@ jobs:
             https://*) ;;
             *) echo "UAT_BASE_URL must use HTTPS"; exit 1 ;;
           esac
-      - name: Wait for exact branch preview revision
+      - name: Wait for Cloudflare deployment of exact PR head
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100"
+          short_sha="${PR_HEAD_SHA:0:8}"
           for attempt in $(seq 1 12); do
-            code=$(curl -L -sS -o /tmp/coursefinder-refactor-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?uat_probe=${GITHUB_SHA}" || true)
-            if [ "$code" = "200" ] && cmp -s dist/index.html /tmp/coursefinder-refactor-home.html; then
-              echo "Current PR preview matches the locally built index exactly"
+            comments=$(curl -fsS \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$api" || true)
+            cloudflare=$(printf '%s' "$comments" | jq -r '[.[] | select(.user.login=="cloudflare-workers-and-pages[bot]")] | last | .body // ""' 2>/dev/null || true)
+            code=$(curl -L -sS -o /tmp/coursefinder-refactor-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?uat_probe=${PR_HEAD_SHA}" || true)
+            if printf '%s' "$cloudflare" | grep -Fq 'Deployment successful' \
+              && printf '%s' "$cloudflare" | grep -Fq "$short_sha" \
+              && printf '%s' "$cloudflare" | grep -Fq "$UAT_BASE_URL" \
+              && [ "$code" = "200" ]; then
+              echo "Cloudflare confirms exact PR head $PR_HEAD_SHA on $UAT_BASE_URL"
               exit 0
             fi
-            if [ "$code" = "200" ]; then
-              echo "Preview reachable but does not yet match this PR build; retry ${attempt}/12"
-            else
-              echo "Preview not ready yet (HTTP ${code:-none}); retry ${attempt}/12"
-            fi
+            echo "Waiting for Cloudflare to confirm exact PR head $short_sha on derived preview; retry ${attempt}/12"
             sleep 10
           done
-          echo "Current PR preview did not serve the exact built revision within the deployment-settle window"
+          echo "Cloudflare did not confirm deployment of exact PR head $PR_HEAD_SHA to $UAT_BASE_URL"
           exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
