@@ -97,9 +97,5 @@ jobs:
           exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Governed bounded UAT
-        run: >-
-          npx playwright test -c playwright.config.mjs
-          tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs
-          tests/uat/m2-5-platform-readiness-deployed.spec.mjs
-          tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs
+      - name: Full Playwright UAT
+        run: npm run test:uat
