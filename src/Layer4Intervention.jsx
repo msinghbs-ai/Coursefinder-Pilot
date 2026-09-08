@@ -80,9 +80,10 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
  const fields=Array.isArray(layer4?.fields)?layer4.fields:[]
  const providerContext=type==='provider'?data?.id:(data?.provider_id||data?.provider?.id||'')
  const pimFamilyId=type==='course'?(data?.pim_family_id??data?.pim?.family_id??null):null
+ const pimFamilyName=type==='course'?(data?.pim_family_name??data?.pim?.family_name??data?.pim?.family?.name??''):''
  const pimValues=type==='course'?(data?.pim_attribute_values??data?.attribute_values??data?.pim?.attribute_values??[]):[]
  return <>
-  {type==='course'&&<DynamicPimFields entityType="course" familyId={pimFamilyId} values={Array.isArray(pimValues)?pimValues:[]}/>} 
+  {type==='course'&&<DynamicPimFields entityType="course" familyId={pimFamilyId} familyName={pimFamilyName} values={Array.isArray(pimValues)?pimValues:[]}/>} 
   <section className="m-detail-section cf-layer4-override">
   <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start'}}>
    <div><h3>Layer 4 governed intervention</h3><p className="m-help">Effective-value overlay only. Underlying source and canonical history remain preserved.</p></div>
