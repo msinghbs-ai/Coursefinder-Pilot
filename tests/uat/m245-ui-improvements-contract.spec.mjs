@@ -69,7 +69,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   expect(shell).toMatch(/QS World University Rankings[\s\S]*Open Dataset[\s\S]*Compare/)
   expect(shell).toMatch(/Times Higher Education[\s\S]*Open Dataset[\s\S]*Compare/)
   expect(compare).toContain("datasets,setDatasets]=useState({qilt:true,prisms:true,qs:true,the:true})")
-  expect(compare).toContain('historical editions')
+  expect(compare).toContain('retained editions')
   expect(compare).toContain('No accepted observation for edition')
   expect(compare).toContain('cf-flow-sticky')
   expect(compare).toContain('<ProviderLogo providerId={logoProviderId}')
