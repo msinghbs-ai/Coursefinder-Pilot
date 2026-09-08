@@ -5,7 +5,7 @@ import{readFile}from'node:fs/promises'
 const read=p=>readFile(new URL(`../../${p}`,import.meta.url),'utf8')
 
 test('CF-208 Scholarship PIM catalogue is wired through the mature governed shell',async()=>{
- const[index,main,api]=await Promise.all([read('index.html'),read('src/mature-main.jsx'),read('src/lib/supabase.js')])
+ const[index,main,api]=await Promise.all([read('index.html'),read('src/mature-main.jsx'),read('src/lib/supabase.ts')])
  assert.match(index,/src\/mature-main\.jsx/)
  assert.match(main,/item\('Scholarships',Sparkles,1\)/)
  assert.match(main,/if\(page==='Scholarships'\)return <ScholarshipWorkspace/)
