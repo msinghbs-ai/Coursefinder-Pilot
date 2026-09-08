@@ -15,7 +15,7 @@ describe('CF-241 Evidence entity-link replay contract', () => {
   })
 
   it('runs before the Evidence replay-completion migration', () => {
-    expect('20260908111700').toBeLessThan('20260908111800')
+    expect(Number('20260908111700')).toBeLessThan(Number('20260908111800'))
   })
 
   it('restores and protects the maintenance path', () => {
