@@ -7,12 +7,16 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: architectural-refactor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      UAT_BASE_URL: https://coursefinder-pilot.techm.workers.dev
+      UAT_BASE_URL: https://refactor-2-15-74-architectural-hardening-coursefinder-pilot.techm.workers.dev
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
@@ -39,6 +43,24 @@ jobs:
             echo "Required Actions secrets are missing: COURSEFINDER_UAT_EMAIL / COURSEFINDER_UAT_PASSWORD"
             exit 1
           fi
+          case "$UAT_BASE_URL" in
+            https://*) ;;
+            *) echo "UAT_BASE_URL must use HTTPS"; exit 1 ;;
+          esac
+      - name: Wait for branch preview
+        shell: bash
+        run: |
+          for attempt in $(seq 1 12); do
+            code=$(curl -L -sS -o /tmp/coursefinder-refactor-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?uat_probe=${GITHUB_SHA}" || true)
+            if [ "$code" = "200" ]; then
+              echo "Branch preview reachable for UAT"
+              exit 0
+            fi
+            echo "Branch preview not ready yet (HTTP ${code:-none}); retry ${attempt}/12"
+            sleep 10
+          done
+          echo "Branch preview did not become reachable within the deployment-settle window"
+          exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Full UAT
