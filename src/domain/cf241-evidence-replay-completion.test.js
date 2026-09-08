@@ -24,8 +24,9 @@ describe('CF-241 Evidence replay completion contract', () => {
     expect(sql).toContain("case when x.rejected_count>0 then ''rejected'' when x.observation_count>0 then ''extracted'' else ''missing_extraction'' end")
   })
 
-  it('excludes explicit stale rows from expired and current freshness filters', () => {
-    expect(sql).toContain("v_freshness=''expired'' and not (lower(coalesce(e.metadata->>''freshness_state'',''''))=''stale''")
-    expect(sql).toContain("v_freshness=''current'' and not (lower(coalesce(e.metadata->>''freshness_state'',''''))=''stale''")
+  it('does not re-patch freshness already governed by the preceding CF-241 migration', () => {
+    expect(sql).toContain('relies on the preceding CF-241 migration for stale/current/expired freshness precedence')
+    expect(sql).not.toContain("v_old := '(v_freshness=''expired''")
+    expect(sql).not.toContain("v_old := '(v_freshness=''current''")
   })
 })
