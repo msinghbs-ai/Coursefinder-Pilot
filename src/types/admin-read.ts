@@ -12,9 +12,12 @@ export interface PagePayload<T> {
 
 export interface PimDetailEnvelope {
   pim_family_id?: string | null
+  pim_family_name?: string | null
   pim_attribute_values?: PimAttributeValue[]
   pim?: {
     family_id?: string | null
+    family_name?: string | null
+    family?: { name?: string | null; [key: string]: unknown }
     attribute_values?: PimAttributeValue[]
     [key: string]: unknown
   }
