@@ -24,4 +24,11 @@ describe('course detail PIM SQL contract',()=>{
   expect(migration).toContain('avp.channel_code is not distinct from av.channel_code')
   expect(migration).toContain('av.locale nulls first, av.channel_code nulls first')
  })
+
+ it('scopes embedded option labels to the value locale with global fallback only',()=>{
+  expect(migration).toContain('(ao.locale is not distinct from av.locale or ao.locale is null)')
+  expect(migration).toContain('(av.locale is not null or ao.locale is null)')
+  expect(migration).toContain('(ao.locale is not distinct from av.locale) desc')
+  expect(migration).toContain('select distinct on (ao.code)')
+ })
 })
