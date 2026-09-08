@@ -10,6 +10,11 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      UAT_BASE_URL: https://coursefinder-pilot.techm.workers.dev
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,6 +32,13 @@ jobs:
         run: npm run test:unit
       - name: Build
         run: npm run build
+      - name: Preflight governed UAT credentials
+        shell: bash
+        run: |
+          if [ -z "$UAT_EMAIL" ] || [ -z "$UAT_PASSWORD" ]; then
+            echo "Required Actions secrets are missing: COURSEFINDER_UAT_EMAIL / COURSEFINDER_UAT_PASSWORD"
+            exit 1
+          fi
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Full UAT
