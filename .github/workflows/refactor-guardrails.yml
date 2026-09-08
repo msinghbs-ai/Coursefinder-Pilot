@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  issues: read
   pull-requests: read
 
 concurrency:
@@ -40,22 +41,39 @@ jobs:
         run: npm run test:unit
       - name: Build
         run: npm run build
-      - name: Resolve current pull-request preview
+      - name: Resolve exact Cloudflare commit preview
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          branch="$PR_HEAD_REF"
-          if [ -z "$branch" ] || [ -z "$PR_HEAD_SHA" ]; then
+          if [ -z "$PR_HEAD_SHA" ] || [ -z "$PR_HEAD_REF" ]; then
             echo "Pull-request head branch/SHA is unavailable"
             exit 1
           fi
-          slug=$(printf '%s' "$branch" | tr '[:upper:]' '[:lower:]' | sed -E 's#[/._]+#-#g; s#[^a-z0-9-]+#-#g; s#-+#-#g; s#^-+|-+$##g')
-          if [ -z "$slug" ]; then
-            echo "Unable to derive Cloudflare preview slug from $branch"
-            exit 1
-          fi
-          echo "UAT_BASE_URL=https://${slug}-coursefinder-pilot.techm.workers.dev" >> "$GITHUB_ENV"
-          echo "Resolved current PR preview: ${slug}-coursefinder-pilot.techm.workers.dev"
-          echo "PR head: $PR_HEAD_SHA"
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100"
+          short_sha="${PR_HEAD_SHA:0:8}"
+          for attempt in $(seq 1 18); do
+            comments=$(curl -fsS \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$api" || true)
+            cloudflare=$(printf '%s' "$comments" | jq -r '[.[] | select(.user.login=="cloudflare-workers-and-pages[bot]")] | last | .body // ""' 2>/dev/null || true)
+            if printf '%s' "$cloudflare" | grep -Fq 'Deployment successful' \
+              && printf '%s' "$cloudflare" | grep -Fq "$short_sha"; then
+              preview=$(printf '%s' "$cloudflare" | grep -oE 'https://[a-f0-9]{8}-coursefinder-pilot\.techm\.workers\.dev' | head -n 1 || true)
+              if [ -n "$preview" ]; then
+                echo "UAT_BASE_URL=$preview" >> "$GITHUB_ENV"
+                echo "Resolved exact commit preview $preview for $PR_HEAD_SHA"
+                exit 0
+              fi
+            fi
+            echo "Cloudflare exact commit preview not available yet for $short_sha; retry ${attempt}/18"
+            sleep 10
+          done
+          echo "Unable to resolve Cloudflare exact commit preview for $PR_HEAD_SHA"
+          exit 1
       - name: Preflight governed UAT credentials
         shell: bash
         run: |
@@ -64,36 +82,44 @@ jobs:
             exit 1
           fi
           case "$UAT_BASE_URL" in
-            https://*) ;;
-            *) echo "UAT_BASE_URL must use HTTPS"; exit 1 ;;
+            https://*-coursefinder-pilot.techm.workers.dev) ;;
+            *) echo "UAT_BASE_URL must be a governed HTTPS CourseFinder commit preview"; exit 1 ;;
           esac
-      - name: Wait for Cloudflare deployment of exact PR head
+      - name: Verify exact deployed revision
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          api="https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100"
-          short_sha="${PR_HEAD_SHA:0:8}"
-          for attempt in $(seq 1 12); do
-            comments=$(curl -fsS \
-              -H "Authorization: Bearer $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "$api" || true)
-            cloudflare=$(printf '%s' "$comments" | jq -r '[.[] | select(.user.login=="cloudflare-workers-and-pages[bot]")] | last | .body // ""' 2>/dev/null || true)
+          for attempt in $(seq 1 18); do
             code=$(curl -L -sS -o /tmp/coursefinder-refactor-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?uat_probe=${PR_HEAD_SHA}" || true)
-            if printf '%s' "$cloudflare" | grep -Fq 'Deployment successful' \
-              && printf '%s' "$cloudflare" | grep -Fq "$short_sha" \
-              && printf '%s' "$cloudflare" | grep -Fq "$UAT_BASE_URL" \
-              && [ "$code" = "200" ]; then
-              echo "Cloudflare confirms exact PR head $PR_HEAD_SHA on $UAT_BASE_URL"
-              exit 0
+            if [ "$code" = "200" ]; then
+              if python - <<'PY'
+          import os
+          from html.parser import HTMLParser
+
+          class BuildShaParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.found = False
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() != 'meta':
+                      return
+                  values = dict(attrs)
+                  if values.get('name') == 'coursefinder-build-sha' and values.get('content') == os.environ['PR_HEAD_SHA']:
+                      self.found = True
+
+          parser = BuildShaParser()
+          with open('/tmp/coursefinder-refactor-home.html', encoding='utf-8') as handle:
+              parser.feed(handle.read())
+          raise SystemExit(0 if parser.found else 1)
+          PY
+              then
+                echo "Exact PR head $PR_HEAD_SHA verified on $UAT_BASE_URL"
+                exit 0
+              fi
             fi
-            echo "Waiting for Cloudflare to confirm exact PR head $short_sha on derived preview; retry ${attempt}/12"
+            echo "Exact revision not served yet at $UAT_BASE_URL (HTTP ${code:-none}); retry ${attempt}/18"
             sleep 10
           done
-          echo "Cloudflare did not confirm deployment of exact PR head $PR_HEAD_SHA to $UAT_BASE_URL"
+          echo "Commit preview did not serve exact revision $PR_HEAD_SHA"
           exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
