@@ -48,7 +48,7 @@ jobs:
           tests/uat/m2-5-jobs-workspace-read-path-contract.spec.mjs
           tests/uat/m245-ui-improvements-contract.spec.mjs
           --project=chromium-desktop
-      - name: Resolve exact Cloudflare commit preview
+      - name: Resolve governed Cloudflare commit preview
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,19 +67,53 @@ jobs:
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "$api" || true)
             cloudflare=$(printf '%s' "$comments" | jq -r '[.[] | select(.user.login=="cloudflare-workers-and-pages[bot]")] | last | .body // ""' 2>/dev/null || true)
+            preview=$(printf '%s' "$cloudflare" | grep -oE 'https://[a-f0-9]{8}-coursefinder-pilot\.techm\.workers\.dev' | head -n 1 || true)
+
             if printf '%s' "$cloudflare" | grep -Fq 'Deployment successful' \
-              && printf '%s' "$cloudflare" | grep -Fq "$short_sha"; then
-              preview=$(printf '%s' "$cloudflare" | grep -oE 'https://[a-f0-9]{8}-coursefinder-pilot\.techm\.workers\.dev' | head -n 1 || true)
-              if [ -n "$preview" ]; then
-                echo "UAT_BASE_URL=$preview" >> "$GITHUB_ENV"
-                echo "Resolved exact commit preview $preview for $PR_HEAD_SHA"
-                exit 0
+              && printf '%s' "$cloudflare" | grep -Fq "$short_sha" \
+              && [ -n "$preview" ]; then
+              echo "TARGET_SHA=$PR_HEAD_SHA" >> "$GITHUB_ENV"
+              echo "UAT_BASE_URL=$preview" >> "$GITHUB_ENV"
+              echo "DEPLOYMENT_MODE=exact" >> "$GITHUB_ENV"
+              echo "Resolved exact commit preview $preview for $PR_HEAD_SHA"
+              exit 0
+            fi
+
+            # Cloudflare may intentionally skip deployment when commits after the
+            # last preview change validation-only files. Accept the prior preview
+            # only after GitHub proves every intervening file is non-runtime.
+            deployed_short=$(printf '%s' "$cloudflare" | grep -oE '\| [a-f0-9]{8} \|' | head -n 1 | tr -d '| ' || true)
+            if printf '%s' "$cloudflare" | grep -Fq 'Deployment successful' \
+              && [ -n "$preview" ] && [ -n "$deployed_short" ]; then
+              deployed_json=$(curl -fsS \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${deployed_short}" || true)
+              deployed_sha=$(printf '%s' "$deployed_json" | jq -r '.sha // empty' 2>/dev/null || true)
+              if [ -n "$deployed_sha" ]; then
+                comparison=$(curl -fsS \
+                  -H "Authorization: Bearer $GH_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${deployed_sha}...${PR_HEAD_SHA}" || true)
+                status=$(printf '%s' "$comparison" | jq -r '.status // empty' 2>/dev/null || true)
+                changed=$(printf '%s' "$comparison" | jq -r '.files[]?.filename' 2>/dev/null || true)
+                unsafe=$(printf '%s\n' "$changed" | grep -Ev '^(\.github/workflows/|tests/)' || true)
+                if { [ "$status" = "ahead" ] || [ "$status" = "identical" ]; } && [ -z "$unsafe" ]; then
+                  echo "TARGET_SHA=$deployed_sha" >> "$GITHUB_ENV"
+                  echo "UAT_BASE_URL=$preview" >> "$GITHUB_ENV"
+                  echo "DEPLOYMENT_MODE=runtime_equivalent" >> "$GITHUB_ENV"
+                  echo "Using runtime-equivalent preview $preview at $deployed_sha; intervening PR changes are validation-only"
+                  exit 0
+                fi
               fi
             fi
-            echo "Cloudflare exact commit preview not available yet for $short_sha; retry ${attempt}/18"
+
+            echo "Governed Cloudflare preview not ready for $short_sha; retry ${attempt}/18"
             sleep 10
           done
-          echo "Unable to resolve Cloudflare exact commit preview for $PR_HEAD_SHA"
+          echo "Unable to resolve an exact or proven runtime-equivalent Cloudflare preview for $PR_HEAD_SHA"
           exit 1
       - name: Preflight governed UAT credentials
         shell: bash
@@ -92,11 +126,15 @@ jobs:
             https://*-coursefinder-pilot.techm.workers.dev) ;;
             *) echo "UAT_BASE_URL must be a governed HTTPS CourseFinder commit preview"; exit 1 ;;
           esac
-      - name: Verify exact deployed revision
+          if [ -z "$TARGET_SHA" ] || [ -z "$DEPLOYMENT_MODE" ]; then
+            echo "TARGET_SHA and DEPLOYMENT_MODE are required"
+            exit 1
+          fi
+      - name: Verify deployed runtime revision
         shell: bash
         run: |
           for attempt in $(seq 1 18); do
-            code=$(curl -L -sS -o /tmp/coursefinder-refactor-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?uat_probe=${PR_HEAD_SHA}" || true)
+            code=$(curl -L -sS -o /tmp/coursefinder-refactor-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?uat_probe=${TARGET_SHA}" || true)
             if [ "$code" = "200" ]; then
               if python - <<'PY'
           import os
@@ -110,7 +148,7 @@ jobs:
                   if tag.lower() != 'meta':
                       return
                   values = dict(attrs)
-                  if values.get('name') == 'coursefinder-build-sha' and values.get('content') == os.environ['PR_HEAD_SHA']:
+                  if values.get('name') == 'coursefinder-build-sha' and values.get('content') == os.environ['TARGET_SHA']:
                       self.found = True
 
           parser = BuildShaParser()
@@ -119,14 +157,14 @@ jobs:
           raise SystemExit(0 if parser.found else 1)
           PY
               then
-                echo "Exact PR head $PR_HEAD_SHA verified on $UAT_BASE_URL"
+                echo "Verified $DEPLOYMENT_MODE runtime revision $TARGET_SHA on $UAT_BASE_URL"
                 exit 0
               fi
             fi
-            echo "Exact revision not served yet at $UAT_BASE_URL (HTTP ${code:-none}); retry ${attempt}/18"
+            echo "Runtime revision $TARGET_SHA not served yet at $UAT_BASE_URL (HTTP ${code:-none}); retry ${attempt}/18"
             sleep 10
           done
-          echo "Commit preview did not serve exact revision $PR_HEAD_SHA"
+          echo "Commit preview did not serve runtime revision $TARGET_SHA"
           exit 1
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
