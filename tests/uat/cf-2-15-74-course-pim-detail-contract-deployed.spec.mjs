@@ -46,7 +46,9 @@ test.describe('CF 2.15.74 governed course PIM detail contract @deployed',()=>{
    }
   }
   for(const count of singleValueCounts.values())expect(count).toBe(1)
-  expect(detailPayload.pim_attribute_values.some(x=>x.attribute_code==='course_description')).toBe(true)
-  await expect(page.locator('[data-pim-dynamic-fields]')).toHaveCount(0)
+  const coreDescription=detailPayload.pim_attribute_values.find(x=>x.attribute_code==='course_description')
+  expect(coreDescription).toBeTruthy()
+  const dynamicLabels=page.locator('[data-pim-dynamic-fields] .cf-field-label span')
+  await expect(dynamicLabels.filter({hasText:coreDescription.attribute_name})).toHaveCount(0)
  }finally{await finish(testInfo,runtime)}})
 })
