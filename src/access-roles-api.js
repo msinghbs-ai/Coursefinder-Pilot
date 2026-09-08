@@ -1,10 +1,9 @@
-import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 
 async function invoke(body) {
   const { data, error } = await supabase.functions.invoke('admin-user-management', { body })
   if (error) {
-    if (error instanceof FunctionsHttpError && error.context) {
+    if (error?.context) {
       try {
         const payload = await error.context.clone().json()
         throw new Error(payload?.error || payload?.message || error.message || 'Admin user management failed')
