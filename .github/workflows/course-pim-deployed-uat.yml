@@ -1,0 +1,105 @@
+name: Course PIM Deployed UAT
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/course-pim-deployed-uat.yml'
+      - '.github/cf-2-15-74-course-pim-candidate'
+      - 'src/Layer4Intervention.jsx'
+      - 'src/components/pim/**'
+      - 'src/domain/pim*'
+      - 'src/types/pim.ts'
+      - 'src/types/admin-read.ts'
+      - 'supabase/migrations/20260908032500_course_detail_pim_payload.sql'
+      - 'tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/course-pim-deployed-uat.yml'
+      - '.github/cf-2-15-74-course-pim-candidate'
+      - 'src/Layer4Intervention.jsx'
+      - 'src/components/pim/**'
+      - 'src/domain/pim*'
+      - 'src/types/pim.ts'
+      - 'src/types/admin-read.ts'
+      - 'supabase/migrations/20260908032500_course_detail_pim_payload.sql'
+      - 'tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed CourseFinder Admin URL
+        required: true
+        default: https://coursefinder-pilot.techm.workers.dev
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-pim-deployed-uat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  course-pim-deployed-uat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --prefer-offline --no-audit --no-fund
+
+      - name: Preflight governed UAT credentials
+        shell: bash
+        run: |
+          if [ -z "$UAT_EMAIL" ] || [ -z "$UAT_PASSWORD" ]; then
+            echo "Required Actions secrets are missing: COURSEFINDER_UAT_EMAIL / COURSEFINDER_UAT_PASSWORD"
+            exit 1
+          fi
+          case "$UAT_BASE_URL" in
+            https://*) ;;
+            *) echo "UAT_BASE_URL must use HTTPS for deployed acceptance"; exit 1 ;;
+          esac
+
+      - name: Verify deployed worker is reachable
+        shell: bash
+        run: |
+          for attempt in $(seq 1 6); do
+            code=$(curl -L -sS -o /tmp/coursefinder-pim-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?pim_uat_probe=${GITHUB_SHA}" || true)
+            if [ "$code" = "200" ]; then
+              echo "Worker reachable for Course PIM deployed UAT"
+              exit 0
+            fi
+            echo "Worker not ready yet (HTTP ${code:-none}); retry ${attempt}/6"
+            sleep 6
+          done
+          echo "Worker did not become reachable within the Course PIM UAT window"
+          exit 1
+
+      - name: Install Chromium browser
+        run: npx playwright install chromium
+
+      - name: Run governed Course PIM deployed contract
+        run: npx playwright test tests/uat/cf-2-15-74-course-pim-detail-contract-deployed.spec.mjs --project=chromium-desktop
+
+      - name: Upload Course PIM UAT evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: course-pim-deployed-uat-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            playwright-report/
+            test-results/
+            uat-artifacts/
