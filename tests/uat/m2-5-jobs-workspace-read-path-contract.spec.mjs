@@ -16,7 +16,7 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     const[shell,ops,supa,versionEntry,index,releaseTest]=await Promise.all([
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('src/pipeline-ops-entry.jsx','utf8'),
-      fs.readFile('src/lib/supabase.js','utf8'),
+      fs.readFile('src/lib/supabase.ts','utf8'),
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('tests/uat/release-notes-deployed.spec.mjs','utf8'),
