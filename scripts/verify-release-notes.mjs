@@ -21,7 +21,7 @@ if (!sourceChanged) {
   process.exit(0)
 }
 
-for (const required of ['package.json', 'CHANGELOG.md']) {
+for (const required of ['package.json', 'package-lock.json', 'CHANGELOG.md']) {
   if (!changed.includes(required)) {
     console.error(`Release gate: src/ changed but ${required} was not modified.`)
     process.exit(1)
@@ -30,6 +30,14 @@ for (const required of ['package.json', 'CHANGELOG.md']) {
 
 const basePackage = JSON.parse(git('show', `${base}:package.json`))
 const headPackage = JSON.parse(git('show', `${head}:package.json`))
+const headLock = JSON.parse(git('show', `${head}:package-lock.json`))
+
+if (headLock.version !== headPackage.version || headLock.packages?.['']?.version !== headPackage.version) {
+  console.error(
+    `Release gate: package-lock.json root versions must both equal package.json version ${headPackage.version}.`,
+  )
+  process.exit(1)
+}
 
 const parseSemver = (version) => {
   const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(version)
@@ -94,5 +102,5 @@ if (!versionHeading.test(changelog)) {
 }
 
 console.log(
-  `Release gate: src/ changes are paired with package version ${basePackage.version} -> ${headPackage.version} and a matching changelog entry.`,
+  `Release gate: src/ changes are paired with package/package-lock version ${basePackage.version} -> ${headPackage.version} and a matching changelog entry.`,
 )
