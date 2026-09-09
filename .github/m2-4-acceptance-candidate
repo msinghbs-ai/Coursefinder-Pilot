@@ -101,3 +101,23 @@ Governance:
 
 This marker triggers exactly one replacement final deployed acceptance desktop/mobile matrix.
 M2.4.4 and CF-CHG-20260830-048 may CLOSE/PASS only if build and desktop/mobile acceptance PASS and the final repository/runtime/advisor/documentation reconciliation remains clean.
+
+---
+
+Post-merge production-readiness acceptance nomination — 9 September 2026.
+
+Purpose:
+- validate merge commit 8a451809275607350d89672adf513caba004db0e and the deployed-UAT orchestration correction before production deployment;
+- run the governed acceptance desktop/mobile matrix on the next main push;
+- retain all existing security, performance, Evidence, publication and data-access boundaries without weakening thresholds or test semantics.
+
+Precondition evidence:
+- PR #54 merged from validated head bc7eb4827ebae5043737ac289f0db82c11fd311c;
+- governed security contracts passed 49/49 before merge;
+- post-merge targeted deployed desktop UAT passed 1/1 on run 34346185429;
+- run 34346185429 failed only in the final status-publisher shell block because its mobile-tier conditional lacked a closing `fi`;
+- no tests under tests/uat are changed by the orchestration correction.
+
+Deployment stop-line:
+- no production deployment unless the replacement acceptance desktop and mobile gates complete successfully after this nomination;
+- any application, security, database, runtime or governed-UAT failure remains fail-closed and blocks deployment.
