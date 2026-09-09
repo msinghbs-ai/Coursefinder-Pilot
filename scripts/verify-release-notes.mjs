@@ -1,5 +1,4 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
 
 const base = process.env.RELEASE_GATE_BASE_SHA || process.argv[2]
 const head = process.env.RELEASE_GATE_HEAD_SHA || process.argv[3] || 'HEAD'
@@ -9,10 +8,10 @@ if (!base) {
   process.exit(2)
 }
 
-const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
-const changed = git('diff', '--no-renames', '--name-only', `${base}...${head}`)
-  .split('\n')
-  .map((value) => value.trim())
+const gitRaw = (...args) => execFileSync('git', args, { encoding: 'utf8' })
+const git = (...args) => gitRaw(...args).trim()
+const changed = gitRaw('diff', '--no-renames', '--name-only', '-z', `${base}...${head}`)
+  .split('\0')
   .filter(Boolean)
 
 const sourceChanged = changed.some((path) => path === 'src' || path.startsWith('src/'))
@@ -30,17 +29,40 @@ for (const required of ['package.json', 'CHANGELOG.md']) {
 }
 
 const basePackage = JSON.parse(git('show', `${base}:package.json`))
-const headPackage = JSON.parse(readFileSync('package.json', 'utf8'))
+const headPackage = JSON.parse(git('show', `${head}:package.json`))
 
 const parseSemver = (version) => {
-  const match = /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(version)
+  const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(version)
   if (!match) throw new Error(`Unsupported package version: ${version}`)
-  return match.slice(1, 4).map(Number)
+  return {
+    core: match.slice(1, 4).map(Number),
+    prerelease: match[4] ? match[4].split('.') : [],
+  }
+}
+
+const compareIdentifier = (left, right) => {
+  const leftNumeric = /^\d+$/.test(left)
+  const rightNumeric = /^\d+$/.test(right)
+  if (leftNumeric && rightNumeric) return Number(left) - Number(right)
+  if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1
+  return left === right ? 0 : left < right ? -1 : 1
 }
 
 const compareSemver = (left, right) => {
   for (let index = 0; index < 3; index += 1) {
-    if (left[index] !== right[index]) return left[index] - right[index]
+    if (left.core[index] !== right.core[index]) return left.core[index] - right.core[index]
+  }
+
+  if (left.prerelease.length === 0 && right.prerelease.length === 0) return 0
+  if (left.prerelease.length === 0) return 1
+  if (right.prerelease.length === 0) return -1
+
+  const count = Math.max(left.prerelease.length, right.prerelease.length)
+  for (let index = 0; index < count; index += 1) {
+    if (left.prerelease[index] === undefined) return -1
+    if (right.prerelease[index] === undefined) return 1
+    const compared = compareIdentifier(left.prerelease[index], right.prerelease[index])
+    if (compared !== 0) return compared
   }
   return 0
 }
@@ -62,7 +84,7 @@ if (compareSemver(headVersion, baseVersion) <= 0) {
   process.exit(1)
 }
 
-const changelog = readFileSync('CHANGELOG.md', 'utf8')
+const changelog = gitRaw('show', `${head}:CHANGELOG.md`)
 const escapedVersion = headPackage.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const versionHeading = new RegExp(`^## \\[${escapedVersion}\\](?:\\s+-\\s+\\d{4}-\\d{2}-\\d{2})?\\s*$`, 'm')
 
