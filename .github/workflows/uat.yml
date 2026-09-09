@@ -31,7 +31,19 @@ jobs:
         run: npm ci
 
       - name: Run governed security contracts
-        run: npx playwright test --config=playwright.security-contracts.config.mjs
+        run: npx playwright test --config=playwright.security-contracts.config.mjs 2>&1 | tee governed-security.log
+
+      - name: Upload governed security evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governed-security-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            governed-security.log
+            playwright-report/
+            test-results/
 
   uat:
     name: UAT shard ${{ matrix.shard }}
