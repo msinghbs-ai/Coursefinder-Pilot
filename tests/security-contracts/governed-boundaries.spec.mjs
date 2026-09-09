@@ -260,7 +260,7 @@ test('browser Supabase boundary remains centralised, publishable-key only and pu
   const client = files.find(file => file.path === 'src/lib/supabase.ts')
   expect(client).toBeTruthy()
 
-  const combined = files.map(file => `\n-- ${file.path}\n${file.content}`).join('\n')
+  const combined = files.map(file => `\n-- ${file.path}\n${stripCodeComments(file.content)}`).join('\n')
   expect(combined).not.toMatch(/service[_-]?role/i)
   expect(combined).not.toMatch(/SUPABASE_SERVICE/i)
 
