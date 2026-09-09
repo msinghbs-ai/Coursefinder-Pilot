@@ -14,9 +14,12 @@ const changed = gitRaw('diff', '--no-renames', '--name-only', '-z', `${base}...$
   .split('\0')
   .filter(Boolean)
 
+const nonRuntimeRoots = /^(?:tests|scripts|supabase|docs|change-control|node_modules|dist|playwright-report|test-results|uat-artifacts)\//i
+const productionModuleExtension = /\.(?:[cm]?[jt]sx?|css|scss|sass|less|styl|stylus|html?)$/i
+
 const isProductionBuildInput = (filePath) => {
-  const rootLevelModule = !filePath.includes('/')
-    && /\.(?:[cm]?[jt]sx?|css|scss|sass|less|html?)$/i.test(filePath)
+  const productionCapableModule = productionModuleExtension.test(filePath)
+    && !nonRuntimeRoots.test(filePath)
 
   return filePath === 'src'
     || filePath.startsWith('src/')
@@ -26,7 +29,7 @@ const isProductionBuildInput = (filePath) => {
     || filePath.startsWith('public/')
     || filePath === 'package.json'
     || filePath === 'package-lock.json'
-    || rootLevelModule
+    || productionCapableModule
 }
 
 const productionBuildChanged = changed.some(isProductionBuildInput)
