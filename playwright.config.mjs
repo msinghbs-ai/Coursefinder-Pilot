@@ -3,8 +3,13 @@ import { defineConfig, devices } from '@playwright/test'
 const deployedBaseUrl = process.env.UAT_BASE_URL?.trim()
 const localBaseUrl = 'http://127.0.0.1:5173'
 
+// Smoke tagging is opt-in and does not modify existing tests:
+//   test('provider catalogue opens @smoke', async ({ page }) => { ... })
+// Fast path:
+//   npx playwright test --grep "@smoke"
 export default defineConfig({
   testDir: './tests/uat',
+  globalSetup: './global-setup.ts',
   timeout: 120_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
@@ -19,6 +24,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: deployedBaseUrl || localBaseUrl,
+    storageState: 'storageState.json',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
