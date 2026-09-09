@@ -195,9 +195,9 @@ function activeSecurityDefinerWrappers(source) {
   return active
 }
 
-function hasEffectivePublicRevokeAfter(source, wrapper) {
-  const tail = source.slice((wrapper.def.index ?? 0) + wrapper.def[0].length)
-  for (const revoke of tail.matchAll(/\brevoke\s+(?:execute|all(?:\s+privileges)?)\s+on\s+(?:function|routine)\s+([^;]+?)\s+from\s+([^;]+?)(?:;|$)/gi)) {
+function hasEffectivePublicRevokeAfter(_source, wrapper) {
+  const definitionWindow = wrapper.def[0]
+  for (const revoke of definitionWindow.matchAll(/\brevoke\s+(?:execute|all(?:\s+privileges)?)\s+on\s+(?:function|routine)\s+([^;]+?)\s+from\s+([^;]+?)(?:;|$)/gi)) {
     const recipients = revoke[2].split(',').map(value => value.trim().replace(/^"|"$/g, '').toLowerCase())
     if (!recipients.includes('public')) continue
     for (const target of splitTopLevelComma(revoke[1])) {
