@@ -14,12 +14,12 @@ test('QS and THE acquisition remain publisher-allowlisted and Evidence-first', a
   expect(qs).toContain('complete_qs_source_unavailable')
   expect(qs).toContain('global_completeness_gate_failed_')
   expect(qs).toMatch(/storage\.from\(["']evidence["']\)\.upload/)
-  expect(qs).toContain('ranking_publisher_raw')
+  expect(qs).toContain('svc_ranking_raw_evidence_register')
 
   expect(the).toMatch(/timeshighereducation\.com/)
   expect(the).toMatch(/world-university-rankings/)
   expect(the).toMatch(/storage\.from\(["']evidence["']\)\.upload/)
-  expect(the).toContain('ranking_publisher_raw')
+  expect(the).toContain('svc_ranking_raw_evidence_register')
 })
 
 test('ranking ingest remains service-role-only and evidence export stays short-lived', async () => {
