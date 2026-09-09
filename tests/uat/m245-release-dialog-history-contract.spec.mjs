@@ -3,6 +3,7 @@ import fs from 'node:fs'
 test('version pill preserves maintained accessible release history and bug fixes',()=>{
   const ui=fs.readFileSync('src/mature-main.jsx','utf8')
   const release=fs.readFileSync('src/pim-version-entry.js','utf8')
+  const current=fs.readFileSync('src/release-currentness-entry.js','utf8')
   expect(ui).toContain('<span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span>')
   expect(ui).not.toContain('<details className="m-release-menu">')
   expect(release).toContain("querySelectorAll('.m-release-pill')")
@@ -13,4 +14,9 @@ test('version pill preserves maintained accessible release history and bug fixes
   expect(release).toContain('Bug / UI fixes')
   expect(release).toContain('release.bugFixes')
   expect(release).not.toContain('.m-release-pill-legacy')
+  expect(current).toContain("const VERSION='2.15.75'")
+  expect(current).toContain('bugFixes:[')
+  expect(current).toContain('<strong>Bug / UI fixes</strong>')
+  expect(current).toContain('Fixed duplicate QS edition rows in Sources & Imports')
+  expect(current).toContain('pending security task #60')
 })
