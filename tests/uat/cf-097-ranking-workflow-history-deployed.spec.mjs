@@ -36,7 +36,7 @@ test.describe('CF-097/226 ranking workflow, history and datasets @deployed',()=>
  test('Statistics exposes accepted QS and THE editions and opens imported observations',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#statistics-rankings',process.env.UAT_BASE_URL).toString())
-  await expect(page.locator('.m-release-pill')).toContainText('v2.15.71',{timeout:120000})
+  await expect(page.locator('.m-release-pill')).toContainText('v2.15.74',{timeout:120000})
   const qs=page.locator('.m-stats-card').filter({hasText:'QS WORLD UNIVERSITY RANKINGS'}).first()
   await expect(qs).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const qsEdition=qs.locator('.cf-ranking-card-picker select')
