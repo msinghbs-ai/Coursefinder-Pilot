@@ -4,7 +4,7 @@ The active Playwright suite remains under `tests/uat/`. Performance optimisation
 
 ## Authentication cache
 
-For deployed UAT, set `UAT_BASE_URL`, `UAT_EMAIL` (or `UAT_USERNAME`), and `UAT_PASSWORD`. `global-setup.mjs` signs in once, writes `storageState.json`, and Playwright reuses that authenticated browser state for the run.
+For deployed UAT, set `UAT_BASE_URL`, `UAT_EMAIL`, and `UAT_PASSWORD`. `global-setup.mjs` signs in once, writes `storageState.json`, and Playwright reuses that authenticated browser state for the run.
 
 Optional login-surface overrides are available when an environment uses different controls:
 
