@@ -14,16 +14,24 @@ const changed = gitRaw('diff', '--no-renames', '--name-only', '-z', `${base}...$
   .split('\0')
   .filter(Boolean)
 
-const sourceChanged = changed.some((path) => path === 'src' || path.startsWith('src/'))
+const isProductionBuildInput = (filePath) =>
+  filePath === 'src'
+  || filePath.startsWith('src/')
+  || filePath === 'index.html'
+  || /^vite\.config\.[cm]?[jt]s$/.test(filePath)
+  || filePath === 'public'
+  || filePath.startsWith('public/')
 
-if (!sourceChanged) {
-  console.log('Release gate: no src/ changes; version/changelog bump not required.')
+const productionBuildChanged = changed.some(isProductionBuildInput)
+
+if (!productionBuildChanged) {
+  console.log('Release gate: no production frontend build-input changes; version/changelog bump not required.')
   process.exit(0)
 }
 
 for (const required of ['package.json', 'package-lock.json', 'CHANGELOG.md']) {
   if (!changed.includes(required)) {
-    console.error(`Release gate: src/ changed but ${required} was not modified.`)
+    console.error(`Release gate: production frontend build inputs changed but ${required} was not modified.`)
     process.exit(1)
   }
 }
@@ -87,7 +95,7 @@ try {
 
 if (compareSemver(headVersion, baseVersion) <= 0) {
   console.error(
-    `Release gate: src/ changed but package.json version did not increase (${basePackage.version} -> ${headPackage.version}).`,
+    `Release gate: production frontend build inputs changed but package.json version did not increase (${basePackage.version} -> ${headPackage.version}).`,
   )
   process.exit(1)
 }
@@ -102,5 +110,5 @@ if (!versionHeading.test(changelog)) {
 }
 
 console.log(
-  `Release gate: src/ changes are paired with package/package-lock version ${basePackage.version} -> ${headPackage.version} and a matching changelog entry.`,
+  `Release gate: production frontend build-input changes are paired with package/package-lock version ${basePackage.version} -> ${headPackage.version} and a matching changelog entry.`,
 )
