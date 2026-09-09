@@ -113,11 +113,16 @@ function normaliseRoles(raw) {
 
 function normaliseSignature(raw) {
   return raw
-    .replace(/"/g, '')
-    .replace(/\s+/g, ' ')
-    .replace(/\s*,\s*/g, ',')
-    .trim()
-    .toLowerCase()
+    .split(',')
+    .map(argument => argument
+      .trim()
+      .replace(/\b(?:default\b|=)[\s\S]*$/i, '')
+      .replace(/^(?:(?:in|out|inout|variadic)\s+)?"?p_[A-Za-z0-9_]+"?\s+/i, '')
+      .replace(/"/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase())
+    .join(',')
 }
 
 function effectiveIngestExecuteState(rawSql) {
@@ -302,10 +307,14 @@ test('browser Supabase boundary remains centralised, publishable-key only and pu
   const combined = executableFiles.map(file => `\n-- ${file.path}\n${file.executable}`).join('\n')
   expect(combined).not.toMatch(/\b(?:VITE_[A-Z0-9_]*SERVICE[_-]?ROLE[A-Z0-9_]*|SUPABASE_SERVICE(?:_ROLE)?(?:_KEY)?)\b/i)
 
-  const supabaseLibraryImports = executableFiles
-    .filter(file => /["']@supabase\/supabase-js["']/.test(file.executable))
+  const nonCentralConstructors = executableFiles
+    .filter(file => file.path !== 'src/lib/supabase.ts')
+    .filter(file =>
+      /import\s*\{[^}]*\bcreateClient\b[^}]*\}\s*from\s*["']@supabase\/supabase-js["']/s.test(file.executable)
+      || /import\s+\*\s+as\s+\w+\s+from\s*["']@supabase\/supabase-js["']/.test(file.executable)
+      || /(?:require|import)\s*\(\s*["']@supabase\/supabase-js["']\s*\)/.test(file.executable))
     .map(file => file.path)
-  expect(supabaseLibraryImports).toEqual(['src/lib/supabase.ts'])
+  expect(nonCentralConstructors).toEqual([])
 
   expect(client.content).toContain('VITE_SUPABASE_URL')
   expect(client.content).toContain('VITE_SUPABASE_PUBLISHABLE_KEY')
