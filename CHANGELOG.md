@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.2] - 2026-09-09
+
+### Changed
+- Added a one-time Playwright global authentication setup for deployed UAT and configured all tests to reuse the resulting `storageState.json` session state.
+- Retained trace, screenshot, and video evidence only when tests fail to reduce routine Playwright execution overhead.
+- Documented opt-in `@smoke` tagging and the `npx playwright test --grep "@smoke"` fast-path command without modifying existing UAT test files.
+
+### Security
+- Added `storageState.json` to `.gitignore` so authenticated browser state cannot be committed accidentally.
+- Kept UAT credentials environment-only and preserved existing browser data-access routing; no direct catalogue/PIM browser data path was introduced.
+
 ## [0.1.1] - 2026-09-08
 
 ### Changed
