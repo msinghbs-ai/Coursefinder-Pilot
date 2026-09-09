@@ -10,30 +10,80 @@ async function readAllMigrations() {
   return contents.join('\n')
 }
 
-function ingestExecuteGrantees(sql) {
-  const roles = []
-  const grant = /grant\s+execute\s+on\s+function\s+public\.svc_ranking_ingest_apply\b[\s\S]*?\bto\s+([^;]+);/gi
-  for (const match of sql.matchAll(grant)) {
-    const roleList = match[1].replace(/\bwith\s+grant\s+option\b[\s\S]*$/i, '')
-    for (const role of roleList.split(',')) roles.push(role.trim().replace(/^"|"$/g, '').toLowerCase())
+function stripCodeComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+}
+
+function normaliseRoles(raw) {
+  return raw
+    .replace(/\bwith\s+grant\s+option\b[\s\S]*$/i, '')
+    .split(',')
+    .map(role => role.trim().replace(/^"|"$/g, '').toLowerCase())
+    .filter(Boolean)
+}
+
+function effectiveIngestExecuteGrantees(sql) {
+  const events = []
+  const patterns = [
+    ['create', /create\s+(?:or\s+replace\s+)?function\s+public\.svc_ranking_ingest_apply\b/gi],
+    ['grant_function', /grant\s+execute\s+on\s+function\s+public\.svc_ranking_ingest_apply\b[\s\S]*?\bto\s+([^;]+);/gi],
+    ['revoke_function', /revoke\s+(?:all|execute)\s+on\s+function\s+public\.svc_ranking_ingest_apply\b[\s\S]*?\bfrom\s+([^;]+);/gi],
+    ['grant_schema', /grant\s+execute\s+on\s+all\s+functions\s+in\s+schema\s+public\s+to\s+([^;]+);/gi],
+    ['revoke_schema', /revoke\s+(?:all|execute)\s+on\s+all\s+functions\s+in\s+schema\s+public\s+from\s+([^;]+);/gi],
+  ]
+
+  for (const [kind, pattern] of patterns) {
+    for (const match of sql.matchAll(pattern)) {
+      events.push({ kind, index: match.index ?? 0, roles: match[1] ? normaliseRoles(match[1]) : [] })
+    }
   }
-  return roles
+  events.sort((a, b) => a.index - b.index)
+
+  const grantees = new Set()
+  let exists = false
+  for (const event of events) {
+    if (event.kind === 'create') {
+      if (!exists) {
+        exists = true
+        grantees.add('public')
+      }
+      continue
+    }
+    if (!exists) continue
+
+    if (event.kind === 'grant_function' || event.kind === 'grant_schema') {
+      for (const role of event.roles) grantees.add(role)
+    } else {
+      for (const role of event.roles) {
+        if (role === 'public') grantees.delete('public')
+        else grantees.delete(role)
+      }
+    }
+  }
+  return [...grantees].sort()
 }
 
 function latestFunctionDefinition(sql, qualifiedName) {
-  const lower = sql.toLowerCase()
-  const marker = `create or replace function ${qualifiedName.toLowerCase()}`
-  const start = lower.lastIndexOf(marker)
-  if (start < 0) return ''
-  const next = lower.indexOf('create or replace function ', start + marker.length)
-  return sql.slice(start, next < 0 ? sql.length : next)
+  const escaped = qualifiedName.split('.').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*\\.\\s*')
+  const definition = new RegExp(`create\\s+or\\s+replace\\s+function\\s+${escaped}\\s*\\(`, 'gi')
+  const matches = [...sql.matchAll(definition)]
+  if (!matches.length) return ''
+  const start = matches.at(-1).index ?? 0
+  const nextPattern = /create\s+or\s+replace\s+function\b/gi
+  nextPattern.lastIndex = start + matches.at(-1)[0].length
+  const next = nextPattern.exec(sql)
+  return sql.slice(start, next ? next.index : sql.length)
 }
 
 test('QS and THE acquisition remain publisher-allowlisted and Evidence-first', async () => {
-  const [qs, the] = await Promise.all([
+  const [qsRaw, theRaw] = await Promise.all([
     read('supabase/functions/ranking-qs-url-import/index.ts'),
     read('supabase/functions/ranking-the-url-import/index.ts'),
   ])
+  const qs = stripCodeComments(qsRaw)
+  const the = stripCodeComments(theRaw)
 
   expect(qs).toMatch(/if\s*\(\s*u\.protocol\s*!==\s*["']https:["']\s*\|\|\s*u\.hostname\s*!==\s*["']www\.topuniversities\.com["']\s*\)\s*throw/)
   expect(qs).toMatch(/world-university-rankings/)
@@ -60,9 +110,7 @@ test('ranking ingest remains service-role-only and evidence export stays short-l
   expect(migration).toContain('revoke all on function public.svc_ranking_ingest_apply')
   expect(migration).toContain('grant execute on function public.svc_ranking_ingest_apply')
   expect(migration).toContain('to service_role')
-  const grantees = ingestExecuteGrantees(allMigrations)
-  expect(grantees.length).toBeGreaterThan(0)
-  expect(grantees.every(role => role === 'service_role')).toBe(true)
+  expect(effectiveIngestExecuteGrantees(allMigrations)).toEqual(['service_role'])
   expect(exportWorker).toMatch(/createSignedUrl\([^,]+,\s*300/)
   expect(exportWorker).toContain('authorised_role_required')
 })
@@ -92,7 +140,7 @@ test('platform administration contract remains operator-gated, non-destructive a
   const allMigrations = await readAllMigrations()
   const effective = latestFunctionDefinition(allMigrations, 'security.admin_platform_maturity_read')
 
-  expect(effective).toContain('create or replace function security.admin_platform_maturity_read')
+  expect(effective).toMatch(/create\s+or\s+replace\s+function\s+security\s*\.\s*admin_platform_maturity_read/i)
   expect(effective).toMatch(/if\s+v_rank\s*<\s*4\s+then\s+raise\s+exception\s+["']pipeline_operator role required["']/i)
   expect(effective).not.toContain('vault_secret_id')
   expect(effective).not.toContain('secret_env_key')
