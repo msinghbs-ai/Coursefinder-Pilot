@@ -9,11 +9,15 @@
 - Added a three-runner GitHub Actions UAT matrix using Playwright native `--shard=1/3`, `2/3`, and `3/3` execution.
 - Added npm download-cache and Playwright browser-cache restoration to reduce repeated CI setup overhead.
 - Added a PR release-governance gate that requires a package version bump and matching CHANGELOG release entry for governed UI/code/UAT orchestration changes.
+- Added a manual production deployment matrix with AU, UK, US, and CA country gates backed by separate GitHub Environments.
 
 ### Security
 - Added `storageState.json` to `.gitignore` so authenticated browser state cannot be committed accidentally.
 - Kept UAT credentials environment-only and preserved existing browser data-access routing; no direct catalogue/PIM browser data path was introduced.
 - Passed UAT credentials to CI only through GitHub Actions secrets and the UAT target through repository/environment variables.
+- Audited `catalogue.provider_assets.storage_path` and `pipeline.evidence_artifacts.storage_path`; populated values are relative storage references with no HTTP/S, object-store scheme, or root-absolute environment-bound paths.
+- Verified the browser Supabase client uses only environment-provided `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; database integration configuration stores Vault IDs or secret names/environment-key references rather than plaintext secret values.
+- Production deployment consumes environment-scoped Supabase/Cloudflare configuration and GitHub secret-backed deployment credentials with fail-closed validation.
 
 ## [0.1.1] - 2026-09-08
 
