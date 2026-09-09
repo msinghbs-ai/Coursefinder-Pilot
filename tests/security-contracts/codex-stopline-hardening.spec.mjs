@@ -83,10 +83,48 @@ function normaliseRoutineName(value) {
   return value.replace(/"/g, '').replace(/\s+/g, '').toLowerCase()
 }
 
+function splitTopLevelComma(raw) {
+  const parts = []
+  let current = ''
+  let depth = 0
+  for (const ch of raw) {
+    if (ch === '(' || ch === '[') depth += 1
+    if (ch === ')' || ch === ']') depth -= 1
+    if (ch === ',' && depth === 0) {
+      parts.push(current.trim())
+      current = ''
+    } else current += ch
+  }
+  if (current.trim()) parts.push(current.trim())
+  return parts
+}
+
+function canonicalType(type) {
+  return type
+    .replace(/\bpg_catalog\s*\.\s*/gi, '')
+    .replace(/\bint2\b/gi, 'smallint')
+    .replace(/\bint4\b/gi, 'integer')
+    .replace(/\bint8\b/gi, 'bigint')
+    .replace(/\bfloat4\b/gi, 'real')
+    .replace(/\bfloat8\b/gi, 'double precision')
+    .replace(/\bbool\b/gi, 'boolean')
+    .replace(/\bvarchar\b/gi, 'character varying')
+    .replace(/\btimestamptz\b/gi, 'timestamp with time zone')
+    .replace(/\btimetz\b/gi, 'time with time zone')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
 function normaliseSignature(value) {
-  return value
-    .split(',')
-    .map(part => part.trim().replace(/\s+/g, ' ').toLowerCase())
+  if (!value.trim()) return ''
+  return splitTopLevelComma(value)
+    .map(argument => canonicalType(argument
+      .replace(/\bdefault\b[\s\S]*$/i, '')
+      .replace(/=[\s\S]*$/i, '')
+      .replace(/^(?:(?:in|out|inout|variadic)\s+)?"?[A-Za-z_][A-Za-z0-9_]*"?\s+/i, '')
+      .replace(/"/g, '')
+      .trim()))
     .join(',')
 }
 
@@ -147,7 +185,7 @@ function activeSecurityDefinerWrappers(source) {
     const tail = source.slice((def.index ?? 0) + def[0].length)
     let dropped = false
     for (const drop of tail.matchAll(/\bdrop\s+(?:function|routine)\s+([^;]+?)(?:;|$)/gi)) {
-      for (const target of drop[1].split(/,(?![^()]*\))/)) {
+      for (const target of splitTopLevelComma(drop[1])) {
         const parsed = target.trim().match(/^((?:"?[A-Za-z_][A-Za-z0-9_]*"?\s*\.\s*)?"?[A-Za-z_][A-Za-z0-9_]*"?)\s*\(([^)]*)\)/i)
         if (parsed && routineKey(parsed[1], parsed[2]) === key) dropped = true
       }
@@ -162,7 +200,7 @@ function hasEffectivePublicRevokeAfter(source, wrapper) {
   for (const revoke of tail.matchAll(/\brevoke\s+(?:execute|all(?:\s+privileges)?)\s+on\s+(?:function|routine)\s+([^;]+?)\s+from\s+([^;]+?)(?:;|$)/gi)) {
     const recipients = revoke[2].split(',').map(value => value.trim().replace(/^"|"$/g, '').toLowerCase())
     if (!recipients.includes('public')) continue
-    for (const target of revoke[1].split(/,(?![^()]*\))/)) {
+    for (const target of splitTopLevelComma(revoke[1])) {
       const parsed = target.trim().match(/^((?:"?[A-Za-z_][A-Za-z0-9_]*"?\s*\.\s*)?"?[A-Za-z_][A-Za-z0-9_]*"?)\s*\(([^)]*)\)/i)
       if (parsed && routineKey(parsed[1], parsed[2]) === wrapper.key) return true
     }
