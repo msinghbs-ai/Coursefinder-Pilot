@@ -14,13 +14,18 @@ const changed = gitRaw('diff', '--no-renames', '--name-only', '-z', `${base}...$
   .split('\0')
   .filter(Boolean)
 
-const isProductionBuildInput = (filePath) =>
-  filePath === 'src'
-  || filePath.startsWith('src/')
-  || filePath === 'index.html'
-  || /^vite\.config\.[cm]?[jt]s$/.test(filePath)
-  || filePath === 'public'
-  || filePath.startsWith('public/')
+const isProductionBuildInput = (filePath) => {
+  const rootLevelModule = !filePath.includes('/')
+    && /\.(?:[cm]?[jt]sx?|css|scss|sass|less|html?)$/i.test(filePath)
+
+  return filePath === 'src'
+    || filePath.startsWith('src/')
+    || filePath === 'index.html'
+    || /^vite\.config\.[cm]?[jt]s$/.test(filePath)
+    || filePath === 'public'
+    || filePath.startsWith('public/')
+    || rootLevelModule
+}
 
 const productionBuildChanged = changed.some(isProductionBuildInput)
 
