@@ -240,3 +240,4 @@ jobs:
               -f context="coursefinder/deployed-uat/${UAT_TIER}/chromium-mobile" \
               -f description="${UAT_TIER} deployed mobile UAT ${MOBILE_OUTCOME}" \
               -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          fi
