@@ -79,6 +79,25 @@ function normaliseExpression(value) {
   return value.replace(/\s+/g, '').replace(/^\((.*)\)$/s, '$1')
 }
 
+function normaliseRoutineName(value) {
+  return value.replace(/"/g, '').replace(/\s+/g, '').toLowerCase()
+}
+
+function normaliseSignature(value) {
+  return value
+    .split(',')
+    .map(part => part.trim().replace(/\s+/g, ' ').toLowerCase())
+    .join(',')
+}
+
+function routineKey(name, signature) {
+  return `${normaliseRoutineName(name)}(${normaliseSignature(signature)})`
+}
+
+function functionDefinitions(source) {
+  return [...source.matchAll(/create\s+(?:or\s+replace\s+)?function\s+((?:"?[A-Za-z_][A-Za-z0-9_]*"?\s*\.\s*)?"?[A-Za-z_][A-Za-z0-9_]*"?)\s*\(([^)]*)\)([\s\S]*?)(?=\n\s*(?:create\s+(?:or\s+replace\s+)?function|drop\s+(?:function|routine)|alter\s+(?:function|routine))|$)/gi)]
+}
+
 function parseScriptSources(html) {
   const sources = []
   for (const tag of html.match(/<script\b[^>]*>/gi) || []) {
@@ -92,7 +111,8 @@ function serviceRoleMembershipExposure(source) {
   const hits = []
   for (const match of source.matchAll(/\bgrant\s+([^;]+?)\s+to\s+([^;]+?)(?:;|$)/gi)) {
     const granted = match[1].split(',').map(x => x.trim().replace(/^"|"$/g, '').toLowerCase())
-    const recipients = match[2].split(',').map(x => x.trim().replace(/^"|"$/g, '').toLowerCase())
+    const recipientClause = match[2].replace(/\s+with\s+(?:admin|inherit|set)\b[\s\S]*$/i, '').trim()
+    const recipients = recipientClause.split(',').map(x => x.trim().replace(/^"|"$/g, '').toLowerCase())
     if (granted.includes('service_role') && recipients.some(x => x === 'anon' || x === 'authenticated')) hits.push(match[0])
   }
   return hits
@@ -114,6 +134,78 @@ function allSignedUrlTtls(source) {
   return ttls
 }
 
+function activeSecurityDefinerWrappers(source) {
+  const defs = functionDefinitions(source)
+    .filter(def => /\bsecurity\s+definer\b/i.test(def[3] || '') && new RegExp(`\\b${governedRoutine}\\b`, 'i').test(def[3] || ''))
+  const latest = new Map()
+  for (const def of defs) latest.set(routineKey(def[1], def[2]), def)
+
+  const active = []
+  for (const [key, def] of latest) {
+    const name = normaliseRoutineName(def[1])
+    const signature = normaliseSignature(def[2])
+    const tail = source.slice((def.index ?? 0) + def[0].length)
+    let dropped = false
+    for (const drop of tail.matchAll(/\bdrop\s+(?:function|routine)\s+([^;]+?)(?:;|$)/gi)) {
+      for (const target of drop[1].split(/,(?![^()]*\))/)) {
+        const parsed = target.trim().match(/^((?:"?[A-Za-z_][A-Za-z0-9_]*"?\s*\.\s*)?"?[A-Za-z_][A-Za-z0-9_]*"?)\s*\(([^)]*)\)/i)
+        if (parsed && routineKey(parsed[1], parsed[2]) === key) dropped = true
+      }
+    }
+    if (!dropped) active.push({ key, name, signature, def })
+  }
+  return active
+}
+
+function hasEffectivePublicRevokeAfter(source, wrapper) {
+  const tail = source.slice((wrapper.def.index ?? 0) + wrapper.def[0].length)
+  for (const revoke of tail.matchAll(/\brevoke\s+(?:execute|all(?:\s+privileges)?)\s+on\s+(?:function|routine)\s+([^;]+?)\s+from\s+([^;]+?)(?:;|$)/gi)) {
+    const recipients = revoke[2].split(',').map(value => value.trim().replace(/^"|"$/g, '').toLowerCase())
+    if (!recipients.includes('public')) continue
+    for (const target of revoke[1].split(/,(?![^()]*\))/)) {
+      const parsed = target.trim().match(/^((?:"?[A-Za-z_][A-Za-z0-9_]*"?\s*\.\s*)?"?[A-Za-z_][A-Za-z0-9_]*"?)\s*\(([^)]*)\)/i)
+      if (parsed && routineKey(parsed[1], parsed[2]) === wrapper.key) return true
+    }
+  }
+  return false
+}
+
+function latestDefinitionsByName(source) {
+  const byName = new Map()
+  for (const def of functionDefinitions(source)) {
+    const name = normaliseRoutineName(def[1])
+    const list = byName.get(name) || []
+    list.push(def)
+    byName.set(name, list)
+  }
+  return byName
+}
+
+function calledRoutineNames(body, knownNames) {
+  const calls = new Set()
+  for (const match of body.matchAll(/\b((?:[A-Za-z_][A-Za-z0-9_]*\.)?[A-Za-z_][A-Za-z0-9_]*)\s*\(/g)) {
+    const name = match[1].toLowerCase()
+    const qualified = knownNames.has(name) ? name : [...knownNames].find(candidate => candidate.endsWith(`.${name}`))
+    if (qualified) calls.add(qualified)
+  }
+  return calls
+}
+
+function assertNoTransitiveEvidenceMutation(rootBody, definitionsByName, label) {
+  const destructive = new RegExp(`\\b(?:delete\\s+from\\s+(?:only\\s+)?|update\\s+(?:only\\s+)?|truncate\\s+(?:table\\s+)?(?:only\\s+)?|merge\\s+into\\s+)${evidenceTables}\\b`, 'i')
+  const visited = new Set()
+  const visit = (name, body) => {
+    const visitKey = `${name}:${body}`
+    if (visited.has(visitKey)) return
+    visited.add(visitKey)
+    expect(body, `${label} -> ${name} must not mutate governed evidence`).not.toMatch(destructive)
+    for (const called of calledRoutineNames(body, new Set(definitionsByName.keys()))) {
+      for (const def of definitionsByName.get(called) || []) visit(called, def[3] || '')
+    }
+  }
+  visit(label, rootBody)
+}
+
 const evidenceTables = '(?:pipeline\\s*\\.\\s*evidence_artifacts|storage\\s*\\.\\s*objects)'
 const governedRoutine = '(?:svc_ranking_ingest_apply|provider_contact_profiles_claim_service|provider_contact_profile_finish_claim_service)'
 
@@ -130,18 +222,10 @@ test('platform rank definition is comment-free and bound exactly to caller rank'
   expect(normaliseExpression(chosen || '')).toBe('security.current_role_rank()')
 })
 
-test('latest SECURITY DEFINER wrappers revoke PUBLIC after their latest definition', async () => {
+test('active SECURITY DEFINER wrappers revoke PUBLIC for each exact overload signature', async () => {
   const source = stripSqlComments((await migrationFiles()).map(x => x.text).join('\n'))
-  const defs = [...source.matchAll(/create\s+(?:or\s+replace\s+)?function\s+((?:"?[A-Za-z_][A-Za-z0-9_]*"?\s*\.\s*)?"?[A-Za-z_][A-Za-z0-9_]*"?)\s*\(([^)]*)\)([\s\S]*?)(?=\n\s*(?:create\s+(?:or\s+replace\s+)?function|drop\s+(?:function|routine)|alter\s+(?:function|routine))|$)/gi)]
-  const wrappers = defs.filter(def => /\bsecurity\s+definer\b/i.test(def[3] || '') && new RegExp(`\\b${governedRoutine}\\b`, 'i').test(def[3] || ''))
-  const latestByName = new Map()
-  for (const def of wrappers) latestByName.set(def[1].replace(/"/g, '').replace(/\s+/g, '').toLowerCase(), def)
-  for (const [name, def] of latestByName) {
-    const after = source.slice((def.index ?? 0) + def[0].length)
-    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const nextLifecycle = new RegExp(`\\b(?:create\\s+(?:or\\s+replace\\s+)?function|drop\\s+(?:function|routine))\\s+${escaped}\\b`, 'i').exec(after)
-    const effectiveTail = nextLifecycle ? after.slice(0, nextLifecycle.index) : after
-    expect(effectiveTail, `${name} latest definition must revoke default PUBLIC execute`).toMatch(new RegExp(`\\brevoke\\s+(?:execute|all(?:\\s+privileges)?)\\s+on\\s+(?:function|routine)\\s+${escaped}[^;]*\\bfrom\\s+[^;]*\\bpublic\\b`, 'i'))
+  for (const wrapper of activeSecurityDefinerWrappers(source)) {
+    expect(hasEffectivePublicRevokeAfter(source, wrapper), `${wrapper.key} must revoke default PUBLIC execute after its latest definition`).toBe(true)
   }
 })
 
@@ -171,19 +255,32 @@ test('central browser Supabase constructor uses only the publishable key binding
   expect((call?.[2] || '').replace(/\s+/g, '')).toMatch(/^key(?:\?\?'')?$/)
 })
 
-test('effective governed routines reject DELETE or UPDATE with optional ONLY against evidence', async () => {
+test('effective governed routines and their helper call graph remain non-destructive to evidence', async () => {
   const source = stripSqlComments((await migrationFiles()).map(x => x.text).join('\n'))
+  const definitions = latestDefinitionsByName(source)
   for (const name of ['security.platform_capacity_snapshot_internal', 'public.provider_contact_profiles_claim_service', 'public.provider_contact_profile_finish_claim_service']) {
     const body = latestFunction(source, name)
     expect(body, `${name} must exist`).toBeTruthy()
-    expect(body).not.toMatch(new RegExp(`\\bdelete\\s+from\\s+(?:only\\s+)?${evidenceTables}\\b`, 'i'))
-    expect(body).not.toMatch(new RegExp(`\\bupdate\\s+(?:only\\s+)?${evidenceTables}\\b`, 'i'))
+    assertNoTransitiveEvidenceMutation(body, definitions, name)
   }
 })
 
-test('service_role cannot be inherited by browser roles through any position in a role list', async () => {
+test('service_role cannot be inherited by browser roles through role lists or membership options', async () => {
   const source = stripSqlComments((await migrationFiles()).map(x => x.text).join('\n'))
   expect(serviceRoleMembershipExposure(source)).toEqual([])
+})
+
+test('provider-contact claim update consumes the candidate CTE that owns FOR UPDATE SKIP LOCKED', async () => {
+  const source = stripSqlComments((await migrationFiles()).map(x => x.text).join('\n'))
+  const body = latestFunction(source, 'public.provider_contact_profiles_claim_service')
+  expect(body).toBeTruthy()
+  const ctes = body.match(/\bwith\s+candidate_ids\s+as\s*\(([\s\S]*?)\)\s*,\s*claimed\s+as\s*\(([\s\S]*?)\)\s*,\s*base\s+as\s*\(/i)
+  expect(ctes, 'claim function must define candidate_ids then claimed CTEs').not.toBeNull()
+  const candidate = ctes?.[1] || ''
+  const claimed = ctes?.[2] || ''
+  expect(candidate).toMatch(/\bselect\s+pcp\.id\b[\s\S]*\bfrom\s+pipeline\.provider_contact_profiles\s+pcp\b/i)
+  expect(candidate).toMatch(/\bfor\s+update\s+of\s+pcp\s+skip\s+locked\b[\s\S]*\blimit\s+v_limit\b/i)
+  expect(claimed).toMatch(/\bupdate\s+pipeline\.provider_contact_profiles\s+pcp\b[\s\S]*\bfrom\s+candidate_ids\s+c\b[\s\S]*\bwhere\s+pcp\.id\s*=\s*c\.id\b/i)
 })
 
 test('every signed evidence URL call is visible, remains 300 seconds, and is dominated by role-rank rejection', async () => {
