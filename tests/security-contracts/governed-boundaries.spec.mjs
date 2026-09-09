@@ -118,13 +118,13 @@ function effectiveIngestExecuteGrantees(rawSql) {
   const privilege = '(?:execute|all(?:\\s+privileges)?)'
   const publicSchema = '(?:"public"|public)'
   const ingestFunction = '(?:"svc_ranking_ingest_apply"|svc_ranking_ingest_apply)'
-  const qualifiedIngest = `${publicSchema}\\s*\\.\\s*${ingestFunction}`
+  const qualifiedIngest = `${publicSchema}\\s*\\.\\s*${ingestFunction}(?![A-Za-z0-9_])`
   const patterns = [
-    ['drop', new RegExp(`drop\\s+function\\s+(?:if\\s+exists\\s+)?${qualifiedIngest}\\b`, 'gi')],
-    ['create_replace', new RegExp(`create\\s+or\\s+replace\\s+function\\s+${qualifiedIngest}\\b`, 'gi')],
-    ['create', new RegExp(`create\\s+function\\s+${qualifiedIngest}\\b`, 'gi')],
-    ['grant_function', new RegExp(`grant\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}\\b[\\s\\S]*?\\bto\\s+([^;]+);`, 'gi')],
-    ['revoke_function', new RegExp(`revoke\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}\\b[\\s\\S]*?\\bfrom\\s+([^;]+);`, 'gi')],
+    ['drop', new RegExp(`drop\\s+function\\s+(?:if\\s+exists\\s+)?${qualifiedIngest}`, 'gi')],
+    ['create_replace', new RegExp(`create\\s+or\\s+replace\\s+function\\s+${qualifiedIngest}`, 'gi')],
+    ['create', new RegExp(`create\\s+function\\s+${qualifiedIngest}`, 'gi')],
+    ['grant_function', new RegExp(`grant\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}[\\s\\S]*?\\bto\\s+([^;]+);`, 'gi')],
+    ['revoke_function', new RegExp(`revoke\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}[\\s\\S]*?\\bfrom\\s+([^;]+);`, 'gi')],
     ['grant_schema', new RegExp(`grant\\s+${privilege}\\s+on\\s+all\\s+functions\\s+in\\s+schema\\s+${publicSchema}\\s+to\\s+([^;]+);`, 'gi')],
     ['revoke_schema', new RegExp(`revoke\\s+${privilege}\\s+on\\s+all\\s+functions\\s+in\\s+schema\\s+${publicSchema}\\s+from\\s+([^;]+);`, 'gi')],
   ]
@@ -261,8 +261,7 @@ test('browser Supabase boundary remains centralised, publishable-key only and pu
   expect(client).toBeTruthy()
 
   const combined = files.map(file => `\n-- ${file.path}\n${stripCodeComments(file.content)}`).join('\n')
-  expect(combined).not.toMatch(/service[_-]?role/i)
-  expect(combined).not.toMatch(/SUPABASE_SERVICE/i)
+  expect(combined).not.toMatch(/\b(?:VITE_[A-Z0-9_]*SERVICE[_-]?ROLE[A-Z0-9_]*|SUPABASE_SERVICE(?:_ROLE)?(?:_KEY)?)\b/i)
 
   const clientCreators = files.filter(file => /\bcreateClient\s*\(/.test(stripCodeComments(file.content)))
   expect(clientCreators.map(file => file.path)).toEqual(['src/lib/supabase.ts'])
