@@ -10,11 +10,82 @@ async function readAllMigrations() {
   return contents.join('\n')
 }
 
-function stripCodeComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
+function stripLineAndBlockComments(source, lineMarker = '//') {
+  let out = ''
+  let i = 0
+  let quote = null
+  let dollarTag = null
+
+  while (i < source.length) {
+    if (dollarTag) {
+      if (source.startsWith(dollarTag, i)) {
+        out += dollarTag
+        i += dollarTag.length
+        dollarTag = null
+      } else {
+        out += source[i++]
+      }
+      continue
+    }
+
+    if (quote) {
+      const ch = source[i]
+      out += ch
+      if (ch === quote) {
+        if (source[i + 1] === quote) {
+          out += source[i + 1]
+          i += 2
+          continue
+        }
+        quote = null
+      } else if (ch === '\\' && quote !== '`' && i + 1 < source.length) {
+        out += source[i + 1]
+        i += 2
+        continue
+      }
+      i += 1
+      continue
+    }
+
+    const dollar = source.slice(i).match(/^\$[A-Za-z_][A-Za-z0-9_]*\$|^\$\$/)
+    if (dollar) {
+      dollarTag = dollar[0]
+      out += dollarTag
+      i += dollarTag.length
+      continue
+    }
+
+    const ch = source[i]
+    if (ch === "'" || ch === '"' || ch === '`') {
+      quote = ch
+      out += ch
+      i += 1
+      continue
+    }
+
+    if (source.startsWith('/*', i)) {
+      const end = source.indexOf('*/', i + 2)
+      i = end < 0 ? source.length : end + 2
+      continue
+    }
+
+    if (lineMarker && source.startsWith(lineMarker, i)) {
+      const end = source.indexOf('\n', i + lineMarker.length)
+      if (end < 0) break
+      out += '\n'
+      i = end + 1
+      continue
+    }
+
+    out += ch
+    i += 1
+  }
+
+  return out
 }
+
+const stripCodeComments = source => stripLineAndBlockComments(source, '//')
+const stripSqlComments = source => stripLineAndBlockComments(source, '--')
 
 function normaliseRoles(raw) {
   return raw
@@ -24,14 +95,18 @@ function normaliseRoles(raw) {
     .filter(Boolean)
 }
 
-function effectiveIngestExecuteGrantees(sql) {
+function effectiveIngestExecuteGrantees(rawSql) {
+  const sql = stripSqlComments(rawSql)
   const events = []
+  const privilege = '(?:execute|all(?:\\s+privileges)?)'
   const patterns = [
-    ['create', /create\s+(?:or\s+replace\s+)?function\s+public\.svc_ranking_ingest_apply\b/gi],
-    ['grant_function', /grant\s+execute\s+on\s+function\s+public\.svc_ranking_ingest_apply\b[\s\S]*?\bto\s+([^;]+);/gi],
-    ['revoke_function', /revoke\s+(?:all|execute)\s+on\s+function\s+public\.svc_ranking_ingest_apply\b[\s\S]*?\bfrom\s+([^;]+);/gi],
-    ['grant_schema', /grant\s+execute\s+on\s+all\s+functions\s+in\s+schema\s+public\s+to\s+([^;]+);/gi],
-    ['revoke_schema', /revoke\s+(?:all|execute)\s+on\s+all\s+functions\s+in\s+schema\s+public\s+from\s+([^;]+);/gi],
+    ['drop', /drop\s+function\s+(?:if\s+exists\s+)?public\s*\.\s*svc_ranking_ingest_apply\b/gi],
+    ['create_replace', /create\s+or\s+replace\s+function\s+public\s*\.\s*svc_ranking_ingest_apply\b/gi],
+    ['create', /create\s+function\s+public\s*\.\s*svc_ranking_ingest_apply\b/gi],
+    ['grant_function', new RegExp(`grant\\s+${privilege}\\s+on\\s+function\\s+public\\s*\\.\\s*svc_ranking_ingest_apply\\b[\\s\\S]*?\\bto\\s+([^;]+);`, 'gi')],
+    ['revoke_function', new RegExp(`revoke\\s+${privilege}\\s+on\\s+function\\s+public\\s*\\.\\s*svc_ranking_ingest_apply\\b[\\s\\S]*?\\bfrom\\s+([^;]+);`, 'gi')],
+    ['grant_schema', new RegExp(`grant\\s+${privilege}\\s+on\\s+all\\s+functions\\s+in\\s+schema\\s+public\\s+to\\s+([^;]+);`, 'gi')],
+    ['revoke_schema', new RegExp(`revoke\\s+${privilege}\\s+on\\s+all\\s+functions\\s+in\\s+schema\\s+public\\s+from\\s+([^;]+);`, 'gi')],
   ]
 
   for (const [kind, pattern] of patterns) {
@@ -44,9 +119,21 @@ function effectiveIngestExecuteGrantees(sql) {
   const grantees = new Set()
   let exists = false
   for (const event of events) {
+    if (event.kind === 'drop') {
+      exists = false
+      grantees.clear()
+      continue
+    }
     if (event.kind === 'create') {
+      exists = true
+      grantees.clear()
+      grantees.add('public')
+      continue
+    }
+    if (event.kind === 'create_replace') {
       if (!exists) {
         exists = true
+        grantees.clear()
         grantees.add('public')
       }
       continue
@@ -62,16 +149,18 @@ function effectiveIngestExecuteGrantees(sql) {
       }
     }
   }
+
   return [...grantees].sort()
 }
 
-function latestFunctionDefinition(sql, qualifiedName) {
+function latestFunctionDefinition(rawSql, qualifiedName) {
+  const sql = stripSqlComments(rawSql)
   const escaped = qualifiedName.split('.').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*\\.\\s*')
   const definition = new RegExp(`create\\s+or\\s+replace\\s+function\\s+${escaped}\\s*\\(`, 'gi')
   const matches = [...sql.matchAll(definition)]
   if (!matches.length) return ''
   const start = matches.at(-1).index ?? 0
-  const nextPattern = /create\s+or\s+replace\s+function\b/gi
+  const nextPattern = /create\s+(?:or\s+replace\s+)?function\b/gi
   nextPattern.lastIndex = start + matches.at(-1)[0].length
   const next = nextPattern.exec(sql)
   return sql.slice(start, next ? next.index : sql.length)
@@ -144,7 +233,8 @@ test('platform administration contract remains operator-gated, non-destructive a
   expect(effective).toMatch(/if\s+v_rank\s*<\s*4\s+then\s+raise\s+exception\s+["']pipeline_operator role required["']/i)
   expect(effective).not.toContain('vault_secret_id')
   expect(effective).not.toContain('secret_env_key')
-  expect(effective).not.toMatch(/\b(delete|truncate)\s+from\b/i)
+  expect(effective).not.toMatch(/\bdelete\s+from\b/i)
+  expect(effective).not.toMatch(/\btruncate\s+(?:table\s+)?(?:only\s+)?pipeline\.(?:environment_source_gates|layer2_provider_environment_gates|layer3_profile_environment_gates)\b/i)
   expect(effective).not.toMatch(/\bupdate\s+pipeline\.(?:environment_source_gates|layer2_provider_environment_gates|layer3_profile_environment_gates)\b/i)
 })
 
