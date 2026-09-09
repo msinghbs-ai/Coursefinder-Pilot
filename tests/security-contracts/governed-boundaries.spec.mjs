@@ -393,8 +393,8 @@ test('evidence lineage remains non-destructive and excludes logical URI schemes 
 
 test('historical lineage reconciliation and provider-contact claiming remain concurrency-safe', async () => {
   const allMigrations = await readAllMigrations()
-  const claim = latestFunctionDefinition(allMigrations, 'security.provider_contact_profiles_claim_service')
-  const finish = latestFunctionDefinition(allMigrations, 'security.provider_contact_profile_finish_claim_service')
+  const claim = latestFunctionDefinition(allMigrations, 'public.provider_contact_profiles_claim_service')
+  const finish = latestFunctionDefinition(allMigrations, 'public.provider_contact_profile_finish_claim_service')
 
   expect(allMigrations).toContain('create table if not exists pipeline.evidence_lineage_reconciliations')
   expect(allMigrations).toContain('add column if not exists claim_token uuid')
