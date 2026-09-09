@@ -6,10 +6,14 @@
 - Added a one-time Playwright global authentication setup for deployed UAT and configured all tests to reuse the resulting `storageState.json` session state.
 - Retained trace, screenshot, and video evidence only when tests fail to reduce routine Playwright execution overhead.
 - Documented opt-in `@smoke` tagging and the `npx playwright test --grep "@smoke"` fast-path command without modifying existing UAT test files.
+- Added a three-runner GitHub Actions UAT matrix using Playwright native `--shard=1/3`, `2/3`, and `3/3` execution.
+- Added npm download-cache and Playwright browser-cache restoration to reduce repeated CI setup overhead.
+- Added a PR release-governance gate that requires a package version bump and matching CHANGELOG release entry for governed UI/code/UAT orchestration changes.
 
 ### Security
 - Added `storageState.json` to `.gitignore` so authenticated browser state cannot be committed accidentally.
 - Kept UAT credentials environment-only and preserved existing browser data-access routing; no direct catalogue/PIM browser data path was introduced.
+- Passed UAT credentials to CI only through GitHub Actions secrets and the UAT target through repository/environment variables.
 
 ## [0.1.1] - 2026-09-08
 
