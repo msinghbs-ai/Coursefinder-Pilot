@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.2] - 2026-09-09
+
+### Changed
+- Added Playwright global authentication setup for deployed UAT so authenticated browser state is captured once per run and reused through `storageState.json`.
+- Kept all existing test files and assertions under `tests/uat/` unchanged; existing UAT helpers continue to enforce governed shell/role readiness and browser data access remains on the existing `public.admin_read` RPC path.
+- Retained trace, screenshot, and video artifacts only on failure to reduce routine Playwright overhead.
+
+### Security
+- Added `storageState.json` to `.gitignore` so cached authenticated session material is not committed.
+- UAT credentials remain environment-provided; no plaintext credentials or tokens were added to source.
+
 ## [0.1.1] - 2026-09-08
 
 ### Changed
