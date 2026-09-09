@@ -12,6 +12,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  security-contracts:
+    name: Governed security contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run governed security contracts
+        run: npx playwright test --config=playwright.security-contracts.config.mjs
+
   uat:
     name: UAT shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
