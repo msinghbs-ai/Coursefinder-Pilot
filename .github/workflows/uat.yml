@@ -1,0 +1,151 @@
+name: PR UAT Shards
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uat-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-governance:
+    name: Release governance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify package version and changelog
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          if ! grep -Eq '^(src/|playwright\.config\.|global-setup\.|\.github/workflows/)' <<<"$changed_files"; then
+            echo "No governed application/UAT orchestration change detected; release metadata gate not required."
+            exit 0
+          fi
+
+          base_version="$(git show "$BASE_SHA:package.json" | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>process.stdout.write(JSON.parse(s).version))")"
+          head_version="$(node -p "require('./package.json').version")"
+
+          if [[ -z "$head_version" || "$head_version" == "$base_version" ]]; then
+            echo "package.json version must be bumped for governed UI/code/UAT orchestration changes." >&2
+            exit 1
+          fi
+
+          if ! grep -Fxq "CHANGELOG.md" <<<"$changed_files"; then
+            echo "CHANGELOG.md must be updated for governed UI/code/UAT orchestration changes." >&2
+            exit 1
+          fi
+
+          if ! grep -Fq "## [$head_version]" CHANGELOG.md; then
+            echo "CHANGELOG.md must contain a release heading for version $head_version." >&2
+            exit 1
+          fi
+
+          echo "Release governance verified: $base_version -> $head_version"
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+  uat:
+    name: UAT shard ${{ matrix.shard }}
+    needs: [release-governance, typecheck]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/3, 2/3, 3/3]
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Restore Playwright browser cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Chromium system dependencies
+        run: npx playwright install-deps chromium
+
+      - name: Install Chromium browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
+
+      - name: Run Playwright shard
+        env:
+          UAT_BASE_URL: ${{ vars.UAT_BASE_URL }}
+          UAT_USERNAME: ${{ secrets.UAT_USERNAME }}
+          UAT_PASSWORD: ${{ secrets.UAT_PASSWORD }}
+        run: npx playwright test --shard=${{ matrix.shard }}
+
+      - name: Upload UAT evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uat-shard-${{ strategy.job-index }}-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            playwright-report/
+            test-results/
+            uat-artifacts/
