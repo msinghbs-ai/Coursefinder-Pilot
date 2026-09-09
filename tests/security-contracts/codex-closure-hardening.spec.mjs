@@ -157,9 +157,15 @@ test('platform rank guard uses caller rank as the guarded value', async () => {
   const guardIndex = body.search(/if\s+v_rank\s*<\s*4\s+then\s+raise\s+exception/i)
   expect(guardIndex).toBeGreaterThanOrEqual(0)
   const beforeGuard = body.slice(0, guardIndex)
-  const assignments = [...beforeGuard.matchAll(/v_rank\s*:=\s*([^;]+);/gi)]
-  expect(assignments.length).toBeGreaterThan(0)
-  expect(assignments.at(-1)?.[1] || '').toMatch(/security\s*\.\s*current_role_rank\s*\(/i)
+  const directAssignments = [...beforeGuard.matchAll(/v_rank\s*:=\s*([^;]+);/gi)]
+  const selectAssignments = [...beforeGuard.matchAll(/select\s+([^;]+?)\s+into\s+v_rank\s*;/gi)]
+  const latestDirect = directAssignments.at(-1)
+  const latestSelect = selectAssignments.at(-1)
+  const latestDirectIndex = latestDirect?.index ?? -1
+  const latestSelectIndex = latestSelect?.index ?? -1
+  expect(Math.max(latestDirectIndex, latestSelectIndex)).toBeGreaterThanOrEqual(0)
+  const boundExpression = latestDirectIndex > latestSelectIndex ? latestDirect?.[1] : latestSelect?.[1]
+  expect(boundExpression || '').toMatch(/security\s*\.\s*current_role_rank\s*\(/i)
 })
 
 test('governed evidence is protected from MERGE-based mutation', async () => {
