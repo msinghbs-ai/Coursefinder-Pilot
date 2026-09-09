@@ -3,8 +3,13 @@ import { defineConfig, devices } from '@playwright/test'
 const deployedBaseUrl = process.env.UAT_BASE_URL?.trim()
 const localBaseUrl = 'http://127.0.0.1:5173'
 
+// Tagging fast path (test files remain opt-in and unchanged by this config):
+//   test('critical journey @smoke', async ({ page }) => { ... })
+// Run only tagged smoke coverage with:
+//   npx playwright test --grep "@smoke"
 export default defineConfig({
   testDir: './tests/uat',
+  globalSetup: './global-setup.mjs',
   // Deployed suites require an explicitly governed UAT target. When no
   // UAT_BASE_URL is supplied, the default UAT command is the local/contract
   // validation surface only. Governed deployed workflows set UAT_BASE_URL and
@@ -24,6 +29,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: deployedBaseUrl || localBaseUrl,
+    storageState: 'storageState.json',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
