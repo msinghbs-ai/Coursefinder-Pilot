@@ -24,6 +24,8 @@ const isProductionBuildInput = (filePath) => {
     || /^vite\.config\.[cm]?[jt]s$/.test(filePath)
     || filePath === 'public'
     || filePath.startsWith('public/')
+    || filePath === 'package.json'
+    || filePath === 'package-lock.json'
     || rootLevelModule
 }
 
