@@ -20,20 +20,29 @@ function ingestExecuteGrantees(sql) {
   return roles
 }
 
+function latestFunctionDefinition(sql, qualifiedName) {
+  const lower = sql.toLowerCase()
+  const marker = `create or replace function ${qualifiedName.toLowerCase()}`
+  const start = lower.lastIndexOf(marker)
+  if (start < 0) return ''
+  const next = lower.indexOf('create or replace function ', start + marker.length)
+  return sql.slice(start, next < 0 ? sql.length : next)
+}
+
 test('QS and THE acquisition remain publisher-allowlisted and Evidence-first', async () => {
   const [qs, the] = await Promise.all([
     read('supabase/functions/ranking-qs-url-import/index.ts'),
     read('supabase/functions/ranking-the-url-import/index.ts'),
   ])
 
-  expect(qs).toMatch(/u\.protocol\s*!==\s*["']https:["']\s*\|\|\s*u\.hostname\s*!==\s*["']www\.topuniversities\.com["']/)
+  expect(qs).toMatch(/if\s*\(\s*u\.protocol\s*!==\s*["']https:["']\s*\|\|\s*u\.hostname\s*!==\s*["']www\.topuniversities\.com["']\s*\)\s*throw/)
   expect(qs).toMatch(/world-university-rankings/)
   expect(qs).toContain('complete_qs_source_unavailable')
   expect(qs).toContain('global_completeness_gate_failed_')
   expect(qs).toMatch(/storage\.from\(["']evidence["']\)\.upload/)
   expect(qs).toContain('svc_ranking_raw_evidence_register')
 
-  expect(the).toMatch(/u\.protocol\s*!==\s*["']https:["']\s*\|\|\s*u\.hostname\s*!==\s*["']www\.timeshighereducation\.com["']/)
+  expect(the).toMatch(/if\s*\(\s*u\.protocol\s*!==\s*["']https:["']\s*\|\|\s*u\.hostname\s*!==\s*["']www\.timeshighereducation\.com["']\s*\)\s*throw/)
   expect(the).toMatch(/world-university-rankings/)
   expect(the).toContain('the_completeness_gate_failed_')
   expect(the).toContain('publisher_total')
@@ -52,9 +61,8 @@ test('ranking ingest remains service-role-only and evidence export stays short-l
   expect(migration).toContain('grant execute on function public.svc_ranking_ingest_apply')
   expect(migration).toContain('to service_role')
   const grantees = ingestExecuteGrantees(allMigrations)
-  expect(grantees).toContain('service_role')
-  expect(grantees).not.toContain('anon')
-  expect(grantees).not.toContain('authenticated')
+  expect(grantees.length).toBeGreaterThan(0)
+  expect(grantees.every(role => role === 'service_role')).toBe(true)
   expect(exportWorker).toMatch(/createSignedUrl\([^,]+,\s*300/)
   expect(exportWorker).toContain('authorised_role_required')
 })
@@ -81,14 +89,15 @@ test('historical lineage reconciliation and provider-contact claiming remain con
 })
 
 test('platform administration contract remains operator-gated, non-destructive and secret references stay server-side', async () => {
-  const migration = await read('supabase/migrations/20260901220500_m2_5_platform_maturity_admin_read_surface.sql')
+  const allMigrations = await readAllMigrations()
+  const effective = latestFunctionDefinition(allMigrations, 'security.admin_platform_maturity_read')
 
-  expect(migration).toContain('create or replace function security.admin_platform_maturity_read')
-  expect(migration).toMatch(/if\s+v_rank\s*<\s*4\s+then\s+raise\s+exception\s+["']pipeline_operator role required["']/i)
-  expect(migration).not.toContain('vault_secret_id')
-  expect(migration).not.toContain('secret_env_key')
-  expect(migration).not.toMatch(/\b(delete|truncate)\s+from\b/i)
-  expect(migration).not.toMatch(/\bupdate\s+pipeline\.(?:environment_source_gates|layer2_provider_environment_gates|layer3_profile_environment_gates)\b/i)
+  expect(effective).toContain('create or replace function security.admin_platform_maturity_read')
+  expect(effective).toMatch(/if\s+v_rank\s*<\s*4\s+then\s+raise\s+exception\s+["']pipeline_operator role required["']/i)
+  expect(effective).not.toContain('vault_secret_id')
+  expect(effective).not.toContain('secret_env_key')
+  expect(effective).not.toMatch(/\b(delete|truncate)\s+from\b/i)
+  expect(effective).not.toMatch(/\bupdate\s+pipeline\.(?:environment_source_gates|layer2_provider_environment_gates|layer3_profile_environment_gates)\b/i)
 })
 
 test('browser Supabase boundary remains publishable-key plus public.admin_read only', async () => {
