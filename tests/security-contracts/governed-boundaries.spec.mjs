@@ -101,7 +101,6 @@ function stripLineAndBlockComments(source, lineMarker = '//', { dollarOpaque = t
 }
 
 const stripCodeComments = source => stripLineAndBlockComments(source, '//')
-const stripSqlComments = source => stripLineAndBlockComments(source, '--')
 const stripPlpgsqlComments = source => stripLineAndBlockComments(source, '--', { dollarOpaque: false })
 
 function normaliseRoles(raw) {
@@ -112,75 +111,109 @@ function normaliseRoles(raw) {
     .filter(Boolean)
 }
 
-function effectiveIngestExecuteGrantees(rawSql) {
-  const sql = stripSqlComments(rawSql)
+function normaliseSignature(raw) {
+  return raw
+    .replace(/"/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s*,\s*/g, ',')
+    .trim()
+    .toLowerCase()
+}
+
+function effectiveIngestExecuteState(rawSql) {
+  const sql = stripPlpgsqlComments(rawSql)
   const events = []
   const privilege = '(?:execute|all(?:\\s+privileges)?)'
   const publicSchema = '(?:"public"|public)'
   const ingestFunction = '(?:"svc_ranking_ingest_apply"|svc_ranking_ingest_apply)'
   const qualifiedIngest = `${publicSchema}\\s*\\.\\s*${ingestFunction}(?![A-Za-z0-9_])`
+  const signature = '\\s*\\(([^;]*?)\\)'
   const patterns = [
-    ['drop', new RegExp(`drop\\s+function\\s+(?:if\\s+exists\\s+)?${qualifiedIngest}`, 'gi')],
-    ['create_replace', new RegExp(`create\\s+or\\s+replace\\s+function\\s+${qualifiedIngest}`, 'gi')],
-    ['create', new RegExp(`create\\s+function\\s+${qualifiedIngest}`, 'gi')],
-    ['grant_function', new RegExp(`grant\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}[\\s\\S]*?\\bto\\s+([^;]+);`, 'gi')],
-    ['revoke_function', new RegExp(`revoke\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}[\\s\\S]*?\\bfrom\\s+([^;]+);`, 'gi')],
-    ['grant_schema', new RegExp(`grant\\s+${privilege}\\s+on\\s+all\\s+functions\\s+in\\s+schema\\s+${publicSchema}\\s+to\\s+([^;]+);`, 'gi')],
-    ['revoke_schema', new RegExp(`revoke\\s+${privilege}\\s+on\\s+all\\s+functions\\s+in\\s+schema\\s+${publicSchema}\\s+from\\s+([^;]+);`, 'gi')],
+    ['drop', new RegExp(`drop\\s+function\\s+(?:if\\s+exists\\s+)?${qualifiedIngest}${signature}`, 'gi')],
+    ['create_replace', new RegExp(`create\\s+or\\s+replace\\s+function\\s+${qualifiedIngest}${signature}`, 'gi')],
+    ['create', new RegExp(`create\\s+function\\s+${qualifiedIngest}${signature}`, 'gi')],
+    ['grant_function', new RegExp(`grant\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}${signature}\\s+to\\s+([^;]+);`, 'gi')],
+    ['revoke_function', new RegExp(`revoke\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}${signature}\\s+from\\s+([^;]+);`, 'gi')],
+    ['grant_schema', new RegExp(`grant\\s+${privilege}\\s+on\\s+all\\s+(?:functions|routines)\\s+in\\s+schema\\s+${publicSchema}\\s+to\\s+([^;]+);`, 'gi')],
+    ['revoke_schema', new RegExp(`revoke\\s+${privilege}\\s+on\\s+all\\s+(?:functions|routines)\\s+in\\s+schema\\s+${publicSchema}\\s+from\\s+([^;]+);`, 'gi')],
   ]
 
   for (const [kind, pattern] of patterns) {
     for (const match of sql.matchAll(pattern)) {
-      events.push({ kind, index: match.index ?? 0, roles: match[1] ? normaliseRoles(match[1]) : [] })
+      const isSchema = kind.endsWith('_schema')
+      events.push({
+        kind,
+        index: match.index ?? 0,
+        signature: isSchema ? null : normaliseSignature(match[1] ?? ''),
+        roles: isSchema ? normaliseRoles(match[1] ?? '') : normaliseRoles(match[2] ?? ''),
+      })
     }
   }
   events.sort((a, b) => a.index - b.index)
 
-  const grantees = new Set()
-  let exists = false
+  const state = new Map()
   for (const event of events) {
     if (event.kind === 'drop') {
-      exists = false
-      grantees.clear()
+      state.delete(event.signature)
       continue
     }
     if (event.kind === 'create') {
-      exists = true
-      grantees.clear()
-      grantees.add('public')
+      state.set(event.signature, new Set(['public']))
       continue
     }
     if (event.kind === 'create_replace') {
-      if (!exists) {
-        exists = true
-        grantees.clear()
-        grantees.add('public')
+      if (!state.has(event.signature)) state.set(event.signature, new Set(['public']))
+      continue
+    }
+
+    if (event.kind === 'grant_schema' || event.kind === 'revoke_schema') {
+      for (const grantees of state.values()) {
+        for (const role of event.roles) {
+          if (event.kind === 'grant_schema') grantees.add(role)
+          else grantees.delete(role)
+        }
       }
       continue
     }
-    if (!exists) continue
 
-    if (event.kind === 'grant_function' || event.kind === 'grant_schema') {
-      for (const role of event.roles) grantees.add(role)
-    } else {
-      for (const role of event.roles) grantees.delete(role)
+    const grantees = state.get(event.signature)
+    if (!grantees) continue
+    for (const role of event.roles) {
+      if (event.kind === 'grant_function') grantees.add(role)
+      else grantees.delete(role)
     }
   }
 
-  return [...grantees].sort()
+  return [...state.entries()]
+    .map(([signatureKey, grantees]) => ({ signature: signatureKey, grantees: [...grantees].sort() }))
+    .sort((a, b) => a.signature.localeCompare(b.signature))
 }
 
 function latestFunctionDefinition(rawSql, qualifiedName) {
-  const sql = stripSqlComments(rawSql)
-  const escaped = qualifiedName.split('.').map(part => `(?:"${part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"|${part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`).join('\\s*\\.\\s*')
-  const definition = new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+${escaped}\\s*\\(`, 'gi')
-  const matches = [...sql.matchAll(definition)]
-  if (!matches.length) return ''
-  const start = matches.at(-1).index ?? 0
-  const nextPattern = /create\s+(?:or\s+replace\s+)?function\b/gi
-  nextPattern.lastIndex = start + matches.at(-1)[0].length
+  const sql = stripPlpgsqlComments(rawSql)
+  const escaped = qualifiedName
+    .split('.')
+    .map(part => {
+      const safe = part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      return `(?:"${safe}"|${safe})`
+    })
+    .join('\\s*\\.\\s*')
+
+  const targetEvent = new RegExp(
+    `(create\\s+(?:or\\s+replace\\s+)?function\\s+${escaped}\\s*\\(|drop\\s+function\\s+(?:if\\s+exists\\s+)?${escaped}\\b)`,
+    'gi',
+  )
+  const events = [...sql.matchAll(targetEvent)]
+  if (!events.length) return ''
+
+  const latest = events.at(-1)
+  if (/^drop\b/i.test(latest[0])) return ''
+
+  const start = latest.index ?? 0
+  const nextPattern = /(?:create\s+(?:or\s+replace\s+)?function|drop\s+function)\b/gi
+  nextPattern.lastIndex = start + latest[0].length
   const next = nextPattern.exec(sql)
-  return stripPlpgsqlComments(sql.slice(start, next ? next.index : sql.length))
+  return sql.slice(start, next ? next.index : sql.length)
 }
 
 test('QS and THE acquisition remain publisher-allowlisted and Evidence-first', async () => {
@@ -207,16 +240,21 @@ test('QS and THE acquisition remain publisher-allowlisted and Evidence-first', a
 })
 
 test('ranking ingest remains service-role-only and evidence export stays short-lived', async () => {
-  const [migration, allMigrations, exportWorker] = await Promise.all([
+  const [migration, allMigrations, exportWorkerRaw] = await Promise.all([
     read('supabase/migrations/20260905085600_cf_213_ranking_indicator_rank_semantics.sql'),
     readAllMigrations(),
     read('supabase/functions/ranking-evidence-export/index.ts'),
   ])
+  const exportWorker = stripCodeComments(exportWorkerRaw)
 
   expect(migration).toContain('revoke all on function public.svc_ranking_ingest_apply')
   expect(migration).toContain('grant execute on function public.svc_ranking_ingest_apply')
   expect(migration).toContain('to service_role')
-  expect(effectiveIngestExecuteGrantees(allMigrations)).toEqual(['service_role'])
+
+  const effective = effectiveIngestExecuteState(allMigrations)
+  expect(effective.length).toBeGreaterThan(0)
+  for (const overload of effective) expect(overload.grantees).toEqual(['service_role'])
+
   expect(exportWorker).toMatch(/createSignedUrl\(\s*[^,]+,\s*300\s*(?:,|\))/)
   expect(exportWorker).toContain('authorised_role_required')
 })
@@ -260,11 +298,14 @@ test('browser Supabase boundary remains centralised, publishable-key only and pu
   const client = files.find(file => file.path === 'src/lib/supabase.ts')
   expect(client).toBeTruthy()
 
-  const combined = files.map(file => `\n-- ${file.path}\n${stripCodeComments(file.content)}`).join('\n')
+  const executableFiles = files.map(file => ({ ...file, executable: stripCodeComments(file.content) }))
+  const combined = executableFiles.map(file => `\n-- ${file.path}\n${file.executable}`).join('\n')
   expect(combined).not.toMatch(/\b(?:VITE_[A-Z0-9_]*SERVICE[_-]?ROLE[A-Z0-9_]*|SUPABASE_SERVICE(?:_ROLE)?(?:_KEY)?)\b/i)
 
-  const clientCreators = files.filter(file => /\bcreateClient\s*\(/.test(stripCodeComments(file.content)))
-  expect(clientCreators.map(file => file.path)).toEqual(['src/lib/supabase.ts'])
+  const supabaseLibraryImports = executableFiles
+    .filter(file => /["']@supabase\/supabase-js["']/.test(file.executable))
+    .map(file => file.path)
+  expect(supabaseLibraryImports).toEqual(['src/lib/supabase.ts'])
 
   expect(client.content).toContain('VITE_SUPABASE_URL')
   expect(client.content).toContain('VITE_SUPABASE_PUBLISHABLE_KEY')
