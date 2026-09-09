@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.2] - 2026-09-09
+
+### Changed
+- Added Playwright global authentication setup for deployed UAT so authenticated browser state is captured once per run and reused through `storageState.json`.
+- Retired nine stale source/milestone contract suites from `tests/uat/` into `tests/retired-uat/` without weakening governed runtime behaviour; active release UAT remains focused on current browser regression coverage.
+- Added a separate blocking governed-security contract suite that preserves the critical QS/THE publisher allowlists, ranking ingest service-role boundary, short-lived evidence export, evidence-lineage protections, operator-gated platform administration, provider-contact claim safety, and browser `public.admin_read`/publishable-key boundary.
+- Retained trace, screenshot, and video artifacts only on failure to reduce routine Playwright overhead.
+
+### Security
+- Added `storageState.json` to `.gitignore` so cached authenticated session material is not committed.
+- UAT credentials remain environment-provided; no plaintext credentials or tokens were added to source.
+
 ## [0.1.1] - 2026-09-08
 
 ### Changed
