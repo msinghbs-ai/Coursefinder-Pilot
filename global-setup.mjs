@@ -3,7 +3,6 @@ import path from 'node:path'
 import { chromium } from '@playwright/test'
 
 const storageStatePath = path.resolve('storageState.json')
-const localBaseUrl = 'http://127.0.0.1:5173'
 
 async function writeEmptyStorageState() {
   await fs.writeFile(storageStatePath, JSON.stringify({ cookies: [], origins: [] }, null, 2))
@@ -20,10 +19,10 @@ export default async function globalSetup() {
     return
   }
 
-  const username = process.env.UAT_EMAIL?.trim() || process.env.UAT_USERNAME?.trim()
+  const email = process.env.UAT_EMAIL?.trim()
   const password = process.env.UAT_PASSWORD
-  if (!username || !password) {
-    throw new Error('Missing UAT credentials. Configure UAT_EMAIL (or UAT_USERNAME) and UAT_PASSWORD for deployed UAT.')
+  if (!email || !password) {
+    throw new Error('Missing UAT credentials. Configure UAT_EMAIL and UAT_PASSWORD for deployed UAT.')
   }
 
   const loginPath = process.env.UAT_LOGIN_PATH?.trim() || '/'
@@ -42,7 +41,7 @@ export default async function globalSetup() {
     const usernameInput = page.locator(usernameSelector).first()
     const passwordInput = page.locator(passwordSelector).first()
     await usernameInput.waitFor({ state: 'visible', timeout: 45_000 })
-    await usernameInput.fill(username)
+    await usernameInput.fill(email)
     await passwordInput.fill(password)
 
     if (submitSelector) {
