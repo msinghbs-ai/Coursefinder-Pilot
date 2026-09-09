@@ -3,34 +3,47 @@ import { test, expect } from '@playwright/test'
 
 const read = path => fs.readFile(path, 'utf8')
 
+async function readAllMigrations() {
+  const dir = 'supabase/migrations'
+  const names = (await fs.readdir(dir)).filter(name => name.endsWith('.sql')).sort()
+  const contents = await Promise.all(names.map(async name => `\n-- ${name}\n${await read(`${dir}/${name}`)}`))
+  return contents.join('\n')
+}
+
 test('QS and THE acquisition remain publisher-allowlisted and Evidence-first', async () => {
   const [qs, the] = await Promise.all([
     read('supabase/functions/ranking-qs-url-import/index.ts'),
     read('supabase/functions/ranking-the-url-import/index.ts'),
   ])
 
-  expect(qs).toMatch(/hostname\s*!==\s*["']www\.topuniversities\.com["']/)
+  expect(qs).toMatch(/u\.protocol\s*!==\s*["']https:["']/)
+  expect(qs).toMatch(/u\.hostname\s*!==\s*["']www\.topuniversities\.com["']/)
   expect(qs).toMatch(/world-university-rankings/)
   expect(qs).toContain('complete_qs_source_unavailable')
   expect(qs).toContain('global_completeness_gate_failed_')
   expect(qs).toMatch(/storage\.from\(["']evidence["']\)\.upload/)
   expect(qs).toContain('svc_ranking_raw_evidence_register')
 
-  expect(the).toMatch(/timeshighereducation\.com/)
+  expect(the).toMatch(/u\.protocol\s*!==\s*["']https:["']/)
+  expect(the).toMatch(/u\.hostname\s*!==\s*["']www\.timeshighereducation\.com["']/)
   expect(the).toMatch(/world-university-rankings/)
+  expect(the).toContain('the_completeness_gate_failed_')
+  expect(the).toContain('publisher_total')
   expect(the).toMatch(/storage\.from\(["']evidence["']\)\.upload/)
   expect(the).toContain('svc_ranking_raw_evidence_register')
 })
 
 test('ranking ingest remains service-role-only and evidence export stays short-lived', async () => {
-  const [migration, exportWorker] = await Promise.all([
+  const [migration, allMigrations, exportWorker] = await Promise.all([
     read('supabase/migrations/20260905085600_cf_213_ranking_indicator_rank_semantics.sql'),
+    readAllMigrations(),
     read('supabase/functions/ranking-evidence-export/index.ts'),
   ])
 
   expect(migration).toContain('revoke all on function public.svc_ranking_ingest_apply')
   expect(migration).toContain('grant execute on function public.svc_ranking_ingest_apply')
   expect(migration).toContain('to service_role')
+  expect(allMigrations).not.toMatch(/grant\s+execute\s+on\s+function\s+public\.svc_ranking_ingest_apply\b[\s\S]{0,500}?\bto\s+(?:anon|authenticated)\b/i)
   expect(exportWorker).toMatch(/createSignedUrl\([^,]+,\s*300/)
   expect(exportWorker).toContain('authorised_role_required')
 })
