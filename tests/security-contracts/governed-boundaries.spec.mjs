@@ -81,12 +81,16 @@ function stripLineAndBlockComments(source, lineMarker = '//', { dollarOpaque = t
 
     if (source.startsWith('/*', i)) {
       const end = source.indexOf('*/', i + 2)
-      i = end < 0 ? source.length : end + 2
+      const next = end < 0 ? source.length : end + 2
+      out += ' '.repeat(next - i)
+      i = next
       continue
     }
 
     if (lineMarker && source.startsWith(lineMarker, i)) {
       const end = source.indexOf('\n', i + lineMarker.length)
+      const next = end < 0 ? source.length : end
+      out += ' '.repeat(next - i)
       if (end < 0) break
       out += '\n'
       i = end + 1
@@ -103,6 +107,46 @@ function stripLineAndBlockComments(source, lineMarker = '//', { dollarOpaque = t
 const stripCodeComments = source => stripLineAndBlockComments(source, '//')
 const stripPlpgsqlComments = source => stripLineAndBlockComments(source, '--', { dollarOpaque: false })
 
+function sqlTopLevelExecutable(source) {
+  const sql = stripLineAndBlockComments(source, '--')
+  let out = ''
+  let i = 0
+
+  while (i < sql.length) {
+    if (sql[i] === "'") {
+      const start = i++
+      while (i < sql.length) {
+        if (sql[i] === "'" && sql[i + 1] === "'") {
+          i += 2
+          continue
+        }
+        if (sql[i] === "'") {
+          i += 1
+          break
+        }
+        i += 1
+      }
+      out += ' '.repeat(i - start)
+      continue
+    }
+
+    const dollar = sql.slice(i).match(/^\$[A-Za-z_][A-Za-z0-9_]*\$|^\$\$/)
+    if (dollar) {
+      const tag = dollar[0]
+      const start = i
+      i += tag.length
+      const end = sql.indexOf(tag, i)
+      i = end < 0 ? sql.length : end + tag.length
+      out += ' '.repeat(i - start)
+      continue
+    }
+
+    out += sql[i++]
+  }
+
+  return out
+}
+
 function normaliseRoles(raw) {
   return raw
     .replace(/\bwith\s+grant\s+option\b[\s\S]*$/i, '')
@@ -111,22 +155,37 @@ function normaliseRoles(raw) {
     .filter(Boolean)
 }
 
+function canonicaliseType(type) {
+  return type
+    .replace(/\bpg_catalog\s*\.\s*/gi, '')
+    .replace(/\bint2\b/gi, 'smallint')
+    .replace(/\bint4\b/gi, 'integer')
+    .replace(/\bint8\b/gi, 'bigint')
+    .replace(/\bfloat4\b/gi, 'real')
+    .replace(/\bfloat8\b/gi, 'double precision')
+    .replace(/\bbool\b/gi, 'boolean')
+    .replace(/\bvarchar\b/gi, 'character varying')
+    .replace(/\btimestamptz\b/gi, 'timestamp with time zone')
+    .replace(/\btimetz\b/gi, 'time with time zone')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function normaliseSignature(raw) {
   return raw
     .split(',')
-    .map(argument => argument
+    .map(argument => canonicaliseType(argument
       .trim()
       .replace(/\b(?:default\b|=)[\s\S]*$/i, '')
       .replace(/^(?:(?:in|out|inout|variadic)\s+)?"?p_[A-Za-z0-9_]+"?\s+/i, '')
       .replace(/"/g, '')
-      .replace(/\s+/g, ' ')
       .trim()
-      .toLowerCase())
+      .toLowerCase()))
     .join(',')
 }
 
 function effectiveIngestExecuteState(rawSql) {
-  const sql = stripPlpgsqlComments(rawSql)
+  const sql = sqlTopLevelExecutable(rawSql)
   const events = []
   const privilege = '(?:execute|all(?:\\s+privileges)?)'
   const publicSchema = '(?:"public"|public)'
@@ -134,11 +193,11 @@ function effectiveIngestExecuteState(rawSql) {
   const qualifiedIngest = `${publicSchema}\\s*\\.\\s*${ingestFunction}(?![A-Za-z0-9_])`
   const signature = '\\s*\\(([^;]*?)\\)'
   const patterns = [
-    ['drop', new RegExp(`drop\\s+function\\s+(?:if\\s+exists\\s+)?${qualifiedIngest}${signature}`, 'gi')],
+    ['drop', new RegExp(`drop\\s+(?:function|routine)\\s+(?:if\\s+exists\\s+)?${qualifiedIngest}${signature}`, 'gi')],
     ['create_replace', new RegExp(`create\\s+or\\s+replace\\s+function\\s+${qualifiedIngest}${signature}`, 'gi')],
     ['create', new RegExp(`create\\s+function\\s+${qualifiedIngest}${signature}`, 'gi')],
-    ['grant_function', new RegExp(`grant\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}${signature}\\s+to\\s+([^;]+);`, 'gi')],
-    ['revoke_function', new RegExp(`revoke\\s+${privilege}\\s+on\\s+function\\s+${qualifiedIngest}${signature}\\s+from\\s+([^;]+);`, 'gi')],
+    ['grant_function', new RegExp(`grant\\s+${privilege}\\s+on\\s+(?:function|routine)\\s+${qualifiedIngest}${signature}\\s+to\\s+([^;]+);`, 'gi')],
+    ['revoke_function', new RegExp(`revoke\\s+${privilege}\\s+on\\s+(?:function|routine)\\s+${qualifiedIngest}${signature}\\s+from\\s+([^;]+);`, 'gi')],
     ['grant_schema', new RegExp(`grant\\s+${privilege}\\s+on\\s+all\\s+(?:functions|routines)\\s+in\\s+schema\\s+${publicSchema}\\s+to\\s+([^;]+);`, 'gi')],
     ['revoke_schema', new RegExp(`revoke\\s+${privilege}\\s+on\\s+all\\s+(?:functions|routines)\\s+in\\s+schema\\s+${publicSchema}\\s+from\\s+([^;]+);`, 'gi')],
   ]
@@ -205,7 +264,7 @@ function latestFunctionDefinition(rawSql, qualifiedName) {
     .join('\\s*\\.\\s*')
 
   const targetEvent = new RegExp(
-    `(create\\s+(?:or\\s+replace\\s+)?function\\s+${escaped}\\s*\\(|drop\\s+function\\s+(?:if\\s+exists\\s+)?${escaped}\\b)`,
+    `(create\\s+(?:or\\s+replace\\s+)?function\\s+${escaped}\\s*\\(|drop\\s+(?:function|routine)\\s+(?:if\\s+exists\\s+)?${escaped}\\b)`,
     'gi',
   )
   const events = [...sql.matchAll(targetEvent)]
@@ -215,10 +274,65 @@ function latestFunctionDefinition(rawSql, qualifiedName) {
   if (/^drop\b/i.test(latest[0])) return ''
 
   const start = latest.index ?? 0
-  const nextPattern = /(?:create\s+(?:or\s+replace\s+)?function|drop\s+function)\b/gi
+  const nextPattern = /(?:create\s+(?:or\s+replace\s+)?function|drop\s+(?:function|routine))\b/gi
   nextPattern.lastIndex = start + latest[0].length
   const next = nextPattern.exec(sql)
   return sql.slice(start, next ? next.index : sql.length)
+}
+
+function callArguments(source, callee) {
+  const calls = []
+  const pattern = new RegExp(`\\b${callee.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\(`, 'g')
+  for (const match of source.matchAll(pattern)) {
+    const open = (match.index ?? 0) + match[0].lastIndexOf('(')
+    let i = open + 1
+    let depth = 0
+    let quote = null
+    let current = ''
+    const args = []
+
+    while (i < source.length) {
+      const ch = source[i]
+      if (quote) {
+        current += ch
+        if (ch === quote && source[i - 1] !== '\\') quote = null
+        i += 1
+        continue
+      }
+      if (ch === "'" || ch === '"' || ch === '`') {
+        quote = ch
+        current += ch
+        i += 1
+        continue
+      }
+      if (ch === '(' || ch === '[' || ch === '{') {
+        depth += 1
+        current += ch
+        i += 1
+        continue
+      }
+      if (ch === ')' || ch === ']' || ch === '}') {
+        if (ch === ')' && depth === 0) {
+          args.push(current.trim())
+          calls.push(args)
+          break
+        }
+        depth -= 1
+        current += ch
+        i += 1
+        continue
+      }
+      if (ch === ',' && depth === 0) {
+        args.push(current.trim())
+        current = ''
+        i += 1
+        continue
+      }
+      current += ch
+      i += 1
+    }
+  }
+  return calls
 }
 
 test('QS and THE acquisition remain publisher-allowlisted and Evidence-first', async () => {
@@ -244,7 +358,7 @@ test('QS and THE acquisition remain publisher-allowlisted and Evidence-first', a
   expect(the).toContain('svc_ranking_raw_evidence_register')
 })
 
-test('ranking ingest remains service-role-only and evidence export stays short-lived', async () => {
+test('ranking ingest remains service-role-only and every evidence export stays short-lived', async () => {
   const [migration, allMigrations, exportWorkerRaw] = await Promise.all([
     read('supabase/migrations/20260905085600_cf_213_ranking_indicator_rank_semantics.sql'),
     readAllMigrations(),
@@ -260,29 +374,37 @@ test('ranking ingest remains service-role-only and evidence export stays short-l
   expect(effective.length).toBeGreaterThan(0)
   for (const overload of effective) expect(overload.grantees).toEqual(['service_role'])
 
-  expect(exportWorker).toMatch(/createSignedUrl\(\s*[^,]+,\s*300\s*(?:,|\))/)
+  const signedUrlCalls = callArguments(exportWorker, 'createSignedUrl')
+  expect(signedUrlCalls.length).toBeGreaterThan(0)
+  for (const args of signedUrlCalls) expect(args[1]).toBe('300')
   expect(exportWorker).toContain('authorised_role_required')
 })
 
 test('evidence lineage remains non-destructive and excludes logical URI schemes from storage checks', async () => {
-  const migration = await read('supabase/migrations/20260901195000_m2_5_evidence_lineage_classification.sql')
+  const allMigrations = await readAllMigrations()
+  const effective = latestFunctionDefinition(allMigrations, 'security.platform_capacity_snapshot_internal')
 
-  expect(migration).toContain("e.storage_path !~ '^[A-Za-z][A-Za-z0-9+.-]*://'")
-  expect(migration).toContain("'unlinked_storage_object_count_raw'")
-  expect(migration).toContain("'virtual_evidence_reference_count'")
-  expect(migration).not.toMatch(/delete\s+from\s+(pipeline\.evidence_artifacts|storage\.objects)/i)
+  expect(effective).toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:"security"|security)\s*\.\s*(?:"platform_capacity_snapshot_internal"|platform_capacity_snapshot_internal)/i)
+  expect(effective).toContain("e.storage_path !~ '^[A-Za-z][A-Za-z0-9+.-]*://'")
+  expect(effective).toContain("'unlinked_storage_object_count_raw'")
+  expect(effective).toContain("'virtual_evidence_reference_count'")
+  expect(effective).not.toMatch(/delete\s+from\s+(pipeline\.evidence_artifacts|storage\.objects)/i)
 })
 
 test('historical lineage reconciliation and provider-contact claiming remain concurrency-safe', async () => {
-  const migration = await read('supabase/migrations/20260901224000_m2_5_evidence_lineage_reconciliation_contact_claim.sql')
+  const allMigrations = await readAllMigrations()
+  const claim = latestFunctionDefinition(allMigrations, 'security.provider_contact_profiles_claim_service')
+  const finish = latestFunctionDefinition(allMigrations, 'security.provider_contact_profile_finish_claim_service')
 
-  expect(migration).toContain('create table if not exists pipeline.evidence_lineage_reconciliations')
-  expect(migration).toContain('add column if not exists claim_token uuid')
-  expect(migration).toContain('add column if not exists claim_until timestamptz')
-  expect(migration).toContain('for update of pcp skip locked')
-  expect(migration).toContain('stale or invalid Provider-contact claim token')
-  expect(migration).not.toMatch(/delete\s+from\s+(?:pipeline\.evidence_artifacts|storage\.objects)/i)
-  expect(migration).not.toMatch(/update\s+pipeline\.evidence_artifacts/i)
+  expect(allMigrations).toContain('create table if not exists pipeline.evidence_lineage_reconciliations')
+  expect(allMigrations).toContain('add column if not exists claim_token uuid')
+  expect(allMigrations).toContain('add column if not exists claim_until timestamptz')
+  expect(claim).toMatch(/create\s+(?:or\s+replace\s+)?function/i)
+  expect(claim).toContain('for update of pcp skip locked')
+  expect(finish).toMatch(/create\s+(?:or\s+replace\s+)?function/i)
+  expect(finish).toContain('stale or invalid Provider-contact claim token')
+  expect(`${claim}\n${finish}`).not.toMatch(/delete\s+from\s+(?:pipeline\.evidence_artifacts|storage\.objects)/i)
+  expect(`${claim}\n${finish}`).not.toMatch(/update\s+pipeline\.evidence_artifacts/i)
 })
 
 test('platform administration contract remains operator-gated, non-destructive and secret references stay server-side', async () => {
@@ -310,7 +432,7 @@ test('browser Supabase boundary remains centralised, publishable-key only and pu
   const nonCentralConstructors = executableFiles
     .filter(file => file.path !== 'src/lib/supabase.ts')
     .filter(file =>
-      /import\s*\{[^}]*\bcreateClient\b[^}]*\}\s*from\s*["']@supabase\/supabase-js["']/s.test(file.executable)
+      /(?:import|export)\s*\{[^}]*\bcreateClient\b[^}]*\}\s*(?:from\s*)?["']@supabase\/supabase-js["']/s.test(file.executable)
       || /import\s+\*\s+as\s+\w+\s+from\s*["']@supabase\/supabase-js["']/.test(file.executable)
       || /(?:require|import)\s*\(\s*["']@supabase\/supabase-js["']\s*\)/.test(file.executable))
     .map(file => file.path)
