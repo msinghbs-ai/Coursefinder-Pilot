@@ -33,7 +33,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm install --ignore-scripts --no-audit --no-fund
       - name: Verify maintained release history and version synchronization
         run: npx playwright test tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs --project=chromium-desktop
