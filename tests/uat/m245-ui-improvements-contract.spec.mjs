@@ -13,7 +13,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   ])
 
   // Current nominated release version must remain synchronized with the accepted shell.
-  expect(shell).toContain("const UI_VERSION='2.15.75'")
+  expect(shell).toContain("const UI_VERSION='2.15.76'")
 
   // Scholarship catalogue: bounded Provider filter and authoritative provider_id read.
   expect(shell).toContain("if(type==='scholarship')return <div className=\"m-filter-bar\"")

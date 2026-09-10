@@ -1,20 +1,21 @@
-const VERSION='2.15.75'
+const VERSION='2.15.76'
 const RELEASE={
   version:VERSION,
   date:'10 Sep 2026',
-  title:'QS ranking duplicate cleanup and 2026/2027 acquisition correction',
+  title:'Scheduled Tasks configuration and governed run control',
   changes:[
-    'Administration → Sources & Imports now presents one active QS workflow row per edition while retained source revisions remain auditable.',
-    'QS 2024 and 2025 duplicate active editions were lifecycle-retired instead of destructively deleting historical observations or Evidence.',
-    'The QS official-static acquisition contract now recognises the governed 2026 and 2027 indicator set, preventing those editions from being rejected solely because the completeness contract stopped at 2025.',
-    'RLS remediation discovered during the ranking review is explicitly deferred to pending security task #60 so ranking recovery does not silently change runtime access controls.'
+    'Data Operations now includes Scheduled Tasks immediately before Evidence, with operator-friendly schedule configuration, latest refresh queue and recent Job results.',
+    'Pipeline Operators can edit exact bounded recurring Layer 1–3 schedules through audited SECURITY INVOKER contracts with optimistic concurrency and durable governance reason/actor evidence.',
+    'Run on demand is available only for executable Layer 1–2 schedules and creates or reuses an exact bounded manual_governed refresh request without altering recurring cadence or next-run time.',
+    'Layer 3 remains Evidence/profile/model-qualified and is not given a generic autonomous execution path.',
+    'Jobs remain read through public.admin_read and historical Jobs are never reset or replayed.'
   ],
   bugFixes:[
-    'Fixed duplicate QS edition rows in Sources & Imports by returning one active row per ranking system and edition.',
-    'Fixed duplicate active QS 2024/2025 lifecycle state: the newest accepted publisher revision remains active and the older revision is Superseded/retired with Evidence preserved.',
-    'Fixed the QS 2026/2027 official-static completeness contract so supported direct publisher payloads can qualify without being forced into Parse.bot fallback.',
-    'Accepted ranking editions now validate with no duplicate institution observations after lifecycle cleanup.',
-    'Recorded RLS hardening as pending security task #60 rather than applying incomplete policies during this bug-fix release.'
+    'Preserved PostgreSQL time-only whole-day cadence values when editing schedules.',
+    'Corrected datetime-local handling so stored next-run instants are not shifted by the operator timezone.',
+    'Surfaced governed Jobs-read failures instead of presenting false empty history.',
+    'Completion timestamps remain blank until a Job is terminal.',
+    'Added complete paged policy reads, cadence bounds and stale-snapshot rejection for schedule edits.'
   ]
 }
 let pending=false

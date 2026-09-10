@@ -28,7 +28,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.75'
+const UI_VERSION='2.15.76'
 const UI_FIXES=[
  'Independent QILT, PRISMS, QS and THE year/edition controls in Provider Compare.',
  'Frozen Provider/university identity headers across comparison statistics and rankings.',
