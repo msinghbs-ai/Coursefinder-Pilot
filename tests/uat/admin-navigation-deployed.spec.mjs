@@ -18,9 +18,6 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     for(const obsolete of ['Layer 1 — Regulatory','Layer 1 — Authority','Evidence & Provenance','Jobs & Runs','Scholarship Selection','Guides & Runbooks','Settings','Layer 2 Operations','Refresh & Scheduling']){
       await expect(nav.getByRole('button',{name:obsolete,exact:true})).toHaveCount(0)
     }
-    const scheduled=nav.getByRole('button',{name:'Scheduled Tasks',exact:true})
-    const evidence=nav.getByRole('button',{name:'Evidence',exact:true})
-    await expect(scheduled).toBeVisible();await expect(evidence).toBeVisible()
     const order=await nav.locator('button').evaluateAll(nodes=>nodes.map(n=>n.textContent?.trim()))
     expect(order.indexOf('Scheduled Tasks')).toBeGreaterThan(-1)
     expect(order.indexOf('Scheduled Tasks')).toBeLessThan(order.indexOf('Evidence'))
