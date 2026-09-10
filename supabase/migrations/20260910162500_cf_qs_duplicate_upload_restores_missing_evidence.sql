@@ -4,8 +4,9 @@ begin;
 -- Legacy ranking imports may however point at inline Evidence whose payload is no
 -- longer retained. In that bounded case, keep the newly uploaded private Storage
 -- object and rebind the existing immutable import/Evidence row instead of deleting
--- the replacement bytes as an ordinary duplicate. Lock the duplicate import row so
--- overlapping re-uploads cannot both retain orphaned replacement objects.
+-- the replacement bytes as an ordinary duplicate. Recovery requires a live governed
+-- Evidence row, excludes terminal rejected imports, and locks the duplicate import
+-- row so overlapping re-uploads cannot both retain orphaned replacement objects.
 create or replace function public.svc_ranking_manual_import_register(
   p_system_code text,
   p_edition_year integer,
@@ -57,8 +58,15 @@ begin
   for update;
 
   if v_existing.id is not null then
-    if (coalesce(v_existing.storage_path,'')=''
-        or v_existing.storage_path like 'inline://%')
+    if v_existing.status <> 'rejected'
+       and v_existing.evidence_artifact_id is not null
+       and exists (
+         select 1
+         from pipeline.evidence_artifacts ea
+         where ea.id=v_existing.evidence_artifact_id
+       )
+       and (coalesce(v_existing.storage_path,'')=''
+            or v_existing.storage_path like 'inline://%')
        and not exists (
          select 1
          from pipeline.ranking_inline_evidence_payloads iep
