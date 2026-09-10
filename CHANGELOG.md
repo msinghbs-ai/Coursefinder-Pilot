@@ -2,8 +2,8 @@
 
 ## 0.1.3 — 10 Sep 2026
 
-- Added Administration Scheduling controls with operator-friendly schedule columns, schedule editing, bounded Layer 1–3 on-demand queueing, and direct Jobs/Evidence follow-through.
-- Added a rank-gated `scheduler_policy_control` mutation that mirrors governed scheduler targets and explicitly does not provide generic historical retry/replay/reset.
+- Added a primary Scheduled Tasks workspace immediately before Evidence, with operator-friendly schedule columns, schedule editing, bounded Layer 1–3 due-now control, and direct Jobs/Evidence follow-through; removed the duplicate Scheduling entry from Administration.
+- Reused the accepted `refresh_policy_upsert_v2` authority boundary for schedule edits and due-now requests; no new scheduler mutation RPC or generic historical retry/replay/reset was introduced.
 - Added consolidated latest refresh-queue and recent Job result views while keeping browser Job reads on `public.admin_read`.
 
 ## 0.1.2 — 10 Sep 2026

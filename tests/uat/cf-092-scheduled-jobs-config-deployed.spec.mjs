@@ -8,9 +8,12 @@ test.describe('CF-092 Scheduled Jobs configuration @deployed',()=>{
 
   test('Scheduling presents governed Layer 1-3 control and readable run follow-through without mutating state',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
+    await clickPrimaryNav(page,'Scheduled Tasks')
+    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await clickPrimaryNav(page,'Administration')
     await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await page.getByRole('tab',{name:'Scheduling',exact:true}).click()
+    await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
+    await clickPrimaryNav(page,'Scheduled Tasks')
     await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     const workspace=page.locator('.cf-scheduler-v2-native')
     for(const header of ['Layer','Country','Scheduled Target','Freshness Policy','Cadence','Next Run','Schedule Status','Actions'])await expect(workspace.getByRole('columnheader',{name:header,exact:true}).first()).toBeVisible()
