@@ -34,13 +34,8 @@ jobs:
         run: npx playwright test tests/uat/cf-092-scheduled-jobs-config-contract.spec.mjs --project=chromium-desktop
       - name: Deployed Scheduled Tasks and navigation
         run: npx playwright test tests/uat/cf-092-scheduled-jobs-config-deployed.spec.mjs tests/uat/admin-navigation-deployed.spec.mjs --project=chromium-desktop
-      - name: Focused ranking regression
-        run: |
-          files=""
-          for f in tests/uat/*ranking*contract*.spec.mjs tests/uat/*qs*contract*.spec.mjs tests/uat/*ranking*deployed*.spec.mjs tests/uat/*qs*deployed*.spec.mjs; do
-            [ -f "$f" ] && files="$files $f"
-          done
-          if [ -n "$files" ]; then npx playwright test $files --project=chromium-desktop; else echo 'No focused ranking regression specs found'; fi
+      - name: PR65 ranking regression
+        run: npx playwright test tests/uat/cf-090-qs-workbook-shape-contract.spec.mjs --project=chromium-desktop
       - name: Remove helper
         if: success()
         run: |
