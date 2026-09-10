@@ -19,6 +19,11 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   expect(workspace).toContain("technicalTarget(x)!=='UNBOUNDED'?technicalTarget(x):'Scheduled task'")
   expect(workspace).toContain('does not change its recurring cadence or next-run time')
   expect(workspace).toContain('Layer 3 remains Evidence/profile/model-qualified')
+  expect(workspace).toContain('useRef')
+  expect(workspace).toContain('const loadGeneration=useRef(0)')
+  expect(workspace).toContain('const generation=++loadGeneration.current')
+  expect(workspace).toContain('if(generation!==loadGeneration.current)return')
+  expect(workspace).toContain('if(generation===loadGeneration.current)setBusy(false)')
 
   for(const text of ['created_by_display_snapshot','created_by_email_snapshot','actor_display_snapshot','actor_email_snapshot','System / legacy','System / automation','former_user','security invoker','curator role required'])expect(migration.toLowerCase()).toContain(text.toLowerCase())
   expect(migration).not.toContain('created_by_email_snapshot as created_by_email')
