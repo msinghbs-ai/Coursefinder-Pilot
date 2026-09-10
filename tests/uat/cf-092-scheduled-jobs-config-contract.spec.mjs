@@ -4,17 +4,18 @@ import { test, expect } from '@playwright/test'
 const read=path=>fs.readFileSync(path,'utf8')
 
 test.describe('CF-092 Scheduled Jobs configuration contract',()=>{
-  test('browser surface preserves governed read and bounded mutation boundaries',async()=>{
-    const [entry,index,client]=['src/scheduled-jobs-config-entry.js','index.html','src/lib/supabase.js'].map(read)
-    expect(index).toContain('/src/scheduled-jobs-config-entry.js')
-    expect(entry).toContain("api.jobs(50)")
-    expect(entry).toContain("supabase.rpc('scheduler_policy_control'")
-    expect(entry).not.toMatch(/supabase\.from\s*\(/)
+  test('native browser surface preserves governed reads and bounded mutation boundaries',async()=>{
+    const [workspace,legacy,client]=['src/ScheduledJobsWorkspace.jsx','src/m2-3-intelligence-entry.jsx','src/lib/supabase.js'].map(read)
+    expect(legacy).toContain("import ScheduledJobsWorkspace from'./ScheduledJobsWorkspace'")
+    expect(legacy).toContain('export const Refresh=ScheduledJobsWorkspace')
+    expect(workspace).toContain('api.jobs(50)')
+    expect(workspace).toContain("supabase.rpc('scheduler_policy_control'")
+    expect(workspace).not.toMatch(/supabase\.from\s*\(/)
     expect(client).toContain("adminRead('jobs'")
-    for(const label of ['Scheduled Jobs & Run Control','Schedule Configuration','Scheduled Target','Freshness Policy','Next Run','Schedule Status','Latest Refresh Queue','Recent Job Runs','Edit schedule','Run on demand'])expect(entry).toContain(label)
-    for(const route of ['#layer-1-operations','#layer-2-enrichment','#layer-3-ai-interpretation','#jobs','#evidence'])expect(entry).toContain(route)
-    expect(entry).toContain('does not retry/reset an arbitrary historical job')
-    expect(entry).toContain('dataset.signature')
+    for(const label of ['Scheduled Jobs & Run Control','Schedule Configuration','Scheduled Target','Freshness Policy','Cadence','Next Run','Schedule Status','Latest Refresh Queue','Recent Job Runs','Edit schedule','Run on demand'])expect(workspace).toContain(label)
+    for(const route of ['#layer-1-operations','#layer-2-enrichment','#layer-3-ai-interpretation','#jobs','#evidence'])expect(workspace).toContain(route)
+    expect(workspace).toContain('does not reset/replay a historical Job')
+    expect(read('index.html')).not.toContain('scheduled-jobs-config-entry.js')
   })
 
   test('database control is role-gated, bounded and non-replay',async()=>{
