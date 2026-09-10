@@ -4,7 +4,8 @@ begin;
 -- Legacy ranking imports may however point at inline Evidence whose payload is no
 -- longer retained. In that bounded case, keep the newly uploaded private Storage
 -- object and rebind the existing immutable import/Evidence row instead of deleting
--- the replacement bytes as an ordinary duplicate.
+-- the replacement bytes as an ordinary duplicate. Lock the duplicate import row so
+-- overlapping re-uploads cannot both retain orphaned replacement objects.
 create or replace function public.svc_ranking_manual_import_register(
   p_system_code text,
   p_edition_year integer,
@@ -52,11 +53,17 @@ begin
     and edition_year=p_edition_year
     and content_hash=p_content_hash
   order by uploaded_at desc nulls last,id desc
-  limit 1;
+  limit 1
+  for update;
 
   if v_existing.id is not null then
-    if coalesce(v_existing.storage_path,'')=''
-       or v_existing.storage_path like 'inline://%' then
+    if (coalesce(v_existing.storage_path,'')=''
+        or v_existing.storage_path like 'inline://%')
+       and not exists (
+         select 1
+         from pipeline.ranking_inline_evidence_payloads iep
+         where iep.evidence_id=v_existing.evidence_artifact_id
+       ) then
       update pipeline.evidence_artifacts
          set storage_path=p_storage_path,
              metadata=coalesce(metadata,'{}'::jsonb)||jsonb_build_object(
