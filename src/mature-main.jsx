@@ -86,7 +86,7 @@ const PAGE_META={
   'Layer 4 — Human Resolution':['Layer 4 — Human Resolution','Human resolution queue, effective-value decisions, audit and reversibility.'],
   'Important Links':['Important Links','Governed operational and authority link registry.'],
   'Important Dates':['Important Dates','Sourced regulatory and operational dates.'],
-  Administration:['Administration','Central PIM, source, scheduling, acquisition and platform configuration.'],
+  Administration:['Administration','Central PIM, source, acquisition and platform configuration.'],
   Onboarding:['Onboarding','Governed source/country onboarding lifecycle.'],
   Jobs:['Jobs','Pipeline execution history and operational status.'],
   Sources:['Sources','Governed regulatory and enrichment source inventory.'],
