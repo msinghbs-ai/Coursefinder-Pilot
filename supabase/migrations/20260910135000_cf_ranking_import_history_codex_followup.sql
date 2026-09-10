@@ -4,6 +4,7 @@ begin;
 -- Preserve one visible workflow row per ranking system + edition while:
 --   * selecting the newest source revision by immutable upload order;
 --   * aggregating detected country scopes across all retained revisions;
+--   * including both URL-acquisition and governed manual-file acquisition jobs;
 --   * counting every retained revision, including lifecycle-rejected rows.
 create or replace function security.admin_ranking_imports_read(p_args jsonb default '{}'::jsonb)
 returns jsonb
@@ -52,8 +53,15 @@ begin
               from ranking.manual_imports mi_scope
               join pipeline.jobs j
                 on j.domain='ranking'
-               and j.job_type='ranking_import_acquire'
                and j.payload->>'import_id'=mi_scope.id::text
+               and (
+                 j.job_type='ranking_import_acquire'
+                 or (
+                   j.job_type='layer1_ranking_etl'
+                   and j.payload->>'action'='acquire'
+                   and j.payload->>'acquisition_mode'='manual_file'
+                 )
+               )
               cross join lateral jsonb_array_elements(
                 coalesce(j.result->'detected_scope',j.payload->'detected_scope','[]'::jsonb)
               ) scope_item(value)
