@@ -8,7 +8,7 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   const workspace=await read('src/ScheduledJobsWorkspace.jsx')
   const migration=await read('supabase/migrations/20260911052000_cf_093_scheduler_operator_attribution.sql')
   const reviewFix=await read('supabase/migrations/20260911053600_cf_093_codex_review_fixes.sql')
-  const secondReviewFix=await read('supabase/migrations/20260911073000_cf_093_codex_second_review_fixes.sql')
+  const secondReviewFix=await read('supabase/migrations/20260910213556_cf_093_resolved_actor_search_semantics.sql')
   const css=await read('src/scheduled-jobs-config.css')
 
   for(const text of ['Task / Dataset','Search scheduled tasks','Created By','Owner','Columns','Reset view','Scheduled Target','Cadence','Next Run','Schedule Status','Actions'])expect(workspace).toContain(text)
