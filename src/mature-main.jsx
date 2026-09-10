@@ -28,7 +28,7 @@ import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 
-const UI_VERSION='2.15.75'
+const UI_VERSION='2.15.76'
 const UI_FIXES=[
  'Independent QILT, PRISMS, QS and THE year/edition controls in Provider Compare.',
  'Frozen Provider/university identity headers across comparison statistics and rankings.',
@@ -55,7 +55,7 @@ const NAV=[
     item('Statistics & Rankings',BarChart3,1),item('Compare',ArrowLeftRight,1),
   ]],
   ['Data Operations',[
-    item('Layer 1 — Operations',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Evidence',BookOpen,3),item('Jobs',Workflow,4),
+    item('Layer 1 — Operations',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Scheduled Tasks',Clock3,4),item('Evidence',BookOpen,3),item('Jobs',Workflow,4),
   ]],
   ['Quality & Review',[
     item('Completeness',CheckCircle2,1),item('Review Queue',ListChecks,3),
@@ -77,6 +77,7 @@ const PAGE_META={
   'Student Flow (PRISMS)':['Student Flow (PRISMS)','Time-scoped international student-flow observations.'],
   Compare:['Compare providers & courses','Choose entities, datasets and aligned periods for a governed comparison.'],
   Completeness:['Completeness & readiness','Operational presence signals; not truth, approval or Search admission.'],
+  'Scheduled Tasks':['Scheduled Tasks','Governed Layer 1–3 schedules, on-demand due-work control, queues and run follow-through.'],
   Evidence:['Evidence & provenance','Source snapshots, evidence artifacts and canonical consequences.'],
   'Review Queue':['Review Queue','Human-resolution workload and exception state.'],
   'Layer 1 — Operations':['Layer 1 — Operations','Country-first regulatory, statistical and ranking ingestion operations with source health, governed runs, Evidence and reconciliation.'],
@@ -85,8 +86,7 @@ const PAGE_META={
   'Layer 4 — Human Resolution':['Layer 4 — Human Resolution','Human resolution queue, effective-value decisions, audit and reversibility.'],
   'Important Links':['Important Links','Governed operational and authority link registry.'],
   'Important Dates':['Important Dates','Sourced regulatory and operational dates.'],
-  Administration:['Administration','Central PIM, source, scheduling, acquisition and platform configuration.'],
-  'Refresh & Scheduling':['Refresh & Scheduling','Targeted refresh policies, queues and downstream signals.'],
+  Administration:['Administration','Central PIM, source, acquisition and platform configuration.'],
   Onboarding:['Onboarding','Governed source/country onboarding lifecycle.'],
   Jobs:['Jobs','Pipeline execution history and operational status.'],
   Sources:['Sources','Governed regulatory and enrichment source inventory.'],
@@ -103,7 +103,6 @@ const ADMIN_SECTIONS=[
  {key:'layer2-providers',label:'Scraper Config',Icon:SlidersHorizontal,min:4,group:'Acquisition',description:'Acquisition providers, credentials, quotas and profile routing.'},
  {key:'provider-assets',label:'Provider Assets',Icon:Building2,min:4,group:'Acquisition',description:'Provider logo coverage, Evidence, approval state and first-party source completeness.'},
  {key:'layer2-sources',label:'Extraction Profiles',Icon:Database,min:4,group:'Advanced',description:'Versioned non-secret extraction rules and source-specific qualification state.'},
- {key:'scheduling',label:'Scheduling',Icon:RefreshCw,min:4,group:'Operations',description:'Refresh cadence, targeted scheduling and due-work policy.'},
  {key:'onboarding',label:'Onboarding',Icon:Workflow,min:4,group:'Operations',description:'Governed country and source onboarding lifecycle.'},
  {key:'pim',label:'PIM configuration',Icon:Tags,min:5,group:'PIM',description:'Attributes, families, groups, options and completeness profiles.'},
  {key:'users-roles',label:'Users & Roles',Icon:UsersRound,min:6,group:'Security',description:'Auth identities, role assignment and access audit.'},
@@ -112,7 +111,7 @@ const ADMIN_SECTIONS=[
 ]
 const ADMIN_SECTION_LABELS=Object.fromEntries(ADMIN_SECTIONS.map(x=>[x.key,x.label]))
 const LEGACY_ADMIN_ROUTES={'users-roles':'users-roles','attributes':'pim','settings':'platform'}
-const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Refresh & Scheduling',RefreshCw,3),item('Onboarding',Workflow,3)]
+const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Onboarding',Workflow,3)]
 function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(LEGACY_ADMIN_ROUTES[route]){const params=new URLSearchParams(query);params.set('section',LEGACY_ADMIN_ROUTES[route]);return{page:'Administration',params}}if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
 function pageBreadcrumbs(page,routeParams){
@@ -214,7 +213,7 @@ function Page({page,routeParams,rank,actorId,onError,navigate}){
   if(page==='Important Links'&&rank>=3)return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Important Dates'&&rank>=3)return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} actorId={actorId} navigate={navigate} routeParams={routeParams} onError={onError}/>
-  if(page==='Refresh & Scheduling'&&rank>=3)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
+  if(page==='Scheduled Tasks'&&rank>=4)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Onboarding'&&rank>=3)return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
   if(page==='Jobs'&&rank>=4)return <JobsWorkspace/>
@@ -325,7 +324,6 @@ function AdministrationHome({rank,actorId,navigate,routeParams,onError}){
  {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>}
  {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>}
  {tool==='environment-migration'&&rank>=6&&<EnvironmentMigrationWorkspace rank={rank} onError={onError}/>}
- {tool==='scheduling'&&<div className="m-page-stack"><RefreshWorkspace onError={e=>onError?.(e?.message||String(e))}/></div>}
  {tool==='onboarding'&&<div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError?.(e?.message||String(e))}/></div>}
  {tool==='pim'&&rank>=5&&<Attributes onError={onError}/>}
  {tool==='users-roles'&&rank>=6&&<AccessRolesEmbedded actorId={actorId}/>}

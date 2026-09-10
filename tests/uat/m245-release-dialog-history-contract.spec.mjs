@@ -14,7 +14,7 @@ test('version pill preserves maintained accessible release history and bug fixes
   expect(release).toContain('Bug / UI fixes')
   expect(release).toContain('release.bugFixes')
   expect(release).not.toContain('.m-release-pill-legacy')
-  expect(current).toContain("const VERSION='2.15.75'")
+  expect(current).toContain("const VERSION='2.15.76'")
   expect(current).toContain('bugFixes:[')
   expect(current).toContain('<strong>Bug / UI fixes</strong>')
   expect(current).toContain('Fixed duplicate QS edition rows in Sources & Imports')
