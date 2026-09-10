@@ -20,7 +20,6 @@ jobs:
           git merge origin/main --no-edit
           python3 - <<'PY'
           from pathlib import Path
-          import re
           p=Path('src/mature-main.jsx')
           s=p.read_text()
           changes=[
@@ -30,31 +29,18 @@ jobs:
             (",item('Refresh & Scheduling',RefreshCw,3)",""),
             ("  'Refresh & Scheduling':['Refresh & Scheduling','Targeted refresh policies, queues and downstream signals.'],\n",""),
             ("if(page==='Refresh & Scheduling'&&rank>=3)return <div className=\"m-page-stack\"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>","if(page==='Scheduled Tasks'&&rank>=4)return <div className=\"m-page-stack\"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>"),
+            (" {tool==='scheduling'&&<div className=\"m-page-stack\"><RefreshWorkspace onError={e=>onError?.(e?.message||String(e))}/></div>}\n","")
           ]
           for old,new in changes:
-            if old not in s: raise SystemExit('Missing expected mature-main fragment: '+old[:80])
+            if old not in s: raise SystemExit('Missing expected mature-main fragment: '+old[:90])
             s=s.replace(old,new,1)
-          s,n=re.subn(r"\s*if\(tool==='scheduling'\)return <RefreshWorkspace[^\n]*\n","\n",s,count=1)
-          if n==0:
-            s,_=re.subn(r"\s*tool==='scheduling'\?\s*<RefreshWorkspace[^:]+:\s*","",s,count=1)
           p.write_text(s)
-
           p=Path('tests/uat/cf-092-scheduled-jobs-config-deployed.spec.mjs')
           t=p.read_text()
-          old="""    await clickPrimaryNav(page,'Administration')
-    await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await page.getByRole('tab',{name:'Scheduling',exact:true}).click()
-    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})"""
-          new="""    await clickPrimaryNav(page,'Scheduled Tasks')
-    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await clickPrimaryNav(page,'Administration')
-    await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
-    await clickPrimaryNav(page,'Scheduled Tasks')
-    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})"""
+          old="    await clickPrimaryNav(page,'Administration')\n    await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})\n    await page.getByRole('tab',{name:'Scheduling',exact:true}).click()\n    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})"
+          new="    await clickPrimaryNav(page,'Scheduled Tasks')\n    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})\n    await clickPrimaryNav(page,'Administration')\n    await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})\n    await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)\n    await clickPrimaryNav(page,'Scheduled Tasks')\n    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})"
           if old not in t: raise SystemExit('Missing CF-092 deployed UAT fragment')
           p.write_text(t.replace(old,new,1))
-
           p=Path('CHANGELOG.md')
           c=p.read_text()
           c=c.replace('Added Administration Scheduling controls with operator-friendly schedule columns, schedule editing, bounded Layer 1–3 on-demand queueing, and direct Jobs/Evidence follow-through.','Added a primary Scheduled Tasks workspace immediately before Evidence, with operator-friendly schedule columns, schedule editing, bounded Layer 1–3 due-now control, and direct Jobs/Evidence follow-through; removed the duplicate Scheduling entry from Administration.')
