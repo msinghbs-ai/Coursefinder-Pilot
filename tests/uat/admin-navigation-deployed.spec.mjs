@@ -5,21 +5,25 @@ import { openLayer1, openLayer2, openLayer3, openLayer4, openLayer2Advanced } fr
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('CourseFinder canonical Administration and Operations navigation @deployed',()=>{
-  test.beforeAll(async()=>{await writeRunEnvironment({suite:'admin-canonical-navigation-a20-a28',change_control:'CF-CHG-20260830-048'})})
+  test.beforeAll(async()=>{await writeRunEnvironment({suite:'admin-canonical-navigation-a20-a28-cf092',change_control:'CF-CHG-20260830-048 / CF-CHG-20260910-092'})})
 
   test('primary sidebar exposes the governed non-floating information architecture',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const nav=page.locator('.m-nav')
-    for(const group of ['Overview','Catalogue','Enrichment & Insights','Data Quality','Operations','Administration']){
+    for(const group of ['Overview','Catalogue','Statistics & Insights','Data Operations','Quality & Review','Administration']){
       await expect(nav.locator('.m-nav-label').filter({hasText:group})).toHaveText(group,{timeout:DETERMINISTIC_UI_TIMEOUT})
     }
-    for(const label of ['Dashboard','Providers','Courses','Campuses','Scholarships','Outcomes (QILT)','Student Flow (PRISMS)','Completeness','Evidence','Review Queue','Layer 1 — Authority','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 4 — Human Resolution','Important Links','Important Dates','Jobs','Administration']){
+    for(const label of ['Dashboard','Providers','Courses','Campuses','Scholarships','Provider Contacts','Statistics & Rankings','Compare','Layer 1 — Operations','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 4 — Human Resolution','Scheduled Tasks','Evidence','Jobs','Completeness','Review Queue','Administration']){
       await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     }
-    for(const obsolete of ['Layer 1 — Regulatory','Evidence & Provenance','Jobs & Runs','Scholarship Selection','Guides & Runbooks','Settings','Layer 2 Operations']){
+    for(const obsolete of ['Layer 1 — Regulatory','Layer 1 — Authority','Evidence & Provenance','Jobs & Runs','Scholarship Selection','Guides & Runbooks','Settings','Layer 2 Operations','Refresh & Scheduling']){
       await expect(nav.getByRole('button',{name:obsolete,exact:true})).toHaveCount(0)
     }
-    await expect(nav.getByText('Data Operations',{exact:true})).toHaveCount(0)
-    await expect(nav.getByText('Governance & Platform',{exact:true})).toHaveCount(0)
+    const scheduled=nav.getByRole('button',{name:'Scheduled Tasks',exact:true})
+    const evidence=nav.getByRole('button',{name:'Evidence',exact:true})
+    await expect(scheduled).toBeVisible();await expect(evidence).toBeVisible()
+    const order=await nav.locator('button').evaluateAll(nodes=>nodes.map(n=>n.textContent?.trim()))
+    expect(order.indexOf('Scheduled Tasks')).toBeGreaterThan(-1)
+    expect(order.indexOf('Scheduled Tasks')).toBeLessThan(order.indexOf('Evidence'))
     await milestoneScreenshot(page,testInfo,'admin-canonical-navigation')
   }finally{await finish(testInfo,runtime)}})
 
@@ -43,32 +47,33 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     await milestoneScreenshot(page,testInfo,'layers3-4-separate-routes')
   }finally{await finish(testInfo,runtime)}})
 
-  test('Administration opens non-empty and Layer 2 source configuration is centralised',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('Administration is configuration-only and Layer 2 source configuration is centralised',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Administration')
     await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.getByRole('tab',{name:'Layer 2 sources',exact:true})).toBeVisible()
+    await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
+    await expect(page.getByRole('tab',{name:'Extraction Profiles',exact:true})).toBeVisible()
     await openLayer2Advanced(page)
     await expect(page.getByRole('heading',{name:'Enrichment Source Configuration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByText('Configuration is separate from execution.')).toBeVisible()
     await milestoneScreenshot(page,testInfo,'layer2-config-central-administration')
   }finally{await finish(testInfo,runtime)}})
 
-  test('Administration subcontext survives deep link, refresh and browser history',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('Administration subcontext and Scheduled Tasks survive deep-link browser history',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await page.evaluate(()=>{location.hash='#administration?section=layer2-providers'})
     await expect(page).toHaveURL(/#administration\?section=layer2-providers/)
-    await expect(page.getByRole('tab',{name:'Acquisition',exact:true})).toHaveAttribute('aria-selected','true',{timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toHaveAttribute('aria-selected','true',{timeout:DETERMINISTIC_UI_TIMEOUT})
     await page.reload()
-    await expect(page.getByRole('tab',{name:'Acquisition',exact:true})).toHaveAttribute('aria-selected','true',{timeout:DETERMINISTIC_UI_TIMEOUT})
-    await page.getByRole('tab',{name:'Scheduling',exact:true}).click()
-    await expect(page).toHaveURL(/#administration\?section=scheduling/)
-    await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveAttribute('aria-selected','true')
+    await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toHaveAttribute('aria-selected','true',{timeout:DETERMINISTIC_UI_TIMEOUT})
+    await clickPrimaryNav(page,'Scheduled Tasks')
+    await expect(page).toHaveURL(/#scheduled-tasks/)
+    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await page.goBack()
     await expect(page).toHaveURL(/#administration\?section=layer2-providers/)
-    await expect(page.getByRole('tab',{name:'Acquisition',exact:true})).toHaveAttribute('aria-selected','true')
+    await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toHaveAttribute('aria-selected','true')
     await page.goForward()
-    await expect(page).toHaveURL(/#administration\?section=scheduling/)
-    await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveAttribute('aria-selected','true')
+    await expect(page).toHaveURL(/#scheduled-tasks/)
+    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible()
   }finally{await finish(testInfo,runtime)}})
 })
