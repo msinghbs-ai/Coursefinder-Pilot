@@ -2,9 +2,11 @@
 
 ## 0.1.3 — 10 Sep 2026
 
-- Added a primary Scheduled Tasks workspace immediately before Evidence, with operator-friendly schedule columns, schedule editing, bounded Layer 1–3 due-now control, and direct Jobs/Evidence follow-through; removed the duplicate Scheduling entry from Administration.
-- Reused the accepted `refresh_policy_upsert_v2` authority boundary for schedule edits and due-now requests; no new scheduler mutation RPC or generic historical retry/replay/reset was introduced.
-- Added consolidated latest refresh-queue and recent Job result views while keeping browser Job reads on `public.admin_read`.
+- Added a primary Scheduled Tasks workspace immediately before Evidence, with operator-friendly schedule columns, schedule editing, bounded Layer 1–3 run-on-demand control, and direct Jobs/Evidence follow-through; removed the duplicate Scheduling entry from Administration.
+- Added narrow authenticated scheduler action contracts for schedule edits and run-on-demand. Public wrappers remain SECURITY INVOKER and delegate to independently rank-gated non-exposed security bridges.
+- Run-on-demand now queues an exact bounded `manual_governed` refresh request without changing the recurring cadence or next-run timestamp, prevents duplicate active requests, and never replays/resets historical Jobs.
+- Added durable scheduler action audit events recording operator, governance reason, before/after state, Change Control and associated refresh request while keeping browser Job reads on `public.admin_read`.
+- Corrected whole-day cadence handling for PostgreSQL time-only interval representations and browser-local `datetime-local` formatting so schedule edits do not erase hour-derived cadences or shift timestamps by the operator timezone.
 - Reconciled canonical navigation UAT so acceptance follows the primary Scheduled Tasks route and no longer references the removed Administration Scheduling tab.
 
 ## 0.1.2 — 10 Sep 2026
