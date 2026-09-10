@@ -9,6 +9,7 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   const migration=await read('supabase/migrations/20260911052000_cf_093_scheduler_operator_attribution.sql')
   const reviewFix=await read('supabase/migrations/20260911053600_cf_093_codex_review_fixes.sql')
   const secondReviewFix=await read('supabase/migrations/20260910213556_cf_093_resolved_actor_search_semantics.sql')
+  const entityLabelFix=await read('supabase/migrations/20260911073200_cf_093_scheduler_entity_labels.sql')
   const css=await read('src/scheduled-jobs-config.css')
 
   for(const text of ['Task / Dataset','Search scheduled tasks','Created By','Owner','Columns','Reset view','Scheduled Target','Cadence','Next Run','Schedule Status','Actions'])expect(workspace).toContain(text)
@@ -50,6 +51,12 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   expect(secondReviewFix).toContain('security.scheduler_actor_display(p.created_by)')
   expect(secondReviewFix).toContain('au.deleted_at is null')
   expect(secondReviewFix).toContain('au.banned_until is null or au.banned_until <= now()')
+
+  expect(entityLabelFix).toContain('create or replace function security.scheduler_entity_display')
+  for(const entity of ["when 'provider'","when 'course'","when 'campus'","when 'scholarship'"])expect(entityLabelFix).toContain(entity)
+  expect(entityLabelFix).toContain('security.scheduler_entity_display(p.entity_type,p.entity_id)')
+  expect(entityLabelFix).toContain("lower(coalesce(security.scheduler_entity_display(p.entity_type,p.entity_id),'')) like")
+  expect(entityLabelFix).toContain('revoke all on function security.scheduler_entity_display(text,uuid) from public,anon,authenticated')
   expect(css).toContain('cf-scheduler-v2__sticky-actions')
  })
 })
