@@ -5,7 +5,7 @@ const read=path=>fs.readFileSync(path,'utf8')
 
 test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
   test('native browser surface preserves governed reads, primary navigation and bounded mutation boundaries',()=>{
-    const [workspace,legacy,client,shell]=['src/ScheduledJobsWorkspace.jsx','src/m2-3-intelligence-entry.jsx','src/lib/supabase.js','src/mature-main.jsx'].map(read)
+    const [workspace,legacy,client,shell,navUat]=['src/ScheduledJobsWorkspace.jsx','src/m2-3-intelligence-entry.jsx','src/lib/supabase.js','src/mature-main.jsx','tests/uat/admin-navigation-deployed.spec.mjs'].map(read)
     expect(legacy).toContain("import ScheduledJobsWorkspace from'./ScheduledJobsWorkspace'")
     expect(legacy).toContain('export const Refresh=ScheduledJobsWorkspace')
     expect(workspace).toContain('api.jobs(50)')
@@ -23,6 +23,8 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     expect(shell).not.toContain("{key:'scheduling',label:'Scheduling'")
     expect(shell).not.toContain("tool==='scheduling'")
     expect(shell).not.toContain("item('Refresh & Scheduling'")
+    expect(navUat).toContain("clickPrimaryNav(page,'Scheduled Tasks')")
+    expect(navUat).not.toContain("getByRole('tab',{name:'Scheduling',exact:true}).click()")
 
     for(const label of ['Scheduled Jobs & Run Control','Schedule Configuration','Scheduled Target','Freshness Policy','Cadence','Next Run','Schedule Status','Latest Refresh Queue','Recent Job Runs','Edit schedule','Run on demand'])expect(workspace).toContain(label)
     for(const route of ['#layer-1-operations','#layer-2-enrichment','#layer-3-ai-interpretation','#jobs','#evidence'])expect(workspace).toContain(route)
