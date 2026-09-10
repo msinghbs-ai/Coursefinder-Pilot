@@ -1,0 +1,39 @@
+name: Release History Contract
+
+on:
+  pull_request:
+    paths:
+      - 'src/pim-version-entry.js'
+      - 'src/release-currentness-entry.js'
+      - 'src/mature-main.jsx'
+      - 'index.html'
+      - 'package.json'
+      - 'tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs'
+      - '.github/workflows/release-history-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/pim-version-entry.js'
+      - 'src/release-currentness-entry.js'
+      - 'src/mature-main.jsx'
+      - 'index.html'
+      - 'package.json'
+      - 'tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs'
+      - '.github/workflows/release-history-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  release-history-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Verify maintained release history and version synchronization
+        run: npx playwright test tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs --project=chromium-desktop
