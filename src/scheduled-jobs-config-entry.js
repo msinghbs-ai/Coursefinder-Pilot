@@ -18,7 +18,7 @@ function scheduleMount(){if(scheduled)return;scheduled=true;setTimeout(()=>{sche
 function parsePolicies(){
  const heading=findHeading('Source/entity freshness policies')
  const section=heading?.closest('section')
- const table=section?.querySelector('table')
+ const table=section?.querySelector('table.cf-scheduler-v2-original-policy-table')||section?.querySelector('table')
  if(!table)return {heading,section,table:null,rows:[]}
  const rows=tableRows(table).map(cells=>({
   layer:Number(String(cells[0]||'').replace(/\D/g,'')),country:cells[1]||'—',target:cells[2]||'',freshness:normaliseFreshness(cells[3]),nextDue:cells[4]||'—',enabled:/enabled/i.test(cells[5]||'')&&!/disabled/i.test(cells[5]||'')
@@ -84,13 +84,15 @@ function renderJobs(rows){return rows.slice(0,10).map(r=>`<tr><td>${esc(String(j
 async function mount(){
  const parsed=parsePolicies()
  if(!parsed.section||!parsed.table)return
+ const queue=parseQueue()
+ const signature=JSON.stringify({policies:parsed.rows,queue})
  const existing=parsed.section.querySelector('.cf-scheduler-v2')
+ if(existing?.dataset.signature===signature)return
  if(existing)existing.remove()
  parsed.table.classList.add('cf-scheduler-v2-original-policy-table');parsed.table.hidden=true
- const queue=parseQueue()
  let jobs=[]
  try{jobs=jobItems(await api.jobs(50))}catch{}
- const root=document.createElement('div');root.className='cf-scheduler-v2';root.dataset.cfSchedulerEnhanced='true'
+ const root=document.createElement('div');root.className='cf-scheduler-v2';root.dataset.cfSchedulerEnhanced='true';root.dataset.signature=signature
  root.innerHTML=`<div class="cf-scheduler-v2__head"><div><h2>Scheduled Jobs & Run Control</h2><p>Governed schedule configuration, bounded Layer 1–3 on-demand queueing, recent queue status and job/evidence follow-through. Generic historical replay/reset remains disabled.</p></div><div class="cf-scheduler-v2__actions"><button data-refresh>Refresh</button><a class="cf-scheduler-v2__link" href="#jobs">Open Jobs</a><a class="cf-scheduler-v2__link" href="#evidence">Open Evidence</a></div></div><div class="cf-scheduler-v2__summary"><article><strong>${parsed.rows.length}</strong><span>Bounded Layer 1–3 schedules</span></article><article><strong>${queue.filter(x=>/queued|running/i.test(x.status)).length}</strong><span>Queued / active refresh requests shown</span></article><article><strong>${jobs.length}</strong><span>Recent governed job records loaded through admin_read</span></article></div><div class="cf-scheduler-v2__links"><a class="cf-scheduler-v2__link" href="#layer-1-operations">Layer 1 — Regulatory</a><a class="cf-scheduler-v2__link" href="#layer-2-enrichment">Layer 2 — Enrichment</a><a class="cf-scheduler-v2__link" href="#layer-3-ai-interpretation">Layer 3 — AI Interpretation</a></div><div class="cf-scheduler-v2__message" data-cf-scheduler-message hidden></div><div class="cf-scheduler-v2__subhead"><h3>Schedule Configuration</h3><span class="cf-scheduler-v2__status">${esc(CHANGE)}</span></div><div class="cf-scheduler-v2__table-wrap"><table><thead><tr><th>Layer</th><th>Country</th><th>Scheduled Target</th><th>Freshness Policy</th><th>Next Run</th><th>Schedule Status</th><th>Actions</th></tr></thead><tbody>${renderPolicies(parsed.rows)||'<tr><td colspan="7" class="cf-scheduler-v2__empty">No bounded Layer 1–3 policies are currently visible.</td></tr>'}</tbody></table></div><p class="cf-scheduler-v2__note">“Run on demand” queues the same bounded policy target used by the governed scheduler. It does not retry/reset an arbitrary historical job and does not bypass Layer-specific qualification, Evidence or publication controls.</p><div class="cf-scheduler-v2__subhead"><h3>Latest Refresh Queue</h3><a class="cf-scheduler-v2__link" href="#jobs">Follow in Jobs</a></div><div class="cf-scheduler-v2__table-wrap"><table><thead><tr><th>Layer</th><th>Trigger</th><th>Target</th><th>Status</th><th>Queued At</th><th>Reason / Result</th></tr></thead><tbody>${renderQueue(queue)||'<tr><td colspan="6" class="cf-scheduler-v2__empty">No recent refresh requests are visible.</td></tr>'}</tbody></table></div><div class="cf-scheduler-v2__subhead"><h3>Recent Job Runs</h3><div class="cf-scheduler-v2__links"><a class="cf-scheduler-v2__link" href="#jobs">All Jobs</a><a class="cf-scheduler-v2__link" href="#evidence">Evidence</a></div></div><div class="cf-scheduler-v2__table-wrap"><table><thead><tr><th>Layer</th><th>Job / Source</th><th>Status</th><th>Run Mode</th><th>Started</th><th>Completed</th><th>Result</th><th>Follow</th></tr></thead><tbody>${renderJobs(jobs)||'<tr><td colspan="8" class="cf-scheduler-v2__empty">No recent job records returned by the governed Jobs read surface.</td></tr>'}</tbody></table></div>${dialogMarkup()}`
  parsed.section.insertBefore(root,parsed.table)
  root.querySelector('[data-refresh]').addEventListener('click',()=>{const refresh=parsed.section.querySelector('button:not([data-refresh])');if(refresh&&/refresh/i.test(text(refresh)))refresh.click();setTimeout(scheduleMount,450)})
