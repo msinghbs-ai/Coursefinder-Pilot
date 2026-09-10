@@ -12,7 +12,7 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     expect(workspace).toContain("supabase.rpc('scheduler_policy_edit_v1'")
     expect(workspace).toContain("supabase.rpc('scheduler_policy_run_now_v1'")
     expect(workspace).toContain('localDateTime')
-    expect(workspace).toContain('168:00:00')===false
+    expect(workspace).toContain("const t=text.match(/(?:^|\\s)(\\d+):(\\d{2})")
     expect(workspace).toContain("Data Operations · Scheduled Tasks")
     expect(workspace).not.toContain("supabase.rpc('refresh_policy_upsert_v2'")
     expect(workspace).not.toContain('scheduler_policy_control')
@@ -26,6 +26,7 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     expect(shell).not.toContain("{key:'scheduling',label:'Scheduling'")
     expect(shell).not.toContain("tool==='scheduling'")
     expect(shell).not.toContain("item('Refresh & Scheduling'")
+    expect(shell).not.toContain("Central PIM, source, scheduling, acquisition and platform configuration.")
     expect(navUat).toContain("clickPrimaryNav(page,'Scheduled Tasks')")
     expect(navUat).not.toContain("getByRole('tab',{name:'Scheduling',exact:true}).click()")
 
