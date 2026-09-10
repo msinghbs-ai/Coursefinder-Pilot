@@ -1,0 +1,83 @@
+name: CF-092 v2.15.76 release sync
+on: [push]
+permissions:
+  contents: write
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/feature/m245-scheduled-jobs-config-20260910'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Synchronize canonical release metadata
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          history=Path('src/pim-version-entry.js')
+          s=history.read_text()
+          s=s.replace("const VERSION='2.15.75'", "const VERSION='2.15.76'", 1)
+          marker="const RELEASES=[\n"
+          entry="  {version:'2.15.76',date:'10 Sep 2026',title:'Scheduled Tasks configuration and governed run control',changes:['Data Operations now includes Scheduled Tasks immediately before Evidence, with operator-friendly schedule configuration, latest refresh queue and recent Job results.','Pipeline Operators can edit exact bounded recurring Layer 1–3 schedules through audited SECURITY INVOKER contracts with optimistic concurrency and durable governance reason/actor evidence.','Run on demand is available only for executable Layer 1–2 schedules and creates or reuses an exact bounded manual_governed refresh request without altering recurring cadence or next-run time.','Layer 3 remains Evidence/profile/model-qualified and is not given a generic autonomous execution path.','Jobs remain read through public.admin_read and historical Jobs are never reset or replayed.'],bugFixes:['Preserved PostgreSQL time-only whole-day cadence values when editing schedules.','Corrected datetime-local handling so stored next-run instants are not shifted by the operator timezone.','Surfaced governed Jobs-read failures instead of presenting false empty history.','Completion timestamps remain blank until a Job is terminal.','Added complete paged policy reads, cadence bounds and stale-snapshot rejection for schedule edits.']},\n"
+          if "{version:'2.15.76'" not in s:
+              s=s.replace(marker, marker+entry, 1)
+          history.write_text(s)
+
+          shell=Path('src/mature-main.jsx')
+          s=shell.read_text().replace("const UI_VERSION='2.15.75'", "const UI_VERSION='2.15.76'", 1)
+          shell.write_text(s)
+
+          current=Path('src/release-currentness-entry.js')
+          s=current.read_text()
+          s=s.replace("const VERSION='2.15.75'", "const VERSION='2.15.76'", 1)
+          start=s.index('const RELEASE={')
+          end=s.index('\nlet pending=false')
+          release="""const RELEASE={
+  version:VERSION,
+  date:'10 Sep 2026',
+  title:'Scheduled Tasks configuration and governed run control',
+  changes:[
+    'Data Operations now includes Scheduled Tasks immediately before Evidence, with operator-friendly schedule configuration, latest refresh queue and recent Job results.',
+    'Pipeline Operators can edit exact bounded recurring Layer 1–3 schedules through audited SECURITY INVOKER contracts with optimistic concurrency and durable governance reason/actor evidence.',
+    'Run on demand is available only for executable Layer 1–2 schedules and creates or reuses an exact bounded manual_governed refresh request without altering recurring cadence or next-run time.',
+    'Layer 3 remains Evidence/profile/model-qualified and is not given a generic autonomous execution path.',
+    'Jobs remain read through public.admin_read and historical Jobs are never reset or replayed.'
+  ],
+  bugFixes:[
+    'Preserved PostgreSQL time-only whole-day cadence values when editing schedules.',
+    'Corrected datetime-local handling so stored next-run instants are not shifted by the operator timezone.',
+    'Surfaced governed Jobs-read failures instead of presenting false empty history.',
+    'Completion timestamps remain blank until a Job is terminal.',
+    'Added complete paged policy reads, cadence bounds and stale-snapshot rejection for schedule edits.'
+  ]
+}"""
+          s=s[:start]+release+s[end:]
+          current.write_text(s)
+
+          html=Path('index.html')
+          html.write_text(html.read_text().replace('Coursefinder PIM Admin v2.15.75','Coursefinder PIM Admin v2.15.76',1))
+
+          p=Path('tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs')
+          s=p.read_text()
+          s=s.replace("expect(shell).toContain(\"const UI_VERSION='2.15.75'\")", "expect(history).toContain(\"{version:'2.15.76'\")\n  expect(history.indexOf(\"{version:'2.15.76'\")).toBeLessThan(history.indexOf(\"{version:'2.15.75'\"))\n  expect(shell).toContain(\"const UI_VERSION='2.15.76'\")")
+          s=s.replace("expect(current).toContain(\"const VERSION='2.15.75'\")", "expect(current).toContain(\"const VERSION='2.15.76'\")")
+          s=s.replace("expect(html).toContain('<title>Coursefinder PIM Admin v2.15.75</title>')", "expect(html).toContain('<title>Coursefinder PIM Admin v2.15.76</title>')")
+          p.write_text(s)
+
+          p=Path('tests/uat/m245-ui-improvements-contract.spec.mjs')
+          if p.exists():
+              p.write_text(p.read_text().replace("const UI_VERSION='2.15.75'", "const UI_VERSION='2.15.76'"))
+
+          p=Path('tests/uat/m245-release-dialog-history-contract.spec.mjs')
+          if p.exists():
+              p.write_text(p.read_text().replace("const VERSION='2.15.75'", "const VERSION='2.15.76'"))
+          PY
+      - name: Commit synchronized release
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm .github/workflows/cf092-release-sync.yml
+          git add -A
+          git commit -m 'CF-092 publish PIM Admin v2.15.76 release metadata'
+          git push origin HEAD:feature/m245-scheduled-jobs-config-20260910
