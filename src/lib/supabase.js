@@ -89,6 +89,43 @@ async function invoke(name, body) {
   return data
 }
 
+// Multipart publisher Evidence uses a direct browser fetch instead of the generic
+// Functions client. This preserves the browser-generated multipart boundary and
+// avoids the mobile/browser transport failure that can occur before the Edge
+// Function receives the POST. Do not set Content-Type manually here.
+async function invokeMultipart(name, form) {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  const token = sessionData?.session?.access_token
+  if (!token) throw new Error('authentication required')
+  if (!url || !key) throw new Error('Supabase function configuration missing')
+
+  let response
+  try {
+    response = await fetch(`${url.replace(/\/$/,'')}/functions/v1/${encodeURIComponent(name)}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: key,
+      },
+      body: form,
+    })
+  } catch (error) {
+    throw new Error(`Unable to reach ${name}: ${functionErrorText(error,'network request failed')}`)
+  }
+
+  const text = await response.text()
+  let payload = null
+  if (text) {
+    try { payload = JSON.parse(text) } catch { payload = text }
+  }
+  if (!response.ok) {
+    throw new Error(functionErrorText(payload?.error??payload?.message??payload,`${name} failed (${response.status})`))
+  }
+  if (payload?.error) throw new Error(functionErrorText(payload.error,`${name} failed`))
+  return payload
+}
+
 const pageItems = value => value?.items ?? value?.rows ?? (Array.isArray(value) ? value : [])
 const bounded = (value, fallback = 50) => Math.min(Math.max(Number(value) || fallback, 1), 200)
 const present = value => value === '' || value === null || value === undefined ? null : value
@@ -241,7 +278,7 @@ export const api = {
       )
     }
     form.set('file', transportFile)
-    return invoke('ranking-publisher-import', form)
+    return invokeMultipart('ranking-publisher-import', form)
   },
   importRankingPublisherUrl: ({ systemCode, editionYear, referencePath }) => invoke('ranking-publisher-url-import', {
     system_code: systemCode, edition_year: Number(editionYear), reference_path: referencePath,
