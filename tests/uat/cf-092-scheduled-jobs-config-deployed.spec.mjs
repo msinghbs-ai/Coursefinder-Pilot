@@ -3,18 +3,23 @@ import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINI
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
-test.describe('CF-092 Scheduled Jobs configuration @deployed',()=>{
-  test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-092-scheduled-jobs-config',change_control:'CF-CHG-20260910-092'})})
+test.describe('CF-092 Scheduled Tasks configuration @deployed',()=>{
+  test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-092-scheduled-tasks-config',change_control:'CF-CHG-20260910-092'})})
 
-  test('Scheduling presents governed Layer 1-3 control and readable run follow-through without mutating state',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('Scheduled Tasks is primary Data Operations navigation before Evidence and Administration has no scheduler footprint',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
+    const nav=page.locator('.m-nav')
+    const order=await nav.locator('button').evaluateAll(nodes=>nodes.map(n=>n.textContent?.trim()))
+    expect(order.indexOf('Scheduled Tasks')).toBeGreaterThan(-1)
+    expect(order.indexOf('Scheduled Tasks')).toBeLessThan(order.indexOf('Evidence'))
     await clickPrimaryNav(page,'Scheduled Tasks')
+    await expect(page).toHaveURL(/#scheduled-tasks/)
     await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await clickPrimaryNav(page,'Administration')
     await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
+    await expect(page.getByText('Refresh & Scheduling',{exact:true})).toHaveCount(0)
     await clickPrimaryNav(page,'Scheduled Tasks')
-    await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     const workspace=page.locator('.cf-scheduler-v2-native')
     for(const header of ['Layer','Country','Scheduled Target','Freshness Policy','Cadence','Next Run','Schedule Status','Actions'])await expect(workspace.getByRole('columnheader',{name:header,exact:true}).first()).toBeVisible()
     await expect(workspace.getByRole('heading',{name:'Latest Refresh Queue',exact:true})).toBeVisible()
@@ -30,6 +35,6 @@ test.describe('CF-092 Scheduled Jobs configuration @deployed',()=>{
     await expect(page.getByLabel('Governance reason')).toBeVisible()
     await page.getByRole('button',{name:'Cancel',exact:true}).click()
     await expect(page.getByRole('dialog',{name:'Edit schedule'})).toHaveCount(0)
-    await milestoneScreenshot(page,testInfo,'scheduled-jobs-config')
+    await milestoneScreenshot(page,testInfo,'scheduled-tasks-config')
   }finally{await finish(testInfo,runtime)}})
 })
