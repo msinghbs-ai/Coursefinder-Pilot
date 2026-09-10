@@ -4,7 +4,8 @@ begin;
 -- Fresh-replay finalizer. Earlier CF-093 migrations are already applied in Pilot under
 -- runtime-generated versions; on a clean repository replay this definition must run
 -- after scheduler_operator_attribution and codex_review_fixes so the final bridge keeps
--- literal search, canonical entity labels, and resolved actor search semantics.
+-- literal search, canonical entity labels, resolved actor search semantics, and the
+-- same humanised dataset-domain text presented by the operator UI.
 
 create or replace function security.scheduler_policies_list_v1_browser_bridge(
   p_limit integer default 50,
@@ -39,7 +40,7 @@ begin
           or lower(coalesce(s.label,'')) like '%'||v_query||'%'
           or lower(coalesce(ps.label,'')) like '%'||v_query||'%'
           or lower(coalesce(lp.profile_key,'')) like '%'||v_query||'%'
-          or lower(coalesce(lp.domain,'')) like '%'||v_query||'%'
+          or lower(replace(coalesce(lp.domain,''),'_',' ')) like '%'||v_query||'%'
           or lower(coalesce(lp.acquisition_method,'')) like '%'||v_query||'%'
           or lower(coalesce(p.country_code,'')) like '%'||v_query||'%'
           or lower(coalesce(p.entity_type,'')) like '%'||v_query||'%'
@@ -81,7 +82,7 @@ begin
             or lower(coalesce(s.label,'')) like '%'||v_query||'%'
             or lower(coalesce(ps.label,'')) like '%'||v_query||'%'
             or lower(coalesce(lp.profile_key,'')) like '%'||v_query||'%'
-            or lower(coalesce(lp.domain,'')) like '%'||v_query||'%'
+            or lower(replace(coalesce(lp.domain,''),'_',' ')) like '%'||v_query||'%'
             or lower(coalesce(lp.acquisition_method,'')) like '%'||v_query||'%'
             or lower(coalesce(p.country_code,'')) like '%'||v_query||'%'
             or lower(coalesce(p.entity_type,'')) like '%'||v_query||'%'
