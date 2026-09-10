@@ -9,7 +9,9 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   const migration=await read('supabase/migrations/20260911052000_cf_093_scheduler_operator_attribution.sql')
   const reviewFix=await read('supabase/migrations/20260911053600_cf_093_codex_review_fixes.sql')
   const secondReviewFix=await read('supabase/migrations/20260910213556_cf_093_resolved_actor_search_semantics.sql')
-  const entityLabelFix=await read('supabase/migrations/20260911073200_cf_093_scheduler_entity_labels.sql')
+  const entityLabelFix=await read('supabase/migrations/20260910215546_cf_093_scheduler_entity_labels.sql')
+  const literalSearchFix=await read('supabase/migrations/20260910221808_cf_093_literal_scheduler_search.sql')
+  const replayFinalizer=await read('supabase/migrations/20260911054000_cf_093_scheduler_search_finalizer.sql')
   const css=await read('src/scheduled-jobs-config.css')
 
   for(const text of ['Task / Dataset','Search scheduled tasks','Created By','Owner','Columns','Reset view','Scheduled Target','Cadence','Next Run','Schedule Status','Actions'])expect(workspace).toContain(text)
@@ -29,8 +31,8 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   expect(workspace).toContain('Promise.allSettled')
   expect(workspace).toContain('const policyResponse=await supabase.rpc')
   expect(workspace).toContain('if(page>maxPage){await load(maxPage,search);return}')
-  expect(workspace).toContain('closeEditor();await load(0,query)')
-  expect(workspace).not.toContain('closeEditor();await load(policyPage,query)')
+  expect(workspace).toContain('closeEditor();const policyReload=load(0,query);if(runNow)await loadPanels();await policyReload')
+  expect(workspace).not.toContain('if(runNow)await loadPanels();await load(0,query)')
   expect(workspace).not.toContain('finally{setBusy(false)}}')
 
   for(const text of ['created_by_display_snapshot','created_by_email_snapshot','actor_display_snapshot','actor_email_snapshot','System / legacy','System / automation','former_user','security invoker','curator role required'])expect(migration.toLowerCase()).toContain(text.toLowerCase())
@@ -55,8 +57,14 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   expect(entityLabelFix).toContain('create or replace function security.scheduler_entity_display')
   for(const entity of ["when 'provider'","when 'course'","when 'campus'","when 'scholarship'"])expect(entityLabelFix).toContain(entity)
   expect(entityLabelFix).toContain('security.scheduler_entity_display(p.entity_type,p.entity_id)')
-  expect(entityLabelFix).toContain("lower(coalesce(security.scheduler_entity_display(p.entity_type,p.entity_id),'')) like")
   expect(entityLabelFix).toContain('revoke all on function security.scheduler_entity_display(text,uuid) from public,anon,authenticated')
+
+  for(const sql of [literalSearchFix,replayFinalizer]){
+   expect(sql).toContain("replace(replace(replace(lower(trim(coalesce(p_query,'')))")
+   expect(sql).toContain('security.scheduler_entity_display(p.entity_type,p.entity_id)')
+   expect(sql).toContain('security.scheduler_actor_display(p.owner_user_id)')
+   expect(sql).toContain('security.scheduler_actor_display(p.created_by)')
+  }
   expect(css).toContain('cf-scheduler-v2__sticky-actions')
  })
 })
