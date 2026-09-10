@@ -23,17 +23,9 @@ test('CF-090 QS workbook retains full indicator/category detail through ingest w
   expect(start).toBeGreaterThan(-1)
   const end=ui.indexOf('\nfunction ',start+30)
   const block=ui.slice(start,end>start?end:undefined)
-  expect(block).toContain("sortHead('rank','Rank')")
-  expect(block).toContain("sortHead('score','Overall score')")
-  expect(block).not.toContain('Academic Reputation')
-  expect(block).not.toContain('Employer Reputation')
-  expect(block).not.toContain('Faculty Student Ratio')
-  expect(block).not.toContain('Citations per Faculty')
-  expect(block).not.toContain('International Faculty Ratio')
-  expect(block).not.toContain('International Student Ratio')
-  expect(block).not.toContain('International Research Network')
-  expect(block).not.toContain('Employment Outcomes')
-  expect(block).not.toContain('Sustainability')
+  const header=block.match(/<thead><tr>(.*?)<\/tr><\/thead>/s)?.[1]||''
+  const labels=[...header.matchAll(/sortHead\('[^']+','([^']+)'\)|<span>(Evidence)<\/span>/g)].map(x=>x[1]||x[2])
+  expect(labels).toEqual(['Publisher institution','Canonical Provider','Rank','Overall score','Country','Evidence'])
 })
 
 test('CF-090 byte-identical re-upload repairs only missing inline Evidence and serializes recovery',()=>{
