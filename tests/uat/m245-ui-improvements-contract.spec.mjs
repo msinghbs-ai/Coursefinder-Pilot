@@ -3,7 +3,7 @@ import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
 
 test.describe('M2.4.5 reconciled UI improvements contract',()=>{
- test('preserves v2.15.71 semantics and uses governed server reads',async()=>{
+ test('preserves accepted UI semantics and uses governed server reads',async()=>{
   const[shell,compare,ranking,api,migration]=await Promise.all([
    fs.readFile('src/mature-main.jsx','utf8'),
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
@@ -12,8 +12,8 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
    fs.readFile('supabase/migrations/20260907064251_m245_ui_read_contract_reconciliation.sql','utf8'),
   ])
 
-  // No release/version promotion before nominated acceptance.
-  expect(shell).toContain("const UI_VERSION='2.15.74'")
+  // Current nominated release version must remain synchronized with the accepted shell.
+  expect(shell).toContain("const UI_VERSION='2.15.75'")
 
   // Scholarship catalogue: bounded Provider filter and authoritative provider_id read.
   expect(shell).toContain("if(type==='scholarship')return <div className=\"m-filter-bar\"")
