@@ -3,9 +3,9 @@ begin;
 -- CF-CHG-20260910-093
 -- Codex review corrections:
 -- 1) search is applied before LIMIT/OFFSET so results are global across all policies;
--- 2) deleted or currently banned accounts are classified as former users;
--- 3) creator/owner search uses the same resolved display semantics returned to the UI.
+-- 2) deleted or currently banned accounts are classified as former users.
 
+-- Replace the prior two-argument list contract with a query-aware additive contract.
 drop function if exists public.scheduler_policies_list_v1(integer,integer);
 drop function if exists security.scheduler_policies_list_v1_browser_bridge(integer,integer);
 
@@ -49,20 +49,8 @@ begin
           or lower(coalesce(p.entity_id::text,'')) like '%'||v_query||'%'
           or lower(coalesce(p.source_id::text,'')) like '%'||v_query||'%'
           or lower(coalesce(p.source_profile_id::text,'')) like '%'||v_query||'%'
-          or lower(coalesce(
-               p.created_by_display_snapshot,
-               case
-                 when p.created_by is null then 'System / legacy'
-                 when exists(select 1 from auth.users au where au.id=p.created_by and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) then security.scheduler_actor_display(p.created_by)
-                 else 'Former user'
-               end,'')) like '%'||v_query||'%'
-          or lower(coalesce(
-               p.owner_display_snapshot,
-               case
-                 when p.owner_user_id is null then null
-                 when exists(select 1 from auth.users au where au.id=p.owner_user_id and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) then security.scheduler_actor_display(p.owner_user_id)
-                 else 'Former user'
-               end,'')) like '%'||v_query||'%'
+          or lower(coalesce(p.created_by_display_snapshot,'')) like '%'||v_query||'%'
+          or lower(coalesce(p.owner_display_snapshot,'')) like '%'||v_query||'%'
           or lower(coalesce(p.freshness_class,'')) like '%'||v_query||'%'
           or lower(coalesce(p.cadence_interval::text,'')) like '%'||v_query||'%'
           or lower('layer '||p.layer::text) like '%'||v_query||'%'
@@ -149,20 +137,8 @@ begin
             or lower(coalesce(p.entity_id::text,'')) like '%'||v_query||'%'
             or lower(coalesce(p.source_id::text,'')) like '%'||v_query||'%'
             or lower(coalesce(p.source_profile_id::text,'')) like '%'||v_query||'%'
-            or lower(coalesce(
-                 p.created_by_display_snapshot,
-                 case
-                   when p.created_by is null then 'System / legacy'
-                   when exists(select 1 from auth.users au where au.id=p.created_by and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) then security.scheduler_actor_display(p.created_by)
-                   else 'Former user'
-                 end,'')) like '%'||v_query||'%'
-            or lower(coalesce(
-                 p.owner_display_snapshot,
-                 case
-                   when p.owner_user_id is null then null
-                   when exists(select 1 from auth.users au where au.id=p.owner_user_id and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) then security.scheduler_actor_display(p.owner_user_id)
-                   else 'Former user'
-                 end,'')) like '%'||v_query||'%'
+            or lower(coalesce(p.created_by_display_snapshot,'')) like '%'||v_query||'%'
+            or lower(coalesce(p.owner_display_snapshot,'')) like '%'||v_query||'%'
             or lower(coalesce(p.freshness_class,'')) like '%'||v_query||'%'
             or lower(coalesce(p.cadence_interval::text,'')) like '%'||v_query||'%'
             or lower('layer '||p.layer::text) like '%'||v_query||'%'
