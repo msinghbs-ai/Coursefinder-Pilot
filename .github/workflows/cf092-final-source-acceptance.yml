@@ -8,10 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - name: Clean remaining Administration scheduling copy
         run: |
           python3 - <<'PY'
@@ -25,7 +26,7 @@ jobs:
           PY
       - name: Install and targeted acceptance
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm run build
           npx playwright test tests/uat/cf-092-scheduled-jobs-config-contract.spec.mjs --project=chromium-desktop
       - name: Commit cleanup and remove helper
@@ -33,6 +34,8 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin feature/m245-scheduled-jobs-config-20260910
+          git merge --ff-only origin/feature/m245-scheduled-jobs-config-20260910
           rm .github/workflows/cf092-final-source-acceptance.yml
           git add -A
           git commit -m 'CF-092 close Administration scheduling footprint'
