@@ -27,7 +27,9 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   expect(workspace).toContain('const generation=++loadGeneration.current')
   expect(workspace).toContain('if(generation!==loadGeneration.current)return')
   expect(workspace).toContain('if(generation===loadGeneration.current)setBusy(false)')
-  expect(workspace).toContain('const loadPanels=async()=>')
+  expect(workspace).toContain('const panelGeneration=useRef(0)')
+  expect(workspace).toContain('const loadPanels=async()=>{const generation=++panelGeneration.current')
+  expect(workspace).toContain('if(generation!==panelGeneration.current)return')
   expect(workspace).toContain('Promise.allSettled')
   expect(workspace).toContain('const policyResponse=await supabase.rpc')
   expect(workspace).toContain('if(page>maxPage){await load(maxPage,search);return}')
@@ -65,6 +67,7 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
    expect(sql).toContain('security.scheduler_actor_display(p.owner_user_id)')
    expect(sql).toContain('security.scheduler_actor_display(p.created_by)')
   }
+  expect(replayFinalizer).toContain("lower(replace(coalesce(lp.domain,''),'_',' ')) like")
   expect(css).toContain('cf-scheduler-v2__sticky-actions')
  })
 })
