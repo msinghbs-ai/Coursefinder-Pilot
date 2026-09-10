@@ -1,0 +1,1 @@
+Implementation acceptance will follow the governed targeted sequence in coursefinder-admin CF-093. This file is temporary branch-local coordination and should be folded into permanent release/governance records before merge.
