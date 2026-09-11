@@ -46,12 +46,9 @@ jobs:
           changelog=changelog.replace('# Changelog\n','# Changelog\n'+cEntry)
           fs.writeFileSync('CHANGELOG.md',changelog)
 
-          for(const path of ['package.json','package-lock.json']){
-            const obj=JSON.parse(fs.readFileSync(path,'utf8'))
-            obj.version='0.1.5'
-            if(obj.packages?.[''])obj.packages[''].version='0.1.5'
-            fs.writeFileSync(path,JSON.stringify(obj,null,2)+'\n')
-          }
+          const pkg=JSON.parse(fs.readFileSync('package.json','utf8'))
+          pkg.version='0.1.5'
+          fs.writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n')
 
           const releaseTest=`import {test,expect} from '@playwright/test'\nimport fs from 'node:fs'\n\ntest('v2.15.78 is canonical while v2.15.77, v2.15.76 and v2.15.75 remain retained in release history',()=>{\n  const history=fs.readFileSync('src/pim-version-entry.js','utf8')\n  const shell=fs.readFileSync('src/mature-main.jsx','utf8')\n  const current=fs.readFileSync('src/release-currentness-entry.js','utf8')\n  const html=fs.readFileSync('index.html','utf8')\n\n  expect(history).toContain(\"const VERSION='2.15.78'\")\n  expect(history).toContain(\"{version:'2.15.78'\")\n  expect(history).toContain(\"{version:'2.15.77'\")\n  expect(history).toContain(\"{version:'2.15.76'\")\n  expect(history).toContain(\"{version:'2.15.75'\")\n  expect(history).toContain(\"title:'QS ranking duplicate cleanup and 2026/2027 acquisition correction'\")\n  expect(history).toContain(\"bugFixes:['Fixed duplicate QS edition rows in Sources & Imports\")\n  expect(history.indexOf(\"{version:'2.15.78'\")).toBeLessThan(history.indexOf(\"{version:'2.15.77'\"))\n  expect(history.indexOf(\"{version:'2.15.77'\")).toBeLessThan(history.indexOf(\"{version:'2.15.76'\"))\n  expect(history.indexOf(\"{version:'2.15.76'\")).toBeLessThan(history.indexOf(\"{version:'2.15.75'\"))\n  expect(history.indexOf(\"{version:'2.15.75'\")).toBeLessThan(history.indexOf(\"{version:'2.15.74'\"))\n  expect(shell).toContain(\"const UI_VERSION='2.15.78'\")\n  expect(current).toContain(\"const VERSION='2.15.78'\")\n  expect(html).toContain('<title>Coursefinder PIM Admin v2.15.78</title>')\n})\n`
           fs.writeFileSync('tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs',releaseTest)
@@ -66,7 +63,7 @@ jobs:
           rm .github/workflows/cf093-release-sync-once.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add CHANGELOG.md package.json package-lock.json index.html src/mature-main.jsx src/pim-version-entry.js src/release-currentness-entry.js tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs tests/uat/cf-097-ranking-workflow-history-deployed.spec.mjs .github/workflows/cf093-release-sync-once.yml
+          git add CHANGELOG.md package.json index.html src/mature-main.jsx src/pim-version-entry.js src/release-currentness-entry.js tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs tests/uat/cf-097-ranking-workflow-history-deployed.spec.mjs .github/workflows/cf093-release-sync-once.yml
           git diff --cached --check
           git commit -m 'CF-093 synchronise v2.15.78 release currentness'
           git push origin HEAD:release/cf093-v2.15.78-20260911
