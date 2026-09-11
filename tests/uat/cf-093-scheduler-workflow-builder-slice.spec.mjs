@@ -12,6 +12,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  const secondPass=read('supabase/migrations/20260911023721_cf_093_scheduler_workflow_codex_second_pass.sql')
  const thirdPass=read('supabase/migrations/20260911025332_cf_093_scheduler_workflow_codex_third_pass.sql')
  const fourthPass=read('supabase/migrations/20260911031554_cf_093_scheduler_workflow_codex_fourth_pass.sql')
+ const policyQualification=read('supabase/migrations/20260911052952_cf_093_scheduler_execution_policy_qualification.sql')
 
  expect(index).toContain('/src/scheduler-workflow-builder-entry.jsx')
  expect(ui).toContain("const WORKFLOW_KEY='course_facts_l2'")
@@ -69,6 +70,17 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(fourthPass).toContain("Layer 2 runnable scope changed during dispatch; preview again before dispatch")
  expect(fourthPass).toContain("security.current_role_rank() < 4")
  expect(fourthPass).toContain("v_mode <> 'acquisition_only'")
+
+ // Nominated queueable acceptance exposed profiles that were valid/current but
+ // lacked the execution policy required by layer2_run_batch_create. Fail closed
+ // at preview and re-check immediately before dispatch.
+ expect(policyQualification).toContain("scheduler_workflow_execution_policy_gap_count_v1")
+ expect(policyQualification).toContain("pipeline.layer2_execution_policies")
+ expect(policyQualification).toContain("count(*) filter (where sc.source_url is null)=0")
+ expect(policyQualification).toContain("'missing_execution_policy_count',v_policy_gaps")
+ expect(policyQualification).toContain("fully queueable Layer 2 profiles in this scope do not have an execution policy")
+ expect(policyQualification).toContain("Layer 2 execution policy qualification changed after preview")
+ expect(policyQualification).toContain("revoke all on function security.scheduler_workflow_execution_policy_gap_count_v1")
 })
 
 test('CF-093 builder preserves server preview-before-dispatch, rank gate and dispatch race safety',()=>{
