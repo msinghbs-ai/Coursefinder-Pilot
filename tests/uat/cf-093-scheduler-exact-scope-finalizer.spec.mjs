@@ -7,6 +7,7 @@ const runtimeFinalizer=fs.readFileSync('supabase/migrations/20260911103931_cf_09
 const bridgeScopeFinalizer=fs.readFileSync('supabase/migrations/20260911105517_cf_093_scheduler_browser_bridge_and_scope_binding_finalizer.sql','utf8')
 const queryIpv4Finalizer=fs.readFileSync('supabase/migrations/20260911111431_cf_093_scheduler_query_binding_and_ipv4_finalizer.sql','utf8')
 const discoveryFailClosedFinalizer=fs.readFileSync('supabase/migrations/20260911114056_cf_093_scheduler_discovery_failclosed_and_runtime_parser_finalizer.sql','utf8')
+const operatorRouteFinalizer=fs.readFileSync('supabase/migrations/20260911115830_cf_093_scheduler_operator_reason_and_route_chain_finalizer.sql','utf8')
 
 test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex runtime gaps',()=>{
  expect(sql).toContain('scheduler_workflow_scope_snapshot_v2')
@@ -62,6 +63,15 @@ test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex r
  expect(discoveryFailClosedFinalizer).toContain('jsonb_build_array(')
  expect(discoveryFailClosedFinalizer).toContain("where s.source_url is null")
  expect(discoveryFailClosedFinalizer).toContain('scheduler_workflow_queueable_url_allowed_v1')
+
+ expect(operatorRouteFinalizer).toContain("select distinct security.scheduler_workflow_https_host_v1(raw) host")
+ expect(operatorRouteFinalizer).not.toContain("replace(raw,'{query}','x')")
+ expect(operatorRouteFinalizer).toContain("coalesce(b.fallback_on,'[]'::jsonb) ? 'blocked'")
+ expect(operatorRouteFinalizer).toContain('b.priority<=c.priority')
+ expect(operatorRouteFinalizer).toContain("'unsupported_discovery_count',v_unsupported_discovery")
+ expect(operatorRouteFinalizer).toContain('Scheduled Tasks intentionally does not execute until Preview-bound discovery inputs are carried and verified')
+ expect(operatorRouteFinalizer).toContain('configured route order and fallback policy')
+ expect(operatorRouteFinalizer).toContain('same literal URL-reference semantics as the acquisition worker')
 
  expect(sql).toContain("v_workflow <> 'course_facts_l2'")
  expect(sql).toContain("only AU Layer 2 Course Facts is currently authorised for this builder")
