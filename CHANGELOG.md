@@ -2,6 +2,7 @@
 
 ## 0.1.4 — 11 Sep 2026
 
+- Published visible PIM Admin release **v2.15.77** after CF-093 functional merge/deployed acceptance; retained v2.15.76 as canonical prior release history and left the separate target-builder/processing-mode/run-preview scope explicitly open.
 - Began CF-093 Scheduled Workflow Orchestrator on top of the accepted v2.15.76 scheduler baseline.
 - Added human-readable scheduled-task/source labels while retaining policy/source/profile UUIDs as secondary technical identifiers.
 - Added task search across dataset, country, target, creator, owner and technical identifiers.
