@@ -7,6 +7,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  const index=read('index.html')
  const ui=read('src/scheduler-workflow-builder-entry.jsx')
  const migration=read('supabase/migrations/20260911021144_cf_093_scheduler_workflow_builder_slice.sql')
+ const aclFix=read('supabase/migrations/20260911021847_cf_093_scheduler_workflow_bridge_acl_fix.sql')
 
  expect(index).toContain('/src/scheduler-workflow-builder-entry.jsx')
  expect(ui).toContain("const WORKFLOW_KEY='course_facts_l2'")
@@ -25,9 +26,16 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(migration).toContain("Conditional Layer 3/L4 orchestration is not yet qualified")
  expect(migration).toContain("Country/state schedules are not advertised")
  expect(migration).toContain("language sql\nsecurity invoker")
- expect(migration).toContain("revoke all on function security.scheduler_workflow_run_now_v1_browser_bridge")
  expect(migration).toContain("grant execute on function public.scheduler_workflow_run_now_v1")
- expect(migration).not.toContain("grant execute on function security.scheduler_workflow_run_now_v1_browser_bridge")
+
+ // SECURITY INVOKER wrappers must have a callable private bridge, while the bridge
+ // independently enforces auth.uid + rank. This is the governed CF-239 prevention rule.
+ expect(aclFix).toContain("grant execute on function security.scheduler_workflow_scope_options_v1_browser_bridge")
+ expect(aclFix).toContain("grant execute on function security.scheduler_workflow_preview_v1_browser_bridge")
+ expect(aclFix).toContain("grant execute on function security.scheduler_workflow_run_now_v1_browser_bridge")
+ expect(aclFix).toContain("to authenticated")
+ expect(aclFix).toContain("from anon")
+ expect(aclFix).not.toContain("to anon")
 })
 
 test('CF-093 builder preserves explicit preview-before-dispatch and follow-through semantics',()=>{
