@@ -1,0 +1,129 @@
+import{test,expect}from'@playwright/test'
+import fs from'node:fs'
+
+const read=p=>fs.readFileSync(p,'utf8')
+
+test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Facts slice',()=>{
+ const index=read('index.html')
+ const ui=read('src/scheduler-workflow-builder-entry.jsx')
+ const migration=read('supabase/migrations/20260911021144_cf_093_scheduler_workflow_builder_slice.sql')
+ const aclFix=read('supabase/migrations/20260911021847_cf_093_scheduler_workflow_bridge_acl_fix.sql')
+ const previewFix=read('supabase/migrations/20260911022312_cf_093_scheduler_workflow_preview_token_idempotency.sql')
+ const secondPass=read('supabase/migrations/20260911023721_cf_093_scheduler_workflow_codex_second_pass.sql')
+ const thirdPass=read('supabase/migrations/20260911025332_cf_093_scheduler_workflow_codex_third_pass.sql')
+ const fourthPass=read('supabase/migrations/20260911031554_cf_093_scheduler_workflow_codex_fourth_pass.sql')
+ const policyQualification=read('supabase/migrations/20260911052952_cf_093_scheduler_execution_policy_qualification.sql')
+ const fifthPass=read('supabase/migrations/20260911065626_cf_093_scheduler_policy_and_scope_limit_qualification.sql')
+
+ expect(index).toContain('/src/scheduler-workflow-builder-entry.jsx')
+ expect(ui).toContain("const WORKFLOW_KEY='course_facts_l2'")
+ expect(ui).toContain("const AU='AU'")
+ expect(ui).toContain("scheduler_workflow_scope_options_v1")
+ expect(ui).toContain("scheduler_workflow_preview_v1")
+ expect(ui).toContain("scheduler_workflow_run_now_v2")
+ expect(ui).not.toContain("scheduler_workflow_run_now_v1',{p_workflow_key")
+ expect(ui).toContain("p_preview_token:preview.preview_token")
+ expect(ui).toContain("Preview governed scope")
+ expect(ui).toContain("Run acquisition + deterministic Layer 2")
+ expect(ui).toContain("Automatic L2 → conditional L3/L4 and Evidence reprocessing remain disabled here")
+ expect(ui).not.toContain("refresh_policy_upsert_v2")
+
+ expect(migration).toContain("security.current_role_rank() < 4")
+ expect(migration).toContain("only AU Layer 2 Course Facts is currently authorised for this builder")
+ expect(migration).toContain("v_mode <> 'acquisition_only'")
+ expect(migration).toContain("Conditional Layer 3/L4 orchestration is not yet qualified")
+ expect(migration).toContain("Country/state schedules are not advertised")
+ expect(migration).toContain("language sql\nsecurity invoker")
+
+ expect(aclFix).toContain("grant execute on function security.scheduler_workflow_scope_options_v1_browser_bridge")
+ expect(aclFix).toContain("grant execute on function security.scheduler_workflow_preview_v1_browser_bridge")
+ expect(aclFix).toContain("to authenticated")
+ expect(aclFix).toContain("from anon")
+ expect(aclFix).not.toContain("to anon")
+
+ expect(previewFix).toContain("revoke all on function public.scheduler_workflow_run_now_v1")
+ expect(previewFix).toContain("create or replace function public.scheduler_workflow_run_now_v2")
+ expect(previewFix).toContain("p_preview_token uuid")
+ expect(previewFix).toContain("preview token does not match the exact requested workflow target")
+ expect(previewFix).toContain("previewed scope has no executable Layer 2 work")
+ expect(previewFix).toContain("pg_advisory_xact_lock")
+ expect(previewFix).toContain("idempotent_replay")
+ expect(previewFix).toContain("existing_recent_dispatch")
+
+ expect(secondPass).toContain("country scope must not include a scope id")
+ expect(secondPass).toContain("pv.validation_status<>'valid'")
+ expect(secondPass).toContain("Layer 2 profile qualification changed after preview")
+ expect(secondPass).toContain("(j.payload->>'consumed_at')::timestamptz >= now()-interval '10 minutes'")
+ expect(secondPass).not.toContain("j.created_at >= now()-interval '10 minutes'")
+
+ expect(thirdPass).toContain("v_live_preview:=public.layer2_operator_scope_service(v_actor,'preview'")
+ expect(thirdPass).toContain("Layer 2 runnable scope changed after preview; preview again before dispatch")
+ expect(thirdPass).toContain("security.current_role_rank() < 4")
+ expect(thirdPass).toContain("v_mode <> 'acquisition_only'")
+
+ // Fourth pass keeps preview ownership actor-bound but makes recent exact-scope
+ // dispatch dedupe operator-independent, and rejects an empty start atomically.
+ expect((fourthPass.match(/and j\.requested_by=v_actor/g)||[])).toHaveLength(1)
+ expect(fourthPass).toContain("j.id=p_preview_token")
+ expect(fourthPass).toContain("j.job_type='scheduler_workflow_preview'")
+ expect(fourthPass).toContain("v_result:=public.layer2_operator_scope_service(v_actor,'start'")
+ expect(fourthPass).toContain("jsonb_array_length(coalesce(v_result->'profiles','[]'::jsonb))=0")
+ expect(fourthPass).toContain("Layer 2 runnable scope changed during dispatch; preview again before dispatch")
+ expect(fourthPass).toContain("security.current_role_rank() < 4")
+ expect(fourthPass).toContain("v_mode <> 'acquisition_only'")
+
+ // Queueable acceptance exposed a valid/current profile without the execution
+ // policy required by layer2_run_batch_create. This first qualification pass
+ // established the fail-closed policy surface.
+ expect(policyQualification).toContain("scheduler_workflow_execution_policy_gap_count_v1")
+ expect(policyQualification).toContain("pipeline.layer2_execution_policies")
+ expect(policyQualification).toContain("'missing_execution_policy_count',v_policy_gaps")
+ expect(policyQualification).toContain("Layer 2 execution policy qualification changed after preview")
+ expect(policyQualification).toContain("revoke all on function security.scheduler_workflow_execution_policy_gap_count_v1")
+
+ // Codex fifth-pass reconciliation extends policy qualification to every
+ // discovery-backed profile because successful discovery auto-syncs into the
+ // deterministic Layer 2 batch service. It also fails closed before dispatch
+ // when one profile would exceed the existing 1,000-course downstream limit.
+ expect(fifthPass).toContain("having not exists")
+ expect(fifthPass).not.toContain("count(*) filter (where sc.source_url is null)=0")
+ expect(fifthPass).toContain("scheduler_workflow_oversized_profile_count_v1")
+ expect(fifthPass).toContain("having count(*) > 1000")
+ expect(fifthPass).toContain("'oversized_profile_count',v_oversized_profiles")
+ expect(fifthPass).toContain("execution policy required by deterministic Layer 2 processing")
+ expect(fifthPass).toContain("exceed the current 1,000-course dispatch contract")
+ expect(fifthPass).toContain("Layer 2 scope exceeds the current 1,000-course per-profile dispatch contract")
+ expect(fifthPass).toContain("security.current_role_rank() < 4")
+ expect(fifthPass).toContain("v_mode <> 'acquisition_only'")
+})
+
+test('CF-093 builder preserves server preview-before-dispatch, rank gate and dispatch race safety',()=>{
+ const ui=read('src/scheduler-workflow-builder-entry.jsx')
+ const previewFix=read('supabase/migrations/20260911022312_cf_093_scheduler_workflow_preview_token_idempotency.sql')
+
+ expect(ui).toContain("if(!preview?.preview_token){setError('Preview the governed scope before running it.')")
+ expect(ui).toContain("preview?.executable!==true")
+ expect(ui).toContain("execution_block_reason")
+ expect(ui).toContain("governance reason of at least 5 characters")
+ expect(ui).toContain("location.hash='#jobs'")
+ expect(ui).toContain("location.hash='#evidence'")
+ expect(ui).toContain("previewGeneration=useRef(0)")
+ expect(ui).toContain("setPreviewBusy(false)")
+ expect(ui).toContain("setDispatchBusy(true)")
+ expect(ui).toContain("setDispatchBusy(false)")
+ expect(ui).toContain("const locked=dispatchBusy||!operator")
+ expect(ui).toContain("const operator=contextLoaded&&rank>=4")
+ expect(ui).toContain("Pipeline Operator rank 4 or higher is required")
+ expect(ui).toContain("api.context()")
+ expect(ui).toContain("if(generation!==previewGeneration.current)return")
+ expect(ui).toContain("optionGeneration=useRef(0)")
+ expect(ui).toContain("const changeUniversityQuery=value=>{if(dispatchBusy)return;")
+ expect(ui).toContain("Existing recent governed dispatch reused")
+ expect(ui).toContain("Follow Jobs/Evidence for underlying work status")
+
+ expect(previewFix).toContain("'scheduler_workflow_preview','course_facts','completed'")
+ expect(previewFix).toContain("'expires_at',now()+interval '15 minutes'")
+ expect(previewFix).toContain("'change_control_ref','CF-CHG-20260910-093'")
+ expect(previewFix).toContain("public.layer2_operator_scope_service(v_actor,'start'")
+ expect(previewFix).not.toContain("'scheduler_workflow_run','course_facts','completed'")
+})
