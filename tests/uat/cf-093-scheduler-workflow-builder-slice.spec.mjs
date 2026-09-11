@@ -11,6 +11,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  const previewFix=read('supabase/migrations/20260911022312_cf_093_scheduler_workflow_preview_token_idempotency.sql')
  const secondPass=read('supabase/migrations/20260911023721_cf_093_scheduler_workflow_codex_second_pass.sql')
  const thirdPass=read('supabase/migrations/20260911025332_cf_093_scheduler_workflow_codex_third_pass.sql')
+ const fourthPass=read('supabase/migrations/20260911031554_cf_093_scheduler_workflow_codex_fourth_pass.sql')
 
  expect(index).toContain('/src/scheduler-workflow-builder-entry.jsx')
  expect(ui).toContain("const WORKFLOW_KEY='course_facts_l2'")
@@ -57,6 +58,17 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(thirdPass).toContain("Layer 2 runnable scope changed after preview; preview again before dispatch")
  expect(thirdPass).toContain("security.current_role_rank() < 4")
  expect(thirdPass).toContain("v_mode <> 'acquisition_only'")
+
+ // Fourth pass keeps preview ownership actor-bound but makes recent exact-scope
+ // dispatch dedupe operator-independent, and rejects an empty start atomically.
+ expect((fourthPass.match(/and j\.requested_by=v_actor/g)||[])).toHaveLength(1)
+ expect(fourthPass).toContain("j.id=p_preview_token")
+ expect(fourthPass).toContain("j.job_type='scheduler_workflow_preview'")
+ expect(fourthPass).toContain("v_result:=public.layer2_operator_scope_service(v_actor,'start'")
+ expect(fourthPass).toContain("jsonb_array_length(coalesce(v_result->'profiles','[]'::jsonb))=0")
+ expect(fourthPass).toContain("Layer 2 runnable scope changed during dispatch; preview again before dispatch")
+ expect(fourthPass).toContain("security.current_role_rank() < 4")
+ expect(fourthPass).toContain("v_mode <> 'acquisition_only'")
 })
 
 test('CF-093 builder preserves server preview-before-dispatch, rank gate and dispatch race safety',()=>{
