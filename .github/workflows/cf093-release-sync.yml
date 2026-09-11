@@ -1,0 +1,69 @@
+name: CF-093 Release Sync
+
+on:
+  push:
+    branches:
+      - release/cf093-v2.15.77-20260911
+    paths:
+      - '.github/workflows/cf093-release-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/cf093-v2.15.77-20260911
+      - name: Synchronise governed v2.15.77 release surfaces
+        shell: python
+        run: |
+          from pathlib import Path
+
+          shell = Path('src/mature-main.jsx')
+          s = shell.read_text()
+          old = "const UI_VERSION='2.15.76'"
+          assert old in s, 'expected v2.15.76 UI_VERSION baseline missing'
+          shell.write_text(s.replace(old, "const UI_VERSION='2.15.77'", 1))
+
+          history = Path('src/pim-version-entry.js')
+          s = history.read_text()
+          assert "const VERSION='2.15.76'" in s
+          assert "{version:'2.15.77'" not in s
+          s = s.replace("const VERSION='2.15.76'", "const VERSION='2.15.77'", 1)
+          anchor = "const RELEASES=[\n"
+          release = "  {version:'2.15.77',date:'11 Sep 2026',title:'Scheduled Tasks operator catalogue and search hardening',changes:['Scheduled Tasks now presents human-readable task/source labels while retaining technical identifiers for support and audit.','Task search covers dataset, country, target, creator, owner and technical identifiers with query-before-pagination semantics.','Per-user column visibility and ordering are retained separately from governed scheduler execution policy.','Creator and owner attribution remains intelligible when accounts are disabled or removed, while system/legacy schedules remain explicitly identified.','The accepted CF-093 functional candidate preserves existing scheduler authority, exact bounded execution, Layer 3 Evidence/profile/model governance and Jobs/Evidence lineage.'],bugFixes:['Sequenced policy and supporting-panel reads so stale responses cannot overwrite newer scheduler state.','Preserved literal percent/underscore search behaviour while supporting both raw dataset domains such as course_facts and humanised labels such as Course Facts.','Preserved profile identity when source and profile IDs coexist and refreshed queue/Jobs/context after successful on-demand runs.','Aligned repository migration history with the exact Pilot-applied CF-093 identities without using migration-history repair or --include-all.','Retained explicit supporting-panel failure states and former-user rendered-label search semantics.']},\n"
+          assert anchor in s
+          history.write_text(s.replace(anchor, anchor + release, 1))
+
+          test = Path('tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs')
+          s = test.read_text()
+          s = s.replace("test('v2.15.76 is canonical while v2.15.75 remains retained in release history'", "test('v2.15.77 is canonical while v2.15.76 and v2.15.75 remain retained in release history'", 1)
+          s = s.replace("expect(history).toContain(\"const VERSION='2.15.76'\")", "expect(history).toContain(\"const VERSION='2.15.77'\")\n  expect(history).toContain(\"{version:'2.15.76'\")", 1)
+          s = s.replace("expect(history).toContain(\"{version:'2.15.76'\")\n  expect(history.indexOf(\"{version:'2.15.76'\")).toBeLessThan(history.indexOf(\"{version:'2.15.75'\"))", "expect(history).toContain(\"{version:'2.15.77'\")\n  expect(history.indexOf(\"{version:'2.15.77'\")).toBeLessThan(history.indexOf(\"{version:'2.15.76'\"))\n  expect(history.indexOf(\"{version:'2.15.76'\")).toBeLessThan(history.indexOf(\"{version:'2.15.75'\"))", 1)
+          s = s.replace("expect(shell).toContain(\"const UI_VERSION='2.15.76'\")", "expect(shell).toContain(\"const UI_VERSION='2.15.77'\")", 1)
+          s = s.replace("expect(current).toContain(\"const VERSION='2.15.76'\")", "expect(current).toContain(\"const VERSION='2.15.77'\")", 1)
+          s = s.replace("expect(html).toContain('<title>Coursefinder PIM Admin v2.15.76</title>')", "expect(html).toContain('<title>Coursefinder PIM Admin v2.15.77</title>')", 1)
+          test.write_text(s)
+
+          changelog = Path('CHANGELOG.md')
+          s = changelog.read_text()
+          marker = "## 0.1.4 — 11 Sep 2026\n\n"
+          bullet = "- Published visible PIM Admin release **v2.15.77** after CF-093 functional merge/deployed acceptance; retained v2.15.76 as canonical prior release history and left the separate target-builder/processing-mode/run-preview scope explicitly open.\n"
+          assert marker in s
+          if bullet not in s:
+              s = s.replace(marker, marker + bullet, 1)
+          changelog.write_text(s)
+
+          workflow = Path('.github/workflows/cf093-release-sync.yml')
+          workflow.unlink()
+      - name: Commit synchronized release metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "CF-093 synchronise v2.15.77 release history"
+          git push origin HEAD:release/cf093-v2.15.77-20260911
