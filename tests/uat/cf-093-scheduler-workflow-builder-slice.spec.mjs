@@ -10,6 +10,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  const aclFix=read('supabase/migrations/20260911021847_cf_093_scheduler_workflow_bridge_acl_fix.sql')
  const previewFix=read('supabase/migrations/20260911022312_cf_093_scheduler_workflow_preview_token_idempotency.sql')
  const secondPass=read('supabase/migrations/20260911023721_cf_093_scheduler_workflow_codex_second_pass.sql')
+ const thirdPass=read('supabase/migrations/20260911025332_cf_093_scheduler_workflow_codex_third_pass.sql')
 
  expect(index).toContain('/src/scheduler-workflow-builder-entry.jsx')
  expect(ui).toContain("const WORKFLOW_KEY='course_facts_l2'")
@@ -51,9 +52,14 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(secondPass).toContain("Layer 2 profile qualification changed after preview")
  expect(secondPass).toContain("(j.payload->>'consumed_at')::timestamptz >= now()-interval '10 minutes'")
  expect(secondPass).not.toContain("j.created_at >= now()-interval '10 minutes'")
+
+ expect(thirdPass).toContain("v_live_preview:=public.layer2_operator_scope_service(v_actor,'preview'")
+ expect(thirdPass).toContain("Layer 2 runnable scope changed after preview; preview again before dispatch")
+ expect(thirdPass).toContain("security.current_role_rank() < 4")
+ expect(thirdPass).toContain("v_mode <> 'acquisition_only'")
 })
 
-test('CF-093 builder preserves server preview-before-dispatch, stale-state guards and truthful follow-through',()=>{
+test('CF-093 builder preserves server preview-before-dispatch, rank gate and dispatch race safety',()=>{
  const ui=read('src/scheduler-workflow-builder-entry.jsx')
  const previewFix=read('supabase/migrations/20260911022312_cf_093_scheduler_workflow_preview_token_idempotency.sql')
 
@@ -64,10 +70,16 @@ test('CF-093 builder preserves server preview-before-dispatch, stale-state guard
  expect(ui).toContain("location.hash='#jobs'")
  expect(ui).toContain("location.hash='#evidence'")
  expect(ui).toContain("previewGeneration=useRef(0)")
- expect(ui).toContain("const invalidatePreview=()=>{previewGeneration.current+=1;setPreview(null);setMessage('');setBusy(false)}")
+ expect(ui).toContain("setPreviewBusy(false)")
+ expect(ui).toContain("setDispatchBusy(true)")
+ expect(ui).toContain("setDispatchBusy(false)")
+ expect(ui).toContain("const locked=dispatchBusy||!operator")
+ expect(ui).toContain("const operator=contextLoaded&&rank>=4")
+ expect(ui).toContain("Pipeline Operator rank 4 or higher is required")
+ expect(ui).toContain("api.context()")
  expect(ui).toContain("if(generation!==previewGeneration.current)return")
  expect(ui).toContain("optionGeneration=useRef(0)")
- expect(ui).toContain("const changeUniversityQuery=value=>{setUniversityQuery(value);if(scopeId)setScopeId('')}")
+ expect(ui).toContain("const changeUniversityQuery=value=>{if(dispatchBusy)return;")
  expect(ui).toContain("Existing recent governed dispatch reused")
  expect(ui).toContain("Follow Jobs/Evidence for underlying work status")
 
