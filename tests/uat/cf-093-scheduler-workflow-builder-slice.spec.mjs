@@ -14,6 +14,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  const fourthPass=read('supabase/migrations/20260911031554_cf_093_scheduler_workflow_codex_fourth_pass.sql')
  const policyQualification=read('supabase/migrations/20260911052952_cf_093_scheduler_execution_policy_qualification.sql')
  const fifthPass=read('supabase/migrations/20260911065626_cf_093_scheduler_policy_and_scope_limit_qualification.sql')
+ const postmergeFinalizer=read('supabase/migrations/20260911085724_cf_093_scheduler_postmerge_codex_finalizer.sql')
 
  expect(index).toContain('/src/scheduler-workflow-builder-entry.jsx')
  expect(ui).toContain("const WORKFLOW_KEY='course_facts_l2'")
@@ -61,8 +62,6 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(thirdPass).toContain("security.current_role_rank() < 4")
  expect(thirdPass).toContain("v_mode <> 'acquisition_only'")
 
- // Fourth pass keeps preview ownership actor-bound but makes recent exact-scope
- // dispatch dedupe operator-independent, and rejects an empty start atomically.
  expect((fourthPass.match(/and j\.requested_by=v_actor/g)||[])).toHaveLength(1)
  expect(fourthPass).toContain("j.id=p_preview_token")
  expect(fourthPass).toContain("j.job_type='scheduler_workflow_preview'")
@@ -72,19 +71,12 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(fourthPass).toContain("security.current_role_rank() < 4")
  expect(fourthPass).toContain("v_mode <> 'acquisition_only'")
 
- // Queueable acceptance exposed a valid/current profile without the execution
- // policy required by layer2_run_batch_create. This first qualification pass
- // established the fail-closed policy surface.
  expect(policyQualification).toContain("scheduler_workflow_execution_policy_gap_count_v1")
  expect(policyQualification).toContain("pipeline.layer2_execution_policies")
  expect(policyQualification).toContain("'missing_execution_policy_count',v_policy_gaps")
  expect(policyQualification).toContain("Layer 2 execution policy qualification changed after preview")
  expect(policyQualification).toContain("revoke all on function security.scheduler_workflow_execution_policy_gap_count_v1")
 
- // Codex fifth-pass reconciliation extends policy qualification to every
- // discovery-backed profile because successful discovery auto-syncs into the
- // deterministic Layer 2 batch service. It also fails closed before dispatch
- // when one profile would exceed the existing 1,000-course downstream limit.
  expect(fifthPass).toContain("having not exists")
  expect(fifthPass).not.toContain("count(*) filter (where sc.source_url is null)=0")
  expect(fifthPass).toContain("scheduler_workflow_oversized_profile_count_v1")
@@ -95,6 +87,27 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(fifthPass).toContain("Layer 2 scope exceeds the current 1,000-course per-profile dispatch contract")
  expect(fifthPass).toContain("security.current_role_rank() < 4")
  expect(fifthPass).toContain("v_mode <> 'acquisition_only'")
+
+ // Post-merge Codex finalizer preserves the narrow authority boundary while
+ // proving exact profile membership, acquisition/discovery readiness, stable
+ // dispatch timestamps, and identical state option/execution semantics.
+ expect(postmergeFinalizer).toContain("scheduler_workflow_profile_ids_v1")
+ expect(postmergeFinalizer).toContain("scheduler_workflow_route_gap_count_v1")
+ expect(postmergeFinalizer).toContain("scheduler_workflow_discovery_config_gap_count_v1")
+ expect(postmergeFinalizer).toContain("r.enabled=true and ap.enabled=true")
+ expect(postmergeFinalizer).toContain("discovery_strategy,catalogue_url")
+ expect(postmergeFinalizer).toContain("discovery_strategy,search_url_template")
+ expect(postmergeFinalizer).toContain("'missing_acquisition_route_count',v_route_gaps")
+ expect(postmergeFinalizer).toContain("'missing_discovery_config_count',v_discovery_config_gaps")
+ expect(postmergeFinalizer).toContain("'profile_ids',to_jsonb(v_profile_ids)")
+ expect(postmergeFinalizer).toContain("layer2_scope_courses(v_country,'state',sd.id)")
+ expect(postmergeFinalizer).toContain("v_live_profiles<>v_preview_profiles")
+ expect(postmergeFinalizer).toContain("v_started_profiles<>v_live_profiles")
+ expect(postmergeFinalizer).toContain("'deduplicated_at',now()")
+ expect(postmergeFinalizer).toContain("'consumed_at',now(),'dispatch_result'")
+ expect(postmergeFinalizer).toContain("v_mode <> 'acquisition_only'")
+ expect(postmergeFinalizer).toContain("Conditional Layer 3/L4 orchestration is not yet qualified")
+ expect(postmergeFinalizer).toContain("Country/state schedules are not advertised")
 })
 
 test('CF-093 builder preserves server preview-before-dispatch, rank gate and dispatch race safety',()=>{
