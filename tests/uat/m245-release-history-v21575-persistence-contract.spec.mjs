@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 
+// CF-093 release-currentness gate: canonical current release plus retained prior history.
 test('v2.15.77 is canonical while v2.15.76 and v2.15.75 remain retained in release history',()=>{
   const history=fs.readFileSync('src/pim-version-entry.js','utf8')
   const shell=fs.readFileSync('src/mature-main.jsx','utf8')
