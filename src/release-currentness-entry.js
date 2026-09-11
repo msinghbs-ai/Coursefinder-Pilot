@@ -1,21 +1,21 @@
-const VERSION='2.15.77'
+const VERSION='2.15.78'
 const RELEASE={
   version:VERSION,
   date:'11 Sep 2026',
-  title:'Scheduled Tasks operator catalogue and workflow control',
+  title:'Governed Scheduled Tasks target builder',
   changes:[
-    'Scheduled Tasks now presents human-readable task, dataset and target labels while retaining source, profile and entity IDs as secondary technical detail.',
-    'Operators can search scheduled work across dataset, country, target, creator, owner and technical identifiers before pagination.',
-    'Created By and Owner attribution remains intelligible when an account is removed or disabled, while system and legacy schedules remain explicitly non-human.',
-    'Personal column visibility and ordering are retained per operator without changing governed execution policy.',
-    'Run on demand remains bounded to executable Layer 1–2 policies; Layer 3 continues through its Evidence/profile/model-qualified control path.'
+    'Scheduled Tasks adds a server-authorised target builder for AU Course Facts enrichment with Country, State/Territory and University/Provider scopes.',
+    'Every consequential run requires a same-actor server preview receipt bound to the exact workflow, target and acquisition-only processing mode before dispatch.',
+    'Layer 2 dispatch now fails closed unless scoped profiles have valid current versions, governed execution policies and remain within the supported per-profile scope limit.',
+    'Exact-scope dispatch is serialised and deduplicated across operators while preview-token ownership remains actor-bound.',
+    'Jobs and Evidence remain the authoritative follow-through for underlying work; automatic generic Layer 3/Layer 4 orchestration, Evidence reprocessing and recurring scope construction remain unavailable.'
   ],
   bugFixes:[
-    'Prevented stale debounced scheduler responses and supporting-panel refreshes from overwriting newer operator state.',
-    'Made refresh-queue targets distinguishable and preserved source-profile identity when a policy also carries a source ID.',
-    'Search now treats percent and underscore as literal text and matches both raw and humanised dataset labels.',
-    'Resolved Provider, Course, Campus and Scholarship entity targets to governed business labels where available.',
-    'Surfaced independent queue, context and Jobs read failures instead of presenting false empty operational state.'
+    'Prevented stale scope, university search and preview responses from authorising a different target or leaving the builder busy.',
+    'Retired the bypassable v1 target-builder run path and enforced preview-before-dispatch on the server.',
+    'Rejected country scopes carrying arbitrary target IDs and revalidated live runnable scope immediately before dispatch.',
+    'Measured duplicate suppression from actual dispatch time and rejected empty or unqualified starts atomically.',
+    'Preserved Layer 1 authority, Layer 3 Evidence/profile/model governance, Layer 4 human resolution and separate Search/Publication admission boundaries.'
   ]
 }
 let pending=false
