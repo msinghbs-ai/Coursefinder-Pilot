@@ -4,6 +4,7 @@ import fs from'node:fs'
 const sql=fs.readFileSync('supabase/migrations/20260911095142_cf_093_scheduler_exact_scope_codex_finalizer.sql','utf8')
 const routeFinalizer=fs.readFileSync('supabase/migrations/20260911095420_cf_093_scheduler_runtime_route_credential_finalizer.sql','utf8')
 const runtimeFinalizer=fs.readFileSync('supabase/migrations/20260911103931_cf_093_scheduler_runtime_semantics_finalizer.sql','utf8')
+const bridgeScopeFinalizer=fs.readFileSync('supabase/migrations/20260911105517_cf_093_scheduler_browser_bridge_and_scope_binding_finalizer.sql','utf8')
 
 test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex runtime gaps',()=>{
  expect(sql).toContain('scheduler_workflow_scope_snapshot_v2')
@@ -37,6 +38,15 @@ test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex r
  expect(runtimeFinalizer).toContain("v_post_snapshot:=security.scheduler_workflow_scope_snapshot_v2")
  expect(runtimeFinalizer).toContain("coalesce(v_post_snapshot->>'scope_fingerprint','')<>v_preview_fingerprint")
  expect(runtimeFinalizer).toContain('Layer 2 dispatch did not start the exact previewed work for every profile')
+
+ expect(bridgeScopeFinalizer).toContain("v_match[1] ~ '^[0-9.]+$'")
+ expect(bridgeScopeFinalizer).toContain('v_octet>255')
+ expect(bridgeScopeFinalizer).toContain('current_version_id::text')
+ expect(bridgeScopeFinalizer).toContain("'<discover:'||coalesce(discovery_target,'')||'>'")
+ expect(bridgeScopeFinalizer).toContain("discovery_strategy,search_url_template")
+ expect(bridgeScopeFinalizer).toContain("discovery_strategy,catalogue_url")
+ expect(bridgeScopeFinalizer).toContain('grant execute on function security.scheduler_workflow_run_now_v2_browser_bridge(uuid,text,text,text,uuid,text,text) to authenticated')
+ expect(bridgeScopeFinalizer).toContain('revoke all on function security.scheduler_workflow_run_now_v2_browser_bridge(uuid,text,text,text,uuid,text,text) from public,anon')
 
  expect(sql).toContain("v_workflow <> 'course_facts_l2'")
  expect(sql).toContain("only AU Layer 2 Course Facts is currently authorised for this builder")
