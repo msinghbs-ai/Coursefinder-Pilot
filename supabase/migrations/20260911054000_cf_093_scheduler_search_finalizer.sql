@@ -4,8 +4,8 @@ begin;
 -- Fresh-replay finalizer. Earlier CF-093 migrations are already applied in Pilot under
 -- runtime-generated versions; on a clean repository replay this definition must run
 -- after scheduler_operator_attribution and codex_review_fixes so the final bridge keeps
--- literal search, canonical entity labels, resolved actor search semantics, and the
--- same humanised dataset-domain text presented by the operator UI.
+-- literal search, canonical entity labels, resolved actor search semantics, and both
+-- raw and humanised dataset-domain search text presented by the operator UI.
 
 create or replace function security.scheduler_policies_list_v1_browser_bridge(
   p_limit integer default 50,
@@ -40,6 +40,7 @@ begin
           or lower(coalesce(s.label,'')) like '%'||v_query||'%'
           or lower(coalesce(ps.label,'')) like '%'||v_query||'%'
           or lower(coalesce(lp.profile_key,'')) like '%'||v_query||'%'
+          or lower(coalesce(lp.domain,'')) like '%'||v_query||'%'
           or lower(replace(coalesce(lp.domain,''),'_',' ')) like '%'||v_query||'%'
           or lower(coalesce(lp.acquisition_method,'')) like '%'||v_query||'%'
           or lower(coalesce(p.country_code,'')) like '%'||v_query||'%'
@@ -49,7 +50,9 @@ begin
           or lower(coalesce(p.source_id::text,'')) like '%'||v_query||'%'
           or lower(coalesce(p.source_profile_id::text,'')) like '%'||v_query||'%'
           or lower(coalesce(p.created_by_display_snapshot,case when p.created_by is null then 'System / legacy' when exists(select 1 from auth.users au where au.id=p.created_by and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) then security.scheduler_actor_display(p.created_by) else 'Former user' end,'')) like '%'||v_query||'%'
+          or (p.created_by is not null and not exists(select 1 from auth.users au where au.id=p.created_by and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) and lower('Former user — '||coalesce(p.created_by_display_snapshot,security.scheduler_actor_display(p.created_by),'unknown')) like '%'||v_query||'%')
           or lower(coalesce(p.owner_display_snapshot,case when p.owner_user_id is null then null when exists(select 1 from auth.users au where au.id=p.owner_user_id and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) then security.scheduler_actor_display(p.owner_user_id) else 'Former user' end,'')) like '%'||v_query||'%'
+          or (p.owner_user_id is not null and not exists(select 1 from auth.users au where au.id=p.owner_user_id and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) and lower('Former user — '||coalesce(p.owner_display_snapshot,security.scheduler_actor_display(p.owner_user_id),'unknown')) like '%'||v_query||'%')
           or lower(coalesce(p.freshness_class,'')) like '%'||v_query||'%'
           or lower(coalesce(p.cadence_interval::text,'')) like '%'||v_query||'%'
           or lower('layer '||p.layer::text) like '%'||v_query||'%'
@@ -82,6 +85,7 @@ begin
             or lower(coalesce(s.label,'')) like '%'||v_query||'%'
             or lower(coalesce(ps.label,'')) like '%'||v_query||'%'
             or lower(coalesce(lp.profile_key,'')) like '%'||v_query||'%'
+            or lower(coalesce(lp.domain,'')) like '%'||v_query||'%'
             or lower(replace(coalesce(lp.domain,''),'_',' ')) like '%'||v_query||'%'
             or lower(coalesce(lp.acquisition_method,'')) like '%'||v_query||'%'
             or lower(coalesce(p.country_code,'')) like '%'||v_query||'%'
@@ -91,7 +95,9 @@ begin
             or lower(coalesce(p.source_id::text,'')) like '%'||v_query||'%'
             or lower(coalesce(p.source_profile_id::text,'')) like '%'||v_query||'%'
             or lower(coalesce(p.created_by_display_snapshot,case when p.created_by is null then 'System / legacy' when exists(select 1 from auth.users au where au.id=p.created_by and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) then security.scheduler_actor_display(p.created_by) else 'Former user' end,'')) like '%'||v_query||'%'
+            or (p.created_by is not null and not exists(select 1 from auth.users au where au.id=p.created_by and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) and lower('Former user — '||coalesce(p.created_by_display_snapshot,security.scheduler_actor_display(p.created_by),'unknown')) like '%'||v_query||'%')
             or lower(coalesce(p.owner_display_snapshot,case when p.owner_user_id is null then null when exists(select 1 from auth.users au where au.id=p.owner_user_id and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) then security.scheduler_actor_display(p.owner_user_id) else 'Former user' end,'')) like '%'||v_query||'%'
+            or (p.owner_user_id is not null and not exists(select 1 from auth.users au where au.id=p.owner_user_id and au.deleted_at is null and (au.banned_until is null or au.banned_until <= now())) and lower('Former user — '||coalesce(p.owner_display_snapshot,security.scheduler_actor_display(p.owner_user_id),'unknown')) like '%'||v_query||'%')
             or lower(coalesce(p.freshness_class,'')) like '%'||v_query||'%'
             or lower(coalesce(p.cadence_interval::text,'')) like '%'||v_query||'%'
             or lower('layer '||p.layer::text) like '%'||v_query||'%'
