@@ -1,3 +1,4 @@
+// CF-093 release-currentness source: accepted functional target-builder semantics only.
 const VERSION='2.15.78'
 const RELEASE={
   version:VERSION,
