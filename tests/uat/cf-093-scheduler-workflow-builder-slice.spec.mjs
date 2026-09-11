@@ -9,6 +9,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  const migration=read('supabase/migrations/20260911021144_cf_093_scheduler_workflow_builder_slice.sql')
  const aclFix=read('supabase/migrations/20260911021847_cf_093_scheduler_workflow_bridge_acl_fix.sql')
  const previewFix=read('supabase/migrations/20260911022312_cf_093_scheduler_workflow_preview_token_idempotency.sql')
+ const secondPass=read('supabase/migrations/20260911023721_cf_093_scheduler_workflow_codex_second_pass.sql')
 
  expect(index).toContain('/src/scheduler-workflow-builder-entry.jsx')
  expect(ui).toContain("const WORKFLOW_KEY='course_facts_l2'")
@@ -44,7 +45,12 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(previewFix).toContain("pg_advisory_xact_lock")
  expect(previewFix).toContain("idempotent_replay")
  expect(previewFix).toContain("existing_recent_dispatch")
- expect(previewFix).toContain("j.created_at >= now()-interval '10 minutes'")
+
+ expect(secondPass).toContain("country scope must not include a scope id")
+ expect(secondPass).toContain("pv.validation_status<>'valid'")
+ expect(secondPass).toContain("Layer 2 profile qualification changed after preview")
+ expect(secondPass).toContain("(j.payload->>'consumed_at')::timestamptz >= now()-interval '10 minutes'")
+ expect(secondPass).not.toContain("j.created_at >= now()-interval '10 minutes'")
 })
 
 test('CF-093 builder preserves server preview-before-dispatch, stale-state guards and truthful follow-through',()=>{
@@ -58,9 +64,10 @@ test('CF-093 builder preserves server preview-before-dispatch, stale-state guard
  expect(ui).toContain("location.hash='#jobs'")
  expect(ui).toContain("location.hash='#evidence'")
  expect(ui).toContain("previewGeneration=useRef(0)")
- expect(ui).toContain("setPreview(null);setMessage('');previewGeneration.current+=1")
+ expect(ui).toContain("const invalidatePreview=()=>{previewGeneration.current+=1;setPreview(null);setMessage('');setBusy(false)}")
  expect(ui).toContain("if(generation!==previewGeneration.current)return")
  expect(ui).toContain("optionGeneration=useRef(0)")
+ expect(ui).toContain("const changeUniversityQuery=value=>{setUniversityQuery(value);if(scopeId)setScopeId('')}")
  expect(ui).toContain("Existing recent governed dispatch reused")
  expect(ui).toContain("Follow Jobs/Evidence for underlying work status")
 
