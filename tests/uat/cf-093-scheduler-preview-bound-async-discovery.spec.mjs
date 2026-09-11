@@ -3,6 +3,9 @@ import fs from'node:fs'
 
 const sql=fs.readFileSync('supabase/migrations/20260912010000_cf_093_scheduler_preview_bound_async_discovery.sql','utf8')
 const foundFix=fs.readFileSync('supabase/migrations/20260912010100_cf_093_scheduler_async_binding_found_state_fix.sql','utf8')
+const cancelFix=fs.readFileSync('supabase/migrations/20260912010200_cf_093_scheduler_async_binding_cancel_failclosed.sql','utf8')
+const retryChain=fs.readFileSync('supabase/migrations/20260912010300_cf_093_scheduler_retry_context_and_token_chain.sql','utf8')
+const retryContext=fs.readFileSync('supabase/migrations/20260912010400_cf_093_scheduler_bound_discovery_context_retry.sql','utf8')
 const worker=fs.readFileSync('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
 
 test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs without broadening authority',()=>{
@@ -28,18 +31,31 @@ test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs 
  expect(sql).toContain("set status='handoff_started',handoff_started_at=now()")
  expect(sql).toContain("set_config('coursefinder.scheduler_preview_token',p_preview_token::text,true)")
 
- // The forward hardening must use an explicit binding-presence flag rather than a stale
- // PL/pgSQL FOUND value, preserving legacy service-only discovery when no binding exists.
+ // Binding presence must be explicit and cancelled/handoff continuations must fail closed.
  expect(foundFix).toContain('v_bound boolean:=false')
  expect(foundFix).toContain('v_bound:=found')
- expect(foundFix).toContain('if v_bound then')
- expect(foundFix).toContain("case when v_bound then v_binding.preview_token else null end")
  expect(foundFix).not.toContain('case when found then v_binding.preview_token else null end')
+ expect(cancelFix).toContain("b.discovery_course_ids @> v_requested")
+ expect(cancelFix).not.toContain("b.status in ('active','handoff_started')")
+ expect(cancelFix).toContain('scheduler async binding is not active; continuation rejected')
 
- // Existing worker continuations already carry the exact actor/full sync set. The new
- // service-only binding validates those same values on every continuation and final handoff.
+ // The exact Preview token is retained in nonce payloads, while historical unresolved
+ // dispositions remain retryable only for an active exact scheduler binding.
+ expect(retryChain).toContain("'scheduler_preview_token',case when v_bound then v_preview_token else null end")
+ expect(retryChain).toContain('historical_dispositions_are_retryable')
+ expect(retryContext).toContain("b.status='active'")
+ expect(retryContext).toContain('v_binding.discovery_course_ids @> v_requested')
+ expect(retryContext).toContain("dc.created_at>=v_binding.activated_at")
+ expect(retryContext).toContain("'scheduler_bound_retry',true")
+ expect(retryContext).toContain("'historical_dispositions_preserved',true")
+ expect(retryContext).toContain("dc.status in ('exact_match','likely_match','ambiguous','identity_mismatch','current_page_not_found')")
+ expect(retryContext).not.toContain('delete from pipeline.layer2_course_discovery_candidates')
+
+ // Existing worker continuations already carry actor/full sync scope and use the same
+ // scoped context helper; the new DB contract changes retry semantics only while bound.
  expect(worker).toContain('auto_sync_actor')
  expect(worker).toContain('sync_course_ids')
+ expect(worker).toContain('layer2_discovery_context_scope')
  expect(worker).toContain('layer2_discovery_scope_dispatch_v2')
  expect(worker).toContain('layer2_scope_profile_batch_service')
  expect(worker).toContain('remaining=courseIds.filter')
@@ -56,9 +72,9 @@ test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs 
  expect(sql).not.toContain('insert into publishing.')
  expect(sql).not.toContain('insert into search.')
 
- // State/multi-provider scopes do not receive fabricated execution policies. Existing
- // per-profile policy qualification remains a hard Preview/run gate.
+ // State/multi-provider scopes do not receive fabricated execution policies.
  expect(sql).toContain('scheduler_workflow_execution_policy_gap_count_v1')
  expect(sql).toContain('if v_policy_gaps>0')
  expect(sql).not.toContain('insert into pipeline.layer2_execution_policies')
+ expect(retryContext).not.toContain('insert into pipeline.layer2_execution_policies')
 })
