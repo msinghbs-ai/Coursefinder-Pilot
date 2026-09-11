@@ -3,6 +3,7 @@ import fs from'node:fs'
 
 const sql=fs.readFileSync('supabase/migrations/20260911095142_cf_093_scheduler_exact_scope_codex_finalizer.sql','utf8')
 const routeFinalizer=fs.readFileSync('supabase/migrations/20260911095420_cf_093_scheduler_runtime_route_credential_finalizer.sql','utf8')
+const runtimeFinalizer=fs.readFileSync('supabase/migrations/20260911103931_cf_093_scheduler_runtime_semantics_finalizer.sql','utf8')
 
 test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex runtime gaps',()=>{
  expect(sql).toContain('scheduler_workflow_scope_snapshot_v2')
@@ -25,13 +26,25 @@ test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex r
  expect(sql).toContain("from public.layer2_scope_courses(v_country,case when p_state_id is null then 'country' else 'state' end,p_state_id)")
  expect(sql).toContain("'scope_source','layer2_executable_provider_scope'")
 
+ expect(runtimeFinalizer).toContain('scheduler_workflow_https_host_v1')
+ expect(runtimeFinalizer).toContain('v_port>65535')
+ expect(runtimeFinalizer).toContain('scheduler_workflow_queueable_url_allowed_v1')
+ expect(runtimeFinalizer).toContain("target.host=h.host or target.host like '%.'||h.host")
+ expect(runtimeFinalizer).toContain("coalesce(pc#>>'{budget_status,allowed}','true')<>'false'")
+ expect(runtimeFinalizer).toContain("lower(coalesce(pc->>'provider_key',''))='direct-http' or nullif(pc->>'estimated_request_cost_usd','') is not null")
+ expect(runtimeFinalizer).toContain("coalesce(e->>'status','') not in ('started','discovery_started')")
+ expect(runtimeFinalizer).toContain("coalesce((e->>'target_count')::integer,-1)<>coalesce((e->>'requested_count')::integer,-2)")
+ expect(runtimeFinalizer).toContain("v_post_snapshot:=security.scheduler_workflow_scope_snapshot_v2")
+ expect(runtimeFinalizer).toContain("coalesce(v_post_snapshot->>'scope_fingerprint','')<>v_preview_fingerprint")
+ expect(runtimeFinalizer).toContain('Layer 2 dispatch did not start the exact previewed work for every profile')
+
  expect(sql).toContain("v_workflow <> 'course_facts_l2'")
  expect(sql).toContain("only AU Layer 2 Course Facts is currently authorised for this builder")
  expect(sql).toContain("v_mode <> 'acquisition_only'")
  expect(sql).toContain("Conditional Layer 3/L4 orchestration is not yet qualified")
  expect(sql).toContain("Country/state schedules are not advertised")
- expect(sql).toContain("scheduler_workflow_run_now_v2_browser_bridge")
- expect(sql).toContain("security.current_role_rank() < 4")
- expect(sql).not.toContain('automatic_governed_pipeline\',\'label\',\'Automatic governed pipeline\',\'enabled\',true')
- expect(sql).not.toContain('reprocess_governed_evidence\',\'label\',\'Reprocess governed Evidence\',\'enabled\',true')
+ expect(runtimeFinalizer).toContain("v_mode <> 'acquisition_only'")
+ expect(runtimeFinalizer).toContain("security.current_role_rank() < 4")
+ expect(runtimeFinalizer).not.toContain("automatic_governed_pipeline','label','Automatic governed pipeline','enabled',true")
+ expect(runtimeFinalizer).not.toContain("reprocess_governed_evidence','label','Reprocess governed Evidence','enabled',true")
 })
