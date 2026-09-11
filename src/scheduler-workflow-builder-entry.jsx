@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState}from'react'
+import React,{useEffect,useMemo,useRef,useState}from'react'
 import{createRoot}from'react-dom/client'
 import{Play,SearchCheck,Workflow,ExternalLink}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -6,22 +6,22 @@ import'./scheduler-workflow-builder.css'
 
 const WORKFLOW_KEY='course_facts_l2'
 const AU='AU'
-const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,x=>x.toUpperCase())
 
 function OptionSelect({label,value,onChange,items,disabled=false}){return <label className="cf-workflow-builder__field"><span>{label}</span><select value={value} disabled={disabled} onChange={e=>onChange(e.target.value)}><option value="">Select…</option>{items.map(x=><option key={x.value} value={x.value}>{x.label}{x.meta?` — ${x.meta}`:''}</option>)}</select></label>}
 
 function Builder(){
  const[scopeType,setScopeType]=useState('country'),[scopeId,setScopeId]=useState(''),[states,setStates]=useState([]),[universities,setUniversities]=useState([]),[universityQuery,setUniversityQuery]=useState(''),[preview,setPreview]=useState(null),[mode,setMode]=useState('acquisition_only'),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('')
- const selectedState=scopeType==='state'?scopeId:''
+ const optionGeneration=useRef(0),previewGeneration=useRef(0)
  const needsTarget=scopeType!=='country'
  const canPreview=!busy&&(!needsTarget||Boolean(scopeId))
  const modes=useMemo(()=>Array.isArray(preview?.processing_modes)?preview.processing_modes:[],[preview])
 
- useEffect(()=>{setScopeId('');setPreview(null);setError('');setMessage('')},[scopeType])
- useEffect(()=>{if(scopeType!=='state')return;let live=true;supabase.rpc('scheduler_workflow_scope_options_v1',{p_country_code:AU,p_kind:'state',p_state_id:null,p_query:null,p_limit:10,p_offset:0}).then(({data,error})=>{if(!live)return;if(error)setError(error.message);else setStates(Array.isArray(data?.items)?data.items:[])});return()=>{live=false}},[scopeType])
- useEffect(()=>{if(scopeType!=='university')return;const timer=setTimeout(()=>{let live=true;supabase.rpc('scheduler_workflow_scope_options_v1',{p_country_code:AU,p_kind:'university',p_state_id:null,p_query:universityQuery||null,p_limit:10,p_offset:0}).then(({data,error})=>{if(!live)return;if(error)setError(error.message);else setUniversities(Array.isArray(data?.items)?data.items:[])});return()=>{live=false}},200);return()=>clearTimeout(timer)},[scopeType,universityQuery])
+ useEffect(()=>{setScopeId('');setPreview(null);setError('');setMessage('');previewGeneration.current+=1},[scopeType])
+ useEffect(()=>{setPreview(null);setMessage('');previewGeneration.current+=1},[scopeId])
+ useEffect(()=>{if(scopeType!=='state')return;const generation=++optionGeneration.current;supabase.rpc('scheduler_workflow_scope_options_v1',{p_country_code:AU,p_kind:'state',p_state_id:null,p_query:null,p_limit:10,p_offset:0}).then(({data,error})=>{if(generation!==optionGeneration.current)return;if(error)setError(error.message);else setStates(Array.isArray(data?.items)?data.items:[])});return()=>{optionGeneration.current+=1}},[scopeType])
+ useEffect(()=>{if(scopeType!=='university')return;const generation=++optionGeneration.current;const timer=setTimeout(()=>{supabase.rpc('scheduler_workflow_scope_options_v1',{p_country_code:AU,p_kind:'university',p_state_id:null,p_query:universityQuery||null,p_limit:10,p_offset:0}).then(({data,error})=>{if(generation!==optionGeneration.current)return;if(error)setError(error.message);else setUniversities(Array.isArray(data?.items)?data.items:[])})},200);return()=>{clearTimeout(timer);optionGeneration.current+=1}},[scopeType,universityQuery])
 
- async function doPreview(){setBusy(true);setError('');setMessage('');try{const{data,error}=await supabase.rpc('scheduler_workflow_preview_v1',{p_workflow_key:WORKFLOW_KEY,p_country_code:AU,p_scope_type:scopeType,p_scope_id:needsTarget?scopeId:null});if(error)throw error;setPreview(data);setMode('acquisition_only')}catch(e){setPreview(null);setError(e?.message||String(e))}finally{setBusy(false)}}
+ async function doPreview(){const generation=++previewGeneration.current;setBusy(true);setError('');setMessage('');try{const{data,error}=await supabase.rpc('scheduler_workflow_preview_v1',{p_workflow_key:WORKFLOW_KEY,p_country_code:AU,p_scope_type:scopeType,p_scope_id:needsTarget?scopeId:null});if(generation!==previewGeneration.current)return;if(error)throw error;setPreview(data);setMode('acquisition_only')}catch(e){if(generation!==previewGeneration.current)return;setPreview(null);setError(e?.message||String(e))}finally{if(generation===previewGeneration.current)setBusy(false)}}
  async function run(){if(reason.trim().length<5){setError('A governance reason of at least 5 characters is required.');return}if(!preview){setError('Preview the governed scope before running it.');return}setBusy(true);setError('');setMessage('');try{const{data,error}=await supabase.rpc('scheduler_workflow_run_now_v1',{p_workflow_key:WORKFLOW_KEY,p_country_code:AU,p_scope_type:scopeType,p_scope_id:needsTarget?scopeId:null,p_processing_mode:mode,p_reason:reason.trim()});if(error)throw error;setMessage(`Governed Layer 2 dispatch accepted. Dispatch record ${data?.job_id||'created'}. Follow Jobs/Evidence for the underlying work.`);setPreview(null);setReason('')}catch(e){setError(e?.message||String(e))}finally{setBusy(false)}}
 
  return <section className="m23-panel cf-workflow-builder" data-cf-workflow-builder="true">
