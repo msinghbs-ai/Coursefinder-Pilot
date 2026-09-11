@@ -5,7 +5,8 @@ const sql=fs.readFileSync('supabase/migrations/20260911095142_cf_093_scheduler_e
 const routeFinalizer=fs.readFileSync('supabase/migrations/20260911095420_cf_093_scheduler_runtime_route_credential_finalizer.sql','utf8')
 const runtimeFinalizer=fs.readFileSync('supabase/migrations/20260911103931_cf_093_scheduler_runtime_semantics_finalizer.sql','utf8')
 const bridgeScopeFinalizer=fs.readFileSync('supabase/migrations/20260911105517_cf_093_scheduler_browser_bridge_and_scope_binding_finalizer.sql','utf8')
-const queryIpv4Finalizer=fs.readFileSync('supabase/migrations/20260911111622_cf_093_scheduler_query_binding_and_ipv4_finalizer.sql','utf8')
+const queryIpv4Finalizer=fs.readFileSync('supabase/migrations/20260911111431_cf_093_scheduler_query_binding_and_ipv4_finalizer.sql','utf8')
+const discoveryFailClosedFinalizer=fs.readFileSync('supabase/migrations/20260911114056_cf_093_scheduler_discovery_failclosed_and_runtime_parser_finalizer.sql','utf8')
 
 test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex runtime gaps',()=>{
  expect(sql).toContain('scheduler_workflow_scope_snapshot_v2')
@@ -53,6 +54,14 @@ test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex r
  expect(queryIpv4Finalizer).toContain("c.course_code,c.canonical_title,c.display_title")
  expect(queryIpv4Finalizer).toContain("':query-inputs:'||coalesce(course_code,'')||':'||coalesce(canonical_title,'')||':'||coalesce(display_title,'')")
  expect(queryIpv4Finalizer).toContain('current_version_id::text')
+
+ expect(discoveryFailClosedFinalizer).toContain('preview_bound_async_discovery_not_supported')
+ expect(discoveryFailClosedFinalizer).toContain("pc->>'base_url'")
+ expect(discoveryFailClosedFinalizer).toContain("0x[0-9a-f]+")
+ expect(discoveryFailClosedFinalizer).toContain('jsonb_agg(')
+ expect(discoveryFailClosedFinalizer).toContain('jsonb_build_array(')
+ expect(discoveryFailClosedFinalizer).toContain("where s.source_url is null")
+ expect(discoveryFailClosedFinalizer).toContain('scheduler_workflow_queueable_url_allowed_v1')
 
  expect(sql).toContain("v_workflow <> 'course_facts_l2'")
  expect(sql).toContain("only AU Layer 2 Course Facts is currently authorised for this builder")
