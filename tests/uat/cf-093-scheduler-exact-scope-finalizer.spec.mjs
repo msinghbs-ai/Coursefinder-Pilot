@@ -5,6 +5,7 @@ const sql=fs.readFileSync('supabase/migrations/20260911095142_cf_093_scheduler_e
 const routeFinalizer=fs.readFileSync('supabase/migrations/20260911095420_cf_093_scheduler_runtime_route_credential_finalizer.sql','utf8')
 const runtimeFinalizer=fs.readFileSync('supabase/migrations/20260911103931_cf_093_scheduler_runtime_semantics_finalizer.sql','utf8')
 const bridgeScopeFinalizer=fs.readFileSync('supabase/migrations/20260911105517_cf_093_scheduler_browser_bridge_and_scope_binding_finalizer.sql','utf8')
+const queryIpv4Finalizer=fs.readFileSync('supabase/migrations/20260911111622_cf_093_scheduler_query_binding_and_ipv4_finalizer.sql','utf8')
 
 test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex runtime gaps',()=>{
  expect(sql).toContain('scheduler_workflow_scope_snapshot_v2')
@@ -47,6 +48,11 @@ test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex r
  expect(bridgeScopeFinalizer).toContain("discovery_strategy,catalogue_url")
  expect(bridgeScopeFinalizer).toContain('grant execute on function security.scheduler_workflow_run_now_v2_browser_bridge(uuid,text,text,text,uuid,text,text) to authenticated')
  expect(bridgeScopeFinalizer).toContain('revoke all on function security.scheduler_workflow_run_now_v2_browser_bridge(uuid,text,text,text,uuid,text,text) from public,anon')
+
+ expect(queryIpv4Finalizer).toContain("v_part !~ '^(0|[1-9][0-9]{0,2})$'")
+ expect(queryIpv4Finalizer).toContain("c.course_code,c.canonical_title,c.display_title")
+ expect(queryIpv4Finalizer).toContain("':query-inputs:'||coalesce(course_code,'')||':'||coalesce(canonical_title,'')||':'||coalesce(display_title,'')")
+ expect(queryIpv4Finalizer).toContain('current_version_id::text')
 
  expect(sql).toContain("v_workflow <> 'course_facts_l2'")
  expect(sql).toContain("only AU Layer 2 Course Facts is currently authorised for this builder")
