@@ -1,21 +1,21 @@
-const VERSION='2.15.76'
+const VERSION='2.15.77'
 const RELEASE={
   version:VERSION,
-  date:'10 Sep 2026',
-  title:'Scheduled Tasks configuration and governed run control',
+  date:'11 Sep 2026',
+  title:'Scheduled Tasks operator catalogue and workflow control',
   changes:[
-    'Data Operations now includes Scheduled Tasks immediately before Evidence, with operator-friendly schedule configuration, latest refresh queue and recent Job results.',
-    'Pipeline Operators can edit exact bounded recurring Layer 1–3 schedules through audited SECURITY INVOKER contracts with optimistic concurrency and durable governance reason/actor evidence.',
-    'Run on demand is available only for executable Layer 1–2 schedules and creates or reuses an exact bounded manual_governed refresh request without altering recurring cadence or next-run time.',
-    'Layer 3 remains Evidence/profile/model-qualified and is not given a generic autonomous execution path.',
-    'Jobs remain read through public.admin_read and historical Jobs are never reset or replayed.'
+    'Scheduled Tasks now presents human-readable task, dataset and target labels while retaining source, profile and entity IDs as secondary technical detail.',
+    'Operators can search scheduled work across dataset, country, target, creator, owner and technical identifiers before pagination.',
+    'Created By and Owner attribution remains intelligible when an account is removed or disabled, while system and legacy schedules remain explicitly non-human.',
+    'Personal column visibility and ordering are retained per operator without changing governed execution policy.',
+    'Run on demand remains bounded to executable Layer 1–2 policies; Layer 3 continues through its Evidence/profile/model-qualified control path.'
   ],
   bugFixes:[
-    'Preserved PostgreSQL time-only whole-day cadence values when editing schedules.',
-    'Corrected datetime-local handling so stored next-run instants are not shifted by the operator timezone.',
-    'Surfaced governed Jobs-read failures instead of presenting false empty history.',
-    'Completion timestamps remain blank until a Job is terminal.',
-    'Added complete paged policy reads, cadence bounds and stale-snapshot rejection for schedule edits.'
+    'Prevented stale debounced scheduler responses and supporting-panel refreshes from overwriting newer operator state.',
+    'Made refresh-queue targets distinguishable and preserved source-profile identity when a policy also carries a source ID.',
+    'Search now treats percent and underscore as literal text and matches both raw and humanised dataset labels.',
+    'Resolved Provider, Course, Campus and Scholarship entity targets to governed business labels where available.',
+    'Surfaced independent queue, context and Jobs read failures instead of presenting false empty operational state.'
   ]
 }
 let pending=false
