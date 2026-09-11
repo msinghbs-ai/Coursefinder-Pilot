@@ -11,6 +11,7 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   const secondReviewFix=await read('supabase/migrations/20260910213556_cf_093_resolved_actor_search_semantics.sql')
   const entityLabelFix=await read('supabase/migrations/20260910215546_cf_093_scheduler_entity_labels.sql')
   const literalSearchFix=await read('supabase/migrations/20260910221808_cf_093_literal_scheduler_search.sql')
+  const appliedFinalizer=await read('supabase/migrations/20260910232606_cf_093_scheduler_search_finalizer.sql')
   const replayFinalizer=await read('supabase/migrations/20260911054000_cf_093_scheduler_search_finalizer.sql')
   const css=await read('src/scheduled-jobs-config.css')
 
@@ -30,6 +31,9 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   expect(workspace).toContain('const panelGeneration=useRef(0)')
   expect(workspace).toContain('const loadPanels=async()=>{const generation=++panelGeneration.current')
   expect(workspace).toContain('if(generation!==panelGeneration.current)return')
+  expect(workspace).toContain('hydratedActorKey')
+  expect(workspace).toContain('if(hydratedActorKey!==actorKey)return')
+  expect(workspace).toContain('setHydratedActorKey(actorKey)')
   expect(workspace).toContain('Promise.allSettled')
   expect(workspace).toContain('const policyResponse=await supabase.rpc')
   expect(workspace).toContain('if(page>maxPage){await load(maxPage,search);return}')
@@ -61,13 +65,16 @@ test.describe('CF-093 Scheduled Tasks operator contract',()=>{
   expect(entityLabelFix).toContain('security.scheduler_entity_display(p.entity_type,p.entity_id)')
   expect(entityLabelFix).toContain('revoke all on function security.scheduler_entity_display(text,uuid) from public,anon,authenticated')
 
-  for(const sql of [literalSearchFix,replayFinalizer]){
+  for(const sql of [literalSearchFix,appliedFinalizer,replayFinalizer]){
    expect(sql).toContain("replace(replace(replace(lower(trim(coalesce(p_query,'')))")
    expect(sql).toContain('security.scheduler_entity_display(p.entity_type,p.entity_id)')
    expect(sql).toContain('security.scheduler_actor_display(p.owner_user_id)')
    expect(sql).toContain('security.scheduler_actor_display(p.created_by)')
   }
+  expect(replayFinalizer).toContain("lower(coalesce(lp.domain,'')) like")
   expect(replayFinalizer).toContain("lower(replace(coalesce(lp.domain,''),'_',' ')) like")
+  expect(replayFinalizer).toContain("lower('Former user — '||coalesce(p.created_by_display_snapshot")
+  expect(replayFinalizer).toContain("lower('Former user — '||coalesce(p.owner_display_snapshot")
   expect(css).toContain('cf-scheduler-v2__sticky-actions')
  })
 })
