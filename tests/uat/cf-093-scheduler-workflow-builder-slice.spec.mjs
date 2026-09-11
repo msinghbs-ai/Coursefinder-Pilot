@@ -13,6 +13,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  const thirdPass=read('supabase/migrations/20260911025332_cf_093_scheduler_workflow_codex_third_pass.sql')
  const fourthPass=read('supabase/migrations/20260911031554_cf_093_scheduler_workflow_codex_fourth_pass.sql')
  const policyQualification=read('supabase/migrations/20260911052952_cf_093_scheduler_execution_policy_qualification.sql')
+ const fifthPass=read('supabase/migrations/20260911065626_cf_093_scheduler_policy_and_scope_limit_qualification.sql')
 
  expect(index).toContain('/src/scheduler-workflow-builder-entry.jsx')
  expect(ui).toContain("const WORKFLOW_KEY='course_facts_l2'")
@@ -71,16 +72,29 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(fourthPass).toContain("security.current_role_rank() < 4")
  expect(fourthPass).toContain("v_mode <> 'acquisition_only'")
 
- // Nominated queueable acceptance exposed profiles that were valid/current but
- // lacked the execution policy required by layer2_run_batch_create. Fail closed
- // at preview and re-check immediately before dispatch.
+ // Queueable acceptance exposed a valid/current profile without the execution
+ // policy required by layer2_run_batch_create. This first qualification pass
+ // established the fail-closed policy surface.
  expect(policyQualification).toContain("scheduler_workflow_execution_policy_gap_count_v1")
  expect(policyQualification).toContain("pipeline.layer2_execution_policies")
- expect(policyQualification).toContain("count(*) filter (where sc.source_url is null)=0")
  expect(policyQualification).toContain("'missing_execution_policy_count',v_policy_gaps")
- expect(policyQualification).toContain("fully queueable Layer 2 profiles in this scope do not have an execution policy")
  expect(policyQualification).toContain("Layer 2 execution policy qualification changed after preview")
  expect(policyQualification).toContain("revoke all on function security.scheduler_workflow_execution_policy_gap_count_v1")
+
+ // Codex fifth-pass reconciliation extends policy qualification to every
+ // discovery-backed profile because successful discovery auto-syncs into the
+ // deterministic Layer 2 batch service. It also fails closed before dispatch
+ // when one profile would exceed the existing 1,000-course downstream limit.
+ expect(fifthPass).toContain("having not exists")
+ expect(fifthPass).not.toContain("count(*) filter (where sc.source_url is null)=0")
+ expect(fifthPass).toContain("scheduler_workflow_oversized_profile_count_v1")
+ expect(fifthPass).toContain("having count(*) > 1000")
+ expect(fifthPass).toContain("'oversized_profile_count',v_oversized_profiles")
+ expect(fifthPass).toContain("execution policy required by deterministic Layer 2 processing")
+ expect(fifthPass).toContain("exceed the current 1,000-course dispatch contract")
+ expect(fifthPass).toContain("Layer 2 scope exceeds the current 1,000-course per-profile dispatch contract")
+ expect(fifthPass).toContain("security.current_role_rank() < 4")
+ expect(fifthPass).toContain("v_mode <> 'acquisition_only'")
 })
 
 test('CF-093 builder preserves server preview-before-dispatch, rank gate and dispatch race safety',()=>{
