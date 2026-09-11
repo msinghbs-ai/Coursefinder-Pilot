@@ -2,6 +2,7 @@ import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 
 const sql=fs.readFileSync('supabase/migrations/20260911095142_cf_093_scheduler_exact_scope_codex_finalizer.sql','utf8')
+const routeFinalizer=fs.readFileSync('supabase/migrations/20260911095420_cf_093_scheduler_runtime_route_credential_finalizer.sql','utf8')
 
 test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex runtime gaps',()=>{
  expect(sql).toContain('scheduler_workflow_scope_snapshot_v2')
@@ -13,7 +14,10 @@ test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex r
  expect(sql).toContain("coalesce(j.result->'profile_ids','[]'::jsonb)=to_jsonb(v_live_profiles)")
 
  expect(sql).toContain("lower(coalesce(ap.provider_key,''))<>'parsebot'")
- expect(sql).toContain("lower(coalesce(ap.auth_scheme,'none'))='none' or ap.vault_secret_id is not null")
+ expect(routeFinalizer).toContain('left join vault.decrypted_secrets ds on ds.id=ap.vault_secret_id')
+ expect(routeFinalizer).toContain("lower(coalesce(ap.provider_key,''))<>'parsebot'")
+ expect(routeFinalizer).toContain("lower(coalesce(ap.auth_scheme,'none'))='none'")
+ expect(routeFinalizer).toContain("nullif(ds.decrypted_secret,'') is not null")
  expect(sql).toContain("target_url !~* '^https://")
  expect(sql).toContain("discovery_strategy,search_url_template")
  expect(sql).toContain("discovery_strategy,catalogue_url")
