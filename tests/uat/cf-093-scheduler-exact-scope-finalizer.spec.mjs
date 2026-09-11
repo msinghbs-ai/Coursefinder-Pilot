@@ -7,7 +7,7 @@ const runtimeFinalizer=fs.readFileSync('supabase/migrations/20260911103931_cf_09
 const bridgeScopeFinalizer=fs.readFileSync('supabase/migrations/20260911105517_cf_093_scheduler_browser_bridge_and_scope_binding_finalizer.sql','utf8')
 const queryIpv4Finalizer=fs.readFileSync('supabase/migrations/20260911111431_cf_093_scheduler_query_binding_and_ipv4_finalizer.sql','utf8')
 const discoveryFailClosedFinalizer=fs.readFileSync('supabase/migrations/20260911114056_cf_093_scheduler_discovery_failclosed_and_runtime_parser_finalizer.sql','utf8')
-const operatorRouteFinalizer=fs.readFileSync('supabase/migrations/20260911115830_cf_093_scheduler_operator_reason_and_route_chain_finalizer.sql','utf8')
+const operatorRouteFinalizer=fs.readFileSync('supabase/migrations/20260911120131_cf_093_scheduler_operator_reason_and_route_chain_finalizer.sql','utf8')
 
 test('CF-093 exact-scope finalizer preserves narrow authority and closes Codex runtime gaps',()=>{
  expect(sql).toContain('scheduler_workflow_scope_snapshot_v2')
