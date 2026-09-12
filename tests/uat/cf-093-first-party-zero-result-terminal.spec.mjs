@@ -4,7 +4,7 @@ import fs from'node:fs'
 const worker=fs.readFileSync('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
 
 test('CF-093 first-party zero-result search is terminal only when profile-qualified and only after route exhaustion',()=>{
- expect(worker).toContain('layer2-scope-discover-scheduled-v1.3.9')
+ expect(worker).toContain('layer2-scope-discover-scheduled-v1.3.10')
  expect(worker).toContain('let emptySearchResult:any=null')
  expect(worker).toContain('function qualifiedZeroResult')
  expect(worker).toContain('zero_result_markers')
