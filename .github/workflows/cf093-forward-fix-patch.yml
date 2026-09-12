@@ -18,39 +18,22 @@ jobs:
         with:
           ref: m245/cf093-async-discovery-20260912
           fetch-depth: 0
-      - name: Apply exact forward-only worker corrections
-        shell: python
+      - name: Align source filename to applied runtime migration identity
+        shell: bash
         run: |
-          from pathlib import Path
-          p=Path('supabase/functions/layer2-scope-discover-scheduled/index.ts')
-          s=p.read_text()
-          def repl(old,new,label):
-              global s
-              n=s.count(old)
-              if n!=1:
-                  raise SystemExit(f'{label}: expected 1 match, got {n}')
-              s=s.replace(old,new)
-          repl('VERSION="layer2-scope-discover-scheduled-v1.3.9"','VERSION="layer2-scope-discover-scheduled-v1.3.10"','worker version')
-          repl('estimatedRequestCostUsd:pc.estimated_request_cost_usd??null};continue}','estimatedRequestCostUsd:pc.estimated_request_cost_usd??null,zeroResultMarkerQualified:true,requiredPrefixLinkCount:0,attemptFinalized:true};continue}','qualified zero result flags')
-          repl('estimatedRequestCostUsd:pc.estimated_request_cost_usd??null}}catch','estimatedRequestCostUsd:pc.estimated_request_cost_usd??null,zeroResultMarkerQualified:false,attemptFinalized:false}}catch','normal acquisition flags')
-          repl('nExpected=norm(rankingExpectedTitle),nObserved=norm(observedTitle),exactTitle=Boolean(nExpected&&nObserved&&nObserved===nExpected),prefixTitle=Boolean(nExpected&&nObserved&&nObserved.startsWith(nExpected+" ")&&nObserved.split(" ").length-nExpected.split(" ").length<=2),titleScore=exactTitle?1:prefixTitle?(preferExact?.85:1):similarity(rankingExpectedTitle,observedTitle),','nExpected=norm(rankingExpectedTitle),nOriginal=norm(expectedTitle),nObserved=norm(observedTitle),exactTitle=Boolean(nObserved&&((nExpected&&nObserved===nExpected)||(nOriginal&&nObserved===nOriginal))),prefixTitle=Boolean(nObserved&&((nExpected&&nObserved.startsWith(nExpected+" ")&&nObserved.split(" ").length-nExpected.split(" ").length<=2)||(nOriginal&&nObserved.startsWith(nOriginal+" ")&&nObserved.split(" ").length-nOriginal.split(" ").length<=2))),titleScore=exactTitle?1:prefixTitle?(preferExact?.85:1):Math.max(similarity(rankingExpectedTitle,observedTitle),similarity(expectedTitle,observedTitle)),','original and stripped title matching')
-          repl('return{expectedTitle,rankingExpectedTitle,expectedCode,candidates,status,blocker,selected:["exact_match","likely_match"].includes(status)}}','return{expectedTitle,rankingExpectedTitle,expectedCode,candidates,status,blocker,selected:["exact_match","likely_match"].includes(status),requiredPrefixLinkCount:links.length}}','qualified result page count')
-          repl('async function verifyCandidateDetail(svc:any,rt:any,cfg:any,course:any,ranked:any,jobId:string,ua:string,budgetMs:number){','async function verifyCandidateDetail(svc:any,rt:any,cfg:any,course:any,ranked:any,jobId:string,ua:string,budgetMs:number,schedulerPreviewToken:string,autoSyncActor:string,profileId:string){','verification signature')
-          repl('candidate.url,jobId,ua,cfg,budgetMs,false),expectedCode=','candidate.url,jobId,ua,cfg,budgetMs,false);if(autoSyncActor){const postFetch=await rpc(svc,"layer2_discovery_context_scope_bound_v1",{p_preview_token:schedulerPreviewToken,p_actor:autoSyncActor,p_profile_id:profileId,p_course_ids:[course.id],p_limit:1});if(postFetch?.identity_revalidated!==true||!(postFetch?.courses||[]).some((x:any)=>clean(x.id)===clean(course.id)))throw new Error("scheduler async binding identity changed during candidate verification")};const expectedCode=','verification post-fetch binding revalidation')
-          repl('acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent,cfg,invocationRemainingMs-10000);const bytes=','acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent,cfg,invocationRemainingMs-10000);if(autoSyncActor){const postFetch=await rpc(svc,"layer2_discovery_context_scope_bound_v1",{p_preview_token:schedulerPreviewToken,p_actor:autoSyncActor,p_profile_id:profileId,p_course_ids:[course.id],p_limit:1});if(postFetch?.identity_revalidated!==true||!(postFetch?.courses||[]).some((x:any)=>clean(x.id)===clean(course.id)))throw new Error("scheduler async binding identity changed during acquisition")};const bytes=','source post-fetch binding revalidation')
-          repl('verifyCandidateDetail(svc,rt,cfg,course,ranked,jobId,cfg.headers?.user_agent,remain)','verifyCandidateDetail(svc,rt,cfg,course,ranked,jobId,cfg.headers?.user_agent,remain,schedulerPreviewToken,autoSyncActor,profileId)','verification args')
-          repl('verification_evidence_id:i===0?verification?.evidenceId||null:null},status:','verification_evidence_id:i===0?verification?.evidenceId||null:null,scheduler_preview_token:schedulerPreviewToken||null,zero_result_marker_qualified:Boolean(acquired.zeroResultMarkerQualified),required_prefix_link_count:ranked.requiredPrefixLinkCount},status:','candidate provenance metadata')
-          repl('provider_key:acquired.providerKey,detail_cricos_verified:false},blocker:','provider_key:acquired.providerKey,detail_cricos_verified:false,scheduler_preview_token:schedulerPreviewToken||null,zero_result_marker_qualified:Boolean(acquired.zeroResultMarkerQualified),required_prefix_link_count:ranked.requiredPrefixLinkCount},blocker:','terminal basis metadata')
-          repl('await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:acquired.attemptId,p_status:"succeeded",','if(!acquired.attemptFinalized)await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:acquired.attemptId,p_status:"succeeded",','preserve zero-result telemetry')
-          repl('if(acquired?.attemptId)try{await rpc(svc,"layer2_provider_attempt_finish",','if(acquired?.attemptId&&!acquired?.attemptFinalized)try{await rpc(svc,"layer2_provider_attempt_finish",','preserve finalised attempt on downstream error')
-          p.write_text(s)
-      - name: Commit patched worker
+          set -euo pipefail
+          old='supabase/migrations/20260913091500_cf_093_preview_provenance_terminal_dedupe_hardening.sql'
+          new='supabase/migrations/20260912232827_cf_093_preview_provenance_terminal_dedupe_hardening.sql'
+          test -f "$old"
+          test ! -e "$new"
+          git mv "$old" "$new"
+          git diff --check
+      - name: Commit migration identity alignment
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'coursefinder-governance-bot'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add supabase/functions/layer2-scope-discover-scheduled/index.ts
-          git diff --cached --check
-          git commit -m 'fix(cf093): harden preview-bound discovery worker'
+          git add supabase/migrations
+          git commit -m 'chore(cf093): align applied migration source identity'
           git push origin HEAD:m245/cf093-async-discovery-20260912
