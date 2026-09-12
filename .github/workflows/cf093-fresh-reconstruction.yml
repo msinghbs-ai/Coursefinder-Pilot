@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout exact branch
+      - name: Checkout Pilot candidate
         uses: actions/checkout@v4
 
       - name: Setup Node
@@ -37,7 +37,14 @@ jobs:
           npm install --no-save --ignore-scripts supabase@2.117.0
           npx supabase --version
 
-      - name: Initialise local Supabase config when absent
+      - name: Fetch authoritative Admin migration baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth=1 https://github.com/msinghbs-ai/coursefinder-admin.git .cf093-admin
+          test -d .cf093-admin/supabase/production-migrations
+
+      - name: Initialise local Supabase config
         shell: bash
         run: |
           set -euo pipefail
@@ -45,28 +52,53 @@ jobs:
             npx supabase init
           fi
 
-      - name: Start isolated local Supabase
+      - name: Stage governed Admin 001-043 baseline before Pilot migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 43); do
+            prefix="$(printf '%03d' "$i")"
+            mapfile -t files < <(find .cf093-admin/supabase/production-migrations -maxdepth 1 -type f -name "${prefix}_*.sql" -print)
+            if [ "${#files[@]}" -ne 1 ]; then
+              echo "Expected exactly one authoritative Admin migration for ${prefix}; found ${#files[@]}" >&2
+              exit 3
+            fi
+            base="$(basename "${files[0]}")"
+            suffix="${base#${prefix}_}"
+            version="$(printf '2026081000%04d' "$i")"
+            cp "${files[0]}" "supabase/migrations/${version}_admin_baseline_${suffix}"
+          done
+          test -f supabase/migrations/20260810000001_admin_baseline_schemas_extensions.sql
+          test -f supabase/migrations/20260810000043_admin_baseline_harden_de_daad_guard_function_acl.sql
+          test -f supabase/migrations/20260812110933_qilt_provider_outcomes_foundation.sql
+          echo "Authoritative Admin 001-043 baseline staged ahead of Pilot migration chain."
+
+      - name: Start isolated local Supabase and perform first replay
         shell: bash
         run: |
           set -euo pipefail
           npx supabase start
 
-      - name: Fresh replay from repository migrations
+      - name: Fresh reset and second replay from combined governed chain
         shell: bash
         run: |
           set -euo pipefail
           npx supabase db reset --local --no-seed
 
-      - name: Verify CF-093 reconstruction order is applied locally
+      - name: Verify CF-093 reconstruction order and core schemas locally
         shell: bash
         run: |
           set -euo pipefail
           OUT="$(npx supabase migration list --local)"
           printf '%s\n' "$OUT"
+          printf '%s\n' "$OUT" | grep -F '20260810000001'
+          printf '%s\n' "$OUT" | grep -F '20260810000043'
           printf '%s\n' "$OUT" | grep -F '20260912005000'
           printf '%s\n' "$OUT" | grep -F '20260912005948'
           printf '%s\n' "$OUT" | grep -F '20260912100539'
           printf '%s\n' "$OUT" | grep -F '20260912101339'
+          psql 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' -v ON_ERROR_STOP=1 -Atc "select count(*) from pg_namespace where nspname in ('ref','catalogue','pim','pipeline','security');" | grep -Fx '5'
+          psql 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' -v ON_ERROR_STOP=1 -Atc "select coalesce(pv.configuration#>>'{discovery_strategy,type}','') from pipeline.layer2_source_profiles p join pipeline.layer2_source_profile_versions pv on pv.id=p.current_version_id where p.profile_key='au-uq-course-catalogue';" | grep -Fx 'first_party_search'
 
       - name: Stop isolated local Supabase
         if: always()
