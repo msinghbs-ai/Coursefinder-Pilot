@@ -7,6 +7,12 @@ on:
     paths:
       - '.github/workflows/cf093-fresh-reconstruction.yml'
       - 'supabase/migrations/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/cf093-fresh-reconstruction.yml'
+      - 'supabase/migrations/**'
 
 permissions:
   contents: read
