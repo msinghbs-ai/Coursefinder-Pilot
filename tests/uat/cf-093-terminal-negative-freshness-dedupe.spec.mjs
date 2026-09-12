@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const migration = fs.readFileSync(
-  path.resolve('supabase/migrations/20260912032000_cf_093_scheduler_terminal_negative_freshness_dedupe.sql'),
+  path.resolve('supabase/migrations/20260912031356_cf_093_scheduler_terminal_negative_freshness_dedupe.sql'),
   'utf8',
 )
 
