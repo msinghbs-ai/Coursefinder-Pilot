@@ -3,9 +3,11 @@ import fs from'node:fs'
 
 const sql=fs.readFileSync('supabase/migrations/20260912010000_cf_093_scheduler_preview_bound_async_discovery.sql','utf8')
 const foundFix=fs.readFileSync('supabase/migrations/20260912010100_cf_093_scheduler_async_binding_found_state_fix.sql','utf8')
+const operatorCancel=fs.readFileSync('supabase/migrations/20260912010128_cf_093_scheduler_async_binding_operator_cancel.sql','utf8')
 const cancelFix=fs.readFileSync('supabase/migrations/20260912010200_cf_093_scheduler_async_binding_cancel_failclosed.sql','utf8')
 const retryChain=fs.readFileSync('supabase/migrations/20260912010300_cf_093_scheduler_retry_context_and_token_chain.sql','utf8')
 const retryContext=fs.readFileSync('supabase/migrations/20260912010400_cf_093_scheduler_bound_discovery_context_retry.sql','utf8')
+const terminalHandoff=fs.readFileSync('supabase/migrations/20260912012541_cf_093_scheduler_terminal_negative_subset_handoff.sql','utf8')
 const worker=fs.readFileSync('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
 
 test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs without broadening authority',()=>{
@@ -26,8 +28,6 @@ test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs 
  expect(sql).toContain('v_binding.discovery_course_ids @> v_requested')
  expect(sql).toContain('scheduler async bound profile/course identity changed during discovery')
  expect(sql).toContain('d.created_at>=v_binding.activated_at')
- expect(sql).toContain('scheduler async discovery did not produce a current selected URL for every preview-bound discovery course')
- expect(sql).toContain('if v_bound and v_count<>cardinality(v_binding.sync_course_ids)')
  expect(sql).toContain("set status='handoff_started',handoff_started_at=now()")
  expect(sql).toContain("set_config('coursefinder.scheduler_preview_token',p_preview_token::text,true)")
 
@@ -38,6 +38,11 @@ test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs 
  expect(cancelFix).toContain("b.discovery_course_ids @> v_requested")
  expect(cancelFix).not.toContain("b.status in ('active','handoff_started')")
  expect(cancelFix).toContain('scheduler async binding is not active; continuation rejected')
+ expect(operatorCancel).toContain("p_reason text")
+ expect(operatorCancel).toContain("current_user not in ('service_role','postgres')")
+ expect(operatorCancel).toContain("set status='cancelled'")
+ expect(operatorCancel).toContain("'cancel_reason',trim(p_reason)")
+ expect(operatorCancel).toContain('revoke all on function security.scheduler_workflow_async_binding_cancel_v1')
 
  // The exact Preview token is retained in nonce payloads, while historical unresolved
  // dispositions remain retryable only for an active exact scheduler binding.
@@ -51,8 +56,27 @@ test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs 
  expect(retryContext).toContain("dc.status in ('exact_match','likely_match','ambiguous','identity_mismatch','current_page_not_found')")
  expect(retryContext).not.toContain('delete from pipeline.layer2_course_discovery_candidates')
 
- // Existing worker continuations already carry actor/full sync scope and use the same
- // scoped context helper; the new DB contract changes retry semantics only while bound.
+ // Consequential recovery: deterministic Layer 2 may consume the verified queueable subset
+ // only after every Preview-bound discovery course has either a selected URL or an explicit
+ // post-activation terminal negative. Transient/unattempted outcomes still fail closed.
+ expect(terminalHandoff).toContain("d.created_at>=v_binding.activated_at")
+ expect(terminalHandoff).toContain("d.status in ('current_page_not_found','ambiguous','identity_mismatch')")
+ expect(terminalHandoff).toContain('scheduler async discovery has transient/unattempted courses without a governed terminal outcome')
+ expect(terminalHandoff).toContain("'terminal_negative_count',v_terminal_negative_count")
+ expect(terminalHandoff).toContain("'selected_discovery_count',v_selected_discovery_count")
+ expect(terminalHandoff).toContain("'canonical_mutation_authorised',false")
+ expect(terminalHandoff).toContain("'search_publication_authorised',false")
+ expect(terminalHandoff).not.toContain('v_count<>cardinality(v_binding.sync_course_ids)')
+
+ // Historical partial batches are retained but do not masquerade as live work. A partial
+ // batch still blocks only when it actually contains queued/running items.
+ expect(terminalHandoff).toContain("b.status in ('queued','running')")
+ expect(terminalHandoff).toContain("b.status='partial'")
+ expect(terminalHandoff).toContain("i.status in ('queued','running')")
+ expect(terminalHandoff).not.toContain("b.status in ('queued','running','partial')")
+
+ // Existing worker continuations carry actor/full sync scope and use the same scoped
+ // context helper; retry semantics change only while bound.
  expect(worker).toContain('auto_sync_actor')
  expect(worker).toContain('sync_course_ids')
  expect(worker).toContain('layer2_discovery_context_scope')
@@ -71,10 +95,13 @@ test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs 
  expect(sql).not.toContain("reprocess_governed_evidence','label','Reprocess governed Evidence','enabled',true")
  expect(sql).not.toContain('insert into publishing.')
  expect(sql).not.toContain('insert into search.')
+ expect(terminalHandoff).not.toContain('insert into publishing.')
+ expect(terminalHandoff).not.toContain('insert into search.')
 
  // State/multi-provider scopes do not receive fabricated execution policies.
  expect(sql).toContain('scheduler_workflow_execution_policy_gap_count_v1')
  expect(sql).toContain('if v_policy_gaps>0')
  expect(sql).not.toContain('insert into pipeline.layer2_execution_policies')
  expect(retryContext).not.toContain('insert into pipeline.layer2_execution_policies')
+ expect(terminalHandoff).not.toContain('insert into pipeline.layer2_execution_policies')
 })
