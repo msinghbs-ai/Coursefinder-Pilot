@@ -1,0 +1,55 @@
+name: CF-093 Migration History Repair
+
+on:
+  push:
+    branches:
+      - m245/cf093-async-discovery-20260912
+    paths:
+      - .github/workflows/cf093-migration-history-repair.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: fxcwkweaxjtknorudmwp
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+
+      - name: Verify required Supabase secrets exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_ACCESS_TOKEN:-}" || { echo "Missing GitHub Actions secret SUPABASE_ACCESS_TOKEN"; exit 2; }
+          test -n "${SUPABASE_DB_PASSWORD:-}" || { echo "Missing GitHub Actions secret SUPABASE_DB_PASSWORD"; exit 2; }
+
+      - name: Install Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts supabase@latest
+          npx supabase --version
+
+      - name: Link Pilot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Repair retroactive CF-093 bootstrap history
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx supabase migration repair 20260912005000 --status applied --linked
+
+      - name: Verify migration history parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx supabase migration list --linked
