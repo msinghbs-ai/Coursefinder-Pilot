@@ -42,4 +42,5 @@ jobs:
           tests/uat/cf-093-terminal-negative-freshness-dedupe.spec.mjs
           tests/uat/cf-093-uq-discovery-query-field.spec.mjs
           tests/uat/cf-093-uq-reconstruction-bootstrap.spec.mjs
+          tests/uat/cf-093-preview-provenance-terminal-hardening.spec.mjs
           --project=chromium-desktop
