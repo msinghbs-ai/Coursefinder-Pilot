@@ -1,0 +1,68 @@
+name: CF-093 Fresh Reconstruction
+
+on:
+  push:
+    branches:
+      - m245/cf093-async-discovery-20260912
+    paths:
+      - '.github/workflows/cf093-fresh-reconstruction.yml'
+      - 'supabase/migrations/**'
+
+permissions:
+  contents: read
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --ignore-scripts supabase@2.117.0
+          npx supabase --version
+
+      - name: Initialise local Supabase config when absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f supabase/config.toml ]; then
+            npx supabase init
+          fi
+
+      - name: Start isolated local Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx supabase start
+
+      - name: Fresh replay from repository migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx supabase db reset --local --no-seed
+
+      - name: Verify CF-093 reconstruction order is applied locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$(npx supabase migration list --local)"
+          printf '%s\n' "$OUT"
+          printf '%s\n' "$OUT" | grep -F '20260912005000'
+          printf '%s\n' "$OUT" | grep -F '20260912005948'
+          printf '%s\n' "$OUT" | grep -F '20260912100539'
+          printf '%s\n' "$OUT" | grep -F '20260912101339'
+
+      - name: Stop isolated local Supabase
+        if: always()
+        shell: bash
+        run: npx supabase stop --no-backup || true
