@@ -1,12 +1,12 @@
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 
-const sql=fs.readFileSync('supabase/migrations/20260912010000_cf_093_scheduler_preview_bound_async_discovery.sql','utf8')
-const foundFix=fs.readFileSync('supabase/migrations/20260912010100_cf_093_scheduler_async_binding_found_state_fix.sql','utf8')
+const sql=fs.readFileSync('supabase/migrations/20260911231544_cf_093_scheduler_preview_bound_async_discovery.sql','utf8')
+const foundFix=fs.readFileSync('supabase/migrations/20260911231600_cf_093_scheduler_async_binding_found_state_fix.sql','utf8')
 const operatorCancel=fs.readFileSync('supabase/migrations/20260912010128_cf_093_scheduler_async_binding_operator_cancel.sql','utf8')
-const cancelFix=fs.readFileSync('supabase/migrations/20260912010200_cf_093_scheduler_async_binding_cancel_failclosed.sql','utf8')
-const retryChain=fs.readFileSync('supabase/migrations/20260912010300_cf_093_scheduler_retry_context_and_token_chain.sql','utf8')
-const retryContext=fs.readFileSync('supabase/migrations/20260912010400_cf_093_scheduler_bound_discovery_context_retry.sql','utf8')
+const cancelFix=fs.readFileSync('supabase/migrations/20260911231845_cf_093_scheduler_async_binding_cancel_failclosed.sql','utf8')
+const retryChain=fs.readFileSync('supabase/migrations/20260911232205_cf_093_scheduler_retry_context_and_token_chain.sql','utf8')
+const retryContext=fs.readFileSync('supabase/migrations/20260911232239_cf_093_scheduler_bound_discovery_context_retry.sql','utf8')
 const terminalHandoff=fs.readFileSync('supabase/migrations/20260912012541_cf_093_scheduler_terminal_negative_subset_handoff.sql','utf8')
 const worker=fs.readFileSync('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
 
