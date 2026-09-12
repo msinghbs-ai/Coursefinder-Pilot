@@ -4,7 +4,7 @@ import fs from'node:fs'
 const worker=fs.readFileSync('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
 
 test('CF-093 keeps UQ discovery qualification profile-scoped and preserves CRICOS detail verification',()=>{
- expect(worker).toContain('layer2-scope-discover-scheduled-v1.3.9')
+ expect(worker).toContain('layer2-scope-discover-scheduled-v1.3.10')
  expect(worker).toContain('d.query_field')
  expect(worker).toContain('field==="course_code"')
  expect(worker).toContain('field==="canonical_title"')
