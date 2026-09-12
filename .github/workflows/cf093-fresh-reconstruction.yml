@@ -1,0 +1,185 @@
+name: CF-093 Fresh Reconstruction
+
+on:
+  push:
+    branches:
+      - m245/cf093-async-discovery-20260912
+    paths:
+      - '.github/workflows/cf093-fresh-reconstruction.yml'
+      - 'supabase/migrations/20260912005000_cf_093_uq_discovery_strategy_reconstruction_bootstrap.sql'
+      - 'supabase/migrations/20260912005948_cf_093_uq_native_program_discovery_profile.sql'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/cf093-fresh-reconstruction.yml'
+      - 'supabase/migrations/20260912005000_cf_093_uq_discovery_strategy_reconstruction_bootstrap.sql'
+      - 'supabase/migrations/20260912005948_cf_093_uq_native_program_discovery_profile.sql'
+
+permissions:
+  contents: read
+
+jobs:
+  reconstruct-uq:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - name: Checkout Pilot candidate
+        uses: actions/checkout@v4
+
+      - name: Create fresh governed Layer 2 reconstruction fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create schema extensions;
+          create schema security;
+          create schema pipeline;
+          create extension if not exists pgcrypto with schema extensions;
+
+          create or replace function extensions.gen_random_uuid()
+          returns uuid language sql volatile as $$ select pg_catalog.gen_random_uuid() $$;
+
+          create table pipeline.layer2_source_profiles (
+            id uuid primary key default extensions.gen_random_uuid(),
+            profile_key text not null unique,
+            domain text not null,
+            freshness_sla_hours integer,
+            schedule_text text,
+            current_version_id uuid,
+            updated_at timestamptz not null default now()
+          );
+
+          create table pipeline.layer2_source_profile_versions (
+            id uuid primary key default extensions.gen_random_uuid(),
+            profile_id uuid not null references pipeline.layer2_source_profiles(id) on delete cascade,
+            version_no integer not null check(version_no>0),
+            configuration jsonb not null default '{}'::jsonb,
+            configuration_hash text not null,
+            validation_status text not null default 'pending' check(validation_status in ('pending','valid','invalid','superseded')),
+            validation_result jsonb not null default '{}'::jsonb,
+            change_control_ref text,
+            uat_ref text,
+            created_at timestamptz not null default now(),
+            unique(profile_id,version_no),
+            unique(profile_id,configuration_hash)
+          );
+
+          alter table pipeline.layer2_source_profiles
+            add constraint layer2_profiles_current_version_fk
+            foreign key(current_version_id) references pipeline.layer2_source_profile_versions(id) on delete restrict;
+
+          create or replace function security.layer2_validate_profile_config(p_config jsonb)
+          returns jsonb
+          language plpgsql
+          stable
+          set search_path='pg_catalog','security'
+          as $$
+          declare
+            v_errors jsonb := '[]'::jsonb;
+            v_method text := coalesce(p_config->>'acquisition_method','');
+            v_target text := coalesce(p_config->>'target_entity_type','');
+            v_text text := lower(p_config::text);
+          begin
+            if v_method not in ('website','course_catalogue','course_detail','fee_schedule','intake_calendar','english_requirements','scholarship_catalogue','document','structured_api','json_endpoint','csv_feed','xlsx_feed','sitemap','search_endpoint','other_deterministic') then v_errors := v_errors || jsonb_build_array('unsupported acquisition_method'); end if;
+            if v_target not in ('provider','course','campus','scholarship','provider_outcome','student_flow','course_fact','mixed') then v_errors := v_errors || jsonb_build_array('unsupported target_entity_type'); end if;
+            if coalesce(p_config->>'base_domain','')='' and coalesce(p_config->>'discovery_url','')='' then v_errors := v_errors || jsonb_build_array('base_domain or discovery_url is required'); end if;
+            if coalesce((p_config->>'timeout_seconds')::integer,30) < 1 or coalesce((p_config->>'timeout_seconds')::integer,30) > 120 then v_errors := v_errors || jsonb_build_array('timeout_seconds must be between 1 and 120'); end if;
+            if coalesce((p_config->>'concurrency')::integer,1) < 1 or coalesce((p_config->>'concurrency')::integer,1) > 20 then v_errors := v_errors || jsonb_build_array('concurrency must be between 1 and 20'); end if;
+            if coalesce((p_config->>'max_payload_mb')::integer,10) < 1 or coalesce((p_config->>'max_payload_mb')::integer,10) > 100 then v_errors := v_errors || jsonb_build_array('max_payload_mb must be between 1 and 100'); end if;
+            if v_text ~ '"(secret|password|token|api[_-]?key|authorization|cookie|client[_-]?secret)"[[:space:]]*:' then v_errors := v_errors || jsonb_build_array('secret-like configuration keys are prohibited; use server-side secret references only'); end if;
+            if coalesce(p_config->>'evidence_required','true') <> 'true' then v_errors := v_errors || jsonb_build_array('Layer 2 evidence_required must be true'); end if;
+            return jsonb_build_object('valid',jsonb_array_length(v_errors)=0,'errors',v_errors,'validated_at',now());
+          exception when others then
+            return jsonb_build_object('valid',false,'errors',jsonb_build_array('configuration type validation failed'),'validated_at',now());
+          end
+          $$;
+
+          do $$
+          declare
+            v_profile uuid := 'c7976665-14f3-40ac-834b-a8ee1c8afc32'::uuid;
+            v_version uuid := '1f6c4e75-538a-4087-a721-c9087b5a3ae0'::uuid;
+            v_cfg jsonb := $cfg$
+            {
+              "retry":{"backoff":"exponential","max_attempts":3},
+              "headers":{"user_agent":"CourseFinder deterministic acquisition"},
+              "schedule":"manual/governed",
+              "pagination":{"mode":"source_specific"},
+              "base_domain":"\\1",
+              "concurrency":2,
+              "url_patterns":["https://study.uq.edu.au/study-options/programs"],
+              "discovery_url":"https://study.uq.edu.au/study-options/programs",
+              "robots_policy":"respect",
+              "authentication":{"mechanism":"none_or_server_secret_reference"},
+              "max_payload_mb":25,
+              "parser_profile":"deterministic-v1",
+              "exclusion_rules":[],
+              "inclusion_rules":[],
+              "timeout_seconds":30,
+              "mapping_strategy":"stable Layer 1 course match; exact regulatory code where available",
+              "source_authority":"official/first-party deterministic enrichment",
+              "evidence_required":true,
+              "operational_owner":"PIM/Data Operations",
+              "acquisition_method":"course_catalogue",
+              "allowed_mime_types":["text/html","application/json"],
+              "change_control_ref":"CF-CHG-20260823-029",
+              "target_entity_type":"course_fact",
+              "freshness_sla_hours":168,
+              "content_change_policy":"hash_then_observe_never_direct_canonical_mutation",
+              "rate_limit_per_minute":60,
+              "regulatory_code_extraction":{"nzqa":null,"cricos":"00025B"},
+              "stable_identifier_strategy":"exact_cricos_course_code"
+            }
+            $cfg$::jsonb;
+            v_hash text;
+          begin
+            v_hash:=encode(extensions.digest(v_cfg::text,'sha256'),'hex');
+            if v_hash <> '77dda7fa33501c67a046dff1e5385554a419853c64f12f5b56e1c23a63da0d72' then
+              raise exception 'historical UQ v1 fixture hash drifted: %',v_hash;
+            end if;
+            insert into pipeline.layer2_source_profiles(id,profile_key,domain,freshness_sla_hours,schedule_text)
+            values(v_profile,'au-uq-course-catalogue','course_facts',168,'manual/governed');
+            insert into pipeline.layer2_source_profile_versions(id,profile_id,version_no,configuration,configuration_hash,validation_status,validation_result,change_control_ref,uat_ref)
+            values(v_version,v_profile,1,v_cfg,v_hash,'valid',security.layer2_validate_profile_config(v_cfg),'CF-CHG-20260823-029','M2.1-foundation');
+            update pipeline.layer2_source_profiles set current_version_id=v_version where id=v_profile;
+          end
+          $$;
+          SQL
+
+      - name: Apply retroactive bootstrap then immutable 005948
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260912005000_cf_093_uq_discovery_strategy_reconstruction_bootstrap.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20260912005948_cf_093_uq_native_program_discovery_profile.sql
+
+      - name: Verify fresh replay result and uniqueness
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(psql -Atc "select count(*) from pipeline.layer2_source_profile_versions where profile_id='c7976665-14f3-40ac-834b-a8ee1c8afc32'::uuid")" = "3"
+          test "$(psql -Atc "select count(distinct configuration_hash) from pipeline.layer2_source_profile_versions where profile_id='c7976665-14f3-40ac-834b-a8ee1c8afc32'::uuid")" = "3"
+          test "$(psql -Atc "select configuration#>>'{discovery_strategy,type}' from pipeline.layer2_source_profile_versions v join pipeline.layer2_source_profiles p on p.current_version_id=v.id where p.profile_key='au-uq-course-catalogue'")" = "first_party_search"
+          test "$(psql -Atc "select configuration#>>'{discovery_strategy,query_field}' from pipeline.layer2_source_profile_versions v join pipeline.layer2_source_profiles p on p.current_version_id=v.id where p.profile_key='au-uq-course-catalogue'")" = "canonical_title_normalized"
+          test "$(psql -Atc "select configuration#>>'{discovery_strategy,require_url_prefix}' from pipeline.layer2_source_profile_versions v join pipeline.layer2_source_profiles p on p.current_version_id=v.id where p.profile_key='au-uq-course-catalogue'")" = "/study-options/programs/"
+          test "$(psql -Atc "select validation_status from pipeline.layer2_source_profile_versions v join pipeline.layer2_source_profiles p on p.current_version_id=v.id where p.profile_key='au-uq-course-catalogue'")" = "valid"
+          echo "CF-093 UQ fresh migration replay PASS: bootstrap + immutable 005948 created distinct governed versions under the real uniqueness contract."

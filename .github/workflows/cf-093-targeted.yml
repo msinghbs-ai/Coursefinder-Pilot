@@ -1,0 +1,45 @@
+name: CF-093 Targeted Recovery
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/layer2-scope-discover-scheduled/**'
+      - 'supabase/migrations/*cf_093*'
+      - 'tests/uat/cf-093-*.spec.mjs'
+      - '.github/workflows/cf-093-targeted.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cf-093-targeted-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Run CF-093 targeted contract tests
+        run: >-
+          npx playwright test
+          tests/uat/cf-093-codex-async-token-hardening.spec.mjs
+          tests/uat/cf-093-first-party-zero-result-terminal.spec.mjs
+          tests/uat/cf-093-scheduler-preview-bound-async-discovery.spec.mjs
+          tests/uat/cf-093-terminal-negative-dedupe.spec.mjs
+          tests/uat/cf-093-terminal-negative-freshness-dedupe.spec.mjs
+          tests/uat/cf-093-uq-discovery-query-field.spec.mjs
+          tests/uat/cf-093-uq-reconstruction-bootstrap.spec.mjs
+          --project=chromium-desktop
