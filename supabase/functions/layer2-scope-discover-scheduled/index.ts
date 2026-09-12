@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.3.7";
+const FN="layer2-scope-discover-scheduled",BUCKET="evidence",VERSION="layer2-scope-discover-scheduled-v1.3.8";
 const J=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:unknown)=>String(v??"").replace(/\s+/g," ").trim();
 const norm=(v:unknown)=>clean(v).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -41,7 +41,7 @@ async function captureFirecrawlScreenshot(svc:any,rt:any,acquired:any,jobId:stri
  }catch(e:any){return{evidenceId:null,error:String(e?.name==="AbortError"?"firecrawl_screenshot_timeout":e?.message||e)}}
 }
 async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,cfg:any,budgetCapMs:number=90000,requireDiscoveryLinks:boolean=true){
- const failures:any[]=[],courseStarted=performance.now(),configuredBudgetMs=Math.min(Math.max(Number(cfg?.discovery_strategy?.course_acquisition_budget_ms||70000),15000),90000),courseBudgetMs=Math.max(5000,Math.min(configuredBudgetMs,budgetCapMs));
+ const failures:any[]=[],courseStarted=performance.now(),configuredBudgetMs=Math.min(Math.max(Number(cfg?.discovery_strategy?.course_acquisition_budget_ms||70000),15000),90000),courseBudgetMs=Math.max(5000,Math.min(configuredBudgetMs,budgetCapMs));let emptySearchResult:any=null;
  for(const route of (rt.routes||[])){
   const remainingCourseBudget=courseBudgetMs-(performance.now()-courseStarted);
   if(remainingCourseBudget<=5000){failures.push({reason:"course_acquisition_budget_exhausted"});break;}
@@ -95,9 +95,11 @@ async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,c
    if(requiredPrefix&&requireDiscoveryLinks){
      const matchingLinks=extractLinks(html,target).filter((x:any)=>{try{return new URL(x.url).pathname.toLowerCase().startsWith(requiredPrefix.toLowerCase())}catch{return false}});
      if(!matchingLinks.length){
-       const reason="extraction_failed";
-       await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:attemptId,p_status:"extraction_failed",p_http_status:res.status,p_mime:"text/html",p_raw_evidence:null,p_html_evidence:null,p_screenshot_evidence:null,p_extraction_status:"discovery_required_link_missing",p_blocker:`no discovery link matched required prefix ${requiredPrefix}`,p_metrics:{operation:"scope_discovery",provider_key:pc.provider_key,...usage(pc),route_priority:route.priority,fallback_reason:reason,latency_ms:latency,worker_version:VERSION,required_url_prefix:requiredPrefix}});
+       const firstPartySearch=String(cfg?.discovery_strategy?.type||"").toLowerCase()==="first_party_search";
+       const reason=firstPartySearch?"zero_results":"extraction_failed";
+       await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:attemptId,p_status:"extraction_failed",p_http_status:res.status,p_mime:"text/html",p_raw_evidence:null,p_html_evidence:null,p_screenshot_evidence:null,p_extraction_status:firstPartySearch?"discovery_zero_results":"discovery_required_link_missing",p_blocker:`no discovery link matched required prefix ${requiredPrefix}`,p_metrics:{operation:"scope_discovery",provider_key:pc.provider_key,...usage(pc),route_priority:route.priority,fallback_reason:reason,latency_ms:latency,worker_version:VERSION,required_url_prefix:requiredPrefix,first_party_zero_result:firstPartySearch}});
        failures.push({provider_key:pc.provider_key,reason,required_url_prefix:requiredPrefix});
+       if(firstPartySearch){if(!emptySearchResult)emptySearchResult={attemptId,providerId:pc.id,providerKey:pc.provider_key,httpStatus:res.status,mime:"text/html",html,sourceUrl:target,screenshotUrl,latency,routePriority:route.priority,failures,vendorUnits:pc.provider_key==="direct-http"?0:1,vendorUnitsBasis:pc.provider_key==="direct-http"?"internal_request":"provider_request_attempt",estimatedRequestCostUsd:pc.estimated_request_cost_usd??null};continue}
        if(canFallback(route,reason))continue;
        throw new Error(`route_stopped:${pc.provider_key}:${reason}`);
      }
@@ -114,6 +116,7 @@ async function acquireHtml(svc:any,rt:any,target:string,jobId:string,ua:string,c
    throw e;
   }
  }
+ if(emptySearchResult)return emptySearchResult;
  throw new Error("providers_exhausted:"+JSON.stringify(failures));
 }
 function candidateExpectedTitle(course:any,cfg:any){const original=clean(course.canonical_title||course.display_title),prefixes=Array.isArray(cfg?.discovery_strategy?.candidate_title_strip_prefixes)?cfg.discovery_strategy.candidate_title_strip_prefixes.map((x:any)=>norm(x)).filter(Boolean):[];let n=norm(original);for(const prefix of prefixes){if(n===prefix)return original;if(n.startsWith(prefix+" ")){n=n.slice(prefix.length+1).trim();break}}return n||original}
