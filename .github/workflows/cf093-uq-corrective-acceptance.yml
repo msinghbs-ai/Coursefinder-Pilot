@@ -1,0 +1,112 @@
+name: CF-093 UQ Corrective Acceptance
+
+on:
+  push:
+    branches:
+      - m245/cf093-async-discovery-20260912
+    paths:
+      - '.github/workflows/cf093-uq-corrective-acceptance.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch-uq:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UAT_BASE_URL: https://m245-cf093-async-discovery-20260912-coursefinder-pilot.techm.workers.dev
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Preflight governed UAT credentials and preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${UAT_EMAIL:-}" || { echo 'Missing COURSEFINDER_UAT_EMAIL'; exit 2; }
+          test -n "${UAT_PASSWORD:-}" || { echo 'Missing COURSEFINDER_UAT_PASSWORD'; exit 2; }
+          for attempt in $(seq 1 6); do
+            code=$(curl -L -sS -o /tmp/cf093-preview.html -w '%{http_code}' --max-time 15 "$UAT_BASE_URL/?cf093_uq_acceptance=${GITHUB_SHA}" || true)
+            if [ "$code" = '200' ]; then exit 0; fi
+            sleep 5
+          done
+          echo 'CF-093 branch preview unavailable' >&2
+          exit 3
+
+      - name: Install UAT dependencies
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npx playwright install chromium
+
+      - name: Create one-shot authenticated UQ dispatch test
+        shell: bash
+        run: |
+          cat > tests/uat/cf093-uq-corrective-dispatch.temp.spec.mjs <<'TEST'
+          import fs from 'node:fs/promises'
+          import { test, expect } from '@playwright/test'
+          import { loginAsUatUser } from './support/runtime-evidence.mjs'
+
+          const UQ='e55396d2-869a-46ef-9d17-841c7eab1313'
+          const expected={catalogue_count:382,needs_discovery_count:54}
+
+          test('CF-093 authenticated UQ corrective provider-scope dispatch',async({page})=>{
+            await loginAsUatUser(page)
+            await page.goto('/#scheduled-tasks',{waitUntil:'domcontentloaded'})
+            const builder=page.locator('.cf-workflow-builder')
+            await expect(builder).toBeVisible({timeout:45_000})
+
+            const scope=builder.locator('label.cf-workflow-builder__field').filter({hasText:'Scope type'}).locator('select')
+            await scope.selectOption('university')
+            const search=builder.getByPlaceholder('Search up to 10 server-authorised matches')
+            await search.fill('Queensland')
+            const providerSelect=builder.locator('label.cf-workflow-builder__field').filter({hasText:'University / provider'}).locator('select')
+            await expect(providerSelect.locator(`option[value="${UQ}"]`)).toHaveCount(1,{timeout:20_000})
+            await providerSelect.selectOption(UQ)
+
+            const previewResponsePromise=page.waitForResponse(r=>r.url().includes('/rest/v1/rpc/scheduler_workflow_preview_v1')&&r.request().method()==='POST',{timeout:45_000})
+            await builder.getByRole('button',{name:'Preview governed scope'}).click()
+            const previewResponse=await previewResponsePromise
+            expect(previewResponse.ok()).toBeTruthy()
+            const preview=await previewResponse.json()
+            expect(preview.catalogue_count).toBe(expected.catalogue_count)
+            expect(preview.needs_discovery_count).toBe(expected.needs_discovery_count)
+            expect(preview.executable).toBe(true)
+            expect(preview.preview_token).toBeTruthy()
+            expect(preview.async_discovery_preview_bound).toBe(true)
+
+            await builder.getByPlaceholder('Required for consequential dispatch').fill('CF-093 corrective UQ discovery acceptance after terminal-basis hardening')
+            const runResponsePromise=page.waitForResponse(r=>r.url().includes('/rest/v1/rpc/scheduler_workflow_run_now_v2')&&r.request().method()==='POST',{timeout:45_000})
+            await builder.getByRole('button',{name:/Run acquisition \+ deterministic Layer 2/i}).click()
+            const runResponse=await runResponsePromise
+            expect(runResponse.ok()).toBeTruthy()
+            const dispatch=await runResponse.json()
+            expect(dispatch.preview_token||preview.preview_token).toBe(preview.preview_token)
+            expect(dispatch.status).toBeTruthy()
+
+            await fs.mkdir('uat-artifacts',{recursive:true})
+            await fs.writeFile('uat-artifacts/cf093-uq-corrective-dispatch.json',JSON.stringify({captured_at:new Date().toISOString(),github_sha:process.env.GITHUB_SHA,base_url:process.env.UAT_BASE_URL,preview,dispatch},null,2))
+          })
+          TEST
+
+      - name: Dispatch through normal authenticated Admin/PIM contract
+        run: npx playwright test tests/uat/cf093-uq-corrective-dispatch.temp.spec.mjs --project=chromium-desktop --retries=0
+
+      - name: Upload governed dispatch evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cf093-uq-corrective-dispatch-${{ github.run_id }}
+          path: |
+            uat-artifacts/cf093-uq-corrective-dispatch.json
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 14
