@@ -1,0 +1,77 @@
+name: CF-093 Forward Fix Patch
+
+on:
+  push:
+    branches:
+      - m245/cf093-async-discovery-20260912
+    paths:
+      - '.github/workflows/cf093-forward-fix-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: m245/cf093-async-discovery-20260912
+          fetch-depth: 0
+      - name: Apply exact forward-only source corrections
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p=Path('supabase/functions/layer2-scope-discover-scheduled/index.ts')
+          s=p.read_text()
+          def repl(old,new,label):
+              global s
+              n=s.count(old)
+              if n!=1:
+                  raise SystemExit(f'{label}: expected 1 match, got {n}')
+              s=s.replace(old,new)
+
+          repl('VERSION="layer2-scope-discover-scheduled-v1.3.9"','VERSION="layer2-scope-discover-scheduled-v1.3.10"','worker version')
+          repl('estimatedRequestCostUsd:pc.estimated_request_cost_usd??null};continue}','estimatedRequestCostUsd:pc.estimated_request_cost_usd??null,zeroResultMarkerQualified:true,requiredPrefixLinkCount:0,attemptFinalized:true};continue}','qualified zero result flags')
+          repl('estimatedRequestCostUsd:pc.estimated_request_cost_usd??null}}catch','estimatedRequestCostUsd:pc.estimated_request_cost_usd??null,zeroResultMarkerQualified:false,attemptFinalized:false}}catch','normal acquisition flags')
+          repl('nExpected=norm(rankingExpectedTitle),nObserved=norm(observedTitle),exactTitle=Boolean(nExpected&&nObserved&&nObserved===nExpected),prefixTitle=Boolean(nExpected&&nObserved&&nObserved.startsWith(nExpected+" ")&&nObserved.split(" ").length-nExpected.split(" ").length<=2),titleScore=exactTitle?1:prefixTitle?(preferExact?.85:1):similarity(rankingExpectedTitle,observedTitle),','nExpected=norm(rankingExpectedTitle),nOriginal=norm(expectedTitle),nObserved=norm(observedTitle),exactTitle=Boolean(nObserved&&((nExpected&&nObserved===nExpected)||(nOriginal&&nObserved===nOriginal))),prefixTitle=Boolean(nObserved&&((nExpected&&nObserved.startsWith(nExpected+" ")&&nObserved.split(" ").length-nExpected.split(" ").length<=2)||(nOriginal&&nObserved.startsWith(nOriginal+" ")&&nObserved.split(" ").length-nOriginal.split(" ").length<=2))),titleScore=exactTitle?1:prefixTitle?(preferExact?.85:1):Math.max(similarity(rankingExpectedTitle,observedTitle),similarity(expectedTitle,observedTitle)),','original and stripped title matching')
+          repl('return{expectedTitle,rankingExpectedTitle,expectedCode,candidates,status,blocker,selected:["exact_match","likely_match"].includes(status)}}','return{expectedTitle,rankingExpectedTitle,expectedCode,candidates,status,blocker,selected:["exact_match","likely_match"].includes(status),requiredPrefixLinkCount:links.length}}','qualified result page count')
+          repl('async function verifyCandidateDetail(svc:any,rt:any,cfg:any,course:any,ranked:any,jobId:string,ua:string,budgetMs:number){','async function verifyCandidateDetail(svc:any,rt:any,cfg:any,course:any,ranked:any,jobId:string,ua:string,budgetMs:number,schedulerPreviewToken:string,autoSyncActor:string,profileId:string){','verification signature')
+          repl('candidate.url,jobId,ua,cfg,budgetMs,false),expectedCode=','candidate.url,jobId,ua,cfg,budgetMs,false);if(autoSyncActor){const postFetch=await rpc(svc,"layer2_discovery_context_scope_bound_v1",{p_preview_token:schedulerPreviewToken,p_actor:autoSyncActor,p_profile_id:profileId,p_course_ids:[course.id],p_limit:1});if(postFetch?.identity_revalidated!==true||!(postFetch?.courses||[]).some((x:any)=>clean(x.id)===clean(course.id)))throw new Error("scheduler async binding identity changed during candidate verification")};const expectedCode=','verification post-fetch binding revalidation')
+          repl('acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent,cfg,invocationRemainingMs-10000);const bytes=','acquired=await acquireHtml(svc,rt,target,jobId,cfg.headers?.user_agent,cfg,invocationRemainingMs-10000);if(autoSyncActor){const postFetch=await rpc(svc,"layer2_discovery_context_scope_bound_v1",{p_preview_token:schedulerPreviewToken,p_actor:autoSyncActor,p_profile_id:profileId,p_course_ids:[course.id],p_limit:1});if(postFetch?.identity_revalidated!==true||!(postFetch?.courses||[]).some((x:any)=>clean(x.id)===clean(course.id)))throw new Error("scheduler async binding identity changed during acquisition")};const bytes=','source post-fetch binding revalidation')
+          repl('verifyCandidateDetail(svc,rt,cfg,course,ranked,jobId,cfg.headers?.user_agent,remain)','verifyCandidateDetail(svc,rt,cfg,course,ranked,jobId,cfg.headers?.user_agent,remain,schedulerPreviewToken,autoSyncActor,profileId)','verification args')
+          repl('verification_evidence_id:i===0?verification?.evidenceId||null:null},status:','verification_evidence_id:i===0?verification?.evidenceId||null:null,scheduler_preview_token:schedulerPreviewToken||null,zero_result_marker_qualified:Boolean(acquired.zeroResultMarkerQualified),required_prefix_link_count:ranked.requiredPrefixLinkCount},status:','candidate provenance metadata')
+          repl('provider_key:acquired.providerKey,detail_cricos_verified:false},blocker:','provider_key:acquired.providerKey,detail_cricos_verified:false,scheduler_preview_token:schedulerPreviewToken||null,zero_result_marker_qualified:Boolean(acquired.zeroResultMarkerQualified),required_prefix_link_count:ranked.requiredPrefixLinkCount},blocker:','terminal basis metadata')
+          repl('await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:acquired.attemptId,p_status:"succeeded",','if(!acquired.attemptFinalized)await rpc(svc,"layer2_provider_attempt_finish",{p_attempt_id:acquired.attemptId,p_status:"succeeded",','preserve zero-result telemetry')
+          repl('if(acquired?.attemptId)try{await rpc(svc,"layer2_provider_attempt_finish",','if(acquired?.attemptId&&!acquired?.attemptFinalized)try{await rpc(svc,"layer2_provider_attempt_finish",','preserve finalised attempt on downstream error')
+          p.write_text(s)
+
+          w=Path('.github/workflows/cf093-uq-corrective-acceptance.yml')
+          a=w.read_text()
+          old="""on:\n  push:\n    branches:\n      - m245/cf093-async-discovery-20260912\n    paths:\n      - '.github/workflows/cf093-uq-corrective-acceptance.yml'\n"""
+          new="""on:\n  workflow_dispatch:\n"""
+          if old not in a: raise SystemExit('acceptance trigger block not found')
+          a=a.replace(old,new,1)
+          a=a.replace('UAT_BASE_URL: https://m245-cf093-async-discovery-20260912-coursefinder-pilot.techm.workers.dev','UAT_BASE_URL: http://127.0.0.1:4173',1)
+          old_pre="""          for attempt in $(seq 1 6); do\n            code=$(curl -L -sS -o /tmp/cf093-preview.html -w '%{http_code}' --max-time 15 \"$UAT_BASE_URL/?cf093_uq_acceptance=${GITHUB_SHA}\" || true)\n            if [ \"$code\" = '200' ]; then exit 0; fi\n            sleep 5\n          done\n          echo 'CF-093 branch preview unavailable' >&2\n          exit 3\n"""
+          new_pre="""          test \"$(git rev-parse HEAD)\" = \"${GITHUB_SHA}\" || { echo 'Checked-out SHA does not equal workflow SHA'; exit 3; }\n"""
+          if old_pre not in a: raise SystemExit('preflight preview block not found')
+          a=a.replace(old_pre,new_pre,1)
+          install="""      - name: Install UAT dependencies\n        run: |\n          npm install --ignore-scripts --no-audit --no-fund\n          npx playwright install chromium\n"""
+          serve=install+"""\n      - name: Build and serve exact workflow SHA locally\n        shell: bash\n        run: |\n          set -euo pipefail\n          npm run build\n          nohup npx vite preview --host 127.0.0.1 --port 4173 >/tmp/cf093-vite.log 2>&1 &\n          for attempt in $(seq 1 12); do\n            code=$(curl -sS -o /tmp/cf093-preview.html -w '%{http_code}' --max-time 10 \"$UAT_BASE_URL/\" || true)\n            if [ \"$code\" = '200' ]; then exit 0; fi\n            sleep 2\n          done\n          cat /tmp/cf093-vite.log || true\n          exit 4\n"""
+          if install not in a: raise SystemExit('install block not found')
+          a=a.replace(install,serve,1)
+          a=a.replace('expect(dispatch.status).toBeTruthy()','expect(dispatch.result?.status).toBe(\'scope_started\')\n            expect(dispatch.result?.profiles).toHaveLength(1)\n            expect(dispatch.result.profiles[0]?.status).toBe(\'discovery_started\')',1)
+          w.write_text(a)
+
+      - name: Commit patched sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'coursefinder-governance-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add supabase/functions/layer2-scope-discover-scheduled/index.ts .github/workflows/cf093-uq-corrective-acceptance.yml
+          git diff --cached --check
+          git commit -m 'fix(cf093): harden discovery binding and acceptance evidence'
+          git push origin HEAD:m245/cf093-async-discovery-20260912
