@@ -40,9 +40,10 @@ test('CF-CHG-20260910-093 binds discovery continuations to exact Preview inputs 
  expect(cancelFix).not.toContain("b.status in ('active','handoff_started')")
  expect(cancelFix).toContain('scheduler async binding is not active; continuation rejected')
  expect(operatorCancel).toContain("p_reason text")
+ expect(operatorCancel).toContain("v_reason text:=trim(coalesce(p_reason,''))")
  expect(operatorCancel).toContain("current_user not in ('service_role','postgres')")
  expect(operatorCancel).toContain("set status='cancelled'")
- expect(operatorCancel).toContain("'cancel_reason',trim(p_reason)")
+ expect(operatorCancel).toContain("'async_binding_cancellation_reason',v_reason")
  expect(operatorCancel).toContain('revoke all on function security.scheduler_workflow_async_binding_cancel_v1')
 
  // The exact Preview token is retained in nonce payloads, while historical unresolved
