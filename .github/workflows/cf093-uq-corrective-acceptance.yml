@@ -1,11 +1,7 @@
 name: CF-093 UQ Corrective Acceptance
 
 on:
-  push:
-    branches:
-      - m245/cf093-async-discovery-20260912
-    paths:
-      - '.github/workflows/cf093-uq-corrective-acceptance.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,36 +11,46 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      UAT_BASE_URL: https://m245-cf093-async-discovery-20260912-coursefinder-pilot.techm.workers.dev
+      UAT_BASE_URL: http://127.0.0.1:4173
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
-      - name: Checkout exact branch
+      - name: Checkout exact workflow SHA
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Preflight governed UAT credentials and preview
+      - name: Preflight governed UAT credentials and exact head
         shell: bash
         run: |
           set -euo pipefail
           test -n "${UAT_EMAIL:-}" || { echo 'Missing COURSEFINDER_UAT_EMAIL'; exit 2; }
           test -n "${UAT_PASSWORD:-}" || { echo 'Missing COURSEFINDER_UAT_PASSWORD'; exit 2; }
-          for attempt in $(seq 1 6); do
-            code=$(curl -L -sS -o /tmp/cf093-preview.html -w '%{http_code}' --max-time 15 "$UAT_BASE_URL/?cf093_uq_acceptance=${GITHUB_SHA}" || true)
-            if [ "$code" = '200' ]; then exit 0; fi
-            sleep 5
-          done
-          echo 'CF-093 branch preview unavailable' >&2
-          exit 3
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}" || { echo 'Checked-out SHA does not equal workflow SHA'; exit 3; }
 
       - name: Install UAT dependencies
         run: |
           npm install --ignore-scripts --no-audit --no-fund
           npx playwright install chromium
+
+      - name: Build and serve exact workflow SHA locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build
+          nohup npx vite preview --host 127.0.0.1 --port 4173 >/tmp/cf093-vite.log 2>&1 &
+          for attempt in $(seq 1 12); do
+            code=$(curl -sS -o /tmp/cf093-preview.html -w '%{http_code}' --max-time 10 "$UAT_BASE_URL/" || true)
+            if [ "$code" = '200' ]; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/cf093-vite.log || true
+          exit 4
 
       - name: Create one-shot authenticated UQ dispatch test
         shell: bash
@@ -89,7 +95,9 @@ jobs:
             expect(runResponse.ok()).toBeTruthy()
             const dispatch=await runResponse.json()
             expect(dispatch.preview_token||preview.preview_token).toBe(preview.preview_token)
-            expect(dispatch.status).toBeTruthy()
+            expect(dispatch.result?.status).toBe('scope_started')
+            expect(dispatch.result?.profiles).toHaveLength(1)
+            expect(dispatch.result.profiles[0]?.status).toBe('discovery_started')
 
             await fs.mkdir('uat-artifacts',{recursive:true})
             await fs.writeFile('uat-artifacts/cf093-uq-corrective-dispatch.json',JSON.stringify({captured_at:new Date().toISOString(),github_sha:process.env.GITHUB_SHA,base_url:process.env.UAT_BASE_URL,preview,dispatch},null,2))
