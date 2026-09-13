@@ -84,7 +84,7 @@ jobs:
           create or replace function security.scheduler_workflow_route_gap_count_v1(text,text,uuid) returns integer language sql stable as $$ select 0 $$;
           create or replace function security.scheduler_workflow_recent_terminal_negative_v1(uuid,uuid) returns boolean language sql stable as $$ select false $$;
           create or replace function security.scheduler_workflow_scope_snapshot_v2(text,text,uuid) returns jsonb language sql stable as $$ select jsonb_build_object('profile_ids','[]'::jsonb,'scope_fingerprint','fixture','scoped_course_count',0,'queueable_count',0,'needs_discovery_count',0) $$;
-          create or replace function public.layer2_scope_courses(text,text,uuid) returns table(profile_id uuid,course_id uuid,source_url text,provider_id uuid) language sql stable as $$ select null::uuid,null::uuid,null::text,null::uuid where false $$;
+          create or replace function public.layer2_scope_courses(text,text,uuid) returns table(profile_id uuid,profile_key text,provider_id uuid,provider_name text,course_id uuid,source_url text) language sql stable as $$ select null::uuid,null::text,null::uuid,null::text,null::uuid,null::text where false $$;
           create or replace function public.layer2_run_batch_create(uuid,text,uuid,jsonb) returns uuid language sql as $$ select extensions.gen_random_uuid() $$;
           create or replace function public.layer2_run_batch_dispatch(uuid) returns bigint language sql as $$ select 1::bigint $$;
           create or replace function public.layer2_operator_scope_service(uuid,text,text,text,uuid) returns jsonb language sql as $$ select '{}'::jsonb $$;
