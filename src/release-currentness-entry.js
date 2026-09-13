@@ -1,22 +1,20 @@
-// CF-093 release-currentness source: accepted functional target-builder semantics only.
-const VERSION='2.15.78'
+// CF-093 release-currentness source: governed dispatcher tuning and runtime metrics candidate.
+const VERSION='2.15.79'
 const RELEASE={
   version:VERSION,
-  date:'11 Sep 2026',
-  title:'Governed Scheduled Tasks target builder',
+  date:'14 Sep 2026',
+  title:'Dispatcher tuning & run metrics',
   changes:[
-    'Scheduled Tasks adds a server-authorised target builder for AU Course Facts enrichment with Country, State/Territory and University/Provider scopes.',
-    'Every consequential run requires a same-actor server preview receipt bound to the exact workflow, target and acquisition-only processing mode before dispatch.',
-    'Layer 2 dispatch now fails closed unless scoped profiles have valid current versions, governed execution policies and remain within the supported per-profile scope limit.',
-    'Exact-scope dispatch is serialised and deduplicated across operators while preview-token ownership remains actor-bound.',
-    'Jobs and Evidence remain the authoritative follow-through for underlying work; automatic generic Layer 3/Layer 4 orchestration, Evidence reprocessing and recurring scope construction remain unavailable.'
+    'Administration > Scraper Config now separates vendor controls from governed Layer 2 dispatcher tuning.',
+    'Admins can compare recent runs using throughput, response/extraction latency, retries, Evidence, field resolution and Layer 2/Layer 3/blocked outcomes.',
+    'PIM/Data Admins can tune batch size, run concurrency, stale recovery and paid-attempt limits for subsequent runs with an auditable governance reason.',
+    'Running batches retain their immutable policy snapshot; tuning never rewrites work already in flight.',
+    'Hourly CourseFinder metrics now track dispatcher continuations, provider performance, Evidence and policy snapshots for evidence-based tuning.'
   ],
   bugFixes:[
-    'Prevented stale scope, university search and preview responses from authorising a different target or leaving the builder busy.',
-    'Retired the bypassable v1 target-builder run path and enforced preview-before-dispatch on the server.',
-    'Rejected country scopes carrying arbitrary target IDs and revalidated live runnable scope immediately before dispatch.',
-    'Measured duplicate suppression from actual dispatch time and rejected empty or unqualified starts atomically.',
-    'Preserved Layer 1 authority, Layer 3 Evidence/profile/model governance, Layer 4 human resolution and separate Search/Publication admission boundaries.'
+    'Retains the Layer 2 runner transport safety cap introduced by PR #84: ordinary invocations remain capped at four items and scraper-first invocations at two.',
+    'Dispatcher metrics are sanitized and do not expose raw payloads, result/error text, target URLs, Storage paths or provider credentials.',
+    'Preserves Layer 1 authority, Layer 3 Evidence/profile/model governance, Layer 4 human authority and separate Search/Publication admission.'
   ]
 }
 let pending=false
