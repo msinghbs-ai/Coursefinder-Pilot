@@ -1,4 +1,5 @@
 name: CF-093 UQ Corrective Acceptance
+# one-shot rerun: set-based Preview optimisation
 
 on:
   workflow_dispatch:
