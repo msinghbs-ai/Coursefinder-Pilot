@@ -12,7 +12,6 @@ const average=values=>{const xs=values.filter(v=>Number.isFinite(v));return xs.l
 const jobState=j=>String(j?.status||j?.state||'unknown').toLowerCase()
 const queueWait=j=>secondsBetween(j?.created_at,j?.started_at)
 const runDuration=j=>secondsBetween(j?.started_at,j?.completed_at)
-const totalDuration=j=>secondsBetween(j?.created_at,j?.completed_at)
 const strictWhen=v=>{const d=validDate(v);return d?d.toLocaleString():UNKNOWN}
 const failureClass=j=>j?.failure_class||j?.completion_class||(jobState(j)==='failed'?'Failed — inspect Job':(terminal.has(jobState(j))?'—':UNKNOWN))
 const countLabel=v=>v==null?UNKNOWN:String(v)
@@ -27,19 +26,17 @@ export default function ScheduledRuntimeHealth({jobs=[],error,onNavigate=()=>{}}
    const recent=Array.isArray(sourceJobs)?sourceJobs:[]
    const queue=recent.map(queueWait).filter(v=>v!=null)
    const runs=recent.map(runDuration).filter(v=>v!=null)
-   const failed=recent.filter(j=>jobState(j)==='failed').length
-   const active=recent.filter(j=>['queued','running'].includes(jobState(j))).length
    const terminalMissingCompleted=recent.filter(j=>terminal.has(jobState(j))&&!validDate(j?.completed_at)).length
    const measurableWork=recent.filter(j=>Number.isFinite(Number(j?.processed_count))&&runDuration(j)>0)
    const processed=measurableWork.reduce((sum,j)=>sum+Number(j.processed_count),0)
    const executionSeconds=measurableWork.reduce((sum,j)=>sum+runDuration(j),0)
    const evidenceProduced=recent.reduce((sum,j)=>sum+(Number(j?.evidence_count)||0),0)
-   return{recent,queueAvg:average(queue),runAvg:average(runs),failed,active,terminalMissingCompleted,queueMeasured:queue.length,runMeasured:runs.length,processed,weightedRate:executionSeconds>0?processed/executionSeconds*60:null,evidenceProduced}
+   return{recent,queueAvg:average(queue),runAvg:average(runs),terminalMissingCompleted,queueMeasured:queue.length,runMeasured:runs.length,processed,weightedRate:executionSeconds>0?processed/executionSeconds*60:null,evidenceProduced}
  },[sourceJobs])
- const readError=error||runtimeError
  return <section className="m23-panel cf-scheduler-v2 cf-scheduler-runtime" aria-label="Scheduled Tasks Runtime Health">
    <div className="cf-scheduler-v2__subhead"><div><h3>Runtime Health</h3><p className="cf-scheduler-v2__note">Read-only measurements from the governed rank-4 Jobs runtime surface. Missing counters or timestamps remain unavailable rather than being treated as zero.</p></div><div className="cf-scheduler-v2__links"><button onClick={()=>onNavigate('#jobs')}>Jobs <ExternalLink size={12}/></button><button onClick={()=>onNavigate('#evidence')}>Evidence <ExternalLink size={12}/></button></div></div>
-   {readError&&<div className="cf-scheduler-v2__message" data-error="true">Runtime metrics read unavailable; basic Jobs timing remains visible where available: {readError}</div>}
+   {runtimeError&&<div className="cf-scheduler-v2__message" data-error="true">Runtime metrics read unavailable; basic Jobs timing remains visible where available: {runtimeError}</div>}
+   {!runtimeError&&error&&<div className="cf-scheduler-v2__message" data-error="true">Generic Jobs panel read unavailable; governed Runtime Health remains available: {error}</div>}
    <div className="cf-scheduler-runtime__summary">
      <article><strong>{metrics.recent.length}</strong><span>Recent Job sample</span></article>
      <article><strong>{durationLabel(metrics.queueAvg)}</strong><span>Average queue wait · {metrics.queueMeasured} measurable</span></article>
