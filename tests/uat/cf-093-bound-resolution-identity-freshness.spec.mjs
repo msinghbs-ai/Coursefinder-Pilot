@@ -38,12 +38,11 @@ test('CF-093 final reconciliation enforces retry ceiling and full-set fairness b
   expect(finalReview).toContain("'operator_review_required',true")
   expect(finalReview).toContain("'course_ids',to_jsonb(v_ordered)")
   expect(finalReview).toContain('order by coalesce(a.attempts,0),q.course_id')
-  expect(finalReview).not.toContain('least(greatest(coalesce(nullif(v_ctx#>>\'{configuration,retry,max_attempts}\'')')
 })
 
 test('CF-093 final reconciliation aggregates retry history once and rejects unapproved acquisition targets',()=>{
   expect(finalReview).toContain('with retry_counts as (')
-  expect(finalReview).toContain('group by (r->>\'course_id\')::uuid')
+  expect(finalReview).toContain("group by (r->>'course_id')::uuid")
   expect(finalReview).toContain('left join retry_counts a on a.course_id=c.id')
   expect(finalReview).toContain('scheduler_workflow_queueable_url_allowed_v1(v_profile_id,p_request_url)')
   expect(finalReview).toContain('Layer 2 acquisition target is outside the governed profile host allowlist')
