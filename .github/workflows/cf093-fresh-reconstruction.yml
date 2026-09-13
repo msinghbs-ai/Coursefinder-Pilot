@@ -127,6 +127,7 @@ jobs:
             supabase/migrations/20260913020222_cf_093_scheduler_route_gap_scope_optimization.sql
             supabase/migrations/20260913020646_cf_093_scheduler_run_bridge_acl_reconcile.sql
             supabase/migrations/20260913062000_cf_093_bound_resolution_identity_freshness_reconcile.sql
+            supabase/migrations/20260913064500_cf_093_bound_handoff_queueable_provenance_reconcile.sql
           )
           for migration in "${migrations[@]}"; do
             echo "Applying $migration"
@@ -144,6 +145,7 @@ jobs:
           test "$(psql -Atc "select configuration#>>'{discovery_strategy,require_url_prefix}' from pipeline.layer2_source_profile_versions v join pipeline.layer2_source_profiles p on p.current_version_id=v.id where p.profile_key='au-uq-course-catalogue'")" = "/study-options/programs/"
           test "$(psql -Atc "select to_regclass('pipeline.scheduler_workflow_async_bindings') is not null")" = "t"
           psql -Atc "select pg_get_functiondef('public.layer2_scope_profile_batch_service(uuid,uuid,uuid[])'::regprocedure)" | grep -F 'exact scheduler Preview binding is missing, cancelled, expired or does not match the handoff scope'
+          psql -Atc "select pg_get_functiondef('public.layer2_scope_profile_batch_service(uuid,uuid,uuid[])'::regprocedure)" | grep -F 'c.id = ANY (v_binding.discovery_course_ids)'
           psql -Atc "select pg_get_functiondef('security.scheduler_workflow_dispatch_dedupe_anchor_v1(jsonb,timestamptz)'::regprocedure)" | grep -F 'discovery_started'
           psql -Atc "select pg_get_functiondef('public.layer2_discovery_context_scope_bound_v1(uuid,uuid,uuid,uuid[],integer)'::regprocedure)" | grep -F 'scheduler_preview_token'
           psql -Atc "select pg_get_functiondef('security.scheduler_workflow_scope_state_v1(text,text,uuid)'::regprocedure)" | grep -F 'expected_course_code'
