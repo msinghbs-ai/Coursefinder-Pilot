@@ -26,11 +26,13 @@ test('CF-093 preserves applied migration 005948 rather than rewriting its identi
  expect(bootstrap).not.toContain('delete from supabase_migrations.schema_migrations')
 })
 
-test('CF-093 reconstruction fixture matches accepted scope and route contracts and replays final immutable migrations',()=>{
+test('CF-093 reconstruction fixture matches accepted scope route and retired-run contracts and replays final immutable migrations',()=>{
  expect(reconstruction).toContain('returns table(profile_id uuid,profile_key text,provider_id uuid,provider_name text,course_id uuid,source_url text)')
  expect(reconstruction).toContain('create table pipeline.layer2_acquisition_providers(')
  expect(reconstruction).toContain('create table pipeline.layer2_profile_provider_routes(')
  expect(reconstruction).toContain("create or replace function public.layer2_provider_runtime_config(uuid) returns jsonb")
+ expect(reconstruction).toContain('create or replace function security.scheduler_workflow_run_now_v1_browser_bridge(text,text,text,uuid,text,text) returns jsonb')
+ expect(reconstruction).toContain('create or replace function public.scheduler_workflow_run_now_v1(text,text,text,uuid,text,text) returns jsonb')
  expect(reconstruction).toContain('20260913015530_cf_093_scheduler_preview_set_based_terminal_optimization.sql')
  expect(reconstruction).toContain('20260913020222_cf_093_scheduler_route_gap_scope_optimization.sql')
  expect(reconstruction).toContain('20260913020646_cf_093_scheduler_run_bridge_acl_reconcile.sql')
