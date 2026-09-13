@@ -1,6 +1,6 @@
 name: CF-093 UQ Corrective Acceptance
-# one-shot rerun: set-based Preview optimisation
-# acceptance trigger: Edge v30 deployed-current after exact-head Codex clean (2026-09-13)
+# final governed UQ closure run after 20260913082845 review reconciliation
+# acceptance trigger: exact branch head, complete reconstruction and resolved Codex findings (2026-09-13)
 
 on:
   workflow_dispatch:
