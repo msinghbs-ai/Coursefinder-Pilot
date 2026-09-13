@@ -126,7 +126,7 @@ begin
       ) values(
         3,'AU',v_profile,'course',v_course,
         'Layer 2 URL discovery exhausted Firecrawl/ZenRows; park for governed Layer 3 when course-specific Evidence is available',
-        'scheduler_layer2_exhaustion','blocked',v_binding.actor_id,'CF-CHG-20260910-093',v_source,null,v_l3_profile,
+        'manual_governed','blocked',v_binding.actor_id,'CF-CHG-20260910-093',v_source,null,v_l3_profile,
         'CF093-DISCOVERY-PARK:'||v_preview::text||':'||v_course::text,
         'Layer 3 is evidence-gated; no course-specific retained Evidence was produced by bounded discovery'
       ) returning id into v_rr;
