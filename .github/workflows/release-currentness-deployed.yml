@@ -1,0 +1,84 @@
+name: Release Currentness Deployed
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/release-manifest.js'
+      - 'src/release-currentness-entry.js'
+      - 'src/pim-version-entry.js'
+      - 'src/mature-main.jsx'
+      - 'index.html'
+      - 'package.json'
+      - 'CHANGELOG.md'
+      - 'tests/uat/release-notes-deployed.spec.mjs'
+      - '.github/workflows/release-currentness-deployed.yml'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed CourseFinder Admin URL
+        required: true
+        default: https://coursefinder-pilot.techm.workers.dev
+        type: string
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: coursefinder-release-currentness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deployed-release-currentness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --ignore-scripts --prefer-offline --no-audit --no-fund
+      - name: Verify release contract before deployed check
+        run: npm run release:verify
+      - name: Preflight governed UAT credentials
+        shell: bash
+        run: |
+          test -n "$UAT_EMAIL" || { echo 'COURSEFINDER_UAT_EMAIL missing'; exit 1; }
+          test -n "$UAT_PASSWORD" || { echo 'COURSEFINDER_UAT_PASSWORD missing'; exit 1; }
+          case "$UAT_BASE_URL" in https://*) ;; *) echo 'UAT_BASE_URL must use HTTPS'; exit 1;; esac
+      - name: Wait for candidate release to be visible
+        shell: bash
+        run: |
+          expected=$(node --input-type=module -e "import('./src/release-manifest.js').then(m=>process.stdout.write(m.UI_VERSION))")
+          for attempt in $(seq 1 12); do
+            body=$(curl -L -sS --max-time 15 "$UAT_BASE_URL/?release_probe=${GITHUB_SHA}" || true)
+            if printf '%s' "$body" | grep -q 'id="root"'; then
+              echo "Deployed frontend reachable; browser UAT will verify v${expected} currentness (attempt ${attempt}/12)."
+              exit 0
+            fi
+            echo "Deployment not ready; retry ${attempt}/12"
+            sleep 10
+          done
+          echo 'Deployed frontend did not become reachable in release-currentness window'
+          exit 1
+      - name: Install Chromium
+        run: npx playwright install chromium
+      - name: Verify deployed release version and release notes
+        run: npx playwright test tests/uat/release-notes-deployed.spec.mjs --project=chromium-desktop
+      - name: Upload release-currentness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-currentness-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            playwright-report/
+            test-results/
+            uat-artifacts/
