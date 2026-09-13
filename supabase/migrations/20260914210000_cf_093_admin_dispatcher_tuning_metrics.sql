@@ -150,8 +150,14 @@ begin
     group by ap.id,ap.provider_key,ap.display_name,ap.enabled,ap.priority,ap.concurrency,ap.rate_limit_per_minute,ap.timeout_seconds,r.priority
   )
   select jsonb_build_object(
-    'profile',(select jsonb_build_object('id',p.id,'profile_key',p.profile_key,'source_label',s.display_name,'country_code',p.country_code,'domain',p.domain,'enabled',p.enabled,'paused',p.paused)
-               from pipeline.layer2_source_profiles p join pipeline.sources s on s.id=p.source_id where p.id=v_profile_id),
+    'profile',(select jsonb_build_object(
+      'id',p.id,'profile_key',p.profile_key,'source_label',s.label,
+      'country_code',coalesce(cv.configuration->>'country_code',s.metadata->>'country_code'),
+      'domain',p.domain,'enabled',p.enabled,'paused',p.paused)
+      from pipeline.layer2_source_profiles p
+      join pipeline.sources s on s.id=p.source_id
+      left join pipeline.layer2_source_profile_versions cv on cv.id=p.current_version_id
+      where p.id=v_profile_id),
     'policy',(select to_jsonb(ep)-'updated_by' from pipeline.layer2_execution_policies ep where ep.profile_id=v_profile_id),
     'system_guardrails',jsonb_build_object('transport_wave_cap',4,'scraper_first_wave_cap',2,'pg_net_timeout_ms',120000,'tuning_mode','manual_governed'),
     'recent_runs',(select coalesce(jsonb_agg(row_json order by created_at desc),'[]'::jsonb) from runs),
