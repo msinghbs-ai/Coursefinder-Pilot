@@ -80,6 +80,7 @@ end
 $function$;
 
 revoke all on function security.admin_jobs_runtime_read_v1(jsonb) from public,anon,authenticated;
+grant execute on function security.admin_jobs_runtime_read_v1(jsonb) to authenticated;
 
 create or replace function public.admin_read(p_operation text, p_args jsonb default '{}'::jsonb)
 returns jsonb
