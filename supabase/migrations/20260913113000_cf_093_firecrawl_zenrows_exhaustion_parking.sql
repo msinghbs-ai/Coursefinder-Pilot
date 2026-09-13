@@ -7,18 +7,36 @@ begin;
 -- unresolved courses into Layer 3 as blocked/pending Evidence and Layer 4 Human
 -- Resolution instead of extending scraper-specific logic or weakening identity rules.
 
+-- Route priority is unique per profile. Move the existing UQ route set out of the
+-- active range first, then assign the final deterministic order without transient
+-- collisions: Firecrawl 10 -> ZenRows 20; legacy routes remain disabled at 110+.
 with uq as (
-  select id
-  from pipeline.layer2_source_profiles
-  where profile_key='au-uq-course-catalogue'
+  select id from pipeline.layer2_source_profiles where profile_key='au-uq-course-catalogue'
 ), providers as (
-  select id,provider_key
-  from pipeline.layer2_acquisition_providers
+  select id from pipeline.layer2_acquisition_providers
+  where provider_key in ('direct-http','firecrawl','scrape-do','scraperapi','zenrows')
+)
+update pipeline.layer2_profile_provider_routes r
+set priority=priority+1000,updated_at=now()
+from uq,providers p
+where r.profile_id=uq.id and r.acquisition_provider_id=p.id;
+
+with uq as (
+  select id from pipeline.layer2_source_profiles where profile_key='au-uq-course-catalogue'
+), providers as (
+  select id,provider_key from pipeline.layer2_acquisition_providers
   where provider_key in ('direct-http','firecrawl','scrape-do','scraperapi','zenrows')
 )
 update pipeline.layer2_profile_provider_routes r
 set enabled = p.provider_key in ('firecrawl','zenrows'),
-    priority = case p.provider_key when 'firecrawl' then 10 when 'zenrows' then 20 else r.priority end,
+    priority = case p.provider_key
+      when 'firecrawl' then 10
+      when 'zenrows' then 20
+      when 'direct-http' then 110
+      when 'scrape-do' then 120
+      when 'scraperapi' then 130
+      else r.priority
+    end,
     updated_at = now()
 from uq,providers p
 where r.profile_id=uq.id and r.acquisition_provider_id=p.id;
@@ -150,7 +168,7 @@ $function$;
 
 revoke all on function security.cf093_park_exhausted_discovery_v1() from public,anon,authenticated;
 
- drop trigger if exists cf093_park_exhausted_discovery_v1 on pipeline.jobs;
+drop trigger if exists cf093_park_exhausted_discovery_v1 on pipeline.jobs;
 create trigger cf093_park_exhausted_discovery_v1
 after insert or update of status,completed_at,result on pipeline.jobs
 for each row execute function security.cf093_park_exhausted_discovery_v1();
