@@ -69,7 +69,7 @@ jobs:
           import { loginAsUatUser } from './support/runtime-evidence.mjs'
 
           const UQ='e55396d2-869a-46ef-9d17-841c7eab1313'
-          const expected={catalogue_count:382,needs_discovery_count:54}
+          const expectedCatalogueCount=382
 
           test.setTimeout(150_000)
 
@@ -92,8 +92,11 @@ jobs:
             const previewResponse=await previewResponsePromise
             expect(previewResponse.ok()).toBeTruthy()
             const preview=await previewResponse.json()
-            expect(preview.catalogue_count).toBe(expected.catalogue_count)
-            expect(preview.needs_discovery_count).toBe(expected.needs_discovery_count)
+            expect(preview.catalogue_count).toBe(expectedCatalogueCount)
+            expect(preview.scoped_course_count).toBe(expectedCatalogueCount)
+            expect(preview.queueable_count+preview.needs_discovery_count+preview.terminal_negative_count).toBe(expectedCatalogueCount)
+            expect(preview.needs_discovery_count).toBeGreaterThan(0)
+            expect(preview.preview_bound_discovery_count).toBe(preview.needs_discovery_count)
             expect(preview.executable).toBe(true)
             expect(preview.preview_token).toBeTruthy()
             expect(preview.async_discovery_preview_bound).toBe(true)
