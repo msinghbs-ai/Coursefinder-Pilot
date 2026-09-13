@@ -1,5 +1,5 @@
 import{test,expect}from'@playwright/test'
-import fs from'node:fs'
+import{UI_VERSION}from'../../src/release-manifest.js'
 import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,DETERMINISTIC_UI_TIMEOUT,writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -37,7 +37,7 @@ test.describe('CF-097/226 ranking workflow, history and datasets @deployed',()=>
  test('Statistics exposes accepted QS and THE editions and opens imported observations',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#statistics-rankings',process.env.UAT_BASE_URL).toString())
-  const expectedVersion=fs.readFileSync('src/release-currentness-entry.js','utf8').match(/const VERSION='([^']+)'/)?.[1];expect(expectedVersion).toBeTruthy();await expect(page.locator('.m-release-pill')).toContainText('v'+expectedVersion,{timeout:120000})
+  await expect(page.locator('.m-release-pill')).toContainText('v'+UI_VERSION,{timeout:120000})
   const qs=page.locator('.m-stats-card').filter({hasText:'QS WORLD UNIVERSITY RANKINGS'}).first()
   await expect(qs).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const qsEdition=qs.locator('.cf-ranking-card-picker select')
