@@ -23,6 +23,14 @@ test('CF-093 worker retains qualified terminal basis and exact original-title ma
   expect(worker).toContain('required_prefix_link_count:ranked.requiredPrefixLinkCount')
 })
 
+test('CF-093 continuation consumes only governed resolved outcomes',()=>{
+  expect(worker).toContain('terminalStatuses=new Set(["exact_match","likely_match","ambiguous","identity_mismatch","current_page_not_found"])')
+  expect(worker).toContain('resolvedSet=new Set(results.filter((x:any)=>terminalStatuses.has(clean(x.status))).map((x:any)=>clean(x.course_id)))')
+  expect(worker).toContain('if(!actionableSet.has(id)||resolvedSet.has(id))consumedSet.add(id)')
+  expect(worker).not.toContain('processedSet=new Set(results.map((x:any)=>clean(x.course_id)))')
+  expect(worker).not.toContain('for(const id of processedSet)consumedSet.add(id)')
+})
+
 test('CF-093 handoff accepts only exact Preview-provenanced discovery outcomes',()=>{
   expect(migration).toContain("j.payload->>'scheduler_preview_token'=v_binding.preview_token::text")
   expect(migration).toContain('exact scheduler Preview binding is missing, cancelled, expired or does not match the handoff scope')
