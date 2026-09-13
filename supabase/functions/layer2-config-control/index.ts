@@ -36,7 +36,7 @@ Deno.serve(async(req:Request)=>{
     const entries=Object.entries(rawPatch as Record<string,unknown>);
     if(!entries.length||entries.some(([k])=>!POLICY_FIELDS.has(k)))return reply(req,400,{error:"unsupported_policy_field"});
     const patch=Object.fromEntries(entries);
-    if(Object.prototype.hasOwnProperty.call(patch,"_governance_reason")&&String(patch._governance_reason||"").trim().length<5)return reply(req,400,{error:"governance_reason_required"});
+    if(String(patch._governance_reason||"").trim().length<5)return reply(req,400,{error:"governance_reason_required"});
     const{data,error}=await serviceClient.rpc("layer2_ops_policy_update",{p_actor:actorUserId,p_profile_id:profileId,p_patch:patch});
     if(error)return reply(req,error.code==="42501"?403:400,{error:error.message||"layer2_ops_policy_update_failed"});
     return reply(req,200,data||{ok:true,profile_id:profileId,action});
