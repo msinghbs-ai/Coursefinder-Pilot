@@ -77,11 +77,11 @@ jobs:
             const builder=page.locator('.cf-workflow-builder')
             await expect(builder).toBeVisible({timeout:45_000})
 
-            const scope=builder.locator('label.cf-workflow-builder__field').filter({hasText:'Scope type'}).locator('select')
+            const scope=builder.getByLabel('Scope type',{exact:true})
             await scope.selectOption('university')
             const search=builder.getByPlaceholder('Search up to 10 server-authorised matches')
             await search.fill('The University of Queensland')
-            const providerSelect=builder.locator('label.cf-workflow-builder__field').filter({hasText:'University / provider'}).locator('select')
+            const providerSelect=builder.getByLabel('University / provider',{exact:true})
             await expect(providerSelect.locator(`option[value="${UQ}"]`)).toHaveCount(1,{timeout:20_000})
             await providerSelect.selectOption(UQ)
 
