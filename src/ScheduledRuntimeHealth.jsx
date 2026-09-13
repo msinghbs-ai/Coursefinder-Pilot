@@ -15,7 +15,7 @@ const totalDuration=j=>secondsBetween(j?.created_at,j?.completed_at)
 const strictWhen=v=>{const d=validDate(v);return d?d.toLocaleString():UNKNOWN}
 const failureClass=j=>j?.failure_class||j?.completion_class||(jobState(j)==='failed'?(j?.error_text||'Failed — inspect Job'):(terminal.has(jobState(j))?'—':UNKNOWN))
 
-export default function ScheduledRuntimeHealth({jobs=[],error,onNavigate}){
+export default function ScheduledRuntimeHealth({jobs=[],error,onNavigate=()=>{}}){
  const metrics=useMemo(()=>{
    const recent=Array.isArray(jobs)?jobs:[]
    const queue=recent.map(queueWait).filter(v=>v!=null)
