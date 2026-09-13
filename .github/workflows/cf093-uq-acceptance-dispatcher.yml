@@ -1,0 +1,23 @@
+name: CF-093 UQ Acceptance Dispatcher
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/cf093-uq-acceptance-dispatcher.yml
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch-current-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch governed UQ acceptance on current main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run cf093-uq-corrective-acceptance.yml --repo "$GITHUB_REPOSITORY" --ref main
