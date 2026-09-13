@@ -142,7 +142,7 @@ begin
       'http_429_24h',count(pa.*) filter(where pa.created_at>=now()-interval '24 hours' and pa.response_http_status=429),
       'avg_attempt_ms_24h',round(avg(extract(epoch from (pa.completed_at-pa.started_at))*1000) filter(where pa.created_at>=now()-interval '24 hours' and pa.completed_at is not null and pa.started_at is not null)::numeric,1)
     ) row_json,r.priority
-    from pipeline.layer2_provider_routes r
+    from pipeline.layer2_profile_provider_routes r
     join pipeline.layer2_acquisition_providers ap on ap.id=r.acquisition_provider_id
     left join pipeline.layer2_provider_attempts pa on pa.acquisition_provider_id=ap.id
       and pa.profile_version_id=(select pv.id from pipeline.layer2_source_profile_versions pv where pv.profile_id=v_profile_id and pv.validation_status='valid' order by pv.version_no desc limit 1)
