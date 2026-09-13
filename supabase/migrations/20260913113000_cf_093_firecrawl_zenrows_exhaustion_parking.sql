@@ -3,9 +3,10 @@ begin;
 -- CF-CHG-20260910-093
 -- Stop provider-specific perfection loops for UQ discovery.
 -- The bounded acquisition route is Firecrawl -> ZenRows only.
--- If all preview-bound discovery courses exhaust their governed attempts, park the
--- unresolved courses into Layer 3 as blocked/pending Evidence and Layer 4 Human
--- Resolution instead of extending scraper-specific logic or weakening identity rules.
+-- If all unresolved preview-bound discovery courses exhaust their governed attempts,
+-- park only those unresolved courses into Layer 3 as blocked/pending Evidence and
+-- Layer 4 Human Resolution. A course with a selected post-activation discovery URL
+-- is resolved and must never be re-escalated.
 
 -- Route priority is unique per profile. Move the existing UQ route set out of the
 -- active range first, then assign the final deterministic order without transient
@@ -54,6 +55,7 @@ declare
   v_retry_max integer:=3;
   v_exhausted integer:=0;
   v_total integer:=0;
+  v_unresolved uuid[]:='{}'::uuid[];
   v_source uuid;
   v_l3_profile uuid;
   v_rr uuid;
@@ -81,7 +83,26 @@ begin
   exception when others then v_retry_max:=3; end;
   v_retry_max:=coalesce(v_retry_max,3);
 
-  v_total:=cardinality(v_binding.discovery_course_ids);
+  -- Reuse the established resolution rule from bounded discovery: a course is no
+  -- longer unresolved once a selected non-null discovery candidate exists for the
+  -- same profile version, same Preview token and this binding activation window.
+  select coalesce(array_agg(c order by c),'{}'::uuid[])
+  into v_unresolved
+  from unnest(v_binding.discovery_course_ids) c
+  where not exists(
+    select 1
+    from pipeline.layer2_course_discovery_candidates dc
+    join pipeline.layer2_provider_attempts pa on pa.id=dc.provider_attempt_id
+    join pipeline.jobs j on j.id=pa.job_id
+    where dc.course_id=c
+      and dc.source_profile_version_id=v_binding.profile_version_id
+      and dc.selected=true
+      and nullif(dc.discovered_url,'') is not null
+      and dc.created_at>=v_binding.activated_at
+      and coalesce(j.payload->>'scheduler_preview_token','')=v_preview::text
+  );
+
+  v_total:=cardinality(v_unresolved);
   if v_total<=0 then return new; end if;
 
   with attempts as (
@@ -92,7 +113,7 @@ begin
       and j.payload->>'scheduler_preview_token'=v_preview::text
       and j.payload->>'profile_id'=v_profile::text
       and nullif(r->>'course_id','') is not null
-      and (r->>'course_id')::uuid=any(v_binding.discovery_course_ids)
+      and (r->>'course_id')::uuid=any(v_unresolved)
       and r->>'status' in ('failed','candidate')
     group by (r->>'course_id')::uuid
   )
@@ -110,7 +131,7 @@ begin
   order by updated_at desc,id
   limit 1;
 
-  foreach v_course in array v_binding.discovery_course_ids loop
+  foreach v_course in array v_unresolved loop
     select id into v_rr
     from pipeline.refresh_requests
     where requested_layer=3
