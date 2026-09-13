@@ -12,7 +12,9 @@ set search_path to 'pg_catalog','security','pipeline','auth'
 as $function$
 declare
   v_rank integer:=0;
-  v_limit integer:=least(greatest(coalesce(nullif(p_args->>'limit','')::integer,50),1),200);
+  v_limit integer:=case when coalesce(p_args->>'limit','') ~ '^\d{1,9}$'
+    then least(greatest((p_args->>'limit')::integer,1),200)
+    else 50 end;
   v_result jsonb;
 begin
   if auth.uid() is null then raise exception 'authentication required' using errcode='42501'; end if;
@@ -22,13 +24,13 @@ begin
   with recent as (
     select
       j.id,j.job_type,j.domain,j.status,j.created_at,j.started_at,j.completed_at,j.source_profile_version_id,
-      case when coalesce(j.result->>'processed','') ~ '^\d+$' then (j.result->>'processed')::integer end processed_count,
-      case when coalesce(j.result->>'selected','') ~ '^\d+$' then (j.result->>'selected')::integer end selected_count,
-      case when coalesce(j.result->>'accepted','') ~ '^\d+$' then (j.result->>'accepted')::integer
-           when coalesce(j.result->>'applied','') ~ '^\d+$' then (j.result->>'applied')::integer end accepted_count,
-      case when coalesce(j.result->>'failed','') ~ '^\d+$' then (j.result->>'failed')::integer end failed_count,
-      case when coalesce(j.result->>'retry_exhausted_count','') ~ '^\d+$' then (j.result->>'retry_exhausted_count')::integer
-           when coalesce(j.payload->>'retry_exhausted_count','') ~ '^\d+$' then (j.payload->>'retry_exhausted_count')::integer end retry_exhausted_count,
+      case when coalesce(j.result->>'processed','') ~ '^\d{1,18}$' then (j.result->>'processed')::bigint end processed_count,
+      case when coalesce(j.result->>'selected','') ~ '^\d{1,18}$' then (j.result->>'selected')::bigint end selected_count,
+      case when coalesce(j.result->>'accepted','') ~ '^\d{1,18}$' then (j.result->>'accepted')::bigint
+           when coalesce(j.result->>'applied','') ~ '^\d{1,18}$' then (j.result->>'applied')::bigint end accepted_count,
+      case when coalesce(j.result->>'failed','') ~ '^\d{1,18}$' then (j.result->>'failed')::bigint end failed_count,
+      case when coalesce(j.result->>'retry_exhausted_count','') ~ '^\d{1,18}$' then (j.result->>'retry_exhausted_count')::bigint
+           when coalesce(j.payload->>'retry_exhausted_count','') ~ '^\d{1,18}$' then (j.payload->>'retry_exhausted_count')::bigint end retry_exhausted_count,
       case when j.result ? 'idempotent_replay' and lower(j.result->>'idempotent_replay') in ('true','false') then (j.result->>'idempotent_replay')::boolean end dedupe_replay,
       case
         when j.status<>'failed' then nullif(j.result->>'completion_class','')
@@ -44,8 +46,8 @@ begin
     limit v_limit
   ), evidence_counts as (
     select e.job_id,
-      count(*)::integer evidence_count,
-      count(*) filter(where e.review_state in ('verified','verified_source_reference'))::integer verified_evidence_count
+      count(*) evidence_count,
+      count(*) filter(where e.review_state in ('verified','verified_source_reference')) verified_evidence_count
     from pipeline.evidence_artifacts e
     where e.job_id in (select id from recent)
     group by e.job_id
