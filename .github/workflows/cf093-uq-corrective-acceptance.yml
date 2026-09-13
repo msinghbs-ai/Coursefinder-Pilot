@@ -2,6 +2,11 @@ name: CF-093 UQ Corrective Acceptance
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - m245/cf093-async-discovery-20260912
+    paths:
+      - .github/workflows/cf093-uq-corrective-acceptance.yml
 
 permissions:
   contents: read
