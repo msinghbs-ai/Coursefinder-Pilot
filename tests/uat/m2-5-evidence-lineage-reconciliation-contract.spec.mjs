@@ -12,7 +12,7 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
   })
 
   test('preserves raw lineage, reconciles 5+2 history and hardens contact concurrency',async()=>{
-    const[migration,worker,platform,shell,versionEntry,index,releaseTest]=await Promise.all([
+    const[migration,worker,platform,shell,versionEntry,index,releaseTest,manifest,current]=await Promise.all([
       fs.readFile('supabase/migrations/20260901224000_m2_5_evidence_lineage_reconciliation_contact_claim.sql','utf8'),
       fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8'),
       fs.readFile('src/platform-maturity-entry.jsx','utf8'),
@@ -20,6 +20,8 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('tests/uat/release-notes-deployed.spec.mjs','utf8'),
+      fs.readFile('src/release-manifest.js','utf8'),
+      fs.readFile('src/release-currentness-entry.js','utf8'),
     ])
 
     expect(migration).toContain('create table if not exists pipeline.evidence_lineage_reconciliations')
@@ -71,14 +73,19 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
     expect(platform).toContain('Unresolved missing Storage objects')
     expect(platform).toContain('CF-055/059 preserve raw lineage counts')
 
-    const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-    const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
-    expect(shellVersion).toBeTruthy()
-    expect(releaseVersion).toBe(shellVersion)
-    expect(index).toContain('Coursefinder PIM Admin v'+shellVersion)
+    const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
+    const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
+    const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
+    expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
+    expect(historyVersion).toBe(fallbackVersion)
+    expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+    expect(manifest).toContain(`version:'${fallbackVersion}'`)
+    expect(current).toContain("from'./release-manifest.js'")
+    expect(index).toContain('<title>Coursefinder PIM Admin</title>')
+    expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)
     expect(versionEntry).toContain("version:'2.15.19'")
     expect(versionEntry).toContain('Evidence lineage reconciliation and contact claim hardening')
-    expect(releaseTest).toContain('v'+shellVersion)
+    expect(releaseTest).toContain('release notes @deployed')
 
     const output=execFileSync('npm',['run','build'],{
       cwd:process.cwd(),
