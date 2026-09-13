@@ -20,14 +20,25 @@ begin
   if v_rank<4 then raise exception 'pipeline_operator role required' using errcode='42501'; end if;
 
   with recent as (
-    select j.*,
+    select
+      j.id,j.job_type,j.domain,j.status,j.created_at,j.started_at,j.completed_at,j.source_profile_version_id,
       case when coalesce(j.result->>'processed','') ~ '^\d+$' then (j.result->>'processed')::integer end processed_count,
       case when coalesce(j.result->>'selected','') ~ '^\d+$' then (j.result->>'selected')::integer end selected_count,
       case when coalesce(j.result->>'accepted','') ~ '^\d+$' then (j.result->>'accepted')::integer
            when coalesce(j.result->>'applied','') ~ '^\d+$' then (j.result->>'applied')::integer end accepted_count,
       case when coalesce(j.result->>'failed','') ~ '^\d+$' then (j.result->>'failed')::integer end failed_count,
       case when coalesce(j.result->>'retry_exhausted_count','') ~ '^\d+$' then (j.result->>'retry_exhausted_count')::integer
-           when coalesce(j.payload->>'retry_exhausted_count','') ~ '^\d+$' then (j.payload->>'retry_exhausted_count')::integer end retry_exhausted_count
+           when coalesce(j.payload->>'retry_exhausted_count','') ~ '^\d+$' then (j.payload->>'retry_exhausted_count')::integer end retry_exhausted_count,
+      case when j.result ? 'idempotent_replay' and lower(j.result->>'idempotent_replay') in ('true','false') then (j.result->>'idempotent_replay')::boolean end dedupe_replay,
+      case
+        when j.status<>'failed' then nullif(j.result->>'completion_class','')
+        when coalesce(j.error_text,'') ilike '%401%' then 'authentication_401'
+        when coalesce(j.error_text,'') ilike '%credential%' then 'credential_unavailable'
+        when coalesce(j.error_text,'') ilike '%provider%' and coalesce(j.error_text,'') ilike '%exhaust%' then 'provider_exhausted'
+        when coalesce(j.error_text,'') ilike '%budget%' then 'acquisition_budget_exhausted'
+        when coalesce(j.error_text,'') ilike '%timeout%' then 'timeout'
+        else 'failed'
+      end failure_class
     from pipeline.jobs j
     order by j.created_at desc
     limit v_limit
@@ -58,16 +69,8 @@ begin
     'evidence_count',coalesce(ec.evidence_count,0),
     'verified_evidence_count',coalesce(ec.verified_evidence_count,0),
     'throughput_records_per_min',case when j.processed_count is not null and j.started_at is not null and j.completed_at>j.started_at then round((j.processed_count::numeric/nullif(extract(epoch from (j.completed_at-j.started_at)),0))*60,2) end,
-    'dedupe_replay',case when j.result ? 'idempotent_replay' then (j.result->>'idempotent_replay')::boolean end,
-    'failure_class',case
-      when j.status<>'failed' then nullif(j.result->>'completion_class','')
-      when coalesce(j.error_text,'') ilike '%401%' then 'authentication_401'
-      when coalesce(j.error_text,'') ilike '%credential%' then 'credential_unavailable'
-      when coalesce(j.error_text,'') ilike '%provider%' and coalesce(j.error_text,'') ilike '%exhaust%' then 'provider_exhausted'
-      when coalesce(j.error_text,'') ilike '%budget%' then 'acquisition_budget_exhausted'
-      when coalesce(j.error_text,'') ilike '%timeout%' then 'timeout'
-      else 'failed'
-    end
+    'dedupe_replay',j.dedupe_replay,
+    'failure_class',j.failure_class
   )) order by j.created_at desc),'[]'::jsonb)
   into v_result
   from recent j
