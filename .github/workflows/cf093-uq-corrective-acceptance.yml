@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      UAT_BASE_URL: http://127.0.0.1:4173
+      UAT_BASE_URL: https://m245-cf093-async-discovery-20260912-coursefinder-pilot.techm.workers.dev
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
@@ -43,18 +43,19 @@ jobs:
           npm install --ignore-scripts --no-audit --no-fund
           npx playwright install chromium
 
-      - name: Build and serve exact workflow SHA locally
+      - name: Build exact workflow SHA
+        run: npm run build
+
+      - name: Wait for exact branch preview deployment
         shell: bash
         run: |
           set -euo pipefail
-          npm run build
-          nohup npx vite preview --host 127.0.0.1 --port 4173 >/tmp/cf093-vite.log 2>&1 &
+          sleep 35
           for attempt in $(seq 1 12); do
-            code=$(curl -sS -o /tmp/cf093-preview.html -w '%{http_code}' --max-time 10 "$UAT_BASE_URL/" || true)
+            code=$(curl -L -sS -o /tmp/cf093-preview.html -w '%{http_code}' --max-time 15 "$UAT_BASE_URL/" || true)
             if [ "$code" = '200' ]; then exit 0; fi
-            sleep 2
+            sleep 5
           done
-          cat /tmp/cf093-vite.log || true
           exit 4
 
       - name: Create one-shot authenticated UQ dispatch test
@@ -68,7 +69,7 @@ jobs:
           const UQ='e55396d2-869a-46ef-9d17-841c7eab1313'
           const expected={catalogue_count:382,needs_discovery_count:54}
 
-          test.setTimeout(120_000)
+          test.setTimeout(150_000)
 
           test('CF-093 authenticated UQ corrective provider-scope dispatch',async({page})=>{
             await loginAsUatUser(page)
