@@ -10,6 +10,8 @@ test('Scheduled Tasks runtime metrics read is rank-4, derived and secret-free',(
   expect(sql).toContain("if p_operation='jobs_runtime' then return security.admin_jobs_runtime_read_v1(p_args)")
   expect(sql).toContain('revoke all on function security.admin_jobs_runtime_read_v1(jsonb) from public,anon,authenticated')
   expect(sql).toContain('grant execute on function security.admin_jobs_runtime_read_v1(jsonb) to authenticated')
+  expect(sql).toContain("coalesce(p_args->>'limit','') ~ '^\\d{1,9}$'")
+  expect(sql).toContain("(j.result->>'processed')::bigint")
   expect(sql).toContain("'processed_count'")
   expect(sql).toContain("'throughput_records_per_min'")
   expect(sql).toContain("'evidence_count'")
