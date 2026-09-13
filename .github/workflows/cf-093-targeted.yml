@@ -43,4 +43,6 @@ jobs:
           tests/uat/cf-093-uq-discovery-query-field.spec.mjs
           tests/uat/cf-093-uq-reconstruction-bootstrap.spec.mjs
           tests/uat/cf-093-preview-provenance-terminal-hardening.spec.mjs
+          tests/uat/cf-093-bound-resolution-identity-freshness.spec.mjs
+          tests/uat/cf-093-bound-handoff-queueable-provenance.spec.mjs
           --project=chromium-desktop
