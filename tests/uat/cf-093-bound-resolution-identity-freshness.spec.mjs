@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const migration = fs.readFileSync('supabase/migrations/20260913063252_cf_093_bound_resolution_identity_freshness_reconcile.sql','utf8')
-const retryFairness = fs.readFileSync('supabase/migrations/20260913074630_cf_093_bounded_retry_fairness_reconcile.sql','utf8')
+const retryFairness = fs.readFileSync('supabase/migrations/20260913074104_cf_093_bounded_retry_fairness_reconcile.sql','utf8')
 
 test('CF-093 bound resolver only consumes selected candidates from the exact Preview token',()=>{
   expect(migration).toContain('join pipeline.layer2_provider_attempts pa on pa.id=dc.provider_attempt_id')
