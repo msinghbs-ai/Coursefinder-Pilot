@@ -126,8 +126,8 @@ jobs:
             supabase/migrations/20260913015530_cf_093_scheduler_preview_set_based_terminal_optimization.sql
             supabase/migrations/20260913020222_cf_093_scheduler_route_gap_scope_optimization.sql
             supabase/migrations/20260913020646_cf_093_scheduler_run_bridge_acl_reconcile.sql
-            supabase/migrations/20260913062000_cf_093_bound_resolution_identity_freshness_reconcile.sql
-            supabase/migrations/20260913064500_cf_093_bound_handoff_queueable_provenance_reconcile.sql
+            supabase/migrations/20260913063252_cf_093_bound_resolution_identity_freshness_reconcile.sql
+            supabase/migrations/20260913063321_cf_093_bound_handoff_queueable_provenance_reconcile.sql
           )
           for migration in "${migrations[@]}"; do
             echo "Applying $migration"
