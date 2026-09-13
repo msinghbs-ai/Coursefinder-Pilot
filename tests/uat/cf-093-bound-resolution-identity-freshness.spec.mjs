@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const migration = fs.readFileSync('supabase/migrations/20260913063252_cf_093_bound_resolution_identity_freshness_reconcile.sql','utf8')
+const retryFairness = fs.readFileSync('supabase/migrations/20260913074630_cf_093_bounded_retry_fairness_reconcile.sql','utf8')
 
 test('CF-093 bound resolver only consumes selected candidates from the exact Preview token',()=>{
   expect(migration).toContain('join pipeline.layer2_provider_attempts pa on pa.id=dc.provider_attempt_id')
@@ -18,6 +19,16 @@ test('CF-093 terminal freshness is invalidated when Layer 1 identity changes',()
   expect(migration).toContain("d.status='current_page_not_found'")
 })
 
+test('CF-093 bounded retry fairness honours governed max attempts without manufacturing terminal Evidence',()=>{
+  expect(retryFairness).toContain("v_ctx#>>'{configuration,retry,max_attempts}'")
+  expect(retryFairness).toContain("r->>'status' in ('failed','candidate')")
+  expect(retryFairness).toContain('coalesce(a.retry_attempts,0)<v_retry_max')
+  expect(retryFairness).toContain('order by coalesce(a.retry_attempts,0),c.canonical_title,c.id')
+  expect(retryFairness).toContain("jsonb_agg(to_jsonb(x)-'retry_attempts' order by x.retry_attempts,x.canonical_title,x.id)")
+  expect(retryFairness).not.toContain("status='current_page_not_found'")
+  expect(retryFairness).not.toContain('insert into pipeline.layer2_course_discovery_candidates')
+})
+
 test('CF-093 forward reconciliation preserves authority and ACL boundaries',()=>{
   expect(migration).toContain("if current_user not in ('service_role','postgres')")
   expect(migration).toContain('scheduler async bound profile/course identity changed before discovery Evidence write')
@@ -25,4 +36,8 @@ test('CF-093 forward reconciliation preserves authority and ACL boundaries',()=>
   expect(migration).toContain('grant execute on function public.layer2_discovery_context_scope_bound_v1')
   expect(migration).toContain('revoke all on function security.scheduler_workflow_scope_state_v1')
   expect(migration).toContain('grant execute on function security.scheduler_workflow_scope_state_v1')
+  expect(retryFairness).toContain("if current_user not in ('service_role','postgres')")
+  expect(retryFairness).toContain('scheduler async bound profile/course identity changed before discovery Evidence write')
+  expect(retryFairness).toContain('revoke all on function public.layer2_discovery_context_scope_bound_v1')
+  expect(retryFairness).toContain('grant execute on function public.layer2_discovery_context_scope_bound_v1')
 })
