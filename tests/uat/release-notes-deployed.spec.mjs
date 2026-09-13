@@ -1,24 +1,25 @@
 import { test, expect } from '@playwright/test'
+import { UI_VERSION, RELEASE } from '../../src/release-manifest.js'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
-test.describe('CourseFinder PIM Admin v2.15.21 release notes @deployed',()=>{
- test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.');await writeRunEnvironment({suite:'deployed-pim-v2.15.21-release-notes',change_control:'CF-CHG-20260901-061'})})
+test.describe(`CourseFinder PIM Admin v${UI_VERSION} release notes @deployed`,()=>{
+ test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required for deployed acceptance.');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required for deployed acceptance.');await writeRunEnvironment({suite:`deployed-pim-v${UI_VERSION.replaceAll('.','-')}-release-notes`,change_control:'CF-CHG-20260910-093'})})
  test('top-right version opens maintained release history and closes accessibly',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await expect(page.locator('#governed-runtime-marker')).toHaveCount(0)
   const version=page.locator('.m-release-pill')
-  await expect(version).toContainText('v2.15.21')
+  await expect(version).toContainText(`v${UI_VERSION}`)
   await expect(page.locator('body')).not.toContainText(/Pipeline Ops v1\.0 · Evidence v1\.0 · Data Quality v1\.0 · Access Admin v1\.0/)
   await expect(version).toHaveAttribute('role','button')
   await expect(version).toHaveAttribute('aria-haspopup','dialog')
   await version.click()
   const dialog=page.getByRole('dialog',{name:'Release notes'})
   await expect(dialog).toBeVisible()
-  await expect(dialog.locator('[data-release-version="2.15.21"]')).toContainText('QILT & PRISMS comparison experience')
+  await expect(dialog.locator(`[data-release-version="${UI_VERSION}"]`)).toContainText(RELEASE.title)
   await expect(dialog.locator('[data-release-version="2.15.11"]')).toContainText('Layer 3 AI operations maturity')
   await expect(dialog.locator('[data-release-version="2.15.6"]')).toContainText('Streamlined Data Operations navigation')
   await expect(dialog).toContainText('Evidence')
-  await milestoneScreenshot(page,testInfo,'pim-v2-15-20-release-notes')
+  await milestoneScreenshot(page,testInfo,`pim-v${UI_VERSION.replaceAll('.','-')}-release-notes`)
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
   await expect(version).toBeFocused()
