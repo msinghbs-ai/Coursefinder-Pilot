@@ -80,7 +80,7 @@ jobs:
             const scope=builder.locator('label.cf-workflow-builder__field').filter({hasText:'Scope type'}).locator('select')
             await scope.selectOption('university')
             const search=builder.getByPlaceholder('Search up to 10 server-authorised matches')
-            await search.fill('Queensland')
+            await search.fill('The University of Queensland')
             const providerSelect=builder.locator('label.cf-workflow-builder__field').filter({hasText:'University / provider'}).locator('select')
             await expect(providerSelect.locator(`option[value="${UQ}"]`)).toHaveCount(1,{timeout:20_000})
             await providerSelect.selectOption(UQ)
