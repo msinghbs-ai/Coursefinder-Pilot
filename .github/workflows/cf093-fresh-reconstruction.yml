@@ -128,6 +128,7 @@ jobs:
             supabase/migrations/20260913020646_cf_093_scheduler_run_bridge_acl_reconcile.sql
             supabase/migrations/20260913063252_cf_093_bound_resolution_identity_freshness_reconcile.sql
             supabase/migrations/20260913063321_cf_093_bound_handoff_queueable_provenance_reconcile.sql
+            supabase/migrations/20260913074104_cf_093_bounded_retry_fairness_reconcile.sql
           )
           for migration in "${migrations[@]}"; do
             echo "Applying $migration"
@@ -147,6 +148,8 @@ jobs:
           psql -Atc "select pg_get_functiondef('public.layer2_scope_profile_batch_service(uuid,uuid,uuid[])'::regprocedure)" | grep -F 'exact scheduler Preview binding is missing, cancelled, expired or does not match the handoff scope'
           psql -Atc "select pg_get_functiondef('public.layer2_scope_profile_batch_service(uuid,uuid,uuid[])'::regprocedure)" | grep -F 'v_binding.discovery_course_ids'
           psql -Atc "select pg_get_functiondef('security.scheduler_workflow_dispatch_dedupe_anchor_v1(jsonb,timestamptz)'::regprocedure)" | grep -F 'discovery_started'
-          psql -Atc "select pg_get_functiondef('public.layer2_discovery_context_scope_bound_v1(uuid,uuid,uuid,uuid[],integer)'::regprocedure)" | grep -F 'scheduler_preview_token'
+          psql -Atc "select pg_get_functiondef('public.layer2_discovery_context_scope_bound_v1(uuid,uuid,uuid,uuid[],integer)'::regprocedure)" | grep -F 'retry_max_attempts'
+          psql -Atc "select pg_get_functiondef('public.layer2_discovery_context_scope_bound_v1(uuid,uuid,uuid,uuid[],integer)'::regprocedure)" | grep -F "r ->> 'status' = ANY"
+          psql -Atc "select pg_get_functiondef('public.layer2_discovery_context_scope_bound_v1(uuid,uuid,uuid,uuid[],integer)'::regprocedure)" | grep -F 'retry_attempts'
           psql -Atc "select pg_get_functiondef('security.scheduler_workflow_scope_state_v1(text,text,uuid)'::regprocedure)" | grep -F 'expected_course_code'
           echo 'CF-093 full ordered PR migration reconstruction PASS.'
