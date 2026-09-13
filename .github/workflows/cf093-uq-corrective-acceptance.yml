@@ -1,12 +1,12 @@
 name: CF-093 UQ Corrective Acceptance
 # final governed UQ closure run after 20260913082845 review reconciliation
-# acceptance trigger: exact branch head, complete reconstruction and resolved Codex findings (2026-09-13)
+# acceptance trigger: exact main head, deployed main Worker and resolved forward-only authority/runtime gates
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - m245/cf093-async-discovery-20260912
+      - main
     paths:
       - .github/workflows/cf093-uq-corrective-acceptance.yml
 
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      UAT_BASE_URL: https://m245-cf093-async-discovery-20260912-coursefinder-pilot.techm.workers.dev
+      UAT_BASE_URL: https://coursefinder-pilot.techm.workers.dev
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
     steps:
@@ -48,13 +48,13 @@ jobs:
       - name: Build exact workflow SHA
         run: npm run build
 
-      - name: Wait for exact branch preview deployment
+      - name: Wait for deployed main Worker
         shell: bash
         run: |
           set -euo pipefail
           sleep 35
           for attempt in $(seq 1 12); do
-            code=$(curl -L -sS -o /tmp/cf093-preview.html -w '%{http_code}' --max-time 15 "$UAT_BASE_URL/" || true)
+            code=$(curl -L -sS -o /tmp/cf093-main.html -w '%{http_code}' --max-time 15 "$UAT_BASE_URL/" || true)
             if [ "$code" = '200' ]; then exit 0; fi
             sleep 5
           done
@@ -98,7 +98,7 @@ jobs:
             expect(preview.preview_token).toBeTruthy()
             expect(preview.async_discovery_preview_bound).toBe(true)
 
-            await builder.getByPlaceholder('Required for consequential dispatch').fill('CF-093 corrective UQ discovery acceptance after terminal-basis hardening')
+            await builder.getByPlaceholder('Required for consequential dispatch').fill('CF-093 corrective UQ discovery acceptance from deployed main')
             const runResponsePromise=page.waitForResponse(r=>r.url().includes('/rest/v1/rpc/scheduler_workflow_run_now_v2')&&r.request().method()==='POST',{timeout:45_000})
             await builder.getByRole('button',{name:/Run acquisition \+ deterministic Layer 2/i}).click()
             const runResponse=await runResponsePromise
