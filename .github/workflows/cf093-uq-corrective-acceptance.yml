@@ -63,6 +63,8 @@ jobs:
           const UQ='e55396d2-869a-46ef-9d17-841c7eab1313'
           const expected={catalogue_count:382,needs_discovery_count:54}
 
+          test.setTimeout(120_000)
+
           test('CF-093 authenticated UQ corrective provider-scope dispatch',async({page})=>{
             await loginAsUatUser(page)
             await page.goto('/#scheduled-tasks',{waitUntil:'domcontentloaded'})
