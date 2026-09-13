@@ -13,7 +13,7 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
   })
 
   test('builds and preserves governed Administration/platform boundaries',async()=>{
-    const[component,css,shell,migration,versionEntry,index,releaseTest]=await Promise.all([
+    const[component,css,shell,migration,versionEntry,index,releaseTest,manifest,current]=await Promise.all([
       fs.readFile('src/platform-maturity-entry.jsx','utf8'),
       fs.readFile('src/platform-maturity.css','utf8'),
       fs.readFile('src/mature-main.jsx','utf8'),
@@ -21,6 +21,8 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('tests/uat/release-notes-deployed.spec.mjs','utf8'),
+      fs.readFile('src/release-manifest.js','utf8'),
+      fs.readFile('src/release-currentness-entry.js','utf8'),
     ])
 
     expect(component).toContain('data-platform-maturity="true"')
@@ -40,15 +42,20 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(shell).toContain("<PlatformMaturity rank={rank} onError={onError}/>")
     expect(shell).not.toContain("{tool==='platform'&&rank>=6&&<div className=\"m-legacy-host\"><RegulatorySettings")
     expect(shell).toContain("action=\"Open PIM\" onClick={()=>selectTool('pim')}")
-    const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-    const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
-    expect(shellVersion).toBeTruthy()
-    expect(releaseVersion).toBe(shellVersion)
-    expect(index).toContain('Coursefinder PIM Admin v'+shellVersion)
+    const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
+    const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
+    const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
+    expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
+    expect(historyVersion).toBe(fallbackVersion)
+    expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+    expect(manifest).toContain(`version:'${fallbackVersion}'`)
+    expect(current).toContain("from'./release-manifest.js'")
+    expect(index).toContain('<title>Coursefinder PIM Admin</title>')
+    expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)
     expect(versionEntry).toContain("version:'2.15.18'")
     expect(versionEntry).toContain('Platform maturity Administration workspace')
-    expect(releaseTest).toContain('v'+shellVersion)
-    expect(releaseTest).toContain('[data-release-version="'+shellVersion+'"]')
+    expect(releaseTest).toContain('release notes @deployed')
+    expect(releaseTest).toContain('data-release-version')
 
     expect(css).toContain('.pm-table-wrap')
     expect(css).toContain('overflow-x:auto')

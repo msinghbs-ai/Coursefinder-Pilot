@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 — 14 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.79** for governed dispatcher tuning and recent-run decision metrics.
+- Added Administration → Scraper Config dispatcher controls for batch size, run concurrency, stale recovery and paid-attempt limits while keeping vendor concurrency/rate/timeout/quota separate.
+- Added sanitized comparable-run metrics for throughput, acquisition/extraction latency, retries, Evidence, field resolution and Layer 2/Layer 3/blocked outcomes, plus provider 24-hour performance.
+- Added auditable tuning history with actor-bound governance reason and before/after policy; in-flight batches retain immutable policy snapshots.
+- Retained the PR #84 transport safety cap of four ordinary items per invocation and two for scraper-first, with no change to Layer 1 identity, Layer 3 Evidence/model gating, Layer 4 authority or Search/Publication boundaries.
+
 ## 0.1.5 — 11 Sep 2026
 
 - Published visible PIM Admin release **v2.15.78** for the accepted CF-093 governed Scheduled Tasks target-builder slice.

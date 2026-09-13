@@ -8,13 +8,15 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-061-qilt-prisms-comparison-contract',change_control:'CF-CHG-20260901-061'})})
 
  test('builds bounded comparison UX without mutating governed authority',async()=>{
-  const[ui,context,shell,migration,version,index]=await Promise.all([
+  const[ui,context,shell,migration,version,index,manifest,current]=await Promise.all([
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
    fs.readFile('src/ContextualInsights.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8'),
    Promise.all([fs.readFile('supabase/migrations/20260901133212_cf_061_contextual_compare_qilt_prisms.sql','utf8'),fs.readFile('supabase/migrations/20260901134059_cf_061_contextual_compare_provider_city_fix.sql','utf8'),fs.readFile('supabase/migrations/20260901134137_cf_061_contextual_insights_study_area_code_fix.sql','utf8')]).then(xs=>xs.join('\n')),
    fs.readFile('src/pim-version-entry.js','utf8'),
    fs.readFile('index.html','utf8'),
+   fs.readFile('src/release-manifest.js','utf8'),
+   fs.readFile('src/release-currentness-entry.js','utf8'),
   ])
 
   expect(ui).toContain('const MAX=6')
@@ -40,10 +42,16 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(shell).toContain("import ComparisonWorkspace from'./ComparisonWorkspace'")
   expect(shell).toContain("if(page==='Compare')return <ComparisonWorkspace")
   expect(shell).toContain("navigate?.('Compare',{type,ids:data.id})")
-  const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-  const releaseVersion=version.match(/const VERSION='([^']+)'/)?.[1]
-  expect(shellVersion).toMatch(/^2\.15\.\d+$/)
-  expect(releaseVersion).toBe(shellVersion)
+  const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
+  const historyVersion=version.match(/const VERSION='([^']+)'/)?.[1]
+  const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
+  expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
+  expect(historyVersion).toBe(fallbackVersion)
+  expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+  expect(manifest).toContain(`version:'${fallbackVersion}'`)
+  expect(current).toContain("from'./release-manifest.js'")
+  expect(index).toContain('<title>Coursefinder PIM Admin</title>')
+  expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)
 
   expect(migration).toContain('security.admin_contextual_insights_v2')
   expect(migration).toContain('security.admin_contextual_compare')
@@ -57,9 +65,7 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(migration).not.toMatch(/\b(delete|truncate)\s+from\b/i)
   expect(migration).not.toMatch(/\bupdate\s+(catalogue|search|publication)\./i)
 
-  expect(version).toContain(`version:'${shellVersion}'`)
   expect(version).toContain('Course comparison provider coverage correction')
-  expect(index).toContain(`Coursefinder PIM Admin v${shellVersion}`)
 
   const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
   expect(output).toContain('built in')

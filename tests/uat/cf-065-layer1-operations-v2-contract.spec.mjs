@@ -5,11 +5,13 @@ import{test,expect}from'@playwright/test'
 
 test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
   test('country-first operations and Administration configuration stay separated',async()=>{
-    const[layer1,shell,versionEntry,index]=await Promise.all([
+    const[layer1,shell,versionEntry,index,manifest,current]=await Promise.all([
       fs.readFile('src/layer1-operations-entry.jsx','utf8'),
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
+      fs.readFile('src/release-manifest.js','utf8'),
+      fs.readFile('src/release-currentness-entry.js','utf8'),
     ])
     expect(layer1).toContain('Layer 1 Operations')
     expect(layer1).toContain('Operate governed regulatory, statistical and ranking ingestion by country, source health, schedule and Evidence.')
@@ -29,12 +31,16 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(shell).toContain("item('Layer 1 — Operations',Database,4)")
     expect(shell).toContain("['layer1-sources','Layer 1 sources',Database,rank>=6]")
     expect(shell).toContain("tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>")
-    const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-    const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
-    expect(shellVersion).toMatch(/^2\\.15\\.\\d+$/)
-    expect(releaseVersion).toBe(shellVersion)
-    expect(index).toContain(`Coursefinder PIM Admin v${shellVersion}`)
-    expect(versionEntry).toContain(`version:'${shellVersion}'`)
+    const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
+    const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
+    const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
+    expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
+    expect(historyVersion).toBe(fallbackVersion)
+    expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+    expect(manifest).toContain(`version:'${fallbackVersion}'`)
+    expect(current).toContain("from'./release-manifest.js'")
+    expect(index).toContain('<title>Coursefinder PIM Admin</title>')
+    expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)
     expect(versionEntry).toContain('Layer 1 source configuration UI restoration')
     const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
     expect(output).toContain('built in')
