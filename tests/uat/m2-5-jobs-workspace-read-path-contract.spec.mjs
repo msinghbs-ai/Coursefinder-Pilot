@@ -13,13 +13,15 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
   })
 
   test('canonical Jobs route uses governed paged Pipeline Jobs without route suppression',async()=>{
-    const[shell,ops,supa,versionEntry,index,releaseTest]=await Promise.all([
+    const[shell,ops,supa,versionEntry,index,releaseTest,manifest,current]=await Promise.all([
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('src/pipeline-ops-entry.jsx','utf8'),
       fs.readFile('src/lib/supabase.js','utf8'),
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('tests/uat/release-notes-deployed.spec.mjs','utf8'),
+      fs.readFile('src/release-manifest.js','utf8'),
+      fs.readFile('src/release-currentness-entry.js','utf8'),
     ])
 
     expect(shell).toContain("import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'")
@@ -42,12 +44,16 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     expect(supa).not.toContain("Jobs/Sources routes are owned by the Pipeline Ops overlay")
     expect(supa).toContain("Jobs/Sources are canonical shell workspaces again")
 
-    const shellVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-    const releaseVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
-    expect(shellVersion).toMatch(/^2\.15\.\d+$/)
-    expect(releaseVersion).toBe(shellVersion)
-    expect(index).toContain(`Coursefinder PIM Admin v${shellVersion}`)
-    expect(versionEntry).toContain(`version:'${shellVersion}'`)
+    const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
+    const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
+    const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
+    expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
+    expect(historyVersion).toBe(fallbackVersion)
+    expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+    expect(manifest).toContain(`version:'${fallbackVersion}'`)
+    expect(current).toContain("from'./release-manifest.js'")
+    expect(index).toContain('<title>Coursefinder PIM Admin</title>')
+    expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)
     expect(versionEntry).toContain('Pipeline Jobs workspace restoration')
     expect(releaseTest).toContain('release notes @deployed')
 
