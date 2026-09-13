@@ -1,7 +1,7 @@
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 
-const migration=fs.readFileSync('supabase/migrations/20260913064500_cf_093_bound_handoff_queueable_provenance_reconcile.sql','utf8')
+const migration=fs.readFileSync('supabase/migrations/20260913063321_cf_093_bound_handoff_queueable_provenance_reconcile.sql','utf8')
 
 test('CF-093 exact Preview provenance is limited to the discovery subset at handoff',()=>{
  expect(migration).toContain('v_bound and c.id=any(v_binding.discovery_course_ids)')
