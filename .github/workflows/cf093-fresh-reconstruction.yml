@@ -129,6 +129,7 @@ jobs:
             supabase/migrations/20260913063252_cf_093_bound_resolution_identity_freshness_reconcile.sql
             supabase/migrations/20260913063321_cf_093_bound_handoff_queueable_provenance_reconcile.sql
             supabase/migrations/20260913074104_cf_093_bounded_retry_fairness_reconcile.sql
+            supabase/migrations/20260913082845_cf_093_final_review_authority_retry_reconcile.sql
           )
           for migration in "${migrations[@]}"; do
             echo "Applying $migration"
@@ -149,7 +150,10 @@ jobs:
           psql -Atc "select pg_get_functiondef('public.layer2_scope_profile_batch_service(uuid,uuid,uuid[])'::regprocedure)" | grep -F 'v_binding.discovery_course_ids'
           psql -Atc "select pg_get_functiondef('security.scheduler_workflow_dispatch_dedupe_anchor_v1(jsonb,timestamptz)'::regprocedure)" | grep -F 'discovery_started'
           psql -Atc "select pg_get_functiondef('public.layer2_discovery_context_scope_bound_v1(uuid,uuid,uuid,uuid[],integer)'::regprocedure)" | grep -F 'retry_max_attempts'
-          grep -F "r->>'status' in ('failed','candidate')" supabase/migrations/20260913074104_cf_093_bounded_retry_fairness_reconcile.sql
+          psql -Atc "select pg_get_functiondef('public.layer2_provider_attempt_start(uuid,uuid,text)'::regprocedure)" | grep -F 'scheduler_workflow_queueable_url_allowed_v1'
+          psql -Atc "select pg_get_functiondef('security.layer2_discovery_scope_dispatch_v2(uuid,uuid[],integer,uuid,uuid[])'::regprocedure)" | grep -F 'retry_exhausted'
+          psql -Atc "select pg_get_functiondef('public.layer2_scope_profile_batch_service(uuid,uuid,uuid[])'::regprocedure)" | grep -F 'scheduler_preview_token'
+          grep -F "r->>'status' in ('failed','candidate')" supabase/migrations/20260913082845_cf_093_final_review_authority_retry_reconcile.sql
           psql -Atc "select pg_get_functiondef('public.layer2_discovery_context_scope_bound_v1(uuid,uuid,uuid,uuid[],integer)'::regprocedure)" | grep -F 'retry_attempts'
           psql -Atc "select pg_get_functiondef('security.scheduler_workflow_scope_state_v1(text,text,uuid)'::regprocedure)" | grep -F 'expected_course_code'
           echo 'CF-093 full ordered PR migration reconstruction PASS.'
