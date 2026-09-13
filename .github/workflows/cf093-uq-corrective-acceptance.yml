@@ -1,5 +1,6 @@
 name: CF-093 UQ Corrective Acceptance
 # one-shot rerun: set-based Preview optimisation
+# acceptance trigger: Edge v30 deployed-current after exact-head Codex clean (2026-09-13)
 
 on:
   workflow_dispatch:
