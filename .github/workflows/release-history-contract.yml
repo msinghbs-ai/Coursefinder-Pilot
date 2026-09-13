@@ -3,21 +3,27 @@ name: Release History Contract
 on:
   pull_request:
     paths:
+      - 'src/release-manifest.js'
       - 'src/pim-version-entry.js'
       - 'src/release-currentness-entry.js'
       - 'src/mature-main.jsx'
       - 'index.html'
       - 'package.json'
+      - 'CHANGELOG.md'
+      - 'scripts/verify-release-contract.mjs'
       - 'tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs'
       - '.github/workflows/release-history-contract.yml'
   push:
     branches: [main]
     paths:
+      - 'src/release-manifest.js'
       - 'src/pim-version-entry.js'
       - 'src/release-currentness-entry.js'
       - 'src/mature-main.jsx'
       - 'index.html'
       - 'package.json'
+      - 'CHANGELOG.md'
+      - 'scripts/verify-release-contract.mjs'
       - 'tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs'
       - '.github/workflows/release-history-contract.yml'
 
@@ -34,5 +40,7 @@ jobs:
         with:
           node-version: 22
       - run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Verify maintained release history and version synchronization
+      - name: Verify canonical release manifest and recovery baseline
+        run: npm run release:verify
+      - name: Verify maintained release history contract
         run: npx playwright test tests/uat/m245-release-history-v21575-persistence-contract.spec.mjs --project=chromium-desktop
