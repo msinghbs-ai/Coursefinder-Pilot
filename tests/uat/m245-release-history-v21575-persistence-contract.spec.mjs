@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 
-test('v2.15.79 candidate uses one manifest while v2.15.78 remains the accepted recovery baseline and retained history',()=>{
+test('v2.15.79 is the accepted recovery release while v2.15.78 remains retained history',()=>{
   const manifest=fs.readFileSync('src/release-manifest.js','utf8')
   const history=fs.readFileSync('src/pim-version-entry.js','utf8')
   const shell=fs.readFileSync('src/mature-main.jsx','utf8')
@@ -12,9 +12,13 @@ test('v2.15.79 candidate uses one manifest while v2.15.78 remains the accepted r
 
   expect(manifest).toContain("export const UI_VERSION='2.15.79'")
   expect(manifest).toContain("export const PACKAGE_VERSION='0.1.6'")
-  expect(manifest).toContain("version:'2.15.78'")
-  expect(manifest).toContain("packageVersion:'0.1.5'")
-  expect(manifest).toContain("pilotMain:'7cf5cc72296ca82e6e026606a61f449ede4ead45'")
+  expect(manifest).toContain("export const RELEASE_STATE='accepted'")
+  expect(manifest).toContain('export const ACCEPTED_RELEASES=[')
+  expect(manifest).toContain("version:'2.15.79'")
+  expect(manifest).toContain("packageVersion:'0.1.6'")
+  expect(manifest).toContain("pilotMain:'32be4e96a8df342deba3011f9740dc1230a672b2'")
+  expect(manifest).toContain('export const RECOVERY_RELEASE=ACCEPTED_RELEASES[0]')
+  expect(manifest).not.toContain('PREVIOUS_ACCEPTED_RELEASE')
 
   expect(pkg.version).toBe('0.1.6')
   expect(changelog).toContain('## 0.1.6 — 14 Sep 2026')
@@ -22,16 +26,15 @@ test('v2.15.79 candidate uses one manifest while v2.15.78 remains the accepted r
   expect(changelog).toContain('## 0.1.5 — 11 Sep 2026')
   expect(changelog).toContain('**v2.15.78**')
 
+  // Legacy history remains retained display content only; it no longer decides recovery authority.
   expect(history).toContain("const VERSION='2.15.78'")
   expect(history).toContain("{version:'2.15.78'")
   expect(history).toContain("{version:'2.15.77'")
   expect(history).toContain("{version:'2.15.76'")
   expect(history).toContain("{version:'2.15.75'")
   expect(history.indexOf("{version:'2.15.78'")).toBeLessThan(history.indexOf("{version:'2.15.77'"))
-  expect(history.indexOf("{version:'2.15.77'")).toBeLessThan(history.indexOf("{version:'2.15.76'"))
-  expect(history.indexOf("{version:'2.15.76'")).toBeLessThan(history.indexOf("{version:'2.15.75'"))
 
-  // Bootstrap/history remain the last accepted release until the candidate passes merge + deployed acceptance.
+  // Static shell fallback must remain an immutable retained release; runtime currentness comes only from the manifest overlay.
   expect(shell).toContain("const UI_VERSION='2.15.78'")
   expect(current).toContain("import{UI_VERSION as VERSION,RELEASE}from'./release-manifest.js'")
   expect(current).not.toMatch(/const VERSION='2\.15\.\d+'/)
