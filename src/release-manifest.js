@@ -1,6 +1,8 @@
-// Canonical browser-visible release authority. Derived release surfaces must import/read this file rather than define their own current version literal.
+// Canonical browser-visible release and recovery authority.
+// New releases must change this file rather than defining competing current-version literals elsewhere.
 export const UI_VERSION='2.15.79'
 export const PACKAGE_VERSION='0.1.6'
+export const RELEASE_STATE='accepted'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
@@ -20,11 +22,18 @@ export const RELEASE={
   ]
 }
 
-// Immutable accepted recovery point immediately preceding this candidate.
-export const PREVIOUS_ACCEPTED_RELEASE={
-  version:'2.15.78',
-  packageVersion:'0.1.5',
-  date:'11 Sep 2026',
-  pilotMain:'7cf5cc72296ca82e6e026606a61f449ede4ead45',
-  title:'Governed Scheduled Tasks target builder'
-}
+// Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
+// Historical releases before this central manifest remain retained by the legacy release-history source.
+export const ACCEPTED_RELEASES=[
+  {
+    version:'2.15.79',
+    packageVersion:'0.1.6',
+    date:'14 Sep 2026',
+    pilotMain:'32be4e96a8df342deba3011f9740dc1230a672b2',
+    title:'Dispatcher tuning & run metrics',
+    changes:RELEASE.changes,
+    bugFixes:RELEASE.bugFixes
+  }
+]
+
+export const RECOVERY_RELEASE=ACCEPTED_RELEASES[0]
