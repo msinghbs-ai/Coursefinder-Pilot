@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs/promises'
 
-test('CF-247 durable Layer 3 work queue is service-owned, idempotent and bounded',async()=>{
+test('CF-247 durable Layer 3 work queue is service-owned, idempotent, bounded and recoverable',async()=>{
   const sql=await fs.readFile('supabase/migrations/20260915113000_cf_247_layer3_work_queue_foundation.sql','utf8')
   for(const token of [
     'pipeline.layer3_work_items',
@@ -16,11 +16,16 @@ test('CF-247 durable Layer 3 work queue is service-owned, idempotent and bounded
     "v_item.status<>'layer3_required'",
     'retained governed Evidence required',
     'service_role required',
+    "current_setting('request.jwt.claim.role',true)",
+    "reserved_at < now()-interval '15 minutes'",
+    'attempt_count<5',
+    "attempt_count>=5 then 'parked'",
     'CF-CHG-20260915-247'
   ]) expect(sql).toContain(token)
   expect(sql).toMatch(/revoke all on pipeline\.layer3_work_items from public,anon,authenticated/i)
   expect(sql).toMatch(/grant select,insert,update on pipeline\.layer3_work_items to service_role/i)
   expect(sql).not.toMatch(/grant .*layer3_work_items.*authenticated/i)
+  expect(sql).not.toMatch(/if current_user not in/i)
   expect(sql).not.toContain('catalogue.course_fees')
   expect(sql).not.toContain('catalogue.course_links')
 })
