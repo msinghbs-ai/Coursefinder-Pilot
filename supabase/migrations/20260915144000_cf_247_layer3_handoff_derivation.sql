@@ -13,9 +13,9 @@ begin
   v_caller:=coalesce(nullif(current_setting('request.jwt.claim.role',true),''),nullif(current_setting('request.jwt.role',true),''),session_user);
   if v_caller not in ('service_role','postgres') then raise exception 'service_role required' using errcode='42501'; end if;
 
-  -- Current Course fall-out is predominantly provider-current tuition. Do not guess
-  -- task classes from a generic layer3_required marker. Only explicit fee blockers
-  -- are mapped here, and only when the matching benchmark-passed profile is executable.
+  -- Do not guess task classes from a generic layer3_required marker. Only the
+  -- explicitly governed fee blocker taxonomy is mapped, and exactly one latest
+  -- retained Evidence attempt is selected per Layer 2 run item.
   with profile as (
     select id
     from pipeline.layer3_model_profiles
@@ -26,29 +26,38 @@ begin
     limit 1
   ), candidates as (
     select i.id as layer2_run_item_id,
-           coalesce(a.html_evidence_id,a.raw_evidence_id) as evidence_id,
+           a.evidence_id,
            p.id as profile_id,
            case
              when i.blocker ilike '%multiple_equal_rank_fee_candidates%' then 'multiple_equal_rank_fee_candidates'
              when i.blocker ilike '%low_confidence_international_fee_candidate%' then 'low_confidence_international_fee_candidate'
              when i.blocker ilike '%no_fee_candidate%' then 'no_fee_candidate'
-             else null
            end as reason
     from pipeline.layer2_run_items i
-    join pipeline.layer2_provider_attempts a on a.job_id=i.job_id
+    join lateral (
+      select coalesce(pa.html_evidence_id,pa.raw_evidence_id) as evidence_id
+      from pipeline.layer2_provider_attempts pa
+      where pa.job_id=i.job_id
+        and coalesce(pa.html_evidence_id,pa.raw_evidence_id) is not null
+        and exists (
+          select 1 from pipeline.evidence_artifacts e
+          where e.id=coalesce(pa.html_evidence_id,pa.raw_evidence_id)
+            and e.storage_path is not null and e.content_hash is not null
+        )
+      order by pa.attempt_no desc
+      limit 1
+    ) a on true
     cross join profile p
     where i.status='layer3_required'
-      and (i.blocker ilike '%fee_candidate%' or i.blocker ilike '%no_fee_candidate%')
-      and coalesce(a.html_evidence_id,a.raw_evidence_id) is not null
-      and exists (
-        select 1 from pipeline.evidence_artifacts e
-        where e.id=coalesce(a.html_evidence_id,a.raw_evidence_id)
-          and e.storage_path is not null and e.content_hash is not null
+      and (
+        i.blocker ilike '%multiple_equal_rank_fee_candidates%'
+        or i.blocker ilike '%low_confidence_international_fee_candidate%'
+        or i.blocker ilike '%no_fee_candidate%'
       )
       and not exists (
         select 1 from pipeline.layer3_work_items w
         where w.layer2_run_item_id=i.id
-          and w.evidence_id=coalesce(a.html_evidence_id,a.raw_evidence_id)
+          and w.evidence_id=a.evidence_id
           and w.task_class='provider_current_tuition_validation'
           and w.policy_version='cf247-v1'
       )
