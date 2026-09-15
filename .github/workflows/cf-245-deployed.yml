@@ -1,0 +1,68 @@
+name: CF-245 Enrichment Operations Deployed UAT
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/EnrichmentOperations.jsx'
+      - 'src/enrichment-operations.css'
+      - 'src/layer2-operations-entry.jsx'
+      - 'supabase/migrations/*cf_245*'
+      - 'tests/uat/cf-245-*'
+      - '.github/cf-245-enrichment-operations-candidate'
+      - '.github/workflows/cf-245-deployed.yml'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed CourseFinder Admin URL
+        required: true
+        default: https://coursefinder-pilot.techm.workers.dev
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deployed-cf245:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --ignore-scripts --prefer-offline --no-audit --no-fund
+      - name: Preflight governed UAT credentials
+        shell: bash
+        run: |
+          test -n "$UAT_EMAIL" && test -n "$UAT_PASSWORD"
+          case "$UAT_BASE_URL" in https://*) ;; *) exit 1;; esac
+      - name: Wait for deployed Worker
+        shell: bash
+        run: |
+          for attempt in $(seq 1 12); do
+            code=$(curl -L -sS -o /tmp/cf245-home.html -w '%{http_code}' --max-time 12 "$UAT_BASE_URL/?cf245_probe=${GITHUB_SHA}" || true)
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 5
+          done
+          exit 1
+      - name: Install Chromium
+        run: npx playwright install chromium
+      - name: Run CF-245 deployed outcome acceptance
+        run: npx playwright test tests/uat/cf-245-enrichment-operations-deployed.spec.mjs --project=chromium-desktop
+      - name: Upload CF-245 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cf-245-deployed-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            playwright-report/
+            test-results/
+            uat-artifacts/

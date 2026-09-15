@@ -5,7 +5,7 @@ const read=path=>fs.readFile(path,'utf8')
 
 test.describe('CF-245 Enrichment Operations contract',()=>{
  test('outcome reporting stays separate from scheduler configuration and mutation authority',async()=>{
-  const migration=await read('supabase/migrations/20260915083500_cf_245_enrichment_operations_admin_read_v1.sql')
+  const migration=await read('supabase/migrations/20260914223552_cf_245_enrichment_operations_admin_read_v1.sql')
   const report=await read('src/EnrichmentOperations.jsx')
   const layer2=await read('src/layer2-operations-entry.jsx')
   const scheduled=await read('src/ScheduledJobsWorkspace.jsx')

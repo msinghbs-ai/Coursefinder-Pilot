@@ -39,8 +39,8 @@ jobs:
           path: dist/
       - name: Validate UAT suite discovery
         run: npx playwright test --list
-      - name: CF-245 targeted Enrichment Operations contract
-        run: npx playwright test tests/uat/cf-245-enrichment-operations-contract.spec.mjs --project=chromium-desktop
+      - name: CF-245 targeted contracts
+        run: npx playwright test tests/uat/cf-245-enrichment-operations-contract.spec.mjs tests/uat/cf-245-observed-replay-contract.spec.mjs --project=chromium-desktop
       - name: Restore Playwright browser cache
         id: playwright-cache
         uses: actions/cache@v4
