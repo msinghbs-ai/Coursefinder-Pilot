@@ -7,7 +7,7 @@ test.describe('CF-245 stored Evidence replay contract',()=>{
  test('reuses only qualified deterministic facts and isolates tuition for Layer 3',async()=>{
   const base=await read('supabase/migrations/20260915014733_cf_245_observed_artifact_replay_and_layer3_backlog_v1.sql')
   const fix=await read('supabase/migrations/20260915014810_cf_245_observed_artifact_replay_boolean_fix_v1_1.sql')
-  const fee=await read('supabase/migrations/20260915020230_cf_245_layer3_tuition_validation_profile_v1.sql')
+  const fee=await read('supabase/migrations/20260915020403_cf_245_layer3_tuition_validation_profile_v1.sql')
   const sql=base+'\n'+fix
   for(const text of [
    'svc_cf245_replay_observed_coursefacts',"qualification_status in ('qualified','bounded')",'apply_admitted','identity_match','regulatory_code_seen',
