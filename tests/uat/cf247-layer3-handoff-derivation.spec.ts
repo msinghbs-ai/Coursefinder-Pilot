@@ -1,14 +1,17 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs/promises'
 
-test('CF-247 handoff derivation is explicit, evidence-backed and benchmark gated',async()=>{
+test('CF-247 handoff derivation is explicit, evidence-backed, single-attempt and benchmark gated',async()=>{
   const sql=await fs.readFile('supabase/migrations/20260915144000_cf_247_layer3_handoff_derivation.sql','utf8')
   for(const token of [
     'layer3_enqueue_eligible_layer2_service',
     "provider_current_tuition_validation",
     "quality_benchmark->>'pass'",
     'enabled and not paused',
+    'join lateral',
     'layer2_provider_attempts',
+    'order by pa.attempt_no desc',
+    'limit 1',
     'html_evidence_id',
     'raw_evidence_id',
     'storage_path is not null',
@@ -19,6 +22,8 @@ test('CF-247 handoff derivation is explicit, evidence-backed and benchmark gated
     'service_role required',
     'CF-CHG-20260915-247'
   ]) expect(sql).toContain(token)
+  expect(sql).not.toContain("i.blocker ilike '%fee_candidate%' or")
+  expect(sql).not.toContain('else null')
   expect(sql).not.toContain("task_class='course_description'")
   expect(sql).not.toContain('catalogue.course_fees')
   expect(sql).not.toContain('catalogue.course_links')
