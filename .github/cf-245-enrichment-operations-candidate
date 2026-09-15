@@ -1,0 +1,3 @@
+CF-CHG-20260915-245 deployed acceptance trigger.
+
+Purpose: force the dedicated CF-245 Enrichment Operations deployed-UAT workflow against the current merged main baseline after generic deployed-UAT misrouting selected an unrelated Layer 1 suite.
