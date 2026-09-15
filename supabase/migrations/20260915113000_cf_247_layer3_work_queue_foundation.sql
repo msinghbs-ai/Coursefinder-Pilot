@@ -51,11 +51,10 @@ create or replace function public.layer3_enqueue_from_layer2_service(
 language plpgsql security definer
 set search_path='pg_catalog','pipeline'
 as $$
-declare v_item pipeline.layer2_run_items%rowtype; v_id uuid; v_created boolean:=false;
+declare v_item pipeline.layer2_run_items%rowtype; v_id uuid; v_created boolean:=false; v_caller text;
 begin
-  if current_user not in ('service_role','postgres') then
-    raise exception 'service_role required' using errcode='42501';
-  end if;
+  v_caller:=coalesce(nullif(current_setting('request.jwt.claim.role',true),''),nullif(current_setting('request.jwt.role',true),''),session_user);
+  if v_caller not in ('service_role','postgres') then raise exception 'service_role required' using errcode='42501'; end if;
   select * into v_item from pipeline.layer2_run_items where id=p_layer2_run_item_id;
   if not found then raise exception 'layer2 run item not found'; end if;
   if v_item.status<>'layer3_required' then
@@ -82,17 +81,26 @@ returns jsonb
 language plpgsql security definer
 set search_path='pg_catalog','pipeline'
 as $$
-declare v_result jsonb;
+declare v_result jsonb; v_caller text;
 begin
-  if current_user not in ('service_role','postgres') then
-    raise exception 'service_role required' using errcode='42501';
-  end if;
+  v_caller:=coalesce(nullif(current_setting('request.jwt.claim.role',true),''),nullif(current_setting('request.jwt.role',true),''),session_user);
+  if v_caller not in ('service_role','postgres') then raise exception 'service_role required' using errcode='42501'; end if;
   if nullif(trim(p_worker),'') is null then raise exception 'worker required'; end if;
+
+  -- Reclaim abandoned leases. Poison work is parked after five reservations.
+  update pipeline.layer3_work_items
+  set status=case when attempt_count>=5 then 'parked' else 'pending' end,
+      available_at=case when attempt_count>=5 then available_at else now() end,
+      completed_at=case when attempt_count>=5 then now() else null end,
+      last_error=case when attempt_count>=5 then 'reservation lease expired after maximum attempts' else 'reservation lease expired; requeued' end,
+      reserved_at=null,reserved_by=null,updated_at=now()
+  where status='reserved' and reserved_at < now()-interval '15 minutes';
+
   with picked as (
     select w.id
     from pipeline.layer3_work_items w
     left join pipeline.layer3_model_profiles p on p.id=w.profile_id
-    where w.status in ('pending','failed') and w.available_at<=now()
+    where w.status in ('pending','failed') and w.available_at<=now() and w.attempt_count<5
       and (w.profile_id is null or (p.enabled and not p.paused and coalesce((p.quality_benchmark->>'pass')::boolean,false)))
     order by w.created_at,w.id
     for update of w skip locked
@@ -115,20 +123,23 @@ create or replace function public.layer3_work_item_transition_service(
 language plpgsql security definer
 set search_path='pg_catalog','pipeline'
 as $$
-declare v_ok boolean;
+declare v_ok boolean; v_caller text;
 begin
-  if current_user not in ('service_role','postgres') then raise exception 'service_role required' using errcode='42501'; end if;
+  v_caller:=coalesce(nullif(current_setting('request.jwt.claim.role',true),''),nullif(current_setting('request.jwt.role',true),''),session_user);
+  if v_caller not in ('service_role','postgres') then raise exception 'service_role required' using errcode='42501'; end if;
   if p_to_status not in ('pending','reserved','interpreting','validated','no_candidate','rejected','admission_pending','layer4_required','admitted','parked','failed') then raise exception 'invalid target status'; end if;
   update pipeline.layer3_work_items set
-    status=p_to_status,
+    status=case when p_to_status='failed' and attempt_count>=5 then 'parked' else p_to_status end,
     interpretation_id=coalesce(p_interpretation_id,interpretation_id),
     last_error=case when p_to_status in ('failed','parked','rejected') then nullif(left(coalesce(p_error,''),2000),'') else null end,
-    available_at=case when p_to_status='failed' then now()+make_interval(secs=>least(greatest(coalesce(p_retry_after_seconds,60),1),86400)) else available_at end,
-    completed_at=case when p_to_status in ('validated','no_candidate','rejected','layer4_required','admitted','parked') then now() else null end,
+    available_at=case when p_to_status='failed' and attempt_count<5 then now()+make_interval(secs=>least(greatest(coalesce(p_retry_after_seconds,60),1),86400)) else available_at end,
+    completed_at=case when p_to_status in ('validated','no_candidate','rejected','layer4_required','admitted','parked') or (p_to_status='failed' and attempt_count>=5) then now() else null end,
+    reserved_at=case when p_to_status in ('reserved','interpreting') then reserved_at else null end,
+    reserved_by=case when p_to_status in ('reserved','interpreting') then reserved_by else null end,
     updated_at=now()
   where id=p_work_item_id and status=p_from_status;
   v_ok:=found;
-  return jsonb_build_object('ok',v_ok,'work_item_id',p_work_item_id,'status',case when v_ok then p_to_status else null end);
+  return jsonb_build_object('ok',v_ok,'work_item_id',p_work_item_id,'status',case when v_ok then (select status from pipeline.layer3_work_items where id=p_work_item_id) else null end);
 end $$;
 
 revoke all on function public.layer3_enqueue_from_layer2_service(uuid,uuid,text,uuid,text) from public,anon,authenticated;
