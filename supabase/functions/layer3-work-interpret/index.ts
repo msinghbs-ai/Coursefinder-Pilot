@@ -158,7 +158,21 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (interpretationId) await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message, p_external_call_count: externalCallCount, p_call_latency_ms: startedMs == null ? null : Math.round(performance.now() - startedMs) }).catch(() => undefined);
-    if (workItemId) await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "interpreting", p_to_status: "failed", p_interpretation_id: interpretationId || null, p_error: message, p_retry_after_seconds: 60 }).catch(() => undefined);
+    if (workItemId) {
+      const { data: currentWork } = await svc.schema("pipeline").from("layer3_work_items").select("attempt_count").eq("id", workItemId).maybeSingle();
+      const attempts = Number(currentWork?.attempt_count || 0);
+      if (interpretationId && attempts >= 5) {
+        const { data: routed, error: routeError } = await svc.rpc("layer3_route_work_item_layer4_service", {
+          p_work_item_id: workItemId,
+          p_interpretation_id: interpretationId,
+          p_reason: `Layer 3 provider/transport retries exhausted after ${attempts} attempts: ${message.slice(0, 1200)}`,
+        });
+        if (!routeError && routed?.ok) {
+          return json({ ok: true, work_item_id: workItemId, interpretation_id: interpretationId, status: "layer4_required", review_item_id: routed?.review_item_id || null, exhausted_attempts: attempts, provider_error: message });
+        }
+      }
+      await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "interpreting", p_to_status: "failed", p_interpretation_id: interpretationId || null, p_error: message, p_retry_after_seconds: 60 }).catch(() => undefined);
+    }
     return json({ error: message, work_item_id: workItemId || null, interpretation_id: interpretationId || null }, /ceiling|credential|not executable/i.test(message) ? 409 : 500);
   }
 });
