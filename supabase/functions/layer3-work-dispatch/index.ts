@@ -22,7 +22,24 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const worker = String(body?.worker || "cf247-layer3-dispatch").trim();
     const limit = Math.min(Math.max(Number(body?.limit || 10), 1), 25);
-    const { data: reserved, error } = await svc.rpc("layer3_reserve_work_service", { p_worker: worker, p_limit: limit });
+    const taskClass = "provider_current_tuition_validation";
+    const { data: headroom, error: headroomError } = await svc.rpc("layer3_dispatch_headroom_service", { p_task_class: taskClass });
+    if (headroomError) throw new Error(`dispatch headroom check failed: ${headroomError.message}`);
+    const dispatchHeadroom = Math.max(Number(headroom?.dispatch_headroom || 0), 0);
+    if (!headroom?.ok || dispatchHeadroom <= 0) {
+      return json({
+        ok: true,
+        worker,
+        task_class: taskClass,
+        quota_blocked: true,
+        reserved_count: 0,
+        dispatched_count: 0,
+        headroom,
+        results: [],
+      });
+    }
+    const boundedLimit = Math.min(limit, dispatchHeadroom);
+    const { data: reserved, error } = await svc.rpc("layer3_reserve_work_service", { p_worker: worker, p_limit: boundedLimit });
     if (error) throw new Error(`work reservation failed: ${error.message}`);
     const items = Array.isArray(reserved) ? reserved : [];
     const results: unknown[] = [];
@@ -43,7 +60,7 @@ Deno.serve(async (req: Request) => {
         results.push({ work_item_id: workItemId, http_status: null, error: message });
       }
     }
-    return json({ ok: true, worker, reserved_count: items.length, dispatched_count: results.length, results });
+    return json({ ok: true, worker, task_class: taskClass, quota_blocked: false, headroom, reserved_count: items.length, dispatched_count: results.length, results });
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
