@@ -27,6 +27,7 @@ Deno.serve(async (req: Request) => {
   let workItemId = "";
   let interpretationId = "";
   let externalCallCount = 0;
+  let workAttemptCount = 0;
   let startedMs: number | null = null;
   try {
     const body = await req.json();
@@ -38,8 +39,10 @@ Deno.serve(async (req: Request) => {
     if (reserveError) return json({ error: reserveError.message || "work interpretation reservation failed" }, 409);
     interpretationId = String(reservation?.interpretation_id || "");
     const evidenceId = String(reservation?.evidence_id || "");
+    workAttemptCount = Number(reservation?.attempt_count || 0);
     const taskClass = String(reservation?.task_class || "");
     const candidateContext = reservation?.candidate_context || null;
+    const evidence = reservation?.evidence || {};
     const profile = reservation?.profile || {};
     if (!interpretationId || !evidenceId || !profile?.id) throw new Error("reserved work interpretation context incomplete");
     if (taskClass !== "provider_current_tuition_validation") throw new Error("service worker currently permits only provider_current_tuition_validation");
@@ -49,16 +52,15 @@ Deno.serve(async (req: Request) => {
     if (Number(usage?.minute_calls || 0) >= Number(profile.requests_per_minute || 1)) throw new Error("profile requests/minute ceiling reached");
     if (Number(usage?.day_calls || 0) >= Number(profile.requests_per_day || 1)) throw new Error("profile requests/day ceiling reached");
 
-    const { data: ev, error: evError } = await svc.schema("pipeline").from("evidence_artifacts").select("id,storage_path,mime_type,content_hash,source_url").eq("id", evidenceId).single();
-    if (evError || !ev?.storage_path) throw new Error(`retained Evidence lookup failed: ${evError?.message || "not found"}`);
-    const { data: blob, error: storageError } = await svc.storage.from("evidence").download(ev.storage_path);
+    if (!evidence?.storage_path || !evidence?.content_hash || String(evidence?.id || "") !== evidenceId) throw new Error("reserved governed Evidence context incomplete");
+    const { data: blob, error: storageError } = await svc.storage.from("evidence").download(String(evidence.storage_path));
     if (storageError || !blob) throw new Error(`Evidence download failed: ${storageError?.message || "not found"}`);
-    const text = evidenceText(new Uint8Array(await blob.arrayBuffer()), ev.mime_type, Math.min(Number(profile.max_input_tokens || 12000) * 4, 120000));
+    const text = evidenceText(new Uint8Array(await blob.arrayBuffer()), evidence?.mime_type || null, Math.min(Number(profile.max_input_tokens || 12000) * 4, 120000));
     if (text.length < 20) throw new Error("Evidence text is too short to interpret");
 
     const prompt = [
       "Task class: provider_current_tuition_validation",
-      `Governed Evidence source: ${ev.source_url || "retained Evidence"}`,
+      `Governed Evidence source: ${evidence?.source_url || "retained Evidence"}`,
       tuitionValidationPromptContext(candidateContext),
       "Return exactly one JSON object with keys candidate_value, confidence, rationale, evidence_quotes. candidate_value must be null or one supplied tuition candidate with amount, currency_code, basis, fee_year and audience. Evidence must explicitly support any basis resolution; otherwise return null.",
       `Evidence:\n${text}`,
@@ -163,8 +165,7 @@ Deno.serve(async (req: Request) => {
       } catch { /* preserve original failure; work-item transition below remains authoritative */ }
     }
     if (workItemId) {
-      const { data: currentWork } = await svc.schema("pipeline").from("layer3_work_items").select("attempt_count").eq("id", workItemId).maybeSingle();
-      const attempts = Number(currentWork?.attempt_count || 0);
+      const attempts = workAttemptCount;
       if (interpretationId && attempts >= 5) {
         const { data: routed, error: routeError } = await svc.rpc("layer3_route_work_item_layer4_service", {
           p_work_item_id: workItemId,
