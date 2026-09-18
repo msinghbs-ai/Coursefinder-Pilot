@@ -157,7 +157,11 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, work_item_id: workItemId, interpretation_id: interpretationId, status: "validated", validator_result: validatorResult, review_item_id: completed?.review_item_id || null, input_tokens: inputTokens, output_tokens: outputTokens, estimated_cost_usd: cost, call_latency_ms: latencyMs });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (interpretationId) await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message, p_external_call_count: externalCallCount, p_call_latency_ms: startedMs == null ? null : Math.round(performance.now() - startedMs) }).catch(() => undefined);
+    if (interpretationId) {
+      try {
+        await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message, p_external_call_count: externalCallCount, p_call_latency_ms: startedMs == null ? null : Math.round(performance.now() - startedMs) });
+      } catch { /* preserve original failure; work-item transition below remains authoritative */ }
+    }
     if (workItemId) {
       const { data: currentWork } = await svc.schema("pipeline").from("layer3_work_items").select("attempt_count").eq("id", workItemId).maybeSingle();
       const attempts = Number(currentWork?.attempt_count || 0);
@@ -171,7 +175,9 @@ Deno.serve(async (req: Request) => {
           return json({ ok: true, work_item_id: workItemId, interpretation_id: interpretationId, status: "layer4_required", review_item_id: routed?.review_item_id || null, exhausted_attempts: attempts, provider_error: message });
         }
       }
-      await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "interpreting", p_to_status: "failed", p_interpretation_id: interpretationId || null, p_error: message, p_retry_after_seconds: 60 }).catch(() => undefined);
+      try {
+        await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "interpreting", p_to_status: "failed", p_interpretation_id: interpretationId || null, p_error: message, p_retry_after_seconds: 60 });
+      } catch { /* return original interpreter failure below */ }
     }
     return json({ error: message, work_item_id: workItemId || null, interpretation_id: interpretationId || null }, /ceiling|credential|not executable/i.test(message) ? 409 : 500);
   }
