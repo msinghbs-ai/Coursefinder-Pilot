@@ -9,9 +9,15 @@ Deno.serve(async (req: Request) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || (() => { try { return JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}").default || ""; } catch { return ""; } })();
   if (!url || !serviceKey) return json({ error: "server configuration unavailable" }, 500);
   const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-  if (!token || token !== serviceKey) return json({ error: "service role required" }, 403);
-
   const svc = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const nonce = String(req.headers.get("x-cf-run-nonce") || "").trim();
+  let authorised = Boolean(token && token === serviceKey);
+  if (!authorised && nonce) {
+    const { data: consumed, error: nonceError } = await svc.rpc("svc_pilot_consume_nonce", { p_function: "layer3-work-dispatch", p_nonce: nonce });
+    authorised = !nonceError && consumed === true;
+  }
+  if (!authorised) return json({ error: "service role or valid one-time service nonce required" }, 403);
+
   try {
     const body = await req.json().catch(() => ({}));
     const worker = String(body?.worker || "cf247-layer3-dispatch").trim();
