@@ -124,10 +124,37 @@ Deno.serve(async (req: Request) => {
       p_response_model: payload?.model || null, p_input_tokens: inputTokens || null, p_output_tokens: outputTokens || null, p_estimated_cost_usd: cost, p_expiry: expiry, p_external_call_count: externalCallCount, p_call_latency_ms: latencyMs,
     });
     if (completeError) throw new Error(`completion persistence failed: ${completeError.message}`);
-    const target = valid ? (parsed?.candidate_value == null ? "no_candidate" : "validated") : "rejected";
-    const { data: transition, error: transitionError } = await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "interpreting", p_to_status: target, p_interpretation_id: interpretationId, p_error: valid ? null : errors.join("; ").slice(0, 1900), p_retry_after_seconds: null });
+    const interpretationStatus = String(completed?.status || (valid ? (parsed?.candidate_value == null ? "no_candidate" : "validated") : "rejected_validation"));
+    if (!valid || parsed?.candidate_value == null || interpretationStatus === "no_candidate" || interpretationStatus === "low_confidence" || interpretationStatus === "rejected_validation") {
+      const routeReason = !valid
+        ? `Layer 3 validator rejected model output: ${errors.join("; ").slice(0, 1200)}`
+        : interpretationStatus === "low_confidence"
+          ? "Layer 3 result is below the governed confidence threshold"
+          : "Layer 3 safely abstained because governed Evidence did not support a candidate";
+      const { data: routed, error: routeError } = await svc.rpc("layer3_route_work_item_layer4_service", {
+        p_work_item_id: workItemId,
+        p_interpretation_id: interpretationId,
+        p_reason: routeReason,
+      });
+      if (routeError || !routed?.ok) throw new Error(`Layer 4 routing failed: ${routeError?.message || "not applied"}`);
+      return json({
+        ok: true,
+        work_item_id: workItemId,
+        interpretation_id: interpretationId,
+        interpretation_status: interpretationStatus,
+        status: "layer4_required",
+        validator_result: validatorResult,
+        review_item_id: routed?.review_item_id || completed?.review_item_id || null,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        estimated_cost_usd: cost,
+        call_latency_ms: latencyMs,
+      });
+    }
+
+    const { data: transition, error: transitionError } = await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "interpreting", p_to_status: "validated", p_interpretation_id: interpretationId, p_error: null, p_retry_after_seconds: null });
     if (transitionError || !transition?.ok) throw new Error(`work item completion transition failed: ${transitionError?.message || "not applied"}`);
-    return json({ ok: valid, work_item_id: workItemId, interpretation_id: interpretationId, status: target, validator_result: validatorResult, review_item_id: completed?.review_item_id || null, input_tokens: inputTokens, output_tokens: outputTokens, estimated_cost_usd: cost, call_latency_ms: latencyMs }, valid ? 200 : 422);
+    return json({ ok: true, work_item_id: workItemId, interpretation_id: interpretationId, status: "validated", validator_result: validatorResult, review_item_id: completed?.review_item_id || null, input_tokens: inputTokens, output_tokens: outputTokens, estimated_cost_usd: cost, call_latency_ms: latencyMs });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (interpretationId) await svc.rpc("layer3_fail_interpretation_service", { p_interpretation_id: interpretationId, p_error: message, p_external_call_count: externalCallCount, p_call_latency_ms: startedMs == null ? null : Math.round(performance.now() - startedMs) }).catch(() => undefined);
