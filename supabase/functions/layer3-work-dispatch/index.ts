@@ -27,16 +27,7 @@ Deno.serve(async (req: Request) => {
     if (headroomError) throw new Error(`dispatch headroom check failed: ${headroomError.message}`);
     const dispatchHeadroom = Math.max(Number(headroom?.dispatch_headroom || 0), 0);
     if (!headroom?.ok || dispatchHeadroom <= 0) {
-      return json({
-        ok: true,
-        worker,
-        task_class: taskClass,
-        quota_blocked: true,
-        reserved_count: 0,
-        dispatched_count: 0,
-        headroom,
-        results: [],
-      });
+      return json({ ok: true, worker, task_class: taskClass, quota_blocked: true, reserved_count: 0, dispatched_count: 0, headroom, results: [] });
     }
     const boundedLimit = Math.min(limit, dispatchHeadroom);
     const { data: reserved, error } = await svc.rpc("layer3_reserve_work_service", { p_worker: worker, p_limit: boundedLimit });
@@ -47,12 +38,21 @@ Deno.serve(async (req: Request) => {
       const workItemId = String(item?.id || "");
       if (!workItemId) continue;
       try {
-        const response = await fetch(`${url}/functions/v1/layer3-work-interpret`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ work_item_id: workItemId, worker }),
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 110000);
+        let response: Response;
+        try {
+          response = await fetch(`${url}/functions/v1/layer3-work-interpret`, {
+            method: "POST",
+            signal: controller.signal,
+            headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" },
+            body: JSON.stringify({ work_item_id: workItemId, worker }),
+          });
+        } finally { clearTimeout(timeout); }
         const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "reserved", p_to_status: "failed", p_interpretation_id: null, p_error: `interpreter HTTP ${response.status}: ${JSON.stringify(payload).slice(0, 1500)}`, p_retry_after_seconds: 60 }).catch(() => undefined);
+        }
         results.push({ work_item_id: workItemId, http_status: response.status, result: payload });
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
