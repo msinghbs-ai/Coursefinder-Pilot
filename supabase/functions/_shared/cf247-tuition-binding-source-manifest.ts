@@ -9,5 +9,5 @@ export const CF247_TUITION_BINDING_SOURCE_MANIFEST = {
   interpreter_request_sha256: "03cdbc5048002a38b88993f6fe2657ab17fa6fa5a607ec6883a4cb7f757850e2",
   validator_source_sha256: "d61e80faeb7d0099ff310ba04bb8656588ed2006fda8356ffa0dd22905909440",
   schema_sha256: "17f3e69647244176a699b953c74cd99f81baf155a0421ef1c9014245b0560a9a",
-  binding_helper_sha256: "41c2477c93540897e9071df004412d087a7c5c3f550cf332b97031e9b921c0b6",
+  binding_helper_sha256: "6fc61a79a69fc4c1d104869662638a3852f7c0efbf0acc2858faa641f62f7d9e",
 } as const;
