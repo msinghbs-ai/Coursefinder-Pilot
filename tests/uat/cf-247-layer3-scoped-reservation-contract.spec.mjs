@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs/promises'
 
-const MIGRATION_PATH='supabase/migrations/20260921030000_cf247_task_profile_scoped_reservation.sql'
+const MIGRATION_PATH='supabase/migrations/20260921040446_cf247_task_profile_scoped_reservation.sql'
 
 test('CF-247 slice 2A: scoped reservation RPC requires exact task class/profile and revalidates in-transaction',async()=>{
   const sql=await fs.readFile(MIGRATION_PATH,'utf8')
