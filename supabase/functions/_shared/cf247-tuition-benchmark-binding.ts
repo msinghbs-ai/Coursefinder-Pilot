@@ -14,6 +14,14 @@
 // - benchmark_prompt_template / interpreter_prompt_template: the effective,
 //   non-case-specific instructional templates (candidate-context instructions
 //   included via a fixed placeholder, never interpolated per-case values).
+// - benchmark_request_body_source / interpreter_request_body_source: the
+//   *exact literal source text* of each caller's real `JSON.stringify({...})`
+//   provider request body (extracted from the live .ts source, not a mirrored
+//   constant). This is what actually carries each caller's real temperature,
+//   seed, reasoning, max_tokens/profile fallback and response_format mode, so
+//   a genuine divergence between the benchmark's and the interpreter's actual
+//   request (e.g. json_schema vs json_object, or a changed token fallback)
+//   changes the fingerprint by construction, because it changes this text.
 // - shared_validator_source: the exact source text of the shared validator
 //   module (implementation-bound, not merely its exported string identifiers).
 // - response_schema: the shared strict structured-output JSON schema object.
@@ -21,8 +29,13 @@
 //   version in effect.
 // - deterministic_validators: the deterministic validator thresholds in effect
 //   (e.g. confidence bounds, quote limits) — never secret values.
-// - inference_settings: temperature, seed/reasoning, input/output limits,
-//   timeout/retry — the settings that affect determinism/reproducibility.
+// - inference_settings: the profile-derived, caller-shared determinism inputs
+//   (max_input_tokens/timeout_ms/retry_ceiling) that are not literal in the
+//   request-body source text. Per-caller settings that DO appear literally in
+//   the request body (temperature/seed/reasoning/max_tokens fallback/
+//   response_format) are intentionally NOT duplicated here as hardcoded
+//   constants — they are covered, per caller, by *_request_body_source above,
+//   so this module can never silently diverge from the real runtime request.
 //
 // Explicitly excluded: secret values (API keys), Evidence bytes, per-case
 // candidate_value/candidate_context payloads, and volatile metrics (latency,
@@ -63,11 +76,7 @@ export const CF247_CANDIDATE_CONTEXT_INSTRUCTION =
   "Validate only the supplied provider_current_tuition target against Evidence — it is the sole positive candidate. The listed competing_fee_candidates are other fees mentioned in context for awareness only; they must never be returned or substituted for the target, even if Evidence supports one of them instead. Keep amount, currency, fee_year and audience unchanged from the target. If the target's basis is annual_or_indicative_requires_validation, Evidence may resolve only to annual or indicative_annual; otherwise basis must remain unchanged. Both the target and any returned candidate must have audience explicitly \"international\"; missing, blank or other audience is invalid. A non-null result additionally requires identity_match to be true. Return null when Evidence does not explicitly support the target, when identity_match is not true, or when no positive target can be admitted — null is always a safe abstention. Never invent or annualise an amount, convert currency, infer a year, change audience, or select a different fee.";
 
 export type InferenceSettings = {
-  temperature: number;
-  seed?: number | null;
-  reasoning?: { effort: string; exclude: boolean } | null;
   max_input_tokens: number;
-  max_output_tokens: number;
   timeout_ms: number;
   retry_ceiling: number;
 };
@@ -83,6 +92,8 @@ export type BindingComponents = {
   benchmark_prompt_template: string;
   interpreter_prompt_template: string;
   candidate_context_instruction: string;
+  benchmark_request_body_source: string;
+  interpreter_request_body_source: string;
   shared_validator_source: string;
   response_schema: unknown;
   model_identifier: string;
@@ -99,6 +110,8 @@ export const CF247_BINDING_REQUIRED_COMPONENT_KEYS: readonly (keyof BindingCompo
   "benchmark_prompt_template",
   "interpreter_prompt_template",
   "candidate_context_instruction",
+  "benchmark_request_body_source",
+  "interpreter_request_body_source",
   "shared_validator_source",
   "response_schema",
   "model_identifier",
@@ -107,6 +120,46 @@ export const CF247_BINDING_REQUIRED_COMPONENT_KEYS: readonly (keyof BindingCompo
   "deterministic_validators",
   "inference_settings",
 ];
+
+// Extracts the exact literal source text of a `JSON.stringify({ ... })`
+// provider request-body call that immediately follows `anchor` in `source`,
+// by scanning forward from the first `{` after the anchor and returning the
+// substring up to its balanced matching `}` (brace-depth counting, respecting
+// both `'...'`/`"..."` quoted strings and `` `...` `` template literals so a
+// stray `{`/`}` inside a string or interpolation never breaks the balance).
+// This ties the binding to the caller's REAL runtime request body — the exact
+// source text that determines temperature/seed/reasoning/max_tokens fallback/
+// response_format — not to a mirrored/hardcoded description of it. Fails
+// closed (throws) if the anchor or a balanced body cannot be found, so a
+// caller whose request shape changed enough to break extraction cannot
+// silently produce a stale/incomplete binding.
+export function extractJsonRequestBodySource(source: string, anchor: string): string {
+  const anchorIndex = source.indexOf(anchor);
+  if (anchorIndex < 0) {
+    throw new Error(`CF-247 tuition benchmark binding: request-body anchor not found in source: ${anchor}`);
+  }
+  const openIndex = source.indexOf("{", anchorIndex + anchor.length);
+  if (openIndex < 0) {
+    throw new Error(`CF-247 tuition benchmark binding: no request-body object found after anchor: ${anchor}`);
+  }
+  let depth = 0;
+  let quote: '"' | "'" | "`" | null = null;
+  for (let i = openIndex; i < source.length; i++) {
+    const ch = source[i];
+    const prev = source[i - 1];
+    if (quote) {
+      if (ch === quote && prev !== "\\") quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") { quote = ch; continue; }
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return source.slice(openIndex, i + 1);
+    }
+  }
+  throw new Error(`CF-247 tuition benchmark binding: unbalanced request-body object after anchor: ${anchor}`);
+}
 
 export const CF247_TUITION_BENCHMARK_BINDING_CONTRACT_ID = "cf247-tuition-benchmark-binding-v1";
 
@@ -174,30 +227,45 @@ export async function tuitionBenchmarkBindingFingerprint(components: BindingComp
   return sha256Hex(canonicalBindingDescriptor(components));
 }
 
+// Anchors used to locate each caller's real provider request-body literal
+// within its own live source text. These must stay in sync with the actual
+// `fetch(...)` call sites in layer3-cf245-tuition-benchmark/index.ts and
+// layer3-work-interpret/index.ts; if either caller's source is refactored
+// such that the anchor no longer immediately precedes the request-body
+// object, extractJsonRequestBodySource throws (fails closed) rather than
+// silently binding to a stale/absent request body.
+export const CF247_BENCHMARK_REQUEST_BODY_ANCHOR = "body:JSON.stringify(";
+export const CF247_INTERPRETER_REQUEST_BODY_ANCHOR = "body: JSON.stringify(";
+
 // Assembles the BindingComponents shared by the benchmark and the interpreter
 // from a model/prompt profile record (the same `profile` shape both the
-// benchmark and the interpreter already receive), plus the shared validator
-// module's source text. Callers are responsible for supplying `validatorSource`
-// (the shared cf247-tuition-validation.ts source text) so this module has no
-// filesystem/runtime dependency of its own.
+// benchmark and the interpreter already receive), the shared validator
+// module's source text, and each caller's own live edge-function source text.
+// Callers are responsible for supplying `validatorSource`, `benchmarkSource`
+// and `interpreterSource` (read from the real .ts files) so this module has
+// no filesystem/runtime dependency of its own, while still binding to the
+// actual runtime request bodies rather than a mirrored description of them.
 export function buildTuitionBenchmarkBindingComponents(
   profile: {
     model_identifier?: unknown;
     prompt_profile_version?: unknown;
     prompt_system?: unknown;
     max_input_tokens?: unknown;
-    max_output_tokens?: unknown;
     timeout_ms?: unknown;
     retry_ceiling?: unknown;
     validators?: { confidence_min?: unknown; confidence_max?: unknown; max_quotes?: unknown; max_quote_chars?: unknown } | null;
   },
   responseSchema: unknown,
   validatorSource: string,
+  benchmarkSource: string,
+  interpreterSource: string,
 ): BindingComponents {
   return {
     benchmark_prompt_template: CF247_BENCHMARK_PROMPT_TEMPLATE,
     interpreter_prompt_template: CF247_INTERPRETER_PROMPT_TEMPLATE,
     candidate_context_instruction: CF247_CANDIDATE_CONTEXT_INSTRUCTION,
+    benchmark_request_body_source: extractJsonRequestBodySource(benchmarkSource, CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
+    interpreter_request_body_source: extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR),
     shared_validator_source: validatorSource,
     response_schema: responseSchema,
     model_identifier: String(profile?.model_identifier ?? ""),
@@ -210,11 +278,7 @@ export function buildTuitionBenchmarkBindingComponents(
       max_quote_chars: Number(profile?.validators?.max_quote_chars ?? 600),
     },
     inference_settings: {
-      temperature: 0,
-      seed: 0,
-      reasoning: { effort: "none", exclude: true },
       max_input_tokens: Number(profile?.max_input_tokens ?? 12000),
-      max_output_tokens: Number(profile?.max_output_tokens ?? 900),
       timeout_ms: Number(profile?.timeout_ms ?? 30000),
       retry_ceiling: Number(profile?.retry_ceiling ?? 0),
     },
