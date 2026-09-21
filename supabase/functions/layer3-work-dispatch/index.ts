@@ -30,13 +30,17 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, worker, task_class: taskClass, quota_blocked: true, reserved_count: 0, dispatched_count: 0, headroom, results: [] });
     }
     const boundedLimit = Math.min(limit, dispatchHeadroom);
-    const { data: reserved, error } = await svc.rpc("layer3_reserve_work_service", { p_worker: worker, p_limit: boundedLimit });
-    if (error) throw new Error(`work reservation failed: ${error.message}`);
-    const items = Array.isArray(reserved) ? reserved : [];
-    const results: unknown[] = [];
     const budgetMs = 240000; const startedAt = Date.now();
-    for (const item of items) {
+    const items: unknown[] = [];
+    const results: unknown[] = [];
+    for (let reservedCount = 0; reservedCount < boundedLimit; reservedCount++) {
       if (Date.now() - startedAt > budgetMs) break;
+      const { data: reserved, error } = await svc.rpc("layer3_reserve_work_service", { p_worker: worker, p_limit: 1 });
+      if (error) throw new Error(`work reservation failed: ${error.message}`);
+      const batch = Array.isArray(reserved) ? reserved : [];
+      if (batch.length === 0) break;
+      const item = batch[0];
+      items.push(item);
       const workItemId = String(item?.id || "");
       if (!workItemId) continue;
       try {
