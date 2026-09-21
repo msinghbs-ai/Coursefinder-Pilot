@@ -34,7 +34,9 @@ Deno.serve(async (req: Request) => {
     if (error) throw new Error(`work reservation failed: ${error.message}`);
     const items = Array.isArray(reserved) ? reserved : [];
     const results: unknown[] = [];
+    const budgetMs = 240000; const startedAt = Date.now();
     for (const item of items) {
+      if (Date.now() - startedAt > budgetMs) break;
       const workItemId = String(item?.id || "");
       if (!workItemId) continue;
       try {
