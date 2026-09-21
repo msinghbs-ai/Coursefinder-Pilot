@@ -5,6 +5,8 @@ import {
   tuitionValidationPromptContext,
   validateProviderCurrentTuitionCandidate,
 } from "../_shared/cf247-tuition-validation.ts";
+import { CF247_TUITION_BINDING_SOURCE_MANIFEST } from "../_shared/cf247-tuition-binding-source-manifest.ts";
+import { tuitionBenchmarkRuntimeBindingHash } from "../_shared/cf247-tuition-benchmark-binding.ts";
 const FN = "layer3-cf245-tuition-benchmark",
   V = "cf247-tuition-benchmark-v1.3.6-control-id-reconcile";
 const J = (s: number, b: any) =>
@@ -317,6 +319,10 @@ Deno.serve(async (req: Request) => {
       throw new Error(
         "fee profile must be enabled and paused before benchmark",
       );
+    const bindingHash = await tuitionBenchmarkRuntimeBindingHash(
+      CF247_TUITION_BINDING_SOURCE_MANIFEST,
+      profile,
+    );
     const cases = await rpc(
       svc,
       "layer3_cf245_tuition_benchmark_cases_service",
@@ -553,6 +559,7 @@ Deno.serve(async (req: Request) => {
         p_max_latency_ms: maxLatency,
         p_evidence_ids: evidenceIds,
         p_summary: summary,
+        p_binding_hash: bindingHash,
       },
     );
     return J(recorded?.pass ? 200 : 422, {
