@@ -28,6 +28,7 @@ const benchmarkSource = readFileSync(new URL("../supabase/functions/layer3-cf245
 const interpreterSource = readFileSync(new URL("../supabase/functions/layer3-work-interpret/index.ts", import.meta.url), "utf8");
 const bindingHelperSource = readFileSync(new URL("../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts", import.meta.url), "utf8");
 const recorderMigration = readFileSync(new URL("../supabase/migrations/20260921171328_cf247_tuition_benchmark_record_binding_baseline.sql", import.meta.url), "utf8");
+const interpretationReservationMigration = readFileSync(new URL("../supabase/migrations/20260922010000_cf247_interpretation_reservation_expose_quality_benchmark.sql", import.meta.url), "utf8");
 const sha256 = (source: string) => createHash("sha256").update(source).digest("hex");
 assert.deepEqual(CF247_TUITION_BINDING_SOURCE_MANIFEST, {
   benchmark_prompt_sha256: sha256(extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR)),
@@ -506,6 +507,69 @@ const casesLookupIndex = benchmarkSource.indexOf("layer3_cf245_tuition_benchmark
 assert.ok(
   bindingHashComputeIndex >= 0 && casesLookupIndex >= 0 && bindingHashComputeIndex < casesLookupIndex,
   "the binding hash must be computed before the cases lookup / provider-call loop, so a malformed profile fails closed before any cost is spent",
+);
+
+// --- 8. CF-247 3B2B: fail-closed binding-hash drift check at the
+// interpretation execution gate. The interpretation-reservation migration
+// must additively expose quality_benchmark (including binding_hash) so the
+// interpreter can independently recompute the current hash and refuse to
+// execute the provider model when it no longer matches what was recorded at
+// qualification time — without which quality_benchmark.pass=true could go
+// stale silently after any later source or profile change. ---
+
+// 34. The migration must expose quality_benchmark in the returned profile
+// object without touching the existing enabled/paused/pass/task_class gates
+// (those lines must be byte-identical to the pre-3B2B definition).
+assert.match(interpretationReservationMigration, /'quality_benchmark',v_p\.quality_benchmark/, "the interpretation-reservation RPC must return the profile's quality_benchmark");
+assert.match(interpretationReservationMigration, /if not v_p\.enabled or v_p\.paused then raise exception 'model profile not executable'; end if;/, "the existing enabled/paused gate must be unchanged");
+assert.match(interpretationReservationMigration, /if coalesce\(\(v_p\.quality_benchmark->>'pass'\)::boolean,false\) is not true then/, "the existing quality_benchmark.pass gate must be unchanged");
+assert.match(interpretationReservationMigration, /if not \(v_work\.task_class=any\(v_p\.allowed_task_classes\)\) then/, "the existing task_class gate must be unchanged");
+
+// 35. Source-text contract: the interpreter must import both the manifest
+// and the runtime hash function, compute the current hash from the exact
+// profile it just received, and refuse to proceed on a missing or
+// mismatched qualified hash — whitespace/quote-tolerant per the pattern
+// established for every source-contract assertion since Slice PRE.
+assert.match(
+  interpreterSource,
+  /import\s*\{\s*CF247_TUITION_BINDING_SOURCE_MANIFEST\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-binding-source-manifest\.ts["']/,
+  "the interpreter must import CF247_TUITION_BINDING_SOURCE_MANIFEST",
+);
+assert.match(
+  interpreterSource,
+  /import\s*\{\s*tuitionBenchmarkRuntimeBindingHash\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-benchmark-binding\.ts["']/,
+  "the interpreter must import tuitionBenchmarkRuntimeBindingHash",
+);
+assert.match(
+  interpreterSource,
+  /qualifiedBindingHash\s*=\s*String\(\s*profile\?\.quality_benchmark\?\.binding_hash\s*\|\|\s*["']["'],?\s*\)/,
+  "the interpreter must read the qualified binding hash from the profile's quality_benchmark",
+);
+assert.match(
+  interpreterSource,
+  /if\s*\(\s*!qualifiedBindingHash\s*\)\s*throw new Error/,
+  "the interpreter must fail closed when no qualified binding hash is on record",
+);
+assert.match(
+  interpreterSource,
+  /tuitionBenchmarkRuntimeBindingHash\(\s*CF247_TUITION_BINDING_SOURCE_MANIFEST,\s*profile,?\s*\)/,
+  "the interpreter must compute the current binding hash from the checked-in manifest and the live profile",
+);
+assert.match(
+  interpreterSource,
+  /if\s*\(\s*currentBindingHash\s*!==\s*qualifiedBindingHash\s*\)\s*throw new Error/,
+  "the interpreter must fail closed when the current binding hash does not match the qualified one",
+);
+
+// 36. Ordering: the binding-hash check must happen before the usage-window
+// RPC (and therefore before any provider call), so a drifted profile is
+// refused before any rate-limit budget or cost is spent — not merely
+// somewhere in the function.
+const bindingCheckIdx = interpreterSource.indexOf("tuitionBenchmarkRuntimeBindingHash(");
+const usageWindowIdx = interpreterSource.indexOf("layer3_usage_window_service");
+assert.ok(
+  bindingCheckIdx >= 0 && usageWindowIdx >= 0 && bindingCheckIdx < usageWindowIdx,
+  "the binding-hash check must happen before the usage-window check / any provider call, so a drifted profile fails closed before any cost is spent",
 );
 
 console.log("CF-247 tuition benchmark binding contract PASS");
