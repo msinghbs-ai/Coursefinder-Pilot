@@ -327,11 +327,19 @@ export function buildTuitionBenchmarkBindingComponents(
   benchmarkSource: string,
   interpreterSource: string,
 ): BindingComponents {
-  // The live profile RPC exposes deterministic_validators, not `validators`.
-  // Never replace absent profile settings with defaults: a default would make
-  // a changed or malformed profile appear equal to the last qualified one.
-  const validators = (profile as any).deterministic_validators ?? (profile as any).validators;
-  const schema = (profile as any).structured_output_schema ?? (profile as any).schema;
+  // The live profile RPC may expose deterministic_validators/structured_output_schema
+  // or the validators/schema aliases. Reject profiles carrying both so alias
+  // resolution can never mask a change made under only one key. Never substitute
+  // a default: that would make a changed/malformed profile look last-qualified.
+  const p = profile as any;
+  if (p.deterministic_validators != null && p.validators != null) {
+    throw new Error("CF-247 tuition benchmark binding: ambiguous validators (both keys present)");
+  }
+  if (p.structured_output_schema != null && p.schema != null) {
+    throw new Error("CF-247 tuition benchmark binding: ambiguous schema (both keys present)");
+  }
+  const validators = p.deterministic_validators ?? p.validators;
+  const schema = p.structured_output_schema ?? p.schema;
   if (!validators || !Object.keys(validators).length ||
       !schema || typeof schema !== "object") {
     throw new Error("CF-247 tuition benchmark binding: profile validator/schema settings missing");
