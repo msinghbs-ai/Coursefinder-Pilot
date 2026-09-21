@@ -68,18 +68,23 @@ export function governedTuitionTarget(context: CandidateContext | null | undefin
   return normaliseGoverned(context.provider_current_tuition);
 }
 
+const tuitionCandidateKey = (candidate: TuitionCandidate) =>
+  `${candidate.amount}|${candidate.currency_code}|${candidate.basis}|${candidate.fee_year ?? ""}|${candidate.audience ?? ""}`;
+
 // Competing context only: candidate_context.fee_candidates. Surfaced to the model for
 // awareness of alternative fees that must be distinguished from, and never accepted as
 // a substitute for, the sole target above.
 export function competingFeeCandidates(context: CandidateContext | null | undefined): TuitionCandidate[] {
   if (!context || typeof context !== "object" || !Array.isArray(context.fee_candidates)) return [];
+  const target = governedTuitionTarget(context);
+  const targetKey = target ? tuitionCandidateKey(target) : null;
   const seen = new Set<string>();
   const result: TuitionCandidate[] = [];
   for (const item of context.fee_candidates) {
     const c = normaliseGoverned(item);
     if (!c) continue;
-    const key = `${c.amount}|${c.currency_code}|${c.basis}|${c.fee_year ?? ""}|${c.audience ?? ""}`;
-    if (seen.has(key)) continue;
+    const key = tuitionCandidateKey(c);
+    if (key === targetKey || seen.has(key)) continue;
     seen.add(key);
     result.push(c);
   }
@@ -95,7 +100,7 @@ export function governedTuitionCandidates(context: CandidateContext | null | und
   const seen = new Set<string>();
   const result: TuitionCandidate[] = [];
   for (const c of target ? [target, ...competing] : competing) {
-    const key = `${c.amount}|${c.currency_code}|${c.basis}|${c.fee_year ?? ""}|${c.audience ?? ""}`;
+    const key = tuitionCandidateKey(c);
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(c);

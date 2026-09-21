@@ -1,5 +1,5 @@
 import { strict as assert } from "node:assert";
-import { governedTuitionCandidates, validateProviderCurrentTuitionCandidate } from "../supabase/functions/_shared/cf247-tuition-validation.ts";
+import { governedTuitionCandidates, tuitionValidationPromptContext, validateProviderCurrentTuitionCandidate } from "../supabase/functions/_shared/cf247-tuition-validation.ts";
 
 const exactContext = {
   provider_current_tuition: { amount: 48160, currency: "AUD", basis: "indicative_annual", year: 2026, audience: "international" },
@@ -12,6 +12,9 @@ const exactContext = {
 };
 
 assert.equal(governedTuitionCandidates(exactContext).length, 2, "deduplicates governed candidates");
+const promptContext = JSON.parse(tuitionValidationPromptContext(exactContext));
+assert.equal(promptContext.provider_current_tuition_target.amount, 48160, "prompt identifies the sole positive target");
+assert.deepEqual(promptContext.competing_fee_candidates.map((candidate: { amount: number }) => candidate.amount), [96320], "prompt excludes the target duplicate and labels only alternative fees as competing context");
 assert.equal(validateProviderCurrentTuitionCandidate({ amount: 48160, currency_code: "AUD", basis: "indicative_annual", fee_year: 2026, audience: "international" }, exactContext).valid, true);
 assert.equal(validateProviderCurrentTuitionCandidate(null, exactContext).valid, true, "null remains a safe rejection/no-candidate result");
 assert.equal(validateProviderCurrentTuitionCandidate({ amount: 48160, currency: "AUD", basis: "annual", year: 2026, audience: "international" }, exactContext).valid, false, "basis strengthening is rejected when Layer 2 basis is already resolved");
