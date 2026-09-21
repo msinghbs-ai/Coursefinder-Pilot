@@ -330,8 +330,10 @@ export function buildTuitionBenchmarkBindingComponents(
   // The live profile RPC exposes deterministic_validators, not `validators`.
   // Never replace absent profile settings with defaults: a default would make
   // a changed or malformed profile appear equal to the last qualified one.
-  if (!profile?.deterministic_validators || !Object.keys(profile.deterministic_validators).length ||
-      !profile.structured_output_schema || typeof profile.structured_output_schema !== "object") {
+  const validators = (profile as any).deterministic_validators ?? (profile as any).validators;
+  const schema = (profile as any).structured_output_schema ?? (profile as any).schema;
+  if (!validators || !Object.keys(validators).length ||
+      !schema || typeof schema !== "object") {
     throw new Error("CF-247 tuition benchmark binding: profile validator/schema settings missing");
   }
   for (const key of ["max_input_tokens", "max_output_tokens", "timeout_ms", "retry_ceiling"] as const) {
@@ -347,11 +349,11 @@ export function buildTuitionBenchmarkBindingComponents(
     interpreter_request_body_source: extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR),
     shared_validator_source: validatorSource,
     response_schema: responseSchema,
-    profile_response_schema: profile.structured_output_schema,
+    profile_response_schema: schema,
     model_identifier: String(profile?.model_identifier ?? ""),
     prompt_profile_version: String(profile?.prompt_profile_version ?? ""),
     prompt_profile_system: String(profile?.prompt_system ?? ""),
-    deterministic_validators: profile.deterministic_validators,
+    deterministic_validators: validators,
     inference_settings: {
       max_input_tokens: Number(profile.max_input_tokens),
       max_output_tokens: Number(profile.max_output_tokens),
