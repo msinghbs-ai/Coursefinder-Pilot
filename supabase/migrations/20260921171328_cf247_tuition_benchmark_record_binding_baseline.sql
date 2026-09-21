@@ -1,7 +1,16 @@
 -- CF-247 3B2A: exact deployed baseline captured by pg_get_functiondef on 2026-09-21 17:10 UTC.
 -- Live function MD5: 7556ed94d82ec8fa46eb069b891e9737 (function definition only).
--- This NEW, unapplied migration is a reviewable starting point for the forward-only binding correction.
--- Do not apply as a standalone no-op; complete 3B2A before replay or deployment.
+-- CF-247 3B2A fail-closed storage foundation. This migration is UNAPPLIED.
+-- Preserve the exact live scorer below, but disable its legacy unbound entrypoint
+-- before adding any new bound recorder. A later 3B2A commit must provide the
+-- source-derived worker binding and bound recorder before qualification resumes.
+-- Existing benchmark history and the paused tuition profile are not rewritten.
+
+alter table pipeline.layer3_quality_benchmark_runs
+  add column binding_hash text;
+alter table pipeline.layer3_quality_benchmark_runs
+  add constraint layer3_quality_benchmark_binding_hash_format
+  check (binding_hash is null or binding_hash ~ '^[0-9a-f]{64}$');
 
 CREATE OR REPLACE FUNCTION public.layer3_cf245_tuition_benchmark_record_service(p_provider_cases jsonb, p_control_cases jsonb, p_returned_models text[], p_external_call_count integer, p_input_tokens integer, p_output_tokens integer, p_estimated_cost_usd numeric, p_max_latency_ms integer, p_evidence_ids uuid[], p_summary text)
  RETURNS jsonb
@@ -12,6 +21,9 @@ AS $function$
 declare p pipeline.layer3_model_profiles%rowtype;v_run uuid;v_provider_ok boolean;v_controls_ok boolean;v_model_ok boolean;v_cost_ok boolean;v_pass boolean;v_required_controls text[]:=array['ambiguous_multiple_equal_rank','low_confidence_missing_basis','loan_cap_or_deposit','unsupported_currency'];
 begin
   if current_user not in ('postgres','service_role') and coalesce(auth.role(),'')<>'service_role' then raise exception 'service_role required' using errcode='42501'; end if;
+  -- Legacy ten-argument callers cannot record an unbound PASS or unpause the
+  -- profile. The subsequent bound recorder must have a distinct entrypoint.
+  raise exception 'CF-247 unbound tuition benchmark recorder disabled' using errcode='42501';
   select * into p from pipeline.layer3_model_profiles where code='openrouter-provider-tuition-validation-v1' for update;
   if not found or not p.enabled then raise exception 'CF-245 tuition validation profile unavailable'; end if;
   select coalesce(jsonb_array_length(coalesce(p_provider_cases,'[]'::jsonb))>=3,false)
@@ -28,4 +40,9 @@ begin
     last_validation_result=jsonb_build_object('state',case when v_pass then 'fee_specific_benchmark_passed' else 'fee_specific_benchmark_failed' end,'validated',v_pass,'credential_verified',coalesce(array_length(p_returned_models,1),0)>0,'benchmark_passed',v_pass,'benchmark_run_id',v_run,'completed_at',now(),'message',left(coalesce(p_summary,''),500)),updated_at=now()
   where id=p.id;
   return jsonb_build_object('ok',true,'pass',v_pass,'run_id',v_run,'profile_paused',not v_pass,'provider_cases_pass',v_provider_ok,'controls_pass',v_controls_ok,'model_exact',v_model_ok,'cost_pass',v_cost_ok);
-end $function$
+end $function$;
+
+revoke all on function public.layer3_cf245_tuition_benchmark_record_service(jsonb,jsonb,text[],integer,integer,integer,numeric,integer,uuid[],text)
+  from public, anon, authenticated;
+grant execute on function public.layer3_cf245_tuition_benchmark_record_service(jsonb,jsonb,text[],integer,integer,integer,numeric,integer,uuid[],text)
+  to service_role;
