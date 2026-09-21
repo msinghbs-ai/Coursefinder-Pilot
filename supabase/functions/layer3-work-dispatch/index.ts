@@ -29,6 +29,8 @@ Deno.serve(async (req: Request) => {
     if (!headroom?.ok || dispatchHeadroom <= 0) {
       return json({ ok: true, worker, task_class: taskClass, quota_blocked: true, reserved_count: 0, dispatched_count: 0, headroom, results: [] });
     }
+    const profileId = String(headroom?.profile_id || "");
+    if (!profileId) return json({ error: "resolved model profile id unavailable" }, 500);
     const boundedLimit = Math.min(limit, dispatchHeadroom);
     const budgetMs = 240000; const startedAt = Date.now();
     const interpreterTimeoutMs = 110000;
@@ -38,7 +40,7 @@ Deno.serve(async (req: Request) => {
     const results: unknown[] = [];
     for (let reservedCount = 0; reservedCount < boundedLimit; reservedCount++) {
       if (budgetMs - (Date.now() - startedAt) < requiredRemainingMs) break;
-      const { data: reserved, error } = await svc.rpc("layer3_reserve_work_service", { p_worker: worker, p_limit: 1 });
+      const { data: reserved, error } = await svc.rpc("layer3_reserve_scoped_work_service", { p_worker: worker, p_task_class: taskClass, p_profile_id: profileId, p_limit: 1 });
       if (error) throw new Error(`work reservation failed: ${error.message}`);
       const batch = Array.isArray(reserved) ? reserved : [];
       if (batch.length === 0) break;
