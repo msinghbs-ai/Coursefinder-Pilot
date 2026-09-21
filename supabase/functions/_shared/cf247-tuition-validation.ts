@@ -5,6 +5,13 @@
 // The only bounded semantic resolution allowed here is the explicit Layer 2 ambiguity
 // annual_or_indicative_requires_validation -> annual|indicative_annual, with Evidence
 // still required to support the chosen basis in the caller.
+//
+// CF-247 candidate-contract: candidate_context.provider_current_tuition is the sole
+// positive validation target. candidate_context.fee_candidates is competing context
+// only (surfaced to the model for awareness) and must never be accepted as a
+// substitute for the target. A non-null result also fails closed unless
+// candidate_context.identity_match === true, and both the target and the returned
+// candidate must carry an explicit audience of "international".
 
 export type TuitionCandidate = {
   amount: number;
@@ -42,26 +49,56 @@ const candidateYear = (c: TuitionCandidate | Record<string, unknown>) => {
   return raw == null || String(raw).trim() === "" ? null : String(raw).trim();
 };
 
-export function governedTuitionCandidates(context: CandidateContext | null | undefined): TuitionCandidate[] {
-  if (!context || typeof context !== "object") return [];
-  const raw: unknown[] = [];
-  if (context.provider_current_tuition && typeof context.provider_current_tuition === "object") raw.push(context.provider_current_tuition);
-  if (Array.isArray(context.fee_candidates)) raw.push(...context.fee_candidates);
+const normaliseGoverned = (item: unknown): TuitionCandidate | null => {
+  if (!item || typeof item !== "object") return null;
+  const c = item as TuitionCandidate;
+  const amount = finiteAmount(c.amount);
+  const currency = candidateCurrency(c);
+  const basis = normaliseBasis(c.basis);
+  if (amount == null || !currency || !basis) return null;
+  const year = candidateYear(c);
+  const audience = normaliseAudience(c.audience) || null;
+  return { ...c, amount, currency_code: currency, basis, fee_year: year, audience };
+};
+
+// The sole positive validation target: candidate_context.provider_current_tuition.
+// This is the only candidate a non-null model result may ever be matched against.
+export function governedTuitionTarget(context: CandidateContext | null | undefined): TuitionCandidate | null {
+  if (!context || typeof context !== "object") return null;
+  return normaliseGoverned(context.provider_current_tuition);
+}
+
+// Competing context only: candidate_context.fee_candidates. Surfaced to the model for
+// awareness of alternative fees that must be distinguished from, and never accepted as
+// a substitute for, the sole target above.
+export function competingFeeCandidates(context: CandidateContext | null | undefined): TuitionCandidate[] {
+  if (!context || typeof context !== "object" || !Array.isArray(context.fee_candidates)) return [];
   const seen = new Set<string>();
   const result: TuitionCandidate[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const c = item as TuitionCandidate;
-    const amount = finiteAmount(c.amount);
-    const currency = candidateCurrency(c);
-    const basis = normaliseBasis(c.basis);
-    if (amount == null || !currency || !basis) continue;
-    const year = candidateYear(c);
-    const audience = normaliseAudience(c.audience) || null;
-    const key = `${amount}|${currency}|${basis}|${year ?? ""}|${audience ?? ""}`;
+  for (const item of context.fee_candidates) {
+    const c = normaliseGoverned(item);
+    if (!c) continue;
+    const key = `${c.amount}|${c.currency_code}|${c.basis}|${c.fee_year ?? ""}|${c.audience ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    result.push({ ...c, amount, currency_code: currency, basis, fee_year: year, audience });
+    result.push(c);
+  }
+  return result;
+}
+
+// Retained for callers/tests that want the full governed pool (target + competing
+// context) deduplicated together, e.g. for display/diagnostics. This is NOT used to
+// decide validity: only governedTuitionTarget is ever matched against.
+export function governedTuitionCandidates(context: CandidateContext | null | undefined): TuitionCandidate[] {
+  const target = governedTuitionTarget(context);
+  const competing = competingFeeCandidates(context);
+  const seen = new Set<string>();
+  const result: TuitionCandidate[] = [];
+  for (const c of target ? [target, ...competing] : competing) {
+    const key = `${c.amount}|${c.currency_code}|${c.basis}|${c.fee_year ?? ""}|${c.audience ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(c);
   }
   return result;
 }
@@ -75,6 +112,9 @@ export function validateProviderCurrentTuitionCandidate(
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     return { valid: false, errors: ["tuition candidate must be an object or null"], matched_candidate: null, basis_resolution: false };
   }
+  if (context?.identity_match !== true) {
+    return { valid: false, errors: ["a non-null tuition candidate requires confirmed candidate_context.identity_match"], matched_candidate: null, basis_resolution: false };
+  }
   const c = candidate as Record<string, unknown>;
   const amount = finiteAmount(c.amount);
   const currency = candidateCurrency(c);
@@ -84,38 +124,40 @@ export function validateProviderCurrentTuitionCandidate(
   if (amount == null) errors.push("tuition amount must be positive and finite");
   if (!currency) errors.push("tuition currency is required");
   if (!basis) errors.push("tuition basis is required");
-  if (audience && audience !== "international") errors.push("tuition audience must remain international");
+  if (audience !== "international") errors.push("tuition audience must be explicitly international");
   if (errors.length) return { valid: false, errors, matched_candidate: null, basis_resolution: false };
 
-  const governed = governedTuitionCandidates(context);
-  if (!governed.length) return { valid: false, errors: ["no governed Layer 2 tuition candidate set"], matched_candidate: null, basis_resolution: false };
+  const target = governedTuitionTarget(context);
+  if (!target) return { valid: false, errors: ["no governed Layer 2 provider_current_tuition target"], matched_candidate: null, basis_resolution: false };
+  const targetAudience = normaliseAudience(target.audience);
+  if (targetAudience !== "international") {
+    return { valid: false, errors: ["governed provider_current_tuition target must be explicitly international"], matched_candidate: null, basis_resolution: false };
+  }
 
   let basisResolution = false;
-  const match = governed.find((g) => {
-    if (g.amount !== amount || candidateCurrency(g) !== currency) return false;
-    if (candidateYear(g) !== year) return false;
-    const governedAudience = normaliseAudience(g.audience);
-    if (governedAudience && audience && governedAudience !== audience) return false;
-    if (governedAudience === "international" && audience && audience !== "international") return false;
-    const governedBasis = normaliseBasis(g.basis);
-    if (governedBasis === basis) return true;
-    if (governedBasis === AMBIGUOUS_BASIS && RESOLVED_AMBIGUOUS_BASES.has(basis)) {
+  let match: TuitionCandidate | null = null;
+  if (target.amount === amount && candidateCurrency(target) === currency && candidateYear(target) === year && targetAudience === audience) {
+    const targetBasis = normaliseBasis(target.basis);
+    if (targetBasis === basis) {
+      match = target;
+    } else if (targetBasis === AMBIGUOUS_BASIS && RESOLVED_AMBIGUOUS_BASES.has(basis)) {
       basisResolution = true;
-      return true;
+      match = target;
     }
-    return false;
-  }) ?? null;
-  if (!match) errors.push("candidate is outside the deterministic Layer 2 candidate set or changes amount/currency/year/audience/basis beyond the governed ambiguity");
+  }
+  if (!match) errors.push("candidate does not match the sole governed provider_current_tuition target, or changes amount/currency/year/audience/basis beyond the governed ambiguity; competing fee_candidates are never a valid substitute");
   return { valid: errors.length === 0, errors, matched_candidate: match, basis_resolution: Boolean(match && basisResolution) };
 }
 
 export function tuitionValidationPromptContext(context: CandidateContext | null | undefined): string {
-  const candidates = governedTuitionCandidates(context);
+  const target = governedTuitionTarget(context);
+  const competing = competingFeeCandidates(context);
   return JSON.stringify({
-    instruction: "Validate only the supplied deterministic Layer 2 tuition candidate against Evidence. Keep amount, currency, year and audience unchanged. If Layer 2 basis is annual_or_indicative_requires_validation, Evidence may resolve only to annual or indicative_annual; otherwise basis must remain unchanged. Return null when Evidence does not explicitly support the candidate. Never invent or annualise an amount, convert currency, infer a year, change audience, or select a different fee.",
+    instruction: "Validate only the supplied provider_current_tuition target against Evidence — it is the sole positive candidate. The listed competing_fee_candidates are other fees mentioned in context for awareness only; they must never be returned or substituted for the target, even if Evidence supports one of them instead. Keep amount, currency, fee_year and audience unchanged from the target. If the target's basis is annual_or_indicative_requires_validation, Evidence may resolve only to annual or indicative_annual; otherwise basis must remain unchanged. Both the target and any returned candidate must have audience explicitly \"international\"; missing, blank or other audience is invalid. A non-null result additionally requires identity_match to be true. Return null when Evidence does not explicitly support the target, when identity_match is not true, or when no positive target can be admitted — null is always a safe abstention. Never invent or annualise an amount, convert currency, infer a year, change audience, or select a different fee.",
     identity_match: context?.identity_match ?? null,
     fee_ambiguous: context?.fee_ambiguous ?? null,
     expected_course_code: context?.expected_course_code ?? null,
-    candidates,
+    provider_current_tuition_target: target,
+    competing_fee_candidates: competing,
   });
 }

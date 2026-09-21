@@ -15,7 +15,8 @@
     "test:uat:smoke": "playwright test tests/uat/smoke.spec.mjs --project=chromium-desktop",
     "test:uat:deployed": "playwright test tests/uat/data-quality-deployed.spec.mjs --project=chromium-desktop",
     "test:uat:deployed:mobile": "playwright test tests/uat/data-quality-deployed.spec.mjs --project=chromium-mobile",
-    "test:uat:report": "playwright show-report playwright-report"
+    "test:uat:report": "playwright show-report playwright-report",
+    "test:cf247-tuition-validation-contract": "node tests/cf247-tuition-validation-contract.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
