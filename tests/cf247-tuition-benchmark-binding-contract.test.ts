@@ -19,11 +19,23 @@ import {
 } from "../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts";
 import type { BindingComponents } from "../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts";
 import { CF247_TUITION_RESPONSE_SCHEMA } from "../supabase/functions/_shared/cf247-tuition-validation.ts";
+import { CF247_TUITION_BINDING_SOURCE_MANIFEST } from "../supabase/functions/_shared/cf247-tuition-binding-source-manifest.ts";
 
 const validatorSource = readFileSync(new URL("../supabase/functions/_shared/cf247-tuition-validation.ts", import.meta.url), "utf8");
 const benchmarkSource = readFileSync(new URL("../supabase/functions/layer3-cf245-tuition-benchmark/index.ts", import.meta.url), "utf8");
 const interpreterSource = readFileSync(new URL("../supabase/functions/layer3-work-interpret/index.ts", import.meta.url), "utf8");
+const bindingHelperSource = readFileSync(new URL("../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts", import.meta.url), "utf8");
 const recorderMigration = readFileSync(new URL("../supabase/migrations/20260921171328_cf247_tuition_benchmark_record_binding_baseline.sql", import.meta.url), "utf8");
+const sha256 = (source: string) => createHash("sha256").update(source).digest("hex");
+assert.deepEqual(CF247_TUITION_BINDING_SOURCE_MANIFEST, {
+  benchmark_prompt_sha256: sha256(extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR)),
+  interpreter_prompt_sha256: sha256(extractPromptBuildSource(interpreterSource, CF247_INTERPRETER_PROMPT_BUILD_ANCHOR)),
+  benchmark_request_sha256: sha256(extractJsonRequestBodySource(benchmarkSource, CF247_BENCHMARK_REQUEST_BODY_ANCHOR)),
+  interpreter_request_sha256: sha256(extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR)),
+  validator_source_sha256: sha256(validatorSource),
+  schema_sha256: sha256(canonicalJsonStringify(CF247_TUITION_RESPONSE_SCHEMA)),
+  binding_helper_sha256: sha256(bindingHelperSource),
+}, "the source manifest must be regenerated on prompt, request, validator, schema or binding-helper drift");
 
 // 3B2A fail-closed foundation: legacy ten-argument calls must never record a
 // fresh unbound PASS or unpause the tuition profile. Preserve the verified live
@@ -45,10 +57,12 @@ const profile = {
   model_identifier: "openrouter/example-model-v1",
   prompt_profile_version: "cf247-tuition-prompt-v3",
   prompt_system: "Fixed governed system prompt text.",
+  structured_output_schema: { type: "object", additionalProperties: false },
   max_input_tokens: 12000,
+  max_output_tokens: 900,
   timeout_ms: 30000,
   retry_ceiling: 1,
-  validators: { confidence_min: 0, confidence_max: 1, max_quotes: 4, max_quote_chars: 600 },
+  deterministic_validators: { confidence_min: 0, confidence_max: 1, review_confidence_min: 0.9, allowed_basis: ["annual", "indicative_annual"] },
 };
 
 function baseComponents(): BindingComponents {
@@ -74,6 +88,7 @@ assert.deepEqual(
     "prompt_profile_system",
     "prompt_profile_version",
     "response_schema",
+    "profile_response_schema",
     "shared_validator_source",
   ].sort(),
   "binding descriptor must cover effective prompt templates, each caller's real request-body source, shared validator implementation, response schema, model identifier, prompt_profile_version, deterministic validators and inference settings",
@@ -273,6 +288,7 @@ const mutations: Array<[string, (c: BindingComponents) => void]> = [
   ["interpreter_request_body_source", (c) => { c.interpreter_request_body_source += " changed"; }],
   ["shared_validator_source", (c) => { c.shared_validator_source += "\n// changed"; }],
   ["response_schema", (c) => { c.response_schema = { ...(c.response_schema as Record<string, unknown>), extra: true }; }],
+  ["profile_response_schema", (c) => { c.profile_response_schema = { ...(c.profile_response_schema as Record<string, unknown>), extra: true }; }],
   ["model_identifier", (c) => { c.model_identifier = "a-different-model"; }],
   ["prompt_profile_version", (c) => { c.prompt_profile_version = "a-different-version"; }],
   ["prompt_profile_system", (c) => { c.prompt_profile_system += " changed"; }],
@@ -300,9 +316,26 @@ nestedReordered.inference_settings = {
   retry_ceiling: nestedReordered.inference_settings.retry_ceiling,
   timeout_ms: nestedReordered.inference_settings.timeout_ms,
   max_input_tokens: nestedReordered.inference_settings.max_input_tokens,
+  max_output_tokens: nestedReordered.inference_settings.max_output_tokens,
 };
 const fingerprintNestedReordered = await tuitionBenchmarkBindingFingerprint(nestedReordered);
 assert.equal(fingerprintNestedReordered, fingerprintA, "nested object key order must not affect the fingerprint");
+
+// The live profile RPC returns deterministic_validators and max_output_tokens.
+// Bind the complete validator JSON, including rules beyond four old mirrored
+// threshold names. A changed live setting must never reuse a prior PASS hash.
+assert.deepEqual(baseComponents().deterministic_validators, profile.deterministic_validators);
+for (const [label, mutatedProfile] of [
+  ["review threshold", { ...profile, deterministic_validators: { ...profile.deterministic_validators, review_confidence_min: 0.95 } }],
+  ["allowed basis", { ...profile, deterministic_validators: { ...profile.deterministic_validators, allowed_basis: ["annual"] } }],
+  ["max output tokens", { ...profile, max_output_tokens: 1200 }],
+  ["profile schema", { ...profile, structured_output_schema: { type: "object", additionalProperties: true } }],
+] as const) {
+  const changed = await tuitionBenchmarkBindingFingerprint(buildTuitionBenchmarkBindingComponents(mutatedProfile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, interpreterSource));
+  assert.notEqual(changed, fingerprintA, `${label} drift must invalidate the binding`);
+}
+assert.throws(() => buildTuitionBenchmarkBindingComponents({ ...profile, deterministic_validators: null }, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, interpreterSource), /settings missing/);
+assert.throws(() => buildTuitionBenchmarkBindingComponents({ ...profile, max_output_tokens: undefined }, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, interpreterSource), /max_output_tokens missing/);
 
 assert.equal(
   canonicalJsonStringify({ b: 1, a: 2 }),
