@@ -4,6 +4,8 @@ import {
   tuitionValidationPromptContext,
   validateProviderCurrentTuitionCandidate,
 } from "../_shared/cf247-tuition-validation.ts";
+import { CF247_TUITION_BINDING_SOURCE_MANIFEST } from "../_shared/cf247-tuition-binding-source-manifest.ts";
+import { tuitionBenchmarkRuntimeBindingHash } from "../_shared/cf247-tuition-benchmark-binding.ts";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -113,6 +115,21 @@ Deno.serve(async (req: Request) => {
     if (taskClass !== "provider_current_tuition_validation")
       throw new Error(
         "service worker currently permits only provider_current_tuition_validation",
+      );
+    const qualifiedBindingHash = String(
+      profile?.quality_benchmark?.binding_hash || "",
+    );
+    if (!qualifiedBindingHash)
+      throw new Error(
+        "profile has no qualified binding hash on record; execution refused",
+      );
+    const currentBindingHash = await tuitionBenchmarkRuntimeBindingHash(
+      CF247_TUITION_BINDING_SOURCE_MANIFEST,
+      profile,
+    );
+    if (currentBindingHash !== qualifiedBindingHash)
+      throw new Error(
+        "current source/profile binding hash does not match the qualified benchmark; execution refused",
       );
 
     const { data: usage, error: usageError } = await svc.rpc(
