@@ -15,7 +15,9 @@ import {
   extractCandidateContextInstructionSource,
   extractJsonRequestBodySource,
   extractPromptBuildSource,
+  resolveTuitionProfileBindingInputs,
   tuitionBenchmarkBindingFingerprint,
+  tuitionBenchmarkRuntimeBindingHash,
 } from "../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts";
 import type { BindingComponents } from "../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts";
 import { CF247_TUITION_RESPONSE_SCHEMA } from "../supabase/functions/_shared/cf247-tuition-validation.ts";
@@ -392,6 +394,118 @@ for (const forbidden of ["secret_env_key", "evidence_id", "storage_path", "laten
 assert.ok(
   !("provider_current_tuition" in descriptor.components) && !("fee_candidates" in descriptor.components) && !("candidate_context" in descriptor.components),
   "canonical descriptor must never carry a per-case candidate_context/candidate payload",
+);
+
+// --- 7. Runtime source-manifest binding hash: the worker-safe computation
+// that layer3-cf245-tuition-benchmark/index.ts actually calls (it cannot read
+// raw .ts source at Deno edge runtime, so it cannot use
+// buildTuitionBenchmarkBindingComponents/tuitionBenchmarkBindingFingerprint
+// above — those remain CI/test-only). Verifies this alternate path is
+// genuinely source- and profile-bound, and equally fail-closed, not merely
+// "runs without throwing". ---
+
+// 25. Format must satisfy the recorder migration's binding_hash CHECK
+// constraint (^[0-9a-f]{64}$) exactly: lowercase 64-char hex.
+const runtimeHashA = await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, profile);
+assert.match(runtimeHashA, /^[0-9a-f]{64}$/, "runtime binding hash must be lowercase 64-char hex matching the recorder's CHECK constraint");
+
+// 26. Determinism: the same manifest and profile must always produce the
+// same hash (no hidden timestamp/random input).
+const runtimeHashARepeat = await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, profile);
+assert.equal(runtimeHashARepeat, runtimeHashA, "the same manifest and profile must always produce the same runtime binding hash");
+
+// 27. A real source change — a manifest component drifting from the actual
+// source (exactly what CI catches via assertion #1 above if left
+// unregenerated) — must change the runtime hash. This is what makes the
+// worker's recorded binding_hash meaningfully source-bound.
+const mutatedManifest = { ...CF247_TUITION_BINDING_SOURCE_MANIFEST, benchmark_prompt_sha256: "0".repeat(64) };
+const runtimeHashMutatedManifest = await tuitionBenchmarkRuntimeBindingHash(mutatedManifest, profile);
+assert.notEqual(runtimeHashMutatedManifest, runtimeHashA, "changing a source manifest component must change the runtime binding hash");
+
+// 28. A profile drift (model swapped) must change the runtime hash — this is
+// what makes qualification profile-bound, not just source-bound.
+const mutatedModelProfile = { ...profile, model_identifier: "openrouter/a-different-model-v9" };
+const runtimeHashMutatedModel = await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, mutatedModelProfile);
+assert.notEqual(runtimeHashMutatedModel, runtimeHashA, "changing the profile's model_identifier must change the runtime binding hash");
+
+// 29. A validator-settings drift (e.g. a loosened confidence threshold) must
+// also change the hash — proves deterministic_validators is bound, not just
+// echoed for shape.
+const mutatedValidatorsProfile = {
+  ...profile,
+  deterministic_validators: { ...(profile as any).deterministic_validators, review_confidence_min: 0.1 },
+};
+const runtimeHashMutatedValidators = await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, mutatedValidatorsProfile);
+assert.notEqual(runtimeHashMutatedValidators, runtimeHashA, "changing the profile's deterministic_validators must change the runtime binding hash");
+
+// 30. Same fail-closed behaviour as the full descriptor path: an ambiguous
+// profile (both canonical and alias keys present) must still throw, not
+// silently pick one.
+await assert.rejects(
+  () => tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, { ...profile, validators: (profile as any).deterministic_validators }),
+  /ambiguous validators/,
+  "the runtime binding hash must fail closed on an ambiguous profile the same way the full descriptor does",
+);
+
+// 31. Same fail-closed behaviour for a missing required inference setting.
+const { timeout_ms, ...profileMissingTimeout } = profile as any;
+await assert.rejects(
+  () => tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, profileMissingTimeout),
+  /timeout_ms missing or invalid/,
+  "the runtime binding hash must fail closed on a missing required inference setting",
+);
+
+// 32. resolveTuitionProfileBindingInputs is the single shared implementation
+// behind both the full descriptor and the runtime hash — confirm it resolves
+// to the same values buildTuitionBenchmarkBindingComponents used, so the two
+// paths can never silently diverge in which profile fields they require.
+const resolvedInputs = resolveTuitionProfileBindingInputs(profile);
+assert.deepEqual(
+  resolvedInputs,
+  {
+    model_identifier: components.model_identifier,
+    prompt_profile_version: components.prompt_profile_version,
+    prompt_profile_system: components.prompt_profile_system,
+    profile_response_schema: components.profile_response_schema,
+    deterministic_validators: components.deterministic_validators,
+    inference_settings: components.inference_settings,
+  },
+  "resolveTuitionProfileBindingInputs must resolve identically to the profile-derived fields the full descriptor uses",
+);
+
+// 33. Source-text contract: the deployed worker must actually compute and
+// pass this runtime hash to the bound 11-argument recorder call — not merely
+// have the capability available unused. Whitespace/quote-tolerant, matching
+// the pattern established for every other source-contract assertion in this
+// suite after Slice PRE.
+assert.match(
+  benchmarkSource,
+  /import\s*\{\s*CF247_TUITION_BINDING_SOURCE_MANIFEST\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-binding-source-manifest\.ts["']/,
+  "the benchmark worker must import CF247_TUITION_BINDING_SOURCE_MANIFEST",
+);
+assert.match(
+  benchmarkSource,
+  /import\s*\{\s*tuitionBenchmarkRuntimeBindingHash\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-benchmark-binding\.ts["']/,
+  "the benchmark worker must import tuitionBenchmarkRuntimeBindingHash",
+);
+assert.match(
+  benchmarkSource,
+  /tuitionBenchmarkRuntimeBindingHash\(\s*CF247_TUITION_BINDING_SOURCE_MANIFEST,\s*profile,?\s*\)/,
+  "the benchmark worker must call tuitionBenchmarkRuntimeBindingHash with the checked-in manifest and the live profile",
+);
+assert.match(
+  benchmarkSource,
+  /p_binding_hash:\s*bindingHash/,
+  "the benchmark worker must pass the computed hash as p_binding_hash to the recorder RPC call",
+);
+// The binding-hash computation must happen before any provider call is made
+// (fail closed on a malformed profile before spending cost), i.e. before the
+// cases lookup that precedes the provider-call loop.
+const bindingHashComputeIndex = benchmarkSource.indexOf("tuitionBenchmarkRuntimeBindingHash(");
+const casesLookupIndex = benchmarkSource.indexOf("layer3_cf245_tuition_benchmark_cases_service");
+assert.ok(
+  bindingHashComputeIndex >= 0 && casesLookupIndex >= 0 && bindingHashComputeIndex < casesLookupIndex,
+  "the binding hash must be computed before the cases lookup / provider-call loop, so a malformed profile fails closed before any cost is spent",
 );
 
 console.log("CF-247 tuition benchmark binding contract PASS");
