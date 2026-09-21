@@ -46,6 +46,12 @@ Deno.serve(async (req: Request) => {
       items.push(item);
       const workItemId = String(item?.id || "");
       if (!workItemId) continue;
+      const failWorkItem = async (err: string) => {
+        const first = await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "reserved", p_to_status: "failed", p_interpretation_id: null, p_error: err.slice(0, 1900), p_retry_after_seconds: 60 }).catch(() => ({ data: null }));
+        if (!(first as any)?.data?.ok) {
+          await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "interpreting", p_to_status: "failed", p_interpretation_id: null, p_error: err.slice(0, 1900), p_retry_after_seconds: 60 }).catch(() => undefined);
+        }
+      };
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), interpreterTimeoutMs);
@@ -60,12 +66,12 @@ Deno.serve(async (req: Request) => {
         } finally { clearTimeout(timeout); }
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) {
-          await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "reserved", p_to_status: "failed", p_interpretation_id: null, p_error: `interpreter HTTP ${response.status}: ${JSON.stringify(payload).slice(0, 1500)}`, p_retry_after_seconds: 60 }).catch(() => undefined);
+          await failWorkItem(`interpreter HTTP ${response.status}: ${JSON.stringify(payload).slice(0, 1500)}`);
         }
         results.push({ work_item_id: workItemId, http_status: response.status, result: payload });
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        await svc.rpc("layer3_work_item_transition_service", { p_work_item_id: workItemId, p_from_status: "reserved", p_to_status: "failed", p_interpretation_id: null, p_error: `dispatcher invocation failed: ${message}`.slice(0, 1900), p_retry_after_seconds: 60 }).catch(() => undefined);
+        await failWorkItem(`dispatcher invocation failed: ${message}`);
         results.push({ work_item_id: workItemId, http_status: null, error: message });
       }
     }
