@@ -126,7 +126,7 @@ async function call(
   );
   const candidateJson = tuitionValidationPromptContext(candidateContext);
   const focused = evidenceFocus(evidence, candidate);
-  const system = `CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction. Return JSON only. A positive answer MUST return the supplied candidate exactly unchanged; a negative/ambiguous answer MUST return candidate_value null. Never invent, annualise, convert currency, change year, strengthen basis, or select a different amount.\n${String(profile.prompt_system || "")}`;
+  const system=`CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction. Return JSON only. A positive answer MUST return the supplied candidate exactly unchanged; a negative/ambiguous answer MUST return candidate_value null. Never invent, annualise, convert currency, change year, strengthen basis, or select a different amount.\n${String(profile.prompt_system || "")}`;
   for (let i = 0; i < attempts; i++) {
     calls++;
     const st = performance.now(),
@@ -144,7 +144,7 @@ async function call(
             "HTTP-Referer": "https://coursefinder.app",
             "X-Title": "CourseFinder CF-247 Candidate-Bound Tuition Benchmark",
           },
-          body: JSON.stringify({
+          body:JSON.stringify({
             model: profile.model_identifier,
             temperature: 0,
             seed: 0,
