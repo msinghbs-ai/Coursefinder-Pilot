@@ -1,15 +1,19 @@
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import {
+  CF247_BENCHMARK_PROMPT_BUILD_ANCHOR,
   CF247_BENCHMARK_REQUEST_BODY_ANCHOR,
   CF247_BINDING_REQUIRED_COMPONENT_KEYS,
+  CF247_INTERPRETER_PROMPT_BUILD_ANCHOR,
   CF247_INTERPRETER_REQUEST_BODY_ANCHOR,
   CF247_TUITION_BENCHMARK_BINDING_CONTRACT_ID,
   assertBindingComponentsComplete,
   buildTuitionBenchmarkBindingComponents,
   canonicalBindingDescriptor,
   canonicalJsonStringify,
+  extractCandidateContextInstructionSource,
   extractJsonRequestBodySource,
+  extractPromptBuildSource,
   tuitionBenchmarkBindingFingerprint,
 } from "../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts";
 import type { BindingComponents } from "../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts";
@@ -66,11 +70,88 @@ assert.ok(
   "shared_validator_source must contain the real validator implementation, not just an identifier",
 );
 
-// The benchmark's and interpreter's actual effective prompt templates are
-// present verbatim (as literal text) in their respective source files, so the
-// descriptor tracks their real, current instructional content.
-assert.ok(benchmarkSource.includes("CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate"), "benchmark source must still contain the templated system-prompt header this descriptor is bound to");
-assert.ok(interpreterSource.includes("Task class: provider_current_tuition_validation"), "interpreter source must still contain the templated prompt lead-in this descriptor is bound to");
+// The benchmark's and interpreter's prompt templates are extracted, live
+// source spans (from the real `system`/`prompt` declaration through the
+// balanced end of the request-body call that consumes it) — not disconnected
+// mirrored constants — so they track the real, current instructional content
+// AND the real request wiring together.
+assert.equal(
+  components.benchmark_prompt_template,
+  extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR),
+  "benchmark_prompt_template must equal the exact literal extracted from the live benchmark source, not a mirrored constant",
+);
+assert.equal(
+  components.interpreter_prompt_template,
+  extractPromptBuildSource(interpreterSource, CF247_INTERPRETER_PROMPT_BUILD_ANCHOR),
+  "interpreter_prompt_template must equal the exact literal extracted from the live interpreter source, not a mirrored constant",
+);
+assert.ok(components.benchmark_prompt_template.includes("CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate"), "benchmark_prompt_template must contain the real benchmark system-prompt text (built outside JSON.stringify)");
+assert.ok(components.interpreter_prompt_template.includes("Task class: provider_current_tuition_validation"), "interpreter_prompt_template must contain the real interpreter prompt lead-in text (built outside JSON.stringify)");
+
+// candidate_context_instruction is derived from the shared validator's real
+// instruction literal, not a disconnected mirrored copy.
+assert.equal(
+  components.candidate_context_instruction,
+  extractCandidateContextInstructionSource(validatorSource),
+  "candidate_context_instruction must equal the exact literal extracted from the shared validator source, not a mirrored constant",
+);
+assert.ok(components.candidate_context_instruction.includes("Validate only the supplied provider_current_tuition target against Evidence"), "candidate_context_instruction must contain the real shared instruction text");
+
+// Mutating the REAL benchmark system-prompt text, interpreter prompt text, or
+// candidate-context instruction in their respective live sources must change
+// the corresponding component and the overall fingerprint — proving these
+// three components are bound to the real prompt-building source, not to a
+// disconnected mirror that would stay stable while the real text changed.
+const mutatedBenchmarkSystemText = benchmarkSource.replace(
+  "CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction.",
+  "CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction. CHANGED.",
+);
+assert.notEqual(mutatedBenchmarkSystemText, benchmarkSource, "test fixture sanity: the benchmark source must actually contain the system-prompt text being mutated");
+const componentsWithMutatedBenchmarkSystem = buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, mutatedBenchmarkSystemText, interpreterSource);
+assert.notEqual(
+  componentsWithMutatedBenchmarkSystem.benchmark_prompt_template,
+  components.benchmark_prompt_template,
+  "changing the real benchmark system prompt text must change benchmark_prompt_template",
+);
+assert.notEqual(
+  await tuitionBenchmarkBindingFingerprint(componentsWithMutatedBenchmarkSystem),
+  await tuitionBenchmarkBindingFingerprint(components),
+  "changing the real benchmark system prompt text must change the fingerprint",
+);
+
+const mutatedInterpreterPromptText = interpreterSource.replace(
+  "Task class: provider_current_tuition_validation",
+  "Task class: provider_current_tuition_validation_CHANGED",
+);
+assert.notEqual(mutatedInterpreterPromptText, interpreterSource, "test fixture sanity: the interpreter source must actually contain the prompt lead-in text being mutated");
+const componentsWithMutatedInterpreterPrompt = buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, mutatedInterpreterPromptText);
+assert.notEqual(
+  componentsWithMutatedInterpreterPrompt.interpreter_prompt_template,
+  components.interpreter_prompt_template,
+  "changing the real interpreter prompt lead-in text must change interpreter_prompt_template",
+);
+assert.notEqual(
+  await tuitionBenchmarkBindingFingerprint(componentsWithMutatedInterpreterPrompt),
+  await tuitionBenchmarkBindingFingerprint(components),
+  "changing the real interpreter prompt lead-in text must change the fingerprint",
+);
+
+const mutatedValidatorInstruction = validatorSource.replace(
+  "Validate only the supplied provider_current_tuition target against Evidence",
+  "Validate only the supplied provider_current_tuition target against Evidence CHANGED",
+);
+assert.notEqual(mutatedValidatorInstruction, validatorSource, "test fixture sanity: the validator source must actually contain the candidate-context instruction text being mutated");
+const componentsWithMutatedInstruction = buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, mutatedValidatorInstruction, benchmarkSource, interpreterSource);
+assert.notEqual(
+  componentsWithMutatedInstruction.candidate_context_instruction,
+  components.candidate_context_instruction,
+  "changing the real shared candidate-context instruction text must change candidate_context_instruction",
+);
+assert.notEqual(
+  await tuitionBenchmarkBindingFingerprint(componentsWithMutatedInstruction),
+  await tuitionBenchmarkBindingFingerprint(components),
+  "changing the real shared candidate-context instruction text must change the fingerprint",
+);
 
 // --- 1b. benchmark_request_body_source / interpreter_request_body_source are
 // extracted, live, DISTINCT request-body literals — not disconnected mirrored

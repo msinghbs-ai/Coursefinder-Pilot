@@ -11,9 +11,21 @@
 // explicitly deferred to 3B2.
 //
 // Included components (all static/structural, never per-case or secret):
-// - benchmark_prompt_template / interpreter_prompt_template: the effective,
-//   non-case-specific instructional templates (candidate-context instructions
-//   included via a fixed placeholder, never interpolated per-case values).
+// - benchmark_prompt_template / interpreter_prompt_template: the *exact
+//   literal source text* of each caller's real prompt-building statement
+//   (from its `const system =` / `const prompt = [` declaration through the
+//   balanced end of the provider request-body call that consumes it),
+//   extracted from the live .ts source — not a mirrored constant. Because the
+//   extraction spans both the prompt/system construction AND the request
+//   body in one literal, any change to the real benchmark `system` text or
+//   the real interpreter `prompt` text changes this component by
+//   construction; a source-substring assertion against unrelated prompt text
+//   can never pass while the actual prompt text differs.
+// - candidate_context_instruction: retained for backward-compatible shape,
+//   populated from `shared_validator_source` (see below) rather than a
+//   separate mirrored string literal, so the shared candidate-context
+//   instruction is bound to the validator's real implementation, not a
+//   disconnected copy of it.
 // - benchmark_request_body_source / interpreter_request_body_source: the
 //   *exact literal source text* of each caller's real `JSON.stringify({...})`
 //   provider request body (extracted from the live .ts source, not a mirrored
@@ -24,6 +36,9 @@
 //   changes the fingerprint by construction, because it changes this text.
 // - shared_validator_source: the exact source text of the shared validator
 //   module (implementation-bound, not merely its exported string identifiers).
+//   This is also the sole source of the candidate-context instruction text
+//   (tuitionValidationPromptContext's literal instruction string lives here),
+//   so a change to that instruction is covered without a mirrored constant.
 // - response_schema: the shared strict structured-output JSON schema object.
 // - model_identifier / prompt_profile_version: identity of the model/prompt
 //   version in effect.
@@ -41,39 +56,20 @@
 // candidate_value/candidate_context payloads, and volatile metrics (latency,
 // cost, token counts, timestamps).
 
-// The benchmark's effective system-prompt template, fixed and non-case-specific.
-// Mirrors supabase/functions/layer3-cf245-tuition-benchmark/index.ts `system`
-// (candidate-bound header + profile.prompt_system), with profile.prompt_system
-// represented as a fixed placeholder rather than its live value, since the
-// live value is carried separately via BindingComponents.prompt_profile_system.
-export const CF247_BENCHMARK_PROMPT_TEMPLATE =
-  "CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction. Return JSON only. A positive answer MUST return the supplied candidate exactly unchanged; a negative/ambiguous answer MUST return candidate_value null. Never invent, annualise, convert currency, change year, strengthen basis, or select a different amount.\n{{profile.prompt_system}}";
-
-// The benchmark's effective user-turn instructional template (case label and
-// per-case candidate/evidence content replaced with fixed placeholders).
-export const CF247_BENCHMARK_USER_TEMPLATE =
-  "Benchmark case: {{label}}\nValidate ONLY the exact Layer 2 candidate against the retained first-party Evidence excerpt. If the Evidence explicitly supports the same amount, currency, international audience, basis and stated fee year (when non-null), return that candidate exactly unchanged with confidence >= 0.90 and short verbatim Evidence quotes. If any required attribute is unsupported, conflicting or ambiguous, return candidate_value null. Do not extract or substitute another value. indicative_annual is an allowed governed basis and must remain indicative_annual.\nLayer 2 candidate:\n{{candidateJson}}\nEvidence excerpt:\n{{evidenceExcerpt}}";
-
-// The interpreter's effective prompt template (mirrors the `prompt` array
-// joined in supabase/functions/layer3-work-interpret/index.ts, with per-case
-// Evidence source/content and the candidate-context instructions carried via
-// tuitionValidationPromptContext represented as a fixed placeholder — the
-// candidate-bound *instructions* are covered by the shared validator source
-// below, not by interpolating a specific candidate_context here).
-export const CF247_INTERPRETER_PROMPT_TEMPLATE = [
-  "Task class: provider_current_tuition_validation",
-  "Governed Evidence source: {{evidence.source_url}}",
-  "{{tuitionValidationPromptContext(candidateContext)}}",
-  "Return exactly one JSON object with keys candidate_value, confidence, rationale, evidence_quotes. candidate_value must be null or one supplied tuition candidate with amount, currency_code, basis, fee_year and audience. Evidence must explicitly support any basis resolution; otherwise return null.",
-  "Evidence:\n{{evidenceText}}",
-].join("\n\n");
-
-// The fixed instructional wrapper produced by the shared prompt-context
-// builder, independent of any specific candidate_context value. This captures
-// the *instruction* text that governs candidate-bound behaviour identically
-// for the benchmark and the interpreter (both call the same shared function).
-export const CF247_CANDIDATE_CONTEXT_INSTRUCTION =
-  "Validate only the supplied provider_current_tuition target against Evidence — it is the sole positive candidate. The listed competing_fee_candidates are other fees mentioned in context for awareness only; they must never be returned or substituted for the target, even if Evidence supports one of them instead. Keep amount, currency, fee_year and audience unchanged from the target. If the target's basis is annual_or_indicative_requires_validation, Evidence may resolve only to annual or indicative_annual; otherwise basis must remain unchanged. Both the target and any returned candidate must have audience explicitly \"international\"; missing, blank or other audience is invalid. A non-null result additionally requires identity_match to be true. Return null when Evidence does not explicitly support the target, when identity_match is not true, or when no positive target can be admitted — null is always a safe abstention. Never invent or annualise an amount, convert currency, infer a year, change audience, or select a different fee.";
+// Anchors used to locate each caller's real prompt-building statement — from
+// the declaration of its effective system/prompt variable through to the
+// balanced end of the provider request-body call that actually consumes it —
+// within its own live source text. Anchoring here (rather than only at the
+// request-body literal) means the extracted text includes the benchmark's
+// real `system` template text and the interpreter's real `prompt` array,
+// which are built OUTSIDE JSON.stringify(...) and therefore would otherwise
+// be invisible to a binding anchored solely on the request-body object. Must
+// stay in sync with the actual prompt-construction call sites; if either
+// caller's source is refactored such that the anchor no longer precedes a
+// balanced request-body call, extraction throws (fails closed) rather than
+// silently binding to a stale/absent prompt.
+export const CF247_BENCHMARK_PROMPT_BUILD_ANCHOR = "const system=";
+export const CF247_INTERPRETER_PROMPT_BUILD_ANCHOR = "const prompt = [";
 
 export type InferenceSettings = {
   max_input_tokens: number;
@@ -159,6 +155,77 @@ export function extractJsonRequestBodySource(source: string, anchor: string): st
     }
   }
   throw new Error(`CF-247 tuition benchmark binding: unbalanced request-body object after anchor: ${anchor}`);
+}
+
+// Extracts the exact literal source text spanning `anchor` (a caller's real
+// prompt/system-building declaration, e.g. `const system=`) through the
+// balanced end of the first `JSON.stringify({ ... })` request-body call that
+// follows it in `source`. This proves the binding actually covers the real
+// prompt/system text — which is constructed OUTSIDE JSON.stringify(...) in
+// both the benchmark and the interpreter — not merely the request body that
+// consumes it. Uses the same brace-depth counting (respecting quoted strings
+// and template literals) as extractJsonRequestBodySource. Fails closed
+// (throws) if the anchor, the `JSON.stringify(` call after it, or a balanced
+// body cannot be found.
+export function extractPromptBuildSource(source: string, anchor: string): string {
+  const anchorIndex = source.indexOf(anchor);
+  if (anchorIndex < 0) {
+    throw new Error(`CF-247 tuition benchmark binding: prompt-build anchor not found in source: ${anchor}`);
+  }
+  const stringifyMarker = "JSON.stringify(";
+  const stringifyIndex = source.indexOf(stringifyMarker, anchorIndex + anchor.length);
+  if (stringifyIndex < 0) {
+    throw new Error(`CF-247 tuition benchmark binding: no JSON.stringify request-body call found after prompt-build anchor: ${anchor}`);
+  }
+  const openIndex = source.indexOf("{", stringifyIndex + stringifyMarker.length);
+  if (openIndex < 0) {
+    throw new Error(`CF-247 tuition benchmark binding: no request-body object found after prompt-build anchor: ${anchor}`);
+  }
+  let depth = 0;
+  let quote: '"' | "'" | "`" | null = null;
+  for (let i = openIndex; i < source.length; i++) {
+    const ch = source[i];
+    const prev = source[i - 1];
+    if (quote) {
+      if (ch === quote && prev !== "\\") quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") { quote = ch; continue; }
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return source.slice(anchorIndex, i + 1);
+    }
+  }
+  throw new Error(`CF-247 tuition benchmark binding: unbalanced request-body object after prompt-build anchor: ${anchor}`);
+}
+
+// Extracts the exact literal `instruction:` string from the shared
+// validator's real `tuitionValidationPromptContext` source (the fixed
+// candidate-context instruction text sent to both the benchmark and the
+// interpreter), so `candidate_context_instruction` is derived from the
+// validator's actual current implementation rather than a disconnected
+// mirrored copy of it. Fails closed (throws) if the anchor or a
+// terminating unescaped quote cannot be found.
+const CANDIDATE_CONTEXT_INSTRUCTION_ANCHOR = "instruction:";
+export function extractCandidateContextInstructionSource(validatorSource: string): string {
+  const anchorIndex = validatorSource.indexOf(CANDIDATE_CONTEXT_INSTRUCTION_ANCHOR);
+  if (anchorIndex < 0) {
+    throw new Error("CF-247 tuition benchmark binding: candidate-context instruction anchor not found in shared validator source");
+  }
+  const quoteIndex = validatorSource.indexOf('"', anchorIndex + CANDIDATE_CONTEXT_INSTRUCTION_ANCHOR.length);
+  if (quoteIndex < 0) {
+    throw new Error("CF-247 tuition benchmark binding: no candidate-context instruction string literal found after anchor");
+  }
+  let i = quoteIndex + 1;
+  let value = "";
+  for (; i < validatorSource.length; i++) {
+    const ch = validatorSource[i];
+    if (ch === "\\") { value += ch + (validatorSource[i + 1] ?? ""); i++; continue; }
+    if (ch === '"') return value;
+    value += ch;
+  }
+  throw new Error("CF-247 tuition benchmark binding: unterminated candidate-context instruction string literal");
 }
 
 export const CF247_TUITION_BENCHMARK_BINDING_CONTRACT_ID = "cf247-tuition-benchmark-binding-v1";
@@ -261,9 +328,9 @@ export function buildTuitionBenchmarkBindingComponents(
   interpreterSource: string,
 ): BindingComponents {
   return {
-    benchmark_prompt_template: CF247_BENCHMARK_PROMPT_TEMPLATE,
-    interpreter_prompt_template: CF247_INTERPRETER_PROMPT_TEMPLATE,
-    candidate_context_instruction: CF247_CANDIDATE_CONTEXT_INSTRUCTION,
+    benchmark_prompt_template: extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR),
+    interpreter_prompt_template: extractPromptBuildSource(interpreterSource, CF247_INTERPRETER_PROMPT_BUILD_ANCHOR),
+    candidate_context_instruction: extractCandidateContextInstructionSource(validatorSource),
     benchmark_request_body_source: extractJsonRequestBodySource(benchmarkSource, CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
     interpreter_request_body_source: extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR),
     shared_validator_source: validatorSource,
