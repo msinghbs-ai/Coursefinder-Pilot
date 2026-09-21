@@ -40,12 +40,14 @@
 //   (tuitionValidationPromptContext's literal instruction string lives here),
 //   so a change to that instruction is covered without a mirrored constant.
 // - response_schema: the shared strict structured-output JSON schema object.
+// - profile_response_schema: the stored profile schema; profile drift must
+//   invalidate qualification even if the worker still uses the shared schema.
 // - model_identifier / prompt_profile_version: identity of the model/prompt
 //   version in effect.
-// - deterministic_validators: the deterministic validator thresholds in effect
-//   (e.g. confidence bounds, quote limits) — never secret values.
+// - deterministic_validators: the complete stored profile validator settings,
+//   including allowed basis/currency and review threshold — never secrets.
 // - inference_settings: the profile-derived, caller-shared determinism inputs
-//   (max_input_tokens/timeout_ms/retry_ceiling) that are not literal in the
+//   (max_input_tokens/max_output_tokens/timeout_ms/retry_ceiling) that are not literal in the
 //   request-body source text. Per-caller settings that DO appear literally in
 //   the request body (temperature/seed/reasoning/max_tokens fallback/
 //   response_format) are intentionally NOT duplicated here as hardcoded
@@ -73,15 +75,9 @@ export const CF247_INTERPRETER_PROMPT_BUILD_ANCHOR = "const prompt = [";
 
 export type InferenceSettings = {
   max_input_tokens: number;
+  max_output_tokens: number;
   timeout_ms: number;
   retry_ceiling: number;
-};
-
-export type DeterministicValidatorSettings = {
-  confidence_min: number;
-  confidence_max: number;
-  max_quotes: number;
-  max_quote_chars: number;
 };
 
 export type BindingComponents = {
@@ -92,10 +88,11 @@ export type BindingComponents = {
   interpreter_request_body_source: string;
   shared_validator_source: string;
   response_schema: unknown;
+  profile_response_schema: unknown;
   model_identifier: string;
   prompt_profile_version: string;
   prompt_profile_system: string;
-  deterministic_validators: DeterministicValidatorSettings;
+  deterministic_validators: Record<string, unknown>;
   inference_settings: InferenceSettings;
 };
 
@@ -110,6 +107,7 @@ export const CF247_BINDING_REQUIRED_COMPONENT_KEYS: readonly (keyof BindingCompo
   "interpreter_request_body_source",
   "shared_validator_source",
   "response_schema",
+  "profile_response_schema",
   "model_identifier",
   "prompt_profile_version",
   "prompt_profile_system",
@@ -317,16 +315,30 @@ export function buildTuitionBenchmarkBindingComponents(
     model_identifier?: unknown;
     prompt_profile_version?: unknown;
     prompt_system?: unknown;
+    structured_output_schema?: unknown;
     max_input_tokens?: unknown;
+    max_output_tokens?: unknown;
     timeout_ms?: unknown;
     retry_ceiling?: unknown;
-    validators?: { confidence_min?: unknown; confidence_max?: unknown; max_quotes?: unknown; max_quote_chars?: unknown } | null;
+    deterministic_validators?: Record<string, unknown> | null;
   },
   responseSchema: unknown,
   validatorSource: string,
   benchmarkSource: string,
   interpreterSource: string,
 ): BindingComponents {
+  // The live profile RPC exposes deterministic_validators, not `validators`.
+  // Never replace absent profile settings with defaults: a default would make
+  // a changed or malformed profile appear equal to the last qualified one.
+  if (!profile?.deterministic_validators || !Object.keys(profile.deterministic_validators).length ||
+      !profile.structured_output_schema || typeof profile.structured_output_schema !== "object") {
+    throw new Error("CF-247 tuition benchmark binding: profile validator/schema settings missing");
+  }
+  for (const key of ["max_input_tokens", "max_output_tokens", "timeout_ms", "retry_ceiling"] as const) {
+    if (profile[key] == null || !Number.isFinite(Number(profile[key]))) {
+      throw new Error(`CF-247 tuition benchmark binding: profile ${key} missing or invalid`);
+    }
+  }
   return {
     benchmark_prompt_template: extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR),
     interpreter_prompt_template: extractPromptBuildSource(interpreterSource, CF247_INTERPRETER_PROMPT_BUILD_ANCHOR),
@@ -335,19 +347,16 @@ export function buildTuitionBenchmarkBindingComponents(
     interpreter_request_body_source: extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR),
     shared_validator_source: validatorSource,
     response_schema: responseSchema,
+    profile_response_schema: profile.structured_output_schema,
     model_identifier: String(profile?.model_identifier ?? ""),
     prompt_profile_version: String(profile?.prompt_profile_version ?? ""),
     prompt_profile_system: String(profile?.prompt_system ?? ""),
-    deterministic_validators: {
-      confidence_min: Number(profile?.validators?.confidence_min ?? 0),
-      confidence_max: Number(profile?.validators?.confidence_max ?? 1),
-      max_quotes: Number(profile?.validators?.max_quotes ?? 4),
-      max_quote_chars: Number(profile?.validators?.max_quote_chars ?? 600),
-    },
+    deterministic_validators: profile.deterministic_validators,
     inference_settings: {
-      max_input_tokens: Number(profile?.max_input_tokens ?? 12000),
-      timeout_ms: Number(profile?.timeout_ms ?? 30000),
-      retry_ceiling: Number(profile?.retry_ceiling ?? 0),
+      max_input_tokens: Number(profile.max_input_tokens),
+      max_output_tokens: Number(profile.max_output_tokens),
+      timeout_ms: Number(profile.timeout_ms),
+      retry_ceiling: Number(profile.retry_ceiling),
     },
   };
 }
