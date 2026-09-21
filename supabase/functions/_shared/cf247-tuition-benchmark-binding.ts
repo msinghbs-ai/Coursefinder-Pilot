@@ -308,31 +308,36 @@ export async function tuitionBenchmarkBindingFingerprint(components: BindingComp
 export const CF247_BENCHMARK_REQUEST_BODY_ANCHOR = "body:JSON.stringify(";
 export const CF247_INTERPRETER_REQUEST_BODY_ANCHOR = "body: JSON.stringify(";
 
-// Assembles the BindingComponents shared by the benchmark and the interpreter
-// from a model/prompt profile record (the same `profile` shape both the
-// benchmark and the interpreter already receive), the shared validator
-// module's source text, and each caller's own live edge-function source text.
-// Callers are responsible for supplying `validatorSource`, `benchmarkSource`
-// and `interpreterSource` (read from the real .ts files) so this module has
-// no filesystem/runtime dependency of its own, while still binding to the
-// actual runtime request bodies rather than a mirrored description of them.
-export function buildTuitionBenchmarkBindingComponents(
-  profile: {
-    model_identifier?: unknown;
-    prompt_profile_version?: unknown;
-    prompt_system?: unknown;
-    structured_output_schema?: unknown;
-    max_input_tokens?: unknown;
-    max_output_tokens?: unknown;
-    timeout_ms?: unknown;
-    retry_ceiling?: unknown;
-    deterministic_validators?: Record<string, unknown> | null;
-  },
-  responseSchema: unknown,
-  validatorSource: string,
-  benchmarkSource: string,
-  interpreterSource: string,
-): BindingComponents {
+export type TuitionProfileLike = {
+  model_identifier?: unknown;
+  prompt_profile_version?: unknown;
+  prompt_system?: unknown;
+  structured_output_schema?: unknown;
+  max_input_tokens?: unknown;
+  max_output_tokens?: unknown;
+  timeout_ms?: unknown;
+  retry_ceiling?: unknown;
+  deterministic_validators?: Record<string, unknown> | null;
+};
+
+export type ResolvedTuitionProfileBindingInputs = {
+  model_identifier: string;
+  prompt_profile_version: string;
+  prompt_profile_system: string;
+  profile_response_schema: unknown;
+  deterministic_validators: Record<string, unknown>;
+  inference_settings: InferenceSettings;
+};
+
+// Validates and resolves the profile-derived binding inputs shared by both
+// the full source-text descriptor (buildTuitionBenchmarkBindingComponents,
+// CI/test-only — see below) and the runtime source-manifest descriptor
+// (tuitionBenchmarkRuntimeBindingHash, safe to call from the deployed Deno
+// worker). Kept as a single implementation so the two descriptors can never
+// silently diverge in which profile fields they require or how they resolve
+// the validators/schema key aliases. Fails closed: throws rather than
+// substituting a default for any missing/invalid/ambiguous field.
+export function resolveTuitionProfileBindingInputs(profile: TuitionProfileLike): ResolvedTuitionProfileBindingInputs {
   // The live profile RPC may expose deterministic_validators/structured_output_schema
   // or the validators/schema aliases. Reject profiles carrying both so alias
   // resolution can never mask a change made under only one key. Never substitute
@@ -356,17 +361,10 @@ export function buildTuitionBenchmarkBindingComponents(
     }
   }
   return {
-    benchmark_prompt_template: extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR),
-    interpreter_prompt_template: extractPromptBuildSource(interpreterSource, CF247_INTERPRETER_PROMPT_BUILD_ANCHOR),
-    candidate_context_instruction: extractCandidateContextInstructionSource(validatorSource),
-    benchmark_request_body_source: extractJsonRequestBodySource(benchmarkSource, CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
-    interpreter_request_body_source: extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR),
-    shared_validator_source: validatorSource,
-    response_schema: responseSchema,
-    profile_response_schema: schema,
     model_identifier: String(profile?.model_identifier ?? ""),
     prompt_profile_version: String(profile?.prompt_profile_version ?? ""),
     prompt_profile_system: String(profile?.prompt_system ?? ""),
+    profile_response_schema: schema,
     deterministic_validators: validators,
     inference_settings: {
       max_input_tokens: Number(profile.max_input_tokens),
@@ -375,4 +373,70 @@ export function buildTuitionBenchmarkBindingComponents(
       retry_ceiling: Number(profile.retry_ceiling),
     },
   };
+}
+
+// Assembles the BindingComponents shared by the benchmark and the interpreter
+// from a model/prompt profile record (the same `profile` shape both the
+// benchmark and the interpreter already receive), the shared validator
+// module's source text, and each caller's own live edge-function source text.
+// Callers are responsible for supplying `validatorSource`, `benchmarkSource`
+// and `interpreterSource` (read from the real .ts files) so this module has
+// no filesystem/runtime dependency of its own, while still binding to the
+// actual runtime request bodies rather than a mirrored description of them.
+// CI/TEST USE ONLY: raw-source-text extraction is not available inside the
+// deployed Deno worker (there is no readable copy of these .ts files at edge
+// runtime). The worker computes its own binding hash via
+// tuitionBenchmarkRuntimeBindingHash below instead.
+export function buildTuitionBenchmarkBindingComponents(
+  profile: TuitionProfileLike,
+  responseSchema: unknown,
+  validatorSource: string,
+  benchmarkSource: string,
+  interpreterSource: string,
+): BindingComponents {
+  const resolved = resolveTuitionProfileBindingInputs(profile);
+  return {
+    benchmark_prompt_template: extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR),
+    interpreter_prompt_template: extractPromptBuildSource(interpreterSource, CF247_INTERPRETER_PROMPT_BUILD_ANCHOR),
+    candidate_context_instruction: extractCandidateContextInstructionSource(validatorSource),
+    benchmark_request_body_source: extractJsonRequestBodySource(benchmarkSource, CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
+    interpreter_request_body_source: extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR),
+    shared_validator_source: validatorSource,
+    response_schema: responseSchema,
+    profile_response_schema: resolved.profile_response_schema,
+    model_identifier: resolved.model_identifier,
+    prompt_profile_version: resolved.prompt_profile_version,
+    prompt_profile_system: resolved.prompt_profile_system,
+    deterministic_validators: resolved.deterministic_validators,
+    inference_settings: resolved.inference_settings,
+  };
+}
+
+// Runtime-safe binding hash: the SHA-256 hex digest of a canonical descriptor
+// combining the checked-in, CI-verified source manifest (proof that the
+// checked-in component hashes match the actual deployed source, established
+// by the mandatory binding contract test recomputing them from real source on
+// every PR) with the live profile's binding-relevant settings. Deliberately
+// does NOT re-derive from raw .ts source text at runtime — see the CI/TEST
+// USE ONLY note above. Changing any manifest component (a real source change,
+// caught by the binding contract test if the manifest isn't regenerated to
+// match) or any resolved profile input changes this hash. Fails closed via
+// resolveTuitionProfileBindingInputs. Format matches the recorder migration's
+// binding_hash CHECK constraint (^[0-9a-f]{64}$).
+export async function tuitionBenchmarkRuntimeBindingHash(
+  manifest: Record<string, string>,
+  profile: TuitionProfileLike,
+): Promise<string> {
+  const resolved = resolveTuitionProfileBindingInputs(profile);
+  const descriptor = canonicalJsonStringify({
+    binding_contract_id: CF247_TUITION_BENCHMARK_BINDING_CONTRACT_ID,
+    source_manifest: manifest,
+    model_identifier: resolved.model_identifier,
+    prompt_profile_version: resolved.prompt_profile_version,
+    prompt_profile_system: resolved.prompt_profile_system,
+    profile_response_schema: resolved.profile_response_schema,
+    deterministic_validators: resolved.deterministic_validators,
+    inference_settings: resolved.inference_settings,
+  });
+  return sha256Hex(descriptor);
 }
