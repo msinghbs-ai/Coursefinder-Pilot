@@ -1,4 +1,6 @@
 import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   CF247_TUITION_CANDIDATE_VALIDATOR_CONTRACT_ID,
   CF247_TUITION_RESPONSE_SCHEMA,
@@ -186,5 +188,29 @@ assert.equal(CF247_TUITION_RESPONSE_SCHEMA.properties.rationale.type, "string", 
 const evidenceQuotesSchema = CF247_TUITION_RESPONSE_SCHEMA.properties.evidence_quotes;
 assert.equal(evidenceQuotesSchema.type, "array", "evidence_quotes must be an array");
 assert.equal(evidenceQuotesSchema.items.type, "string", "evidence_quotes items must be strings");
+
+// --- CF-247 Slice 3A2a: benchmark must import and use the shared response schema,
+// with no duplicated local schema definition left behind. This is a deterministic
+// source-text contract (no execution of the benchmark edge function itself), so it
+// stays cheap and stable in PR CI.
+const benchmarkSourcePath = fileURLToPath(
+  new URL("../supabase/functions/layer3-cf245-tuition-benchmark/index.ts", import.meta.url),
+);
+const benchmarkSource = readFileSync(benchmarkSourcePath, "utf8");
+assert.match(
+  benchmarkSource,
+  /import\s*\{\s*CF247_TUITION_RESPONSE_SCHEMA\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-validation\.ts["']/,
+  "benchmark must import CF247_TUITION_RESPONSE_SCHEMA from the shared validation module",
+);
+assert.match(
+  benchmarkSource,
+  /schema\s*:\s*CF247_TUITION_RESPONSE_SCHEMA\b/,
+  "benchmark must pass the imported CF247_TUITION_RESPONSE_SCHEMA into its response_format.json_schema",
+);
+assert.doesNotMatch(
+  benchmarkSource,
+  /\bconst\s+schema\s*=/,
+  "benchmark must not keep a duplicated local schema definition",
+);
 
 console.log("CF-247 candidate-bound tuition validation contract PASS");
