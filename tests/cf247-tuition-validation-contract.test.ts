@@ -335,4 +335,76 @@ assert.equal(
   "a non-null result with identity_match:false must remain rejected even when it matches the sole target",
 );
 
+// --- CF-247 Slice 3A2c: the `ambiguous_multiple_equal_rank` synthetic null-control's
+// Evidence must genuinely fail to support its own target (annual/2026 basis), so the
+// null expected outcome is correct under single-target candidate-bound validation.
+// A competing fee amount present in the same Evidence must never, on its own, be the
+// reason an otherwise-supported target is expected to be null.
+
+// 16. Extract the exact synthetic case entry and its Evidence text from source.
+const ambiguousCaseMatch = benchmarkSource.match(
+  /case:'ambiguous_multiple_equal_rank',candidate:(\{[^}]*\}),fee_candidates:(\[[^\]]*\]),text:'([^']*)'/,
+);
+assert.ok(ambiguousCaseMatch, "the ambiguous_multiple_equal_rank synthetic case must exist with candidate/fee_candidates/text fields");
+const toObject = (jsLiteral: string) =>
+  JSON.parse(jsLiteral.replace(/([{,])\s*([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":').replace(/'/g, '"'));
+const ambiguousTarget = toObject(ambiguousCaseMatch![1]);
+const ambiguousFeeCandidates = toObject(ambiguousCaseMatch![2]);
+const ambiguousEvidenceText = ambiguousCaseMatch![3];
+
+// The target and competing fee retained as non-selectable context must be unchanged
+// (exact amount/currency/basis/fee_year/audience), so only the Evidence text changed.
+assert.deepEqual(
+  ambiguousTarget,
+  { amount: 56800, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+  "the ambiguous_multiple_equal_rank target must remain the exact AUD 56,800 annual/2026 candidate",
+);
+assert.deepEqual(
+  ambiguousFeeCandidates,
+  [{ amount: 59000, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" }],
+  "the competing AUD 59,000 fee must be retained unchanged as non-selectable context",
+);
+
+// 17. The target's annual/2026 basis must be genuinely unsupported/conflicting in the
+// Evidence text — i.e. the shared validator's own governed-target matching would not
+// find explicit annual support for the target in this text (checked deterministically
+// via the same signals evidenceDiagnostic uses: an annual-basis phrase must not appear
+// adjacent to the target's own amount, or the target's stated year must not be the one
+// the Evidence actually supports).
+const ambiguousLower = ambiguousEvidenceText.toLowerCase();
+const targetAmountIdx = ambiguousLower.indexOf("56,800");
+assert.ok(targetAmountIdx >= 0, "the target amount must still appear in the Evidence text");
+const targetWindow = ambiguousEvidenceText.slice(Math.max(0, targetAmountIdx - 200), targetAmountIdx + 200);
+const annualBasisPhrase = /indicative\s+annual|annual\s+fee|per\s+year|per\s+annum|annual\s+tuition/i;
+assert.ok(
+  !annualBasisPhrase.test(targetWindow) || /per\s+semester/i.test(targetWindow),
+  "the target's annual basis must be unsupported or conflicting near its own amount in the Evidence",
+);
+assert.match(
+  ambiguousEvidenceText,
+  /per\s+semester/i,
+  "the Evidence must state a conflicting (non-annual) basis for the target amount",
+);
+assert.doesNotMatch(
+  ambiguousEvidenceText,
+  /56,800[^.]*\bper\s+year\b/i,
+  "the target amount must not be explicitly stated as per year anywhere in the Evidence",
+);
+
+// 18. A competing fee amount being present must never, by itself, be why the target is
+// expected null: prove that with Evidence genuinely supporting the target (annual/2026,
+// no conflict) plus the same competing fee present, the shared validator still accepts
+// the target — i.e. only the target's own unsupported/conflicting basis (not the mere
+// presence of a competing fee) determines the null outcome.
+const supportedContext = {
+  provider_current_tuition: ambiguousTarget,
+  fee_candidates: ambiguousFeeCandidates,
+  identity_match: true,
+};
+assert.equal(
+  validateProviderCurrentTuitionCandidate(ambiguousTarget, supportedContext).valid,
+  true,
+  "a competing fee_candidates entry must never invalidate an otherwise fully-supported, unchanged target",
+);
+
 console.log("CF-247 candidate-bound tuition validation contract PASS");
