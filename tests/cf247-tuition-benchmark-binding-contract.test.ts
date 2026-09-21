@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import {
   CF247_BENCHMARK_PROMPT_BUILD_ANCHOR,
   CF247_BENCHMARK_REQUEST_BODY_ANCHOR,
@@ -22,6 +23,23 @@ import { CF247_TUITION_RESPONSE_SCHEMA } from "../supabase/functions/_shared/cf2
 const validatorSource = readFileSync(new URL("../supabase/functions/_shared/cf247-tuition-validation.ts", import.meta.url), "utf8");
 const benchmarkSource = readFileSync(new URL("../supabase/functions/layer3-cf245-tuition-benchmark/index.ts", import.meta.url), "utf8");
 const interpreterSource = readFileSync(new URL("../supabase/functions/layer3-work-interpret/index.ts", import.meta.url), "utf8");
+const recorderMigration = readFileSync(new URL("../supabase/migrations/20260921171328_cf247_tuition_benchmark_record_binding_baseline.sql", import.meta.url), "utf8");
+
+// 3B2A fail-closed foundation: legacy ten-argument calls must never record a
+// fresh unbound PASS or unpause the tuition profile. Preserve the verified live
+// scorer verbatim behind the guard for the subsequent bound-recorder edit.
+const recorderStart = recorderMigration.indexOf("CREATE OR REPLACE FUNCTION public.layer3_cf245_tuition_benchmark_record_service(");
+const recorderEnd = recorderMigration.indexOf("end $function$;", recorderStart);
+assert.ok(recorderStart >= 0 && recorderEnd > recorderStart, "benchmark recorder definition must be complete SQL");
+const recorder = recorderMigration.slice(recorderStart, recorderEnd + "end $function$".length);
+const legacyGuard = "  -- Legacy ten-argument callers cannot record an unbound PASS or unpause the\n  -- profile. The subsequent bound recorder must have a distinct entrypoint.\n  raise exception 'CF-247 unbound tuition benchmark recorder disabled' using errcode='42501';\n";
+assert.equal(recorder.split(legacyGuard).length, 2, "legacy recorder must contain exactly one fail-closed guard");
+assert.ok(recorder.indexOf(legacyGuard) < recorder.indexOf("select * into p"), "unbound calls must stop before selecting or mutating a profile");
+assert.equal(createHash("md5").update(recorder.replace(legacyGuard, "") + "\n").digest("hex"), "7556ed94d82ec8fa46eb069b891e9737", "the original live scorer must remain byte-for-byte intact behind the guard");
+assert.match(recorderMigration, /add column binding_hash text;/);
+assert.match(recorderMigration, /check \(binding_hash is null or binding_hash ~ '\^\[0-9a-f\]\{64\}\$'\)/);
+assert.match(recorderMigration, /revoke all on function public\.layer3_cf245_tuition_benchmark_record_service\([\s\S]*?from public, anon, authenticated;/);
+assert.match(recorderMigration, /grant execute on function public\.layer3_cf245_tuition_benchmark_record_service\([\s\S]*?to service_role;/);
 
 const profile = {
   model_identifier: "openrouter/example-model-v1",
