@@ -198,6 +198,8 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify({
             model: profile.model_identifier,
             temperature: 0,
+            seed: 0,
+            reasoning: { effort: "none", exclude: true },
             max_tokens: Number(profile.max_output_tokens || 1200),
             response_format: { type: "json_object" },
             messages: [
