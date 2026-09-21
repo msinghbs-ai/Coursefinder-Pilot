@@ -211,7 +211,13 @@ export function extractCandidateContextInstructionSource(validatorSource: string
   if (anchorIndex < 0) {
     throw new Error("CF-247 tuition benchmark binding: candidate-context instruction anchor not found in shared validator source");
   }
-  const quoteIndex = validatorSource.indexOf('"', anchorIndex + CANDIDATE_CONTEXT_INSTRUCTION_ANCHOR.length);
+  const searchFrom = anchorIndex + CANDIDATE_CONTEXT_INSTRUCTION_ANCHOR.length;
+  let quoteIndex = -1;
+  let quoteChar = "";
+  for (let j = searchFrom; j < validatorSource.length; j++) {
+    const ch = validatorSource[j];
+    if (ch === '"' || ch === "'") { quoteIndex = j; quoteChar = ch; break; }
+  }
   if (quoteIndex < 0) {
     throw new Error("CF-247 tuition benchmark binding: no candidate-context instruction string literal found after anchor");
   }
@@ -220,7 +226,7 @@ export function extractCandidateContextInstructionSource(validatorSource: string
   for (; i < validatorSource.length; i++) {
     const ch = validatorSource[i];
     if (ch === "\\") { value += ch + (validatorSource[i + 1] ?? ""); i++; continue; }
-    if (ch === '"') return value;
+    if (ch === quoteChar) return value;
     value += ch;
   }
   throw new Error("CF-247 tuition benchmark binding: unterminated candidate-context instruction string literal");
