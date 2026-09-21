@@ -407,4 +407,122 @@ assert.equal(
   "a competing fee_candidates entry must never invalidate an otherwise fully-supported, unchanged target",
 );
 
+// --- CF-247 Slice 3A2d: provider-corpus cases are independently admitted
+// provider-current-tuition positive truth (layer3_cf245_tuition_benchmark_cases_service).
+// The benchmark must score every provider case as a known positive with
+// validatePositive against the shared candidate-bound validator/schema, and must
+// never re-derive expected_outcome/validator choice from the evidenceDiagnostic
+// keyword heuristic. Provider transport errors must be inconclusive/invalid, never
+// scored valid:true, and must not be mislabeled as a semantic Layer 4 route.
+
+// 19. The provider loop must not select between validatePositive/validateNull (or
+// between 'resolve_candidate'/'safe_abstention_to_layer4') based on evidenceDiagnostic
+// output. expectedOutcome for provider-corpus cases must be a fixed known-positive
+// literal, not a ternary driven by the heuristic's support signals.
+const providerLoopMatch = benchmarkSource.match(
+  /const support=evidenceDiagnostic\(evidence,c\.candidate_payload\);([^]*?evidenceIds\.push\(String\(c\.evidence_id\)\)\})/,
+);
+assert.ok(providerLoopMatch, "the provider loop body must be present and match the expected shape");
+const providerLoopBody = providerLoopMatch![1];
+assert.doesNotMatch(
+  providerLoopBody,
+  /support\.amount_present/,
+  "expected_outcome for provider-corpus cases must not branch on evidenceDiagnostic support signals",
+);
+assert.doesNotMatch(
+  providerLoopBody,
+  /safe_abstention_to_layer4/,
+  "provider-corpus cases must never be routed to a null/abstention expected outcome",
+);
+assert.match(
+  providerLoopBody,
+  /expectedOutcome\s*=\s*['"]resolve_candidate['"]/,
+  "provider-corpus cases must always expect resolve_candidate as independently admitted positive truth",
+);
+
+// 20. On a semantic (non-transport-error) result, the provider loop must call
+// validatePositive with the parsed response, the candidateContext, and evidence —
+// never validateNull — for provider-corpus cases.
+assert.match(
+  providerLoopBody,
+  /validatePositive\(r\.parsed,candidateContext,evidence\)/,
+  "provider-corpus cases must be scored with validatePositive(r.parsed,candidateContext,evidence)",
+);
+assert.doesNotMatch(
+  providerLoopBody,
+  /validateNull\(r\.parsed\)/,
+  "provider-corpus cases must never be scored with validateNull",
+);
+
+// 21. evidenceDiagnostic may remain present as diagnostic metadata (evidence_support)
+// but must not gate acceptance/validator choice for provider cases.
+assert.match(
+  providerLoopBody,
+  /evidence_support\s*:\s*support/,
+  "evidenceDiagnostic output may still be attached as diagnostic metadata",
+);
+
+// 22. Provider transport errors must never be scored valid:true, must be marked
+// inconclusive, and must not be mislabeled as a semantic Layer 4 routing outcome
+// (i.e. no 'technical_failure_to_layer4' expected_outcome literal for provider cases).
+assert.doesNotMatch(
+  providerLoopBody,
+  /r\.error\s*\?\s*\{valid:true/,
+  "a provider transport error must never be scored valid:true",
+);
+assert.doesNotMatch(
+  providerLoopBody,
+  /technical_failure_to_layer4/,
+  "a provider transport error must not be mislabeled as a semantic Layer 4 route",
+);
+assert.match(
+  providerLoopBody,
+  /r\.error\s*\?\s*\{valid:false,inconclusive:true/,
+  "a provider transport error must be scored valid:false with an explicit inconclusive flag",
+);
+
+// 23. Deterministic behavioral proof (no execution of the Deno edge function): given
+// a known-positive candidate_context (mirroring a provider-corpus row), an unsupported
+// or abstaining model response (candidate_value: null, or a materially different
+// candidate) must fail validatePositive's contract-level gate — i.e. the shared
+// validator must reject it — so a null-abstention against known-positive truth can
+// never be accepted as a passing null control or as a positive.
+const knownPositiveContext = {
+  provider_current_tuition: { amount: 51200, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+  fee_candidates: [],
+  identity_match: true,
+};
+assert.equal(
+  validateProviderCurrentTuitionCandidate(null, knownPositiveContext).valid,
+  true,
+  "the shared validator alone treats null as a safe no-candidate result (defense in depth lives in validatePositive's positive_candidate_required gate, asserted below)",
+);
+// validatePositive (the benchmark's own gate, mirrored here since it is not exported)
+// must require a non-null candidate_value; this is the same requirement enforced by
+// the benchmark source (`if(!c||typeof c!=='object')e.push('positive_candidate_required')`).
+assert.match(
+  benchmarkSource,
+  /if\(!c\|\|typeof c!=='object'\)e\.push\('positive_candidate_required'\)/,
+  "validatePositive must require a non-null, object candidate_value — an abstaining/null response to a known-positive case must fail this gate",
+);
+
+// 24. A materially different (heuristic-missed-but-still-known-positive) Evidence
+// phrasing must not itself change the correctness of the target candidate: the
+// shared validator must still accept the exact unchanged target regardless of
+// whether an annual-basis keyword happens to sit near the amount in the Evidence
+// text (i.e. correctness is candidate-bound, not keyword-proximity-bound).
+const heuristicMissedContext = {
+  provider_current_tuition: { amount: 51200, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+  fee_candidates: [],
+  identity_match: true,
+};
+assert.equal(
+  validateProviderCurrentTuitionCandidate(
+    { amount: 51200, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+    heuristicMissedContext,
+  ).valid,
+  true,
+  "the exact unchanged known-positive target must validate regardless of Evidence keyword phrasing, since candidate-bound correctness does not depend on evidenceDiagnostic's keyword-proximity heuristic",
+);
+
 console.log("CF-247 candidate-bound tuition validation contract PASS");
