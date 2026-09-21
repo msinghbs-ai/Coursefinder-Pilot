@@ -206,9 +206,9 @@ assert.notEqual(
   components.interpreter_request_body_source,
   "the benchmark's and interpreter's real request bodies currently differ (response_format/max_output_tokens fallback) and the binding must reflect that, not a shared mirrored literal",
 );
-assert.match(components.benchmark_request_body_source, /response_format:\{type:'json_schema'/, "benchmark_request_body_source must prove the benchmark's actual response_format is json_schema");
+assert.match(components.benchmark_request_body_source, /response_format:\s*\{\s*type:\s*["']json_schema["']/, "benchmark_request_body_source must prove the benchmark's actual response_format is json_schema");
 assert.match(components.interpreter_request_body_source, /response_format:\s*\{\s*type:\s*"json_object"\s*\}/, "interpreter_request_body_source must prove the interpreter's actual response_format is json_object");
-assert.match(components.benchmark_request_body_source, /max_output_tokens\|\|900/, "benchmark_request_body_source must prove the benchmark's actual max_output_tokens fallback is 900");
+assert.match(components.benchmark_request_body_source, /max_output_tokens\s*\|\|\s*900/, "benchmark_request_body_source must prove the benchmark's actual max_output_tokens fallback is 900");
 assert.match(components.interpreter_request_body_source, /max_output_tokens \|\| 1200/, "interpreter_request_body_source must prove the interpreter's actual max_output_tokens fallback is 1200");
 
 // A caller supplying a different-but-still-source-derived request body (e.g. if
@@ -237,7 +237,7 @@ assert.notEqual(
 // Changing an unrelated part of either caller's source (outside the request
 // body) must NOT change the fingerprint's request-body component — proving
 // the extraction is bound to the actual request body, not the whole file.
-const unrelatedBenchmarkEdit = benchmarkSource.replace("const FN='layer3-cf245-tuition-benchmark'", "const FN='layer3-cf245-tuition-benchmark-renamed'");
+const unrelatedBenchmarkEdit = benchmarkSource.replace('const FN = "layer3-cf245-tuition-benchmark"', 'const FN = "layer3-cf245-tuition-benchmark-renamed"');
 assert.notEqual(unrelatedBenchmarkEdit, benchmarkSource, "test fixture sanity: the unrelated benchmark edit must actually change the source");
 assert.equal(
   extractJsonRequestBodySource(unrelatedBenchmarkEdit, CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
