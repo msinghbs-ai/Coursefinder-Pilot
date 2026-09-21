@@ -83,7 +83,7 @@ Deno.serve(async (req: Request) => {
       response = await fetch(`${String(profile.base_url).replace(/\/$/, "")}/chat/completions`, {
         method: "POST", signal: controller.signal,
         headers: { Authorization: `Bearer ${providerKey}`, "Content-Type": "application/json", "HTTP-Referer": "https://coursefinder.app", "X-Title": "CourseFinder CF-247 Layer 3 Tuition Validation" },
-        body: JSON.stringify({ model: profile.model_identifier, temperature: 0, max_tokens: Number(profile.max_output_tokens || 1200), response_format: { type: "json_object" }, messages: [{ role: "system", content: profile.prompt_system }, { role: "user", content: prompt }] }),
+        body: JSON.stringify({ model: profile.model_identifier, temperature: 0, seed: 0, reasoning: { effort: "none", exclude: true }, max_tokens: Number(profile.max_output_tokens || 1200), response_format: { type: "json_object" }, messages: [{ role: "system", content: profile.prompt_system }, { role: "user", content: prompt }] }),
       });
     } finally { clearTimeout(timeout); }
     const payload: any = await response.json().catch(() => ({}));
