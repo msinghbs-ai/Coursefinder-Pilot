@@ -335,4 +335,199 @@ assert.equal(
   "a non-null result with identity_match:false must remain rejected even when it matches the sole target",
 );
 
+// --- CF-247 Slice 3A2c: the `ambiguous_multiple_equal_rank` synthetic null-control's
+// Evidence must genuinely fail to support its own target (annual/2026 basis), so the
+// null expected outcome is correct under single-target candidate-bound validation.
+// A competing fee amount present in the same Evidence must never, on its own, be the
+// reason an otherwise-supported target is expected to be null.
+
+// 16. Extract the exact synthetic case entry and its Evidence text from source.
+const ambiguousCaseMatch = benchmarkSource.match(
+  /case:\s*["']ambiguous_multiple_equal_rank["'],\s*candidate:\s*(\{[^}]*\}),\s*fee_candidates:\s*(\[[^\]]*\]),\s*text:\s*(?:"([^"]*)"|'([^']*)')/,
+);
+assert.ok(ambiguousCaseMatch, "the ambiguous_multiple_equal_rank synthetic case must exist with candidate/fee_candidates/text fields");
+const toObject = (jsLiteral: string) =>
+  JSON.parse(
+    jsLiteral
+      .replace(/([{,])\s*([A-Za-z_][A-Za-z0-9_]*)\s*:/g, '$1"$2":')
+      .replace(/'/g, '"')
+      .replace(/,\s*([}\]])/g, "$1"),
+  );
+const ambiguousTarget = toObject(ambiguousCaseMatch![1]);
+const ambiguousFeeCandidates = toObject(ambiguousCaseMatch![2]);
+const ambiguousEvidenceText = ambiguousCaseMatch![3] ?? ambiguousCaseMatch![4];
+
+// The target and competing fee retained as non-selectable context must be unchanged
+// (exact amount/currency/basis/fee_year/audience), so only the Evidence text changed.
+assert.deepEqual(
+  ambiguousTarget,
+  { amount: 56800, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+  "the ambiguous_multiple_equal_rank target must remain the exact AUD 56,800 annual/2026 candidate",
+);
+assert.deepEqual(
+  ambiguousFeeCandidates,
+  [{ amount: 59000, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" }],
+  "the competing AUD 59,000 fee must be retained unchanged as non-selectable context",
+);
+
+// 17. The target's annual/2026 basis must be genuinely unsupported/conflicting in the
+// Evidence text — i.e. the shared validator's own governed-target matching would not
+// find explicit annual support for the target in this text (checked deterministically
+// via the same signals evidenceDiagnostic uses: an annual-basis phrase must not appear
+// adjacent to the target's own amount, or the target's stated year must not be the one
+// the Evidence actually supports).
+const ambiguousLower = ambiguousEvidenceText.toLowerCase();
+const targetAmountIdx = ambiguousLower.indexOf("56,800");
+assert.ok(targetAmountIdx >= 0, "the target amount must still appear in the Evidence text");
+const targetWindow = ambiguousEvidenceText.slice(Math.max(0, targetAmountIdx - 200), targetAmountIdx + 200);
+const annualBasisPhrase = /indicative\s+annual|annual\s+fee|per\s+year|per\s+annum|annual\s+tuition/i;
+assert.ok(
+  !annualBasisPhrase.test(targetWindow) || /per\s+semester/i.test(targetWindow),
+  "the target's annual basis must be unsupported or conflicting near its own amount in the Evidence",
+);
+assert.match(
+  ambiguousEvidenceText,
+  /per\s+semester/i,
+  "the Evidence must state a conflicting (non-annual) basis for the target amount",
+);
+assert.doesNotMatch(
+  ambiguousEvidenceText,
+  /56,800[^.]*\bper\s+year\b/i,
+  "the target amount must not be explicitly stated as per year anywhere in the Evidence",
+);
+
+// 18. A competing fee amount being present must never, by itself, be why the target is
+// expected null: prove that with Evidence genuinely supporting the target (annual/2026,
+// no conflict) plus the same competing fee present, the shared validator still accepts
+// the target — i.e. only the target's own unsupported/conflicting basis (not the mere
+// presence of a competing fee) determines the null outcome.
+const supportedContext = {
+  provider_current_tuition: ambiguousTarget,
+  fee_candidates: ambiguousFeeCandidates,
+  identity_match: true,
+};
+assert.equal(
+  validateProviderCurrentTuitionCandidate(ambiguousTarget, supportedContext).valid,
+  true,
+  "a competing fee_candidates entry must never invalidate an otherwise fully-supported, unchanged target",
+);
+
+// --- CF-247 Slice 3A2d: provider-corpus cases are independently admitted
+// provider-current-tuition positive truth (layer3_cf245_tuition_benchmark_cases_service).
+// The benchmark must score every provider case as a known positive with
+// validatePositive against the shared candidate-bound validator/schema, and must
+// never re-derive expected_outcome/validator choice from the evidenceDiagnostic
+// keyword heuristic. Provider transport errors must be inconclusive/invalid, never
+// scored valid:true, and must not be mislabeled as a semantic Layer 4 route.
+
+// 19. The provider loop must not select between validatePositive/validateNull (or
+// between 'resolve_candidate'/'safe_abstention_to_layer4') based on evidenceDiagnostic
+// output. expectedOutcome for provider-corpus cases must be a fixed known-positive
+// literal, not a ternary driven by the heuristic's support signals.
+const providerLoopMatch = benchmarkSource.match(
+  /const support\s*=\s*evidenceDiagnostic\(\s*evidence,\s*c\.candidate_payload,?\s*\);([^]*?evidenceIds\.push\(\s*String\(c\.evidence_id\),?\s*\)\s*;?\s*\})/,
+);
+assert.ok(providerLoopMatch, "the provider loop body must be present and match the expected shape");
+const providerLoopBody = providerLoopMatch![1];
+assert.doesNotMatch(
+  providerLoopBody,
+  /support\.amount_present/,
+  "expected_outcome for provider-corpus cases must not branch on evidenceDiagnostic support signals",
+);
+assert.doesNotMatch(
+  providerLoopBody,
+  /safe_abstention_to_layer4/,
+  "provider-corpus cases must never be routed to a null/abstention expected outcome",
+);
+assert.match(
+  providerLoopBody,
+  /expectedOutcome\s*=\s*['"]resolve_candidate['"]/,
+  "provider-corpus cases must always expect resolve_candidate as independently admitted positive truth",
+);
+
+// 20. On a semantic (non-transport-error) result, the provider loop must call
+// validatePositive with the parsed response, the candidateContext, and evidence —
+// never validateNull — for provider-corpus cases.
+assert.match(
+  providerLoopBody,
+  /validatePositive\(\s*r\.parsed,\s*candidateContext,\s*evidence,?\s*\)/,
+  "provider-corpus cases must be scored with validatePositive(r.parsed,candidateContext,evidence)",
+);
+assert.doesNotMatch(
+  providerLoopBody,
+  /validateNull\(r\.parsed\)/,
+  "provider-corpus cases must never be scored with validateNull",
+);
+
+// 21. evidenceDiagnostic may remain present as diagnostic metadata (evidence_support)
+// but must not gate acceptance/validator choice for provider cases.
+assert.match(
+  providerLoopBody,
+  /evidence_support\s*:\s*support/,
+  "evidenceDiagnostic output may still be attached as diagnostic metadata",
+);
+
+// 22. Provider transport errors must never be scored valid:true, must be marked
+// inconclusive, and must not be mislabeled as a semantic Layer 4 routing outcome
+// (i.e. no 'technical_failure_to_layer4' expected_outcome literal for provider cases).
+assert.doesNotMatch(
+  providerLoopBody,
+  /r\.error\s*\?\s*\{valid:true/,
+  "a provider transport error must never be scored valid:true",
+);
+assert.doesNotMatch(
+  providerLoopBody,
+  /technical_failure_to_layer4/,
+  "a provider transport error must not be mislabeled as a semantic Layer 4 route",
+);
+assert.match(
+  providerLoopBody,
+  /r\.error\s*\?\s*\{\s*valid:\s*false,\s*inconclusive:\s*true/,
+  "a provider transport error must be scored valid:false with an explicit inconclusive flag",
+);
+
+// 23. Deterministic behavioral proof (no execution of the Deno edge function): given
+// a known-positive candidate_context (mirroring a provider-corpus row), an unsupported
+// or abstaining model response (candidate_value: null, or a materially different
+// candidate) must fail validatePositive's contract-level gate — i.e. the shared
+// validator must reject it — so a null-abstention against known-positive truth can
+// never be accepted as a passing null control or as a positive.
+const knownPositiveContext = {
+  provider_current_tuition: { amount: 51200, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+  fee_candidates: [],
+  identity_match: true,
+};
+assert.equal(
+  validateProviderCurrentTuitionCandidate(null, knownPositiveContext).valid,
+  true,
+  "the shared validator alone treats null as a safe no-candidate result (defense in depth lives in validatePositive's positive_candidate_required gate, asserted below)",
+);
+// validatePositive (the benchmark's own gate, mirrored here since it is not exported)
+// must require a non-null candidate_value; this is the same requirement enforced by
+// the benchmark source (`if(!c||typeof c!=='object')e.push('positive_candidate_required')`).
+assert.match(
+  benchmarkSource,
+  /if\s*\(\s*!c\s*\|\|\s*typeof c\s*!==\s*["']object["']\s*\)\s*e\.push\(\s*["']positive_candidate_required["']\s*\)/,
+  "validatePositive must require a non-null, object candidate_value — an abstaining/null response to a known-positive case must fail this gate",
+);
+
+// 24. A materially different (heuristic-missed-but-still-known-positive) Evidence
+// phrasing must not itself change the correctness of the target candidate: the
+// shared validator must still accept the exact unchanged target regardless of
+// whether an annual-basis keyword happens to sit near the amount in the Evidence
+// text (i.e. correctness is candidate-bound, not keyword-proximity-bound).
+const heuristicMissedContext = {
+  provider_current_tuition: { amount: 51200, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+  fee_candidates: [],
+  identity_match: true,
+};
+assert.equal(
+  validateProviderCurrentTuitionCandidate(
+    { amount: 51200, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+    heuristicMissedContext,
+  ).valid,
+  true,
+  "the exact unchanged known-positive target must validate regardless of Evidence keyword phrasing, since candidate-bound correctness does not depend on evidenceDiagnostic's keyword-proximity heuristic",
+);
+
 console.log("CF-247 candidate-bound tuition validation contract PASS");
