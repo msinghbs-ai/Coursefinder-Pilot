@@ -31,10 +31,13 @@ Deno.serve(async (req: Request) => {
     }
     const boundedLimit = Math.min(limit, dispatchHeadroom);
     const budgetMs = 240000; const startedAt = Date.now();
+    const interpreterTimeoutMs = 110000;
+    const dbTransitionSafetyMarginMs = 5000;
+    const requiredRemainingMs = interpreterTimeoutMs + dbTransitionSafetyMarginMs;
     const items: unknown[] = [];
     const results: unknown[] = [];
     for (let reservedCount = 0; reservedCount < boundedLimit; reservedCount++) {
-      if (Date.now() - startedAt > budgetMs) break;
+      if (budgetMs - (Date.now() - startedAt) < requiredRemainingMs) break;
       const { data: reserved, error } = await svc.rpc("layer3_reserve_work_service", { p_worker: worker, p_limit: 1 });
       if (error) throw new Error(`work reservation failed: ${error.message}`);
       const batch = Array.isArray(reserved) ? reserved : [];
@@ -45,7 +48,7 @@ Deno.serve(async (req: Request) => {
       if (!workItemId) continue;
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 110000);
+        const timeout = setTimeout(() => controller.abort(), interpreterTimeoutMs);
         let response: Response;
         try {
           response = await fetch(`${url}/functions/v1/layer3-work-interpret`, {
