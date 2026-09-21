@@ -197,9 +197,19 @@ const benchmarkSourcePath = fileURLToPath(
   new URL("../supabase/functions/layer3-cf245-tuition-benchmark/index.ts", import.meta.url),
 );
 const benchmarkSource = readFileSync(benchmarkSourcePath, "utf8");
-assert.match(
-  benchmarkSource,
-  /import\s*\{\s*CF247_TUITION_RESPONSE_SCHEMA\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-validation\.ts["']/,
+const benchmarkImportMatch = benchmarkSource.match(
+  /import\s*\{([^}]*)\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-validation\.ts["']/,
+);
+assert.ok(
+  benchmarkImportMatch,
+  "benchmark must import from the shared validation module",
+);
+const benchmarkImportedNames = (benchmarkImportMatch?.[1] ?? "")
+  .split(",")
+  .map((name) => name.trim())
+  .filter(Boolean);
+assert.ok(
+  benchmarkImportedNames.includes("CF247_TUITION_RESPONSE_SCHEMA"),
   "benchmark must import CF247_TUITION_RESPONSE_SCHEMA from the shared validation module",
 );
 assert.match(
@@ -211,6 +221,118 @@ assert.doesNotMatch(
   benchmarkSource,
   /\bconst\s+schema\s*=/,
   "benchmark must not keep a duplicated local schema definition",
+);
+
+// --- CF-247 Slice 3A2b: benchmark must delegate positive acceptance authority to the
+// shared validateProviderCurrentTuitionCandidate validator, build an explicit immutable
+// candidate_context (sole target provider_current_tuition + identity_match:true) for
+// every provider and synthetic call(), and pass that same context to the model via
+// tuitionValidationPromptContext. No local sameCandidate acceptance authority may remain.
+
+// 9. The benchmark must import both validateProviderCurrentTuitionCandidate and
+// tuitionValidationPromptContext from the shared module (same import statement as the
+// schema, or otherwise — only presence in the module-scoped import list is asserted).
+assert.ok(
+  benchmarkImportedNames.includes("validateProviderCurrentTuitionCandidate"),
+  "benchmark must import validateProviderCurrentTuitionCandidate from the shared validation module",
+);
+assert.ok(
+  benchmarkImportedNames.includes("tuitionValidationPromptContext"),
+  "benchmark must import tuitionValidationPromptContext from the shared validation module",
+);
+
+// 10. No local sameCandidate acceptance authority may remain — positive acceptance is
+// delegated entirely to the shared validator.
+assert.doesNotMatch(
+  benchmarkSource,
+  /\bfunction\s+sameCandidate\b/,
+  "benchmark must not retain a local sameCandidate function",
+);
+assert.doesNotMatch(
+  benchmarkSource,
+  /\bsameCandidate\s*\(/,
+  "benchmark must not call a local sameCandidate anywhere",
+);
+
+// 11. validatePositive must invoke the shared validator to decide acceptance.
+assert.match(
+  benchmarkSource,
+  /validateProviderCurrentTuitionCandidate\s*\(/,
+  "benchmark must invoke the shared validateProviderCurrentTuitionCandidate validator",
+);
+
+// 12. The model prompt must be built via the shared tuitionValidationPromptContext,
+// not a raw JSON.stringify of the bare candidate.
+assert.match(
+  benchmarkSource,
+  /tuitionValidationPromptContext\s*\(/,
+  "benchmark must build the model prompt context via the shared tuitionValidationPromptContext",
+);
+
+// 13. Every provider and synthetic call() site must construct an explicit
+// candidate_context whose sole positive target is provider_current_tuition, with
+// identity_match:true, and any other fee only ever placed in fee_candidates.
+const candidateContextSites = [
+  ...benchmarkSource.matchAll(/candidateContext\s*=\s*Object\.freeze\(\{([^}]*)\}\)/g),
+];
+assert.equal(
+  candidateContextSites.length,
+  2,
+  "exactly one provider-loop and one synthetic-loop candidate_context construction site is expected",
+);
+for (const [, body] of candidateContextSites) {
+  assert.match(
+    body,
+    /provider_current_tuition\s*:/,
+    "each candidate_context must set provider_current_tuition as the sole positive target",
+  );
+  assert.match(
+    body,
+    /fee_candidates\s*:/,
+    "each candidate_context must carry fee_candidates as non-selectable context only",
+  );
+  assert.match(
+    body,
+    /identity_match\s*:\s*true\b/,
+    "each candidate_context must assert identity_match:true",
+  );
+}
+
+// 14. Both call() sites (provider loop and synthetic loop) must pass the same
+// constructed candidateContext through as an explicit argument.
+assert.match(
+  benchmarkSource,
+  /call\(profile,key,`governed-\$\{c\.provider_cricos\}-\$\{c\.course_cricos\}`,evidence,c\.candidate_payload,candidateContext\)/,
+  "the provider-loop call() must be invoked with the explicit candidateContext",
+);
+assert.match(
+  benchmarkSource,
+  /call\(profile,key,c\.case,c\.text,c\.candidate,candidateContext\)/,
+  "the synthetic-loop call() must be invoked with the explicit candidateContext",
+);
+
+// 15. Wrong-target and identity-false non-null results remain rejected by the shared
+// validator even though the benchmark no longer holds any local acceptance authority.
+const wrongTargetContext = {
+  provider_current_tuition: { amount: 48160, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+  fee_candidates: [{ amount: 59000, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" }],
+  identity_match: true,
+};
+assert.equal(
+  validateProviderCurrentTuitionCandidate(
+    { amount: 59000, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+    wrongTargetContext,
+  ).valid,
+  false,
+  "a candidate matching only a competing fee_candidates entry (wrong target) must remain rejected",
+);
+assert.equal(
+  validateProviderCurrentTuitionCandidate(
+    { amount: 48160, currency_code: "AUD", basis: "annual", fee_year: 2026, audience: "international" },
+    { ...wrongTargetContext, identity_match: false },
+  ).valid,
+  false,
+  "a non-null result with identity_match:false must remain rejected even when it matches the sole target",
 );
 
 console.log("CF-247 candidate-bound tuition validation contract PASS");
