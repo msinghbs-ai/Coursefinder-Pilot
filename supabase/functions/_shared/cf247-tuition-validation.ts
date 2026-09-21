@@ -13,6 +13,47 @@
 // candidate_context.identity_match === true, and both the target and the returned
 // candidate must carry an explicit audience of "international".
 
+// CF-247 Slice 3A1: stable, explicit string identifiers for the shared candidate
+// validator contract and the shared strict model response JSON schema below.
+// These identifiers are exported so callers (e.g. the benchmark) can assert they
+// are calling/consuming the same shared contract, without re-deriving equality or
+// schema authority of their own.
+export const CF247_TUITION_CANDIDATE_VALIDATOR_CONTRACT_ID = "cf247-tuition-candidate-validator-v1";
+export const CF247_TUITION_RESPONSE_SCHEMA_CONTRACT_ID = "cf247-tuition-response-schema-v1";
+
+// CF-247 Slice 3A1: the strict model response JSON schema, previously duplicated
+// inline by the benchmark. Semantics are unchanged: object, additionalProperties
+// false, required candidate_value/confidence/rationale/evidence_quotes;
+// candidate_value is null or the exact five-field tuition object; confidence is a
+// 0..1 number; rationale is a string; evidence_quotes is a string array.
+export const CF247_TUITION_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["candidate_value", "confidence", "rationale", "evidence_quotes"],
+  properties: {
+    candidate_value: {
+      anyOf: [
+        { type: "null" },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["amount", "currency_code", "basis", "fee_year", "audience"],
+          properties: {
+            amount: { type: "number" },
+            currency_code: { type: "string" },
+            basis: { type: "string" },
+            fee_year: { anyOf: [{ type: "integer" }, { type: "null" }] },
+            audience: { type: "string" },
+          },
+        },
+      ],
+    },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    rationale: { type: "string" },
+    evidence_quotes: { type: "array", items: { type: "string" } },
+  },
+} as const;
+
 export type TuitionCandidate = {
   amount: number;
   currency?: string;

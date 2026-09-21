@@ -1,5 +1,12 @@
 import { strict as assert } from "node:assert";
-import { governedTuitionCandidates, tuitionValidationPromptContext, validateProviderCurrentTuitionCandidate } from "../supabase/functions/_shared/cf247-tuition-validation.ts";
+import {
+  CF247_TUITION_CANDIDATE_VALIDATOR_CONTRACT_ID,
+  CF247_TUITION_RESPONSE_SCHEMA,
+  CF247_TUITION_RESPONSE_SCHEMA_CONTRACT_ID,
+  governedTuitionCandidates,
+  tuitionValidationPromptContext,
+  validateProviderCurrentTuitionCandidate,
+} from "../supabase/functions/_shared/cf247-tuition-validation.ts";
 
 const exactContext = {
   provider_current_tuition: { amount: 48160, currency: "AUD", basis: "indicative_annual", year: 2026, audience: "international" },
@@ -123,5 +130,61 @@ assert.equal(
 assert.equal(validateProviderCurrentTuitionCandidate(null, undefined).valid, true, "null abstention is valid with no context at all");
 assert.equal(validateProviderCurrentTuitionCandidate(null, targetAudienceMissing).valid, true, "null abstention is valid when the target audience is missing");
 assert.equal(validateProviderCurrentTuitionCandidate(null, targetAudienceBlank).valid, true, "null abstention is valid when the target audience is blank");
+
+// --- CF-247 Slice 3A1: shared contract export regressions ---
+
+// 7. The exported identifiers are nonblank, stable expected literals — callers must
+// be able to assert they are using the same shared contract by exact value.
+assert.equal(
+  CF247_TUITION_CANDIDATE_VALIDATOR_CONTRACT_ID,
+  "cf247-tuition-candidate-validator-v1",
+  "candidate validator contract identifier must be the stable expected literal",
+);
+assert.equal(
+  CF247_TUITION_RESPONSE_SCHEMA_CONTRACT_ID,
+  "cf247-tuition-response-schema-v1",
+  "response schema contract identifier must be the stable expected literal",
+);
+assert.ok(CF247_TUITION_CANDIDATE_VALIDATOR_CONTRACT_ID.trim().length > 0, "candidate validator contract identifier must be nonblank");
+assert.ok(CF247_TUITION_RESPONSE_SCHEMA_CONTRACT_ID.trim().length > 0, "response schema contract identifier must be nonblank");
+
+// 8. The exported response schema is strict: object, additionalProperties false,
+// exactly the four required top-level fields, and candidate_value is null or the
+// exact five-field tuition object (also additionalProperties false).
+assert.equal(CF247_TUITION_RESPONSE_SCHEMA.type, "object", "response schema root must be an object");
+assert.equal(CF247_TUITION_RESPONSE_SCHEMA.additionalProperties, false, "response schema must be strict (additionalProperties false)");
+assert.deepEqual(
+  [...CF247_TUITION_RESPONSE_SCHEMA.required].sort(),
+  ["candidate_value", "confidence", "evidence_quotes", "rationale"].sort(),
+  "response schema must require exactly candidate_value/confidence/rationale/evidence_quotes",
+);
+
+const candidateValueSchema = CF247_TUITION_RESPONSE_SCHEMA.properties.candidate_value;
+assert.equal(candidateValueSchema.anyOf.length, 2, "candidate_value must accept exactly null or the tuition object shape");
+assert.deepEqual(candidateValueSchema.anyOf[0], { type: "null" }, "candidate_value must allow null");
+const candidateObjectSchema = candidateValueSchema.anyOf[1];
+assert.equal(candidateObjectSchema.type, "object", "candidate_value object branch must be an object");
+assert.equal(candidateObjectSchema.additionalProperties, false, "candidate_value object branch must be strict (additionalProperties false)");
+assert.deepEqual(
+  [...candidateObjectSchema.required].sort(),
+  ["amount", "audience", "basis", "currency_code", "fee_year"].sort(),
+  "candidate_value object branch must require exactly the five governed tuition fields",
+);
+assert.deepEqual(
+  Object.keys(candidateObjectSchema.properties).sort(),
+  ["amount", "audience", "basis", "currency_code", "fee_year"].sort(),
+  "candidate_value object branch must expose exactly the five governed tuition fields",
+);
+
+const confidenceSchema = CF247_TUITION_RESPONSE_SCHEMA.properties.confidence;
+assert.equal(confidenceSchema.type, "number", "confidence must be a number");
+assert.equal(confidenceSchema.minimum, 0, "confidence must be bounded at minimum 0");
+assert.equal(confidenceSchema.maximum, 1, "confidence must be bounded at maximum 1");
+
+assert.equal(CF247_TUITION_RESPONSE_SCHEMA.properties.rationale.type, "string", "rationale must be a string");
+
+const evidenceQuotesSchema = CF247_TUITION_RESPONSE_SCHEMA.properties.evidence_quotes;
+assert.equal(evidenceQuotesSchema.type, "array", "evidence_quotes must be an array");
+assert.equal(evidenceQuotesSchema.items.type, "string", "evidence_quotes items must be strings");
 
 console.log("CF-247 candidate-bound tuition validation contract PASS");
