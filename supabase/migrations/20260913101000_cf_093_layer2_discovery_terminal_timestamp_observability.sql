@@ -1,6 +1,6 @@
 -- CF-CHG-20260910-093
 -- Runtime observability correction: Layer 2 discovery terminal rows must carry a real completion timestamp.
--- Forward-only. Does not alter discovery routing, retry policy, Evidence, acceptance, Search or Publication behaviour.
+-- Forward-only. Stamps a timestamp only; no other pipeline behaviour is touched by this trigger.
 
 begin;
 
