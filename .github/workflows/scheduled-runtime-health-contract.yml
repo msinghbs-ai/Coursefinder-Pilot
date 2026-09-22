@@ -1,0 +1,53 @@
+name: Scheduled Tasks Runtime Health Contract
+
+# CF-247 Track G. These three specs previously existed in the repo but were
+# not wired into any CI workflow, which is how a stale test assertion
+# (referencing a function that had already been renamed/removed) went
+# undetected despite the PR's own checks showing green. This workflow
+# closes that gap.
+
+on:
+  pull_request:
+    paths:
+      - 'src/ScheduledJobsWorkspace.jsx'
+      - 'src/ScheduledRuntimeHealth.jsx'
+      - 'supabase/migrations/20260913101000_cf_093_layer2_discovery_terminal_timestamp_observability.sql'
+      - 'supabase/migrations/20260913102500_cf_093_scheduled_runtime_metrics_read.sql'
+      - 'supabase/migrations/20260914210000_cf_093_admin_dispatcher_tuning_metrics.sql'
+      - 'tests/uat/cf-093-scheduled-runtime-health-contract.spec.mjs'
+      - 'tests/uat/m245-layer2-discovery-terminal-timestamp-contract.spec.mjs'
+      - 'tests/uat/m245-scheduled-runtime-metrics-read-contract.spec.mjs'
+      - '.github/workflows/scheduled-runtime-health-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/ScheduledJobsWorkspace.jsx'
+      - 'src/ScheduledRuntimeHealth.jsx'
+      - 'supabase/migrations/20260913101000_cf_093_layer2_discovery_terminal_timestamp_observability.sql'
+      - 'supabase/migrations/20260913102500_cf_093_scheduled_runtime_metrics_read.sql'
+      - 'supabase/migrations/20260914210000_cf_093_admin_dispatcher_tuning_metrics.sql'
+      - 'tests/uat/cf-093-scheduled-runtime-health-contract.spec.mjs'
+      - 'tests/uat/m245-layer2-discovery-terminal-timestamp-contract.spec.mjs'
+      - 'tests/uat/m245-scheduled-runtime-metrics-read-contract.spec.mjs'
+      - '.github/workflows/scheduled-runtime-health-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  scheduled-runtime-health-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Verify Scheduled Tasks runtime observability contracts
+        run: >-
+          npx playwright test
+          tests/uat/cf-093-scheduled-runtime-health-contract.spec.mjs
+          tests/uat/m245-layer2-discovery-terminal-timestamp-contract.spec.mjs
+          tests/uat/m245-scheduled-runtime-metrics-read-contract.spec.mjs
+          --project=chromium-desktop
