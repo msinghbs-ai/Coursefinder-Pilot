@@ -10,5 +10,9 @@ test('Layer 2 discovery terminal timestamp guard is narrow and observability-onl
   expect(sql).toContain('new.completed_at is null')
   expect(sql).toContain('new.completed_at:=clock_timestamp()')
   expect(sql).toContain('before insert or update of status,completed_at on pipeline.jobs')
-  expect(sql).not.toMatch(/layer2_provider|layer2_evidence|search_|publication|retry_max|concurrency|batch_size/i)
+  // Note: 'search_' alone is deliberately excluded from this guard — the
+  // required `set search_path to ...` clause on every SECURITY DEFINER
+  // function in this codebase would false-positive against it. 'publication'
+  // alone still catches genuine Search/Publication-domain identifiers.
+  expect(sql).not.toMatch(/layer2_provider|layer2_evidence|publication|retry_max|concurrency|batch_size/i)
 })
