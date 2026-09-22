@@ -1,0 +1,22 @@
+.tai-panel{border:1px solid var(--border,#dfe4ea);border-radius:14px;padding:16px;background:var(--surface,#fff);display:grid;gap:14px}
+.tai-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.tai-head h3{margin:2px 0 3px;font-size:18px}
+.tai-head p,.tai-head small{margin:0;color:#667085}
+.tai-head button{display:inline-flex;align-items:center;gap:6px}
+.tai-error{padding:9px 10px;border-radius:9px;background:#fef3f2;color:#b42318;font-size:12px}
+.tai-empty{padding:9px 10px;border-radius:9px;background:#f8fafc;color:#667085;font-size:12px}
+.tai-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.tai-card{border:1px solid #e7eaf0 ￼;border-radius:12px;padding:12px;display:grid;gap:8px;background:#fff}
+.tai-card.tai-pass{border-color:#12b76a;background:#f6fef9}
+.tai-card.tai-disabled{opacity:.55}
+.tai-card header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.tai-model{font-size:13px;font-weight:600;color:#101828;word-break:break-word}
+.tai-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tai-badge-pass{background:#ecfdf3;color:#027a48}
+.tai-badge-fail{background:#f2f4f7;color:#475467}
+.tai-summary{margin:0;font-size:12px;color:#475467;line-height:1.4}
+.tai-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.tai-stats span{border:1px solid #e7eaf0 ￼;border-radius:8px;padding:6px 7px;font-size:10px;color:#667085;text-align:center}
+.tai-stats b{display:block;font-size:13px;color:#101828}
+.tai-flags{display:flex;align-items:center;gap:6px;font-size:11px;color:#475467}
+@media(max-width:900px){.tai-grid{grid-template-columns:1fr}}
