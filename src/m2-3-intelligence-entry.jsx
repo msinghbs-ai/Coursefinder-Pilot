@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{createRoot}from'react-dom/client'
-import{BrainCircuit,CalendarClock,Check,ExternalLink,FileCheck2,Link2,RefreshCw,Route,ShieldCheck,X}from'lucide-react'
+import{BrainCircuit,CalendarClock,Check,ExternalLink,FileCheck2,KeyRound,Link2,RefreshCw,Route,ShieldCheck,X}from'lucide-react'
 import{supabase,api}from'./lib/supabase'
 import ScheduledJobsWorkspace from'./ScheduledJobsWorkspace'
 import'./m2-3-intelligence.css'
@@ -125,5 +125,29 @@ function Head({icon:Icon,title,action}){return <div className="m23-head"><div><I
 function State({value}){return <span className={`m23-state s-${String(value||'').replaceAll('_','-').toLowerCase()}`}>{human(value||'unknown')}</span>}
 function Empty({text}){return <div className="m23-empty">{text}</div>}
 function Table({headers,rows}){return <div className="m23-table"><div className="m23-tr head">{headers.map(h=><strong key={h}>{h}</strong>)}</div>{rows.length?rows.map((r,i)=><div className="m23-tr" key={i}>{r.map((v,j)=><span key={j}>{v??'—'}</span>)}</div>):<Empty text="No records."/>}</div>}
+
+// CF-247 Track G (Phase 3 audit): this was previously its own standalone
+// Vite entry (layer3-provider-credential-entry.jsx) with its own
+// createRoot bootstrap and its own independent session/rank fetch — but
+// no HTML file ever referenced it, so it was never actually reachable
+// despite being complete, working functionality against the real, live
+// layer3-provider-control edge function. Converted into a regular
+// component, rank-gated by the caller (mature-main.jsx already has rank
+// from its own session context) rather than re-fetching it here.
+export function ProviderCredential(){
+  const[open,setOpen]=useState(false)
+  return <><button className="l3cred-launcher" onClick={()=>setOpen(true)} aria-label="Configure OpenRouter API key"><KeyRound size={15}/>OpenRouter API Key</button>{open&&<ProviderCredentialPanel onClose={()=>setOpen(false)}/>}<ProviderCredentialStyle/></>
+}
+function ProviderCredentialPanel({onClose}){
+  const[profiles,setProfiles]=useState([]),[profileId,setProfileId]=useState(''),[credential,setCredential]=useState(''),[reason,setReason]=useState('Configure OpenRouter credential for M2.3 benchmark'),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[error,setError]=useState('')
+  const load=async()=>{setBusy(true);setError('');try{const{data,error}=await supabase.rpc('layer3_model_profiles_admin');if(error)throw error;const p=Array.isArray(data)?data:[];setProfiles(p);setProfileId(x=>x||p?.[0]?.id||'')}catch(e){setError(e.message)}finally{setBusy(false)}}
+  useEffect(()=>{load()},[])
+  const selected=profiles.find(p=>p.id===profileId)
+  const call=async(action,body={})=>{const{data,error}=await supabase.functions.invoke('layer3-provider-control',{body:{action,profile_id:profileId,...body}});if(error)throw error;if(data?.error)throw new Error(data.error);return data}
+  const save=async()=>{if(!credential||!reason)return;setBusy(true);setError('');setMsg('');try{await call('set_credential',{credential,reason});setCredential('');setMsg('Credential stored in Supabase Vault. Profile remains paused until benchmark PASS.');await load()}catch(e){setError(e.message)}finally{setBusy(false)}}
+  const verify=async()=>{setBusy(true);setError('');setMsg('');try{const d=await call('verify_credential');setMsg(d?.message||'Credential verification completed.');await load()}catch(e){setError(e.message)}finally{setBusy(false)}}
+  return <div className="l3cred-shell" role="dialog" aria-modal="true" aria-label="Layer 3 provider credential"><div className="l3cred-card"><header><div><small>M2.3 · server-side provider credential</small><h2>OpenRouter API Key</h2><p>Configure OpenRouter without exposing the API key to browser reads, logs or local storage.</p></div><button onClick={onClose}><X size={18}/></button></header>{error&&<div className="l3cred-error">{error}</div>}{msg&&<div className="l3cred-ok">{msg}</div>}<label>Provider / profile<select value={profileId} onChange={e=>setProfileId(e.target.value)}>{profiles.map(p=><option key={p.id} value={p.id}>{human(p.aggregator_provider)} · {p.code} · {p.model_identifier}</option>)}</select></label>{selected&&<div className="l3cred-status"><ShieldCheck size={16}/><div><strong>{selected.credential_configured?'Credential configured':'Credential not configured'}</strong><span>State: {human(selected.last_validation_result?.state||'not validated')} · Profile {selected.paused?'PAUSED':'ACTIVE'}</span><small>Key value is write-only. Saving or verifying never unpauses the profile.</small></div></div>}<label>API key<input type="password" autoComplete="new-password" spellCheck="false" value={credential} onChange={e=>setCredential(e.target.value)} placeholder="sk-or-v1-…"/></label><label>Change reason<input value={reason} onChange={e=>setReason(e.target.value)}/></label><div className="l3cred-actions"><button className="primary" disabled={busy||!profileId||credential.length<20||reason.length<4} onClick={save}>Save credential</button><button disabled={busy||!profileId||!selected?.credential_configured} onClick={verify}><RefreshCw size={14}/>Verify provider</button></div><p className="l3cred-note">Verification makes one bounded provider call using the configured profile. It confirms credential/model connectivity only; the governed quality benchmark is still required before Layer 3 can be resumed.</p></div></div>
+}
+function ProviderCredentialStyle(){return <style>{`.l3cred-launcher{position:fixed;right:28px;bottom:30px;z-index:27000;border:0;border-radius:999px;padding:10px 13px;background:#111827;color:#fff;display:flex;gap:7px;align-items:center;font:700 12px system-ui;box-shadow:0 8px 24px #0f172a44}.l3cred-shell{position:fixed;inset:0;z-index:32000;background:#0f172ab3;display:grid;place-items:center;padding:20px}.l3cred-card{width:min(680px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 24px 80px #02061766;font-family:system-ui;color:#0f172a}.l3cred-card header{display:flex;justify-content:space-between;gap:20px}.l3cred-card header button{border:0;background:transparent}.l3cred-card small,.l3cred-card span,.l3cred-card p{color:#64748b}.l3cred-card label{display:grid;gap:6px;margin-top:16px;font-weight:700;font-size:12px}.l3cred-card input,.l3cred-card select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff}.l3cred-status{display:flex;gap:10px;margin-top:16px;padding:12px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff}.l3cred-status div{display:grid;gap:3px}.l3cred-actions{display:flex;gap:10px;margin-top:18px}.l3cred-actions button{border:1px solid #cbd5e1;border-radius:9px;padding:9px 12px;background:#fff;font-weight:700;display:flex;gap:6px;align-items:center}.l3cred-actions .primary{background:#111827;color:#fff;border-color:#111827}.l3cred-actions button:disabled{opacity:.45}.l3cred-error,.l3cred-ok{margin-top:12px;padding:10px;border-radius:9px;font-size:13px}.l3cred-error{background:#fef2f2;color:#991b1b}.l3cred-ok{background:#f0fdf4;color:#166534}.l3cred-note{font-size:12px;line-height:1.45}@media(max-width:640px){.l3cred-launcher{right:16px;bottom:20px}.l3cred-shell{padding:10px}.l3cred-actions{flex-direction:column}}`}</style>}
 
 const root=document.getElementById('m2-3-intelligence-root');if(root)createRoot(root).render(<Entry/>)
