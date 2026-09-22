@@ -1,0 +1,575 @@
+import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import {
+  CF247_BENCHMARK_PROMPT_BUILD_ANCHOR,
+  CF247_BENCHMARK_REQUEST_BODY_ANCHOR,
+  CF247_BINDING_REQUIRED_COMPONENT_KEYS,
+  CF247_INTERPRETER_PROMPT_BUILD_ANCHOR,
+  CF247_INTERPRETER_REQUEST_BODY_ANCHOR,
+  CF247_TUITION_BENCHMARK_BINDING_CONTRACT_ID,
+  assertBindingComponentsComplete,
+  buildTuitionBenchmarkBindingComponents,
+  canonicalBindingDescriptor,
+  canonicalJsonStringify,
+  extractCandidateContextInstructionSource,
+  extractJsonRequestBodySource,
+  extractPromptBuildSource,
+  resolveTuitionProfileBindingInputs,
+  tuitionBenchmarkBindingFingerprint,
+  tuitionBenchmarkRuntimeBindingHash,
+} from "../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts";
+import type { BindingComponents } from "../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts";
+import { CF247_TUITION_RESPONSE_SCHEMA } from "../supabase/functions/_shared/cf247-tuition-validation.ts";
+import { CF247_TUITION_BINDING_SOURCE_MANIFEST } from "../supabase/functions/_shared/cf247-tuition-binding-source-manifest.ts";
+
+const validatorSource = readFileSync(new URL("../supabase/functions/_shared/cf247-tuition-validation.ts", import.meta.url), "utf8");
+const benchmarkSource = readFileSync(new URL("../supabase/functions/layer3-cf245-tuition-benchmark/index.ts", import.meta.url), "utf8");
+const interpreterSource = readFileSync(new URL("../supabase/functions/layer3-work-interpret/index.ts", import.meta.url), "utf8");
+const bindingHelperSource = readFileSync(new URL("../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts", import.meta.url), "utf8");
+const recorderMigration = readFileSync(new URL("../supabase/migrations/20260921171328_cf247_tuition_benchmark_record_binding_baseline.sql", import.meta.url), "utf8");
+const interpretationReservationMigration = readFileSync(new URL("../supabase/migrations/20260922010000_cf247_interpretation_reservation_expose_quality_benchmark.sql", import.meta.url), "utf8");
+const sha256 = (source: string) => createHash("sha256").update(source).digest("hex");
+assert.deepEqual(CF247_TUITION_BINDING_SOURCE_MANIFEST, {
+  benchmark_prompt_sha256: sha256(extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR)),
+  interpreter_prompt_sha256: sha256(extractPromptBuildSource(interpreterSource, CF247_INTERPRETER_PROMPT_BUILD_ANCHOR)),
+  benchmark_request_sha256: sha256(extractJsonRequestBodySource(benchmarkSource, CF247_BENCHMARK_REQUEST_BODY_ANCHOR)),
+  interpreter_request_sha256: sha256(extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR)),
+  validator_source_sha256: sha256(validatorSource),
+  schema_sha256: sha256(canonicalJsonStringify(CF247_TUITION_RESPONSE_SCHEMA)),
+  binding_helper_sha256: sha256(bindingHelperSource),
+}, "the source manifest must be regenerated on prompt, request, validator, schema or binding-helper drift");
+
+// 3B2A fail-closed foundation: legacy ten-argument calls must never record a
+// fresh unbound PASS or unpause the tuition profile. Preserve the verified live
+// scorer verbatim behind the guard for the subsequent bound-recorder edit.
+const recorderStart = recorderMigration.indexOf("CREATE OR REPLACE FUNCTION public.layer3_cf245_tuition_benchmark_record_service(");
+const recorderEnd = recorderMigration.indexOf("end $function$;", recorderStart);
+assert.ok(recorderStart >= 0 && recorderEnd > recorderStart, "benchmark recorder definition must be complete SQL");
+const recorder = recorderMigration.slice(recorderStart, recorderEnd + "end $function$".length);
+const legacyGuard = "  -- Legacy ten-argument callers cannot record an unbound PASS or unpause the\n  -- profile. The subsequent bound recorder must have a distinct entrypoint.\n  raise exception 'CF-247 unbound tuition benchmark recorder disabled' using errcode='42501';\n";
+assert.equal(recorder.split(legacyGuard).length, 2, "legacy recorder must contain exactly one fail-closed guard");
+assert.ok(recorder.indexOf(legacyGuard) < recorder.indexOf("select * into p"), "unbound calls must stop before selecting or mutating a profile");
+assert.equal(createHash("md5").update(recorder.replace(legacyGuard, "") + "\n").digest("hex"), "7556ed94d82ec8fa46eb069b891e9737", "the original live scorer must remain byte-for-byte intact behind the guard");
+assert.match(recorderMigration, /add column binding_hash text;/);
+assert.match(recorderMigration, /check \(binding_hash is null or binding_hash ~ '\^\[0-9a-f\]\{64\}\$'\)/);
+assert.match(recorderMigration, /revoke all on function public\.layer3_cf245_tuition_benchmark_record_service\([\s\S]*?from public, anon, authenticated;/);
+assert.match(recorderMigration, /grant execute on function public\.layer3_cf245_tuition_benchmark_record_service\([\s\S]*?to service_role;/);
+
+const profile = {
+  model_identifier: "openrouter/example-model-v1",
+  prompt_profile_version: "cf247-tuition-prompt-v3",
+  prompt_system: "Fixed governed system prompt text.",
+  structured_output_schema: { type: "object", additionalProperties: false },
+  max_input_tokens: 12000,
+  max_output_tokens: 900,
+  timeout_ms: 30000,
+  retry_ceiling: 1,
+  deterministic_validators: { confidence_min: 0, confidence_max: 1, review_confidence_min: 0.9, allowed_basis: ["annual", "indicative_annual"] },
+};
+
+function baseComponents(): BindingComponents {
+  return buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, interpreterSource);
+}
+
+// --- 1. Descriptor covers effective prompt templates, shared validator
+// implementation, response schema, model identifier, prompt_profile_version,
+// deterministic validators and inference settings — not merely static IDs. ---
+
+assert.equal(CF247_TUITION_BENCHMARK_BINDING_CONTRACT_ID, "cf247-tuition-benchmark-binding-v1");
+assert.deepEqual(
+  [...CF247_BINDING_REQUIRED_COMPONENT_KEYS].sort(),
+  [
+    "benchmark_prompt_template",
+    "benchmark_request_body_source",
+    "candidate_context_instruction",
+    "deterministic_validators",
+    "inference_settings",
+    "interpreter_prompt_template",
+    "interpreter_request_body_source",
+    "model_identifier",
+    "prompt_profile_system",
+    "prompt_profile_version",
+    "response_schema",
+    "profile_response_schema",
+    "shared_validator_source",
+  ].sort(),
+  "binding descriptor must cover effective prompt templates, each caller's real request-body source, shared validator implementation, response schema, model identifier, prompt_profile_version, deterministic validators and inference settings",
+);
+
+// The descriptor is bound to the *exact implementation* of the shared
+// validator (its full source text), not merely a static contract-id literal.
+const components = baseComponents();
+assert.ok(components.shared_validator_source.length > 0, "shared_validator_source must be the validator's actual source text");
+assert.ok(
+  components.shared_validator_source.includes("export function validateProviderCurrentTuitionCandidate"),
+  "shared_validator_source must contain the real validator implementation, not just an identifier",
+);
+
+// The benchmark's and interpreter's prompt templates are extracted, live
+// source spans (from the real `system`/`prompt` declaration through the
+// balanced end of the request-body call that consumes it) — not disconnected
+// mirrored constants — so they track the real, current instructional content
+// AND the real request wiring together.
+assert.equal(
+  components.benchmark_prompt_template,
+  extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR),
+  "benchmark_prompt_template must equal the exact literal extracted from the live benchmark source, not a mirrored constant",
+);
+assert.equal(
+  components.interpreter_prompt_template,
+  extractPromptBuildSource(interpreterSource, CF247_INTERPRETER_PROMPT_BUILD_ANCHOR),
+  "interpreter_prompt_template must equal the exact literal extracted from the live interpreter source, not a mirrored constant",
+);
+assert.ok(components.benchmark_prompt_template.includes("CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate"), "benchmark_prompt_template must contain the real benchmark system-prompt text (built outside JSON.stringify)");
+assert.ok(components.interpreter_prompt_template.includes("Task class: provider_current_tuition_validation"), "interpreter_prompt_template must contain the real interpreter prompt lead-in text (built outside JSON.stringify)");
+
+// candidate_context_instruction is derived from the shared validator's real
+// instruction literal, not a disconnected mirrored copy.
+assert.equal(
+  components.candidate_context_instruction,
+  extractCandidateContextInstructionSource(validatorSource),
+  "candidate_context_instruction must equal the exact literal extracted from the shared validator source, not a mirrored constant",
+);
+assert.ok(components.candidate_context_instruction.includes("Validate only the supplied provider_current_tuition target against Evidence"), "candidate_context_instruction must contain the real shared instruction text");
+
+// Mutating the REAL benchmark system-prompt text, interpreter prompt text, or
+// candidate-context instruction in their respective live sources must change
+// the corresponding component and the overall fingerprint — proving these
+// three components are bound to the real prompt-building source, not to a
+// disconnected mirror that would stay stable while the real text changed.
+const mutatedBenchmarkSystemText = benchmarkSource.replace(
+  "CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction.",
+  "CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction. CHANGED.",
+);
+assert.notEqual(mutatedBenchmarkSystemText, benchmarkSource, "test fixture sanity: the benchmark source must actually contain the system-prompt text being mutated");
+const componentsWithMutatedBenchmarkSystem = buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, mutatedBenchmarkSystemText, interpreterSource);
+assert.notEqual(
+  componentsWithMutatedBenchmarkSystem.benchmark_prompt_template,
+  components.benchmark_prompt_template,
+  "changing the real benchmark system prompt text must change benchmark_prompt_template",
+);
+assert.notEqual(
+  await tuitionBenchmarkBindingFingerprint(componentsWithMutatedBenchmarkSystem),
+  await tuitionBenchmarkBindingFingerprint(components),
+  "changing the real benchmark system prompt text must change the fingerprint",
+);
+
+const mutatedInterpreterPromptText = interpreterSource.replace(
+  "Task class: provider_current_tuition_validation",
+  "Task class: provider_current_tuition_validation_CHANGED",
+);
+assert.notEqual(mutatedInterpreterPromptText, interpreterSource, "test fixture sanity: the interpreter source must actually contain the prompt lead-in text being mutated");
+const componentsWithMutatedInterpreterPrompt = buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, mutatedInterpreterPromptText);
+assert.notEqual(
+  componentsWithMutatedInterpreterPrompt.interpreter_prompt_template,
+  components.interpreter_prompt_template,
+  "changing the real interpreter prompt lead-in text must change interpreter_prompt_template",
+);
+assert.notEqual(
+  await tuitionBenchmarkBindingFingerprint(componentsWithMutatedInterpreterPrompt),
+  await tuitionBenchmarkBindingFingerprint(components),
+  "changing the real interpreter prompt lead-in text must change the fingerprint",
+);
+
+const mutatedValidatorInstruction = validatorSource.replace(
+  "Validate only the supplied provider_current_tuition target against Evidence",
+  "Validate only the supplied provider_current_tuition target against Evidence CHANGED",
+);
+assert.notEqual(mutatedValidatorInstruction, validatorSource, "test fixture sanity: the validator source must actually contain the candidate-context instruction text being mutated");
+const componentsWithMutatedInstruction = buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, mutatedValidatorInstruction, benchmarkSource, interpreterSource);
+assert.notEqual(
+  componentsWithMutatedInstruction.candidate_context_instruction,
+  components.candidate_context_instruction,
+  "changing the real shared candidate-context instruction text must change candidate_context_instruction",
+);
+assert.notEqual(
+  await tuitionBenchmarkBindingFingerprint(componentsWithMutatedInstruction),
+  await tuitionBenchmarkBindingFingerprint(components),
+  "changing the real shared candidate-context instruction text must change the fingerprint",
+);
+
+// --- 1b. benchmark_request_body_source / interpreter_request_body_source are
+// extracted, live, DISTINCT request-body literals — not disconnected mirrored
+// constants — and they actually prove each caller's real, currently-DIVERGENT
+// determinism settings (response_format mode and max_output_tokens fallback). ---
+
+assert.equal(
+  components.benchmark_request_body_source,
+  extractJsonRequestBodySource(benchmarkSource, CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
+  "benchmark_request_body_source must equal the exact literal extracted from the live benchmark source, not a mirrored constant",
+);
+assert.equal(
+  components.interpreter_request_body_source,
+  extractJsonRequestBodySource(interpreterSource, CF247_INTERPRETER_REQUEST_BODY_ANCHOR),
+  "interpreter_request_body_source must equal the exact literal extracted from the live interpreter source, not a mirrored constant",
+);
+assert.notEqual(
+  components.benchmark_request_body_source,
+  components.interpreter_request_body_source,
+  "the benchmark's and interpreter's real request bodies currently differ (response_format/max_output_tokens fallback) and the binding must reflect that, not a shared mirrored literal",
+);
+assert.match(components.benchmark_request_body_source, /response_format:\s*\{\s*type:\s*["']json_schema["']/, "benchmark_request_body_source must prove the benchmark's actual response_format is json_schema");
+assert.match(components.interpreter_request_body_source, /response_format:\s*\{\s*type:\s*"json_object"\s*\}/, "interpreter_request_body_source must prove the interpreter's actual response_format is json_object");
+assert.match(components.benchmark_request_body_source, /max_output_tokens\s*\|\|\s*900/, "benchmark_request_body_source must prove the benchmark's actual max_output_tokens fallback is 900");
+assert.match(components.interpreter_request_body_source, /max_output_tokens \|\| 1200/, "interpreter_request_body_source must prove the interpreter's actual max_output_tokens fallback is 1200");
+
+// A caller supplying a different-but-still-source-derived request body (e.g. if
+// the interpreter's fallback or response_format literally changes) must produce
+// a different fingerprint than the real current sources — proving the binding
+// actually consumes the source, rather than being a source-text substring check
+// that would pass regardless of what changed.
+const mutatedInterpreterSource = interpreterSource.replace('max_tokens: Number(profile.max_output_tokens || 1200)', 'max_tokens: Number(profile.max_output_tokens || 900)');
+assert.notEqual(mutatedInterpreterSource, interpreterSource, "test fixture sanity: the interpreter source must actually contain the 1200 fallback being mutated");
+const componentsWithAlignedInterpreterFallback = buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, mutatedInterpreterSource);
+assert.notEqual(
+  await tuitionBenchmarkBindingFingerprint(componentsWithAlignedInterpreterFallback),
+  await tuitionBenchmarkBindingFingerprint(components),
+  "changing the interpreter's real max_output_tokens fallback in its source must change the fingerprint",
+);
+
+const mutatedInterpreterResponseFormat = interpreterSource.replace('response_format: { type: "json_object" }', 'response_format: { type: "json_schema" }');
+assert.notEqual(mutatedInterpreterResponseFormat, interpreterSource, "test fixture sanity: the interpreter source must actually contain the json_object response_format being mutated");
+const componentsWithAlignedResponseFormat = buildTuitionBenchmarkBindingComponents(profile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, mutatedInterpreterResponseFormat);
+assert.notEqual(
+  await tuitionBenchmarkBindingFingerprint(componentsWithAlignedResponseFormat),
+  await tuitionBenchmarkBindingFingerprint(components),
+  "changing the interpreter's real response_format mode in its source must change the fingerprint",
+);
+
+// Changing an unrelated part of either caller's source (outside the request
+// body) must NOT change the fingerprint's request-body component — proving
+// the extraction is bound to the actual request body, not the whole file.
+const unrelatedBenchmarkEdit = benchmarkSource.replace('const FN = "layer3-cf245-tuition-benchmark"', 'const FN = "layer3-cf245-tuition-benchmark-renamed"');
+assert.notEqual(unrelatedBenchmarkEdit, benchmarkSource, "test fixture sanity: the unrelated benchmark edit must actually change the source");
+assert.equal(
+  extractJsonRequestBodySource(unrelatedBenchmarkEdit, CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
+  extractJsonRequestBodySource(benchmarkSource, CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
+  "an edit outside the request body must not change the extracted request-body source",
+);
+
+// The extractor fails closed when its anchor cannot be located (e.g. the real
+// call site is refactored away), so a broken binding can never silently
+// produce a stale or empty fingerprint component instead of failing the CI
+// contract.
+assert.throws(
+  () => extractJsonRequestBodySource(benchmarkSource, "this-anchor-does-not-exist-in-source"),
+  /anchor not found/,
+  "a missing request-body anchor must fail closed",
+);
+assert.throws(
+  () => extractJsonRequestBodySource("body:JSON.stringify(", CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
+  /no request-body object found/,
+  "an anchor with no following object must fail closed",
+);
+assert.throws(
+  () => extractJsonRequestBodySource("body:JSON.stringify({unbalanced:'", CF247_BENCHMARK_REQUEST_BODY_ANCHOR),
+  /unbalanced request-body object/,
+  "an unbalanced request-body object must fail closed",
+);
+
+// --- 2. Canonical serialization / hash: deterministic given the same inputs. ---
+
+const fingerprintA = await tuitionBenchmarkBindingFingerprint(baseComponents());
+const fingerprintB = await tuitionBenchmarkBindingFingerprint(baseComponents());
+assert.equal(fingerprintA, fingerprintB, "the same components must always produce the same fingerprint");
+assert.match(fingerprintA, /^[0-9a-f]{64}$/, "fingerprint must be a SHA-256 hex digest");
+
+// --- 3. Each covered component change invalidates the binding. ---
+
+async function fingerprintWithChange(mutate: (c: BindingComponents) => void): Promise<string> {
+  const mutated = baseComponents();
+  mutate(mutated);
+  return tuitionBenchmarkBindingFingerprint(mutated);
+}
+
+const mutations: Array<[string, (c: BindingComponents) => void]> = [
+  ["benchmark_prompt_template", (c) => { c.benchmark_prompt_template += " changed"; }],
+  ["interpreter_prompt_template", (c) => { c.interpreter_prompt_template += " changed"; }],
+  ["candidate_context_instruction", (c) => { c.candidate_context_instruction += " changed"; }],
+  ["benchmark_request_body_source", (c) => { c.benchmark_request_body_source += " changed"; }],
+  ["interpreter_request_body_source", (c) => { c.interpreter_request_body_source += " changed"; }],
+  ["shared_validator_source", (c) => { c.shared_validator_source += "\n// changed"; }],
+  ["response_schema", (c) => { c.response_schema = { ...(c.response_schema as Record<string, unknown>), extra: true }; }],
+  ["profile_response_schema", (c) => { c.profile_response_schema = { ...(c.profile_response_schema as Record<string, unknown>), extra: true }; }],
+  ["model_identifier", (c) => { c.model_identifier = "a-different-model"; }],
+  ["prompt_profile_version", (c) => { c.prompt_profile_version = "a-different-version"; }],
+  ["prompt_profile_system", (c) => { c.prompt_profile_system += " changed"; }],
+  ["deterministic_validators", (c) => { c.deterministic_validators = { ...c.deterministic_validators, confidence_min: 0.5 }; }],
+  ["inference_settings", (c) => { c.inference_settings = { ...c.inference_settings, timeout_ms: 45000 }; }],
+];
+
+for (const [label, mutate] of mutations) {
+  const mutatedFingerprint = await fingerprintWithChange(mutate);
+  assert.notEqual(mutatedFingerprint, fingerprintA, `changing ${label} must invalidate the binding fingerprint`);
+}
+
+// --- 4. Object-key order does not affect the fingerprint. ---
+
+const reorderedComponents = baseComponents();
+const reorderedKeysDescriptor: Record<string, unknown> = {};
+for (const key of [...Object.keys(reorderedComponents)].reverse()) {
+  (reorderedKeysDescriptor as Record<string, unknown>)[key] = (reorderedComponents as unknown as Record<string, unknown>)[key];
+}
+const fingerprintReorderedTopLevel = await tuitionBenchmarkBindingFingerprint(reorderedKeysDescriptor as BindingComponents);
+assert.equal(fingerprintReorderedTopLevel, fingerprintA, "top-level component key order must not affect the fingerprint");
+
+const nestedReordered = baseComponents();
+nestedReordered.inference_settings = {
+  retry_ceiling: nestedReordered.inference_settings.retry_ceiling,
+  timeout_ms: nestedReordered.inference_settings.timeout_ms,
+  max_input_tokens: nestedReordered.inference_settings.max_input_tokens,
+  max_output_tokens: nestedReordered.inference_settings.max_output_tokens,
+};
+const fingerprintNestedReordered = await tuitionBenchmarkBindingFingerprint(nestedReordered);
+assert.equal(fingerprintNestedReordered, fingerprintA, "nested object key order must not affect the fingerprint");
+
+// The live profile RPC returns deterministic_validators and max_output_tokens.
+// Bind the complete validator JSON, including rules beyond four old mirrored
+// threshold names. A changed live setting must never reuse a prior PASS hash.
+assert.deepEqual(baseComponents().deterministic_validators, profile.deterministic_validators);
+for (const [label, mutatedProfile] of [
+  ["review threshold", { ...profile, deterministic_validators: { ...profile.deterministic_validators, review_confidence_min: 0.95 } }],
+  ["allowed basis", { ...profile, deterministic_validators: { ...profile.deterministic_validators, allowed_basis: ["annual"] } }],
+  ["max output tokens", { ...profile, max_output_tokens: 1200 }],
+  ["profile schema", { ...profile, structured_output_schema: { type: "object", additionalProperties: true } }],
+] as const) {
+  const changed = await tuitionBenchmarkBindingFingerprint(buildTuitionBenchmarkBindingComponents(mutatedProfile, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, interpreterSource));
+  assert.notEqual(changed, fingerprintA, `${label} drift must invalidate the binding`);
+}
+assert.throws(() => buildTuitionBenchmarkBindingComponents({ ...profile, deterministic_validators: null }, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, interpreterSource), /settings missing/);
+assert.throws(() => buildTuitionBenchmarkBindingComponents({ ...profile, max_output_tokens: undefined }, CF247_TUITION_RESPONSE_SCHEMA, validatorSource, benchmarkSource, interpreterSource), /max_output_tokens missing/);
+
+assert.equal(
+  canonicalJsonStringify({ b: 1, a: 2 }),
+  canonicalJsonStringify({ a: 2, b: 1 }),
+  "canonicalJsonStringify must be independent of object key insertion order",
+);
+assert.notEqual(
+  canonicalJsonStringify(["b", "a"]),
+  canonicalJsonStringify(["a", "b"]),
+  "canonicalJsonStringify must preserve array element order (order is semantically significant there)",
+);
+
+// --- 5. Missing required components fail closed. ---
+
+for (const key of CF247_BINDING_REQUIRED_COMPONENT_KEYS) {
+  const incomplete = baseComponents() as Partial<BindingComponents>;
+  delete incomplete[key];
+  assert.throws(
+    () => assertBindingComponentsComplete(incomplete),
+    /missing required component/,
+    `missing ${key} must fail closed (throw), not silently produce a fingerprint`,
+  );
+  await assert.rejects(
+    tuitionBenchmarkBindingFingerprint(incomplete as BindingComponents),
+    /missing required component/,
+    `computing a fingerprint over components missing ${key} must fail closed`,
+  );
+}
+
+// Blank string / empty object components must also fail closed, not merely
+// absent keys.
+const blankString = baseComponents();
+blankString.model_identifier = "   ";
+assert.throws(() => assertBindingComponentsComplete(blankString), /missing required component/, "a blank model_identifier must fail closed");
+
+const emptyValidators = baseComponents();
+emptyValidators.deterministic_validators = {} as unknown as BindingComponents["deterministic_validators"];
+assert.throws(() => assertBindingComponentsComplete(emptyValidators), /missing required component/, "an empty deterministic_validators object must fail closed");
+
+// A complete descriptor never throws.
+assert.doesNotThrow(() => assertBindingComponentsComplete(baseComponents()), "a fully-populated descriptor must not throw");
+
+// --- 6. Canonical descriptor excludes secret values, Evidence bytes, per-case
+// candidate values, and volatile metrics by construction (component shape). ---
+
+const descriptor = JSON.parse(canonicalBindingDescriptor(baseComponents())) as { components: Record<string, unknown> };
+const topLevelComponentKeys = Object.keys(descriptor.components);
+for (const forbidden of ["secret_env_key", "evidence_id", "storage_path", "latency_ms", "cost_usd", "input_tokens", "output_tokens", "timestamp"]) {
+  assert.ok(!topLevelComponentKeys.includes(forbidden), `canonical descriptor components must never include a ${forbidden} field`);
+}
+// The descriptor's response_schema component legitimately mentions the field
+// name "candidate_value" (it is part of the shared JSON schema shape), but no
+// component may carry an actual per-case candidate value/payload.
+assert.ok(
+  !("provider_current_tuition" in descriptor.components) && !("fee_candidates" in descriptor.components) && !("candidate_context" in descriptor.components),
+  "canonical descriptor must never carry a per-case candidate_context/candidate payload",
+);
+
+// --- 7. Runtime source-manifest binding hash: the worker-safe computation
+// that layer3-cf245-tuition-benchmark/index.ts actually calls (it cannot read
+// raw .ts source at Deno edge runtime, so it cannot use
+// buildTuitionBenchmarkBindingComponents/tuitionBenchmarkBindingFingerprint
+// above — those remain CI/test-only). Verifies this alternate path is
+// genuinely source- and profile-bound, and equally fail-closed, not merely
+// "runs without throwing". ---
+
+// 25. Format must satisfy the recorder migration's binding_hash CHECK
+// constraint (^[0-9a-f]{64}$) exactly: lowercase 64-char hex.
+const runtimeHashA = await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, profile);
+assert.match(runtimeHashA, /^[0-9a-f]{64}$/, "runtime binding hash must be lowercase 64-char hex matching the recorder's CHECK constraint");
+
+// 26. Determinism: the same manifest and profile must always produce the
+// same hash (no hidden timestamp/random input).
+const runtimeHashARepeat = await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, profile);
+assert.equal(runtimeHashARepeat, runtimeHashA, "the same manifest and profile must always produce the same runtime binding hash");
+
+// 27. A real source change — a manifest component drifting from the actual
+// source (exactly what CI catches via assertion #1 above if left
+// unregenerated) — must change the runtime hash. This is what makes the
+// worker's recorded binding_hash meaningfully source-bound.
+const mutatedManifest = { ...CF247_TUITION_BINDING_SOURCE_MANIFEST, benchmark_prompt_sha256: "0".repeat(64) };
+const runtimeHashMutatedManifest = await tuitionBenchmarkRuntimeBindingHash(mutatedManifest, profile);
+assert.notEqual(runtimeHashMutatedManifest, runtimeHashA, "changing a source manifest component must change the runtime binding hash");
+
+// 28. A profile drift (model swapped) must change the runtime hash — this is
+// what makes qualification profile-bound, not just source-bound.
+const mutatedModelProfile = { ...profile, model_identifier: "openrouter/a-different-model-v9" };
+const runtimeHashMutatedModel = await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, mutatedModelProfile);
+assert.notEqual(runtimeHashMutatedModel, runtimeHashA, "changing the profile's model_identifier must change the runtime binding hash");
+
+// 29. A validator-settings drift (e.g. a loosened confidence threshold) must
+// also change the hash — proves deterministic_validators is bound, not just
+// echoed for shape.
+const mutatedValidatorsProfile = {
+  ...profile,
+  deterministic_validators: { ...(profile as any).deterministic_validators, review_confidence_min: 0.1 },
+};
+const runtimeHashMutatedValidators = await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, mutatedValidatorsProfile);
+assert.notEqual(runtimeHashMutatedValidators, runtimeHashA, "changing the profile's deterministic_validators must change the runtime binding hash");
+
+// 30. Same fail-closed behaviour as the full descriptor path: an ambiguous
+// profile (both canonical and alias keys present) must still throw, not
+// silently pick one.
+await assert.rejects(
+  () => tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, { ...profile, validators: (profile as any).deterministic_validators }),
+  /ambiguous validators/,
+  "the runtime binding hash must fail closed on an ambiguous profile the same way the full descriptor does",
+);
+
+// 31. Same fail-closed behaviour for a missing required inference setting.
+const { timeout_ms, ...profileMissingTimeout } = profile as any;
+await assert.rejects(
+  () => tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, profileMissingTimeout),
+  /timeout_ms missing or invalid/,
+  "the runtime binding hash must fail closed on a missing required inference setting",
+);
+
+// 32. resolveTuitionProfileBindingInputs is the single shared implementation
+// behind both the full descriptor and the runtime hash — confirm it resolves
+// to the same values buildTuitionBenchmarkBindingComponents used, so the two
+// paths can never silently diverge in which profile fields they require.
+const resolvedInputs = resolveTuitionProfileBindingInputs(profile);
+assert.deepEqual(
+  resolvedInputs,
+  {
+    model_identifier: components.model_identifier,
+    prompt_profile_version: components.prompt_profile_version,
+    prompt_profile_system: components.prompt_profile_system,
+    profile_response_schema: components.profile_response_schema,
+    deterministic_validators: components.deterministic_validators,
+    inference_settings: components.inference_settings,
+  },
+  "resolveTuitionProfileBindingInputs must resolve identically to the profile-derived fields the full descriptor uses",
+);
+
+// 33. Source-text contract: the deployed worker must actually compute and
+// pass this runtime hash to the bound 11-argument recorder call — not merely
+// have the capability available unused. Whitespace/quote-tolerant, matching
+// the pattern established for every other source-contract assertion in this
+// suite after Slice PRE.
+assert.match(
+  benchmarkSource,
+  /import\s*\{\s*CF247_TUITION_BINDING_SOURCE_MANIFEST\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-binding-source-manifest\.ts["']/,
+  "the benchmark worker must import CF247_TUITION_BINDING_SOURCE_MANIFEST",
+);
+assert.match(
+  benchmarkSource,
+  /import\s*\{\s*tuitionBenchmarkRuntimeBindingHash\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-benchmark-binding\.ts["']/,
+  "the benchmark worker must import tuitionBenchmarkRuntimeBindingHash",
+);
+assert.match(
+  benchmarkSource,
+  /tuitionBenchmarkRuntimeBindingHash\(\s*CF247_TUITION_BINDING_SOURCE_MANIFEST,\s*profile,?\s*\)/,
+  "the benchmark worker must call tuitionBenchmarkRuntimeBindingHash with the checked-in manifest and the live profile",
+);
+assert.match(
+  benchmarkSource,
+  /p_binding_hash:\s*bindingHash/,
+  "the benchmark worker must pass the computed hash as p_binding_hash to the recorder RPC call",
+);
+// The binding-hash computation must happen before any provider call is made
+// (fail closed on a malformed profile before spending cost), i.e. before the
+// cases lookup that precedes the provider-call loop.
+const bindingHashComputeIndex = benchmarkSource.indexOf("tuitionBenchmarkRuntimeBindingHash(");
+const casesLookupIndex = benchmarkSource.indexOf("layer3_cf245_tuition_benchmark_cases_service");
+assert.ok(
+  bindingHashComputeIndex >= 0 && casesLookupIndex >= 0 && bindingHashComputeIndex < casesLookupIndex,
+  "the binding hash must be computed before the cases lookup / provider-call loop, so a malformed profile fails closed before any cost is spent",
+);
+
+// --- 8. CF-247 3B2B: fail-closed binding-hash drift check at the
+// interpretation execution gate. The interpretation-reservation migration
+// must additively expose quality_benchmark (including binding_hash) so the
+// interpreter can independently recompute the current hash and refuse to
+// execute the provider model when it no longer matches what was recorded at
+// qualification time — without which quality_benchmark.pass=true could go
+// stale silently after any later source or profile change. ---
+
+// 34. The migration must expose quality_benchmark in the returned profile
+// object without touching the existing enabled/paused/pass/task_class gates
+// (those lines must be byte-identical to the pre-3B2B definition).
+assert.match(interpretationReservationMigration, /'quality_benchmark',v_p\.quality_benchmark/, "the interpretation-reservation RPC must return the profile's quality_benchmark");
+assert.match(interpretationReservationMigration, /if not v_p\.enabled or v_p\.paused then raise exception 'model profile not executable'; end if;/, "the existing enabled/paused gate must be unchanged");
+assert.match(interpretationReservationMigration, /if coalesce\(\(v_p\.quality_benchmark->>'pass'\)::boolean,false\) is not true then/, "the existing quality_benchmark.pass gate must be unchanged");
+assert.match(interpretationReservationMigration, /if not \(v_work\.task_class=any\(v_p\.allowed_task_classes\)\) then/, "the existing task_class gate must be unchanged");
+
+// 35. Source-text contract: the interpreter must import both the manifest
+// and the runtime hash function, compute the current hash from the exact
+// profile it just received, and refuse to proceed on a missing or
+// mismatched qualified hash — whitespace/quote-tolerant per the pattern
+// established for every source-contract assertion since Slice PRE.
+assert.match(
+  interpreterSource,
+  /import\s*\{\s*CF247_TUITION_BINDING_SOURCE_MANIFEST\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-binding-source-manifest\.ts["']/,
+  "the interpreter must import CF247_TUITION_BINDING_SOURCE_MANIFEST",
+);
+assert.match(
+  interpreterSource,
+  /import\s*\{\s*tuitionBenchmarkRuntimeBindingHash\s*\}\s*from\s*["']\.\.\/_shared\/cf247-tuition-benchmark-binding\.ts["']/,
+  "the interpreter must import tuitionBenchmarkRuntimeBindingHash",
+);
+assert.match(
+  interpreterSource,
+  /qualifiedBindingHash\s*=\s*String\(\s*profile\?\.quality_benchmark\?\.binding_hash\s*\|\|\s*["']["'],?\s*\)/,
+  "the interpreter must read the qualified binding hash from the profile's quality_benchmark",
+);
+assert.match(
+  interpreterSource,
+  /if\s*\(\s*!qualifiedBindingHash\s*\)\s*throw new Error/,
+  "the interpreter must fail closed when no qualified binding hash is on record",
+);
+assert.match(
+  interpreterSource,
+  /tuitionBenchmarkRuntimeBindingHash\(\s*CF247_TUITION_BINDING_SOURCE_MANIFEST,\s*profile,?\s*\)/,
+  "the interpreter must compute the current binding hash from the checked-in manifest and the live profile",
+);
+assert.match(
+  interpreterSource,
+  /if\s*\(\s*currentBindingHash\s*!==\s*qualifiedBindingHash\s*\)\s*throw new Error/,
+  "the interpreter must fail closed when the current binding hash does not match the qualified one",
+);
+
+// 36. Ordering: the binding-hash check must happen before the usage-window
+// RPC (and therefore before any provider call), so a drifted profile is
+// refused before any rate-limit budget or cost is spent — not merely
+// somewhere in the function.
+const bindingCheckIdx = interpreterSource.indexOf("tuitionBenchmarkRuntimeBindingHash(");
+const usageWindowIdx = interpreterSource.indexOf("layer3_usage_window_service");
+assert.ok(
+  bindingCheckIdx >= 0 && usageWindowIdx >= 0 && bindingCheckIdx < usageWindowIdx,
+  "the binding-hash check must happen before the usage-window check / any provider call, so a drifted profile fails closed before any cost is spent",
+);
+
+console.log("CF-247 tuition benchmark binding contract PASS");
