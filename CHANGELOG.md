@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7 — 23 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.80**: first automated Layer 3 tuition admission, plain-English Layer 4 reasons and navigation clean-up (CF-247).
+- Layer 3 validates Layer 2 tuition candidates on a schedule; confirmed fees are admitted to the catalogue, refresh the consumer projection and appear in search and the website API. The first run admitted fees with no wrong admissions.
+- Added governed Layer 3 profile activation and pause (administrator only, reason required, append-only audit) and live Layer 3 queue status.
+- Layer 4 reasons are plain English; admission holds now open a Layer 4 review; validated fees no longer open one.
+- Navigation: Quality & Insights group; Review Queue retired with its address redirected to Layer 4; Dashboard review links fixed.
+- Website API adds course and scholarship search. v2.15.79 remains the accepted recovery release until v2.15.80 is accepted.
+
 ## 0.1.6 — 14 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.79** for governed dispatcher tuning and recent-run decision metrics.
