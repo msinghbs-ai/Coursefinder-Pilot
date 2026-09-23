@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 
-test('v2.15.81 is the release candidate while v2.15.79 remains the accepted recovery release and v2.15.78 retained history',()=>{
+test('v2.15.82 is the release candidate while v2.15.79 remains the accepted recovery release and v2.15.78 retained history',()=>{
   const manifest=fs.readFileSync('src/release-manifest.js','utf8')
   const history=fs.readFileSync('src/pim-version-entry.js','utf8')
   const shell=fs.readFileSync('src/mature-main.jsx','utf8')
@@ -10,8 +10,8 @@ test('v2.15.81 is the release candidate while v2.15.79 remains the accepted reco
   const pkg=JSON.parse(fs.readFileSync('package.json','utf8'))
   const changelog=fs.readFileSync('CHANGELOG.md','utf8')
 
-  expect(manifest).toContain("export const UI_VERSION='2.15.81'")
-  expect(manifest).toContain("export const PACKAGE_VERSION='0.1.8'")
+  expect(manifest).toContain("export const UI_VERSION='2.15.82'")
+  expect(manifest).toContain("export const PACKAGE_VERSION='0.1.9'")
   expect(manifest).toContain("export const RELEASE_STATE='candidate'")
   expect(manifest).toContain('export const ACCEPTED_RELEASES=[')
   expect(manifest).toContain("version:'2.15.79'")
@@ -20,7 +20,9 @@ test('v2.15.81 is the release candidate while v2.15.79 remains the accepted reco
   expect(manifest).toContain('export const RECOVERY_RELEASE=ACCEPTED_RELEASES[0]')
   expect(manifest).not.toContain('PREVIOUS_ACCEPTED_RELEASE')
 
-  expect(pkg.version).toBe('0.1.8')
+  expect(pkg.version).toBe('0.1.9')
+  expect(changelog).toContain('## 0.1.9 — 23 Sep 2026')
+  expect(changelog).toContain('**v2.15.82**')
   expect(changelog).toContain('## 0.1.8 — 23 Sep 2026')
   expect(changelog).toContain('**v2.15.81**')
   expect(changelog).toContain('## 0.1.7 — 23 Sep 2026')
