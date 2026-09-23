@@ -1,4 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState}from'react'
+import{Pager}from'./ui-kit'
 import{
   ArrowLeft,BookOpen,ChevronDown,Database,Download,ExternalLink,FileCheck2,FileSearch,
   Filter,GitBranch,History,Link2,RefreshCw,Search,ShieldCheck,Workflow,X
@@ -94,7 +95,7 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
       {deepContext&&<div className="evidence-context"><Link2 size={14}/><span>Scoped from a governed operational/canonical deep link.</span><button onClick={()=>{setFilter('entityId','');setFilter('providerId','');setFilter('jobId','')}}>Remove scope</button></div>}
 
       <EvidenceTable rows={rows} loading={busy} selected={selected} onSelect={setSelected}/>
-      <Pager offset={offset} total={total} onOffset={setOffset}/>
+      <Pager offset={offset} limit={PAGE_SIZE} total={total} onOffset={setOffset} className="evidence-pager"/>
     </section>
 
     {selected&&<EvidenceDrawer id={selected} data={detail} busy={detailBusy} onClose={()=>setSelected(null)} onError={onError} navigate={navigate}/>} 
@@ -213,7 +214,6 @@ function DateFilter({label,value,onChange}){return <label className="evidence-te
 function Chip({label,onRemove}){return <span>{label}<button onClick={onRemove}><X size={11}/></button></span>}
 function Badge({value}){return <span className="evidence-badge">{human(value||'unknown')}</span>}
 function State({value}){const s=String(value||'unknown').toLowerCase(),tone=['rejected','failed','error','conflict','blocked'].includes(s)?'danger':['source_null','stale','expired','superseded','warning'].includes(s)?'warning':['missing_extraction','pending','queued','running','processing','in_review'].includes(s)?'info':['current','active','completed','succeeded','published','extracted','resolved','captured'].includes(s)?'success':'neutral';return <span className={`evidence-state ${tone}`}>{human(s)}</span>}
-function Pager({offset,total,onOffset}){const pages=Math.max(1,Math.ceil(total/PAGE_SIZE)),page=Math.floor(offset/PAGE_SIZE)+1;return <div className="evidence-pager"><span>Page <strong>{page}</strong> of {pages} · {fmt(total)} records</span><div><button disabled={offset<=0} onClick={()=>onOffset(Math.max(0,offset-PAGE_SIZE))}>Previous</button><button disabled={offset+PAGE_SIZE>=total} onClick={()=>onOffset(offset+PAGE_SIZE)}>Next</button></div></div>}
 
 function openCanonical(x,navigate){const page=ENTITY_PAGE[String(x.entity_type||'').toLowerCase()];if(!page||!navigate)return;const id=x.entity_id;if(id)navigate(page,{id})}
 function filtersFromRoute(params){const f={...EMPTY_FILTERS};if(!params?.get)return f;for(const[k,p]of Object.entries({country:'country',sourceId:'source_id',layer:'layer',entityType:'entity_type',entityId:'entity_id',providerId:'provider_id',jobId:'job_id',evidenceType:'evidence_type',mime:'mime',jobStatus:'job_status',status:'status',extractionState:'extraction_state',freshness:'freshness',verifiedFrom:'verified_from',verifiedTo:'verified_to',hash:'hash',unresolvedConflicts:'unresolved_conflicts'})){const v=params.get(p);if(v)f[k]=v}return f}

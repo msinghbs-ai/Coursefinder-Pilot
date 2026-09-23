@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.9 — 23 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.82**: Layer 4 review clarity and remembered filters (UI-5 batch 1), shared UI kit (UI-2), and the PERF-2 scoped search refresh fix.
+- Layer 4: plain-English reason on every item, remembered status/field filters per reviewer with reset, plain status labels plus "All statuses", summarised automatic checks with technical detail behind a disclosure, queue limit raised from 100 to 250.
+- Shared UI kit src/ui-kit.jsx: common components and one Pager (three copies removed, each screen keeps its look); useRememberedState generalises the Catalogue's saved state with the same storage key.
+- PERF-2 (no screen change): admission refreshes only the courses it changes. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.8 — 23 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.81** (PERF-1): Dashboard and layer-status summaries are pre-calculated every 2 minutes by a background job and served from a snapshot, with a live fallback if the snapshot is over 10 minutes old.

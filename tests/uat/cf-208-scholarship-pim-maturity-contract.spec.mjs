@@ -29,7 +29,9 @@ test('CF-208 Scholarship PIM catalogue keeps operator search filter sort paginat
  assert.match(main,/<DataTable rows=\{rows\}/)
  assert.match(main,/<Pager offset=\{offset\} limit=\{PAGE_SIZE\} total=\{total\}/)
  assert.match(main,/<DetailDrawer type=\{type\}/)
- assert.match(main,/localStorage\.setItem\(screenStateKey/)
+ // UI-2: remembered screen state moved to the shared kit (same storage key format).
+ assert.match(main,/useRememberedState\(type,/)
+ assert.match(await read('src/ui-kit.jsx'),/const STATE_PREFIX='coursefinder:pim:screen-state:v1:'/)
 })
 
 test('CF-208 Scholarship PIM keeps publication and eligibility semantics separate',async()=>{
