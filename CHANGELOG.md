@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.8 — 23 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.81** (PERF-1): Dashboard and layer-status summaries are pre-calculated every 2 minutes by a background job and served from a snapshot, with a live fallback if the snapshot is over 10 minutes old.
+- Fixed intermittent Dashboard HTTP 500s caused by summary reads exceeding the 8-second statement limit.
+- Open reviews and recent review activity now use Layer 4 review items instead of the retired, empty review queue.
+- The Dashboard shows when its figures were last updated. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.7 — 23 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.80**: first automated Layer 3 tuition admission, plain-English Layer 4 reasons and navigation clean-up (CF-247).
