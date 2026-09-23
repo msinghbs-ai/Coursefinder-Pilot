@@ -277,8 +277,8 @@ const candidateContextSites = [
 ];
 assert.equal(
   candidateContextSites.length,
-  2,
-  "exactly one provider-loop and one synthetic-loop candidate_context construction site is expected",
+  3,
+  "exactly one provider-loop, one production-shaped-loop (CF-247 option A) and one synthetic-loop candidate_context construction site is expected",
 );
 for (const [, body] of candidateContextSites) {
   assert.match(

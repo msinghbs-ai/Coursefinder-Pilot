@@ -2,6 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   CF247_TUITION_RESPONSE_SCHEMA,
+  tuitionQuoteSupports,
+  tuitionQuoteSupportsBasis,
   tuitionValidationPromptContext,
   validateProviderCurrentTuitionCandidate,
 } from "../_shared/cf247-tuition-validation.ts";
@@ -21,6 +23,13 @@ const clean = (v: any) =>
   String(v ?? "")
     .replace(/\s+/g, " ")
     .trim();
+// CF-247: quotes are compared ignoring whitespace. HTML-to-text conversion puts
+// spaces between elements (e.g. "A$ 60,952"), so a quote that differs only in
+// spacing is still verbatim; characters must still match exactly and in order.
+const squash = (v: any) =>
+  String(v ?? "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
 async function rpc(c: any, n: string, a: any = {}) {
   const { data, error } = await c.rpc(n, a);
   if (error) throw new Error(`${n}: ${error.message}`);
@@ -128,7 +137,7 @@ async function call(
   );
   const candidateJson = tuitionValidationPromptContext(candidateContext);
   const focused = evidenceFocus(evidence, candidate);
-  const system=`CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction. Return JSON only. A positive answer MUST return the supplied candidate exactly unchanged; a negative/ambiguous answer MUST return candidate_value null. Never invent, annualise, convert currency, change year, strengthen basis, or select a different amount.\n${String(profile.prompt_system || "")}`;
+  const system=`CF-247 candidate-bound validation. This is validation of one immutable deterministic Layer 2 candidate, not extraction. Return JSON only. A positive answer MUST keep the supplied amount, currency and audience unchanged, may resolve only the governed basis ambiguity and a missing fee year as instructed, and MUST never select a different amount; a negative/ambiguous answer MUST return candidate_value null. Never invent, annualise, convert currency, change year, strengthen basis, or select a different amount.\n${String(profile.prompt_system || "")}`;
   for (let i = 0; i < attempts; i++) {
     calls++;
     const st = performance.now(),
@@ -164,7 +173,7 @@ async function call(
               { role: "system", content: system },
               {
                 role: "user",
-                content: `Benchmark case: ${label}\nValidate ONLY the exact Layer 2 candidate against the retained first-party Evidence excerpt. If the Evidence explicitly supports the same amount, currency, international audience, basis and stated fee year (when non-null), return that candidate exactly unchanged with confidence >= 0.90 and short verbatim Evidence quotes. If any required attribute is unsupported, conflicting or ambiguous, return candidate_value null. Do not extract or substitute another value. indicative_annual is an allowed governed basis and must remain indicative_annual.\nLayer 2 candidate:\n${candidateJson}\nEvidence excerpt:\n${focused}`,
+                content: `Benchmark case: ${label}\nValidate ONLY the exact Layer 2 candidate against the retained first-party Evidence excerpt. If the Evidence explicitly supports the same amount, currency, international audience, basis and stated fee year (when non-null), return that candidate with confidence >= 0.90 and short verbatim Evidence quotes: keep amount, currency and audience unchanged; if its basis is annual_or_indicative_requires_validation, resolve it to annual or indicative_annual exactly as the Evidence states; if its fee_year is null you may set it only when a returned quote states that year together with the amount. If any required attribute is unsupported, conflicting or ambiguous, return candidate_value null. Do not extract or substitute another value. indicative_annual is an allowed governed basis and must remain indicative_annual.\nLayer 2 candidate:\n${candidateJson}\nEvidence excerpt:\n${focused}`,
               },
             ],
           }),
@@ -232,6 +241,12 @@ function validatePositive(r: any, candidateContext: any, evidence: string) {
   else {
     const shared = validateProviderCurrentTuitionCandidate(c, candidateContext);
     if (!shared.valid) e.push("candidate_changed_or_outside_layer2_set");
+    // CF-247 option A: any resolved basis or supplied fee year must be quoted
+    // together with the amount (the same rule the interpreter enforces).
+    if (shared.basis_resolution && !tuitionQuoteSupportsBasis(r?.evidence_quotes, c.amount, c.basis))
+      e.push("resolved_basis_not_quoted_with_amount");
+    if (shared.year_resolution && !tuitionQuoteSupports(r?.evidence_quotes, c.amount, c.fee_year))
+      e.push("resolved_fee_year_not_quoted_with_amount");
     if (String(c.audience) !== "international")
       e.push("international_audience_required");
     if (
@@ -255,7 +270,7 @@ function validatePositive(r: any, candidateContext: any, evidence: string) {
     e.push("evidence_quotes_required");
   else
     for (const q of r.evidence_quotes) {
-      if (!evidence.toLowerCase().includes(clean(q).toLowerCase()))
+      if (!squash(evidence).includes(squash(q)))
         e.push("quote_not_in_evidence");
     }
   return {
@@ -263,6 +278,7 @@ function validatePositive(r: any, candidateContext: any, evidence: string) {
     errors: e,
     candidate_value: c ?? null,
     confidence: Number.isFinite(conf) ? conf : null,
+    evidence_quotes: Array.isArray(r?.evidence_quotes) ? r.evidence_quotes : null,
   };
 }
 function validateNull(r: any) {
@@ -426,6 +442,35 @@ Deno.serve(async (req: Request) => {
       });
       evidenceIds.push(String(c.evidence_id));
     }
+    // CF-247 option A: production-shaped provider cases. The live backlog carries
+    // an ambiguous basis and no fee year; the governed cases above do not, so these
+    // make qualification exercise the real task. Both must resolve positively.
+    const productionShaped = [
+      {
+        case: "production_ambiguous_basis_year_quoted",
+        candidate: { amount: 38400, currency_code: "AUD", basis: "annual_or_indicative_requires_validation", fee_year: null, audience: "international" },
+        text: "Fees for international students. Tuition fee: AU$38,400 (2027 annual). Additional costs such as textbooks and field trips are not included. Domestic places are listed separately.",
+      },
+      {
+        case: "production_ambiguous_basis_no_year",
+        candidate: { amount: 45120, currency_code: "AUD", basis: "annual_or_indicative_requires_validation", fee_year: null, audience: "international" },
+        text: "International students: the indicative annual tuition fee for this program is AU$45,120. Fees are reviewed each year.",
+      },
+    ];
+    for (const c of productionShaped) {
+      const candidateContext = Object.freeze({ provider_current_tuition: c.candidate, fee_candidates: [], identity_match: true });
+      const r = await call(profile, key, c.case, c.text, c.candidate, candidateContext);
+      for (const m of r.metrics.returned_models) models.add(String(m));
+      calls += r.metrics.external_calls;
+      input += r.metrics.input_tokens;
+      output += r.metrics.output_tokens;
+      cost += r.metrics.cost;
+      maxLatency = Math.max(maxLatency, r.metrics.max_latency_ms);
+      const val = r.error
+        ? { valid: false, inconclusive: true, errors: [r.error], candidate_value: null, confidence: null, transport_error: r.error }
+        : validatePositive(r.parsed, candidateContext, c.text);
+      provider.push({ case: c.case, synthetic: true, expected: c.candidate, expected_outcome: "resolve_candidate", semantic_result: !r.error, ...val, response_model: r.model, latency_ms: r.latency_ms });
+    }
     const synthetic = [
       {
         case: "ambiguous_multiple_equal_rank",
@@ -482,6 +527,19 @@ Deno.serve(async (req: Request) => {
         },
         fee_candidates: [],
         text: "International tuition fee: USD 42,000 per year. No AUD provider-current fee is published.",
+      },
+      {
+        // CF-247 option A: the live trap — an ambiguous basis where the page states a course total.
+        case: "ambiguous_basis_course_total",
+        candidate: {
+          amount: 19200,
+          currency_code: "AUD",
+          basis: "annual_or_indicative_requires_validation",
+          fee_year: null,
+          audience: "international",
+        },
+        fee_candidates: [],
+        text: "Fee summary. 2027 indicative fees - Full-fee places: AU $19,200 (2027 total). Student services and amenities fee: AU$386 maximum for 2027.",
       },
     ];
     for (const c of synthetic) {

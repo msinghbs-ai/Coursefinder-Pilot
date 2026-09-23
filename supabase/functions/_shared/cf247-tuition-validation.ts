@@ -85,6 +85,46 @@ export type CandidateContext = {
 
 const AMBIGUOUS_BASIS = "annual_or_indicative_requires_validation";
 const RESOLVED_AMBIGUOUS_BASES = new Set(["annual", "indicative_annual"]);
+const PLAUSIBLE_FEE_YEAR = /^20(2[4-9]|30)$/;
+
+// CF-247 option A: does any Evidence quote state this amount (tolerating
+// thousands separators such as "38,400" or "38 400") and, when given, this year?
+export function tuitionQuoteSupports(
+  quotes: unknown,
+  amount: unknown,
+  year?: string | number | null,
+): boolean {
+  const n = Number(amount);
+  if (!Array.isArray(quotes) || !Number.isFinite(n) || n <= 0) return false;
+  const amountText = Number.isInteger(n) ? String(n) : n.toFixed(2);
+  const amountPattern = new RegExp(`(^|\\D)${amountText.replace(".", "\\.")}(\\D|$)`);
+  const yearText = year == null || String(year).trim() === "" ? null : String(year).trim();
+  return quotes.some((q) => {
+    if (typeof q !== "string") return false;
+    const compact = q.replace(/(\d)[,\s](?=\d{3}(\D|$))/g, "$1");
+    if (!amountPattern.test(compact)) return false;
+    return yearText === null || new RegExp(`(^|\\D)${yearText}(\\D|$)`).test(compact);
+  });
+}
+// CF-247 option A: a resolved basis must be stated in a returned quote that also
+// carries the amount. "Indicative" alone does not mean annual; totals and
+// per-semester/per-unit figures are never annual.
+const ANNUAL_WORDING = /\b(annual|annually|per\s+year|per\s+annum|a\s+year|yearly|each\s+year)\b/i;
+const NOT_ANNUAL_WORDING = /\b(total|whole[\s-]course|full[\s-]course|entire\s+course|per\s+semester|per\s+trimester|per\s+unit|per\s+credit|per\s+subject)\b/i;
+export function tuitionQuoteSupportsBasis(
+  quotes: unknown,
+  amount: unknown,
+  basis: unknown,
+): boolean {
+  const wanted = String(basis ?? "").trim().toLowerCase();
+  if (!Array.isArray(quotes)) return false;
+  return quotes.some((q) => {
+    if (typeof q !== "string" || !tuitionQuoteSupports([q], amount)) return false;
+    if (NOT_ANNUAL_WORDING.test(q) || !ANNUAL_WORDING.test(q)) return false;
+    if (wanted === "indicative_annual") return /\bindicative\b/i.test(q);
+    return wanted === "annual" || wanted === "per_year_explicit";
+  });
+}
 const normaliseBasis = (value: unknown) =>
   String(value ?? "")
     .trim()
@@ -194,6 +234,7 @@ export function validateProviderCurrentTuitionCandidate(
   errors: string[];
   matched_candidate: TuitionCandidate | null;
   basis_resolution: boolean;
+  year_resolution: boolean;
 } {
   const errors: string[] = [];
   if (candidate == null)
@@ -202,6 +243,7 @@ export function validateProviderCurrentTuitionCandidate(
       errors,
       matched_candidate: null,
       basis_resolution: false,
+      year_resolution: false,
     };
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     return {
@@ -209,6 +251,7 @@ export function validateProviderCurrentTuitionCandidate(
       errors: ["tuition candidate must be an object or null"],
       matched_candidate: null,
       basis_resolution: false,
+      year_resolution: false,
     };
   }
   if (context?.identity_match !== true) {
@@ -219,6 +262,7 @@ export function validateProviderCurrentTuitionCandidate(
       ],
       matched_candidate: null,
       basis_resolution: false,
+      year_resolution: false,
     };
   }
   const c = candidate as Record<string, unknown>;
@@ -238,6 +282,7 @@ export function validateProviderCurrentTuitionCandidate(
       errors,
       matched_candidate: null,
       basis_resolution: false,
+      year_resolution: false,
     };
 
   const target = governedTuitionTarget(context);
@@ -247,6 +292,7 @@ export function validateProviderCurrentTuitionCandidate(
       errors: ["no governed Layer 2 provider_current_tuition target"],
       matched_candidate: null,
       basis_resolution: false,
+      year_resolution: false,
     };
   const targetAudience = normaliseAudience(target.audience);
   if (targetAudience !== "international") {
@@ -257,15 +303,21 @@ export function validateProviderCurrentTuitionCandidate(
       ],
       matched_candidate: null,
       basis_resolution: false,
+      year_resolution: false,
     };
   }
 
   let basisResolution = false;
+  // CF-247 option A: when Layer 2 captured no fee year, Layer 3 may supply one.
+  // Callers must additionally require an Evidence quote stating that year with
+  // the amount (tuitionQuoteSupports) before accepting it.
+  const yearResolution = candidateYear(target) === null && year !== null;
   let match: TuitionCandidate | null = null;
   if (
     target.amount === amount &&
     candidateCurrency(target) === currency &&
-    candidateYear(target) === year &&
+    (candidateYear(target) === year ||
+      (candidateYear(target) === null && year !== null && PLAUSIBLE_FEE_YEAR.test(year))) &&
     targetAudience === audience
   ) {
     const targetBasis = normaliseBasis(target.basis);
@@ -288,6 +340,7 @@ export function validateProviderCurrentTuitionCandidate(
     errors,
     matched_candidate: match,
     basis_resolution: Boolean(match && basisResolution),
+    year_resolution: Boolean(match && yearResolution),
   };
 }
 
@@ -298,7 +351,7 @@ export function tuitionValidationPromptContext(
   const competing = competingFeeCandidates(context);
   return JSON.stringify({
     instruction:
-      'Validate only the supplied provider_current_tuition target against Evidence — it is the sole positive candidate. The listed competing_fee_candidates are other fees mentioned in context for awareness only; they must never be returned or substituted for the target, even if Evidence supports one of them instead. Keep amount, currency, fee_year and audience unchanged from the target. If the target\'s basis is annual_or_indicative_requires_validation, Evidence may resolve only to annual or indicative_annual; otherwise basis must remain unchanged. Both the target and any returned candidate must have audience explicitly "international"; missing, blank or other audience is invalid. A non-null result additionally requires identity_match to be true. Return null when Evidence does not explicitly support the target, when identity_match is not true, or when no positive target can be admitted — null is always a safe abstention. Never invent or annualise an amount, convert currency, infer a year, change audience, or select a different fee.',
+      'Validate only the supplied provider_current_tuition target against Evidence — it is the sole positive candidate. The listed competing_fee_candidates are other fees mentioned in context for awareness only; they must never be returned or substituted for the target, even if Evidence supports one of them instead. Keep amount, currency and audience unchanged from the target. Keep fee_year unchanged when the target has one; when the target\'s fee_year is null you may set it only if an evidence quote you return states that year together with the amount, otherwise keep it null. If the target\'s basis is annual_or_indicative_requires_validation, Evidence may resolve only to annual or indicative_annual; otherwise basis must remain unchanged. Before resolving the basis, read the words immediately beside the amount. If they say total, total course, whole course, full course, per semester or per unit, the amount is NOT annual and you must return null, even if a heading nearby says indicative or mentions a year — for example, "A$60,952 (total course fee)" must return null. "Indicative" alone does not mean annual: choose indicative_annual only when the words beside the amount say it is both indicative and annual or per year. If they do not say annual or per year, return null. Both the target and any returned candidate must have audience explicitly "international"; missing, blank or other audience is invalid. A non-null result additionally requires identity_match to be true. Return null when Evidence does not explicitly support the target, when identity_match is not true, or when no positive target can be admitted — null is always a safe abstention. Never invent or annualise an amount, convert currency, infer a year that is not quoted with the amount, change audience, or select a different fee.',
     identity_match: context?.identity_match ?? null,
     fee_ambiguous: context?.fee_ambiguous ?? null,
     expected_course_code: context?.expected_course_code ?? null,
