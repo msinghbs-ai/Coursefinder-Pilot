@@ -8,8 +8,10 @@ test.describe('CF-085 Firecrawl scraper configuration contract',()=>{
    fs.readFile('src/EnvironmentMigrationWorkspace.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8'),
   ])
-  expect(shell).toContain("['layer2-providers','Scraper Config'")
-  expect(shell).toContain("'layer2-providers':'Scraper Config'")
+  // CF-088 moved the Administration tool list to objects; the contract (Scraper
+  // Config owns the Firecrawl quota) is unchanged.
+  expect(shell).toContain("key:'layer2-providers',label:'Scraper Config'")
+  expect(shell).toContain("tool==='layer2-providers'&&<><Layer2ProviderConfig")
   expect(provider).toContain('aria-label="Firecrawl monthly limit"')
   expect(provider).toContain('aria-label="Firecrawl safety reserve"')
   expect(provider).toContain('monthly_vendor_units_limit:limit')
