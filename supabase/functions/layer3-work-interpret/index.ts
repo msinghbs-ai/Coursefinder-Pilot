@@ -216,8 +216,8 @@ Deno.serve(async (req: Request) => {
             model: profile.model_identifier,
             temperature: 0,
             seed: 0,
-            reasoning: { effort: "none", exclude: true },
             max_tokens: Number(profile.max_output_tokens || 1200),
+            provider: { require_parameters: true },
             response_format: { type: "json_object" },
             messages: [
               { role: "system", content: profile.prompt_system },
