@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
+  tuitionQuoteSupports,
+  tuitionQuoteSupportsBasis,
   tuitionValidationPromptContext,
   validateProviderCurrentTuitionCandidate,
 } from "../_shared/cf247-tuition-validation.ts";
@@ -54,6 +56,42 @@ const evidenceText = (
   return text.replace(/\s+/g, " ").trim().slice(0, maxChars);
 };
 
+// CF-247: Layer 4 reviewers see a plain-English reason (what happened, what to
+// check). The technical detail stays in validator_result for engineers.
+const feeLabel = (amount: unknown, currency: unknown) => {
+  const n = Number(amount);
+  if (!Number.isFinite(n) || n <= 0) return "the fee";
+  const c = String(currency ?? "").trim().toUpperCase();
+  const prefix = c === "AUD" ? "A$" : c === "NZD" ? "NZ$" : c ? `${c} ` : "";
+  return prefix + n.toLocaleString("en-AU", { maximumFractionDigits: 2 });
+};
+function plainLayer4Reason(
+  errors: string[],
+  status: string,
+  candidate: any,
+  target: any,
+): string {
+  const fee = feeLabel(target?.amount ?? candidate?.amount, target?.currency_code ?? candidate?.currency_code);
+  const has = (s: string) => errors.some((e) => String(e).includes(s));
+  if (has("evidence quote not present") || has("invalid evidence quote"))
+    return `The AI quoted text that isn't on the saved page, so its answer can't be trusted. Please check the page and confirm ${fee}.`;
+  if (has("identity_match"))
+    return `We couldn't confirm this page belongs to this course. Please check it's the right page before confirming ${fee}.`;
+  if (has("resolved fee year"))
+    return `The AI gave the year ${candidate?.fee_year ?? "shown"}, but the page doesn't show that year next to ${fee}. Please confirm the fee year.`;
+  if (has("resolved tuition basis"))
+    return `The page doesn't clearly say ${fee} is charged per year. Please confirm whether it is an annual fee.`;
+  if (has("does not match the sole governed"))
+    return `The AI's answer didn't match the fee Layer 2 found (${fee}), so it wasn't accepted automatically. Please confirm the fee on the page.`;
+  if (has("cost ceiling"))
+    return `This check cost more than the allowed limit and was stopped. Please review ${fee} manually.`;
+  if (status === "low_confidence" || has("confidence outside"))
+    return `The AI wasn't confident enough (below 90%) that ${fee} is the annual international tuition fee. Please check the page.`;
+  if (status === "no_candidate" || candidate == null)
+    return `The page doesn't clearly show ${fee} as an annual tuition fee for international students. Please check the page and confirm the fee, or mark it as not available.`;
+  return `The AI's answer for ${fee} couldn't be accepted automatically. Please check the page and confirm the fee.`;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
   const url = Deno.env.get("SUPABASE_URL") || "";
@@ -84,6 +122,7 @@ Deno.serve(async (req: Request) => {
   let externalCallCount = 0;
   let workAttemptCount = 0;
   let startedMs: number | null = null;
+  let reviewFee = "the fee";
   try {
     const body = await req.json();
     workItemId = String(body?.work_item_id || "");
@@ -110,6 +149,10 @@ Deno.serve(async (req: Request) => {
     const candidateContext = reservation?.candidate_context || null;
     const evidence = reservation?.evidence || {};
     const profile = reservation?.profile || {};
+    reviewFee = feeLabel(
+      candidateContext?.provider_current_tuition?.amount,
+      candidateContext?.provider_current_tuition?.currency_code,
+    );
     if (!interpretationId || !evidenceId || !profile?.id)
       throw new Error("reserved work interpretation context incomplete");
     if (taskClass !== "provider_current_tuition_validation")
@@ -255,14 +298,19 @@ Deno.serve(async (req: Request) => {
       errors.push("evidence_quotes must be an array");
     if (quotes.length > Number(profile?.validators?.max_quotes ?? 4))
       errors.push("too many evidence quotes");
-    const haystack = text.toLowerCase();
+    // CF-247: compare quotes ignoring whitespace (HTML-to-text spacing), while
+    // characters must still match exactly and in order.
+    const haystack = text.replace(/\s+/g, "").toLowerCase();
     for (const quote of quotes) {
       if (
         typeof quote !== "string" ||
         quote.length > Number(profile?.validators?.max_quote_chars ?? 600)
       )
         errors.push("invalid evidence quote");
-      else if (quote.trim() && !haystack.includes(quote.trim().toLowerCase()))
+      else if (
+        quote.trim() &&
+        !haystack.includes(quote.replace(/\s+/g, "").toLowerCase())
+      )
         errors.push("evidence quote not present in governed Evidence");
     }
     const tuition = validateProviderCurrentTuitionCandidate(
@@ -271,22 +319,28 @@ Deno.serve(async (req: Request) => {
     );
     errors.push(...tuition.errors);
     if (tuition.basis_resolution && parsed?.candidate_value) {
-      const basis = String(parsed.candidate_value.basis || "")
-        .replace(/_/g, " ")
-        .toLowerCase();
-      const amount = String(parsed.candidate_value.amount ?? "");
-      const explicitBasisSupport = quotes.some(
-        (q: unknown) =>
-          typeof q === "string" &&
-          q.includes(amount) &&
-          (q.toLowerCase().includes(basis) ||
-            (basis === "indicative annual" &&
-              /indicative[^.]{0,80}(annual|year|full.?time)/i.test(q)) ||
-            (basis === "annual" && /(annual|per year|yearly)/i.test(q))),
+      const explicitBasisSupport = tuitionQuoteSupportsBasis(
+        quotes,
+        parsed.candidate_value.amount,
+        parsed.candidate_value.basis,
       );
       if (!explicitBasisSupport)
         errors.push(
           "Evidence quote does not explicitly support the resolved tuition basis",
+        );
+    }
+    // CF-247 option A: a fee year supplied by Layer 3 (target had none) must be
+    // stated in a returned Evidence quote together with the amount.
+    if (tuition.year_resolution && parsed?.candidate_value) {
+      if (
+        !tuitionQuoteSupports(
+          quotes,
+          parsed.candidate_value.amount,
+          parsed.candidate_value.fee_year,
+        )
+      )
+        errors.push(
+          "Evidence quote does not state the resolved fee year together with the amount",
         );
     }
     if (
@@ -347,11 +401,12 @@ Deno.serve(async (req: Request) => {
       interpretationStatus === "low_confidence" ||
       interpretationStatus === "rejected_validation"
     ) {
-      const routeReason = !valid
-        ? `Layer 3 validator rejected model output: ${errors.join("; ").slice(0, 1200)}`
-        : interpretationStatus === "low_confidence"
-          ? "Layer 3 result is below the governed confidence threshold"
-          : "Layer 3 safely abstained because governed Evidence did not support a candidate";
+      const routeReason = plainLayer4Reason(
+        errors,
+        interpretationStatus,
+        parsed?.candidate_value ?? null,
+        candidateContext?.provider_current_tuition ?? null,
+      );
       const { data: routed, error: routeError } = await svc.rpc(
         "layer3_route_work_item_layer4_service",
         {
@@ -432,7 +487,7 @@ Deno.serve(async (req: Request) => {
           {
             p_work_item_id: workItemId,
             p_interpretation_id: interpretationId,
-            p_reason: `Layer 3 provider/transport retries exhausted after ${attempts} attempts: ${message.slice(0, 1200)}`,
+            p_reason: `The AI service couldn't be reached after ${attempts} attempts, so ${reviewFee} couldn't be checked automatically. Please check the page and confirm the fee.`,
           },
         );
         if (!routeError && routed?.ok) {

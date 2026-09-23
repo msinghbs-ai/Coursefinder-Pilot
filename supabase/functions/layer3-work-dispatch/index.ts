@@ -108,6 +108,11 @@ Deno.serve(async (req: Request) => {
       const workItemId = String(item?.id || "");
       if (!workItemId) continue;
       const failWorkItem = async (err: string) => {
+        // CF-247 WP2b: supabase-js rpc() returns a query builder, not a Promise,
+        // so it has no .catch(); chaining one threw and aborted the whole batch
+        // whenever a single item failed. rpc() reports errors in its result, so
+        // a plain try/catch keeps this best-effort backstop from ever throwing.
+        try {
         const first = await svc
           .rpc("layer3_work_item_transition_service", {
             p_work_item_id: workItemId,
@@ -116,8 +121,7 @@ Deno.serve(async (req: Request) => {
             p_interpretation_id: null,
             p_error: err.slice(0, 1900),
             p_retry_after_seconds: 60,
-          })
-          .catch(() => ({ data: null }));
+          });
         if (!(first as any)?.data?.ok) {
           await svc
             .rpc("layer3_work_item_transition_service", {
@@ -127,8 +131,10 @@ Deno.serve(async (req: Request) => {
               p_interpretation_id: null,
               p_error: err.slice(0, 1900),
               p_retry_after_seconds: 60,
-            })
-            .catch(() => undefined);
+            });
+        }
+        } catch {
+          /* best effort: the interpreter records its own failure state */
         }
       };
       try {
