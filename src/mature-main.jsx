@@ -51,14 +51,11 @@ const NAV=[
   ['Catalogue',[
     item('Providers',Building2,1),item('Courses',GraduationCap,1),item('Campuses',MapPin,1),item('Scholarships',Sparkles,1),item('Provider Contacts',UsersRound,1),
   ]],
-  ['Statistics & Insights',[
-    item('Statistics & Rankings',BarChart3,1),item('Compare',ArrowLeftRight,1),
-  ]],
   ['Data Operations',[
     item('Layer 1 — Operations',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Scheduled Tasks',Clock3,4),item('Evidence',BookOpen,3),item('Jobs',Workflow,4),
   ]],
-  ['Quality & Review',[
-    item('Completeness',CheckCircle2,1),item('Review Queue',ListChecks,3),
+  ['Quality & Insights',[
+    item('Completeness',CheckCircle2,1),item('Statistics & Rankings',BarChart3,1),item('Compare',ArrowLeftRight,1),
   ]],
   ['Administration',[
     item('Administration',Settings2,4),
@@ -112,7 +109,7 @@ const ADMIN_SECTIONS=[
 const ADMIN_SECTION_LABELS=Object.fromEntries(ADMIN_SECTIONS.map(x=>[x.key,x.label]))
 const LEGACY_ADMIN_ROUTES={'users-roles':'users-roles','attributes':'pim','settings':'platform'}
 const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Onboarding',Workflow,3)]
-function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(LEGACY_ADMIN_ROUTES[route]){const params=new URLSearchParams(query);params.set('section',LEGACY_ADMIN_ROUTES[route]);return{page:'Administration',params}}if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
+function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'review-queue':'Layer 4 — Human Resolution','layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(LEGACY_ADMIN_ROUTES[route]){const params=new URLSearchParams(query);params.set('section',LEGACY_ADMIN_ROUTES[route]);return{page:'Administration',params}}if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
 
 function pageBreadcrumbs(page,routeParams){
  const crumbs=[{label:'Home',page:'Dashboard'}]
@@ -508,7 +505,7 @@ function Dashboard({onError,navigate}){
   const health=failed>0?'attention':running>0?'active':'healthy'
   const metrics=[
     ['Providers',data?.providers,Building2,'indigo','Providers'],['Courses',data?.courses,GraduationCap,'blue','Courses'],
-    ['Evidence',data?.evidence,FileCheck2,'violet','Evidence'],['Open reviews',data?.open_reviews,ClipboardCheck,reviews?'amber':'green','Review Queue'],
+    ['Evidence',data?.evidence,FileCheck2,'violet','Evidence'],['Open reviews',data?.open_reviews,ClipboardCheck,reviews?'amber':'green','Layer 4 — Human Resolution'],
     ['Jobs',data?.jobs,Workflow,'teal','Jobs'],['Search documents',data?.search_documents,SearchCheck,'cyan','Courses'],
     ['Scholarships',data?.scholarships,Sparkles,'pink','Scholarships'],['Attributes',data?.attributes,Tags,'slate','Attributes'],
   ]
@@ -535,7 +532,7 @@ function Dashboard({onError,navigate}){
     <section className="m-panel"><PanelTitle icon={AlertTriangle} title="Attention & next actions" subtitle="Exception-first operational guidance"/>
       <div className="m-attention-grid">
         <Attention tone={failed?'danger':'success'} icon={failed?AlertTriangle:CheckCircle2} title={failed?`${failed} failed job${failed===1?'':'s'} in the last 24 hours`:'No failed jobs in the last 24 hours'} text={failed?'Review pipeline failures before the next scheduled run.':'Pipeline failure signal is clear.'} action="Open Jobs" onClick={()=>navigate('Jobs')}/>
-        <Attention tone={reviews?'warning':'success'} icon={ClipboardCheck} title={reviews?`${reviews} review item${reviews===1?'':'s'} awaiting resolution`:'Review queue is clear'} text={reviews?'Prioritise high-impact or identity-sensitive exceptions.':'No current human-resolution backlog.'} action="Open Review Queue" onClick={()=>navigate('Review Queue')}/>
+        <Attention tone={reviews?'warning':'success'} icon={ClipboardCheck} title={reviews?`${reviews} review item${reviews===1?'':'s'} awaiting resolution`:'Review queue is clear'} text={reviews?'Prioritise high-impact or identity-sensitive exceptions.':'No current human-resolution backlog.'} action="Open Review Queue" onClick={()=>navigate('Layer 4 — Human Resolution')}/>
         <Attention tone="info" icon={SearchCheck} title={`${fmtNumber(op.search_row_count??data?.search_documents)} projected Search rows`} text={op.search_rebuilt_at?`Last rebuilt ${relativeTime(op.search_rebuilt_at)}.`:'Search rebuild timestamp is not available.'} action="Open Courses" onClick={()=>navigate('Courses')}/>
       </div>
     </section>
