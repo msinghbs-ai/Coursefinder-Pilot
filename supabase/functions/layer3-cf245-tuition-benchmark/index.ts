@@ -151,7 +151,7 @@ async function call(
             temperature: 0,
             seed: 0,
             max_tokens: Number(profile.max_output_tokens || 900),
-            reasoning: { effort: "none", exclude: true },
+            provider: { require_parameters: true },
             response_format: {
               type: "json_schema",
               json_schema: {
@@ -311,9 +311,11 @@ Deno.serve(async (req: Request) => {
       throw new Error("invalid, expired or already-used schedule nonce");
     const body = await req.json().catch(() => ({}));
     const limit = Math.min(Math.max(Number(body.case_limit || 4), 3), 6);
+    const profileCode = clean(body.profile_code || "");
     const profile = await rpc(
       svc,
       "layer3_cf245_tuition_benchmark_profile_service",
+      profileCode ? { p_profile_code: profileCode } : {},
     );
     if (!profile?.enabled || !profile?.paused)
       throw new Error(
@@ -560,6 +562,7 @@ Deno.serve(async (req: Request) => {
         p_evidence_ids: evidenceIds,
         p_summary: summary,
         p_binding_hash: bindingHash,
+        p_profile_id: profile.id,
       },
     );
     return J(recorded?.pass ? 200 : 422, {
