@@ -1,22 +1,25 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.89'
-export const PACKAGE_VERSION='0.1.16'
+export const UI_VERSION='2.15.90'
+export const PACKAGE_VERSION='0.1.17'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'24 Sep 2026',
-  title:'Layer 4 decision forms for every category',
+  date:'25 Sep 2026',
+  title:'Queue relief and complete release history',
   changes:[
-    'Official course link items have their own form: paste the provider\'s course page link (the usual website is suggested), then approve. The link appears in search.',
-    'Scholarship scope items show how many courses still need a decision, with a button that opens those courses in batch work, and Mark as done once they are all decided.',
-    'Links entered by reviewers are recorded against a dedicated "Layer 4 human review" source, so it is clear a person entered them.'
+    'Layer 3 no longer refuses correct fees just because a page is saved with link formatting (about 60% of waiting tuition items). Takes effect once the updated AI check is deployed and re-qualified.',
+    'Items refused only for that reason are suggested "Send back" in Layer 4, and can be sent back in batches, once the updated AI check is active.',
+    'Official course link items are suggested Reject for exit awards and study abroad or exchange programmes, which have no course page, and research degrees are pointed to the provider\'s research-degree page.',
+    'Jobs shows only the counts a job actually recorded, instead of rows of empty cells.',
+    'Release notes: every release is kept. The release notes list now fills in all past releases, and "All release notes" opens a searchable history page.',
+    'A guarded "Deploy edge functions" workflow deploys functions straight from the repository.'
   ],
   bugFixes:[
-    'Official course link items could not be approved: there was no field to enter the link.',
-    'Scholarship scope items offered no way to complete them.',
-    'Automated checks cleaned up: five out-of-date tests were fixed or retired.'
+    'Send back to AI check (Layer 3) now really re-checks tuition items; before, returned items left the queue without being re-checked.',
+    'Release notes for v2.15.79 to v2.15.88 disappeared from the list when a newer release shipped; they are shown again.',
+    'An out-of-date automated test was corrected.'
   ]
 }
 

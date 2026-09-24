@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coursefinder PIM Admin — release notes</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a;background:#f8fafc}
+body{margin:0}main{max-width:860px;margin:0 auto;padding:28px 20px 60px}
+h1{margin:0 0 4px;font-size:26px}p.sub{margin:0 0 18px;color:#64748b}
+input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;margin-bottom:16px}
+article{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;margin-bottom:12px}
+.meta{display:flex;gap:10px;align-items:center;font-size:13px;color:#64748b}.v{font-weight:700;color:#3730a3;background:#eef2ff;border-radius:999px;padding:2px 9px}
+.cur{background:#dcfce7;color:#166534;border-radius:999px;padding:2px 9px;font-weight:600}
+h2{font-size:17px;margin:8px 0 6px}ul{margin:4px 0 0;padding-left:20px}li{margin:3px 0;line-height:1.45}
+.fixes{margin-top:8px}.fixes strong{font-size:13px;color:#475569}
+</style></head>
+<body><main>
+<h1>Release notes</h1><p class="sub" id="sub">Every Coursefinder PIM Admin release, newest first.</p>
+<input id="q" type="search" placeholder="Search release notes (for example: Layer 4, tuition, Evidence)" aria-label="Search release notes">
+<div id="list">Loading…</div>
+</main>
+<script>
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+fetch('release-history.json',{cache:'no-store'}).then(r=>r.json()).then(h=>{
+  document.getElementById('sub').textContent=`${h.count} releases, newest first. Current: v${h.current}.`
+  const render=q=>{const t=q.trim().toLowerCase();const rows=h.releases.filter(r=>!t||JSON.stringify(r).toLowerCase().includes(t))
+    document.getElementById('list').innerHTML=rows.length?rows.map(r=>`<article><div class="meta"><span class="v">v${esc(r.version)}</span>${r.version===h.current?'<span class="cur">Current</span>':''}<span>${esc(r.date)}</span></div><h2>${esc(r.title)}</h2>${r.changes.length?`<ul>${r.changes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${r.bugFixes.length?`<div class="fixes"><strong>Bug / UI fixes</strong><ul>${r.bugFixes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}</article>`).join(''):'<p>No release notes match.</p>'}
+  render('');document.getElementById('q').addEventListener('input',e=>render(e.target.value))
+}).catch(()=>{document.getElementById('list').textContent='Release notes could not be loaded.'})
+</script></body></html>

@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import {
+import { quoteComparable,
   CF247_TUITION_RESPONSE_SCHEMA,
   tuitionQuoteSupports,
   tuitionQuoteSupportsBasis,
@@ -26,10 +26,8 @@ const clean = (v: any) =>
 // CF-247: quotes are compared ignoring whitespace. HTML-to-text conversion puts
 // spaces between elements (e.g. "A$ 60,952"), so a quote that differs only in
 // spacing is still verbatim; characters must still match exactly and in order.
-const squash = (v: any) =>
-  String(v ?? "")
-    .replace(/\s+/g, "")
-    .toLowerCase();
+// CF-247 queue relief: identical to the interpreter (shared, binding-covered).
+const squash = (v: any) => quoteComparable(v);
 async function rpc(c: any, n: string, a: any = {}) {
   const { data, error } = await c.rpc(n, a);
   if (error) throw new Error(`${n}: ${error.message}`);
@@ -450,6 +448,11 @@ Deno.serve(async (req: Request) => {
         case: "production_ambiguous_basis_year_quoted",
         candidate: { amount: 38400, currency_code: "AUD", basis: "annual_or_indicative_requires_validation", fee_year: null, audience: "international" },
         text: "Fees for international students. Tuition fee: AU$38,400 (2027 annual). Additional costs such as textbooks and field trips are not included. Domestic places are listed separately.",
+      },
+      {
+        case: "production_markdown_link_annual",
+        candidate: { amount: 56800, currency_code: "AUD", basis: "annual_or_indicative_requires_validation", fee_year: null, audience: "international" },
+        text: "Program overview. Fees[AU$56,800 per year (2027)](https://study.example.edu.au/programs/example#fees)Duration 3 Years. Fees are for international students.",
       },
       {
         case: "production_ambiguous_basis_no_year",

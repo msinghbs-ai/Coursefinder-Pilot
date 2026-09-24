@@ -359,3 +359,25 @@ export function tuitionValidationPromptContext(
     competing_fee_candidates: competing,
   });
 }
+
+// CF-247 queue relief: Evidence is often saved as JSON holding the page as marked-up
+// text, e.g. "Fees[A$56,800](https://...)Duration". The AI quotes the visible words
+// ("Fees A$56,800 Duration"). Compare visible text on BOTH sides: drop link targets and
+// JSON escapes, formatting symbols and whitespace. Characters must still match exactly
+// and in order; nothing is added to either side.
+export function quoteComparable(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\\[nrt]/g, " ")
+    .replace(/\\\//g, "/")
+    .replace(/\\"/g, '"')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`#>|]/g, "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+export function evidenceQuotePresent(quote: unknown, evidence: unknown): boolean {
+  const q = quoteComparable(quote);
+  return q.length > 0 && quoteComparable(evidence).includes(q);
+}
+

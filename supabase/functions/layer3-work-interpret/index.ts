@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import {
+import { quoteComparable,
   tuitionQuoteSupports,
   tuitionQuoteSupportsBasis,
   tuitionValidationPromptContext,
@@ -300,7 +300,8 @@ Deno.serve(async (req: Request) => {
       errors.push("too many evidence quotes");
     // CF-247: compare quotes ignoring whitespace (HTML-to-text spacing), while
     // characters must still match exactly and in order.
-    const haystack = text.replace(/\s+/g, "").toLowerCase();
+    // CF-247 queue relief: shared visible-text comparison (binding-covered).
+    const haystack = quoteComparable(text);
     for (const quote of quotes) {
       if (
         typeof quote !== "string" ||
@@ -309,7 +310,7 @@ Deno.serve(async (req: Request) => {
         errors.push("invalid evidence quote");
       else if (
         quote.trim() &&
-        !haystack.includes(quote.replace(/\s+/g, "").toLowerCase())
+        !haystack.includes(quoteComparable(quote))
       )
         errors.push("evidence quote not present in governed Evidence");
     }
