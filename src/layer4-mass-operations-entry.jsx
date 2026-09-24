@@ -68,5 +68,3 @@ export function Layer4MassOperations({embedded=false}={}){
 }
 
 // v2.15.85: the self-mounting MutationObserver was removed; Layer 4 renders this component in its Batches view.
-
-if(document.readyState==='loading')addEventListener('DOMContentLoaded',schedule,{once:true});else schedule()
