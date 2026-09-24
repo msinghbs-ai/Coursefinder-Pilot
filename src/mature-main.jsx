@@ -18,7 +18,7 @@ import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRe
 import Layer4Intervention from'./Layer4Intervention'
 import{Layer1Operations,Layer1SourceSettings}from'./layer1-operations-entry'
 import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
-import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLinksWorkspace,Dates as ImportantDatesWorkspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace,ProviderCredential as Layer3ProviderCredential}from'./m2-3-intelligence-entry'
+import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLinksWorkspace,Dates as ImportantDatesWorkspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
 import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
 import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
 import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'
@@ -185,7 +185,7 @@ function App(){
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
       <WorkspaceErrorBoundary routeKey={`${page}?${routeParams.toString()}`} onError={setError} onRecover={()=>go('Dashboard')}><Page page={page} routeParams={routeParams} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/></WorkspaceErrorBoundary>
     </main>
-    {rank>=6&&<Layer3ProviderCredential/>}
+    {/* v2.15.87: floating OpenRouter key button removed; the key is managed in Administration > Environment migration. */}
   </div>
 }
 
