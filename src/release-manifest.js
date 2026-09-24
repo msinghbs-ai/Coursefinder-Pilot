@@ -1,18 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.84'
-export const PACKAGE_VERSION='0.1.11'
+export const UI_VERSION='2.15.85'
+export const PACKAGE_VERSION='0.1.12'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Sep 2026',
-  title:'Review desk first',
+  title:'Layer 4 batches',
   changes:[
-    'Layer 4 opens straight on the review desk. Batch work (bulk decisions for repeat cases) now sits below it, collapsed, with its key counts still visible; select "Open batch work" to use it.'
+    'Layer 4 has a Batches view (switch between "Review one by one" and "Batches"). Repeat cases are grouped by task and suggestion, for example tuition fees where the page shows a course total.',
+    'Preview a batch before deciding: see every item with its page quote, untick any you are unsure about, give one reason, and type a confirmation such as "REJECT 41".',
+    'Every item in a batch is recorded exactly as if decided on its own, and the batch itself is recorded too. If any item cannot be decided, none are.',
+    'Applying a batch needs the Pipeline Operator role; curators can preview.',
+    'Scholarship scope items now show the scholarship and provider names, and scholarship scope batches and history sit in the Batches view.'
   ],
   bugFixes:[
-    'The long list of scholarship cohorts no longer fills the top of Layer 4 and pushes the review desk out of sight.'
+    'Approve is no longer offered for scholarship scope items, where it could not be applied.',
+    'Scholarship cohort reasons are shown in plain English instead of internal codes.',
+    'The batch panel no longer inserts itself into the page; Layer 4 shows it deliberately in the Batches view.'
   ]
 }
 

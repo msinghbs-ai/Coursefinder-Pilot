@@ -9,9 +9,15 @@ const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCas
 const when=v=>v?new Date(v).toLocaleString():'—'
 const count=v=>Number(v||0).toLocaleString()
 
-function Layer4MassOperations(){
+// v2.15.85: plain wording for cohort reason codes.
+const REASON_TEXT={
+  provider_owned_but_no_explicit_course_or_provider_scope:"The scholarship belongs to the provider, but the page doesn't say which courses it covers.",
+}
+function plainReason(code){const c=String(code||'');if(REASON_TEXT[c])return REASON_TEXT[c];if(/^[a-z0-9_]+$/.test(c)){const t=c.replace(/_/g,' ');return t.charAt(0).toUpperCase()+t.slice(1)+'.'}return c}
+// v2.15.85: rendered inside the Layer 4 desk (Batches view); no longer inserts itself into the page.
+export function Layer4MassOperations({embedded=false}={}){
  const[summary,setSummary]=useState({}),[groups,setGroups]=useState([]),[reviewGroups,setReviewGroups]=useState([]),[diagnostics,setDiagnostics]=useState([]),[findings,setFindings]=useState([]),[history,setHistory]=useState([])
- const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(''),[tab,setTab]=useState('scope'),[open,setOpen]=useState(false),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(''),[tab,setTab]=useState('scope'),[open,setOpen]=useState(embedded),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
  const load=async()=>{setBusy(true);setError('');try{const[s,g,r,d,f,h]=await Promise.all([rpc('layer4_mass_summary'),rpc('layer4_scholarship_scope_groups',{p_limit:200}),rpc('layer4_review_groups',{p_limit:200}),rpc('layer4_quality_diagnostics'),rpc('layer4_quality_findings_read',{p_status:'open',p_limit:100}),rpc('layer4_mass_operations_history',{p_limit:50})]);setSummary(s||{});setGroups(Array.isArray(g)?g:[]);setReviewGroups(Array.isArray(r)?r:[]);setDiagnostics(Array.isArray(d)?d:[]);setFindings(Array.isArray(f)?f:[]);setHistory(Array.isArray(h)?h:[])}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  useEffect(()=>{load()},[])
  const filtered=useMemo(()=>groups.filter(g=>!query||[g.scholarship_name,g.provider_name,g.candidate_reason,...(g.sample_courses||[])].join(' ').toLowerCase().includes(query.toLowerCase())),[groups,query])
@@ -35,13 +41,13 @@ function Layer4MassOperations(){
   </div>
   {/* v2.15.84: collapsed by default and placed below the review desk, so operators land on the desk. */}
   {!open?<div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(true)}>Open batch work</button><small>Decide repeat cases together — every batch is previewed, confirmed and audited.</small></div>:<>
-  <div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(false)}>Close batch work</button></div>
+  {!embedded&&<div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(false)}>Close batch work</button></div>}
   <div className="cf-l4mass-tabs">{[['scope','Scholarship scope'],['review','Review queue'],['quality','Errors & improvements'],['history','Mass audit']].map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>{setTab(k);setDecision(null)}}>{l}</button>)}</div>
   {tab==='scope'&&<div className="cf-l4mass-body">
    <div className="cf-l4mass-toolbar"><label><Search size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search university, scholarship, rule or course"/></label><span>{filtered.length} cohort(s) shown</span></div>
    <div className="cf-l4mass-list">{filtered.map(g=><article key={g.group_id} className={g.structural_ready?'':'blocked'}>
     <div className="cf-l4mass-row"><div><strong>{g.scholarship_name}</strong><span>{g.provider_name}</span></div><span className="cf-l4mass-pill">{count(g.candidate_count)} courses</span></div>
-    <p>{g.candidate_reason}</p>
+    <p>{plainReason(g.candidate_reason)}</p>
     <div className="cf-l4mass-meta"><span>Evidence {count(g.evidence_count)}/{count(g.candidate_count)}</span><span>Already mapped {count(g.already_mapped_count)}</span><span>Provider mismatch {count(g.provider_mismatch_count)}</span><span>Study levels {count(g.study_level_count)}</span>{g.semantic_warning&&<span className="warn">Semantic scope warning</span>}</div>
     <small>Sample: {(g.sample_courses||[]).join(' · ')||'—'}</small>
     <div className="cf-l4mass-actions"><button onClick={()=>openScope(g)}><ClipboardCheck size={13}/>Preview cohort</button></div>
@@ -61,17 +67,4 @@ function Layer4MassOperations(){
  </section>
 }
 
-let mountedNode=null,mountedRoot=null,pending=false
-function mount(){
- const active=location.hash.includes('layer-4-human-resolution')||location.hash.includes('layer-4-review')
- if(!active){if(mountedNode&&!mountedNode.isConnected){mountedNode=null;mountedRoot=null}return}
- if(mountedNode?.isConnected)return
- const stacks=[...document.querySelectorAll('.m23-stack')]
- const host=stacks.find(x=>(x.textContent||'').includes('Layer 4'))
- if(!host)return
- const node=document.createElement('div');node.dataset.cfLayer4MassMount='true';host.append(node);mountedNode=node;mountedRoot=createRoot(node);mountedRoot.render(<Layer4MassOperations/>)
-}
-function schedule(){if(pending)return;pending=true;setTimeout(()=>{pending=false;mount()},40)}
-new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true})
-addEventListener('hashchange',schedule)
-if(document.readyState==='loading')addEventListener('DOMContentLoaded',schedule,{once:true});else schedule()
+// v2.15.85: the self-mounting MutationObserver was removed; Layer 4 renders this component in its Batches view.

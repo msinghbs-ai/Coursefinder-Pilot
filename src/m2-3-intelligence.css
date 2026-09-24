@@ -38,3 +38,18 @@
 .l4d-more{position:relative}.l4d-more summary{list-style:none;cursor:pointer;border:1px solid #cbd5e1;border-radius:8px;padding:8px 14px;font-weight:600}
 .l4d-more>div{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .m23-cards article.l4d-late strong{color:#b91c1c}
+
+/* L4-C batches */
+.l4d-view{display:flex;gap:6px;margin-left:auto}.l4d-view button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:7px 12px;font-weight:600}.l4d-view button.on{background:#1e293b;color:#fff;border-color:#1e293b}
+.l4b{display:flex;flex-direction:column;gap:12px}.l4b-msg{margin:0;padding:8px 12px;border-radius:8px;background:#dcfce7;color:#166534}.l4b-note{margin:0;font-size:13px;color:#64748b}
+.l4b-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.l4b-group{border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:#fff}
+.l4b-group>div:first-child{display:flex;justify-content:space-between;gap:8px;align-items:center}.l4b-group p{margin:0;font-size:14px}.l4b-group small{color:#64748b}
+.l4b-group button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:6px 12px;font-weight:600}
+.l4b-preview{border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;background:#fff}
+.l4b-preview header h3{margin:0}.l4b-preview header p{margin:4px 0 0}
+.l4b-items{list-style:none;margin:0;padding:0;max-height:50vh;overflow:auto;border:1px solid #eef2f7;border-radius:8px}
+.l4b-items li{padding:8px 10px;border-bottom:1px solid #eef2f7}.l4b-items label{display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.l4b-items em{display:block;font-style:normal;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#475569;margin-top:2px}
+.l4b-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.l4b-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:#475569}
+.l4b-sub{margin:10px 0 0;font-size:15px}

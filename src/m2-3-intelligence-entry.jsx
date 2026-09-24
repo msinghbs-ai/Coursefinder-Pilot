@@ -4,6 +4,7 @@ import{BrainCircuit,CalendarClock,Check,ExternalLink,FileCheck2,KeyRound,Link2,R
 import{supabase,api}from'./lib/supabase'
 import ScheduledJobsWorkspace from'./ScheduledJobsWorkspace'
 import{useRememberedState}from'./ui-kit'
+import{Layer4MassOperations}from'./layer4-mass-operations-entry'
 import'./m2-3-intelligence.css'
 
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,x=>x.toUpperCase())
@@ -44,8 +45,14 @@ export function Layer4({onError}){
  // L4-A review desk: one decision at a time, with the facts that settle it.
  const[data,setData]=useState({items:[],summary:{}}),[reviewer,setReviewer]=useState(null),[selectedId,setSelectedId]=useState(null),[context,setContext]=useState(null),[note,setNote]=useState(''),[busy,setBusy]=useState(false)
  useEffect(()=>{let live=true;supabase.auth.getSession().then(({data:s})=>{if(live)setReviewer(s?.session?.user?.id||'anonymous')});return()=>{live=false}},[])
- const[filtersState,rememberFilters,clearFilters]=useRememberedState('layer4-review',{status:'pending',task:''},{userId:reviewer})
- const{status,task}=filtersState
+ const[filtersState,rememberFilters,clearFilters]=useRememberedState('layer4-review',{status:'pending',task:'',view:'review'},{userId:reviewer})
+ const{status,task,view}=filtersState
+ // L4-C batches: grouped by task and suggestion; preview, untick, reason, typed confirmation.
+ const[batches,setBatches]=useState({groups:[],can_apply:false}),[preview,setPreview]=useState(null),[batchMsg,setBatchMsg]=useState('')
+ const loadBatches=async()=>{try{setBatches(await rpc('layer4_review_batches_v1')||{groups:[]})}catch(e){onError(e)}}
+ useEffect(()=>{if(view==='batches')loadBatches()},[view])
+ const openPreview=g=>{const ids=(g.item_ids||[]).slice(0,100);const act=['reject','approve'].includes(g.action)?(g.action==='approve'&&!g.can_approve?'':g.action):'';setBatchMsg('');setPreview({group:g,picked:new Set(ids),action:act,reason:act?`Batch: ${g.text}`:'',confirm:''})}
+ const applyBatch=async()=>{const ids=[...preview.picked];try{const r=await rpc('layer4_batch_decide_v1',{p_item_ids:ids,p_action:preview.action,p_reason:preview.reason,p_confirmation:preview.confirm,p_batch_label:`${preview.group.task} · ${preview.group.text}`});setBatchMsg(`Done: ${r?.decided||ids.length} item(s) decided (${human(preview.action)}).`);setPreview(null);await loadBatches();await load()}catch(e){onError(e)}}
  const load=async(keepId=null)=>{setBusy(true);try{const r=await rpc('layer4_review_desk_v1',{p_status:status||'',p_limit:250});const next=r||{items:[],summary:{}};setData(next);const items=(next.items||[]).filter(i=>!task||i.task===task);const keep=keepId&&items.find(i=>i.id===keepId);setSelectedId(keep?keep.id:(items[0]?.id||null))}catch(e){onError(e)}finally{setBusy(false)}}
  useEffect(()=>{load()},[status])
  const items=useMemo(()=>(data.items||[]).filter(i=>!task||i.task===task),[data,task])
@@ -93,7 +100,8 @@ export function Layer4({onError}){
  const actionsFor=r=>{
    const main=[['reject','Reject'],['approve','Approve'],['edit_and_approve','Edit and approve']]
    const s=r.suggestion?.action
-   const ordered=s==='approve'?[main[1],main[0],main[2]]:main
+   const allowed=r.can_approve===false?main.filter(([a])=>a==='reject'):main
+   const ordered=(s==='approve'?[main[1],main[0],main[2]]:main).filter(x=>allowed.includes(x))
    return <div className="l4d-actions">
      {ordered.map(([a,l],i)=><button key={a} className={s===a?'l4d-primary':''} onClick={()=>decide(r,a,l)}>{l}</button>)}
      <details className="l4d-more"><summary>More</summary><div>
@@ -118,8 +126,29 @@ export function Layer4({onError}){
        <label>Status<select value={status} onChange={e=>rememberFilters({status:e.target.value})}>{[['pending','Waiting for review'],['approved','Approved'],['edited_approved','Edited & approved'],['rejected','Rejected'],['more_evidence','More evidence requested'],['returned_layer2','Sent back to Layer 2'],['returned_layer3','Sent back to Layer 3'],['','All statuses']].map(([v,l])=><option key={v||'all'} value={v}>{l}</option>)}</select></label>
        <div className="l4d-chips">{[['','All'],...tasks.map(([t])=>[t,t])].map(([v,l])=><button key={v||'all'} type="button" className={task===v?'on':''} onClick={()=>rememberFilters({task:v})}>{l}</button>)}</div>
        {(status!=='pending'||task)&&<button type="button" className="m23-clear" onClick={clearFilters}>Reset filters</button>}
+       <div className="l4d-view">{[['review','Review one by one'],['batches','Batches']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>rememberFilters({view:v})}>{l}</button>)}</div>
      </div>
-     {items.length===0?<Empty text="Nothing waiting here. Try another status or task."/>:<div className="l4d-grid">
+     {view==='batches'?<div className="l4b">
+       {batchMsg&&<p className="l4b-msg">{batchMsg}</p>}
+       {!batches.can_apply&&<p className="l4b-note">You can preview batches. Applying a batch needs the Pipeline Operator role.</p>}
+       {preview?<div className="l4b-preview">
+         <header><h3>{preview.group.count} {preview.group.task.toLowerCase()} item(s)</h3><p>{preview.group.text}</p>{preview.group.count>100&&<p className="l4b-note">Showing the oldest 100. Decide these, then preview again for the rest.</p>}</header>
+         <ol className="l4b-items">{(preview.group.samples||[]).filter(x=>(preview.group.item_ids||[]).slice(0,100).includes(x.id)).map(x=><li key={x.id}><label><input type="checkbox" checked={preview.picked.has(x.id)} onChange={e=>{const n=new Set(preview.picked);e.target.checked?n.add(x.id):n.delete(x.id);setPreview({...preview,picked:n,confirm:''})}}/><span><strong>{x.title}</strong>{x.code&&<small> · {x.code}</small>}<br/><small>{[x.provider,x.ai_suggested].filter(Boolean).join(' · ')}</small>{x.quote&&<em>“{x.quote}”</em>}</span></label></li>)}</ol>
+         <div className="l4b-form">
+           <label>Decision<select value={preview.action} onChange={e=>setPreview({...preview,action:e.target.value,confirm:''})}><option value="">Choose…</option><option value="reject">Reject</option>{preview.group.can_approve&&<option value="approve">Approve</option>}<option value="request_more_evidence">Ask for more evidence</option><option value="return_layer2">Send back to enrichment (Layer 2)</option><option value="return_layer3">Send back to AI check (Layer 3)</option></select></label>
+           <label>Reason saved with every item<input value={preview.reason} onChange={e=>setPreview({...preview,reason:e.target.value})}/></label>
+           {preview.action&&<label>Type <b>{preview.action.toUpperCase()} {preview.picked.size}</b> to confirm<input value={preview.confirm} onChange={e=>setPreview({...preview,confirm:e.target.value})}/></label>}
+         </div>
+         <div className="l4d-actions"><button className="l4d-primary" disabled={!batches.can_apply||!preview.action||preview.picked.size<2||preview.reason.trim().length<8||preview.confirm.trim()!==`${preview.action.toUpperCase()} ${preview.picked.size}`} onClick={applyBatch}>Apply to {preview.picked.size} item(s)</button><button onClick={()=>setPreview(null)}>Cancel</button></div>
+       </div>:<div className="l4b-groups">{(batches.groups||[]).map(g=><article key={g.key} className="l4b-group">
+         <div><strong>{g.count} × {g.task}</strong><em className={`l4d-chip ${g.action}`}>{chip(g.action)}</em></div>
+         <p>{g.text}</p>
+         <small>Oldest {g.oldest_days} days · e.g. {(g.samples||[]).slice(0,3).map(x=>x.title).join('; ')}</small>
+         <div><button onClick={()=>openPreview(g)}>Preview batch</button></div>
+       </article>)}{(batches.groups||[]).length===0&&<Empty text="No repeat cases to batch right now."/>}</div>}
+       <h3 className="l4b-sub">Scholarship scope batches and audit history</h3>
+       <Layer4MassOperations embedded/>
+     </div>:items.length===0?<Empty text="Nothing waiting here. Try another status or task."/>:<div className="l4d-grid">
        <ol className="l4d-queue">{items.map(r=><li key={r.id} className={r.id===selectedId?'on':''} onClick={()=>setSelectedId(r.id)}>
          <strong>{title(r)}</strong>
          <span>{[r.entity?.code,r.task].filter(Boolean).join(' · ')}</span>

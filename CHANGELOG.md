@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.12 — 24 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.85**: Layer 4 batches (L4-C).
+- New reads/actions: public.layer4_review_batches_v1 (groups by task and rule-based suggestion) and public.layer4_batch_decide_v1 (Pipeline Operator+, 2-100 previewed items of one kind, typed confirmation, no bulk edit, each item decided through layer4_review_decide_impl, batch logged as review_batch, all or nothing). pipeline.layer4_mass_operations accepts target_kind review_batch.
+- Desk read: scholarship scope items named, plain reason, can_approve flag.
+- Layer 4 screen: Review one by one / Batches switch (remembered); batch preview with untick, reason and confirmation; scholarship scope tools embedded in the Batches view. The mass-operations script no longer self-mounts via MutationObserver. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.11 — 24 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.84**: the Layer 4 mass-operations panel mounts below the review desk and is collapsed by default (heading and count cards visible; "Open batch work" reveals the cohorts). Interim step before L4-C folds it into a Batches tab. v2.15.79 remains the accepted recovery release.
