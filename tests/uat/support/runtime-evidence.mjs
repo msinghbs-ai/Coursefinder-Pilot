@@ -135,7 +135,10 @@ async function inViewport(locator,page){
   return !!box&&!!vp&&box.x>=0&&box.y>=0&&box.x+box.width<=vp.width&&box.y+box.height<=vp.height
 }
 
+// Package 2 (P4): Jobs and Scheduled Tasks live under one menu item with tabs.
+const TABBED_NAV={'Jobs':'Jobs & Schedules','Scheduled Tasks':'Jobs & Schedules'}
 export async function clickPrimaryNav(page,label){
+  if(TABBED_NAV[label]){await clickPrimaryNav(page,TABBED_NAV[label]);await page.locator('button.m-subtab').filter({hasText:label}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT});return}
   const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
   await expect(item,`Missing accepted primary navigation item: ${label}`).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   if(!(await inViewport(item,page))){

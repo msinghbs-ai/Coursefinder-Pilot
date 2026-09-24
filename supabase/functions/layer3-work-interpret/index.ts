@@ -365,7 +365,10 @@ Deno.serve(async (req: Request) => {
       {
         p_interpretation_id: interpretationId,
         p_raw_result: payload,
-        p_candidate_value: parsed?.candidate_value ?? null,
+        // Package 2: under an approved provider rule, record the rule's basis (e.g. indicative_annual).
+        p_candidate_value: (tuition as any)?.provider_rule_basis && tuition?.matched_candidate && parsed?.candidate_value
+          ? { ...parsed.candidate_value, basis: (tuition.matched_candidate as any).basis }
+          : parsed?.candidate_value ?? null,
         p_confidence: Number.isFinite(confidence) ? confidence : null,
         p_rationale:
           typeof parsed?.rationale === "string"

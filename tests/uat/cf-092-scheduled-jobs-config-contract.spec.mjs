@@ -19,7 +19,7 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     expect(workspace).toContain('cadence<1||cadence>3650')
     expect(workspace).toContain("Number(policy?.layer)<=2")
     expect(workspace).toContain('Layer 3 remains Evidence/profile/model-qualified')
-    expect(workspace).toContain('terminalJob')
+    // 'terminalJob' no longer exists in the Scheduled Tasks workspace (stale; removed in Package 2).
     expect(workspace).toContain("Data Operations · Scheduled Tasks")
     expect(workspace).not.toContain("supabase.rpc('refresh_policy_upsert_v2'")
     expect(workspace).not.toContain('scheduler_policy_control')
@@ -27,8 +27,9 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     expect(client).toContain("adminRead('jobs'")
 
     const dataOps=shell.match(/\['Data Operations',\[(.*?)\]\],/s)?.[1]||''
-    expect(dataOps).toContain("item('Scheduled Tasks',Clock3,4)")
-    expect(dataOps.indexOf("item('Scheduled Tasks',Clock3,4)")).toBeLessThan(dataOps.indexOf("item('Evidence',BookOpen,3)"))
+    // Package 2 (P4): Scheduled Tasks is a tab of the Jobs & Schedules menu item.
+    expect(dataOps).toContain("item('Jobs & Schedules',Workflow,4)")
+    expect(dataOps.indexOf("item('Jobs & Schedules',Workflow,4)")).toBeLessThan(dataOps.indexOf("item('Evidence',BookOpen,3)"))
     expect(shell).toContain("if(page==='Scheduled Tasks'&&rank>=4)")
     expect(shell).not.toContain("{key:'scheduling',label:'Scheduling'")
     expect(shell).not.toContain("tool==='scheduling'")

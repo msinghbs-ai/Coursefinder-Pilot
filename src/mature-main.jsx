@@ -53,7 +53,7 @@ const NAV=[
     item('Providers',Building2,1),item('Courses',GraduationCap,1),item('Campuses',MapPin,1),item('Scholarships',Sparkles,1),item('Provider Contacts',UsersRound,1),
   ]],
   ['Data Operations',[
-    item('Layer 1 — Operations',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Scheduled Tasks',Clock3,4),item('Evidence',BookOpen,3),item('Jobs',Workflow,4),
+    item('Layer 1 — Operations',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Jobs & Schedules',Workflow,4),item('Evidence',BookOpen,3),
   ]],
   ['Quality & Insights',[
     item('Completeness',CheckCircle2,1),item('Statistics & Rankings',BarChart3,1),item('Compare',ArrowLeftRight,1),
@@ -75,6 +75,7 @@ const PAGE_META={
   'Student Flow (PRISMS)':['Student Flow (PRISMS)','Time-scoped international student-flow observations.'],
   Compare:['Compare providers & courses','Choose entities, datasets and aligned periods for a governed comparison.'],
   Completeness:['Completeness & readiness','Operational presence signals; not truth, approval or Search admission.'],
+  'Jobs & Schedules':['Jobs & Schedules','Pipeline job history and the governed schedules that run it, in one place.'],
   'Scheduled Tasks':['Scheduled Tasks','Governed Layer 1–3 schedules, on-demand due-work control, queues and run follow-through.'],
   Evidence:['Evidence & provenance','Source snapshots, evidence artifacts and canonical consequences.'],
   'Review Queue':['Review Queue','Human-resolution workload and exception state.'],
@@ -212,7 +213,8 @@ function Page({page,routeParams,rank,actorId,onError,navigate}){
   if(page==='Important Links'&&rank>=3)return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Important Dates'&&rank>=3)return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} actorId={actorId} navigate={navigate} routeParams={routeParams} onError={onError}/>
-  if(page==='Scheduled Tasks'&&rank>=4)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
+  if(page==='Jobs & Schedules'&&rank>=4)return <JobsAndSchedules onError={onError}/>
+    if(page==='Scheduled Tasks'&&rank>=4)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Onboarding'&&rank>=3)return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
   if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
   if(page==='Jobs'&&rank>=4)return <JobsWorkspace/>
@@ -497,6 +499,17 @@ function ScholarshipFillControl({onError}){
  </section>
 }
 
+// Package 2 (P4): Jobs and Scheduled Tasks merged into one menu item with two tabs.
+// The single pages ('Jobs', 'Scheduled Tasks') remain as routes for deep links and contracts.
+function JobsAndSchedules({onError}){
+  const[tab,setTab]=useState(()=>{try{return sessionStorage.getItem('cf-jobs-schedules-tab')||'Jobs'}catch{return 'Jobs'}})
+  const pick=t=>{setTab(t);try{sessionStorage.setItem('cf-jobs-schedules-tab',t)}catch{}}
+  return <div className="m-page-stack">
+    <div className="m-subtabs" role="tablist" aria-label="Jobs and schedules">{['Jobs','Scheduled Tasks'].map(t=><button key={t} type="button" role="tab" aria-selected={tab===t} className={`m-subtab${tab===t?' on':''}`} onClick={()=>pick(t)}>{t}</button>)}</div>
+    {tab==='Jobs'?<JobsWorkspace/>:<RefreshWorkspace onError={e=>onError(e?.message||String(e))}/>}
+  </div>
+}
+
 function Dashboard({onError,navigate}){
   const[data,setData]=useState(null),[layerStatus,setLayerStatus]=useState(null),[platformHealth,setPlatformHealth]=useState(null),[busy,setBusy]=useState(true)
   const load=()=>{setBusy(true);Promise.all([adminRead('dashboard'),adminRead('layer_status_summary'),adminRead('platform_health')]).then(([d,l,h])=>{setData(d);setLayerStatus(l);setPlatformHealth(h)}).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
@@ -533,7 +546,7 @@ function Dashboard({onError,navigate}){
     <section className="m-panel"><PanelTitle icon={AlertTriangle} title="Attention & next actions" subtitle="Exception-first operational guidance"/>
       <div className="m-attention-grid">
         <Attention tone={failed?'danger':'success'} icon={failed?AlertTriangle:CheckCircle2} title={failed?`${failed} failed job${failed===1?'':'s'} in the last 24 hours`:'No failed jobs in the last 24 hours'} text={failed?'Review pipeline failures before the next scheduled run.':'Pipeline failure signal is clear.'} action="Open Jobs" onClick={()=>navigate('Jobs')}/>
-        <Attention tone={reviews?'warning':'success'} icon={ClipboardCheck} title={reviews?`${reviews} review item${reviews===1?'':'s'} awaiting resolution`:'Review queue is clear'} text={reviews?'Prioritise high-impact or identity-sensitive exceptions.':'No current human-resolution backlog.'} action="Open Review Queue" onClick={()=>navigate('Layer 4 — Human Resolution')}/>
+        <Attention tone={reviews?'warning':'success'} icon={ClipboardCheck} title={reviews?`${reviews} review item${reviews===1?'':'s'} awaiting resolution`:'Review queue is clear'} text={reviews?'Prioritise high-impact or identity-sensitive exceptions.':'No current human-resolution backlog.'} action="Open Layer 4" onClick={()=>navigate('Layer 4 — Human Resolution')}/>
         <Attention tone="info" icon={SearchCheck} title={`${fmtNumber(op.search_row_count??data?.search_documents)} projected Search rows`} text={op.search_rebuilt_at?`Last rebuilt ${relativeTime(op.search_rebuilt_at)}.`:'Search rebuild timestamp is not available.'} action="Open Courses" onClick={()=>navigate('Courses')}/>
       </div>
     </section>

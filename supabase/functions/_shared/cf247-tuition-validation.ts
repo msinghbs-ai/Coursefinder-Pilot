@@ -235,6 +235,7 @@ export function validateProviderCurrentTuitionCandidate(
   matched_candidate: TuitionCandidate | null;
   basis_resolution: boolean;
   year_resolution: boolean;
+  provider_rule_basis?: boolean;
 } {
   const errors: string[] = [];
   if (candidate == null)
@@ -308,6 +309,7 @@ export function validateProviderCurrentTuitionCandidate(
   }
 
   let basisResolution = false;
+  let providerRuleBasis = false;
   // CF-247 option A: when Layer 2 captured no fee year, Layer 3 may supply one.
   // Callers must additionally require an Evidence quote stating that year with
   // the amount (tuitionQuoteSupports) before accepting it.
@@ -329,6 +331,16 @@ export function validateProviderCurrentTuitionCandidate(
     ) {
       basisResolution = true;
       match = target;
+    } else if (
+      // Package 2: an approved provider fee rule set the target basis (e.g. UQ program
+      // pages = indicative annual). The AI may call the same yearly fee "annual"; accept it
+      // and keep the rule's basis. Only when the target is stamped by a provider rule.
+      targetBasis === "indicative_annual" &&
+      basis === "annual" &&
+      String((target as any)?.basis_source ?? "").startsWith("provider_fee_rule:")
+    ) {
+      providerRuleBasis = true;
+      match = target;
     }
   }
   if (!match)
@@ -341,6 +353,7 @@ export function validateProviderCurrentTuitionCandidate(
     matched_candidate: match,
     basis_resolution: Boolean(match && basisResolution),
     year_resolution: Boolean(match && yearResolution),
+    provider_rule_basis: providerRuleBasis,
   };
 }
 

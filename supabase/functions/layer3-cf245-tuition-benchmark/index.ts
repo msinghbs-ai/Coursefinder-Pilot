@@ -450,6 +450,11 @@ Deno.serve(async (req: Request) => {
         text: "Fees for international students. Tuition fee: AU$38,400 (2027 annual). Additional costs such as textbooks and field trips are not included. Domestic places are listed separately.",
       },
       {
+        case: "production_provider_rule_indicative_annual",
+        candidate: { amount: 60952, currency_code: "AUD", basis: "indicative_annual", basis_source: "provider_fee_rule:uq-program-page-indicative-annual-v1", fee_year: null, audience: "international" },
+        text: "Bachelor of Example. Fees AUD $60,952 2027. Duration 3 Years. International students. Program Code 9999.",
+      },
+      {
         case: "production_markdown_link_annual",
         candidate: { amount: 56800, currency_code: "AUD", basis: "annual_or_indicative_requires_validation", fee_year: null, audience: "international" },
         text: "Program overview. Fees[AU$56,800 per year (2027)](https://study.example.edu.au/programs/example#fees)Duration 3 Years. Fees are for international students.",

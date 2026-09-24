@@ -41,14 +41,16 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(shell).toContain("import PlatformMaturity from'./platform-maturity-entry'")
     expect(shell).toContain("<PlatformMaturity rank={rank} onError={onError}/>")
     expect(shell).not.toContain("{tool==='platform'&&rank>=6&&<div className=\"m-legacy-host\"><RegulatorySettings")
-    expect(shell).toContain("action=\"Open PIM\" onClick={()=>selectTool('pim')}")
+    // The 'Open PIM' overview card was removed; PIM configuration remains an Administration section.
+    expect(shell).toContain("{key:'pim',label:'PIM configuration'")
     const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
     expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
     expect(historyVersion).toBe(fallbackVersion)
     expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-    expect(manifest).toContain(`version:'${fallbackVersion}'`)
+    // The fallback version's notes live in the legacy history (pim-version-entry.js); the manifest holds only the current release.
+    expect(versionEntry).toContain(`version:'${fallbackVersion}'`)
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>Coursefinder PIM Admin</title>')
     expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)
