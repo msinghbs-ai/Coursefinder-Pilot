@@ -384,6 +384,7 @@ export function quoteComparable(value: unknown): string {
     .replace(/\\\//g, "/")
     .replace(/\\"/g, '"')
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[\[\]]/g, "") // stray square brackets without a link target, e.g. "Fees[A$91428]"
     .replace(/[*_`#>|]/g, "")
     .replace(/\s+/g, "")
     .toLowerCase();
