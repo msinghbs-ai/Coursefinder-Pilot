@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.18 — 25 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.91** (Package 2).
+- Menu: Jobs and Scheduled Tasks merged into "Jobs & Schedules" (tabs); single pages kept as routes; test helper clickPrimaryNav maps the old labels to the tabs.
+- Provider fee profiles: pipeline.provider_fee_profiles, security.apply_provider_fee_profiles_v1 (every 5 minutes), first rule uq-program-page-indicative-annual-v1; targets stamped basis_source provider_fee_rule:<code>.
+- Layer 3 (binding change, requires re-qualification): validator accepts "annual" where an approved provider rule set "indicative_annual" (provider_rule_basis flag); interpreter records the rule's basis; benchmark case production_provider_rule_indicative_annual; manifest regenerated.
+- P5a: pipeline.evidence_acquisition_provenance_v1 (tool, adapter, attempt per Evidence item).
+- Scheduled Tasks: Layer 1-3 shortcut row removed; replay-safety sentence restored. Dashboard "Open Review Queue" relabelled "Open Layer 4".
+- Stale tests fixed: cf-092 (terminalJob, menu), m2-5-platform-maturity-admin (Open PIM, version pin), admin-navigation order. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.17 — 25 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.90** (Package 1: queue relief, Jobs simplification, release history).

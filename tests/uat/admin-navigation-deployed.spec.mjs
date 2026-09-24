@@ -12,15 +12,15 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     for(const group of ['Overview','Catalogue','Data Operations','Quality & Insights','Administration']){
       await expect(nav.locator('.m-nav-label').filter({hasText:group})).toHaveText(group,{timeout:DETERMINISTIC_UI_TIMEOUT})
     }
-    for(const label of ['Dashboard','Providers','Courses','Campuses','Scholarships','Provider Contacts','Statistics & Rankings','Compare','Layer 1 — Operations','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 4 — Human Resolution','Scheduled Tasks','Evidence','Jobs','Completeness','Administration']){
+    for(const label of ['Dashboard','Providers','Courses','Campuses','Scholarships','Provider Contacts','Statistics & Rankings','Compare','Layer 1 — Operations','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 4 — Human Resolution','Jobs & Schedules','Evidence','Completeness','Administration']){
       await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     }
     for(const obsolete of ['Review Queue','Layer 1 — Regulatory','Layer 1 — Authority','Evidence & Provenance','Jobs & Runs','Scholarship Selection','Guides & Runbooks','Settings','Layer 2 Operations','Refresh & Scheduling']){
       await expect(nav.getByRole('button',{name:obsolete,exact:true})).toHaveCount(0)
     }
     const order=await nav.locator('button').evaluateAll(nodes=>nodes.map(n=>n.textContent?.trim()))
-    expect(order.indexOf('Scheduled Tasks')).toBeGreaterThan(-1)
-    expect(order.indexOf('Scheduled Tasks')).toBeLessThan(order.indexOf('Evidence'))
+    expect(order.indexOf('Jobs & Schedules')).toBeGreaterThan(-1)
+    expect(order.indexOf('Jobs & Schedules')).toBeLessThan(order.indexOf('Evidence'))
     await milestoneScreenshot(page,testInfo,'admin-canonical-navigation')
   }finally{await finish(testInfo,runtime)}})
 
