@@ -138,7 +138,8 @@ function SectionTitle({icon:Icon,title,subtitle}){return <div className="ops-sec
 function DetailCard({title,rows}){return <section className="ops-detail-card"><h4>{title}</h4>{rows.map(([l,v])=><Fact key={l} label={l} value={v}/>)}</section>}
 function Fact({label,value,action,onClick}){return <div className="ops-fact"><span>{label}</span><div><strong title={String(value??'—')}>{value??'—'}</strong>{action&&<button onClick={onClick}>{action}</button>}</div></div>}
 function Metric({label,value}){return <div className="ops-metric"><span>{label}</span><strong>{value==null?'—':typeof value==='number'?num(value):value}</strong></div>}
-function MiniCounts({row,keys}){return <div className="ops-mini-counts">{keys.map(k=><span key={k} title={human(k)}><small>{human(k).replace(' count','').split(' ')[0]}</small><strong>{row[k]==null?'—':num(row[k])}</strong></span>)}</div>}
+// v2.15.90: show only counts that were recorded and are not zero (most job types record none).
+function MiniCounts({row,keys}){const shown=keys.filter(k=>row[k]!=null&&Number(row[k])!==0);if(!shown.length)return <div className="ops-mini-counts ops-mini-none"><small>Not recorded</small></div>;return <div className="ops-mini-counts">{shown.map(k=><span key={k} title={human(k)}><small>{human(k).replace(' count','').split(' ')[0]}</small><strong>{num(row[k])}</strong></span>)}</div>}
 function Badge({value}){const v=String(value||'unknown');return <span className={`ops-badge b-${slug(v)}`}>{human(v)}</span>}
 function Select({label,value,onChange,options}){const list=normalise(options);return <label className="ops-select"><span>{label}</span><select value={value} onChange={e=>onChange(e.target.value)}><option value="">All</option>{list.map(o=><option value={o.value} key={o.value}>{o.label}</option>)}</select></label>}
 function Loading({label,compact=false}){return <div className={`ops-loading ${compact?'compact':''}`}><RefreshCw size={17}/><span>{label}</span></div>}

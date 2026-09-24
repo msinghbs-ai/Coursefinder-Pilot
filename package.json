@@ -1,13 +1,13 @@
 {
   "name": "coursefinder-pilot",
   "private": true,
-  "version": "0.1.16",
+  "version": "0.1.17",
   "type": "module",
   "scripts": {
     "release:verify": "node scripts/verify-release-contract.mjs",
     "predev": "npm run release:verify",
     "dev": "vite",
-    "prebuild": "npm run release:verify",
+    "prebuild": "npm run release:verify && node scripts/build-release-history.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "worker:dev": "wrangler dev",

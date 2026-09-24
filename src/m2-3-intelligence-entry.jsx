@@ -55,7 +55,7 @@ export function Layer4({onError}){
  useEffect(()=>{if(view==='team')rpc('layer4_team_forecast_v1',{p_days:teamDays}).then(setTeam).catch(onError)},[view,teamDays])
  const loadBatches=async()=>{try{setBatches(await rpc('layer4_review_batches_v1')||{groups:[]})}catch(e){onError(e)}}
  useEffect(()=>{if(view==='batches')loadBatches()},[view])
- const openPreview=g=>{const ids=(g.item_ids||[]).slice(0,100);const act=['reject','approve'].includes(g.action)?(g.action==='approve'&&!g.can_approve?'':g.action):'';setBatchMsg('');setPreview({group:g,picked:new Set(ids),action:act,reason:act?`Batch: ${g.text}`:'',confirm:''})}
+ const openPreview=g=>{const ids=(g.item_ids||[]).slice(0,100);const act=['reject','approve','return_layer3'].includes(g.action)?(g.action==='approve'&&!g.can_approve?'':g.action):'';setBatchMsg('');setPreview({group:g,picked:new Set(ids),action:act,reason:act?`Batch: ${g.text}`:'',confirm:''})}
  const applyBatch=async()=>{const ids=[...preview.picked];try{const r=await rpc('layer4_batch_decide_v1',{p_item_ids:ids,p_action:preview.action,p_reason:preview.reason,p_confirmation:preview.confirm,p_batch_label:`${preview.group.task} · ${preview.group.text}`});setBatchMsg(`Done: ${r?.decided||ids.length} item(s) decided (${human(preview.action)}).`);setPreview(null);await loadBatches();await load()}catch(e){onError(e)}}
  const load=async(keepId=null)=>{setBusy(true);try{const r=await rpc('layer4_review_desk_v1',{p_status:status||'',p_limit:250});const next=r||{items:[],summary:{}};setData(next);const items=(next.items||[]).filter(i=>!task||i.task===task);const keep=keepId&&items.find(i=>i.id===keepId);setSelectedId(keep?keep.id:(items[0]?.id||null))}catch(e){onError(e)}finally{setBusy(false)}}
  useEffect(()=>{load()},[status])
@@ -110,7 +110,8 @@ export function Layer4({onError}){
    const allowed=r.can_approve===false?main.filter(([a])=>a==='reject'||(a==='edit_and_approve'&&editOnly)):main
    const ordered=(s==='approve'?[main[1],main[0],main[2]]:main).filter(x=>allowed.includes(x))
    return <div className="l4d-actions">
-     {ordered.map(([a,l],i)=><button key={a} className={s===a||(editOnly&&a==='edit_and_approve')?'l4d-primary':''} onClick={()=>a==='edit_and_approve'&&hasForm(r)?openEdit(r):decide(r,a,l)}>{l}</button>)}
+     {s==='return_layer3'&&<button className="l4d-primary" onClick={()=>decide(r,'return_layer3','Send back to AI check (Layer 3)')}>Send back for AI check</button>}
+     {ordered.map(([a,l],i)=><button key={a} className={(s===a||(editOnly&&a==='edit_and_approve'))&&s!=='return_layer3'?'l4d-primary':''} onClick={()=>a==='edit_and_approve'&&hasForm(r)?openEdit(r):decide(r,a,l)}>{l}</button>)}
      <details className="l4d-more"><summary>More</summary><div>
        <button onClick={()=>decide(r,'request_more_evidence','Ask for more evidence')}>Ask for more evidence</button>
        <button onClick={()=>decide(r,'return_layer2','Send back to enrichment (Layer 2)')}>Send back to enrichment (Layer 2)</button>
@@ -126,7 +127,7 @@ export function Layer4({onError}){
    if(!current||current.status!=='pending'||claimInfo)return;if(k==='r')decide(current,'reject','Reject');else if(k==='a'&&current.can_approve!==false)decide(current,'approve','Approve');else if(k==='e'&&hasForm(current))openEdit(current)}
    addEventListener('keydown',h);return()=>removeEventListener('keydown',h)},[view,selectedId,current,claimInfo,note])
  const title=r=>r?.entity?.title||r?.entity?.provider||r?.task
- const chip=a=>a==='reject'?'Suggest reject':a==='approve'?'Suggest approve':'Check'
+ const chip=a=>a==='reject'?'Suggest reject':a==='approve'?'Suggest approve':a==='return_layer3'?'Suggest send back':'Check'
  return <div className="m23-stack">
    <LayerWorkspaceHeader layer="4" eyebrow="Layer 4 · governed human resolution" title="Layer 4 — Human Resolution" subtitle="Decide the items automation could not settle. Each decision is recorded with its reason and can be reversed." onRefresh={()=>load(selectedId)} busy={busy}/>
    <section className="m23-panel"><Head icon={ShieldCheck} title="Layer 4 status"/><div className="m23-cards">

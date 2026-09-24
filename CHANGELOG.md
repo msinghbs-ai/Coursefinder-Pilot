@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.17 — 25 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.90** (Package 1: queue relief, Jobs simplification, release history).
+- Layer 3: shared quoteComparable / evidenceQuotePresent in cf247-tuition-validation.ts (visible-text comparison: link targets, JSON escapes and formatting removed on both sides); used by layer3-work-interpret and the tuition benchmark; new production-shaped benchmark case production_markdown_link_annual; binding manifest regenerated (validator_source_sha256 9667690c...). Requires deploy and re-qualification before it runs.
+- Layer 4: Send back to Layer 3 re-queues the tuition work item (trigger on layer4_decisions); gated "Send back" suggestion; official course link suggestion rules.
+- Jobs: MiniCounts shows only recorded, non-zero counts.
+- Release history: scripts/build-release-history.mjs (prebuild) generates public/release-history.json from legacy history, docs/release-notes and the manifest; public/release-history.html; the release overlay fills in missing releases and links to the history.
+- .github/workflows/deploy-edge-functions.yml: guarded manual deployment. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.16 — 24 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.89**: Layer 4 decision forms for official course links and scholarship scope.
