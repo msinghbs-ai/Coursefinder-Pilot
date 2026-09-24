@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.11 — 24 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.84**: the Layer 4 mass-operations panel mounts below the review desk and is collapsed by default (heading and count cards visible; "Open batch work" reveals the cohorts). Interim step before L4-C folds it into a Batches tab. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.10 — 24 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.83**: Layer 4 review desk (L4-A).

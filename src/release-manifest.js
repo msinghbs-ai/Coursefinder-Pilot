@@ -1,26 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.83'
-export const PACKAGE_VERSION='0.1.10'
+export const UI_VERSION='2.15.84'
+export const PACKAGE_VERSION='0.1.11'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Sep 2026',
-  title:'Layer 4 review desk',
+  title:'Review desk first',
   changes:[
-    'Layer 4 is now a review desk: a queue on the left and one decision at a time on the right, oldest first; the next item opens after each decision.',
-    'Each item shows the course and provider by name, the reason, what is recorded now, what the AI suggested, and the exact words the page shows.',
-    'A suggestion (Reject, Approve or Check) is shown for each item, based on simple rules about the page wording. It is never applied automatically.',
-    'Links open the provider page, the course page, or a ready-made web search.',
-    'A note field is pre-filled from the suggestion, so the reason saved with each decision no longer needs a pop-up.',
-    'Less common actions (ask for more evidence, send back to Layer 2 or Layer 3) are under More; technical detail is collapsed.',
-    'Status and task filters are remembered per reviewer; the status cards show waiting items, the oldest item against the 7-day target, and suggestion counts.'
+    'Layer 4 opens straight on the review desk. Batch work (bulk decisions for repeat cases) now sits below it, collapsed, with its key counts still visible; select "Open batch work" to use it.'
   ],
   bugFixes:[
-    'The Evidence screen no longer times out and shows no items: its filter options are now prepared in the background.',
-    'Review reasons written for developers (for example about Firecrawl or ZenRows) are replaced with plain instructions; the original text stays under Technical detail.',
-    'Quotes from pages no longer show web-link formatting.'
+    'The long list of scholarship cohorts no longer fills the top of Layer 4 and pushes the review desk out of sight.'
   ]
 }
 
