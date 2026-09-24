@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.16 — 24 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.89**: Layer 4 decision forms for official course links and scholarship scope.
+- Backend: security.layer4_course_link_apply_impl records reviewer links in catalogue.course_links (https only; search, social and listing sites refused) and refreshes search; security.layer4_scholarship_scope_close_impl allows Mark as done only when no candidate courses need review; decisions routed by category; desk read adds per-category can_approve (never empty), scope_pending and provider_domain.
+- New source "Layer 4 human review" (source_type layer4_human_review), approved for official_course_url in search (programme owner decision 24 Sep 2026, option A).
+- Stale tests: cf-205, cf-208 and cf-142-143 updated to current names and the release-manifest authority; m245-release-currentness-ranking-fix-contract and m245-release-dialog-history-contract retired (superseded by m245-release-history-v21575-persistence-contract). v2.15.79 remains the accepted recovery release.
+
 ## 0.1.15 — 24 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.88**: Layer 4 team and forecast (L4-D: public.layer4_team_forecast_v1, read-only; managers rank 5+ see everyone, others their own row), plus Layer 4 task chips show waiting counts; tuition items without a proposed fee keep Edit and approve (main action).

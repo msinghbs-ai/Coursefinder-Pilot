@@ -15,9 +15,9 @@ const REASON_TEXT={
 }
 function plainReason(code){const c=String(code||'');if(REASON_TEXT[c])return REASON_TEXT[c];if(/^[a-z0-9_]+$/.test(c)){const t=c.replace(/_/g,' ');return t.charAt(0).toUpperCase()+t.slice(1)+'.'}return c}
 // v2.15.85: rendered inside the Layer 4 desk (Batches view); no longer inserts itself into the page.
-export function Layer4MassOperations({embedded=false}={}){
+export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=false}={}){
  const[summary,setSummary]=useState({}),[groups,setGroups]=useState([]),[reviewGroups,setReviewGroups]=useState([]),[diagnostics,setDiagnostics]=useState([]),[findings,setFindings]=useState([]),[history,setHistory]=useState([])
- const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(''),[tab,setTab]=useState('scope'),[open,setOpen]=useState(false),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(initialQuery||''),[tab,setTab]=useState('scope'),[open,setOpen]=useState(!!startOpen),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
  const load=async()=>{setBusy(true);setError('');try{const[s,g,r,d,f,h]=await Promise.all([rpc('layer4_mass_summary'),rpc('layer4_scholarship_scope_groups',{p_limit:200}),rpc('layer4_review_groups',{p_limit:200}),rpc('layer4_quality_diagnostics'),rpc('layer4_quality_findings_read',{p_status:'open',p_limit:100}),rpc('layer4_mass_operations_history',{p_limit:50})]);setSummary(s||{});setGroups(Array.isArray(g)?g:[]);setReviewGroups(Array.isArray(r)?r:[]);setDiagnostics(Array.isArray(d)?d:[]);setFindings(Array.isArray(f)?f:[]);setHistory(Array.isArray(h)?h:[])}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  useEffect(()=>{load()},[])
  const filtered=useMemo(()=>groups.filter(g=>!query||[g.scholarship_name,g.provider_name,g.candidate_reason,...(g.sample_courses||[])].join(' ').toLowerCase().includes(query.toLowerCase())),[groups,query])

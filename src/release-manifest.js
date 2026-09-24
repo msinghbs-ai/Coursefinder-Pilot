@@ -1,23 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.88'
-export const PACKAGE_VERSION='0.1.15'
+export const UI_VERSION='2.15.89'
+export const PACKAGE_VERSION='0.1.16'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Sep 2026',
-  title:'Layer 4 team and forecast',
+  title:'Layer 4 decision forms for every category',
   changes:[
-    'Layer 4 has a Team and forecast view: waiting items, arrivals and decisions per day, how long items have been waiting, and a forecast of when the queue clears (or a warning that it is growing).',
-    'Managers (PIM Admin and above) see who decided what, with median time per decision and outcomes; everyone else sees only their own figures.',
-    'Task filters show how many items are waiting, for example "Tuition fee (282)".',
-    'Tuition items with no proposed fee show Edit and approve as the main action, so the fee can be entered and approved.'
+    'Official course link items have their own form: paste the provider\'s course page link (the usual website is suggested), then approve. The link appears in search.',
+    'Scholarship scope items show how many courses still need a decision, with a button that opens those courses in batch work, and Mark as done once they are all decided.',
+    'Links entered by reviewers are recorded against a dedicated "Layer 4 human review" source, so it is clear a person entered them.'
   ],
   bugFixes:[
-    'Tuition items with no proposed fee showed only Reject and More; Edit and approve is back.',
-    'Approving a tuition fee from the app no longer fails with "UPDATE requires a WHERE clause".',
-    'Course details no longer time out: provider rankings now load in a fraction of the time.'
+    'Official course link items could not be approved: there was no field to enter the link.',
+    'Scholarship scope items offered no way to complete them.',
+    'Automated checks cleaned up: five out-of-date tests were fixed or retired.'
   ]
 }
 

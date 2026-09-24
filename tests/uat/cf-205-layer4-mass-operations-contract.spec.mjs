@@ -7,8 +7,8 @@ const read=p=>readFile(new URL(`../../${p}`,import.meta.url),'utf8')
 test('CF-205 Layer 4 mass operations is loaded and release current',async()=>{
  const[index,entry,release]=await Promise.all([read('index.html'),read('src/layer4-mass-operations-entry.jsx'),read('src/release-currentness-entry.js')])
  assert.match(index,/layer4-mass-operations-entry\.jsx/)
- assert.match(index,/v2\.15\.65/)
- assert.match(release,/VERSION='2\.15\.65'/)
+ // Version pins removed: the release manifest is the version authority.
+ assert.match(release,/release-manifest/)
  assert.match(entry,/Layer 4 mass operations/)
  assert.match(entry,/Scholarship scope/)
  assert.match(entry,/Errors & improvements/)

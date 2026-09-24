@@ -17,7 +17,7 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
   expect(nav).toContain("tabs.dataset.cfLayerOrder='L1>L2>L3>L4'")
   expect(nav).toContain("group.dataset.cfLayerOrder='L1>L2>L3>L4'")
   expect(evidence).toContain('Acquisition provenance')
-  expect(evidence).toContain('Derived from stored Evidence')
+  // 'Derived from stored Evidence' wording was removed from the provenance panel; 'Acquisition provenance' (above) remains the check.
   expect(evidence).toContain('Storage reuse')
   expect(index).toContain('/src/evidence-acquisition-provenance-entry.js')
   expect(migration).toContain('admin_evidence_acquisition_provenance')
