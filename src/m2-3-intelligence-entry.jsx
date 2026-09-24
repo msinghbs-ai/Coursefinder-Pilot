@@ -47,7 +47,7 @@ export function Layer4({onError}){
  useEffect(()=>{let live=true;supabase.auth.getSession().then(({data:s})=>{if(live)setReviewer(s?.session?.user?.id||'anonymous')});return()=>{live=false}},[])
  const[filtersState,rememberFilters,clearFilters]=useRememberedState('layer4-review',{status:'pending',task:'',view:'review',who:'all'},{userId:reviewer})
  const{status,task,view,who}=filtersState
- const[claimInfo,setClaimInfo]=useState(null),[edit,setEdit]=useState(null),[panelError,setPanelError]=useState('')
+ const[scopeQuery,setScopeQuery]=useState(''),[claimInfo,setClaimInfo]=useState(null),[edit,setEdit]=useState(null),[panelError,setPanelError]=useState('')
  // L4-C batches: grouped by task and suggestion; preview, untick, reason, typed confirmation.
  const[batches,setBatches]=useState({groups:[],can_apply:false}),[preview,setPreview]=useState(null),[batchMsg,setBatchMsg]=useState('')
  // L4-D team and forecast (read-only).
@@ -106,11 +106,11 @@ export function Layer4({onError}){
  const actionsFor=r=>{
    const main=[['reject','Reject'],['approve','Approve'],['edit_and_approve','Edit and approve']]
    const s=r.suggestion?.action
-   const editOnly=r.can_approve===false&&r.field_code==='provider_current_tuition_validation'
+   const editOnly=r.can_approve===false&&hasForm(r)
    const allowed=r.can_approve===false?main.filter(([a])=>a==='reject'||(a==='edit_and_approve'&&editOnly)):main
    const ordered=(s==='approve'?[main[1],main[0],main[2]]:main).filter(x=>allowed.includes(x))
    return <div className="l4d-actions">
-     {ordered.map(([a,l],i)=><button key={a} className={s===a||(editOnly&&a==='edit_and_approve')?'l4d-primary':''} onClick={()=>a==='edit_and_approve'&&r.field_code==='provider_current_tuition_validation'?openEdit(r):decide(r,a,l)}>{l}</button>)}
+     {ordered.map(([a,l],i)=><button key={a} className={s===a||(editOnly&&a==='edit_and_approve')?'l4d-primary':''} onClick={()=>a==='edit_and_approve'&&hasForm(r)?openEdit(r):decide(r,a,l)}>{l}</button>)}
      <details className="l4d-more"><summary>More</summary><div>
        <button onClick={()=>decide(r,'request_more_evidence','Ask for more evidence')}>Ask for more evidence</button>
        <button onClick={()=>decide(r,'return_layer2','Send back to enrichment (Layer 2)')}>Send back to enrichment (Layer 2)</button>
@@ -118,11 +118,12 @@ export function Layer4({onError}){
      </div></details>
    </div>
  }
- const openEdit=r=>{const v=r?.technical?.proposed_value||{};setEdit({amount:v.amount??'',currency_code:v.currency_code||'AUD',fee_year:v.fee_year??'',basis:['annual','indicative_annual'].includes(v.basis)?v.basis:'annual',audience:v.audience||'international',note:`Checked the page: fee confirmed${v.amount?` as ${v.amount}`:''}`})}
- const saveEdit=r=>{const amt=Number(edit.amount),yr=edit.fee_year===''?null:Number(edit.fee_year);if(!(amt>0))return setPanelError('Enter a fee amount greater than 0.');if(yr!==null&&!(yr>=2024&&yr<=2030))return setPanelError('Fee year must be between 2024 and 2030, or blank.');decide(r,'edit_and_approve','Edit and approve',{amount:amt,currency_code:edit.currency_code,basis:edit.basis,fee_year:yr,audience:edit.audience},edit.note)}
+ const hasForm=r=>['provider_current_tuition_validation','official_course_url'].includes(r?.field_code)
+ const openEdit=r=>{if(r?.field_code==='official_course_url'){const v=r?.technical?.proposed_value;setEdit({kind:'link',url:typeof v==='string'?v:(v?.url||''),note:'Found the official course page on the provider\'s website'});return}const v=r?.technical?.proposed_value||{};setEdit({amount:v.amount??'',currency_code:v.currency_code||'AUD',fee_year:v.fee_year??'',basis:['annual','indicative_annual'].includes(v.basis)?v.basis:'annual',audience:v.audience||'international',note:`Checked the page: fee confirmed${v.amount?` as ${v.amount}`:''}`})}
+ const saveEdit=r=>{if(edit?.kind==='link'){const u=(edit.url||'').trim();if(!/^https:\/\/[^\s/]+\.[^\s/]+/i.test(u))return setPanelError('Enter the full https:// address of the provider\'s course page.');return decide(r,'edit_and_approve','Edit and approve',u,edit.note)}const amt=Number(edit.amount),yr=edit.fee_year===''?null:Number(edit.fee_year);if(!(amt>0))return setPanelError('Enter a fee amount greater than 0.');if(yr!==null&&!(yr>=2024&&yr<=2030))return setPanelError('Fee year must be between 2024 and 2030, or blank.');decide(r,'edit_and_approve','Edit and approve',{amount:amt,currency_code:edit.currency_code,basis:edit.basis,fee_year:yr,audience:edit.audience},edit.note)}
  // Keyboard: R reject, A approve, E edit, N next (not while typing).
  useEffect(()=>{if(view!=='review')return;const h=e=>{const t=e.target?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(t)||e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();if(k==='n'){const n=nextAfter(selectedId);if(n)setSelectedId(n);return}
-   if(!current||current.status!=='pending'||claimInfo)return;if(k==='r')decide(current,'reject','Reject');else if(k==='a'&&current.can_approve!==false)decide(current,'approve','Approve');else if(k==='e'&&current.field_code==='provider_current_tuition_validation')openEdit(current)}
+   if(!current||current.status!=='pending'||claimInfo)return;if(k==='r')decide(current,'reject','Reject');else if(k==='a'&&current.can_approve!==false)decide(current,'approve','Approve');else if(k==='e'&&hasForm(current))openEdit(current)}
    addEventListener('keydown',h);return()=>removeEventListener('keydown',h)},[view,selectedId,current,claimInfo,note])
  const title=r=>r?.entity?.title||r?.entity?.provider||r?.task
  const chip=a=>a==='reject'?'Suggest reject':a==='approve'?'Suggest approve':'Check'
@@ -179,7 +180,7 @@ export function Layer4({onError}){
          <div><button onClick={()=>openPreview(g)}>Preview batch</button></div>
        </article>)}{(batches.groups||[]).length===0&&<Empty text="No repeat cases to batch right now."/>}</div>}
        <h3 className="l4b-sub">Scholarship scope batches and audit history</h3>
-       <Layer4MassOperations embedded/>
+       <Layer4MassOperations key={scopeQuery||'all'} embedded initialQuery={scopeQuery} startOpen={!!scopeQuery}/>
      </div>:items.length===0?<Empty text="Nothing waiting here. Try another status or task."/>:<div className="l4d-grid">
        <ol className="l4d-queue">{items.map(r=><li key={r.id} className={r.id===selectedId?'on':''} onClick={()=>setSelectedId(r.id)}>
          <strong>{title(r)}</strong>
@@ -203,14 +204,22 @@ export function Layer4({onError}){
            </div>
            {panelError&&<p className="l4d-error" role="alert">{panelError}</p>}
            {claimInfo&&<p className="l4d-taken">Being reviewed by {claimInfo.claimed_by||'another reviewer'}. It frees up in about {claimInfo.minutes_left} minute(s) if left idle.</p>}
-           {edit&&<div className="l4d-edit"><strong>Edit the fee, then approve</strong><div className="l4b-form">
+           {edit?.kind==='link'&&<div className="l4d-edit"><strong>Add the official course page, then approve</strong><div className="l4b-form">
+             <label className="l4d-edit-note">Official course page link<input type="url" value={edit.url} onChange={e=>setEdit({...edit,url:e.target.value})} placeholder={current.provider_domain?`https://${current.provider_domain}/…`:'https://…'}/></label>
+             {current.provider_domain&&<small className="l4b-note">This provider's course pages are usually on {current.provider_domain}.</small>}
+             <label className="l4d-edit-note">Note saved with your decision<input value={edit.note} onChange={e=>setEdit({...edit,note:e.target.value})}/></label>
+           </div><div className="l4d-actions"><button className="l4d-primary" onClick={()=>saveEdit(current)}>Save and approve</button><button onClick={()=>setEdit(null)}>Cancel</button></div></div>}
+           {edit&&edit.kind!=='link'&&<div className="l4d-edit"><strong>Edit the fee, then approve</strong><div className="l4b-form">
              <label>Amount<input type="number" min="1" value={edit.amount} onChange={e=>setEdit({...edit,amount:e.target.value})}/></label>
              <label>Currency<select value={edit.currency_code} onChange={e=>setEdit({...edit,currency_code:e.target.value})}><option>AUD</option><option>NZD</option></select></label>
              <label>Charged<select value={edit.basis} onChange={e=>setEdit({...edit,basis:e.target.value})}><option value="annual">Per year</option><option value="indicative_annual">Per year (indicative)</option></select></label>
              <label>Fee year<input type="number" min="2024" max="2030" value={edit.fee_year??''} onChange={e=>setEdit({...edit,fee_year:e.target.value})} placeholder="blank if not stated"/></label>
              <label className="l4d-edit-note">Note saved with your decision<input value={edit.note} onChange={e=>setEdit({...edit,note:e.target.value})}/></label>
            </div><div className="l4d-actions"><button className="l4d-primary" onClick={()=>saveEdit(current)}>Save and approve</button><button onClick={()=>setEdit(null)}>Cancel</button></div></div>}
-           {current.status==='pending'&&!claimInfo&&!edit&&<>
+           {current.entity?.type==='scholarship'&&current.status==='pending'&&<div className="l4d-edit"><strong>{current.scope_pending>0?`${current.scope_pending} course(s) still need a scope decision`:'All courses have a scope decision'}</strong>
+             <p className="l4b-note">Decide which courses this scholarship applies to in batch work, then mark this item as done.</p>
+             <div className="l4d-actions">{current.scope_pending>0&&<button className="l4d-primary" onClick={()=>{setScopeQuery(current.entity?.title||'');rememberFilters({view:'batches'})}}>Decide these in Batches</button>}<button className={current.scope_pending>0?'':'l4d-primary'} disabled={current.scope_pending>0} onClick={()=>decide(current,'approve','Mark as done',undefined,note||'Scholarship scope decided in batch work')}>Mark as done</button></div></div>}
+           {current.status==='pending'&&!claimInfo&&!edit&&current.entity?.type!=='scholarship'&&<>
              <label className="l4d-note">Note saved with your decision<input value={note} onChange={e=>setNote(e.target.value)} placeholder="Why you decided (required)"/></label>
              {actionsFor(current)}
              <small className="l4d-keys">Keys: R reject · A approve · E edit · N next</small>

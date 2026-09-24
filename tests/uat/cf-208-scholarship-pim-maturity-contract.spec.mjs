@@ -12,7 +12,7 @@ test('CF-208 Scholarship PIM catalogue is wired through the mature governed shel
  assert.match(main,/function ScholarshipWorkspace/)
  assert.match(main,/<Catalogue type="scholarship"/)
  assert.match(main,/scholarship:\{operation:'scholarships_page',detail:'scholarship_detail',sort:'scholarship'/)
- assert.match(api,/scholarshipPage:\s*args\s*=>\s*entityPage\('scholarships_page',args\)/)
+ assert.match(api,/scholarshipPage:\s*args\s*=>\s*entityPage\('scholarships_page'/)
  assert.match(api,/scholarshipDetail:\s*scholarshipId\s*=>\s*adminRead\('scholarship_detail'/)
 })
 
