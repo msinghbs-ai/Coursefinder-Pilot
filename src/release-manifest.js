@@ -1,24 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.85'
-export const PACKAGE_VERSION='0.1.12'
+export const UI_VERSION='2.15.86'
+export const PACKAGE_VERSION='0.1.13'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Sep 2026',
-  title:'Layer 4 batches',
+  title:'Layer 4 team working',
   changes:[
-    'Layer 4 has a Batches view (switch between "Review one by one" and "Batches"). Repeat cases are grouped by task and suggestion, for example tuition fees where the page shows a course total.',
-    'Preview a batch before deciding: see every item with its page quote, untick any you are unsure about, give one reason, and type a confirmation such as "REJECT 41".',
-    'Every item in a batch is recorded exactly as if decided on its own, and the batch itself is recorded too. If any item cannot be decided, none are.',
-    'Applying a batch needs the Pipeline Operator role; curators can preview.',
-    'Scholarship scope items now show the scholarship and provider names, and scholarship scope batches and history sit in the Batches view.'
+    'Opening a Layer 4 item reserves it for you, so two people cannot work on the same item. A reservation lapses after 30 minutes without activity.',
+    'Items someone else is reviewing are marked "In review" and show who has them; their decision buttons are hidden.',
+    'Filter the queue by All, Mine or Unassigned.',
+    'Keyboard keys: R reject, A approve, E edit, N next item (not while typing).',
+    'Edit and approve for tuition fees now uses a form (amount, currency, per year or indicative, fee year) instead of raw data.',
+    'Batches refuse items someone else is reviewing, and say how many to untick.'
   ],
   bugFixes:[
-    'Approve is no longer offered for scholarship scope items, where it could not be applied.',
-    'Scholarship cohort reasons are shown in plain English instead of internal codes.',
-    'The batch panel no longer inserts itself into the page; Layer 4 shows it deliberately in the Batches view.'
+    'The scholarship tools in the Batches view start collapsed instead of listing every cohort.'
   ]
 }
 

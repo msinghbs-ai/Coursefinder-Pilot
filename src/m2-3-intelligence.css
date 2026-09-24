@@ -53,3 +53,9 @@
 .l4b-items em{display:block;font-style:normal;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#475569;margin-top:2px}
 .l4b-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.l4b-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:#475569}
 .l4b-sub{margin:10px 0 0;font-size:15px}
+
+/* L4-B */
+.l4d-chip.taken{background:#e0e7ff;color:#3730a3}
+.l4d-taken{margin:0;padding:9px 12px;border-radius:8px;background:#e0e7ff;color:#3730a3;font-size:14px}
+.l4d-edit{border:1px dashed #94a3b8;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+.l4d-keys{color:#94a3b8;font-size:12px}

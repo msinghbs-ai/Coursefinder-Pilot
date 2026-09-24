@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.13 — 24 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.86**: Layer 4 team working (L4-B).
+- Claims: pipeline.layer4_review_items.claimed_at; public.layer4_claim_v1 (claim on open, 30-minute idle lapse, release); desk read adds claim fields; batch decisions refuse items actively claimed by another reviewer.
+- Layer 4 screen: claim on open, "In review" marking with reviewer, All / Mine / Unassigned filter (remembered), keyboard keys R/A/E/N, tuition Edit and approve form, scholarship tools collapsed in Batches. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.12 — 24 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.85**: Layer 4 batches (L4-C).
