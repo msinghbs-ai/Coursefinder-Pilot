@@ -11,7 +11,7 @@ const count=v=>Number(v||0).toLocaleString()
 
 function Layer4MassOperations(){
  const[summary,setSummary]=useState({}),[groups,setGroups]=useState([]),[reviewGroups,setReviewGroups]=useState([]),[diagnostics,setDiagnostics]=useState([]),[findings,setFindings]=useState([]),[history,setHistory]=useState([])
- const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(''),[tab,setTab]=useState('scope'),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(''),[tab,setTab]=useState('scope'),[open,setOpen]=useState(false),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
  const load=async()=>{setBusy(true);setError('');try{const[s,g,r,d,f,h]=await Promise.all([rpc('layer4_mass_summary'),rpc('layer4_scholarship_scope_groups',{p_limit:200}),rpc('layer4_review_groups',{p_limit:200}),rpc('layer4_quality_diagnostics'),rpc('layer4_quality_findings_read',{p_status:'open',p_limit:100}),rpc('layer4_mass_operations_history',{p_limit:50})]);setSummary(s||{});setGroups(Array.isArray(g)?g:[]);setReviewGroups(Array.isArray(r)?r:[]);setDiagnostics(Array.isArray(d)?d:[]);setFindings(Array.isArray(f)?f:[]);setHistory(Array.isArray(h)?h:[])}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  useEffect(()=>{load()},[])
  const filtered=useMemo(()=>groups.filter(g=>!query||[g.scholarship_name,g.provider_name,g.candidate_reason,...(g.sample_courses||[])].join(' ').toLowerCase().includes(query.toLowerCase())),[groups,query])
@@ -33,6 +33,9 @@ function Layer4MassOperations(){
    <article><strong>{count(summary.missing_evidence+summary.provider_mismatch)}</strong><span>Structural blockers</span><small>{count(summary.missing_evidence)} missing Evidence · {count(summary.provider_mismatch)} provider mismatch</small></article>
    <article><strong>{count(summary.open_findings)}</strong><span>Tracked findings</span><small>Errors, issues and improvements</small></article>
   </div>
+  {/* v2.15.84: collapsed by default and placed below the review desk, so operators land on the desk. */}
+  {!open?<div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(true)}>Open batch work</button><small>Decide repeat cases together — every batch is previewed, confirmed and audited.</small></div>:<>
+  <div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(false)}>Close batch work</button></div>
   <div className="cf-l4mass-tabs">{[['scope','Scholarship scope'],['review','Review queue'],['quality','Errors & improvements'],['history','Mass audit']].map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>{setTab(k);setDecision(null)}}>{l}</button>)}</div>
   {tab==='scope'&&<div className="cf-l4mass-body">
    <div className="cf-l4mass-toolbar"><label><Search size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search university, scholarship, rule or course"/></label><span>{filtered.length} cohort(s) shown</span></div>
@@ -54,6 +57,7 @@ function Layer4MassOperations(){
    {!mutationAllowed&&<p className="cf-l4mass-warning"><ShieldCheck size={14}/>Pipeline Operator role is required for mass mutation. Curators can preview and cross-check.</p>}
    <div className="cf-l4mass-actions"><button className="primary" disabled={busy||!mutationAllowed||!decision.action||decision.reason.trim().length<8||!decision.confirmation.trim()} onClick={applyDecision}>Apply audited cohort decision</button><button onClick={()=>setDecision(null)}>Cancel</button></div>
   </div>}
+  </>}
  </section>
 }
 
@@ -65,7 +69,7 @@ function mount(){
  const stacks=[...document.querySelectorAll('.m23-stack')]
  const host=stacks.find(x=>(x.textContent||'').includes('Layer 4'))
  if(!host)return
- const node=document.createElement('div');node.dataset.cfLayer4MassMount='true';host.prepend(node);mountedNode=node;mountedRoot=createRoot(node);mountedRoot.render(<Layer4MassOperations/>)
+ const node=document.createElement('div');node.dataset.cfLayer4MassMount='true';host.append(node);mountedNode=node;mountedRoot=createRoot(node);mountedRoot.render(<Layer4MassOperations/>)
 }
 function schedule(){if(pending)return;pending=true;setTimeout(()=>{pending=false;mount()},40)}
 new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true})
