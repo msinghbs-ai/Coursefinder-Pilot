@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.14 — 24 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.87**: Layer 4 approvals fixed.
+- security.layer4_tuition_apply_impl: tuition Approve / Edit and approve record catalogue.course_fees with the Layer 3 admission key convention and refresh the course in search; strict value checks. layer4_review_decide_impl routes tuition decisions to it (previously refused as "field is not enabled for scalar Layer 4 editing").
+- Desk read: approve suggestion and can_approve require a proposed fee already marked per year.
+- Layer 4 screen: edit form carries its own note (no pop-up), errors shown in the panel, main actions hidden while editing. Floating OpenRouter key launcher removed from the shell. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.13 — 24 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.86**: Layer 4 team working (L4-B).

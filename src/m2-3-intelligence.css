@@ -59,3 +59,7 @@
 .l4d-taken{margin:0;padding:9px 12px;border-radius:8px;background:#e0e7ff;color:#3730a3;font-size:14px}
 .l4d-edit{border:1px dashed #94a3b8;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:10px}
 .l4d-keys{color:#94a3b8;font-size:12px}
+
+/* v2.15.87 */
+.l4d-error{margin:0;padding:9px 12px;border-radius:8px;background:#fee2e2;color:#991b1b;font-size:14px}
+.l4d-edit-note{grid-column:1/-1}

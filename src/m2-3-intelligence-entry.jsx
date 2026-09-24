@@ -47,7 +47,7 @@ export function Layer4({onError}){
  useEffect(()=>{let live=true;supabase.auth.getSession().then(({data:s})=>{if(live)setReviewer(s?.session?.user?.id||'anonymous')});return()=>{live=false}},[])
  const[filtersState,rememberFilters,clearFilters]=useRememberedState('layer4-review',{status:'pending',task:'',view:'review',who:'all'},{userId:reviewer})
  const{status,task,view,who}=filtersState
- const[claimInfo,setClaimInfo]=useState(null),[edit,setEdit]=useState(null)
+ const[claimInfo,setClaimInfo]=useState(null),[edit,setEdit]=useState(null),[panelError,setPanelError]=useState('')
  // L4-C batches: grouped by task and suggestion; preview, untick, reason, typed confirmation.
  const[batches,setBatches]=useState({groups:[],can_apply:false}),[preview,setPreview]=useState(null),[batchMsg,setBatchMsg]=useState('')
  const loadBatches=async()=>{try{setBatches(await rpc('layer4_review_batches_v1')||{groups:[]})}catch(e){onError(e)}}
@@ -61,16 +61,17 @@ export function Layer4({onError}){
  const current=items.find(i=>i.id===selectedId)||null
  const target=Number(data.summary?.target_days||7)
  const suggestedCount=a=>(data.items||[]).filter(i=>i.status==='pending'&&i.suggestion?.action===a).length
- useEffect(()=>{setClaimInfo(null);setEdit(null);if(current&&current.status==='pending')rpc('layer4_claim_v1',{p_review_item_id:current.id}).then(r=>{if(r&&r.ok===false&&r.reason==='claimed')setClaimInfo(r);else if(r&&r.ok)setData(d=>({...d,items:(d.items||[]).map(i=>i.id===current.id?{...i,claimed_by_me:true,claim_active:true}:i)}))}).catch(()=>{})},[selectedId])
+ useEffect(()=>{setClaimInfo(null);setEdit(null);setPanelError('');if(current&&current.status==='pending')rpc('layer4_claim_v1',{p_review_item_id:current.id}).then(r=>{if(r&&r.ok===false&&r.reason==='claimed')setClaimInfo(r);else if(r&&r.ok)setData(d=>({...d,items:(d.items||[]).map(i=>i.id===current.id?{...i,claimed_by_me:true,claim_active:true}:i)}))}).catch(()=>{})},[selectedId])
  useEffect(()=>{setContext(null);setNote(current?.suggestion?.action&&current.suggestion.action!=='check'?current.suggestion.text:'');if(current)rpc('layer4_review_context',{p_review_item_id:current.id}).then(setContext).catch(()=>{})},[selectedId])
  const isContact=r=>r?.technical?.layer2_state&&r?.field_code==='provider_contact_reconciliation'
  const asRow=r=>({...r,entity_type:r?.entity?.type,layer2_state:r?.technical?.layer2_state,proposed_value:r?.technical?.proposed_value})
  const nextAfter=id=>{const i=items.findIndex(x=>x.id===id);return (items[i+1]||items[i-1]||null)?.id||null}
- const decide=async(row,action,label,prepared)=>{
-   const reason=(note||'').trim()||askReason(label||human(action));if(!reason)return
+ const decide=async(row,action,label,prepared,reasonOverride)=>{
+   setPanelError('')
+   const reason=(reasonOverride??note??'').trim();if(reason.length<5){setPanelError('Add a short note (at least 5 characters) saying why, then try again.');return}
    let final=null
    if(action==='edit_and_approve'&&prepared!==undefined){final=prepared}else if(action==='edit_and_approve'){const raw=window.prompt('Final value (JSON)',JSON.stringify(row.technical?.proposed_value));if(raw===null)return;try{final=JSON.parse(raw)}catch{return onError(new Error('Final value must be valid JSON'))}}
-   try{const nextId=nextAfter(row.id);await rpc('layer4_review_decide',{p_review_item_id:row.id,p_action:action,p_reason:reason,p_final_value:final});await load(nextId)}catch(e){onError(e)}
+   try{const nextId=nextAfter(row.id);await rpc('layer4_review_decide',{p_review_item_id:row.id,p_action:action,p_reason:reason,p_final_value:final});setEdit(null);await load(nextId)}catch(e){setPanelError(`Not saved: ${e?.message||e}`)}
  }
  const contactDecide=async(row,action,targetProviderId=null,targetContactId=null)=>{
    const labels={merge_existing:'Merge with existing',accept_incoming:'Accept incoming as current',keep_existing:'Keep existing',keep_separate:'Keep as separate contact',map_provider_apply:'Map Provider and apply incoming',reject_import:'Reject import row'}
@@ -113,8 +114,8 @@ export function Layer4({onError}){
      </div></details>
    </div>
  }
- const openEdit=r=>{const v=r?.technical?.proposed_value||{};setEdit({amount:v.amount??'',currency_code:v.currency_code||'AUD',fee_year:v.fee_year??'',basis:['annual','indicative_annual'].includes(v.basis)?v.basis:'annual',audience:v.audience||'international'})}
- const saveEdit=r=>{const amt=Number(edit.amount),yr=edit.fee_year===''?null:Number(edit.fee_year);if(!(amt>0))return onError(new Error('Enter a fee amount greater than 0'));if(yr!==null&&!(yr>=2024&&yr<=2030))return onError(new Error('Fee year must be between 2024 and 2030, or blank'));decide(r,'edit_and_approve','Edit and approve',{amount:amt,currency_code:edit.currency_code,basis:edit.basis,fee_year:yr,audience:edit.audience})}
+ const openEdit=r=>{const v=r?.technical?.proposed_value||{};setEdit({amount:v.amount??'',currency_code:v.currency_code||'AUD',fee_year:v.fee_year??'',basis:['annual','indicative_annual'].includes(v.basis)?v.basis:'annual',audience:v.audience||'international',note:`Checked the page: fee confirmed${v.amount?` as ${v.amount}`:''}`})}
+ const saveEdit=r=>{const amt=Number(edit.amount),yr=edit.fee_year===''?null:Number(edit.fee_year);if(!(amt>0))return setPanelError('Enter a fee amount greater than 0.');if(yr!==null&&!(yr>=2024&&yr<=2030))return setPanelError('Fee year must be between 2024 and 2030, or blank.');decide(r,'edit_and_approve','Edit and approve',{amount:amt,currency_code:edit.currency_code,basis:edit.basis,fee_year:yr,audience:edit.audience},edit.note)}
  // Keyboard: R reject, A approve, E edit, N next (not while typing).
  useEffect(()=>{if(view!=='review')return;const h=e=>{const t=e.target?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(t)||e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toLowerCase();if(k==='n'){const n=nextAfter(selectedId);if(n)setSelectedId(n);return}
    if(!current||current.status!=='pending'||claimInfo)return;if(k==='r')decide(current,'reject','Reject');else if(k==='a'&&current.can_approve!==false)decide(current,'approve','Approve');else if(k==='e'&&current.field_code==='provider_current_tuition_validation')openEdit(current)}
@@ -178,14 +179,16 @@ export function Layer4({onError}){
              {current.links?.course_url&&current.links.course_url!==current.links.page_url&&<a href={current.links.course_url} target="_blank" rel="noreferrer">Course page <ExternalLink size={13}/></a>}
              {current.search_url&&<a href={current.search_url} target="_blank" rel="noreferrer">Search the web <ExternalLink size={13}/></a>}
            </div>
+           {panelError&&<p className="l4d-error" role="alert">{panelError}</p>}
            {claimInfo&&<p className="l4d-taken">Being reviewed by {claimInfo.claimed_by||'another reviewer'}. It frees up in about {claimInfo.minutes_left} minute(s) if left idle.</p>}
            {edit&&<div className="l4d-edit"><strong>Edit the fee, then approve</strong><div className="l4b-form">
              <label>Amount<input type="number" min="1" value={edit.amount} onChange={e=>setEdit({...edit,amount:e.target.value})}/></label>
              <label>Currency<select value={edit.currency_code} onChange={e=>setEdit({...edit,currency_code:e.target.value})}><option>AUD</option><option>NZD</option></select></label>
              <label>Charged<select value={edit.basis} onChange={e=>setEdit({...edit,basis:e.target.value})}><option value="annual">Per year</option><option value="indicative_annual">Per year (indicative)</option></select></label>
              <label>Fee year<input type="number" min="2024" max="2030" value={edit.fee_year??''} onChange={e=>setEdit({...edit,fee_year:e.target.value})} placeholder="blank if not stated"/></label>
+             <label className="l4d-edit-note">Note saved with your decision<input value={edit.note} onChange={e=>setEdit({...edit,note:e.target.value})}/></label>
            </div><div className="l4d-actions"><button className="l4d-primary" onClick={()=>saveEdit(current)}>Save and approve</button><button onClick={()=>setEdit(null)}>Cancel</button></div></div>}
-           {current.status==='pending'&&!claimInfo&&<>
+           {current.status==='pending'&&!claimInfo&&!edit&&<>
              <label className="l4d-note">Note saved with your decision<input value={note} onChange={e=>setNote(e.target.value)} placeholder="Why you decided (required)"/></label>
              {actionsFor(current)}
              <small className="l4d-keys">Keys: R reject · A approve · E edit · N next</small>

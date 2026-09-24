@@ -1,23 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.86'
-export const PACKAGE_VERSION='0.1.13'
+export const UI_VERSION='2.15.87'
+export const PACKAGE_VERSION='0.1.14'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Sep 2026',
-  title:'Layer 4 team working',
+  title:'Layer 4 approvals fixed',
   changes:[
-    'Opening a Layer 4 item reserves it for you, so two people cannot work on the same item. A reservation lapses after 30 minutes without activity.',
-    'Items someone else is reviewing are marked "In review" and show who has them; their decision buttons are hidden.',
-    'Filter the queue by All, Mine or Unassigned.',
-    'Keyboard keys: R reject, A approve, E edit, N next item (not while typing).',
-    'Edit and approve for tuition fees now uses a form (amount, currency, per year or indicative, fee year) instead of raw data.',
-    'Batches refuse items someone else is reviewing, and say how many to untick.'
+    'Approving a tuition fee in Layer 4 (single, edited or in a batch) now records the fee, and it appears in search and the website API.',
+    'Approve is offered only when a fee is proposed and already marked per year; otherwise the item asks you to use Edit and approve, where you choose the frequency.',
+    'The Edit and approve form has its own note, pre-filled; no pop-up asks for a reason.',
+    'The floating "OpenRouter API Key" button is removed; the key is managed in Administration > Environment migration.'
   ],
   bugFixes:[
-    'The scholarship tools in the Batches view start collapsed instead of listing every cohort.'
+    'Approve and Edit and approve for tuition fees previously did nothing: the backend refused them, and the error appeared only at the top of the page.',
+    'Errors now appear in the review panel, where you are working.',
+    'While editing, the other decision buttons are hidden, so actions no longer appear twice.',
+    'Items with no proposed fee are no longer labelled "Suggest approve".'
   ]
 }
 
