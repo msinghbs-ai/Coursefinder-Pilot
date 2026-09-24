@@ -63,3 +63,12 @@
 /* v2.15.87 */
 .l4d-error{margin:0;padding:9px 12px;border-radius:8px;background:#fee2e2;color:#991b1b;font-size:14px}
 .l4d-edit-note{grid-column:1/-1}
+
+/* L4-D team and forecast */
+.l4t{display:flex;flex-direction:column;gap:12px}.l4t-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.l4t-head p{margin:0;color:#475569;font-weight:600}
+.l4t-days{display:flex;gap:6px;align-items:flex-end;height:140px;overflow-x:auto;padding-bottom:4px}
+.l4t-day{flex:1 0 34px;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}.l4t-day small{font-size:11px;color:#64748b;white-space:nowrap}
+.l4t-bars{flex:1;display:flex;gap:3px;align-items:flex-end;width:100%;justify-content:center}.l4t-bars i{display:block;width:12px;border-radius:3px 3px 0 0;min-height:2px}
+.l4t-bars i.in,.l4t-key.in{background:#f59e0b}.l4t-bars i.out,.l4t-key.out{background:#16a34a}.l4t-key{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 10px}
+.l4t-ages{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.l4t-ages div{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;background:#fff}.l4t-ages strong{display:block;font-size:20px}.l4t-ages small{color:#64748b}.l4t-ages .late strong{color:#b91c1c}
+.l4t-table{width:100%;border-collapse:collapse;font-size:13px;display:block;overflow-x:auto}.l4t-table th,.l4t-table td{text-align:left;padding:7px 10px;border-bottom:1px solid #eef2f7;white-space:nowrap}.l4t-table th{color:#64748b;font-weight:600}

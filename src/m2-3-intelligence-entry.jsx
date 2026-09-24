@@ -50,6 +50,9 @@ export function Layer4({onError}){
  const[claimInfo,setClaimInfo]=useState(null),[edit,setEdit]=useState(null),[panelError,setPanelError]=useState('')
  // L4-C batches: grouped by task and suggestion; preview, untick, reason, typed confirmation.
  const[batches,setBatches]=useState({groups:[],can_apply:false}),[preview,setPreview]=useState(null),[batchMsg,setBatchMsg]=useState('')
+ // L4-D team and forecast (read-only).
+ const[team,setTeam]=useState(null),[teamDays,setTeamDays]=useState(7)
+ useEffect(()=>{if(view==='team')rpc('layer4_team_forecast_v1',{p_days:teamDays}).then(setTeam).catch(onError)},[view,teamDays])
  const loadBatches=async()=>{try{setBatches(await rpc('layer4_review_batches_v1')||{groups:[]})}catch(e){onError(e)}}
  useEffect(()=>{if(view==='batches')loadBatches()},[view])
  const openPreview=g=>{const ids=(g.item_ids||[]).slice(0,100);const act=['reject','approve'].includes(g.action)?(g.action==='approve'&&!g.can_approve?'':g.action):'';setBatchMsg('');setPreview({group:g,picked:new Set(ids),action:act,reason:act?`Batch: ${g.text}`:'',confirm:''})}
@@ -103,10 +106,11 @@ export function Layer4({onError}){
  const actionsFor=r=>{
    const main=[['reject','Reject'],['approve','Approve'],['edit_and_approve','Edit and approve']]
    const s=r.suggestion?.action
-   const allowed=r.can_approve===false?main.filter(([a])=>a==='reject'):main
+   const editOnly=r.can_approve===false&&r.field_code==='provider_current_tuition_validation'
+   const allowed=r.can_approve===false?main.filter(([a])=>a==='reject'||(a==='edit_and_approve'&&editOnly)):main
    const ordered=(s==='approve'?[main[1],main[0],main[2]]:main).filter(x=>allowed.includes(x))
    return <div className="l4d-actions">
-     {ordered.map(([a,l],i)=><button key={a} className={s===a?'l4d-primary':''} onClick={()=>a==='edit_and_approve'&&r.field_code==='provider_current_tuition_validation'?openEdit(r):decide(r,a,l)}>{l}</button>)}
+     {ordered.map(([a,l],i)=><button key={a} className={s===a||(editOnly&&a==='edit_and_approve')?'l4d-primary':''} onClick={()=>a==='edit_and_approve'&&r.field_code==='provider_current_tuition_validation'?openEdit(r):decide(r,a,l)}>{l}</button>)}
      <details className="l4d-more"><summary>More</summary><div>
        <button onClick={()=>decide(r,'request_more_evidence','Ask for more evidence')}>Ask for more evidence</button>
        <button onClick={()=>decide(r,'return_layer2','Send back to enrichment (Layer 2)')}>Send back to enrichment (Layer 2)</button>
@@ -133,12 +137,30 @@ export function Layer4({onError}){
    <section className="m23-panel l4d"><Head icon={ShieldCheck} title="Human resolution queue"/>
      <div className="l4d-filters">
        <label>Status<select value={status} onChange={e=>rememberFilters({status:e.target.value})}>{[['pending','Waiting for review'],['approved','Approved'],['edited_approved','Edited & approved'],['rejected','Rejected'],['more_evidence','More evidence requested'],['returned_layer2','Sent back to Layer 2'],['returned_layer3','Sent back to Layer 3'],['','All statuses']].map(([v,l])=><option key={v||'all'} value={v}>{l}</option>)}</select></label>
-       <div className="l4d-chips">{[['','All'],...tasks.map(([t])=>[t,t])].map(([v,l])=><button key={v||'all'} type="button" className={task===v?'on':''} onClick={()=>rememberFilters({task:v})}>{l}</button>)}</div>
+       <div className="l4d-chips">{[['',status==='pending'?`All (${Number(data.summary?.waiting||0).toLocaleString()})`:'All'],...tasks.map(([t,n])=>[t,status==='pending'?`${t} (${Number(n).toLocaleString()})`:t])].map(([v,l])=><button key={v||'all'} type="button" className={task===v?'on':''} onClick={()=>rememberFilters({task:v})}>{l}</button>)}</div>
        {(status!=='pending'||task)&&<button type="button" className="m23-clear" onClick={clearFilters}>Reset filters</button>}
        {view==='review'&&<div className="l4d-chips">{[['all','All'],['mine','Mine'],['unassigned','Unassigned']].map(([v,l])=><button key={v} type="button" className={who===v?'on':''} onClick={()=>rememberFilters({who:v})}>{l}</button>)}</div>}
-       <div className="l4d-view">{[['review','Review one by one'],['batches','Batches']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>rememberFilters({view:v})}>{l}</button>)}</div>
+       <div className="l4d-view">{[['review','Review one by one'],['batches','Batches'],['team','Team and forecast']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>rememberFilters({view:v})}>{l}</button>)}</div>
      </div>
-     {view==='batches'?<div className="l4b">
+     {view==='team'?<div className="l4t">
+       {!team?<Empty text="Loading…"/>:<>
+       <div className="l4t-head"><p>{team.scope==='team'?'Everyone\'s work':'Your work'} · last {team.days} days</p><div className="l4d-chips">{[7,30].map(d=><button key={d} type="button" className={teamDays===d?'on':''} onClick={()=>setTeamDays(d)}>{d} days</button>)}</div></div>
+       <div className="m23-cards">
+         <article><strong>{Number(team.waiting).toLocaleString()}</strong><span>Waiting now</span><small>{team.ages?.over_target||0} older than {team.target_days} days</small></article>
+         <article><strong>{Number(team.arrived).toLocaleString()}</strong><span>Arrived</span><small>Sent to people in the last {team.days} days</small></article>
+         <article><strong>{Number(team.decided).toLocaleString()}</strong><span>Decided</span><small>In the last {team.days} days</small></article>
+         <article className={team.forecast?.state==='growing'?'l4d-late':''}><strong>{team.forecast?.state==='clearing'?new Date(team.forecast.date).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):team.forecast?.state==='clear'?'Clear':'Growing'}</strong><span>Forecast</span><small>{team.forecast?.text}</small></article>
+       </div>
+       <h3 className="l4b-sub">Arriving and decided each day</h3>
+       <div className="l4t-days">{(team.daily||[]).map(d=>{const max=Math.max(1,...(team.daily||[]).map(x=>Math.max(x.arrived,x.decided)));return <div key={d.day} className="l4t-day" title={`${d.day}: ${d.arrived} arrived, ${d.decided} decided`}><div className="l4t-bars"><i className="in" style={{height:`${d.arrived/max*100}%`}}/><i className="out" style={{height:`${d.decided/max*100}%`}}/></div><small>{new Date(d.day).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</small></div>})}</div>
+       <p className="l4b-note"><i className="l4t-key in"/> arrived <i className="l4t-key out"/> decided</p>
+       <h3 className="l4b-sub">How long items have been waiting</h3>
+       <div className="l4t-ages">{['0-2','3-7','8-14','15+'].map(k=><div key={k} className={['8-14','15+'].includes(k)?'late':''}><strong>{team.ages?.[k]||0}</strong><small>{k} days</small></div>)}</div>
+       <h3 className="l4b-sub">{team.scope==='team'?'Who decided what':'Your decisions'}</h3>
+       {(team.people||[]).length===0?<Empty text="No decisions in this period."/>:<table className="l4t-table"><thead><tr><th>Person</th><th>Decided</th><th>Median time</th><th>Approved</th><th>Rejected</th><th>Sent back</th><th>Last decision</th></tr></thead><tbody>{team.people.map(p=><tr key={p.actor_id}><td>{p.who}{p.is_me&&' (you)'}</td><td>{p.decided}</td><td>{p.median_minutes!=null?`${p.median_minutes} min`:'—'}</td><td>{p.approved}</td><td>{p.rejected}</td><td>{p.sent_back}</td><td>{when(p.last_at)}</td></tr>)}</tbody></table>}
+       <p className="l4b-note">Median time is from opening an item to deciding it. {team.scope==='team'?'Managers see everyone; operators see only their own figures.':'You see your own figures; managers see the whole team.'}</p>
+       </>}
+     </div>:view==='batches'?<div className="l4b">
        {batchMsg&&<p className="l4b-msg">{batchMsg}</p>}
        {!batches.can_apply&&<p className="l4b-note">You can preview batches. Applying a batch needs the Pipeline Operator role.</p>}
        {preview?<div className="l4b-preview">
