@@ -41,26 +41,27 @@ export function Layer3({rank,onError}){const[profiles,setProfiles]=useState([]),
  <section className="m23-panel"><Head icon={FileCheck2} title="Governed Layer 2 Evidence queue" action={MANUAL_RUN_TASK_CLASSES.includes(form.task_class)&&<button onClick={()=>setAdvanced(x=>!x)}>{advanced?'Hide technical identifiers':'Technical identifiers'}</button>}/><div className="m23-form-grid"><label>Layer 2 fall-out<select aria-label="Layer 3 governed Evidence candidate" value={form.evidence_id} onChange={e=>chooseCandidate(e.target.value)} disabled={!MANUAL_RUN_TASK_CLASSES.includes(form.task_class)}><option value="">Choose unresolved Course Evidence</option>{candidates.map(c=><option key={c.evidence_id} value={c.evidence_id}>{c.entity_label} · {human(c.evidence_type)} · {human(c.selection_reason)}</option>)}</select></label><label>Task<select value={form.task_class} onChange={e=>chooseTask(e.target.value)}>{[...MANUAL_RUN_TASK_CLASSES,'provider_current_tuition_validation'].map(x=><option key={x}>{x}</option>)}</select></label><label>Qualified profile<select aria-label="Layer 3 qualified profile" value={form.profile_id} onChange={e=>setForm(f=>({...f,profile_id:e.target.value}))} disabled={!MANUAL_RUN_TASK_CLASSES.includes(form.task_class)}>{eligibleProfiles.map(p=><option key={p.id} value={p.id}>{p.code} · {p.model_identifier}</option>)}</select></label></div>{!MANUAL_RUN_TASK_CLASSES.includes(form.task_class)?<div className="m23-cards"><article><strong>Runs automatically, not by manual selection</strong><span>{form.task_class} drains continuously through the CF-247 dispatcher/queue (layer3-work-dispatch → layer3-work-interpret), gated by a qualified, benchmark-passed profile and a binding-hash check against the exact source/profile state at qualification time.</span><small>The manual Evidence-item selection and Run action above apply only to the legacy task classes still triggered that way.</small></article>{(()=>{const qs=queueStatus.find(x=>x.task_class===form.task_class);if(!qs)return <article><strong>No live queue activity</strong><span>No {form.task_class} items currently in the CF-247 dispatcher/queue.</span></article>;const entries=Object.entries(qs.status_counts||{});return <article><strong>{qs.total} item(s) in queue</strong><span>{entries.map(([s,n])=>`${n} ${human(s)}`).join(' · ')||'—'}</span><small>{qs.oldest_pending_seconds!=null?`Oldest pending: ${durationLabelSeconds(qs.oldest_pending_seconds)}`:'None currently pending.'} · {qs.last_completed_at?`Last completed ${when(qs.last_completed_at)}`:'No completions yet.'}</small></article>})()}</div>:<>{form.evidence_id&&<div className="m23-cards"><article><strong>Deterministic Evidence selection</strong><span>{candidates.find(c=>c.evidence_id===form.evidence_id)?.source_url||'Retained Evidence'}</span><small>{human(form.selection_reason||'governed selection')} · Evidence {form.evidence_id} · entity {form.entity_id}</small></article></div>}{advanced&&<div className="m23-form-grid"><label>Evidence ID<input aria-label="Layer 3 Evidence ID" value={form.evidence_id} onChange={e=>setForm(f=>({...f,evidence_id:e.target.value,selection_reason:'advanced_operator_selection'}))}/></label><label>Entity ID<input aria-label="Layer 3 Entity ID" value={form.entity_id} onChange={e=>setForm(f=>({...f,entity_id:e.target.value}))}/></label></div>}<p className="m23-note">Selection follows the latest successful Layer 2 native/text Evidence lineage; screenshots are excluded from AI input. Unchanged Evidence and Layer-2-resolved work take zero-call paths. Valid, low-confidence and no-candidate outcomes remain non-canonical and route to Layer 4.</p><button className="m23-primary" disabled={busy||!form.evidence_id||!form.entity_id||!form.profile_id} onClick={run}>Run eligible interpretation</button></>}</section>
  <section className="m23-panel"><Head icon={Route} title="Evidence → model → result → human review"/><Table headers={['State','Target / task','Evidence','Model / profile','Execution','Human review']} rows={runs.map(r=>[<State value={r.status}/>,<span>{r.entity_type}:{String(r.entity_id).slice(0,8)}…<small> · {human(r.task_class)}</small></span>,<span>{String(r.evidence_id||'—').slice(0,8)}…<small> · {human(r.selected_evidence_reason||r.eligibility_reason)}</small></span>,<span>{r.profile_code}<small> · {r.aggregator_response_model||r.model_identifier}</small></span>,<span>{r.confidence==null?'confidence —':`confidence ${Number(r.confidence).toFixed(2)}`}<small> · calls {r.external_call_count||0} / retries {r.retry_count||0} · tokens {r.input_tokens||0}/{r.output_tokens||0} · {r.call_latency_ms??'—'} ms · $${Number(r.estimated_cost_usd||0).toFixed(4)}</small></span>,<span><State value={r.review_state||'not_created'}/><small>{r.escalation_reason||'No human-review item yet'}</small></span>])}/></section></div>}
 export function Layer4({onError}){
- const[rows,setRows]=useState([]),[reviewer,setReviewer]=useState(null),[selected,setSelected]=useState(null),[context,setContext]=useState(null),[busy,setBusy]=useState(false)
- // UI-5: status and field filters are remembered per reviewer (shared kit).
+ // L4-A review desk: one decision at a time, with the facts that settle it.
+ const[data,setData]=useState({items:[],summary:{}}),[reviewer,setReviewer]=useState(null),[selectedId,setSelectedId]=useState(null),[context,setContext]=useState(null),[note,setNote]=useState(''),[busy,setBusy]=useState(false)
  useEffect(()=>{let live=true;supabase.auth.getSession().then(({data:s})=>{if(live)setReviewer(s?.session?.user?.id||'anonymous')});return()=>{live=false}},[])
- const[filtersState,rememberFilters,clearFilters]=useRememberedState('layer4-review',{status:'pending',field:''},{userId:reviewer})
- const{status,field}=filtersState
- const setStatus=v=>rememberFilters({status:v}),setField=v=>rememberFilters({field:v})
- const load=async()=>{setBusy(true);try{const r=await rpc('layer4_review_queue',{p_status:null,p_limit:250});setRows(r||[]);setSelected(null);setContext(null)}catch(e){onError(e)}finally{setBusy(false)}}
- useEffect(()=>{load()},[])
- const visible=useMemo(()=>rows.filter(r=>(!status||r.status===status)&&(!field||String(r.field_code||'').toLowerCase().includes(field.toLowerCase()))),[rows,status,field])
- const pending=rows.filter(r=>r.status==='pending').length
- const approved=rows.filter(r=>['approved','edited_approved'].includes(r.status)).length
- const returned=rows.filter(r=>String(r.status||'').startsWith('returned_')).length
- const contactPending=rows.filter(r=>r.status==='pending'&&r.entity_type==='provider_contact_import_row'&&r.field_code==='provider_contact_reconciliation').length
- const isContact=r=>r?.entity_type==='provider_contact_import_row'&&r?.field_code==='provider_contact_reconciliation'
- const choose=async r=>{setSelected(r.id);try{setContext(await rpc('layer4_review_context',{p_review_item_id:r.id}))}catch(e){onError(e)}}
- const decide=async(row,action)=>{
-   const reason=askReason(human(action));if(!reason)return
+ const[filtersState,rememberFilters,clearFilters]=useRememberedState('layer4-review',{status:'pending',task:''},{userId:reviewer})
+ const{status,task}=filtersState
+ const load=async(keepId=null)=>{setBusy(true);try{const r=await rpc('layer4_review_desk_v1',{p_status:status||'',p_limit:250});const next=r||{items:[],summary:{}};setData(next);const items=(next.items||[]).filter(i=>!task||i.task===task);const keep=keepId&&items.find(i=>i.id===keepId);setSelectedId(keep?keep.id:(items[0]?.id||null))}catch(e){onError(e)}finally{setBusy(false)}}
+ useEffect(()=>{load()},[status])
+ const items=useMemo(()=>(data.items||[]).filter(i=>!task||i.task===task),[data,task])
+ const tasks=useMemo(()=>Object.entries(data.summary?.by_task||{}),[data])
+ const current=items.find(i=>i.id===selectedId)||null
+ const target=Number(data.summary?.target_days||7)
+ const suggestedCount=a=>(data.items||[]).filter(i=>i.status==='pending'&&i.suggestion?.action===a).length
+ useEffect(()=>{setContext(null);setNote(current?.suggestion?.action&&current.suggestion.action!=='check'?current.suggestion.text:'');if(current)rpc('layer4_review_context',{p_review_item_id:current.id}).then(setContext).catch(()=>{})},[selectedId])
+ const isContact=r=>r?.technical?.layer2_state&&r?.field_code==='provider_contact_reconciliation'
+ const asRow=r=>({...r,entity_type:r?.entity?.type,layer2_state:r?.technical?.layer2_state,proposed_value:r?.technical?.proposed_value})
+ const nextAfter=id=>{const i=items.findIndex(x=>x.id===id);return (items[i+1]||items[i-1]||null)?.id||null}
+ const decide=async(row,action,label)=>{
+   const reason=(note||'').trim()||askReason(label||human(action));if(!reason)return
    let final=null
-   if(action==='edit_and_approve'){const raw=window.prompt('Final JSON value',JSON.stringify(row.proposed_value));if(raw===null)return;try{final=JSON.parse(raw)}catch{return onError(new Error('Final value must be valid JSON'))}}
-   try{await rpc('layer4_review_decide',{p_review_item_id:row.id,p_action:action,p_reason:reason,p_final_value:final});await load()}catch(e){onError(e)}
+   if(action==='edit_and_approve'){const raw=window.prompt('Final value (JSON)',JSON.stringify(row.technical?.proposed_value));if(raw===null)return;try{final=JSON.parse(raw)}catch{return onError(new Error('Final value must be valid JSON'))}}
+   try{const nextId=nextAfter(row.id);await rpc('layer4_review_decide',{p_review_item_id:row.id,p_action:action,p_reason:reason,p_final_value:final});await load(nextId)}catch(e){onError(e)}
  }
  const contactDecide=async(row,action,targetProviderId=null,targetContactId=null)=>{
    const labels={merge_existing:'Merge with existing',accept_incoming:'Accept incoming as current',keep_existing:'Keep existing',keep_separate:'Keep as separate contact',map_provider_apply:'Map Provider and apply incoming',reject_import:'Reject import row'}
@@ -71,7 +72,7 @@ export function Layer4({onError}){
        p_target_provider_id:targetProviderId||null,p_target_contact_id:targetContactId||null,
      })
      if(error)throw error
-     await load()
+     await load(nextAfter(row.id))
    }catch(e){onError(e)}
  }
  const contactActions=row=>{
@@ -89,32 +90,67 @@ export function Layer4({onError}){
      <button onClick={e=>{e.stopPropagation();contactDecide(row,'reject_import')}}>Reject import</button>
    </div>
  }
+ const actionsFor=r=>{
+   const main=[['reject','Reject'],['approve','Approve'],['edit_and_approve','Edit and approve']]
+   const s=r.suggestion?.action
+   const ordered=s==='approve'?[main[1],main[0],main[2]]:main
+   return <div className="l4d-actions">
+     {ordered.map(([a,l],i)=><button key={a} className={s===a?'l4d-primary':''} onClick={()=>decide(r,a,l)}>{l}</button>)}
+     <details className="l4d-more"><summary>More</summary><div>
+       <button onClick={()=>decide(r,'request_more_evidence','Ask for more evidence')}>Ask for more evidence</button>
+       <button onClick={()=>decide(r,'return_layer2','Send back to enrichment (Layer 2)')}>Send back to enrichment (Layer 2)</button>
+       <button onClick={()=>decide(r,'return_layer3','Send back to AI check (Layer 3)')}>Send back to AI check (Layer 3)</button>
+     </div></details>
+   </div>
+ }
+ const title=r=>r?.entity?.title||r?.entity?.provider||r?.task
+ const chip=a=>a==='reject'?'Suggest reject':a==='approve'?'Suggest approve':'Check'
  return <div className="m23-stack">
-   <LayerWorkspaceHeader layer="4" eyebrow="Layer 4 · governed human resolution" title="Layer 4 — Human Resolution" subtitle="Resolve governed exceptions with auditable decisions, preserved source history and reversible human intervention." onRefresh={load} busy={busy}/>
+   <LayerWorkspaceHeader layer="4" eyebrow="Layer 4 · governed human resolution" title="Layer 4 — Human Resolution" subtitle="Decide the items automation could not settle. Each decision is recorded with its reason and can be reversed." onRefresh={()=>load(selectedId)} busy={busy}/>
    <section className="m23-panel"><Head icon={ShieldCheck} title="Layer 4 status"/><div className="m23-cards">
-     <article><strong>{pending}</strong><span>Pending decision(s)</span><small>Human resolution required.</small></article>
-     <article><strong>{contactPending}</strong><span>Provider Contact reconciliation</span><small>Duplicate, Provider ambiguity or import/PIM conflict.</small></article>
-     <article><strong>{approved}</strong><span>Approved decision(s)</span><small>Audited decisions retained.</small></article>
-     <article><strong>{returned}</strong><span>Returned upstream</span><small>Sent back to Layer 2 or Layer 3 for more work.</small></article>
+     <article><strong>{Number(data.summary?.waiting||0).toLocaleString()}</strong><span>Waiting for review</span><small>{tasks.map(([t,n])=>`${t} ${n}`).join(' · ')||'—'}</small></article>
+     <article className={Number(data.summary?.oldest_days||0)>target?'l4d-late':''}><strong>{data.summary?.oldest_days??'—'} days</strong><span>Oldest item</span><small>Target: nothing waits more than {target} days.</small></article>
+     <article><strong>{suggestedCount('reject')}</strong><span>Suggested reject</span><small>Page shows a total or per-semester amount.</small></article>
+     <article><strong>{suggestedCount('approve')}</strong><span>Suggested approve</span><small>Page shows the amount as a yearly fee.</small></article>
    </div></section>
-   <section className="m23-panel"><Head icon={ShieldCheck} title="Human resolution queue"/>
-     <div className="m23-form-grid">
-       <label>Status<select value={status} onChange={e=>setStatus(e.target.value)}>{[['pending','Waiting for review'],['approved','Approved'],['edited_approved','Edited & approved'],['rejected','Rejected'],['more_evidence','More evidence requested'],['returned_layer2','Sent back to Layer 2'],['returned_layer3','Sent back to Layer 3'],['','All statuses']].map(([v,l])=><option key={v||'all'} value={v}>{l}</option>)}</select></label>
-       <label>Field filter<input value={field} onChange={e=>setField(e.target.value)} placeholder="e.g. provider contact reconciliation"/></label>{(status!=='pending'||field)&&<button type="button" className="m23-clear" onClick={clearFilters}>Reset filters</button>}
+   <section className="m23-panel l4d"><Head icon={ShieldCheck} title="Human resolution queue"/>
+     <div className="l4d-filters">
+       <label>Status<select value={status} onChange={e=>rememberFilters({status:e.target.value})}>{[['pending','Waiting for review'],['approved','Approved'],['edited_approved','Edited & approved'],['rejected','Rejected'],['more_evidence','More evidence requested'],['returned_layer2','Sent back to Layer 2'],['returned_layer3','Sent back to Layer 3'],['','All statuses']].map(([v,l])=><option key={v||'all'} value={v}>{l}</option>)}</select></label>
+       <div className="l4d-chips">{[['','All'],...tasks.map(([t])=>[t,t])].map(([v,l])=><button key={v||'all'} type="button" className={task===v?'on':''} onClick={()=>rememberFilters({task:v})}>{l}</button>)}</div>
+       {(status!=='pending'||task)&&<button type="button" className="m23-clear" onClick={clearFilters}>Reset filters</button>}
      </div>
-     {visible.length===0?<Empty text="No Layer 4 decisions match this queue filter."/>:<div className="m23-review-list">{visible.map(r=><article key={r.id} onClick={()=>choose(r)} className={isContact(r)?'m23-contact-reconciliation':''}>
-       <div className="m23-row"><div><strong>{isContact(r)?'Provider Contact reconciliation':human(r.field_code)}</strong><span>{isContact(r)?`Import row ${r.layer2_state?.row_number||'—'} · ${human(r.layer2_state?.classification||'review')}`:`${r.entity_type} · ${r.entity_id}`}</span></div><State value={r.status}/></div>{r.escalation_reason&&<p className="m23-reason">{r.escalation_reason}</p>}
-       {isContact(r)&&<small>{r.layer2_state?.source_institution_name||'—'} → {r.layer2_state?.current_institution_name||'—'}{r.layer2_state?.matched_contact_id?` · managed contact ${r.layer2_state.matched_contact_id}`:''}</small>}
-       <div className="m23-values"><pre>{JSON.stringify(r.before_value,null,2)}</pre><span>→</span><pre>{JSON.stringify(r.proposed_value,null,2)}</pre></div>
-       <small>Evidence {r.evidence_id||'—'}{isContact(r)?` · batch ${r.layer2_state?.import_batch_id||'—'}`:` · Layer 3 ${r.layer3_interpretation_id||'—'}`}</small>
-       {r.status==='pending'&&(isContact(r)?contactActions(r):<div className="m23-actions">{[['approve','Approve'],['edit_and_approve','Edit & Approve'],['reject','Reject'],['request_more_evidence','More Evidence'],['return_layer2','Return L2'],['return_layer3','Return L3']].map(([a,l])=><button key={a} onClick={e=>{e.stopPropagation();decide(r,a)}}>{l}</button>)}</div>)}
-     </article>)}</div>}
+     {items.length===0?<Empty text="Nothing waiting here. Try another status or task."/>:<div className="l4d-grid">
+       <ol className="l4d-queue">{items.map(r=><li key={r.id} className={r.id===selectedId?'on':''} onClick={()=>setSelectedId(r.id)}>
+         <strong>{title(r)}</strong>
+         <span>{[r.entity?.code,r.task].filter(Boolean).join(' · ')}</span>
+         <span className="l4d-meta"><em className={`l4d-chip ${r.suggestion?.action||'check'}`}>{chip(r.suggestion?.action)}</em><b className={r.age_days>target?'late':''}>{r.age_days} d</b></span>
+       </li>)}</ol>
+       {current&&<article className="l4d-panel">
+         <header><h3>{title(current)}{current.entity?.code&&<small> · {current.entity.code}</small>}</h3><p>{[current.entity?.provider,current.task,`${current.age_days} days waiting`].filter(Boolean).join(' · ')}</p></header>
+         {current.reason&&<p className="l4d-reason">{current.reason}</p>}
+         {isContact(current)?contactActions(asRow(current)):<>
+           <dl className="l4d-facts">
+             {current.recorded&&<><dt>Recorded now</dt><dd>{current.recorded}</dd></>}
+             {current.ai_suggested&&<><dt>AI suggested</dt><dd>{current.ai_suggested}</dd></>}
+             {current.page_quote&&<><dt>The page says</dt><dd className="l4d-quote">“{current.page_quote}”</dd></>}
+             <dt>Suggestion</dt><dd className={`l4d-sugg ${current.suggestion?.action}`}>{current.suggestion?.text}</dd>
+           </dl>
+           <div className="l4d-links">
+             {current.links?.page_url&&<a href={current.links.page_url} target="_blank" rel="noreferrer">Open provider page <ExternalLink size={13}/></a>}
+             {current.links?.course_url&&current.links.course_url!==current.links.page_url&&<a href={current.links.course_url} target="_blank" rel="noreferrer">Course page <ExternalLink size={13}/></a>}
+             {current.search_url&&<a href={current.search_url} target="_blank" rel="noreferrer">Search the web <ExternalLink size={13}/></a>}
+           </div>
+           {current.status==='pending'&&<>
+             <label className="l4d-note">Note saved with your decision<input value={note} onChange={e=>setNote(e.target.value)} placeholder="Why you decided (required)"/></label>
+             {actionsFor(current)}
+           </>}
+         </>}
+         <details className="m23-tech"><summary>Technical detail</summary>
+           <pre>{JSON.stringify({...current.technical,history:context?.history||[],layer3:context?.layer3?{profile:context.layer3.profile_code,model:context.layer3.response_model,status:context.layer3.status,checks:context.layer3.validator_result}:null},null,2)}</pre>
+         </details>
+       </article>}
+     </div>}
    </section>
-   {selected&&context&&<section className="m23-panel"><Head icon={FileCheck2} title={isContact(context.review)?'Provider Contact reconciliation package':'Review package & lineage'}/><div className="m23-cards">
-     <article><strong>Evidence</strong><span>{context.evidence?.id||'—'}</span><small>{context.evidence?.source_url||'Private import Evidence'} · {context.evidence?.mime_type||'—'} · captured {when(context.evidence?.captured_at)}</small>{context.evidence?.source_url&&<a href={context.evidence.source_url} target="_blank" rel="noreferrer">Open Evidence source <ExternalLink size={13}/></a>}</article>
-     {isContact(context.review)?<article><strong>Import reconciliation</strong><span>{human(context.review?.layer2_state?.classification||'review')}</span><small>Row {context.review?.layer2_state?.row_number||'—'} · {context.review?.layer2_state?.source_institution_name||'—'} → {context.review?.layer2_state?.current_institution_name||'—'}</small></article>:<article><strong>Layer 3</strong><span>{context.layer3?.profile_code||'No L3 interpretation'} · configured {context.layer3?.configured_model||'—'} · returned {context.layer3?.response_model||'—'}</span><small>Result {context.layer3?.status||'—'} · automatic checks {context.layer3?.validator_result?.valid===true?'passed':context.layer3?.validator_result?'did not pass':'—'} · tokens {context.layer3?.input_tokens||0}/{context.layer3?.output_tokens||0} · cost ${Number(context.layer3?.estimated_cost_usd||0).toFixed(4)}</small>{context.layer3?.validator_result&&<details className="m23-tech"><summary>Technical detail</summary><pre>{JSON.stringify(context.layer3.validator_result,null,2)}</pre></details>}</article>}
-     <article><strong>Decision history</strong><span>{(context.history||[]).length} event(s)</span><small>{(context.history||[]).map(h=>`${human(h.action||h.decision_type)} · ${h.reason||''} · ${when(h.created_at)}`).join(' | ')||'No prior decision history'}</small></article>
-   </div></section>}
  </div>
 }
 
