@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10 — 24 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.83**: Layer 4 review desk (L4-A).
+- New read public.layer4_review_desk_v1 (additive; the existing queue is unchanged): course and provider names, plain task label, age, plain reason, recorded value, AI suggestion as text, cleaned page quote, links and web search, rule-based suggestion, queue summary; raw values under technical.
+- Layer 4 screen: queue plus one decision panel, suggestion-led primary action, pre-filled decision note, More menu, collapsed technical detail, remembered status and task filters, next item after each decision. Provider-contact reconciliation actions unchanged.
+- PERF-4 (no screen change of its own): Evidence filter options served from a background snapshot. v2.15.79 remains the accepted recovery release.
+- m2-3-intelligence-deployed: stale placeholder assertion replaced with a Status filter check.
+
 ## 0.1.9 — 23 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.82**: Layer 4 review clarity and remembered filters (UI-5 batch 1), shared UI kit (UI-2), and the PERF-2 scoped search refresh fix.

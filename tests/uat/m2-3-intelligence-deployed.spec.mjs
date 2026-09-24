@@ -16,7 +16,7 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance on canonical r
  }finally{await finish(testInfo,runtime)}})
 
  test('Layer 4 and Refresh/Scheduling are separate governed workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const l4=await openLayer4(page);await expect(l4.getByRole('heading',{name:'Human resolution queue',exact:true})).toBeVisible();await expect(l4.getByPlaceholder(/prioritise unresolved field/i)).toBeVisible()
+  await loginAsUatUser(page);const l4=await openLayer4(page);await expect(l4.getByRole('heading',{name:'Human resolution queue',exact:true})).toBeVisible();await expect(l4.getByLabel('Status',{exact:true})).toBeVisible()
   await page.evaluate(()=>{location.hash='#refresh-scheduling'});await expect(page.getByRole('heading',{name:'Source/entity freshness policies',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(page.getByRole('heading',{name:'Targeted refresh queue',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Downstream Search refresh signals',exact:true})).toBeVisible();await expect(page.getByText('UNBOUNDED',{exact:true})).toHaveCount(0)
   await milestoneScreenshot(page,testInfo,'m2-3-layer4-refresh-separate')
  }finally{await finish(testInfo,runtime)}})
