@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.15 — 24 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.88**: Layer 4 team and forecast (L4-D: public.layer4_team_forecast_v1, read-only; managers rank 5+ see everyone, others their own row), plus Layer 4 task chips show waiting counts; tuition items without a proposed fee keep Edit and approve (main action).
+- Notes include backend fixes merged without a version change: PERF-5 provider rankings index path (course detail timeouts) and the scoped search refresh WHERE clause required by pg_safeupdate for app-path approvals. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.14 — 24 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.87**: Layer 4 approvals fixed.
