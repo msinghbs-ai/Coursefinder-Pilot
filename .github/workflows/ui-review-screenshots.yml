@@ -1,0 +1,51 @@
+# UI review screenshots (P3 screen-by-screen review).
+# Logs in as the UAT user, captures full-page screenshots of the listed screens, and commits
+# them to the separate branch "ui-review-snapshots" (never main). E-mail addresses and the
+# signed-in user's details are masked. The repository is public: do not add screens that
+# show personal data without masking them.
+name: UI review screenshots
+on:
+  workflow_dispatch:
+    inputs:
+      screens:
+        description: "Comma-separated routes; route>Button also clicks a tab (e.g. layer-4-human-resolution>Batches)"
+        required: true
+        default: "jobs,scheduled-tasks,layer-4-human-resolution,layer-4-human-resolution>Batches,layer-3-ai-interpretation"
+      base_url:
+        description: "Site address (defaults to the pilot)"
+        required: false
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    env:
+      UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+      SCREENS: ${{ inputs.screens }}
+      OUT_DIR: ui-review-out
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Capture screens
+        run: npx playwright test -c tools/ui-review/playwright.config.mjs
+      - name: Commit to ui-review-snapshots branch
+        run: |
+          set -e
+          DEST="snapshots/$(date -u +%Y%m%d-%H%M)-run${{ github.run_number }}"
+          mkdir -p /tmp/snap && cp -r ui-review-out/. /tmp/snap/
+          git config user.name "ui-review-bot"
+          git config user.email "ui-review-bot@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin ui-review-snapshots >/dev/null; then
+            git fetch origin ui-review-snapshots && git checkout -f ui-review-snapshots
+          else
+            git checkout --orphan ui-review-snapshots && git rm -rf . >/dev/null
+          fi
+          mkdir -p "$DEST" && cp -r /tmp/snap/. "$DEST/"
+          git add "$DEST" && git commit -m "UI review snapshots: $DEST" && git push origin ui-review-snapshots
+          echo "Saved to branch ui-review-snapshots, folder $DEST"
