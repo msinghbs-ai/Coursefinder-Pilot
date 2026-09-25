@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
@@ -30,7 +31,7 @@ test.describe('CF-089 Scraper Config and Parse.bot qualification @targeted',()=>
   try{
    await loginAsUatUser(page)
    await page.goto(new URL('/#administration?section=layer2-providers',process.env.UAT_BASE_URL).toString())
-   await expect(page.locator('.m-release-pill')).toContainText('v2.15.46',{timeout:45000})
+   await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`,{timeout:45000})
    await expect(page.getByRole('heading',{name:'Scraper Config',exact:true})).toBeVisible({timeout:45000})
    await expect(page.getByRole('button',{name:'Refresh',exact:true})).toBeVisible()
    await expect(page.getByRole('button',{name:'Manage routes',exact:true})).toBeVisible()

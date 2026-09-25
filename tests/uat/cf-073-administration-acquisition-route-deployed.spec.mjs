@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -21,7 +22,7 @@ test.describe('CF-073 Administration Acquisition route regression @deployed',()=
       await expect(page.locator('.l2p-shell')).toBeVisible({timeout:45000})
       await expect(page.getByRole('heading',{name:'Acquisition providers',exact:true})).toBeVisible()
       await expect(page.locator('.m-workspace-error')).toHaveCount(0)
-      await expect(page.locator('.m-release-pill')).toContainText('v2.15.31')
+      await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`)
       const rankLabel=(await page.locator('.m-role-pill').textContent())||''
       expect(rankLabel.trim()).not.toBe('')
 

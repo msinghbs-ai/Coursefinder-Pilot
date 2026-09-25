@@ -1,4 +1,5 @@
 import{test,expect}from'@playwright/test'
+import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
 import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment,DETERMINISTIC_UI_TIMEOUT}from'./support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -9,7 +10,7 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
 
  test('Provider comparison aligns QILT cards for two selected universities',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
-  await expect(page.locator('.m-release-pill')).toContainText('v2.15.40')
+  await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`)
   await openCatalogue(page,'#providers','Providers')
   const search=page.locator('.m-searchbox input').first()
   await search.fill('Charles Darwin University')

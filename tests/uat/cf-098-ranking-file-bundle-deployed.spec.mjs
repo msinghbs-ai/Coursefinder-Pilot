@@ -1,4 +1,5 @@
 import{test,expect}from'@playwright/test'
+import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
 import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,DETERMINISTIC_UI_TIMEOUT,writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -9,7 +10,7 @@ test.describe('CF-098 file-first ranking bundle @deployed',()=>{
  test('ranking file upload is primary and country files combine before registration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
-  await expect(page.locator('.m-release-pill')).toContainText('v2.15.54',{timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`,{timeout:DETERMINISTIC_UI_TIMEOUT})
   const selects=page.locator('.m-ranking-essentials select')
   await expect(selects.nth(2)).toHaveValue('file')
   const input=page.locator('input[type=file][multiple]')
