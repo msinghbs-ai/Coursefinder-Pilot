@@ -4,7 +4,7 @@ import { openLayer2Providers } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 async function selectMatching(select,re){await expect.poll(async()=>await select.locator('option').allTextContents(),{timeout:45000,message:`Waiting for source option ${re}`}).toEqual(expect.arrayContaining([expect.stringMatching(re)]));const options=select.locator('option');const count=await options.count();for(let i=0;i<count;i++){const o=options.nth(i),label=(await o.textContent())||'';if(re.test(label)){const value=await o.getAttribute('value');await select.selectOption(value??{label});return}}throw new Error(`No option matched ${re}`)}
-function sourceControl(page){return page.locator('.l2p-panel').filter({has:page.getByRole('heading',{name:'Provider routing & fallback',exact:true})}).locator('select').first()}
+function sourceControl(page){return page.locator('.l2p-panel').filter({has:page.getByRole('heading',{name:'Profile routing',exact:true})}).locator('select').first()}
 async function openProviders(page){await openLayer2Providers(page);await expect(sourceControl(page)).toBeVisible()}
 
 test.describe('CourseFinder deployed Layer 2 acquisition-provider acceptance @deployed',()=>{

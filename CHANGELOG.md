@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.20 — 26 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.93** (P3 item 1).
+- Regression fix: Jobs and Scheduled Tasks added to HIDDEN_ROUTES and a refresh-scheduling alias added, so #jobs, #scheduled-tasks and #refresh-scheduling resolve again after the v2.15.91 menu merge.
+- Stale live-site test sweep (Decision 127): 430 literal UI expectations checked statically; stale ones updated to current wording (Schedule Configuration, Latest Refresh Queue, Profile routing, contact reconciliation, eligibility inference); drifting counts checked by pattern; every remaining expectation classified (database data, dynamic text, test input, or must-not-appear). v2.15.79 remains the accepted recovery release.
+
 ## 0.1.19 — 25 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.92** (Package 3).

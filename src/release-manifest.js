@@ -1,21 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.92'
-export const PACKAGE_VERSION='0.1.19'
+export const UI_VERSION='2.15.93'
+export const PACKAGE_VERSION='0.1.20'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'25 Sep 2026',
-  title:'UQ fees admitted by rule; tidier Administration',
+  date:'26 Sep 2026',
+  title:'Old Jobs and Scheduled Tasks links work again',
   changes:[
-    'UQ program-page fees are now admitted automatically by an approved provider rule, without AI: the fee must appear as the labelled fee for international students with no exclusion words beside it. 89 UQ courses gained their indicative annual fee.',
-    'Review items settled by a provider rule are marked "superseded", so it is always clear whether a person or a rule decided.',
-    'Layer 3 now uses one shared OpenRouter key for all models.'
+    'Bookmarks and shared links to Jobs, Scheduled Tasks and the older Refresh & Scheduling address open the right page again.'
   ],
   bugFixes:[
-    'The Administration tab row no longer repeats Layer 1 to Layer 4; they stay in the Data Operations menu.',
-    'The Layer 3 benchmark now gives models the same provider-rule context as production, and compares quotes as visible text (ignoring link formatting and stray brackets).'
+    'Links to Jobs and Scheduled Tasks fell back to the Dashboard after the two were merged into Jobs & Schedules (v2.15.91). In-app buttons were not affected.',
+    'Automated checks: every live-site test was checked against the current app; out-of-date wording was updated and changing counts are now checked by pattern.'
   ]
 }
 
