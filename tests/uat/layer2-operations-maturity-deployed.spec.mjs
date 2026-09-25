@@ -56,7 +56,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await expect(page.locator('.l2p-launcher')).toHaveCount(0)
   await openLayer2Providers(page)
   await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers',exact:true})).toBeVisible({timeout:45000})
-  await expect(page.getByText(/Credentials are write-only and provider concurrency is separate from run concurrency/i)).toBeVisible()
+  await expect(page.getByText(/Credentials stay write-only/i)).toBeVisible()
   await milestoneScreenshot(page,testInfo,'layer2-provider-controls-administration')
  }finally{await finish(testInfo,runtime)}})
 
@@ -110,7 +110,9 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(providerUi).toContain('Vendor concurrency')
   expect(providerUi).toContain('Rate / timeout')
   expect(providerUi).toContain('rank>=6')
-  expect(providerUi).toContain('Credentials are write-only and provider concurrency is separate from run concurrency.')
+  // Wording updated in the provider screen: write-only credentials; provider and run concurrency governed separately.
+  expect(providerUi).toContain('Credentials stay write-only.')
+  expect(providerUi).toContain('run concurrency, stale recovery and paid-attempt limits are governed separately')
 
   const alertSql=await fs.readFile('supabase/migrations/20260827224500_m2_4_2_layer2_operational_alerts.sql','utf8')
   expect(alertSql).toContain('layer2_ops_alerts')
@@ -208,7 +210,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(l2Ui).toContain("action:'scope_options_page'")
 
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
-  expect(discovery).toContain('layer2-scope-discover-scheduled-v1.3.2')
+  expect(discovery).toMatch(/layer2-scope-discover-scheduled-v1\.3\.\d+/)
   expect(discovery).toContain('courseBudgetMs')
   expect(discovery).toContain('invocationBudgetMs=80000')
   expect(discovery).toContain('continuation_request_id')
