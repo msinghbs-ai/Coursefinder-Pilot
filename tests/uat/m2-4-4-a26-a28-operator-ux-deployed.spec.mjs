@@ -17,7 +17,7 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     const acquisition=page.getByRole('tab',{name:'Acquisition',exact:true})
     await acquisition.click()
     await expect(acquisition).toHaveAttribute('aria-selected','true')
-    await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('heading',{name:'Acquisition providers',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     const scheduling=page.getByRole('tab',{name:'Scheduling',exact:true})
     await scheduling.click()
     await expect(scheduling).toHaveAttribute('aria-selected','true')

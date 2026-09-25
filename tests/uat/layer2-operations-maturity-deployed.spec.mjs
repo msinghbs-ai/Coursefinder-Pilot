@@ -52,10 +52,10 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
  test('advanced acquisition provider controls are centralised under Administration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const workspace=await openLayer2(page)
-  await expect(workspace.getByRole('heading',{name:'Layer 2 Acquisition Providers'})).toHaveCount(0)
+  await expect(workspace.getByRole('heading',{name:'Acquisition providers'})).toHaveCount(0)
   await expect(page.locator('.l2p-launcher')).toHaveCount(0)
   await openLayer2Providers(page)
-  await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers',exact:true})).toBeVisible({timeout:45000})
+  await expect(page.getByRole('heading',{name:'Acquisition providers',exact:true})).toBeVisible({timeout:45000})
   await expect(page.getByText(/Credentials stay write-only/i)).toBeVisible()
   await milestoneScreenshot(page,testInfo,'layer2-provider-controls-administration')
  }finally{await finish(testInfo,runtime)}})

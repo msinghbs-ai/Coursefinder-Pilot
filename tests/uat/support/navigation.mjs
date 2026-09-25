@@ -35,7 +35,8 @@ export async function openLayer2Advanced(page) {
 }
 
 export async function openLayer2Providers(page) {
-  return openAdministrationTool(page,'Scraper Config','Layer 2 Acquisition Providers')
+  // Heading renamed in the provider screen: 'Layer 2 Acquisition Providers' -> 'Acquisition providers'.
+  return openAdministrationTool(page,'Scraper Config','Acquisition providers')
 }
 
 export async function openLayer2Trials(page) {

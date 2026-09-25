@@ -27,7 +27,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   await expect(page.getByRole('heading',{name:'Enrichment Source Configuration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(page.getByText('Configuration is separate from execution.')).toBeVisible()
   await acquisitionTab.click()
-  await expect(page.getByRole('heading',{name:'Layer 2 Acquisition Providers',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.getByRole('heading',{name:'Acquisition providers',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const policyHeading=page.getByRole('heading',{name:'Layer 2 execution policy',exact:true})
   if(await policyHeading.count()){
     await expect(policyHeading).toBeVisible()
