@@ -21,7 +21,7 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     const scheduling=page.getByRole('tab',{name:'Scheduling',exact:true})
     await scheduling.click()
     await expect(scheduling).toHaveAttribute('aria-selected','true')
-    await expect(page.getByRole('heading',{name:'Source/entity freshness policies',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('heading',{name:'Schedule Configuration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   }finally{await finish(testInfo,runtime)}})
 
   test('Layer 2 uses production wording, canonical Jobs/Evidence links and actionable blockers only',async({page},testInfo)=>{const runtime=observeRuntime(page);try{

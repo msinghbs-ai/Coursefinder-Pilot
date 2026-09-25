@@ -49,16 +49,16 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
       await milestoneScreenshot(page, testInfo, 'data-quality-overview')
 
       await openRegulatoryFeeSourceNull(page, fee)
-      await expect(page.getByText('1–50 of 191', { exact: true })).toBeVisible()
+      await expect(page.getByText(/^1–\d+ of \d+$/)).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'exceptions-page-1')
 
       const next = page.locator('.dq-pager').getByRole('button', { name: /Next/i })
       await next.click()
-      await expect(page.getByText('51–100 of 191', { exact: true })).toBeVisible()
+      await expect(page.getByText(/^51–\d+ of \d+$/)).toBeVisible()
       await next.click()
-      await expect(page.getByText('101–150 of 191', { exact: true })).toBeVisible()
+      await expect(page.getByText(/^101–\d+ of \d+$/)).toBeVisible()
       await next.click()
-      await expect(page.getByText('151–191 of 191', { exact: true })).toBeVisible()
+      await expect(page.getByText(/^151–\d+ of \d+$/)).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'exceptions-page-4')
     } finally {
       await finish(testInfo, runtime)

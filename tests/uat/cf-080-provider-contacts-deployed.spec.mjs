@@ -98,8 +98,8 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
       await loginAsUatUser(page)
       await page.goto(new URL('/#layer-4-review',process.env.UAT_BASE_URL).toString())
       await expect(page.getByRole('heading',{name:'Layer 4 — Human Resolution'}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-      await expect(page.getByText('Provider Contact reconciliation').first()).toBeVisible()
-      await expect(page.getByText('Duplicate, Provider ambiguity or import/PIM conflict.')).toBeVisible()
+      await expect(page.getByText(/contact reconciliation item\(s\) parked in Layer 4/).first()).toBeVisible()
+      await expect(page.getByText(/Human decisions remain auditable/).first()).toBeVisible()
     }finally{await finish(testInfo,runtime)}
   })
 
