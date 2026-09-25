@@ -1,24 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.91'
-export const PACKAGE_VERSION='0.1.18'
+export const UI_VERSION='2.15.92'
+export const PACKAGE_VERSION='0.1.19'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'25 Sep 2026',
-  title:'Simpler menu and provider fee rules',
+  title:'UQ fees admitted by rule; tidier Administration',
   changes:[
-    'Jobs and Scheduled Tasks are now one menu item, Jobs & Schedules, with two tabs.',
-    'Approved provider fee rules: where a provider officially states what its published fee means, that rule settles the fee frequency. First rule: UQ program pages show the indicative annual international fee, as UQ states on its own site.',
-    'Fees admitted under a provider rule are recorded with the rule\'s wording (for example "indicative annual").',
-    'Each saved web page now records which tool fetched it, so acquisition tools can be changed without losing traceability.',
-    'Scheduled Tasks states that historical jobs are never reset or replayed; running a schedule again creates a new run.'
+    'UQ program-page fees are now admitted automatically by an approved provider rule, without AI: the fee must appear as the labelled fee for international students with no exclusion words beside it. 89 UQ courses gained their indicative annual fee.',
+    'Review items settled by a provider rule are marked "superseded", so it is always clear whether a person or a rule decided.',
+    'Layer 3 now uses one shared OpenRouter key for all models.'
   ],
   bugFixes:[
-    'A duplicate row of Layer 1 to 3 shortcuts was removed from Scheduled Tasks.',
-    'The Dashboard button "Open Review Queue" now reads "Open Layer 4", matching where it goes.',
-    'Automated checks: the remaining out-of-date tests were fixed.'
+    'The Administration tab row no longer repeats Layer 1 to Layer 4; they stay in the Data Operations menu.',
+    'The Layer 3 benchmark now gives models the same provider-rule context as production, and compares quotes as visible text (ignoring link formatting and stray brackets).'
   ]
 }
 
