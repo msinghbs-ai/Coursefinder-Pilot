@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.19 — 25 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.92** (Package 3).
+- Deterministic provider-rule admission (Decisions 106, 124): security.provider_rule_admit_v1 with proof and apply modes, pipeline.provider_rule_admissions audit, review items marked superseded; scheduled every 15 minutes. First run admitted 160 UQ items (89 courses).
+- Layer 3 status (Decision 125): enqueue runs; AI dispatch and admission stay paused until a model passes two clean runs.
+- Administration: layer2-navigation-restore.js no longer injects Layer 1-4 buttons into the Administration tab row (Decision 116); cf-142-143 contract now asserts it does not.
+- Notes include Packages 2b-2d (visible-text quotes, year selectors, fair benchmark, shared OpenRouter key). v2.15.79 remains the accepted recovery release.
+
 ## 0.1.18 — 25 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.91** (Package 2).

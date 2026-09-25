@@ -14,7 +14,8 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
   expect(nav.indexOf("label:'Layer 1 — Operations'")).toBeLessThan(nav.indexOf("label:'Layer 2 — Enrichment'"))
   expect(nav.indexOf("label:'Layer 2 — Enrichment'")).toBeLessThan(nav.indexOf("label:'Layer 3 — AI Interpretation'"))
   expect(nav.indexOf("label:'Layer 3 — AI Interpretation'")).toBeLessThan(nav.indexOf("label:'Layer 4 — Human Resolution'"))
-  expect(nav).toContain("tabs.dataset.cfLayerOrder='L1>L2>L3>L4'")
+  // Decision 116: Layer shortcuts must not be injected into the Administration tab row.
+  expect(nav).not.toContain('.m-admin-subnav')
   expect(nav).toContain("group.dataset.cfLayerOrder='L1>L2>L3>L4'")
   expect(evidence).toContain('Acquisition provenance')
   // 'Derived from stored Evidence' wording was removed from the provenance panel; 'Acquisition provenance' (above) remains the check.
