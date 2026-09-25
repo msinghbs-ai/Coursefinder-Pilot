@@ -394,8 +394,14 @@ Deno.serve(async (req: Request) => {
       if (dl.error || !dl.data)
         throw new Error("Evidence download failed: " + c.evidence_id);
       const evidence = textFrom(await dl.data.text());
+      // Package 2d: stamp the approved provider fee rule, exactly as production does.
+      const ruleLookup = await svc.rpc("provider_fee_rule_for_evidence_service", { p_evidence_id: c.evidence_id });
+      const rule = ruleLookup.data && typeof ruleLookup.data === "object" ? ruleLookup.data as any : null;
+      const target = rule && rule.rule_code
+        ? { ...c.candidate_payload, basis: rule.resolved_basis, basis_source: `provider_fee_rule:${rule.rule_code}` }
+        : c.candidate_payload;
       const candidateContext = Object.freeze({
-        provider_current_tuition: c.candidate_payload,
+        provider_current_tuition: target,
         fee_candidates: [],
         identity_match: true,
       });
