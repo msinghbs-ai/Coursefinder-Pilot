@@ -19,7 +19,8 @@ export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=f
  const[summary,setSummary]=useState({}),[groups,setGroups]=useState([]),[reviewGroups,setReviewGroups]=useState([]),[diagnostics,setDiagnostics]=useState([]),[findings,setFindings]=useState([]),[history,setHistory]=useState([])
  const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(initialQuery||''),[tab,setTab]=useState('scope'),[open,setOpen]=useState(!!startOpen),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
  const load=async()=>{setBusy(true);setError('');try{const[s,g,r,d,f,h]=await Promise.all([rpc('layer4_mass_summary'),rpc('layer4_scholarship_scope_groups',{p_limit:200}),rpc('layer4_review_groups',{p_limit:200}),rpc('layer4_quality_diagnostics'),rpc('layer4_quality_findings_read',{p_status:'open',p_limit:100}),rpc('layer4_mass_operations_history',{p_limit:50})]);setSummary(s||{});setGroups(Array.isArray(g)?g:[]);setReviewGroups(Array.isArray(r)?r:[]);setDiagnostics(Array.isArray(d)?d:[]);setFindings(Array.isArray(f)?f:[]);setHistory(Array.isArray(h)?h:[])}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
- useEffect(()=>{load()},[])
+ // Package 5 (L4): collapsed -> only the light summary for the cards; the five heavy reads load when batch work is opened.
+ useEffect(()=>{if(open)load();else rpc('layer4_mass_summary').then(x=>setSummary(x||{})).catch(e=>setError(e.message||String(e)))},[open])
  const filtered=useMemo(()=>groups.filter(g=>!query||[g.scholarship_name,g.provider_name,g.candidate_reason,...(g.sample_courses||[])].join(' ').toLowerCase().includes(query.toLowerCase())),[groups,query])
  const openScope=async g=>{setBusy(true);setError('');try{const p=await rpc('layer4_scholarship_scope_preview',{p_scholarship_id:g.scholarship_id,p_candidate_reason:g.candidate_reason});setDecision({kind:'scope',group:g,preview:p,action:'',reason:'',confirmation:''})}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  const openReview=g=>setDecision({kind:'review',group:g,action:'',reason:'',confirmation:''})
@@ -29,7 +30,7 @@ export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=f
  const mutationAllowed=Boolean(summary.mass_mutation_allowed)
  return <section className="cf-l4mass" data-cf-layer4-mass-operations>
   <div className="cf-l4mass-head">
-   <div><small>CF-205 · governed cohort operations</small><h2>Layer 4 mass operations</h2><p>Resolve repeatable review work by governed cohort instead of one record at a time. Every mass decision is previewed, confirmed and audited; Publication remains separate.</p></div>
+   <div><small>Batch decisions and history</small><h2>Layer 4 mass operations</h2><p>Resolve repeatable review work by governed cohort instead of one record at a time. Every mass decision is previewed, confirmed and audited; Publication remains separate.</p></div>
    <button onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button>
   </div>
   {error&&<div className="cf-l4mass-error"><AlertTriangle size={14}/>{error}</div>}

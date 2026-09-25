@@ -168,3 +168,12 @@ html,body,#root{height:100%}body{margin:0;background:var(--m-bg);color:var(--m-t
 .m-subtabs{display:flex;gap:6px;border-bottom:1px solid #e2e8f0;padding-bottom:6px}
 .m-subtab{border:1px solid #cbd5e1;background:#fff;border-radius:8px 8px 0 0;padding:8px 14px;font-weight:600}
 .m-subtab.on{background:#1e293b;color:#fff;border-color:#1e293b}
+
+/* Decision 133 (supersedes A24): Layer headers no longer repeat the page title. They are a slim,
+   light bar with the one-line purpose and the refresh action. More specific than the per-screen
+   dark styles (.l1v2-shell>header, .l2o-top, .cf-layer-header). */
+header.cf-layer-header[data-layer-header]{background:transparent;color:#0f172a;border:0;border-radius:0;box-shadow:none;padding:0 2px 8px;position:static}
+header.cf-layer-header[data-layer-header] span{color:#64748b}
+header.cf-layer-header[data-layer-header] h1{color:#0f172a}
+header.cf-layer-header[data-layer-header] p{color:#475569;font-size:13px}
+header.cf-layer-header[data-layer-header] button{background:#fff;color:#334155;border:1px solid #cbd5e1}

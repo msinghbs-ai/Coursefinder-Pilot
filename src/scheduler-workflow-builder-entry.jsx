@@ -31,7 +31,7 @@ function Builder(){
  const changeUniversityQuery=value=>{if(dispatchBusy)return;setUniversityQuery(value);if(scopeId)setScopeId('')}
 
  return <section className="m23-panel cf-workflow-builder" data-cf-workflow-builder="true">
-  <div className="cf-workflow-builder__head"><div><span className="m-eyebrow">CF-093 · Target builder</span><h3>New governed run</h3><p>Build a new server-authorised Layer 2 Course Facts run. Unsupported layers, modes and recurring scopes stay unavailable rather than being simulated in the browser.</p></div><Workflow size={22}/></div>
+  <div className="cf-workflow-builder__head"><div><span className="m-eyebrow">Target builder</span><h3>New governed run</h3><p>Build a new server-authorised Layer 2 Course Facts run. Unsupported layers, modes and recurring scopes stay unavailable rather than being simulated in the browser.</p></div><Workflow size={22}/></div>
   {contextLoaded&&!operator&&<div className="cf-workflow-builder__notice">Read-only. Pipeline Operator rank 4 or higher is required to preview or dispatch a new governed run.</div>}
   {error&&<div className="cf-workflow-builder__notice" data-error="true">{error}</div>}{message&&<div className="cf-workflow-builder__notice">{message}</div>}
   <div className="cf-workflow-builder__grid">

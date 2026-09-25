@@ -15,7 +15,8 @@ export async function openLayer2(page) {
   await clickPrimaryNav(page, 'Layer 2 — Enrichment')
   const workspace = page.locator('.l2o-shell')
   await expect(workspace).toBeVisible(ui)
-  await expect(workspace.getByRole('heading', { name: 'Layer 2 — Enrichment' })).toBeVisible(ui)
+  // Decision 133: the screen title is the page title (Layer panels no longer repeat it).
+  await expect(page.getByRole('heading', { name: 'Layer 2 — Enrichment' }).first()).toBeVisible(ui)
   return workspace
 }
 
