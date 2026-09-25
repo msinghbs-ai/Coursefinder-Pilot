@@ -369,6 +369,11 @@ export function tuitionValidationPromptContext(
     fee_ambiguous: context?.fee_ambiguous ?? null,
     expected_course_code: context?.expected_course_code ?? null,
     provider_current_tuition_target: target,
+    // Package 2d: explain an approved provider fee rule, so a careful model does not decline
+    // a fee only because the page lacks "per year" wording the provider has defined elsewhere.
+    provider_fee_rule: String((target as any)?.basis_source ?? "").startsWith("provider_fee_rule:")
+      ? `Approved provider rule (${String((target as any).basis_source).slice("provider_fee_rule:".length)}): the provider officially states that the fee shown on this page is its ${(target as any).basis === "indicative_annual" ? "indicative annual" : "annual"} tuition fee. Confirm the amount (and the year only if it is printed beside the amount) with an exact quote, and return basis ${(target as any).basis}. Do not decline only because the page does not repeat "per year". Still decline if the page shows a total, per-semester, domestic or subsidised amount.`
+      : null,
     competing_fee_candidates: competing,
   });
 }
