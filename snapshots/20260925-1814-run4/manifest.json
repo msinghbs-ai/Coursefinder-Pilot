@@ -1,0 +1,60 @@
+{
+  "captured_at": "2026-09-25T18:14:22.301Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-jobs.png",
+      "route": "jobs",
+      "action": null,
+      "clicked": true,
+      "heading": "Jobs",
+      "settle_ms": 3293,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#jobs"
+    },
+    {
+      "file": "02-scheduled-tasks.png",
+      "route": "scheduled-tasks",
+      "action": null,
+      "clicked": true,
+      "heading": "Scheduled Tasks",
+      "settle_ms": 1218,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scheduled-tasks"
+    },
+    {
+      "file": "03-layer-4-human-resolution.png",
+      "route": "layer-4-human-resolution",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 4 — Human Resolution",
+      "settle_ms": 1215,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-4-human-resolution"
+    },
+    {
+      "file": "04-layer-4-human-resolution.png",
+      "route": "layer-4-human-resolution",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 4 — Human Resolution",
+      "settle_ms": 1206,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-4-human-resolution"
+    },
+    {
+      "file": "05-layer-4-human-resolution-batches.png",
+      "route": "layer-4-human-resolution",
+      "action": "Batches",
+      "clicked": true,
+      "heading": "Layer 4 — Human Resolution",
+      "settle_ms": 1204,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-4-human-resolution"
+    },
+    {
+      "file": "06-layer-3-ai-interpretation.png",
+      "route": "layer-3-ai-interpretation",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 3 — AI Interpretation",
+      "settle_ms": 1215,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-3-ai-interpretation"
+    }
+  ]
+}
