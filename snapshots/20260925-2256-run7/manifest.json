@@ -1,0 +1,86 @@
+{
+  "captured_at": "2026-09-25T22:56:46.174Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-1-operations.png",
+      "route": "layer-1-operations",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 1 — Operations",
+      "settle_ms": 3225,
+      "height": 1072,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-1-operations"
+    },
+    {
+      "file": "02-statistics-rankings.png",
+      "route": "statistics-rankings",
+      "action": null,
+      "clicked": true,
+      "heading": "Statistics & Rankings",
+      "settle_ms": 1,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#statistics-rankings"
+    },
+    {
+      "file": "03-outcomes-qilt.png",
+      "route": "outcomes-qilt",
+      "action": null,
+      "clicked": true,
+      "heading": "Outcomes (QILT)",
+      "settle_ms": 4534,
+      "height": 2175,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#outcomes-qilt"
+    },
+    {
+      "file": "04-student-flow-prisms.png",
+      "route": "student-flow-prisms",
+      "action": null,
+      "clicked": true,
+      "heading": "Student Flow (PRISMS)",
+      "settle_ms": 1,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#student-flow-prisms"
+    },
+    {
+      "file": "05-compare.png",
+      "route": "compare",
+      "action": null,
+      "clicked": true,
+      "heading": "Compare providers & courses",
+      "settle_ms": 3019,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#compare"
+    },
+    {
+      "file": "06-administration.png",
+      "route": "administration",
+      "action": null,
+      "clicked": true,
+      "heading": "Administration",
+      "settle_ms": 1,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#administration"
+    },
+    {
+      "file": "07-administration-sources-imports.png",
+      "route": "administration",
+      "action": "Sources & Imports",
+      "clicked": true,
+      "heading": "Administration",
+      "settle_ms": 3520,
+      "height": 2103,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#administration?section=sources-imports"
+    },
+    {
+      "file": "08-administration-layer-1-sources.png",
+      "route": "administration",
+      "action": "Layer 1 sources",
+      "clicked": false,
+      "heading": "Administration",
+      "settle_ms": 0,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#administration"
+    }
+  ]
+}
