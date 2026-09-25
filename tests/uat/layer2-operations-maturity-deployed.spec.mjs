@@ -11,7 +11,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
  test('routine Layer 2 workspace exposes bounded scope with one background enrichment action',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const workspace=await openLayer2(page)
-  await expect(workspace.getByRole('heading',{name:'Layer 2 — Enrichment',exact:true})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Layer 2 — Enrichment',exact:true}).first()).toBeVisible()
   await expect(workspace.getByRole('heading',{name:'Background Course enrichment',exact:true})).toBeVisible()
   const country=workspace.getByLabel('Layer 2 sync country'),scope=workspace.getByLabel('Layer 2 fetch scope')
   await expect(country).toHaveValue('AU');await expect(scope).toHaveValue('country');const countryLabels=await country.locator('option').allTextContents();expect(countryLabels.join(' ')).toMatch(/Australia.*Canada.*New Zealand/i)

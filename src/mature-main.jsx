@@ -180,7 +180,7 @@ function App(){
     {navOpen&&<button className="m-backdrop" onClick={()=>setNavOpen(false)} aria-label="Close navigation"/>}
     <main className="m-main" ref={mainRef}>
       <header className="m-topbar">
-        <div className="m-title-wrap"><button className="m-mobile-menu" onClick={()=>setNavOpen(true)}><Menu size={20}/></button><div><div className="m-eyebrow">Canonical governance · governed browser RPC</div><AppBreadcrumbs page={page} routeParams={routeParams} navigate={go}/><h1>{title}</h1><p>{subtitle}</p></div></div>
+        <div className="m-title-wrap"><button className="m-mobile-menu" onClick={()=>setNavOpen(true)}><Menu size={20}/></button><div><AppBreadcrumbs page={page} routeParams={routeParams} navigate={go}/><h1>{title}</h1><p>{subtitle}</p></div></div>
         <div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></div>
       </header>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}

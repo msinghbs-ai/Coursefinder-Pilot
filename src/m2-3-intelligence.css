@@ -75,3 +75,13 @@
 
 /* v2.15.90 */
 .l4d-chip.return_layer3{background:#e0f2fe;color:#075985}
+
+/* Package 5 (T1) */
+.m23-paused-note{margin:0 0 12px;padding:10px 14px;border:1px solid #fcd34d;background:#fffbeb;color:#78350f;border-radius:10px;font-size:14px}
+
+/* Package 5 (L2): the queue scrolls inside its own column and the decision panel stays in view,
+   so a long queue no longer makes the page thousands of pixels tall. */
+@media (min-width:901px){
+  .l4d-grid .l4d-queue{max-height:calc(100vh - 210px);overflow-y:auto;overscroll-behavior:contain}
+  .l4d-grid .l4d-panel{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto}
+}

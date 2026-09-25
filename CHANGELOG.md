@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.21 — 26 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.94** (Package 5, P3 screen review: Operations group).
+- Decision 133 supersedes A24 (CF-CHG-20260830-048): Layer headers no longer repeat the page title (embedded Layer 1 and 2 keep a title only in pop-up mode; Layer 1 embedded region gets aria-label); slim light header style; a24 test rewritten to one title per screen; a21, layer2-operations-maturity and openLayer2 check the page title.
+- Jobs (J1-J4): count columns only when present, UNSPECIFIED mode hidden, SUCCEEDED shown as Completed, compact table width; "Operational console" label removed.
+- Layer 4 (L2-L4): queue scrolls in its column with a sticky decision panel; neutral Suggested reject wording; batch history loads only its summary until opened.
+- Layer 3 (T1): paused notice while no model is qualified.
+- A2/A3: developer eyebrow and CF build labels replaced with plain titles.
+- Database (already live): provider rule fee-explanation pattern (Decision 131); one current provider tuition per course (Decision 132). v2.15.79 remains the accepted recovery release.
+
 ## 0.1.20 — 26 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.93** (P3 item 1).
