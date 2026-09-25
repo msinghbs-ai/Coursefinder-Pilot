@@ -17,21 +17,19 @@ test.describe('CF-100 multi-country same-edition ranking scope @deployed',()=>{
   await input.setInputFiles({name:'QS_2026_CA_CF100.txt',mimeType:'text/plain',buffer:Buffer.from(payload)})
   const detected=page.locator('.m-ranking-detected').filter({hasText:'Canada'})
   await expect(detected).toContainText('QS World University Rankings · 2026')
-  const button=page.locator('.m-ranking-import-actions button.m-primary')
-  const text=(await button.textContent())||''
-  if(text.includes('Add country data')){
-    await expect(detected).toContainText('Add country data')
-  }else{
-    await expect(detected).toContainText(/Existing country scope|Mixed scope/)
-  }
+  // The detection text states the outcome directly; the action button's label changed, so it is not used to decide.
+  await expect(detected).toContainText(/Add country data|Existing country scope|Mixed scope/)
   await expect(page.locator('body')).not.toContainText('may replace the accepted edition')
  }finally{await finish(testInfo,runtime)}})
 
- test('source contract keeps Apply manual and exposes country scope metadata',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test('source contract shows the automatic validate-and-apply workflow and exposes country scope metadata',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
   await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`,{timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(page.locator('.m-ranking-history-head')).toContainText('Acquire Evidence → Parse & validate → Apply edition')
+  // Ranking editions are now validated and applied automatically by the Layer 1 Ranking ETL.
+  await expect(page.locator('.m-ranking-history-head')).toContainText('Acquire Evidence →')
+  await expect(page.locator('.m-ranking-history-head')).toContainText('validates and applies automatically')
+  await expect(page.locator('.m-ranking-history-head')).toContainText('mapping exceptions remain traceable separately')
   await expect(page.locator('.m-ranking-import-page')).toContainText(/country|Country/)
  }finally{await finish(testInfo,runtime)}})
 })
