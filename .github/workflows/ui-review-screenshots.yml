@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci
+      - run: npm install --ignore-scripts --prefer-offline --no-audit --no-fund
       - run: npx playwright install chromium
       - name: Capture screens
         run: npx playwright test -c tools/ui-review/playwright.config.mjs
