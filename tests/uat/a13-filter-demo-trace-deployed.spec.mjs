@@ -37,7 +37,7 @@ test.describe('A13 stable Course filters and Layer 2 acquisition Evidence trace 
  test('Layer 2 explains governed Firecrawl production route and opens accepted UQ Evidence',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   const dialog=await openLayer2(page)
-  await expect(dialog.getByRole('heading',{name:'Layer 2 — Enrichment'})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Layer 2 — Enrichment'}).first()).toBeVisible()
   await expect(dialog.getByRole('heading',{name:'Effective acquisition policy',exact:true})).toBeVisible()
   const route=page.locator('.l2o-route-chain')
   await expect(route).toContainText(/Firecrawl direct.*Background scheduler.*Budget guard.*Evidence/i)

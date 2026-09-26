@@ -7,7 +7,8 @@ export async function openLayer1(page) {
   await clickPrimaryNav(page, 'Layer 1 — Operations')
   const workspace = page.locator('.l1v2-page .l1v2-shell')
   await expect(workspace).toBeVisible(ui)
-  await expect(workspace.getByRole('heading', { name: 'Layer 1 Operations' })).toBeVisible(ui)
+  // Decision 133: the screen title is the page title (the embedded panel no longer repeats it).
+  await expect(page.getByRole('heading', { name: 'Layer 1 — Operations' }).first()).toBeVisible(ui)
   return workspace
 }
 
