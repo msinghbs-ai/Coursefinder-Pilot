@@ -33,7 +33,7 @@ test.describe('CF-089 Scraper Config and Parse.bot qualification @targeted',()=>
    await page.goto(new URL('/#administration?section=layer2-providers',process.env.UAT_BASE_URL).toString())
    await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`,{timeout:45000})
    await expect(page.getByRole('heading',{name:'Scraper Config',exact:true})).toBeVisible({timeout:45000})
-   await expect(page.getByRole('button',{name:'Refresh',exact:true})).toBeVisible()
+   await expect(page.locator('header.l2p-canonical-head').getByRole('button',{name:'Refresh',exact:true})).toBeVisible()
    await expect(page.getByRole('button',{name:'Manage routes',exact:true})).toBeVisible()
    await expect(page.getByLabel('Layer 2 provider source profile')).toHaveCount(0)
 
