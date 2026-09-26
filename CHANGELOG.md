@@ -5,7 +5,8 @@
 - Prepared visible PIM Admin release candidate **v2.15.95** (Package 7a: Layer 2 provider onboarding, Decision 141).
 - New Layer 2 panel: provider onboarding queue (largest first, state per provider) with per-provider catalogue page submission: Check (dry run) then Validate & qualify (Pipeline Operator); three-course identity check 3 of 3 decides qualification.
 - Database (already live): layer2_provider_onboarding_queue_v1, layer2_provider_catalogue_submit_v1 (audited), pipeline.layer2_provider_catalogue_submissions.
-- Contract test cf-247-layer2-provider-onboarding. v2.15.79 remains the accepted recovery release.
+- Layer 2 automation settings (Decisions 141, 146): pipeline.layer2_auto_discovery_settings with audit; read (Curator+) and save (Platform Admin, reason required, providers in flight capped at Firecrawl concurrency); card in Scraper Config above dispatcher tuning. Automation off by default.
+- Contract test cf-247-layer2-provider-onboarding (onboarding panel and automation card). v2.15.79 remains the accepted recovery release.
 
 ## 0.1.21 — 26 Sep 2026
 

@@ -7,11 +7,12 @@ export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'26 Sep 2026',
-  title:'Provider onboarding for Layer 2',
+  title:'Provider onboarding and Layer 2 automation controls',
   changes:[
     'Layer 2 has a Provider onboarding panel: providers waiting for qualification, largest first, with their state.',
     'For each provider an operator can supply the course catalogue page, check it without changing anything, then start the three-course identity check.',
-    'Each submission is recorded with who made it, when and why.'
+    'Each submission is recorded with who made it, when and why.',
+    'Scraper Config has a Layer 2 automation card: Platform Admins set the daily provider limit, providers in flight (up to the Firecrawl concurrency) and candidate pages per provider, with a reason kept in the audit.'
   ],
   bugFixes:[]
 }
