@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.24 — 26 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.97** (Package 8: efficient, observable platform; Decisions 146 refined, 150, 152, 153).
+- Platform resources and cost panel (Environment & Migration): hourly observations (size vs memory, cache hit, jobs, overlaps, acquisition and AI usage, largest tables), alerts, 30-day trends, cost model, admission lifecycle.
+- Database (applied live): narrow evidence link index; Micro workload schedule; system automation identity; Layer 1 write-only-when-changed; capacity observation fix; hourly resource recorder and cost model; admission lifecycle policy (3,057 Layer 2 profiles aligned).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.23 — 26 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.96** (Package 7, part 2: evidence-first onboarding, Decisions 146 and 147).

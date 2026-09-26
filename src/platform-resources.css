@@ -1,0 +1,27 @@
+/* Package 8.2 (Decision 153): platform resources and cost */
+.pr-panel{display:grid;gap:12px}
+.pr-alerts{display:grid;gap:6px}
+.pr-alert{display:flex;gap:8px;align-items:flex-start;border-radius:10px;padding:8px 12px;font-size:13px}
+.pr-alert.warn{background:#fffbeb;border:1px solid #fcd34d;color:#78350f}
+.pr-alert.high{background:#fef2f2;border:1px solid #fca5a5;color:#7f1d1d}
+.pr-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.pr-tiles article{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;display:grid;gap:3px;background:#fff}
+.pr-tiles article span{font-size:12px;color:#64748b}
+.pr-tiles article strong{font-size:18px;color:#0f172a}
+.pr-tiles article small{font-size:12px;color:#475569}
+.pr-tiles small.warn{color:#b45309}.pr-tiles small.bad{color:#b91c1c;font-weight:600}
+.pr-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+@media (max-width:900px){.pr-two{grid-template-columns:1fr}}
+.pr-box{border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;background:#fff;overflow-x:auto}
+.pr-box h3{margin:0 0 8px;font-size:14px}
+.pr-trend{display:grid;grid-template-columns:150px 160px 1fr;gap:10px;align-items:center;font-size:12px;color:#475569;padding:4px 0}
+.pr-spark{color:#1d4ed8}.pr-spark-empty{font-size:11px;color:#94a3b8}
+.pr-table{width:100%;border-collapse:collapse;font-size:13px}
+.pr-table th{text-align:left;font-size:11px;text-transform:uppercase;color:#64748b;padding:6px}
+.pr-table td{padding:6px;border-top:1px solid #eef2f7;vertical-align:top}
+.pr-costs input{width:110px;padding:5px 7px;border:1px solid #cbd5e1;border-radius:8px}
+.pr-costs button{display:inline-flex;gap:5px;align-items:center;border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:4px 9px;font-size:12px}
+.pr-total td{font-weight:700}
+.pr-note{margin:6px 0 0;font-size:12px;color:#64748b}.pr-ok{margin:6px 0 0;font-size:13px;color:#065f46}
+.pr-sub{display:block;color:#64748b;font-size:11px;margin-top:2px}
+.pr-bad{color:#b91c1c;font-weight:600}

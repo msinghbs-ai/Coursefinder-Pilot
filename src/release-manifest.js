@@ -1,20 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.96'
-export const PACKAGE_VERSION='0.1.23'
+export const UI_VERSION='2.15.97'
+export const PACKAGE_VERSION='0.1.24'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'26 Sep 2026',
-  title:'Evidence-first provider onboarding',
+  title:'Platform resources, cost and admission lifecycle',
   changes:[
-    'Provider onboarding shows candidate course catalogue pages found in stored evidence, each with a link to the page it came from; the best candidate is filled in for you.',
-    'Automatic discovery (switched on by a Platform Admin in Scraper Config) tries each waiting provider\'s best candidates through the three-course identity check and hands providers it cannot settle to a person.',
-    'Provider states now include Qualified and Needs a person, and show the latest automatic result.',
-    'The onboarding list loads in about a second (counts refresh every 10 minutes).'
+    'Administration → Environment & Migration opens with Platform resources and cost: database size against memory, cache hit rate, scheduled job health, evidence storage and the monthly toolset cost.',
+    'Alerts appear when the database outgrows memory or a size threshold, when scheduled jobs fail or overlap, or when the cache hit rate drops.',
+    'The admission lifecycle shows how often each kind of data is re-checked: course facts annually in the Aug–Nov publishing window, scholarships quarterly, registers weekly.',
+    'Platform Admins can set the monthly cost of each tool; AI cost is taken from actual usage.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'The daily capacity observation runs again (it had timed out every day since 2 September).'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
