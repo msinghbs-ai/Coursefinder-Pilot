@@ -5,7 +5,7 @@ import fs from 'node:fs'
 test('Layer 2 provider onboarding: mounted, dry-run first, three-course check required',async()=>{
   const entry=fs.readFileSync('src/layer2-operations-entry.jsx','utf8')
   expect(entry).toContain("import ProviderOnboarding from'./layer2-provider-onboarding'")
-  expect(entry).toContain('<ProviderOnboarding rank={rank}/>')
+  expect(entry).toContain('<ProviderOnboarding rank={rank} openEvidence={openEvidence}/>')
   const panel=fs.readFileSync('src/layer2-provider-onboarding.jsx','utf8')
   expect(panel).toContain("rpc('layer2_provider_onboarding_queue_v1'")
   expect(panel).toContain("rpc('layer2_provider_catalogue_submit_v1'")
@@ -25,5 +25,16 @@ test('Layer 2 automation settings: in Scraper Config, admin-only editing, Firecr
   expect(card).toContain('const edit=data.can_edit,max=Number(data.firecrawl_concurrency||1)')
   expect(card).toContain('max={max}')
   expect(card).toContain("disabled={busy||reason.trim().length<8}")
+})
+
+// Decisions 146 and 147: candidates from stored evidence, with the evidence one click away.
+test('Layer 2 onboarding shows evidence-ranked candidates and automatic status',async()=>{
+  const entry=fs.readFileSync('src/layer2-operations-entry.jsx','utf8')
+  expect(entry).toContain('<ProviderOnboarding rank={rank} openEvidence={openEvidence}/>')
+  const panel=fs.readFileSync('src/layer2-provider-onboarding.jsx','utf8')
+  expect(panel).toContain('Candidates found in stored evidence')
+  expect(panel).toContain('openEvidence(c.evidence_id)')
+  expect(panel).toContain("['needs_person','Needs a person']")
+  expect(panel).toContain("r.last_submission.origin==='automatic'")
 })
 

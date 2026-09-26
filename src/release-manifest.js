@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.95'
-export const PACKAGE_VERSION='0.1.22'
+export const UI_VERSION='2.15.96'
+export const PACKAGE_VERSION='0.1.23'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'26 Sep 2026',
-  title:'Provider onboarding and Layer 2 automation controls',
+  title:'Evidence-first provider onboarding',
   changes:[
-    'Layer 2 has a Provider onboarding panel: providers waiting for qualification, largest first, with their state.',
-    'For each provider an operator can supply the course catalogue page, check it without changing anything, then start the three-course identity check.',
-    'Each submission is recorded with who made it, when and why.',
-    'Scraper Config has a Layer 2 automation card: Platform Admins set the daily provider limit, providers in flight (up to the Firecrawl concurrency) and candidate pages per provider, with a reason kept in the audit.'
+    'Provider onboarding shows candidate course catalogue pages found in stored evidence, each with a link to the page it came from; the best candidate is filled in for you.',
+    'Automatic discovery (switched on by a Platform Admin in Scraper Config) tries each waiting provider\'s best candidates through the three-course identity check and hands providers it cannot settle to a person.',
+    'Provider states now include Qualified and Needs a person, and show the latest automatic result.',
+    'The onboarding list loads in about a second (counts refresh every 10 minutes).'
   ],
   bugFixes:[]
 }
