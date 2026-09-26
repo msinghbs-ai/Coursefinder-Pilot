@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState}from'react'
 import{AlertTriangle,CheckCircle2,Database,KeyRound,RefreshCw,ServerCog,ShieldCheck}from'lucide-react'
 import{adminRead,supabase}from'./lib/supabase'
 import'./environment-migration.css'
+import PlatformResourcesPanel from'./PlatformResourcesPanel'
 
 const human=v=>String(v||'').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())
 const fmt=v=>Number(v||0).toLocaleString()
@@ -17,6 +18,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
  const parsebot=providers.find(x=>x.provider_key==='parsebot'),firecrawl=providers.find(x=>x.provider_key==='firecrawl'),zenrows=providers.find(x=>x.provider_key==='zenrows'),otherProviders=providers.filter(x=>['scrape-do','scraperapi'].includes(x.provider_key))
  const refresh=async text=>{setMsg(text);await load()}
  return <div className="env-stack">
+  <PlatformResourcesPanel onError={onError}/>
   <section className="env-panel"><div className="env-head"><div><small>Administration / Environment & Migration</small><h2>Integration credentials & production portability</h2><p>Secret values are write-only. Production-specific Supabase keys remain target-generated and are never copied from Pilot.</p></div><button onClick={load}><RefreshCw size={15}/>Refresh</button></div>
    {msg&&<div className="env-ok"><CheckCircle2 size={15}/>{msg}</div>}
    <div className="env-summary">
