@@ -50,6 +50,9 @@ jobs:
             [website-course-api]=false
             [zoho-course-api]=false
             [evidence-link-index]=false
+            [layer1-au-depth]=false
+            [layer1-au-cricos-facts]=false
+            [layer1-au-completeness]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
