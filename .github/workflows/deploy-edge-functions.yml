@@ -49,6 +49,7 @@ jobs:
             [wix-course-api]=false
             [website-course-api]=false
             [zoho-course-api]=false
+            [evidence-link-index]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do

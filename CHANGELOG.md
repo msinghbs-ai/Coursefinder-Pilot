@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.23 — 26 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.96** (Package 7, part 2: evidence-first onboarding, Decisions 146 and 147).
+- Evidence link index: edge function evidence-link-index reads stored evidence (bucket "evidence") and records links; runs every minute, prioritised by providers waiting for onboarding; allow-listed in the deploy workflow (verify_jwt false, own authentication).
+- Candidate ranking from the link index (security.layer2_catalogue_candidates_v1); automatic discovery job every 5 minutes within Platform Admin limits; attempts audited; submissions record origin person or automatic.
+- Onboarding snapshot refreshed every 10 minutes: queue read 25.8 s to 1.2 s; discovery job 0.4 s.
+- Panel: candidates with View evidence, automatic status, Qualified and Needs a person states. v2.15.79 remains the accepted recovery release.
+
 ## 0.1.22 — 26 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.95** (Package 7a: Layer 2 provider onboarding, Decision 141).
