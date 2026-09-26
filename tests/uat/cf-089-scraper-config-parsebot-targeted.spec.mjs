@@ -55,7 +55,8 @@ test.describe('CF-089 Scraper Config and Parse.bot qualification @targeted',()=>
    await expect(select).toBeVisible({timeout:45000})
    expect(await select.locator('option').count()).toBeLessThanOrEqual(10)
 
-   const advanced=page.locator('details.m-admin-advanced')
+   // Two sections share this class (workload defaults, rank 5+; scholarship runtime settings, everyone): pick workload defaults by its title.
+   const advanced=page.locator('details.m-admin-advanced').filter({has:page.locator('summary',{hasText:'Advanced Layer 2 workload defaults'})})
    if(await advanced.count()){
      await expect(advanced).not.toHaveAttribute('open','')
      await advanced.locator('summary').click()
