@@ -1,24 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.94'
-export const PACKAGE_VERSION='0.1.21'
+export const UI_VERSION='2.15.95'
+export const PACKAGE_VERSION='0.1.22'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'26 Sep 2026',
-  title:'Clearer operations screens',
+  title:'Provider onboarding for Layer 2',
   changes:[
-    'Each Layer screen shows its title once; the Layer header is now a slim bar with its purpose and refresh button.',
-    'Jobs shows only columns that have values, a single "Completed" status and no empty mode badges, and the table fits the screen.',
-    'Layer 4: the queue scrolls in its own column and the decision panel stays in view; batch history loads its details only when opened.',
-    'Layer 3 states plainly when AI interpretation is paused and why.',
-    'UQ fees described on UQ\'s fee explanation ("Approximate yearly cost of full-time tuition") are admitted by the approved provider rule, and each course keeps one current tuition fee.'
+    'Layer 2 has a Provider onboarding panel: providers waiting for qualification, largest first, with their state.',
+    'For each provider an operator can supply the course catalogue page, check it without changing anything, then start the three-course identity check.',
+    'Each submission is recorded with who made it, when and why.'
   ],
-  bugFixes:[
-    'Developer labels ("Canonical governance · governed browser RPC", "CF-205", "CF-206", "CF-245", "CF-093") replaced with plain titles.',
-    'The "Suggested reject" card no longer implies every rejection is about fees.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
