@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "layer1-edge-v1.4.1";
+const VERSION = "layer1-edge-v1.5.0";
 const RPC_CHUNK = 250;
 const DEFAULT_BATCH = 2500;
 const MAX_BATCH = 5000;
@@ -79,6 +79,8 @@ async function rpc(client: any, name: string, args: Record<string, unknown> = {}
 async function authAdmin(req: Request, service: any, url: string, anon: string) {
   const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (!token) throw new Error("authentication required");
+  // Background runs (Decision 155): the Layer 1 run driver calls with the service key.
+  if (token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")) return { user: { id: null as unknown as string }, token };
   const client = createClient(url, anon, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false },
@@ -156,7 +158,8 @@ function progress(totalRecords: number, offset: number, selectedRecords: number,
 async function runAU(url: string, anon: string, token: string, apply: boolean, offset: number, batchSize: number) {
   const response = await fetchT(`${url}/functions/v1/layer1-au-depth`, 120000, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, apikey: anon, "content-type": "application/json" },
+    // A secret key must travel in both headers; mixing it with the publishable key is rejected by the gateway.
+    headers: { Authorization: `Bearer ${token}`, apikey: token === Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ? token : anon, "content-type": "application/json" },
     body: JSON.stringify({ apply, offset, batchSize }),
   });
   const text = await response.text();
