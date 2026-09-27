@@ -18,7 +18,8 @@ export const RELEASE={
   bugFixes:[
     'Run now no longer fails with a duplicate request error when a run of the same source failed earlier that day.',
     'Run progress was overstated for Australian runs (for example 207,824 processed out of 25,978). Progress now counts items actually reached.',
-    'A source whose last run failed is now counted under Attention.'
+    'A source whose last run failed is now counted under Attention.',
+    'The QS rankings card shows the ingested 2026 edition (1,501 rows) again, titled with its year; the 2027 edition, not yet available from the publisher, shows as pending.'
   ]
 }
 
