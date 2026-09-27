@@ -53,6 +53,9 @@ jobs:
             [layer1-au-depth]=false
             [layer1-au-cricos-facts]=false
             [layer1-au-completeness]=false
+            [layer1-operations-control]=false
+            [layer1-nz-live]=true
+            [layer1-register-etl]=true
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
