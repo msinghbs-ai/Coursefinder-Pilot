@@ -6,6 +6,7 @@
 - Database (applied live): run lease and background driver (layer1-run-driver, every minute); automatic retry of temporary source errors (1, 2, 4, 8, 15 minutes); evidence reuse by content hash; system-queued runs; retirement of the 809 Australian courses no longer in CRICOS (audited in pipeline.layer1_course_retirements).
 - Edge functions: layer1-operations-control v1.3.0, layer1-nz-live v1.2.0 (now in the repository), layer1-register-etl v1.5.0, layer1-au-depth v1.6.1; added to the deploy allow-list.
 - Layer 1 card: live progress, retry and failure states, resume from the stopped item.
+- Ranking family cards use the newest ingested edition and show its year in the title; newer editions without data show as pending (fixes CF-068 deployed UAT).
 - v2.15.79 remains the accepted recovery release.
 
 ## 0.1.24 — 26 Sep 2026
