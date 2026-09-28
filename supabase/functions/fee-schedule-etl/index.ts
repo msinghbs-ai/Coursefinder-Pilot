@@ -6,7 +6,9 @@ import { getDocumentProxy } from "npm:unpdf@0.12.1";
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.4.0";
+const VERSION = "fee-schedule-etl-v0.4.1";
+// v0.4.1: annual fee floor $12,000 and English-language programs excluded (Charles Darwin lists English for
+// Academic Purposes modules at $5,500 per module, which are not annual course fees).
 // v0.4.0: fees written "A$37,800/year" accepted; rows holding several courses side by side (two-column pages)
 // are split at each CRICOS code, each course taking the first fee after its own code.
 // v0.3.0: apply — the schedule file is stored as evidence and svc_fee_schedule_apply writes each bound row through
@@ -50,8 +52,9 @@ function parseRows(rows: string[]) {
       const feeAt = cells.findIndex((c, i) => i > idx[k] && i < end && FEE_CELL.test(c));
       if (feeAt < 0) { rejected.push(raw); segStart = end; continue; }
       const amount = Number(cells[feeAt].replace(/\/.*$/, "").replace(/[^0-9.]/g, ""));
-      if (!(amount >= 5000 && amount <= 150000)) { rejected.push(raw); segStart = feeAt + 1; continue; }
+      if (!(amount >= 12000 && amount <= 150000)) { rejected.push(raw); segStart = feeAt + 1; continue; }
       const title = cells.slice(segStart, feeAt).find(isTitle) || "";
+      if (/english for academic|general english|elicos|english language/i.test(cells.slice(segStart, feeAt).join(" "))) { rejected.push(raw); segStart = feeAt + 1; continue; }
       out.push({ course_cricos: cells[idx[k]], title, amount, raw });
       segStart = feeAt + 1;
     }
