@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION="ranking-layer1-etl-v1.6.0";
+const VERSION="ranking-layer1-etl-v1.6.1";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -126,6 +126,8 @@ function parsebotRowsFromJson(bytes:Uint8Array,systemCode:string,expectedYear:nu
 
 function rankingJsonRowsFromEvidence(bytes:Uint8Array,systemCode:string,expectedYear:number){
  const text=new TextDecoder().decode(bytes).replace(/^\uFEFF/,"").trim();
+ // v1.6.1: THE native files start with a "Year NNNN" line; parse them with the THE reader, which also checks the declared year.
+ if(systemCode==="the_wur"&&/^Year\s+\d{4}\s*[\r\n]/i.test(text)){const parsed=theRowsFromNativeJson(bytes,expectedYear);return{...parsed,scopeCountries:[...new Set(parsed.rows.map((r:any)=>r.country_text).filter(Boolean))]};}
  const root=JSON.parse(text);
  if(root?.source==="parsebot")return parsebotRowsFromJson(bytes,systemCode,expectedYear);
  const payloads=Array.isArray(root)?root:Array.isArray(root?.responses)?root.responses:Array.isArray(root?.pages)?root.pages:root?.source==="manual_ranking_bundle"&&Array.isArray(root?.files)?root.files.map((x:any)=>x?.payload).filter(Boolean):[root];

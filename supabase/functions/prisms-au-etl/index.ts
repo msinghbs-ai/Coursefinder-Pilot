@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION = "prisms-au-etl-v0.1.2";
+const VERSION = "prisms-au-etl-v0.2.0";
 const SOURCE_URL = "https://www.education.gov.au/download/15221/international-student-enrolment-and-commencement-data-abs-sa4-publication/44345/document/xlsx";
 const SOURCE_PAGE = "https://www.education.gov.au/international-education-data-and-research/resources/international-student-enrolment-and-commencement-data-abs-sa4";
 const SHEET = "Data";
@@ -354,6 +354,15 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const mode = text(body?.mode || "dry_run").toLowerCase();
+    // v0.2.0 (Decision 134): an edition found by the statistics discovery job is read from its own file on education.gov.au.
+    let editionUrl = SOURCE_URL;
+    if (body?.url) {
+      const u = new URL(String(body.url));
+      if (u.protocol !== "https:" || !/(^|\.)education\.gov\.au$/i.test(u.hostname) || !/^\/download\//i.test(u.pathname)) {
+        throw new Error("edition file must be an education.gov.au download");
+      }
+      editionUrl = u.toString();
+    }
     if (!["dry_run", "apply"].includes(mode)) {
       throw new Error("mode must be dry_run or apply");
     }
@@ -363,7 +372,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("PRISMS context unavailable");
     }
 
-    const response = await fetch(SOURCE_URL, {
+    const response = await fetch(editionUrl, {
       redirect: "follow",
       headers: { "user-agent": "CourseFinder-Pilot/PRISMS-0.1" },
     });
@@ -381,7 +390,7 @@ Deno.serve(async (req: Request) => {
       ok: true,
       workerVersion: VERSION,
       mode,
-      sourceUrl: SOURCE_URL,
+      sourceUrl: editionUrl,
       sourcePage: SOURCE_PAGE,
       workbookBytes: bytes.length,
       workbookSha256: workbookHash,
@@ -413,7 +422,7 @@ Deno.serve(async (req: Request) => {
       `Department of Education PRISMS SA4 ${parsed.period.monthName} ${parsed.period.year}`;
     sourceId = await rpc(client, "svc_prisms_prepare_source", {
       p_label: label,
-      p_url: SOURCE_URL,
+      p_url: editionUrl,
       p_collection_version: parsed.period.collectionVersion,
       p_period_start: parsed.period.periodStart,
       p_period_end: parsed.period.periodEnd,
@@ -430,7 +439,7 @@ Deno.serve(async (req: Request) => {
 
     const evidenceId = await rpc(client, "svc_prisms_register_evidence", {
       p_source_id: sourceId,
-      p_source_url: SOURCE_URL,
+      p_source_url: editionUrl,
       p_storage_path: storagePath,
       p_content_hash: workbookHash,
       p_collection_version: parsed.period.collectionVersion,

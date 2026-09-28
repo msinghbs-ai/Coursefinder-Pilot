@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.27 — 28 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.100** (Layer 1 closure, Decision 159; R5, R6, R14, R22, R25; Decision 149 identifiers; R23/R26 evidence).
+- Database (applied live): NZQA seen tracking with departures and reactivation; 30-day re-verification of register rows; active counts in run summaries; provider departures review (Layer 4); GLOBAL country for ranking runs and scheduled checks; statistics edition rules, candidates and monthly discovery (Decision 134); country-scoped register identifiers (Decision 149); Layer 2 capture reuses identical files; ranking clean-up (THE 2016–2024 applied, THE "2015" withdrawn, QS 2025 restored).
+- Edge functions: layer1-operations-scheduled v1.2.1, layer1-operations-control v1.6.0, ranking-publisher-control (internal apply of validated uploads), ranking-layer1-etl v1.6.1, qilt-au-etl v0.3.0, prisms-au-etl v0.2.0, statistics-edition-discovery v1.0.0 (new); allow-list updated.
+- Layer 1 card: QILT family with survey tabs; new editions with Apply. Layer 4: Provider departures tab.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.26 — 28 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.99** (Package 10: Decision 155 steps 2, 5, 6 and 7; R18–R21).
