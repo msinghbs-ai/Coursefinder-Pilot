@@ -6,7 +6,9 @@ import { getDocumentProxy } from "npm:unpdf@0.12.1";
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.5.0";
+const VERSION = "fee-schedule-etl-v0.6.0";
+// v0.6.0: inspect can return PDF text items with their positions (positions: true), for column-based tables
+// such as the UQ English Language Proficiency Table 1. Read only.
 // v0.5.0: inspect of university English-requirement pages (UQ, Western Sydney, Macquarie, UWA) returns the page
 // text as lines (tags removed), so each provider's English rule is written against the real page. Read only.
 // v0.4.1: annual fee floor $12,000 and English-language programs excluded (Charles Darwin lists English for
@@ -71,6 +73,20 @@ const MONEY = /\$\s?\d{1,3}(,\d{3})+(\.\d{2})?/g;
 
 function allowed(u: URL) {
   return u.protocol === "https:" && HOSTS.some((h) => u.hostname === h || u.hostname.endsWith("." + h));
+}
+
+async function pdfItems(bytes: Uint8Array, maxPages: number) {
+  const pdf = await getDocumentProxy(bytes);
+  const items: { p: number; x: number; y: number; w: number; s: string }[] = [];
+  for (let p = 1; p <= Math.min(pdf.numPages, maxPages); p++) {
+    const tc = await (await pdf.getPage(p)).getTextContent();
+    for (const it of tc.items as any[]) {
+      const s = String(it.str ?? "");
+      if (!s.trim()) continue;
+      items.push({ p, x: Math.round(it.transform[4] * 10) / 10, y: Math.round(it.transform[5] * 10) / 10, w: Math.round((it.width || 0) * 10) / 10, s });
+    }
+  }
+  return { numPages: pdf.numPages, items };
 }
 
 async function pdfRows(bytes: Uint8Array, maxPages: number) {
@@ -139,6 +155,10 @@ Deno.serve(async (req) => {
     const bytes = new Uint8Array(await r.arrayBuffer());
     const hashBuf = await crypto.subtle.digest("SHA-256", bytes);
     const sha256 = [...new Uint8Array(hashBuf)].map((x) => x.toString(16).padStart(2, "0")).join("");
+    if ((type.includes("pdf") || u.pathname.toLowerCase().endsWith(".pdf")) && body.positions === true) {
+      const d = await pdfItems(bytes, Number(body.max_pages || 3));
+      return j({ ok: true, mode, kind: "pdf_items", url: u.toString(), bytes: bytes.length, sha256, numPages: d.numPages, items: d.items, workerVersion: VERSION });
+    }
     if (type.includes("pdf") || u.pathname.toLowerCase().endsWith(".pdf")) {
       const d = await pdfRows(bytes, Number(body.max_pages || 3));
       const all = d.pages.flatMap((p) => p.rows).join("\n");
