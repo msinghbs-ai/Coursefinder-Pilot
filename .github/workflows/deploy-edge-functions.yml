@@ -58,6 +58,7 @@ jobs:
             [layer1-register-etl]=true
             [evidence-storage-dedupe]=false
             [layer1-operations-scheduled]=false
+            [ranking-publisher-control]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
