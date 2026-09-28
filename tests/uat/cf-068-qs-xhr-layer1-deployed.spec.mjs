@@ -30,7 +30,7 @@ test.describe('CF-068 QS direct XHR Layer 1 acquisition @deployed',()=>{
   expect(result.body?.validation?.discovered?.candidate_observations).toBe(1501)
   expect(result.body?.validation?.source_hash).toMatch(/^[a-f0-9]{64}$/)
   expect(result.body?.validation?.discovered?.evidence_artifact_id).toBeTruthy()
-  const preview=result.body?.validation?.discovered?.reconciliation_preview;console.log('CF071_RECONCILIATION_PREVIEW',JSON.stringify(preview));expect(preview?.country_code).toBe('AU');expect(preview?.country_rows).toBe(36);expect(preview?.mapped_unique).toBe(35);expect(preview?.alias_unique).toBe(14);expect(preview?.exact_unique).toBe(21);expect(preview?.exact_ambiguous).toBe(1);expect(preview?.unmatched).toBe(0)
+  const preview=result.body?.validation?.discovered?.reconciliation_preview;console.log('CF071_RECONCILIATION_PREVIEW',JSON.stringify(preview));expect(preview?.country_code).toBe('AU');expect(preview?.country_rows).toBe(36);expect(preview?.system_code).toBe('qs_wur');expect(preview?.mapped_unique).toBe(36);expect(preview?.alias_unique).toBe(14);expect(preview?.exact_unique).toBe(21);expect(preview?.equivalent_fanout).toBe(1);expect(preview?.exact_ambiguous).toBe(0);expect(preview?.unmatched).toBe(0)
   await dialog.getByRole('button',{name:'Refresh'}).click();await country.selectOption('GLOBAL');await dataset.selectOption('statistics')
   await expect(dialog.locator('article.l1v2-card').filter({hasText:'QS World University Rankings 2026'})).toContainText('1,501')
   await milestoneScreenshot(page,testInfo,'cf-068-qs-2026-xhr-validated')
