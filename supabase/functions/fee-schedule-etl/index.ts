@@ -6,7 +6,39 @@ import { getDocumentProxy } from "npm:unpdf@0.12.1";
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.1.0";
+const VERSION = "fee-schedule-etl-v0.2.0";
+// v0.2.0: dry_run — parse a registered schedule and compare it with the catalogue (svc_fee_schedule_preview).
+// Parser rule (all registered schedules): a row holding exactly one CRICOS course code; the fee is the first
+// whole-dollar amount after that code (the annual fee for one full-time year); the title is the first cell.
+const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year: number; basis: string; label: string }> = {
+  federation_2026_commencing: { provider_cricos: "00103D", fee_year: 2026, basis: "annual",
+    url: "https://federation.edu.au/__data/assets/pdf_file/0006/630951/2026_HEd_Intl_Tuition_Fee_Schedule_Commencing.pdf",
+    label: "Federation University 2026 commencing international tuition fee schedule (annual fee, 1 EFTSL)" },
+  wsu_ug_2027: { provider_cricos: "00917K", fee_year: 2027, basis: "annual",
+    url: "https://www.westernsydney.edu.au/content/dam/digital/pdf/international/ug-intl-fees-2027.pdf",
+    label: "Western Sydney University 2027 undergraduate international tuition fees (annual)" },
+  wsu_pg_2027: { provider_cricos: "00917K", fee_year: 2027, basis: "annual",
+    url: "https://www.westernsydney.edu.au/content/dam/digital/pdf/international/pg-intl-fees-2027.pdf",
+    label: "Western Sydney University 2027 postgraduate international tuition fees (annual)" },
+};
+const CODE_CELL = /^\d{6}[0-9A-Z]$/;
+const FEE_CELL = /^\$\s?(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.00)?$/;
+function parseRows(rows: string[]) {
+  const out: { course_cricos: string; title: string; amount: number; raw: string }[] = [];
+  const rejected: string[] = [];
+  for (const raw of rows) {
+    const cells = raw.split(" | ").map((x) => x.trim()).filter(Boolean);
+    const idx = cells.map((c, i) => (CODE_CELL.test(c) ? i : -1)).filter((i) => i >= 0);
+    if (idx.length === 0) continue;
+    if (idx.length > 1) { rejected.push(raw); continue; }
+    const fee = cells.slice(idx[0] + 1).find((c) => FEE_CELL.test(c));
+    if (!fee) { rejected.push(raw); continue; }
+    const amount = Number(fee.replace(/[^0-9.]/g, ""));
+    if (!(amount >= 5000 && amount <= 150000)) { rejected.push(raw); continue; }
+    out.push({ course_cricos: cells[idx[0]], title: cells[0], amount, raw });
+  }
+  return { rows: out, rejected };
+}
 const HOSTS = ["federation.edu.au", "westernsydney.edu.au", "cdu.edu.au", "csu.edu.au", "rmit.edu.au", "swinburne.edu.au", "uow.edu.au"];
 const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
 const t = (v: unknown) => String(v ?? "").trim();
@@ -46,7 +78,24 @@ Deno.serve(async (req) => {
     if (!ok) return j({ error: "valid one-time Pilot nonce required", workerVersion: VERSION }, 401);
     const body = await req.json().catch(() => ({}));
     const mode = t(body.mode || "inspect");
-    if (mode !== "inspect") throw Error("v0.1.0 supports inspect only");
+    if (mode === "dry_run") {
+      const sc = SCHEDULES[t(body.schedule)];
+      if (!sc) throw Error("unknown schedule; registered: " + Object.keys(SCHEDULES).join(", "));
+      const su = new URL(sc.url);
+      const rr = await fetch(su, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/fee-schedule-0.2" } });
+      if (!rr.ok) throw Error(`HTTP ${rr.status}`);
+      const b = new Uint8Array(await rr.arrayBuffer());
+      const hb = await crypto.subtle.digest("SHA-256", b);
+      const sha = [...new Uint8Array(hb)].map((x) => x.toString(16).padStart(2, "0")).join("");
+      const d = await pdfRows(b, 400);
+      const parsed = parseRows(d.pages.flatMap((p) => p.rows));
+      const { data: preview, error } = await c.rpc("svc_fee_schedule_preview", { p_provider_cricos: sc.provider_cricos, p_fee_year: sc.fee_year,
+        p_rows: parsed.rows.map(({ raw, ...x }) => x) });
+      if (error) throw Error(error.message);
+      return j({ ok: true, mode, schedule: t(body.schedule), label: sc.label, url: sc.url, sha256: sha, bytes: b.length, numPages: d.numPages,
+        parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), preview, workerVersion: VERSION });
+    }
+    if (mode !== "inspect") throw Error("supported modes: inspect, dry_run");
     const u = new URL(t(body.url));
     if (!allowed(u)) throw Error("address must be https on an allow-listed university host");
     const r = await fetch(u, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/fee-schedule-0.1" } });
