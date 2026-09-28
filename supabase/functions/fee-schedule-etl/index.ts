@@ -1,12 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { getDocumentProxy } from "npm:unpdf@0.12.1";
+import { parseUqTable1, parseUqTable3Minimum } from "./elp.ts";
 
 // CF-247 Decision 162 step 2: provider international fee schedules (one document per provider per fee year).
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.6.0";
+const VERSION = "fee-schedule-etl-v0.7.0";
+// v0.7.0: English requirement tables (Decision 162 step 4). elp_dry_run parses the provider's higher-than-minimum
+// table and minimum-entry table and returns the full reconciliation (svc_english_table_preview); elp_apply stores
+// both files as evidence and writes only courses with no English requirement (svc_english_table_apply). Apply is
+// refused when the parser reports any issue or unassigned program.
 // v0.6.0: inspect can return PDF text items with their positions (positions: true), for column-based tables
 // such as the UQ English Language Proficiency Table 1. Read only.
 // v0.5.0: inspect of university English-requirement pages (UQ, Western Sydney, Macquarie, UWA) returns the page
@@ -39,6 +44,10 @@ const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year
   wsu_pg_2027: { provider_cricos: "00917K", fee_year: 2027, basis: "annual",
     url: "https://www.westernsydney.edu.au/content/dam/digital/pdf/international/pg-intl-fees-2027.pdf",
     label: "Western Sydney University 2027 postgraduate international tuition fees (annual)" },
+};
+const ENGLISH_TABLES: Record<string, { provider_cricos: string; table1: string; table3: string; label: string }> = {
+  uq_elp: { provider_cricos: "00025B", label: "The University of Queensland ELP Admission Procedure Table 1 and Table 3",
+    table1: "https://policies.uq.edu.au/download.php?associated=1&id=170", table3: "https://policies.uq.edu.au/download.php?associated=1&id=172" },
 };
 const CODE_CELL = /^\d{6}[0-9A-Z]$/;
 const FEE_CELL = /^(?:A|AU)?\$\s?(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.00)?(?:\s*\/\s*(?:year|yr|annum))?$/i;
@@ -146,7 +155,42 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, schedule: t(body.schedule), label: sc.label, url: sc.url, sha256: sha, bytes: b.length, numPages: d.numPages,
         parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), preview, workerVersion: VERSION });
     }
-    if (mode !== "inspect") throw Error("supported modes: inspect, dry_run, apply");
+    if (mode === "elp_dry_run" || mode === "elp_apply") {
+      const et = ENGLISH_TABLES[t(body.table)];
+      if (!et) throw Error("unknown English table; registered: " + Object.keys(ENGLISH_TABLES).join(", "));
+      const get = async (url: string) => {
+        const rr = await fetch(url, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/english-table-0.7" } });
+        if (!rr.ok) throw Error(`HTTP ${rr.status} for ${url}`);
+        const b = new Uint8Array(await rr.arrayBuffer());
+        const hb = await crypto.subtle.digest("SHA-256", b);
+        return { b, sha: [...new Uint8Array(hb)].map((x) => x.toString(16).padStart(2, "0")).join("") };
+      };
+      const [d1, d3] = [await get(et.table1), await get(et.table3)];
+      const t1 = parseUqTable1((await pdfItems(d1.b, 40)).items);
+      const t3 = parseUqTable3Minimum((await pdfRows(d3.b, 5)).pages.flatMap((p) => p.rows));
+      const programs = t1.programs.map(({ ielts_text, page, ...x }) => x);
+      const { data: preview, error } = await c.rpc("svc_english_table_preview", { p_provider_cricos: et.provider_cricos, p_programs: programs, p_minimum: t3.requirements });
+      if (error) throw Error(error.message);
+      const parse = { programs: t1.programs.length, unassigned: t1.unassigned, issues: [...t1.issues, ...t3.issues], minimum: t3.requirements,
+        table1: t1.programs.map((p) => ({ name: p.name, section: p.section, page: p.page, ielts: p.ielts_text, tests: p.requirements.map((q) => q.test_code) })) };
+      if (mode === "elp_apply") {
+        if (parse.issues.length || parse.unassigned.length || t1.programs.length < 30 || t3.requirements.length < 3) throw Error("parser reported issues; apply refused");
+        const docs: Record<string, unknown> = {};
+        for (const [k, d, url] of [["table1", d1, et.table1], ["table3", d3, et.table3]] as const) {
+          const path = `layer2/AU/english-requirements/${et.provider_cricos}/${k}/${d.sha}.pdf`;
+          const up = await c.storage.from("evidence").upload(path, d.b, { contentType: "application/pdf", upsert: true });
+          if (up.error) throw Error("evidence upload failed: " + up.error.message);
+          docs[k] = { storage_path: path, sha256: d.sha, url, document: k };
+        }
+        const { data: applied, error: ae } = await c.rpc("svc_english_table_apply", { p_provider_cricos: et.provider_cricos, p_programs: programs,
+          p_minimum: t3.requirements, p_table1: docs.table1, p_table3: docs.table3 });
+        if (ae) throw Error(ae.message);
+        return j({ ok: true, mode, table: t(body.table), sha256: { table1: d1.sha, table3: d3.sha }, parse: { programs: parse.programs, issues: parse.issues },
+          preview: { by_plan: preview?.by_plan, would_write: preview?.would_write }, applied, workerVersion: VERSION });
+      }
+      return j({ ok: true, mode, table: t(body.table), label: et.label, sha256: { table1: d1.sha, table3: d3.sha }, parse, preview, workerVersion: VERSION });
+    }
+    if (mode !== "inspect") throw Error("supported modes: inspect, dry_run, apply, elp_dry_run, elp_apply");
     const u = new URL(t(body.url));
     if (!allowed(u)) throw Error("address must be https on an allow-listed university host");
     const r = await fetch(u, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/fee-schedule-0.1" } });
