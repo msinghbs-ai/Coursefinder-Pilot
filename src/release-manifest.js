@@ -1,22 +1,28 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.99'
-export const PACKAGE_VERSION='0.1.26'
+export const UI_VERSION='2.15.100'
+export const PACKAGE_VERSION='0.1.27'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'28 Sep 2026',
-  title:'Register changes applied automatically',
+  title:'Layer 1 closed: every source checks, updates and retires on its own',
   changes:[
-    'A CRICOS run first compares the whole register with what was last applied (about 10 seconds) and then applies only new and changed courses. The card shows the register total and how many are new, changed, unchanged and departed.',
-    'Courses that leave the register are retired automatically at the end of the run, with an audit record. A large departure (more than 2% of the register) waits for a Platform Admin to approve it on the card.',
-    'A retired course that returns to the register is reactivated. A provider whose courses have all left is listed for a person to review as a closure or a merger.',
-    'When the weekly check finds a changed register and the record count is within the accepted range, the ingestion now runs automatically (CRICOS and NZQA). The card details show whether automatic ingestion is on.',
-    'Duplicate copies of register files were removed after a byte-for-byte check (746 copies, 1.7 GB); every record still points to an identical stored file.'
+    'NZQA runs now record every course they read; a course NZQA no longer lists is retired at the end of the run, with the same audit and approval limit as CRICOS (21 retired on the first run).',
+    'Every Layer 1 source, including the QS and THE rankings, is now checked on its schedule. Licensed ranking uploads are checked against the stored upload.',
+    'Statistics datasets find their own new editions: a monthly check reads each publisher page, finds new files and test-reads them without writing anything. The Layer 1 card shows the new edition with an Apply action. QILT appears as one card with a tab per survey.',
+    'THE rankings 2016 to 2024 are now applied, so THE has every edition from 2016 to 2026; QS has every edition from 2021 to 2027.',
+    'Layer 4 has a Provider departures list: providers whose courses have all left the register are decided as closed, merged into a successor, or reviewed.',
+    'Australian and New Zealand register codes are recorded as country-scoped identifiers, kept in step automatically (Decision 149).'
   ],
   bugFixes:[
-    'The course catalogue link index no longer grows with every captured page: links are kept once per provider (447,678 rows reduced to 25,521; the database shrank by 165 MB).'
+    'The run summary counted retired registrations as current (26,787 instead of 25,978 CRICOS courses).',
+    'Scheduled QILT and PRISMS checks failed because the worker called functions it did not define.',
+    'QS and THE sources could not be queued or checked on schedule because they have no country.',
+    'The current QS 2025 edition had been loaded from a workbook read with the region in the country column, so no university was matched; the correct load of the same edition is current again.',
+    'The THE "2015" edition was the 2021 file under the wrong year (all 1,526 rows identical); it is withdrawn.',
+    'The Zoho course lookup now applies the Layer 4 search block to matches by course code as well.'
   ]
 }
 

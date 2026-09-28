@@ -20,7 +20,7 @@ const rankingCode=s=>String(s?.source_system||'').toUpperCase()==='THE'?'the_wur
 const rankingFamilyLabel=s=>String(s?.source_system||'').toUpperCase()==='THE'?'Times Higher Education World University Rankings':'QS World University Rankings'
 const rankingYearsFor=(system,sources=[])=>{
  const configured=sources.map(x=>Number(x.edition_year)).filter(Number.isInteger),code=String(system||'').toUpperCase()
- const provisioned=code==='THE'?Array.from({length:12},(_,i)=>2026-i):code==='QS'?[2027,2026]:[]
+ const provisioned=code==='THE'?Array.from({length:11},(_,i)=>2026-i):code==='QS'?[2027,2026]:[]
  return [...new Set([...configured,...provisioned])].sort((a,b)=>b-a)
 }
 const collapseRankingFamilies=rows=>{
