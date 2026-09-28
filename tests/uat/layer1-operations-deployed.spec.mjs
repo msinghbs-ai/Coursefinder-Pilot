@@ -66,10 +66,15 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   test('AU Statistics filter exposes QILT and PRISMS as governed runnable sources',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU')
     const datasetSelect=dialog.locator('.l1v2-filter').filter({hasText:'Dataset'}).locator('select');await datasetSelect.selectOption('statistics')
-    const cards=dialog.locator('article.l1v2-card[data-country="AU"]');await expect(cards).toHaveCount(5,{timeout:DETERMINISTIC_UI_TIMEOUT})
-    for(const [label,edition] of [['QILT Graduate Outcomes Survey','2025'],['QILT Student Experience Survey','2024'],['QILT Graduate Outcomes Survey – Longitudinal','2025'],['QILT Employer Satisfaction Survey','2025'],['PRISMS International Student Flow','2025-12']]){
-      const card=cards.filter({has:page.getByRole('heading',{name:label,exact:true})});await expect(card).toBeVisible();await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card).toContainText(`current ${edition}`);await expect(card.getByRole('button',{name:'Details'})).toBeVisible();await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Edition history & comparison retention');await expect(card).toContainText('retained rather than overwritten');await expect(card.getByRole('button',{name:'Open Compare'})).toBeVisible()
+    // Decision 134: QILT is one card with a tab per survey; PRISMS is its own card.
+    const cards=dialog.locator('article.l1v2-card[data-country="AU"]');await expect(cards).toHaveCount(2,{timeout:DETERMINISTIC_UI_TIMEOUT})
+    const openDetails=async(card,edition)=>{await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card).toContainText(edition);await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Edition history & comparison retention');await expect(card).toContainText('retained rather than overwritten');await expect(card.getByRole('button',{name:'Open Compare'})).toBeVisible()}
+    const family=dialog.locator('[data-cf-qilt-family]');await expect(family).toHaveCount(1);const tabs=family.getByRole('tab');await expect(tabs).toHaveCount(4)
+    for(const [survey,edition] of [['Graduate Outcomes Survey',/current 2025/],['Student Experience Survey',/current 202[45]/],['Graduate Outcomes Survey – Longitudinal',/current 2025/],['Employer Satisfaction Survey',/current 2025/]]){
+      await tabs.filter({hasText:new RegExp('^'+survey.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?!\\s*–)')}).click()
+      const card=family.locator('article.l1v2-card');await expect(card.getByRole('heading',{name:`QILT (Quality Indicators for Learning and Teaching) · ${survey}`,exact:true})).toBeVisible();await openDetails(card,edition)
     }
+    const prismsCard=cards.filter({has:page.getByRole('heading',{name:'PRISMS International Student Flow',exact:true})});await expect(prismsCard).toBeVisible();await openDetails(prismsCard,/current 2025-12/)
     const qilt=await validateSource(page,dialog,s=>/QILT GOS 2025 National Report Tables/i.test(s.source_label||''),'QILT GOS');expect(qilt?.ok).toBe(true);expect(qilt?.validation?.source_system).toBe('QILT');expect(qilt?.validation?.discovered?.candidate_observations).toBeGreaterThan(100)
     const prisms=await validateSource(page,dialog,s=>/PRISMS/i.test(s.source_label||''),'PRISMS');expect(prisms?.ok).toBe(true);expect(prisms?.validation?.source_system).toBe('PRISMS');expect(prisms?.validation?.discovered?.candidate_observations).toBeGreaterThan(1000)
     await milestoneScreenshot(page,testInfo,'cf-066-layer1-statistics-sources')
