@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION="ranking-qs-official-etl-v1.3.0";
+const VERSION="ranking-qs-official-etl-v1.4.0";
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const clean=(v:unknown)=>String(v??"").replace(/^\uFEFF/,"").trim();
 const key=(v:unknown)=>clean(v).toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -40,6 +40,19 @@ const idefs=[
  {code:"sustainability",label:"Sustainability",group:"Sustainability",aliases:["sus","sustainability"]},
 ] as const;
 
+// Country column. "Country/Territory" when present. Otherwise QS files label two columns "location code" and
+// "location", and the 2025 file mislabels them: "location code" holds the country and "location" holds the
+// region. Choose the candidate whose values are country names (not 2-letter codes) with the most distinct values.
+function countryColumn(best:any[][],hi:number,headers:string[],pos:(...n:string[])=>number){
+ const ct=pos("country territory","country");if(ct>=0)return ct;
+ const cands=["location","location code"].map(n=>headers.indexOf(key(n))).filter(i=>i>=0);
+ let bestI=-1,bestN=0;
+ for(const i of cands){const vals=new Set<string>();let codes=0,n=0;
+  for(let ri=hi+1;ri<best.length;ri++){const v=clean(best[ri][i]);if(!v)continue;n++;vals.add(v);if(/^[A-Z]{2,3}$/.test(v))codes++}
+  if(n&&codes/n<0.5&&vals.size>bestN){bestI=i;bestN=vals.size}}
+ return bestI;
+}
+
 function parseWorkbook(bytes:Uint8Array,year:number){
  const wb=XLSX.read(bytes,{type:"array",cellDates:false,raw:false});
  let best:any[][]=[];let sheetName="";
@@ -55,7 +68,7 @@ function parseWorkbook(bytes:Uint8Array,year:number){
  if(hi<0)throw new Error("Official QS workbook header row not found");
  const headers=best[hi].map(key);
  const pos=(...names:string[])=>{for(const n of names){const i=headers.indexOf(key(n));if(i>=0)return i}return-1};
- const nameI=pos("name","institution"),rankI=pos("rank","rank display"),prevI=pos("previous rank","rank display2"),countryI=pos("country territory","location"),regionI=pos("region"),overallI=pos("overall score");
+ const nameI=pos("name","institution"),rankI=pos("rank","rank display"),prevI=pos("previous rank","rank display2"),countryI=countryColumn(best,hi,headers,pos),regionI=pos("region"),overallI=pos("overall score");
  if([nameI,rankI,countryI,overallI].some(i=>i<0))throw new Error("Official QS workbook required columns missing");
  const rows:any[]=[];
  for(let ri=hi+1;ri<best.length;ri++){
@@ -69,6 +82,9 @@ function parseWorkbook(bytes:Uint8Array,year:number){
  for(const r of rows)if(r.rank_exact!=null)counts.set(r.rank_exact,(counts.get(r.rank_exact)||0)+1);
  for(const r of rows)if(r.rank_exact!=null&&(counts.get(r.rank_exact)||0)>1){r.is_tied=true;if(!String(r.rank_display||"").startsWith("="))r.rank_display="="+r.rank_display}
  if(rows.length<1000)throw new Error(`QS World workbook parsed only ${rows.length} rows; global edition requires at least 1000`);
+ const countries=new Set(rows.map(r=>r.country_text).filter(Boolean));
+ if(countries.size<30)throw new Error(`QS workbook country column has only ${countries.size} distinct values; it looks like regions, not countries`);
+ if(!rows.some(r=>/^australia$/i.test(String(r.country_text||""))))throw new Error("QS workbook has no Australia rows; country column not recognised");
  const unknown=rows.filter(r=>r.rank_status==="unknown").length;
  if(unknown>10)throw new Error(`QS workbook has ${unknown} unknown rank semantics`);
  return{rows,sheetName,headerRow:hi+1,title};
