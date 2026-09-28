@@ -102,3 +102,17 @@ test('English table worker and planning contract', () => {
   expect(m).toContain("'close to a Table 1 program name: review'")
   expect(m).toContain('only courses with no English requirement are written')
 })
+
+test('UQ English: Search gate and double-degree higher-component rule contract', () => {
+  const g = fs.readFileSync('supabase/migrations/20260929090000_d162_uq_english_search_gate.sql', 'utf8')
+  expect(g).toContain("'courses','course_english',s.id,'approved'")
+  expect(g).toContain("if v_n<>1 then raise exception 'expected 1 new Search gate")
+  expect(g).toContain('security.consumer_api_snapshot_v1()')
+  const d = fs.readFileSync('supabase/migrations/20260929091000_d162_english_double_degree_higher_component.sql', 'utf8')
+  expect(d).toContain("when v_double='higher_component_v1' then case when ddr.n_t1=1 then 'table1' else 'minimum' end")
+  expect(d).toContain("'double degree: component not recognised ('||ddr.unknown||')'")
+  expect(d).toContain("'double degree: components carry different Table 1 requirements'")
+  expect(d).toContain("exists(select 1 from p p2 where p2.k=btrim(comp.c) and p2.pl='minimum') single_min")
+  const on = fs.readFileSync('supabase/migrations/20260929092000_d162_english_double_degree_rule_on.sql', 'utf8')
+  expect(on).toContain("'double_degree_rule','higher_component_v1'")
+})
