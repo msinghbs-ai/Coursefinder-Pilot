@@ -41,6 +41,8 @@ const items = [
   I(9, 34, 473.9, 'Master of Teaching (Primary)'), ...ielts(9, 473.9, 7.5, 'a minimum score of 8 in Listening and Speaking and 7 in Writing and Reading'),
   I(9, 34, 457.6, 'Master of Teaching (Secondary)'), I(9, 225.1, 457.6, 'Note: other tests and Bridging English (BE) are not accepted'),
   I(9, 34, 247.8, 'HIGHER'), I(9, 68.9, 247.8, '-'), I(9, 71.9, 247.8, 'THAN'), I(9, 96.8, 247.8, '-'), I(9, 99.8, 247.8, 'MINIMUM ELP POSTGRADUATE RESEARCH PROGRAMS'),
+  I(9, 34, 231.2, 'Higher Degree by Research in the Health'), ...ielts(9, 231.2, 7, 'a minimum score of 7 in each sub-band of Writing, Reading, Speaking and Listening'),
+  I(9, 34, 220.9, 'Sciences where research is undertaken in a'), I(9, 34, 210.5, 'clinical placement setting'),
   I(9, 34, 194.2, 'Doctor of Veterinary Clinical Science'), ...ielts(9, 194.2, 7, 'a minimum score of 7 in each sub-band of Writing, Reading, Speaking and Listening'),
 ]
 
@@ -54,7 +56,8 @@ test('UQ Table 1: programs, shared blocks, wrapped names and component bands', a
     'Master of Finance and Investment Management', 'Graduate Certificate in Finance and Investment Management', 'Bachelor of Laws (Honours) (64 units)',
     'Bachelor of Exercise and Sports Sciences (Honours)', 'Bachelor of Midwifery (Honours)', 'Bachelor of Nursing (Honours)', 'Bachelor of Social Work',
     'Bachelor of Social Work (Honours)', 'Bachelor of Clinical Exercise Physiology (Honours)', 'Bachelor of Dental Science (Honours)', 'Bachelor of Midwifery',
-    'Bachelor of Nursing', 'Bachelor of Nursing/Bachelor of Midwifery', 'Master of Teaching (Primary)', 'Master of Teaching (Secondary)', 'Doctor of Veterinary Clinical Science'])
+    'Bachelor of Nursing', 'Bachelor of Nursing/Bachelor of Midwifery', 'Master of Teaching (Primary)', 'Master of Teaching (Secondary)',
+    'Higher Degree by Research in the Health Sciences where research is undertaken in a clinical placement setting', 'Doctor of Veterinary Clinical Science'])
   const i = (n) => by[n].requirements.find((q) => q.test_code === 'IELTS')
   expect(i('Graduate Certificate in Finance and Investment Management')).toEqual({ test_code: 'IELTS', overall_score: 7, component_scores: { writing: 6, reading: 6, speaking: 6, listening: 6 } })
   expect(by['Master of Finance and Investment Management'].requirements.map((q) => q.test_code)).toEqual(['IELTS', 'TOEFL_IBT', 'PTE'])
@@ -64,6 +67,7 @@ test('UQ Table 1: programs, shared blocks, wrapped names and component bands', a
   expect(i('Master of Teaching (Secondary)')).toEqual({ test_code: 'IELTS', overall_score: 7.5, component_scores: { listening: 8, speaking: 8, writing: 7, reading: 7 } })
   expect(by['Master of Teaching (Secondary)'].other_tests).toBe('not_accepted')
   expect(by['Doctor of Veterinary Clinical Science'].section).toBe('research')
+  expect(by['Higher Degree by Research in the Health Sciences where research is undertaken in a clinical placement setting'].section).toBe('research')
   expect(by['Master of Teaching (Primary)'].section).toBe('coursework')
 })
 
@@ -90,7 +94,7 @@ test('UQ Table 3 minimum entry row set', async () => {
 
 test('English table worker and planning contract', () => {
   const w = fs.readFileSync('supabase/functions/fee-schedule-etl/index.ts', 'utf8')
-  expect(w).toContain('const VERSION = "fee-schedule-etl-v0.7.0";')
+  expect(w).toContain('const VERSION = "fee-schedule-etl-v0.7.1";')
   expect(w).toContain('mode === "elp_dry_run" || mode === "elp_apply"')
   const m = fs.readFileSync('supabase/migrations/20260928190000_d162_english_table_plan.sql', 'utf8')
   expect(m).toContain("'double degree: the policy has no double-degree rule'")

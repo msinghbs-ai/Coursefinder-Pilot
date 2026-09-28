@@ -7,7 +7,8 @@ import { parseUqTable1, parseUqTable3Minimum } from "./elp.ts";
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.7.0";
+const VERSION = "fee-schedule-etl-v0.7.1";
+// v0.7.1: English table section headers matched in upper case only ("Higher Degree by Research ..." is a program).
 // v0.7.0: English requirement tables (Decision 162 step 4). elp_dry_run parses the provider's higher-than-minimum
 // table and minimum-entry table and returns the full reconciliation (svc_english_table_preview); elp_apply stores
 // both files as evidence and writes only courses with no English requirement (svc_english_table_apply). Apply is

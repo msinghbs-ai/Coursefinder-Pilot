@@ -68,7 +68,9 @@ export function parseUqTable1(items: Item[]) {
   const progs: P[] = [];
   let section: "coursework" | "research" = "coursework";
   for (const l of left) {
-    if (/^HIGHER\b/i.test(l.s)) { section = /RESEARCH/i.test(l.s) ? "research" : "coursework"; continue; }
+    // section headers are upper case ("HIGHER-THAN-MINIMUM ELP ... PROGRAMS"); a program name such as
+    // "Higher Degree by Research in the Health ..." must not be read as one
+    if (/^HIGHER\b.*MINIMUM ELP/.test(l.s)) { section = /RESEARCH/.test(l.s) ? "research" : "coursework"; continue; }
     if (Math.abs(l.x - progX) > 3 || /^Note\b/i.test(l.s)) continue;
     const prev = progs[progs.length - 1];
     if (prev && prev.p === l.p && prev.lastY - l.y < WRAP_GAP && prev.section === section) { prev.name += " " + l.s; prev.lastY = l.y; }
