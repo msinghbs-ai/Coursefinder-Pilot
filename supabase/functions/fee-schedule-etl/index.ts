@@ -6,7 +6,9 @@ import { getDocumentProxy } from "npm:unpdf@0.12.1";
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.4.1";
+const VERSION = "fee-schedule-etl-v0.5.0";
+// v0.5.0: inspect of university English-requirement pages (UQ, Western Sydney, Macquarie, UWA) returns the page
+// text as lines (tags removed), so each provider's English rule is written against the real page. Read only.
 // v0.4.1: annual fee floor $12,000 and English-language programs excluded (Charles Darwin lists English for
 // Academic Purposes modules at $5,500 per module, which are not annual course fees).
 // v0.4.0: fees written "A$37,800/year" accepted; rows holding several courses side by side (two-column pages)
@@ -61,7 +63,7 @@ function parseRows(rows: string[]) {
   }
   return { rows: out, rejected };
 }
-const HOSTS = ["federation.edu.au", "westernsydney.edu.au", "cdu.edu.au", "csu.edu.au", "rmit.edu.au", "swinburne.edu.au", "uow.edu.au"];
+const HOSTS = ["federation.edu.au", "westernsydney.edu.au", "cdu.edu.au", "csu.edu.au", "rmit.edu.au", "swinburne.edu.au", "uow.edu.au", "uq.edu.au", "mq.edu.au", "uwa.edu.au"];
 const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
 const t = (v: unknown) => String(v ?? "").trim();
 const CRICOS = /\b\d{6}[0-9A-Z]\b/g;
@@ -146,7 +148,13 @@ Deno.serve(async (req) => {
     }
     const html = new TextDecoder().decode(bytes);
     const links = [...html.matchAll(/href=["']([^"']+\.(?:pdf|xlsx|csv))["']/gi)].map((m) => new URL(m[1], u).toString());
-    return j({ ok: true, mode, kind: "html", url: u.toString(), bytes: bytes.length, sha256,
+    const text = html.replace(/<(script|style|noscript)[\s\S]*?<\/\1>/gi, " ").replace(/<\/(p|li|tr|h[1-6]|div|td|th)>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#39;|&rsquo;/g, "'")
+      .split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter((l) => l.length > 2);
+    const want = t(body.grep);
+    const lines = want ? text.filter((l) => new RegExp(want, "i").test(l)) : text;
+    return j({ ok: true, mode, kind: "html", url: u.toString(), bytes: bytes.length, sha256, lineCount: text.length,
+      lines: lines.slice(Number(body.from || 0), Number(body.from || 0) + Number(body.max_rows || 120)),
       documentLinks: [...new Set(links)].filter((l) => /fee|tuition|intl|international/i.test(l)).slice(0, 60),
       cricosLike: (html.match(CRICOS) || []).length, workerVersion: VERSION });
   } catch (e) {
