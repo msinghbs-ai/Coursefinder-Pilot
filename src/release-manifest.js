@@ -1,28 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.100'
-export const PACKAGE_VERSION='0.1.27'
+export const UI_VERSION='2.15.101'
+export const PACKAGE_VERSION='0.1.28'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'28 Sep 2026',
-  title:'Layer 1 closed: every source checks, updates and retires on its own',
+  title:'Compare shows every dataset by default; Layer 3 AI switched on',
   changes:[
-    'NZQA runs now record every course they read; a course NZQA no longer lists is retired at the end of the run, with the same audit and approval limit as CRICOS (21 retired on the first run).',
-    'Every Layer 1 source, including the QS and THE rankings, is now checked on its schedule. Licensed ranking uploads are checked against the stored upload.',
-    'Statistics datasets find their own new editions: a monthly check reads each publisher page, finds new files and test-reads them without writing anything. The Layer 1 card shows the new edition with an Apply action. QILT appears as one card with a tab per survey.',
-    'THE rankings 2016 to 2024 are now applied, so THE has every edition from 2016 to 2026; QS has every edition from 2021 to 2027.',
-    'Layer 4 has a Provider departures list: providers whose courses have all left the register are decided as closed, merged into a successor, or reviewed.',
-    'Australian and New Zealand register codes are recorded as country-scoped identifiers, kept in step automatically (Decision 149).'
+    'Compare: QILT, PRISMS, QS and THE are all on by default and are never greyed out before anything is selected; click a dataset to switch it off. Periods default to the latest available.',
+    'Compare in course mode states what each dataset describes: QILT and rankings for each course\'s university, PRISMS for the course, its state and field, or its state.',
+    'Layer 3 tuition checks run with a qualified AI model (Decision 160): every answer it gives must be correct, and anything it is unsure of goes to Layer 4.',
+    'QILT Student Experience Survey 2025 is the current edition; 2024 is kept for comparison.'
   ],
   bugFixes:[
-    'The run summary counted retired registrations as current (26,787 instead of 25,978 CRICOS courses).',
-    'Scheduled QILT and PRISMS checks failed because the worker called functions it did not define.',
-    'QS and THE sources could not be queued or checked on schedule because they have no country.',
-    'The current QS 2025 edition had been loaded from a workbook read with the region in the country column, so no university was matched; the correct load of the same edition is current again.',
-    'The THE "2015" edition was the 2021 file under the wrong year (all 1,526 rows identical); it is withdrawn.',
-    'The Zoho course lookup now applies the Layer 4 search block to matches by course code as well.'
+    'Compare in course mode showed no PRISMS student flow for most courses; it now falls back to the state of the course\'s campuses, as the university view does.',
+    'Applying the QILT SES 2025 edition was refused for universities with more than one CRICOS code (Victoria University, Holmes Institute).',
+    'The official QS 2025 workbook was read with the region in the country column; the QS parser now finds the real country column and refuses a file that looks like regions.',
+    'Layer 3 items sent back from Layer 4 were stuck on a retired AI profile and never rechecked.'
   ]
 }
 
