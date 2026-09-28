@@ -55,7 +55,7 @@ function Details({source}){
   <section><h4>Current run</h4><dl><div><dt>Status</dt><dd>{r?<Badge value={r.status}/>:<span>No queued run</span>}</dd></div><div><dt>Stage</dt><dd>{r?stageLabel(r.current_stage):'—'}</dd></div><div><dt>Heartbeat</dt><dd>{fmt(r?.heartbeat_at)}</dd></div><div><dt>Queue / position</dt><dd>{n(source.queue_depth)} / {n(r?.queue_position)}</dd></div><div><dt>Runtime</dt><dd>{seconds(r?.runtime_seconds)}</dd></div><div><dt>Next action</dt><dd>{source.next_action||'—'}</dd></div></dl></section>
   <section><h4>Reconciliation</h4><div className="l1v2-counts"><span>Created<b>{n(r?.created_count)}</b></span><span>Updated<b>{n(r?.updated_count)}</b></span><span>Unchanged<b>{n(r?.unchanged_count)}</b></span><span>Rejected<b>{n(r?.rejected_count)}</b></span><span>Conflicted<b>{n(r?.conflicted_count)}</b></span><span>Failed<b>{n(r?.failed_count)}</b></span></div><dl><div><dt>Expected / previous</dt><dd>{n(source.last_expected_count)} / {n(source.previous_accepted_count)}</dd></div><div><dt>Variance</dt><dd>{pct(source.variance_percent)} · <Badge value={source.variance_decision}/></dd></div></dl></section>
   <section><h4>Evidence & provenance</h4><dl><div><dt>Source config</dt><dd>v{n(source.source_config_version)}</dd></div><div><dt>Evidence objects</dt><dd>{n(source.evidence_count)}</dd></div><div><dt>Latest Evidence</dt><dd>{fmt(source.latest_evidence_at)}</dd></div><div><dt>Current hash</dt><dd><code>{shortHash(source.last_source_hash)}</code></dd></div><div><dt>Accepted hash</dt><dd><code>{shortHash(source.previous_accepted_hash)}</code></dd></div></dl><div className="l1v2-detail-links"><button onClick={()=>location.hash='#evidence'}><FileCheck2/>Evidence</button><button onClick={()=>location.hash='#jobs'}><Activity/>Jobs & runs</button></div></section>
-  <section><h4>Schedule</h4><dl><div><dt>Scheduled</dt><dd><Badge value={source.schedule_enabled?'enabled':'disabled'}/></dd></div><div><dt>Cadence</dt><dd>{source.cadence_interval||`${source.ingestion_cadence_days||'—'} days`}</dd></div><div><dt>Next due</dt><dd>{fmt(source.schedule_next_due_at||source.next_ingestion_at)}</dd></div><div><dt>Next verification</dt><dd>{fmt(source.next_verification_at)}</dd></div><div><dt>Last scheduler result</dt><dd><Badge value={source.last_schedule_status||'not_run'}/></dd></div></dl></section>
+  <section><h4>Schedule</h4><dl><div><dt>Scheduled</dt><dd><Badge value={source.schedule_enabled?'enabled':'disabled'}/></dd></div>{source.auto_ingest!==undefined&&<div><dt>Automatic ingestion</dt><dd>{source.auto_ingest?'On: a changed register within the accepted range is applied automatically':'Off: a person starts each ingestion'}</dd></div>}<div><dt>Cadence</dt><dd>{source.cadence_interval||`${source.ingestion_cadence_days||'—'} days`}</dd></div><div><dt>Next due</dt><dd>{fmt(source.schedule_next_due_at||source.next_ingestion_at)}</dd></div><div><dt>Next verification</dt><dd>{fmt(source.next_verification_at)}</dd></div><div><dt>Last scheduler result</dt><dd><Badge value={source.last_schedule_status||'not_run'}/></dd></div></dl></section>
   <EditionHistory source={source}/>
   <section className="wide"><h4>Source health</h4><dl><div><dt>Authority</dt><dd>{source.authority_name||'—'}</dd></div>{(source.edition_key||source.edition_year)&&<div><dt>Current edition</dt><dd>{source.edition_key||source.edition_year}</dd></div>}{source.acquisition_mode&&<div><dt>Acquisition</dt><dd>{human(source.acquisition_mode)}</dd></div>}<div><dt>Source URL</dt><dd>{source.source_url?<a href={source.source_url} target="_blank" rel="noreferrer">{source.source_url}<ExternalLink/></a>:'—'}</dd></div><div><dt>Format</dt><dd>{source.expected_format||'—'}</dd></div><div><dt>Last verified</dt><dd>{fmt(source.last_verified_at)}</dd></div><div><dt>Last successful ingestion</dt><dd>{fmt(source.last_success_at)}</dd></div></dl></section>
  </div>
@@ -63,7 +63,7 @@ function Details({source}){
 
 // Decision 155: live run status. Progress is measured by the run cursor (items done of items in the register),
 // the run is advanced in the background by the database, and the real error text is shown when a run fails.
-const STAGE_LABELS={queued:'Waiting to start',starting_ingestion:'Starting',resuming_ingestion:'Resuming',batch_running:'Processing a batch',batch_completed_resume_pending:'Batch saved, starting the next',retry_waiting:'Waiting to retry',reconciled:'Completed',source_unchanged:'Source unchanged',failed:'Failed',stuck_recovered:'Recovered after stalling'}
+const STAGE_LABELS={queued:'Waiting to start',starting_ingestion:'Starting',resuming_ingestion:'Resuming',batch_running:'Processing a batch',batch_completed_resume_pending:'Batch saved, starting the next',retry_waiting:'Waiting to retry',reconciled:'Completed',source_unchanged:'Source unchanged',failed:'Failed',stuck_recovered:'Recovered after stalling',planning:'Comparing with the last applied register',planned:'Changes found, applying them',no_changes_to_apply:'No changes to apply',planned_dry_run:'Changes found (dry run, nothing applied)'}
 const stageLabel=v=>STAGE_LABELS[String(v||'')]||human(v||'Running')
 const ago=(v,now=Date.now())=>{if(!v)return'—';const s=Math.max(0,Math.round((now-new Date(v).getTime())/1000));if(s<60)return`${s}s ago`;const m=Math.round(s/60);if(m<60)return`${m} min ago`;const h=Math.round(m/60);return h<48?`${h} h ago`:fmt(v)}
 const duration=ms=>{if(!Number.isFinite(ms)||ms<0)return'—';const s=Math.round(ms/1000);if(s<60)return`${s}s`;const m=Math.floor(s/60),r=s%60;if(m<60)return r?`${m} min ${r}s`:`${m} min`;return`${Math.floor(m/60)} h ${m%60} min`}
@@ -79,7 +79,17 @@ export function runProgress(source,r,now=Date.now()){
  const quietMinutes=r?.heartbeat_at?(now-new Date(r.heartbeat_at).getTime())/60000:null
  return{total,done,start,pct,rate,remaining,quietMinutes,unit:runUnit(source,r)}
 }
-function RunStatus({source,rank,busy,onRetry}){
+const PlanLine=({plan})=>plan?<div className="l1v2-live-facts l1v2-plan"><span>Register <b>{n(plan.register_total)}</b></span><span><b>{n(plan.new)}</b> new</span><span><b>{n(plan.changed)}</b> changed</span><span><b>{n(plan.unchanged)}</b> unchanged</span><span><b>{n(plan.departed)}</b> departed</span></div>:null
+// Decision 155 step 6: departures are retired at the end of a run; a large departure waits for a Platform Admin.
+function Departures({run,rank,onRefresh}){
+ const d=run?.result?.departures,[busy,setBusy]=useState(false),[error,setError]=useState('')
+ if(!d)return null
+ const approve=async()=>{const reason=window.prompt(`Approve retiring ${d.to_retire} courses that left the register? Enter a reason (at least 5 characters).`);if(!reason||reason.trim().length<5)return;setBusy(true);setError('');try{const{error:e}=await supabase.rpc('layer1_approve_departures',{p_run_id:run.id,p_reason:reason.trim()});if(e)throw e;await onRefresh?.()}catch(e){setError(errorText(e)||'Approval failed')}finally{setBusy(false)}}
+ if(d.status==='held')return <div className="l1v2-live-warn" data-departures="held"><AlertTriangle/><span>{d.message||`${n(d.to_retire)} courses left the register and need approval before they are retired.`}{rank>=6&&<button className="secondary" onClick={approve} disabled={busy}>{busy?'Approving…':'Approve retirement'}</button>}{error&&<small>{error}</small>}</span></div>
+ if(!Number(d.retired)&&!Number(d.reactivated)&&!Number(d.providers_to_review))return null
+ return <div className="l1v2-live-facts l1v2-plan" data-departures="applied"><span><b>{n(d.retired)}</b> retired</span><span><b>{n(d.reactivated)}</b> reactivated</span>{Number(d.providers_to_review)>0&&<span><b>{n(d.providers_to_review)}</b> providers to review (closure or merger)</span>}</div>
+}
+function RunStatus({source,rank,busy,onRetry,onRefresh}){
  const r=source.latest_run||null,[now,setNow]=useState(Date.now()),status=String(r?.status||'').toLowerCase(),active=['queued','running'].includes(status)
  useEffect(()=>{if(!active)return;const t=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(t)},[active])
  if(!r)return null
@@ -91,6 +101,7 @@ function RunStatus({source,rank,busy,onRetry}){
   {live?.cursor_from!==undefined&&r.current_stage==='batch_running'&&<small className="l1v2-live-note">Working on {p.unit} {n(Number(live.cursor_from)+1)}–{n(Math.min(Number(live.cursor_from)+Number(live.batch_size||0),p.total||Infinity))}.</small>}
   {r.current_stage==='retry_waiting'&&retry&&<div className="l1v2-live-warn"><AlertTriangle/><span>The source had a temporary problem. Retrying automatically {retry.next_at?`at ${new Date(retry.next_at).toLocaleTimeString()}`:'shortly'} (attempt {retry.attempt} of {retry.max}).<small>{retry.last_error}</small></span></div>}
   {r.current_stage!=='retry_waiting'&&p.quietMinutes!==null&&p.quietMinutes>3&&<div className="l1v2-live-warn"><Clock3/><span>No update for {Math.round(p.quietMinutes)} min. The background driver restarts quiet runs automatically every minute.</span></div>}
+  <PlanLine plan={r?.result?.plan}/>
   <small className="l1v2-live-note">Runs in the background. You can close this page; progress is saved after every batch.</small>
  </div>
  if(['failed','blocked'].includes(status))return <div className="l1v2-live failed" role="alert" data-run-state="failed">
@@ -100,7 +111,7 @@ function RunStatus({source,rank,busy,onRetry}){
  </div>
  if(['completed','no_change'].includes(status)){const took=r.started_at&&r.completed_at?new Date(r.completed_at)-new Date(r.started_at):NaN
   return <div className="l1v2-live done" data-run-state={status}><div className="l1v2-live-head"><span><CheckCircle2/>{status==='no_change'?'Source unchanged':'Last run completed'} {ago(r.completed_at,now)}</span><b>{duration(took)}</b></div>
-  <div className="l1v2-live-facts"><span><b>{n(p.total)}</b> {p.unit}</span><span><b>{n(r.created_count)}</b> new</span><span><b>{n(r.updated_count)}</b> changed</span><span><b>{n(r.unchanged_count)}</b> unchanged</span>{Number(r.conflicted_count)>0&&<span><b>{n(r.conflicted_count)}</b> conflicts</span>}</div></div>}
+  <div className="l1v2-live-facts"><span><b>{n(r?.result?.plan?r.result.plan.to_apply:p.total)}</b> {p.unit}{r?.result?.plan?' applied':''}</span><span><b>{n(r.created_count)}</b> new</span><span><b>{n(r.updated_count)}</b> changed</span><span><b>{n(r.unchanged_count)}</b> unchanged</span>{Number(r.conflicted_count)>0&&<span><b>{n(r.conflicted_count)}</b> conflicts</span>}</div><PlanLine plan={r?.result?.plan}/><Departures run={r} rank={rank} onRefresh={onRefresh}/></div>}
  return null
 }
 
@@ -124,7 +135,7 @@ function SourceCard({source,rank,onRefresh}){
    <div className="l1v2-key"><FileCheck2/><span><b>{n(source.evidence_count)}</b><small>Evidence</small></span></div>
    <div className="l1v2-runmeta"><span><Clock3/><small>Last run</small><b>{fmt(source.last_success_at||r?.finished_at||r?.started_at)}</b></span><span><CalendarClock/><small>Next run</small><b>{fmt(source.schedule_next_due_at||source.next_ingestion_at)}</b></span></div>
   </div>
-  <RunStatus source={source} rank={rank} busy={busy} onRetry={retry}/>
+  <RunStatus source={source} rank={rank} busy={busy} onRetry={retry} onRefresh={onRefresh}/>
   <div className="l1v2-card-actions">{rank>=6&&!['queued','running'].includes(String(r?.status||'').toLowerCase())&&<button className="secondary" onClick={()=>queue('apply')} disabled={!!busy||source.paused||['blocked','failed'].includes(source.verification_status)}><Play/>{busy==='apply'?'Starting…':'Run now'}</button>}{['queued','running'].includes(String(r?.status||'').toLowerCase())&&<button className="secondary" onClick={()=>location.hash='#jobs'}><Activity/>View run</button>}<button className="primary" onClick={()=>setDetails(x=>!x)}>{details?'Hide details':'Details'}<ChevronDown className={details?'rotated':''}/></button></div>
   {details&&<Details source={source}/>}
  </article>
@@ -209,8 +220,10 @@ const STYLES=`
 .l1v2-live-facts{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;color:#55627a}
 .l1v2-live-facts b{color:#1f2d44}
 .l1v2-live-note{display:block;margin-top:6px;color:#6b778c}
+.l1v2-plan{padding-top:6px;border-top:1px dashed #d9e4f7}
 .l1v2-live-warn{display:flex;gap:6px;align-items:flex-start;margin-top:8px;padding:7px 8px;border-radius:8px;background:#fff7e6;color:#7a4b00}
 .l1v2-live-warn svg{width:13px;height:13px;flex:none;margin-top:1px}
+.l1v2-live-warn button{margin-top:6px}
 .l1v2-live-warn small{display:block;margin-top:3px;color:#8a6a2a;word-break:break-word}
 .l1v2-live-error{margin:6px 0 8px;color:#7d2323;word-break:break-word;line-height:1.45}
 .l1v2-live button{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid #d7deea;border-radius:8px;background:#fff;color:#1f2d44;font:inherit;font-size:10px;font-weight:700;cursor:pointer}.l1v2-live button:hover{border-color:#9fb3d9}.l1v2-live button:disabled{opacity:.6;cursor:default}
