@@ -5,8 +5,9 @@ import fs from 'node:fs'
 test('Fee schedule worker is deterministic and bounded to registered schedules on university hosts',()=>{
   const w=fs.readFileSync('supabase/functions/fee-schedule-etl/index.ts','utf8')
   expect(w).toContain('const CODE_CELL = /^\\d{6}[0-9A-Z]$/;')
-  expect(w).toContain('if (idx.length > 1) { rejected.push(raw); continue; }')        // one CRICOS code per row
-  expect(w).toContain('if (!(amount >= 5000 && amount <= 150000))')
+  expect(w).toContain('const feeAt = cells.findIndex((c, i) => i > idx[k] && i < end && FEE_CELL.test(c));')   // each course takes the fee after its own code
+  expect(w).toContain('if (!(amount >= 12000 && amount <= 150000))')
+  expect(w).toContain('english for academic|general english|elicos|english language')
   expect(w).toContain('svc_pilot_consume_nonce')
   expect(w).not.toMatch(/firecrawl|openrouter|json.*schema/i)                         // no AI extraction
 })
