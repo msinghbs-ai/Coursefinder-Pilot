@@ -6,7 +6,9 @@ import { getDocumentProxy } from "npm:unpdf@0.12.1";
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.2.0";
+const VERSION = "fee-schedule-etl-v0.3.0";
+// v0.3.0: apply — the schedule file is stored as evidence and svc_fee_schedule_apply writes each bound row through
+// the governed course-facts path (Decision 162 step 2).
 // v0.2.0: dry_run — parse a registered schedule and compare it with the catalogue (svc_fee_schedule_preview).
 // Parser rule (all registered schedules): a row holding exactly one CRICOS course code; the fee is the first
 // whole-dollar amount after that code (the annual fee for one full-time year); the title is the first cell.
@@ -78,7 +80,7 @@ Deno.serve(async (req) => {
     if (!ok) return j({ error: "valid one-time Pilot nonce required", workerVersion: VERSION }, 401);
     const body = await req.json().catch(() => ({}));
     const mode = t(body.mode || "inspect");
-    if (mode === "dry_run") {
+    if (mode === "dry_run" || mode === "apply") {
       const sc = SCHEDULES[t(body.schedule)];
       if (!sc) throw Error("unknown schedule; registered: " + Object.keys(SCHEDULES).join(", "));
       const su = new URL(sc.url);
@@ -92,10 +94,21 @@ Deno.serve(async (req) => {
       const { data: preview, error } = await c.rpc("svc_fee_schedule_preview", { p_provider_cricos: sc.provider_cricos, p_fee_year: sc.fee_year,
         p_rows: parsed.rows.map(({ raw, ...x }) => x) });
       if (error) throw Error(error.message);
+      if (mode === "apply") {
+        if (parsed.rows.length < 10) throw Error("too few rows parsed; apply refused");
+        const path = `layer2/AU/fee-schedules/${sc.provider_cricos}/${sc.fee_year}/${sha}.pdf`;
+        const up = await c.storage.from("evidence").upload(path, b, { contentType: "application/pdf", upsert: true });
+        if (up.error) throw Error("evidence upload failed: " + up.error.message);
+        const { data: applied, error: ae } = await c.rpc("svc_fee_schedule_apply", { p_provider_cricos: sc.provider_cricos, p_fee_year: sc.fee_year,
+          p_storage_path: path, p_url: sc.url, p_sha256: sha, p_schedule: t(body.schedule), p_rows: parsed.rows.map(({ raw, ...x }) => x) });
+        if (ae) throw Error(ae.message);
+        return j({ ok: true, mode, schedule: t(body.schedule), url: sc.url, sha256: sha, parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length,
+          preview: { actions: preview?.actions, bound: preview?.bound }, applied, workerVersion: VERSION });
+      }
       return j({ ok: true, mode, schedule: t(body.schedule), label: sc.label, url: sc.url, sha256: sha, bytes: b.length, numPages: d.numPages,
         parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), preview, workerVersion: VERSION });
     }
-    if (mode !== "inspect") throw Error("supported modes: inspect, dry_run");
+    if (mode !== "inspect") throw Error("supported modes: inspect, dry_run, apply");
     const u = new URL(t(body.url));
     if (!allowed(u)) throw Error("address must be https on an allow-listed university host");
     const r = await fetch(u, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/fee-schedule-0.1" } });
