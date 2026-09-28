@@ -9,3 +9,11 @@ test('Layer 3 tuition qualification: zero unsafe, conclusive, useful; activation
   expect(m).toContain("'profile_paused',true")   // a pass never activates by itself
   expect(m).toContain('33ed315e5208a6b09ba4d195971947bb')
 })
+
+test('Open items on a profile that cannot run are moved to the qualified profile, with an audit row',async()=>{
+  const m=fs.readFileSync('supabase/migrations/20260928100100_d160_layer3_rebind_open_items.sql','utf8')
+  expect(m).toContain('create table if not exists pipeline.layer3_work_item_rebinds(')
+  expect(m).toContain("if v_n<>1 then raise exception 'expected exactly one qualified active tuition profile")
+  expect(m).toContain("and w.status in ('pending','failed')")            // finished items are never moved
+  expect(m).toContain('and (not p.enabled or p.paused)')
+})
