@@ -64,6 +64,7 @@ jobs:
             [qilt-au-etl]=false
             [prisms-au-etl]=false
             [statistics-edition-discovery]=false
+            [fee-schedule-etl]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
