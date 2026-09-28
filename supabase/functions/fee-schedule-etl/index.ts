@@ -6,7 +6,9 @@ import { getDocumentProxy } from "npm:unpdf@0.12.1";
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.3.0";
+const VERSION = "fee-schedule-etl-v0.4.0";
+// v0.4.0: fees written "A$37,800/year" accepted; rows holding several courses side by side (two-column pages)
+// are split at each CRICOS code, each course taking the first fee after its own code.
 // v0.3.0: apply — the schedule file is stored as evidence and svc_fee_schedule_apply writes each bound row through
 // the governed course-facts path (Decision 162 step 2).
 // v0.2.0: dry_run — parse a registered schedule and compare it with the catalogue (svc_fee_schedule_preview).
@@ -19,25 +21,40 @@ const SCHEDULES: Record<string, { provider_cricos: string; url: string; fee_year
   wsu_ug_2027: { provider_cricos: "00917K", fee_year: 2027, basis: "annual",
     url: "https://www.westernsydney.edu.au/content/dam/digital/pdf/international/ug-intl-fees-2027.pdf",
     label: "Western Sydney University 2027 undergraduate international tuition fees (annual)" },
+  cdu_2026: { provider_cricos: "00300K", fee_year: 2026, basis: "annual",
+    url: "https://www.cdu.edu.au/files/2025-08/2026-he-international-annual-tuition-fees.pdf",
+    label: "Charles Darwin University 2026 higher education international annual tuition fees" },
+  swinburne_ug_2027: { provider_cricos: "00111D", fee_year: 2027, basis: "annual",
+    url: "https://www.swinburne.edu.au/downloads/Undergraduate-Course-Fees-2027-International.pdf",
+    label: "Swinburne University of Technology 2027 international undergraduate course fees (per year)" },
+  swinburne_pg_2027: { provider_cricos: "00111D", fee_year: 2027, basis: "annual",
+    url: "https://www.swinburne.edu.au/downloads/Postgraduate-Course-Fees-2027-International.pdf",
+    label: "Swinburne University of Technology 2027 international postgraduate course fees (per year)" },
   wsu_pg_2027: { provider_cricos: "00917K", fee_year: 2027, basis: "annual",
     url: "https://www.westernsydney.edu.au/content/dam/digital/pdf/international/pg-intl-fees-2027.pdf",
     label: "Western Sydney University 2027 postgraduate international tuition fees (annual)" },
 };
 const CODE_CELL = /^\d{6}[0-9A-Z]$/;
-const FEE_CELL = /^\$\s?(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.00)?$/;
+const FEE_CELL = /^(?:A|AU)?\$\s?(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.00)?(?:\s*\/\s*(?:year|yr|annum))?$/i;
 function parseRows(rows: string[]) {
   const out: { course_cricos: string; title: string; amount: number; raw: string }[] = [];
   const rejected: string[] = [];
+  const isTitle = (c: string) => /[A-Za-z]{3,}.*\s/.test(c) && !CODE_CELL.test(c) && !FEE_CELL.test(c);
   for (const raw of rows) {
     const cells = raw.split(" | ").map((x) => x.trim()).filter(Boolean);
     const idx = cells.map((c, i) => (CODE_CELL.test(c) ? i : -1)).filter((i) => i >= 0);
     if (idx.length === 0) continue;
-    if (idx.length > 1) { rejected.push(raw); continue; }
-    const fee = cells.slice(idx[0] + 1).find((c) => FEE_CELL.test(c));
-    if (!fee) { rejected.push(raw); continue; }
-    const amount = Number(fee.replace(/[^0-9.]/g, ""));
-    if (!(amount >= 5000 && amount <= 150000)) { rejected.push(raw); continue; }
-    out.push({ course_cricos: cells[idx[0]], title: cells[0], amount, raw });
+    let segStart = 0;
+    for (let k = 0; k < idx.length; k++) {
+      const end = k + 1 < idx.length ? idx[k + 1] : cells.length;
+      const feeAt = cells.findIndex((c, i) => i > idx[k] && i < end && FEE_CELL.test(c));
+      if (feeAt < 0) { rejected.push(raw); segStart = end; continue; }
+      const amount = Number(cells[feeAt].replace(/\/.*$/, "").replace(/[^0-9.]/g, ""));
+      if (!(amount >= 5000 && amount <= 150000)) { rejected.push(raw); segStart = feeAt + 1; continue; }
+      const title = cells.slice(segStart, feeAt).find(isTitle) || "";
+      out.push({ course_cricos: cells[idx[k]], title, amount, raw });
+      segStart = feeAt + 1;
+    }
   }
   return { rows: out, rejected };
 }
