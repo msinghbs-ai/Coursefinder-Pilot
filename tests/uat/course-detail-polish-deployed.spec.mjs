@@ -62,9 +62,11 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.x standardised oper
       await expect(drawer.getByText('Current Provider tuition',{exact:true})).toBeVisible()
       await expect(drawer.getByText('English requirement',{exact:true})).toBeVisible()
       await expect(drawer.getByText('Delivery',{exact:true})).toBeVisible()
-      await expect(drawer.getByLabel('Layer 2 attempted and unresolved; awaiting Layer 3')).toHaveCount(2)
-      await expect(drawer.getByText('Awaiting L3',{exact:true})).toHaveCount(2)
-      await expect(drawer.getByText('Awaiting L2',{exact:true})).toHaveCount(1)
+      // Decision 162: badges come from stored records. Layer 3 handles only tuition and has no open item for this
+      // course, so nothing awaits L3; UQ has a qualified source for tuition and English, so both await L2.
+      await expect(drawer.getByLabel('Layer 2 attempted and unresolved; awaiting Layer 3')).toHaveCount(0)
+      await expect(drawer.getByText('Awaiting L3',{exact:true})).toHaveCount(0)
+      await expect(drawer.getByText('Awaiting L2',{exact:true})).toHaveCount(2)
       await expect(drawer.getByRole('heading',{name:'Academic options',exact:true})).toHaveCount(0)
       await expect(drawer.getByRole('heading',{name:'Categories',exact:true})).toHaveCount(0)
       await expect(drawer.getByRole('heading',{name:'Collections',exact:true})).toHaveCount(0)

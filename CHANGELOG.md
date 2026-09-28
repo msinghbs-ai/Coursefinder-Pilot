@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.29 — 28 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.102** (Decision 162 step 1: badges from stored provenance; Decisions 161 and 162 cadence; Layer 2 discovery carry-forward).
+- Database (applied live): security.admin_course_field_states reads stored provenance (Layer 3 admitted work items, Layer 4 resolutions, CRICOS sources) and provider-scoped Layer 2 sources; Layer 2 discovered URLs carried forward across settings-only profile versions; UQ and RMIT course-page refresh every 90 days; RMIT refresh re-enabled.
+- Course page: new states "CRICOS tuition applies" and "Not collected"; badge tooltips show what resolved each value.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.28 — 28 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.101** (Compare datasets on by default; Decision 160 Layer 3 activation; QILT SES 2025 applied; QS parser v1.4.0).
