@@ -76,3 +76,10 @@ test('Identity is country-scoped (Decision 149)',async()=>{
   expect(m).toContain('create trigger trg_mirror_course_registration_identifier')
   expect(m).toContain('create trigger trg_mirror_provider_registration_identifier')
 })
+
+test('QILT apply accepts only providers in the verified mapping or its recorded equivalent set',async()=>{
+  const m=read('supabase/migrations/20260928110000_qilt_apply_accepts_verified_equivalent_providers.sql')
+  expect(m).toContain("if md5(v_def)<>'51f88dce77bfa10894659e6362be0836' then")
+  expect(m).toContain("m.status=''verified'' and (m.provider_id=(r->>''provider_id'')::uuid or (coalesce((m.metadata->>''statistical_equivalence_fanout'')::boolean,false)")
+  expect(m).toContain("m.metadata->''equivalent_provider_ids''")
+})
