@@ -14,6 +14,31 @@ const REASON_TEXT={
   provider_owned_but_no_explicit_course_or_provider_scope:"The scholarship belongs to the provider, but the page doesn't say which courses it covers.",
 }
 function plainReason(code){const c=String(code||'');if(REASON_TEXT[c])return REASON_TEXT[c];if(/^[a-z0-9_]+$/.test(c)){const t=c.replace(/_/g,' ');return t.charAt(0).toUpperCase()+t.slice(1)+'.'}return c}
+// R25 (Decision 158): providers whose every course left the register; a Platform Admin records closure, merger or review.
+function ProviderDepartures({canDecide}){
+ const[rows,setRows]=useState([]),[status,setStatus]=useState('needs_review'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[form,setForm]=useState(null)
+ const load=async(st=status)=>{setBusy(true);setError('');try{const r=await rpc('layer4_provider_departures_read',{p_status:st});setRows(Array.isArray(r)?r:[])}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
+ useEffect(()=>{load(status)},[status])
+ const open=d=>setForm({id:d.id,name:d.provider_name,decision:d.suggested_successor?'merged':'closed',successor:d.suggested_successor?.provider_id||'',successorName:d.suggested_successor?.name||'',reason:''})
+ const save=async()=>{if(!form)return;setBusy(true);setError('');try{await rpc('layer4_provider_departure_decide',{p_id:form.id,p_decision:form.decision,p_successor_provider_id:form.decision==='merged'&&form.successor?form.successor:null,p_reason:form.reason});setForm(null);await load()}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
+ return <div className="cf-l4mass-body" data-cf-provider-departures>
+  <p className="cf-l4mass-note">Providers whose every course has left the register. Decide each one: closed, merged into a successor, or reviewed with no change. Nothing is deleted; closed and merged providers are marked inactive and a merger records the successor.</p>
+  {error&&<div className="cf-l4mass-error"><AlertTriangle size={14}/>{error}</div>}
+  <div className="cf-l4mass-toolbar"><label>Show<select value={status} onChange={e=>setStatus(e.target.value)}><option value="needs_review">Needs review</option><option value="all">All</option></select></label><span>{rows.length} provider(s)</span></div>
+  <div className="cf-l4mass-list">{rows.map(d=><article key={d.id}>
+   <div className="cf-l4mass-row"><div><strong>{d.provider_name}</strong><span>{d.country_code} · {(d.registrations||[]).map(r=>`${String(r.scheme).toUpperCase()} ${r.code}`).join(' · ')||'No registration'}</span></div><span className="cf-l4mass-pill">{human(d.status)}</span></div>
+   <div className="cf-l4mass-meta"><span>{count(d.courses_retired)} courses retired</span><span>{count(d.active_courses)} active</span><span>Listed {when(d.created_at)}</span>{d.suggested_successor&&<span>Suggested successor: {d.suggested_successor.name}</span>}{d.successor_name&&<span>Successor: {d.successor_name}</span>}</div>
+   {d.status==='needs_review'&&<div className="cf-l4mass-actions"><button onClick={()=>open(d)} disabled={!canDecide}><ClipboardCheck size={13}/>Decide</button>{!canDecide&&<small>Platform Admin decides</small>}</div>}
+   {form?.id===d.id&&<div className="cf-l4mass-decision">
+    <div className="cf-l4mass-form"><label>Decision<select value={form.decision} onChange={e=>setForm(x=>({...x,decision:e.target.value}))}><option value="closed">Closed</option><option value="merged">Merged into a successor</option><option value="reviewed">Reviewed, no change</option></select></label>
+    <label>Reason<textarea value={form.reason} onChange={e=>setForm(x=>({...x,reason:e.target.value}))} placeholder="Required audited reason"/></label>
+    {form.decision==='merged'?<label>Successor provider ID<input value={form.successor} onChange={e=>setForm(x=>({...x,successor:e.target.value.trim()}))} placeholder="Provider ID"/>{form.successorName&&<small>Suggested: {form.successorName}</small>}</label>:<span/>}</div>
+    <div className="cf-l4mass-actions"><button className="primary" disabled={busy||form.reason.trim().length<8||(form.decision==='merged'&&!form.successor)} onClick={save}>Record decision</button><button onClick={()=>setForm(null)}>Cancel</button></div>
+   </div>}
+  </article>)}{!rows.length&&!busy&&<small>Nothing to review.</small>}</div>
+ </div>
+}
+
 // v2.15.85: rendered inside the Layer 4 desk (Batches view); no longer inserts itself into the page.
 export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=false}={}){
  const[summary,setSummary]=useState({}),[groups,setGroups]=useState([]),[reviewGroups,setReviewGroups]=useState([]),[diagnostics,setDiagnostics]=useState([]),[findings,setFindings]=useState([]),[history,setHistory]=useState([])
@@ -43,7 +68,7 @@ export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=f
   {/* v2.15.84: collapsed by default and placed below the review desk, so operators land on the desk. */}
   {!open?<div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(true)}>Open batch work</button><small>Decide repeat cases together — every batch is previewed, confirmed and audited.</small></div>:<>
   <div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(false)}>Close batch work</button></div>
-  <div className="cf-l4mass-tabs">{[['scope','Scholarship scope'],['review','Review queue'],['quality','Errors & improvements'],['history','Mass audit']].map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>{setTab(k);setDecision(null)}}>{l}</button>)}</div>
+  <div className="cf-l4mass-tabs">{[['scope','Scholarship scope'],['review','Review queue'],['departures','Provider departures'],['quality','Errors & improvements'],['history','Mass audit']].map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>{setTab(k);setDecision(null)}}>{l}</button>)}</div>
   {tab==='scope'&&<div className="cf-l4mass-body">
    <div className="cf-l4mass-toolbar"><label><Search size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search university, scholarship, rule or course"/></label><span>{filtered.length} cohort(s) shown</span></div>
    <div className="cf-l4mass-list">{filtered.map(g=><article key={g.group_id} className={g.structural_ready?'':'blocked'}>
@@ -56,6 +81,7 @@ export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=f
   </div>}
   {tab==='review'&&<div className="cf-l4mass-body"><p className="cf-l4mass-note">Generic Layer 4 cohorts can be rejected or returned to Layer 2/3 in batches of up to 500. Bulk approve is intentionally not available because proposed scalar values may differ.</p><div className="cf-l4mass-list">{reviewGroups.map(g=><article key={g.group_id}><div className="cf-l4mass-row"><div><strong>{human(g.entity_type)} · {human(g.field_code)}</strong><span>{g.escalation_reason||'No escalation reason'}</span></div><span className="cf-l4mass-pill">{count(g.item_count)} items</span></div><div className="cf-l4mass-meta"><span>Missing Evidence {count(g.missing_evidence_count)}</span><span>Oldest {when(g.oldest_at)}</span></div><div className="cf-l4mass-actions"><button onClick={()=>openReview(g)}><ClipboardCheck size={13}/>Open cohort action</button></div></article>)}</div></div>}
   {tab==='quality'&&<div className="cf-l4mass-body"><div className="cf-l4mass-quality">{diagnostics.map(d=><article key={d.title} className={`sev-${d.severity}`}><div className="cf-l4mass-row"><div><strong>{d.title}</strong><span>{human(d.type)} · {human(d.severity)}</span></div><span className="cf-l4mass-pill">{count(d.count)}</span></div><p>{d.detail}</p><small>{d.recommendation}</small><div className="cf-l4mass-actions"><button onClick={()=>track(d)} disabled={busy}><Wrench size={13}/>Track finding</button></div></article>)}</div><h3>Open findings</h3><div className="cf-l4mass-list">{findings.map(f=><article key={f.id}><div className="cf-l4mass-row"><div><strong>{f.title}</strong><span>{human(f.finding_type)} · {human(f.severity)} · {human(f.status)}</span></div><span>{when(f.last_seen_at)}</span></div><p>{f.detail||'—'}</p>{resolve?.id===f.id?<div className="cf-l4mass-decision"><label>Resolution note<textarea value={resolve.note} onChange={e=>setResolve(x=>({...x,note:e.target.value}))}/></label><div className="cf-l4mass-actions"><button className="primary" onClick={resolveFinding} disabled={!resolve.note.trim()||busy}>Resolve</button><button onClick={()=>setResolve(null)}>Cancel</button></div></div>:<button onClick={()=>setResolve({id:f.id,note:''})}><CheckCircle2 size={13}/>Resolve finding</button>}</article>)}</div></div>}
+  {tab==='departures'&&<ProviderDepartures canDecide={Number(summary.role_rank||0)>=6}/>}
   {tab==='history'&&<div className="cf-l4mass-body"><div className="cf-l4mass-list">{history.map(h=><article key={h.id}><div className="cf-l4mass-row"><div><strong>{human(h.target_kind)} · {human(h.action)}</strong><span>{h.reason}</span></div><span>{when(h.created_at)}</span></div><div className="cf-l4mass-meta"><span>Before {count(h.before_count)}</span><span>Affected {count(h.affected_count)}</span><span>{h.change_control_ref}</span></div></article>)}</div></div>}
   {decision&&<div className="cf-l4mass-decision" data-cf-layer4-mass-decision>
    <div className="cf-l4mass-row"><div><strong>{decision.kind==='scope'?decision.group.scholarship_name:`${human(decision.group.entity_type)} · ${human(decision.group.field_code)}`}</strong><span>One decision for the whole current cohort</span></div><button onClick={()=>setDecision(null)}>Close</button></div>
