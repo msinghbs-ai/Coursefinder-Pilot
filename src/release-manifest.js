@@ -1,24 +1,25 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.101'
-export const PACKAGE_VERSION='0.1.28'
+export const UI_VERSION='2.15.102'
+export const PACKAGE_VERSION='0.1.29'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'28 Sep 2026',
-  title:'Compare shows every dataset by default; Layer 3 AI switched on',
+  title:'Course attribute badges show where each value really came from',
   changes:[
-    'Compare: QILT, PRISMS, QS and THE are all on by default and are never greyed out before anything is selected; click a dataset to switch it off. Periods default to the latest available.',
-    'Compare in course mode states what each dataset describes: QILT and rankings for each course\'s university, PRISMS for the course, its state and field, or its state.',
-    'Layer 3 tuition checks run with a qualified AI model (Decision 160): every answer it gives must be correct, and anything it is unsure of goes to Layer 4.',
-    'QILT Student Experience Survey 2025 is the current edition; 2024 is kept for comparison.'
+    'Course attribute badges now come from stored records: CRICOS values show L1, provider-page values L2, tuition checked by the AI shows L3 with the model name, and people\'s decisions L4. Hover a badge to see what resolved it.',
+    'Where a university has no provider tuition but CRICOS registered tuition exists, the course shows "CRICOS tuition applies" instead of "Awaiting L2".',
+    'Attributes that no Layer 2 source collects for that university show "Not collected" instead of waiting.',
+    'Provider course pages are refreshed every 90 days instead of weekly (Decision 162); tuition is read once per fee year.',
+    'Layer 2 course extraction works again: discovered course pages are kept when a profile\'s settings change (it had stopped on 26 Sep). RMIT\'s course refresh is switched back on (Decision 161).'
   ],
   bugFixes:[
-    'Compare in course mode showed no PRISMS student flow for most courses; it now falls back to the state of the course\'s campuses, as the university view does.',
-    'Applying the QILT SES 2025 edition was refused for universities with more than one CRICOS code (Victoria University, Holmes Institute).',
-    'The official QS 2025 workbook was read with the region in the country column; the QS parser now finds the real country column and refuses a file that looks like regions.',
-    'Layer 3 items sent back from Layer 4 were stuck on a retired AI profile and never rechecked.'
+    'Tuition admitted by the Layer 3 AI (242 courses) was badged as Layer 2.',
+    '"Awaiting L3" was shown for course URL, description, intakes and English, which Layer 3 never handles.',
+    'Delivery mode showed "Awaiting L2" although CRICOS course locations give it.',
+    'The course page looked up Layer 2 results by course code alone instead of within the course\'s own provider.'
   ]
 }
 
