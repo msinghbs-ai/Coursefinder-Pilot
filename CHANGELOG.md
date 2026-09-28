@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.26 — 28 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.99** (Package 10: Decision 155 steps 2, 5, 6 and 7; R18–R21).
+- Database (applied live): per-provider discovery links (evidence link index 188 MB emptied; candidates proven identical for all 648 providers); register fingerprints and run plans (change-based apply; bootstrap from the accepted file); automatic departures with a 2% hold and Platform Admin approval, reactivation and provider review list; duplicate register evidence clean-up (746 copies, 1.7 GB, sample verified byte for byte); automatic ingestion within the pass band (layer1-auto-ingest, CRICOS and NZQA).
+- Edge functions: layer1-operations-control v1.5.0, layer1-au-depth v1.7.0, layer1-au-cricos-facts v1.2.0, evidence-storage-dedupe v1.0.0 (new); allow-list updated.
+- Layer 1 card: register breakdown, departures and approval, automatic ingestion setting.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.25 — 27 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.98** (Package 9b: Layer 1 background runs and live progress; Decision 155 part 1).

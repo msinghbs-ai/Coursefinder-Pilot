@@ -1,25 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.98'
-export const PACKAGE_VERSION='0.1.25'
+export const UI_VERSION='2.15.99'
+export const PACKAGE_VERSION='0.1.26'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'27 Sep 2026',
-  title:'Layer 1 runs in the background with live progress',
+  date:'28 Sep 2026',
+  title:'Register changes applied automatically',
   changes:[
-    'Layer 1 register runs now continue in the background after you start them. You can close the page, and the database restarts a stalled run automatically within a minute.',
-    'Each Layer 1 card shows live progress: items done out of the total, pace, time remaining, when it last updated and which batch is being worked on.',
-    'Temporary errors from a source (for example HTTP 502) are retried automatically up to five times, with increasing waits. The card shows the retry and the error.',
-    'A failed run shows the real error on the card and offers Resume from the item where it stopped. A completed run shows new, changed and unchanged counts and how long it took.',
-    'Register files that have not changed are stored once and reused, instead of being saved again for every batch.'
+    'A CRICOS run first compares the whole register with what was last applied (about 10 seconds) and then applies only new and changed courses. The card shows the register total and how many are new, changed, unchanged and departed.',
+    'Courses that leave the register are retired automatically at the end of the run, with an audit record. A large departure (more than 2% of the register) waits for a Platform Admin to approve it on the card.',
+    'A retired course that returns to the register is reactivated. A provider whose courses have all left is listed for a person to review as a closure or a merger.',
+    'When the weekly check finds a changed register and the record count is within the accepted range, the ingestion now runs automatically (CRICOS and NZQA). The card details show whether automatic ingestion is on.',
+    'Duplicate copies of register files were removed after a byte-for-byte check (746 copies, 1.7 GB); every record still points to an identical stored file.'
   ],
   bugFixes:[
-    'Run now no longer fails with a duplicate request error when a run of the same source failed earlier that day.',
-    'Run progress was overstated for Australian runs (for example 207,824 processed out of 25,978). Progress now counts items actually reached.',
-    'A source whose last run failed is now counted under Attention.',
-    'The QS rankings card shows the ingested 2026 edition (1,501 rows) again, titled with its year; the 2027 edition, not yet available from the publisher, shows as pending.'
+    'The course catalogue link index no longer grows with every captured page: links are kept once per provider (447,678 rows reduced to 25,521; the database shrank by 165 MB).'
   ]
 }
 
