@@ -15,3 +15,10 @@ test('Field states read stored provenance and only await layers that really have
   expect(ui).toContain("if(s==='not_collected')return")
   expect(ui).toContain('title={state?.resolved_by||undefined}')
 })
+
+test('Fee schedules never leave courses waiting and are named in the badge tooltip',()=>{
+  const a=fs.readFileSync('supabase/migrations/20260928174000_d162_badges_schedule_scope.sql','utf8')
+  expect(a).toContain("s.source_type=''provider_fee_schedule''")
+  const b=fs.readFileSync('supabase/migrations/20260928174100_d162_badges_schedule_resolved_by.sql','utf8')
+  expect(b).toContain("''Layer 2 provider fee schedule''")
+})
