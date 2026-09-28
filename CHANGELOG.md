@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.28 — 28 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.101** (Compare datasets on by default; Decision 160 Layer 3 activation; QILT SES 2025 applied; QS parser v1.4.0).
+- Database (applied live): Layer 3 safe-abstention qualification and open-item move to the qualified profile; QILT apply guard accepts a verified institution's equivalent providers; Compare course mode falls back to state-level PRISMS context.
+- Edge functions: ranking-qs-official-etl v1.4.0 (deploy allow-list updated).
+- Compare: datasets on by default, never disabled before a selection; course-mode labels.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.27 — 28 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.100** (Layer 1 closure, Decision 159; R5, R6, R14, R22, R25; Decision 149 identifiers; R23/R26 evidence).
