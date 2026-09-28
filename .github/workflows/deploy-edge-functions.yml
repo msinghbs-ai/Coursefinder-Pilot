@@ -59,6 +59,7 @@ jobs:
             [evidence-storage-dedupe]=false
             [layer1-operations-scheduled]=false
             [ranking-publisher-control]=false
+            [ranking-qs-official-etl]=true
             [ranking-layer1-etl]=true
             [qilt-au-etl]=false
             [prisms-au-etl]=false
