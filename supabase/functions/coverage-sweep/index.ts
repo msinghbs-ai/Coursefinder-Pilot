@@ -8,7 +8,10 @@ import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllow
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.4.0";
+const VERSION = "coverage-sweep-v0.5.0";
+// v0.5.0: English overall only when stated as overall or in a score table; minimum band after the overall; fee basis
+// total/annual from the amount's own wording ("(2027 total)", "total indicative fee"); mode reextract re-runs the
+// extractor over stored pages read by an older version (no fetch).
 // v0.4.0: mode find_site - providers with no website: web search (Firecrawl, 2 credits), accepted only when the
 // home page prints the provider's CRICOS provider code; directories and registers skipped.
 // v0.3.2: a script-only page read directly while the Firecrawl reserve is reached is "needs_render" (retried after the
@@ -114,6 +117,21 @@ Deno.serve(async (req) => {
     }
 
 
+    if (mode === "reextract") {
+      const rows: { course_id: string; storage_path: string; title: string; code: string; status: string; url: string }[] = await rpc("svc_coverage_reextract_next", { p_limit: Math.min(Number(body.limit || 100), 200), p_version: VERSION });
+      let done = 0, failed = 0;
+      await pool(rows, 10, async (r) => {
+        try {
+          const { data, error } = await c.storage.from("evidence").download(r.storage_path);
+          if (error || !data) throw Error(error?.message || "missing");
+          const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+          const text = htmlToText(html);
+          const cand = { final_url: r.url, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text), english: english(text), intakes: intakes(text), extractor: VERSION };
+          await rpc("svc_coverage_candidates_update", { p_course_id: r.course_id, p_candidates: cand }); done++;
+        } catch { failed++ }
+      });
+      return j({ ok: true, mode, rows: rows.length, done, failed, ms: Date.now() - t0, workerVersion: VERSION });
+    }
     if (mode === "find_site") {
       const provs: { provider_id: string; name: string; trading: string | null; cricos: string }[] = await rpc("svc_coverage_site_next", { p_limit: Math.min(Number(body.limit || 5), 10) });
       const out: unknown[] = [];
@@ -193,7 +211,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
