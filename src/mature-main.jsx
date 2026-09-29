@@ -165,6 +165,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'providers':
         if(tab==='campuses')return <Catalogue type="campus" onError={onError} navigate={navigate} initialId={focusId}/>
         if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
+        if(tab==='onboarding')return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={err}/></div>
         return <Catalogue type="provider" onError={onError} navigate={navigate} initialId={focusId}/>
       case'scholarships':return tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
@@ -173,15 +174,15 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='prisms')return <Prisms onError={onError}/>
         if(tab==='datasets')return <div className="m-page-stack" data-cf-stat-admin-host/>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':return tab==='domains'?<DomainReadiness rank={rank}/>:<CoverageView/>
+      case'coverage':return tab==='domains'?<DomainReadiness rank={rank}/>:<CoverageView view={tab==='attributes'?'attributes':'courses'}/>
       case'layer1':
-        if(tab==='imports')return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
         if(tab==='sources')return <SourcesWorkspace/>
         if(tab==='settings')return <Layer1SourceSettings/>
-        if(tab==='onboarding')return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={err}/></div>
+        return <Layer1Operations embedded/>
+      case'reference':
         if(tab==='dates')return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={err}/></div>
         if(tab==='links')return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={err}/></div>
-        return <Layer1Operations embedded/>
+        return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
       case'layer2':
         if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
         return <Layer2Workspace rank={rank} embedded/>

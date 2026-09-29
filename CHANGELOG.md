@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.39 — 30 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.112** (Provider contacts under Catalogue; new Catalogue › Reference data with Ranking imports, Key dates and Key links; Onboarding under Providers; Coverage & completeness tabs Courses, Attributes, Readiness by area).
+- Database (applied live): migration 20260930070000_system_identity_auth_list_fix — NULL token columns on the system automation identity set to empty strings, so the Auth admin user list works again (Users & roles).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.38 — 30 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.111** (Layer 3 without Sonnet: model choice per field on Layer 4 Review › Send back to AI, including models whose cascade step is off).

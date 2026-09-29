@@ -14,6 +14,7 @@ export const PAGES = {
     { key: 'providers', label: 'Providers', min: 1 },
     { key: 'campuses', label: 'Campuses', min: 1 },
     { key: 'assets', label: 'Logos & assets', min: 4 },
+    { key: 'onboarding', label: 'Onboarding', min: 3 },
   ] },
   scholarships: { label: 'Scholarships', slug: 'scholarships', icon: 'scholarship', subtitle: 'Scholarships, where each value came from, and what is published.', tabs: [
     { key: 'list', label: 'Scholarships', min: 1 },
@@ -27,16 +28,19 @@ export const PAGES = {
     { key: 'datasets', label: 'Datasets', min: 4 },
   ] },
 
-  coverage: { label: 'Coverage & completeness', slug: 'coverage', icon: 'check', subtitle: 'How complete each course is, attribute by attribute.', tabs: [
-    { key: 'courses', label: 'Course coverage', min: 1 },
+  coverage: { label: 'Coverage & completeness', slug: 'coverage', icon: 'check', subtitle: 'How complete each course is, and each attribute across all courses.', tabs: [
+    { key: 'courses', label: 'Courses', min: 1 },
+    { key: 'attributes', label: 'Attributes', min: 1 },
     { key: 'domains', label: 'Readiness by area', min: 1 },
   ] },
-  layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', subtitle: 'Official registers (CRICOS and others), rankings files and key dates.', tabs: [
+  layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', subtitle: 'Official registers such as CRICOS: runs, sources and their settings.', tabs: [
     { key: 'operations', label: 'Runs', min: 4 },
-    { key: 'imports', label: 'Ranking imports', min: 4 },
     { key: 'sources', label: 'Sources', min: 4 },
     { key: 'settings', label: 'Source settings', min: 6 },
-    { key: 'onboarding', label: 'Onboarding', min: 3 },
+  ] },
+  // v2.15.112 (Platform Admin, 30 Sep 2026): reference data that is not a register run moved out of Layer 1.
+  reference: { label: 'Reference data', slug: 'reference-data', icon: 'book', subtitle: 'Ranking files, key dates and key links used across the catalogue.', tabs: [
+    { key: 'imports', label: 'Ranking imports', min: 4 },
     { key: 'dates', label: 'Key dates', min: 3 },
     { key: 'links', label: 'Key links', min: 3 },
   ] },
@@ -78,11 +82,11 @@ export const PAGES = {
 
 export const SECTIONS = [
   { label: '', pages: ['dashboard'] },
-  { label: 'Catalogue', pages: ['courses', 'providers', 'scholarships', 'rankings'] },
+  { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence'] },
   { label: 'Platform settings', pages: ['environment', 'scrapers', 'regulatory', 'migration', 'dataModel'] },
-  { label: 'Administration', pages: ['users', 'contacts'] },
+  { label: 'Administration', pages: ['users'] },
 ]
 
 for (const [key, p] of Object.entries(PAGES)) { p.key = key; if (p.tabs) p.min = Math.min(...p.tabs.map(t => t.min)); p.title = p.title || p.label }
@@ -105,9 +109,9 @@ export const LEGACY = {
   'layer-1-regulatory': { page: 'layer1', tab: 'operations' },
   'layer-1-authority': { page: 'layer1', tab: 'operations' },
   'sources': { page: 'layer1', tab: 'sources' },
-  'onboarding': { page: 'layer1', tab: 'onboarding' },
-  'important-dates': { page: 'layer1', tab: 'dates' },
-  'important-links': { page: 'layer1', tab: 'links' },
+  'onboarding': { page: 'providers', tab: 'onboarding' },
+  'important-dates': { page: 'reference', tab: 'dates' },
+  'important-links': { page: 'reference', tab: 'links' },
   'layer-2-enrichment': { page: 'layer2', tab: 'operations' },
   'layer-2-operations': { page: 'layer2', tab: 'operations' },
   'layer-3-ai-interpretation': { page: 'layer3' },
@@ -127,18 +131,20 @@ export const LEGACY = {
 // Old Administration sections (#administration?section=...) → new page and tab.
 export const LEGACY_ADMIN_SECTIONS = {
   'overview': { page: 'scrapers' },
-  'sources-imports': { page: 'layer1', tab: 'imports' },
+  'sources-imports': { page: 'reference', tab: 'imports' },
   'layer1-sources': { page: 'layer1', tab: 'settings' },
   'layer2-providers': { page: 'scrapers' },
   'provider-assets': { page: 'providers', tab: 'assets' },
   'layer2-sources': { page: 'layer2', tab: 'profiles' },
-  'onboarding': { page: 'layer1', tab: 'onboarding' },
+  'onboarding': { page: 'providers', tab: 'onboarding' },
   'pim': { page: 'dataModel' },
   'users-roles': { page: 'users' },
   'environment-migration': { page: 'environment' },
   'platform': { page: 'health', tab: 'readiness' },
   'statistics-datasets': { page: 'rankings', tab: 'datasets' },
 }
+
+const MOVED_L1 = { imports: { page: 'reference', tab: 'imports' }, dates: { page: 'reference', tab: 'dates' }, links: { page: 'reference', tab: 'links' }, onboarding: { page: 'providers', tab: 'onboarding' } }
 
 const BY_SLUG = Object.fromEntries(Object.values(PAGES).map(p => [p.slug, p.key]))
 const BY_LABEL = Object.fromEntries(Object.values(PAGES).map(p => [slugify(p.label), p.key]))
@@ -166,6 +172,8 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (!hit) return { page: 'dashboard', tab: '', params: new URLSearchParams(), unknown: Boolean(raw) }
   const tab = p.get('tab') || hit.tab || ''
   p.delete('tab')
+  // Layer 1 tabs moved in v2.15.112: old links keep working.
+  if (hit.page === 'layer1' && MOVED_L1[tab]) return { page: MOVED_L1[tab].page, tab: MOVED_L1[tab].tab, params: p }
   return { page: hit.page, tab, params: p }
 }
 

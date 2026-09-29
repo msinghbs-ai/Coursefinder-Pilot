@@ -1,20 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.111'
-export const PACKAGE_VERSION='0.1.38'
+export const UI_VERSION='2.15.112'
+export const PACKAGE_VERSION='0.1.39'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'30 Sep 2026',
-  title:'Layer 3 on cheap models only; stronger models only when sent from Layer 4',
+  title:'Users & roles fixed; clearer Catalogue and Coverage',
   changes:[
-    'Claude Sonnet 4.6 is no longer part of any cascade. Intakes run Qwen3 30B, then Claude Haiku 4.5; English runs Qwen3 30B, then Mistral Small 3.2. An answer the last step cannot settle goes to Layer 4.',
-    'On Layer 4 Review › Send back to AI, each field has a model choice: the cheap-model cascade, or one named model, including models the cascade no longer uses. A page sent to a named model goes only to that model; if it still cannot be settled, it comes back to Layer 4.',
-    'The intake and English checks now run every minute, 40 pages at a time, 8 in parallel.'
+    'Provider contacts moved to Catalogue.',
+    'New Catalogue page, Reference data: Ranking imports, Key dates and Key links (moved from Layer 1). Onboarding moved to Providers. Old links still work.',
+    'Layer 1 Register now shows only register work: Runs, Sources and Source settings.',
+    'Coverage & completeness has separate tabs: Courses (how complete each course is), Attributes (each attribute across all courses, and where it sits in the pipeline) and Readiness by area.'
   ],
   bugFixes:[
-    'Pages where cheaper models found no intake were passed to Claude Sonnet, which agreed in almost every case, spending about US$7 a day for nothing.'
+    'Users & roles showed "Auth User List Failed", no accounts and no recent changes. The system automation account had blank fields that the sign-in service cannot read; they are now filled. No account or role was lost.'
   ]
 }
 

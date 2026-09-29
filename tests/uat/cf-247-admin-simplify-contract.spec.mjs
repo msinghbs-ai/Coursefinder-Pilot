@@ -10,15 +10,17 @@ const read = p => fs.readFileSync(p, 'utf8')
 
 test('menu map: five plain sections, every page reachable, old addresses and names redirect', () => {
   expect(SECTIONS.map(s => s.label)).toEqual(['', 'Catalogue', 'Data pipeline', 'Operations', 'Platform settings', 'Administration'])
+  expect(SECTIONS.find(s => s.label === 'Catalogue').pages).toContain('contacts')
+  expect(SECTIONS.find(s => s.label === 'Administration').pages).toEqual(['users'])
   const inMenu = SECTIONS.flatMap(s => s.pages)
   expect(new Set(inMenu).size).toBe(inMenu.length)
   expect(Object.keys(PAGES).sort()).toEqual([...inMenu].sort())
   // Every old menu entry, hidden route and alias.
-  const old = { 'dashboard': 'dashboard', 'providers': 'providers', 'courses': 'courses', 'campuses': 'providers', 'scholarships': 'scholarships', 'provider-contacts': 'contacts', 'layer-1-operations': 'layer1', 'layer-2-enrichment': 'layer2', 'layer-3-ai-interpretation': 'layer3', 'layer-4-human-resolution': 'layer4', 'jobs-schedules': 'jobs', 'evidence': 'evidence', 'completeness': 'coverage', 'data-quality-readiness': 'coverage', 'course-coverage': 'coverage', 'statistics-rankings': 'rankings', 'compare': 'rankings', 'administration': 'scrapers', 'outcomes-qilt': 'rankings', 'student-flow-prisms': 'rankings', 'sources': 'layer1', 'attributes': 'dataModel', 'settings': 'health', 'onboarding': 'layer1', 'jobs': 'jobs', 'scheduled-tasks': 'jobs', 'important-links': 'layer1', 'important-dates': 'layer1', 'review-queue': 'layer4', 'refresh-scheduling': 'jobs', 'layer-1-regulatory': 'layer1', 'layer-1-authority': 'layer1', 'layer-2-operations': 'layer2', 'layer-3-ai': 'layer3', 'layer-4-review': 'layer4', 'users-roles': 'users' }
+  const old = { 'dashboard': 'dashboard', 'providers': 'providers', 'courses': 'courses', 'campuses': 'providers', 'scholarships': 'scholarships', 'provider-contacts': 'contacts', 'layer-1-operations': 'layer1', 'layer-2-enrichment': 'layer2', 'layer-3-ai-interpretation': 'layer3', 'layer-4-human-resolution': 'layer4', 'jobs-schedules': 'jobs', 'evidence': 'evidence', 'completeness': 'coverage', 'data-quality-readiness': 'coverage', 'course-coverage': 'coverage', 'statistics-rankings': 'rankings', 'compare': 'rankings', 'administration': 'scrapers', 'outcomes-qilt': 'rankings', 'student-flow-prisms': 'rankings', 'sources': 'layer1', 'attributes': 'dataModel', 'settings': 'health', 'onboarding': 'providers', 'jobs': 'jobs', 'scheduled-tasks': 'jobs', 'important-links': 'reference', 'important-dates': 'reference', 'review-queue': 'layer4', 'refresh-scheduling': 'jobs', 'layer-1-regulatory': 'layer1', 'layer-1-authority': 'layer1', 'layer-2-operations': 'layer2', 'layer-3-ai': 'layer3', 'layer-4-review': 'layer4', 'users-roles': 'users' }
   for (const [slug, page] of Object.entries(old)) expect(resolveTarget(slug).page, slug).toBe(page)
   // Old menu labels passed to navigate().
   for (const [label, page] of [['Layer 4 — Human Resolution', 'layer4'], ['Statistics & Rankings', 'rankings'], ['Outcomes (QILT)', 'rankings'], ['Provider Contacts', 'contacts'], ['Jobs', 'jobs'], ['Compare', 'rankings'], ['Evidence', 'evidence']]) expect(resolveTarget(label).page, label).toBe(page)
-  for (const [section, page] of Object.entries({ 'sources-imports': 'layer1', 'layer1-sources': 'layer1', 'layer2-providers': 'scrapers', 'provider-assets': 'providers', 'layer2-sources': 'layer2', 'onboarding': 'layer1', 'pim': 'dataModel', 'users-roles': 'users', 'environment-migration': 'environment', 'platform': 'health', 'statistics-datasets': 'rankings' })) {
+  for (const [section, page] of Object.entries({ 'sources-imports': 'reference', 'layer1-sources': 'layer1', 'layer2-providers': 'scrapers', 'provider-assets': 'providers', 'layer2-sources': 'layer2', 'onboarding': 'providers', 'pim': 'dataModel', 'users-roles': 'users', 'environment-migration': 'environment', 'platform': 'health', 'statistics-datasets': 'rankings' })) {
     const r = resolveTarget('administration', new URLSearchParams({ section, system: 'the_wur' }))
     expect(r.page, section).toBe(page)
     expect(r.params.get('section')).toBeNull()
@@ -35,8 +37,12 @@ test('role gates are unchanged from the screens they came from', () => {
   expect([min('layer1', 'operations'), min('layer1', 'settings'), min('layer2', 'operations'), min('layer3', 'routing'), min('layer4', 'review'), min('jobs', 'jobs'), min('evidence')]).toEqual([4, 6, 4, 3, 3, 4, 3])
   expect([min('users'), min('environment'), min('migration'), min('regulatory'), min('dataModel'), min('scrapers'), min('health', 'readiness')]).toEqual([6, 6, 6, 6, 5, 4, 6])
   expect(canOpen('users', 5)).toBe(false)
-  expect(canOpen('layer1', 3)).toBe(true) // Key dates, Key links and Onboarding are rank 3
-  expect(effectiveTab('layer1', 'operations', 3)).toBe('onboarding')
+  // v2.15.112: Key dates and Key links moved to Reference data, Onboarding to Providers (still rank 3)
+  expect(canOpen('layer1', 3)).toBe(false)
+  expect(canOpen('reference', 3)).toBe(true)
+  expect(effectiveTab('reference', 'imports', 3)).toBe('dates')
+  expect(PAGES.providers.tabs.find(t => t.key === 'onboarding').min).toBe(3)
+  for (const tab of ['imports', 'dates', 'links', 'onboarding']) expect(resolveTarget('layer-1-register', new URLSearchParams({ tab })).page).toBe(tab === 'onboarding' ? 'providers' : 'reference')
 })
 
 test('no screen draws its own shell; one layout in the kit', () => {
@@ -73,9 +79,15 @@ test.describe('mocked browser', () => {
     await expect(page.locator('.dq-shell')).toHaveCount(0)
     await expect(page.locator('.m-topbar h1')).toHaveText('Coverage & completeness')
     await expect(page.getByRole('tab', { name: 'Readiness by area' })).toHaveAttribute('aria-selected', 'true')
-    await page.getByRole('tab', { name: 'Course coverage' }).click()
+    await page.getByRole('tab', { name: 'Courses' }).click()
     await expect(page).toHaveURL(/#coverage$/)
     await expect(page.getByText('Course completeness score').first()).toBeVisible()
+    await expect(page.getByText('Completeness by attribute')).toHaveCount(0)
+    await page.getByRole('tab', { name: 'Attributes' }).click()
+    await expect(page).toHaveURL(/#coverage\?tab=attributes$/)
+    await expect(page.getByText('Completeness by attribute')).toBeVisible()
+    await expect(page.getByText('Coverage by pipeline stage')).toBeVisible()
+    await expect(page.getByText('Course completeness score')).toHaveCount(0)
   })
 
   test('Platform health shows status, issues, checks and history; dot in the top bar', async ({ page }) => {
