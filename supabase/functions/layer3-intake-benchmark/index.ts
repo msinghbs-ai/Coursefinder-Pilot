@@ -2,17 +2,20 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { htmlToText, intakes } from "../coverage-sweep/extract.ts";
 import {
-  focusText, INTAKE_RESPONSE_SCHEMA, INTAKE_SYSTEM_PROMPT, INTAKE_VALIDATOR_VERSION, monthNamesToNumbers, quoteInText,
-  scoreCase, summarise, validateIntakeAnswer,
+  applyIntakeSafetyRule, focusText, INTAKE_RESPONSE_SCHEMA, INTAKE_SAFETY_RULES, INTAKE_SYSTEM_PROMPT, INTAKE_VALIDATOR_VERSION,
+  intakeSafetyBlockers, MAX_QUOTES, monthNamesToNumbers, quoteInText, scoreCase, summarise, validateIntakeAnswer,
 } from "../_shared/cf247-intake-validation.ts";
 
 // CF-247 plan item A3: one-time Layer 3 intake benchmark (nonce-only, never scheduled).
 //   mode excerpts: intake-relevant windows of stored sweep pages, used to read the gold set by hand (no model call).
-//   mode run:      Layer 2 (the live sweep extractor) and Layer 3 (the pinned model) against every gold case;
-//                  one result row per case; hard OpenRouter budget cap across all runs.
+//   mode run:      Layer 2 (the live sweep extractor) and Layer 3 (the pinned model) against every case of one FROZEN
+//                  gold set (refused unless its current digest equals the frozen one); the deterministic safety rule
+//                  runs before the model (no call) and on every accepted answer; one result row per case; hard
+//                  OpenRouter budget cap across all runs and profiles.
+//   mode verify:   a gold set's pinned text hash and gold excerpts against the stored pages (no model call).
 //   mode finalise: records the run in layer3_quality_benchmark_runs and the intake profile's quality_benchmark.
 // Nothing is admitted, scheduled or enabled here. The intake profile must stay paused.
-const FN = "layer3-intake-benchmark", V = "cf247-intake-benchmark-v1.0.0";
+const FN = "layer3-intake-benchmark", V = "cf247-intake-benchmark-v1.1.0";
 const BUDGET_USD = 3.0, RESERVE_USD = 0.05;
 const MAX_TOKENS = 600, MAX_CHARS = 30000;
 const j = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -35,7 +38,15 @@ async function bindingHash(model: string) {
   return sha256(JSON.stringify({
     validator: INTAKE_VALIDATOR_VERSION, worker: V, model, prompt: INTAKE_SYSTEM_PROMPT, schema: INTAKE_RESPONSE_SCHEMA,
     request_body: requestBody.toString(), focus: focusText.toString(), validate: validateIntakeAnswer.toString(), max_chars: MAX_CHARS, max_tokens: MAX_TOKENS,
+    max_quotes: MAX_QUOTES, safety_rules: INTAKE_SAFETY_RULES.map((r) => ({ code: r.code, re: String(r.re) })),
+    safety_blockers: intakeSafetyBlockers.toString(), safety_apply: applyIntakeSafetyRule.toString(),
   }));
+}
+// A gold excerpt is one passage, or several joined by " | "; either way every character must be in the page text.
+function goldExcerptOk(excerpt: unknown, text: string) {
+  if (!excerpt) return true;
+  const e = String(excerpt);
+  return quoteInText(e, text) || e.split(" | ").every((q) => quoteInText(q, text));
 }
 function parse(v: unknown) {
   if (v && typeof v === "object") return v;
@@ -88,7 +99,20 @@ Deno.serve(async (req: Request) => {
       return j(200, { ok: true, mode, worker_version: V, pages: out, ms: Date.now() - t0 });
     }
 
-    const profile = await rpc("layer3_intake_benchmark_profile_service");
+    // verify: a frozen gold set's pinned text and excerpts, with no model call
+    if (mode === "verify") {
+      const goldSet = String(body.gold_set || "").trim();
+      const set = await rpc("layer3_intake_benchmark_cases_service", { p_gold_set: goldSet });
+      const out: any[] = [];
+      await pool(set.cases || [], 6, async (c: any) => {
+        const text = await pageText(c.storage_path);
+        out.push({ case_key: c.case_key, text_matches_gold: (await sha256(text)) === c.text_sha256, gold_excerpt_in_text: goldExcerptOk(c.evidence_excerpt, text), layer2: monthNamesToNumbers(intakes(text)) });
+      });
+      return j(200, { ok: true, mode, worker_version: V, gold_set: goldSet, frozen_digest: set.frozen_digest, current_digest: set.current_digest, cases: out.length,
+        all_text_pinned: out.every((x) => x.text_matches_gold), all_excerpts_in_text: out.every((x) => x.gold_excerpt_in_text), problems: out.filter((x) => !x.text_matches_gold || !x.gold_excerpt_in_text) });
+    }
+
+    const profile = await rpc("layer3_intake_benchmark_profile_service", body.profile_code ? { p_code: String(body.profile_code) } : {});
     if (!profile?.id) throw new Error("intake profile missing");
     if (!profile.paused) throw new Error("intake profile must be paused during benchmark");
     const model = String(profile.model_identifier);
@@ -96,17 +120,20 @@ Deno.serve(async (req: Request) => {
     const binding = await bindingHash(model);
 
     if (mode === "finalise") {
-      const cases: any[] = await rpc("layer3_intake_benchmark_cases_service");
       const runLabel = String(body.run_label || "");
       const summary = body.summary && typeof body.summary === "object" ? body.summary : {};
-      const recorded = await rpc("layer3_intake_benchmark_finalise_service", { p_run_label: runLabel, p_summary: { ...summary, gold_cases: cases.length, worker_version: V, validator: INTAKE_VALIDATOR_VERSION }, p_binding_hash: binding });
+      const recorded = await rpc("layer3_intake_benchmark_finalise_service", { p_run_label: runLabel, p_summary: { ...summary, worker_version: V, validator: INTAKE_VALIDATOR_VERSION }, p_binding_hash: binding });
       return j(200, { ok: true, mode, worker_version: V, binding_hash: binding, recorded });
     }
 
     if (mode === "run") {
       const runLabel = String(body.run_label || "").trim();
       if (!/^[a-z0-9][a-z0-9._-]{2,60}$/i.test(runLabel)) throw new Error("run_label required");
-      let cases: any[] = await rpc("layer3_intake_benchmark_cases_service");
+      const goldSet = String(body.gold_set || "").trim();
+      const set = await rpc("layer3_intake_benchmark_cases_service", { p_gold_set: goldSet });
+      // the gold set must be frozen, and unchanged since it was frozen, before any model call
+      if (!set?.frozen_digest || set.frozen_digest !== set.current_digest) throw new Error(`gold set ${goldSet} is not frozen or has changed since it was frozen`);
+      let cases: any[] = set.cases || [];
       const offset = Math.max(0, Number(body.offset || 0)), limit = Math.min(Math.max(1, Number(body.limit || 60)), 60);
       cases = cases.slice(offset, offset + limit);
       let key = Deno.env.get(String(profile.secret_env_key || ""));
@@ -120,12 +147,15 @@ Deno.serve(async (req: Request) => {
         const text = await pageText(c.storage_path);
         const textSha = await sha256(text);
         // the gold answer's own excerpt(s) must still be in the text it was read from
-        const excerptOk = !c.evidence_excerpt || String(c.evidence_excerpt).split(" | ").every((q: string) => quoteInText(q, text));
+        const excerptOk = goldExcerptOk(c.evidence_excerpt, text);
         const gold = { status: c.gold_status, months: (c.gold_months || []).map(Number) };
         const l2 = monthNamesToNumbers(intakes(text));
         const l2Score = scoreCase(gold, { status: l2.length ? "months" : "not_stated", months: l2 });
         let answer: any = null, err: string | null = null, returned: string | null = null, input = 0, output = 0, cost = 0, calls = 0, latency = 0;
-        const attempts = Math.max(1, Math.min(Number(profile.retry_ceiling || 0) + 1, 2));
+        const blockers = intakeSafetyBlockers(text);
+        // safety rule before the model: a blocked page is not_stated and is never sent to the model
+        if (blockers.length) answer = { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule: " + blockers.map((b) => b.code).join(", ") };
+        const attempts = blockers.length ? 0 : Math.max(1, Math.min(Number(profile.retry_ceiling || 0) + 1, 2));
         for (let i = 0; i < attempts; i++) {
           // hard budget cap: stop before a call that could cross it (a call on these pages costs well under a cent)
           if (spent + RESERVE_USD >= cap) { stoppedForBudget = true; err = "budget_cap_reached"; break }
@@ -146,7 +176,8 @@ Deno.serve(async (req: Request) => {
             answer = parse(p?.choices?.[0]?.message?.content); err = null; break;
           } catch (e) { err = String((e as Error)?.message || e); latency = Math.max(latency, Math.round(performance.now() - st)) }
         }
-        const val = answer ? validateIntakeAnswer(answer, text) : { valid: false, errors: [err || "no_answer"], status: null, months: [] as number[], quotes: [] as string[] };
+        // safety rule after the model: applied to every accepted answer (a blocker can only remove months)
+        const val = answer ? applyIntakeSafetyRule(validateIntakeAnswer(answer, text), blockers) : { valid: false, errors: [err || "no_answer"], status: null, months: [] as number[], quotes: [] as string[] };
         const l3Score = scoreCase(gold, { status: val.status, months: val.months });
         const row = {
           profile_id: profile.id, configured_model: model, returned_model: returned, text_sha256: textSha, text_matches_gold: textSha === c.text_sha256, gold_excerpt_in_text: excerptOk,
@@ -154,17 +185,18 @@ Deno.serve(async (req: Request) => {
           layer3_status: val.status ?? (answer?.status ? `rejected:${answer.status}` : "no_answer"), layer3_months: val.months, layer3_valid: val.valid, layer3_errors: val.errors,
           layer3_exact: l3Score.exact, invented_months: l3Score.invented, missed_months: l3Score.missed,
           quotes: answer?.quotes ?? null, raw_answer: answer, input_tokens: input, output_tokens: output, cost_usd: cost, latency_ms: latency, external_calls: calls,
+          safety_blockers: blockers.map((b) => b.code), gold_set: goldSet,
         };
         if (err === "budget_cap_reached" && !calls) return; // not recorded: the case was never run
         await rpc("layer3_intake_benchmark_result_record_service", { p_run_label: runLabel, p_case_id: c.case_id, p_result: row });
-        rows.push({ case_key: c.case_key, gold, layer2: l2, layer2_exact: l2Score.exact, layer3: { status: row.layer3_status, months: val.months, valid: val.valid, errors: val.errors }, layer3_exact: l3Score.exact, invented: l3Score.invented, missed: l3Score.missed, cost });
+        rows.push({ case_key: c.case_key, safety: blockers.map((b) => b.code), gold, layer2: l2, layer2_exact: l2Score.exact, layer3: { status: row.layer3_status, months: val.months, valid: val.valid, errors: val.errors }, layer3_exact: l3Score.exact, invented: l3Score.invented, missed: l3Score.missed, cost });
       });
       const l2Summary = summarise(rows.map((r) => ({ gold: r.gold, predicted: { status: r.layer2.length ? "months" : "not_stated", months: r.layer2 } })));
       const l3Summary = summarise(rows.map((r) => ({ gold: r.gold, predicted: { status: r.layer3.valid ? r.layer3.status : null, months: r.layer3.months } })));
-      return j(200, { ok: true, mode, worker_version: V, run_label: runLabel, binding_hash: binding, cases_run: rows.length, stopped_for_budget: stoppedForBudget,
+      return j(200, { ok: true, mode, worker_version: V, run_label: runLabel, gold_set: goldSet, gold_digest: set.frozen_digest, model, binding_hash: binding, cases_run: rows.length, stopped_for_budget: stoppedForBudget,
         spent_usd_total: spent, returned_models: [...models], layer2: l2Summary, layer3: l3Summary, rows: rows.sort((a, b) => String(a.case_key).localeCompare(String(b.case_key))), ms: Date.now() - t0 });
     }
-    return j(422, { ok: false, error: "supported modes: excerpts, run, finalise", worker_version: V });
+    return j(422, { ok: false, error: "supported modes: excerpts, verify, run, finalise", worker_version: V });
   } catch (e) {
     return j(500, { ok: false, error: String((e as Error)?.message || e), worker_version: V });
   }

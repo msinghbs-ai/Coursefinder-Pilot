@@ -10,7 +10,12 @@
 
 // v1.1.0: fields are answered in reading order (rationale, quotes, months, status). With status first (v1.0.0) the
 // pinned model answered not_stated on every stated case even where its own rationale named the months (run r1).
-export const INTAKE_VALIDATOR_VERSION = "cf247-intake-validation-v1.1.0";
+// v1.2.0 (requalification): a deterministic safety rule forces not_stated before and after the model when the page
+// says the course is not open to student visa holders / international students or has no current or upcoming
+// intake; up to 12 verbatim quotes (long date lists); prompt rules 8-9 of v1.1.0 (written after reading the first
+// gold set) removed - rule 8 is now enforced in code, rule 9 was specific to one page.
+export const INTAKE_VALIDATOR_VERSION = "cf247-intake-validation-v1.2.0";
+export const MAX_QUOTES = 12;
 
 export const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const MONTH_ABBR = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
@@ -22,10 +27,8 @@ Rules:
 3. Do not convert terms such as "Semester 1", "Trimester 2", "Term 3" or "Study Period 4" into months. If the page gives only such terms and no month, the answer is not_stated.
 4. If the page separates domestic and international intakes, report only the international ones. If a month is stated as not available to international students, leave it out. If intakes are listed per campus, location or study mode, report every month listed for any option open to international students.
 5. If no start month is stated for this course, return status "not_stated" with months [].
-6. quotes: one to four short passages copied exactly, character for character, from the text, which together name every month you report. Use an empty list only for not_stated.
+6. quotes: one to twelve short passages copied exactly, character for character, from the text, which together name every month you report. Use an empty list only for not_stated.
 7. months: integers 1 to 12, ascending, no duplicates.
-8. If the page says the course is suspended, closed, not accepting applications or enrolments, has no current or further intakes, or is not available to international students or student visa holders, return not_stated.
-9. General explanations that are not about this course (for example a glossary saying most courses start in February) are not intakes of this course.
 Answer the fields in order: rationale (what the page says about when this course starts), then quotes, then months, then status ("months" when you report at least one month, otherwise "not_stated").`;
 
 export const INTAKE_RESPONSE_SCHEMA = {
@@ -110,7 +113,7 @@ export function validateIntakeAnswer(r: any, text: string) {
   if (status === "months") {
     if (!months.length) errors.push("months_required_for_status_months");
     if (!quotes.length) errors.push("quote_required");
-    if (quotes.length > 4) errors.push("too_many_quotes");
+    if (quotes.length > MAX_QUOTES) errors.push("too_many_quotes");
     for (const q of quotes) if (!quoteInText(q, text)) { errors.push("quote_not_in_page_text"); break }
     const quoted = new Set(monthsWritten(quotes.join(" \n ")));
     if (months.some((m) => !quoted.has(m))) errors.push("month_not_in_quotes");
@@ -118,6 +121,33 @@ export function validateIntakeAnswer(r: any, text: string) {
   if (status === "not_stated" && months.length) errors.push("not_stated_with_months");
   const valid = errors.length === 0;
   return { valid, errors, status: valid ? status : null, months: valid && status === "months" ? months : [], quotes };
+}
+
+// Deterministic safety rule (applied before the model is called and again to any accepted answer). Narrow on purpose:
+// only whole-course statements. A partial restriction ("Trimester 3 ... is not available to international students",
+// "Online programs are not available to Student visa holders") does not match, because each pattern needs the course
+// itself as the subject, or the bare statement as its own line/sentence.
+export const INTAKE_SAFETY_RULES: { code: string; re: RegExp }[] = [
+  // "This course is not available to international students" / "The program is not open to student visa holders"
+  { code: "course_not_open_to_international", re: /\b(?:this|the) (?:course|program(?:me)?|degree|qualification) is not (?:available|open|offered) to (?:international students|overseas students|student visa holders|students on a student visa)\b/i },
+  // a stand-alone label or sentence: "Not available to student visa holders." The capital N is required (page text is
+  // whitespace-collapsed, so a label reads "... (Available part-time) Not available to ..."); "are not available to" never matches.
+  { code: "not_available_to_student_visa_holders", re: /(?:^|[\s.!?:)])Not (?:available|open) to (?:student visa holders|international students)\b/ },
+  // no current or upcoming intake: closed, suspended or not offered
+  { code: "no_current_intake", re: /\bNo current intake\b|\bno (?:further|future|upcoming) intakes?\b|\bnot (?:currently )?accepting (?:new )?(?:applications|enrolments|enrollments)\b|\b(?:course|program(?:me)?|degree) (?:has been|is|was) (?:suspended|discontinued)\b|\b(?:course|program(?:me)?|degree) is no longer (?:offered|available)\b/i },
+];
+export function intakeSafetyBlockers(text: string): { code: string; quote: string }[] {
+  const out: { code: string; quote: string }[] = [];
+  for (const r of INTAKE_SAFETY_RULES) {
+    const m = String(text ?? "").match(r.re);
+    if (m) out.push({ code: r.code, quote: m[0].trim().slice(0, 200) });
+  }
+  return out;
+}
+// Applied to any validated answer: a blocker turns an accepted months answer into not_stated (never the reverse).
+export function applyIntakeSafetyRule<T extends { valid: boolean; status: string | null; months: number[]; errors: string[] }>(val: T, blockers: { code: string }[]): T {
+  if (!blockers.length || val.status !== "months") return val;
+  return { ...val, status: "not_stated", months: [], errors: [...val.errors, ...blockers.map((b) => `safety_rule:${b.code}`)] };
 }
 
 // Case scoring against the gold answer. A rejected answer counts as an abstention (nothing admitted).
