@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.30 — 29 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.103** (complete-coverage statistics; UQ English requirements in Search).
+- Database (applied live): pipeline.course_attribute_coverage and pipeline.course_coverage_daily, security.course_coverage_build_v1 (hourly), admin_read operations course_coverage and course_coverage_courses; UQ English Search gate; double-degree higher-component rule.
+- Data Quality: new "Course coverage" view (#course-coverage).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.29 — 28 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.102** (Decision 162 step 1: badges from stored provenance; Decisions 161 and 162 cadence; Layer 2 discovery carry-forward).

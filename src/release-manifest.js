@@ -1,26 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.102'
-export const PACKAGE_VERSION='0.1.29'
+export const UI_VERSION='2.15.103'
+export const PACKAGE_VERSION='0.1.30'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'28 Sep 2026',
-  title:'Course attribute badges show where each value really came from',
+  date:'29 Sep 2026',
+  title:'Course coverage: every course accounted for, attribute by attribute',
   changes:[
-    'Course attribute badges now come from stored records: CRICOS values show L1, provider-page values L2, tuition checked by the AI shows L3 with the model name, and people\'s decisions L4. Hover a badge to see what resolved it.',
-    'Where a university has no provider tuition but CRICOS registered tuition exists, the course shows "CRICOS tuition applies" instead of "Awaiting L2".',
-    'Attributes that no Layer 2 source collects for that university show "Not collected" instead of waiting.',
-    'Provider course pages are refreshed every 90 days instead of weekly (Decision 162); tuition is read once per fee year.',
-    'Layer 2 course extraction works again: discovered course pages are kept when a profile\'s settings change (it had stopped on 26 Sep). RMIT\'s course refresh is switched back on (Decision 161).'
+    'New Data Quality view "Course coverage": every active Australian course has a state for each attribute (official course page, provider tuition, English, intakes, and the CRICOS registry values). States run from "course page not found yet" to "admitted". Filter by provider tier; select a count to list the courses.',
+    'Coverage is rebuilt every hour and kept as a daily trend.',
+    'UQ English requirements are in Search: Table 1 and Table 3 of the UQ English Language Proficiency Procedure cover 86 more UQ courses, including double degrees, which take the higher requirement of their component programs.'
   ],
-  bugFixes:[
-    'Tuition admitted by the Layer 3 AI (242 courses) was badged as Layer 2.',
-    '"Awaiting L3" was shown for course URL, description, intakes and English, which Layer 3 never handles.',
-    'Delivery mode showed "Awaiting L2" although CRICOS course locations give it.',
-    'The course page looked up Layer 2 results by course code alone instead of within the course\'s own provider.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
