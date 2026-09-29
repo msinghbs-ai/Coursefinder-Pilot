@@ -23,7 +23,7 @@ test('identity needs the CRICOS course code on the page or the exact course titl
 })
 
 test('tuition, English and intake candidates', async () => {
-  const { fee, english, intakes } = await load()
+  const { fee, english, intakes, intakeEvidence } = await load()
   const f = fee('International students: indicative annual fee A$42,500 (2027). Domestic CSP $8,948 per year.')
   expect(f.safe).toBe(true); expect(f.value).toBe(42500); expect(f.fee_year).toBe(2027)
   expect(f.basis).toBe('annual')
@@ -44,8 +44,17 @@ test('tuition, English and intake candidates', async () => {
   expect(english('PTE Academic requirements vary; see the English requirements page for 41 courses').pte_overall).toBeUndefined()
   expect(english('Pearson PTE: overall 58, writing 50').pte_overall).toBe(58)
   expect(english('TOEFL iBT (0-120): overall 79, writing 21').toefl_overall).toBe(79)
+  // v0.5.3: the number after "overall" only when no other words intervene; band score may come before "in each band"
+  expect(english('Academic IELTS 6.0 overall, no less than 5.5 in each band, or upper intermediate')).toMatchObject({ ielts_overall: 6, ielts_min_band: 5.5 })
+  expect(english('IELTS Listening 6.0 Reading 6.0 Writing 6.0 Speaking 6.0 Overall 6.5')).toMatchObject({ ielts_overall: 6.5 })
+  expect(english('IELTS: overall score of 6.5 with a minimum of 6.0 in all bands')).toMatchObject({ ielts_overall: 6.5, ielts_min_band: 6 })
+  expect(english('IELTS overall 7.0 (no band below 6.5)')).toMatchObject({ ielts_overall: 7, ielts_min_band: 6.5 })
   expect(intakes('Intakes: February and July each year. Semester starts in February.')).toEqual(['February', 'July'])
   expect(intakes('Semester dates may change; start dates may vary.')).toEqual([])
+  // v0.5.3: money, visa and deadline windows are not intakes; evidence snippet kept for review
+  expect(intakes('From May 2024, the 12-month living costs is: AUD 29,710')).toEqual([])
+  expect(intakes('Applications close in November for semester 1 fees')).toEqual([])
+  expect(intakeEvidence('Intakes: February and July each year.')[0]).toContain('February and July')
 })
 
 test('map filter keeps same-site course pages and drops the rest', async () => {
@@ -70,7 +79,7 @@ test('robots.txt is respected', async () => {
 
 test('worker and database contract: nothing written to the catalogue, budget guard counts sweep usage', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.2";')
+  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.3";')
   expect(w).toContain('identity(html, text, it.title, it.code, it.status === "ambiguous")')
   expect(w).not.toContain('svc_coursefacts_apply_record')
   expect(w).toContain('robotsAllows(')

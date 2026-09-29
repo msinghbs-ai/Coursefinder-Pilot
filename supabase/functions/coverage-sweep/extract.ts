@@ -58,11 +58,25 @@ export function fee(text: string) {
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 // Month names must be capitalised ("May" the month, not "may" the verb); the lead-in words are matched in any case.
+// Windows about money, visas, deadlines, holidays, exams or events are not intakes.
+const NOT_INTAKE = /(living cost|visa|fee|payment|tuition|deadline|clos(?:e|es|ing)|census|orientation|exam|holiday|break|results?|graduation|open day|webinar|event|updated|published|as of|from \w+ 20\d\d,)/i
+export function intakeEvidence(text: string) {
+  const lead = /(?:next intake|intakes?|commenc\w*|semester|trimester|start date|starts?)/gi
+  const out: string[] = []
+  for (const m of text.matchAll(lead)) {
+    const win = text.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 100).split(/[.!?]/)[0]
+    if (NOT_INTAKE.test(win) || !MONTHS.some((mon) => new RegExp(`\\b${mon}\\b`).test(win))) continue
+    out.push(clean(text.slice(Math.max(0, (m.index || 0) - 40), (m.index || 0) + m[0].length + win.length)).slice(0, 200))
+    if (out.length >= 3) break
+  }
+  return out
+}
 export function intakes(text: string) {
   const lead = /(?:next intake|intakes?|commenc\w*|semester|trimester|start date|starts?)/gi
   const found = new Set<string>()
   for (const m of text.matchAll(lead)) {
     const win = text.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 100).split(/[.!?]/)[0]
+    if (NOT_INTAKE.test(win)) continue
     for (const mon of MONTHS) if (new RegExp(`\\b${mon}\\b`).test(win)) found.add(mon)
   }
   return MONTHS.filter((m) => found.has(m))
@@ -70,16 +84,21 @@ export function intakes(text: string) {
 
 // IELTS overall only when the page says "overall" next to the score, or prints the IELTS row of a score table
 // (overall then four band scores). A score next to a single band ("7.0 in Writing") is never taken as overall.
-const BAND = /(?:no (?:individual |other )?(?:band|sub-?score|section|component)s?(?: score)? (?:less than|lower than|below|under)|\b(?:each|every|all) (?:sub-?)?bands?(?: of| at least)?|minimum (?:of )?(?:\d(?:\.\d)? )?in (?:each|all)|not less than)[^\d]{0,12}(\d(?:\.\d)?)/i
+const BAND = /(?:no (?:individual |other )?(?:band|sub-?score|section|component)s?(?: score)? (?:less than|lower than|below|under)|\b(?:each|every|all) (?:sub-?)?bands?(?: of| at least)?|minimum (?:of )?(?:\d(?:\.\d)? )?in (?:each|all)|not less than|no less than|(?:with )?(?:a )?minimum(?: score)? of)[^\d]{0,12}(\d(?:\.\d)?)/i
+// "5.5 in each band" / "6.0 or above in all sub-bands": the band score written before the words
+const BAND_PRE = /(\d(?:\.\d)?)\s*(?:or (?:above|higher|better)\s*)?(?:in|for|on) (?:each|every|all|any)(?: (?:of the )?(?:four )?)?(?:sub-?)?(?:bands?|sections?|components?|skills?|sub-?scores?)/i
 export function english(text: string) {
   const x: Record<string, unknown> = {}
   const ok = (v: number) => v >= 4 && v <= 9
   for (const m of text.matchAll(/IELTS/gi)) {
     const at = m.index || 0, win = text.slice(at, at + 220)
     const table = win.match(/^IELTS[^\d]{0,40}?(\d(?:\.\d)?)\s+(\d(?:\.\d)?)\s+(\d(?:\.\d)?)\s+(\d(?:\.\d)?)\s+(\d(?:\.\d)?)\b/i)
-    const over = win.match(/overall(?: band)?(?: score)?(?: of)?[^\d]{0,20}(\d(?:\.\d)?)/i) || win.match(/(\d(?:\.\d)?)(?: or (?:better|higher|above))?\s+overall/i)
+    // "overall 6.5" / "overall band score of 6.5" first (only these words between); then "6.5 (or better) overall".
+    // Never a number reached across other words ("6.0 overall, no less than 5.5 in each band" is 6.0, not 5.5).
+    const over = win.match(/overall(?:\s+band)?(?:\s+score)?(?:\s+(?:of|minimum|min\.?|at least|is|required|requirement))*\s*[:\-–=]?\s*(\d(?:\.\d)?)(?!\d)/i)
+      || win.match(/(\d(?:\.\d)?)(?:\s*\(?or (?:better|higher|above)\)?)?\s+overall/i)
     if (table && ok(+table[1])) { x.ielts_overall = +table[1]; const bands = [2, 3, 4, 5].map((i) => +table[i]).filter(ok); if (bands.length === 4) x.ielts_min_band = Math.min(...bands) }
-    else if (over && ok(+over[1])) { x.ielts_overall = +over[1]; const b = win.slice((over.index || 0) + over[0].length).match(BAND); if (b && ok(+b[1])) x.ielts_min_band = +b[1] }
+    else if (over && ok(+over[1])) { x.ielts_overall = +over[1]; const rest = win.slice((over.index || 0) + over[0].length); const b = rest.match(BAND) || rest.match(BAND_PRE); if (b && ok(+b[1]) && +b[1] <= +over[1]) x.ielts_min_band = +b[1] }
     else continue
     x.context = clean(text.slice(Math.max(0, at - 60), at + 220)).slice(0, 280)
     break
