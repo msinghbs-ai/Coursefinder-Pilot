@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.4.2')
+  expect(idx).toContain('scholarship-sweep-v0.4.3')
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
@@ -125,4 +125,16 @@ test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier
   expect(scholarshipLevels('Alumni Postgraduate Scholarship', 'Eligibility: be alumni who completed a degree at a Vietnam campus. This can include: an undergraduate degree or postgraduate degree.')).toEqual(['postgraduate_coursework'])
   expect(scholarshipLevels('Merit Award', 'Eligibility: applicants who have completed an undergraduate degree and enrol in a Master by Coursework.')).toEqual(['postgraduate_coursework'])
   expect(scholarshipLevels('Griffith University International Postgraduate Research Scholarship', '')).toEqual(['research'])
+})
+
+test('v0.4.3 step-1 hand-check fixes: value conditions, up to, stated value, name amount', async () => {
+  const { scholarshipValue } = await load()
+  const mq = 'Award value (Fee reduction) AUD $10,000 per year. AUD $5,000 credited each session. Be an international full fee-paying student. Must not be a recipient of a government sponsorship or scholarship that covers full tuition fees.'
+  expect(scholarshipValue(mq, 'ASEAN $10,000 Early Acceptance Scholarship')).toMatchObject({ type: 'fixed_amount', amount: 10000 })
+  expect(scholarshipValue(mq).type).not.toBe('percentage')
+  expect(scholarshipValue('The award may be up to 100% remission of the tuition fees.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Each year up to 50% tuition fee reduction is offered.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Minimum Value $10,000 available. Co-op students receive a $5,000 once-off scholarship bonus.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('An annual stipend to assist with general living costs: $38,310 from 2027 (currently $37,010 for 2026).')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Recipients receive 100% tuition fees covered, flights and a living allowance.')).toMatchObject({ type: 'percentage', percentage: 100 })
 })

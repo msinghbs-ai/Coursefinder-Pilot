@@ -67,26 +67,45 @@ export function scholarshipFaculties(body: string) {
 }
 
 // Award value: one clear percentage of tuition, one clear fixed amount, or full tuition. Tiers or mixed -> ambiguous.
-export function scholarshipValue(body: string) {
+// v0.4.3 (step-1 hand-check): "must not hold a scholarship that covers full tuition fees" is a condition, not the value
+// (Macquarie "$10,000" and "$5,000" scholarships were given 100%); "up to N%" is a maximum, not the value; "Value
+// $10,000" counts as a stated amount; stipend amounts are not dropped as living costs; one amount in the scholarship's own
+// name ("ASEAN $10,000 Early Acceptance Scholarship") that the page also states is the value.
+const FULL_TUITION = /\b(?:100\s?%|full)\s+(?:tuition|course)\s+fees?\b|\bfull[- ]tuition\b|\bfull fee (?:waiver|scholarship)\b/gi;
+function fullTuitionStated(t: string) {
+  for (const m of t.matchAll(FULL_TUITION)) {
+    const before = t.slice(Math.max(0, (m.index || 0) - 70), m.index || 0);
+    if (/\b(not|no|pay(?:s|ing)?|paid|recipients?|receiving|sponsor\w*|already|another|other|up to)\b[^.]{0,55}$/i.test(before)) continue;
+    return true;
+  }
+  return false;
+}
+export function scholarshipValue(body: string, name = "") {
   const t = body.slice(0, 6000);
+  const nameAmt = [...String(name).matchAll(/\$\s?(\d{1,3}(?:,\d{3})+|\d{3,6})\b/g)].map((m) => Number(m[1].replace(/,/g, "")));
+  if (nameAmt.length === 1 && nameAmt[0] >= 500 && new RegExp(`\\$\\s?${nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?")}(?![\\d,])`).test(t))
+    return { type: "fixed_amount", amount: nameAmt[0], currency: "AUD", basis: "scholarship_name", context: ctx(t, new RegExp(nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?"))) };
   // v0.4.2: full tuition only when no other percentage is stated (HonduFuturo: full tuition for PhD, 20% for coursework)
   const otherPct = [...t.matchAll(/(\d{1,3})\s?%/g)].map((m) => Number(m[1])).filter((v) => v >= 5 && v < 100);
-  if (/\b(?:100\s?%|full)\s+(?:tuition|course)\s+fees?\b|\bfull[- ]tuition\b|\bfull fee (?:waiver|scholarship)\b/i.test(t))
+  if (fullTuitionStated(t))
     return otherPct.length ? { type: "ambiguous", percentages: [...new Set([...otherPct, 100])].sort((a, b) => a - b), amounts: [] as number[] }
       : { type: "percentage", percentage: 100, applies_to: "tuition_fee", context: ctx(t, /full[- ]?(?:tuition|fee)|100\s?%/i) };
-  const pct = new Set<number>();
+  const pct = new Set<number>(); let upTo = false;
   for (const m of t.matchAll(/(\d{1,3})\s?%\s+(?:off\s+|of\s+)?(?:(?:your|the|annual|first[- ]year|total)\s+)*(?:tuition|course)\s+fees?|(\d{1,3})\s?%\s+(?:tuition\s+)?(?:fee\s+)?(?:reduction|remission|discount|waiver|scholarship)/gi)) {
     const v = Number(m[1] || m[2]); if (v >= 5 && v <= 100) pct.add(v);
+    if (/up to\s*$/i.test(t.slice(Math.max(0, (m.index || 0) - 12), m.index || 0))) upTo = true;
   }
   const amt = new Set<number>();
+  const stipend = /\bstipend\b/i.test(t);
   for (const m of t.matchAll(/(?:A\$|AUD\s?\$?|\$)\s?(\d{1,3}(?:,\d{3})+|\d{3,6})(?:\.\d{2})?/g)) {
     const at = m.index || 0, around = t.slice(Math.max(0, at - 90), at + 90).toLowerCase();
-    if (!/(scholarship|award|valued|worth|stipend|bursary|grant|per year|per annum|each year|one-off|one off)/.test(around)) continue;
-    if (/(living|accommodation|application fee|cost of|visa|oshc|health cover)/.test(around)) continue;
+    if (!/(scholarship|award|valued?|worth|stipend|bursary|grant|per year|per annum|each year|one-off|one off|once-off)/.test(around)) continue;
+    if (/(accommodation|application fee|cost of|visa|oshc|health cover)/.test(around) || (!stipend && /living/.test(around))) continue;
     const v = Number(m[1].replace(/,/g, "")); if (v >= 500 && v <= 200000) amt.add(v);
   }
   // any other percentage in the scholarship text (tiers by region, level or result) makes a single value unsafe
   const allPct = new Set<number>([...t.matchAll(/(\d{1,3})\s?%/g)].map((m) => Number(m[1])).filter((v) => v >= 5 && v <= 100))
+  if (upTo) return { type: "ambiguous", up_to: true, percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && allPct.size > 1) return { type: "ambiguous", percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && amt.size === 0) { const p = [...pct][0]; return { type: "percentage", percentage: p, applies_to: "tuition_fee", context: ctx(t, new RegExp(`${p}\\s?%`)) } }
   if (amt.size === 1 && pct.size === 0) { const a = [...amt][0]; return { type: "fixed_amount", amount: a, currency: "AUD", context: ctx(t, new RegExp(a.toLocaleString("en-AU").replace(/,/g, ",?"))) } }
@@ -118,7 +137,7 @@ export function scholarshipFacts(html: string, titleText: string, name: string) 
     levels: scholarshipLevels(titleText + " " + name, eligibility ?? body),
     levels_from: eligibility ? "eligibility" : "page",
     ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped } })(),
-    value: scholarshipValue(body),
+    value: scholarshipValue(body, name),
     deadline: scholarshipDeadline(body),
     international: /\binternational\b/i.test(titleText + " " + body.slice(0, 4000)),
     eligibility_excerpt: (() => { const at = body.search(/eligib/i); return at >= 0 ? clean(body.slice(at, at + 900)) : null })(),

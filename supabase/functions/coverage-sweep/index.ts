@@ -2,7 +2,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 import { admissionCheck, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.4.2";
+const SCH_VERSION = "scholarship-sweep-v0.4.3";
+// v0.4.3 (step-1 hand-check): conditions about other scholarships covering full tuition are not the value; "up to N%"
+// is a maximum (not applied); "Value $N" is a stated amount; stipend amounts kept; one amount in the scholarship's name
+// that the page states is the value; a discovered page must be about a scholarship (UWA research-project page) and a
+// web-search match must be a scholarship address or title.
 // v0.4.2 (hand-check of the first admitted pages): full tuition is a single value only when no other percentage is
 // stated; levels ignore excluded levels ("excluding Master by Research or PhD") and earlier study ("completed an
 // undergraduate degree").
@@ -259,6 +263,10 @@ Deno.serve(async (req) => {
         const hd = status === "read" ? pageHeadings(html) : null;
         const nc = hd ? { ...nameOnPage(it.name, hd.primary, providerTokens(it.names || []), hd.secondary), headings: hd, extractor: SCH_VERSION } : null;
         if (status === "read" && !nc!.ok) { status = "name_mismatch"; facts = { name_check: nc, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl } }
+        // a discovered page must be about a scholarship (a research-project page can carry the same title)
+        if (status === "read" && it.url_source === "discovered" && !/(scholarship|stipend|bursary|tuition|\baward|\bgrant|\bprize|fee (?:reduction|remission|discount|waiver))/i.test(mainText(html).slice(0, 8000))) {
+          status = "name_mismatch"; facts = { name_check: { ...nc, ok: false, basis: "not_a_scholarship_page" }, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl };
+        }
         if (status === "read") {
           const t = titleOf(html) + " " + h1Of(html);
           facts = { ...scholarshipFacts(html, t, it.name), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION, name_check: nc };
@@ -341,8 +349,10 @@ Deno.serve(async (req) => {
             const prov = providerTokens(it.names || []);
             const kept = res.map((x: any) => { let ok = false; try { const u = new URL(x.url); ok = onSite(u.hostname, hosts) && !/\.(pdf|docx?|xlsx?)(\?|$)|\/news|\/events?\//i.test(u.pathname) } catch { /* */ } return { ...x, kept: ok } });
             const pool2 = kept.filter((x: any) => x.kept);
-            let m: { url: string; basis: string } | null = matchScholarshipPage(it.name, pool2, prov);
-            if (!m) { const byTitle = pool2.filter((x: any) => nameOnPage(it.name, [x.title], prov).ok && keepScholarshipUrl(x.url, hosts)); if (byTitle.length === 1) m = { url: byTitle[0].url, basis: "search_title" } }
+            // v0.4.3: only scholarship addresses or scholarship titles (a research-project page can carry the same name)
+            const schPool = pool2.filter((x: any) => keepScholarshipUrl(x.url, hosts) || /scholarship|bursary|award|grant|prize|stipend/i.test(x.title || ""));
+            let m: { url: string; basis: string } | null = matchScholarshipPage(it.name, schPool, prov);
+            if (!m) { const byTitle = schPool.filter((x: any) => nameOnPage(it.name, [x.title], prov).ok && keepScholarshipUrl(x.url, hosts)); if (byTitle.length === 1) m = { url: byTitle[0].url, basis: "search_title" } }
             const rec = await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: r.ok ? (m ? "matched" : "no_match") : `http_${r.status}`, p_results: kept, p_match: m || {} });
             done.push({ scholarship_id: it.scholarship_id, results: res.length, match: m, matched: rec?.matched ?? false });
           } catch (e) {
