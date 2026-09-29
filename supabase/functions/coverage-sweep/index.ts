@@ -8,7 +8,8 @@ import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keep
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.5.4";
+const VERSION = "coverage-sweep-v0.5.4"; // extractor version (unchanged by v0.6.0 worker modes)
+const WORKER = "coverage-sweep-worker-v0.6.0";
 // v0.5.2: discovery drops requirement, scholarship and applying pages (pilot: RMIT inherent-requirements pages).
 // v0.5.1: PTE/TOEFL only when stated as overall or directly after the test name.
 // v0.5.0: English overall only when stated as overall or in a score table; minimum band after the overall; fee basis
@@ -134,6 +135,29 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, rows: rows.length, done, failed, ms: Date.now() - t0, workerVersion: VERSION });
     }
+    // v0.6.0 (Decision 163, Option A): tuition found on CRICOS-code pages goes to the qualified Layer 3 model.
+    // The stored page is turned into plain text (the qualified interpreter reads text evidence only), saved as its
+    // own evidence, and recorded as a Layer 2 run item with a Layer 3 work item. Nothing is admitted here.
+    if (mode === "tuition_handoff") {
+      const rows: { course_id: string; storage_path: string; url: string }[] = await rpc("svc_coverage_tuition_handoff_next", { p_limit: Math.min(Number(body.limit || 50), 100) });
+      let done = 0, failed = 0; const errors: string[] = [];
+      await pool(rows, 8, async (r) => {
+        try {
+          const { data, error } = await c.storage.from("evidence").download(r.storage_path);
+          if (error || !data) throw Error(error?.message || "missing");
+          const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+          const text = htmlToText(html);
+          if (text.length < 200) throw Error("page text too short");
+          const bytes = new TextEncoder().encode(text), hash = await sha256(bytes);
+          const path = `coverage-text/${r.course_id}/${hash.slice(0, 32)}.txt`;
+          const up = await c.storage.from("evidence").upload(path, bytes, { contentType: "text/plain", upsert: true });
+          if (up.error) throw Error("upload: " + up.error.message);
+          const res = await rpc("svc_coverage_tuition_handoff_record", { p_course_id: r.course_id, p_storage_path: path, p_content_hash: hash, p_bytes: bytes.length });
+          if (res?.queued) done++; else failed++;
+        } catch (e) { failed++; if (errors.length < 3) errors.push(e instanceof Error ? e.message : String(e)) }
+      });
+      return j({ ok: true, mode, rows: rows.length, done, failed, errors, ms: Date.now() - t0, workerVersion: VERSION });
+    }
     if (mode === "find_site") {
       const provs: { provider_id: string; name: string; trading: string | null; cricos: string }[] = await rpc("svc_coverage_site_next", { p_limit: Math.min(Number(body.limit || 5), 10) });
       const out: unknown[] = [];
@@ -213,7 +237,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
