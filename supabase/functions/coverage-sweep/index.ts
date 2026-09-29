@@ -8,7 +8,8 @@ import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllow
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.3.0";
+const VERSION = "coverage-sweep-v0.3.1";
+// v0.3.1: Firecrawl fallback only for bound pages; ambiguous pages are read directly only (low yield).
 // v0.3.0: ambiguous course pages are read too and accepted only with the CRICOS course code on the page; month
 // names in intakes must be capitalised.
 // v0.2.0: discovery reads the site's own XML site maps first (free), from the final address after redirects; Firecrawl
@@ -125,7 +126,7 @@ Deno.serve(async (req) => {
               if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) { html = await r.text(); via = "direct" }
             } catch { http = null }
             const thin = html && htmlToText(html).length < 1500;
-            if ((!html || thin) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
+            if ((!html || thin) && it.status === "bound" && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
               const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
               const d = await r.json().catch(() => ({}));
               if (r.ok && d?.data?.html) { html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
