@@ -25,7 +25,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
   test('Layer 1 is embedded and actionable, not a floating dialog',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Layer 1 — Operations')
-    await expect(page.getByRole('heading',{name:'Layer 1 — Operations'}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('heading',{name:'Layer 1 Register'}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.locator('.l1v2-page')).toBeVisible()
     await expect(page.locator('.l1v2-backdrop')).toHaveCount(0)
     await expect(page.getByRole('button',{name:/Refresh/i}).first()).toBeVisible()
@@ -36,7 +36,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Layer 2 — Enrichment')
     const workspace=page.getByLabel('Layer 2 Operations')
-    await expect(page.getByRole('heading',{name:'Layer 2 — Enrichment',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('heading',{name:'Layer 2 Discovery & reading',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(workspace).toHaveClass(/l2o-embedded/)
     await expect(workspace).toHaveAttribute('role','region')
     await expect(page.locator('.m-sidebar')).toBeVisible()
