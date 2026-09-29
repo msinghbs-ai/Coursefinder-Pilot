@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
+import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 
 // CF-247 complete coverage sweep (Platform Admin direction 29 Sep 2026). Nonce-only. Nothing is written to the
 // catalogue: discovery lists a provider's course-like pages, reading keeps each bound course page as evidence and
@@ -8,7 +8,7 @@ import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllow
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.5.2";
+const VERSION = "coverage-sweep-v0.5.4";
 // v0.5.2: discovery drops requirement, scholarship and applying pages (pilot: RMIT inherent-requirements pages).
 // v0.5.1: PTE/TOEFL only when stated as overall or directly after the test name.
 // v0.5.0: English overall only when stated as overall or in a score table; minimum band after the overall; fee basis
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
           if (error || !data) throw Error(error?.message || "missing");
           const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
           const text = htmlToText(html);
-          const cand = { final_url: r.url, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text), english: english(text), intakes: intakes(text), extractor: VERSION };
+          const cand = { final_url: r.url, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION };
           await rpc("svc_coverage_candidates_update", { p_course_id: r.course_id, p_candidates: cand }); done++;
         } catch { failed++ }
       });
@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
           path = `layer2/AU/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
           const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
           if (up.error) { path = null; sha = null }
-          candidates = identityBasis ? { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text), english: english(text), intakes: intakes(text), extractor: VERSION }
+          candidates = identityBasis ? { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION }
                                      : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200) };
         }
         await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: status, p_http_status: http, p_fetched_via: via, p_identity_basis: identityBasis, p_storage_path: path, p_sha256: sha, p_candidates: candidates });
