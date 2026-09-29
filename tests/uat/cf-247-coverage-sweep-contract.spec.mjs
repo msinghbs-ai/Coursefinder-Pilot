@@ -26,11 +26,24 @@ test('tuition, English and intake candidates', async () => {
   const { fee, english, intakes } = await load()
   const f = fee('International students: indicative annual fee A$42,500 (2027). Domestic CSP $8,948 per year.')
   expect(f.safe).toBe(true); expect(f.value).toBe(42500); expect(f.fee_year).toBe(2027)
+  expect(f.basis).toBe('annual')
+  expect(fee('Fee summary 2027 indicative fees International: Full-fee places: AU$31,680 (2027 total) Additional expenses').basis).toBe('total')
+  expect(fee('International students: The total indicative fee for 2026 commencement is AU$25,250 . View tuition fees').basis).toBe('total')
+  expect(fee('International student Fees A$109328 Duration 4 Years').basis).toBeNull()
   expect(fee('Application fee $150 only').value).toBeNull()
   expect(fee('Domestic students: $9,000 student contribution').safe).toBe(false)
   expect(english('IELTS Academic overall 6.5 with no band less than 6.0; PTE Academic 58; TOEFL iBT 79'))
     .toMatchObject({ ielts_overall: 6.5, ielts_min_band: 6, pte_overall: 58, toefl_overall: 79 })
-  expect(english('Contact us on 1300 IELTS')).toEqual({})
+  expect(english('Contact us on 1300 IELTS')).toEqual({ ielts_unclear: true })
+  // pilot findings 29 Sep 2026
+  expect(english('IELTS Academic (or equivalent) with a minimum 7.0 in Writing and no other band less than 6.5')).toEqual({ ielts_unclear: true })
+  expect(english('IELTS Academic / One Skill Retake: 7.0 or better overall with no subscore below 6.5 PTE Academic: 66 or better')).toMatchObject({ ielts_overall: 7, ielts_min_band: 6.5, pte_overall: 66 })
+  expect(english('IELTS overall band of 6.5 (Academic Module) with no individual band below 6.0')).toMatchObject({ ielts_overall: 6.5, ielts_min_band: 6 })
+  expect(english('English Test Overall Score Reading Writing Listening Speaking IELTS Academic 6.5 6.0 6.0 6.0 6.0 UOW College')).toMatchObject({ ielts_overall: 6.5, ielts_min_band: 6 })
+  expect(english('IELTS Academic: overall 6.5, writing 6.0 TOEFL iBT (0-120): overall 79, writing 21')).toMatchObject({ ielts_overall: 6.5, toefl_overall: 79 })
+  expect(english('PTE Academic requirements vary; see the English requirements page for 41 courses').pte_overall).toBeUndefined()
+  expect(english('Pearson PTE: overall 58, writing 50').pte_overall).toBe(58)
+  expect(english('TOEFL iBT (0-120): overall 79, writing 21').toefl_overall).toBe(79)
   expect(intakes('Intakes: February and July each year. Semester starts in February.')).toEqual(['February', 'July'])
   expect(intakes('Semester dates may change; start dates may vary.')).toEqual([])
 })
@@ -42,6 +55,7 @@ test('map filter keeps same-site course pages and drops the rest', async () => {
   expect(keepUrl({ url: 'https://www.example.edu.au/news/bachelor-of-science-launch' }, 'www.example.edu.au')).toBe(false)
   expect(keepUrl({ url: 'https://www.other.com.au/courses/bachelor' }, 'www.example.edu.au')).toBe(false)
   expect(keepUrl({ url: 'https://www.example.edu.au/files/diploma.pdf' }, 'www.example.edu.au')).toBe(false)
+  expect(keepUrl({ url: 'https://www.rmit.edu.au/study-with-us/applying-to-rmit/local-student-applications/entry-requirements/inherent-requirements/bachelor-of-photography' }, 'www.rmit.edu.au')).toBe(false)
 })
 
 test('robots.txt is respected', async () => {
@@ -56,7 +70,7 @@ test('robots.txt is respected', async () => {
 
 test('worker and database contract: nothing written to the catalogue, budget guard counts sweep usage', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const VERSION = "coverage-sweep-v0.4.0";')
+  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.2";')
   expect(w).toContain('identity(html, text, it.title, it.code, it.status === "ambiguous")')
   expect(w).not.toContain('svc_coursefacts_apply_record')
   expect(w).toContain('robotsAllows(')
