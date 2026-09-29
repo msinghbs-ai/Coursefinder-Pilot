@@ -45,6 +45,8 @@ const WORKER = "coverage-sweep-worker-v0.8.0";
 // home page prints the provider's CRICOS provider code; directories and registers skipped.
 // v0.3.2: a script-only page read directly while the Firecrawl reserve is reached is "needs_render" (retried after the
 // budget resets), never an identity mismatch.
+// v0.6.1 (30 Sep 2026, Platform Admin: maximum data for top universities): the Firecrawl fallback also covers ambiguous
+// pages of the 100 largest providers (read_next marks them priority); identity is still the CRICOS code on the page.
 // v0.3.1: Firecrawl fallback only for bound pages; ambiguous pages are read directly only (low yield).
 // v0.3.0: ambiguous course pages are read too and accepted only with the CRICOS course code on the page; month
 // names in intakes must be capitalised.
@@ -430,7 +432,7 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, pages: out, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
     if (mode === "read") {
-      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
+      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const tally: Record<string, number> = {};
       await pool(items, 8, async (it) => {
         if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_identity_basis: null, p_storage_path: null, p_sha256: null, p_candidates: null }); return }
@@ -445,7 +447,7 @@ Deno.serve(async (req) => {
               if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) { html = await r.text(); via = "direct" }
             } catch { http = null }
             const thin = html && htmlToText(html).length < 1500;
-            if ((!html || thin) && it.status === "bound" && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
+            if ((!html || thin) && (it.status === "bound" || it.priority === true) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
               const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
               const d = await r.json().catch(() => ({}));
               if (r.ok && d?.data?.html) { html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
