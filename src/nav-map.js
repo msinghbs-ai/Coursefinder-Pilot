@@ -41,11 +41,9 @@ export const PAGES = {
     { key: 'operations', label: 'Runs', min: 4 },
     { key: 'profiles', label: 'Source profiles', min: 4 },
   ] },
-  layer3: { label: 'Layer 3 AI validation', slug: 'layer-3-ai', icon: 'ai', subtitle: 'Which AI model checks what, how well it tested, and what it costs.', tabs: [
-    { key: 'routing', label: 'Routing', min: 3 },
-    { key: 'models', label: 'Models & profiles', min: 3 },
-    { key: 'tests', label: 'Test results', min: 3 },
-    { key: 'spend', label: 'Spend', min: 3 },
+  layer3: { label: 'Layer 3 AI validation', slug: 'layer-3-ai', icon: 'ai', subtitle: 'Run or pause each task, set its daily limit and choose the model cascade.', tabs: [
+    { key: 'routing', label: 'Control', min: 3 },
+    { key: 'models', label: 'Models', min: 3 },
     { key: 'work', label: 'Work queue', min: 3 },
   ] },
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', min: 3, subtitle: 'Decisions that need a person, with an audit trail.' },

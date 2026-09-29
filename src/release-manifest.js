@@ -1,25 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.107'
-export const PACKAGE_VERSION='0.1.34'
+export const UI_VERSION='2.15.108'
+export const PACKAGE_VERSION='0.1.35'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'29 Sep 2026',
-  title:'Simpler menu, one page layout, Platform health, Layer 3 at a glance, sources side by side',
+  title:'Layer 3 control: run or pause, daily limits and the model cascade',
   changes:[
-    'The menu has five plain sections: Catalogue, Data pipeline, Operations, Platform settings and Administration. Screens that were near-duplicates are now tabs of one page (for example Jobs and Schedules, Providers and Campuses, Rankings, Compare, QILT and PRISMS). Old links still open the right page.',
-    'Every screen now sits inside the same frame: the same side menu, top bar, page title and tabs. Coverage & completeness no longer opens as a separate full-screen view with its own menu.',
-    'New Platform health page (Operations): overall status, open issues by area, every automatic check and the last 14 days. A coloured dot in the top bar and the menu shows the status at a glance.',
-    'Layer 3 AI validation is one page with tabs: Routing (the model used for each task, today\'s calls and spend), Models & profiles (active, candidates, retired), Test results (stated exact, wrong admitted, withheld, cost) and Spend (per day and profile against ceilings). The existing work queue is its own tab.',
-    'Scholarship detail shows the provider\'s own page next to Study Australia, and course detail shows the provider page next to the regulator (CRICOS). Values that differ are highlighted; both sources are kept.',
-    'Environment & integrations lists the external services (configured or not), stored keys by name only, and usage against budgets.'
+    'Layer 3 AI validation now has three tabs: Control, Models and Work queue.',
+    'Control shows each task (intakes, English requirements, tuition) with Running or Paused, today\'s spend against its daily limit, the last 24 hours and what is waiting for a person.',
+    'Each task shows its model cascade in order, cheapest first: the test score, cost per 1,000 pages, pages settled and passed up in the last 24 hours, and spot-check results.',
+    'Platform Admins can pause or run one task or all of them, change the daily limit, switch a step on or off, move it up or down, add a model that has passed its test, or remove one. Every change is logged under Recent changes.',
+    'Models lists only the models in use or qualified to be used; models that failed their tests or were never tested are no longer shown.'
   ],
   bugFixes:[
-    'Coverage & completeness did not show the main menu and had a different sub-menu.',
-    'The scheduled-workflow builder only appeared on the old Scheduled Tasks address, not on the Schedules tab.',
-    'Layer 3 cost ceilings read "$US$0.0500" (doubled currency sign).'
+    'The Routing tab showed one model per task and did not show the cascade models (for example Mistral Small and Claude Haiku).',
+    'The Work queue repeated a long list of every model profile ever set up.',
+    'There was no way to pause Layer 3 or change its models from the admin screens.'
   ]
 }
 
