@@ -1,0 +1,46 @@
+{
+  "captured_at": "2026-09-29T08:03:02.072Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-courses.png",
+      "route": "courses",
+      "action": null,
+      "clicked": true,
+      "heading": "Courses",
+      "settle_ms": 2769,
+      "height": 2643,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#courses"
+    },
+    {
+      "file": "02-courses-university-group.png",
+      "route": "courses",
+      "action": "University group",
+      "clicked": true,
+      "heading": "Courses",
+      "settle_ms": 2263,
+      "height": 2643,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#courses"
+    },
+    {
+      "file": "03-providers.png",
+      "route": "providers",
+      "action": null,
+      "clicked": true,
+      "heading": "Providers",
+      "settle_ms": 1,
+      "height": 2541,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#providers"
+    },
+    {
+      "file": "04-providers-university-group.png",
+      "route": "providers",
+      "action": "University group",
+      "clicked": true,
+      "heading": "Providers",
+      "settle_ms": 3019,
+      "height": 3093,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#providers"
+    }
+  ]
+}
