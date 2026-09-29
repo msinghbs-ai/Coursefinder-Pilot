@@ -69,8 +69,8 @@ test('focused evidence keeps intake windows of long pages and whole short pages'
 
 test('benchmark function and migration activate nothing', () => {
   const fn = fs.readFileSync('supabase/functions/layer3-intake-benchmark/index.ts', 'utf8')
-  const sql = fs.readFileSync('supabase/migrations/20260929200000_cf247_intake_layer3_benchmark.sql', 'utf8')
-  const gold = fs.readFileSync('supabase/migrations/20260929201000_cf247_intake_benchmark_gold.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations/20260929211000_cf247_intake_layer3_benchmark.sql', 'utf8')
+  const gold = fs.readFileSync('supabase/migrations/20260929212000_cf247_intake_benchmark_gold.sql', 'utf8')
   // nonce-only, pinned model, paused profile, json_schema strict, provider routing control only
   expect(fn).toContain('svc_pilot_consume_nonce')
   expect(fn).toContain('intake profile must be paused during benchmark')
@@ -94,7 +94,7 @@ test('benchmark function and migration activate nothing', () => {
 })
 
 test('gold set: at least 40 cases over at least 15 providers, each months answer backed by an excerpt', () => {
-  const gold = fs.readFileSync('supabase/migrations/20260929201000_cf247_intake_benchmark_gold.sql', 'utf8')
+  const gold = fs.readFileSync('supabase/migrations/20260929212000_cf247_intake_benchmark_gold.sql', 'utf8')
   const rows = [...gold.matchAll(/^\s*\('([a-z0-9-]+)','([0-9a-f-]{36})','([0-9a-f]{64})','(months|not_stated)','\{([0-9,]*)\}',(?:\$x\$([\s\S]*?)\$x\$|null),'(l2_[a-z_]+)'/gm)]
   expect(rows.length).toBeGreaterThanOrEqual(40)
   const providers = new Set(rows.map((r) => r[1].split('-')[0]))
