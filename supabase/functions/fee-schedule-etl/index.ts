@@ -7,7 +7,9 @@ import { parseUqTable1, parseUqTable3Minimum } from "./elp.ts";
 // v0.1.0: inspect mode only — fetch a schedule from an allow-listed university host and return its text laid out
 // as rows (grouped by line, ordered left to right), so each provider's parser rule is written against the real
 // document. Nothing is written. Invoked only with a one-time Pilot nonce.
-const VERSION = "fee-schedule-etl-v0.7.1";
+const VERSION = "fee-schedule-etl-v0.8.0";
+// v0.8.0: check_documents - fetch every registered fee schedule and English table and record its SHA-256
+// (svc_provider_document_check_record); a changed document is marked for review, nothing is applied.
 // v0.7.1: English table section headers matched in upper case only ("Higher Degree by Research ..." is a program).
 // v0.7.0: English requirement tables (Decision 162 step 4). elp_dry_run parses the provider's higher-than-minimum
 // table and minimum-entry table and returns the full reconciliation (svc_english_table_preview); elp_apply stores
@@ -156,6 +158,23 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, schedule: t(body.schedule), label: sc.label, url: sc.url, sha256: sha, bytes: b.length, numPages: d.numPages,
         parsedRows: parsed.rows.length, rejectedRows: parsed.rejected.length, rejectedSample: parsed.rejected.slice(0, 8), preview, workerVersion: VERSION });
     }
+    if (mode === "check_documents") {
+      const docs: [string, string][] = [...Object.entries(SCHEDULES).map(([k, v]) => [k, v.url] as [string, string]),
+        ...Object.entries(ENGLISH_TABLES).flatMap(([k, v]) => [[`${k}:table1`, v.table1], [`${k}:table3`, v.table3]] as [string, string][])];
+      const results: unknown[] = [];
+      for (const [key, url] of docs) {
+        let sha: string | null = null, http: number | null = null, note: string | null = null;
+        try {
+          const r = await fetch(url, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/document-check-0.8" }, signal: AbortSignal.timeout(30000) });
+          http = r.status;
+          if (r.ok) { const b = new Uint8Array(await r.arrayBuffer()); sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("") }
+          else note = `HTTP ${r.status}`;
+        } catch (e) { note = e instanceof Error ? e.message : String(e) }
+        const { data, error } = await c.rpc("svc_provider_document_check_record", { p_doc_key: key, p_url: url, p_sha256: sha, p_http_status: http, p_note: note });
+        results.push({ key, http, changed: error ? null : data?.changed, error: error?.message || note });
+      }
+      return j({ ok: true, mode, documents: results.length, changed: results.filter((r: any) => r.changed).length, results, workerVersion: VERSION });
+    }
     if (mode === "elp_dry_run" || mode === "elp_apply") {
       const et = ENGLISH_TABLES[t(body.table)];
       if (!et) throw Error("unknown English table; registered: " + Object.keys(ENGLISH_TABLES).join(", "));
@@ -191,7 +210,7 @@ Deno.serve(async (req) => {
       }
       return j({ ok: true, mode, table: t(body.table), label: et.label, sha256: { table1: d1.sha, table3: d3.sha }, parse, preview, workerVersion: VERSION });
     }
-    if (mode !== "inspect") throw Error("supported modes: inspect, dry_run, apply, elp_dry_run, elp_apply");
+    if (mode !== "inspect") throw Error("supported modes: inspect, dry_run, apply, elp_dry_run, elp_apply, check_documents");
     const u = new URL(t(body.url));
     if (!allowed(u)) throw Error("address must be https on an allow-listed university host");
     const r = await fetch(u, { redirect: "follow", headers: { "user-agent": "CourseFinder-Pilot/fee-schedule-0.1" } });

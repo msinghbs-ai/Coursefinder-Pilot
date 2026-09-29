@@ -135,7 +135,7 @@ function DataQualityWorkspace({rank,role}){
     <main className="dq-main">
       <header className="dq-topbar">
         <div><div className="dq-eyebrow">Layer-aware data quality · AU/NZ operational gate</div><h1>{coverage?'Course coverage':selected?'Exceptions & decision context':'Data Quality & Readiness'}</h1><p>{coverage?'Every active Australian course, accounted for attribute by attribute (Layer 1 register and Layer 2 provider sources).':selected?`${selected.label} · ${ENTITY_LABEL[selected.entity_type]} · ${STATE_LABEL[selected.state]}`:'Completeness is shown by governed domain, not as one equal-weight product score.'}</p></div>
-        <div className="dq-actions"><label>Scope<select value={country} onChange={e=>setCountry(e.target.value)}><option value="">AU + NZ</option><option value="AU">Australia</option><option value="NZ">New Zealand</option></select></label><button className="dq-icon" title="Refresh" onClick={loadOverview} disabled={busy}><RefreshCw size={17}/></button><button className="dq-secondary" onClick={()=>goAdmin()}><ArrowLeft size={16}/>Admin</button></div>
+        <div className="dq-actions">{!coverage&&<label>Scope<select value={country} onChange={e=>setCountry(e.target.value)}><option value="">AU + NZ</option><option value="AU">Australia</option><option value="NZ">New Zealand</option></select></label>}{!coverage&&<button className="dq-icon" title="Refresh" onClick={loadOverview} disabled={busy}><RefreshCw size={17}/></button>}<button className="dq-secondary" onClick={()=>goAdmin()}><ArrowLeft size={16}/>Admin</button></div>
       </header>
 
       {error&&<div className="dq-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}

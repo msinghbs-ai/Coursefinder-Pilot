@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.31 — 29 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.104** (complete-coverage sweep, website discovery, document change checks, Layer 3 throughput).
+- Database (applied live): coverage sweep tables and services (discover, bind v2 one-to-one, read, find_site), coverage states candidate/blocked/page_found from the sweep, Firecrawl budget guard counts sweep usage, provider document checks, Layer 3 profile 15,000/day; schedules coverage-discover, coverage-bind, coverage-read, coverage-find-site, provider-document-check-monthly/-weekly-q4.
+- Edge functions: coverage-sweep v0.4.0 (new), fee-schedule-etl v0.8.0.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.30 — 29 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.103** (complete-coverage statistics; UQ English requirements in Search).

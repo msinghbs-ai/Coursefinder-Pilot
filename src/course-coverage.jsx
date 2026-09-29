@@ -7,14 +7,14 @@ import{adminRead}from'./lib/supabase'
 // Colour: one blue ordinal ramp by pipeline stage (validated light, ordinal: steps 250/350/450/550/700).
 export const COVERAGE_STAGES=[
   {key:'admitted',label:'Admitted',states:['admitted'],color:'#0d366b'},
-  {key:'progress',label:'In review or AI check',states:['in_review','awaiting_l3'],color:'#1c5cab'},
+  {key:'progress',label:'Found, awaiting admission or review',states:['candidate','in_review','awaiting_l3'],color:'#1c5cab'},
   {key:'read',label:'Page read, not published',states:['not_on_page'],color:'#2a78d6'},
   {key:'found',label:'Page found or site blocked',states:['page_found','blocked'],color:'#5598e7'},
   {key:'unreached',label:'Course page not found yet',states:['site_known','no_website','missing_l1'],color:'#86b6ef'},
 ]
-const STATE_LABEL={admitted:'Admitted',in_review:'In human review (L4)',awaiting_l3:'Awaiting AI check (L3)',not_on_page:'Page read, not published',
+const STATE_LABEL={admitted:'Admitted',candidate:'Found on verified page (awaiting admission)',in_review:'In human review (L4)',awaiting_l3:'Awaiting AI check (L3)',not_on_page:'Page read, not published',
   blocked:'Site blocked',page_found:'Page found, not read',site_known:'Site known, page not found',no_website:'No website known',missing_l1:'Missing in CRICOS'}
-const STATE_ORDER=['admitted','in_review','awaiting_l3','not_on_page','blocked','page_found','site_known','no_website','missing_l1']
+const STATE_ORDER=['admitted','candidate','in_review','awaiting_l3','not_on_page','blocked','page_found','site_known','no_website','missing_l1']
 const ATTR={official_url:{label:'Official course page',layer:'Layer 2'},provider_tuition:{label:'Provider tuition (fee year)',layer:'Layer 2'},
   english:{label:'English requirements',layer:'Layer 2'},intakes:{label:'Intakes / start dates',layer:'Layer 2'},
   registered_tuition:{label:'Registered tuition (CRICOS)',layer:'Layer 1'},duration:{label:'Duration (CRICOS)',layer:'Layer 1'},campus:{label:'Campus (CRICOS)',layer:'Layer 1'}}
