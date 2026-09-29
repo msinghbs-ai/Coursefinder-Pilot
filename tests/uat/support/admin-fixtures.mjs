@@ -109,7 +109,7 @@ const tier = (tier, model, profile, right, cost, answered, up, final = false, ac
 export const layer3Control = {
   generated_at: now, can_control: true, credit: { remaining_usd: 19.08, observed_at: now },
   tasks: [
-    { task_class: 'provider_intake_validation', label: 'Intakes', running: true, cascade: true, daily_usd: 4, spent_today_usd: 4.06, in_review: 0, last_24h: { admitted: 98, not_stated: 222, to_review: 0, retrying: 265 },
+    { task_class: 'provider_intake_validation', label: 'Intakes', running: true, cascade: true, daily_usd: 4, spent_today_usd: 4.06, in_review: 17, last_24h: { admitted: 98, not_stated: 222, to_review: 0, retrying: 265 },
       tiers: [tier(1, 'qwen/qwen3-30b-a3b-instruct-2507', 'openrouter-intake-l3c-qwen3-30b-a3b-2507-v1', 83, 0.19, 19, 109), tier(2, 'anthropic/claude-haiku-4.5', 'openrouter-intake-l3r-claude-haiku-4-5-v1', 93.6, 3.69, 3, 106), tier(3, 'anthropic/claude-sonnet-4.6', 'openrouter-intake-l3r-claude-sonnet-4-6-v1', 93.6, 10.94, 298, 0, true)],
       addable: [] },
     { task_class: 'provider_english_validation', label: 'English requirements', running: true, cascade: true, daily_usd: 4, spent_today_usd: 4.05, in_review: 0, last_24h: { admitted: 349, not_stated: 248, to_review: 0, retrying: 247 },
@@ -128,4 +128,46 @@ export const dataFlags = {
     { id: 'f1', flag: 'tuition_period_assumed_annual', status: 'open', created_at: now, course_id: 'c1', course: 'Bachelor of Laws/Bachelor of Psychology', course_code: '0102000', provider: 'Edith Cowan University', amount: 54750, currency: 'AUD', basis: 'annual', fee_status: 'active', page_url: 'https://www.ecu.edu.au/example', quotes: ['International students - estimated 1st year indicative fee AUD $54,750'] },
     { id: 'f2', flag: 'tuition_period_assumed_annual', status: 'open', created_at: now, course_id: 'c2', course: 'Bachelor of Nursing', course_code: '0100001', provider: 'Example University', amount: 33600, currency: 'AUD', basis: 'annual', fee_status: 'active', page_url: null, quotes: ['Fee paying overseas: Full-time - $33,600.00 pa'] },
   ],
+}
+
+// Automations (shape of public.admin_automations_read, 29 Sep 2026)
+const lastOk = { at: now, status: 'succeeded', seconds: 1.9, message: null }
+export const automations = {
+  generated_at: now, rank: 5,
+  jobs: [
+    { job: 'coverage-read', area: 'Course pages', sort: 40, label: 'Read course pages', description: 'Fetches matched course pages and saves them as evidence.', schedule: '1-59/2 * * * *', active: true, control_rank: 5, batch: 60, last: lastOk, runs_24h: 720, failed_24h: 0 },
+    { job: 'coverage-discover', area: 'Course pages', sort: 20, label: 'Discover course pages', description: "Maps each provider's website to find its course pages.", schedule: '3-59/10 * * * *', active: false, control_rank: 5, batch: 8, last: { at: now, status: 'failed', seconds: 0.4, message: 'ERROR: canceling statement due to statement timeout' }, runs_24h: 144, failed_24h: 3 },
+    { job: 'layer3-intake-route', area: 'Layer 3 AI', sort: 10, label: 'AI check: intakes', description: 'Sends waiting pages through the intake model cascade.', schedule: '* * * * *', active: true, control_rank: 5, batch: 25, last: lastOk, runs_24h: 1440, failed_24h: 0 },
+    { job: 'course-completeness-build', area: 'Reports', sort: 10, label: 'Completeness score', description: 'Works out how complete each course and provider is.', schedule: '17 20 * * *', active: true, control_rank: 5, batch: null, last: lastOk, runs_24h: 1, failed_24h: 0 },
+    { job: 'cron-history-retention', area: 'Platform upkeep', sort: 40, label: 'Trim job history', description: 'Deletes job history older than 14 days.', schedule: '41 3 * * *', active: true, control_rank: 6, batch: null, last: lastOk, runs_24h: 1, failed_24h: 0 },
+  ],
+  events: [{ at: now, action: 'set_every', target: 'coverage-read', detail: { minutes: 2 } }],
+}
+
+// Send back to AI (shape of public.admin_requeue_read after 20260930052000)
+export const requeue = {
+  can_control: true,
+  groups: [
+    { field: 'provider_current_tuition_validation', reason: "The page doesn't clearly show [amount] as an annual tuition fee for international students. Please check the page and confirm the fee, or mark it as not available.", items: 178, oldest: now },
+    { field: 'provider_current_tuition_validation', reason: 'The page gives this fee for a different period (for example the total for the whole course), not per year. Please confirm the annual fee.', items: 23, oldest: now },
+    { field: 'course_intake', reason: "The AI's answer was not fully supported by the words it quoted from the page. Please check the page. Confirm the months this course starts for international students.", items: 12, oldest: now },
+  ],
+  stays_with_person: { official_course_url: 42, scope_resolution: 6, provider_current_tuition_validation: 5 },
+  layer3_failed: { provider_current_tuition_validation: 4 },
+  layer3_waiting: { provider_intake_validation: 219, provider_english_validation: 94, provider_current_tuition_validation: 566 },
+  events: [],
+}
+
+// Scholarship publishing (shape of public.admin_scholarship_publishing_read)
+export const scholarshipPublishing = {
+  can_control: true,
+  counts: { published: 124, eligible: 2, held: 1, active: 631 },
+  not_publishable_reasons: { 'no stated award value': 375, 'no provider page': 111, 'no linked course': 71 },
+  eligible: [
+    { id: 'e1', name: 'Doherty Supplementary Scholarship', provider: 'Australian National University', value: 'A$7,000', page: 'https://jcsmr.anu.edu.au/study/scholarships/doherty-supplementary-scholarship', courses: 290 },
+    { id: 'e2', name: 'Global Excellence Scholarship', provider: 'Example University', value: '25% of tuition', page: null, courses: 40 },
+  ],
+  held: [{ id: 'h1', name: 'Held Scholarship', provider: 'Example University', reason: 'Value on page is for domestic students', at: now }],
+  published: [{ id: 'p1', name: 'RMIT Irana Turynska Scholarship', provider: 'RMIT University', page: 'https://www.rmit.edu.au/scholarships/coursework/irana-turynska' }],
+  events: [],
 }

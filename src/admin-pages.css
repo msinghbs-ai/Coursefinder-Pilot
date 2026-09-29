@@ -111,3 +111,21 @@ td>.l3v-model{display:block}
 .sc-panel .cf-kv-table tbody th{text-transform:none;letter-spacing:0;font-size:var(--cf-fs-sm)}
 .sc-diff-tag{display:block;width:fit-content;margin:4px 0 0;text-transform:none;letter-spacing:0}
 .sc-diff-tag.is-one-sided{background:var(--cf-surface-3);color:var(--cf-text-2)}
+/* v2.15.110 control sweep: Automations, Send back to AI, Scholarship publishing */
+.au-search{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;background:var(--cf-surface);font:inherit;font-size:var(--cf-fs-sm);min-width:180px}
+.au-desc{display:block;font-size:var(--cf-fs-xs);color:var(--cf-text-2);margin-top:2px;max-width:420px}
+.au-error{display:block;font-size:var(--cf-fs-xs);color:var(--cf-danger);margin-top:2px;overflow-wrap:anywhere;max-width:320px}
+.au-controls{display:grid;gap:6px;min-width:190px}
+.au-controls .fv-input{max-width:none}
+.au-batch{display:flex;gap:6px;align-items:center}
+.au-batch .fv-input{max-width:80px}
+.sb-done{margin:var(--cf-space-2) 0 0;font-size:var(--cf-fs-sm);color:var(--cf-success)}
+.sp-publish{display:flex;gap:var(--cf-space-2);align-items:end;flex-wrap:wrap}
+.sp-publish label{display:grid;gap:4px;flex:1 1 320px}
+.sp-publish input{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:7px 9px;background:var(--cf-surface);font:inherit;font-size:var(--cf-fs-sm)}
+.au-table{table-layout:fixed;width:100%}
+.au-table th:nth-child(1){width:34%}.au-table th:nth-child(2){width:12%}.au-table th:nth-child(3){width:20%}.au-table th:nth-child(4){width:10%}.au-table th:nth-child(5){width:8%}.au-table th:nth-child(6){width:16%}
+.au-table tr.l3c-off td:last-child{opacity:1}
+.au-table td{overflow-wrap:anywhere}
+.au-controls{min-width:0}
+.sp-publish label small{font-size:var(--cf-fs-xs);font-weight:600;color:var(--cf-muted)}

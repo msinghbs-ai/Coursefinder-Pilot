@@ -15,7 +15,10 @@ export const PAGES = {
     { key: 'campuses', label: 'Campuses', min: 1 },
     { key: 'assets', label: 'Logos & assets', min: 4 },
   ] },
-  scholarships: { label: 'Scholarships', slug: 'scholarships', icon: 'scholarship', min: 1, subtitle: 'Scholarships and where each value came from.' },
+  scholarships: { label: 'Scholarships', slug: 'scholarships', icon: 'scholarship', subtitle: 'Scholarships, where each value came from, and what is published.', tabs: [
+    { key: 'list', label: 'Scholarships', min: 1 },
+    { key: 'publishing', label: 'Publishing', min: 3 },
+  ] },
   rankings: { label: 'Rankings & statistics', slug: 'statistics-rankings', icon: 'chart', subtitle: 'QILT, PRISMS, QS and THE data, and side-by-side comparison.', tabs: [
     { key: 'overview', label: 'Overview', min: 1 },
     { key: 'compare', label: 'Compare', min: 1 },
@@ -49,13 +52,15 @@ export const PAGES = {
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
     { key: 'review', label: 'Review queue', min: 3 },
     { key: 'flags', label: 'Flagged values', min: 3 },
+    { key: 'sendback', label: 'Send back to AI', min: 3 },
   ] },
 
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database.', tabs: [
     { key: 'checks', label: 'Health checks', min: 3 },
     { key: 'readiness', label: 'Readiness & capacity', min: 6 },
   ] },
-  jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Job history and the schedules that start them.', tabs: [
+  jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, job history and refresh schedules.', tabs: [
+    { key: 'automations', label: 'Automations', min: 4 },
     { key: 'jobs', label: 'Jobs', min: 4 },
     { key: 'schedules', label: 'Schedules', min: 4 },
   ] },

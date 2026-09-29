@@ -18,6 +18,12 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_data_flags_read: F.dataFlags,
     admin_data_flag_resolve: b => { calls.push(b); return F.dataFlags },
     admin_layer3_control: b => { calls.push(b); return F.layer3Control },
+    admin_automations_read: F.automations,
+    admin_automation_control: b => { calls.push(b); return F.automations },
+    admin_requeue_read: F.requeue,
+    admin_requeue: b => { calls.push(b); return { ...F.requeue, moved: 12 } },
+    admin_scholarship_publishing_read: F.scholarshipPublishing,
+    admin_scholarship_publishing: b => { calls.push(b); return F.scholarshipPublishing },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)
