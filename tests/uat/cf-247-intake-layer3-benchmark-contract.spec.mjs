@@ -112,5 +112,77 @@ test('answers are produced in reading order (rationale, quotes, months, status)'
   const { INTAKE_RESPONSE_SCHEMA, INTAKE_VALIDATOR_VERSION } = await load()
   expect(INTAKE_RESPONSE_SCHEMA.required).toEqual(['rationale', 'quotes', 'months', 'status'])
   expect(Object.keys(INTAKE_RESPONSE_SCHEMA.properties)).toEqual(['rationale', 'quotes', 'months', 'status'])
-  expect(INTAKE_VALIDATOR_VERSION).toBe('cf247-intake-validation-v1.1.0')
+  expect(INTAKE_VALIDATOR_VERSION).toBe('cf247-intake-validation-v1.2.0')
+})
+
+// ---- requalification (Platform Admin option 1) ----
+test('safety rule: narrow whole-course blockers force not_stated; partial restrictions do not', async () => {
+  const { intakeSafetyBlockers, applyIntakeSafetyRule, validateIntakeAnswer } = await load()
+  const codes = (t) => intakeSafetyBlockers(t).map((b) => b.code)
+  expect(codes('Duration 1 year full-time (Available part-time) Not available to student visa holders. Intake/s Check dates')).toEqual(['not_available_to_student_visa_holders'])
+  expect(codes('This course is not available to international students. Intakes: February')).toEqual(['course_not_open_to_international'])
+  expect(codes('Next start date &times; No current intake This program is not currently accepting new applications.')).toEqual(['no_current_intake'])
+  expect(codes('This program has been suspended from September 2024. There are no further intakes of students planned.')).toEqual(['no_current_intake'])
+  expect(codes('Notice Not Accepting Enrolments Entry Requirements')).toEqual(['no_current_intake'])
+  // partial restrictions and ordinary pages are not blockers
+  expect(codes('Online programs are not available to Student visa holders. Start Feb, Jul')).toEqual([])
+  expect(codes('Trimester 3 intake is part-time and online only, therefore is not available to International students studying in Australia on a student visa.')).toEqual([])
+  expect(codes('French This major is not available for students commencing in 2026.')).toEqual([])
+  expect(codes('Applications for 2026 are now closed. The next available intake will commence in Semester 1 2027')).toEqual([])
+  expect(codes('Intakes: February and July')).toEqual([])
+  // applied after the model: an accepted months answer becomes not_stated; never the reverse
+  const page = 'Not available to student visa holders. Starting date Semester 1 - February'
+  const v = validateIntakeAnswer({ status: 'months', months: [2], quotes: ['Semester 1 - February'], rationale: 'x' }, page)
+  expect(v).toMatchObject({ valid: true, status: 'months' })
+  expect(applyIntakeSafetyRule(v, intakeSafetyBlockers(page))).toMatchObject({ status: 'not_stated', months: [], errors: ['safety_rule:not_available_to_student_visa_holders'] })
+  const ns = { valid: true, status: 'not_stated', months: [], errors: [] }
+  expect(applyIntakeSafetyRule(ns, [])).toBe(ns)
+})
+
+test('up to 12 verbatim quotes; "every month except" stays rejected; tuned prompt rules removed', async () => {
+  const { validateIntakeAnswer, MAX_QUOTES, INTAKE_SYSTEM_PROMPT } = await load()
+  expect(MAX_QUOTES).toBe(12)
+  const dates = ['20 July 2026', '3 August 2026', '5 October 2026', '2 November 2026', '4 January 2027', '1 February 2027', '5 April 2027', '3 May 2027', '5 July 2027']
+  const page = 'Upcoming intakes ' + dates.join(' ')
+  expect(validateIntakeAnswer({ status: 'months', months: [1, 2, 4, 5, 7, 8, 10, 11], quotes: dates, rationale: 'x' }, page).valid).toBe(true)
+  expect(validateIntakeAnswer({ status: 'months', months: [7], quotes: Array(13).fill('20 July 2026'), rationale: 'x' }, page).errors).toContain('too_many_quotes')
+  const except = 'Intake Dates: Monthly intakes except June and December'
+  expect(validateIntakeAnswer({ status: 'months', months: [1, 2, 3, 4, 5, 7, 8, 9, 10, 11], quotes: [except], rationale: 'x' }, except).errors).toContain('month_not_in_quotes')
+  expect(INTAKE_SYSTEM_PROMPT).not.toMatch(/glossary|suspended|student visa holders/)
+  expect(INTAKE_SYSTEM_PROMPT).toContain('one to twelve short passages')
+})
+
+test('requalification migrations: frozen holdout, guarded replacements, nothing activated', () => {
+  const sql = fs.readFileSync('supabase/migrations/20260929220000_cf247_intake_requalify.sql', 'utf8')
+  const hold = fs.readFileSync('supabase/migrations/20260929221000_cf247_intake_holdout_gold.sql', 'utf8')
+  const dev = fs.readFileSync('supabase/migrations/20260929212000_cf247_intake_benchmark_gold.sql', 'utf8')
+  const fn = fs.readFileSync('supabase/functions/layer3-intake-benchmark/index.ts', 'utf8')
+  for (const s of [sql, hold]) {
+    expect(s).not.toMatch(/cron\.schedule|coverage_admission_apply_v1\s*\(|layer3_work_items|website_edge_|zoho|wix-|scholarship_read/i)
+    expect(s).not.toMatch(/paused\s*=\s*false|enabled\s*=\s*true/)
+  }
+  for (const [name, md5] of [['cases_service()', 'e7506c861179148f9a9ce3667a90c484'], ['profile_service()', '4378b41af1c7a3b811f1ab8a006a08d7'],
+    ['result_record_service(text,uuid,jsonb)', '53f6629f1d745013d1d5178f7840eb14'], ['finalise_service(text,jsonb,text)', 'e2b68a46f16e9661e6d46dc991165dde']])
+    expect(sql).toContain(`oid='public.layer3_intake_benchmark_${name}'::regprocedure)<>'${md5}'`)
+  expect(sql).toMatch(/'mistralai\/mistral-medium-3\.1'/)
+  expect(sql).toMatch(/false,true,jsonb_build_object\('state','pending_intake_benchmark'/)
+  // holdout: frozen with a recorded digest, no overlap with the development set (cases or providers)
+  const digest = (hold.match(/Frozen digest \(sha256\): ([0-9a-f]{64})/) || [])[1]
+  expect(digest).toBeTruthy()
+  expect(hold).toContain(`pipeline.layer3_intake_gold_digest('a3-holdout-1')<>'${digest}'`)
+  expect(hold).toContain(`values ('a3-holdout-1', 45, '${digest}'`)
+  const row = /^\s*\('([a-z0-9-]+)','([0-9a-f-]{36})','([0-9a-f]{64})','(months|not_stated)','\{([0-9,]*)\}',(?:\$x\$([\s\S]*?)\$x\$|null),'(l2_[a-z_]+)'/gm
+  const h = [...hold.matchAll(row)], d = [...dev.matchAll(row)]
+  expect(h.length).toBe(45)
+  expect(h.filter((r) => r[4] === 'months').length).toBeGreaterThanOrEqual(15)
+  expect(h.filter((r) => r[4] === 'not_stated').length).toBeGreaterThanOrEqual(15)
+  const devCourses = new Set(d.map((r) => r[2]))
+  expect(h.some((r) => devCourses.has(r[2]))).toBe(false)
+  expect(new Set(h.map((r) => r[1].split('-')[1])).size).toBeGreaterThanOrEqual(15)
+  for (const r of h) if (r[4] === 'months') expect((r[6] || '').length).toBeGreaterThan(5)
+  // runs are refused on an unfrozen or changed gold set; the safety rule runs before and after the model
+  expect(fn).toContain('is not frozen or has changed since it was frozen')
+  expect(fn).toMatch(/const attempts = blockers\.length \? 0/)
+  expect(fn).toContain('applyIntakeSafetyRule(validateIntakeAnswer(answer, text), blockers)')
+  expect(fn).toMatch(/safety_rules: INTAKE_SAFETY_RULES/)
 })
