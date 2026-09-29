@@ -1,12 +1,14 @@
 import React,{useEffect,useMemo,useRef,useState}from'react'
+import{StatusChip,EmptyRow as Empty}from'./ui-kit'
 import{Clock3,ExternalLink,Play,RefreshCw,Save,Search,Settings2,SlidersHorizontal,RotateCcw,X,ArrowLeft,ArrowRight}from'lucide-react'
 import{supabase,api}from'./lib/supabase'
 import ScheduledRuntimeHealth from'./ScheduledRuntimeHealth'
 import'./scheduled-jobs-config.css'
+import{fmtDateTime}from'./lib/format.js'
 
 const PAGE_SIZE=100
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,x=>x.toUpperCase())
-const when=v=>v?new Date(v).toLocaleString():'—'
+const when=v=>v?fmtDateTime(v):'—'
 const technicalTarget=x=>x?.entity_id?`${x.entity_type}:${x.entity_id}`:x?.source_profile_id?`profile:${x.source_profile_id}${x?.source_id?` · source:${x.source_id}`:''}`:x?.source_id?`source:${x.source_id}`:'UNBOUNDED'
 const targetLabel=x=>x?.source_profile_id?(x?.source_profile_key||x?.task_label||x?.source_label||technicalTarget(x)):(x?.source_label||x?.task_label||x?.source_profile_key||(x?.entity_id?`${human(x.entity_type||'entity')} target`:technicalTarget(x)!=='UNBOUNDED'?technicalTarget(x):'Scheduled task'))
 const creatorLabel=x=>x?.created_by_state==='former_user'?`Former user — ${x?.created_by_display||'unknown'}`:(x?.created_by_display||'System / legacy')
@@ -29,8 +31,8 @@ const COLUMN_DEFS={
 const DEFAULT_COLUMNS=['task','layer','country','target','pipeline','cadence','next','status','owner','createdBy','actions']
 const PREF_BASE='cf:scheduler:view:v1'
 
-function Status({value}){return <span className="cf-scheduler-v2__status" data-state={String(value||'').toLowerCase()}>{human(value||'unknown')}</span>}
-function Empty({colSpan,text}){return <tr><td colSpan={colSpan} className="cf-scheduler-v2__empty">{text}</td></tr>}
+function Status({value}){return <StatusChip value={value||'unknown'} label={human(value||'unknown')}/>}
+
 
 export default function ScheduledJobsWorkspace({onError}){
  const[data,setData]=useState({requests:[],search_signals:[]}),[policySet,setPolicySet]=useState({items:[],total:0}),[policyPage,setPolicyPage]=useState(0),[jobs,setJobs]=useState([]),[rank,setRank]=useState(0),[actorKey,setActorKey]=useState('default'),[hydratedActorKey,setHydratedActorKey]=useState(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[panelErrors,setPanelErrors]=useState({}),[editing,setEditing]=useState(null),[action,setAction]=useState('edit_schedule'),[form,setForm]=useState({cadence:'',nextDue:'',enabled:'',reason:''}),[query,setQuery]=useState(''),[columns,setColumns]=useState(DEFAULT_COLUMNS)
@@ -57,7 +59,7 @@ export default function ScheduledJobsWorkspace({onError}){
    layer:<td key={id}>Layer {p.layer}</td>,
    country:<td key={id}>{p.country_code||'—'}</td>,
    target:<td key={id}><strong>{targetLabel(p)}</strong><br/><small className="cf-scheduler-v2__technical">{technicalTarget(p)}</small></td>,
-   pipeline:<td key={id}>{Number(p.layer)===1?'L1 authoritative/reference':Number(p.layer)===2?'L2 → conditional L3/L4':'L3 Evidence interpretation'}</td>,
+   pipeline:<td key={id}>{Number(p.layer)===1?'Layer 1 authoritative/reference':Number(p.layer)===2?'Layer 2 → conditional Layer 3 / Layer 4':'Layer 3 Evidence interpretation'}</td>,
    freshness:<td key={id}>{human(p.freshness_class)}</td>,
    cadence:<td key={id}>{p.cadence_interval||'Event driven'}</td>,
    next:<td key={id}>{when(p.next_due_at)}</td>,

@@ -9,7 +9,7 @@ let history=null,historyLoading=false
 function noteHtml(r){return `<article class="m-release-note" data-release-version="${esc(r.version)}"><div class="m-release-note-meta"><span class="m-release-note-version">v${esc(r.version)}</span><span class="m-release-note-date">${esc(r.date)}</span></div><h3>${esc(r.title)}</h3><ul>${(r.changes||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>${r.bugFixes?.length?`<div class="m-release-note-fixes"><strong>Bug / UI fixes</strong><ul>${r.bugFixes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}</article>`}
 function completeHistory(list){
   if(!history){if(!historyLoading){historyLoading=true;fetch('/release-history.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(h=>{history=h;schedule()}).catch(()=>{})}return}
-  if(!list.querySelector('.m-release-history-link'))list.insertAdjacentHTML('afterbegin',`<p class="m-release-history-link" style="margin:0 0 10px;font-weight:600"><a style="color:#4338ca" href="/release-history.html" target="_blank" rel="noopener">All release notes (${history.count}) →</a></p>`)
+  if(!list.querySelector('.m-release-history-link'))list.insertAdjacentHTML('afterbegin',`<p class="m-release-history-link" style="margin:0 0 10px;font-weight:600"><a style="color:var(--cf-indigo-700)" href="/release-history.html" target="_blank" rel="noopener">All release notes (${history.count}) →</a></p>`)
   const present=new Set([...list.querySelectorAll('[data-release-version]')].map(e=>e.dataset.releaseVersion))
   const current=list.querySelector(`[data-release-version="${VERSION}"]`)
   const missing=(history.releases||[]).filter(r=>!present.has(r.version))

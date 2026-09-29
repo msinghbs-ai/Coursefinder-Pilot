@@ -1,6 +1,8 @@
 import React,{useEffect,useMemo,useState}from'react'
+import{StatusChip}from'./ui-kit'
 import{ExternalLink}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import{fmtDateTime}from'./lib/format.js'
 
 const UNKNOWN='Unavailable'
 const terminal=new Set(['completed','failed','cancelled','blocked','succeeded','success'])
@@ -12,7 +14,7 @@ const average=values=>{const xs=values.filter(v=>Number.isFinite(v));return xs.l
 const jobState=j=>String(j?.status||j?.state||'unknown').toLowerCase()
 const queueWait=j=>secondsBetween(j?.created_at,j?.started_at)
 const runDuration=j=>secondsBetween(j?.started_at,j?.completed_at)
-const strictWhen=v=>{const d=validDate(v);return d?d.toLocaleString():UNKNOWN}
+const strictWhen=v=>{const d=validDate(v);return d?fmtDateTime(d):UNKNOWN}
 const failureClass=j=>j?.failure_class||j?.completion_class||(jobState(j)==='failed'?'Failed — inspect Job':(terminal.has(jobState(j))?'—':UNKNOWN))
 const countLabel=v=>v==null?UNKNOWN:String(v)
 const rateLabel=v=>v==null?UNKNOWN:`${Number(v).toFixed(2)}/min`
@@ -45,7 +47,7 @@ export default function ScheduledRuntimeHealth({jobs=[],error,onNavigate=()=>{}}
      <article><strong>{metrics.evidenceProduced}</strong><span>Evidence produced in sample</span></article>
      <article data-warning={metrics.terminalMissingCompleted>0?'true':'false'}><strong>{metrics.terminalMissingCompleted}</strong><span>Terminal Jobs missing completion timestamp</span></article>
    </div>
-   <div className="cf-scheduler-v2__table-wrap"><table className="cf-scheduler-runtime__table"><thead><tr><th>Job / Profile</th><th>Status</th><th>Queue</th><th>Execution</th><th>Work</th><th>Rate</th><th>Evidence</th><th>Retry / Dedupe</th><th>Failure / Outcome</th><th>Follow</th></tr></thead><tbody>{metrics.recent.length?metrics.recent.slice(0,12).map((j,i)=><tr key={j.id||i}><td><strong>{human(j.job_type||j.domain||'Job')}</strong>{j.profile_key&&<><br/><small>{j.profile_key}</small></>}<br/><small className="cf-scheduler-v2__technical">{j.id||UNKNOWN}</small></td><td><span className="cf-scheduler-v2__status" data-state={jobState(j)}>{human(jobState(j))}</span></td><td>{durationLabel(queueWait(j))}</td><td>{durationLabel(runDuration(j))}<br/><small>{strictWhen(j.completed_at)}</small></td><td>{countLabel(j.processed_count)} processed{j.failed_count!=null&&<><br/><small>{j.failed_count} failed</small></>}</td><td>{rateLabel(j.throughput_records_per_min)}</td><td>{evidenceLabel(j)}</td><td>{j.retry_exhausted_count!=null?`${j.retry_exhausted_count} exhausted`:UNKNOWN}{j.dedupe_replay!=null&&<><br/><small>{j.dedupe_replay?'Dedupe replay':'Not replayed'}</small></>}</td><td className="cf-scheduler-runtime__failure">{failureClass(j)}</td><td><div className="cf-scheduler-v2__row-actions"><button onClick={()=>onNavigate('#jobs')}>Jobs</button><button onClick={()=>onNavigate('#evidence')}>Evidence</button></div></td></tr>):<tr><td colSpan={10} className="cf-scheduler-v2__empty">No recent Job records returned by the governed Jobs read surface.</td></tr>}</tbody></table></div>
+   <div className="cf-scheduler-v2__table-wrap"><table className="cf-scheduler-runtime__table"><thead><tr><th>Job / Profile</th><th>Status</th><th>Queue</th><th>Execution</th><th>Work</th><th>Rate</th><th>Evidence</th><th>Retry / Dedupe</th><th>Failure / Outcome</th><th>Follow</th></tr></thead><tbody>{metrics.recent.length?metrics.recent.slice(0,12).map((j,i)=><tr key={j.id||i}><td><strong>{human(j.job_type||j.domain||'Job')}</strong>{j.profile_key&&<><br/><small>{j.profile_key}</small></>}<br/><small className="cf-scheduler-v2__technical">{j.id||UNKNOWN}</small></td><td><StatusChip value={jobState(j)} label={human(jobState(j))}/></td><td>{durationLabel(queueWait(j))}</td><td>{durationLabel(runDuration(j))}<br/><small>{strictWhen(j.completed_at)}</small></td><td>{countLabel(j.processed_count)} processed{j.failed_count!=null&&<><br/><small>{j.failed_count} failed</small></>}</td><td>{rateLabel(j.throughput_records_per_min)}</td><td>{evidenceLabel(j)}</td><td>{j.retry_exhausted_count!=null?`${j.retry_exhausted_count} exhausted`:UNKNOWN}{j.dedupe_replay!=null&&<><br/><small>{j.dedupe_replay?'Dedupe replay':'Not replayed'}</small></>}</td><td className="cf-scheduler-runtime__failure">{failureClass(j)}</td><td><div className="cf-scheduler-v2__row-actions"><button onClick={()=>onNavigate('#jobs')}>Jobs</button><button onClick={()=>onNavigate('#evidence')}>Evidence</button></div></td></tr>):<tr><td colSpan={10} className="cf-empty-cell">No recent Job records returned by the governed Jobs read surface.</td></tr>}</tbody></table></div>
    <p className="cf-scheduler-v2__note">Evidence produced and verified are separate counters; no acceptance/yield percentage is manufactured from unreviewed Evidence. Retry exhaustion is shown only when the runtime records that counter. Job <code>attempt_count</code> is intentionally not treated as retry count.</p>
  </section>
 }

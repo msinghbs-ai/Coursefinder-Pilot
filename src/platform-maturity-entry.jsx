@@ -1,8 +1,10 @@
 import React,{useEffect,useMemo,useState}from'react'
+import{StatusChip,Metric as KitMetric,SectionTitle as KitSectionTitle,Empty}from'./ui-kit'
 import{
   Activity,AlertTriangle,Archive,Blocks,CheckCircle2,Database,HardDrive,RefreshCw,
   Search,ServerCog,ShieldCheck,SlidersHorizontal,TestTube2,Workflow
 }from'lucide-react'
+import{fmtDateTime,fmtNumber as fmtNum,fmtPercent}from'./lib/format.js'
 import{adminRead,supabase}from'./lib/supabase'
 import'./platform-maturity.css'
 
@@ -17,19 +19,19 @@ const TABS=[
 const BLOCK_SCOPES=[['operational','Operational'],['publication','Publication'],['search','Search'],['data_quality_quarantine','Data quality quarantine']]
 const ENTITY_TYPES=[['provider','Provider'],['course','Course'],['campus','Campus'],['scholarship','Scholarship']]
 const num=v=>Number(v||0)
-const fmtNumber=v=>new Intl.NumberFormat('en-AU').format(num(v))
+const fmtNumber=v=>fmtNum(num(v))
 const fmtBytes=v=>{const n=num(v);if(!n)return'0 B';const u=['B','KB','MB','GB','TB'],i=Math.min(Math.floor(Math.log(n)/Math.log(1024)),u.length-1);return (n/1024**i).toFixed(i<2?0:2)+' '+u[i]}
-const fmtDate=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(d.valueOf())?'—':d.toLocaleString('en-AU',{dateStyle:'medium',timeStyle:'short'})}
+const fmtDate=v=>fmtDateTime(v)
 const title=v=>String(v||'').replace(/[_-]+/g,' ').replace(/\b\w/g,x=>x.toUpperCase())
 const toneFor=v=>{const x=String(v||'').toLowerCase();if(['pass','passed','pilot_uat_pass','pilot_qualified','accepted_baseline','healthy','enabled','published'].includes(x))return'success';if(['warning','designed','registered','internal','active'].includes(x))return'warning';if(['critical','error','failed','blocked','not_run','disabled'].includes(x))return'danger';return'neutral'}
 const list=v=>v?.items??v?.rows??(Array.isArray(v)?v:[])
 const itemId=x=>x?.id||x?.entity_id||x?.provider_id||x?.course_id||x?.campus_id||x?.scholarship_id||''
 const itemLabel=x=>x?.display_name||x?.canonical_name||x?.display_title||x?.canonical_title||x?.name||x?.title||x?.entity_name||x?.stable_key||itemId(x)
 
-function Pill({children,tone='neutral'}){return <span className={'pm-pill tone-'+tone}>{children}</span>}
-function Metric({label,value,detail,tone='neutral',Icon=Database}){return <div className={'pm-metric tone-'+tone}><span className="pm-metric-icon"><Icon size={18}/></span><div><small>{label}</small><strong>{value}</strong>{detail&&<span>{detail}</span>}</div></div>}
-function SectionTitle({icon:Icon=ServerCog,title:heading,subtitle,action}){return <div className="pm-section-title"><div className="pm-section-heading"><span className="pm-section-icon"><Icon size={17}/></span><div><h3>{heading}</h3>{subtitle&&<p>{subtitle}</p>}</div></div>{action}</div>}
-function Empty({children}){return <div className="pm-empty">{children}</div>}
+function Pill({children,tone='neutral'}){return <StatusChip tone={tone} label={children}/>}
+function Metric({label,value,detail,tone='neutral',Icon=Database}){return <KitMetric icon={Icon} label={label} value={value} detail={detail} tone={tone}/>}
+function SectionTitle({icon=ServerCog,title,subtitle,action}){return <KitSectionTitle icon={icon} title={title} subtitle={subtitle} action={action}/>}
+
 
 export default function PlatformMaturity({rank,onError}){
   const[tab,setTab]=useState('overview')
@@ -96,7 +98,7 @@ function Overview({readiness,capacity,acceptedPilot,prodOpen}){
       <Metric Icon={SlidersHorizontal} label="Production scrapers" value={fmtNumber(readiness?.production_scrapers_enabled)} detail="Environment-gated" tone={num(readiness?.production_scrapers_enabled)?'danger':'success'}/>
       <Metric Icon={Activity} label="Production AI profiles" value={fmtNumber(readiness?.production_ai_profiles_enabled)} detail="Separate benchmark required" tone={num(readiness?.production_ai_profiles_enabled)?'danger':'success'}/>
       <Metric Icon={TestTube2} label="Open Production hard gates" value={fmtNumber(readiness?.production_uat_open)} detail={prodOpen.length+' visible in catalogue'} tone={num(readiness?.production_uat_open)?'warning':'success'}/>
-      <Metric Icon={HardDrive} label="Evidence storage" value={fmtBytes(capacity?.evidence_object_bytes)} detail={fmtNumber(capacity?.evidence_object_count)+' objects · '+num(capacity?.evidence_planning_capacity_pct).toFixed(2)+'% planning envelope'} tone={toneFor(capacity?.severity)}/>
+      <Metric Icon={HardDrive} label="Evidence storage" value={fmtBytes(capacity?.evidence_object_bytes)} detail={fmtNumber(capacity?.evidence_object_count)+' objects · '+fmtPercent(num(capacity?.evidence_planning_capacity_pct))+' planning envelope'} tone={toneFor(capacity?.severity)}/>
       <Metric Icon={CheckCircle2} label="Accepted Pilot UAT domains" value={fmtNumber(acceptedPilot.length)} detail="M2.4.4 permanent baseline" tone="success"/>
     </div>
 
@@ -122,7 +124,7 @@ function Capacity({capacity,integrity,policy,evidencePolicy}){
     <div className="pm-metric-grid">
       <Metric Icon={Database} label="Logical database" value={fmtBytes(capacity?.database_bytes)} detail={'Warn '+fmtBytes(policy?.database_warn_bytes)+' · High '+fmtBytes(policy?.database_high_bytes)} tone={num(capacity?.database_bytes)>=num(policy?.database_warn_bytes)?'warning':'success'}/>
       <Metric Icon={HardDrive} label="Evidence storage" value={fmtBytes(capacity?.evidence_object_bytes)} detail={fmtNumber(capacity?.evidence_object_count)+' objects'} tone={toneFor(capacity?.severity)}/>
-      <Metric Icon={Activity} label="Planning utilisation" value={num(capacity?.evidence_planning_capacity_pct).toFixed(2)+'%'} detail="Governed 60 GiB planning envelope · not vendor hard quota" tone={num(capacity?.evidence_planning_capacity_pct)>=num(evidencePolicy?.warn_pct)?'warning':'success'}/>
+      <Metric Icon={Activity} label="Planning utilisation" value={fmtPercent(num(capacity?.evidence_planning_capacity_pct))} detail="Governed 60 GiB planning envelope · not vendor hard quota" tone={num(capacity?.evidence_planning_capacity_pct)>=num(evidencePolicy?.warn_pct)?'warning':'success'}/>
       <Metric Icon={AlertTriangle} label="Integrity severity" value={title(capacity?.severity||'unknown')} detail={'Severity input '+fmtNumber(capacity?.integrity_count_for_severity)} tone={toneFor(capacity?.severity)}/>
     </div>
 

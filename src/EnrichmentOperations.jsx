@@ -1,12 +1,14 @@
 import React,{useEffect,useState}from'react'
+import{Metric as Card,Empty}from'./ui-kit'
 import{Activity,AlertTriangle,BookOpen,CheckCircle2,Clock3,DollarSign,RefreshCw,ShieldCheck,Workflow}from'lucide-react'
 import{adminRead}from'./lib/supabase'
 import'./enrichment-operations.css'
+import{fmtNumber,fmtDateTime,fmtMoney,fmtPercent}from'./lib/format.js'
 
-const n=v=>Number(v||0).toLocaleString()
-const ms=v=>v==null?'—':`${Math.round(Number(v)).toLocaleString()} ms`
-const money=v=>v==null?'—':`$${Number(v).toFixed(4)}`
-const when=v=>v?new Date(v).toLocaleString():'—'
+const n=v=>fmtNumber(v||0)
+const ms=v=>v==null?'—':`${fmtNumber(Math.round(Number(v)))} ms`
+const money=v=>v==null?'—':fmtMoney(v,'USD',{decimals:4})
+const when=v=>v?fmtDateTime(v):'—'
 const human=v=>String(v??'—').replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase())
 const fieldLabel=v=>({official_course_url:'Official course URL',intake_availability:'Intake availability',english_requirements:'English requirements',provider_current_international_tuition:'Provider-current tuition',scholarship:'Scholarships'}[v]||human(v))
 
@@ -30,13 +32,13 @@ export default function EnrichmentOperations({rank=4,openNav=()=>{},openEvidence
   </div>
   <div className="eops-grid">
    <article className="eops-panel eops-wide"><Panel title="Coverage & backlog" subtitle="Search/website-visible coverage from the latest hourly snapshot."/>
-    <div className="eops-table-wrap"><table><thead><tr><th>Country</th><th>Field</th><th>Current</th><th>Coverage</th><th>+ hour</th><th>+ day</th><th>Remaining</th><th>Queueable</th><th>Blocked</th><th>Awaiting qualification</th></tr></thead><tbody>{coverage.map(x=><tr key={`${x.country_code}-${x.field_key}`}><td>{x.country_code}</td><td><strong>{fieldLabel(x.field_key)}</strong></td><td>{n(x.current)} / {n(x.total)}</td><td>{Number(x.coverage_pct||0).toFixed(2)}%</td><td>{x.added_hour==null?<span className="eops-muted">Baseline pending</span>:signed(x.added_hour)}</td><td>{x.added_day==null?<span className="eops-muted">Baseline pending</span>:signed(x.added_day)}</td><td>{n(x.remaining)}</td><td>{n(x.queueable)}</td><td>{n(x.blocked)}</td><td>{n(x.awaiting_qualification)}</td></tr>)}</tbody></table></div>
+    <div className="eops-table-wrap"><table><thead><tr><th>Country</th><th>Field</th><th>Current</th><th>Coverage</th><th>+ hour</th><th>+ day</th><th>Remaining</th><th>Queueable</th><th>Blocked</th><th>Awaiting qualification</th></tr></thead><tbody>{coverage.map(x=><tr key={`${x.country_code}-${x.field_key}`}><td>{x.country_code}</td><td><strong>{fieldLabel(x.field_key)}</strong></td><td>{n(x.current)} / {n(x.total)}</td><td>{fmtPercent(x.coverage_pct||0)}</td><td>{x.added_hour==null?<span className="eops-muted">Baseline pending</span>:signed(x.added_hour)}</td><td>{x.added_day==null?<span className="eops-muted">Baseline pending</span>:signed(x.added_day)}</td><td>{n(x.remaining)}</td><td>{n(x.queueable)}</td><td>{n(x.blocked)}</td><td>{n(x.awaiting_qualification)}</td></tr>)}</tbody></table></div>
     {!coverage.length&&!busy&&<Empty text="No coverage snapshot is available yet."/>}
    </article>
    <article className="eops-panel"><Panel title="Where work stops" subtitle="Seven-day item stop reasons."/><Bars rows={reasons.map(x=>({label:human(x.reason),value:x.items,detail:`${n(x.fields_resolved)} / ${n(x.fields_targeted)} fields resolved`}))}/></article>
    <article className="eops-panel"><Panel title="Provider yield & latency" subtitle="Seven-day acquisition route performance."/><div className="eops-list">{providers.map(x=><div key={x.provider}><div><strong>{human(x.provider)}</strong><small>{n(x.succeeded)} succeeded · {n(x.failed)} failed · {n(x.retries)} retries</small></div><span>{ms(x.p50_ms)} p50<br/>{ms(x.p95_ms)} p95</span></div>)}</div></article>
    <article className="eops-panel eops-wide"><Panel title="Hourly enrichment funnel" subtitle="Acquisition and deterministic extraction are not reported as published enrichment."/>
-    <div className="eops-table-wrap"><table><thead><tr><th>Hour</th><th>Country</th><th>Items</th><th>Fetched</th><th>Fetch fail</th><th>Evidence</th><th>Extraction</th><th>URLs</th><th>Intakes</th><th>English</th><th>Tuition</th><th>Scholarships</th><th>Admitted</th><th>Unchanged</th><th>Rejected / blocked</th><th>L3</th><th>L4</th><th>Courses improved</th><th>Vendor units / cost</th><th>Retries</th><th>429</th><th>5xx</th><th>Other failures</th><th>Response p50 / p95</th><th>Extraction p50 / p95</th></tr></thead><tbody>{hourly.slice(-24).reverse().map((x,i)=><tr key={`${x.hour_utc}-${x.country_code}-${x.domain}-${i}`}><td>{when(x.hour_utc)}</td><td>{x.country_code||'—'}</td><td>{n(x.items)}</td><td>{n(x.fetched)}</td><td>{n(x.fetch_failures)}</td><td>{n(x.evidence_created)}</td><td>{n(x.extraction_attempted)}</td><td>{n(x.official_urls_found)}</td><td>{n(x.intakes_found)}</td><td>{n(x.english_requirements_found)}</td><td>{n(x.provider_current_tuition_found)}</td><td>{n(x.scholarships_found)}</td><td>{n(x.facts_admitted_lower_bound)}</td><td>{n(x.unchanged)}</td><td>{n(x.rejected_or_blocked)}</td><td>{n(x.layer3_escalated)}</td><td>{n(x.layer4_referred)}</td><td>{n(x.courses_improved_lower_bound)}</td><td>{n(x.vendor_units)} / {money(x.vendor_cost_usd)}</td><td>{n(x.retries)}</td><td>{n(x.http_429)}</td><td>{n(x.http_5xx)}</td><td>{n(x.other_runtime_failures)}</td><td>{ms(x.p50_response_ms)} / {ms(x.p95_response_ms)}</td><td>{ms(x.p50_extraction_ms)} / {ms(x.p95_extraction_ms)}</td></tr>)}</tbody></table></div>
+    <div className="eops-table-wrap"><table><thead><tr><th>Hour</th><th>Country</th><th>Items</th><th>Fetched</th><th>Fetch fail</th><th>Evidence</th><th>Extraction</th><th>URLs</th><th>Intakes</th><th>English</th><th>Tuition</th><th>Scholarships</th><th>Admitted</th><th>Unchanged</th><th>Rejected / blocked</th><th>Layer 3</th><th>Layer 4</th><th>Courses improved</th><th>Vendor units / cost</th><th>Retries</th><th>429</th><th>5xx</th><th>Other failures</th><th>Response p50 / p95</th><th>Extraction p50 / p95</th></tr></thead><tbody>{hourly.slice(-24).reverse().map((x,i)=><tr key={`${x.hour_utc}-${x.country_code}-${x.domain}-${i}`}><td>{when(x.hour_utc)}</td><td>{x.country_code||'—'}</td><td>{n(x.items)}</td><td>{n(x.fetched)}</td><td>{n(x.fetch_failures)}</td><td>{n(x.evidence_created)}</td><td>{n(x.extraction_attempted)}</td><td>{n(x.official_urls_found)}</td><td>{n(x.intakes_found)}</td><td>{n(x.english_requirements_found)}</td><td>{n(x.provider_current_tuition_found)}</td><td>{n(x.scholarships_found)}</td><td>{n(x.facts_admitted_lower_bound)}</td><td>{n(x.unchanged)}</td><td>{n(x.rejected_or_blocked)}</td><td>{n(x.layer3_escalated)}</td><td>{n(x.layer4_referred)}</td><td>{n(x.courses_improved_lower_bound)}</td><td>{n(x.vendor_units)} / {money(x.vendor_cost_usd)}</td><td>{n(x.retries)}</td><td>{n(x.http_429)}</td><td>{n(x.http_5xx)}</td><td>{n(x.other_runtime_failures)}</td><td>{ms(x.p50_response_ms)} / {ms(x.p95_response_ms)}</td><td>{ms(x.p50_extraction_ms)} / {ms(x.p95_extraction_ms)}</td></tr>)}</tbody></table></div>
     {!hourly.length&&!busy&&<Empty text="No managed Layer 2 activity exists in this window."/>}
    </article>
    <article className="eops-panel"><Panel title="Backlog blockers" subtitle="Missing data classified before workload generation."/><div className="eops-list">{blockers.slice(0,12).map((x,i)=><div key={`${x.country_code}-${x.field_key}-${x.reason}-${i}`}><div><strong>{x.country_code} · {fieldLabel(x.field_key)}</strong><small>{human(x.reason||x.state)}</small></div><b>{n(x.courses)}</b></div>)}</div></article>
@@ -47,8 +49,8 @@ export default function EnrichmentOperations({rank=4,openNav=()=>{},openEvidence
  </section>
 }
 
-function Card({icon:Icon,label,value,detail}){return <article className="eops-card"><Icon size={17}/><div><small>{label}</small><strong>{value}</strong><span>{detail}</span></div></article>}
+
 function Panel({title,subtitle}){return <div className="eops-panel-head"><div><h3>{title}</h3><p>{subtitle}</p></div></div>}
-function Empty({text}){return <div className="eops-empty">{text}</div>}
+
 function signed(v){const x=Number(v||0);return <span className={x>0?'eops-positive':''}>{x>0?'+':''}{n(x)}</span>}
 function Bars({rows}){const max=Math.max(1,...rows.map(x=>Number(x.value||0)));return <div className="eops-bars">{rows.slice(0,10).map((x,i)=><div key={`${x.label}-${i}`}><span><strong>{x.label}</strong><small>{x.detail}</small></span><i><b style={{width:`${Math.max(3,100*Number(x.value||0)/max)}%`}}/></i><em>{n(x.value)}</em></div>)}</div>}

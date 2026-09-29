@@ -1,19 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.105'
-export const PACKAGE_VERSION='0.1.32'
+export const UI_VERSION='2.15.106'
+export const PACKAGE_VERSION='0.1.33'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'29 Sep 2026',
-  title:'University group filter on Courses and Providers',
+  title:'One look across the console; completeness states on Course coverage',
   changes:[
-    'New "University group" filter on Courses and Providers: Group of Eight, Australian Technology Network, Innovative Research Universities and Regional Universities Network. Each option shows how many universities are in the group.',
-    'Provider detail shows the university group(s) the provider belongs to; the Providers list has a compact "Group" column.',
-    'Filter chips read, for example, "University group: Group of Eight".'
+    'Course coverage reports the completeness states for every attribute (present, source says nothing, ambiguous, not yet enriched; stale, rejected, suppressed, not applicable and zero are shown as they start being recorded) and the course completeness score: average completeness, accounted for, fully complete courses, courses by attributes admitted, and the score in the daily trend. Select a count to list those courses with their own completeness.',
+    'One set of colours, text sizes, corner radii and shadows for every screen, so the same kind of thing looks the same everywhere. The look is unchanged apart from small alignments.',
+    'Shared building blocks: status chips, badges, buttons, metric tiles, empty messages, filter chips and loading rows are now the same component on every screen.',
+    'Dates read "29 Sep 2026" and "29 Sep 2026, 2:37 pm"; numbers use Australian grouping; money shows as A$31,680 (US$ for vendor and model costs); percentages show one decimal place.',
+    'Layers are always written "Layer 1" to "Layer 4" (no more "L2" or "layer-2").'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Statistics & Rankings cards had unstyled borders and text colours (they used colour names that did not exist).',
+    'Dashboard: "Layer 3 cost · 24h" read "unknown" instead of the amount.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

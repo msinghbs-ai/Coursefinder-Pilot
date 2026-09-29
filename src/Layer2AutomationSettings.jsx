@@ -1,11 +1,12 @@
 import React,{useEffect,useState}from'react'
 import{Bot,RefreshCw,Save}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import{fmtDateTime}from'./lib/format.js'
 
 // Package 7 (Decisions 141, 146): Platform Admin controls for Layer 2 automatic catalogue discovery.
 // Providers in flight cannot exceed the Firecrawl concurrency; the vendor limit still governs fetches.
 const rpc=async(fn,args)=>{const{data,error}=await supabase.rpc(fn,args);if(error)throw new Error(error.message);return data}
-const when=v=>v?new Date(v).toLocaleString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'
+const when=v=>v?fmtDateTime(v):'—'
 
 export default function Layer2AutomationSettings({onError}){
   const[data,setData]=useState(null),[form,setForm]=useState(null),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[error,setError]=useState('')

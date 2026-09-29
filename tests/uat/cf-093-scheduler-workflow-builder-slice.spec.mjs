@@ -26,7 +26,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(ui).toContain("p_preview_token:preview.preview_token")
  expect(ui).toContain("Preview governed scope")
  expect(ui).toContain("Run acquisition + deterministic Layer 2")
- expect(ui).toContain("Automatic L2 → conditional L3/L4 and Evidence reprocessing remain disabled here")
+ expect(ui).toContain("Automatic Layer 2 → conditional Layer 3 / Layer 4 and Evidence reprocessing remain disabled here")
  expect(ui).not.toContain("refresh_policy_upsert_v2")
 
  expect(migration).toContain("security.current_role_rank() < 4")

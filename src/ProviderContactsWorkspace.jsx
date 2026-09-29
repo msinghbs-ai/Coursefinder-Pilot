@@ -1,8 +1,10 @@
 
 import React,{useEffect,useMemo,useRef,useState}from'react'
+import{StatusChip,Button,Metric}from'./ui-kit'
 import{ArrowDown,ArrowUp,Check,ChevronDown,ChevronLeft,ChevronRight,Columns3,Download,ExternalLink,FileUp,Mail,Phone,Plus,RefreshCw,RotateCcw,Save,Search,ShieldCheck,Trash2,Upload,UsersRound,X}from'lucide-react'
 import{api}from'./lib/supabase'
 import'./provider-contacts.css'
+import{fmtNumber,fmtDate,fmtDateTime}from'./lib/format.js'
 
 const PAGE_SIZE=50
 const DEFAULT_COLUMNS=[
@@ -24,11 +26,9 @@ const blankForm={provider_id:'',record_type:'named_staff',full_name:'',team_name
 const text=v=>String(v??'')
 const human=v=>text(v).replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase())
 const rowsOf=d=>d?.items??d?.rows??[]
-const fmtDate=v=>{if(!v)return'—';const s=String(v);if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s.split('-').reverse().join('/');const d=new Date(v);return Number.isNaN(d.getTime())?s:d.toLocaleDateString('en-AU')}
-const fmtDateTime=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString('en-AU')}
 const tone=v=>['active','current','official_current_page','official_university_source','applied','validated','create','update','restore','unchanged'].includes(v)?'success':['deleted','failed','invalid','conflict'].includes(v)?'danger':['inactive','stale','partial','provider_ambiguous','provider_unmatched','duplicate','skipped'].includes(v)?'warning':'neutral'
-function Badge({value}){const v=text(value||'unknown').toLowerCase();return <span className={'pc-badge pc-'+tone(v)}>{human(v)}</span>}
-function Btn({children,onClick,disabled=false,primary=false,danger=false}){return <button className={'pc-button '+(primary?'primary ':'')+(danger?'danger':'')} onClick={onClick} disabled={disabled}>{children}</button>}
+function Badge({value}){const v=text(value||'unknown').toLowerCase();return <StatusChip value={v} tone={tone(v)} label={human(v)}/>}
+function Btn({children,onClick,disabled=false,primary=false,danger=false}){return <Button variant={primary?'primary':danger?'danger':undefined} onClick={onClick} disabled={disabled}>{children}</Button>}
 
 function ProviderPicker({value,label='',onChange,disabled=false}){
  const[open,setOpen]=useState(false),[query,setQuery]=useState(''),[offset,setOffset]=useState(0),[data,setData]=useState({items:[],total:0}),[busy,setBusy]=useState(false)
@@ -134,7 +134,7 @@ export default function ProviderContactsWorkspace({rank,onError,navigate,initial
  const changeSort=k=>{if(sort===k)setDirection(d=>d==='asc'?'desc':'asc');else{setSort(k);setDirection('asc')}}
  async function exportCsv(){if(rank<5)return;setBusy(true);try{let all=[],o=0;while(o<10000){const r=await api.providerContactsPage({...args,limit:200,offset:o}),batch=rowsOf(r);all=all.concat(batch);if(batch.length<200||all.length>=Number(r.total||0))break;o+=200}const visible=columns.filter(c=>c.visible!==false),csv=[visible.map(c=>csvValue(c.label)).join(','),...all.map(r=>visible.map(c=>csvValue(exportField(r,c.key))).join(','))].join('\r\n');await api.providerContactExportAudit({rowCount:all.length,filters,columns:visible.map(c=>c.key)});const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='provider-contacts-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}catch(e){onError(e.message)}finally{setBusy(false)}}
  return <div className="pc-page"><section className="pc-hero"><div><span className="pc-kicker"><UsersRound size={14}/>Catalogue module</span><h2>Provider Contacts</h2><p>Manage international recruitment contacts as stable Provider-linked records while preserving A15 observations, Evidence, versions and audit.</p></div><div className="pc-hero-actions">{rank>=5&&<><Btn primary onClick={()=>setAdding(true)}><Plus size={14}/>Add contact</Btn><Btn onClick={()=>setImportOpen(true)}><Upload size={14}/>Import CSV</Btn><Btn disabled={busy} onClick={exportCsv}><Download size={14}/>Export view</Btn></>}<div className="pc-column-anchor"><Btn onClick={()=>setColumnsOpen(x=>!x)}><Columns3 size={14}/>Columns</Btn>{columnsOpen&&<ColumnManager columns={columns} setColumns={setColumns} onClose={()=>setColumnsOpen(false)}/>}</div></div></section>
- <section className="pc-metrics"><div><small>Active contacts</small><strong>{Number(summary.active||0).toLocaleString()}</strong></div><div><small>Providers covered</small><strong>{Number(summary.providers||0).toLocaleString()}</strong></div><div><small>Stale / unverified</small><strong>{Number(summary.stale||0).toLocaleString()}</strong></div><div><small>Deleted / restorable</small><strong>{Number(summary.deleted||0).toLocaleString()}</strong></div></section>
+ <section className="pc-metrics"><Metric label="Active contacts" value={fmtNumber(summary.active||0)}/><Metric label="Providers covered" value={fmtNumber(summary.providers||0)}/><Metric label="Stale / unverified" value={fmtNumber(summary.stale||0)}/><Metric label="Deleted / restorable" value={fmtNumber(summary.deleted||0)}/></section>
  <section className="pc-panel"><div className="pc-search-row"><label className="pc-search"><Search size={15}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search Provider, contact, title, region, market, email, phone or source…"/>{query&&<button onClick={()=>setQuery('')}><X size={13}/></button>}</label><Btn disabled={busy} onClick={load}><RefreshCw size={14}/>Refresh</Btn></div><div className="pc-filters">
   <label><span>Country</span><select value={filters.country} onChange={e=>patch('country',e.target.value)}><option value="">All</option><option value="AU">Australia</option><option value="NZ">New Zealand</option><option value="CA">Canada</option><option value="GB">United Kingdom</option><option value="US">United States</option><option value="IE">Ireland</option></select></label>
   <label className="provider"><span>Provider</span><ProviderPicker value={filters.providerId} label={providerLabel} onChange={(v,l)=>{patch('providerId',v);setProviderLabel(l)}}/></label>
@@ -145,7 +145,7 @@ export default function ProviderContactsWorkspace({rank,onError,navigate,initial
   <label><span>Email</span><select value={filters.hasEmail} onChange={e=>patch('hasEmail',e.target.value)}><option value="">Any</option><option value="true">Present</option><option value="false">Missing</option></select></label>
   <label><span>Phone</span><select value={filters.hasPhone} onChange={e=>patch('hasPhone',e.target.value)}><option value="">Any</option><option value="true">Present</option><option value="false">Missing</option></select></label>
   <label><span>Freshness</span><select value={filters.freshness} onChange={e=>patch('freshness',e.target.value)}><option value="">Any</option><option value="current">Verified ≤ 365 days</option><option value="stale">Stale / never verified</option><option value="unverified">Never verified</option></select></label>
- </div><Grid rows={rows} columns={columns} sort={sort} direction={direction} onSort={changeSort} onSelect={setSelected} loading={busy}/><div className="pc-pager"><span>Page <strong>{page}</strong> of {pages} · {total.toLocaleString()} records</span><div><button disabled={!offset} onClick={()=>setOffset(o=>Math.max(0,o-PAGE_SIZE))}>Previous</button><button disabled={offset+PAGE_SIZE>=total} onClick={()=>setOffset(o=>o+PAGE_SIZE)}>Next</button></div></div></section>
+ </div><Grid rows={rows} columns={columns} sort={sort} direction={direction} onSort={changeSort} onSelect={setSelected} loading={busy}/><div className="pc-pager"><span>Page <strong>{page}</strong> of {pages} · {fmtNumber(total)} records</span><div><button disabled={!offset} onClick={()=>setOffset(o=>Math.max(0,o-PAGE_SIZE))}>Previous</button><button disabled={offset+PAGE_SIZE>=total} onClick={()=>setOffset(o=>o+PAGE_SIZE)}>Next</button></div></div></section>
  {rank<5&&<div className="pc-readonly"><ShieldCheck size={15}/><span>Read-only view. PIM Operator or Platform Admin is required for create, edit, import, export, delete and restore.</span></div>}
  {(selected||adding)&&<Drawer id={selected} isNew={adding} rank={rank} onClose={()=>{setSelected('');setAdding(false)}} onChanged={load} onError={onError}/>}
  {importOpen&&<ImportPanel onClose={()=>setImportOpen(false)} onApplied={load} onError={onError} navigate={navigate}/>}

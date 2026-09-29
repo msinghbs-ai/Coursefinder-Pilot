@@ -6,7 +6,7 @@ const LAYERS=[
 ]
 
 function makeButton(layer,kind){
- const b=document.createElement('button');b.type='button';b.dataset.cfLayerSequence=layer.short;b.title=`${layer.label} — governed execution workspace`;b.innerHTML=`<span aria-hidden="true" style="font-size:11px;font-weight:800;min-width:18px;text-align:center">${layer.short}</span><span>${layer.label}</span>`;b.addEventListener('click',()=>{location.hash=layer.hash});if(kind==='sidebar')b.className='m-nav-item';return b
+ const b=document.createElement('button');b.type='button';b.dataset.cfLayerSequence=layer.short;b.title=`${layer.label} — governed execution workspace`;b.innerHTML=`<span aria-hidden="true" style="font-size:var(--cf-fs-sm);font-weight:800;min-width:18px;text-align:center">${layer.short.slice(1)}</span><span>${layer.label}</span>`;b.addEventListener('click',()=>{location.hash=layer.hash});if(kind==='sidebar')b.className='m-nav-item';return b
 }
 function text(el){return(el?.textContent||'').replace(/\s+/g,' ').trim()}
 function matchingButton(host,label){return[...host.querySelectorAll('button')].find(x=>text(x).includes(label))}

@@ -2,10 +2,11 @@ import React,{useEffect,useMemo,useState}from'react'
 import{Activity,RefreshCw,Search,ShieldCheck,SlidersHorizontal}from'lucide-react'
 import{adminRead,supabase}from'./lib/supabase'
 import'./layer2-dispatcher-tuning.css'
+import{fmtNumber,fmtDateTime,fmtShare}from'./lib/format.js'
 
-const fmt=n=>n==null?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:1})
-const pct=(a,b)=>b>0?`${(100*a/b).toFixed(1)}%`:'—'
-const when=v=>v?new Date(v).toLocaleString():'—'
+const fmt=n=>n==null?'—':fmtNumber(n,{maxDecimals:1})
+const pct=(a,b)=>b>0?fmtShare(a,b):'—'
+const when=v=>v?fmtDateTime(v):'—'
 
 export default function Layer2DispatcherTuning({rank,onError=()=>{}}){
  const[query,setQuery]=useState(''),[profiles,setProfiles]=useState([]),[profileId,setProfileId]=useState(''),[data,setData]=useState(null),[busy,setBusy]=useState(false),[saving,setSaving]=useState(false),[reason,setReason]=useState(''),[draft,setDraft]=useState({batch_size:10,max_concurrency:1,stale_after_minutes:30,max_paid_attempts_per_entity:2}),[saved,setSaved]=useState('')
@@ -35,4 +36,4 @@ export default function Layer2DispatcherTuning({rank,onError=()=>{}}){
 }
 function Metric({label,value}){return <div><small>{label}</small><strong>{value??'—'}</strong></div>}
 function Num({label,min,max,value,set}){return <label className="ldt-field">{label}<input type="number" min={min} max={max} step="1" value={value} onChange={e=>set(e.target.value)}/><small>{min}–{max}</small></label>}
-function RunTable({runs}){return <div className="ldt-runs"><h4>Latest comparable runs</h4><div className="ldt-table-wrap"><table><thead><tr><th>Started</th><th>Status</th><th>Policy</th><th>Progress</th><th>Active items/min</th><th>Wall items/min</th><th>Response</th><th>Extract</th><th>Retries</th><th>Evidence</th><th>Fields</th><th>L2 / L3 / blocked</th></tr></thead><tbody>{runs.length?runs.map(r=><tr key={r.id}><td>{when(r.started_at||r.created_at)}</td><td>{r.status}</td><td>b{r.policy_snapshot?.batch_size??'—'} · c{r.policy_snapshot?.max_concurrency??'—'} · a{r.policy_snapshot?.max_paid_attempts_per_entity??'—'}</td><td>{fmt(r.processed_count)}/{fmt(r.target_count)}</td><td>{fmt(r.active_window_items_per_min)}</td><td>{fmt(r.wall_throughput_items_per_min)}</td><td>{fmt(r.avg_response_ms)} ms</td><td>{fmt(r.avg_extraction_ms)} ms</td><td>{fmt(r.retry_count)}</td><td>{fmt(r.evidence_count)}</td><td>{pct(r.fields_resolved,r.fields_targeted)}</td><td>{fmt(r.resolved_l2_count)} / {fmt(r.escalated_l3_count)} / {fmt(r.blocked_count)}</td></tr>):<tr><td colSpan="12">No comparable runs.</td></tr>}</tbody></table></div></div>}
+function RunTable({runs}){return <div className="ldt-runs"><h4>Latest comparable runs</h4><div className="ldt-table-wrap"><table><thead><tr><th>Started</th><th>Status</th><th>Policy</th><th>Progress</th><th>Active items/min</th><th>Wall items/min</th><th>Response</th><th>Extract</th><th>Retries</th><th>Evidence</th><th>Fields</th><th>Layer 2 / Layer 3 / blocked</th></tr></thead><tbody>{runs.length?runs.map(r=><tr key={r.id}><td>{when(r.started_at||r.created_at)}</td><td>{r.status}</td><td>b{r.policy_snapshot?.batch_size??'—'} · c{r.policy_snapshot?.max_concurrency??'—'} · a{r.policy_snapshot?.max_paid_attempts_per_entity??'—'}</td><td>{fmt(r.processed_count)}/{fmt(r.target_count)}</td><td>{fmt(r.active_window_items_per_min)}</td><td>{fmt(r.wall_throughput_items_per_min)}</td><td>{fmt(r.avg_response_ms)} ms</td><td>{fmt(r.avg_extraction_ms)} ms</td><td>{fmt(r.retry_count)}</td><td>{fmt(r.evidence_count)}</td><td>{pct(r.fields_resolved,r.fields_targeted)}</td><td>{fmt(r.resolved_l2_count)} / {fmt(r.escalated_l3_count)} / {fmt(r.blocked_count)}</td></tr>):<tr><td colSpan="12">No comparable runs.</td></tr>}</tbody></table></div></div>}
