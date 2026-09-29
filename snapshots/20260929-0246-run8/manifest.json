@@ -1,0 +1,16 @@
+{
+  "captured_at": "2026-09-29T02:46:56.901Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-course-coverage.png",
+      "route": "course-coverage",
+      "action": null,
+      "clicked": true,
+      "heading": "Operational overview",
+      "settle_ms": 2924,
+      "height": 1611,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#course-coverage"
+    }
+  ]
+}
