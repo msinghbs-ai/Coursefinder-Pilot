@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
-import { admissionCheck, baseHost, keepScholarshipUrl, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
+import { admissionCheck, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.4.0";
 // v0.4.0 (scholarship discovery): the reader confirms the page names the scholarship (title, og:title, <h1>, or the whole
 // name in one of the first <h2>s) before anything is applied - otherwise read_status "name_mismatch"; Firecrawl for
@@ -277,7 +277,7 @@ Deno.serve(async (req) => {
       const phase = String(body.phase || "all"), deadline = t0 + 105_000;
       const out: Record<string, unknown> = {};
       if (phase === "all" || phase === "discover") {
-        const provs: { provider_id: string; website: string; reason: string; names: string[]; held: { scholarship_id: string; name: string }[] }[] = await rpc("svc_scholarship_discover_next", { p_limit: Math.min(Number(body.limit || 3), 6) });
+        const provs: { provider_id: string; website: string; reason: string; hosts?: string[]; names: string[]; held: { scholarship_id: string; name: string }[] }[] = await rpc("svc_scholarship_discover_next", { p_limit: Math.min(Number(body.limit || 3), 6) });
         const done: unknown[] = [];
         await pool(provs, 3, async (p) => {
           let site: URL;
@@ -286,13 +286,13 @@ Deno.serve(async (req) => {
             try { const r = await fetch(site, { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) }); if (r.url) site = new URL(r.url); await r.body?.cancel() } catch { /* keep */ }
             const found = new Map<string, { url: string; title?: string; source: string }>();
             const methods: string[] = []; let total = 0;
-            const origins = [site.origin, `https://scholarships.${baseHost(site.hostname)}`].filter((o, i, a) => a.indexOf(o) === i);
+            const origins = [site.origin, `https://scholarships.${baseHost(site.hostname)}`, ...(p.hosts || []).map((h) => `https://www.${baseHost(h)}`)].filter((o, i, a) => a.indexOf(o) === i);
             for (const o of origins) {
               if (Date.now() > deadline - 20000) break;
               const sm = await siteMapUrls(o, Math.min(deadline - 15000, Date.now() + (o === site.origin ? 40000 : 12000)), scholarshipPri).catch(() => ({ urls: [] as string[], files: 0 }));
               if (sm.urls.length) methods.push(`sitemap${o === site.origin ? "" : ":" + new URL(o).hostname}(${sm.files})`);
               total += sm.urls.length;
-              for (const u of sm.urls) if (keepScholarshipUrl(u, site.hostname)) found.set(normUrl(u), { url: u, source: "sitemap" });
+              for (const u of sm.urls) if (keepScholarshipUrl(u, [site.hostname, ...(p.hosts || [])])) found.set(normUrl(u), { url: u, source: "sitemap" });
             }
             if (!found.size) {
               if (await useFc("sch_map", p.provider_id, site.origin)) {
@@ -302,7 +302,7 @@ Deno.serve(async (req) => {
                 else {
                   const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
                   methods.push(`map_search(${links.length})`); total += links.length;
-                  for (const u of links) if (u.url && keepScholarshipUrl(u.url, site.hostname)) found.set(normUrl(u.url), { url: u.url, title: u.title, source: "map" });
+                  for (const u of links) if (u.url && keepScholarshipUrl(u.url, [site.hostname, ...(p.hosts || [])])) found.set(normUrl(u.url), { url: u.url, title: u.title, source: "map" });
                 }
               } else methods.push("map:budget");
             }
@@ -322,10 +322,11 @@ Deno.serve(async (req) => {
         out.discover = done;
       }
       if ((phase === "all" || phase === "search") && Date.now() < deadline - 45000) {
-        const items: { scholarship_id: string; name: string; provider_id: string; site: string; names: string[] }[] = await rpc("svc_scholarship_search_next", { p_limit: Math.min(Number(body.search_limit || 4), 20) });
+        const items: { scholarship_id: string; name: string; provider_id: string; site: string; hosts?: string[]; names: string[] }[] = await rpc("svc_scholarship_search_next", { p_limit: Math.min(Number(body.search_limit || 4), 20) });
         const done: unknown[] = [];
         await pool(items, 4, async (it) => {
-          let host = ""; try { host = new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
+          let host = ""; try { host = (it.hosts || [])[0] || new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
+          const hosts = [host, it.site, ...(it.hosts || [])].filter(Boolean).map((h) => { try { return new URL(/^https?:/i.test(h) ? h : "https://" + h).hostname } catch { return h } });
           const q = `"${it.name.replace(/"/g, "")}" site:${baseHost(host)}`;
           if (!host || !(await useFc("sch_search", it.provider_id, q))) { await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: "budget", p_results: [], p_match: {} }); done.push({ scholarship_id: it.scholarship_id, status: "budget" }); return }
           try {
@@ -333,10 +334,10 @@ Deno.serve(async (req) => {
             const d = await r.json().catch(() => ({}));
             const res = (d?.data?.web || (Array.isArray(d?.data) ? d.data : [])).map((x: any) => ({ url: String(x.url || ""), title: String(x.title || "") })).filter((x: any) => /^https?:/i.test(x.url));
             const prov = providerTokens(it.names || []);
-            const kept = res.map((x: any) => { let ok = false; try { const u = new URL(x.url); ok = (baseHost(u.hostname) === baseHost(host) || u.hostname.endsWith("." + baseHost(host))) && !/\.(pdf|docx?|xlsx?)(\?|$)|\/news|\/events?\//i.test(u.pathname) } catch { /* */ } return { ...x, kept: ok } });
+            const kept = res.map((x: any) => { let ok = false; try { const u = new URL(x.url); ok = onSite(u.hostname, hosts) && !/\.(pdf|docx?|xlsx?)(\?|$)|\/news|\/events?\//i.test(u.pathname) } catch { /* */ } return { ...x, kept: ok } });
             const pool2 = kept.filter((x: any) => x.kept);
             let m: { url: string; basis: string } | null = matchScholarshipPage(it.name, pool2, prov);
-            if (!m) { const byTitle = pool2.filter((x: any) => nameOnPage(it.name, [x.title], prov).ok && keepScholarshipUrl(x.url, host)); if (byTitle.length === 1) m = { url: byTitle[0].url, basis: "search_title" } }
+            if (!m) { const byTitle = pool2.filter((x: any) => nameOnPage(it.name, [x.title], prov).ok && keepScholarshipUrl(x.url, hosts)); if (byTitle.length === 1) m = { url: byTitle[0].url, basis: "search_title" } }
             const rec = await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: r.ok ? (m ? "matched" : "no_match") : `http_${r.status}`, p_results: kept, p_match: m || {} });
             done.push({ scholarship_id: it.scholarship_id, results: res.length, match: m, matched: rec?.matched ?? false });
           } catch (e) {
@@ -347,7 +348,7 @@ Deno.serve(async (req) => {
         out.search = done;
       }
       if ((phase === "all" || phase === "candidates") && Date.now() < deadline - 30000) {
-        const items: { candidate_id: number; url: string; provider_id: string; site: string }[] = await rpc("svc_scholarship_candidate_next", { p_limit: Math.min(Number(body.read_limit || 30), 60) });
+        const items: { candidate_id: number; url: string; provider_id: string; site: string; hosts?: string[] }[] = await rpc("svc_scholarship_candidate_next", { p_limit: Math.min(Number(body.read_limit || 30), 60) });
         const tally: Record<string, number> = {}; const admitted: unknown[] = [];
         await pool(items, 6, async (it) => {
           if (Date.now() > deadline) { await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_final_url: null, p_storage_path: null, p_sha256: null, p_facts: null }); return }
@@ -355,7 +356,7 @@ Deno.serve(async (req) => {
           let facts: Record<string, unknown> | null = null, path: string | null = null, sha: string | null = null;
           if (pg.status === "read") {
             let host = ""; try { host = new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
-            const adm = admissionCheck(pg.html, pg.finalUrl, host);
+            const adm = admissionCheck(pg.html, pg.finalUrl, [host, ...(it.hosts || [])]);
             facts = { ...scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || ""), page_title: titleOf(pg.html).slice(0, 200), h1: h1Of(pg.html).slice(0, 200), final_url: pg.finalUrl, extractor: SCH_VERSION, admission: adm };
             if (adm.admit) {
               const gz = await gzip(pg.html); sha = await sha256(new TextEncoder().encode(pg.html));

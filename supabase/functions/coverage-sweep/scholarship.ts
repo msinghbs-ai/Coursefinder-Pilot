@@ -176,11 +176,16 @@ const SCH_KEEP = /(scholarship|bursar|award|grant|fee-remission|fee-reduction|fe
 const SCH_DROP = /(\/news|\/events?\/|\/stories|\/story\/|\/blog|\/media|\/staff|\/people\/|\/profile|login|\/search|\/apply(?:ing)?\b|\/how-to-apply|\/terms|\/conditions|\/faqs?\b|\/rules|\/recipients|\/awardees|\/donat|\/giving|\/alumni\/|teaching-award|staff-award|research-grants?\/|\/grants?-and-funding|\/tag\/|\/category\/|wp-content|\/feed|\.(pdf|jpe?g|png|gif|docx?|xlsx?|zip|mp4)(\?|$))/i;
 const SCH_LISTING = /\/(scholarships?|international-scholarships?|scholarships-and-(?:fees|grants|awards|prizes)|find-a-scholarship|find-scholarship|scholarship-search|scholarships-search|awards?|grants?|bursar(?:y|ies)|international|undergraduate|postgraduate|research|domestic)\/?$/i;
 export const baseHost = (h: string) => h.toLowerCase().replace(/^www\./, "").split(".").slice(-3).join(".");
-export function keepScholarshipUrl(url: string, host: string) {
+// on the provider's own site: its website host or one of its other domains (e.g. monash.edu for monash.edu.au)
+export function onSite(hostname: string, hosts: string | string[]) {
+  const h = hostname.toLowerCase();
+  return (Array.isArray(hosts) ? hosts : [hosts]).filter(Boolean).some((x) => baseHost(h) === baseHost(x) || h.endsWith("." + baseHost(x)));
+}
+export function keepScholarshipUrl(url: string, host: string | string[]) {
   try {
     const x = new URL(url);
     if (!/^https?:$/.test(x.protocol)) return false;
-    if (baseHost(x.hostname) !== baseHost(host) && !x.hostname.endsWith("." + baseHost(host))) return false;
+    if (!onSite(x.hostname, host)) return false;
     if (x.search && /[?&](q|query|search|page|f\.|collection|filter)/i.test(x.search)) return false;
     return SCH_KEEP.test(x.hostname + x.pathname) && !SCH_DROP.test(x.pathname) && !SCH_LISTING.test(x.pathname) && x.pathname.length > 1;
   } catch { return false }
@@ -253,13 +258,13 @@ export function isListingPage(html: string, url: string, title: string | null) {
   }
   return links.size >= 12 || (!!title && /^(?:[\w'’-]+\s){0,3}scholarships$/i.test(title) && links.size >= 5);
 }
-export function admissionCheck(html: string, finalUrl: string, providerHost: string) {
+export function admissionCheck(html: string, finalUrl: string, providerHost: string | string[]) {
   const reasons: string[] = [];
   const text = mainText(html);
   const name = scholarshipTitle(html);
   if (!name) reasons.push("no_named_title");
   let host = ""; try { host = new URL(finalUrl).hostname } catch { /* */ }
-  if (!host || (baseHost(host) !== baseHost(providerHost) && !host.endsWith("." + baseHost(providerHost)))) reasons.push("not_provider_domain");
+  if (!host || !onSite(host, providerHost)) reasons.push("not_provider_domain");
   if (isListingPage(html, finalUrl, name)) reasons.push("listing_page");
   const intl = internationalEligibility(text);
   if (!intl.explicit) reasons.push(intl.excluded ? "domestic_only" : "international_not_stated");
