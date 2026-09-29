@@ -1,8 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
-import { admissionCheck, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.4.6";
+import { admissionCheck, baseHost, keepScholarshipUrl, namedScholarshipTitle, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
+const SCH_VERSION = "scholarship-sweep-v0.5.0";
+// v0.5.0 (level hand-check, 40 publication holds): levels from the page content only (site menus, enquiry forms and
+// link-only lists removed - RMIT, Avondale and CQU menus gave "research and undergraduate"); "graduate coursework" is
+// postgraduate coursework; English language course scholarships are linked to English courses only (english_course);
+// "held in tenure until", "not currently offered", "no longer offered/available", "closed permanently" set not_offered
+// (publishability reports it; a closed annual round does not). An admitted record whose stored name is not a
+// scholarship's own name ("--> Scholarships <!--") no longer meets the admission rules.
 // v0.4.6 (step-2 hand-check): amounts in another currency (Swinburne "$5,000 USD") or stated as a maximum ("up to
 // A$7,496", "up to AUD$20,000") are not a single AUD value; the eligibility section is a heading-like "Eligibility"
 // (not "eligible countries") and when it states no level the page start is used.
@@ -278,7 +284,15 @@ Deno.serve(async (req) => {
         if (status === "read") {
           const t = titleOf(html) + " " + h1Of(html);
           facts = { ...scholarshipFacts(html, t, it.name), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION, name_check: nc };
-          if (it.url_source === "admitted") { let h = ""; try { h = new URL(it.url).hostname } catch { /* */ } (facts as any).admission = admissionCheck(html, finalUrl, [h, new URL(finalUrl).hostname]) }
+          if (it.url_source === "admitted") {
+            let h = ""; try { h = new URL(it.url).hostname } catch { /* */ }
+            const adm = admissionCheck(html, finalUrl, [h, new URL(finalUrl).hostname]);
+            // not offered is reported by publishability (reversible), not a reason to withdraw the record
+            adm.reasons = adm.reasons.filter((r: string) => r !== "not_offered");
+            if (!namedScholarshipTitle(it.name)) adm.reasons.push("stored_name_not_a_title");
+            adm.admit = adm.reasons.length === 0;
+            (facts as any).admission = adm;
+          }
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
           path = `layer2/AU/scholarships/${it.provider_id}/${it.scholarship_id}/${sha}.html.gz`;
           const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });

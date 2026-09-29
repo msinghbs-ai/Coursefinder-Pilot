@@ -14,6 +14,27 @@ export function mainText(html: string) {
   return htmlToText(h);
 }
 
+// v0.5.0 (level hand-check): study levels were read from site menus ("Undergraduate courses Postgraduate courses ...
+// Research degrees" on RMIT pages, "Postgraduate Courses Higher Degrees by Research" on Avondale and CQU pages) and
+// enquiry forms ("I am interested in: ... Research Degrees"). The level text is now the page content only: from the
+// page's own <h1>, without menus, headers, footers, side panels, forms, menu/breadcrumb blocks and link-only lists.
+export function contentText(html: string) {
+  let h = html.replace(/<(script|style|noscript|svg|template)[\s\S]*?<\/\1>/gi, " ");
+  const main = h.match(/<main[\s\S]*?<\/main>/i);
+  if (main && main[0].length > 1500) h = main[0];
+  const h1 = h.search(/<h1[\s>]/i);
+  if (h1 > 0 && htmlToText(h.slice(h1)).length > 300) h = h.slice(h1);
+  h = h.replace(/<(nav|header|footer|aside|form|select)\b[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<(div|ul|section)[^>]+(?:class|id)=["'][^"']*(?:menu|breadcrumb|navigation|navbar|sidebar|footer|megamenu|site-header)[^"']*["'][\s\S]*?<\/\1>/gi, " ")
+    // link-only lists (at least four items, nearly all links): menus that are not marked as such
+    .replace(/<ul\b[^>]*>([\s\S]*?)<\/ul>/gi, (all, inner: string) => {
+      const items = inner.match(/<li\b[\s\S]*?(?=<li\b|$)/gi) || [];
+      const links = items.filter((li) => /<a\b/i.test(li) && htmlToText(li.replace(/<a\b[\s\S]*?<\/a>/gi, "")).length < 4).length;
+      return items.length >= 4 && links / items.length >= 0.75 ? " " : all;
+    });
+  return htmlToText(h);
+}
+
 // v0.4.2: levels the text excludes ("excluding Master by Research or PhD") or that describe earlier study ("completed
 // an undergraduate degree") are not levels of the scholarship.
 export function levelText(body: string) {
@@ -24,9 +45,11 @@ export function levelText(body: string) {
 function levelsIn(t: string) {
   const levels = new Set<string>();
   if (/\bundergraduate\b|\bbachelor/.test(t)) levels.add("undergraduate");
-  const research = /\b(phd|doctor of philosophy|doctoral|higher degree by research|hdr|research degree|master(?:'s|s)? by research|research master|postgraduate research|graduate research)/.test(t);
-  if (/postgraduate coursework|coursework (?:master|postgraduate)|master(?:'s|s)? (?:degree )?by coursework|graduate (?:certificate|diploma)/.test(t)) levels.add("postgraduate_coursework");
-  else if (/\bpostgraduate\b|\bmaster(?:'s|s)?\b/.test(t) && !research) levels.add("postgraduate_coursework");
+  const research = /\b(phd|doctor of philosophy|doctoral|higher degrees? by research|hdr|research degree|master(?:'s|s)? by research|research master|postgraduate research|graduate research|research (?:courses?|programs?|higher degrees?))/.test(t);
+  // v0.5.0: "graduate coursework" (Melbourne) is postgraduate coursework; "postgraduate" beside research levels counts
+  // when it is not itself "postgraduate research"
+  if (/postgraduate coursework|graduate coursework|coursework (?:master|postgraduate)|master(?:'s|s)? (?:degree )?by coursework|graduate (?:certificate|diploma)/.test(t)) levels.add("postgraduate_coursework");
+  else if (/\bpostgraduate\b(?!\s+(?:research|by research|\(research\)))|\bmaster(?:'s|s)?\b(?!\s+(?:by research|of philosophy|\(research\)))/.test(t) && (!research || /\bpostgraduate\b(?!\s+(?:research|by research))/.test(t))) levels.add("postgraduate_coursework");
   if (research) levels.add("research");
   return levels;
 }
@@ -132,17 +155,44 @@ export function scholarshipDeadline(body: string) {
 
 function ctx(t: string, re: RegExp) { const m = t.match(new RegExp(re.source, re.flags.replace("g", ""))); if (!m) return null; const at = m.index || 0; return clean(t.slice(Math.max(0, at - 120), at + 160)) }
 
+// v0.5.0: a scholarship or bursary for an English language course (General English, IELTS preparation, ELICOS, EAP,
+// Academic English, English programs) is linked to the provider's English language courses only, never to degrees.
+const ENGLISH_COURSE = /\b(general english|ielts prep(?:aration)?|elicos|english for academic purposes|\beap\b|academic english|english (?:language )?(?:programs?|courses?)|english language (?:intensive )?course|english bursary)\b/i;
+export function englishCourse(name: string, content = "") {
+  // the scholarship's name, or the page's own "Course: General English" field
+  const n = name.match(ENGLISH_COURSE);
+  const c = content.slice(0, 1500).match(/\bCourse\s*:?\s*(General English|IELTS Preparation|RMIT UP Academic English|Academic English|ELICOS|English for Academic Purposes)\b/);
+  const k = (n ? n[1] : c ? c[1] : "").toLowerCase();
+  if (!k) return null;
+  return { course: /ielts/.test(k) ? "ielts preparation" : /general english/.test(k) ? "general english" : /academic english|academic purposes|\beap\b/.test(k) ? "academic english" : "english" };
+}
+// v0.5.0: not currently offered - held by a recipient until a later year, not offered, no longer offered or available,
+// closed permanently, discontinued. An annual round that has closed for this year is not this.
+const NOT_OFFERED = /(held in tenure until|currently held in tenure|not currently (?:being )?(?:offered|available|open for applications|accepting applications)|no longer (?:be )?(?:offered|available|accepting applications)|applications? (?:have |are |is )?closed permanently|permanently closed|(?:has been|is|was) discontinued|will not be offered|not (?:being )?offered in 20\d\d)/i;
+export function notOffered(text: string) {
+  const m = text.slice(0, 15000).match(NOT_OFFERED);
+  if (!m) return null;
+  const at = m.index || 0;
+  return clean(text.slice(Math.max(0, at - 100), at + 140));
+}
+
 export function scholarshipFacts(html: string, titleText: string, name: string) {
   const body = mainText(html);
+  const content = contentText(html);
   // levels from the eligibility section when the page has one (pages mention other levels elsewhere); else the page start
   // v0.4.6: the eligibility section is a heading-like "Eligibility" / "Who is eligible" (not "eligible countries"), and
   // when it states no level the page start is used
-  const at = body.search(/\b(?:eligibility(?: criteria| requirements)?\b|who (?:is|can be) eligible|am i eligible|to be eligible)/i);
-  const eligibility = at >= 0 ? body.slice(at, at + 1200) : null;
+  // v0.5.0: from the page content (menus and forms removed); the name's own level still decides first
+  const at = content.search(/\b(?:eligibility(?: criteria| requirements)?\b|who (?:is|can be) eligible|am i eligible|to be eligible)/i);
+  const eligibility = at >= 0 ? content.slice(at, at + 1200) : null;
   const fromElig = eligibility ? scholarshipLevels(titleText + " " + name, eligibility) : [];
+  const eng = englishCourse(name, content);
+  const off = notOffered(content);
   return {
-    levels: fromElig.length ? fromElig : scholarshipLevels(titleText + " " + name, body),
-    levels_from: fromElig.length ? "eligibility" : "page",
+    levels: eng ? [] : fromElig.length ? fromElig : scholarshipLevels(titleText + " " + name, content),
+    levels_from: eng ? "english_course" : fromElig.length ? "eligibility" : "content",
+    ...(eng ? { english_course: eng } : {}),
+    not_offered: !!off, ...(off ? { not_offered_context: off } : {}),
     ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped } })(),
     value: scholarshipValue(body, name),
     deadline: scholarshipDeadline(body),
@@ -306,7 +356,7 @@ export function internationalEligibility(text: string) {
 }
 export function currentlyOffered(text: string, today = new Date()) {
   const t = text.slice(0, 15000);
-  if (/(no longer (?:be )?(?:offered|available|accepting)|(?:has been|is|was) discontinued|closed permanently|permanently closed|not (?:being )?offered in 20\d\d|this scholarship (?:is|has) (?:now )?closed|will not be offered)/i.test(t)) return { ok: false, reason: "not_offered" };
+  if (NOT_OFFERED.test(t) || /this scholarship (?:is|has) (?:now )?closed permanently/i.test(t)) return { ok: false, reason: "not_offered" };
   const years = [...t.matchAll(/\b(20[1-3]\d)\b/g)].map((m) => Number(m[1])).filter((y) => y >= 2019 && y <= 2035);
   if (years.length && Math.max(...years) < today.getUTCFullYear()) return { ok: false, reason: "past_year_only" };
   return { ok: true, reason: null };

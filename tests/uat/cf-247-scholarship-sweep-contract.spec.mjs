@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.4.6')
+  expect(idx).toContain('scholarship-sweep-v0.5.0')
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
@@ -174,4 +174,43 @@ test('Decision 139 publication holds: hand-check holds are reported and skipped 
   expect(sql).toContain("'held after hand-check'")
   expect(sql).toContain('01d14b534fdda592ca99cd9ee18e5a68')
   expect(sql).not.toMatch(/cron\.schedule/)
+})
+
+// v0.5.0: real excerpts from the pages behind the 40 publication holds (29 Sep 2026)
+const RMIT_NAV = '<div class="megamenu"><ul><li><a href="/u">Undergraduate courses</a></li><li><a href="/p">Postgraduate courses</a></li><li><a href="/v">Vocational studies</a></li><li><a href="/pre">Pre-university studies</a></li></ul><ul><li><a href="/r1">Our research</a></li><li><a href="/r2">Impact</a></li><li><a href="/r3">Research degrees</a></li><li><a href="/r4">Facilities</a></li></ul></div>'
+const AVONDALE_NAV = '<ul><li><a href="/n">Nursing</a></li><li><a href="/t">Teaching</a></li><li><a href="/b">Business</a></li><li><a href="/pg">Postgraduate Courses</a></li><li><a href="/hdr">Higher Degrees by Research</a></li></ul>'
+const AVONDALE_FORM = '<form><label>I am interested in:</label><select><option>Arts</option><option>Business</option><option>Research Degrees</option></select></form>'
+test('v0.5.0 levels come from the page content, not menus or enquiry forms', async () => {
+  const { scholarshipFacts } = await load()
+  const rmit = '<html><head><title>Medibank Excellence Scholarship - RMIT University</title></head><body>' + RMIT_NAV + '<div><h1>Medibank Excellence Scholarship</h1><p>This scholarship, valued at AU$12,000, is available to international students studying Australian Year 12 or International Baccalaureate in Australia and commencing an undergraduate degree at RMIT.</p><p>' + 'Overview text. '.repeat(40) + '</p><p>Eligibility In order to qualify for this scholarship, you must: be applying from Australia; be a current year 12 student.</p></div></body></html>'
+  expect(scholarshipFacts(rmit, 'Medibank Excellence Scholarship', 'Medibank Excellence Scholarship').levels).toEqual(['undergraduate'])
+  const avondale = '<html><head><title>Young Musician Scholarship - Avondale University</title></head><body>' + AVONDALE_NAV + '<h1>Young Musician Scholarship (1)</h1><p>This scholarship is available to any new student aged 29 years or younger enrolling with a music major or specialisation in the first year of the Bachelor of Arts or Bachelor of Arts/Bachelor of Teaching course. Value $2000</p><p>' + 'More about Avondale. '.repeat(30) + '</p>' + AVONDALE_FORM + '</body></html>'
+  expect(scholarshipFacts(avondale, 'Young Musician Scholarship', 'Young Musician Scholarship').levels).toEqual(['undergraduate'])
+  const p89 = '<html><body>' + RMIT_NAV + '<h1>RMIT University Top-up Scholarship for Vietnam Government (Project 89)</h1><p>If you are an international student from Vietnam applying for a PhD at RMIT University, you may be eligible for this top-up scholarship.</p><p>' + 'Value and benefits. '.repeat(30) + '</p><p>Eligibility In order to qualify for this scholarship you must: be a citizen of Vietnam; have an offer for a PhD at RMIT.</p></body></html>'
+  expect(scholarshipFacts(p89, 'RMIT University Top-up Scholarship for Vietnam Government (Project 89)', 'RMIT University Top-up Scholarship for Vietnam Government (Project 89)').levels).toEqual(['research'])
+  // a page that genuinely lists every level keeps them (Melbourne "Graduate coursework, Graduate research")
+  const airc = '<main><h1>Australian Industrial Relations Commission (AIRC) Centennial Prize</h1><p>' + 'About the prize. '.repeat(100) + '</p><p>Eligible study level Undergraduate, Honours, Graduate coursework, Graduate research. Eligible student type Domestic and international students</p></main>'
+  expect(scholarshipFacts(airc, 'AIRC Centennial Prize', 'AIRC Centennial Prize').levels).toEqual(['postgraduate_coursework', 'research', 'undergraduate'])
+  const cqu = '<main><h1>CQUniversity ASEAN Student Scholarship</h1><p>' + 'x '.repeat(800) + '</p><p>Eligible undergraduate, postgraduate coursework and research courses at CQUniversity Australia.</p></main>'
+  expect(scholarshipFacts(cqu, 'CQUniversity ASEAN Student Scholarship', 'CQUniversity ASEAN Student Scholarship').levels).toEqual(['postgraduate_coursework', 'research', 'undergraduate'])
+})
+
+test('v0.5.0 English language course scholarships and not currently offered', async () => {
+  const { scholarshipFacts, englishCourse, notOffered, currentlyOffered } = await load()
+  expect(englishCourse('RMIT UP General English Bursary for Asia')).toEqual({ course: 'general english' })
+  expect(englishCourse('RMIT UP IELTS Preparation Bursary for Latin America, Europe and Türkiye')).toEqual({ course: 'ielts preparation' })
+  expect(englishCourse('COLFUTURO-RMIT UP Joint Scholarship for English Programs')).toEqual({ course: 'english' })
+  expect(englishCourse('RMIT UP Academic English Bursary for Asia')).toEqual({ course: 'academic english' })
+  expect(englishCourse('English Language Scholarship for Sponsored Students')).toBeNull()
+  expect(englishCourse('Global Excellence Scholarship')).toBeNull()
+  const ge = '<html><body>' + RMIT_NAV + '<h1>RMIT UP General English Bursary for Asia</h1><p>Eligibility See eligibility conditions Course General English Overview If you are a citizen of Japan, South Korea, Taiwan or Thailand this bursary provides a tuition fee discount on your General English course.</p><p>' + 'y '.repeat(400) + '</p></body></html>'
+  expect(scholarshipFacts(ge, 'RMIT UP General English Bursary for Asia', 'RMIT UP General English Bursary for Asia')).toMatchObject({ levels: [], english_course: { course: 'general english' } })
+  expect(notOffered('This scholarship is currently held in tenure until 2030. Applications will reopen after that.')).toContain('held in tenure until 2030')
+  expect(notOffered('This scholarship is no longer offered.')).not.toBeNull()
+  expect(notOffered('Applications closed permanently in 2024.')).not.toBeNull()
+  expect(notOffered('Applications for 2026 have now closed. Applications for 2027 open in July.')).toBeNull()
+  expect(notOffered('This scholarship is not open to boys who are currently attending the School.')).toBeNull()
+  expect(currentlyOffered('Applications are closed for this year and reopen in 2027.', new Date('2026-09-29')).ok).toBe(true)
+  const ih = '<main><h1>International House Global Residency Scholarship</h1><p>' + 'z '.repeat(800) + '</p><p>This scholarship is currently held in tenure until 2030.</p></main>'
+  expect(scholarshipFacts(ih, 'International House Global Residency Scholarship', 'International House Global Residency Scholarship')).toMatchObject({ not_offered: true })
 })
