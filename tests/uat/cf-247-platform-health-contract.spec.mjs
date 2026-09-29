@@ -66,3 +66,11 @@ test.describe('CF-247 platform health contract',()=>{
     expect(sql).toContain("'text',array_to_string(v_lines,E'\\n')")
   })
 })
+
+test('health budget check aligned with Layer 3 route guards and credit floor', async () => {
+  const fs = await import('node:fs')
+  const sql = fs.readFileSync('supabase/migrations/20260930010000_cf247_health_openrouter_budget_align.sql', 'utf8')
+  expect(sql).toContain('ba7d0e94c18314afc6e3d8bf5f7becce')
+  expect(sql).toContain('US$14 combined daily ceiling')
+  expect(sql).toContain("budgets:openrouter_credit")
+})
