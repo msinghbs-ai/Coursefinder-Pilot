@@ -33,5 +33,8 @@ test('ladder migration enforces the tier rule and keeps admission guarded', asyn
   expect(fn).toContain('layer3_cascade_ladder_service')
   expect(fn).toContain('not_stated_with_signal')
   expect(fn).toContain('audit_disagreement')
+  expect(fn).toContain('layer3_fact_release_service')
+  expect(fs.readFileSync('supabase/migrations/20260930023000_cf247_l3_key_limit_pause_cleanup.sql', 'utf8')).toContain('budgets:openrouter_refusing')
+  expect(fs.readFileSync('supabase/migrations/20260930024000_cf247_l3_release_on_refusal.sql', 'utf8')).toContain('layer3_fact_release_service')
   expect(fs.readFileSync('supabase/functions/_shared/cf247-model-routing.ts', 'utf8')).toContain('export const ROUTING_VERSION = "cf247-l3-model-routing-v1.0.0"')
 })

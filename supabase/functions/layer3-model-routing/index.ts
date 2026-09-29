@@ -246,6 +246,7 @@ Deno.serve(async (req: Request) => {
       const ladder = await rpc("layer3_cascade_ladder_service", { p_task_class: TASKS[task] });
       const tiers: any[] = ladder?.route_mode === "ladder" ? (ladder.tiers || []).filter((t: any) => t.active && t.profile?.enabled && !t.profile?.paused && isPinnedModel(String(t.profile?.model_identifier))) : [];
       const tierTally: Record<string, number> = {};
+      let refused = "";  // OpenRouter refused a call (key, billing or rate limit): stop and release, never escalate or send to Layer 4
       if (tiers.length) {
         const finalTier = tiers[tiers.length - 1];
         await pool(items, Math.min(Math.max(1, Number(body.concurrency || 4)), 8), async (it) => {
@@ -273,10 +274,12 @@ Deno.serve(async (req: Request) => {
               const done = await rpc("layer3_fact_complete_ladder_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_attempts: [], p_final: pgSafe({ profile_id: tiers[0].profile.id, tier_no: tiers[0].tier_no, escalation_reasons: [], result }) });
               status = done?.work_status || "?"; tierTally["safety_rule"] = (tierTally["safety_rule"] || 0) + 1;
             } else {
+              if (refused) { const r = await rpc("layer3_fact_release_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_reason: refused }); status = r?.work_status || "released"; tally[status] = (tally[status] || 0) + 1; return }
               const attempts: any[] = []; let final: any = null;
               for (let i = 0; i < tiers.length; i++) {
                 const t = tiers[i], last = i === tiers.length - 1;
                 const x = await ask(t.profile); cost += x.cost;
+                if (/provider_(401|402|403|429)/.test(String(x.result.errors?.[0] || ""))) { refused = String(x.result.errors[0]).slice(0, 200); break }
                 const answered = task === "intake" ? x.chk.status === "months" : x.chk.status === "stated";
                 const reasons: string[] = !x.chk.valid ? (x.chk.errors || ["rejected"]).map((e: string) => String(e).split(":")[0]).slice(0, 4) : (!answered && signal ? ["not_stated_with_signal"] : []);
                 if (reasons.length && !last) { attempts.push({ profile_id: t.profile.id, tier_no: t.tier_no, escalation_reasons: reasons, result: x.result }); continue }
@@ -291,6 +294,7 @@ Deno.serve(async (req: Request) => {
                 }
                 break;
               }
+              if (refused) { const r = await rpc("layer3_fact_release_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_reason: refused }); status = r?.work_status || "released"; tally[status] = (tally[status] || 0) + 1; return }
               tierTally[`tier${final.tier_no}`] = (tierTally[`tier${final.tier_no}`] || 0) + 1;
               const done = await rpc("layer3_fact_complete_ladder_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_attempts: pgSafe(attempts), p_final: pgSafe(final) });
               status = done?.work_status || "?";
