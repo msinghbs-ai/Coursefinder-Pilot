@@ -39,7 +39,9 @@ const ATTR={official_url:{label:'Official course page',layer:'Layer 2'},provider
 const TIERS=[['','All providers'],['top_10','Top 10'],['top_11_40','11–40'],['top_41_100','41–100'],['rest','All others']]
 const PAGE=50
 
-export function CoverageView(){
+// v2.15.112: view 'courses' (course completeness) or 'attributes' (attribute completeness and pipeline stage); both
+// kept by default for older callers. Platform Admin 30 Sep 2026: separate course and attribute completion in tabs.
+export function CoverageView({view='all'}={}){
   const[tier,setTier]=useState(''),[data,setData]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState('')
   const[pick,setPick]=useState(null),[list,setList]=useState(null),[offset,setOffset]=useState(0),[listBusy,setListBusy]=useState(false),[tip,setTip]=useState(null)
   const load=()=>{setBusy(true);setError('');adminRead('course_coverage',tier?{tier}:{}).then(setData).catch(e=>setError(e.message||String(e))).finally(()=>setBusy(false))}
@@ -69,6 +71,7 @@ export function CoverageView(){
     </section>
     {error&&<div className="dq-alert"><AlertTriangle size={16}/><span>{error}</span></div>}
 
+    {view!=='attributes'&&<>
     <section className="cf-metric-grid cc-score" aria-label="Course completeness">
       <Metric icon={CircleGauge} tone="info" label="Course completeness score" value={score?fmtPercent(score.completeness):'—'}
         detail={score?`Average share of a course's ${fmtNumber(score.attributes||7)} attributes that are admitted`:'Rebuilt hourly'}/>
@@ -78,10 +81,14 @@ export function CoverageView(){
         detail={score?`${fmtShare(score.fully_complete,score.courses)} of ${fmtNumber(score.courses)} courses have every attribute`:''}/>
       <Metric label="Courses accounted for" value={fmtNumber(data?.courses)} detail={`${fmtNumber(data?.providers)} providers · every course has a state for every attribute`}/>
     </section>
+    </>}
+    {view!=='courses'&&<>
     <section className="cf-metric-grid cc-kpis">
       {l2.map(a=>{const n=Number(a.states?.admitted||0),t=Number(a.total||0);return <Metric key={a.attribute} label={ATTR[a.attribute].label} value={fmtShare(n,t)} detail={`${fmtNumber(n)} of ${fmtNumber(t)} admitted`}/>})}
     </section>
+    </>}
 
+    {view!=='courses'&&<>
     <section className="cc-panel">
       <header><div><h2><Table2 size={14}/> Completeness by attribute</h2><p>Every course, one completeness state per attribute. Select a count to list those courses. States the hourly build does not record yet show as –.</p></div>
         <small>{score?.computed_at?`Updated ${fmtDateTime(score.computed_at)} · rebuilt hourly`:''}</small></header>
@@ -101,14 +108,18 @@ export function CoverageView(){
           {COMPLETENESS_STATES.map(s=>{const n=Number(a.states?.[s.key]||0);return <td key={s.key} className="num">{n?<button className={`cc-count ${pick?.attribute===a.attribute&&pick?.cstate===s.key?'active':''}`} onClick={()=>choose({attribute:a.attribute,cstate:s.key})}>{fmtNumber(n)}</button>:<span className="cc-zero">–</span>}</td>})}
           <td className="num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
     </section>
+    </>}
 
+    {view!=='attributes'&&<>
     <section className="cc-panel">
       <header><div><h2>Courses by attributes admitted</h2><p>How many of each course's {fmtNumber(score?.attributes||7)} attributes are admitted. The completeness score is the average of these shares.</p></div></header>
       <div className="cc-bands">{(score?.by_admitted||[]).map(b=>{const n=Number(b.courses||0);return <div className="cc-band" key={b.admitted}>
         <span>{fmtNumber(b.admitted)} of {fmtNumber(score?.attributes||7)}</span><i><b style={{width:`${Math.max(1,n/maxBand*100)}%`}}/></i><em>{fmtNumber(n)} <small>{fmtShare(n,score?.courses)}</small></em></div>})}
         {!busy&&!(score?.by_admitted||[]).length&&<div className="cf-empty">No completeness build yet.</div>}</div>
     </section>
+    </>}
 
+    {view!=='courses'&&<>
     <section className="cc-panel">
       <header><div><h2>Coverage by pipeline stage</h2><p>Where each attribute sits in the acquisition pipeline. Hover a segment for counts; select a count in the table to list the courses.</p></div>
         <small>{data?.computed_at?`Updated ${fmtDateTime(data.computed_at)} · rebuilt hourly`:''}</small></header>
@@ -131,7 +142,9 @@ export function CoverageView(){
           {STATE_ORDER.map(s=>{const n=Number(a.states?.[s]||0);return <td key={s} className="num">{n?<button className={`cc-count ${pick?.attribute===a.attribute&&pick?.state===s?'active':''}`} onClick={()=>choose({attribute:a.attribute,state:s})}>{fmtNumber(n)}</button>:<span className="cc-zero">–</span>}</td>})}
           <td className="num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
     </section>
+    </>}
 
+    {view!=='courses'&&<>
     {pick&&<section className="cc-panel">
       <header><div><h2>{ATTR[pick.attribute]?.label} · {pickLabel}</h2><p>{fmtNumber(list?.total)} courses{tier?` · ${TIERS.find(t=>t[0]===tier)?.[1]}`:''}</p></div><Button compact onClick={()=>setPick(null)}>Close</Button></header>
       {listBusy?<div className="dq-skeleton-list">{Array.from({length:5}).map((_,i)=><div className="dq-skeleton row" key={i}/>)}</div>:
@@ -140,7 +153,9 @@ export function CoverageView(){
       </tbody></table></div>}
       <footer className="dq-pager"><button disabled={offset===0||listBusy} onClick={()=>setOffset(Math.max(0,offset-PAGE))}><ChevronLeft size={15}/>Previous</button><span>{fmtNumber(Math.min(offset+1,list?.total||0))}–{fmtNumber(Math.min(offset+PAGE,list?.total||0))} of {fmtNumber(list?.total)}</span><button disabled={offset+PAGE>=(list?.total||0)||listBusy} onClick={()=>setOffset(offset+PAGE)}>Next<ChevronRight size={15}/></button></footer>
     </section>}
+    </>}
 
+    {view!=='attributes'&&<>
     <section className="cc-panel">
       <header><div><h2>Daily trend</h2><p>Course completeness score and admitted share per Layer 2 attribute, one row per day (kept from 29 Sep 2026){tier?'. The score columns are for all providers.':'.'}</p></div></header>
       <div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Date</th><th className="num">Completeness</th><th className="num">Accounted for</th><th className="num">Fully complete</th>{l2.map(a=><th key={a.attribute}>{ATTR[a.attribute].label}</th>)}</tr></thead>
@@ -148,6 +163,7 @@ export function CoverageView(){
           <td className="num">{sc?fmtPercent(sc.completeness):'—'}</td><td className="num">{sc?fmtPercent(sc.accounted_pct):'—'}</td><td className="num">{sc?fmtNumber(sc.fully_complete):'—'}</td>
           {l2.map(a=>{const r=row[a.attribute];return <td key={a.attribute}>{r?<><strong>{fmtShare(Number(r.admitted||0),Number(r.total||0))}</strong><small>{fmtNumber(r.admitted||0)} courses</small></>:'—'}</td>})}</tr>})}</tbody></table></div>
     </section>
+    </>}
   </div>
 }
 

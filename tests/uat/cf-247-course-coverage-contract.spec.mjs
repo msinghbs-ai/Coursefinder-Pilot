@@ -16,9 +16,10 @@ test('Course coverage is reachable from Coverage & completeness and uses the val
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   // v2.15.107: Course coverage is the first tab of Coverage & completeness, inside the app shell; the old address still opens it.
-  expect(nav).toContain("{ key: 'courses', label: 'Course coverage', min: 1 }")
+  expect(nav).toContain("{ key: 'courses', label: 'Courses', min: 1 }")
+  expect(nav).toContain("{ key: 'attributes', label: 'Attributes', min: 1 }")
   expect(nav).toContain("'course-coverage': { page: 'coverage', tab: 'courses' }")
-  expect(main).toContain("case'coverage':return tab==='domains'?<DomainReadiness rank={rank}/>:<CoverageView/>")
+  expect(main).toContain("case'coverage':return tab==='domains'?<DomainReadiness rank={rank}/>:<CoverageView view={tab==='attributes'?'attributes':'courses'}/>")
   expect(v).toContain("adminRead('course_coverage'")
   expect(v).toContain("adminRead('course_coverage_courses'")
   expect(v).toContain("states:['candidate','in_review','awaiting_l3']")
