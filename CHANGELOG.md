@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.32 — 29 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.105** (University group filter on Courses and Providers; university group shown on provider detail).
+- Database (applied live): migration 20260929171000_cf247_admin_university_group_filter — checksum-guarded patches of the admin course and provider page functions, the catalogue filter options (new kind university_group) and provider detail; new helper security.university_group_provider_ids.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.31 — 29 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.104** (complete-coverage sweep, website discovery, document change checks, Layer 3 throughput).
