@@ -84,14 +84,24 @@ export function intakes(text: string) {
 
 // IELTS overall only when the page says "overall" next to the score, or prints the IELTS row of a score table
 // (overall then four band scores). A score next to a single band ("7.0 in Writing") is never taken as overall.
-const BAND = /(?:no (?:individual |other )?(?:band|sub-?score|section|component)s?(?: score)? (?:less than|lower than|below|under)|\b(?:each|every|all) (?:sub-?)?bands?(?: of| at least)?|minimum (?:of )?(?:\d(?:\.\d)? )?in (?:each|all)|not less than|no less than|(?:with )?(?:a )?minimum(?: score)? of)[^\d]{0,12}(\d(?:\.\d)?)/i
+const BAND = /(?:no (?:individual |other )?(?:band|sub-?score|section|component)s?(?: score)?(?: of)? (?:less than|lower than|below|under)|\b(?:each|every|all) (?:sub-?)?bands?(?: of| at least)?|minimum (?:of )?(?:\d(?:\.\d)? )?in (?:each|all)|not less than|no less than|(?:with )?(?:a )?minimum(?: score)? of)[^\d]{0,12}(\d(?:\.\d)?)/i
 // "5.5 in each band" / "6.0 or above in all sub-bands": the band score written before the words
 const BAND_PRE = /(\d(?:\.\d)?)\s*(?:or (?:above|higher|better)\s*)?(?:in|for|on) (?:each|every|all|any)(?: (?:of the )?(?:four )?)?(?:sub-?)?(?:bands?|sections?|components?|skills?|sub-?scores?)/i
 export function english(text: string) {
   const x: Record<string, unknown> = {}
   const ok = (v: number) => v >= 4 && v <= 9
+  const OTHER_TEST = /(TOEFL|PTE\b|Pearson|Cambridge|C1 Advanced|CAE\b|OET\b|Duolingo|Occupational English)/i
   for (const m of text.matchAll(/IELTS/gi)) {
-    const at = m.index || 0, win = text.slice(at, at + 220)
+    const at = m.index || 0
+    // the IELTS section ends where another test starts, so another test's "overall" is never read as IELTS
+    let win = text.slice(at, at + 220)
+    const cut = win.slice(5).search(OTHER_TEST); if (cut >= 0) win = win.slice(0, cut + 5)
+    // several different overall scores in one IELTS section (different entry paths or courses) -> unclear
+    const overalls = new Set([...win.matchAll(/overall(?:\s+band)?(?:\s+score)?(?:\s+(?:of|minimum|min\.?|at least|is|required|requirement))*\s*[:\-–=]?\s*(\d(?:\.\d)?)(?!\d)/gi)].map((o) => o[1]).filter((v) => ok(+v)))
+    if (overalls.size > 1) { x.ielts_unclear = true; break }
+    // "a minimum overall band score of 6.5 on IELTS (Academic)": the score written just before the test name
+    const pre = text.slice(Math.max(0, at - 70), at).match(/overall(?:\s+band)?(?:\s+score)?(?:\s+of)?\s*(\d(?:\.\d)?)\s*(?:on|in|for)?\s*(?:the\s+)?(?:academic\s+)?\(?\s*$/i)
+    if (pre && ok(+pre[1])) { x.ielts_overall = +pre[1]; const b = win.match(BAND) || win.match(BAND_PRE); if (b && ok(+b[1]) && +b[1] <= +pre[1]) x.ielts_min_band = +b[1]; x.context = clean(text.slice(Math.max(0, at - 70), at + 220)).slice(0, 290); break }
     const table = win.match(/^IELTS[^\d]{0,40}?(\d(?:\.\d)?)\s+(\d(?:\.\d)?)\s+(\d(?:\.\d)?)\s+(\d(?:\.\d)?)\s+(\d(?:\.\d)?)\b/i)
     // "overall 6.5" / "overall band score of 6.5" first (only these words between); then "6.5 (or better) overall".
     // Never a number reached across other words ("6.0 overall, no less than 5.5 in each band" is 6.0, not 5.5).
@@ -107,10 +117,10 @@ export function english(text: string) {
   // PTE/TOEFL: the number must be stated as overall, or follow the test name directly ("PTE Academic: 58")
   const p = text.match(/(?:PTE(?: Academic)?|Pearson Test of English(?: Academic)?)\s*(?:\(Academic\))?\s*[:\-–]?\s*(?:overall(?: score)?(?: of)?\s*[:\-–]?\s*)?(\d{2})\b/i)
     || text.match(/(?:PTE|Pearson)[^\d.]{0,40}overall(?: score)?(?: of)?[^\d]{0,10}(\d{2})\b/i)
-  if (p && Number(p[1]) >= 30 && Number(p[1]) <= 90) x.pte_overall = Number(p[1])
+  if (p && Number(p[1]) >= 30 && Number(p[1]) <= 90) { x.pte_overall = Number(p[1]); x.pte_context = clean(text.slice(Math.max(0, (p.index || 0) - 40), (p.index || 0) + p[0].length + 60)).slice(0, 200) }
   const t = text.match(/TOEFL(?: iBT)?\s*(?:\(0-120\))?\s*[:\-–]?\s*(?:overall(?: score)?(?: of)?\s*[:\-–]?\s*)?(\d{2,3})\b/i)
     || text.match(/TOEFL[^\d.]{0,40}overall(?: score)?(?: of)?[^\d]{0,10}(\d{2,3})\b/i)
-  if (t && Number(t[1]) >= 40 && Number(t[1]) <= 120) x.toefl_overall = Number(t[1])
+  if (t && Number(t[1]) >= 40 && Number(t[1]) <= 120) { x.toefl_overall = Number(t[1]); x.toefl_context = clean(text.slice(Math.max(0, (t.index || 0) - 40), (t.index || 0) + t[0].length + 60)).slice(0, 200) }
   return x
 }
 

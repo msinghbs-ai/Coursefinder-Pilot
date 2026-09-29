@@ -49,6 +49,10 @@ test('tuition, English and intake candidates', async () => {
   expect(english('IELTS Listening 6.0 Reading 6.0 Writing 6.0 Speaking 6.0 Overall 6.5')).toMatchObject({ ielts_overall: 6.5 })
   expect(english('IELTS: overall score of 6.5 with a minimum of 6.0 in all bands')).toMatchObject({ ielts_overall: 6.5, ielts_min_band: 6 })
   expect(english('IELTS overall 7.0 (no band below 6.5)')).toMatchObject({ ielts_overall: 7, ielts_min_band: 6.5 })
+  // v0.5.4: score before the test name; another test's overall never read as IELTS; several overalls -> unclear
+  expect(english('A minimum overall band score of 6.5 on IELTS (Academic) with no sub-score of less than 6.0 OR an overall score of 79 in the TOEFL iBT (1-6): overall 4')).toMatchObject({ ielts_overall: 6.5, ielts_min_band: 6 })
+  expect(english('IELTS Academic test Overall minimum: 6.0 No band below: 6.0 Overall minimum: 6.5 No band below 6.0').ielts_overall).toBeUndefined()
+  expect(english('IELTS Academic: overall 6.5, writing 6.0 TOEFL iBT (0-120): overall 79')).toMatchObject({ ielts_overall: 6.5, toefl_overall: 79 })
   expect(intakes('Intakes: February and July each year. Semester starts in February.')).toEqual(['February', 'July'])
   expect(intakes('Semester dates may change; start dates may vary.')).toEqual([])
   // v0.5.3: money, visa and deadline windows are not intakes; evidence snippet kept for review
@@ -79,7 +83,7 @@ test('robots.txt is respected', async () => {
 
 test('worker and database contract: nothing written to the catalogue, budget guard counts sweep usage', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.3";')
+  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.4";')
   expect(w).toContain('identity(html, text, it.title, it.code, it.status === "ambiguous")')
   expect(w).not.toContain('svc_coursefacts_apply_record')
   expect(w).toContain('robotsAllows(')
