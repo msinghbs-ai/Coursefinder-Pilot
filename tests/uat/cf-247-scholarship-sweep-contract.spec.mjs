@@ -51,3 +51,119 @@ test('Decision 139 international check: domestic-only provider pages are not pub
   expect(sql).toContain('provider page does not mention international students')
   expect(fs.readFileSync('supabase/migrations/20260929180000_cf247_scholarship_sweep.sql', 'utf8')).not.toContain("cron.schedule('scholarship-publish-batch'")
 })
+
+test('v0.4.0 scholarship discovery: names, page matching and the reader name check', async () => {
+  const { nameTokens, nameOnPage, providerTokens, matchScholarshipPage, keepScholarshipUrl, pageHeadings, slugTokens } = await load()
+  expect(nameTokens("Vice-Chancellor's International Scholarships 2026")).toEqual(['vice', 'chancellor', 'international', 'scholarship'])
+  expect(nameTokens('Vice-Chancellor&#039;s High Achievers Scholarship')).toEqual(nameTokens("Vice Chancellor's High Achievers Scholarship"))
+  const uc = providerTokens(['University of Canberra'])
+  // the page must name the scholarship: heading contains the name (a provider prefix may be missing)
+  expect(nameOnPage('Scientia Scholarship', ['UNSW Scientia Scholarship | UNSW Sydney']).ok).toBe(true)
+  expect(nameOnPage('UC - Southeast Asia Excellence Scholarships', ['Southeast Asia Excellence Scholarship'], uc).ok).toBe(true)
+  expect(nameOnPage('Federation Global Merit Scholarship', ['2027 Global Merit Scholarship'], providerTokens(['Federation University Australia'])).ok).toBe(true)
+  // a different scholarship, or a generic heading, is a mismatch
+  expect(nameOnPage('Academic Scholarship', ['Academic Excellence Scholarship']).ok).toBe(false)
+  expect(nameOnPage('International Merit Scholarship', ['International Scholarships', 'Scholarships']).ok).toBe(false)
+  // secondary headings (first <h2>s) confirm only with the whole name
+  expect(nameOnPage('Global Leaders Scholarship', ['Scholarships'], new Set(), ['Global Leaders Scholarship']).ok).toBe(true)
+  expect(nameOnPage('Global Leaders Scholarship', ['Scholarships'], new Set(), ['Leaders Scholarship']).ok).toBe(false)
+  const hd = pageHeadings('<html><head><title>Merit Award | Uni</title><meta property="og:title" content="Merit Award"></head><body><svg><title>Home icon</title></svg><h1>Merit Award</h1><h2>Eligibility</h2></body></html>')
+  expect(hd.primary).toContain('Merit Award | Uni')
+  expect(hd.primary).not.toContain('Home icon')
+  // page matching: exact name in the address (reference number dropped) or title; strong matches only
+  expect(slugTokens('https://www.monash.edu/x/monash-thailand-award-6307')).toContainEqual(['monash', 'thailand', 'award'])
+  expect(matchScholarshipPage('Monash Thailand Award', [{ url: 'https://www.monash.edu/x/monash-thailand-award-6307' }], providerTokens(['Monash University']))).toMatchObject({ basis: 'url_slug' })
+  expect(matchScholarshipPage('UC - Southeast Asia Excellence Scholarships', [{ url: 'https://www.canberra.edu.au/scholarships/southeast-asia-excellence-scholarship' }], uc)).toMatchObject({ basis: 'url_slug_without_provider' })
+  expect(matchScholarshipPage('Academic Scholarship', [{ url: 'https://school.edu.au/academic-excellence-scholarship' }], new Set())).toBeNull()
+  expect(matchScholarshipPage('Regional Scholarship', [{ url: 'https://a.edu.au/s/regional-scholarship' }, { url: 'https://a.edu.au/t/regional-scholarship-2' }], new Set())).toBeNull()
+  expect(keepScholarshipUrl('https://scholarships.unsw.edu.au/scientia', 'www.unsw.edu.au')).toBe(true)
+  expect(keepScholarshipUrl('https://www.unsw.edu.au/news/2024/scholarship-win', 'www.unsw.edu.au')).toBe(false)
+  expect(keepScholarshipUrl('https://www.unsw.edu.au/study/scholarships', 'unsw.edu.au')).toBe(false)
+  expect(keepScholarshipUrl('https://www.other.edu.au/scholarships/x', 'unsw.edu.au')).toBe(false)
+})
+
+test('v0.4.0 new scholarships: single named page, international, currently offered', async () => {
+  const { admissionCheck, currentlyOffered, internationalEligibility } = await load()
+  const page = (h1, body, links = '') => `<html><head><title>${h1} | Uni</title></head><body><main><h1>${h1}</h1>${'<p>' + 'Lorem ipsum dolor sit amet. '.repeat(20) + '</p>'}<p>${body}</p>${links}</main></body></html>`
+  const ok = admissionCheck(page('Global Excellence Scholarship', 'Open to international students commencing an undergraduate degree in 2027. 20% tuition fee reduction.'), 'https://www.uni.edu.au/scholarships/global-excellence', 'www.uni.edu.au')
+  expect(ok).toMatchObject({ admit: true, name: 'Global Excellence Scholarship' })
+  expect(admissionCheck(page('Community Scholarship', 'Eligibility: Australian citizens or permanent residents only. $5,000.'), 'https://www.uni.edu.au/s/c', 'www.uni.edu.au').reasons).toContain('domestic_only')
+  expect(admissionCheck(page('Scholarships', 'International students welcome.'), 'https://www.uni.edu.au/s', 'www.uni.edu.au').reasons).toContain('no_named_title')
+  const many = Array.from({ length: 16 }, (_, i) => `<a href="/scholarships/award-${i}">Award ${i}</a>`).join('')
+  expect(admissionCheck(page('International Scholarships and Awards Scholarship', 'For international students.', many), 'https://www.uni.edu.au/scholarships/all', 'www.uni.edu.au').reasons).toContain('listing_page')
+  expect(admissionCheck(page('Merit Scholarship', 'For international students.'), 'https://www.elsewhere.com/merit', 'www.uni.edu.au').reasons).toContain('not_provider_domain')
+  // v0.4.1: menus do not make a detail page a listing; supporting pages are not scholarships
+  const nav = '<nav>' + Array.from({ length: 30 }, (_, i) => `<a href="/scholarships/international-scholarships/s-${i}">S ${i}</a>`).join('') + '</nav>'
+  expect(admissionCheck(page('Future Leaders Scholarship', 'For international students commencing in 2027. 20% tuition fee reduction.').replace('<main>', nav + '<main>'), 'https://www.rmit.edu.au/scholarships/international-scholarships/future-leaders-scholarship', 'rmit.edu.au')).toMatchObject({ admit: true })
+  expect(admissionCheck(page('School of Engineering Scholarship Specific Terms and Conditions', 'International students in 2027.'), 'https://www.rmit.edu.au/s/t', 'rmit.edu.au').reasons).toContain('no_named_title')
+  expect(currentlyOffered('Applications for 2024 closed on 1 March 2024.', new Date('2026-09-29')).reason).toBe('past_year_only')
+  expect(currentlyOffered('This scholarship is no longer offered.').reason).toBe('not_offered')
+  expect(currentlyOffered('Applications open for 2027 intake.', new Date('2026-09-29')).ok).toBe(true)
+  expect(internationalEligibility('International students are not eligible for this award.').explicit).toBe(false)
+})
+
+test('v0.4.0 governance: nothing published, guarded replacements, cron list', async () => {
+  const sql = fs.readFileSync('supabase/migrations/20260929200000_cf247_scholarship_discovery.sql', 'utf8')
+  expect(sql).toContain("'active','unpublished'")
+  expect(sql).not.toMatch(/publication_status\s*=\s*'published'/)
+  expect(sql).not.toContain('scholarship_publish_batch_v1(')
+  expect(sql).not.toMatch(/cron\.schedule\('scholarship-publish/)
+  for (const f of ['svc_scholarship_read_next', 'svc_scholarship_read_record', 'scholarship_sweep_apply_v1']) expect(sql).toMatch(new RegExp(`md5\\(prosrc\\)[^;]*${f}[\\s\\S]{0,200}changed since review`))
+  expect(sql).toContain("cron.schedule('scholarship-discover','*/10 * * * *'")
+  expect(sql).not.toMatch(/website_edge_|zoho|wix-|coverage_admission|layer3/i)
+  const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(idx).toContain('const SCH_FC_CAP = 3000')
+  expect(idx).toContain('"name_mismatch"')
+  expect(idx).toContain('scholarship-sweep-v0.4.6')
+})
+
+test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
+  const { scholarshipValue, scholarshipLevels } = await load()
+  expect(scholarshipValue('20% reduced tuition fee for Master by Coursework program. Full tuition fee scholarship for a PhD program.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('This scholarship covers full tuition fees for the standard duration.')).toMatchObject({ type: 'percentage', percentage: 100 })
+  expect(scholarshipLevels('College Student Bursary', 'Eligibility: commencing in any College course (excluding Master by Research or PhD).')).toEqual([])
+  expect(scholarshipLevels('Alumni Postgraduate Scholarship', 'Eligibility: be alumni who completed a degree at a Vietnam campus. This can include: an undergraduate degree or postgraduate degree.')).toEqual(['postgraduate_coursework'])
+  expect(scholarshipLevels('Merit Award', 'Eligibility: applicants who have completed an undergraduate degree and enrol in a Master by Coursework.')).toEqual(['postgraduate_coursework'])
+  expect(scholarshipLevels('Griffith University International Postgraduate Research Scholarship', '')).toEqual(['research'])
+})
+
+test('v0.4.3 step-1 hand-check fixes: value conditions, up to, stated value, name amount', async () => {
+  const { scholarshipValue } = await load()
+  const mq = 'Award value (Fee reduction) AUD $10,000 per year. AUD $5,000 credited each session. Be an international full fee-paying student. Must not be a recipient of a government sponsorship or scholarship that covers full tuition fees.'
+  expect(scholarshipValue(mq, 'ASEAN $10,000 Early Acceptance Scholarship')).toMatchObject({ type: 'fixed_amount', amount: 10000 })
+  expect(scholarshipValue(mq).type).not.toBe('percentage')
+  expect(scholarshipValue('The award may be up to 100% remission of the tuition fees.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Each year up to 50% tuition fee reduction is offered.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Minimum Value $10,000 available. Co-op students receive a $5,000 once-off scholarship bonus.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('An annual stipend to assist with general living costs: $38,310 from 2027 (currently $37,010 for 2026).')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Recipients receive 100% tuition fees covered, flights and a living allowance.')).toMatchObject({ type: 'percentage', percentage: 100 })
+})
+
+test('v0.4.4 step-2 hand-check fixes: articles, information pages and faculty listings are not admitted', async () => {
+  const { admissionCheck } = await load()
+  const page = (h1, body) => `<html><head><title>${h1}</title></head><body><main><h1>${h1}</h1><p>${'Lorem ipsum dolor sit amet. '.repeat(20)}</p><p>${body}</p></main></body></html>`
+  const body = 'Open to international students commencing in 2027. 20% tuition fee reduction.'
+  for (const t of ['The impact of a scholarship', "Your introduction to UC's international scholarships", 'Costs and scholarships', 'Architecture, design and planning international undergraduate scholarships'])
+    expect(admissionCheck(page(t, body), 'https://www.uni.edu.au/x/y', 'uni.edu.au').admit).toBe(false)
+  expect(admissionCheck(page('Foundation Academic Scholarship', body), 'https://www.uni.edu.au/x/y', 'uni.edu.au').admit).toBe(true)
+  const escaped = page('Engineering Excellence Scholarship', body + Array.from({ length: 16 }, (_, i) => `&lt;a href=\\&#34;/scholarships/s-${i}.html\\&#34;&gt;S${i}&lt;/a&gt;`).join(''))
+  expect(admissionCheck(escaped, 'https://www.uni.edu.au/scholarships/x', 'uni.edu.au').reasons).toContain('listing_page')
+})
+
+test('v0.4.5 step-2 hand-check: only a scholarship\'s own name is admitted as a title', async () => {
+  const { namedScholarshipTitle } = await load()
+  for (const t of ['Melbourne International Excellence Scholarship (Graduate)', 'Sir John Monash Scholarships for Excellence', 'International Futures Scholarship - 2027', 'James Millner Scholarship in Pharmacy', 'BUPA Adelaide University International Student Grant', 'Deakin International 20% Merit Scholarship'])
+    expect(namedScholarshipTitle(t)).toBe(true)
+  for (const t of ['--> Scholarships <!--', 'Global Curtin scholarships', 'UNSW scholarships for international students', 'Accommodation scholarships', 'International Scholarships | UniSC | University of the Sunshine Coast', 'Studying in Perth with the WA Premiers University Scholarship Shruti', 'Australia Awards students'])
+    expect(namedScholarshipTitle(t)).toBe(false)
+})
+
+test('v0.4.6 step-2 hand-check: foreign currency, maximum amounts, eligibility section', async () => {
+  const { scholarshipValue, scholarshipFacts } = await load()
+  expect(scholarshipValue('Benefit amount $5,000 USD (total value for up to 1 year). Scholarship paid bi-annually.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Receive a scholarship credit of up to A$7,496 towards your tuition.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('The scholarship amount is varied up to AUD$20,000 for each student.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Recipients receive a one-off scholarship payment of $5,000.')).toMatchObject({ type: 'fixed_amount', amount: 5000 })
+  const bond = '<main>' + 'q '.repeat(800) + '<p>Stand Out Scholarships for students applying to study at an undergraduate or postgraduate level.</p><p>See list of eligible countries: Argentina, Bangladesh, Brazil, Chile.</p></main>'
+  expect(scholarshipFacts(bond, 'International Stand Out Scholarship', 'International Stand Out Scholarship').levels).toEqual(['postgraduate_coursework', 'undergraduate'])
+})

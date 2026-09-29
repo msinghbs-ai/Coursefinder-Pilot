@@ -1,8 +1,29 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
-import { mainText, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.3.1";
+import { admissionCheck, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
+const SCH_VERSION = "scholarship-sweep-v0.4.6";
+// v0.4.6 (step-2 hand-check): amounts in another currency (Swinburne "$5,000 USD") or stated as a maximum ("up to
+// A$7,496", "up to AUD$20,000") are not a single AUD value; the eligibility section is a heading-like "Eligibility"
+// (not "eligible countries") and when it states no level the page start is used.
+// v0.4.5 (step-2 hand-check): an admitted title must be a scholarship's own name - ending with the scholarship word or a
+// qualifier; page furniture, student stories, recaps, application forms and generic plural titles are not admitted.
+// v0.4.4 (step-2 hand-check): articles, information pages and faculty listings are not single scholarships; links held
+// as escaped HTML count as listing links; a re-read of an admitted page checks the admission rules again (a page that
+// no longer meets them is withdrawn by the database, never published).
+// v0.4.3 (step-1 hand-check): conditions about other scholarships covering full tuition are not the value; "up to N%"
+// is a maximum (not applied); "Value $N" is a stated amount; stipend amounts kept; one amount in the scholarship's name
+// that the page states is the value; a discovered page must be about a scholarship (UWA research-project page) and a
+// web-search match must be a scholarship address or title.
+// v0.4.2 (hand-check of the first admitted pages): full tuition is a single value only when no other percentage is
+// stated; levels ignore excluded levels ("excluding Master by Research or PhD") and earlier study ("completed an
+// undergraduate degree").
+// v0.4.1: listing pages counted from the page content only (menus and side panels removed); supporting pages
+// (terms and conditions, FAQs, how to apply, recipients, news) are not scholarships.
+// v0.4.0 (scholarship discovery): the reader confirms the page names the scholarship (title, og:title, <h1>, or the whole
+// name in one of the first <h2>s) before anything is applied - otherwise read_status "name_mismatch"; Firecrawl for
+// scholarship work is capped at 3,000 credits (purposes sch_map, sch_search, sch_scrape).
+const SCH_FC_CAP = 3000;
 
 // CF-247 complete coverage sweep (Platform Admin direction 29 Sep 2026). Nonce-only. Nothing is written to the
 // catalogue: discovery lists a provider's course-like pages, reading keeps each bound course page as evidence and
@@ -11,7 +32,10 @@ const SCH_VERSION = "scholarship-sweep-v0.3.1";
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.4"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.7.0";
+const WORKER = "coverage-sweep-worker-v0.8.0";
+// v0.8.0: mode scholarship_discover (provider scholarship pages from site maps, Firecrawl map/search fallbacks, matching
+// held Study Australia-only scholarships, reading unheld pages at Australian universities for admission as new
+// unpublished scholarships; Firecrawl only for pages the site refuses, keeping 800 credits for step 1) and mode scholarship_inspect (read only: stored or live page headings and text for hand checks).
 // v0.5.2: discovery drops requirement, scholarship and applying pages (pilot: RMIT inherent-requirements pages).
 // v0.5.1: PTE/TOEFL only when stated as overall or directly after the test name.
 // v0.5.0: English overall only when stated as overall or in a score table; minimum band after the overall; fee basis
@@ -44,7 +68,9 @@ async function fetchText(url: string, ms = 15000) {
   }
   return await r.text();
 }
-async function siteMapUrls(origin: string, deadline: number) {
+const coursePri = (u: string) => /course|program|study|handbook|degree|qualification/i.test(u) ? 0 : /page|post/i.test(u) ? 1 : 2;
+const scholarshipPri = (u: string) => /scholar|award|bursar|grant/i.test(u) ? 0 : /study|international|page|content/i.test(u) ? 1 : 2;
+async function siteMapUrls(origin: string, deadline: number, pri: (u: string) => number = coursePri) {
   const robots = await fetchText(origin + "/robots.txt", 8000).catch(() => "");
   const queue = [...robots.matchAll(/^\s*sitemap:\s*(\S+)/gim)].map((m) => m[1]);
   if (!queue.length) queue.push(origin + "/sitemap.xml", origin + "/sitemap_index.xml");
@@ -55,8 +81,8 @@ async function siteMapUrls(origin: string, deadline: number) {
     const xml = await fetchText(sm).catch(() => "");
     const locs = [...xml.matchAll(/<loc>\s*(?:<!\[CDATA\[)?\s*([^<\]\s]+)/gi)].map((m) => m[1].replace(/&amp;/g, "&"));
     if (/<sitemapindex/i.test(xml)) {
-      const pri = (u: string) => /course|program|study|handbook|degree|qualification/i.test(u) ? 0 : /page|post/i.test(u) ? 1 : 2;
       queue.push(...locs.sort((a, b) => pri(a) - pri(b)));
+      queue.sort((a, b) => pri(a) - pri(b));
     } else for (const l of locs) urls.add(l);
   }
   return { urls: [...urls], files };
@@ -76,10 +102,28 @@ Deno.serve(async (req) => {
     const fc = await rpc("svc_coverage_firecrawl", {});
     let fcRemaining = fc?.budget_status?.allowed === false ? 0 : Math.max(0, Number(fc?.budget_status?.remaining_units ?? 0) - Number(fc?.budget_status?.stop_at_remaining_units ?? 0));
     const fcHeaders = { authorization: `Bearer ${fc?.secret}`, "content-type": "application/json" };
+    // scholarship work (purposes sch_*) also stays inside its own 3,000-credit cap
+    let schLeft = mode.startsWith("scholarship") ? Math.max(0, SCH_FC_CAP - Number(await rpc("svc_scholarship_fc_used", {}) ?? SCH_FC_CAP)) : 0;
     const useFc = async (purpose: string, providerId: string | null, url: string) => {
       if (!fc?.secret || fcRemaining < 1) return false;
-      const units = purpose === "search" ? 2 : 1; if (fcRemaining < units) return false;
+      const units = purpose === "search" || purpose === "sch_search" ? 2 : 1; if (fcRemaining < units) return false;
+      if (purpose.startsWith("sch_")) { if (schLeft < units) return false; schLeft -= units }
       fcRemaining -= units; await rpc("svc_coverage_usage", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true;
+    };
+    const robots = new Map<string, Promise<string>>();
+    const robotsFor = (u: URL) => { if (!robots.has(u.origin)) robots.set(u.origin, fetch(u.origin + "/robots.txt", { headers: { "user-agent": UA }, signal: AbortSignal.timeout(8000) }).then((r) => r.ok ? r.text() : "").catch(() => "")); return robots.get(u.origin)! };
+    // direct page read (robots.txt respected); no Firecrawl
+    const readDirect = async (url: string) => {
+      let status = "fetch_failed", http: number | null = null, html = "", finalUrl = url;
+      try {
+        const u = new URL(url);
+        if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) return { status: "robots_disallowed", http, html, finalUrl };
+        const r = await fetch(u, { headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(20000) });
+        http = r.status; finalUrl = r.url || url;
+        if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) html = await r.text(); else await r.body?.cancel();
+        status = html && mainText(html).length >= 300 ? "read" : html ? "too_thin" : http === 404 || http === 410 ? "gone" : [401, 403, 406, 429].includes(http) ? "blocked" : r.ok ? "not_html" : "fetch_failed";
+      } catch { status = "fetch_failed" }
+      return { status, http, html, finalUrl };
     };
 
     if (mode === "discover") {
@@ -197,9 +241,7 @@ Deno.serve(async (req) => {
     // v0.7.0: scholarship sweep. Each active scholarship's own provider page is read (robots.txt respected; Firecrawl
     // only when a direct read is refused or script-only), kept as gzipped evidence, and deterministic facts are recorded.
     if (mode === "scholarship_read") {
-      const items: { scholarship_id: string; url: string; name: string; provider_id: string }[] = await rpc("svc_scholarship_read_next", { p_limit: Math.min(Number(body.limit || 20), 40) });
-      const robots = new Map<string, Promise<string>>();
-      const robotsFor = (u: URL) => { if (!robots.has(u.origin)) robots.set(u.origin, fetch(u.origin + "/robots.txt", { headers: { "user-agent": UA }, signal: AbortSignal.timeout(8000) }).then((r) => r.ok ? r.text() : "").catch(() => "")); return robots.get(u.origin)! };
+      const items: { scholarship_id: string; url: string; name: string; provider_id: string; url_source?: string; names?: string[] }[] = await rpc("svc_scholarship_read_next", { p_limit: Math.min(Number(body.limit || 20), 40) });
       const tally: Record<string, number> = {}; const applied: unknown[] = [];
       await pool(items, 6, async (it) => {
         let status = "fetch_failed", http: number | null = null, via: string | null = null, html = "", finalUrl = it.url;
@@ -213,7 +255,7 @@ Deno.serve(async (req) => {
               if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) { html = await r.text(); via = "direct" }
             } catch { http = null }
             const thin = html && mainText(html).length < 800;
-            if ((!html || thin) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
+            if ((!html || thin) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("sch_scrape", it.provider_id, it.url)) {
               const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
               const d = await r.json().catch(() => ({}));
               if (r.ok && d?.data?.html) { html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
@@ -225,9 +267,18 @@ Deno.serve(async (req) => {
           }
         } catch { status = "fetch_failed" }
         let path: string | null = null, sha: string | null = null, facts: unknown = null;
+        // v0.4.0: the page must name the scholarship before anything from it is used
+        const hd = status === "read" ? pageHeadings(html) : null;
+        const nc = hd ? { ...nameOnPage(it.name, hd.primary, providerTokens(it.names || []), hd.secondary), headings: hd, extractor: SCH_VERSION } : null;
+        if (status === "read" && !nc!.ok) { status = "name_mismatch"; facts = { name_check: nc, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl } }
+        // a discovered page must be about a scholarship (a research-project page can carry the same title)
+        if (status === "read" && it.url_source === "discovered" && !/(scholarship|stipend|bursary|tuition|\baward|\bgrant|\bprize|fee (?:reduction|remission|discount|waiver))/i.test(mainText(html).slice(0, 8000))) {
+          status = "name_mismatch"; facts = { name_check: { ...nc, ok: false, basis: "not_a_scholarship_page" }, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl };
+        }
         if (status === "read") {
           const t = titleOf(html) + " " + h1Of(html);
-          facts = { ...scholarshipFacts(html, t, it.name), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION };
+          facts = { ...scholarshipFacts(html, t, it.name), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION, name_check: nc };
+          if (it.url_source === "admitted") { let h = ""; try { h = new URL(it.url).hostname } catch { /* */ } (facts as any).admission = admissionCheck(html, finalUrl, [h, new URL(finalUrl).hostname]) }
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
           path = `layer2/AU/scholarships/${it.provider_id}/${it.scholarship_id}/${sha}.html.gz`;
           const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
@@ -237,12 +288,149 @@ Deno.serve(async (req) => {
         if (res?.changes?.length) applied.push({ scholarship_id: it.scholarship_id, changes: res.changes });
         tally[status] = (tally[status] || 0) + 1;
       });
-      return j({ ok: true, mode, items: items.length, tally, applied, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
+      return j({ ok: true, mode, items: items.length, tally, applied, firecrawlRemainingAboveReserve: fcRemaining, scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
+    }
+    // v0.8.0: scholarship discovery. Phase discover: a provider's own scholarship pages from its site maps (and a
+    // scholarships.<domain> subdomain's), one Firecrawl map with search "scholarship" only when the site maps give none;
+    // held Study Australia-only scholarships are matched to a page by exact name (address or title). Phase search: one
+    // Firecrawl web search per held scholarship still without a page. Phase candidates: unheld pages at Australian
+    // universities are read directly and offered to security.scholarship_admit_from_provider_page_v1.
+    if (mode === "scholarship_discover") {
+      const phase = String(body.phase || "all"), deadline = t0 + 105_000;
+      const out: Record<string, unknown> = {};
+      if (phase === "all" || phase === "discover") {
+        const provs: { provider_id: string; website: string; reason: string; hosts?: string[]; names: string[]; held: { scholarship_id: string; name: string }[] }[] = await rpc("svc_scholarship_discover_next", { p_limit: Math.min(Number(body.limit || 3), 6) });
+        const done: unknown[] = [];
+        await pool(provs, 3, async (p) => {
+          let site: URL;
+          try { site = new URL(/^https?:/i.test(p.website) ? p.website : "https://" + p.website) } catch { await rpc("svc_scholarship_discover_record", { p_provider_id: p.provider_id, p_status: "failed", p_site_origin: null, p_method: "none", p_url_count: 0, p_candidates: [], p_matches: [], p_error: "invalid website" }); return }
+          try {
+            try { const r = await fetch(site, { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) }); if (r.url) site = new URL(r.url); await r.body?.cancel() } catch { /* keep */ }
+            const found = new Map<string, { url: string; title?: string; source: string }>();
+            const methods: string[] = []; let total = 0;
+            const origins = [site.origin, `https://scholarships.${baseHost(site.hostname)}`, ...(p.hosts || []).map((h) => `https://www.${baseHost(h)}`)].filter((o, i, a) => a.indexOf(o) === i);
+            for (const o of origins) {
+              if (Date.now() > deadline - 20000) break;
+              const sm = await siteMapUrls(o, Math.min(deadline - 15000, Date.now() + (o === site.origin ? 40000 : 12000)), scholarshipPri).catch(() => ({ urls: [] as string[], files: 0 }));
+              if (sm.urls.length) methods.push(`sitemap${o === site.origin ? "" : ":" + new URL(o).hostname}(${sm.files})`);
+              total += sm.urls.length;
+              for (const u of sm.urls) if (keepScholarshipUrl(u, [site.hostname, ...(p.hosts || [])])) found.set(normUrl(u), { url: u, source: "sitemap" });
+            }
+            if (!found.size) {
+              if (await useFc("sch_map", p.provider_id, site.origin)) {
+                const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: "scholarship", limit: 5000, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok || d?.success === false) methods.push(`map:${r.status}`);
+                else {
+                  const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
+                  methods.push(`map_search(${links.length})`); total += links.length;
+                  for (const u of links) if (u.url && keepScholarshipUrl(u.url, [site.hostname, ...(p.hosts || [])])) found.set(normUrl(u.url), { url: u.url, title: u.title, source: "map" });
+                }
+              } else methods.push("map:budget");
+            }
+            const cands = [...found.values()].slice(0, 6000);
+            const prov = providerTokens(p.names || []);
+            const matches = (p.held || []).map((h) => ({ h, m: matchScholarshipPage(h.name, cands, prov) })).filter((x) => x.m);
+            // one page for two held scholarships is not a strong match for either
+            const byUrl = new Map<string, number>(); for (const x of matches) byUrl.set(normUrl(x.m!.url), (byUrl.get(normUrl(x.m!.url)) || 0) + 1);
+            const pm = matches.filter((x) => byUrl.get(normUrl(x.m!.url)) === 1).map((x) => ({ scholarship_id: x.h.scholarship_id, url: x.m!.url, basis: x.m!.basis }));
+            const rec = await rpc("svc_scholarship_discover_record", { p_provider_id: p.provider_id, p_status: cands.length ? "mapped" : "empty", p_site_origin: site.origin, p_method: methods.join("+") || "none", p_url_count: total, p_candidates: cands, p_matches: pm, p_error: null });
+            done.push({ provider_id: p.provider_id, methods, total, kept: rec?.kept, held: (p.held || []).length, matched: rec?.matched });
+          } catch (e) {
+            await rpc("svc_scholarship_discover_record", { p_provider_id: p.provider_id, p_status: "failed", p_site_origin: site.origin, p_method: "discover", p_url_count: 0, p_candidates: [], p_matches: [], p_error: e instanceof Error ? e.message : String(e) });
+            done.push({ provider_id: p.provider_id, status: "failed", error: e instanceof Error ? e.message : String(e) });
+          }
+        });
+        out.discover = done;
+      }
+      if ((phase === "all" || phase === "search") && Date.now() < deadline - 45000) {
+        const items: { scholarship_id: string; name: string; provider_id: string; site: string; hosts?: string[]; names: string[] }[] = await rpc("svc_scholarship_search_next", { p_limit: Math.min(Number(body.search_limit || 4), 20) });
+        const done: unknown[] = [];
+        await pool(items, 4, async (it) => {
+          let host = ""; try { host = (it.hosts || [])[0] || new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
+          const hosts = [host, it.site, ...(it.hosts || [])].filter(Boolean).map((h) => { try { return new URL(/^https?:/i.test(h) ? h : "https://" + h).hostname } catch { return h } });
+          const q = `"${it.name.replace(/"/g, "")}" site:${baseHost(host)}`;
+          if (!host || !(await useFc("sch_search", it.provider_id, q))) { await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: "budget", p_results: [], p_match: {} }); done.push({ scholarship_id: it.scholarship_id, status: "budget" }); return }
+          try {
+            const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: q, limit: 5 }), signal: AbortSignal.timeout(45000) });
+            const d = await r.json().catch(() => ({}));
+            const res = (d?.data?.web || (Array.isArray(d?.data) ? d.data : [])).map((x: any) => ({ url: String(x.url || ""), title: String(x.title || "") })).filter((x: any) => /^https?:/i.test(x.url));
+            const prov = providerTokens(it.names || []);
+            const kept = res.map((x: any) => { let ok = false; try { const u = new URL(x.url); ok = onSite(u.hostname, hosts) && !/\.(pdf|docx?|xlsx?)(\?|$)|\/news|\/events?\//i.test(u.pathname) } catch { /* */ } return { ...x, kept: ok } });
+            const pool2 = kept.filter((x: any) => x.kept);
+            // v0.4.3: only scholarship addresses or scholarship titles (a research-project page can carry the same name)
+            const schPool = pool2.filter((x: any) => keepScholarshipUrl(x.url, hosts) || /scholarship|bursary|award|grant|prize|stipend/i.test(x.title || ""));
+            let m: { url: string; basis: string } | null = matchScholarshipPage(it.name, schPool, prov);
+            if (!m) { const byTitle = schPool.filter((x: any) => nameOnPage(it.name, [x.title], prov).ok && keepScholarshipUrl(x.url, hosts)); if (byTitle.length === 1) m = { url: byTitle[0].url, basis: "search_title" } }
+            const rec = await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: r.ok ? (m ? "matched" : "no_match") : `http_${r.status}`, p_results: kept, p_match: m || {} });
+            done.push({ scholarship_id: it.scholarship_id, results: res.length, match: m, matched: rec?.matched ?? false });
+          } catch (e) {
+            await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: "failed", p_results: [], p_match: {} });
+            done.push({ scholarship_id: it.scholarship_id, status: "failed", error: e instanceof Error ? e.message : String(e) });
+          }
+        });
+        out.search = done;
+      }
+      if ((phase === "all" || phase === "candidates") && Date.now() < deadline - 30000) {
+        const items: { candidate_id: number; url: string; provider_id: string; site: string; hosts?: string[] }[] = await rpc("svc_scholarship_candidate_next", { p_limit: Math.min(Number(body.read_limit || 30), 60) });
+        const tally: Record<string, number> = {}; const admitted: unknown[] = [];
+        await pool(items, 6, async (it) => {
+          if (Date.now() > deadline) { await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_final_url: null, p_storage_path: null, p_sha256: null, p_facts: null }); return }
+          const pg = await readDirect(it.url);
+          let via = pg.status === "read" ? "direct" : null;
+          // many university sites refuse direct reads (403); Firecrawl then, inside the scholarship cap, keeping a
+          // reserve of 800 credits for step 1 (provider pages of held scholarships)
+          if (["blocked", "fetch_failed", "too_thin"].includes(pg.status) && schLeft > 800 && await useFc("sch_scrape", it.provider_id, it.url)) {
+            try {
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
+              const d = await r.json().catch(() => ({}));
+              if (r.ok && d?.data?.html && mainText(d.data.html).length >= 300) { pg.html = d.data.html; pg.status = "read"; pg.http = d.data?.metadata?.statusCode ?? 200; pg.finalUrl = d.data?.metadata?.sourceURL || it.url; via = "firecrawl" }
+            } catch { /* keep the direct result */ }
+          }
+          let facts: Record<string, unknown> | null = null, path: string | null = null, sha: string | null = null;
+          if (pg.status === "read") {
+            let host = ""; try { host = new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
+            const adm = admissionCheck(pg.html, pg.finalUrl, [host, ...(it.hosts || [])]);
+            facts = { ...scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || ""), page_title: titleOf(pg.html).slice(0, 200), h1: h1Of(pg.html).slice(0, 200), final_url: pg.finalUrl, extractor: SCH_VERSION, admission: adm };
+            if (adm.admit) {
+              const gz = await gzip(pg.html); sha = await sha256(new TextEncoder().encode(pg.html));
+              path = `layer2/AU/scholarships/${it.provider_id}/candidates/${it.candidate_id}/${sha}.html.gz`;
+              const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
+              if (up.error) { path = null; sha = null; (facts.admission as any).admit = false; (facts.admission as any).reasons = ["evidence_upload_failed"] }
+            }
+          }
+          const res = await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: pg.status, p_http_status: pg.http, p_fetched_via: via, p_final_url: pg.finalUrl, p_storage_path: path, p_sha256: sha, p_facts: facts });
+          const k = res?.admitted ? "admitted" : pg.status === "read" ? (res?.reason ? "read:" + res.reason : "read:rejected") : pg.status;
+          tally[k] = (tally[k] || 0) + 1;
+          if (res?.admitted) admitted.push({ candidate_id: it.candidate_id, scholarship_id: res.scholarship_id, apply: res.apply?.changes });
+        });
+        out.candidates = { items: items.length, tally, admitted };
+      }
+      return j({ ok: true, mode, phase, ...out, firecrawlRemainingAboveReserve: fcRemaining, scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
+    }
+    // read only: headings, name check, admission rules and page text of stored evidence (or a live page) for hand checks
+    if (mode === "scholarship_inspect") {
+      const chars = Math.min(Number(body.chars || 2500), 8000);
+      const paths = await rpc("svc_scholarship_inspect_paths", { p_scholarship_ids: body.scholarship_ids || [], p_candidate_ids: body.candidate_ids || [] });
+      const rows: any[] = [...(paths?.scholarships || []), ...(paths?.candidates || []), ...((body.urls || []) as string[]).map((u) => ({ url: u, live: true, name: body.name || "" }))];
+      const out: unknown[] = [];
+      await pool(rows, 4, async (r) => {
+        try {
+          let html = "";
+          if (r.live) { const pg = await readDirect(r.url); html = pg.html; r.status = pg.status; r.url = pg.finalUrl }
+          else if (r.storage_path) { const { data, error } = await c.storage.from("evidence").download(r.storage_path); if (error || !data) throw Error(error?.message || "missing"); html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() }
+          if (!html) { out.push({ ...r, error: "no page" }); return }
+          const hd = pageHeadings(html), text = mainText(html);
+          let host = ""; try { host = new URL(r.url).hostname } catch { /* */ }
+          out.push({ scholarship_id: r.scholarship_id, candidate_id: r.candidate_id, url: r.url, name: r.name, headings: hd,
+            name_check: r.name ? nameOnPage(r.name, hd.primary, providerTokens(r.names || []), hd.secondary) : null,
+            admission: admissionCheck(html, r.url, host), facts: scholarshipFacts(html, titleOf(html) + " " + h1Of(html), r.name || ""), text: text.slice(0, chars) });
+        } catch (e) { out.push({ ...r, error: e instanceof Error ? e.message : String(e) }) }
+      });
+      return j({ ok: true, mode, pages: out, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
     if (mode === "read") {
       const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
-      const robots = new Map<string, Promise<string>>();
-      const robotsFor = (u: URL) => { if (!robots.has(u.origin)) robots.set(u.origin, fetch(u.origin + "/robots.txt", { headers: { "user-agent": UA }, signal: AbortSignal.timeout(8000) }).then((r) => r.ok ? r.text() : "").catch(() => "")); return robots.get(u.origin)! };
       const tally: Record<string, number> = {};
       await pool(items, 8, async (it) => {
         if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_identity_basis: null, p_storage_path: null, p_sha256: null, p_candidates: null }); return }
@@ -284,7 +472,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, scholarship_read", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, scholarship_read, scholarship_discover, scholarship_inspect", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
