@@ -26,7 +26,7 @@ test('menu map: five plain sections, every page reachable, old addresses and nam
   }
   expect(Object.keys(LEGACY_ADMIN_SECTIONS).length).toBeGreaterThanOrEqual(11)
   expect(Object.keys(LEGACY).length).toBeGreaterThanOrEqual(25)
-  expect(hrefFor('layer3', 'tests')).toBe('#layer-3-ai?tab=tests')
+  expect(hrefFor('layer3', 'models')).toBe('#layer-3-ai?tab=models')
   expect(hrefFor('layer3', 'routing')).toBe('#layer-3-ai')
 })
 
@@ -60,7 +60,7 @@ test('new reads: guarded, read-only, granted to signed-in users only', () => {
   expect(m).toContain("security.current_role_rank() < 3")
   expect(m).toContain("revoke all on function public.admin_source_comparison(text,uuid) from public, anon;")
   expect(m).toContain("(to_jsonb(pr)->>'retired_at') is not null")
-  expect(read('src/Layer3Operations.jsx')).toContain("supabase.rpc('admin_layer3_operations'")
+  expect(read('src/Layer3Operations.jsx')).toContain("supabase.rpc('admin_layer3_control_read'")
   expect(read('src/SourceComparison.jsx')).toContain("supabase.rpc('admin_source_comparison'")
 })
 
@@ -94,17 +94,27 @@ test.describe('mocked browser', () => {
     await expect(page.getByRole('heading', { name: 'Health checks not available yet' })).toBeVisible()
   })
 
-  test('Layer 3 tabs: routing, models (retired collapsed), test results, spend', async ({ page }) => {
+  test('Layer 3 control: tasks, cascade in order, controls, models only qualified', async ({ page }) => {
     await mockAdmin(page)
+    page.on('dialog', d => d.accept())
     await page.goto('/#layer-3-ai')
-    await expect(page.getByText('mistralai/mistral-small-3.2-24b-instruct').first()).toBeVisible()
-    await page.getByRole('tab', { name: 'Models & profiles' }).click()
-    await expect(page.locator('details.l3v-retired')).not.toHaveAttribute('open', '')
-    await expect(page.locator('.l3v-card.is-retired').first()).toBeHidden()
-    await page.getByRole('tab', { name: 'Test results' }).click()
-    await expect(page.locator('th', { hasText: 'Wrong admitted' })).toBeVisible()
-    await page.getByRole('tab', { name: 'Spend' }).click()
-    await expect(page.getByRole('heading', { name: 'Spend by day and profile' })).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Control' })).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Test results' })).toHaveCount(0)
+    const english = page.locator('.l3c-task', { hasText: 'English requirements' })
+    await expect(english.locator('tbody tr')).toHaveCount(3)
+    await expect(english.locator('tbody tr').nth(1)).toContainText('mistralai/mistral-small-3.2-24b-instruct')
+    await expect(page.locator('.l3c-task', { hasText: 'Intakes' }).locator('tbody tr').nth(1)).toContainText('anthropic/claude-haiku-4.5')
+    await expect(page.locator('.l3c-task', { hasText: 'Tuition' })).toContainText('Paused')
+    await english.getByRole('button', { name: 'Move mistralai/mistral-small-3.2-24b-instruct up' }).click()
+    await expect.poll(() => page.l3calls.map(c => c.p_action)).toContain('tier_move')
+    await english.locator('.l3c-add select').selectOption('openrouter-english-l3c-gemini-2-5-flash-lite-v1')
+    await english.getByRole('button', { name: 'Add as last step' }).click()
+    await expect.poll(() => page.l3calls.map(c => c.p_action)).toContain('tier_add')
+    await page.getByRole('button', { name: 'Pause all' }).click()
+    await expect.poll(() => page.l3calls.map(c => c.p_action)).toContain('run_all')
+    await page.getByRole('tab', { name: 'Models' }).click()
+    await expect(page.locator('tbody tr')).toHaveCount(8)
+    await expect(page.getByText('Qualified, not used')).toBeVisible()
   })
 
   test('scholarship and course detail show both sources and highlight differences', async ({ page }) => {

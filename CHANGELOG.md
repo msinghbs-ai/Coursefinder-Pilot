@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.35 — 29 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.108** (Layer 3 control: Control, Models and Work queue tabs; per-task run or pause, daily limit and the model cascade with reorder, switch on or off, add qualified model and remove; logged changes).
+- Database (applied live): migration 20260930030000_cf247_l3_control_and_requeue — public.admin_layer3_control_read and public.admin_layer3_control (Platform Admin); parked Layer 3 and Layer 4 work returned to Layer 3.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.34 — 29 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.107** (admin simplification: five-section menu with old links redirected, one standard page layout in the shared kit, Coverage & completeness inside the app shell, new Platform health page and top-bar status dot, Layer 3 AI validation tabs, sources side by side on scholarship and course detail, Environment & integrations overview).

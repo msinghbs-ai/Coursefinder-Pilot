@@ -11,8 +11,11 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
     layer3_queue_status: { by_task_class: [] }, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [],
   }
+  const calls = []; page.l3calls = calls
   const rpc = {
     admin_layer3_operations: F.layer3Operations,
+    admin_layer3_control_read: F.layer3Control,
+    admin_layer3_control: b => { calls.push(b); return F.layer3Control },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)

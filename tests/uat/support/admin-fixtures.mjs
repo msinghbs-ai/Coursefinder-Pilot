@@ -103,3 +103,20 @@ export const environmentRead = {
   runtime: { evidence_rows: 50638, storage_objects: 61234, cron_jobs: 53, vault_secret_count: 21, evidence_absolute_storage_paths: 0 },
 }
 export const platformResources = { days: 30, database: { size_bytes: 1801383059 }, tables: [], daily: [], cost_model: [] }
+
+// Layer 3 control read (shape of public.admin_layer3_control_read, 29 Sep 2026)
+const tier = (tier, model, profile, right, cost, answered, up, final = false, active = true) => ({ tier, model, profile, active, final, test_right_pct: right, test_wrong: 0, cost_per_1000_usd: cost, answered_24h: answered, passed_up_24h: up, cost_24h_usd: 0.01, audits: { checked: 2, disagreed: 0 } })
+export const layer3Control = {
+  generated_at: now, can_control: true, credit: { remaining_usd: 19.08, observed_at: now },
+  tasks: [
+    { task_class: 'provider_intake_validation', label: 'Intakes', running: true, cascade: true, daily_usd: 4, spent_today_usd: 4.06, in_review: 0, last_24h: { admitted: 98, not_stated: 222, to_review: 0, retrying: 265 },
+      tiers: [tier(1, 'qwen/qwen3-30b-a3b-instruct-2507', 'openrouter-intake-l3c-qwen3-30b-a3b-2507-v1', 83, 0.19, 19, 109), tier(2, 'anthropic/claude-haiku-4.5', 'openrouter-intake-l3r-claude-haiku-4-5-v1', 93.6, 3.69, 3, 106), tier(3, 'anthropic/claude-sonnet-4.6', 'openrouter-intake-l3r-claude-sonnet-4-6-v1', 93.6, 10.94, 298, 0, true)],
+      addable: [] },
+    { task_class: 'provider_english_validation', label: 'English requirements', running: true, cascade: true, daily_usd: 4, spent_today_usd: 4.05, in_review: 0, last_24h: { admitted: 349, not_stated: 248, to_review: 0, retrying: 247 },
+      tiers: [tier(1, 'qwen/qwen3-30b-a3b-instruct-2507', 'openrouter-english-l3c-qwen3-30b-a3b-2507-v1', 91.9, 0.14, 247, 114), tier(2, 'mistralai/mistral-small-3.2-24b-instruct', 'openrouter-english-l3c-mistral-small-3-2-v1', 100, 0.25, 12, 102), tier(3, 'anthropic/claude-sonnet-4.6', 'openrouter-english-l3r-claude-sonnet-4-6-v1', 100, 10.72, 338, 0, true)],
+      addable: [{ profile: 'openrouter-english-l3c-gemini-2-5-flash-lite-v1', model: 'google/gemini-2.5-flash-lite', test_right_pct: 89.2, test_wrong: 0, cost_per_1000_usd: 0.29 }] },
+    { task_class: 'provider_current_tuition_validation', label: 'Tuition', running: false, cascade: false, daily_usd: 5, spent_today_usd: 0.54, in_review: 5, last_24h: { admitted: 223, not_stated: 0, to_review: 0, retrying: 1014 },
+      tiers: [tier(1, 'qwen/qwen3-235b-a22b-2507', 'openrouter-tuition-l3r-qwen3-235b-2507-v1', 75, 0.55, 4, 0, true)], addable: [] },
+  ],
+  events: [{ at: now, kind: 'requeued_parked', detail: { note: 'parked work returned' } }, { at: now, kind: 'admin_tier_move', detail: { task: 'provider_english_validation', tier: 2 } }],
+}
