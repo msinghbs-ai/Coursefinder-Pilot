@@ -9,18 +9,19 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
 
   test('primary sidebar exposes the governed non-floating information architecture',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const nav=page.locator('.m-nav')
-    for(const group of ['Overview','Catalogue','Data Operations','Quality & Insights','Administration']){
-      await expect(nav.locator('.m-nav-label').filter({hasText:group})).toHaveText(group,{timeout:DETERMINISTIC_UI_TIMEOUT})
+    // v2.15.107 (Decision 171): five-section menu from src/nav-map.js. Only items open to every operator rank are asserted.
+    for(const group of ['Catalogue','Data pipeline','Operations','Administration']){
+      await expect(nav.locator('.m-nav-label').filter({hasText:group}).first()).toHaveText(group,{timeout:DETERMINISTIC_UI_TIMEOUT})
     }
-    for(const label of ['Dashboard','Providers','Courses','Campuses','Scholarships','Provider Contacts','Statistics & Rankings','Compare','Layer 1 — Operations','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 4 — Human Resolution','Jobs & Schedules','Evidence','Completeness','Administration']){
+    for(const label of ['Dashboard','Courses','Scholarships','Coverage & completeness','Layer 4 Review','Evidence','Provider contacts']){
       await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     }
-    for(const obsolete of ['Review Queue','Layer 1 — Regulatory','Layer 1 — Authority','Evidence & Provenance','Jobs & Runs','Scholarship Selection','Guides & Runbooks','Settings','Layer 2 Operations','Refresh & Scheduling']){
+    for(const obsolete of ['Review Queue','Layer 1 — Regulatory','Layer 1 — Authority','Layer 1 — Operations','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 4 — Human Resolution','Completeness','Jobs & Schedules','Evidence & Provenance','Jobs & Runs','Scholarship Selection','Guides & Runbooks','Layer 2 Operations','Refresh & Scheduling']){
       await expect(nav.getByRole('button',{name:obsolete,exact:true})).toHaveCount(0)
     }
     const order=await nav.locator('button').evaluateAll(nodes=>nodes.map(n=>n.textContent?.trim()))
-    expect(order.indexOf('Jobs & Schedules')).toBeGreaterThan(-1)
-    expect(order.indexOf('Jobs & Schedules')).toBeLessThan(order.indexOf('Evidence'))
+    expect(order.indexOf('Coverage & completeness')).toBeGreaterThan(-1)
+    expect(order.indexOf('Coverage & completeness')).toBeLessThan(order.indexOf('Layer 4 Review'))
     await milestoneScreenshot(page,testInfo,'admin-canonical-navigation')
   }finally{await finish(testInfo,runtime)}})
 

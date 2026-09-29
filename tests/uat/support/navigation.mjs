@@ -8,7 +8,7 @@ export async function openLayer1(page) {
   const workspace = page.locator('.l1v2-page .l1v2-shell')
   await expect(workspace).toBeVisible(ui)
   // Decision 133: the screen title is the page title (the embedded panel no longer repeats it).
-  await expect(page.getByRole('heading', { name: 'Layer 1 — Operations' }).first()).toBeVisible(ui)
+  await expect(page.getByRole('heading', { name: 'Layer 1 Register' }).first()).toBeVisible(ui)
   return workspace
 }
 
@@ -17,16 +17,16 @@ export async function openLayer2(page) {
   const workspace = page.locator('.l2o-shell')
   await expect(workspace).toBeVisible(ui)
   // Decision 133: the screen title is the page title (Layer panels no longer repeat it).
-  await expect(page.getByRole('heading', { name: 'Layer 2 — Enrichment' }).first()).toBeVisible(ui)
+  await expect(page.getByRole('heading', { name: 'Layer 2 Discovery & reading' }).first()).toBeVisible(ui)
   return workspace
 }
 
+// v2.15.107: former Administration tools now live on their own pages (src/nav-map.js).
+const ADMIN_TOOL_ROUTES={'Extraction Profiles':['Layer 2 Discovery & reading','Source profiles'],'Scraper Config':['Scrapers & fetchers','']}
 async function openAdministrationTool(page,tabName,heading){
-  await clickPrimaryNav(page,'Administration')
-  await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible(ui)
-  const tab=page.getByRole('tab',{name:tabName,exact:true})
-  await expect(tab).toBeVisible(ui)
-  await tab.click({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const [menu,tab]=ADMIN_TOOL_ROUTES[tabName]||[tabName,'']
+  await clickPrimaryNav(page,menu)
+  if(tab)await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})
   const headingLocator=page.getByRole('heading',{name:heading,exact:true}).first()
   await expect(headingLocator).toBeVisible(ui)
   return headingLocator.locator('xpath=ancestor-or-self::*[@role="region"][1] | ancestor::section[1]').first()
@@ -47,6 +47,8 @@ export async function openLayer2Trials(page) {
 
 export async function openLayer3(page) {
   await clickPrimaryNav(page, 'Layer 3 — AI Interpretation')
+  // v2.15.107: the Layer 3 operations workspace is the Work queue tab of the Layer 3 AI validation page.
+  await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: 'Work queue' }).first().click(ui)
   const workspace = page.locator('.m23-stack').first()
   await expect(workspace.getByRole('heading', { name: 'Layer 3 status' })).toBeVisible(ui)
   return workspace
