@@ -63,8 +63,9 @@ export const PAGES = {
     { key: 'checks', label: 'Health checks', min: 3 },
     { key: 'readiness', label: 'Readiness & capacity', min: 6 },
   ] },
-  jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, job history and refresh schedules.', tabs: [
+  jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, the order work is taken in, job history and refresh schedules.', tabs: [
     { key: 'automations', label: 'Automations', min: 4 },
+    { key: 'priority', label: 'Priority queue', min: 3 },
     { key: 'jobs', label: 'Jobs', min: 4 },
     { key: 'schedules', label: 'Schedules', min: 4 },
   ] },

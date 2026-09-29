@@ -180,3 +180,21 @@ export const scholarshipPublishing = {
   published: [{ id: 'p1', name: 'RMIT Irana Turynska Scholarship', provider: 'RMIT University', page: 'https://www.rmit.edu.au/scholarships/coursework/irana-turynska' }],
   events: [],
 }
+
+// Priority queue (shape of public.admin_priority_read, 30 Sep 2026)
+export const priority = {
+  can_control: true,
+  pins: [
+    { id: 11, kind: 'provider', target_id: 'p-melb', sort: 1, note: null, at: now, label: 'The University of Melbourne (UniMelb)', detail: 'Victoria · Australia', courses: 438 },
+    { id: 12, kind: 'state', target_id: 's-vic', sort: 2, note: null, at: now, label: 'Victoria', detail: 'Australia', courses: 9120 },
+  ],
+  ranking: [
+    { rank: 1, provider_id: 'p-melb', name: 'The University of Melbourne (UniMelb)', state: 'Victoria', country: 'AU', courses: 438, pinned_by: 'provider', pages_matched: 11, pages_waiting: 80 },
+    { rank: 2, provider_id: 'p-monash', name: 'Monash University', state: 'Victoria', country: 'AU', courses: 582, pinned_by: 'state', pages_matched: 5, pages_waiting: 161 },
+    { rank: 3, provider_id: 'p-unsw', name: 'UNSW Sydney', state: 'New South Wales', country: 'AU', courses: 666, pinned_by: null, pages_matched: 246, pages_waiting: 1 },
+  ],
+  states: [{ id: 's-nsw', name: 'New South Wales', country: 'Australia' }, { id: 's-vic', name: 'Victoria', country: 'Australia' }],
+  countries: [{ id: 'c-au', name: 'Australia' }, { id: 'c-nz', name: 'New Zealand' }],
+  events: [{ at: now, action: 'add', target: 'Victoria', detail: { kind: 'state' } }],
+}
+export const prioritySearch = [{ id: 'p-mq', label: 'Macquarie University', detail: 'New South Wales · Australia' }]

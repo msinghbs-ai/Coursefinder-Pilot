@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.40 — 30 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.113** (Scheduled jobs › Priority queue: pin universities, states, countries or single courses to the front, reorder, remove; current order with pages matched and waiting).
+- Database (applied live): 20260930090000 and 20260930091000 (provider ranking; Layer 3 and page reading take the largest providers first; Firecrawl for their blocked pages), 20260930100000 and 20260930101000 (priority pins, course priority, admin_priority_read/search/control; claim and page reader take pinned work first).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.39 — 30 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.112** (Provider contacts under Catalogue; new Catalogue › Reference data with Ranking imports, Key dates and Key links; Onboarding under Providers; Coverage & completeness tabs Courses, Attributes, Readiness by area).
