@@ -9,7 +9,7 @@ const SIGNAL: Record<"intake" | "english", RegExp> = {
 };
 export function cascadeSignal(task: "intake" | "english", text: string) { return SIGNAL[task].test(text) }
 export const AUDIT_RATE = 0.05;
-export const CASCADE_VERSION = "cf247-l3-cascade-v1.0.0";
+export const CASCADE_VERSION = "cf247-l3-cascade-v1.1.0";  // v1.1.0: pinned model from Layer 4
 export const sameAnswer = (task: "intake" | "english", a: any, b: any) => {
   if (!a || !b) return false;
   if (task === "intake") return JSON.stringify([...(a.months || [])].map(Number).sort((x, y) => x - y)) === JSON.stringify([...(b.months || [])].map(Number).sort((x, y) => x - y));

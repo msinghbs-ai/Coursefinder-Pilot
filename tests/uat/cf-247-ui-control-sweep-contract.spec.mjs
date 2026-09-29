@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import { PAGES, resolveTarget, hrefFor } from '../../src/nav-map.js'
 import { describeSchedule } from '../../src/automation-schedule.js'
 import { mockAdmin } from './support/admin-mock.mjs'
+import * as F from './support/admin-fixtures.mjs'
 
 const read = p => fs.readFileSync(p, 'utf8')
 
@@ -47,6 +48,12 @@ test('controls are guarded, logged and admin-only', () => {
   expect(f1).toContain("'3eb0b56824f911f29298e5755e179adc'")
   expect(f2).toContain("'efd0bf3fb2468382aa45d0f194bed300'")
   expect(f2).toContain("not like 'released:%'")
+  const pin = read('supabase/migrations/20260930061000_cf247_l3_pinned_model_from_layer4.sql')
+  expect(pin).toContain("'8e8733c8f2318d2614e1d77ad4b88400'")
+  expect(pin).toContain("'f4f00fc0e7b957e9bd3d4b42c3fbb96d'")
+  expect(pin).toContain('(t.active or t.profile_id=v_pin)')
+  const w = read('supabase/functions/layer3-model-routing/index.ts')
+  expect(w).toContain('const its: any[] = pin ? [pin] : tiers;')
 })
 
 test.describe('mocked browser', () => {
@@ -91,6 +98,12 @@ test.describe('mocked browser', () => {
     await page.locator('.sb-field[data-field="course_intake"]').getByRole('button', { name: 'Send all 12 back' }).click()
     await expect.poll(() => page.l3calls.filter(c => c.p_action === 'send_back').map(c => c.p_args)).toContainEqual({ field: 'course_intake' })
     await expect(page.getByRole('status')).toContainText('12 items moved')
+    const intake = page.locator('.sb-field[data-field="course_intake"]')
+    await expect(intake.getByLabel('Model for Intakes').locator('option')).toHaveCount(4)
+    await expect(intake.getByLabel('Model for Intakes')).toContainText('anthropic/claude-sonnet-4.6 (only when sent from here)')
+    await intake.getByLabel('Model for Intakes').selectOption('openrouter-intake-l3r-claude-sonnet-4-6-v1')
+    await intake.getByRole('button', { name: 'Send 12 back' }).click()
+    await expect.poll(() => page.l3calls.filter(c => c.p_action === 'send_back').map(c => c.p_args)).toContainEqual({ field: 'course_intake', reason: F.requeue.groups[2].reason, profile: 'openrouter-intake-l3r-claude-sonnet-4-6-v1' })
     await page.getByRole('row', { name: /Tuition/ }).getByRole('button', { name: 'Retry' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'retry_failed')?.p_args).toEqual({ task: 'provider_current_tuition_validation' })
   })

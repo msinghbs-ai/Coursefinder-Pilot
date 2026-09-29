@@ -1,22 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.110'
-export const PACKAGE_VERSION='0.1.37'
+export const UI_VERSION='2.15.111'
+export const PACKAGE_VERSION='0.1.38'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'30 Sep 2026',
-  title:'Full control from the admin screens: automations, sending work back to the AI, and scholarship publishing',
+  title:'Layer 3 on cheap models only; stronger models only when sent from Layer 4',
   changes:[
-    'Scheduled jobs has a new first tab, Automations: every job the platform runs on a schedule, grouped by area, with a plain name, what it does, how often it runs (times in IST), its last run and the last 24 hours.',
-    'Platform Admins can pause or resume one automation or a whole area, run one now, change how often it runs, and change the batch size where it works in batches. Every change is logged.',
-    'Layer 4 Review has a new tab, Send back to AI: review items the Layer 3 AI could not settle, grouped by reason. A Platform Admin can send a group, or all items for a field, back to Layer 3 to go through the model cascade again, and retry Layer 3 work that failed.',
-    'Each Layer 3 task card has a Send back to AI button for the items it raised for review.',
-    'Scholarships has a new Publishing tab: what is published, what is ready to publish and why the rest is not. A Platform Admin can publish the ready list with an approval note, hold a scholarship with a reason, and release a hold.'
+    'Claude Sonnet 4.6 is no longer part of any cascade. Intakes run Qwen3 30B, then Claude Haiku 4.5; English runs Qwen3 30B, then Mistral Small 3.2. An answer the last step cannot settle goes to Layer 4.',
+    'On Layer 4 Review › Send back to AI, each field has a model choice: the cheap-model cascade, or one named model, including models the cascade no longer uses. A page sent to a named model goes only to that model; if it still cannot be settled, it comes back to Layer 4.',
+    'The intake and English checks now run every minute, 40 pages at a time, 8 in parallel.'
   ],
   bugFixes:[
-    'Scheduled automations, moving review items back to Layer 3 and publishing scholarships could only be done in the database.'
+    'Pages where cheaper models found no intake were passed to Claude Sonnet, which agreed in almost every case, spending about US$7 a day for nothing.'
   ]
 }
 
