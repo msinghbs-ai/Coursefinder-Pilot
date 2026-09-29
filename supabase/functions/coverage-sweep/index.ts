@@ -2,7 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 import { admissionCheck, baseHost, keepScholarshipUrl, namedScholarshipTitle, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.5.1";
+const SCH_VERSION = "scholarship-sweep-v0.5.2";
+// v0.5.2: a page's own "Study level" / "Eligible study level" field decides the levels when present.
 // v0.5.1: "no longer available" only as a statement about the scholarship, not a condition (Griffith Vice Chancellor's
 // International Scholarship); "students with an undergraduate degree qualification" is earlier study (Monash Indonesia).
 // v0.5.0 (level hand-check, 40 publication holds): levels from the page content only (site menus, enquiry forms and

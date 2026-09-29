@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.5.1')
+  expect(idx).toContain('scholarship-sweep-v0.5.2')
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
@@ -192,6 +192,10 @@ test('v0.5.0 levels come from the page content, not menus or enquiry forms', asy
   // a page that genuinely lists every level keeps them (Melbourne "Graduate coursework, Graduate research")
   const airc = '<main><h1>Australian Industrial Relations Commission (AIRC) Centennial Prize</h1><p>' + 'About the prize. '.repeat(100) + '</p><p>Eligible study level Undergraduate, Honours, Graduate coursework, Graduate research. Eligible student type Domestic and international students</p></main>'
   expect(scholarshipFacts(airc, 'AIRC Centennial Prize', 'AIRC Centennial Prize').levels).toEqual(['postgraduate_coursework', 'research', 'undergraduate'])
+  const ormond = '<main><h1>Ormond College Scholarships</h1><p>Key scholarship details Application status Open for applications Benefit amount $5,000 - $36,000 Eligible study level Undergraduate, Honours, Graduate coursework, Graduate research Eligible student type Domestic and international students</p><p>' + 'w '.repeat(800) + '</p><p>Eligibility To be considered you must be enrolled in an undergraduate degree or a graduate research degree.</p></main>'
+  expect(scholarshipFacts(ormond, 'Ormond College Scholarships', 'Ormond College Scholarships')).toMatchObject({ levels: ['postgraduate_coursework', 'research', 'undergraduate'], levels_from: 'study_level_field' })
+  const uq = '<main><h1>UQ Faculty International Scholarship</h1><p>Student type International Study level Undergraduate, Postgraduate coursework Study area All study areas Scholarship value 10% reduction</p><p>' + 'v '.repeat(800) + '</p></main>'
+  expect(scholarshipFacts(uq, 'UQ Faculty International Scholarship', 'UQ Faculty International Scholarship').levels).toEqual(['postgraduate_coursework', 'undergraduate'])
   const cqu = '<main><h1>CQUniversity ASEAN Student Scholarship</h1><p>' + 'x '.repeat(800) + '</p><p>Eligible undergraduate, postgraduate coursework and research courses at CQUniversity Australia.</p></main>'
   expect(scholarshipFacts(cqu, 'CQUniversity ASEAN Student Scholarship', 'CQUniversity ASEAN Student Scholarship').levels).toEqual(['postgraduate_coursework', 'research', 'undergraduate'])
 })

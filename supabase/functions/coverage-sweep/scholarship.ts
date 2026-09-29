@@ -187,12 +187,16 @@ export function scholarshipFacts(html: string, titleText: string, name: string) 
   // v0.5.0: from the page content (menus and forms removed); the name's own level still decides first
   const at = content.search(/\b(?:eligibility(?: criteria| requirements)?\b|who (?:is|can be) eligible|am i eligible|to be eligible)/i);
   const eligibility = at >= 0 ? content.slice(at, at + 1200) : null;
-  const fromElig = eligibility ? scholarshipLevels(titleText + " " + name, eligibility) : [];
+  // v0.5.2: a page's own "Study level(s)" / "Eligible study level" field decides when present (Melbourne, UQ, ANU, QUT
+  // key-details blocks: Ormond College Scholarships "Undergraduate, Honours, Graduate coursework, Graduate research")
+  const field = content.match(/\b(?:eligible )?study levels?\s*:?\s+((?:(?:undergraduate|bachelor|honours|postgraduate|graduate|coursework|research|masters?|doctoral|phd|hdr|certificate|diploma|and|or|\/|,|\(|\)|-)\s*)+)/i);
+  const fromField = field ? scholarshipLevels(titleText + " " + name, field[1]) : [];
+  const fromElig = fromField.length ? fromField : eligibility ? scholarshipLevels(titleText + " " + name, eligibility) : [];
   const eng = englishCourse(name, content);
   const off = notOffered(content);
   return {
     levels: eng ? [] : fromElig.length ? fromElig : scholarshipLevels(titleText + " " + name, content),
-    levels_from: eng ? "english_course" : fromElig.length ? "eligibility" : "content",
+    levels_from: eng ? "english_course" : fromField.length ? "study_level_field" : fromElig.length ? "eligibility" : "content",
     ...(eng ? { english_course: eng } : {}),
     not_offered: !!off, ...(off ? { not_offered_context: off } : {}),
     ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped } })(),
