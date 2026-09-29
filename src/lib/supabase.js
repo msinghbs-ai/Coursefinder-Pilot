@@ -152,6 +152,7 @@ async function entityPage(operation, args = {}) {
     has_link: args.hasLink ?? args.has_link ?? null,
     min_completeness: args.minCompleteness === '' ? null : (args.minCompleteness ?? args.min_completeness ?? null),
     freshness: args.freshness || null,
+    university_group: args.universityGroup || args.university_group || null,
     sort: args.sort || null,
     direction: args.direction || 'asc',
   })
