@@ -20,6 +20,9 @@ import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effec
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import Layer3Operations from'./Layer3Operations'
 import FlaggedValues from'./FlaggedValues'
+import Automations from'./Automations'
+import SendBackToAI from'./SendBackToAI'
+import ScholarshipPublishing from'./ScholarshipPublishing'
 import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
 import{CoverageView}from'./course-coverage'
@@ -163,7 +166,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='campuses')return <Catalogue type="campus" onError={onError} navigate={navigate} initialId={focusId}/>
         if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
         return <Catalogue type="provider" onError={onError} navigate={navigate} initialId={focusId}/>
-      case'scholarships':return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
+      case'scholarships':return tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
         if(tab==='compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
         if(tab==='qilt')return <Qilt onError={onError}/>
@@ -183,9 +186,9 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
         return <Layer2Workspace rank={rank} embedded/>
       case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
-      case'layer4':return tab==='flags'?<FlaggedValues onError={err}/>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
+      case'layer4':return tab==='flags'?<FlaggedValues onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError}/>:<PlatformHealth onError={onError}/>
-      case'jobs':return tab==='schedules'?<div className="m-page-stack"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
+      case'jobs':return tab==='automations'?<div className="m-page-stack"><Automations onError={err}/></div>:tab==='schedules'?<div className="m-page-stack"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'environment':return <EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/>
       case'scrapers':return <><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>

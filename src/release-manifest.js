@@ -1,21 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.109'
-export const PACKAGE_VERSION='0.1.36'
+export const UI_VERSION='2.15.110'
+export const PACKAGE_VERSION='0.1.37'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'29 Sep 2026',
-  title:'Flagged values: tuition recorded as per year for operators to check',
+  date:'30 Sep 2026',
+  title:'Full control from the admin screens: automations, sending work back to the AI, and scholarship publishing',
   changes:[
-    'Layer 4 Review has two tabs: Review queue and Flagged values.',
-    'Flagged values lists values recorded automatically under an assumption. The first kind is tuition shown on the course page without a period, which is recorded as per year (Platform Admin rule, 29 Sep 2026).',
-    'Each row shows the course, provider, fee, period and the words quoted from the page, with a link to the page when known.',
-    'Pipeline operators and admins can confirm the fee per year, edit the amount or period (per year or whole course), or remove it. Curators can view.'
+    'Scheduled jobs has a new first tab, Automations: every job the platform runs on a schedule, grouped by area, with a plain name, what it does, how often it runs (times in IST), its last run and the last 24 hours.',
+    'Platform Admins can pause or resume one automation or a whole area, run one now, change how often it runs, and change the batch size where it works in batches. Every change is logged.',
+    'Layer 4 Review has a new tab, Send back to AI: review items the Layer 3 AI could not settle, grouped by reason. A Platform Admin can send a group, or all items for a field, back to Layer 3 to go through the model cascade again, and retry Layer 3 work that failed.',
+    'Each Layer 3 task card has a Send back to AI button for the items it raised for review.',
+    'Scholarships has a new Publishing tab: what is published, what is ready to publish and why the rest is not. A Platform Admin can publish the ready list with an approval note, hold a scholarship with a reason, and release a hold.'
   ],
   bugFixes:[
-    'Tuition fees whose page showed no period stayed in the review queue even when the fee itself was confirmed.'
+    'Scheduled automations, moving review items back to Layer 3 and publishing scholarships could only be done in the database.'
   ]
 }
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.37 — 30 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.110** (UI control sweep: Scheduled jobs > Automations for all 58 scheduled jobs with pause or resume per job or area, run now, frequency and batch size; Layer 4 Review > Send back to AI and a Send back to AI button on each Layer 3 task; Scholarships > Publishing with publish batch, hold and release).
+- Database (applied live): migrations 20260930050000–20260930052000 — pipeline.automation_catalogue, pipeline.admin_control_events, public.admin_automations_read and public.admin_automation_control, public.admin_requeue_read and public.admin_requeue, public.admin_scholarship_publishing_read and public.admin_scholarship_publishing (reads rank >= 3, changes Platform Admin; three upkeep jobs top admin only); reason groups without amounts and failed counts that exclude released work (checksum-guarded).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.36 — 29 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.109** (Layer 4 Review tabs: Review queue and Flagged values; operators confirm, edit or remove tuition recorded as per year when the page states no period).

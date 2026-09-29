@@ -5,10 +5,12 @@
 //               model or remove one. Every change is logged.
 //   Models      only the models in a cascade or qualified to join one, with their test scores and cost.
 //   Work queue  the operator workspace (evidence waiting, history), without the old per-profile list.
+// v2.15.110: each task card can send the items the AI raised for review back to Layer 3 (public.admin_requeue,
+// migration 20260930050000_cf247_ui_control_sweep); grouped by reason on Layer 4 Review > Send back to AI.
 // Read: public.admin_layer3_control_read(); write: public.admin_layer3_control(action, args) (migration
 // 20260930030000_cf247_l3_control_and_requeue).
 import React,{useEffect,useState}from'react'
-import{ArrowDown,ArrowUp,BrainCircuit,CircleDollarSign,Pause,Play,Plus,RefreshCw,Route,Trash2}from'lucide-react'
+import{ArrowDown,ArrowUp,BrainCircuit,CircleDollarSign,Pause,Play,Plus,RefreshCw,Route,Trash2,Undo2}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtMoney,fmtNumber}from'./ui-kit'
 import{Layer3 as Layer3Workspace}from'./m2-3-intelligence-entry'
@@ -23,16 +25,17 @@ export default function Layer3Operations({tab='routing',rank,onError}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState('')
   const load=async()=>{setBusy(true);setFailed('');try{const{data:d,error}=await supabase.rpc('admin_layer3_control_read');if(error)throw error;setData(d||{})}catch(e){setFailed(e.message||String(e))}finally{setBusy(false)}}
   const act=async(action,args,confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_layer3_control',{p_action:action,p_args:args});if(error)throw error;setData(d||{})}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
+  const sendBack=async(field,n,label)=>{if(!window.confirm(`Send the ${label} items the AI raised for review back to Layer 3 to be tried again? Items that differ from a value already held stay with a person.`))return;setBusy(true);try{const{error}=await supabase.rpc('admin_requeue',{p_action:'send_back',p_args:{field}});if(error)throw error}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}load()}
   useEffect(()=>{if(tab!=='work'&&!data)load()},[tab])
   if(tab==='work')return <div className="m-page-stack"><Layer3Workspace rank={rank} hideHeader onError={e=>onError?.(e?.message||String(e))}/></div>
   if(!data&&!failed)return <section className="m-panel"><Loading label="Loading Layer 3…"/></section>
   if(failed&&!data)return <section className="m-panel"><Empty text={`Layer 3 could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
   const refresh=<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>
   if(tab==='models')return <Models data={data} action={refresh}/>
-  return <Control data={data} act={act} busy={busy} action={refresh}/>
+  return <Control data={data} act={act} busy={busy} action={refresh} sendBack={sendBack}/>
 }
 
-function Control({data,act,busy,action}){
+function Control({data,act,busy,action,sendBack}){
   const tasks=data.tasks||[],can=Boolean(data.can_control)&&!busy,running=tasks.filter(t=>t.running).length
   const spent=tasks.reduce((n,t)=>n+Number(t.spent_today_usd||0),0),limit=tasks.reduce((n,t)=>n+Number(t.daily_usd||0),0)
   return <>
@@ -47,14 +50,16 @@ function Control({data,act,busy,action}){
         <Button compact variant="primary" onClick={()=>act('run_all',{running:true})} disabled={!can||running===tasks.length}><Play size={14}/>Run all</Button></>}</div>}/>
       {!data.can_control&&<p className="l3v-note">You can view Layer 3. Only a Platform Admin can change it.</p>}
     </section>
-    {tasks.map(t=><TaskCard key={t.task_class} t={t} can={can} admin={data.can_control} act={act}/>)}
+    {tasks.map(t=><TaskCard key={t.task_class} t={t} can={can} admin={data.can_control} act={act} sendBack={sendBack}/>)}
     <section className="m-panel"><SectionTitle title="Recent changes"/>
       {(data.events||[]).length?<ul className="l3c-events">{data.events.map((e,i)=><li key={i}><span>{fmtDateTime(e.at)}</span><strong>{EVENT_LABEL[e.kind]||e.kind}</strong><small>{[e.detail?.task&&e.detail.task.replace('provider_','').replace('_validation','').replace('current_',''),e.detail?.profile,e.detail?.tier&&`step ${e.detail.tier}`,e.detail?.daily_usd!=null&&usd(e.detail.daily_usd),e.detail?.reason].filter(Boolean).join(' · ')}</small></li>)}</ul>:<Empty text="No changes recorded."/>}
     </section>
   </>
 }
 
-function TaskCard({t,can,admin,act}){
+const FIELD_OF={provider_intake_validation:'course_intake',provider_english_validation:'course_english',provider_current_tuition_validation:'provider_current_tuition_validation'}
+
+function TaskCard({t,can,admin,act,sendBack}){
   const[limit,setLimit]=useState(String(t.daily_usd??'')),[add,setAdd]=useState('')
   useEffect(()=>setLimit(String(t.daily_usd??'')),[t.daily_usd])
   const tiers=t.tiers||[],active=tiers.filter(x=>x.active).length,l=t.last_24h||{}
@@ -66,7 +71,8 @@ function TaskCard({t,can,admin,act}){
     <div className="l3c-facts">
       <div><small>Spent today</small><strong>{usd(t.spent_today_usd)}</strong><span>of {usd(t.daily_usd)} daily limit</span></div>
       <div><small>Last 24 hours</small><strong>{fmtNumber(l.admitted||0)} admitted</strong><span>{fmtNumber(l.not_stated||0)} not on the page · {fmtNumber(l.to_review||0)} to review · {fmtNumber(l.retrying||0)} retrying</span></div>
-      <div><small>Waiting for a person</small><strong>{fmtNumber(t.in_review||0)}</strong><span>in Layer 4 review</span></div>
+      <div><small>Waiting for a person</small><strong>{fmtNumber(t.in_review||0)}</strong><span>in Layer 4 review</span>
+        {admin&&FIELD_OF[t.task_class]&&Number(t.in_review)>0&&<Button compact onClick={()=>sendBack(FIELD_OF[t.task_class],Number(t.in_review),t.label)} disabled={!can}><Undo2 size={14}/>Send back to AI</Button>}</div>
       {admin&&<form className="l3c-limit" onSubmit={e=>{e.preventDefault();act('budget',{task:t.task_class,daily_usd:Number(limit)})}}>
         <label><small>Daily limit (US$)</small><input type="number" min="0" max="100" step="0.5" value={limit} onChange={e=>setLimit(e.target.value)} disabled={!can}/></label>
         <Button compact type="submit" disabled={!can||Number(limit)===Number(t.daily_usd)}>Save</Button></form>}
