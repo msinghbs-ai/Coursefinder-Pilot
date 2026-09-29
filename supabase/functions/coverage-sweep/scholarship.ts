@@ -269,14 +269,27 @@ const GENERIC_TITLE = /^(scholarships?|awards?|grants?|bursar(?:y|ies)|eligibili
 // v0.4.4 (step-2 hand-check): articles and information pages ("The impact of a scholarship", "Your introduction to UC's
 // international scholarships", "Costs and scholarships") and faculty listings ("Architecture, design and planning
 // international undergraduate scholarships") are not single scholarships.
-const NOT_A_SCHOLARSHIP_TITLE = /(\ba scholarships?\b|introduction to|impact of|\bcosts? and\b|and scholarships\b|scholarships and\b|how to\b|what is\b|\bwhy\b|\btips\b|\bguide\b|\bstor(?:y|ies)\b|\bexperience\b|\b(?:international|undergraduate|postgraduate|research|faculty|college|school|domestic)\b[^|]*\bscholarships$|terms and conditions|conditions of (?:award|scholarship)|\bfaqs?\b|frequently asked|how to apply|information for|guidelines|\bpolicy\b|\brules\b|recipients|winners|finalists|celebrating|announc|\bnews\b|contact us|apply now|application form|register|registration|sponsors?hip information|sponsored students)/i;
+const NOT_A_SCHOLARSHIP_TITLE = /(\brecap\b|\breceiving\b|\bstudying\b|\bmeet\b|congratulat|\bapplication$|\ba scholarships?\b|introduction to|impact of|\bcosts? and\b|and scholarships\b|scholarships and\b|how to\b|what is\b|\bwhy\b|\btips\b|\bguide\b|\bstor(?:y|ies)\b|\bexperience\b|\b(?:international|undergraduate|postgraduate|research|faculty|college|school|domestic)\b[^|]*\bscholarships$|terms and conditions|conditions of (?:award|scholarship)|\bfaqs?\b|frequently asked|how to apply|information for|guidelines|\bpolicy\b|\brules\b|recipients|winners|finalists|celebrating|announc|\bnews\b|contact us|apply now|application form|register|registration|sponsors?hip information|sponsored students)/i;
+// v0.4.5 (step-2 hand-check): a scholarship's own title ends with the scholarship word, optionally followed by a
+// qualifier ("(Graduate)", "- 2027", "for Excellence", "in Pharmacy"); page furniture ("--> Scholarships <!--",
+// "International Scholarships | UniSC | ..."), student stories ("... Scholarship Shruti") and generic plural titles
+// ("Global Curtin scholarships", "UNSW scholarships for international students", "Accommodation scholarships") are not.
+const KEYWORD = "(?:scholarship|bursary|bursaries|award|grant|prize|fellowship|stipend|discount|remission|reduction|waiver)";
+export function namedScholarshipTitle(t: string) {
+  if (/[<>|{}]/.test(t)) return false;
+  const m = t.match(new RegExp(`${KEYWORD}(s?)(\\s*\\(.*\\)|\\s*[-–:]\\s*.+|\\s+(?:for|in|of|to|at|from|with)\\s.+|\\s+20\\d\\d.*)?$`, "i"));
+  if (!m) return false;
+  const plural = /(?:scholarships|bursaries|awards|grants|prizes|fellowships)$/i.test(t.slice(0, (m.index || 0) + m[0].length - (m[2] || "").length).trim());
+  if (plural && (!m[2] || /^\s+for\s+(?:all\s+|new\s+|current\s+|commencing\s+|future\s+)?(?:international\s+|domestic\s+)?students?\b/i.test(m[2]))) return false;
+  return true;
+}
 export function scholarshipTitle(html: string) {
   const h1s = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(htmlToText(m[1]))).filter(Boolean);
   const head = (html.match(/<head[\s\S]*?<\/head>/i) || [""])[0];
   const og = (head.match(/<meta[^>]+property=["']og:title["'][^>]*content=["']([^"']*)["']/i) || [])[1];
   const title = (head.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
   const opts = [...h1s, og ? htmlToText(og).split(/\s+[|–]\s+|\s+-\s+/)[0] : "", title ? htmlToText(title).split(/\s+[|–]\s+|\s+-\s+/)[0] : ""].map(clean);
-  return opts.find((t) => t.length >= 8 && t.length <= 160 && !GENERIC_TITLE.test(t) && !NOT_A_SCHOLARSHIP_TITLE.test(t) && /(scholarship|bursary|award|grant|fee (?:remission|reduction|waiver|discount)|tuition (?:discount|reduction|waiver))/i.test(t)) || null;
+  return opts.find((t) => t.length >= 8 && t.length <= 160 && !GENERIC_TITLE.test(t) && !NOT_A_SCHOLARSHIP_TITLE.test(t) && namedScholarshipTitle(t)) || null;
 }
 export function internationalEligibility(text: string) {
   const t = text.slice(0, 12000);

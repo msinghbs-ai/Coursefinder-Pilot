@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.4.4')
+  expect(idx).toContain('scholarship-sweep-v0.4.5')
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
@@ -145,7 +145,15 @@ test('v0.4.4 step-2 hand-check fixes: articles, information pages and faculty li
   const body = 'Open to international students commencing in 2027. 20% tuition fee reduction.'
   for (const t of ['The impact of a scholarship', "Your introduction to UC's international scholarships", 'Costs and scholarships', 'Architecture, design and planning international undergraduate scholarships'])
     expect(admissionCheck(page(t, body), 'https://www.uni.edu.au/x/y', 'uni.edu.au').admit).toBe(false)
-  expect(admissionCheck(page('Foundation Academic Scholarships', body), 'https://www.uni.edu.au/x/y', 'uni.edu.au').admit).toBe(true)
+  expect(admissionCheck(page('Foundation Academic Scholarship', body), 'https://www.uni.edu.au/x/y', 'uni.edu.au').admit).toBe(true)
   const escaped = page('Engineering Excellence Scholarship', body + Array.from({ length: 16 }, (_, i) => `&lt;a href=\\&#34;/scholarships/s-${i}.html\\&#34;&gt;S${i}&lt;/a&gt;`).join(''))
   expect(admissionCheck(escaped, 'https://www.uni.edu.au/scholarships/x', 'uni.edu.au').reasons).toContain('listing_page')
+})
+
+test('v0.4.5 step-2 hand-check: only a scholarship\'s own name is admitted as a title', async () => {
+  const { namedScholarshipTitle } = await load()
+  for (const t of ['Melbourne International Excellence Scholarship (Graduate)', 'Sir John Monash Scholarships for Excellence', 'International Futures Scholarship - 2027', 'James Millner Scholarship in Pharmacy', 'BUPA Adelaide University International Student Grant', 'Deakin International 20% Merit Scholarship'])
+    expect(namedScholarshipTitle(t)).toBe(true)
+  for (const t of ['--> Scholarships <!--', 'Global Curtin scholarships', 'UNSW scholarships for international students', 'Accommodation scholarships', 'International Scholarships | UniSC | University of the Sunshine Coast', 'Studying in Perth with the WA Premiers University Scholarship Shruti', 'Australia Awards students'])
+    expect(namedScholarshipTitle(t)).toBe(false)
 })

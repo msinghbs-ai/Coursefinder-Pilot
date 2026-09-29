@@ -1,6 +1,7 @@
 -- CF-247 scholarship discovery: the candidate queue timed out when four readers ran at once (the university test ran
 -- once per candidate page). Universities are known from the discovery queue's priority (0, 1: universities holding
--- Study Australia-only scholarships; 3, 4: other universities), so the queue no longer calls the test per page.
+-- Study Australia-only scholarships; 3, 4: other universities), so the queue no longer calls the test per page; the lease is re-checked on the locked row so
+-- concurrent readers never take the same page.
 create or replace function public.svc_scholarship_candidate_next(p_limit int)
 returns jsonb language plpgsql security definer set search_path to 'pg_catalog','pipeline','security' as $f$
 declare v jsonb;
@@ -12,6 +13,8 @@ begin
      where c.matched_scholarship_id is null and c.admit_status is null and c.next_read_at<=now() and coalesce(c.leased_until,'-infinity')<now() and c.attempts<3),
   pick as (
     select c.id from pipeline.scholarship_page_candidates c join ranked r on r.id=c.id
+     -- re-checked on the locked row, so concurrent readers never take the same page
+     where coalesce(c.leased_until,'-infinity')<now() and c.admit_status is null and c.matched_scholarship_id is null and c.next_read_at<=now()
      order by r.rn, (r.priority not in (0,3)), c.id
      limit greatest(1,least(coalesce(p_limit,30),60)) for update of c skip locked),
   upd as (update pipeline.scholarship_page_candidates c set leased_until=now()+interval '5 minutes', attempts=c.attempts+1 from pick where c.id=pick.id
