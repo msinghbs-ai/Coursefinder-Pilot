@@ -8,7 +8,9 @@ import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllow
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.2.0";
+const VERSION = "coverage-sweep-v0.3.0";
+// v0.3.0: ambiguous course pages are read too and accepted only with the CRICOS course code on the page; month
+// names in intakes must be capitalised.
 // v0.2.0: discovery reads the site's own XML site maps first (free), from the final address after redirects; Firecrawl
 // map runs when the site maps give fewer course pages than 60% of the provider's courses, and a second map focused on
 // "course" only when still short (at most 2 credits per provider). Binding runs separately (cron coverage-bind).
@@ -106,7 +108,7 @@ Deno.serve(async (req) => {
     }
 
     if (mode === "read") {
-      const items: { course_id: string; provider_id: string; url: string; title: string; code: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
+      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const robots = new Map<string, Promise<string>>();
       const robotsFor = (u: URL) => { if (!robots.has(u.origin)) robots.set(u.origin, fetch(u.origin + "/robots.txt", { headers: { "user-agent": UA }, signal: AbortSignal.timeout(8000) }).then((r) => r.ok ? r.text() : "").catch(() => "")); return robots.get(u.origin)! };
       const tally: Record<string, number> = {};
@@ -135,7 +137,7 @@ Deno.serve(async (req) => {
         let identityBasis: string | null = null, path: string | null = null, sha: string | null = null, candidates: unknown = null;
         if (status === "read") {
           const text = htmlToText(html);
-          identityBasis = identity(html, text, it.title, it.code);
+          identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous");
           if (!identityBasis) status = "identity_mismatch";
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
           path = `layer2/AU/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;

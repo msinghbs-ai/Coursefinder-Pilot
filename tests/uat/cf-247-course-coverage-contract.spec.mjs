@@ -18,5 +18,6 @@ test('Course coverage view is reachable from Data Quality and uses the validated
   expect(e).toContain('<GraduationCap size={16}/>Course coverage</button>')
   expect(v).toContain("adminRead('course_coverage'")
   expect(v).toContain("adminRead('course_coverage_courses'")
+  expect(v).toContain("states:['candidate','in_review','awaiting_l3']")
   for (const c of ['#0d366b', '#1c5cab', '#2a78d6', '#5598e7', '#86b6ef']) expect(v).toContain(c)
 })

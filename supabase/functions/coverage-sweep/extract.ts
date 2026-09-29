@@ -17,9 +17,10 @@ const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replac
 
 // Identity: the CRICOS course code is printed on the page, or the exact course title is the page heading or the
 // start of the page title. Anything else is a mismatch and nothing from the page is used.
-export function identity(html: string, text: string, courseTitle: string, courseCode: string) {
+export function identity(html: string, text: string, courseTitle: string, courseCode: string, codeOnly = false) {
   const code = clean(courseCode).toUpperCase()
   if (code.length >= 6 && new RegExp(`\\b${code}\\b`).test(text.toUpperCase())) return "cricos_code"
+  if (codeOnly) return null
   const t = norm(courseTitle), h1 = norm(h1Of(html)), title = norm(titleOf(html))
   if (t && (h1 === t || title === t || title.startsWith(t + " ") || h1.startsWith(t + " international"))) return "exact_title"
   return null
@@ -53,8 +54,15 @@ export function fee(text: string) {
 }
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+// Month names must be capitalised ("May" the month, not "may" the verb); the lead-in words are matched in any case.
 export function intakes(text: string) {
-  return MONTHS.filter((m) => new RegExp(`(?:next intake|intakes?|commenc\\w*|semester|trimester|start date|starts?)[^.!?]{0,100}\\b${m}\\b`, "i").test(text))
+  const lead = /(?:next intake|intakes?|commenc\w*|semester|trimester|start date|starts?)/gi
+  const found = new Set<string>()
+  for (const m of text.matchAll(lead)) {
+    const win = text.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 100).split(/[.!?]/)[0]
+    for (const mon of MONTHS) if (new RegExp(`\\b${mon}\\b`).test(win)) found.add(mon)
+  }
+  return MONTHS.filter((m) => found.has(m))
 }
 
 export function english(text: string) {
