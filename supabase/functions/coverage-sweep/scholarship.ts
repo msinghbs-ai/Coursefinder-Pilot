@@ -40,6 +40,17 @@ export function scholarshipFields(name: string) {
   return [...out].sort();
 }
 
+// A faculty or school named in the scholarship text ("Faculty of Law") restricts it to that field. Several different
+// faculties, or one that cannot be matched to a field, mean the course links need a person (field_unmapped).
+export function scholarshipFaculties(body: string) {
+  const t = body.slice(0, 5000);
+  const names = new Set<string>();
+  for (const m of t.matchAll(/\b(?:Faculty|School|College) of ([A-Z][A-Za-z&,\- ]{2,70}?)(?=[.,;:()]|\s(?:at|is|in|for|to|with|students|scholarship|and\s+the)\b|$)/g)) names.add(clean(m[1]));
+  const fields = new Set<string>(); let unmapped = false;
+  for (const n of names) { const f = scholarshipFields(n); if (f.length) f.forEach((x) => fields.add(x)); else unmapped = true }
+  return { faculties: [...names], fields: [...fields].sort(), unmapped };
+}
+
 // Award value: one clear percentage of tuition, one clear fixed amount, or full tuition. Tiers or mixed -> ambiguous.
 export function scholarshipValue(body: string) {
   const t = body.slice(0, 6000);
@@ -56,6 +67,9 @@ export function scholarshipValue(body: string) {
     if (/(living|accommodation|application fee|cost of|visa|oshc|health cover)/.test(around)) continue;
     const v = Number(m[1].replace(/,/g, "")); if (v >= 500 && v <= 200000) amt.add(v);
   }
+  // any other percentage in the scholarship text (tiers by region, level or result) makes a single value unsafe
+  const allPct = new Set<number>([...t.matchAll(/(\d{1,3})\s?%/g)].map((m) => Number(m[1])).filter((v) => v >= 5 && v <= 100))
+  if (pct.size === 1 && allPct.size > 1) return { type: "ambiguous", percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && amt.size === 0) { const p = [...pct][0]; return { type: "percentage", percentage: p, applies_to: "tuition_fee", context: ctx(t, new RegExp(`${p}\\s?%`)) } }
   if (amt.size === 1 && pct.size === 0) { const a = [...amt][0]; return { type: "fixed_amount", amount: a, currency: "AUD", context: ctx(t, new RegExp(a.toLocaleString("en-AU").replace(/,/g, ",?"))) } }
   if (pct.size || amt.size) return { type: "ambiguous", percentages: [...pct].sort((a, b) => a - b), amounts: [...amt].sort((a, b) => a - b) };
@@ -81,7 +95,7 @@ export function scholarshipFacts(html: string, titleText: string, name: string) 
   const body = mainText(html);
   return {
     levels: scholarshipLevels(titleText + " " + name, body),
-    fields: scholarshipFields(name),
+    ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped } })(),
     value: scholarshipValue(body),
     deadline: scholarshipDeadline(body),
     international: /\binternational\b/i.test(titleText + " " + body.slice(0, 4000)),
