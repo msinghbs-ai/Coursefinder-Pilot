@@ -26,7 +26,7 @@ update scholarship.scholarships s set award_value_type=ch.before_value->>'type',
        award_currency_code=null, award_value_text=ch.before_value->>'text', updated_at=now()
   from ch where s.id=ch.scholarship_id;
 insert into pipeline.scholarship_sweep_changes(scholarship_id,field,before_value,after_value)
-select distinct scholarship_id,'revert','{"reason":"first-batch hand-check; re-read with scholarship-sweep-v0.2.0"}'::jsonb,null from pipeline.scholarship_sweep_changes where field in ('award_value','course_links');
+select distinct scholarship_id,'revert','{"reason":"first-batch hand-check; re-read with scholarship-sweep-v0.2.0"}'::jsonb,null::jsonb from pipeline.scholarship_sweep_changes where field in ('award_value','course_links');
 do $rv$
 declare v_courses uuid[];
 begin

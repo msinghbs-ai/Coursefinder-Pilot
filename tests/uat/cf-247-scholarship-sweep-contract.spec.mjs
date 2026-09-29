@@ -31,6 +31,9 @@ test('scholarship facts: value, levels, fields, deadline, main content only', as
   expect(scholarshipFaculties('Offered by the School of Wizardry.')).toMatchObject({ unmapped: true })
   const law = '<main>' + 'y '.repeat(800) + '<p>Faculty of Law International scholarship. Total scholarship value $10,000 for undergraduate students.</p></main>'
   expect(scholarshipFacts(law, 'Nicholas Auden International Study Scholarship', 'Nicholas Auden International Study Scholarship')).toMatchObject({ fields: ['asced-09'] })
+  // v0.3.0: levels from the eligibility section
+  const phd = '<main>' + 'z '.repeat(800) + '<p>Study undergraduate or postgraduate at Monash.</p><p>Who is eligible? Intending to enrol in a graduate research or PhD degree at Monash.</p></main>'
+  expect(scholarshipFacts(phd, 'Indonesian Women Impact Scholarship', 'Indonesian Women Impact Scholarship').levels).toEqual(['research'])
   const html = '<html><nav>Undergraduate Postgraduate Research PhD</nav><main>' + 'x '.repeat(900) + '<h1>Merit Award</h1><p>25% tuition fee reduction</p></main><footer>Engineering</footer></html>'
   expect(mainText(html)).not.toContain('PhD')
   expect(mainText(html)).toContain('25% tuition fee reduction')

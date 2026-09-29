@@ -93,8 +93,12 @@ function ctx(t: string, re: RegExp) { const m = t.match(new RegExp(re.source, re
 
 export function scholarshipFacts(html: string, titleText: string, name: string) {
   const body = mainText(html);
+  // levels from the eligibility section when the page has one (pages mention other levels elsewhere); else the page start
+  const at = body.search(/\beligib/i);
+  const eligibility = at >= 0 ? body.slice(at, at + 1200) : null;
   return {
-    levels: scholarshipLevels(titleText + " " + name, body),
+    levels: scholarshipLevels(titleText + " " + name, eligibility ?? body),
+    levels_from: eligibility ? "eligibility" : "page",
     ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped } })(),
     value: scholarshipValue(body),
     deadline: scholarshipDeadline(body),
