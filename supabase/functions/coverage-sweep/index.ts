@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
+import { mainText, scholarshipFacts } from "./scholarship.ts";
+const SCH_VERSION = "scholarship-sweep-v0.1.0";
 
 // CF-247 complete coverage sweep (Platform Admin direction 29 Sep 2026). Nonce-only. Nothing is written to the
 // catalogue: discovery lists a provider's course-like pages, reading keeps each bound course page as evidence and
@@ -9,7 +11,7 @@ import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keep
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.4"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.6.0";
+const WORKER = "coverage-sweep-worker-v0.7.0";
 // v0.5.2: discovery drops requirement, scholarship and applying pages (pilot: RMIT inherent-requirements pages).
 // v0.5.1: PTE/TOEFL only when stated as overall or directly after the test name.
 // v0.5.0: English overall only when stated as overall or in a score table; minimum band after the overall; fee basis
@@ -192,6 +194,51 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, providers: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
+    // v0.7.0: scholarship sweep. Each active scholarship's own provider page is read (robots.txt respected; Firecrawl
+    // only when a direct read is refused or script-only), kept as gzipped evidence, and deterministic facts are recorded.
+    if (mode === "scholarship_read") {
+      const items: { scholarship_id: string; url: string; name: string; provider_id: string }[] = await rpc("svc_scholarship_read_next", { p_limit: Math.min(Number(body.limit || 20), 40) });
+      const robots = new Map<string, Promise<string>>();
+      const robotsFor = (u: URL) => { if (!robots.has(u.origin)) robots.set(u.origin, fetch(u.origin + "/robots.txt", { headers: { "user-agent": UA }, signal: AbortSignal.timeout(8000) }).then((r) => r.ok ? r.text() : "").catch(() => "")); return robots.get(u.origin)! };
+      const tally: Record<string, number> = {}; const applied: unknown[] = [];
+      await pool(items, 6, async (it) => {
+        let status = "fetch_failed", http: number | null = null, via: string | null = null, html = "", finalUrl = it.url;
+        try {
+          const u = new URL(it.url);
+          if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) status = "robots_disallowed";
+          else {
+            try {
+              const r = await fetch(u, { headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(20000) });
+              http = r.status; finalUrl = r.url || it.url;
+              if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) { html = await r.text(); via = "direct" }
+            } catch { http = null }
+            const thin = html && mainText(html).length < 800;
+            if ((!html || thin) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
+              const d = await r.json().catch(() => ({}));
+              if (r.ok && d?.data?.html) { html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
+            }
+            if (html && mainText(html).length >= 300) status = "read";
+            else if (html) status = "too_thin";
+            else if (http === 404 || http === 410) status = "gone";
+            else if (http && [401, 403, 406, 429].includes(http)) status = "blocked";
+          }
+        } catch { status = "fetch_failed" }
+        let path: string | null = null, sha: string | null = null, facts: unknown = null;
+        if (status === "read") {
+          const t = titleOf(html) + " " + h1Of(html);
+          facts = { ...scholarshipFacts(html, t, it.name), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION };
+          const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
+          path = `layer2/AU/scholarships/${it.provider_id}/${it.scholarship_id}/${sha}.html.gz`;
+          const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
+          if (up.error) { path = null; sha = null }
+        }
+        const res = await rpc("svc_scholarship_read_record", { p_scholarship_id: it.scholarship_id, p_read_status: status, p_http_status: http, p_fetched_via: via, p_final_url: finalUrl, p_storage_path: path, p_sha256: sha, p_facts: facts });
+        if (res?.changes?.length) applied.push({ scholarship_id: it.scholarship_id, changes: res.changes });
+        tally[status] = (tally[status] || 0) + 1;
+      });
+      return j({ ok: true, mode, items: items.length, tally, applied, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
+    }
     if (mode === "read") {
       const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const robots = new Map<string, Promise<string>>();
@@ -237,7 +284,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, scholarship_read", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
