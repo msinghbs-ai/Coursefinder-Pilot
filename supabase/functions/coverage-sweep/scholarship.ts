@@ -107,3 +107,165 @@ export function scholarshipFacts(html: string, titleText: string, name: string) 
     text_length: body.length,
   };
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// v0.4.0 (CF-247 scholarship discovery): finding a scholarship's own provider page, confirming a page is the same
+// scholarship before anything is applied, and deciding whether an unheld provider page is a new scholarship.
+
+// Names: lower case, entities and apostrophes folded, "&" as "and", years and "the" dropped, simple plurals folded
+// ("Scholarships" = "Scholarship", "Vice-Chancellor's" = "vice chancellors" = "vice chancellor").
+export function nameTokens(s: string) {
+  const t = String(s ?? "").replace(/&#0*39;|&#x0*27;|&#x2019;|&#8217;|&rsquo;|&lsquo;|[’‘`]/gi, "'").replace(/&amp;/gi, "&")
+    .replace(/(\d),(\d{3})/g, "$1$2").toLowerCase().replace(/'/g, "").replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
+  return t ? t.split(" ").filter((w) => w !== "the" && !/^20\d\d$/.test(w)).map((w) => w.length > 3 && w.endsWith("ies") ? w.slice(0, -3) + "y" : w.length > 3 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w) : [];
+}
+const GENERIC = new Set(["scholarship", "international", "award", "grant", "bursary", "student", "program", "fee", "and", "of", "for", "university", "study", "in", "at", "to", "a"]);
+const STOP_PROVIDER = new Set(["international", "college", "school", "institute", "australia", "australian", "of", "and", "the", "group", "limited", "ltd", "pty", "education", "grammar", "sydney", "melbourne"]);
+function seqIn(a: string[], b: string[]) { // a contiguous in b
+  if (!a.length || a.length > b.length) return false;
+  outer: for (let i = 0; i + a.length <= b.length; i++) { for (let k = 0; k < a.length; k++) if (a[k] !== b[i + k]) continue outer; return true }
+  return false;
+}
+// Provider words that may prefix a scholarship name ("UC - ...", "Macquarie University $5,000 ...", "UNSW ...").
+export function providerTokens(names: string[]) {
+  const out = new Set<string>(["university"]);
+  for (const n of names.filter(Boolean)) {
+    for (const w of nameTokens(n)) if (!STOP_PROVIDER.has(w)) out.add(w);
+    for (const m of n.matchAll(/\(([A-Za-z]{2,8})\)/g)) out.add(m[1].toLowerCase());
+    const acro = n.split(/[\s,;]+/).filter((w) => /^[A-Z]/.test(w) && !/^(of|and|the)$/i.test(w)).map((w) => w[0]).join("").toLowerCase();
+    if (acro.length >= 2 && acro.length <= 5) out.add(acro);
+  }
+  return out;
+}
+function stripProvider(t: string[], prov: Set<string>) { let i = 0; while (i < t.length && prov.has(t[i])) i++; return t.slice(i) }
+
+// The headings a page names itself by: <title> in <head> (an SVG <title> is not the page title), og/twitter title,
+// every <h1>; secondary: the first two <h2>s (some sites keep a generic "Scholarships" <h1> above the scholarship's own
+// name). A secondary heading confirms only when it contains the whole name.
+export function pageHeadings(html: string) {
+  const out: string[] = [], sec: string[] = [];
+  const head = (html.match(/<head[\s\S]*?<\/head>/i) || [""])[0];
+  const t = head.match(/<title[^>]*>([\s\S]*?)<\/title>/i); if (t) out.push(htmlToText(t[1]));
+  for (const m of html.matchAll(/<meta[^>]+(?:property|name)=["'](?:og:title|twitter:title)["'][^>]*>/gi)) { const c = m[0].match(/content=["']([^"']*)["']/i); if (c) out.push(htmlToText(c[1])) }
+  for (const m of html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)) out.push(htmlToText(m[1]));
+  let h2 = 0; for (const m of html.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)) { if (h2++ >= 2) break; sec.push(htmlToText(m[1])) }
+  const tidy = (a: string[]) => [...new Set(a.map((x) => clean(x)).filter((x) => x && x.length <= 300))];
+  return { primary: tidy(out), secondary: tidy(sec) };
+}
+
+// Same scholarship: the page names it. The whole name (or the name without a provider prefix) appears in one of the
+// page's headings, or a heading of at least two words, not all generic, makes up at least 70% of the name.
+export function nameOnPage(name: string, headings: string[], prov: Set<string> = new Set(), secondary: string[] = []) {
+  const n = nameTokens(name), np = stripProvider(n, prov);
+  for (const h of secondary) {
+    const ht = nameTokens(h);
+    if (seqIn(n, ht) || (np.length >= 2 && seqIn(np, ht))) return { ok: true, basis: "subheading_contains_name", heading: h };
+  }
+  for (const h of headings) {
+    const ht = nameTokens(h);
+    if (seqIn(n, ht)) return { ok: true, basis: "heading_contains_name", heading: h };
+    if (np.length >= 2 && seqIn(np, ht)) return { ok: true, basis: "heading_contains_name_without_provider", heading: h };
+    const hp = stripProvider(ht, prov);
+    if (hp.length >= 2 && hp.some((w) => !GENERIC.has(w)) && seqIn(hp, n) && hp.length / n.length >= 0.7) return { ok: true, basis: "name_contains_heading", heading: h };
+  }
+  return { ok: false, basis: "name_mismatch", heading: headings[0] || null };
+}
+
+// Candidate scholarship pages on the provider's own site (and its subdomains).
+const SCH_KEEP = /(scholarship|bursar|award|grant|fee-remission|fee-reduction|fee-waiver|tuition-discount|fee-discount)/i;
+const SCH_DROP = /(\/news|\/events?\/|\/stories|\/story\/|\/blog|\/media|\/staff|\/people\/|\/profile|login|\/search|\/apply(?:ing)?\b|\/how-to-apply|\/terms|\/conditions|\/faqs?\b|\/rules|\/recipients|\/awardees|\/donat|\/giving|\/alumni\/|teaching-award|staff-award|research-grants?\/|\/grants?-and-funding|\/tag\/|\/category\/|wp-content|\/feed|\.(pdf|jpe?g|png|gif|docx?|xlsx?|zip|mp4)(\?|$))/i;
+const SCH_LISTING = /\/(scholarships?|international-scholarships?|scholarships-and-(?:fees|grants|awards|prizes)|find-a-scholarship|find-scholarship|scholarship-search|scholarships-search|awards?|grants?|bursar(?:y|ies)|international|undergraduate|postgraduate|research|domestic)\/?$/i;
+export const baseHost = (h: string) => h.toLowerCase().replace(/^www\./, "").split(".").slice(-3).join(".");
+export function keepScholarshipUrl(url: string, host: string) {
+  try {
+    const x = new URL(url);
+    if (!/^https?:$/.test(x.protocol)) return false;
+    if (baseHost(x.hostname) !== baseHost(host) && !x.hostname.endsWith("." + baseHost(host))) return false;
+    if (x.search && /[?&](q|query|search|page|f\.|collection|filter)/i.test(x.search)) return false;
+    return SCH_KEEP.test(x.hostname + x.pathname) && !SCH_DROP.test(x.pathname) && !SCH_LISTING.test(x.pathname) && x.pathname.length > 1;
+  } catch { return false }
+}
+export function normUrl(u: string) { try { const x = new URL(u); x.hash = ""; return (x.origin.toLowerCase() + x.pathname.replace(/\/+$/, "") + x.search).replace(/^http:/, "https:") } catch { return u } }
+
+// The page address as a name: last path segment, file extension and a trailing reference number dropped
+// (".../monash-thailand-award-6307" -> "monash thailand award").
+export function slugTokens(url: string) {
+  try {
+    const segs = new URL(url).pathname.split("/").filter(Boolean);
+    const s = decodeURIComponent(segs[segs.length - 1] || "").replace(/\.(html?|aspx?|php)$/i, "");
+    const cut = s.replace(/[-_](?=[a-z]*\d)[a-z0-9]{1,8}$/i, "");
+    return [...new Set([s, cut])].map((x) => nameTokens(x.replace(/[-_]+/g, " "))).filter((x) => x.length);
+  } catch { return [] }
+}
+const eq = (a: string[], b: string[]) => a.length > 0 && a.length === b.length && a.every((x, i) => x === b[i]);
+const titleHead = (t?: string) => nameTokens(String(t || "").split(/\s+[|:–-]\s+/)[0]);
+
+// Strong match only: the page address or the page title names exactly the scholarship (provider prefix allowed on
+// either side). Several different pages matching one name -> the one under an "international" path, else none.
+export function matchScholarshipPage(name: string, candidates: { url: string; title?: string }[], prov: Set<string>) {
+  const n = nameTokens(name), np = stripProvider(n, prov);
+  if (!n.length || (np.length < 2 && n.length < 2)) return null;
+  const hits: { url: string; basis: string }[] = [];
+  for (const c of candidates) {
+    const slugs = slugTokens(c.url), t = titleHead(c.title), tp = stripProvider(t, prov);
+    const basis = slugs.some((s) => eq(s, n)) ? "url_slug"
+      : slugs.some((s) => { const sp = stripProvider(s, prov); return (np.length >= 2 && (eq(sp, np) || eq(s, np))) || eq(sp, n) }) ? "url_slug_without_provider"
+      : eq(t, n) || (np.length >= 2 && (eq(tp, np) || eq(t, np))) ? "page_title" : null;
+    if (basis) hits.push({ url: c.url, basis });
+  }
+  const uniq = [...new Map(hits.map((h) => [normUrl(h.url), h])).values()];
+  if (uniq.length === 1) return uniq[0];
+  const intl = uniq.filter((h) => /international/i.test(new URL(h.url).pathname));
+  if (intl.length === 1) return intl[0];
+  return null;
+}
+
+// New scholarship from an unheld provider page: a single named scholarship detail page on the provider's own site,
+// explicitly open to international students and currently offered. Anything else is not admitted.
+const GENERIC_TITLE = /^(scholarships?|awards?|grants?|bursar(?:y|ies)|eligibility|faqs?|find a scholarship|search scholarships|scholarship search|international scholarships?|scholarships? for international students|international students? scholarships?|undergraduate scholarships?|postgraduate scholarships?|research scholarships?|scholarships? and (?:fees|awards|grants|prizes)|fees and scholarships|page not found|404.*|access denied|home)$/i;
+export function scholarshipTitle(html: string) {
+  const h1s = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(htmlToText(m[1]))).filter(Boolean);
+  const head = (html.match(/<head[\s\S]*?<\/head>/i) || [""])[0];
+  const og = (head.match(/<meta[^>]+property=["']og:title["'][^>]*content=["']([^"']*)["']/i) || [])[1];
+  const title = (head.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
+  const opts = [...h1s, og ? htmlToText(og).split(/\s+[|–]\s+|\s+-\s+/)[0] : "", title ? htmlToText(title).split(/\s+[|–]\s+|\s+-\s+/)[0] : ""].map(clean);
+  return opts.find((t) => t.length >= 8 && t.length <= 160 && !GENERIC_TITLE.test(t) && /(scholarship|bursary|award|grant|fee (?:remission|reduction|waiver|discount)|tuition (?:discount|reduction|waiver))/i.test(t)) || null;
+}
+export function internationalEligibility(text: string) {
+  const t = text.slice(0, 12000);
+  const excluded = /(not (?:open|available) to international|international students (?:are|will) not (?:be )?eligible|(?:only|solely) (?:open|available) to (?:domestic|australian)|domestic students only|must be an? (?:australian|new zealand) citizen|australian citizens?(?:,| or| and) (?:new zealand citizens?,? )?(?:or |and )?permanent residents? only)/i.test(t);
+  const explicit = /(\binternational (?:students?|applicants?|candidates?|undergraduate|postgraduate|school leavers?|high school)|open to international|onshore (?:and|or) offshore|offshore students|student visa|overseas students?|full[- ]fee[- ]paying international)/i.test(t);
+  return { explicit: explicit && !excluded, excluded };
+}
+export function currentlyOffered(text: string, today = new Date()) {
+  const t = text.slice(0, 15000);
+  if (/(no longer (?:be )?(?:offered|available|accepting)|(?:has been|is|was) discontinued|closed permanently|permanently closed|not (?:being )?offered in 20\d\d|this scholarship (?:is|has) (?:now )?closed|will not be offered)/i.test(t)) return { ok: false, reason: "not_offered" };
+  const years = [...t.matchAll(/\b(20[1-3]\d)\b/g)].map((m) => Number(m[1])).filter((y) => y >= 2019 && y <= 2035);
+  if (years.length && Math.max(...years) < today.getUTCFullYear()) return { ok: false, reason: "past_year_only" };
+  return { ok: true, reason: null };
+}
+export function isListingPage(html: string, url: string, title: string | null) {
+  const main = (html.match(/<main[\s\S]*?<\/main>/i) || [html])[0];
+  let self = ""; try { self = normUrl(url) } catch { /* */ }
+  const links = new Set<string>();
+  for (const m of main.matchAll(/<a[^>]+href=["']([^"'#]+)["']/gi)) {
+    try { const u = new URL(m[1], url); if (SCH_KEEP.test(u.pathname) && !SCH_LISTING.test(u.pathname) && normUrl(u.href) !== self) links.add(normUrl(u.href)) } catch { /* */ }
+  }
+  return links.size >= 12 || (!!title && /^(?:[\w'’-]+\s){0,3}scholarships$/i.test(title) && links.size >= 5);
+}
+export function admissionCheck(html: string, finalUrl: string, providerHost: string) {
+  const reasons: string[] = [];
+  const text = mainText(html);
+  const name = scholarshipTitle(html);
+  if (!name) reasons.push("no_named_title");
+  let host = ""; try { host = new URL(finalUrl).hostname } catch { /* */ }
+  if (!host || (baseHost(host) !== baseHost(providerHost) && !host.endsWith("." + baseHost(providerHost)))) reasons.push("not_provider_domain");
+  if (isListingPage(html, finalUrl, name)) reasons.push("listing_page");
+  const intl = internationalEligibility(text);
+  if (!intl.explicit) reasons.push(intl.excluded ? "domestic_only" : "international_not_stated");
+  const off = currentlyOffered(text);
+  if (!off.ok) reasons.push(off.reason!);
+  if (text.length < 400) reasons.push("too_thin");
+  if (name && /\b(award|grant)s?\b/i.test(name) && !/scholarship|bursary|fee/i.test(name) && !/(tuition|scholarship|stipend|bursary)/i.test(text.slice(0, 6000))) reasons.push("not_a_scholarship");
+  return { admit: reasons.length === 0, name, reasons, international_explicit: intl.explicit, offered: off.ok, detail_page: !reasons.includes("listing_page") && !!name };
+}
