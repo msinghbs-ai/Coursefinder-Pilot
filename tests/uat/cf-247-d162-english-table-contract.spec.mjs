@@ -94,7 +94,7 @@ test('UQ Table 3 minimum entry row set', async () => {
 
 test('English table worker and planning contract', () => {
   const w = fs.readFileSync('supabase/functions/fee-schedule-etl/index.ts', 'utf8')
-  expect(w).toContain('const VERSION = "fee-schedule-etl-v0.7.1";')
+  expect(w).toContain('const VERSION = "fee-schedule-etl-v0.8.0";')
   expect(w).toContain('mode === "elp_dry_run" || mode === "elp_apply"')
   const m = fs.readFileSync('supabase/migrations/20260928190000_d162_english_table_plan.sql', 'utf8')
   expect(m).toContain("'double degree: the policy has no double-degree rule'")
