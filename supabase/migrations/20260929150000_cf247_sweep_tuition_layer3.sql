@@ -103,12 +103,19 @@ begin
 
   insert into pipeline.evidence_artifacts(entity_id,source_id,evidence_type,source_url,storage_path,content_hash,mime_type,metadata,capture_version,evidence_group_key)
   values (p_course_id, v_src, 'provider_course_page_text', pg.url, p_storage_path, p_content_hash, 'text/plain',
-          jsonb_build_object('derived_from_evidence_id',pg.evidence_id,'bytes',p_bytes,'identity_basis','cricos_code','decision','Decision 163 Option A'),
-          'coverage-sweep-text-v1', 'coverage:'||p_course_id)
+          jsonb_build_object('derived_from_evidence_id',pg.evidence_id,'bytes',p_bytes,'identity_basis','cricos_code','decision','Decision 163 Option A','capture','coverage-sweep-text-v1'),
+          1, 'coverage:'||p_course_id)
   returning id into v_ev;
 
   v_key:='coverage-sweep-l3:'||to_char(now() at time zone 'UTC','YYYY-MM-DD');
-  select id into v_batch from pipeline.layer2_run_batches where idempotency_key=v_key;
+  -- one open batch for the sweep profile (the platform allows one active batch per profile); reused across days
+  select b.id into v_batch from pipeline.layer2_run_batches b join pipeline.layer2_source_profiles p on p.id=b.profile_id
+   where p.profile_key='au-coverage-sweep-course-pages' and b.status in ('queued','running') order by b.created_at limit 1 for update of b;
+  if v_batch is null then
+    perform pg_advisory_xact_lock(hashtext('coverage-sweep-l3-batch'));
+    select b.id into v_batch from pipeline.layer2_run_batches b join pipeline.layer2_source_profiles p on p.id=b.profile_id
+     where p.profile_key='au-coverage-sweep-course-pages' and b.status in ('queued','running') order by b.created_at limit 1;
+  end if;
   if v_batch is null then
     insert into pipeline.layer2_run_batches(profile_id,profile_version_id,trigger_type,status,policy_snapshot,started_at,idempotency_key)
     select p.id, p.current_version_id, 'schedule', 'running', jsonb_build_object('decision','Decision 163 Option A','worker','coverage-sweep'), now(), v_key
@@ -140,3 +147,6 @@ begin
 end $f$;
 revoke all on function public.svc_coverage_tuition_handoff_record(uuid,text,text,int) from public, anon, authenticated;
 grant execute on function public.svc_coverage_tuition_handoff_record(uuid,text,text,int) to service_role;
+
+-- hand-off every 5 minutes, 50 pages (about 600 an hour); Layer 3 dispatch and admission run on their own schedules
+select cron.schedule('coverage-tuition-handoff','*/5 * * * *',$$select pipeline.svc_pilot_submit_nonce('coverage-sweep','{"mode":"tuition_handoff","limit":50}'::jsonb)$$);
