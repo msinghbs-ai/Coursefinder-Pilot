@@ -1,19 +1,24 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.103'
-export const PACKAGE_VERSION='0.1.30'
+export const UI_VERSION='2.15.104'
+export const PACKAGE_VERSION='0.1.31'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'29 Sep 2026',
-  title:'Course coverage: every course accounted for, attribute by attribute',
+  title:'Complete-coverage sweep: every provider site read on a schedule',
   changes:[
-    'New Data Quality view "Course coverage": every active Australian course has a state for each attribute (official course page, provider tuition, English, intakes, and the CRICOS registry values). States run from "course page not found yet" to "admitted". Filter by provider tier; select a count to list the courses.',
-    'Coverage is rebuilt every hour and kept as a daily trend.',
-    'UQ English requirements are in Search: Table 1 and Table 3 of the UQ English Language Proficiency Procedure cover 86 more UQ courses, including double degrees, which take the higher requirement of their component programs.'
+    'Course coverage shows a new stage, "Found on verified page (awaiting admission)": the value is on the course\'s own page, confirmed by the CRICOS course code or the exact course title, and waits for the approved admission rule.',
+    'The coverage sweep runs continuously: provider site maps are read (free) or mapped, course pages are matched one-to-one and read with robots.txt respected, and pages are kept as evidence.',
+    'Providers with no website on record are found by web search and accepted only when the site shows the provider\'s own CRICOS provider code.',
+    'Fee schedules and the UQ English tables are checked for changes monthly (weekly October to December); a changed document is flagged for review, never applied automatically.',
+    'Layer 3 tuition checks can run up to 15,000 a day (spend ceiling US$5 a day).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Course coverage: selecting a count to list the courses failed (provider name column).',
+    'The Data Quality scope selector no longer shows on Course coverage, where it had no effect.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
