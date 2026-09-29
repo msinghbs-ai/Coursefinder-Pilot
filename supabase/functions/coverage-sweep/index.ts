@@ -8,7 +8,9 @@ import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllow
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.3.1";
+const VERSION = "coverage-sweep-v0.3.2";
+// v0.3.2: a script-only page read directly while the Firecrawl reserve is reached is "needs_render" (retried after the
+// budget resets), never an identity mismatch.
 // v0.3.1: Firecrawl fallback only for bound pages; ambiguous pages are read directly only (low yield).
 // v0.3.0: ambiguous course pages are read too and accepted only with the CRICOS course code on the page; month
 // names in intakes must be capitalised.
@@ -131,7 +133,8 @@ Deno.serve(async (req) => {
               const d = await r.json().catch(() => ({}));
               if (r.ok && d?.data?.html) { html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
             }
-            if (html) status = "read";
+            if (html && via === "direct" && htmlToText(html).length < 1500) status = "needs_render";
+            else if (html) status = "read";
             else if (http && [401, 403, 406, 429].includes(http)) status = "blocked";
           }
         } catch { status = "fetch_failed" }
