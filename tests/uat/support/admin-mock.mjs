@@ -24,6 +24,9 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_requeue: b => { calls.push(b); return { ...F.requeue, moved: 12 } },
     admin_scholarship_publishing_read: F.scholarshipPublishing,
     admin_scholarship_publishing: b => { calls.push(b); return F.scholarshipPublishing },
+    admin_priority_read: F.priority,
+    admin_priority_search: () => F.prioritySearch,
+    admin_priority_control: b => { calls.push(b); return F.priority },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)

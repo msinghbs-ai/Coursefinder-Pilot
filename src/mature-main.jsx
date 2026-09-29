@@ -23,6 +23,7 @@ import FlaggedValues from'./FlaggedValues'
 import Automations from'./Automations'
 import SendBackToAI from'./SendBackToAI'
 import ScholarshipPublishing from'./ScholarshipPublishing'
+import PriorityQueue from'./PriorityQueue'
 import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
 import{CoverageView}from'./course-coverage'
@@ -189,7 +190,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
       case'layer4':return tab==='flags'?<FlaggedValues onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError}/>:<PlatformHealth onError={onError}/>
-      case'jobs':return tab==='automations'?<div className="m-page-stack"><Automations onError={err}/></div>:tab==='schedules'?<div className="m-page-stack"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
+      case'jobs':return tab==='priority'?<div className="m-page-stack"><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/></div>:tab==='schedules'?<div className="m-page-stack"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'environment':return <EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/>
       case'scrapers':return <><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>

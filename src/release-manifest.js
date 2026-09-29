@@ -1,21 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.112'
-export const PACKAGE_VERSION='0.1.39'
+export const UI_VERSION='2.15.113'
+export const PACKAGE_VERSION='0.1.40'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'30 Sep 2026',
-  title:'Users & roles fixed; clearer Catalogue and Coverage',
+  title:'Priority queue: choose which universities, states, countries or courses go first',
   changes:[
-    'Provider contacts moved to Catalogue.',
-    'New Catalogue page, Reference data: Ranking imports, Key dates and Key links (moved from Layer 1). Onboarding moved to Providers. Old links still work.',
-    'Layer 1 Register now shows only register work: Runs, Sources and Source settings.',
-    'Coverage & completeness has separate tabs: Courses (how complete each course is), Attributes (each attribute across all courses, and where it sits in the pipeline) and Readiness by area.'
+    'Scheduled jobs has a new tab, Priority queue: the order in which the page reader and the AI checks take work.',
+    'Platform Admins can pin a university, a state, a country or a single course to the front, move pins up or down, or remove them. "To the front" moves any provider in the current order to the top.',
+    'The current order shows each provider’s courses, pages matched and pages still waiting, and why it is where it is (pinned or by size). Every change is logged.'
   ],
   bugFixes:[
-    'Users & roles showed "Auth User List Failed", no accounts and no recent changes. The system automation account had blank fields that the sign-in service cannot read; they are now filled. No account or role was lost.'
+    'Work was taken in random order, so the largest universities did not go first.'
   ]
 }
 
