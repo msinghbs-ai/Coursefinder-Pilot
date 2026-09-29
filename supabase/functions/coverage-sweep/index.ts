@@ -8,7 +8,9 @@ import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllow
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.3.2";
+const VERSION = "coverage-sweep-v0.4.0";
+// v0.4.0: mode find_site - providers with no website: web search (Firecrawl, 2 credits), accepted only when the
+// home page prints the provider's CRICOS provider code; directories and registers skipped.
 // v0.3.2: a script-only page read directly while the Firecrawl reserve is reached is "needs_render" (retried after the
 // budget resets), never an identity mismatch.
 // v0.3.1: Firecrawl fallback only for bound pages; ambiguous pages are read directly only (low yield).
@@ -68,7 +70,8 @@ Deno.serve(async (req) => {
     const fcHeaders = { authorization: `Bearer ${fc?.secret}`, "content-type": "application/json" };
     const useFc = async (purpose: string, providerId: string | null, url: string) => {
       if (!fc?.secret || fcRemaining < 1) return false;
-      fcRemaining -= 1; await rpc("svc_coverage_usage", { p_units: 1, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true;
+      const units = purpose === "search" ? 2 : 1; if (fcRemaining < units) return false;
+      fcRemaining -= units; await rpc("svc_coverage_usage", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true;
     };
 
     if (mode === "discover") {
@@ -110,6 +113,41 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, providers: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
 
+
+    if (mode === "find_site") {
+      const provs: { provider_id: string; name: string; trading: string | null; cricos: string }[] = await rpc("svc_coverage_site_next", { p_limit: Math.min(Number(body.limit || 5), 10) });
+      const out: unknown[] = [];
+      const SKIP = /(cricos\.education\.gov\.au|education\.gov\.au|studyaustralia|studyinaustralia|hotcourses|idp\.com|studyin|linkedin|facebook|instagram|youtube|twitter|x\.com|yellowpages|abr\.business|asic\.gov|training\.gov\.au|myskills|seek\.com|indeed|glassdoor|wikipedia|google\.|bing\.|yelp|truelocal|hotfrog|startlocal|opencorporates|dnb\.com|zoominfo|asqa\.gov|teqsa\.gov|studiesinaustralia|educations\.com|coursefinder|topuniversities|timeshighereducation)/i;
+      await pool(provs, 3, async (p) => {
+        const code = String(p.cricos || "").toUpperCase();
+        const codeRe = new RegExp("(^|[^0-9A-Z])" + code.split("").join("\\s?") + "([^0-9A-Z]|$)", "i");
+        if (!(await useFc("search", p.provider_id, p.name))) { out.push({ provider_id: p.provider_id, status: "budget" }); await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return }
+        let accepted: string | null = null; const tried: unknown[] = [];
+        try {
+          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `${p.name} CRICOS ${code}`, limit: 8, country: "AU" }), signal: AbortSignal.timeout(45000) });
+          const d = await r.json().catch(() => ({}));
+          const results = (d?.data?.web || d?.data || []).map((x: any) => ({ url: x.url, title: x.title })).filter((x: any) => typeof x.url === "string");
+          const seenHosts = new Set<string>();
+          for (const res of results) {
+            let u: URL; try { u = new URL(res.url) } catch { continue }
+            if (SKIP.test(u.hostname) || seenHosts.has(u.hostname)) continue; seenHosts.add(u.hostname);
+            for (const page of [u.origin + "/", res.url]) {
+              try {
+                const h = await fetch(page, { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) });
+                const html = h.ok ? await h.text() : "";
+                const ok = codeRe.test(htmlToText(html));
+                tried.push({ page, http: h.status, code_found: ok });
+                if (ok) { accepted = new URL(h.url || page).origin; break }
+              } catch { tried.push({ page, error: true }) }
+            }
+            if (accepted || seenHosts.size >= 4) break;
+          }
+        } catch (e) { tried.push({ error: e instanceof Error ? e.message : String(e) }) }
+        await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: accepted, p_evidence: { query: `${p.name} CRICOS ${code}`, tried, accepted, worker: VERSION } });
+        out.push({ provider_id: p.provider_id, status: accepted ? "found" : "not_found", website: accepted });
+      });
+      return j({ ok: true, mode, providers: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
+    }
     if (mode === "read") {
       const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const robots = new Map<string, Promise<string>>();
@@ -155,7 +193,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
