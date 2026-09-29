@@ -114,5 +114,15 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.4.1')
+  expect(idx).toContain('scholarship-sweep-v0.4.2')
+})
+
+test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
+  const { scholarshipValue, scholarshipLevels } = await load()
+  expect(scholarshipValue('20% reduced tuition fee for Master by Coursework program. Full tuition fee scholarship for a PhD program.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('This scholarship covers full tuition fees for the standard duration.')).toMatchObject({ type: 'percentage', percentage: 100 })
+  expect(scholarshipLevels('College Student Bursary', 'Eligibility: commencing in any College course (excluding Master by Research or PhD).')).toEqual([])
+  expect(scholarshipLevels('Alumni Postgraduate Scholarship', 'Eligibility: be alumni who completed a degree at a Vietnam campus. This can include: an undergraduate degree or postgraduate degree.')).toEqual(['postgraduate_coursework'])
+  expect(scholarshipLevels('Merit Award', 'Eligibility: applicants who have completed an undergraduate degree and enrol in a Master by Coursework.')).toEqual(['postgraduate_coursework'])
+  expect(scholarshipLevels('Griffith University International Postgraduate Research Scholarship', '')).toEqual(['research'])
 })

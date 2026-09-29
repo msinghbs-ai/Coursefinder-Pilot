@@ -14,14 +14,29 @@ export function mainText(html: string) {
   return htmlToText(h);
 }
 
-export function scholarshipLevels(titleText: string, body: string) {
-  const t = (titleText + " " + body.slice(0, 3000)).toLowerCase();
+// v0.4.2: levels the text excludes ("excluding Master by Research or PhD") or that describe earlier study ("completed
+// an undergraduate degree") are not levels of the scholarship.
+export function levelText(body: string) {
+  return body
+    .replace(/\b(?:excluding|except(?: for)?|other than|not (?:available|eligible|open|applicable) (?:for|to)|does not apply to|cannot be used for|ineligible)\b[^.;:)\n]{0,140}/gi, " ")
+    .replace(/\b(?:completed|completing|graduated (?:from|with)|graduates? of|holds?|holding|have finished|prior|previous(?:ly)?)\b[^.;:)\n]{0,80}?\b(?:degree|qualification|diploma|program(?:me)?|studies|course)s?\b/gi, " ");
+}
+function levelsIn(t: string) {
   const levels = new Set<string>();
   if (/\bundergraduate\b|\bbachelor/.test(t)) levels.add("undergraduate");
+  const research = /\b(phd|doctor of philosophy|doctoral|higher degree by research|hdr|research degree|master(?:'s|s)? by research|research master|postgraduate research|graduate research)/.test(t);
   if (/postgraduate coursework|coursework (?:master|postgraduate)|master(?:'s|s)? (?:degree )?by coursework|graduate (?:certificate|diploma)/.test(t)) levels.add("postgraduate_coursework");
-  else if (/\bpostgraduate\b|\bmaster(?:'s|s)?\b/.test(t) && !/\b(phd|doctor of philosophy|higher degree by research)\b/.test(t)) levels.add("postgraduate_coursework");
-  if (/\b(phd|doctor of philosophy|higher degree by research|hdr|research degree|master(?:'s|s)? by research|research master)/.test(t)) levels.add("research");
-  if (/\b(foundation|pathway|elicos)\b/.test(titleText.toLowerCase())) levels.add("pathway");
+  else if (/\bpostgraduate\b|\bmaster(?:'s|s)?\b/.test(t) && !research) levels.add("postgraduate_coursework");
+  if (research) levels.add("research");
+  return levels;
+}
+// A level named in the scholarship's own title decides (v0.4.2: "RMIT Vietnam Alumni Postgraduate Scholarship" is
+// postgraduate although its eligibility mentions the undergraduate degree already completed); otherwise the text.
+export function scholarshipLevels(titleText: string, body: string) {
+  const title = titleText.toLowerCase();
+  let levels = levelsIn(title);
+  if (!levels.size) levels = levelsIn(title + " " + levelText(body.slice(0, 3000)).toLowerCase());
+  if (/\b(foundation|pathway|elicos)\b/.test(title)) levels.add("pathway");
   return [...levels].sort();
 }
 
@@ -54,8 +69,11 @@ export function scholarshipFaculties(body: string) {
 // Award value: one clear percentage of tuition, one clear fixed amount, or full tuition. Tiers or mixed -> ambiguous.
 export function scholarshipValue(body: string) {
   const t = body.slice(0, 6000);
+  // v0.4.2: full tuition only when no other percentage is stated (HonduFuturo: full tuition for PhD, 20% for coursework)
+  const otherPct = [...t.matchAll(/(\d{1,3})\s?%/g)].map((m) => Number(m[1])).filter((v) => v >= 5 && v < 100);
   if (/\b(?:100\s?%|full)\s+(?:tuition|course)\s+fees?\b|\bfull[- ]tuition\b|\bfull fee (?:waiver|scholarship)\b/i.test(t))
-    return { type: "percentage", percentage: 100, applies_to: "tuition_fee", context: ctx(t, /full[- ]?(?:tuition|fee)|100\s?%/i) };
+    return otherPct.length ? { type: "ambiguous", percentages: [...new Set([...otherPct, 100])].sort((a, b) => a - b), amounts: [] as number[] }
+      : { type: "percentage", percentage: 100, applies_to: "tuition_fee", context: ctx(t, /full[- ]?(?:tuition|fee)|100\s?%/i) };
   const pct = new Set<number>();
   for (const m of t.matchAll(/(\d{1,3})\s?%\s+(?:off\s+|of\s+)?(?:(?:your|the|annual|first[- ]year|total)\s+)*(?:tuition|course)\s+fees?|(\d{1,3})\s?%\s+(?:tuition\s+)?(?:fee\s+)?(?:reduction|remission|discount|waiver|scholarship)/gi)) {
     const v = Number(m[1] || m[2]); if (v >= 5 && v <= 100) pct.add(v);

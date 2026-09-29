@@ -2,7 +2,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 import { admissionCheck, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.4.1";
+const SCH_VERSION = "scholarship-sweep-v0.4.2";
+// v0.4.2 (hand-check of the first admitted pages): full tuition is a single value only when no other percentage is
+// stated; levels ignore excluded levels ("excluding Master by Research or PhD") and earlier study ("completed an
+// undergraduate degree").
 // v0.4.1: listing pages counted from the page content only (menus and side panels removed); supporting pages
 // (terms and conditions, FAQs, how to apply, recipients, news) are not scholarships.
 // v0.4.0 (scholarship discovery): the reader confirms the page names the scholarship (title, og:title, <h1>, or the whole
