@@ -29,7 +29,7 @@ export function scholarshipLevels(titleText: string, body: string) {
 const FIELDS: [RegExp, string][] = [
   [/\bengineer/i, "asced-03"], [/\b(information technology|computing|computer science|\bict\b|cyber|data science)/i, "asced-02"],
   [/\b(nursing|health|medicine|medical|pharmacy|dentist|midwi|physiotherap|psycholog)/i, "asced-06"],
-  [/\b(business|commerce|accounting|management|\bmba\b|finance|economics)/i, "asced-08"], [/\blaw\b|\blegal\b/i, "asced-09"],
+  [/\b(business|commerce|accounting|management|\bmba\b|finance|economics)/i, "asced-08"], [/\blaw\b|\blegal\b/i, "asced-0909"],
   [/\b(education|teaching)\b/i, "asced-07"], [/\b(architecture|built environment|construction)\b/i, "asced-04"],
   [/\b(agricultur|environment|veterinar)/i, "asced-05"], [/\b(creative arts|music|design|fine art|film)\b/i, "asced-10"],
   [/\b(science)\b/i, "asced-01"], [/\b(arts|humanities|social science)\b/i, "asced-09"],

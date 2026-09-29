@@ -26,11 +26,11 @@ test('scholarship facts: value, levels, fields, deadline, main content only', as
   expect(scholarshipDeadline('Applications close 31 October 2026. Round 2 closing date 15 March 2027')).toMatchObject({ ambiguous: true })
   // v0.2.0: tiers and faculty restrictions
   expect(scholarshipValue('Undergraduate 25% tuition fee reduction. ANU International Achievement Award – South East Asia 25% ANU International Achievement Award - Pacific 50%')).toMatchObject({ type: 'ambiguous' })
-  expect(scholarshipFaculties('Offered by the Faculty of Law to international students.')).toMatchObject({ fields: ['asced-09'], unmapped: false })
+  expect(scholarshipFaculties('Offered by the Faculty of Law to international students.')).toMatchObject({ fields: ['asced-0909'], unmapped: false })
   expect(scholarshipFaculties('Offered by the Faculty of Pharmacy and Pharmaceutical Sciences.').fields).toEqual(['asced-06'])
   expect(scholarshipFaculties('Offered by the School of Wizardry.')).toMatchObject({ unmapped: true })
   const law = '<main>' + 'y '.repeat(800) + '<p>Faculty of Law International scholarship. Total scholarship value $10,000 for undergraduate students.</p></main>'
-  expect(scholarshipFacts(law, 'Nicholas Auden International Study Scholarship', 'Nicholas Auden International Study Scholarship')).toMatchObject({ fields: ['asced-09'] })
+  expect(scholarshipFacts(law, 'Nicholas Auden International Study Scholarship', 'Nicholas Auden International Study Scholarship')).toMatchObject({ fields: ['asced-0909'] })
   // v0.3.0: levels from the eligibility section
   const phd = '<main>' + 'z '.repeat(800) + '<p>Study undergraduate or postgraduate at Monash.</p><p>Who is eligible? Intending to enrol in a graduate research or PhD degree at Monash.</p></main>'
   expect(scholarshipFacts(phd, 'Indonesian Women Impact Scholarship', 'Indonesian Women Impact Scholarship').levels).toEqual(['research'])
