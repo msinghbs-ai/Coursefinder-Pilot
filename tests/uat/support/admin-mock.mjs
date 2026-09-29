@@ -15,6 +15,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
   const rpc = {
     admin_layer3_operations: F.layer3Operations,
     admin_layer3_control_read: F.layer3Control,
+    admin_data_flags_read: F.dataFlags,
+    admin_data_flag_resolve: b => { calls.push(b); return F.dataFlags },
     admin_layer3_control: b => { calls.push(b); return F.layer3Control },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }

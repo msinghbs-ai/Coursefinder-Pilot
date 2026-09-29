@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.36 — 29 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.109** (Layer 4 Review tabs: Review queue and Flagged values; operators confirm, edit or remove tuition recorded as per year when the page states no period).
+- Database (applied live): migrations 20260930040000–20260930043000 — tuition per-year rule at admission with flags (pipeline.data_flags), public.admin_data_flags_read and public.admin_data_flag_resolve (rank >= 4 to change), period-word and reject-term exclusions, English daily limit US$10.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.35 — 29 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.108** (Layer 3 control: Control, Models and Work queue tabs; per-task run or pause, daily limit and the model cascade with reorder, switch on or off, add qualified model and remove; logged changes).

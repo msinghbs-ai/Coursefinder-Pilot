@@ -75,6 +75,11 @@
 .l3c-events li small{color:var(--cf-muted);overflow-wrap:anywhere}
 @media (max-width:640px){.l3c-events li{grid-template-columns:1fr}.l3c-limit{grid-template-columns:1fr}}
 
+/* Flagged values */
+.fv-filter,.fv-input{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;background:var(--cf-surface);font:inherit;font-size:var(--cf-fs-sm)}
+.fv-input{max-width:130px}
+.fv-quote{display:block;font-size:var(--cf-fs-xs);color:var(--cf-text-2);font-style:italic;overflow-wrap:anywhere;margin-bottom:4px}
+
 /* Sources side by side */
 .sc-panel{display:grid;gap:10px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-lg);padding:12px;background:var(--cf-surface);margin:0 0 12px}
 .sc-panel h3{margin:0;font-size:var(--cf-fs-lg);color:var(--cf-text)}

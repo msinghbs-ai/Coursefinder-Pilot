@@ -46,7 +46,10 @@ export const PAGES = {
     { key: 'models', label: 'Models', min: 3 },
     { key: 'work', label: 'Work queue', min: 3 },
   ] },
-  layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', min: 3, subtitle: 'Decisions that need a person, with an audit trail.' },
+  layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
+    { key: 'review', label: 'Review queue', min: 3 },
+    { key: 'flags', label: 'Flagged values', min: 3 },
+  ] },
 
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database.', tabs: [
     { key: 'checks', label: 'Health checks', min: 3 },
