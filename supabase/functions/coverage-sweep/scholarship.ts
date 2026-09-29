@@ -228,13 +228,15 @@ export function matchScholarshipPage(name: string, candidates: { url: string; ti
 // New scholarship from an unheld provider page: a single named scholarship detail page on the provider's own site,
 // explicitly open to international students and currently offered. Anything else is not admitted.
 const GENERIC_TITLE = /^(scholarships?|awards?|grants?|bursar(?:y|ies)|eligibility|faqs?|find a scholarship|search scholarships|scholarship search|international scholarships?|scholarships? for international students|international students? scholarships?|undergraduate scholarships?|postgraduate scholarships?|research scholarships?|scholarships? and (?:fees|awards|grants|prizes)|fees and scholarships|page not found|404.*|access denied|home)$/i;
+// v0.4.1: supporting pages about scholarships are not scholarships (RMIT "... Scholarship Specific Terms and Conditions")
+const NOT_A_SCHOLARSHIP_TITLE = /(terms and conditions|conditions of (?:award|scholarship)|\bfaqs?\b|frequently asked|how to apply|information for|guidelines|\bpolicy\b|\brules\b|recipients|winners|finalists|celebrating|announc|\bnews\b|contact us|apply now|application form|register|registration|sponsors?hip information|sponsored students)/i;
 export function scholarshipTitle(html: string) {
   const h1s = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(htmlToText(m[1]))).filter(Boolean);
   const head = (html.match(/<head[\s\S]*?<\/head>/i) || [""])[0];
   const og = (head.match(/<meta[^>]+property=["']og:title["'][^>]*content=["']([^"']*)["']/i) || [])[1];
   const title = (head.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
   const opts = [...h1s, og ? htmlToText(og).split(/\s+[|–]\s+|\s+-\s+/)[0] : "", title ? htmlToText(title).split(/\s+[|–]\s+|\s+-\s+/)[0] : ""].map(clean);
-  return opts.find((t) => t.length >= 8 && t.length <= 160 && !GENERIC_TITLE.test(t) && /(scholarship|bursary|award|grant|fee (?:remission|reduction|waiver|discount)|tuition (?:discount|reduction|waiver))/i.test(t)) || null;
+  return opts.find((t) => t.length >= 8 && t.length <= 160 && !GENERIC_TITLE.test(t) && !NOT_A_SCHOLARSHIP_TITLE.test(t) && /(scholarship|bursary|award|grant|fee (?:remission|reduction|waiver|discount)|tuition (?:discount|reduction|waiver))/i.test(t)) || null;
 }
 export function internationalEligibility(text: string) {
   const t = text.slice(0, 12000);
@@ -249,14 +251,23 @@ export function currentlyOffered(text: string, today = new Date()) {
   if (years.length && Math.max(...years) < today.getUTCFullYear()) return { ok: false, reason: "past_year_only" };
   return { ok: true, reason: null };
 }
-export function isListingPage(html: string, url: string, title: string | null) {
-  const main = (html.match(/<main[\s\S]*?<\/main>/i) || [html])[0];
+// Listing: many links to other scholarship pages inside the page's own content (menus, headers, footers and side
+// panels removed first - v0.4.1: RMIT detail pages were counted as listings from their navigation), or a plural
+// title ("... scholarships") over several such links.
+export function listingLinks(html: string, url: string) {
+  const m = html.match(/<main[\s\S]*?<\/main>/i);
+  const main = (m && m[0].length > 1500 ? m[0] : html).replace(/<(nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<(div|ul|section)[^>]+(?:class|id)=["'][^"']*(?:menu|breadcrumb|navigation|sidebar|related|footer|header|megamenu)[^"']*["'][\s\S]*?<\/\1>/gi, " ");
   let self = ""; try { self = normUrl(url) } catch { /* */ }
   const links = new Set<string>();
   for (const m of main.matchAll(/<a[^>]+href=["']([^"'#]+)["']/gi)) {
     try { const u = new URL(m[1], url); if (SCH_KEEP.test(u.pathname) && !SCH_LISTING.test(u.pathname) && normUrl(u.href) !== self) links.add(normUrl(u.href)) } catch { /* */ }
   }
-  return links.size >= 12 || (!!title && /^(?:[\w'’-]+\s){0,3}scholarships$/i.test(title) && links.size >= 5);
+  return links.size;
+}
+export function isListingPage(html: string, url: string, title: string | null) {
+  const n = listingLinks(html, url);
+  return n >= 15 || (!!title && /\b(scholarships|awards|bursaries|grants)$/i.test(title.trim()) && n >= 5);
 }
 export function admissionCheck(html: string, finalUrl: string, providerHost: string | string[]) {
   const reasons: string[] = [];
@@ -272,5 +283,5 @@ export function admissionCheck(html: string, finalUrl: string, providerHost: str
   if (!off.ok) reasons.push(off.reason!);
   if (text.length < 400) reasons.push("too_thin");
   if (name && /\b(award|grant)s?\b/i.test(name) && !/scholarship|bursary|fee/i.test(name) && !/(tuition|scholarship|stipend|bursary)/i.test(text.slice(0, 6000))) reasons.push("not_a_scholarship");
-  return { admit: reasons.length === 0, name, reasons, international_explicit: intl.explicit, offered: off.ok, detail_page: !reasons.includes("listing_page") && !!name };
+  return { admit: reasons.length === 0, name, reasons, international_explicit: intl.explicit, offered: off.ok, detail_page: !reasons.includes("listing_page") && !!name, listing_links: listingLinks(html, finalUrl) };
 }

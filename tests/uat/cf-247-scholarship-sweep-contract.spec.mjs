@@ -89,9 +89,13 @@ test('v0.4.0 new scholarships: single named page, international, currently offer
   expect(ok).toMatchObject({ admit: true, name: 'Global Excellence Scholarship' })
   expect(admissionCheck(page('Community Scholarship', 'Eligibility: Australian citizens or permanent residents only. $5,000.'), 'https://www.uni.edu.au/s/c', 'www.uni.edu.au').reasons).toContain('domestic_only')
   expect(admissionCheck(page('Scholarships', 'International students welcome.'), 'https://www.uni.edu.au/s', 'www.uni.edu.au').reasons).toContain('no_named_title')
-  const many = Array.from({ length: 14 }, (_, i) => `<a href="/scholarships/award-${i}">Award ${i}</a>`).join('')
+  const many = Array.from({ length: 16 }, (_, i) => `<a href="/scholarships/award-${i}">Award ${i}</a>`).join('')
   expect(admissionCheck(page('International Scholarships and Awards Scholarship', 'For international students.', many), 'https://www.uni.edu.au/scholarships/all', 'www.uni.edu.au').reasons).toContain('listing_page')
   expect(admissionCheck(page('Merit Scholarship', 'For international students.'), 'https://www.elsewhere.com/merit', 'www.uni.edu.au').reasons).toContain('not_provider_domain')
+  // v0.4.1: menus do not make a detail page a listing; supporting pages are not scholarships
+  const nav = '<nav>' + Array.from({ length: 30 }, (_, i) => `<a href="/scholarships/international-scholarships/s-${i}">S ${i}</a>`).join('') + '</nav>'
+  expect(admissionCheck(page('Future Leaders Scholarship', 'For international students commencing in 2027. 20% tuition fee reduction.').replace('<main>', nav + '<main>'), 'https://www.rmit.edu.au/scholarships/international-scholarships/future-leaders-scholarship', 'rmit.edu.au')).toMatchObject({ admit: true })
+  expect(admissionCheck(page('School of Engineering Scholarship Specific Terms and Conditions', 'International students in 2027.'), 'https://www.rmit.edu.au/s/t', 'rmit.edu.au').reasons).toContain('no_named_title')
   expect(currentlyOffered('Applications for 2024 closed on 1 March 2024.', new Date('2026-09-29')).reason).toBe('past_year_only')
   expect(currentlyOffered('This scholarship is no longer offered.').reason).toBe('not_offered')
   expect(currentlyOffered('Applications open for 2027 intake.', new Date('2026-09-29')).ok).toBe(true)
@@ -110,5 +114,5 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.4.0')
+  expect(idx).toContain('scholarship-sweep-v0.4.1')
 })

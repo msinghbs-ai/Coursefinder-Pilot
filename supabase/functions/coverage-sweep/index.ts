@@ -2,7 +2,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 import { admissionCheck, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.4.0";
+const SCH_VERSION = "scholarship-sweep-v0.4.1";
+// v0.4.1: listing pages counted from the page content only (menus and side panels removed); supporting pages
+// (terms and conditions, FAQs, how to apply, recipients, news) are not scholarships.
 // v0.4.0 (scholarship discovery): the reader confirms the page names the scholarship (title, og:title, <h1>, or the whole
 // name in one of the first <h2>s) before anything is applied - otherwise read_status "name_mismatch"; Firecrawl for
 // scholarship work is capped at 3,000 credits (purposes sch_map, sch_search, sch_scrape).
