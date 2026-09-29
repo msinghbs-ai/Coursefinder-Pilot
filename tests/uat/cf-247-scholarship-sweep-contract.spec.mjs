@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.4.3')
+  expect(idx).toContain('scholarship-sweep-v0.4.4')
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
@@ -137,4 +137,15 @@ test('v0.4.3 step-1 hand-check fixes: value conditions, up to, stated value, nam
   expect(scholarshipValue('Minimum Value $10,000 available. Co-op students receive a $5,000 once-off scholarship bonus.')).toMatchObject({ type: 'ambiguous' })
   expect(scholarshipValue('An annual stipend to assist with general living costs: $38,310 from 2027 (currently $37,010 for 2026).')).toMatchObject({ type: 'ambiguous' })
   expect(scholarshipValue('Recipients receive 100% tuition fees covered, flights and a living allowance.')).toMatchObject({ type: 'percentage', percentage: 100 })
+})
+
+test('v0.4.4 step-2 hand-check fixes: articles, information pages and faculty listings are not admitted', async () => {
+  const { admissionCheck } = await load()
+  const page = (h1, body) => `<html><head><title>${h1}</title></head><body><main><h1>${h1}</h1><p>${'Lorem ipsum dolor sit amet. '.repeat(20)}</p><p>${body}</p></main></body></html>`
+  const body = 'Open to international students commencing in 2027. 20% tuition fee reduction.'
+  for (const t of ['The impact of a scholarship', "Your introduction to UC's international scholarships", 'Costs and scholarships', 'Architecture, design and planning international undergraduate scholarships'])
+    expect(admissionCheck(page(t, body), 'https://www.uni.edu.au/x/y', 'uni.edu.au').admit).toBe(false)
+  expect(admissionCheck(page('Foundation Academic Scholarships', body), 'https://www.uni.edu.au/x/y', 'uni.edu.au').admit).toBe(true)
+  const escaped = page('Engineering Excellence Scholarship', body + Array.from({ length: 16 }, (_, i) => `&lt;a href=\\&#34;/scholarships/s-${i}.html\\&#34;&gt;S${i}&lt;/a&gt;`).join(''))
+  expect(admissionCheck(escaped, 'https://www.uni.edu.au/scholarships/x', 'uni.edu.au').reasons).toContain('listing_page')
 })

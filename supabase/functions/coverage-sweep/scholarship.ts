@@ -266,7 +266,10 @@ export function matchScholarshipPage(name: string, candidates: { url: string; ti
 // explicitly open to international students and currently offered. Anything else is not admitted.
 const GENERIC_TITLE = /^(scholarships?|awards?|grants?|bursar(?:y|ies)|eligibility|faqs?|find a scholarship|search scholarships|scholarship search|international scholarships?|scholarships? for international students|international students? scholarships?|undergraduate scholarships?|postgraduate scholarships?|research scholarships?|scholarships? and (?:fees|awards|grants|prizes)|fees and scholarships|page not found|404.*|access denied|home)$/i;
 // v0.4.1: supporting pages about scholarships are not scholarships (RMIT "... Scholarship Specific Terms and Conditions")
-const NOT_A_SCHOLARSHIP_TITLE = /(terms and conditions|conditions of (?:award|scholarship)|\bfaqs?\b|frequently asked|how to apply|information for|guidelines|\bpolicy\b|\brules\b|recipients|winners|finalists|celebrating|announc|\bnews\b|contact us|apply now|application form|register|registration|sponsors?hip information|sponsored students)/i;
+// v0.4.4 (step-2 hand-check): articles and information pages ("The impact of a scholarship", "Your introduction to UC's
+// international scholarships", "Costs and scholarships") and faculty listings ("Architecture, design and planning
+// international undergraduate scholarships") are not single scholarships.
+const NOT_A_SCHOLARSHIP_TITLE = /(\ba scholarships?\b|introduction to|impact of|\bcosts? and\b|and scholarships\b|scholarships and\b|how to\b|what is\b|\bwhy\b|\btips\b|\bguide\b|\bstor(?:y|ies)\b|\bexperience\b|\b(?:international|undergraduate|postgraduate|research|faculty|college|school|domestic)\b[^|]*\bscholarships$|terms and conditions|conditions of (?:award|scholarship)|\bfaqs?\b|frequently asked|how to apply|information for|guidelines|\bpolicy\b|\brules\b|recipients|winners|finalists|celebrating|announc|\bnews\b|contact us|apply now|application form|register|registration|sponsors?hip information|sponsored students)/i;
 export function scholarshipTitle(html: string) {
   const h1s = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(htmlToText(m[1]))).filter(Boolean);
   const head = (html.match(/<head[\s\S]*?<\/head>/i) || [""])[0];
@@ -292,6 +295,8 @@ export function currentlyOffered(text: string, today = new Date()) {
 // panels removed first - v0.4.1: RMIT detail pages were counted as listings from their navigation), or a plural
 // title ("... scholarships") over several such links.
 export function listingLinks(html: string, url: string) {
+  // links embedded as escaped HTML (Sydney keeps page content in JSON attributes) count too
+  html = html.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#34;|&quot;/g, '"').replace(/\\"/g, '"');
   const m = html.match(/<main[\s\S]*?<\/main>/i);
   const main = (m && m[0].length > 1500 ? m[0] : html).replace(/<(nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, " ")
     .replace(/<(div|ul|section)[^>]+(?:class|id)=["'][^"']*(?:menu|breadcrumb|navigation|sidebar|related|footer|header|megamenu)[^"']*["'][\s\S]*?<\/\1>/gi, " ");

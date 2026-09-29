@@ -2,7 +2,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 import { admissionCheck, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.4.3";
+const SCH_VERSION = "scholarship-sweep-v0.4.4";
+// v0.4.4 (step-2 hand-check): articles, information pages and faculty listings are not single scholarships; links held
+// as escaped HTML count as listing links; a re-read of an admitted page checks the admission rules again (a page that
+// no longer meets them is withdrawn by the database, never published).
 // v0.4.3 (step-1 hand-check): conditions about other scholarships covering full tuition are not the value; "up to N%"
 // is a maximum (not applied); "Value $N" is a stated amount; stipend amounts kept; one amount in the scholarship's name
 // that the page states is the value; a discovered page must be about a scholarship (UWA research-project page) and a
@@ -270,6 +273,7 @@ Deno.serve(async (req) => {
         if (status === "read") {
           const t = titleOf(html) + " " + h1Of(html);
           facts = { ...scholarshipFacts(html, t, it.name), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION, name_check: nc };
+          if (it.url_source === "admitted") { let h = ""; try { h = new URL(it.url).hostname } catch { /* */ } (facts as any).admission = admissionCheck(html, finalUrl, [h, new URL(finalUrl).hostname]) }
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
           path = `layer2/AU/scholarships/${it.provider_id}/${it.scholarship_id}/${sha}.html.gz`;
           const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
