@@ -23,7 +23,7 @@ const VERSION = "coverage-sweep-v0.5.4"; // extractor version (unchanged by v0.6
 const WORKER = "coverage-sweep-worker-v0.8.0";
 // v0.8.0: mode scholarship_discover (provider scholarship pages from site maps, Firecrawl map/search fallbacks, matching
 // held Study Australia-only scholarships, reading unheld pages at Australian universities for admission as new
-// unpublished scholarships) and mode scholarship_inspect (read only: stored or live page headings and text for hand checks).
+// unpublished scholarships; Firecrawl only for pages the site refuses, keeping 800 credits for step 1) and mode scholarship_inspect (read only: stored or live page headings and text for hand checks).
 // v0.5.2: discovery drops requirement, scholarship and applying pages (pilot: RMIT inherent-requirements pages).
 // v0.5.1: PTE/TOEFL only when stated as overall or directly after the test name.
 // v0.5.0: English overall only when stated as overall or in a score table; minimum band after the overall; fee basis
@@ -358,6 +358,16 @@ Deno.serve(async (req) => {
         await pool(items, 6, async (it) => {
           if (Date.now() > deadline) { await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_final_url: null, p_storage_path: null, p_sha256: null, p_facts: null }); return }
           const pg = await readDirect(it.url);
+          let via = pg.status === "read" ? "direct" : null;
+          // many university sites refuse direct reads (403); Firecrawl then, inside the scholarship cap, keeping a
+          // reserve of 800 credits for step 1 (provider pages of held scholarships)
+          if (["blocked", "fetch_failed", "too_thin"].includes(pg.status) && schLeft > 800 && await useFc("sch_scrape", it.provider_id, it.url)) {
+            try {
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
+              const d = await r.json().catch(() => ({}));
+              if (r.ok && d?.data?.html && mainText(d.data.html).length >= 300) { pg.html = d.data.html; pg.status = "read"; pg.http = d.data?.metadata?.statusCode ?? 200; pg.finalUrl = d.data?.metadata?.sourceURL || it.url; via = "firecrawl" }
+            } catch { /* keep the direct result */ }
+          }
           let facts: Record<string, unknown> | null = null, path: string | null = null, sha: string | null = null;
           if (pg.status === "read") {
             let host = ""; try { host = new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
@@ -370,7 +380,7 @@ Deno.serve(async (req) => {
               if (up.error) { path = null; sha = null; (facts.admission as any).admit = false; (facts.admission as any).reasons = ["evidence_upload_failed"] }
             }
           }
-          const res = await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: pg.status, p_http_status: pg.http, p_fetched_via: pg.status === "read" ? "direct" : null, p_final_url: pg.finalUrl, p_storage_path: path, p_sha256: sha, p_facts: facts });
+          const res = await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: pg.status, p_http_status: pg.http, p_fetched_via: via, p_final_url: pg.finalUrl, p_storage_path: path, p_sha256: sha, p_facts: facts });
           const k = res?.admitted ? "admitted" : pg.status === "read" ? (res?.reason ? "read:" + res.reason : "read:rejected") : pg.status;
           tally[k] = (tally[k] || 0) + 1;
           if (res?.admitted) admitted.push({ candidate_id: it.candidate_id, scholarship_id: res.scholarship_id, apply: res.apply?.changes });
