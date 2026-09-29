@@ -148,5 +148,6 @@ end $f$;
 revoke all on function public.svc_coverage_tuition_handoff_record(uuid,text,text,int) from public, anon, authenticated;
 grant execute on function public.svc_coverage_tuition_handoff_record(uuid,text,text,int) to service_role;
 
--- hand-off every 5 minutes, 50 pages (about 600 an hour); Layer 3 dispatch and admission run on their own schedules
-select cron.schedule('coverage-tuition-handoff','*/5 * * * *',$$select pipeline.svc_pilot_submit_nonce('coverage-sweep','{"mode":"tuition_handoff","limit":50}'::jsonb)$$);
+-- Layer 3 dispatch and admission run on their own schedules
+-- Throttled after the first 4 items all went to Layer 4 (pages lacked 'per year' wording): 20 every 10 minutes until the admit rate is known.
+select cron.schedule('coverage-tuition-handoff','*/10 * * * *',$$select pipeline.svc_pilot_submit_nonce('coverage-sweep','{"mode":"tuition_handoff","limit":20}'::jsonb)$$);
