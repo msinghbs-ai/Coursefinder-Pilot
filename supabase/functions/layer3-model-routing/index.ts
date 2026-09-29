@@ -9,6 +9,7 @@ import {
   isPinnedModel, parseModelJson, ROUTING_VERSION, scoreEnglish, scoreIntake, scoreTuition, TaskKey, TASKS, tuitionEvidenceText, tuitionMaxChars,
   tuitionRequestBody,
 } from "../_shared/cf247-model-routing.ts";
+import { AUDIT_RATE, CASCADE_VERSION, cascadeSignal, sameAnswer } from "../_shared/cf247-cascade.ts";
 
 // CF-CHG-20260915-247 Layer 3 model routing (Platform Admin direction 29 Sep 2026 18:30 IST). Nonce-only.
 //   catalogue  OpenRouter /models (candidate ids only) and /credits; recorded as observations. No model call.
@@ -241,6 +242,68 @@ Deno.serve(async (req: Request) => {
       const profile = claim.profile;
       const model = String(profile.model_identifier);
       const tally: Record<string, number> = {}; let cost = 0;
+      // cascade ladder (route_mode = ladder): active tiers, cheapest first; otherwise the single routed profile
+      const ladder = await rpc("layer3_cascade_ladder_service", { p_task_class: TASKS[task] });
+      const tiers: any[] = ladder?.route_mode === "ladder" ? (ladder.tiers || []).filter((t: any) => t.active && t.profile?.enabled && !t.profile?.paused && isPinnedModel(String(t.profile?.model_identifier))) : [];
+      const tierTally: Record<string, number> = {};
+      let refused = "";  // OpenRouter refused a call (key, billing or rate limit): stop and release, never escalate or send to Layer 4
+      if (tiers.length) {
+        const finalTier = tiers[tiers.length - 1];
+        await pool(items, Math.min(Math.max(1, Number(body.concurrency || 4)), 8), async (it) => {
+          let status = "complete_error";
+          try {
+            const text = await pageText(it.storage_path);
+            const textSha = await sha256(text);
+            const blockers = task === "intake" ? intakeSafetyBlockers(text) : [];
+            const signal = cascadeSignal(task as "intake" | "english", text);
+            const ask = async (tp: any) => {
+              const m = String(tp.model_identifier);
+              const reqBody = task === "intake" ? intakeRequestBody(m, text, Number(tp.max_output_tokens)) : englishRequestBody(m, text, Number(tp.max_output_tokens));
+              let r: any = { ok: false, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null };
+              try { r = await callModel(tp, reqBody) } catch (e) { r.error = String((e as Error)?.message || e).slice(0, 200) }
+              let chk: any = r.answer ? (task === "intake" ? checkIntake(r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+              if (r.returned && r.returned !== m) chk = { valid: false, errors: [...chk.errors, `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
+              const result = { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, answer: r.answer, returned_model: r.returned, cost_usd: r.cost,
+                input_tokens: r.input, output_tokens: r.output, latency_ms: r.latency, external_calls: 1, safety_blockers: [], text_sha256: textSha, binding_hash: null };
+              return { chk, result, cost: Number(r.cost || 0) };
+            };
+            if (task === "intake" && blockers.length) {
+              // deterministic safety rule: no model call, recorded against the first tier
+              const result = { valid: true, status: "not_stated", admitted: null, errors: [], answer: { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" },
+                returned_model: null, cost_usd: 0, external_calls: 0, safety_blockers: blockers.map((b) => b.code), text_sha256: textSha, binding_hash: null };
+              const done = await rpc("layer3_fact_complete_ladder_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_attempts: [], p_final: pgSafe({ profile_id: tiers[0].profile.id, tier_no: tiers[0].tier_no, escalation_reasons: [], result }) });
+              status = done?.work_status || "?"; tierTally["safety_rule"] = (tierTally["safety_rule"] || 0) + 1;
+            } else {
+              if (refused) { const r = await rpc("layer3_fact_release_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_reason: refused }); status = r?.work_status || "released"; tally[status] = (tally[status] || 0) + 1; return }
+              const attempts: any[] = []; let final: any = null;
+              for (let i = 0; i < tiers.length; i++) {
+                const t = tiers[i], last = i === tiers.length - 1;
+                const x = await ask(t.profile); cost += x.cost;
+                if (/provider_(401|402|403|429)/.test(String(x.result.errors?.[0] || ""))) { refused = String(x.result.errors[0]).slice(0, 200); break }
+                const answered = task === "intake" ? x.chk.status === "months" : x.chk.status === "stated";
+                const reasons: string[] = !x.chk.valid ? (x.chk.errors || ["rejected"]).map((e: string) => String(e).split(":")[0]).slice(0, 4) : (!answered && signal ? ["not_stated_with_signal"] : []);
+                if (reasons.length && !last) { attempts.push({ profile_id: t.profile.id, tier_no: t.tier_no, escalation_reasons: reasons, result: x.result }); continue }
+                final = { profile_id: t.profile.id, tier_no: t.tier_no, escalation_reasons: attempts.length ? attempts[attempts.length - 1].escalation_reasons : [], result: x.result };
+                // audit a sample of answers accepted below the final tier
+                if (!last && x.chk.valid && x.chk.admitted && Math.random() < AUDIT_RATE) {
+                  const y = await ask(finalTier.profile); cost += y.cost;
+                  const agree = y.chk.valid && sameAnswer(task as "intake" | "english", x.chk.admitted, y.chk.admitted);
+                  final.audit = { profile_id: finalTier.profile.id, agree, audited_answer: y.chk.admitted, audit_valid: y.chk.valid, audit_cost_usd: y.cost };
+                  final.result = { ...final.result, cost_usd: Number(final.result.cost_usd || 0) + y.cost, external_calls: 2 };
+                  if (!agree) final.result = { ...final.result, valid: false, admitted: null, errors: [...(final.result.errors || []), "audit_disagreement"] };
+                }
+                break;
+              }
+              if (refused) { const r = await rpc("layer3_fact_release_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_reason: refused }); status = r?.work_status || "released"; tally[status] = (tally[status] || 0) + 1; return }
+              tierTally[`tier${final.tier_no}`] = (tierTally[`tier${final.tier_no}`] || 0) + 1;
+              const done = await rpc("layer3_fact_complete_ladder_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_attempts: pgSafe(attempts), p_final: pgSafe(final) });
+              status = done?.work_status || "?";
+            }
+          } catch (e) { console.error("ladder item failed", it.work_item_id, String((e as Error)?.message || e)) }
+          tally[status] = (tally[status] || 0) + 1;
+        });
+        return j(200, { ok: true, mode, task, worker_version: V, cascade_version: CASCADE_VERSION, route: "ladder", tiers: tiers.map((t) => `${t.tier_no}:${t.profile.model_identifier}`), claimed: items.length, tally, tiers_used: tierTally, cost_usd: cost, credits: c, ms: Date.now() - t0 });
+      }
       await pool(items, Math.min(Math.max(1, Number(body.concurrency || 4)), 6), async (it) => {
         let result: any;
         try {
