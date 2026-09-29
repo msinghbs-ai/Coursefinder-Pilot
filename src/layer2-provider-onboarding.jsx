@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{CheckCircle2,RefreshCw,Search}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import{fmtNumber,fmtDateTime}from'./lib/format.js'
 
 // Package 7 (Decision 141): per-provider Layer 2 onboarding. An operator supplies the provider's course
 // catalogue page; "Check" is a dry run (no change), "Validate & qualify" starts the existing
@@ -8,8 +9,8 @@ import{supabase}from'./lib/supabase'
 const STATES=[['','All'],['needs_catalogue_page','Needs catalogue page'],['identity_check_running','Identity check running'],['needs_person','Needs a person'],['qualified','Qualified'],['site_limited','Site limited'],['not_yet_assessed','Not yet assessed']]
 const LABEL={needs_catalogue_page:'Needs catalogue page',identity_check_running:'Identity check running',needs_person:'Needs a person',qualified:'Qualified',site_limited:'Site limited',not_yet_assessed:'Not yet assessed',in_progress:'In progress'}
 const AUTO={checking:'Automatic check running',passed:'Qualified automatically',failed:'Automatic candidate failed',error:'Automatic attempt could not start',needs_person:'Automatic discovery found no working page'}
-const n=v=>Number(v||0).toLocaleString('en-AU')
-const when=v=>v?new Date(v).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''
+const n=v=>fmtNumber(v||0)
+const when=v=>v?fmtDateTime(v):''
 const httpsOf=u=>{const s=String(u||'').trim();if(!s)return'https://';return s.replace(/^http:\/\//i,'https://').replace(/^(?!https:\/\/)/i,'https://')}
 const rpc=async(fn,args)=>{const{data,error}=await supabase.rpc(fn,args);if(error)throw new Error(error.message);return data}
 

@@ -1,10 +1,12 @@
 import React,{useEffect,useState}from'react'
+import{SectionTitle,Metric,StatusChip,LayerBadge,Loading,Empty as KitEmpty,SkeletonRows}from'./ui-kit'
 import{Pager}from'./ui-kit'
 import{createRoot}from'react-dom/client'
 import{
   Activity,AlertTriangle,ArrowLeft,BookOpen,ChevronDown,ChevronRight,Database,
   ExternalLink,FileCheck2,Filter,Layers3,RefreshCw,Search,SearchCheck,ShieldCheck,Workflow,X
 }from'lucide-react'
+import{fmtNumber,fmtDateTime}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
 import'./pipeline-ops.css'
 
@@ -64,7 +66,7 @@ function PipelineOverview({setTab}){
   return <div className="ops-stack">
     <section className="ops-command"><div><span className="ops-health"><span/>Operational authority remains layer-specific</span><h2>Layer 1 → Layer 4 operational journey</h2><p>Pipeline completion, Search admission and Publication are deliberately reported as separate states.</p></div><button className="ops-secondary" onClick={load}><RefreshCw size={14}/>Refresh</button></section>
     <Journey data={data}/>
-    {(unclassifiedSources>0||unclassifiedJobs>0)&&<section className="ops-inline-warning"><AlertTriangle size={15}/><span><strong>Classification attention:</strong> {num(unclassifiedSources)} source(s) and {num(unclassifiedJobs)} job(s) currently sit outside L1–L4 classification. They are not silently folded into another authority layer.</span></section>}
+    {(unclassifiedSources>0||unclassifiedJobs>0)&&<section className="ops-inline-warning"><AlertTriangle size={15}/><span><strong>Classification attention:</strong> {num(unclassifiedSources)} source(s) and {num(unclassifiedJobs)} job(s) currently sit outside the Layer 1 to Layer 4 classification. They are not silently folded into another authority layer.</span></section>}
     <div className="ops-layer-grid">{layers.map(layer=><LayerCard key={layer.code} layer={layer} latest={latest[layer.code]} onJobs={()=>setTab('jobs')} onSources={()=>setTab('sources')}/>)}</div>
     <div className="ops-grid-2"><SearchAdmission data={data?.search_admission}/><Publication data={data?.publication}/></div>
     <div className="ops-grid-2">
@@ -137,26 +139,26 @@ function SearchAdmission({data}){const gates=data?.country_gates||[];return <sec
 function Publication({data}){return <section className="ops-panel"><SectionTitle icon={ExternalLink} title="Publication" subtitle="Downstream channel state"/><div className="ops-big-stat"><strong>{num(data?.entity_states_total)}</strong><span>Entity publication states</span></div><div className="ops-publication-counts">{Object.entries(data?.status_counts||{}).map(([k,v])=><span key={k}><small>{human(k)}</small><strong>{num(v)}</strong></span>)}</div><div className="ops-channel-list">{(data?.channels||[]).map(c=><span key={c.code}>{c.name||c.code}</span>)}</div><p className="ops-definition">{data?.definition}</p></section>}
 function PolicyPanel({title,icon:Icon,rows,tone}){return <section className={`ops-panel policy-${tone}`}><SectionTitle icon={Icon} title={title}/><div className="ops-detail-list">{rows.map(([l,v])=><Fact key={l} label={l} value={typeof v==='number'?num(v):v}/>)}</div></section>}
 function WorkspaceHeader({title,subtitle,total}){return <section className="ops-workspace-head"><div><h2>{title}</h2><p>{subtitle}</p></div><div className="ops-result-count"><strong>{num(total)}</strong><span>matching</span></div></section>}
-function SectionTitle({icon:Icon,title,subtitle}){return <div className="ops-section-title"><span><Icon size={16}/></span><div><h3>{title}</h3>{subtitle&&<p>{subtitle}</p>}</div></div>}
+
 function DetailCard({title,rows}){return <section className="ops-detail-card"><h4>{title}</h4>{rows.map(([l,v])=><Fact key={l} label={l} value={v}/>)}</section>}
 function Fact({label,value,action,onClick}){return <div className="ops-fact"><span>{label}</span><div><strong title={String(value??'—')}>{value??'—'}</strong>{action&&<button onClick={onClick}>{action}</button>}</div></div>}
-function Metric({label,value}){return <div className="ops-metric"><span>{label}</span><strong>{value==null?'—':typeof value==='number'?num(value):value}</strong></div>}
+
 // v2.15.90: show only counts that were recorded and are not zero (most job types record none).
 function MiniCounts({row,keys}){const shown=keys.filter(k=>row[k]!=null&&Number(row[k])!==0);if(!shown.length)return <div className="ops-mini-counts ops-mini-none"><small>Not recorded</small></div>;return <div className="ops-mini-counts">{shown.map(k=><span key={k} title={human(k)}><small>{human(k).replace(' count','').split(' ')[0]}</small><strong>{num(row[k])}</strong></span>)}</div>}
-function Badge({value}){const v=String(value||'unknown');return <span className={`ops-badge b-${slug(v)}`}>{human(v)}</span>}
+function Badge({value}){const v=String(value||'unknown');return /^(l|layer)[-_ ]?\d$/i.test(v)?<LayerBadge layer={v}/>:<StatusChip value={v.toLowerCase()} label={human(v)}/>}
 function Select({label,value,onChange,options}){const list=normalise(options);return <label className="ops-select"><span>{label}</span><select value={value} onChange={e=>onChange(e.target.value)}><option value="">All</option>{list.map(o=><option value={o.value} key={o.value}>{o.label}</option>)}</select></label>}
-function Loading({label,compact=false}){return <div className={`ops-loading ${compact?'compact':''}`}><RefreshCw size={17}/><span>{label}</span></div>}
+
 function ErrorState({error,onRetry}){return <section className="ops-error-state"><AlertTriangle size={22}/><h2>Operations data could not be loaded</h2><p>{error}</p><button onClick={onRetry}><RefreshCw size={14}/>Retry</button></section>}
 function InlineError({error}){return <div className="ops-inline-error"><AlertTriangle size={15}/><span>{error}</span></div>}
-function Empty({label}){return <div className="ops-empty">{label}</div>}
-function SkeletonRows({cols}){return Array.from({length:7}).map((_,i)=><tr key={i}>{Array.from({length:cols}).map((_,j)=><td key={j}><span className="ops-skeleton-line"/></td>)}</tr>)}
+function Empty({label}){return <KitEmpty text={label}/>}
+
 function useDebounce(v,ms){const[x,setX]=useState(v);useEffect(()=>{const t=setTimeout(()=>setX(v),ms);return()=>clearTimeout(t)},[v,ms]);return x}
 function pageItems(v){return v?.items??v?.rows??(Array.isArray(v)?v:[])}
 function normalise(values){return(values||[]).map(v=>typeof v==='object'?{value:String(v.code??v.value??v.id??''),label:String(v.name??v.label??v.code??v.value??v.id??'')}:{value:String(v),label:human(v)}).filter(x=>x.value)}
 function human(v){return String(v??'').replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 function slug(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
-function num(v){const n=Number(v);return Number.isFinite(n)?n.toLocaleString('en-AU'):'—'}
-function dateTime(v){if(!v)return'—';const d=new Date(v);return Number.isNaN(d.getTime())?'—':new Intl.DateTimeFormat('en-AU',{dateStyle:'medium',timeStyle:'short'}).format(d)}
+function num(v){const n=Number(v);return Number.isFinite(n)?fmtNumber(n):'—'}
+function dateTime(v){return fmtDateTime(v)}
 function duration(ms){const n=Number(ms);if(!Number.isFinite(n))return'—';if(n<1000)return`${Math.round(n)} ms`;if(n<60000)return`${(n/1000).toFixed(1)} s`;return`${Math.floor(n/60000)}m ${Math.round((n%60000)/1000)}s`}
 function cursor(j){if(j?.next_cursor!=null)return`next ${num(j.next_cursor)}${j.has_more?' · more':''}`;if(j?.cursor_offset!=null)return`offset ${num(j.cursor_offset)}`;return'No cursor persisted'}
 function configSummary(metadata){const m=metadata||{};const keys=['configured_worker_version','worker_version','scope','coverage_role','apply_gate','apply_enabled','identity_scheme','course_identity_scheme','transport','acquisition_method','coverage_complete_for_country'];return keys.filter(k=>m[k]!=null).slice(0,7).map(k=>[k,m[k]])}

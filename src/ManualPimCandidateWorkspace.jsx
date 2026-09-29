@@ -1,8 +1,9 @@
 import React,{useEffect,useState}from'react'
 import{supabase,api}from'./lib/supabase'
+import{fmtDateTime}from'./lib/format.js'
 
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
-const when=v=>v?new Date(v).toLocaleString():'—'
+const when=v=>v?fmtDateTime(v):'—'
 
 export default function ManualPimCandidateWorkspace({rank=null,onError,initialEntityType='',initialProviderId=''}){
  const[resolvedRank,setResolvedRank]=useState(rank==null?0:Number(rank)||0)

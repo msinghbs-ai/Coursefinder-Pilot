@@ -2,15 +2,16 @@ import React,{useEffect,useState}from'react'
 import{Activity,AlertTriangle,Database,DollarSign,HardDrive,RefreshCw,Save}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import'./platform-resources.css'
+import{fmtNumber,fmtDateTime,fmtMoney,fmtPercent}from'./lib/format.js'
 
 // Package 8.2 (Decision 153): resource utilisation, forecast and toolset cost.
 // Reads pre-recorded hourly observations (no heavy queries on open).
 const rpc=async(fn,args)=>{const{data,error}=await supabase.rpc(fn,args);if(error)throw new Error(error.message);return data}
-const mb=b=>b==null?'—':Math.round(Number(b)/1048576).toLocaleString('en-AU')+' MB'
+const mb=b=>b==null?'—':fmtNumber(Math.round(Number(b)/1048576))+' MB'
 const gb=b=>b==null?'—':(Number(b)/1073741824).toFixed(1)+' GB'
-const usd=v=>v==null?'—':'US$'+Number(v).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})
-const n=v=>v==null?'—':Number(v).toLocaleString('en-AU')
-const when=v=>v?new Date(v).toLocaleString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'
+const usd=v=>v==null?'—':fmtMoney(v,'USD',{decimals:2})
+const n=v=>v==null?'—':fmtNumber(v)
+const when=v=>v?fmtDateTime(v):'—'
 const cycle=d=>{d=Number(d);return d>=365?'annually':d>=180?'twice a year':d>=90?'quarterly':d>=28?'monthly':d===7?'weekly':`every ${d} days`}
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const months=a=>a.length>1?`${MON[a[0]-1]}–${MON[a[a.length-1]-1]} window`:`${MON[a[0]-1]} window`
@@ -52,7 +53,7 @@ export default function PlatformResourcesPanel({onError=()=>{}}){
     <div className="pr-tiles">
       <article><Database size={16}/><span>Database vs memory</span><strong>{mb(l.db_bytes)} / {mb(c.memory_bytes)}</strong><small className={ratio>=1?'bad':ratio>=0.85?'warn':''}>{Math.round(ratio*100)}% of memory · {c.compute_size||'—'} compute</small>
         <small>{data.days_until_memory!=null?`About ${n(data.days_until_memory)} days until it exceeds memory`:Number(data.growth_bytes_per_day)>0?'Already above memory':'Growth forecast needs a few days of data'}</small></article>
-      <article><Activity size={16}/><span>Cache hit rate</span><strong>{l.cache_hit_pct!=null?`${l.cache_hit_pct}%`:'—'}</strong><small>{n(l.connections)} connections of {n(c.max_connections)}</small></article>
+      <article><Activity size={16}/><span>Cache hit rate</span><strong>{l.cache_hit_pct!=null?fmtPercent(l.cache_hit_pct):'—'}</strong><small>{n(l.connections)} connections of {n(c.max_connections)}</small></article>
       <article><Activity size={16}/><span>Scheduled jobs (last hour)</span><strong>{n(l.cron_runs)} runs</strong><small className={Number(l.cron_failures)>0?'warn':''}>{n(l.cron_failures)} not succeeded · longest {l.cron_max_seconds??'—'} s · up to {n(l.cron_max_concurrent)} at once</small></article>
       <article><HardDrive size={16}/><span>Evidence storage</span><strong>{gb(st.evidence_object_bytes)}</strong><small>{n(st.evidence_objects)} files · {n(st.orphans)} without a record</small></article>
       <article><DollarSign size={16}/><span>Monthly toolset cost</span><strong>{usd(costs.total_monthly_usd)}</strong><small>Acquisition this month: {n(costs.acquisition_units_mtd)} units · AI this month: {usd(l.ai_cost_mtd_usd)}</small></article>
@@ -70,7 +71,7 @@ export default function PlatformResourcesPanel({onError=()=>{}}){
     </div>
     <div className="pr-box"><h3>Admission lifecycle</h3><p className="pr-note">Data is admitted once, then re-checked only on its cycle or on demand.</p>
       <table className="pr-table"><thead><tr><th>Data</th><th>Layer</th><th>Re-check</th><th>Status</th></tr></thead><tbody>
-        {life.map(x=><tr key={x.data_type}><td>{x.label}<small className="pr-sub">{x.rationale}</small></td><td>{x.layer}</td>
+        {life.map(x=><tr key={x.data_type}><td>{x.label}<small className="pr-sub">{x.rationale}</small></td><td>{/^L\d$/.test(String(x.layer||''))?`Layer ${String(x.layer).slice(1)}`:x.layer}</td>
           <td>{cycle(x.cycle_days)}{x.check_days&&x.check_days!==x.cycle_days?` · checked ${cycle(x.check_days)}`:''}{x.window_months?.length?` · ${months(x.window_months)}`:''}</td>
           <td>{x.layer==='L2'?`${n(x.aligned)} of ${n(x.profiles)} profiles aligned`:x.next_due?(new Date(x.next_due)<new Date()?<span className="pr-bad">Overdue since {when(x.next_due)}</span>:`Next ${when(x.next_due)}`):'On publication'}</td></tr>)}
       </tbody></table></div>

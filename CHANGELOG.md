@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.33 — 29 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.106** (B2 UI uniformity release with R12: one token set, one component kit, en-AU formats, "Layer N" wording; completeness states and the course completeness score on Course coverage).
+- Database (applied live): migration 20260929190000_cf247_coverage_completeness_states — new helper security.coverage_completeness_state; checksum-guarded replacement of security.admin_course_coverage_read adding completeness states, the completeness score and a completeness-state course list (existing keys unchanged).
+- Removed unreachable source files (legacy src/main.jsx and its stylesheets, and unmounted entry scripts).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.32 — 29 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.105** (University group filter on Courses and Providers; university group shown on provider detail).

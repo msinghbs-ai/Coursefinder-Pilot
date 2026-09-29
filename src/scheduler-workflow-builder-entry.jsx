@@ -51,7 +51,7 @@ function Builder(){
     <label className="cf-workflow-builder__field"><span>Governance reason</span><input value={reason} disabled={dispatchBusy||!operator} onChange={e=>setReason(e.target.value)} placeholder="Required for consequential dispatch"/></label>
     <div className="cf-workflow-builder__actions"><button data-primary disabled={!canRun} onClick={run}><Play size={14}/> Run acquisition + deterministic Layer 2</button><button onClick={()=>{location.hash='#jobs'}}><ExternalLink size={14}/> Open Jobs</button><button onClick={()=>{location.hash='#evidence'}}><ExternalLink size={14}/> Open Evidence</button></div>
    </div>}
-  <div className="cf-workflow-builder__guard"><strong>Authority boundary</strong><span>Automatic L2 → conditional L3/L4 and Evidence reprocessing remain disabled here. Layer 3 continues through its Evidence/profile/model-qualified workspace; Search/Publication are downstream governed consequences.</span></div>
+  <div className="cf-workflow-builder__guard"><strong>Authority boundary</strong><span>Automatic Layer 2 → conditional Layer 3 / Layer 4 and Evidence reprocessing remain disabled here. Layer 3 continues through its Evidence/profile/model-qualified workspace; Search/Publication are downstream governed consequences.</span></div>
  </section>
 }
 

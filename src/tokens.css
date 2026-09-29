@@ -1,0 +1,94 @@
+/* CourseFinder design tokens (B2 UI uniformity, v2.15.106).
+   The one colour, type, spacing, radius and shadow system for the admin console.
+   Every stylesheet reads these custom properties; no stylesheet defines its own colour literals.
+   The console has no dark mode, so there is one (light) set. Older per-screen token names
+   (--m-*, --dq-*, --ops-*, --cf-insight-*) are kept at the bottom as aliases of these tokens.
+   Check: node scripts/verify-ui-tokens.mjs (lists colour literals outside this file). */
+:root{
+  /* Neutral */
+  --cf-white:#ffffff;
+  --cf-slate-25:#fbfcfe;--cf-slate-50:#f8fafc;--cf-slate-75:#f4f6fa;--cf-slate-100:#f1f5f9;--cf-slate-150:#eef2f7;
+  --cf-slate-175:#e8edf4;--cf-slate-200:#e2e8f0;--cf-slate-225:#dbe3ec;--cf-slate-250:#d7deea;--cf-slate-300:#cbd5e1;
+  --cf-slate-350:#aab5c6;--cf-slate-400:#94a3b8;--cf-slate-450:#7c8aa0;--cf-slate-500:#64748b;--cf-slate-600:#475569;
+  --cf-slate-700:#334155;--cf-slate-750:#273449;--cf-slate-800:#1e293b;--cf-slate-850:#172033;--cf-slate-900:#0f172a;
+  --cf-slate-950:#0b1220;
+  /* Brand (indigo) */
+  --cf-indigo-25:#f7f8ff;--cf-indigo-50:#eef2ff;--cf-indigo-100:#e0e7ff;--cf-indigo-200:#c7d2fe;--cf-indigo-300:#a5b4fc;
+  --cf-indigo-400:#818cf8;--cf-indigo-500:#6366f1;--cf-indigo-550:#5b5ce2;--cf-indigo-600:#4f46e5;--cf-indigo-700:#4338ca;
+  --cf-indigo-800:#3730a3;--cf-indigo-900:#312e81;
+  /* Blue / sky / cyan / teal */
+  --cf-blue-50:#eff6ff;--cf-blue-100:#dbeafe;--cf-blue-200:#bfdbfe;--cf-blue-300:#93c5fd;--cf-blue-400:#60a5fa;
+  --cf-blue-500:#3b82f6;--cf-blue-600:#2563eb;--cf-blue-700:#1d4ed8;--cf-blue-800:#1e40af;--cf-blue-900:#1e3a8a;--cf-blue-950:#172554;
+  --cf-sky-50:#f0f9ff;--cf-sky-100:#e0f2fe;--cf-sky-200:#bae6fd;--cf-sky-800:#075985;--cf-sky-900:#0c4a6e;
+  --cf-cyan-50:#ecfeff;--cf-cyan-600:#0891b2;--cf-cyan-700:#0e7490;
+  --cf-teal-50:#f0fdfa;--cf-teal-700:#0f766e;
+  /* Green (success) */
+  --cf-green-50:#f0fdf4;--cf-green-75:#ecfdf5;--cf-green-100:#dcfce7;--cf-green-200:#bbf7d0;--cf-green-300:#86efac;
+  --cf-green-500:#22c55e;--cf-green-600:#16a34a;--cf-green-700:#15803d;--cf-green-750:#047857;--cf-green-800:#166534;
+  --cf-green-850:#065f46;--cf-green-900:#14532d;
+  /* Amber / orange (warning) */
+  --cf-amber-50:#fffbeb;--cf-amber-100:#fef3c7;--cf-amber-200:#fde68a;--cf-amber-300:#fcd34d;--cf-amber-500:#f59e0b;
+  --cf-amber-600:#d97706;--cf-amber-700:#b45309;--cf-amber-800:#92400e;--cf-amber-900:#78350f;
+  --cf-orange-50:#fff7ed;--cf-orange-100:#ffedd5;--cf-orange-200:#fed7aa;--cf-orange-300:#fdba74;--cf-orange-500:#f97316;--cf-orange-700:#c2410c;--cf-orange-800:#9a3412;
+  /* Red / rose (danger) */
+  --cf-red-50:#fef2f2;--cf-red-100:#fee2e2;--cf-red-200:#fecaca;--cf-red-300:#fca5a5;--cf-red-500:#ef4444;--cf-red-600:#dc2626;
+  --cf-red-700:#b91c1c;--cf-red-750:#b42318;--cf-red-800:#991b1b;--cf-red-900:#7f1d1d;
+  --cf-rose-50:#fff1f2;--cf-rose-700:#be123c;--cf-rose-800:#9f1239;
+  /* Violet / purple / pink */
+  --cf-violet-50:#f5f3ff;--cf-violet-100:#ede9fe;--cf-violet-200:#ddd6fe;--cf-violet-400:#a78bfa;--cf-violet-600:#7c3aed;
+  --cf-violet-700:#6d28d9;--cf-violet-900:#4c1d95;--cf-purple-700:#7e22ce;--cf-purple-800:#6b21a8;
+  --cf-pink-50:#fdf2f8;--cf-pink-200:#fbcfe8;--cf-fuchsia-600:#c026d3;--cf-pink-700:#be185d;
+  /* Ordinal chart ramp (validated blue ramp used by Course coverage) */
+  --cf-seq-1:#0d366b;--cf-seq-2:#1c5cab;--cf-seq-3:#2a78d6;--cf-seq-4:#5598e7;--cf-seq-5:#86b6ef;
+
+  /* Semantic roles */
+  --cf-bg:var(--cf-slate-75);--cf-surface:var(--cf-white);--cf-surface-2:var(--cf-slate-50);--cf-surface-3:var(--cf-slate-100);
+  --cf-border:var(--cf-slate-200);--cf-border-strong:var(--cf-slate-250);--cf-border-input:var(--cf-slate-300);
+  --cf-text:var(--cf-slate-850);--cf-text-2:var(--cf-slate-600);--cf-muted:var(--cf-slate-500);--cf-soft:var(--cf-slate-400);
+  --cf-nav:var(--cf-slate-900);--cf-nav-2:var(--cf-slate-850);
+  --cf-brand:var(--cf-indigo-550);--cf-brand-strong:var(--cf-indigo-600);--cf-brand-ink:var(--cf-indigo-700);--cf-brand-soft:var(--cf-indigo-50);
+  --cf-link:var(--cf-blue-600);
+  --cf-success:var(--cf-green-700);--cf-success-ink:var(--cf-green-800);--cf-success-soft:var(--cf-green-75);
+  --cf-warning:var(--cf-amber-700);--cf-warning-ink:var(--cf-amber-800);--cf-warning-soft:var(--cf-amber-50);
+  --cf-danger:var(--cf-red-750);--cf-danger-ink:var(--cf-rose-800);--cf-danger-soft:var(--cf-rose-50);
+  --cf-info:var(--cf-blue-600);--cf-info-ink:var(--cf-blue-800);--cf-info-soft:var(--cf-blue-50);
+  --cf-violet:var(--cf-violet-600);--cf-violet-soft:var(--cf-violet-50);
+  --cf-neutral-ink:var(--cf-slate-600);--cf-neutral-soft:var(--cf-slate-100);
+
+  /* Type */
+  --cf-font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --cf-font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  --cf-fs-3xs:8px;--cf-fs-2xs:9px;--cf-fs-xs:10px;--cf-fs-sm:11px;--cf-fs-md:12px;--cf-fs-base:13px;--cf-fs-lg:14px;
+  --cf-fs-xl:16px;--cf-fs-2xl:18px;--cf-fs-3xl:20px;--cf-fs-4xl:24px;--cf-fs-5xl:30px;
+
+  /* Spacing (4px grid) */
+  --cf-space-1:4px;--cf-space-2:8px;--cf-space-3:12px;--cf-space-4:16px;--cf-space-5:20px;--cf-space-6:24px;--cf-space-8:32px;
+
+  /* Radius */
+  --cf-radius-xs:4px;--cf-radius-sm:6px;--cf-radius-md:8px;--cf-radius-lg:10px;--cf-radius-xl:12px;--cf-radius-2xl:14px;
+  --cf-radius-3xl:16px;--cf-radius-pill:999px;
+
+  /* Shadow */
+  --cf-shadow-card:0 1px 2px color-mix(in srgb,var(--cf-slate-900) 4%,transparent),0 10px 24px color-mix(in srgb,var(--cf-slate-900) 3.5%,transparent);
+  --cf-shadow-xs:0 1px 2px color-mix(in srgb,var(--cf-slate-900) 4%,transparent);
+  --cf-shadow-sm:0 4px 12px color-mix(in srgb,var(--cf-slate-900) 8%,transparent);
+  --cf-shadow-md:0 10px 28px color-mix(in srgb,var(--cf-slate-900) 12%,transparent);
+  --cf-shadow-lg:0 18px 45px color-mix(in srgb,var(--cf-slate-900) 16%,transparent);
+  --cf-shadow-xl:0 24px 70px color-mix(in srgb,var(--cf-slate-900) 26%,transparent);
+  --cf-shadow-drawer:-18px 0 45px color-mix(in srgb,var(--cf-slate-900) 17%,transparent);
+  --cf-focus-ring:0 0 0 3px color-mix(in srgb,var(--cf-indigo-500) 12%,transparent);
+
+  /* Aliases kept for older screen stylesheets (one token set; these only point at it) */
+  --m-bg:var(--cf-bg);--m-surface:var(--cf-surface);--m-surface-2:var(--cf-surface-2);--m-border:var(--cf-border);--m-border-2:var(--cf-border-strong);
+  --m-text:var(--cf-text);--m-muted:var(--cf-muted);--m-soft:var(--cf-soft);--m-nav:var(--cf-nav);--m-nav-2:var(--cf-nav-2);--m-brand:var(--cf-brand);
+  --m-indigo:var(--cf-indigo-550);--m-blue:var(--cf-blue-600);--m-cyan:var(--cf-cyan-600);--m-teal:var(--cf-teal-700);--m-violet:var(--cf-violet-600);--m-pink:var(--cf-fuchsia-600);
+  --m-green:var(--cf-green-700);--m-amber:var(--cf-amber-700);--m-red:var(--cf-red-750);--m-shadow:var(--cf-shadow-card);
+  --dq-ink:var(--cf-slate-900);--dq-muted:var(--cf-muted);--dq-line:var(--cf-border);--dq-bg:var(--cf-surface-2);--dq-panel:var(--cf-surface);
+  --dq-brand:var(--cf-indigo-700);--dq-shadow:0 12px 30px color-mix(in srgb,var(--cf-slate-900) 8%,transparent);
+  --ops-bg:var(--cf-bg);--ops-panel:var(--cf-surface);--ops-text:var(--cf-text);--ops-muted:var(--cf-muted);--ops-line:var(--cf-border);
+  --ops-primary:var(--cf-blue-600);--ops-primary-soft:var(--cf-indigo-50);--ops-danger:var(--cf-danger);--ops-danger-soft:var(--cf-danger-soft);
+  --ops-warn:var(--cf-warning);--ops-warn-soft:var(--cf-orange-50);--ops-green:var(--cf-green-750);--ops-green-soft:var(--cf-success-soft);
+  --ops-violet:var(--cf-violet-700);--ops-violet-soft:var(--cf-violet-50);
+  --cf-insight-ink:var(--cf-text);--cf-insight-navy:var(--cf-slate-750);--cf-insight-accent:var(--cf-brand);--cf-insight-accent-soft:var(--cf-brand-soft);
+  --cf-insight-border:var(--cf-slate-225);--cf-insight-surface:var(--cf-surface-2);
+}

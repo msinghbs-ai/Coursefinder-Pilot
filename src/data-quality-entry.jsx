@@ -5,6 +5,7 @@ import{
   ExternalLink,FileSearch,Filter,GraduationCap,Layers3,MapPin,RefreshCw,Search,
   ShieldCheck,Sparkles,UsersRound,X
 }from'lucide-react'
+import{fmtNumber,fmtDate,fmtPercent}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
 import'./data-quality.css'
 import{CoverageView}from'./course-coverage'
@@ -156,7 +157,7 @@ function DomainCard({group,onState}){return <section className="dq-domain-card">
     const Icon=ENTITY_ICON[metric.entity_type]||Database
     return <div className="dq-domain-row" key={`${metric.domain}-${metric.entity_type}`}>
       <div className="dq-entity"><span><Icon size={15}/></span><div><strong>{ENTITY_LABEL[metric.entity_type]||metric.entity_type}</strong><small>{fmt(metric.scope_count)} scoped · {fmt(metric.applicable_count)} applicable</small></div></div>
-      <div className="dq-rate"><strong>{metric.readiness_pct==null?'N/A':`${Number(metric.readiness_pct).toFixed(metric.readiness_pct%1?2:0)}%`}</strong><small>domain readiness</small></div>
+      <div className="dq-rate"><strong>{metric.readiness_pct==null?'N/A':fmtPercent(metric.readiness_pct)}</strong><small>domain readiness</small></div>
       <div className="dq-state-grid">{STATE_ORDER.map(state=>{const count=Number(metric.states?.[state]||0);return <button key={state} disabled={!count} className={`dq-state-cell s-${state} ${count?'has-count':''}`} title={`${STATE_LABEL[state]}: ${fmt(count)}`} onClick={()=>onState(metric,state,count)}><span>{STATE_LABEL[state]}</span><strong>{fmt(count)}</strong></button>})}</div>
     </div>})}</div>
   </section>}
@@ -183,6 +184,6 @@ function ExceptionsView({selected,data,busy,offset,query,setQuery,submitQuery,se
 
 function ReadinessSkeleton(){return <div className="dq-domain-grid">{Array.from({length:6}).map((_,i)=><div className="dq-skeleton domain" key={i}/>)}</div>}
 function ExceptionSkeleton(){return <div className="dq-skeleton-list">{Array.from({length:7}).map((_,i)=><div className="dq-skeleton row" key={i}/>)}</div>}
-function fmt(v){const n=Number(v);return Number.isFinite(n)?n.toLocaleString():String(v??'—')}
+function fmt(v){const n=Number(v);return Number.isFinite(n)?fmtNumber(n):String(v??'—')}
 function humanise(v){return String(v??'').replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}
-function dateOnly(v){if(!v)return'';const d=new Date(v);return Number.isNaN(d.getTime())?'':d.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'})}
+function dateOnly(v){if(!v)return'';const d=new Date(v);return Number.isNaN(d.getTime())?'':fmtDate(d)}

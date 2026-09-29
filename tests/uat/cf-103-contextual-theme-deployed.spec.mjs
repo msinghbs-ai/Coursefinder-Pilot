@@ -8,8 +8,11 @@ test.describe('CF-103 contextual insights theme alignment @targeted',()=>{
  test('source uses shared CourseFinder contextual theme tokens',async()=>{
   const css=fs.readFileSync('src/contextual-theme.css','utf8'),logo=fs.readFileSync('src/ProviderLogo.jsx','utf8')
   expect(logo).toContain("import'./contextual-theme.css'")
-  expect(css).toContain('--cf-insight-navy:#25324a')
-  expect(css).toContain('--cf-insight-accent:#5b5ce2')
+  // B2 (v2.15.106): the contextual theme tokens are aliases in the one token set (tokens.css).
+  const tokens=fs.readFileSync('src/tokens.css','utf8')
+  expect(tokens).toContain('--cf-insight-navy:var(--cf-slate-750)')
+  expect(tokens).toContain('--cf-insight-accent:var(--cf-brand)')
+  expect(css).toContain('var(--cf-insight-navy)')
   expect(css).toContain('.ci-outcome-value')
   expect(css).toContain('.cf-compare-value>strong')
   expect(css).toContain('.cf-flow-compare')

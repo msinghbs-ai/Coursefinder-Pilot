@@ -1,10 +1,11 @@
 import React,{useEffect,useState}from'react'
 import{supabase}from'./lib/supabase'
 import ManualPimCandidateWorkspace from'./ManualPimCandidateWorkspace'
+import{fmtDateTime}from'./lib/format.js'
 
 const fmt=v=>{if(v==null)return'—';if(typeof v==='string')return v;try{return JSON.stringify(v)}catch{return String(v)}}
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
-const when=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(+d)?String(v):d.toLocaleString()}
+const when=v=>{if(!v)return'—';const d=new Date(v);return Number.isNaN(+d)?String(v):fmtDateTime(d)}
 
 export default function Layer4Intervention({type,data,publicationEnabled=true}){
  const[layer4,setLayer4]=useState(data?.layer4||{fields:[]})
@@ -81,18 +82,18 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
  return <section className="m-detail-section cf-layer4-override">
   <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start'}}>
    <div><h3>Layer 4 governed intervention</h3><p className="m-help">Effective-value overlay only. Underlying source and canonical history remain preserved.</p></div>
-   <span className="m-role-pill">{Number(layer4?.active_override_count||0)} active L4</span>
+   <span className="m-role-pill">{Number(layer4?.active_override_count||0)} active Layer 4</span>
   </div>
   <div className="m-record-list">
-   {fields.map(f=><div className="m-record" key={f.field_code} style={f.effective_source==='L4'?{borderColor:'#c4b5fd'}:{}}>
+   {fields.map(f=><div className="m-record" key={f.field_code} style={f.effective_source==='L4'?{borderColor:'var(--cf-indigo-300)'}:{}}>
     <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
      <strong>{f.display_label}</strong>
-     {f.effective_source==='L4'&&<span className="m-role-pill">L4 effective</span>}
+     {f.effective_source==='L4'&&<span className="m-role-pill">Layer 4 effective</span>}
      {f.editability_class==='immutable'&&<small>Immutable source/history</small>}
     </div>
     <span>Underlying: {fmt(f.underlying_value)}</span>
     <span>Effective: {fmt(f.effective_value)}</span>
-    {f.upstream_changed&&<small style={{color:'#b45309',fontWeight:800}}>Underlying source changed after this override — review required.</small>}
+    {f.upstream_changed&&<small style={{color:'var(--cf-amber-700)',fontWeight:800}}>Underlying source changed after this override — review required.</small>}
     {f.effective_source==='L4'&&<small>Edited by {f.actor_email||f.actor_id||'authorised user'} · {when(f.edited_at)} · {human(f.reason_code||'human decision')}{f.comment?' · '+f.comment:''}</small>}
     <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
      {f.can_edit&&<button className="m-secondary compact" disabled={busy===f.field_code} onClick={()=>edit(f)}>Edit effective value</button>}

@@ -1,0 +1,85 @@
+/* CourseFinder shared component kit (B2 UI uniformity). One look for chips, badges, buttons,
+   metrics, empty states, filter chips, loading rows, section titles and tables, built only
+   from tokens.css. Screens use these through src/ui-kit.jsx. */
+
+/* Status chip: one tone per meaning (success, danger, warning, info, violet, neutral). */
+.cf-chip,.m-status{display:inline-flex;align-items:center;gap:4px;max-width:100%;border-radius:var(--cf-radius-pill);padding:3px 7px;font-size:var(--cf-fs-2xs);line-height:1.2;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--cf-neutral-soft);color:var(--cf-neutral-ink);vertical-align:middle}
+.cf-chip.tone-success,.m-status.status-success{background:var(--cf-success-soft);color:var(--cf-success-ink)}
+.cf-chip.tone-danger,.m-status.status-danger{background:var(--cf-danger-soft);color:var(--cf-danger-ink)}
+.cf-chip.tone-warning,.m-status.status-warning{background:var(--cf-warning-soft);color:var(--cf-warning-ink)}
+.cf-chip.tone-info,.m-status.status-info{background:var(--cf-info-soft);color:var(--cf-info-ink)}
+.cf-chip.tone-violet{background:var(--cf-violet-soft);color:var(--cf-violet-700)}
+.cf-chip.tone-neutral,.m-status.status-neutral{background:var(--cf-neutral-soft);color:var(--cf-neutral-ink)}
+
+/* Badge: a quiet outlined label (Layer badges, tags, types). */
+.cf-badge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-sm);padding:2px 6px;background:var(--cf-surface);color:var(--cf-text-2);font-size:var(--cf-fs-2xs);line-height:1.25;font-weight:750;white-space:nowrap;vertical-align:middle}
+.cf-badge.cf-badge-struck{text-decoration:line-through;opacity:.58}
+.cf-badge.tone-brand{border-color:var(--cf-indigo-200);background:var(--cf-brand-soft);color:var(--cf-brand-ink)}
+.cf-badge.tone-success{border-color:var(--cf-green-200);background:var(--cf-success-soft);color:var(--cf-success-ink)}
+.cf-badge.tone-warning{border-color:var(--cf-amber-200);background:var(--cf-warning-soft);color:var(--cf-warning-ink)}
+.cf-badge.tone-danger{border-color:var(--cf-red-200);background:var(--cf-danger-soft);color:var(--cf-danger-ink)}
+
+/* Buttons */
+.cf-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:30px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);padding:6px 11px;background:var(--cf-surface);color:var(--cf-text-2);font:inherit;font-size:var(--cf-fs-sm);font-weight:750;line-height:1.2;cursor:pointer;white-space:nowrap}
+.cf-btn:hover:not(:disabled){background:var(--cf-surface-2);border-color:var(--cf-border-strong)}
+.cf-btn:focus-visible{outline:none;box-shadow:var(--cf-focus-ring);border-color:var(--cf-indigo-400)}
+.cf-btn:disabled{opacity:.5;cursor:not-allowed}
+.cf-btn.primary{border-color:transparent;background:linear-gradient(135deg,var(--cf-indigo-550),var(--cf-indigo-600));color:var(--cf-white)}
+.cf-btn.primary:hover:not(:disabled){background:var(--cf-indigo-600)}
+.cf-btn.danger{border-color:var(--cf-red-200);background:var(--cf-danger-soft);color:var(--cf-danger)}
+.cf-btn.compact{min-height:26px;padding:4px 8px;font-size:var(--cf-fs-xs)}
+
+/* Metric tile */
+.cf-metric{display:flex;align-items:center;gap:10px;min-width:0;border:1px solid var(--cf-border);border-radius:var(--cf-radius-lg);padding:10px 12px;background:var(--cf-surface)}
+.cf-metric>.cf-metric-icon{flex:0 0 auto;width:30px;height:30px;border-radius:var(--cf-radius-md);display:grid;place-items:center;background:var(--cf-surface-3);color:var(--cf-muted)}
+.cf-metric>div{min-width:0}
+.cf-metric small,.cf-metric strong,.cf-metric .cf-metric-detail{display:block}
+.cf-metric small{font-size:var(--cf-fs-2xs);font-weight:700;color:var(--cf-muted);text-transform:none;letter-spacing:0}
+.cf-metric strong{margin-top:2px;font-size:var(--cf-fs-xl);line-height:1.2;color:var(--cf-text);overflow-wrap:anywhere}
+.cf-metric .cf-metric-detail{margin-top:2px;font-size:var(--cf-fs-2xs);color:var(--cf-muted);line-height:1.35}
+.cf-metric.tone-success>.cf-metric-icon{background:var(--cf-success-soft);color:var(--cf-success)}
+.cf-metric.tone-danger>.cf-metric-icon{background:var(--cf-danger-soft);color:var(--cf-danger)}
+.cf-metric.tone-warning>.cf-metric-icon{background:var(--cf-warning-soft);color:var(--cf-warning)}
+.cf-metric.tone-info>.cf-metric-icon{background:var(--cf-info-soft);color:var(--cf-info)}
+.cf-metric.tone-violet>.cf-metric-icon{background:var(--cf-violet-soft);color:var(--cf-violet)}
+.cf-metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--cf-space-2)}
+
+/* Empty states */
+.cf-empty{display:flex;align-items:center;justify-content:center;gap:8px;padding:18px;border:1px dashed var(--cf-border-input);border-radius:var(--cf-radius-lg);background:var(--cf-surface);color:var(--cf-muted);font-size:var(--cf-fs-xs);text-align:center;line-height:1.5}
+.cf-empty svg{flex:0 0 auto;color:var(--cf-soft)}
+td.cf-empty-cell{padding:22px;text-align:center;color:var(--cf-muted);font-size:var(--cf-fs-xs)}
+
+/* Filter chip (applied filter with remove button) */
+.cf-filter-chip,.m-filter-chip{display:inline-flex;align-items:center;gap:6px;border-radius:var(--cf-radius-pill);background:var(--cf-brand-soft);color:var(--cf-brand-ink);padding:4px 8px;font-size:var(--cf-fs-2xs);font-weight:700}
+.cf-filter-chip button,.m-filter-chip button{border:0;background:transparent;color:inherit;padding:0;display:grid;place-items:center;cursor:pointer}
+
+/* Loading */
+.cf-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:22px;color:var(--cf-muted);font-size:var(--cf-fs-xs)}
+.cf-loading.compact{padding:8px}
+.cf-loading svg{animation:cf-spin 1s linear infinite}
+.cf-skeleton-line{display:block;height:10px;border-radius:var(--cf-radius-xs);background:linear-gradient(90deg,var(--cf-slate-100),var(--cf-slate-200),var(--cf-slate-100));background-size:200% 100%;animation:cf-shimmer 1.2s ease-in-out infinite}
+@keyframes cf-spin{to{transform:rotate(360deg)}}
+@keyframes cf-shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+/* Section title (icon, heading, subtitle, optional action) */
+.cf-section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:12px}
+.cf-section-title .cf-section-heading{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.cf-section-title .cf-section-icon{flex:0 0 auto;width:30px;height:30px;border-radius:var(--cf-radius-md);background:var(--cf-brand-soft);color:var(--cf-brand-strong);display:grid;place-items:center}
+.cf-section-title h2,.cf-section-title h3{margin:1px 0 3px;font-size:var(--cf-fs-lg);letter-spacing:-.015em;color:var(--cf-text)}
+.cf-section-title p{margin:0;font-size:var(--cf-fs-sm);line-height:1.45;color:var(--cf-muted)}
+
+/* Card and data table */
+.cf-card{background:var(--cf-surface);border:1px solid var(--cf-border);border-radius:var(--cf-radius-xl);padding:var(--cf-space-4);box-shadow:var(--cf-shadow-card);min-width:0}
+.cf-table-wrap{overflow:auto;max-width:100%;scrollbar-width:thin}
+.cf-table{width:100%;border-collapse:separate;border-spacing:0}
+.cf-table th,.cf-table td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--cf-slate-150);vertical-align:middle;background:var(--cf-surface)}
+.cf-table th{position:sticky;top:0;z-index:2;background:var(--cf-surface-2);color:var(--cf-slate-450);font-size:var(--cf-fs-2xs);font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.cf-table td{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
+.cf-table td.num,.cf-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+.cf-table tbody tr:hover td{background:var(--cf-slate-25)}
+
+/* Filter bar (label + segmented options) */
+.cf-filterbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cf-filterbar>span{margin-right:4px;color:var(--cf-muted);font-size:var(--cf-fs-2xs);font-weight:750;text-transform:uppercase;letter-spacing:.08em}
+.cf-filterbar>button:not(.cf-icon-btn){border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-pill);padding:5px 11px;background:var(--cf-surface);color:var(--cf-slate-700);font-size:var(--cf-fs-xs);font-weight:700;cursor:pointer}
+.cf-filterbar>button.active{border-color:var(--cf-seq-1);background:var(--cf-seq-1);color:var(--cf-white)}

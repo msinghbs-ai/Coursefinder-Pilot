@@ -3,9 +3,10 @@ import{AlertTriangle,CheckCircle2,Database,KeyRound,RefreshCw,ServerCog,ShieldCh
 import{adminRead,supabase}from'./lib/supabase'
 import'./environment-migration.css'
 import PlatformResourcesPanel from'./PlatformResourcesPanel'
+import{fmtNumber}from'./lib/format.js'
 
 const human=v=>String(v||'').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())
-const fmt=v=>Number(v||0).toLocaleString()
+const fmt=v=>fmtNumber(v||0)
 
 export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
  const[data,setData]=useState(null),[busy,setBusy]=useState(true),[msg,setMsg]=useState('')

@@ -3,10 +3,11 @@ import{createRoot}from'react-dom/client'
 import{AlertTriangle,CheckCircle2,RefreshCw,Repeat2,ShieldCheck}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import'./layer4-mass-operations.css'
+import{fmtNumber,fmtDateTime}from'./lib/format.js'
 
 const rpc=async(name,args={})=>{const{data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
-const count=v=>Number(v||0).toLocaleString()
-const when=v=>v?new Date(v).toLocaleString():'Never'
+const count=v=>fmtNumber(v||0)
+const when=v=>v?fmtDateTime(v):'Never'
 
 function ScopeRules(){
  const[groups,setGroups]=useState([]),[rules,setRules]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[selected,setSelected]=useState(''),[decision,setDecision]=useState(''),[reason,setReason]=useState(''),[confirmation,setConfirmation]=useState('')

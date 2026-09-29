@@ -1,9 +1,11 @@
 import React,{useEffect,useMemo,useState}from'react'
+import{Metric as KitMetric}from'./ui-kit'
 import{createRoot}from'react-dom/client'
 import{AlertTriangle,ArrowLeft,Check,Clock3,KeyRound,LockKeyhole,Plus,RefreshCw,Search,ShieldCheck,UserCog,UserPlus,UsersRound,X}from'lucide-react'
 import{supabase,api}from'./lib/supabase'
 import{accessApi}from'./access-roles-api'
 import'./access-roles.css'
+import{fmtNumber,fmtDate,fmtDateTime}from'./lib/format.js'
 
 const ROUTE='#users-roles'
 const NAV_CLASS='access-admin-nav'
@@ -75,7 +77,7 @@ function AccessWorkspace({actorId,embedded=false}){
 
 export function AccessRolesEmbedded({actorId}){return <AccessWorkspace actorId={actorId} embedded/>}
 
-function Metric({label,value}){return <div className="ar-metric"><small>{label}</small><strong>{Number(value||0).toLocaleString()}</strong></div>}
+function Metric({label,value}){return <KitMetric label={label} value={fmtNumber(value||0)}/>}
 function Status({user}){if(user.disabled)return <div className="ar-status disabled"><span/>Disabled<small>{user.banned_until?`Until ${formatDate(user.banned_until)}`:''}</small></div>;if(!user.email_confirmed_at)return <div className="ar-status invited"><span/>Invited<small>Confirmation pending</small></div>;return <div className="ar-status enabled"><span/>Enabled<small>Confirmed</small></div>}
 function RoleChips({assignments=[]}){if(!assignments.length)return <span className="ar-muted">No CourseFinder role</span>;return <div className="ar-role-chips">{assignments.map(a=><span key={a.role_code} className={!a.active?'expired':''} title={a.expires_at?`Expires ${formatDate(a.expires_at)}`:'No expiry'}>{a.role_name||humanise(a.role_code)}{!a.active?' · expired':''}</span>)}</div>}
 
@@ -102,8 +104,8 @@ function commonExpiry(assignments){const values=[...new Set(assignments.map(a=>a
 function UserSkeleton(){return <div className="ar-skeleton-list">{Array.from({length:6}).map((_,i)=><div className="ar-skeleton" key={i}/>)}</div>}
 function shortId(value){const v=String(value||'');return v?`${v.slice(0,8)}…${v.slice(-4)}`:'—'}
 function humanise(value){return String(value||'').replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}
-function formatDate(value){if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';return d.toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'})}
-function formatDateTime(value){if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';return d.toLocaleString('en-AU',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function formatDate(value){if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';return fmtDate(d)}
+function formatDateTime(value){if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';return fmtDateTime(d)}
 function prettyError(value){return String(value||'Unexpected error').replace(/^Error:\s*/,'').replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}
 
 if(root)root.render(<AccessBootstrap/>)

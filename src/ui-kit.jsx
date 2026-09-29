@@ -1,10 +1,48 @@
-// CourseFinder shared UI kit (UI-2).
-// One home for building blocks used across screens. Components keep their existing
-// markup and CSS classes, so moving a screen onto the kit does not change how it looks.
+// CourseFinder shared UI kit (UI-2, B2 UI uniformity).
+// One home for building blocks used across screens: status chips, badges, buttons, metrics,
+// empty states, filter chips, loading rows, section titles and the pager. Look and feel come
+// from ui-kit.css and tokens.css; numbers and dates from lib/format.js.
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ChevronRight, Database } from 'lucide-react'
+import { ArrowLeft, ChevronRight, Database, RefreshCw, X } from 'lucide-react'
+import { fmtNumber } from './lib/format.js'
 
-export function fmtNumber(v){const n=Number(v);return Number.isFinite(n)?n.toLocaleString():'—'}
+export { fmtNumber, fmtDate, fmtDateTime, fmtDayMonth, fmtTime, fmtMoney, fmtPercent, fmtShare, fmtRelative, fmtBytes } from './lib/format.js'
+
+// "layer2_run" -> "Layer2 run"; keeps the words, drops underscores.
+export function humanLabel(v){const s=String(v??'').replaceAll('_',' ').replaceAll('-',' ').trim();return s?s.charAt(0).toUpperCase()+s.slice(1):''}
+
+// One mapping from a record status to a colour tone, used by every status chip.
+const TONES={
+  success:['completed','complete','succeeded','success','published','active','resolved','captured','current','admitted','approved','enabled','healthy','passed','pass','qualified','applied','validated','accepted','verified','ok','ready','live','extracted'],
+  danger:['failed','failure','error','rejected','blocked','conflict','stuck','unhealthy','critical','disabled','deleted','cancelled','canceled','revoked'],
+  warning:['open','draft','review','warning','stale','expired','source_null','needs_review','partial','superseded','held','paused','degraded','attention','overdue','missing'],
+  info:['regulatory','running','processing','queued','pending','in_review','in_progress','scheduled','reserved','retry','retrying','candidate','awaiting_l3','missing_extraction','uploaded','parsed'],
+  violet:['ai','layer3','model','statistics'],
+}
+export function statusTone(value){const s=String(value??'').toLowerCase().trim().replaceAll(' ','_');for(const[t,list]of Object.entries(TONES))if(list.includes(s))return t;return'neutral'}
+
+/** Status chip. tone overrides the automatic tone; label overrides the shown text. */
+export function StatusChip({value,tone,label,title,className=''}){const t=tone||statusTone(value);return <span className={`cf-chip tone-${t}${className?' '+className:''}`} title={title} data-state={String(value??'').toLowerCase()||undefined}>{label??humanLabel(value||'unknown')}</span>}
+/** Quiet outlined badge (tags, types, Layer badges). */
+export function Badge({children,tone,title,className=''}){return <span className={`cf-badge${tone?' tone-'+tone:''}${className?' '+className:''}`} title={title}>{children}</span>}
+/** "Layer 2" badge, the one way a Layer is labelled. */
+export function LayerBadge({layer,title}){const n=String(layer??'').replace(/\D/g,'');return n?<Badge className="cf-layer-badge" title={title||`Layer ${n}`}>Layer {n}</Badge>:null}
+/** Button. variant: 'primary' | 'danger' | undefined (secondary). */
+export function Button({children,variant,compact=false,className='',type='button',...rest}){return <button type={type} className={`cf-btn${variant?' '+variant:''}${compact?' compact':''}${className?' '+className:''}`} {...rest}>{children}</button>}
+/** Metric tile: label, value, optional detail and icon. Numbers are formatted en-AU. */
+export function Metric({label,value,detail,icon:Icon,tone='neutral',className=''}){const shown=typeof value==='number'?fmtNumber(value):(value??'—');return <div className={`cf-metric tone-${tone}${className?' '+className:''}`}>{Icon&&<span className="cf-metric-icon"><Icon size={16}/></span>}<div><small>{label}</small><strong>{shown}</strong>{detail&&<span className="cf-metric-detail">{detail}</span>}</div></div>}
+/** Small empty message (inside panels and lists). */
+export function Empty({children,text,icon:Icon}){return <div className="cf-empty">{Icon&&<Icon size={17}/>}<span>{children??text}</span></div>}
+/** Empty table row. */
+export function EmptyRow({colSpan,children,text}){return <tr><td colSpan={colSpan} className="cf-empty-cell">{children??text}</td></tr>}
+/** Applied-filter chip with a remove button. */
+export function FilterChip({label,onRemove}){return <span className="cf-filter-chip">{label}<button type="button" aria-label={`Remove ${typeof label==='string'?label:'filter'}`} onClick={onRemove}><X size={12}/></button></span>}
+/** Loading line. */
+export function Loading({label='Loading…',compact=false}){return <div className={`cf-loading${compact?' compact':''}`}><RefreshCw size={16}/><span>{label}</span></div>}
+/** Placeholder table rows while a page loads. */
+export function SkeletonRows({cols,rows=7}){return Array.from({length:rows}).map((_,i)=><tr key={i}>{Array.from({length:cols}).map((_,j)=><td key={j}><span className="cf-skeleton-line"/></td>)}</tr>)}
+/** Section title: icon, heading, optional subtitle and action. */
+export function SectionTitle({icon:Icon,title,subtitle,action,level=3}){const H=level===2?'h2':'h3';return <div className="cf-section-title"><div className="cf-section-heading">{Icon&&<span className="cf-section-icon"><Icon size={16}/></span>}<div><H>{title}</H>{subtitle&&<p>{subtitle}</p>}</div></div>{action}</div>}
 
 export function PanelTitle({icon:Icon,title,subtitle,action}){return <div className="m-panel-title"><div className="m-panel-heading">{Icon&&<span className="m-panel-icon"><Icon size={16}/></span>}<div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div></div>{action}</div>}
 export function Pulse({label,value,tone,icon:Icon}){return <div className={`m-pulse tone-${tone}`}><span><Icon size={15}/></span><div><small>{label}</small><strong>{fmtNumber(value)}</strong></div></div>}

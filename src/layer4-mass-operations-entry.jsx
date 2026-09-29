@@ -3,11 +3,12 @@ import{createRoot}from'react-dom/client'
 import{AlertTriangle,CheckCircle2,ClipboardCheck,RefreshCw,Search,ShieldCheck,Wrench}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import'./layer4-mass-operations.css'
+import{fmtNumber,fmtDateTime}from'./lib/format.js'
 
 const rpc=async(name,args={})=>{const{data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
 const human=v=>String(v??'').replaceAll('_',' ').replace(/\b\w/g,m=>m.toUpperCase())
-const when=v=>v?new Date(v).toLocaleString():'—'
-const count=v=>Number(v||0).toLocaleString()
+const when=v=>v?fmtDateTime(v):'—'
+const count=v=>fmtNumber(v||0)
 
 // v2.15.85: plain wording for cohort reason codes.
 const REASON_TEXT={
