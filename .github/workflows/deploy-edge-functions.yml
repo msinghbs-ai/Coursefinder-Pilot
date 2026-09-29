@@ -67,6 +67,7 @@ jobs:
             [fee-schedule-etl]=false
             [coverage-sweep]=false
             [layer3-intake-benchmark]=false
+            [layer3-model-routing]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
