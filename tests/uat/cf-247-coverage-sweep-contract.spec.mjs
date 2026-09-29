@@ -55,6 +55,7 @@ test('map filter keeps same-site course pages and drops the rest', async () => {
   expect(keepUrl({ url: 'https://www.example.edu.au/news/bachelor-of-science-launch' }, 'www.example.edu.au')).toBe(false)
   expect(keepUrl({ url: 'https://www.other.com.au/courses/bachelor' }, 'www.example.edu.au')).toBe(false)
   expect(keepUrl({ url: 'https://www.example.edu.au/files/diploma.pdf' }, 'www.example.edu.au')).toBe(false)
+  expect(keepUrl({ url: 'https://www.rmit.edu.au/study-with-us/applying-to-rmit/local-student-applications/entry-requirements/inherent-requirements/bachelor-of-photography' }, 'www.rmit.edu.au')).toBe(false)
 })
 
 test('robots.txt is respected', async () => {
@@ -69,7 +70,7 @@ test('robots.txt is respected', async () => {
 
 test('worker and database contract: nothing written to the catalogue, budget guard counts sweep usage', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.1";')
+  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.2";')
   expect(w).toContain('identity(html, text, it.title, it.code, it.status === "ambiguous")')
   expect(w).not.toContain('svc_coursefacts_apply_record')
   expect(w).toContain('robotsAllows(')

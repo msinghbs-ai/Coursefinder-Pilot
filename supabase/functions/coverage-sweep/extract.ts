@@ -97,7 +97,7 @@ export function english(text: string) {
 
 // Map filter: pages that can be course pages (by address or title); obvious non-course pages dropped.
 const KEEP = /(course|program|degree|bachelor|master|diploma|certificate|graduate|doctor|associate|qualification|undergraduate|postgraduate|elicos|english|foundation|cricos|\bcert-?i|\bmba\b|\bvet\b)/i
-const DROP = /(\/news\/|\/blog|\/events?\/|\/staff|\/people\/|\/profile|\/research\/|wp-content|\/tag\/|\/category\/|\/media\/|login|\/feed|\.(pdf|jpe?g|png|gif|docx?|xlsx?|zip|mp4)(\?|$))/i
+const DROP = /(\/news\/|\/blog|\/events?\/|\/staff|\/people\/|\/profile|\/research\/|wp-content|\/tag\/|\/category\/|\/media\/|login|\/feed|\/(inherent|entry|admission|english)-requirements\/|\/scholarships?\/|\/how-to-apply|\/applying|\.(pdf|jpe?g|png|gif|docx?|xlsx?|zip|mp4)(\?|$))/i
 export function keepUrl(u: { url: string; title?: string }, host: string) {
   try {
     const x = new URL(u.url)
