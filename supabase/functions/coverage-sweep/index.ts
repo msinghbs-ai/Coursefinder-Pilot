@@ -8,7 +8,10 @@ import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllow
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.1.0";
+const VERSION = "coverage-sweep-v0.2.0";
+// v0.2.0: discovery reads the site's own XML site maps first (free), from the final address after redirects; Firecrawl
+// map runs when the site maps give fewer course pages than 60% of the provider's courses, and a second map focused on
+// "course" only when still short (at most 2 credits per provider). Binding runs separately (cron coverage-bind).
 const UA = "Mozilla/5.0 (compatible; CourseFinder-Pilot/coverage-0.1; +https://coursefinder-pilot.techm.workers.dev)";
 const BUDGET_MS = 110_000;
 const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
@@ -16,6 +19,33 @@ const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, 
 async function sha256(b: Uint8Array) { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("") }
 async function gzip(s: string) { const cs = new CompressionStream("gzip"); const w = cs.writable.getWriter(); w.write(new TextEncoder().encode(s)); w.close(); return new Uint8Array(await new Response(cs.readable).arrayBuffer()) }
 async function pool<T>(items: T[], n: number, f: (x: T) => Promise<void>) { let i = 0; await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) await f(items[i++]) })) }
+
+
+async function fetchText(url: string, ms = 15000) {
+  const r = await fetch(url, { headers: { "user-agent": UA, accept: "application/xml,text/xml,text/plain,*/*" }, redirect: "follow", signal: AbortSignal.timeout(ms) });
+  if (!r.ok) return "";
+  if (/\.gz($|\?)/i.test(url) || /gzip/i.test(r.headers.get("content-type") || "")) {
+    try { return await new Response(r.body!.pipeThrough(new DecompressionStream("gzip"))).text() } catch { return "" }
+  }
+  return await r.text();
+}
+async function siteMapUrls(origin: string, deadline: number) {
+  const robots = await fetchText(origin + "/robots.txt", 8000).catch(() => "");
+  const queue = [...robots.matchAll(/^\s*sitemap:\s*(\S+)/gim)].map((m) => m[1]);
+  if (!queue.length) queue.push(origin + "/sitemap.xml", origin + "/sitemap_index.xml");
+  const seen = new Set<string>(), urls = new Set<string>();
+  let files = 0;
+  while (queue.length && files < 60 && urls.size < 60000 && Date.now() < deadline) {
+    const sm = queue.shift()!; if (seen.has(sm)) continue; seen.add(sm); files++;
+    const xml = await fetchText(sm).catch(() => "");
+    const locs = [...xml.matchAll(/<loc>\s*(?:<!\[CDATA\[)?\s*([^<\]\s]+)/gi)].map((m) => m[1].replace(/&amp;/g, "&"));
+    if (/<sitemapindex/i.test(xml)) {
+      const pri = (u: string) => /course|program|study|handbook|degree|qualification/i.test(u) ? 0 : /page|post/i.test(u) ? 1 : 2;
+      queue.push(...locs.sort((a, b) => pri(a) - pri(b)));
+    } else for (const l of locs) urls.add(l);
+  }
+  return { urls: [...urls], files };
+}
 
 Deno.serve(async (req) => {
   const t0 = Date.now();
@@ -38,24 +68,38 @@ Deno.serve(async (req) => {
 
     if (mode === "discover") {
       const want = Math.min(Number(body.limit || 4), 8);
-      if (fcRemaining < want) return j({ ok: true, mode, providers: [], note: "Firecrawl budget reserve reached; discovery waits for the next budget period", firecrawlRemainingAboveReserve: fcRemaining, workerVersion: VERSION });
       const providers: { provider_id: string; website: string }[] = await rpc("svc_coverage_discovery_next", { p_limit: want });
       const out: unknown[] = [];
-      await pool(providers, 4, async (p) => {
+      await pool(providers as any[], 4, async (p: { provider_id: string; website: string; courses: number }) => {
         let site: URL;
         try { site = new URL(/^https?:/i.test(p.website) ? p.website : "https://" + p.website) } catch { await rpc("svc_coverage_discovery_record", { p_provider_id: p.provider_id, p_status: "failed", p_method: "map", p_url_count: 0, p_urls: [], p_error: "invalid website" }); return }
-        if (!(await useFc("map", p.provider_id, site.toString()))) { await rpc("svc_coverage_discovery_record", { p_provider_id: p.provider_id, p_status: "pending", p_method: "map", p_url_count: 0, p_urls: [], p_error: "Firecrawl budget reserve reached" }); out.push({ provider_id: p.provider_id, status: "budget" }); return }
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: 30000, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
-          const d = await r.json().catch(() => ({}));
-          if (!r.ok || d?.success === false) throw Error(`map HTTP ${r.status} ${String(d?.error || "").slice(0, 150)}`);
-          const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
-          const kept = links.filter((u: any) => keepUrl(u, site.hostname)).slice(0, 8000);
-          const rec = await rpc("svc_coverage_discovery_record", { p_provider_id: p.provider_id, p_status: "mapped", p_method: "firecrawl_map", p_url_count: links.length, p_urls: kept, p_error: null });
-          out.push({ provider_id: p.provider_id, status: "mapped", links: links.length, kept: rec?.kept });
+          // final address after redirects (monash.edu.au -> monash.edu)
+          try { const r = await fetch(site, { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) }); if (r.url) site = new URL(r.url); await r.body?.cancel() } catch { /* keep the recorded address */ }
+          const found = new Map<string, { url: string; title?: string }>();
+          const methods: string[] = [];
+          const sm = await siteMapUrls(site.origin, Date.now() + 40000).catch(() => ({ urls: [] as string[], files: 0 }));
+          if (sm.urls.length) methods.push(`sitemap(${sm.files})`);
+          let total = sm.urls.length;
+          for (const u of sm.urls) if (keepUrl({ url: u }, site.hostname)) found.set(u, { url: u });
+          const target = Math.max(5, Math.ceil(Number(p.courses || 0) * 0.6));
+          for (const search of [null, "course"]) {
+            if (found.size >= target) break;
+            if (!(await useFc("map", p.provider_id, site.origin))) { methods.push("map:budget"); break }
+            const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: 30000, sitemap: "include", includeSubdomains: true, ...(search ? { search } : {}) }), signal: AbortSignal.timeout(60000) });
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok || d?.success === false) { methods.push(`map:${r.status}`); break }
+            const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
+            methods.push(search ? `map_search(${links.length})` : `map(${links.length})`); total += links.length;
+            for (const u of links) if (u.url && keepUrl(u, site.hostname) && (!found.has(u.url) || u.title)) found.set(u.url, u);
+          }
+          const kept = [...found.values()].slice(0, 12000);
+          const status = kept.length ? "mapped" : "failed";
+          const rec = await rpc("svc_coverage_discovery_record", { p_provider_id: p.provider_id, p_status: status, p_method: methods.join("+") || "none", p_url_count: total, p_urls: kept, p_error: kept.length ? null : "no course-like pages found" });
+          out.push({ provider_id: p.provider_id, status, methods, total, kept: rec?.kept });
         } catch (e) {
-          await rpc("svc_coverage_discovery_record", { p_provider_id: p.provider_id, p_status: "failed", p_method: "firecrawl_map", p_url_count: 0, p_urls: [], p_error: e instanceof Error ? e.message : String(e) });
-          out.push({ provider_id: p.provider_id, status: "failed" });
+          await rpc("svc_coverage_discovery_record", { p_provider_id: p.provider_id, p_status: "failed", p_method: "discover", p_url_count: 0, p_urls: [], p_error: e instanceof Error ? e.message : String(e) });
+          out.push({ provider_id: p.provider_id, status: "failed", error: e instanceof Error ? e.message : String(e) });
         }
       });
       return j({ ok: true, mode, providers: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });

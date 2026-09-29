@@ -54,7 +54,7 @@ test('robots.txt is respected', async () => {
 
 test('worker and database contract: nothing written to the catalogue, budget guard counts sweep usage', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const VERSION = "coverage-sweep-v0.1.0";')
+  expect(w).toContain('const VERSION = "coverage-sweep-v0.2.0";')
   expect(w).not.toContain('svc_coursefacts_apply_record')
   expect(w).toContain('robotsAllows(')
   const m = fs.readFileSync('supabase/migrations/20260929120000_cf247_coverage_sweep.sql', 'utf8')
