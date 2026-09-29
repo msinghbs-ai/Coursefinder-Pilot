@@ -1,0 +1,281 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { htmlToText } from "../coverage-sweep/extract.ts";
+import { intakeSafetyBlockers, quoteInText } from "../_shared/cf247-intake-validation.ts";
+import { CF247_TUITION_BINDING_SOURCE_MANIFEST } from "../_shared/cf247-tuition-binding-source-manifest.ts";
+import { tuitionBenchmarkRuntimeBindingHash } from "../_shared/cf247-tuition-benchmark-binding.ts";
+import {
+  checkEnglish, checkIntake, checkTuition, contractComponents, contractVersion, englishRequestBody, factBindingDescriptor, intakeRequestBody,
+  isPinnedModel, parseModelJson, ROUTING_VERSION, scoreEnglish, scoreIntake, scoreTuition, TaskKey, TASKS, tuitionEvidenceText, tuitionMaxChars,
+  tuitionRequestBody,
+} from "../_shared/cf247-model-routing.ts";
+
+// CF-CHG-20260915-247 Layer 3 model routing (Platform Admin direction 29 Sep 2026 18:30 IST). Nonce-only.
+//   catalogue  OpenRouter /models (candidate ids only) and /credits; recorded as observations. No model call.
+//   freeze     fingerprints of each task class's frozen prompt, schema and validators (recorded before gold reading).
+//   excerpts   windows of stored page text for reading gold answers by hand (no model call).
+//   qualify    one candidate profile on one FROZEN holdout set; hard US$8 cap across all qualification runs.
+//   finalise   records a qualification run (scores recomputed in SQL from the stored rows).
+//   work       live route for intake and English: claim (gated on a qualified, enabled profile with a matching binding
+//              hash, the daily spend guard and the credit floor), call the pinned model, validate, record. Admission
+//              is a separate governed SQL step (security.layer3_fact_admit_v1).
+//   guard      OpenRouter credit floor: below US$5 remaining, the Layer 3 route crons are switched off.
+const FN = "layer3-model-routing", V = ROUTING_VERSION;
+const QUALIFICATION_CAP_USD = 8.0, RESERVE_USD = 0.03;
+const CREDIT_FLOOR_USD = 5.0;
+const OPENROUTER = "https://openrouter.ai/api/v1";
+const CREDIT_PROFILE_CODE = "openrouter-provider-tuition-validation-mistral-small-3-2-v1";
+const j = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+async function sha256(s: string) { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((x) => x.toString(16).padStart(2, "0")).join("") }
+async function pool<T>(items: T[], n: number, f: (x: T) => Promise<void>) { let i = 0; await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) await f(items[i++]) })) }
+// Postgres jsonb cannot hold \u0000; a model answer that contains one is recorded without it (never rejected silently).
+const pgSafe = (v: unknown): any => typeof v === "string" ? v.replace(/\u0000/g, "") : Array.isArray(v) ? v.map(pgSafe) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, pgSafe(x)])) : v;
+const taskOf = (s: unknown): TaskKey => { const t = String(s || ""); if (t === "intake" || t === "english" || t === "tuition") return t; throw new Error("task must be intake, english or tuition") };
+
+function windows(text: string, re: RegExp, radius = 200, cap = 6000) {
+  const spans: [number, number][] = [];
+  for (const m of text.matchAll(re)) { const at = m.index || 0; spans.push([Math.max(0, at - radius), Math.min(text.length, at + m[0].length + radius)]) }
+  spans.sort((a, b) => a[0] - b[0]);
+  const merged: [number, number][] = [];
+  for (const s of spans) { const l = merged[merged.length - 1]; if (l && s[0] <= l[1]) l[1] = Math.max(l[1], s[1]); else merged.push([s[0], s[1]]) }
+  let out = ""; for (const [a, b] of merged) { if (out.length > cap) { out += " [...more cut]"; break } out += (out ? " || " : "") + text.slice(a, b) }
+  return { windows: out, hits: spans.length };
+}
+const WINDOW_RE: Record<TaskKey, RegExp> = {
+  intake: /(\b(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\b|intakes?|commenc\w*|start dates?|when (?:can|do) (?:i|you) start)/gi,
+  english: /(IELTS|PTE|Pearson|TOEFL|English language|English requirement|language requirement|English proficiency)/gi,
+  tuition: /(\$\s?\d|AUD|tuition|per year|annual|per annum|total)/gi,
+};
+
+Deno.serve(async (req: Request) => {
+  const t0 = Date.now();
+  if (req.method !== "POST") return j(405, { ok: false, error: "POST required", worker_version: V });
+  const svc = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const rpc = async (n: string, a: Record<string, unknown> = {}) => { const { data, error } = await svc.rpc(n, a); if (error) throw new Error(`${n}: ${error.message}`); return data };
+  const download = async (path: string) => {
+    const { data, error } = await svc.storage.from("evidence").download(path);
+    if (error || !data) throw new Error("evidence download failed: " + (error?.message || path));
+    return data;
+  };
+  const pageText = async (path: string) => {
+    const data = await download(path);
+    const html = /\.gz$/i.test(path) ? await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() : await data.text();
+    return htmlToText(html);
+  };
+  const tuitionText = async (path: string, mime: string | null, profile: any) => tuitionEvidenceText(new Uint8Array(await (await download(path)).arrayBuffer()), mime, tuitionMaxChars(profile));
+  // the account key: the Edge secret when set, otherwise the governed OpenRouter aggregator credential (vault)
+  const orKey = async () => {
+    const env = Deno.env.get("OPENROUTER_API_KEY"); if (env) return env;
+    const p = await rpc("layer3_routing_profile_service", { p_code: CREDIT_PROFILE_CODE });
+    const { data } = await svc.rpc("layer3_provider_credential_resolve_service", { p_profile_id: p?.id });
+    if (typeof data === "string" && data) return data;
+    throw new Error("OpenRouter credential unavailable");
+  };
+  const credits = async () => {
+    const r = await fetch(`${OPENROUTER}/credits`, { headers: { Authorization: "Bearer " + await orKey() }, signal: AbortSignal.timeout(15000) });
+    const p = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(`credits ${r.status}`);
+    const total = Number(p?.data?.total_credits), used = Number(p?.data?.total_usage);
+    const remaining = Math.round((total - used) * 1e6) / 1e6;
+    await rpc("layer3_openrouter_observation_record_service", { p_kind: "credits", p_payload: p?.data ?? {}, p_remaining: remaining });
+    return { total, used, remaining };
+  };
+  // one model call; returns parsed answer (or null), usage and the returned model id
+  const callModel = async (profile: any, body: unknown) => {
+    const st = performance.now();
+    let key = Deno.env.get(String(profile.secret_env_key || "")) || "";
+    if (!key) { const { data } = await svc.rpc("layer3_provider_credential_resolve_service", { p_profile_id: profile.id }); key = typeof data === "string" ? data : "" }
+    if (!key) throw new Error("server-side OpenRouter credential unavailable");
+    const res = await fetch(String(profile.base_url).replace(/\/$/, "") + "/chat/completions", {
+      method: "POST", signal: AbortSignal.timeout(Number(profile.timeout_ms || 45000)),
+      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json", "HTTP-Referer": "https://coursefinder.app", "X-Title": "CourseFinder CF-247 Layer 3 model routing" },
+      body: JSON.stringify(body),
+    });
+    const p = await res.json().catch(() => ({}));
+    const out = {
+      ok: res.ok, status: res.status, returned: p?.model ? String(p.model) : null, cost: Number(p?.usage?.cost || 0),
+      input: Number(p?.usage?.prompt_tokens || 0), output: Number(p?.usage?.completion_tokens || 0), latency: Math.round(performance.now() - st),
+      error: res.ok ? null : `provider_${res.status}: ${JSON.stringify(p?.error ?? p).slice(0, 300)}`, answer: null as any,
+    };
+    if (res.ok) { try { out.answer = parseModelJson(p?.choices?.[0]?.message?.content) } catch (e) { out.error = "unparseable: " + String((e as Error).message).slice(0, 120) } }
+    return out;
+  };
+  const bindingHash = async (task: TaskKey, profile: any) => task === "tuition"
+    ? await tuitionBenchmarkRuntimeBindingHash(CF247_TUITION_BINDING_SOURCE_MANIFEST, profile)
+    : await sha256(factBindingDescriptor(task, profile));
+
+  try {
+    const nonce = (req.headers.get("x-cf-run-nonce") || "").trim();
+    if (!nonce || !(await rpc("svc_pilot_consume_nonce", { p_function: FN, p_nonce: nonce }))) return j(401, { ok: false, error: "valid one-time nonce required", worker_version: V });
+    const body = await req.json().catch(() => ({}));
+    const mode = String(body.mode || "");
+
+    if (mode === "catalogue") {
+      const ids: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
+      const r = await fetch(`${OPENROUTER}/models`, { signal: AbortSignal.timeout(20000) });
+      const p = await r.json();
+      const all: any[] = p?.data || [];
+      const pick = all.filter((m) => ids.length ? ids.includes(m.id) : false).map((m) => ({
+        id: m.id, context_length: m.context_length, prompt_usd_per_m: Number(m.pricing?.prompt) * 1e6, completion_usd_per_m: Number(m.pricing?.completion) * 1e6,
+        structured_outputs: (m.supported_parameters || []).includes("structured_outputs"), response_format: (m.supported_parameters || []).includes("response_format"),
+        seed: (m.supported_parameters || []).includes("seed"), reasoning: (m.supported_parameters || []).includes("reasoning"),
+        temperature: (m.supported_parameters || []).includes("temperature"),
+      }));
+      const prefix = String(body.prefix || "");
+      const matching = prefix ? all.filter((m) => String(m.id).startsWith(prefix)).map((m) => `${m.id} in=${(Number(m.pricing?.prompt) * 1e6).toFixed(3)} out=${(Number(m.pricing?.completion) * 1e6).toFixed(3)} so=${(m.supported_parameters || []).includes("structured_outputs")}`) : [];
+      await rpc("layer3_openrouter_observation_record_service", { p_kind: "models", p_payload: { requested: ids, found: pick, total_models: all.length }, p_remaining: null });
+      const c = await credits();
+      return j(200, { ok: true, mode, worker_version: V, models: pick, missing: ids.filter((i) => !pick.some((m) => m.id === i)), matching, credits: c, ms: Date.now() - t0 });
+    }
+
+    if (mode === "freeze") {
+      const out: unknown[] = [];
+      for (const task of ["intake", "english", "tuition"] as TaskKey[]) {
+        const comp = contractComponents(task);
+        const fp = await sha256(JSON.stringify(comp));
+        out.push(await rpc("layer3_contract_freeze_record_service", { p_task_class: TASKS[task], p_version: contractVersion(task), p_fingerprint: fp, p_components: { sha256_by_component: Object.fromEntries(await Promise.all(Object.entries(comp).map(async ([k, v]) => [k, await sha256(typeof v === "string" ? v : JSON.stringify(v))]))), routing: V } }));
+      }
+      return j(200, { ok: true, mode, worker_version: V, freezes: out });
+    }
+
+    if (mode === "excerpts") {
+      const task = taskOf(body.task);
+      const ids = (Array.isArray(body.course_ids) ? body.course_ids : []).slice(0, 40);
+      const pages: any[] = await rpc("layer3_routing_pages_service", { p_course_ids: ids });
+      const out: unknown[] = [];
+      await pool(pages, 6, async (p) => {
+        try {
+          let text: string;
+          if (task === "tuition") {
+            if (!p.text_storage_path) throw new Error("no hand-off text evidence");
+            text = await tuitionText(p.text_storage_path, p.text_mime, { max_input_tokens: 12000 });
+          } else text = await pageText(p.storage_path);
+          const w = windows(text, WINDOW_RE[task], Number(body.radius || 200), Number(body.cap || 6000));
+          out.push({ course_id: p.course_id, provider: String(p.provider).slice(0, 40), course: p.course, code: p.course_code, url: p.url, evidence_id: task === "tuition" ? p.text_evidence_id : p.evidence_id,
+            text_sha256: await sha256(text), text_len: text.length, l2: task === "english" ? p.candidates?.english : task === "intake" ? p.candidates?.intakes : undefined,
+            target: task === "tuition" ? p.work_candidate_context?.provider_current_tuition : undefined, work_status: task === "tuition" ? p.work_status : undefined,
+            safety: task === "intake" ? intakeSafetyBlockers(text).map((b) => b.code) : undefined, hits: w.hits, windows: w.windows });
+        } catch (e) { out.push({ course_id: p.course_id, error: String((e as Error)?.message || e) }) }
+      });
+      return j(200, { ok: true, mode, task, worker_version: V, pages: out, ms: Date.now() - t0 });
+    }
+
+    if (mode === "qualify" || mode === "finalise") {
+      const profile = await rpc("layer3_routing_profile_service", { p_code: String(body.profile_code || "") });
+      if (!profile?.id) throw new Error("profile not found");
+      if (profile.enabled && !profile.paused && mode === "qualify" && !body.allow_active) throw new Error("candidate profile must be paused during qualification");
+      const model = String(profile.model_identifier);
+      if (!isPinnedModel(model)) throw new Error("a pinned, individually named model is required");
+      const set = await rpc("layer3_holdout_cases_service", { p_gold_set: String(body.gold_set || "") });
+      if (!set?.frozen_digest || set.frozen_digest !== set.current_digest) throw new Error(`gold set ${body.gold_set} is not frozen or changed since it was frozen`);
+      const task = (Object.keys(TASKS) as TaskKey[]).find((k) => TASKS[k] === set.task_class)!;
+      if (!(profile.allowed_task_classes || []).includes(set.task_class)) throw new Error("profile is not for this task class");
+      const binding = await bindingHash(task, profile);
+      const runLabel = String(body.run_label || "").trim();
+      if (!/^q-[a-z0-9][a-z0-9._-]{2,60}$/i.test(runLabel)) throw new Error("run_label q-... required");
+      if (mode === "finalise") return j(200, { ok: true, mode, worker_version: V, recorded: await rpc("layer3_holdout_finalise_service", { p_run_label: runLabel, p_binding_hash: binding, p_summary: { worker_version: V, contract: contractVersion(task) } }) });
+
+      let spent = Number(profile.qualification_spent_usd || 0);
+      if (spent + RESERVE_USD >= QUALIFICATION_CAP_USD) throw new Error(`qualification cap US$${QUALIFICATION_CAP_USD} reached (spent ${spent})`);
+      const offset = Math.max(0, Number(body.offset || 0)), limit = Math.min(Math.max(1, Number(body.limit || 50)), 50);
+      const cases: any[] = (set.cases || []).slice(offset, offset + limit);
+      const rows: any[] = []; let stopped = false;
+      await pool(cases, Math.min(Math.max(1, Number(body.concurrency || 6)), 8), async (c) => {
+        let text: string;
+        if (task === "tuition") text = await tuitionText(c.storage_path, c.mime_type, profile);
+        else text = await pageText(c.storage_path);
+        const textSha = await sha256(text);
+        const excerptOk = !c.evidence_excerpt || String(c.evidence_excerpt).split(" | ").every((q: string) => quoteInText(q, text));
+        const blockers = task === "intake" ? intakeSafetyBlockers(text) : [];
+        let r: any = { ok: false, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null }, calls = 0;
+        if (task === "intake" && blockers.length) r = { ...r, ok: true, answer: { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" } };
+        else {
+          const reqBody = task === "intake" ? intakeRequestBody(model, text, Number(profile.max_output_tokens))
+            : task === "english" ? englishRequestBody(model, text, Number(profile.max_output_tokens))
+            : tuitionRequestBody(profile, c.source_url, c.candidate_context, text);
+          const attempts = Math.max(1, Math.min(Number(profile.retry_ceiling || 0) + 1, 2));
+          for (let i = 0; i < attempts; i++) {
+            if (spent + RESERVE_USD >= QUALIFICATION_CAP_USD) { stopped = true; r.error = "qualification_cap_reached"; break }
+            calls++;
+            try { const x = await callModel(profile, reqBody); spent += x.cost; r = { ...x, cost: r.cost + x.cost, input: r.input + x.input, output: r.output + x.output }; if (x.ok && x.answer) break }
+            catch (e) { r.error = String((e as Error)?.message || e).slice(0, 200) }
+          }
+        }
+        if (!calls && r.error === "qualification_cap_reached") return;
+        const modelOk = !calls || r.returned === model;
+        let chk = r.answer
+          ? task === "intake" ? checkIntake(r.answer, text, blockers) : task === "english" ? checkEnglish(r.answer, text) : checkTuition(r.answer, text, c.candidate_context, profile, r.cost)
+          : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+        if (!modelOk) chk = { valid: false, errors: [...chk.errors, `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
+        const sc: any = task === "intake" ? scoreIntake(c.gold, chk) : task === "english" ? scoreEnglish(c.gold, chk) : scoreTuition(c.gold, chk);
+        const row = { profile_id: profile.id, task_class: set.task_class, configured_model: model, returned_model: r.returned, outcome: sc.outcome, admitted: chk.admitted,
+          answer: r.answer, errors: [...chk.errors, ...(sc.wrong || []).map((w: unknown) => `wrong:${w}`)], text_matches_gold: textSha === c.text_sha256, excerpt_in_text: excerptOk,
+          cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output, latency_ms: r.latency, external_calls: calls };
+        await rpc("layer3_holdout_result_record_service", { p_run_label: runLabel, p_case_id: c.case_id, p_result: pgSafe(row) });
+        rows.push({ case_key: c.case_key, gold: c.gold, outcome: sc.outcome, admitted: chk.admitted, status: chk.status, errors: row.errors.slice(0, 4), returned: r.returned, cost: r.cost, text_ok: row.text_matches_gold });
+      });
+      const tally: Record<string, number> = {}; for (const x of rows) tally[x.outcome] = (tally[x.outcome] || 0) + 1;
+      return j(200, { ok: true, mode, worker_version: V, run_label: runLabel, model, binding_hash: binding, cases_run: rows.length, stopped_for_cap: stopped, qualification_spent_usd: spent, tally,
+        rows: rows.sort((a, b) => String(a.case_key).localeCompare(String(b.case_key))), ms: Date.now() - t0 });
+    }
+
+    if (mode === "guard") {
+      const c = await credits();
+      const res = c.remaining < CREDIT_FLOOR_USD ? await rpc("layer3_route_credit_floor_service", { p_remaining: c.remaining, p_floor: CREDIT_FLOOR_USD }) : null;
+      return j(200, { ok: true, mode, worker_version: V, credits: c, floor: CREDIT_FLOOR_USD, stopped: res });
+    }
+
+    if (mode === "work") {
+      const task = taskOf(body.task);
+      if (task === "tuition") throw new Error("tuition runs through layer3-work-dispatch / layer3-work-interpret");
+      const c = await credits();
+      if (c.remaining < CREDIT_FLOOR_USD) return j(200, { ok: true, mode, task, worker_version: V, stopped: await rpc("layer3_route_credit_floor_service", { p_remaining: c.remaining, p_floor: CREDIT_FLOOR_USD }) });
+      const worker = `layer3-model-routing:${task}:${crypto.randomUUID().slice(0, 8)}`;
+      // the claim resolves the routed profile; the binding hash sent must equal the one qualified
+      const probe = await rpc("layer3_fact_route_profile_service", { p_task_class: TASKS[task] });
+      if (!probe?.id) return j(200, { ok: true, mode, task, worker_version: V, claimed: 0, reason: probe?.reason || "no routed profile" });
+      const binding = await bindingHash(task, probe);
+      const claim = await rpc("layer3_fact_claim_service", { p_task_class: TASKS[task], p_limit: Math.min(Math.max(1, Number(body.limit || 10)), 40), p_worker: worker, p_binding_hash: binding });
+      const items: any[] = claim?.items || [];
+      if (!items.length) return j(200, { ok: true, mode, task, worker_version: V, claimed: 0, reason: claim?.reason || null, credits: c });
+      const profile = claim.profile;
+      const model = String(profile.model_identifier);
+      const tally: Record<string, number> = {}; let cost = 0;
+      await pool(items, Math.min(Math.max(1, Number(body.concurrency || 4)), 6), async (it) => {
+        let result: any;
+        try {
+          const text = await pageText(it.storage_path);
+          const blockers = task === "intake" ? intakeSafetyBlockers(text) : [];
+          let r: any = { ok: true, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null }, calls = 0;
+          if (task === "intake" && blockers.length) r.answer = { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" };
+          else {
+            const reqBody = task === "intake" ? intakeRequestBody(model, text, Number(profile.max_output_tokens)) : englishRequestBody(model, text, Number(profile.max_output_tokens));
+            const attempts = Math.max(1, Math.min(Number(profile.retry_ceiling || 0) + 1, 2));
+            for (let i = 0; i < attempts; i++) {
+              calls++;
+              try { const x = await callModel(profile, reqBody); r = { ...x, cost: r.cost + x.cost, input: r.input + x.input, output: r.output + x.output }; if (x.ok && x.answer) break }
+              catch (e) { r.error = String((e as Error)?.message || e).slice(0, 200); r.ok = false }
+            }
+          }
+          cost += r.cost;
+          const modelOk = !calls || r.returned === model;
+          let chk = r.answer ? (task === "intake" ? checkIntake(r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+          if (!modelOk) chk = { valid: false, errors: [...chk.errors, `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
+          result = { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, answer: r.answer, returned_model: r.returned, cost_usd: r.cost,
+            input_tokens: r.input, output_tokens: r.output, latency_ms: r.latency, external_calls: calls, safety_blockers: blockers.map((b) => b.code), text_sha256: await sha256(text), binding_hash: binding };
+        } catch (e) {
+          result = { valid: false, status: null, admitted: null, errors: ["worker_error: " + String((e as Error)?.message || e).slice(0, 200)], external_calls: 0, cost_usd: 0 };
+        }
+        // one failed completion never stops the others (the item is released as stale and handed off again)
+        let status = "complete_error";
+        try { const done = await rpc("layer3_fact_complete_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_result: pgSafe(result) }); status = done?.work_status || "?" }
+        catch (e) { console.error("complete failed", it.work_item_id, String((e as Error)?.message || e)) }
+        tally[status] = (tally[status] || 0) + 1;
+      });
+      return j(200, { ok: true, mode, task, worker_version: V, model, claimed: items.length, tally, cost_usd: cost, credits: c, ms: Date.now() - t0 });
+    }
+    return j(422, { ok: false, error: "supported modes: catalogue, freeze, excerpts, qualify, finalise, work, guard", worker_version: V });
+  } catch (e) {
+    return j(500, { ok: false, error: String((e as Error)?.message || e), worker_version: V });
+  }
+});
