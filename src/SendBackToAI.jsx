@@ -5,6 +5,8 @@
 // a person. Also shows what is waiting in Layer 3 and lets an admin retry Layer 3 work that failed.
 // Read: public.admin_requeue_read(); write: public.admin_requeue(action, args)
 // (migrations 20260930050000, 20260930051000 and 20260930052000, cf247_ui_control_sweep).
+// v2.15.111: choose the model per field: the cheap-model cascade (default) or one named model, including models whose
+// cascade step is switched off (migration 20260930061000_cf247_l3_pinned_model_from_layer4).
 import React,{useEffect,useState}from'react'
 import{RefreshCw,RotateCcw,Undo2}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -15,7 +17,7 @@ const TASK_OF={provider_intake_validation:'course_intake',provider_english_valid
 const reasonText=r=>String(r||'').replaceAll('[amount]','a fee').replaceAll('Layer [n]','Layer 2').replaceAll('[n]','a number')
 
 export default function SendBackToAI({onError}){
-  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(''),[done,setDone]=useState('')
+  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(''),[done,setDone]=useState(''),[pick,setPick]=useState({})
   const load=async()=>{setBusy(true);setFailed('');try{const{data:d,error}=await supabase.rpc('admin_requeue_read');if(error)throw error;setData(d||{})}catch(e){setFailed(e.message||String(e))}finally{setBusy(false)}}
   const act=async(action,args,confirmText,label)=>{if(!window.confirm(confirmText))return;setBusy(true);setDone('');try{const{data:d,error}=await supabase.rpc('admin_requeue',{p_action:action,p_args:args});if(error)throw error;setData(d||{});setDone(`${label}: ${fmtNumber(d?.moved||0)} item${Number(d?.moved)===1?'':'s'} moved.`)}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
   useEffect(()=>{load()},[])
@@ -30,15 +32,17 @@ export default function SendBackToAI({onError}){
       <Metric label="Waiting in Layer 3" value={fmtNumber(Object.values(waiting).reduce((n,v)=>n+Number(v),0))} detail={Object.entries(waiting).map(([k,v])=>`${FIELD_LABEL[TASK_OF[k]]||k} ${fmtNumber(v)}`).join(' · ')} icon={RotateCcw}/>
     </div>
     <section className="m-panel">
-      <SectionTitle icon={Undo2} title="Send back to AI" subtitle="Review items the Layer 3 AI could not settle, grouped by reason. Sending a group back closes those review items and puts the pages back in the Layer 3 queue, to go through the model cascade again." action={<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>}/>
+      <SectionTitle icon={Undo2} title="Send back to AI" subtitle="Review items the Layer 3 AI could not settle, grouped by reason. Send a group back through the cheap-model cascade, or to one model you choose (for example a stronger model that the cascade no longer uses). If the answer still cannot be settled, the item comes back here." action={<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>}/>
       {!data.can_control&&<p className="l3v-note">You can view this. Only a Platform Admin can send items back.</p>}
       {done&&<p className="sb-done" role="status">{done}</p>}
     </section>
-    {fields.map(f=>{const gs=groups.filter(g=>g.field===f),n=gs.reduce((s,g)=>s+Number(g.items||0),0);return <section key={f} className="m-panel sb-field" data-field={f}>
-      <SectionTitle title={FIELD_LABEL[f]||f} subtitle={`${fmtNumber(n)} item${n===1?'':'s'} in ${gs.length} group${gs.length===1?'':'s'}`} action={data.can_control&&<Button compact variant="primary" onClick={()=>act('send_back',{field:f},`Send all ${fmtNumber(n)} ${FIELD_LABEL[f]||f} items back to Layer 3?`,`${FIELD_LABEL[f]||f} sent back`)} disabled={!can}><Undo2 size={14}/>Send all {fmtNumber(n)} back</Button>}/>
+    {fields.map(f=>{const gs=groups.filter(g=>g.field===f),n=gs.reduce((s,g)=>s+Number(g.items||0),0),models=(data.models||{})[f]||[],prof=pick[f]||'',to=prof?(models.find(m=>m.profile===prof)?.model||prof):'the cheap-model cascade',args=x=>({field:f,...x,...(prof?{profile:prof}:{})});return <section key={f} className="m-panel sb-field" data-field={f}>
+      <SectionTitle title={FIELD_LABEL[f]||f} subtitle={`${fmtNumber(n)} item${n===1?'':'s'} in ${gs.length} group${gs.length===1?'':'s'}`} action={data.can_control&&<div className="l3c-actions">
+        <select className="fv-filter" value={prof} onChange={e=>setPick({...pick,[f]:e.target.value})} aria-label={`Model for ${FIELD_LABEL[f]||f}`}><option value="">Cheap-model cascade</option>{models.map(m=><option key={m.profile} value={m.profile}>{m.model}{m.in_cascade?'':' (only when sent from here)'}{m.cost_per_1000_usd!=null?` — US$${m.cost_per_1000_usd} per 1,000`:''}</option>)}</select>
+        <Button compact variant="primary" onClick={()=>act('send_back',args({}),`Send all ${fmtNumber(n)} ${FIELD_LABEL[f]||f} items back to Layer 3, to ${to}?`,`${FIELD_LABEL[f]||f} sent back`)} disabled={!can}><Undo2 size={14}/>Send all {fmtNumber(n)} back</Button></div>}/>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Reason</th><th className="num">Items</th><th>Oldest</th>{data.can_control&&<th>Action</th>}</tr></thead><tbody>
         {gs.map((g,i)=><tr key={i}><td>{reasonText(g.reason)}</td><td className="num">{fmtNumber(g.items)}</td><td>{fmtDateTime(g.oldest)}</td>
-          {data.can_control&&<td><Button compact onClick={()=>act('send_back',{field:f,reason:g.reason},`Send these ${fmtNumber(g.items)} items back to Layer 3?`,'Group sent back')} disabled={!can} aria-label={`Send ${g.items} back`}><Undo2 size={14}/>Send back</Button></td>}</tr>)}
+          {data.can_control&&<td><Button compact onClick={()=>act('send_back',args({reason:g.reason}),`Send these ${fmtNumber(g.items)} items back to Layer 3, to ${to}?`,'Group sent back')} disabled={!can} aria-label={`Send ${g.items} back`}><Undo2 size={14}/>Send back</Button></td>}</tr>)}
       </tbody></table></div>
     </section>})}
     {!fields.length&&<section className="m-panel"><Empty text="Nothing raised by the AI is waiting for a person."/></section>}

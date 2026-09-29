@@ -155,6 +155,15 @@ export const requeue = {
   stays_with_person: { official_course_url: 42, scope_resolution: 6, provider_current_tuition_validation: 5 },
   layer3_failed: { provider_current_tuition_validation: 4 },
   layer3_waiting: { provider_intake_validation: 219, provider_english_validation: 94, provider_current_tuition_validation: 566 },
+  models: {
+    course_intake: [
+      { profile: 'openrouter-intake-l3c-qwen3-30b-a3b-2507-v1', model: 'qwen/qwen3-30b-a3b-instruct-2507', in_cascade: true, cost_per_1000_usd: 0.19 },
+      { profile: 'openrouter-intake-l3r-claude-haiku-4-5-v1', model: 'anthropic/claude-haiku-4.5', in_cascade: true, cost_per_1000_usd: 3.69 },
+      { profile: 'openrouter-intake-l3r-claude-sonnet-4-6-v1', model: 'anthropic/claude-sonnet-4.6', in_cascade: false, cost_per_1000_usd: 10.94 },
+    ],
+    course_english: [],
+    provider_current_tuition_validation: [{ profile: 'openrouter-tuition-l3r-qwen3-235b-2507-v1', model: 'qwen/qwen3-235b-a22b-2507', in_cascade: true, cost_per_1000_usd: null }],
+  },
   events: [],
 }
 

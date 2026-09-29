@@ -276,8 +276,13 @@ Deno.serve(async (req: Request) => {
             } else {
               if (refused) { const r = await rpc("layer3_fact_release_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_reason: refused }); status = r?.work_status || "released"; tally[status] = (tally[status] || 0) + 1; return }
               const attempts: any[] = []; let final: any = null;
-              for (let i = 0; i < tiers.length; i++) {
-                const t = tiers[i], last = i === tiers.length - 1;
+              // v1.1.0: a page sent back from Layer 4 to one named model goes to that model only (its cascade step may be
+              // switched off, e.g. Claude Sonnet 4.6); no escalation and no spot check - an unsettled answer returns to Layer 4
+              const pin = it.pinned_profile_id ? (ladder.tiers || []).find((t: any) => t.profile?.id === it.pinned_profile_id && t.profile?.enabled && !t.profile?.paused && isPinnedModel(String(t.profile?.model_identifier))) : null;
+              const its: any[] = pin ? [pin] : tiers;
+              if (pin) tierTally["pinned"] = (tierTally["pinned"] || 0) + 1;
+              for (let i = 0; i < its.length; i++) {
+                const t = its[i], last = i === its.length - 1;
                 const x = await ask(t.profile); cost += x.cost;
                 if (/provider_(401|402|403|429)/.test(String(x.result.errors?.[0] || ""))) { refused = String(x.result.errors[0]).slice(0, 200); break }
                 const answered = task === "intake" ? x.chk.status === "months" : x.chk.status === "stated";

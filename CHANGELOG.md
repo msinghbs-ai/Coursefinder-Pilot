@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.38 — 30 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.111** (Layer 3 without Sonnet: model choice per field on Layer 4 Review › Send back to AI, including models whose cascade step is off).
+- Live changes: Claude Sonnet 4.6 switched off in the intake and English cascades (logged admin control); intake and English routes every minute, 40 pages, 8 in parallel.
+- Database (applied live): 20260930060000 (four cheaper intake candidates; none met the 80%-right, zero-wrong bar on the frozen holdout), 20260930061000 (pinned model from Layer 4: handoff column, claim and completion edited in place behind checksums, send_back model choice).
+- Edge function layer3-model-routing: cascade v1.1.0 (a pinned page goes to its named model only).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.37 — 30 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.110** (UI control sweep: Scheduled jobs > Automations for all 58 scheduled jobs with pause or resume per job or area, run now, frequency and batch size; Layer 4 Review > Send back to AI and a Send back to AI button on each Layer 3 task; Scholarships > Publishing with publish batch, hold and release).
