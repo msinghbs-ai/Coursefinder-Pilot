@@ -43,7 +43,8 @@ test.describe('CF-080 Provider Contacts managed Catalogue @deployed',()=>{
       fs.readFile('src/lib/supabase.js','utf8'),
       fs.readFile('src/m2-3-intelligence-entry.jsx','utf8'),
     ])
-    expect(shell).toContain("item('Provider Contacts',UsersRound,1)")
+    // v2.15.107: the menu comes from src/nav-map.js (Administration > Provider contacts, role rank 1).
+    expect(await fs.readFile('src/nav-map.js','utf8')).toContain("contacts: { label: 'Provider contacts', slug: 'provider-contacts', icon: 'users', min: 1")
     expect(shell).toContain("navigate?.('Provider Contacts',{provider_id:data.id})")
     expect(workspace).toContain('uploadProviderContactFile')
     expect(workspace).toContain('PIM Operator or Platform Admin')

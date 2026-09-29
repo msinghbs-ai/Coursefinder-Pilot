@@ -27,3 +27,12 @@
 .cc-tip{position:fixed;z-index:30000;display:grid;gap:2px;pointer-events:none;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-sm);padding:7px 9px;background:var(--cf-white);box-shadow:var(--cf-shadow-md);font-size:var(--cf-fs-2xs);color:var(--cf-slate-700)}.cc-tip strong{font-size:var(--cf-fs-xs);color:var(--dq-ink)}.cc-tip b{color:var(--dq-ink)}
 .cc-table td small{display:block;color:var(--dq-muted);font-size:var(--cf-fs-3xs)}.cc-count{border:0;padding:2px 4px;border-radius:var(--cf-radius-xs);background:transparent;color:var(--cf-seq-2);font-weight:800;font-size:var(--cf-fs-xs);cursor:pointer;text-decoration:underline;text-underline-offset:2px}.cc-count:hover,.cc-count.active{background:var(--cf-blue-50)}.cc-zero{color:var(--cf-slate-300)}
 @media (max-width:760px){.cc-wrap{padding:12px 16px 24px}.cc-bar-row{grid-template-columns:1fr 44px}.cc-bar-label{grid-column:1/-1}}
+
+/* v2.15.107: Readiness by area inside the standard shell (no own rail or top bar). */
+.dq-embedded{display:grid;gap:10px;min-width:0;color:var(--dq-ink)}
+.dq-embedded .dq-policy,.dq-embedded .dq-legend,.dq-embedded .dq-alert{margin-left:0;margin-right:0}
+.dq-embedded .dq-policy{margin-top:0}
+.dq-embedded .dq-domain-grid,.dq-embedded .dq-exceptions{padding-left:0;padding-right:0}
+.dq-embedded .dq-exceptions{padding-top:0}
+.dq-embedded-intro{margin:0;color:var(--cf-muted);font-size:var(--cf-fs-sm)}
+.cf-page .cc-wrap{padding:0}

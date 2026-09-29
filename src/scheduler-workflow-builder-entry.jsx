@@ -57,8 +57,10 @@ function Builder(){
 
 let root=null,mount=null
 function reconcile(){
- if(!location.hash.startsWith('#scheduled-tasks')){if(root){root.unmount();root=null}mount?.remove();mount=null;return}
- const workspace=document.querySelector('.cf-scheduler-v2-native');if(!workspace||document.querySelector('[data-cf-workflow-builder-host]'))return
+ // v2.15.107: mount wherever the Schedules workspace is on screen (Scheduled jobs > Schedules), not by address.
+ const workspace=document.querySelector('.cf-scheduler-v2-native')
+ if(!workspace){if(root){root.unmount();root=null}mount?.remove();mount=null;return}
+ if(document.querySelector('[data-cf-workflow-builder-host]'))return
  mount=document.createElement('div');mount.dataset.cfWorkflowBuilderHost='true';const panels=workspace.querySelectorAll(':scope > section');if(panels.length>1)workspace.insertBefore(mount,panels[1]);else workspace.appendChild(mount);root=createRoot(mount);root.render(<Builder/>)
 }
 let pending=false

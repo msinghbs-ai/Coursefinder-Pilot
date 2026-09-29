@@ -135,10 +135,17 @@ async function inViewport(locator,page){
   return !!box&&!!vp&&box.x>=0&&box.y>=0&&box.x+box.width<=vp.width&&box.y+box.height<=vp.height
 }
 
-// Package 2 (P4): Jobs and Scheduled Tasks live under one menu item with tabs.
-const TABBED_NAV={'Jobs':'Jobs & Schedules','Scheduled Tasks':'Jobs & Schedules'}
+// v2.15.107: old menu labels used by the deployed suites → new menu item and page tab (src/nav-map.js).
+const TABBED_NAV={
+  'Jobs':['Scheduled jobs','Jobs'],'Scheduled Tasks':['Scheduled jobs','Schedules'],'Jobs & Schedules':['Scheduled jobs',''],
+  'Layer 1 — Operations':['Layer 1 Register','Runs'],'Layer 2 — Enrichment':['Layer 2 Discovery & reading','Runs'],
+  'Layer 3 — AI Interpretation':['Layer 3 AI validation',''],'Layer 4 — Human Resolution':['Layer 4 Review',''],
+  'Completeness':['Coverage & completeness',''],'Statistics & Rankings':['Rankings & statistics',''],'Compare':['Rankings & statistics','Compare'],
+  'Campuses':['Providers','Campuses'],'Provider Contacts':['Provider contacts',''],'Important Dates':['Layer 1 Register','Key dates'],
+  'Important Links':['Layer 1 Register','Key links'],'Administration':['Scrapers & fetchers',''],
+}
 export async function clickPrimaryNav(page,label){
-  if(TABBED_NAV[label]){await clickPrimaryNav(page,TABBED_NAV[label]);await page.locator('button.m-subtab').filter({hasText:label}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT});return}
+  if(TABBED_NAV[label]){const[menu,tab]=TABBED_NAV[label];await clickPrimaryNav(page,menu);if(tab)await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT});return}
   const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
   await expect(item,`Missing accepted primary navigation item: ${label}`).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   if(!(await inViewport(item,page))){

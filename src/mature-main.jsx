@@ -4,7 +4,7 @@ import{
   Activity,AlertTriangle,ArrowDown,ArrowUp,ArrowLeftRight,BarChart3,BookOpen,Building2,CheckCircle2,ChevronDown,
   CircleGauge,ClipboardCheck,Database,FileCheck2,Filter,GraduationCap,History,LayoutDashboard,
   ListChecks,LogOut,Menu,RefreshCw,Search,SearchCheck,Settings2,SlidersHorizontal,Sparkles,
-  ShieldCheck,Tags,UsersRound,Workflow,X,Zap,MapPin,Layers3,Clock3,PanelLeftClose,PanelLeftOpen,ExternalLink
+  ShieldCheck,Tags,UsersRound,Workflow,X,Zap,MapPin,Layers3,Clock3,PanelLeftClose,PanelLeftOpen,ExternalLink,HeartPulse,Plug,BrainCircuit
 }from'lucide-react'
 import{fmtDate,fmtDateTime,fmtMoney,fmtPercent,fmtShare}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
@@ -15,7 +15,13 @@ import ContextualInsights from'./ContextualInsights'
 import ComparisonWorkspace from'./ComparisonWorkspace'
 import ProviderContactsWorkspace from'./ProviderContactsWorkspace'
 import ProviderLogo,{ProviderBrand}from'./ProviderLogo'
-import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip}from'./ui-kit'
+import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot}from'./ui-kit'
+import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
+import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
+import Layer3Operations from'./Layer3Operations'
+import SourceComparison from'./SourceComparison'
+import{DomainReadiness}from'./data-quality-entry'
+import{CoverageView}from'./course-coverage'
 import Layer4Intervention from'./Layer4Intervention'
 import{Layer1Operations,Layer1SourceSettings}from'./layer1-operations-entry'
 import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
@@ -29,6 +35,7 @@ import{AccessRolesEmbedded}from'./access-roles-entry'
 import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
+import'./admin-pages.css'
 
 const UI_VERSION='2.15.78'
 const UI_FIXES=[
@@ -46,99 +53,34 @@ const rankingParsebotRef=system=>system==='arwu'?'/scrapers/0f6d2cb9-c7eb-4f31-9
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
 
-const NAV=[
-  ['Overview',[
-    item('Dashboard',LayoutDashboard,1),
-  ]],
-  ['Catalogue',[
-    item('Providers',Building2,1),item('Courses',GraduationCap,1),item('Campuses',MapPin,1),item('Scholarships',Sparkles,1),item('Provider Contacts',UsersRound,1),
-  ]],
-  ['Data Operations',[
-    item('Layer 1 — Operations',Database,4),item('Layer 2 — Enrichment',Activity,4),item('Layer 3 — AI Interpretation',Sparkles,3),item('Layer 4 — Human Resolution',ListChecks,3),item('Jobs & Schedules',Workflow,4),item('Evidence',BookOpen,3),
-  ]],
-  ['Quality & Insights',[
-    item('Completeness',CheckCircle2,1),item('Statistics & Rankings',BarChart3,1),item('Compare',ArrowLeftRight,1),
-  ]],
-  ['Administration',[
-    item('Administration',Settings2,4),
-  ]],
-]
+// v2.15.107: the menu, page titles, tabs, role gates and old-address redirects all come from nav-map.js.
+const ICONS={dashboard:LayoutDashboard,course:GraduationCap,provider:Building2,scholarship:Sparkles,chart:BarChart3,check:CheckCircle2,database:Database,activity:Activity,ai:BrainCircuit,review:ListChecks,health:HeartPulse,workflow:Workflow,book:BookOpen,plug:Plug,sliders:SlidersHorizontal,shield:ShieldCheck,tags:Tags,users:UsersRound}
 
-const PAGE_META={
-  Dashboard:['Operational overview','Catalogue health, pipeline attention and recent activity.'],
-  Providers:['Providers','Governed provider catalogue with geographic and lifecycle filters.'],
-  Courses:['Courses','Decision-grade course catalogue with authoritative identity and enrichment signals.'],
-  Campuses:['Campuses','Campus geography and Provider relationships without synthetic identity.'],
-  Scholarships:['Scholarships','Relational scholarship catalogue and publication state.'],
-  'Provider Contacts':['Provider Contacts','Managed international recruitment contacts linked to canonical Providers with Evidence, version history and reversible PIM actions.'],
-  'Statistics & Rankings':['Statistics & Rankings','Coverage, years, observations and provenance for QILT, PRISMS, QS and THE.'],
-  'Outcomes (QILT)':['Outcomes (QILT)','Structured provider outcomes enrichment.'],
-  'Student Flow (PRISMS)':['Student Flow (PRISMS)','Time-scoped international student-flow observations.'],
-  Compare:['Compare providers & courses','Choose entities, datasets and aligned periods for a governed comparison.'],
-  Completeness:['Completeness & readiness','Operational presence signals; not truth, approval or Search admission.'],
-  'Jobs & Schedules':['Jobs & Schedules','Pipeline job history and the governed schedules that run it, in one place.'],
-  'Scheduled Tasks':['Scheduled Tasks','Governed Layer 1–3 schedules, on-demand due-work control, queues and run follow-through.'],
-  Evidence:['Evidence & provenance','Source snapshots, evidence artifacts and canonical consequences.'],
-  'Review Queue':['Review Queue','Human-resolution workload and exception state.'],
-  'Layer 1 — Operations':['Layer 1 — Operations','Country-first regulatory, statistical and ranking ingestion operations with source health, governed runs, Evidence and reconciliation.'],
-  'Layer 2 — Enrichment':['Layer 2 — Enrichment','Scoped enrichment waves, governed acquisition routes, Evidence and deterministic fall-out.'],
-  'Layer 3 — AI Interpretation':['Layer 3 — AI Interpretation','Evidence-bound AI interpretation, qualified route health, usage and recent outcomes.'],
-  'Layer 4 — Human Resolution':['Layer 4 — Human Resolution','Human resolution queue, effective-value decisions, audit and reversibility.'],
-  'Important Links':['Important Links','Governed operational and authority link registry.'],
-  'Important Dates':['Important Dates','Sourced regulatory and operational dates.'],
-  Administration:['Administration','Central PIM, source, acquisition and platform configuration.'],
-  Onboarding:['Onboarding','Governed source/country onboarding lifecycle.'],
-  Jobs:['Jobs','Pipeline execution history and operational status.'],
-  Sources:['Sources','Governed regulatory and enrichment source inventory.'],
-  Attributes:['PIM Configuration','Attribute families, groups, options and completeness profiles.'],
-  Settings:['Platform Settings','Privileged ingestion and Pilot operational controls.'],
+function routeFromHash(){
+  const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?')
+  const r=resolveTarget(route||'dashboard',new URLSearchParams(query))
+  // Old addresses keep working: show the new page and quietly replace the address with the new one.
+  const canonical=hrefFor(r.page,r.tab,Object.fromEntries(r.params))
+  if(raw&&`#${raw}`!==canonical)history.replaceState(null,'',canonical)
+  return r
 }
 
-function item(label,Icon,min){return{label,Icon,min,slug:slug(label)}}
-function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
-const ADMIN_SECTIONS=[
- {key:'overview',label:'Overview',Icon:Settings2,min:4,group:'Overview',description:'Administration landing page and governed configuration map.'},
- {key:'sources-imports',label:'Sources & Imports',Icon:Database,min:4,group:'Data setup',description:'Register governed publisher files and inspect import history.'},
- {key:'layer1-sources',label:'Layer 1 sources',Icon:Database,min:6,group:'Data setup',description:'Authoritative source configuration and Layer 1 guardrails.'},
- {key:'layer2-providers',label:'Scraper Config',Icon:SlidersHorizontal,min:4,group:'Acquisition',description:'Acquisition providers, credentials, quotas and profile routing.'},
- {key:'provider-assets',label:'Provider Assets',Icon:Building2,min:4,group:'Acquisition',description:'Provider logo coverage, Evidence, approval state and first-party source completeness.'},
- {key:'layer2-sources',label:'Extraction Profiles',Icon:Database,min:4,group:'Advanced',description:'Versioned non-secret extraction rules and source-specific qualification state.'},
- {key:'onboarding',label:'Onboarding',Icon:Workflow,min:4,group:'Operations',description:'Governed country and source onboarding lifecycle.'},
- {key:'pim',label:'PIM configuration',Icon:Tags,min:5,group:'PIM',description:'Attributes, families, groups, options and completeness profiles.'},
- {key:'users-roles',label:'Users & Roles',Icon:UsersRound,min:6,group:'Security',description:'Auth identities, role assignment and access audit.'},
- {key:'environment-migration',label:'Environment & Migration',Icon:ShieldCheck,min:6,group:'Platform',description:'Environment bindings, write-only credentials and Production migration inventory.'},
- {key:'platform',label:'Platform',Icon:Settings2,min:6,group:'Platform',description:'Readiness, capacity, retention and governed platform controls.'},
-]
-const ADMIN_SECTION_LABELS=Object.fromEntries(ADMIN_SECTIONS.map(x=>[x.key,x.label]))
-const LEGACY_ADMIN_ROUTES={'users-roles':'users-roles','attributes':'pim','settings':'platform'}
-const HIDDEN_ROUTES=[item('Outcomes (QILT)',Activity,1),item('Student Flow (PRISMS)',CircleGauge,1),item('Sources',Database,4),item('Attributes',Tags,5),item('Settings',Settings2,6),item('Onboarding',Workflow,3),item('Jobs',Workflow,4),item('Scheduled Tasks',Clock3,4)]
-function routeFromHash(){const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?');const aliases={'review-queue':'Layer 4 — Human Resolution','refresh-scheduling':'Scheduled Tasks','layer-1-regulatory':'Layer 1 — Operations','layer-1-authority':'Layer 1 — Operations','layer-1-operations':'Layer 1 — Operations','layer-2-operations':'Layer 2 — Enrichment','layer-3-ai':'Layer 3 — AI Interpretation','layer-4-review':'Layer 4 — Human Resolution'};if(LEGACY_ADMIN_ROUTES[route]){const params=new URLSearchParams(query);params.set('section',LEGACY_ADMIN_ROUTES[route]);return{page:'Administration',params}}if(aliases[route])return{page:aliases[route],params:new URLSearchParams(query)};for(const[,items]of NAV)for(const i of items)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};for(const i of HIDDEN_ROUTES)if(i.slug===route)return{page:i.label,params:new URLSearchParams(query)};return{page:'Dashboard',params:new URLSearchParams()}}
-
-function pageBreadcrumbs(page,routeParams){
- const crumbs=[{label:'Home',page:'Dashboard'}]
- if(page==='Dashboard')return[]
- if(page==='Administration'){
-  crumbs.push({label:'Administration',page:'Administration'})
-  const section=routeParams?.get?.('section')||'overview'
-  if(section!=='overview')crumbs.push({label:ADMIN_SECTION_LABELS[section]||section})
-  return crumbs
- }
- if(page==='Outcomes (QILT)')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'QILT'}]
- if(page==='Student Flow (PRISMS)')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'PRISMS'}]
- if(page==='Compare')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Compare'}]
- if(page==='Statistics & Rankings'){
+function pageBreadcrumbs(pageKey,tab,routeParams){
+  if(pageKey==='dashboard')return[]
+  const page=PAGES[pageKey],crumbs=[{label:'Home',page:'dashboard'}],section=SECTION_OF[pageKey]
+  if(section)crumbs.push({label:section})
+  crumbs.push({label:page.label,page:pageKey})
+  const t=page.tabs?.find(x=>x.key===tab)
+  if(t&&page.tabs[0].key!==t.key)crumbs.push({label:t.label})
   const dataset=routeParams?.get?.('dataset')||''
-  if(dataset==='qs_wur')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'QS'}]
-  if(dataset==='the_wur')return[...crumbs,{label:'Statistics & Rankings',page:'Statistics & Rankings'},{label:'Dataset'},{label:'THE'}]
- }
- crumbs.push({label:page})
- return crumbs
+  if(pageKey==='rankings'&&(dataset==='qs_wur'||dataset==='the_wur'))crumbs.push({label:dataset==='qs_wur'?'QS':'THE'})
+  return crumbs
 }
 
-function AppBreadcrumbs({page,routeParams,navigate}){
- const crumbs=pageBreadcrumbs(page,routeParams)
+function AppBreadcrumbs({pageKey,tab,routeParams,navigate}){
+ const crumbs=pageBreadcrumbs(pageKey,tab,routeParams)
  if(!crumbs.length)return null
- return <nav className="m-breadcrumbs" aria-label="Breadcrumb">{crumbs.map((x,i)=><React.Fragment key={x.label}><button disabled={!x.page||i===crumbs.length-1} onClick={()=>x.page&&navigate(x.page)}>{x.label}</button>{i<crumbs.length-1&&<span>/</span>}</React.Fragment>)}</nav>
+ return <nav className="m-breadcrumbs" aria-label="Breadcrumb">{crumbs.map((x,i)=><React.Fragment key={x.label+i}><button disabled={!x.page||i===crumbs.length-1} onClick={()=>x.page&&navigate(x.page)}>{x.label}</button>{i<crumbs.length-1&&<span>/</span>}</React.Fragment>)}</nav>
 }
 
 class WorkspaceErrorBoundary extends React.Component{
@@ -152,26 +94,34 @@ class WorkspaceErrorBoundary extends React.Component{
 function App(){
   const[session,setSession]=useState(null),[booting,setBooting]=useState(true),[context,setContext]=useState(null)
   const initialRoute=routeFromHash()
-  const[page,setPage]=useState(initialRoute.page),[routeParams,setRouteParams]=useState(initialRoute.params),[error,setError]=useState(''),[navOpen,setNavOpen]=useState(false),[collapsed,setCollapsed]=useState(false)
+  const[route,setRoute]=useState(initialRoute),[error,setError]=useState(''),[navOpen,setNavOpen]=useState(false),[collapsed,setCollapsed]=useState(false),[health,setHealth]=useState(undefined)
   const mainRef=useRef(null)
   useEffect(()=>{
     supabase.auth.getSession().then(({data})=>{setSession(data.session??null);setBooting(false)})
     const{data}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));return()=>data.subscription.unsubscribe()
   },[])
   useEffect(()=>{if(!session){setContext(null);return}api.context().then(setContext).catch(e=>setError(e.message))},[session])
-  useEffect(()=>{const h=()=>{const r=routeFromHash();setPage(r.page);setRouteParams(r.params)};addEventListener('hashchange',h);return()=>removeEventListener('hashchange',h)},[])
-  function go(label,params={}){const target=slug(label),q=new URLSearchParams(Object.entries(params||{}).filter(([,v])=>v!==''&&v!=null)).toString(),next=`#${target}${q?`?${q}`:''}`;setPage(label);setRouteParams(new URLSearchParams(q));if(location.hash!==next)location.hash=next;setNavOpen(false);requestAnimationFrame(()=>{if(mainRef.current)mainRef.current.scrollTop=0})}
+  useEffect(()=>{const h=()=>setRoute(routeFromHash());addEventListener('hashchange',h);return()=>removeEventListener('hashchange',h)},[])
+  const rank=Number(context?.role_rank||0)
+  // Top-bar health dot: read once after sign-in and every five minutes.
+  useEffect(()=>{if(!session||!canOpen('health',rank))return;let live=true;const read=()=>readPlatformHealth().then(h=>{if(live)setHealth(h)});read();const t=setInterval(read,300000);return()=>{live=false;clearInterval(t)}},[session,rank])
+  function go(target,params={}){
+    const r=resolveTarget(target,new URLSearchParams(Object.entries(params||{}).filter(([,v])=>v!==''&&v!=null).map(([k,v])=>[k,String(v)])))
+    const next=hrefFor(r.page,r.tab,Object.fromEntries(r.params))
+    setRoute(r);if(location.hash!==next)location.hash=next;setNavOpen(false);requestAnimationFrame(()=>{if(mainRef.current)mainRef.current.scrollTop=0})
+  }
   if(booting)return <div className="m-boot"><div className="m-loader"/><span>Loading Coursefinder Admin…</span></div>
   if(!session)return <Login onError={setError} error={error}/>
-  const rank=Number(context?.role_rank||0)
-  const[title,subtitle]=PAGE_META[page]??[page,'Governed CourseFinder administration.']
+  const pageKey=route.page,page=PAGES[pageKey]||PAGES.dashboard,tab=effectiveTab(pageKey,route.tab,rank)
+  const tone=health===undefined?'unknown':healthTone(health?.overall)
+  const healthLabel=health===undefined?'Checking platform health':HEALTH_WORDS[tone]
   return <div className={`m-shell ${collapsed?'is-collapsed':''}`}>
     <aside className={`m-sidebar ${navOpen?'is-open':''}`}>
       <div className="m-brand-row">
-        <button className="m-brand" onClick={()=>go('Dashboard')} aria-label="Dashboard"><span className="m-brand-mark">CF</span><span className="m-brand-copy"><strong>Coursefinder</strong><small>PIM Admin v{UI_VERSION}</small></span></button>
+        <button className="m-brand" onClick={()=>go('dashboard')} aria-label="Dashboard"><span className="m-brand-mark">CF</span><span className="m-brand-copy"><strong>Coursefinder</strong><small>PIM Admin v{UI_VERSION}</small></span></button>
         <button className="m-sidebar-collapse" onClick={()=>setCollapsed(x=>!x)} title={collapsed?'Expand navigation':'Collapse navigation'}>{collapsed?<PanelLeftOpen size={17}/>:<PanelLeftClose size={17}/>}</button>
       </div>
-      <div className="m-nav-scroll"><nav className="m-nav">{NAV.map(([group,items])=>{const allowed=items.filter(i=>rank>=i.min);if(!allowed.length)return null;return <div className="m-nav-group" key={group}><div className="m-nav-label">{group}</div>{allowed.map(({label,Icon})=><button key={label} title={collapsed?label:undefined} className={`m-nav-item ${page===label?'active':''}`} onClick={()=>go(label)}><Icon size={17}/><span>{label}</span></button>)}</div>})}</nav></div>
+      <div className="m-nav-scroll"><nav className="m-nav" aria-label="Main menu">{SECTIONS.map(section=>{const allowed=section.pages.filter(k=>canOpen(k,rank));if(!allowed.length)return null;return <div className={`m-nav-group${section.label?'':' is-plain'}`} key={section.label||'home'}>{section.label&&<div className="m-nav-label">{section.label}</div>}{allowed.map(k=>{const p=PAGES[k],Icon=ICONS[p.icon]||Settings2;return <button key={k} title={collapsed?p.label:undefined} aria-current={pageKey===k?'page':undefined} className={`m-nav-item ${pageKey===k?'active':''}`} onClick={()=>go(k)}><Icon size={17}/><span>{p.label}</span>{k==='health'&&<StatusDot tone={tone} label={healthLabel}/>}</button>})}</div>})}</nav></div>
       <div className="m-account">
         <div className="m-avatar">{(session.user.email?.[0]||'U').toUpperCase()}</div>
         <div className="m-account-copy"><strong>{roleLabel(context?.role||'Authorised user')}</strong><small>{session.user.email}</small></div>
@@ -180,49 +130,72 @@ function App(){
     </aside>
     {navOpen&&<button className="m-backdrop" onClick={()=>setNavOpen(false)} aria-label="Close navigation"/>}
     <main className="m-main" ref={mainRef}>
-      <header className="m-topbar">
-        <div className="m-title-wrap"><button className="m-mobile-menu" onClick={()=>setNavOpen(true)}><Menu size={20}/></button><div><AppBreadcrumbs page={page} routeParams={routeParams} navigate={go}/><h1>{title}</h1><p>{subtitle}</p></div></div>
-        <div className="m-topbar-actions"><span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></div>
-      </header>
+      <PageHeader
+        leading={<button className="m-mobile-menu" onClick={()=>setNavOpen(true)} aria-label="Open menu"><Menu size={20}/></button>}
+        breadcrumbs={<AppBreadcrumbs pageKey={pageKey} tab={tab} routeParams={route.params} navigate={go}/>}
+        title={page.title} subtitle={page.subtitle}
+        actions={<>{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
-      <WorkspaceErrorBoundary routeKey={`${page}?${routeParams.toString()}`} onError={setError} onRecover={()=>go('Dashboard')}><Page page={page} routeParams={routeParams} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/></WorkspaceErrorBoundary>
+      <WorkspaceErrorBoundary routeKey={`${pageKey}/${tab}?${route.params.toString()}`} onError={setError} onRecover={()=>go('dashboard')}>
+        <Page pageKey={pageKey} tab={tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/>
+      </WorkspaceErrorBoundary>
     </main>
-    {/* v2.15.87: floating OpenRouter key button removed; the key is managed in Administration > Environment migration. */}
   </div>
 }
 
 function Login({error,onError}){const[email,setEmail]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false);async function submit(e){e.preventDefault();setBusy(true);onError('');const{error:x}=await supabase.auth.signInWithPassword({email,password});if(x)onError(x.message);setBusy(false)}return <div className="m-login"><form className="m-login-card" onSubmit={submit}><div className="m-login-brand"><span className="m-brand-mark large">CF</span><div><strong>Coursefinder Admin</strong><small>Governed operational workspace</small></div></div><div className="m-login-copy"><h1>Sign in</h1><p>Authorised staff access only. Canonical catalogue, provenance and pipeline operations.</p></div>{error&&<div className="m-alert compact"><AlertTriangle size={15}/><span>{error}</span></div>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="m-primary" disabled={busy}>{busy?'Signing in…':'Sign in'}</button><small className="m-login-version">PIM Admin v{UI_VERSION}</small></form></div>}
 
-function Page({page,routeParams,rank,actorId,onError,navigate}){
+// Every page renders inside the shell through PageLayout: optional tabs, then content. No page draws its own shell.
+function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
   const focusId=routeParams?.get?.('id')||''
-  if(page==='Dashboard')return <Dashboard onError={onError} navigate={navigate}/>
-  if(page==='Providers')return <Catalogue type="provider" onError={onError} navigate={navigate} initialId={focusId}/>
-  if(page==='Courses')return <Catalogue type="course" onError={onError} navigate={navigate} initialId={focusId}/>
-  if(page==='Campuses')return <Catalogue type="campus" onError={onError} navigate={navigate} initialId={focusId}/>
-  if(page==='Scholarships')return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
-  if(page==='Provider Contacts')return <ProviderContactsWorkspace rank={rank} onError={onError} navigate={navigate} initialProviderId={routeParams?.get?.('provider_id')||''}/>
-  if(page==='Completeness')return <Completeness onError={onError} navigate={navigate}/>
-  if(page==='Statistics & Rankings')return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-  if(page==='Outcomes (QILT)')return <Qilt onError={onError}/>
-  if(page==='Student Flow (PRISMS)')return <Prisms onError={onError}/>
-  if(page==='Compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
-  if(page==='Evidence'&&rank>=3)return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
-  if(page==='Layer 1 — Operations'&&rank>=4)return <Layer1Operations embedded/>
-  if(page==='Layer 2 — Enrichment'&&rank>=4)return <Layer2Workspace rank={rank} embedded/>
-  if(page==='Layer 3 — AI Interpretation'&&rank>=3)return <div className="m-page-stack"><Layer3Workspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
-  if(page==='Layer 4 — Human Resolution'&&rank>=3)return <div className="m-page-stack"><Layer4Workspace onError={e=>onError(e?.message||String(e))}/></div>
-  if(page==='Important Links'&&rank>=3)return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
-  if(page==='Important Dates'&&rank>=3)return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
-  if(page==='Administration'&&rank>=4)return <AdministrationHome rank={rank} actorId={actorId} navigate={navigate} routeParams={routeParams} onError={onError}/>
-  if(page==='Jobs & Schedules'&&rank>=4)return <JobsAndSchedules onError={onError}/>
-    if(page==='Scheduled Tasks'&&rank>=4)return <div className="m-page-stack"><RefreshWorkspace onError={e=>onError(e?.message||String(e))}/></div>
-  if(page==='Onboarding'&&rank>=3)return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError(e?.message||String(e))}/></div>
-  if(page==='Review Queue'&&rank>=3)return <OperationalList operation="reviews_page" title="Human resolution queue" onError={onError}/>
-  if(page==='Jobs'&&rank>=4)return <JobsWorkspace/>
-  if(page==='Sources'&&rank>=4)return <SourcesWorkspace/>
-  if(page==='Attributes'&&rank>=5)return <Attributes onError={onError}/>
-  if(page==='Settings'&&rank>=6)return <div className="m-legacy-host"><RegulatorySettings onError={onError}/></div>
-  return <EmptyState icon={AlertTriangle} title="Not authorised" text="Your assigned CourseFinder role does not permit this workspace."/>
+  const err=e=>onError(e?.message||String(e))
+  if(!canOpen(pageKey,rank))return <EmptyState icon={AlertTriangle} title="Not authorised" text="Your role does not include this page. Ask a Platform Admin if you need access."/>
+  const page=PAGES[pageKey],tabs=allowedTabs(page,rank)
+  const onTab=key=>navigate(pageKey,{tab:key})
+  const body=pageBody()
+  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{body}</PageLayout>
+  function pageBody(){
+    switch(pageKey){
+      case'dashboard':return <Dashboard onError={onError} navigate={navigate}/>
+      case'courses':return <Catalogue type="course" onError={onError} navigate={navigate} initialId={focusId}/>
+      case'providers':
+        if(tab==='campuses')return <Catalogue type="campus" onError={onError} navigate={navigate} initialId={focusId}/>
+        if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
+        return <Catalogue type="provider" onError={onError} navigate={navigate} initialId={focusId}/>
+      case'scholarships':return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
+      case'rankings':
+        if(tab==='compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
+        if(tab==='qilt')return <Qilt onError={onError}/>
+        if(tab==='prisms')return <Prisms onError={onError}/>
+        if(tab==='datasets')return <div className="m-page-stack" data-cf-stat-admin-host/>
+        return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
+      case'coverage':return tab==='domains'?<DomainReadiness rank={rank}/>:<CoverageView/>
+      case'layer1':
+        if(tab==='imports')return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
+        if(tab==='sources')return <SourcesWorkspace/>
+        if(tab==='settings')return <Layer1SourceSettings/>
+        if(tab==='onboarding')return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={err}/></div>
+        if(tab==='dates')return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={err}/></div>
+        if(tab==='links')return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={err}/></div>
+        return <Layer1Operations embedded/>
+      case'layer2':
+        if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
+        return <Layer2Workspace rank={rank} embedded/>
+      case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
+      case'layer4':return <div className="m-page-stack"><Layer4Workspace onError={err}/></div>
+      case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError}/>:<PlatformHealth onError={onError}/>
+      case'jobs':return tab==='schedules'?<div className="m-page-stack"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
+      case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
+      case'environment':return <EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/>
+      case'scrapers':return <><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>
+      case'regulatory':return <div className="m-legacy-host"><RegulatorySettings onError={onError}/></div>
+      case'migration':return <EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/>
+      case'dataModel':return <Attributes onError={onError}/>
+      case'users':return <AccessRolesEmbedded actorId={actorId}/>
+      case'contacts':return <ProviderContactsWorkspace rank={rank} onError={onError} navigate={navigate} initialProviderId={routeParams?.get?.('provider_id')||''}/>
+      default:return <EmptyState icon={AlertTriangle} title="Page not found" text="This address does not match a page. Use the menu to continue."/>
+    }
+  }
 }
 
 
@@ -260,7 +233,7 @@ function StatisticsRankings({onError,navigate,rank,routeParams}){
     <div><b>Provider context</b><span>QILT, PRISMS and institutional rankings retain their native source grain.</span></div>
     <div><b>Years / editions</b><span>QS and THE use independent edition selectors; Compare retains its own per-ranking edition controls.</span></div>
     <div><b>Evidence</b><span>Every accepted observation remains traceable to governed source Evidence.</span></div>
-    <div><b>Historical publisher files</b><span>{rank>=4?'Ranking import management is available only through Administration → Sources & Imports.':'Import controls are restricted to authorised operator roles.'}</span></div>
+    <div><b>Historical publisher files</b><span>{rank>=4?'Ranking import management is available only through Layer 1 Register → Ranking imports.':'Import controls are restricted to authorised operator roles.'}</span></div>
    </div>
   </section>
  </div>
@@ -311,27 +284,6 @@ function ProviderAssetsWorkspace({onError,navigate}){
  </div>
 }
 
-function AdministrationHome({rank,actorId,navigate,routeParams,onError}){
- const allowed=ADMIN_SECTIONS.filter(x=>rank>=x.min)
- const requested=routeParams?.get?.('section')||'overview'
- const tool=allowed.some(x=>x.key===requested)?requested:(allowed[0]?.key||'overview')
- const selectTool=key=>navigate('Administration',key==='overview'?{}:{section:key})
- return <div className="m-page-stack"><section className="m-panel m-admin-shell"><PanelTitle icon={Settings2} title="Administration" subtitle="One governed configuration workspace. Operational Layer execution remains in Data Operations; legacy deep links resolve here without a second control plane."/>
-  <div className="m-admin-subnav" role="tablist" aria-label="Administration sections">{allowed.map(({key,label,Icon,group})=><button key={key} role="tab" aria-selected={tool===key} className={tool===key?'active':''} onClick={()=>selectTool(key)} title={group}><Icon size={15}/><span>{label}</span></button>)}</div>
- </section>
- {tool==='overview'&&<section className="m-panel"><PanelTitle icon={Settings2} title="Administration overview" subtitle="Compact entry points follow the same role gates as their destination workspaces."/><div className="m-admin-card-grid">{allowed.filter(x=>x.key!=='overview').map(({key,label,Icon,group,description})=><button className="m-admin-card" key={key} onClick={()=>selectTool(key)}><span className="m-admin-card-icon"><Icon size={16}/></span><span className="m-admin-card-copy"><small>{group}</small><strong>{label}</strong><span>{description}</span></span><b>Open →</b></button>)}</div></section>}
- {tool==='sources-imports'&&<RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>}
- {tool==='provider-assets'&&<ProviderAssetsWorkspace onError={onError} navigate={navigate}/>}
- {tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>}
- {tool==='layer2-sources'&&<Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>selectTool('layer2-providers')}/>}
- {tool==='layer2-providers'&&<><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>}
- {tool==='environment-migration'&&rank>=6&&<EnvironmentMigrationWorkspace rank={rank} onError={onError}/>}
- {tool==='onboarding'&&<div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={e=>onError?.(e?.message||String(e))}/></div>}
- {tool==='pim'&&rank>=5&&<Attributes onError={onError}/>}
- {tool==='users-roles'&&rank>=6&&<AccessRolesEmbedded actorId={actorId}/>}
- {tool==='platform'&&rank>=6&&<PlatformMaturity rank={rank} onError={onError}/>}
- </div>
-}
 function RankingImportPanel({onError,routeParams,navigate}){
  const requested=routeParams?.get?.('system'),presetSystem=['qs_wur','the_wur','arwu'].includes(requested)?requested:'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
  const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for CourseFinder ingestion.',revisionNote:'',mode:'file',parsebotRef:rankingParsebotRef(system)})
@@ -421,7 +373,7 @@ function RankingImportPanel({onError,routeParams,navigate}){
  }
  return <div className="m-page-stack m-ranking-import-page">
   <section className="m-panel m-ranking-import-compact">
-   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Administration / Sources & Imports</div><h2>Register ranking publisher file</h2><p>File upload is the preferred ranking acquisition route. Upload one global file or combine multiple country/page JSON/TXT files for the same publisher and edition. Parse.bot remains an optional metered fallback.</p></div><FileCheck2 size={22}/></div>
+   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Layer 1 Register / Ranking imports</div><h2>Register ranking publisher file</h2><p>File upload is the preferred ranking acquisition route. Upload one global file or combine multiple country/page JSON/TXT files for the same publisher and edition. Parse.bot remains an optional metered fallback.</p></div><FileCheck2 size={22}/></div>
    <form className="m-ranking-import-form compact" onSubmit={submit}>
     <div className="m-ranking-essentials">
       <label>Ranking system<select value={form.systemCode} onChange={e=>chooseSystem(e.target.value)}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education</option><option value="arwu">Academic Ranking of World Universities</option></select></label>
@@ -481,13 +433,6 @@ function Layer2ExecutionPolicySettings(){
  </section>
 }
 
-function OpsOverlayLauncher({tab}){
-  useEffect(()=>{window.dispatchEvent(new CustomEvent('coursefinder:m23-open',{detail:{tab}}))},[tab])
-  return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Workflow} title={tab} subtitle="This governed operational registry is now launched from primary navigation."/>
-    <button className="m-primary" onClick={()=>window.dispatchEvent(new CustomEvent('coursefinder:m23-open',{detail:{tab}}))}>Open {tab}</button>
-  </section></div>
-}
-
 function ScholarshipWorkspace({rank,onError,navigate,initialId}){const[selectionOpen,setSelectionOpen]=useState(false);return <div className="m-page-stack"><section className="m-panel"><PanelTitle icon={Sparkles} title="Scholarship decision support" subtitle="Structural candidate scoring only. Student eligibility remains unresolved unless separately verified."/><button className="m-secondary" onClick={()=>setSelectionOpen(true)}><GraduationCap size={15}/>Open Course decision support</button></section>{rank>=4&&<ScholarshipFillControl onError={onError}/>}<Catalogue type="scholarship" onError={onError} navigate={navigate} initialId={initialId}/>{selectionOpen&&<ScholarshipSelectionWorkspace onClose={()=>setSelectionOpen(false)}/>}</div>}
 
 function ScholarshipFillControl({onError}){
@@ -500,20 +445,9 @@ function ScholarshipFillControl({onError}){
  </section>
 }
 
-// Package 2 (P4): Jobs and Scheduled Tasks merged into one menu item with two tabs.
-// The single pages ('Jobs', 'Scheduled Tasks') remain as routes for deep links and contracts.
-function JobsAndSchedules({onError}){
-  const[tab,setTab]=useState(()=>{try{return sessionStorage.getItem('cf-jobs-schedules-tab')||'Jobs'}catch{return 'Jobs'}})
-  const pick=t=>{setTab(t);try{sessionStorage.setItem('cf-jobs-schedules-tab',t)}catch{}}
-  return <div className="m-page-stack">
-    <div className="m-subtabs" role="tablist" aria-label="Jobs and schedules">{['Jobs','Scheduled Tasks'].map(t=><button key={t} type="button" role="tab" aria-selected={tab===t} className={`m-subtab${tab===t?' on':''}`} onClick={()=>pick(t)}>{t}</button>)}</div>
-    {tab==='Jobs'?<JobsWorkspace/>:<RefreshWorkspace onError={e=>onError(e?.message||String(e))}/>}
-  </div>
-}
-
 function Dashboard({onError,navigate}){
   const[data,setData]=useState(null),[layerStatus,setLayerStatus]=useState(null),[platformHealth,setPlatformHealth]=useState(null),[busy,setBusy]=useState(true)
-  const load=()=>{setBusy(true);Promise.all([adminRead('dashboard'),adminRead('layer_status_summary'),adminRead('platform_health')]).then(([d,l,h])=>{setData(d);setLayerStatus(l);setPlatformHealth(h)}).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
+  const load=()=>{setBusy(true);Promise.all([adminRead('dashboard'),adminRead('layer_status_summary'),adminRead('platform_health').catch(()=>null)]).then(([d,l,h])=>{setData(d);setLayerStatus(l);setPlatformHealth(h)}).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
   useEffect(load,[])
   if(busy&&!data)return <DashboardSkeleton/>
   const op=data?.operational??{},failed=Number(op.failed_jobs_24h||0),running=Number(op.running_jobs||0),reviews=Number(data?.open_reviews||0)
@@ -527,7 +461,7 @@ function Dashboard({onError,navigate}){
   return <div className="m-page-stack">
     <section className="m-dashboard-intro"><div><span className={`m-health m-health-${health}`}><span/>{health==='healthy'?'Operationally healthy':health==='active'?'Pipeline activity in progress':'Attention required'}</span><h2>Operational command view</h2><p>Counts, freshness and human-attention signals from the governed canonical and pipeline layers.</p>{data?.snapshot_at&&<small className="m-help" title={`Summary calculated ${fmtDate(data.snapshot_at)}`}>Updated {relativeTime(data.snapshot_at)} · refreshes every 2 minutes</small>}</div><button className="m-secondary" onClick={load}><RefreshCw size={15}/>Refresh</button></section>
     <div className="m-metric-grid">{metrics.map(([label,value,Icon,tone,target])=><button className={`m-metric-card tone-${tone}`} key={label} onClick={()=>navigate(target)}><span className="m-metric-icon"><Icon size={18}/></span><span className="m-metric-copy"><small>{label}</small><strong>{fmtNumber(value)}</strong></span><span className="m-metric-arrow">→</span></button>)}</div>
-    {platformHealth&&<section className="m-panel"><PanelTitle icon={ShieldCheck} title="Platform health" subtitle="Role-filtered runtime, Edge workload, security and data-movement signals"/><div className="m-pulse-grid"><Pulse label="Running jobs" value={platformHealth.jobs?.running} tone={platformHealth.jobs?.running?'info':'neutral'} icon={Workflow}/><Pulse label="Failed · 24h" value={platformHealth.jobs?.failed_24h} tone={platformHealth.jobs?.failed_24h?'danger':'success'} icon={AlertTriangle}/><Pulse label="Evidence fetched · 24h" value={platformHealth.data?.evidence_fetched_24h} tone="violet" icon={FileCheck2}/><Pulse label="Edge workloads · 24h" value={platformHealth.edge_runtime?.completed_24h} tone="teal" icon={Activity}/></div>{platformHealth.api_activity&&<div className="m-freshness"><Fresh label="Layer 2 provider API calls · 24h" value={platformHealth.api_activity.layer2_provider_requests_24h} number/><Fresh label="Layer 3 model calls · 24h" value={platformHealth.api_activity.layer3_external_calls_24h} number/><Fresh label="Layer 3 cost · 24h" text value={fmtMoney(platformHealth.api_activity.layer3_cost_24h_usd||0,'USD',{decimals:4})}/><Fresh label="Scholarship AI active runs" value={platformHealth.scholarship_ai?.active_runs} number/></div>}{platformHealth.security&&<div className="m-summary-note"><strong>Security · {humanise(platformHealth.security.status)}</strong><span>{platformHealth.security.note}</span></div>}</section>}
+    {platformHealth&&<section className="m-panel"><PanelTitle icon={ShieldCheck} title="Platform health" subtitle="Jobs, Edge workloads, security and data movement" action={typeof platformHealth.overall==='string'?<button className="m-secondary compact" onClick={()=>navigate('health')}><StatusDot tone={healthTone(platformHealth.overall)} label={HEALTH_WORDS[healthTone(platformHealth.overall)]}/>{HEALTH_WORDS[healthTone(platformHealth.overall)]} · open checks</button>:null}/><div className="m-pulse-grid"><Pulse label="Running jobs" value={platformHealth.jobs?.running} tone={platformHealth.jobs?.running?'info':'neutral'} icon={Workflow}/><Pulse label="Failed · 24h" value={platformHealth.jobs?.failed_24h} tone={platformHealth.jobs?.failed_24h?'danger':'success'} icon={AlertTriangle}/><Pulse label="Evidence fetched · 24h" value={platformHealth.data?.evidence_fetched_24h} tone="violet" icon={FileCheck2}/><Pulse label="Edge workloads · 24h" value={platformHealth.edge_runtime?.completed_24h} tone="teal" icon={Activity}/></div>{platformHealth.api_activity&&<div className="m-freshness"><Fresh label="Layer 2 provider API calls · 24h" value={platformHealth.api_activity.layer2_provider_requests_24h} number/><Fresh label="Layer 3 model calls · 24h" value={platformHealth.api_activity.layer3_external_calls_24h} number/><Fresh label="Layer 3 cost · 24h" text value={fmtMoney(platformHealth.api_activity.layer3_cost_24h_usd||0,'USD',{decimals:4})}/><Fresh label="Scholarship AI active runs" value={platformHealth.scholarship_ai?.active_runs} number/></div>}{platformHealth.security&&<div className="m-summary-note"><strong>Security · {humanise(platformHealth.security.status)}</strong><span>{platformHealth.security.note}</span></div>}</section>}
     {layerStatus&&<section className="m-panel">
       <PanelTitle icon={Layers3} title="Layer status" subtitle="Operational state across authority, enrichment, interpretation and human resolution"/>
       <div className="m-grid-2">
@@ -590,7 +524,7 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false}){
   function changeSort(k){if(!k)return;if(sort===k)setDirection(d=>d==='asc'?'desc':'asc');else{setSort(k);setDirection('asc')}}
   const cols=columns(type,completenessMode)
   return <div className="m-page-stack">
-    {completenessMode&&<CompletenessSummary onError={onError}/>} 
+    
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>{completenessMode?'Course readiness workspace':`${humanise(type)} catalogue`}</h2><p>{completenessMode?'Find missing core-presence signals without treating completeness as truth.':'Filter → inspect → cross-check → decide.'}</p></div><div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(total)}</strong><span>matching</span></>}</div></div>
       <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={cfg.search}/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label>{type==='course'&&<button className={`m-filter-toggle ${advanced?'active':''}`} onClick={()=>setAdvanced(x=>!x)}><SlidersHorizontal size={15}/>Filters{active.length?` · ${active.length}`:''}</button>}<button className="m-secondary compact" onClick={()=>{setQuery('');setFilters({});setFilterLabels({});setOffset(0)}} disabled={!query&&!active.length}><RefreshCw size={14}/>Clear</button>{!completenessMode&&['provider','course'].includes(type)&&<button className="m-secondary compact" onClick={()=>navigate?.('Compare',{type})}><Activity size={14}/>Compare {type}s</button>}</div>
@@ -615,14 +549,14 @@ function FilterBar({type,filters,filterLabels={},patch,data,busy,advanced}){
     <PagedFilterSelect kind="provider" label="Provider" value={filters.provider||''} valueLabel={filterLabels.provider||''} country={filters.country||''} subdivision={filters.subdivision||''} onChange={(v,l)=>patch('provider',v,l)}/>
     <PagedFilterSelect kind="university_group" label="University group" value={filters.universityGroup||''} valueLabel={filterLabels.universityGroup||''} country={filters.country||''} onChange={(v,l)=>patch('universityGroup',v,l)}/>
     <PagedFilterSelect kind="level" label="Study level" value={filters.level||''} valueLabel={filterLabels.level||''} country={filters.country||''} subdivision={filters.subdivision||''} onChange={(v,l)=>patch('level',v,l)}/>
-    {advanced&&<><PagedFilterSelect kind="field" label="Field" value={filters.field||''} valueLabel={filterLabels.field||''} country={filters.country||''} subdivision={filters.subdivision||''} onChange={(v,l)=>patch('field',v,l)}/><PagedFilterSelect kind="delivery" label="Delivery" value={filters.delivery||''} valueLabel={filterLabels.delivery||''} country={filters.country||''} subdivision={filters.subdivision||''} onChange={(v,l)=>patch('delivery',v,l)}/><TriFilter label="Has fee" value={filters.hasFee||''} onChange={(v,l)=>patch('hasFee',v,l)}/><TriFilter label="Has intake" value={filters.hasIntake||''} onChange={(v,l)=>patch('hasIntake',v,l)}/><TriFilter label="Has English" value={filters.hasEnglish||''} onChange={(v,l)=>patch('hasEnglish',v,l)}/><TriFilter label="Has scholarship" value={filters.hasScholarship||''} onChange={(v,l)=>patch('hasScholarship',v,l)}/><FilterSelect label="Min readiness" value={filters.minCompleteness||''} onChange={(v,l)=>patch('minCompleteness',v,l)} options={[50,75,90,100].map(n=>opt(String(n),`${n}%+`))}/><FilterSelect label="Freshness" value={filters.freshness||''} onChange={(v,l)=>patch('freshness',v,l)} options={[opt('never_verified','Never verified'),opt('modified_7d','Modified in 7 days'),opt('modified_30d','Modified in 30 days'),opt('stale_180d','Stale / never verified (180d)')]}/><FilterSelect label="Lifecycle" value={filters.lifecycle||''} onChange={(v,l)=>patch('lifecycle',v,l)} options={STATUS_OPTIONS}/><FilterSelect label="Publication" value={filters.publication||''} onChange={(v,l)=>patch('publication',v,l)} options={PUBLICATION_OPTIONS}/></>}
+    {advanced&&<><PagedFilterSelect kind="field" label="Field" value={filters.field||''} valueLabel={filterLabels.field||''} country={filters.country||''} subdivision={filters.subdivision||''} onChange={(v,l)=>patch('field',v,l)}/><PagedFilterSelect kind="delivery" label="Delivery" value={filters.delivery||''} valueLabel={filterLabels.delivery||''} country={filters.country||''} subdivision={filters.subdivision||''} onChange={(v,l)=>patch('delivery',v,l)}/><TriFilter label="Has fee" value={filters.hasFee||''} onChange={(v,l)=>patch('hasFee',v,l)}/><TriFilter label="Has intake" value={filters.hasIntake||''} onChange={(v,l)=>patch('hasIntake',v,l)}/><TriFilter label="Has English" value={filters.hasEnglish||''} onChange={(v,l)=>patch('hasEnglish',v,l)}/><TriFilter label="Has scholarship" value={filters.hasScholarship||''} onChange={(v,l)=>patch('hasScholarship',v,l)}/><FilterSelect label="Min legacy presence" value={filters.minCompleteness||''} onChange={(v,l)=>patch('minCompleteness',v,l)} options={[50,75,90,100].map(n=>opt(String(n),`${n}%+`))}/><FilterSelect label="Freshness" value={filters.freshness||''} onChange={(v,l)=>patch('freshness',v,l)} options={[opt('never_verified','Never verified'),opt('modified_7d','Modified in 7 days'),opt('modified_30d','Modified in 30 days'),opt('stale_180d','Stale / never verified (180d)')]}/><FilterSelect label="Lifecycle" value={filters.lifecycle||''} onChange={(v,l)=>patch('lifecycle',v,l)} options={STATUS_OPTIONS}/><FilterSelect label="Publication" value={filters.publication||''} onChange={(v,l)=>patch('publication',v,l)} options={PUBLICATION_OPTIONS}/></>}
   </div>
 }
 
 function buildCatalogueArgs(type,{query,filters,offset,sort,direction}){const a={limit:PAGE_SIZE,offset,query:query||null,sort,direction};if(filters.country)a.country_code=filters.country;if(filters.subdivision)a.subdivision_code=filters.subdivision;if(filters.lifecycle)a.lifecycle_status=filters.lifecycle;if(filters.publication)a.publication_status=filters.publication;if(filters.universityGroup&&['course','provider'].includes(type))a.university_group=filters.universityGroup;if(type==='scholarship'&&filters.provider)a.provider_id=filters.provider;if(type==='course'){if(filters.provider)a.provider_id=filters.provider;if(filters.level)a.level_code=filters.level;if(filters.field)a.field_code=filters.field;if(filters.delivery)a.delivery_mode=filters.delivery;for(const k of['hasFee','hasIntake','hasEnglish','hasScholarship'])if(filters[k]!==''&&filters[k]!=null)a[camelToSnake(k)]=filters[k]==='true';if(filters.minCompleteness)a.min_completeness=Number(filters.minCompleteness);if(filters.freshness)a.freshness=filters.freshness}return a}
 function camelToSnake(v){return v.replace(/[A-Z]/g,m=>'_'+m.toLowerCase())}
 function activeFilters(f){return Object.entries(f).filter(([,v])=>v!==''&&v!==null&&v!==undefined)}
-function filterLabel(k){return({country:'Country',subdivision:'State / Region',provider:'Provider',level:'Study level',field:'Field',delivery:'Delivery',hasFee:'Has fee',hasIntake:'Has intake',hasEnglish:'Has English',hasScholarship:'Has scholarship',minCompleteness:'Min readiness',freshness:'Freshness',lifecycle:'Lifecycle',publication:'Publication',universityGroup:'University group'})[k]||humanise(k)}
+function filterLabel(k){return({country:'Country',subdivision:'State / Region',provider:'Provider',level:'Study level',field:'Field',delivery:'Delivery',hasFee:'Has fee',hasIntake:'Has intake',hasEnglish:'Has English',hasScholarship:'Has scholarship',minCompleteness:'Min legacy presence',freshness:'Freshness',lifecycle:'Lifecycle',publication:'Publication',universityGroup:'University group'})[k]||humanise(k)}
 const UNIVERSITY_GROUP_OPTIONS=[{value:'go8',label:'Group of Eight'},{value:'atn',label:'Australian Technology Network'},{value:'iru',label:'Innovative Research Universities'},{value:'run',label:'Regional Universities Network'}]
 function filterValueLabel(k,v,d){if(['hasFee','hasIntake','hasEnglish','hasScholarship'].includes(k))return v==='true'?'Yes':'No';const sets={country:d.countries,subdivision:d.subdivisions,provider:d.providers,level:d.levels,field:d.fields,delivery:d.delivery_modes,universityGroup:UNIVERSITY_GROUP_OPTIONS};const list=sets[k]||[];const found=list.find(x=>String(x.id??x.code??x.value)===String(v));return found?.name??found?.label??humanise(v)}
 
@@ -633,7 +567,7 @@ function AsyncPagedFilterSelect({kind,label,value,valueLabel='',onChange,country
 function TriFilter({label,value,onChange}){return <FilterSelect label={label} value={value} onChange={onChange} options={[opt('true','Yes'),opt('false','No')]}/>}function opt(value,label,meta=''){return{value,label,meta}}
 function DataTable({rows,columns,loading,sort,direction,onSort,onRow,selected}){return <div className="m-table-wrap"><table className="m-table m-fluid-table" style={{width:'100%',minWidth:'max-content'}}><thead><tr>{columns.map((c,i)=>{const max=Number(c.width||180),min=Math.min(max,96),vw=Math.max(9,Math.round(max/18));return <th key={c.key} className={i===0?'sticky-col':''} style={{minWidth:`clamp(${min}px,${vw}vw,${max}px)`}}><button disabled={!c.sortKey} onClick={()=>onSort(c.sortKey)}>{c.label}{c.sortKey&&sort===c.sortKey&&(direction==='asc'?<ArrowUp size={12}/>:<ArrowDown size={12}/>)}</button></th>})}</tr></thead><tbody>{loading&&rows.length===0?Array.from({length:8}).map((_,i)=><tr key={i}>{columns.map((c,j)=><td className={j===0?'sticky-col':''} key={c.key}><span className="m-row-skeleton"/></td>)}</tr>):rows.length?rows.map((r,i)=><tr key={r.id??r.course_id??i} className={String(selected)===String(r.id??r.course_id)?'selected':''} onClick={()=>onRow?.(r)}>{columns.map((c,j)=><td key={c.key} className={j===0?'sticky-col':''}>{cell(r,c.key)}</td>)}</tr>):<tr><td colSpan={columns.length}><EmptyInline text="No records match the current filters."/></td></tr>}</tbody></table></div>}
 
-function columns(type,complete){if(complete)return[{key:'canonical_title',label:'Course',width:300,sortKey:'course'},{key:'provider_name',label:'Provider',width:240,sortKey:'provider'},{key:'course_code',label:'CRICOS / Course code',width:150},{key:'completeness_score_v2',label:'Readiness',width:120,sortKey:'completeness'},{key:'has_fee',label:'Fee',width:90},{key:'has_intake',label:'Intake',width:90},{key:'has_english',label:'English',width:90},{key:'last_verified_at',label:'Verified',width:150,sortKey:'verified'}];if(type==='provider')return[{key:'canonical_name',label:'Provider',width:300,sortKey:'provider'},{key:'country_code',label:'Country',width:110},{key:'subdivision_name',label:'State / Region',width:160},{key:'city',label:'City',width:150},{key:'course_count',label:'Courses',width:95,sortKey:'courses'},{key:'university_groups',label:'Group',width:110},{key:'evidence_count',label:'Evidence',width:95},{key:'lifecycle_status',label:'Lifecycle',width:115},{key:'publication_status',label:'Publication',width:130},{key:'last_verified_at',label:'Verified',width:150,sortKey:'verified'}];if(type==='course')return[{key:'canonical_title',label:'Course',width:310,sortKey:'course'},{key:'provider_name',label:'Provider',width:240,sortKey:'provider'},{key:'course_code',label:'CRICOS / Course code',width:155},{key:'subdivision_name',label:'State / Region',width:150},{key:'level_name',label:'Study level',width:150},{key:'field_of_study',label:'Field',width:190,sortKey:'field'},{key:'fee_amount',label:'CRICOS tuition',width:150,sortKey:'fee'},{key:'completeness_score_v2',label:'Readiness',width:120,sortKey:'completeness'},{key:'last_verified_at',label:'Verified',width:145,sortKey:'verified'}];if(type==='campus')return[{key:'name',label:'Campus',width:270,sortKey:'campus'},{key:'provider_name',label:'Provider',width:260,sortKey:'provider'},{key:'country_code',label:'Country',width:105},{key:'subdivision_name',label:'State / Region',width:160},{key:'city',label:'City',width:150,sortKey:'city'},{key:'course_count',label:'Courses',width:90,sortKey:'courses'},{key:'status',label:'Status',width:110}];return[{key:'name',label:'Scholarship',width:310,sortKey:'scholarship'},{key:'provider_name',label:'Provider',width:250,sortKey:'provider'},{key:'scholarship_type',label:'Type',width:170,sortKey:'type'},{key:'audience',label:'Audience',width:150,sortKey:'audience'},{key:'award_value_text',label:'Award',width:180,sortKey:'award'},{key:'publication_status',label:'Publication',width:130,sortKey:'publication'}]}
+function columns(type,complete){if(complete)return[{key:'canonical_title',label:'Course',width:300,sortKey:'course'},{key:'provider_name',label:'Provider',width:240,sortKey:'provider'},{key:'course_code',label:'CRICOS / Course code',width:150},{key:'completeness_score_v2',label:'Legacy presence',width:120,sortKey:'completeness'},{key:'has_fee',label:'Fee',width:90},{key:'has_intake',label:'Intake',width:90},{key:'has_english',label:'English',width:90},{key:'last_verified_at',label:'Verified',width:150,sortKey:'verified'}];if(type==='provider')return[{key:'canonical_name',label:'Provider',width:300,sortKey:'provider'},{key:'country_code',label:'Country',width:110},{key:'subdivision_name',label:'State / Region',width:160},{key:'city',label:'City',width:150},{key:'course_count',label:'Courses',width:95,sortKey:'courses'},{key:'university_groups',label:'Group',width:110},{key:'evidence_count',label:'Evidence',width:95},{key:'lifecycle_status',label:'Lifecycle',width:115},{key:'publication_status',label:'Publication',width:130},{key:'last_verified_at',label:'Verified',width:150,sortKey:'verified'}];if(type==='course')return[{key:'canonical_title',label:'Course',width:310,sortKey:'course'},{key:'provider_name',label:'Provider',width:240,sortKey:'provider'},{key:'course_code',label:'CRICOS / Course code',width:155},{key:'subdivision_name',label:'State / Region',width:150},{key:'level_name',label:'Study level',width:150},{key:'field_of_study',label:'Field',width:190,sortKey:'field'},{key:'fee_amount',label:'CRICOS tuition',width:150,sortKey:'fee'},{key:'completeness_score_v2',label:'Legacy presence',width:120,sortKey:'completeness'},{key:'last_verified_at',label:'Verified',width:145,sortKey:'verified'}];if(type==='campus')return[{key:'name',label:'Campus',width:270,sortKey:'campus'},{key:'provider_name',label:'Provider',width:260,sortKey:'provider'},{key:'country_code',label:'Country',width:105},{key:'subdivision_name',label:'State / Region',width:160},{key:'city',label:'City',width:150,sortKey:'city'},{key:'course_count',label:'Courses',width:90,sortKey:'courses'},{key:'status',label:'Status',width:110}];return[{key:'name',label:'Scholarship',width:310,sortKey:'scholarship'},{key:'provider_name',label:'Provider',width:250,sortKey:'provider'},{key:'scholarship_type',label:'Type',width:170,sortKey:'type'},{key:'audience',label:'Audience',width:150,sortKey:'audience'},{key:'award_value_text',label:'Award',width:180,sortKey:'award'},{key:'publication_status',label:'Publication',width:130,sortKey:'publication'}]}
 function cell(r,key){const v=r[key];if(key==='university_groups')return <UniversityGroups value={v} short/>;if(['canonical_name','canonical_title','name'].includes(key))return <span className="m-cell-title"><strong>{v??'—'}</strong>{r.stable_key&&<small>{r.stable_key}</small>}</span>;if(key==='country_code')return <span>{countryFlag(v)} {v||'—'}</span>;if(key==='course_code')return v?<code className="m-code">{v}</code>:'—';if(key==='fee_amount')return v==null?'—':fmtMoney(v,r.fee_currency||'AUD');if(key==='completeness_score_v2')return <Score value={v??r.completeness_score}/>;if(['has_fee','has_intake','has_english','has_scholarship'].includes(key))return <Bool value={v}/>;if(key.includes('status')||key==='status')return <Status value={v}/>;if(key.endsWith('_at'))return v?fmtDate(v):'Never';return v==null||v===''?'—':String(v)}
 function UniversityGroups({value,short=false}){const list=Array.isArray(value)?value:[];if(!list.length)return short?'—':null;return <span style={{display:'inline-flex',gap:4,flexWrap:'wrap'}}>{list.map(g=><span key={g.code} className="m-status status-info" title={g.name}>{short?String(g.code||'').toUpperCase():g.name}</span>)}</span>}
 function Score({value}){const n=Math.max(0,Math.min(100,Number(value)||0));return <span className="m-score"><span><i style={{width:`${n}%`}}/></span><b>{fmtPercent(n)}</b></span>}
@@ -647,7 +581,7 @@ function InternationalContacts({data,navigate}){const block=data?.international_
 .cf-contact-intel{display:grid;gap:10px}.cf-contact-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cf-contact-head h3{margin:0;font-size:var(--cf-fs-base)}.cf-contact-head p{margin:4px 0 0;color:var(--cf-slate-500);font-size:var(--cf-fs-xs);line-height:1.45}.cf-contact-summary{display:flex;gap:6px;flex-wrap:wrap}.cf-contact-summary span{border:1px solid var(--cf-slate-200);background:var(--cf-slate-50);border-radius:var(--cf-radius-pill);padding:4px 7px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-600);font-weight:750}.cf-contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cf-contact-card{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);background:var(--cf-white);padding:10px;display:grid;gap:7px}.cf-contact-card.primary{border-color:var(--cf-indigo-200);background:var(--cf-slate-50)}.cf-contact-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.cf-contact-name{display:grid;gap:2px}.cf-contact-name strong{font-size:var(--cf-fs-md);color:var(--cf-slate-900)}.cf-contact-name small{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500)}.cf-contact-badge{white-space:nowrap;border-radius:var(--cf-radius-pill);padding:3px 6px;font-size:var(--cf-fs-3xs);font-weight:850;background:var(--cf-indigo-50);color:var(--cf-indigo-700)}.cf-contact-badge.enriched{background:var(--cf-slate-100);color:var(--cf-slate-600)}.cf-contact-territory{display:grid;gap:2px;padding:7px 8px;border-radius:var(--cf-radius-md);background:var(--cf-slate-50)}.cf-contact-territory small{font-size:var(--cf-fs-3xs);text-transform:uppercase;letter-spacing:.04em;color:var(--cf-slate-400);font-weight:800}.cf-contact-territory strong{font-size:var(--cf-fs-xs);color:var(--cf-slate-700);line-height:1.45}.cf-contact-links{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.cf-contact-links a{font-size:var(--cf-fs-2xs);color:var(--cf-indigo-600);text-decoration:none}.cf-contact-meta{font-size:var(--cf-fs-3xs);color:var(--cf-slate-400);line-height:1.4}.cf-contact-changes{border-top:1px solid var(--cf-slate-150);padding-top:8px}.cf-contact-changes strong{font-size:var(--cf-fs-2xs);color:var(--cf-slate-600)}.cf-contact-changes span{display:block;font-size:var(--cf-fs-3xs);color:var(--cf-slate-500);margin-top:3px}@media(max-width:760px){.cf-contact-grid{grid-template-columns:1fr}.cf-contact-head{display:grid}.cf-contact-summary{justify-content:flex-start}}
 `}</style><div className="cf-contact-head"><div><h3>International contacts</h3><p>First-party university contacts are preferred. Licensed professional enrichment is secondary and does not overwrite university-published assignments.</p>{data?.id&&<button className="m-secondary compact" style={{marginTop:7}} onClick={()=>navigate?.('Provider Contacts',{provider_id:data.id})}><UsersRound size={12}/>View all Provider Contacts</button>}</div><div className="cf-contact-summary"><span>{humanise(disposition.disposition||'pending_acquisition')}</span><span>{Number(summary.first_party_contacts||0)} first-party</span><span>{Number(summary.enriched_contacts||0)} enriched</span>{Number(summary.unacknowledged_changes||0)>0&&<span>{summary.unacknowledged_changes} change signal{Number(summary.unacknowledged_changes)===1?'':'s'}</span>}</div></div>{!items.length&&disposition.disposition&&<div className="cf-contact-meta">A16 disposition: <strong>{humanise(disposition.disposition)}</strong>. Qualified first-party evidence is retained; missing contacts are never manufactured.</div>}{items.length?<div className="cf-contact-grid">{items.map((x,i)=><article key={x.id||i} className={`cf-contact-card ${x.source_class==='first_party'?'primary':''}`}><div className="cf-contact-top"><div className="cf-contact-name"><strong>{x.full_name||x.team_name||'International team'}</strong><small>{x.job_title||x.team_name||'Professional contact'}</small></div><span className={`cf-contact-badge ${x.source_class==='licensed_enrichment'?'enriched':''}`}>{x.source_class==='first_party'?'First-party university':'Licensed enrichment'}</span></div>{x.territory_text&&<div className="cf-contact-territory"><small>Territory / market</small><strong>{x.territory_text}</strong></div>}<div className="cf-contact-links">{x.work_email&&<a href={`mailto:${x.work_email}`}>{x.work_email}</a>}{x.work_phone&&<a href={`tel:${String(x.work_phone).replace(/[^+0-9]/g,'')}`}>{x.work_phone}</a>}{x.source_url&&<a href={x.source_url} target="_blank" rel="noreferrer">University source <ExternalLink size={9}/></a>}{x.professional_profile_url&&<a href={x.professional_profile_url} target="_blank" rel="noreferrer">Professional profile <ExternalLink size={9}/></a>}{x.evidence_id&&<EvidenceButton id={x.evidence_id} navigate={navigate}/>}</div><div className="cf-contact-meta">{x.source_provider?humanise(x.source_provider):'Source retained'} · Verified {x.last_verified_at?fmtDate(x.last_verified_at):'—'}{x.verification_state&&` · ${humanise(x.verification_state)}`}</div>{x.layer4&&<details><summary style={{fontSize:9,fontWeight:800,cursor:'pointer'}}>Layer 4 resolve</summary><Layer4Intervention type="provider_contact" data={x} publicationEnabled={false}/></details>}</article>)}</div>:<EmptyInline text={profile.enabled===false?'Contact discovery is disabled for this Provider.':'No current international recruitment contact has been verified yet.'}/>} {events.length>0&&<div className="cf-contact-changes"><strong>Recent contact signals</strong>{events.slice(0,3).map((e,i)=><span key={e.id||i}>{humanise(e.event_type)} · {e.detected_at?fmtDate(e.detected_at):'—'}</span>)}</div>}</section>}
 
-function DetailBody({type,data,navigate}){if(!data)return <EmptyInline text="No detail returned."/>;if(type==='course')return <div><CourseDetailPolish data={data} navigate={navigate}/><div className="m-drawer-body" style={{paddingTop:0}}><CourseScholarships data={data.course_scholarships} navigate={navigate}/><Layer4Intervention type={type} data={data}/></div></div>;const scalars=Object.entries(data).filter(([,v])=>v==null||['string','number','boolean'].includes(typeof v)).slice(0,24);return <div className="m-drawer-body"><div className="m-detail-grid">{type==='provider'&&Array.isArray(data.university_groups)&&data.university_groups.length>0&&<div className="m-detail-university-group"><small>University group</small><strong><UniversityGroups value={data.university_groups}/></strong></div>}{scalars.map(([k,v])=><div key={k}><small>{humanise(k)}</small><strong>{formatScalar(k,v)}</strong></div>)}</div>{type==='provider'&&<InternationalContacts data={data} navigate={navigate}/>} {type==='provider'&&<ContextualInsights data={data.contextual_insights} navigate={navigate} entityType="provider"/>}{['provider','campus','scholarship'].includes(type)&&<Layer4Intervention type={type} data={data}/>}<ObjectSections data={data} exclude={type==='provider'?['contextual_insights','international_contacts','layer4','layer4_publication','university_groups']:['layer4','layer4_publication']} navigate={navigate}/></div>}
+function DetailBody({type,data,navigate}){if(!data)return <EmptyInline text="No detail returned."/>;if(type==='course')return <div><div className="m-drawer-body" style={{paddingBottom:0}}><SourceComparison type="course" id={data.id} navigate={navigate}/></div><CourseDetailPolish data={data} navigate={navigate}/><div className="m-drawer-body" style={{paddingTop:0}}><CourseScholarships data={data.course_scholarships} navigate={navigate}/><Layer4Intervention type={type} data={data}/></div></div>;const scalars=Object.entries(data).filter(([,v])=>v==null||['string','number','boolean'].includes(typeof v)).slice(0,24);return <div className="m-drawer-body">{type==='scholarship'&&data.id&&<SourceComparison type="scholarship" id={data.id} navigate={navigate}/>}<div className="m-detail-grid">{type==='provider'&&Array.isArray(data.university_groups)&&data.university_groups.length>0&&<div className="m-detail-university-group"><small>University group</small><strong><UniversityGroups value={data.university_groups}/></strong></div>}{scalars.map(([k,v])=><div key={k}><small>{humanise(k)}</small><strong>{formatScalar(k,v)}</strong></div>)}</div>{type==='provider'&&<InternationalContacts data={data} navigate={navigate}/>} {type==='provider'&&<ContextualInsights data={data.contextual_insights} navigate={navigate} entityType="provider"/>}{['provider','campus','scholarship'].includes(type)&&<Layer4Intervention type={type} data={data}/>}<ObjectSections data={data} exclude={type==='provider'?['contextual_insights','international_contacts','layer4','layer4_publication','university_groups']:['layer4','layer4_publication']} navigate={navigate}/></div>}
 
 function CourseScholarships({data,navigate}){
  const items=Array.isArray(data?.items)?data.items:[]
@@ -663,8 +597,6 @@ function Record({value,navigate}){if(value==null)return null;if(typeof value!=='
 function evidenceIdOf(v){return v?.evidence_id||v?.evidence?.id||v?.source_evidence_id||null}
 function EvidenceButton({id,navigate}){return <button className="m-secondary compact" style={{marginLeft:6,padding:'3px 6px',fontSize:8}} onClick={e=>{e.stopPropagation();navigate?.('Evidence',{evidence_id:id})}}><BookOpen size={11}/>Evidence</button>}
 
-function Completeness({onError,navigate}){return <Catalogue type="course" onError={onError} navigate={navigate} completenessMode/>}
-function CompletenessSummary({onError}){const[all,setAll]=useState(null),[ready,setReady]=useState(null);useEffect(()=>{Promise.all([adminRead('courses_page',{limit:1,offset:0}),adminRead('courses_page',{limit:1,offset:0,min_completeness:100})]).then(([a,r])=>{setAll(Number(a?.total||0));setReady(Number(r?.total||0))}).catch(e=>onError(e.message))},[]);const needs=all==null||ready==null?null:Math.max(0,all-ready);return <div className="m-summary-strip"><SummaryCard icon={CheckCircle2} label="100% core presence" value={all?fmtShare(ready,all):'—'} tone="green"/><SummaryCard icon={AlertTriangle} label="Needs enrichment" value={needs==null?'—':fmtNumber(needs)} tone="amber"/><SummaryCard icon={GraduationCap} label="Catalogue Courses" value={all==null?'—':fmtNumber(all)} tone="blue"/><div className="m-summary-note"><strong>Readiness is a coverage signal.</strong><span>It does not approve, publish or override source evidence.</span></div></div>}
 
 function Qilt({onError}){return <InsightWorkspace kind="qilt" onError={onError}/>}function Prisms({onError}){return <InsightWorkspace kind="prisms" onError={onError}/>} 
 function InsightWorkspace({kind,onError}){

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.34 — 29 Sep 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.107** (admin simplification: five-section menu with old links redirected, one standard page layout in the shared kit, Coverage & completeness inside the app shell, new Platform health page and top-bar status dot, Layer 3 AI validation tabs, sources side by side on scholarship and course detail, Environment & integrations overview).
+- Database (applied live): migration 20260930000000_cf247_admin_ui_reads — new read-only public.admin_layer3_operations and public.admin_source_comparison (with security-definer implementations); no existing function replaced.
+- Removed src/layer2-navigation-restore.js (menu reordering by page scripting); the menu now comes from src/nav-map.js.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.33 — 29 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.106** (B2 UI uniformity release with R12: one token set, one component kit, en-AU formats, "Layer N" wording; completeness states and the course completeness score on Course coverage).

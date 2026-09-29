@@ -26,11 +26,15 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     expect(workspace).not.toMatch(/supabase\.from\s*\(/)
     expect(client).toContain("adminRead('jobs'")
 
-    const dataOps=shell.match(/\['Data Operations',\[(.*?)\]\],/s)?.[1]||''
-    // Package 2 (P4): Scheduled Tasks is a tab of the Jobs & Schedules menu item.
-    expect(dataOps).toContain("item('Jobs & Schedules',Workflow,4)")
-    expect(dataOps.indexOf("item('Jobs & Schedules',Workflow,4)")).toBeLessThan(dataOps.indexOf("item('Evidence',BookOpen,3)"))
-    expect(shell).toContain("if(page==='Scheduled Tasks'&&rank>=4)")
+    // v2.15.107: Scheduled Tasks is the Schedules tab of Operations > Scheduled jobs, before Evidence;
+    // the old #scheduled-tasks address still opens it.
+    const nav=read('src/nav-map.js')
+    const ops=nav.match(/label: 'Operations', pages: \[(.*?)\]/)?.[1]||''
+    expect(ops.indexOf("'jobs'")).toBeGreaterThan(-1)
+    expect(ops.indexOf("'jobs'")).toBeLessThan(ops.indexOf("'evidence'"))
+    expect(nav).toContain("{ key: 'schedules', label: 'Schedules', min: 4 }")
+    expect(nav).toContain("'scheduled-tasks': { page: 'jobs', tab: 'schedules' }")
+    expect(shell).toContain("case'jobs':return tab==='schedules'?")
     expect(shell).not.toContain("{key:'scheduling',label:'Scheduling'")
     expect(shell).not.toContain("tool==='scheduling'")
     expect(shell).not.toContain("item('Refresh & Scheduling'")

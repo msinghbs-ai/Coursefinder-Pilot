@@ -41,8 +41,8 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(shell).toContain("import PlatformMaturity from'./platform-maturity-entry'")
     expect(shell).toContain("<PlatformMaturity rank={rank} onError={onError}/>")
     expect(shell).not.toContain("{tool==='platform'&&rank>=6&&<div className=\"m-legacy-host\"><RegulatorySettings")
-    // The 'Open PIM' overview card was removed; PIM configuration remains an Administration section.
-    expect(shell).toContain("{key:'pim',label:'PIM configuration'")
+    // v2.15.107: PIM configuration is the Platform settings > Data model page (role rank 5).
+    expect(await fs.readFile('src/nav-map.js','utf8')).toContain("dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5")
     const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]

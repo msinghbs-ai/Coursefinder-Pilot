@@ -3,12 +3,15 @@ import{AlertTriangle,CheckCircle2,Database,KeyRound,RefreshCw,ServerCog,ShieldCh
 import{adminRead,supabase}from'./lib/supabase'
 import'./environment-migration.css'
 import PlatformResourcesPanel from'./PlatformResourcesPanel'
-import{fmtNumber}from'./lib/format.js'
+import{fmtNumber,fmtDateTime}from'./lib/format.js'
 
 const human=v=>String(v||'').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())
 const fmt=v=>fmtNumber(v||0)
 
-export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
+// v2.15.107: one read, two pages. view='integrations' (Environment & integrations) shows the services overview,
+// usage against budgets and the write-only credentials; view='migration' (Environment migration) shows the
+// Production settings and the migration manifest. view='all' keeps the previous single page.
+export default function EnvironmentMigrationWorkspace({rank,onError=()=>{},view='all'}){
  const[data,setData]=useState(null),[busy,setBusy]=useState(true),[msg,setMsg]=useState('')
  const invoke=async body=>{const{data:r,error}=await supabase.functions.invoke('platform-environment-control',{body});if(error)throw error;if(r?.error)throw new Error(r.error);return r}
  const load=async()=>{setBusy(true);try{setData(await invoke({action:'read'}))}catch(e){onError(e.message||String(e))}finally{setBusy(false)}}
@@ -18,9 +21,12 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
  const providers=data?.layer2_providers||[],settings=data?.settings||[],manifest=data?.migration_manifest||[],runtime=data?.runtime||{}
  const parsebot=providers.find(x=>x.provider_key==='parsebot'),firecrawl=providers.find(x=>x.provider_key==='firecrawl'),zenrows=providers.find(x=>x.provider_key==='zenrows'),otherProviders=providers.filter(x=>['scrape-do','scraperapi'].includes(x.provider_key))
  const refresh=async text=>{setMsg(text);await load()}
+ const showIntegrations=view!=='migration',showMigration=view!=='integrations'
  return <div className="env-stack">
+  {showIntegrations&&<>
+  <ServicesOverview data={data}/>
   <PlatformResourcesPanel onError={onError}/>
-  <section className="env-panel"><div className="env-head"><div><small>Administration / Environment & Migration</small><h2>Integration credentials & production portability</h2><p>Secret values are write-only. Production-specific Supabase keys remain target-generated and are never copied from Pilot.</p></div><button onClick={load}><RefreshCw size={15}/>Refresh</button></div>
+  <section className="env-panel"><div className="env-head"><div><small>Platform settings / Environment & integrations</small><h2>Integration credentials & production portability</h2><p>Secret values are write-only. Production-specific Supabase keys remain target-generated and are never copied from Pilot.</p></div><button onClick={load}><RefreshCw size={15}/>Refresh</button></div>
    {msg&&<div className="env-ok"><CheckCircle2 size={15}/>{msg}</div>}
    <div className="env-summary">
     <Summary label="Evidence rows" value={fmt(runtime.evidence_rows)}/>
@@ -34,7 +40,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
   <section className="env-panel"><h3>Acquisition providers</h3><p className="env-help">Configure keys, quotas and endpoints here. Parse.bot remains disabled until its trial endpoint/key is supplied and bounded UAT passes.</p>
    <div className="env-grid">
     {parsebot&&<ProviderCard provider={parsebot} title="Parse.bot" hint="Trial adapter — configure endpoint/key, then enable only after bounded UAT." onSaved={refresh}/>}
-    {firecrawl&&<ProviderCard provider={firecrawl} title="Firecrawl" hint="Credential and endpoint status only. Monthly entitlement and reserve are managed in Administration → Scraper Config." onSaved={refresh}/>}
+    {firecrawl&&<ProviderCard provider={firecrawl} title="Firecrawl" hint="Credential and endpoint status only. Monthly entitlement and reserve are managed in Platform settings → Scrapers & fetchers." onSaved={refresh}/>}
     {zenrows&&<ProviderCard provider={zenrows} title="ZenRows" hint="Terminal governed fallback." onSaved={refresh}/>}
     {otherProviders.map(p=><ProviderCard key={p.id} provider={p} title={p.display_name} hint="Additional governed Layer 2 acquisition provider." onSaved={refresh}/>)}
    </div>
@@ -42,6 +48,9 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
 
   <IntegrationSecrets data={data} onSaved={refresh}/>
   <ConsumerCredentials data={data} onSaved={refresh}/>
+  </>}
+  {showMigration&&<>
+  {view==='migration'&&msg&&<div className="env-ok"><CheckCircle2 size={15}/>{msg}</div>}
 
   <section className="env-panel"><h3>Production environment</h3><p className="env-help">These are non-secret target values used for cutover planning. Project-generated keys are shown as checklist items only.</p>
    <div className="env-settings">{settings.filter(x=>x.environment_scope!=='current').map(s=><SettingRow key={s.setting_key} setting={s} onSaved={refresh}/>)}</div>
@@ -50,7 +59,28 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{}}){
   <section className="env-panel"><h3>Supabase Production migration manifest</h3><div className="env-warn"><ShieldCheck size={16}/><span>Database clone/restore alone is not enough: Storage objects, Edge Functions, Auth/API keys and project settings require explicit target work.</span></div>
    <div className="env-manifest">{manifest.map(m=><ManifestRow key={m.component_key} item={m} onSaved={refresh}/>)}</div>
   </section>
+  </>}
  </div>
+}
+
+// External services at a glance: configured or not, and budget/usage where the service has one.
+// Secrets are listed by NAME only; values are never read or shown.
+const SERVICE_KEYS=[['openrouter','OpenRouter','AI models for Layer 3'],['cloudflare','Cloudflare','Hosting for this admin site'],['smtp','Email (SMTP)','Sending email']]
+function ServicesOverview({data}){
+ const providers=data?.layer2_providers||[],secrets=data?.integration_secrets||[],consumers=data?.consumer_credentials||[],l3=data?.layer3_profiles||[]
+ const find=k=>secrets.filter(x=>String(x.integration_key||'').toLowerCase().includes(k)||String(x.display_name||'').toLowerCase().includes(k))
+ const cards=[
+  ...providers.map(p=>({key:p.provider_key,name:p.display_name||p.provider_key,purpose:'Fetching provider pages (Layer 2)',configured:Boolean(p.credential_configured),enabled:Boolean(p.enabled),usage:p.billing_config?.monthly_vendor_units_limit??p.billing_config?.monthly_vendor_units,reserve:p.billing_config?.stop_at_vendor_units_remaining??p.billing_config?.reserve_units})),
+  ...SERVICE_KEYS.map(([k,name,purpose])=>{const list=find(k);const l3cred=k==='openrouter'&&l3.some(x=>x.credential_configured);return{key:k,name,purpose,configured:list.some(x=>x.configured)||l3cred,known:list.length>0||l3cred}}),
+ ]
+ return <section className="env-panel"><div className="env-head"><div><small>Platform settings / Environment & integrations</small><h2>External services</h2><p>Whether each service is set up. Keys are stored in the vault and listed here by name only; their values are never shown.</p></div></div>
+  <div className="svc-grid">{cards.map(c=><div className="svc-card" key={c.key}><header><strong>{c.name}</strong><span className={'cf-chip tone-'+(c.configured?'success':c.known===false?'neutral':'warning')}>{c.configured?'Configured':c.known===false?'Not recorded':'Not configured'}</span></header><small>{c.purpose}</small>{c.enabled!=null&&<small>{c.enabled?'Switched on':'Switched off'}{c.usage?` · monthly allowance ${fmt(c.usage)} units`:''}{c.reserve?` · reserve ${fmt(c.reserve)}`:''}</small>}</div>)}</div>
+  <h3>Stored keys (names only)</h3>
+  <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Name</th><th>Key name</th><th>Status</th><th>Last changed</th></tr></thead><tbody>
+   {[...secrets.map(x=>({name:x.display_name,key:x.integration_key,configured:x.configured,at:x.updated_at})),...consumers.map(x=>({name:x.display_name,key:x.credential_name||x.integration_key,configured:x.configured,at:x.rotated_at}))].map(x=><tr key={x.key+x.name}><td>{x.name}</td><td className="svc-names">{x.key}</td><td><span className={'cf-chip tone-'+(x.configured?'success':'warning')}>{x.configured?'Set':'Not set'}</span></td><td>{x.at?fmtDateTime(x.at):'—'}</td></tr>)}
+  </tbody></table></div>
+  <p className="env-help">Keys held as Edge function secrets in Supabase are not readable from the database, so they are not listed here; the health checks report calls that fail because a key is missing.</p>
+ </section>
 }
 
 function Summary({label,value,good=false}){return <div className={'env-summary-card '+(good?'good':'')}><small>{label}</small><strong>{value}</strong></div>}

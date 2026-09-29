@@ -23,3 +23,9 @@
 .l2p-probe{margin-top:9px;padding:9px 10px;border-radius:var(--cf-radius-md);font-size:var(--cf-fs-sm);font-weight:700}.l2p-probe small{display:block;margin-top:3px;font-weight:500}
 .l2p-probe.pass{background:var(--cf-green-75);color:var(--cf-green-800)}.l2p-probe.fail{background:var(--cf-rose-50);color:var(--cf-rose-800)}
 @media(max-width:720px){.l2p-canonical-head{flex-direction:column}.l2p-canonical-head>button{align-self:flex-start}}
+/* v2.15.107: inside Platform settings > Scrapers & fetchers, use the shared kit sizes. */
+.l2p-admin-embedded{font-size:var(--cf-fs-base)}
+.l2p-admin-embedded h2{font-size:var(--cf-fs-xl)}
+.l2p-admin-embedded h3{font-size:var(--cf-fs-lg)}
+.l2p-admin-embedded p{font-size:var(--cf-fs-sm)}
+.l2p-admin-embedded button{font-size:var(--cf-fs-sm)}
