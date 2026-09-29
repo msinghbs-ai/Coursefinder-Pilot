@@ -7,9 +7,11 @@ import{
 }from'lucide-react'
 import{adminRead,api,supabase}from'./lib/supabase'
 import'./data-quality.css'
+import{CoverageView}from'./course-coverage'
 
 const ROUTE='#data-quality-readiness'
 const LEGACY_ROUTE='#completeness'
+const COVERAGE_ROUTE='#course-coverage'
 const PAGE_SIZE=50
 const STATE_ORDER=['present','source_null','not_applicable','zero','suppressed','not_yet_enriched','stale','ambiguous','rejected']
 const STATE_LABEL={
@@ -21,7 +23,8 @@ const ENTITY_ICON={course:GraduationCap,provider:UsersRound,campus:MapPin,schola
 const ENTITY_ROUTE={course:'courses',provider:'providers',campus:'campuses',scholarship:'scholarships'}
 
 function isLegacyHash(){return location.hash===LEGACY_ROUTE||location.hash.startsWith(`${LEGACY_ROUTE}?`)}
-function isActiveHash(){return location.hash===ROUTE||location.hash.startsWith(`${ROUTE}?`)}
+function isCoverageHash(){return location.hash===COVERAGE_ROUTE||location.hash.startsWith(`${COVERAGE_ROUTE}?`)}
+function isActiveHash(){return location.hash===ROUTE||location.hash.startsWith(`${ROUTE}?`)||isCoverageHash()}
 function replaceLegacyHash(){if(isLegacyHash())history.replaceState(null,'',`${ROUTE}${location.hash.includes('?')?location.hash.slice(location.hash.indexOf('?')):''}`)}
 replaceLegacyHash()
 
@@ -79,6 +82,10 @@ function DataQualityWorkspace({rank,role}){
   const[country,setCountry]=useState(''),[overview,setOverview]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState('')
   const[selected,setSelected]=useState(null),[exceptions,setExceptions]=useState(null),[exceptionBusy,setExceptionBusy]=useState(false)
   const[offset,setOffset]=useState(0),[query,setQuery]=useState(''),[submittedQuery,setSubmittedQuery]=useState('')
+  const[coverage,setCoverage]=useState(isCoverageHash())
+  useEffect(()=>{const f=()=>setCoverage(isCoverageHash());addEventListener('hashchange',f);return()=>removeEventListener('hashchange',f)},[])
+  const showCoverage=()=>{setSelected(null);setExceptions(null);if(!isCoverageHash())location.hash=COVERAGE_ROUTE}
+  const showDomains=()=>{setSelected(null);setExceptions(null);if(isCoverageHash())location.hash=ROUTE}
 
   const loadOverview=()=>{
     setBusy(true);setError('')
@@ -118,20 +125,21 @@ function DataQualityWorkspace({rank,role}){
       <button className="dq-brand" onClick={()=>goAdmin()}><span>CF</span><div><strong>Coursefinder</strong><small>Data Quality v1.0</small></div></button>
       <div className="dq-rail-copy"><ShieldCheck size={18}/><div><strong>Governed readiness</strong><small>Decision-grade coverage, freshness and exceptions.</small></div></div>
       <nav className="dq-rail-nav">
-        <button className={!selected?'active':''} onClick={()=>{setSelected(null);setExceptions(null)}}><Layers3 size={16}/>Domain readiness</button>
-        <button className={selected?'active':''} disabled={!selected} onClick={()=>selected&&setSelected({...selected})}><FileSearch size={16}/>Exceptions</button>
+        <button className={!selected&&!coverage?'active':''} onClick={showDomains}><Layers3 size={16}/>Domain readiness</button>
+        <button className={coverage?'active':''} onClick={showCoverage}><GraduationCap size={16}/>Course coverage</button>
+        <button className={selected&&!coverage?'active':''} disabled={!selected||coverage} onClick={()=>selected&&setSelected({...selected})}><FileSearch size={16}/>Exceptions</button>
       </nav>
       <div className="dq-rail-foot"><small>Role</small><strong>{humanise(role)}</strong><button onClick={()=>goAdmin()}><ArrowLeft size={15}/>Back to Admin</button></div>
     </aside>
 
     <main className="dq-main">
       <header className="dq-topbar">
-        <div><div className="dq-eyebrow">Layer-aware data quality · AU/NZ operational gate</div><h1>{selected?'Exceptions & decision context':'Data Quality & Readiness'}</h1><p>{selected?`${selected.label} · ${ENTITY_LABEL[selected.entity_type]} · ${STATE_LABEL[selected.state]}`:'Completeness is shown by governed domain, not as one equal-weight product score.'}</p></div>
+        <div><div className="dq-eyebrow">Layer-aware data quality · AU/NZ operational gate</div><h1>{coverage?'Course coverage':selected?'Exceptions & decision context':'Data Quality & Readiness'}</h1><p>{coverage?'Every active Australian course, accounted for attribute by attribute (Layer 1 register and Layer 2 provider sources).':selected?`${selected.label} · ${ENTITY_LABEL[selected.entity_type]} · ${STATE_LABEL[selected.state]}`:'Completeness is shown by governed domain, not as one equal-weight product score.'}</p></div>
         <div className="dq-actions"><label>Scope<select value={country} onChange={e=>setCountry(e.target.value)}><option value="">AU + NZ</option><option value="AU">Australia</option><option value="NZ">New Zealand</option></select></label><button className="dq-icon" title="Refresh" onClick={loadOverview} disabled={busy}><RefreshCw size={17}/></button><button className="dq-secondary" onClick={()=>goAdmin()}><ArrowLeft size={16}/>Admin</button></div>
       </header>
 
       {error&&<div className="dq-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
-      {!selected?<>
+      {coverage?<CoverageView/>:!selected?<>
         <section className="dq-policy">
           <div className="dq-policy-icon"><ShieldCheck size={21}/></div><div><strong>No composite completeness score</strong><p>{overview?.policy?.reason||'Regulatory authority, enrichment coverage, Search admission and publication are independent decisions.'} <b>Present</b> and legitimate numeric <b>zero</b> count as ready; <b>not applicable</b> is excluded from the denominator.</p></div><span>{scope}</span>
         </section>
