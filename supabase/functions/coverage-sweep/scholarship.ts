@@ -40,7 +40,7 @@ export function contentText(html: string) {
 export function levelText(body: string) {
   return body
     .replace(/\b(?:excluding|except(?: for)?|other than|not (?:available|eligible|open|applicable) (?:for|to)|does not apply to|cannot be used for|ineligible)\b[^.;:)\n]{0,140}/gi, " ")
-    .replace(/\b(?:completed|completing|graduated (?:from|with)|graduates? of|holds?|holding|have finished|prior|previous(?:ly)?)\b[^.;:)\n]{0,80}?\b(?:degree|qualification|diploma|program(?:me)?|studies|course)s?\b/gi, " ");
+    .replace(/\b(?:completed|completing|graduated (?:from|with)|graduates? of|holds?|holding|have finished|prior|previous(?:ly)?|(?:students?|applicants?|those) with)\b[^.;:)\n]{0,80}?\b(?:degree|qualification|diploma|program(?:me)?|studies|course)s?\b/gi, " ");
 }
 function levelsIn(t: string) {
   const levels = new Set<string>();
@@ -168,7 +168,9 @@ export function englishCourse(name: string, content = "") {
 }
 // v0.5.0: not currently offered - held by a recipient until a later year, not offered, no longer offered or available,
 // closed permanently, discontinued. An annual round that has closed for this year is not this.
-const NOT_OFFERED = /(held in tenure until|currently held in tenure|not currently (?:being )?(?:offered|available|open for applications|accepting applications)|no longer (?:be )?(?:offered|available|accepting applications)|applications? (?:have |are |is )?closed permanently|permanently closed|(?:has been|is|was) discontinued|will not be offered|not (?:being )?offered in 20\d\d)/i;
+// v0.5.1: "no longer offered/available" only as a statement about the scholarship ("is no longer offered"), not a
+// condition ("... will result in the scholarship being no longer available")
+const NOT_OFFERED = /(held in tenure until|currently held in tenure|not currently (?:being )?(?:offered|available|open for applications|accepting applications)|(?:is|are|has been|have been)\s+no longer\s+(?:being\s+)?(?:offered|available|accepting applications)|applications? (?:have |are |is )?closed permanently|permanently closed|(?:has been|is|was) discontinued|will not be offered|not (?:being )?offered in 20\d\d)/i;
 export function notOffered(text: string) {
   const m = text.slice(0, 15000).match(NOT_OFFERED);
   if (!m) return null;

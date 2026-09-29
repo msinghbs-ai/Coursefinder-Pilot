@@ -72,7 +72,19 @@ begin
   execute replace(v,o,n);
 end $patch$;
 
--- 4. read again every unpublished active record with a read provider page
+-- 4. read again every unpublished active record with a read provider page (state before kept for the change count)
+create table if not exists pipeline.scholarship_reread_snapshots (
+  run_label text not null, scholarship_id uuid not null, levels jsonb, not_offered boolean, english_course jsonb, linked_courses int,
+  publishable boolean, missing text[], captured_at timestamptz not null default now(), primary key (run_label, scholarship_id));
+alter table pipeline.scholarship_reread_snapshots enable row level security;
+revoke all on pipeline.scholarship_reread_snapshots from public, anon, authenticated;
+insert into pipeline.scholarship_reread_snapshots(run_label,scholarship_id,levels,not_offered,english_course,linked_courses,publishable,missing)
+select 'v0.5.0-before', s.id, sp.facts->'levels', coalesce((sp.facts->>'not_offered')::boolean,false), sp.facts->'english_course',
+       (select count(*) from scholarship.course_mappings cm where cm.scholarship_id=s.id and cm.mapping_state='mapped'), p.publishable, p.missing
+  from pipeline.scholarship_pages sp join scholarship.scholarships s on s.id=sp.scholarship_id
+  join security.scholarship_publishability_v1() p on p.scholarship_id=s.id
+ where s.lifecycle_status='active' and sp.read_status='read'
+on conflict do nothing;
 do $rv$
 declare v_ids uuid[];
 begin

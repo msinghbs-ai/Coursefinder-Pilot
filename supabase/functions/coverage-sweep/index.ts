@@ -2,7 +2,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 import { admissionCheck, baseHost, keepScholarshipUrl, namedScholarshipTitle, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.5.0";
+const SCH_VERSION = "scholarship-sweep-v0.5.1";
+// v0.5.1: "no longer available" only as a statement about the scholarship, not a condition (Griffith Vice Chancellor's
+// International Scholarship); "students with an undergraduate degree qualification" is earlier study (Monash Indonesia).
 // v0.5.0 (level hand-check, 40 publication holds): levels from the page content only (site menus, enquiry forms and
 // link-only lists removed - RMIT, Avondale and CQU menus gave "research and undergraduate"); "graduate coursework" is
 // postgraduate coursework; English language course scholarships are linked to English courses only (english_course);

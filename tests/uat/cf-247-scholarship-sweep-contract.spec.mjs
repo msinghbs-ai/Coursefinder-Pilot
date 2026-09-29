@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.5.0')
+  expect(idx).toContain('scholarship-sweep-v0.5.1')
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
@@ -125,6 +125,7 @@ test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier
   expect(scholarshipLevels('Alumni Postgraduate Scholarship', 'Eligibility: be alumni who completed a degree at a Vietnam campus. This can include: an undergraduate degree or postgraduate degree.')).toEqual(['postgraduate_coursework'])
   expect(scholarshipLevels('Merit Award', 'Eligibility: applicants who have completed an undergraduate degree and enrol in a Master by Coursework.')).toEqual(['postgraduate_coursework'])
   expect(scholarshipLevels('Griffith University International Postgraduate Research Scholarship', '')).toEqual(['research'])
+  expect(scholarshipLevels('Monash University Indonesia Scholarship', 'Intending to enrol in a Monash graduate degree (Master). These scholarships are only awarded to students with an undergraduate degree qualification.')).toEqual(['postgraduate_coursework'])
 })
 
 test('v0.4.3 step-1 hand-check fixes: value conditions, up to, stated value, name amount', async () => {
@@ -207,6 +208,7 @@ test('v0.5.0 English language course scholarships and not currently offered', as
   expect(scholarshipFacts(ge, 'RMIT UP General English Bursary for Asia', 'RMIT UP General English Bursary for Asia')).toMatchObject({ levels: [], english_course: { course: 'general english' } })
   expect(notOffered('This scholarship is currently held in tenure until 2030. Applications will reopen after that.')).toContain('held in tenure until 2030')
   expect(notOffered('This scholarship is no longer offered.')).not.toBeNull()
+  expect(notOffered('Any change from International Fee Paying student status will result in the scholarship being no longer available.')).toBeNull()
   expect(notOffered('Applications closed permanently in 2024.')).not.toBeNull()
   expect(notOffered('Applications for 2026 have now closed. Applications for 2027 open in July.')).toBeNull()
   expect(notOffered('This scholarship is not open to boys who are currently attending the School.')).toBeNull()
