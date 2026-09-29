@@ -1,0 +1,2 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+Deno.serve(() => new Response(JSON.stringify({status:"retired",gate:"M1-SECURITY-RELEASE",reason:"Rejected vector candidate remains not admitted; diagnostic endpoint retired."}),{status:410,headers:{"content-type":"application/json","cache-control":"no-store"}}));
