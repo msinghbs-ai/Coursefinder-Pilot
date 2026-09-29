@@ -173,7 +173,7 @@ export function nameOnPage(name: string, headings: string[], prov: Set<string> =
 
 // Candidate scholarship pages on the provider's own site (and its subdomains).
 const SCH_KEEP = /(scholarship|bursar|award|grant|fee-remission|fee-reduction|fee-waiver|tuition-discount|fee-discount)/i;
-const SCH_DROP = /(\/news|\/events?\/|\/stories|\/story\/|\/blog|\/media|\/staff|\/people\/|\/profile|login|\/search|\/apply(?:ing)?\b|\/how-to-apply|\/terms|\/conditions|\/faqs?\b|\/rules|\/recipients|\/awardees|\/donat|\/giving|\/alumni\/|teaching-award|staff-award|research-grants?\/|\/grants?-and-funding|\/tag\/|\/category\/|wp-content|\/feed|\.(pdf|jpe?g|png|gif|docx?|xlsx?|zip|mp4)(\?|$))/i;
+const SCH_DROP = /(\/sitecore\/|\/news|\/events?\/|\/stories|\/story\/|\/blog|\/media|\/staff|\/people\/|\/profile|login|\/search|\/apply(?:ing)?\b|\/how-to-apply|\/terms|\/conditions|\/faqs?\b|\/rules|\/recipients|\/awardees|\/donat|\/giving|\/alumni\/|teaching-award|staff-award|research-grants?\/|\/grants?-and-funding|\/tag\/|\/category\/|wp-content|\/feed|\.(pdf|jpe?g|png|gif|docx?|xlsx?|zip|mp4)(\?|$))/i;
 const SCH_LISTING = /\/(scholarships?|international-scholarships?|scholarships-and-(?:fees|grants|awards|prizes)|find-a-scholarship|find-scholarship|scholarship-search|scholarships-search|awards?|grants?|bursar(?:y|ies)|international|undergraduate|postgraduate|research|domestic)\/?$/i;
 export const baseHost = (h: string) => h.toLowerCase().replace(/^www\./, "").split(".").slice(-3).join(".");
 // on the provider's own site: its website host or one of its other domains (e.g. monash.edu for monash.edu.au)
