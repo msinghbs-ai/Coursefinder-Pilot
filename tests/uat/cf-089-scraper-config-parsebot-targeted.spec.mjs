@@ -17,7 +17,9 @@ test.describe('CF-089 Scraper Config and Parse.bot qualification @targeted',()=>
   expect(ui).not.toContain("adminRead('layer2_profiles')")
   expect(ui).toContain("control('profile_options'")
   expect(ui).toContain('Test Parse.bot connection')
-  expect(main).toContain("label:'Extraction Profiles'")
+  // v2.15.107: Extraction Profiles is the Layer 2 'Source profiles' tab.
+  expect(fs.readFileSync('src/nav-map.js','utf8')).toContain("{ key: 'profiles', label: 'Source profiles', min: 4 }")
+  expect(main).toContain("if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded")
   expect(main).toContain('Advanced Layer 2 workload defaults')
   expect(main).not.toContain('onChange={e=>setForm(x=>({...x,route_mode:e.target.value}))}')
   expect(acquire).toContain('parsebot_generated_api_route_not_qualified')

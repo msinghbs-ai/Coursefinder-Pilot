@@ -83,3 +83,28 @@ td.cf-empty-cell{padding:22px;text-align:center;color:var(--cf-muted);font-size:
 .cf-filterbar>span{margin-right:4px;color:var(--cf-muted);font-size:var(--cf-fs-2xs);font-weight:750;text-transform:uppercase;letter-spacing:.08em}
 .cf-filterbar>button:not(.cf-icon-btn){border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-pill);padding:5px 11px;background:var(--cf-surface);color:var(--cf-slate-700);font-size:var(--cf-fs-xs);font-weight:700;cursor:pointer}
 .cf-filterbar>button.active{border-color:var(--cf-seq-1);background:var(--cf-seq-1);color:var(--cf-white)}
+
+/* Standard page layout (v2.15.107): page tabs, toolbar and body inside the app shell. */
+.cf-page{display:grid;gap:var(--cf-space-4);min-width:0}
+.cf-page-body{display:grid;gap:var(--cf-space-4);min-width:0}
+.cf-page-tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin;border-bottom:1px solid var(--cf-border);margin-top:-6px}
+.cf-page-tabs button{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;border:0;border-bottom:2px solid transparent;background:transparent;padding:9px 12px 8px;color:var(--cf-muted);font:inherit;font-size:var(--cf-fs-base);font-weight:700;cursor:pointer;white-space:nowrap}
+.cf-page-tabs button:hover{color:var(--cf-text)}
+.cf-page-tabs button.active{border-bottom-color:var(--cf-brand);color:var(--cf-brand-ink)}
+.cf-page-tabs button:focus-visible{outline:none;box-shadow:var(--cf-focus-ring);border-radius:var(--cf-radius-sm)}
+.cf-tab-count{border-radius:var(--cf-radius-pill);background:var(--cf-surface-3);padding:1px 6px;font-size:var(--cf-fs-2xs);color:var(--cf-text-2)}
+.cf-page-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--cf-space-3);flex-wrap:wrap}
+.cf-status-dot{display:inline-block;width:9px;height:9px;border-radius:var(--cf-radius-pill);background:var(--cf-slate-400);flex:0 0 auto}
+.cf-status-dot.tone-ok{background:var(--cf-green-500)}
+.cf-status-dot.tone-warning{background:var(--cf-amber-500)}
+.cf-status-dot.tone-critical{background:var(--cf-red-600)}
+.cf-health-link{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-pill);background:var(--cf-surface);padding:5px 10px;color:var(--cf-text-2);font:inherit;font-size:var(--cf-fs-xs);font-weight:750;cursor:pointer}
+.cf-health-link:hover{border-color:var(--cf-border-strong);background:var(--cf-surface-2)}
+/* Values that differ between two sources are highlighted, never hidden. */
+.cf-diff{background:var(--cf-warning-soft);box-shadow:inset 3px 0 0 var(--cf-amber-500)}
+.cf-kv-table{width:100%;border-collapse:separate;border-spacing:0;font-size:var(--cf-fs-sm)}
+.cf-kv-table th,.cf-kv-table td{padding:8px 10px;border-bottom:1px solid var(--cf-slate-150);text-align:left;vertical-align:top}
+.cf-kv-table thead th{font-size:var(--cf-fs-2xs);font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cf-slate-450);background:var(--cf-surface-2)}
+.cf-kv-table tbody th{width:22%;color:var(--cf-text);font-weight:750}
+.cf-kv-table td small{display:block;margin-top:2px;color:var(--cf-muted);font-size:var(--cf-fs-2xs)}
+@media(max-width:680px){.cf-page-tabs{margin-top:0}.cf-page-tabs button{padding:8px 10px;font-size:var(--cf-fs-md)}.cf-health-link span.cf-health-text{display:none}}

@@ -1,23 +1,25 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.106'
-export const PACKAGE_VERSION='0.1.33'
+export const UI_VERSION='2.15.107'
+export const PACKAGE_VERSION='0.1.34'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'29 Sep 2026',
-  title:'One look across the console; completeness states on Course coverage',
+  title:'Simpler menu, one page layout, Platform health, Layer 3 at a glance, sources side by side',
   changes:[
-    'Course coverage reports the completeness states for every attribute (present, source says nothing, ambiguous, not yet enriched; stale, rejected, suppressed, not applicable and zero are shown as they start being recorded) and the course completeness score: average completeness, accounted for, fully complete courses, courses by attributes admitted, and the score in the daily trend. Select a count to list those courses with their own completeness.',
-    'One set of colours, text sizes, corner radii and shadows for every screen, so the same kind of thing looks the same everywhere. The look is unchanged apart from small alignments.',
-    'Shared building blocks: status chips, badges, buttons, metric tiles, empty messages, filter chips and loading rows are now the same component on every screen.',
-    'Dates read "29 Sep 2026" and "29 Sep 2026, 2:37 pm"; numbers use Australian grouping; money shows as A$31,680 (US$ for vendor and model costs); percentages show one decimal place.',
-    'Layers are always written "Layer 1" to "Layer 4" (no more "L2" or "layer-2").'
+    'The menu has five plain sections: Catalogue, Data pipeline, Operations, Platform settings and Administration. Screens that were near-duplicates are now tabs of one page (for example Jobs and Schedules, Providers and Campuses, Rankings, Compare, QILT and PRISMS). Old links still open the right page.',
+    'Every screen now sits inside the same frame: the same side menu, top bar, page title and tabs. Coverage & completeness no longer opens as a separate full-screen view with its own menu.',
+    'New Platform health page (Operations): overall status, open issues by area, every automatic check and the last 14 days. A coloured dot in the top bar and the menu shows the status at a glance.',
+    'Layer 3 AI validation is one page with tabs: Routing (the model used for each task, today\'s calls and spend), Models & profiles (active, candidates, retired), Test results (stated exact, wrong admitted, withheld, cost) and Spend (per day and profile against ceilings). The existing work queue is its own tab.',
+    'Scholarship detail shows the provider\'s own page next to Study Australia, and course detail shows the provider page next to the regulator (CRICOS). Values that differ are highlighted; both sources are kept.',
+    'Environment & integrations lists the external services (configured or not), stored keys by name only, and usage against budgets.'
   ],
   bugFixes:[
-    'Statistics & Rankings cards had unstyled borders and text colours (they used colour names that did not exist).',
-    'Dashboard: "Layer 3 cost · 24h" read "unknown" instead of the amount.'
+    'Coverage & completeness did not show the main menu and had a different sub-menu.',
+    'The scheduled-workflow builder only appeared on the old Scheduled Tasks address, not on the Schedules tab.',
+    'Layer 3 cost ceilings read "$US$0.0500" (doubled currency sign).'
   ]
 }
 

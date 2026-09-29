@@ -59,6 +59,37 @@ export function Pager({offset,limit=50,total,onOffset,className='m-pager',withIc
   </div></div>
 }
 
+// ---------------------------------------------------------------------------
+// Standard page layout (v2.15.107). Every menu destination renders inside the app shell:
+// the shell draws PageHeader (breadcrumbs, one title, subtitle, actions) and each page
+// draws PageLayout (optional tabs, optional toolbar, content). No screen draws its own
+// shell, side menu or second title.
+
+/** Page header used by the app shell: breadcrumbs, one title, a plain subtitle, actions on the right. */
+export function PageHeader({breadcrumbs,title,subtitle,actions,leading}){return <header className="m-topbar cf-page-header">
+  <div className="m-title-wrap">{leading}<div>{breadcrumbs}<h1>{title}</h1>{subtitle&&<p>{subtitle}</p>}</div></div>
+  {actions&&<div className="m-topbar-actions">{actions}</div>}
+ </header>}
+
+/** Sub-navigation for one page. tabs: [{key,label,count?}]. Keyboard: left/right arrows move between tabs. */
+export function PageTabs({tabs,active,onChange,label='Page sections'}){
+  if(!tabs?.length)return null
+  const move=(e,i)=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;e.preventDefault();const n=tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];onChange?.(n.key);requestAnimationFrame(()=>document.getElementById(`cf-tab-${n.key}`)?.focus())}
+  return <div className="cf-page-tabs" role="tablist" aria-label={label}>{tabs.map((t,i)=><button key={t.key} id={`cf-tab-${t.key}`} type="button" role="tab" aria-selected={active===t.key} tabIndex={active===t.key?0:-1} className={active===t.key?'active':''} onClick={()=>onChange?.(t.key)} onKeyDown={e=>move(e,i)}>{t.label}{t.count!=null&&<span className="cf-tab-count">{fmtNumber(t.count)}</span>}</button>)}</div>
+}
+
+/** Page body: optional tabs, optional toolbar row, then the content. */
+export function PageLayout({tabs,active,onTab,toolbar,children,className='',label}){
+  return <div className={`cf-page${className?' '+className:''}`}>
+    {tabs?.length>1&&<PageTabs tabs={tabs} active={active} onChange={onTab} label={label}/>}
+    {toolbar&&<div className="cf-page-toolbar">{toolbar}</div>}
+    <div className="cf-page-body" role={tabs?.length>1?'tabpanel':undefined} aria-labelledby={tabs?.length>1&&active?`cf-tab-${active}`:undefined}>{children}</div>
+  </div>
+}
+
+/** Small coloured status dot with a text label for screen readers. tone: ok | warning | critical | unknown */
+export function StatusDot({tone='unknown',label}){return <span className={`cf-status-dot tone-${tone}`} role="img" aria-label={label||tone} title={label}/>}
+
 // Remembered screen choices (filters, sort, tab, search).
 // Opening order: the address bar wins (a shared link shows what the sender saw), then this
 // user's last choices for this screen, then the defaults. Unreadable or wrongly typed saved

@@ -3,7 +3,8 @@ import fs from 'node:fs'
 test('breadcrumb navigation and release pill use maintained dialog authority',()=>{
   const ui=fs.readFileSync('src/mature-main.jsx','utf8')
   const release=fs.readFileSync('src/pim-version-entry.js','utf8')
-  expect(ui).toContain('setPage(label);setRouteParams(new URLSearchParams(q));if(location.hash!==next)location.hash=next')
+  // v2.15.107: navigation resolves through nav-map (old names and addresses redirect) and writes one canonical address.
+  expect(ui).toContain('setRoute(r);if(location.hash!==next)location.hash=next')
   expect(ui).toContain('<span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span>')
   expect(ui).not.toContain('<details className="m-release-menu">')
   expect(release).toContain("querySelectorAll('.m-release-pill')")

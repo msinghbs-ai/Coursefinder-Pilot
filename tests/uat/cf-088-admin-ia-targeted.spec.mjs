@@ -13,9 +13,14 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
     const access=fs.readFileSync('src/access-roles-entry.jsx','utf8')
     const index=fs.readFileSync('index.html','utf8')
     expect(main).toMatch(/const UI_VERSION='2\.15\.\d+'/ )
-    expect(main).toContain("const ADMIN_SECTIONS=[")
-    expect(main).toContain("const LEGACY_ADMIN_ROUTES={'users-roles':'users-roles','attributes':'pim','settings':'platform'}")
-    expect(main).toContain("<AccessRolesEmbedded actorId={actorId}/>")
+    // v2.15.107: Administration sections became pages in nav-map.js; every old Administration
+    // section and legacy address (users-roles, attributes, settings) still resolves.
+    const nav=fs.readFileSync('src/nav-map.js','utf8')
+    expect(nav).toContain('export const LEGACY_ADMIN_SECTIONS = {')
+    for(const k of ["'overview'","'sources-imports'","'layer1-sources'","'layer2-providers'","'provider-assets'","'layer2-sources'","'onboarding'","'pim'","'users-roles'","'environment-migration'","'platform'"])expect(nav).toContain(k+':')
+    expect(nav).toContain("'attributes': { page: 'dataModel' }")
+    expect(nav).toContain("'settings': { page: 'health', tab: 'readiness' }")
+    expect(main).toContain("case'users':return <AccessRolesEmbedded actorId={actorId}/>")
     expect(main).not.toContain("if(key==='users-roles'){location.hash='#users-roles'")
     expect(access).toContain("export function AccessRolesEmbedded")
     expect(index).not.toContain('id="access-roles-root"')

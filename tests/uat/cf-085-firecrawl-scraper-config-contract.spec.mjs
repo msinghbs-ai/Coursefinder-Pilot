@@ -10,15 +10,16 @@ test.describe('CF-085 Firecrawl scraper configuration contract',()=>{
   ])
   // CF-088 moved the Administration tool list to objects; the contract (Scraper
   // Config owns the Firecrawl quota) is unchanged.
-  expect(shell).toContain("key:'layer2-providers',label:'Scraper Config'")
-  expect(shell).toContain("tool==='layer2-providers'&&<><Layer2ProviderConfig")
+  // v2.15.107: Scraper Config is the Platform settings > Scrapers & fetchers page.
+  expect(await fs.readFile('src/nav-map.js','utf8')).toContain("scrapers: { label: 'Scrapers & fetchers'")
+  expect(shell).toContain("case'scrapers':return <><Layer2ProviderConfig")
   expect(provider).toContain('aria-label="Firecrawl monthly limit"')
   expect(provider).toContain('aria-label="Firecrawl safety reserve"')
   expect(provider).toContain('monthly_vendor_units_limit:limit')
   expect(provider).toContain('stop_at_vendor_units_remaining:reserve')
   expect(provider).toContain('Firecrawl monthly limit did not persist exactly')
   expect(provider).toContain('Firecrawl safety reserve did not persist exactly')
-  expect(environment).toContain('Monthly entitlement and reserve are managed in Administration → Scraper Config.')
+  expect(environment).toContain('Monthly entitlement and reserve are managed in Platform settings → Scrapers & fetchers.')
   expect(environment).not.toContain('title="Firecrawl" hint="Update the recorded monthly entitlement')
  })
 })

@@ -7,16 +7,14 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
  test('Evidence provenance enhancer and fixed Layer sequence remain wired',async()=>{
   const[index,nav,evidence,migration]=await Promise.all([
    fs.readFile('index.html','utf8'),
-   fs.readFile('src/layer2-navigation-restore.js','utf8'),
+   fs.readFile('src/nav-map.js','utf8'),
    fs.readFile('src/evidence-acquisition-provenance-entry.js','utf8'),
    fs.readFile('supabase/migrations/20260904060000_cf_142_evidence_acquisition_provenance.sql','utf8'),
   ])
-  expect(nav.indexOf("label:'Layer 1 — Operations'")).toBeLessThan(nav.indexOf("label:'Layer 2 — Enrichment'"))
-  expect(nav.indexOf("label:'Layer 2 — Enrichment'")).toBeLessThan(nav.indexOf("label:'Layer 3 — AI Interpretation'"))
-  expect(nav.indexOf("label:'Layer 3 — AI Interpretation'")).toBeLessThan(nav.indexOf("label:'Layer 4 — Human Resolution'"))
-  // Decision 116: Layer shortcuts must not be injected into the Administration tab row.
-  expect(nav).not.toContain('.m-admin-subnav')
-  expect(nav).toContain("group.dataset.cfLayerOrder='L1>L2>L3>L4'")
+  // v2.15.107: the fixed Layer 1 > 2 > 3 > 4 order is declared once in nav-map.js (Data pipeline section);
+  // the page script that reordered menu buttons (layer2-navigation-restore.js) is gone and nothing injects menu entries.
+  expect(nav).toContain("pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4']")
+  expect(index).not.toContain('layer2-navigation-restore')
   expect(evidence).toContain('Acquisition provenance')
   // 'Derived from stored Evidence' wording was removed from the provenance panel; 'Acquisition provenance' (above) remains the check.
   expect(evidence).toContain('Storage reuse')
