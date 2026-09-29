@@ -95,16 +95,20 @@ export function scholarshipValue(body: string, name = "") {
     const v = Number(m[1] || m[2]); if (v >= 5 && v <= 100) pct.add(v);
     if (/up to\s*$/i.test(t.slice(Math.max(0, (m.index || 0) - 12), m.index || 0))) upTo = true;
   }
-  const amt = new Set<number>();
+  const amt = new Set<number>(); let foreign = false;
   const stipend = /\bstipend\b/i.test(t);
-  for (const m of t.matchAll(/(?:A\$|AUD\s?\$?|\$)\s?(\d{1,3}(?:,\d{3})+|\d{3,6})(?:\.\d{2})?/g)) {
+  for (const m of t.matchAll(/(?:A\$|AUD\s?\$?|US\$|USD\s?\$?|\$)\s?(\d{1,3}(?:,\d{3})+|\d{3,6})(?:\.\d{2})?(\s?(?:USD|US|NZD|CAD|GBP|EUR))?/g)) {
     const at = m.index || 0, around = t.slice(Math.max(0, at - 90), at + 90).toLowerCase();
+    // v0.4.6: an amount in another currency, or a maximum ("up to A$7,496"), is not a single AUD value
+    if (/^(?:US\$|USD)/i.test(m[0]) || m[2] || /\b(?:USD|US\$)\s*$/i.test(t.slice(Math.max(0, at - 8), at))) { foreign = true; continue }
+    if (/up to\s*(?:a|au)?\s*$/i.test(t.slice(Math.max(0, at - 12), at))) upTo = true;
     if (!/(scholarship|award|valued?|worth|stipend|bursary|grant|per year|per annum|each year|one-off|one off|once-off)/.test(around)) continue;
     if (/(accommodation|application fee|cost of|visa|oshc|health cover)/.test(around) || (!stipend && /living/.test(around))) continue;
     const v = Number(m[1].replace(/,/g, "")); if (v >= 500 && v <= 200000) amt.add(v);
   }
   // any other percentage in the scholarship text (tiers by region, level or result) makes a single value unsafe
   const allPct = new Set<number>([...t.matchAll(/(\d{1,3})\s?%/g)].map((m) => Number(m[1])).filter((v) => v >= 5 && v <= 100))
+  if (foreign) return { type: "ambiguous", foreign_currency: true, percentages: [...pct], amounts: [...amt] };
   if (upTo) return { type: "ambiguous", up_to: true, percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && allPct.size > 1) return { type: "ambiguous", percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && amt.size === 0) { const p = [...pct][0]; return { type: "percentage", percentage: p, applies_to: "tuition_fee", context: ctx(t, new RegExp(`${p}\\s?%`)) } }
@@ -131,11 +135,14 @@ function ctx(t: string, re: RegExp) { const m = t.match(new RegExp(re.source, re
 export function scholarshipFacts(html: string, titleText: string, name: string) {
   const body = mainText(html);
   // levels from the eligibility section when the page has one (pages mention other levels elsewhere); else the page start
-  const at = body.search(/\beligib/i);
+  // v0.4.6: the eligibility section is a heading-like "Eligibility" / "Who is eligible" (not "eligible countries"), and
+  // when it states no level the page start is used
+  const at = body.search(/\b(?:eligibility(?: criteria| requirements)?\b|who (?:is|can be) eligible|am i eligible|to be eligible)/i);
   const eligibility = at >= 0 ? body.slice(at, at + 1200) : null;
+  const fromElig = eligibility ? scholarshipLevels(titleText + " " + name, eligibility) : [];
   return {
-    levels: scholarshipLevels(titleText + " " + name, eligibility ?? body),
-    levels_from: eligibility ? "eligibility" : "page",
+    levels: fromElig.length ? fromElig : scholarshipLevels(titleText + " " + name, body),
+    levels_from: fromElig.length ? "eligibility" : "page",
     ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped } })(),
     value: scholarshipValue(body, name),
     deadline: scholarshipDeadline(body),

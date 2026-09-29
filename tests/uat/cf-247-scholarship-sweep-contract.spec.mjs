@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toContain('scholarship-sweep-v0.4.5')
+  expect(idx).toContain('scholarship-sweep-v0.4.6')
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
@@ -156,4 +156,14 @@ test('v0.4.5 step-2 hand-check: only a scholarship\'s own name is admitted as a 
     expect(namedScholarshipTitle(t)).toBe(true)
   for (const t of ['--> Scholarships <!--', 'Global Curtin scholarships', 'UNSW scholarships for international students', 'Accommodation scholarships', 'International Scholarships | UniSC | University of the Sunshine Coast', 'Studying in Perth with the WA Premiers University Scholarship Shruti', 'Australia Awards students'])
     expect(namedScholarshipTitle(t)).toBe(false)
+})
+
+test('v0.4.6 step-2 hand-check: foreign currency, maximum amounts, eligibility section', async () => {
+  const { scholarshipValue, scholarshipFacts } = await load()
+  expect(scholarshipValue('Benefit amount $5,000 USD (total value for up to 1 year). Scholarship paid bi-annually.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Receive a scholarship credit of up to A$7,496 towards your tuition.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('The scholarship amount is varied up to AUD$20,000 for each student.')).toMatchObject({ type: 'ambiguous' })
+  expect(scholarshipValue('Recipients receive a one-off scholarship payment of $5,000.')).toMatchObject({ type: 'fixed_amount', amount: 5000 })
+  const bond = '<main>' + 'q '.repeat(800) + '<p>Stand Out Scholarships for students applying to study at an undergraduate or postgraduate level.</p><p>See list of eligible countries: Argentina, Bangladesh, Brazil, Chile.</p></main>'
+  expect(scholarshipFacts(bond, 'International Stand Out Scholarship', 'International Stand Out Scholarship').levels).toEqual(['postgraduate_coursework', 'undergraduate'])
 })
