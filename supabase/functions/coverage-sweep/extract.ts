@@ -85,9 +85,12 @@ export function english(text: string) {
     break
   }
   if (!("ielts_overall" in x) && /IELTS/i.test(text)) x.ielts_unclear = true
-  const p = text.match(/(?:PTE|Pearson Test of English)[^\d]{0,40}(?:overall[^\d]{0,15})?(\d{2})\b/i)
+  // PTE/TOEFL: the number must be stated as overall, or follow the test name directly ("PTE Academic: 58")
+  const p = text.match(/(?:PTE(?: Academic)?|Pearson Test of English(?: Academic)?)\s*(?:\(Academic\))?\s*[:\-–]?\s*(?:overall(?: score)?(?: of)?\s*[:\-–]?\s*)?(\d{2})\b/i)
+    || text.match(/(?:PTE|Pearson)[^\d.]{0,40}overall(?: score)?(?: of)?[^\d]{0,10}(\d{2})\b/i)
   if (p && Number(p[1]) >= 30 && Number(p[1]) <= 90) x.pte_overall = Number(p[1])
-  const t = text.match(/TOEFL[^\d]{0,40}(?:\(0-120\)[^\d]{0,10})?(?:overall[^\d]{0,15})?(\d{2,3})\b/i)
+  const t = text.match(/TOEFL(?: iBT)?\s*(?:\(0-120\))?\s*[:\-–]?\s*(?:overall(?: score)?(?: of)?\s*[:\-–]?\s*)?(\d{2,3})\b/i)
+    || text.match(/TOEFL[^\d.]{0,40}overall(?: score)?(?: of)?[^\d]{0,10}(\d{2,3})\b/i)
   if (t && Number(t[1]) >= 40 && Number(t[1]) <= 120) x.toefl_overall = Number(t[1])
   return x
 }

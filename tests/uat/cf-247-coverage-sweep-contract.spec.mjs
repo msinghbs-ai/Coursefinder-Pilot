@@ -41,6 +41,9 @@ test('tuition, English and intake candidates', async () => {
   expect(english('IELTS overall band of 6.5 (Academic Module) with no individual band below 6.0')).toMatchObject({ ielts_overall: 6.5, ielts_min_band: 6 })
   expect(english('English Test Overall Score Reading Writing Listening Speaking IELTS Academic 6.5 6.0 6.0 6.0 6.0 UOW College')).toMatchObject({ ielts_overall: 6.5, ielts_min_band: 6 })
   expect(english('IELTS Academic: overall 6.5, writing 6.0 TOEFL iBT (0-120): overall 79, writing 21')).toMatchObject({ ielts_overall: 6.5, toefl_overall: 79 })
+  expect(english('PTE Academic requirements vary; see the English requirements page for 41 courses').pte_overall).toBeUndefined()
+  expect(english('Pearson PTE: overall 58, writing 50').pte_overall).toBe(58)
+  expect(english('TOEFL iBT (0-120): overall 79, writing 21').toefl_overall).toBe(79)
   expect(intakes('Intakes: February and July each year. Semester starts in February.')).toEqual(['February', 'July'])
   expect(intakes('Semester dates may change; start dates may vary.')).toEqual([])
 })
@@ -66,7 +69,7 @@ test('robots.txt is respected', async () => {
 
 test('worker and database contract: nothing written to the catalogue, budget guard counts sweep usage', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.0";')
+  expect(w).toContain('const VERSION = "coverage-sweep-v0.5.1";')
   expect(w).toContain('identity(html, text, it.title, it.code, it.status === "ambiguous")')
   expect(w).not.toContain('svc_coursefacts_apply_record')
   expect(w).toContain('robotsAllows(')

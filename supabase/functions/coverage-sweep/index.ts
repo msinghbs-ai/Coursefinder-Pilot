@@ -8,7 +8,8 @@ import { english, fee, h1Of, htmlToText, identity, intakes, keepUrl, robotsAllow
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.5.0";
+const VERSION = "coverage-sweep-v0.5.1";
+// v0.5.1: PTE/TOEFL only when stated as overall or directly after the test name.
 // v0.5.0: English overall only when stated as overall or in a score table; minimum band after the overall; fee basis
 // total/annual from the amount's own wording ("(2027 total)", "total indicative fee"); mode reextract re-runs the
 // extractor over stored pages read by an older version (no fetch).
