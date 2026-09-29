@@ -19,6 +19,7 @@ import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRe
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import Layer3Operations from'./Layer3Operations'
+import FlaggedValues from'./FlaggedValues'
 import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
 import{CoverageView}from'./course-coverage'
@@ -182,7 +183,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
         return <Layer2Workspace rank={rank} embedded/>
       case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
-      case'layer4':return <div className="m-page-stack"><Layer4Workspace onError={err}/></div>
+      case'layer4':return tab==='flags'?<FlaggedValues onError={err}/>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError}/>:<PlatformHealth onError={onError}/>
       case'jobs':return tab==='schedules'?<div className="m-page-stack"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>

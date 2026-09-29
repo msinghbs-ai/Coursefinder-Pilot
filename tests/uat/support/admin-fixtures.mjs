@@ -120,3 +120,12 @@ export const layer3Control = {
   ],
   events: [{ at: now, kind: 'requeued_parked', detail: { note: 'parked work returned' } }, { at: now, kind: 'admin_tier_move', detail: { task: 'provider_english_validation', tier: 2 } }],
 }
+
+// Flagged values (shape of public.admin_data_flags_read, 29 Sep 2026)
+export const dataFlags = {
+  can_edit: true, counts: { open: 2, removed: 27 },
+  items: [
+    { id: 'f1', flag: 'tuition_period_assumed_annual', status: 'open', created_at: now, course_id: 'c1', course: 'Bachelor of Laws/Bachelor of Psychology', course_code: '0102000', provider: 'Edith Cowan University', amount: 54750, currency: 'AUD', basis: 'annual', fee_status: 'active', page_url: 'https://www.ecu.edu.au/example', quotes: ['International students - estimated 1st year indicative fee AUD $54,750'] },
+    { id: 'f2', flag: 'tuition_period_assumed_annual', status: 'open', created_at: now, course_id: 'c2', course: 'Bachelor of Nursing', course_code: '0100001', provider: 'Example University', amount: 33600, currency: 'AUD', basis: 'annual', fee_status: 'active', page_url: null, quotes: ['Fee paying overseas: Full-time - $33,600.00 pa'] },
+  ],
+}

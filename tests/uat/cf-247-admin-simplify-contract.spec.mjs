@@ -32,7 +32,7 @@ test('menu map: five plain sections, every page reachable, old addresses and nam
 
 test('role gates are unchanged from the screens they came from', () => {
   const min = (p, t) => PAGES[p].tabs ? PAGES[p].tabs.find(x => x.key === t).min : PAGES[p].min
-  expect([min('layer1', 'operations'), min('layer1', 'settings'), min('layer2', 'operations'), min('layer3', 'routing'), min('layer4'), min('jobs', 'jobs'), min('evidence')]).toEqual([4, 6, 4, 3, 3, 4, 3])
+  expect([min('layer1', 'operations'), min('layer1', 'settings'), min('layer2', 'operations'), min('layer3', 'routing'), min('layer4', 'review'), min('jobs', 'jobs'), min('evidence')]).toEqual([4, 6, 4, 3, 3, 4, 3])
   expect([min('users'), min('environment'), min('migration'), min('regulatory'), min('dataModel'), min('scrapers'), min('health', 'readiness')]).toEqual([6, 6, 6, 6, 5, 4, 6])
   expect(canOpen('users', 5)).toBe(false)
   expect(canOpen('layer1', 3)).toBe(true) // Key dates, Key links and Onboarding are rank 3
@@ -115,6 +115,22 @@ test.describe('mocked browser', () => {
     await page.getByRole('tab', { name: 'Models' }).click()
     await expect(page.locator('tbody tr')).toHaveCount(8)
     await expect(page.getByText('Qualified, not used')).toBeVisible()
+  })
+
+  test('Layer 4 flagged values: tuition recorded as per year can be confirmed, edited or removed', async ({ page }) => {
+    await mockAdmin(page)
+    page.on('dialog', d => d.accept())
+    await page.goto('/#layer-4-review?tab=flags')
+    await expect(page.getByRole('tab', { name: 'Flagged values' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('tbody tr')).toHaveCount(2)
+    await expect(page.getByText('estimated 1st year indicative fee AUD $54,750')).toBeVisible()
+    await page.getByRole('button', { name: 'Confirm per year' }).first().click()
+    await expect.poll(() => page.l3calls.map(c => c.p_action)).toContain('confirm')
+    await page.getByRole('button', { name: 'Edit' }).first().click()
+    await page.getByLabel('Fee amount').fill('40000')
+    await page.getByLabel('Fee period').selectOption('total_indicative')
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect.poll(() => page.l3calls.find(c => c.p_action === 'correct')?.p_args).toEqual({ amount: 40000, basis: 'total_indicative' })
   })
 
   test('scholarship and course detail show both sources and highlight differences', async ({ page }) => {
