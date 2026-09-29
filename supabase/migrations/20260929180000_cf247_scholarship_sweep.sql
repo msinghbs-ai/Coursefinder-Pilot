@@ -154,5 +154,5 @@ revoke all on function public.svc_scholarship_read_record(uuid,text,int,text,tex
 grant execute on function public.svc_scholarship_read_record(uuid,text,int,text,text,text,text,jsonb) to service_role;
 
 select cron.schedule('scholarship-read','*/5 * * * *',$$select pipeline.svc_pilot_submit_nonce('coverage-sweep','{"mode":"scholarship_read","limit":20}'::jsonb)$$);
--- Decision 139 batches under the 29 Sep 2026 approval (publish, then sweep for more), after each sweep day
-select cron.schedule('scholarship-publish-batch','37 20 * * *',$$select security.scholarship_publish_batch_v1('CF-CHG-20260915-247; Decision 139; Platform Admin approval 29 Sep 2026 09:56 IST (publish and sweep)', true)$$);
+-- Decision 139 batches are run by hand, one deliberate batch at a time (dry run, sample check, then apply); there is
+-- no automatic publish job. The nightly scholarship-publication-review job still withdraws anything that stops qualifying.

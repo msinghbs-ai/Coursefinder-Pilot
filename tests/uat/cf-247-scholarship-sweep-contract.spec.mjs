@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import os from 'node:os'
 import path from 'node:path'
+import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
 
 async function load() {
@@ -37,4 +38,16 @@ test('scholarship facts: value, levels, fields, deadline, main content only', as
   const html = '<html><nav>Undergraduate Postgraduate Research PhD</nav><main>' + 'x '.repeat(900) + '<h1>Merit Award</h1><p>25% tuition fee reduction</p></main><footer>Engineering</footer></html>'
   expect(mainText(html)).not.toContain('PhD')
   expect(mainText(html)).toContain('25% tuition fee reduction')
+})
+
+test('Decision 139 international check: domestic-only provider pages are not publishable', async () => {
+  const { scholarshipFacts } = await load()
+  const dom = '<main>' + 'w '.repeat(800) + '<p>Arts Equity Travel Grant. Eligibility: Australian citizens and permanent residents enrolled in Arts.</p></main>'
+  expect(scholarshipFacts(dom, 'Arts Equity Travel Grant', 'Arts Equity Travel Grant').international).toBe(false)
+  const intl = '<main>' + 'v '.repeat(800) + '<p>Open to international students commencing an undergraduate degree.</p></main>'
+  expect(scholarshipFacts(intl, 'Merit Award', 'Merit Award').international).toBe(true)
+  const sql = fs.readFileSync('supabase/migrations/20260929184000_cf247_d139_international_page_check.sql', 'utf8')
+  expect(sql).toContain('provider page limits it to citizens and residents')
+  expect(sql).toContain('provider page does not mention international students')
+  expect(fs.readFileSync('supabase/migrations/20260929180000_cf247_scholarship_sweep.sql', 'utf8')).not.toContain("cron.schedule('scholarship-publish-batch'")
 })
