@@ -167,3 +167,11 @@ test('v0.4.6 step-2 hand-check: foreign currency, maximum amounts, eligibility s
   const bond = '<main>' + 'q '.repeat(800) + '<p>Stand Out Scholarships for students applying to study at an undergraduate or postgraduate level.</p><p>See list of eligible countries: Argentina, Bangladesh, Brazil, Chile.</p></main>'
   expect(scholarshipFacts(bond, 'International Stand Out Scholarship', 'International Stand Out Scholarship').levels).toEqual(['postgraduate_coursework', 'undergraduate'])
 })
+
+test('Decision 139 publication holds: hand-check holds are reported and skipped by the batch', async () => {
+  const sql = fs.readFileSync('supabase/migrations/20260929214000_cf247_d139_publication_holds.sql', 'utf8')
+  expect(sql).toContain('pipeline.scholarship_publication_holds')
+  expect(sql).toContain("'held after hand-check'")
+  expect(sql).toContain('01d14b534fdda592ca99cd9ee18e5a68')
+  expect(sql).not.toMatch(/cron\.schedule/)
+})
