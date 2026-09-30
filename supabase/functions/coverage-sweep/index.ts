@@ -45,6 +45,8 @@ const WORKER = "coverage-sweep-worker-v0.8.0";
 // home page prints the provider's CRICOS provider code; directories and registers skipped.
 // v0.3.2: a script-only page read directly while the Firecrawl reserve is reached is "needs_render" (retried after the
 // budget resets), never an identity mismatch.
+// v0.6.2 (1 Oct 2026, course link recipes): a priority page read directly that does not show the course's CRICOS code
+// is rendered once through Firecrawl before it is called an identity mismatch (script-rendered handbooks).
 // v0.6.1 (30 Sep 2026, Platform Admin: maximum data for top universities): the Firecrawl fallback also covers ambiguous
 // pages of the 100 largest providers (read_next marks them priority); identity is still the CRICOS code on the page.
 // v0.3.1: Firecrawl fallback only for bound pages; ambiguous pages are read directly only (low yield).
@@ -459,8 +461,18 @@ Deno.serve(async (req) => {
         } catch { status = "fetch_failed" }
         let identityBasis: string | null = null, path: string | null = null, sha: string | null = null, candidates: unknown = null;
         if (status === "read") {
-          const text = htmlToText(html);
+          let text = htmlToText(html);
           identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous");
+          // v0.6.2: a priority page read directly without the code may be a script-rendered handbook (UNSW, Melbourne):
+          // render it once through Firecrawl before calling it a mismatch.
+          if (!identityBasis && via === "direct" && it.priority === true && await useFc("scrape", it.provider_id, it.url)) {
+            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
+            const d = r ? await r.json().catch(() => ({})) : {};
+            if (r?.ok && d?.data?.html) {
+              html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? http; finalUrl = d.data?.metadata?.sourceURL || finalUrl;
+              text = htmlToText(html); identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous");
+            }
+          }
           if (!identityBasis) status = "identity_mismatch";
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
           path = `layer2/AU/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
