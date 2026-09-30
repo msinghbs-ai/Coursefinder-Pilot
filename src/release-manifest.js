@@ -1,23 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.118'
-export const PACKAGE_VERSION='0.1.45'
+export const UI_VERSION='2.15.119'
+export const PACKAGE_VERSION='0.1.46'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Models & services: switch any AI model or fetching service on or off',
+  title:'Parse.bot removed',
   changes:[
-    'New page in Platform settings: Models & services. Every AI model and every page-fetching service has an on/off switch.',
-    'Anything switched off stays listed there, greyed, and is not offered in operation screens (Layer 3 Control, Send back to AI, Layer 2 routing).',
-    'Switching a model off also switches off the cascade steps that use it; you are told which before confirming. Switching it back on does not re-add it to a cascade.',
-    'Models that were retired after failing their tests are listed separately and cannot be switched on.',
-    'Every switch is logged with who, when and an optional reason.'
+    'Parse.bot has been removed completely: its settings card, its routes on every source profile and its stored key.',
+    'Ranking imports are now file upload only. The publisher URL option (which used Parse.bot) is gone; rankings and files already imported are kept.'
   ],
-  bugFixes:[
-    'Layer 3 Control could still show a cascade step whose model had been switched off.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

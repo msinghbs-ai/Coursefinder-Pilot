@@ -5,6 +5,7 @@
 #    verify_jwt setting (taken from the live project on 24 Sep 2026);
 #  - the target project must be typed and must match the repository variable
 #    SUPABASE_PROJECT_REF (so the unrelated demo project can never be targeted by mistake);
+#  - retired functions (delete_functions) can be deleted only from a fixed list, once their source is removed;
 #  - the Layer 3 binding contracts run first, so qualified code cannot deploy with a stale
 #    manifest.
 # One-off setup: repository secret SUPABASE_ACCESS_TOKEN and variable SUPABASE_PROJECT_REF.
@@ -15,6 +16,10 @@ on:
       functions:
         description: "Comma-separated function names (must be on the allow-list)"
         required: true
+      delete_functions:
+        description: "Optional: comma-separated retired functions to delete (must be on the retired list)"
+        required: false
+        default: ""
       project_ref:
         description: "Type the target project ref to confirm"
         required: true
@@ -68,6 +73,9 @@ jobs:
             [coverage-sweep]=false
             [layer3-intake-benchmark]=false
             [layer3-model-routing]=false
+            [layer2-provider-control]=true
+            [layer2-acquire-v2]=false
+            [layer2-scope-discover-scheduled]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
@@ -80,3 +88,16 @@ jobs:
           done
       - name: Deployed versions
         run: supabase functions list --project-ref "${{ inputs.project_ref }}" | grep -E "$(echo '${{ inputs.functions }}' | sed 's/ //g;s/,/|/g')" || true
+      - name: Delete retired functions
+        if: ${{ inputs.delete_functions != '' }}
+        run: |
+          # Only functions retired by a recorded decision can be deleted, and only once their source is gone from the repository.
+          RETIRED=" ranking-publisher-url-import ranking-qs-url-import ranking-the-url-import "
+          IFS=',' read -ra FNS <<< "${{ inputs.delete_functions }}"
+          for raw in "${FNS[@]}"; do
+            fn="$(echo "$raw" | xargs)"
+            case "$RETIRED" in *" $fn "*) ;; *) echo "Refused: $fn is not on the retired list"; exit 1;; esac
+            if [ -e "supabase/functions/$fn" ]; then echo "Refused: supabase/functions/$fn still exists"; exit 1; fi
+            echo "Deleting retired function $fn"
+            supabase functions delete "$fn" --project-ref "${{ inputs.project_ref }}"
+          done

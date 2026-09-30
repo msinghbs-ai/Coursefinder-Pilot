@@ -281,9 +281,6 @@ export const api = {
     form.set('file', transportFile)
     return invokeMultipart('ranking-publisher-import', form)
   },
-  importRankingPublisherUrl: ({ systemCode, editionYear, referencePath }) => invoke('ranking-publisher-url-import', {
-    system_code: systemCode, edition_year: Number(editionYear), reference_path: referencePath,
-  }),
   rankingPublisherControl: ({ action, importId }) => invoke('ranking-publisher-control', { action, import_id: importId }),
 
   providerAssetSummary: ({ countryCode = '', query = '' } = {}) => adminRead('provider_asset_summary', {

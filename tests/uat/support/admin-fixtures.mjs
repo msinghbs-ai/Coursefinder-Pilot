@@ -96,7 +96,6 @@ export const environmentRead = {
   layer2_providers: [
     { id: 'f1', provider_key: 'firecrawl', display_name: 'Firecrawl', enabled: true, credential_configured: true, billing_config: { monthly_vendor_units_limit: 100000, stop_at_vendor_units_remaining: 2000 }, rate_limit_per_minute: 60, auth_scheme: 'bearer' },
     { id: 'z1', provider_key: 'zenrows', display_name: 'ZenRows', enabled: false, credential_configured: false, billing_config: {}, auth_scheme: 'query' },
-    { id: 'pb', provider_key: 'parsebot', display_name: 'Parse.bot', enabled: false, credential_configured: true, billing_config: {}, auth_scheme: 'header' },
   ],
   layer3_profiles: [{ id: '03beae2f', code: 'openrouter-provider-tuition-validation-mistral-small-3-2-v1', aggregator_provider: 'openrouter', credential_configured: true, enabled: true, paused: false }],
   migration_manifest: [{ component_key: 'db', component_group: 'Database', display_name: 'Database schema', migration_mode: 'migrations', required: true, source_status: 'ready', target_status: 'pending', sort_order: 1 }],
