@@ -1,20 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.113'
-export const PACKAGE_VERSION='0.1.40'
+export const UI_VERSION='2.15.114'
+export const PACKAGE_VERSION='0.1.41'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'30 Sep 2026',
-  title:'Priority queue: choose which universities, states, countries or courses go first',
+  date:'1 Oct 2026',
+  title:'Edit courses and providers by hand; your entry always wins',
   changes:[
-    'Scheduled jobs has a new tab, Priority queue: the order in which the page reader and the AI checks take work.',
-    'Platform Admins can pin a university, a state, a country or a single course to the front, move pins up or down, or remove them. "To the front" moves any provider in the current order to the top.',
-    'The current order shows each provider’s courses, pages matched and pages still waiting, and why it is where it is (pinned or by size). Every change is logged.'
+    'Course detail has a new panel, Edit this course: change or remove the official course page, intakes, English requirement, international tuition, title, duration, delivery and description.',
+    'Provider detail has a new panel, Edit this provider: name, website, course finder address (used to find course pages), phone, email, address and description.',
+    'A value entered or removed by hand is marked "Entered by hand" and automation does not change it. "Let automation update this" hands it back.',
+    'PIM Operators and above can add a course or a provider that is not on a register, and archive or restore one.',
+    'Every change is kept with who made it, when and the reason, and shown under "Changes made by hand".'
   ],
   bugFixes:[
-    'Work was taken in random order, so the largest universities did not go first.'
+    'Values corrected by a person could be overwritten by the next automated run.'
   ]
 }
 

@@ -45,6 +45,7 @@ const WORKER = "coverage-sweep-worker-v0.8.0";
 // home page prints the provider's CRICOS provider code; directories and registers skipped.
 // v0.3.2: a script-only page read directly while the Firecrawl reserve is reached is "needs_render" (retried after the
 // budget resets), never an identity mismatch.
+// v0.6.3 (1 Oct 2026, Decision 179 CRUD): an official page entered by hand is trusted as the course's page (identity "manual").
 // v0.6.2 (1 Oct 2026, course link recipes): a priority page read directly that does not show the course's CRICOS code
 // is rendered once through Firecrawl before it is called an identity mismatch (script-rendered handbooks).
 // v0.6.1 (30 Sep 2026, Platform Admin: maximum data for top universities): the Firecrawl fallback also covers ambiguous
@@ -434,7 +435,7 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, pages: out, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
     if (mode === "read") {
-      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
+      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const tally: Record<string, number> = {};
       await pool(items, 8, async (it) => {
         if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_identity_basis: null, p_storage_path: null, p_sha256: null, p_candidates: null }); return }
@@ -462,7 +463,8 @@ Deno.serve(async (req) => {
         let identityBasis: string | null = null, path: string | null = null, sha: string | null = null, candidates: unknown = null;
         if (status === "read") {
           let text = htmlToText(html);
-          identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous");
+          // v0.6.3: a page a person entered on the course page is the course's page (Decision 179).
+          identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous") || (it.manual === true ? "manual" : null);
           // v0.6.2: a priority page read directly without the code may be a script-rendered handbook (UNSW, Melbourne):
           // render it once through Firecrawl before calling it a mismatch.
           if (!identityBasis && via === "direct" && it.priority === true && await useFc("scrape", it.provider_id, it.url)) {

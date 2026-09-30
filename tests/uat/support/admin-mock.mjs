@@ -27,6 +27,12 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_priority_read: F.priority,
     admin_priority_search: () => F.prioritySearch,
     admin_priority_control: b => { calls.push(b); return F.priority },
+    admin_course_edit_read: F.courseEdit,
+    admin_course_edit: b => { calls.push(b); return F.courseEdit },
+    admin_course_create: b => { calls.push(b); return { ...F.courseEdit, course: { ...F.courseEdit.course, id: 'c-new' } } },
+    admin_provider_edit_read: F.providerEdit,
+    admin_provider_edit: b => { calls.push(b); return F.providerEdit },
+    admin_provider_create: b => { calls.push(b); return F.providerEdit },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)
