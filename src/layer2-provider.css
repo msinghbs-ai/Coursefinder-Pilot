@@ -18,8 +18,6 @@
 .l2p-profile-search input{border:0;outline:0;background:transparent;width:100%;padding:9px 0;font:inherit;font-size:var(--cf-fs-sm);color:var(--cf-slate-900)}
 .l2p-field>small{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);font-weight:500}
 .l2p-route-actions{display:flex;justify-content:flex-end;margin-top:10px}
-.l2p-parsebot-status{border:1px solid var(--cf-indigo-200);border-radius:var(--cf-radius-lg);background:var(--cf-indigo-25);padding:12px}
-.l2p-parsebot-status h3{margin-top:0}.l2p-parsebot-status p{font-size:var(--cf-fs-sm);line-height:1.5;color:var(--cf-slate-600)}
 .l2p-probe{margin-top:9px;padding:9px 10px;border-radius:var(--cf-radius-md);font-size:var(--cf-fs-sm);font-weight:700}.l2p-probe small{display:block;margin-top:3px;font-weight:500}
 .l2p-probe.pass{background:var(--cf-green-75);color:var(--cf-green-800)}.l2p-probe.fail{background:var(--cf-rose-50);color:var(--cf-rose-800)}
 @media(max-width:720px){.l2p-canonical-head{flex-direction:column}.l2p-canonical-head>button{align-self:flex-start}}

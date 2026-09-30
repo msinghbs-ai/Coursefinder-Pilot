@@ -30,30 +30,6 @@ Deno.serve(async(req:Request)=>{
   return reply(req,200,data||{items:[],total:0,limit:10,offset:0,has_more:false});
  }
 
- if(action==='probe_provider'){
-  if(rank<4)return reply(req,403,{error:'pipeline_operator_role_required'});
-  const id=String(body?.payload?.id||'');
-  if(!id)return reply(req,400,{error:'provider_id_required'});
-  const{data:pc,error:pe}=await svc.rpc('layer2_provider_runtime_config',{p_provider_id:id});
-  if(pe||!pc)return reply(req,400,{error:pe?.message||'provider_not_found'});
-  if(pc.provider_key!=='parsebot')return reply(req,400,{error:'probe_not_supported_for_provider'});
-  const base=String(pc.base_url||'https://api.parse.bot').replace(/\/+$/,'');
-  let status:number|null=null,probeError:string|null=null;
-  const started=Date.now();
-  try{
-   if(!pc.secret)throw new Error('credential_missing');
-   const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),Math.min(Math.max(Number(pc.timeout_seconds||30),5),30)*1000);
-   let res:Response;
-   try{res=await fetch(base+'/dispatch/tasks',{method:'GET',headers:{'X-API-Key':String(pc.secret),'accept':'application/json'},signal:ctl.signal})}finally{clearTimeout(tm)}
-   status=res.status;
-   if(!res.ok)probeError=res.status===401?'authentication_failed':res.status===404?'parsebot_endpoint_not_found':('http_'+res.status);
-  }catch(e:any){probeError=e?.name==='AbortError'?'timeout':String(e?.message||e)}
-  const passed=!probeError&&status!==null&&status>=200&&status<300;
-  const{error:re}=await svc.rpc('layer2_provider_probe_record_service',{p_provider_id:id,p_status:passed?'passed':'failed',p_http_status:status,p_error:passed?null:probeError});
-  if(re)return reply(req,500,{error:'probe_telemetry_write_failed',detail:re.message});
-  return reply(req,200,{ok:passed,provider_key:'parsebot',status:passed?'connected':'failed',http_status:status,latency_ms:Date.now()-started,probe_error:probeError,execution_qualified:false,note:'Connectivity validates Parse API base URL and API key only. CourseFinder execution still requires a generated Parse API route (scraper_id + endpoint_name) per source profile.'});
- }
-
  if(['create_provider','update_provider','set_secret'].includes(action)&&rank<6)return reply(req,403,{error:'platform_admin_role_required'});
  if(action==='upsert_route'&&rank<5)return reply(req,403,{error:'pim_admin_role_required'});
  const{data,error}=await svc.rpc('layer2_provider_control',{p_actor:String(ctx.user_id),p_action:action,p_payload:body?.payload||{}});

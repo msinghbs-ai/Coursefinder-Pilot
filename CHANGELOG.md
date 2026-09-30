@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.46 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.119** (Parse.bot removed completely; ranking imports are file upload only).
+- Database (applied live): 20260930170000 (Parse.bot provider, 2,098 routes and stored key deleted; two functions edited behind md5 guards).
+- Edge functions: ranking-publisher-url-import, ranking-qs-url-import and ranking-the-url-import retired; layer2-provider-control, layer2-acquire-v2, layer2-scope-discover-scheduled and ranking-layer1-etl no longer mention Parse.bot.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.45 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.118** (Platform settings › Models & services: on/off switch for every AI model and page-fetching service; anything off is greyed and not offered in operation screens).

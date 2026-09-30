@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
 
-const VERSION="ranking-layer1-etl-v1.6.1";
+const VERSION="ranking-layer1-etl-v1.7.0";
 const QS_STATIC:Record<number,string>={2026:"4061771"};
 const QS_REST:Record<number,string>={2027:"4153156"};
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -82,54 +82,11 @@ function theRowsFromNativeJson(bytes:Uint8Array,expectedYear:number){
  return{rows,declaredYear,publisherStatus:payload?.status};
 }
 
-function parsebotRowsFromJson(bytes:Uint8Array,systemCode:string,expectedYear:number){
- const text=new TextDecoder().decode(bytes).replace(/^\uFEFF/,"").trim();
- const envelope=JSON.parse(text);
- if(envelope?.source!=="parsebot")throw new Error("JSON is not a governed Parse.bot ranking Evidence envelope");
- if(String(envelope?.system_code||"")!==systemCode)throw new Error("Parse.bot Evidence ranking system mismatch");
- if(Number(envelope?.edition_year)!==expectedYear)throw new Error("Parse.bot Evidence edition year mismatch");
- const responses=Array.isArray(envelope?.responses)?envelope.responses:[];
- if(!responses.length)throw new Error("Parse.bot Evidence contains no API responses");
- const raw:any[]=[];
- if(systemCode==="qs_wur"){
-  for(const payload of responses){
-   if(String(payload?.status||"").toLowerCase()!=="success")throw new Error("QS Parse.bot response status is not success");
-   if(String(payload?.data?.edition_year||"")!==String(expectedYear))throw new Error("QS Parse.bot response edition mismatch");
-   const universities=Array.isArray(payload?.data?.universities)?payload.data.universities:[];
-   raw.push(...universities);
-  }
-  const rows=raw.map((r:any,i:number)=>{const parsed=parseRank(r.rank||r.rank_display||""),overall=scoreParts(r.overall_score);const indicators:any={};
-   for(const it of Array.isArray(r.indicators)?r.indicators:[]){const k=key(it?.indicator_name||it?.indicator_id||("indicator_"+i));indicators[k]={label:clean(it?.indicator_name)||k,value_display:clean(it?.score)||null,value_numeric:score(it?.score),unit:"score",methodology_version:String(expectedYear),rank:clean(it?.rank)||null,group:clean(it?.group)||null};}
-   return{publisher_institution_id:clean(r.university_id||r.core_id)||null,institution_name:clean(r.name),profile_url:clean(r.profile_url)||null,country_text:clean(r.country)||null,location_text:[clean(r.city),clean(r.country)].filter(Boolean).join(", ")||null,
-    rank_display:parsed.rank_display||null,rank_exact:parsed.rank_exact,rank_low:parsed.rank_low,rank_high:parsed.rank_high,is_tied:parsed.is_tied,rank_status:parsed.rank_status,
-    overall_score:overall.numeric,overall_score_display:overall.display,overall_score_low:overall.low,overall_score_high:overall.high,source_row_ordinal:i+1,indicators,source_row_payload:r};
-  }).filter((r:any)=>r.institution_name);
-  return{rows,declaredYear:expectedYear,publisherStatus:"success"};
- }
- if(systemCode==="arwu"){
-  for(const payload of responses){
-   if(String(payload?.status||"").toLowerCase()!=="success")throw new Error("ARWU Parse.bot response status is not success");
-   if(String(payload?.data?.year||"")!==String(expectedYear))throw new Error("ARWU Parse.bot response edition mismatch");
-   const rankings=Array.isArray(payload?.data?.rankings)?payload.data.rankings:[];
-   raw.push(...rankings);
-  }
-  const rows=raw.map((r:any,i:number)=>{const parsed=parseRank(r.rank||""),overall=scoreParts(r.score);return{
-   publisher_institution_id:clean(r.slug)||null,institution_name:clean(r.name),profile_url:null,country_text:clean(r.region)||null,location_text:clean(r.region)||null,
-   rank_display:parsed.rank_display||null,rank_exact:parsed.rank_exact,rank_low:parsed.rank_low,rank_high:parsed.rank_high,is_tied:parsed.is_tied,rank_status:parsed.rank_status,
-   overall_score:overall.numeric,overall_score_display:overall.display,overall_score_low:overall.low,overall_score_high:overall.high,source_row_ordinal:i+1,
-   indicators:{national_rank:{label:"National rank",value_display:clean(r.national_rank)||null,value_numeric:score(r.national_rank),unit:"rank",methodology_version:String(expectedYear)}},source_row_payload:r};
-  }).filter((r:any)=>r.institution_name);
-  return{rows,declaredYear:expectedYear,publisherStatus:"success"};
- }
- throw new Error("Parse.bot JSON parser supports QS and ARWU only");
-}
-
 function rankingJsonRowsFromEvidence(bytes:Uint8Array,systemCode:string,expectedYear:number){
  const text=new TextDecoder().decode(bytes).replace(/^\uFEFF/,"").trim();
  // v1.6.1: THE native files start with a "Year NNNN" line; parse them with the THE reader, which also checks the declared year.
  if(systemCode==="the_wur"&&/^Year\s+\d{4}\s*[\r\n]/i.test(text)){const parsed=theRowsFromNativeJson(bytes,expectedYear);return{...parsed,scopeCountries:[...new Set(parsed.rows.map((r:any)=>r.country_text).filter(Boolean))]};}
  const root=JSON.parse(text);
- if(root?.source==="parsebot")return parsebotRowsFromJson(bytes,systemCode,expectedYear);
  const payloads=Array.isArray(root)?root:Array.isArray(root?.responses)?root.responses:Array.isArray(root?.pages)?root.pages:root?.source==="manual_ranking_bundle"&&Array.isArray(root?.files)?root.files.map((x:any)=>x?.payload).filter(Boolean):[root];
  const raw:any[]=[];const countries=new Set<string>();
  if(systemCode==="qs_wur"){
@@ -219,12 +176,12 @@ Deno.serve(async(req:Request)=>{
   }
   if(!rows.length){
    if(!imp){const latest=await service.rpc("svc_ranking_latest_import",{p_system_code:systemCode,p_edition_year:editionYear});if(latest.error)throw latest.error;imp=latest.data;}
-   if(!imp?.storage_path)return json({ok:false,error:"ranking Evidence required; register a Parse.bot URL import or upload a publisher file in Administration → Sources & Imports",requiresPublisherFile:true,systemCode,editionYear,workerVersion:VERSION},409);
+   if(!imp?.storage_path)return json({ok:false,error:"ranking Evidence required; upload a publisher file in Administration → Sources & Imports",requiresPublisherFile:true,systemCode,editionYear,workerVersion:VERSION},409);
    const original=String(imp.original_filename||""),isWorkbook=/\.(csv|xlsx)$/i.test(original),isJsonText=/\.(json|txt)$/i.test(original);
    if(!isWorkbook&&!isJsonText)return json({ok:false,error:"Ranking parser accepts CSV/XLSX and governed JSON/TXT Evidence for QS, THE and ARWU.",requiresParserAdapter:true,systemCode,editionYear,filename:imp.original_filename,workerVersion:VERSION},422);
    const dl=await service.storage.from("evidence").download(imp.storage_path);if(dl.error||!dl.data)throw new Error(dl.error?.message||"publisher Evidence download failed");
    const bytes=new Uint8Array(await dl.data.arrayBuffer());
-   if(isJsonText){const parsed=rankingJsonRowsFromEvidence(bytes,systemCode,editionYear);rows=parsed.rows;acquisitionMode=/^parsebot-/.test(original)?"parsebot_api":"manual_file";}
+   if(isJsonText){const parsed=rankingJsonRowsFromEvidence(bytes,systemCode,editionYear);rows=parsed.rows;acquisitionMode="manual_file";}
    else {rows=rowsFromWorkbook(bytes,editionYear,systemCode,original);acquisitionMode="manual_file";}
    sourceHash=imp.content_hash;evidenceArtifactId=imp.evidence_artifact_id;filename=imp.original_filename;sourceUrl=imp.source_url;
   }
@@ -233,7 +190,7 @@ Deno.serve(async(req:Request)=>{
   let reconciliationPreview=null;
   if(["qs_wur","the_wur","arwu"].includes(systemCode)){const {data:preview,error:previewErr}=await service.rpc("svc_ranking_reconciliation_preview_system",{p_rows:rows,p_country_code:"AU",p_system_code:systemCode});if(previewErr)throw previewErr;reconciliationPreview=preview;}
   if(mode!=="apply")return json({ok:true,mode:"dry_run",systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,unknownRankSemantics:unknown,indicatorCells,sourceHash,evidenceArtifactId,filename,sourceUrl,reconciliationPreview,sample:rows.slice(0,5).map(({source_row_payload,...x})=>x),workerVersion:VERSION});
-  if(!["manual_file","manual_the_native_json","parsebot_api"].includes(acquisitionMode))return json({ok:false,error:"Direct publisher JSON APPLY is intentionally disabled; use registered Evidence through the governed import workflow.",dryRunRequired:true,systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,sourceHash,evidenceArtifactId,workerVersion:VERSION},409);
+  if(!["manual_file","manual_the_native_json"].includes(acquisitionMode))return json({ok:false,error:"Direct publisher JSON APPLY is intentionally disabled; use registered Evidence through the governed import workflow.",dryRunRequired:true,systemCode,editionYear,acquisitionMode,candidateObservations:rows.length,sourceHash,evidenceArtifactId,workerVersion:VERSION},409);
   const batchSize=200;let appliedBatches=0,partialMapped=0,partialUnmapped=0;
   for(let offset=0;offset<rows.length;offset+=batchSize){
    const batch=rows.slice(offset,offset+batchSize);

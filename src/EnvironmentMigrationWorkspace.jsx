@@ -19,7 +19,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{},view=
  if(rank<6)return null
  if(busy&&!data)return <section className="env-panel">Loading environment controls…</section>
  const providers=data?.layer2_providers||[],settings=data?.settings||[],manifest=data?.migration_manifest||[],runtime=data?.runtime||{}
- const parsebot=providers.find(x=>x.provider_key==='parsebot'),firecrawl=providers.find(x=>x.provider_key==='firecrawl'),zenrows=providers.find(x=>x.provider_key==='zenrows'),otherProviders=providers.filter(x=>['scrape-do','scraperapi'].includes(x.provider_key))
+ const firecrawl=providers.find(x=>x.provider_key==='firecrawl'),zenrows=providers.find(x=>x.provider_key==='zenrows'),otherProviders=providers.filter(x=>['scrape-do','scraperapi'].includes(x.provider_key))
  const refresh=async text=>{setMsg(text);await load()}
  const showIntegrations=view!=='migration',showMigration=view!=='integrations'
  return <div className="env-stack">
@@ -37,9 +37,8 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{},view=
    </div>
   </section>
 
-  <section className="env-panel"><h3>Acquisition providers</h3><p className="env-help">Configure keys, quotas and endpoints here. Parse.bot remains disabled until its trial endpoint/key is supplied and bounded UAT passes.</p>
+  <section className="env-panel"><h3>Acquisition providers</h3><p className="env-help">Configure keys, quotas and endpoints here.</p>
    <div className="env-grid">
-    {parsebot&&<ProviderCard provider={parsebot} title="Parse.bot" hint="Trial adapter — configure endpoint/key, then enable only after bounded UAT." onSaved={refresh}/>}
     {firecrawl&&<ProviderCard provider={firecrawl} title="Firecrawl" hint="Credential and endpoint status only. Monthly entitlement and reserve are managed in Platform settings → Scrapers & fetchers." onSaved={refresh}/>}
     {zenrows&&<ProviderCard provider={zenrows} title="ZenRows" hint="Terminal governed fallback." onSaved={refresh}/>}
     {otherProviders.map(p=><ProviderCard key={p.id} provider={p} title={p.display_name} hint="Additional governed Layer 2 acquisition provider." onSaved={refresh}/>)}
