@@ -198,3 +198,21 @@ export const priority = {
   events: [{ at: now, action: 'add', target: 'Victoria', detail: { kind: 'state' } }],
 }
 export const prioritySearch = [{ id: 'p-mq', label: 'Macquarie University', detail: 'New South Wales · Australia' }]
+
+// v2.15.114 record editing
+export const courseEdit = {
+  course: { id: courseRow.id, provider_id: 'p1', provider: 'RMIT University', course_code: '111279A', canonical_title: 'Associate Degree in Business', display_title: 'Associate Degree in Business', description: null, duration_value: 104, duration_unit: 'weeks', delivery_mode: 'On campus', lifecycle_status: 'active', course_url: courseDetail.course_url, manual_course: false },
+  official_links: [{ id: 'l1', url: courseDetail.course_url, is_primary: true, source: 'RMIT University course pages (coverage sweep)', manual: false }],
+  intakes: [{ id: 'i1', label: 'February', year: 2027 }, { id: 'i2', label: 'July', year: 2027 }],
+  english: [{ id: 'e1', test: 'IELTS', test_name: 'IELTS Academic', overall: 6.5, components: {} }],
+  tuition: [{ id: 'f1', amount: 37440, currency: 'AUD', fee_year: 2027, basis: 'annual', source: 'Manual entry (platform operators)', manual: true }],
+  locks: { tuition: { mode: 'value', at: '2026-10-01T00:10:00+00:00' } },
+  history: [{ at: '2026-10-01T00:10:00+00:00', field: 'tuition', action: 'set_tuition', by: 'admin@example.test', reason: 'Checked on the RMIT website' }],
+  english_tests: [{ code: 'CAE', name: 'Cambridge C1 Advanced' }, { code: 'IELTS', name: 'IELTS Academic' }, { code: 'PTE', name: 'PTE Academic' }, { code: 'TOEFL_IBT', name: 'TOEFL iBT' }],
+  can_edit: true, can_manage: true,
+}
+export const providerEdit = {
+  provider: { id: 'p1', canonical_name: 'RMIT University', display_name: 'RMIT University', website: 'https://www.rmit.edu.au', phone: null, email: null, description: null, primary_city: 'Melbourne', address_line1: null, postcode: null, lifecycle_status: 'active', country: 'Australia', state: 'Victoria', manual_provider: false, active_courses: 506 },
+  course_finder: { address: 'https://www.rmit.edu.au', status: 'mapped', pages_found: 840, mapped_at: '2026-09-29T10:00:00+00:00' },
+  link_recipe: null, locks: {}, history: [], can_edit: true, can_manage: true,
+}

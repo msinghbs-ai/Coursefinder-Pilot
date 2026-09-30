@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.41 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.114** (Edit this course / Edit this provider panels; Add course and Add provider; values entered by hand always win over automation; history of hand changes).
+- Database (applied live): 20260930120000 (manual locks with guard triggers on course facts, courses and providers; manual entry source; admin_course_edit_read/edit/create, admin_provider_edit_read/edit/create; hand-entered official pages trusted by the page reader). Also 20260930110000 to 114000 (course link recipes, link search and reverse match for the top 10 universities; backend only).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.40 — 30 Sep 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.113** (Scheduled jobs › Priority queue: pin universities, states, countries or single courses to the front, reorder, remove; current order with pages matched and waiting).
