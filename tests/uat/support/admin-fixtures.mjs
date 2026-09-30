@@ -249,3 +249,17 @@ export const feeRules = {
 }
 export const feeRulePreview = { would_admit: 214, ambiguous: 0, already_had_fee: 0, amount_range: { min: 23500, max: 99500 },
   samples: [{ course_id: 'c-1', course: 'Bachelor of Commerce/Bachelor of Information Systems', code: '068783B', amount: 56500, fee_year: 2026, text: '2026 Indicative First Year Fee $56,500', has_fee: false, amounts: 1 }] }
+
+// v2.15.118 Platform settings › Models & services.
+export const services = { can_control: true,
+  models: [
+    { id: 'm1', code: 'qwen3-30b', model: 'qwen/qwen3-30b-a3b', provider: 'openrouter', tasks: ['intake', 'english'], enabled: true, retired: false, qualified: true, steps: [{ task: 'english', step: 1, active: true }, { task: 'intake', step: 1, active: true }], calls_7d: 1204, cost_7d_usd: 0.84 },
+    { id: 'm2', code: 'sonnet-english', model: 'anthropic/claude-sonnet', provider: 'openrouter', tasks: ['english'], enabled: false, retired: false, qualified: true, steps: [{ task: 'english', step: 3, active: false }], calls_7d: 0, cost_7d_usd: 0 },
+    { id: 'm3', code: 'old-model', model: 'vendor/old-model', provider: 'openrouter', tasks: ['tuition'], enabled: false, retired: true, retired_reason: 'Failed the tuition test', qualified: false, steps: [], calls_7d: 0, cost_7d_usd: 0 },
+  ],
+  services: [
+    { id: 's1', key: 'firecrawl', name: 'Firecrawl', type: 'firecrawl', enabled: true, credential: true, routes: 3057, last_test: { at: '2026-09-30T10:00:00Z', status: 'passed' } },
+    { id: 's2', key: 'zenrows', name: 'ZenRows', type: 'zenrows', enabled: true, credential: true, routes: 2114, last_test: { at: null, status: null } },
+    { id: 's3', key: 'custom-gateway', name: 'Custom gateway', type: 'custom', enabled: false, credential: false, routes: 0, last_test: { at: null, status: null } },
+  ],
+  events: [{ at: '2026-10-01T00:00:00Z', action: 'switch_off', target: 'anthropic/claude-sonnet', by: 'admin@example.com' }] }

@@ -75,6 +75,7 @@ export const PAGES = {
 
   environment: { label: 'Environment & integrations', slug: 'environment', icon: 'plug', min: 6, subtitle: 'External services, keys (names only) and usage against budgets.' },
   scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: providers, limits and routing.' },
+  services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off. Anything off is not offered anywhere else.' },
   regulatory: { label: 'Regulatory settings', slug: 'regulatory-settings', icon: 'shield', min: 6, subtitle: 'Regulator source registry and bounded ingestion controls.' },
   migration: { label: 'Environment migration', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up when moving to Production.' },
   dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5, subtitle: 'Attributes, families, groups and options.' },
@@ -88,7 +89,7 @@ export const SECTIONS = [
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence'] },
-  { label: 'Platform settings', pages: ['environment', 'scrapers', 'regulatory', 'migration', 'dataModel'] },
+  { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'regulatory', 'migration', 'dataModel'] },
   { label: 'Administration', pages: ['users'] },
 ]
 
