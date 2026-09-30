@@ -32,7 +32,7 @@ concurrency:
 jobs:
   deployed-release-currentness:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     env:
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
@@ -56,21 +56,27 @@ jobs:
         shell: bash
         run: |
           expected=$(node --input-type=module -e "import('./src/release-manifest.js').then(m=>process.stdout.write(m.UI_VERSION))")
-          for attempt in $(seq 1 12); do
+          # Cloudflare builds the site after the push, so wait (up to 20 minutes) until the served
+          # JavaScript carries the expected version, not just until the page answers.
+          for attempt in $(seq 1 80); do
             body=$(curl -L -sS --max-time 15 "$UAT_BASE_URL/?release_probe=${GITHUB_SHA}" || true)
             if printf '%s' "$body" | grep -q 'id="root"'; then
-              echo "Deployed frontend reachable; browser UAT will verify v${expected} currentness (attempt ${attempt}/12)."
-              exit 0
+              for asset in $(printf '%s' "$body" | grep -o 'assets/[^"]*\.js' | sort -u); do
+                if curl -L -sS --max-time 20 "$UAT_BASE_URL/$asset" | grep -q "${expected}"; then
+                  echo "Deployed frontend serves v${expected} (attempt ${attempt}/80)."
+                  exit 0
+                fi
+              done
             fi
-            echo "Deployment not ready; retry ${attempt}/12"
-            sleep 10
+            echo "v${expected} not deployed yet; retry ${attempt}/80"
+            sleep 15
           done
-          echo 'Deployed frontend did not become reachable in release-currentness window'
+          echo "Deployed frontend did not serve v${expected} within 20 minutes"
           exit 1
       - name: Install Chromium
         run: npx playwright install chromium
       - name: Verify deployed release version and release notes
-        run: npx playwright test tests/uat/release-notes-deployed.spec.mjs --project=chromium-desktop
+        run: npx playwright test tests/uat/release-notes-deployed.spec.mjs --project=chromium-desktop --reporter=github,list
       - name: Upload release-currentness evidence
         if: always()
         uses: actions/upload-artifact@v4
