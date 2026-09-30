@@ -70,7 +70,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install chromium
       - name: Verify deployed release version and release notes
-        run: npx playwright test tests/uat/release-notes-deployed.spec.mjs --project=chromium-desktop
+        run: npx playwright test tests/uat/release-notes-deployed.spec.mjs --project=chromium-desktop --reporter=github,list
       - name: Upload release-currentness evidence
         if: always()
         uses: actions/upload-artifact@v4
