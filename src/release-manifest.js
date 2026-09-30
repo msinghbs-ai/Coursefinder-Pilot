@@ -1,22 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.116'
-export const PACKAGE_VERSION='0.1.43'
+export const UI_VERSION='2.15.117'
+export const PACKAGE_VERSION='0.1.44'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Layer 4 batch rules: settle a university’s fees with one rule',
+  title:'Batch rules: approve works, easier preview',
   changes:[
-    'Layer 4 has a new tab, Batch rules. When a university words its international fee the same way on every course page, one rule settles all of them.',
-    'Type the words that come before the fee (for example “Indicative First Year Fee”), choose the period, and preview exactly which courses would get which fee before saving.',
-    'Wordings repeated on many pages with no fee yet are listed, with a one-click Make a rule.',
-    'A Pipeline Operator prepares a draft; a PIM Operator approves it, which admits the fees at once and then hourly for newly read pages. Rules can be paused, and every run is logged.',
-    'A rule never changes a course that already has a fee or a value entered by hand, and skips pages where the words appear with more than one amount.'
+    'Batch rules preview opens in one panel under the rules list, with fixed-width columns; long course names and page wording are shortened, with the full text on hover.',
+    'If an action on Batch rules fails, the reason is shown right there instead of only at the top of the page.'
   ],
   bugFixes:[
-    'Hundreds of UNSW and Monash fees were sent to Layer 4 one by one although each university words its fee the same way on every page.'
+    'Approve & run on a batch rule did nothing: the run log was refused by the database, so the approval was undone. Fixed; approving now admits the fees at once.'
   ]
 }
 
