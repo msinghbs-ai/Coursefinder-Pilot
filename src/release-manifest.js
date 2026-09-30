@@ -1,22 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.114'
-export const PACKAGE_VERSION='0.1.41'
+export const UI_VERSION='2.15.115'
+export const PACKAGE_VERSION='0.1.42'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Edit courses and providers by hand; your entry always wins',
+  title:'Scholarship course links: decide once per scholarship',
   changes:[
-    'Course detail has a new panel, Edit this course: change or remove the official course page, intakes, English requirement, international tuition, title, duration, delivery and description.',
-    'Provider detail has a new panel, Edit this provider: name, website, course finder address (used to find course pages), phone, email, address and description.',
-    'A value entered or removed by hand is marked "Entered by hand" and automation does not change it. "Let automation update this" hands it back.',
-    'PIM Operators and above can add a course or a provider that is not on a register, and archive or restore one.',
-    'Every change is kept with who made it, when and the reason, and shown under "Changes made by hand".'
+    'Scholarships has a new tab, Course links. 37,200 waiting links come from 87 scholarships that don’t say which courses they are for; each is now one decision.',
+    'For each scholarship choose all proposed courses, only matching courses (study level, field of study, words in the title) or no courses, with a live count and sample of the courses that will be linked.',
+    'A suggestion from the scholarship’s name is shown (for example "Master of …" suggests that one course); it is never applied on its own.',
+    'A decision can be changed, is kept with who made it and why, and is applied to links proposed later. It also removes automatic links that do not match.'
   ],
   bugFixes:[
-    'Values corrected by a person could be overwritten by the next automated run.'
+    'Scholarships whose page names no course were linked to many wrong courses by the automatic sweep, for example a scholarship for one Masters course linked to 25 courses.'
   ]
 }
 

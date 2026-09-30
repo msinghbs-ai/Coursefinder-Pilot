@@ -33,6 +33,9 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_provider_edit_read: F.providerEdit,
     admin_provider_edit: b => { calls.push(b); return F.providerEdit },
     admin_provider_create: b => { calls.push(b); return F.providerEdit },
+    admin_scholarship_links_read: F.scholarshipLinks,
+    admin_scholarship_links_detail: b => { calls.push({ detail: b }); return F.scholarshipLinkDetail },
+    admin_scholarship_links_decide: b => { calls.push(b); return { ...F.scholarshipLinkDetail, result: { applied: true, accepted: 1, rejected: 580, sweep_removed: 24 } } },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)
