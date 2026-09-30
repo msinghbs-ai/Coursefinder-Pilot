@@ -216,3 +216,23 @@ export const providerEdit = {
   course_finder: { address: 'https://www.rmit.edu.au', status: 'mapped', pages_found: 840, mapped_at: '2026-09-29T10:00:00+00:00' },
   link_recipe: null, locks: {}, history: [], can_edit: true, can_manage: true,
 }
+
+// v2.15.115 scholarship course links
+export const scholarshipLinks = {
+  can_decide: true,
+  summary: { waiting_links: 37200, waiting_scholarships: 87, decided_scholarships: 0, accepted_links: 0, rejected_links: 0 },
+  items: [
+    { scholarship_id: 'sch-mgmd', name: 'Master of Global Medicines Development Pioneers Scholarship', provider: 'Monash University', award_type: 'fixed_amount', award: '$15,000', waiting: 581, proposed: 581, accepted: 0, decision: null, suggestion: { decision: 'filter', filter: { title: 'Master of Global Medicines Development' }, why: 'The name mentions one course: Master of Global Medicines Development.' } },
+    { scholarship_id: 'sch-travel', name: 'Arts Equity Travel Grant', provider: 'Monash University', award_type: 'fixed_amount', award: '$3,000', waiting: 581, proposed: 581, accepted: 0, decision: null, suggestion: { decision: 'none', filter: {}, why: 'The name suggests support that is not tied to a course’s tuition (for example travel or hardship).' } },
+  ],
+}
+export const scholarshipLinkDetail = {
+  scholarship: { id: 'sch-mgmd', name: 'Master of Global Medicines Development Pioneers Scholarship', award: '$15,000', provider: 'Monash University', source_url: 'https://www.monash.edu/study/fees-scholarships/scholarships/find-a-scholarship/mgmd', academic_year: 2027 },
+  proposed: 581, waiting: 581,
+  levels: [{ id: 'lv-mc', name: 'Masters Degree (Coursework)', count: 180 }, { id: 'lv-b', name: 'Bachelor', count: 220 }],
+  fields: [{ id: 'f-health', name: 'Health', count: 90 }, { id: 'f-bus', name: 'Management and Commerce', count: 120 }],
+  suggestion: { decision: 'filter', filter: { title: 'Master of Global Medicines Development' }, why: 'The name mentions one course: Master of Global Medicines Development.' },
+  decision: null,
+  preview: { decision: 'filter', filter: { title: 'Master of Global Medicines Development' }, matched: 1, not_matched: 580, sample_matched: [{ id: 'c-mgmd', title: 'Master of Global Medicines Development', code: '079513K' }], sample_not_matched: [] },
+  can_decide: true,
+}

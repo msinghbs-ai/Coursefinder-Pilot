@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.42 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.115** (Scholarships › Course links: one decision per scholarship, all / matching / none, with live preview, suggestion from the name, history; decisions govern the automatic sweep).
+- Database (applied live): 20260930130000 to 20260930133000 (scholarship scope decisions, admin_scholarship_links_read/detail/decide, hourly scholarship-scope-apply job, sweep guard trigger).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.41 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.114** (Edit this course / Edit this provider panels; Add course and Add provider; values entered by hand always win over automation; history of hand changes).

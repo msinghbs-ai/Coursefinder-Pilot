@@ -12,6 +12,7 @@ import RegulatorySettings from'./RegulatorySettings'
 import EvidenceWorkspace from'./EvidenceWorkspace'
 import CourseDetailPolish from'./CourseDetailPolish'
 import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
+import ScholarshipLinks from'./ScholarshipLinks'
 import ContextualInsights from'./ContextualInsights'
 import ComparisonWorkspace from'./ComparisonWorkspace'
 import ProviderContactsWorkspace from'./ProviderContactsWorkspace'
@@ -169,7 +170,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
         if(tab==='onboarding')return <div className="m-page-stack"><OnboardingWorkspace rank={rank} onError={err}/></div>
         return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
-      case'scholarships':return tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
+      case'scholarships':return tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:tab==='links'?<div className="m-page-stack"><ScholarshipLinks onError={err}/></div>:<ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
         if(tab==='compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
         if(tab==='qilt')return <Qilt onError={onError}/>

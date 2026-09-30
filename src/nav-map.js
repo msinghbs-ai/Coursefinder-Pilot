@@ -18,6 +18,7 @@ export const PAGES = {
   ] },
   scholarships: { label: 'Scholarships', slug: 'scholarships', icon: 'scholarship', subtitle: 'Scholarships, where each value came from, and what is published.', tabs: [
     { key: 'list', label: 'Scholarships', min: 1 },
+    { key: 'links', label: 'Course links', min: 3 },
     { key: 'publishing', label: 'Publishing', min: 3 },
   ] },
   rankings: { label: 'Rankings & statistics', slug: 'statistics-rankings', icon: 'chart', subtitle: 'QILT, PRISMS, QS and THE data, and side-by-side comparison.', tabs: [
