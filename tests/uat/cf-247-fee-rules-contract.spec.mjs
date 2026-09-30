@@ -29,7 +29,7 @@ test.describe('mocked browser', () => {
     await expect(page.getByRole('tab', { name: 'Batch rules' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.fr-rules tbody tr')).toHaveCount(2)
     await page.getByRole('button', { name: 'Preview rule 1' }).click()
-    await expect(page.locator('[data-rule="1"] [data-preview]')).toContainText('214 courses would get a fee.')
+    await expect(page.locator('[data-preview-rule="1"] [data-preview]')).toContainText('214 courses would get a fee.')
     await page.getByRole('button', { name: 'Approve rule 1' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'approve')?.p_args).toEqual({ id: 1 })
     await expect(page.getByRole('status')).toContainText('Approved and run: 214 fees admitted.')

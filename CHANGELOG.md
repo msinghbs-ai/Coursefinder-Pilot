@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.44 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.117** (Batch rules: approve fixed, preview in one compact panel, errors shown in place).
+- Database (applied live): 20260930150000 (layer4_mass_operations accepts course_tuition run logs).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.43 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.116** (Layer 4 › Batch rules: fee wording rules with preview, found wordings, draft → approve & run, hourly runs, pause; values entered by hand never changed).

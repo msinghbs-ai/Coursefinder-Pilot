@@ -14,9 +14,9 @@ const STATUS={draft:['warning','Draft · waiting for approval'],active:['success
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 
 export default function FeeRules({onError}){
-  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[draft,setDraft]=useState(null),[done,setDone]=useState('')
+  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[draft,setDraft]=useState(null),[done,setDone]=useState(''),[err,setErr]=useState(''),[preview,setPreview]=useState(null)
   const load=async()=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_fee_rules_read');if(error)throw error;setData(d||{})}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  const act=async(action,args,confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);setDone('');try{const{data:d,error}=await supabase.rpc('admin_fee_rule_control',{p_action:action,p_args:args});if(error)throw error;setData(d||{});const r=d?.result;if(action==='create')setDraft(null);setDone(r?`${action==='approve'?'Approved and run':'Run'}: ${fmtNumber(r.admitted||0)} fee${Number(r.admitted)===1?'':'s'} admitted${r.ambiguous?`, ${fmtNumber(r.ambiguous)} skipped (more than one amount)`:''}${r.already_had_fee?`, ${fmtNumber(r.already_had_fee)} already had a fee`:''}${r.entered_by_hand?`, ${fmtNumber(r.entered_by_hand)} entered by hand`:''}.`:action==='create'?'Saved as a draft. A PIM Operator or above can approve it.':'Saved.')}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  const act=async(action,args,confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);setDone('');setErr('');try{const{data:d,error}=await supabase.rpc('admin_fee_rule_control',{p_action:action,p_args:args});if(error)throw error;setData(d||{});const r=d?.result;if(action==='create')setDraft(null);setDone(r?`${action==='approve'?'Approved and run':'Run'}: ${fmtNumber(r.admitted||0)} fee${Number(r.admitted)===1?'':'s'} admitted${r.ambiguous?`, ${fmtNumber(r.ambiguous)} skipped (more than one amount)`:''}${r.already_had_fee?`, ${fmtNumber(r.already_had_fee)} already had a fee`:''}${r.entered_by_hand?`, ${fmtNumber(r.entered_by_hand)} entered by hand`:''}.`:action==='create'?'Saved as a draft. A PIM Operator or above can approve it.':'Saved.')}catch(e){setErr(`That did not work: ${errText(e)}`)}finally{setBusy(false)}}
   useEffect(()=>{load()},[])
   if(!data)return <section className="m-panel"><Loading label="Loading batch rules…"/></section>
   const rules=data.rules||[],sug=data.suggestions||[],recent=data.recent||[]
@@ -33,6 +33,7 @@ export default function FeeRules({onError}){
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button></div>}/>
       {!data.can_create&&<p className="l3v-note">You can view these. A Pipeline Operator or above can prepare a rule; a PIM Operator or above approves it.</p>}
       {done&&<p className="sb-done" role="status">{done}</p>}
+      {err&&<p className="fr-error" role="alert">{err}</p>}
     </section>
     {draft&&<RuleBuilder key={draft.provider_id+draft.phrase} init={draft} busy={busy} onCancel={()=>setDraft(null)} onSave={a=>act('create',a)} onError={onError}/>}
     <section className="m-panel">
@@ -45,13 +46,14 @@ export default function FeeRules({onError}){
           <td><StatusChip value={r.status} tone={st[0]} label={st[1]}/>{r.approved_at&&<span className="l3v-code">Approved {[r.approved_by,fmtDateTime(r.approved_at)].filter(Boolean).join(' · ')}</span>}{r.last_run_at&&<span className="l3v-code">Last run {fmtDateTime(r.last_run_at)}</span>}</td>
           <td className="num">{fmtNumber(r.admitted||0)}</td>
           <td><div className="l3c-row-actions">
-            <PreviewButton rule={r} onError={onError}/>
+            <Button compact onClick={()=>setPreview(preview?.id===r.id?null:r)} aria-label={`Preview rule ${r.id}`} aria-pressed={preview?.id===r.id}><Search size={13}/>{preview?.id===r.id?'Hide preview':'Preview'}</Button>
             {r.status==='draft'&&data.can_approve&&<Button compact variant="primary" onClick={()=>act('approve',{id:r.id},`Approve this rule for ${r.provider} and admit the fees it finds now?`)} disabled={busy} aria-label={`Approve rule ${r.id}`}><Check size={13}/>Approve & run</Button>}
             {r.status==='active'&&data.can_approve&&<><Button compact onClick={()=>act('run',{id:r.id})} disabled={busy} aria-label={`Run rule ${r.id}`}><Zap size={13}/>Run now</Button><Button compact onClick={()=>act('pause',{id:r.id})} disabled={busy} aria-label={`Pause rule ${r.id}`}><Pause size={13}/>Pause</Button></>}
             {r.status==='paused'&&data.can_approve&&<Button compact onClick={()=>act('resume',{id:r.id})} disabled={busy} aria-label={`Resume rule ${r.id}`}><Play size={13}/>Resume</Button>}
             {r.status==='draft'&&data.can_create&&<Button compact variant="danger" onClick={()=>act('delete',{id:r.id},'Delete this draft rule?')} disabled={busy} aria-label={`Delete rule ${r.id}`}><Trash2 size={13}/></Button>}
           </div></td></tr>})}
       </tbody></table></div>}
+      {preview&&<div className="fr-preview-panel" data-preview-rule={preview.id}><div className="fr-preview-head"><strong>Preview · {preview.provider}</strong><q className="fr-phrase">{preview.phrase}</q><Button compact onClick={()=>setPreview(null)}>Close</Button></div><Preview providerId={preview.provider_id} phrase={preview.phrase} urlPattern={preview.url_pattern} onError={onError}/></div>}
     </section>
     <section className="m-panel">
       <SectionTitle icon={Sparkles} title="Wordings found on pages with no fee yet" subtitle="The words just before an amount, repeated on many course pages of the same university. Not every wording is a tuition fee: preview before making a rule."/>
@@ -67,12 +69,6 @@ export default function FeeRules({onError}){
   </>
 }
 
-function PreviewButton({rule,onError}){
-  const[open,setOpen]=useState(false)
-  return <><Button compact onClick={()=>setOpen(o=>!o)} aria-label={`Preview rule ${rule.id}`}><Search size={13}/>{open?'Hide':'Preview'}</Button>
-    {open&&<div className="fr-inline-preview"><Preview providerId={rule.provider_id} phrase={rule.phrase} urlPattern={rule.url_pattern} onError={onError}/></div>}</>
-}
-
 function Preview({providerId,phrase,urlPattern,onError}){
   const[p,setP]=useState(null),[busy,setBusy]=useState(false),t=useRef(null)
   useEffect(()=>{clearTimeout(t.current);if(!providerId||String(phrase||'').trim().length<6){setP(null);return}
@@ -82,7 +78,7 @@ function Preview({providerId,phrase,urlPattern,onError}){
   if(!p)return <Loading label="Checking the saved pages…"/>
   return <div className="fr-preview" data-preview>
     <p><strong>{fmtNumber(p.would_admit||0)} course{Number(p.would_admit)===1?'':'s'} would get a fee.</strong>{p.ambiguous?` ${fmtNumber(p.ambiguous)} skipped: the words appear with more than one amount.`:''}{p.already_had_fee?` ${fmtNumber(p.already_had_fee)} already have a fee and are left as they are.`:''}{p.amount_range?.min!=null?` Amounts from ${fmtMoney(p.amount_range.min,'AUD')} to ${fmtMoney(p.amount_range.max,'AUD')}.`:''}{busy?' Updating…':''}</p>
-    {(p.samples||[]).length>0&&<ul>{p.samples.map(s=><li key={s.course_id}><span><strong>{s.course}</strong><span className="l3v-code">{s.code}</span></span><span className="fr-example">{s.text}</span><span className="num">{fmtMoney(s.amount,'AUD')}{s.has_fee?' · has a fee':''}{s.amounts>1?' · more than one amount':''}</span></li>)}</ul>}
+    {(p.samples||[]).length>0&&<div className="cf-table-wrap fr-sample-wrap"><table className="cf-table fr-samples"><thead><tr><th>Course</th><th className="num">Fee</th><th>Year</th><th>Words on the page</th></tr></thead><tbody>{p.samples.map(s=><tr key={s.course_id}><td className="fr-trunc" title={s.course}>{s.course}<span className="l3v-code">{s.code}</span></td><td className="num">{fmtMoney(s.amount,'AUD')}{s.has_fee?<span className="l3v-code">has a fee</span>:null}{s.amounts>1?<span className="l3v-code">more than one amount</span>:null}</td><td>{s.fee_year||'—'}</td><td className="fr-trunc" title={s.text}>{s.text}</td></tr>)}</tbody></table></div>}
   </div>
 }
 
