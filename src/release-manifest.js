@@ -1,21 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.115'
-export const PACKAGE_VERSION='0.1.42'
+export const UI_VERSION='2.15.116'
+export const PACKAGE_VERSION='0.1.43'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Scholarship course links: decide once per scholarship',
+  title:'Layer 4 batch rules: settle a university’s fees with one rule',
   changes:[
-    'Scholarships has a new tab, Course links. 37,200 waiting links come from 87 scholarships that don’t say which courses they are for; each is now one decision.',
-    'For each scholarship choose all proposed courses, only matching courses (study level, field of study, words in the title) or no courses, with a live count and sample of the courses that will be linked.',
-    'A suggestion from the scholarship’s name is shown (for example "Master of …" suggests that one course); it is never applied on its own.',
-    'A decision can be changed, is kept with who made it and why, and is applied to links proposed later. It also removes automatic links that do not match.'
+    'Layer 4 has a new tab, Batch rules. When a university words its international fee the same way on every course page, one rule settles all of them.',
+    'Type the words that come before the fee (for example “Indicative First Year Fee”), choose the period, and preview exactly which courses would get which fee before saving.',
+    'Wordings repeated on many pages with no fee yet are listed, with a one-click Make a rule.',
+    'A Pipeline Operator prepares a draft; a PIM Operator approves it, which admits the fees at once and then hourly for newly read pages. Rules can be paused, and every run is logged.',
+    'A rule never changes a course that already has a fee or a value entered by hand, and skips pages where the words appear with more than one amount.'
   ],
   bugFixes:[
-    'Scholarships whose page names no course were linked to many wrong courses by the automatic sweep, for example a scholarship for one Masters course linked to 25 courses.'
+    'Hundreds of UNSW and Monash fees were sent to Layer 4 one by one although each university words its fee the same way on every page.'
   ]
 }
 

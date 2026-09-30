@@ -36,6 +36,9 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_scholarship_links_read: F.scholarshipLinks,
     admin_scholarship_links_detail: b => { calls.push({ detail: b }); return F.scholarshipLinkDetail },
     admin_scholarship_links_decide: b => { calls.push(b); return { ...F.scholarshipLinkDetail, result: { applied: true, accepted: 1, rejected: 580, sweep_removed: 24 } } },
+    admin_fee_rules_read: F.feeRules,
+    admin_fee_rule_preview: b => { calls.push({ preview: b }); return F.feeRulePreview },
+    admin_fee_rule_control: b => { calls.push(b); return { ...F.feeRules, result: b.p_action === 'approve' ? { admitted: 214, ambiguous: 0, already_had_fee: 0, entered_by_hand: 0 } : null } },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)

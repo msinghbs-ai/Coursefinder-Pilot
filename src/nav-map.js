@@ -58,6 +58,7 @@ export const PAGES = {
     { key: 'review', label: 'Review queue', min: 3 },
     { key: 'flags', label: 'Flagged values', min: 3 },
     { key: 'sendback', label: 'Send back to AI', min: 3 },
+    { key: 'rules', label: 'Batch rules', min: 3 },
   ] },
 
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database.', tabs: [

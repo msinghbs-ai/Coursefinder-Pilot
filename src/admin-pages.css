@@ -186,3 +186,14 @@ td>.l3v-model{display:block}
 .sl-preview ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:3px}.sl-preview li{display:flex;gap:8px;justify-content:space-between}
 .sl-save{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}.sl-save .re-reason{flex:1;min-width:240px}
 @media(max-width:620px){.sl-search{min-width:0;width:100%}.sl-choice{flex-direction:column;gap:6px}}
+
+/* v2.15.116 Layer 4 batch rules (FeeRules.jsx) */
+.fr-phrase{font-weight:700;color:var(--cf-slate-900);quotes:"“" "”"}
+.fr-example{display:block;color:var(--cf-slate-500);font-size:var(--cf-fs-xs);line-height:1.4;max-width:560px;word-break:break-word}
+.fr-builder{display:grid;gap:10px}.fr-grow{flex:1;min-width:220px}
+.fr-preview{padding:9px 10px;border:1px dashed var(--cf-slate-300);border-radius:var(--cf-radius-md);font-size:var(--cf-fs-sm)}
+.fr-preview p{margin:0 0 6px}.fr-preview ul{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.fr-preview li{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.6fr) auto;gap:8px;align-items:start}
+.fr-inline-preview{flex:1 1 100%;margin-top:6px}
+.fr-rules .l3c-row-actions{flex-wrap:wrap}
+@media(max-width:760px){.fr-preview li{grid-template-columns:1fr}}

@@ -13,6 +13,7 @@ import EvidenceWorkspace from'./EvidenceWorkspace'
 import CourseDetailPolish from'./CourseDetailPolish'
 import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
 import ScholarshipLinks from'./ScholarshipLinks'
+import FeeRules from'./FeeRules'
 import ContextualInsights from'./ContextualInsights'
 import ComparisonWorkspace from'./ComparisonWorkspace'
 import ProviderContactsWorkspace from'./ProviderContactsWorkspace'
@@ -190,7 +191,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
         return <Layer2Workspace rank={rank} embedded/>
       case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
-      case'layer4':return tab==='flags'?<FlaggedValues onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
+      case'layer4':return tab==='flags'?<FlaggedValues onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError}/>:<PlatformHealth onError={onError}/>
       case'jobs':return tab==='priority'?<div className="m-page-stack"><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/></div>:tab==='schedules'?<div className="m-page-stack"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
