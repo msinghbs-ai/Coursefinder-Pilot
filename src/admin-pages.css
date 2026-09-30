@@ -203,3 +203,12 @@ td>.l3v-model{display:block}
 .fr-sample-wrap{max-height:340px;overflow:auto}
 .fr-samples{table-layout:fixed;width:100%}.fr-samples th:nth-child(1){width:36%}.fr-samples th:nth-child(2){width:14%}.fr-samples th:nth-child(3){width:8%}
 .fr-trunc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
+/* Models & services (v2.15.118): on/off switches; anything off is greyed. */
+.ms-switch{position:relative;width:38px;height:22px;border-radius:var(--cf-radius-pill);border:1px solid var(--cf-border-input);background:var(--cf-surface-3);cursor:pointer;padding:0;transition:background .15s}
+.ms-switch span{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--cf-white);box-shadow:0 1px 2px color-mix(in srgb,var(--cf-slate-900) 25%,transparent);transition:left .15s}
+.ms-switch.on{background:var(--cf-success);border-color:var(--cf-success)}.ms-switch.on span{left:18px}
+.ms-switch:disabled{cursor:not-allowed;opacity:.55}
+.ms-table tr.ms-off td:not(:last-child){opacity:.5}
+.ms-table td .cf-chip{margin:0 4px 4px 0}
+.ms-retired{margin-top:var(--cf-space-3)}.ms-retired summary{cursor:pointer;color:var(--cf-text-2);font-size:var(--cf-fs-sm)}
+.ms-events{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:var(--cf-fs-sm)}.ms-events .l3v-code{margin-left:8px}

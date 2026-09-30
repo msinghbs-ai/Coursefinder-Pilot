@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.45 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.118** (Platform settings › Models & services: on/off switch for every AI model and page-fetching service; anything off is greyed and not offered in operation screens).
+- Database (applied live): 20260930160000 (admin_services_read, admin_services_control; Layer 3 Control hides steps whose model is off).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.44 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.117** (Batch rules: approve fixed, preview in one compact panel, errors shown in place).

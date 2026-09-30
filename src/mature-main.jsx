@@ -14,6 +14,7 @@ import CourseDetailPolish from'./CourseDetailPolish'
 import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
 import ScholarshipLinks from'./ScholarshipLinks'
 import FeeRules from'./FeeRules'
+import ModelsServices from'./ModelsServices'
 import ContextualInsights from'./ContextualInsights'
 import ComparisonWorkspace from'./ComparisonWorkspace'
 import ProviderContactsWorkspace from'./ProviderContactsWorkspace'
@@ -197,6 +198,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'environment':return <EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/>
       case'scrapers':return <><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>
+      case'services':return <div className="m-page-stack"><ModelsServices onError={err}/></div>
       case'regulatory':return <div className="m-legacy-host"><RegulatorySettings onError={onError}/></div>
       case'migration':return <EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/>
       case'dataModel':return <Attributes onError={onError}/>
