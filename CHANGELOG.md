@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.43 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.116** (Layer 4 › Batch rules: fee wording rules with preview, found wordings, draft → approve & run, hourly runs, pause; values entered by hand never changed).
+- Database (applied live): 20260930140000 (fee_wording_rules, fee_rule_admissions, admin_fee_rules_read / admin_fee_rule_preview / admin_fee_rule_control, hourly fee-wording-rules job).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.42 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.115** (Scholarships › Course links: one decision per scholarship, all / matching / none, with live preview, suggestion from the name, history; decisions govern the automatic sweep).

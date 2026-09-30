@@ -236,3 +236,16 @@ export const scholarshipLinkDetail = {
   preview: { decision: 'filter', filter: { title: 'Master of Global Medicines Development' }, matched: 1, not_matched: 580, sample_matched: [{ id: 'c-mgmd', title: 'Master of Global Medicines Development', code: '079513K' }], sample_not_matched: [] },
   can_decide: true,
 }
+
+// v2.15.116 Layer 4 batch rules (fee wording)
+export const feeRules = {
+  can_create: true, can_approve: true,
+  rules: [
+    { id: 1, provider_id: 'p-unsw', provider: 'UNSW Sydney', label: 'UNSW Sydney: Indicative First Year Fee', phrase: 'Indicative First Year Fee', basis: 'annual', url_pattern: null, status: 'draft', admitted: 0, created_at: '2026-10-01T08:00:00+10:00', note: 'International fee block' },
+    { id: 2, provider_id: 'p-rmit', provider: 'RMIT University', label: 'RMIT', phrase: 'Full-fee places:', basis: 'annual', url_pattern: null, status: 'active', admitted: 89, created_at: '2026-09-28T08:00:00+10:00', approved_at: '2026-09-28T09:00:00+10:00', approved_by: 'admin@example.test', last_run_at: '2026-10-01T07:37:00+10:00' },
+  ],
+  suggestions: [{ provider_id: 'p-uts', provider: 'University of Technology Sydney (UTS)', phrase: 'Indicative first-year tuition fee', pages: 145, example: 'Tuition Fee Indicative first-year tuition fee $52,730', has_rule: false }],
+  recent: [],
+}
+export const feeRulePreview = { would_admit: 214, ambiguous: 0, already_had_fee: 0, amount_range: { min: 23500, max: 99500 },
+  samples: [{ course_id: 'c-1', course: 'Bachelor of Commerce/Bachelor of Information Systems', code: '068783B', amount: 56500, fee_year: 2026, text: '2026 Indicative First Year Fee $56,500', has_fee: false, amounts: 1 }] }

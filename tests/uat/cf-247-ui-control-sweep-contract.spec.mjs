@@ -11,7 +11,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 
 test('menu: Automations, Send back to AI and Publishing tabs; old links still land', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs', 'schedules'])
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'flags', 'sendback'])
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'flags', 'sendback', 'rules'])
   expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['links', 3], ['publishing', 3]])
   expect(PAGES.scholarships.min).toBe(1)
   expect(resolveTarget('jobs').params?.get?.('tab') ?? 'jobs').toBe('jobs')
