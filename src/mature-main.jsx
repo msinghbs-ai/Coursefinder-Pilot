@@ -58,6 +58,12 @@ import'./styles.css'
 import'./mature.css'
 import'./admin-pages.css'
 
+// Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
+function CoverageAttributes({rank}){
+  const[scope,setScope]=useState({country:'',provider:null})
+  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<FeeSchedules country={scope.country} provider={scope.provider}/>}</div>
+}
+
 const UI_VERSION='2.15.78'
 const UI_FIXES=[
  'Independent QILT, PRISMS, QS and THE year/edition controls in Provider Compare.',
@@ -195,7 +201,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='prisms')return <Prisms onError={onError}/>
         if(tab==='datasets')return <StatisticsDatasets rank={rank}/>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':return tab==='attributes'?<div className="m-page-stack"><CoverageView view="attributes"/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<FeeSchedules/>}</div>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
+      case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       case'layer1':
         if(tab==='settings')return <Layer1SourceSettings/>
         if(tab==='batch')return <div className="m-legacy-host"><RegulatorySettings onError={onError} mode="batch"/></div>

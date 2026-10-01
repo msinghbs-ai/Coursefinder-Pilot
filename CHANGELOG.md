@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.71 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.144** (Decision 217: New Zealand course pages, search and tuition; fee schedules follow the country).
+- Database: migrations 20261002181300 and 20261002181400 applied to fxcwkweaxjtknorudmwp; coverage-sweep v42 (reader v0.9.1).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.70 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.143** (Decision 216: every background function signs in with one-time run passes).

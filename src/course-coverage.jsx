@@ -45,7 +45,7 @@ const PAGE=50
 
 // v2.15.112: view 'courses' (course completeness) or 'attributes' (attribute completeness and pipeline stage); both
 // kept by default for older callers. Platform Admin 30 Sep 2026: separate course and attribute completion in tabs.
-export function CoverageView({view='all'}={}){
+export function CoverageView({view='all',onScope}={}){
   const[tier,setTier]=useState(''),[data,setData]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState('')
   // Decision 213: country and university filters (opens on all countries)
   const[country,setCountry]=useState(''),[provider,setProvider]=useState(null),[pq,setPq]=useState(''),[found,setFound]=useState([])
@@ -53,6 +53,8 @@ export function CoverageView({view='all'}={}){
   const[pick,setPick]=useState(null),[list,setList]=useState(null),[offset,setOffset]=useState(0),[listBusy,setListBusy]=useState(false),[tip,setTip]=useState(null)
   const load=()=>{setBusy(true);setError('');adminRead('course_coverage',scope()).then(setData).catch(e=>setError(e.message||String(e))).finally(()=>setBusy(false))}
   useEffect(()=>{setPick(null);load()},[tier,country,provider])
+  // Decision 217: panels below (fee schedules) follow the same country and university
+  useEffect(()=>{onScope?.({country,provider})},[country,provider])
   useEffect(()=>{if(pq.trim().length<2){setFound([]);return}let live=true;const t=setTimeout(()=>adminRead('course_coverage_providers',{query:pq.trim(),...(country?{country}:{})}).then(d=>live&&setFound(Array.isArray(d)?d:[])).catch(()=>{}),250);return()=>{live=false;clearTimeout(t)}},[pq,country])
   useEffect(()=>{
     if(!pick){setList(null);return}

@@ -19,7 +19,9 @@ test('Course coverage is reachable from Coverage & completeness and uses the val
   expect(nav).toContain("{ key: 'courses', label: 'Courses', min: 1 }")
   expect(nav).toContain("{ key: 'attributes', label: 'Attributes', min: 1 }")
   expect(nav).toContain("'course-coverage': { page: 'coverage', tab: 'courses' }")
-  expect(main).toContain(`case'coverage':return tab==='attributes'?<div className="m-page-stack"><CoverageView view="attributes"/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<FeeSchedules/>}</div>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>`)
+  expect(main).toContain("case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className=\"m-page-stack\"><CoverageView view=\"courses\"/><LinkRefresh/></div>")
+  // Decision 217: the attributes view, By area and Fee schedules share the Coverage country and university
+  expect(main).toContain('<CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<FeeSchedules country={scope.country} provider={scope.provider}/>}')
   expect(v).toContain("adminRead('course_coverage'")
   expect(v).toContain("adminRead('course_coverage_courses'")
   expect(v).toContain("states:['candidate','in_review','awaiting_l3']")
