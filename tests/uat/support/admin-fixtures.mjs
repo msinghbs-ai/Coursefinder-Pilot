@@ -395,3 +395,15 @@ export const linkRefresh = {
   types: [{ code: 'official_course', label: 'Official course page' }, { code: 'handbook', label: 'Handbook entry' }, { code: 'regulator_listing', label: 'Regulator listing' }],
   countries: ['AU', 'CA', 'NZ'],
 }
+export const feeSchedules = {
+  can_decide: true,
+  totals: { providers_searched: 12, providers_queued: 138, documents_found: 31, documents_read: 9, with_fee_rows: 2, awaiting_decision: 1 },
+  documents: [
+    { id: 'fs1', provider_id: 'p-acu', provider: 'Australian Catholic University', url: 'https://www.acu.edu.au/media/acu-2027-schedule-of-tuition-fees.pdf', fee_year: '2027', read_at: '2026-10-01T09:00:00Z', decision: null, decided_at: null, apply_summary: null, rows: 152, new: 131, same: 0, differs: 2, no_course: 19 },
+    { id: 'fs2', provider_id: 'p-x', provider: 'Example Institute', url: 'https://example.edu.au/fees.pdf', fee_year: '2027', read_at: '2026-10-01T08:00:00Z', decision: 'approved', decided_at: '2026-10-01T08:30:00Z', apply_summary: { written: 20, refused: 0 }, rows: 22, new: 0, same: 20, differs: 0, no_course: 2 },
+  ],
+}
+export const feeScheduleRows = { can_decide: true, rows: [
+  { row_id: 'r1', course_code: '001293G', course_id: 'c1', course_title: 'Bachelor of Nursing', amount: 39672, currency_code: 'AUD', basis: 'annual', fee_year: 2027, current_amount: null, current_basis: null, outcome: 'new' },
+  { row_id: 'r2', course_code: '079454F', course_id: 'c2', course_title: 'Bachelor of Accounting and Finance', amount: 36016, currency_code: 'AUD', basis: 'annual', fee_year: 2027, current_amount: 35000, current_basis: 'annual', outcome: 'differs' },
+] }

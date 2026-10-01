@@ -97,6 +97,7 @@ async function siteMapUrls(origin: string, deadline: number, pri: (u: string) =>
 // in CRICOS form (6 digits and a check character) and an amount; the basis comes from the column heading (or the line's
 // own wording outside tables). Nothing is inferred across rows. The document year is the fee year most often named.
 const FEE_CODE = /\b(\d{6}[0-9A-Z])\b/g;
+const FEE_HEAD = /fee|tuition|cost|price|aud|\$/i;
 const FEE_MONEY = /\$\s?(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?/g;
 function feeBasis(label: string) {
   const l = label.toLowerCase();
@@ -111,10 +112,29 @@ function feeDocYear(text: string) {
   for (const m of text.matchAll(/\b(202[5-9])\b/g)) n.set(+m[1], (n.get(+m[1]) || 0) + 1);
   return [...n.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] ?? null;
 }
+// Fee schedule documents linked from a fee page (usually PDFs): links on the provider's own site whose text or address
+// mentions fees or tuition. Newest year first, at most 4.
+export function feeLinks(md: string, pageUrl: string) {
+  let base: URL; try { base = new URL(pageUrl) } catch { return [] }
+  const root = base.hostname.replace(/^www\./, "").split(".").slice(-3).join(".");
+  const out = new Map<string, number>();
+  for (const m of md.matchAll(/\[([^\]]{0,200})\]\((\S+?)(?:\s+"[^"]*")?\)/g)) {
+    let u: URL; try { u = new URL(m[2], base) } catch { continue }
+    if (!/^https?:$/.test(u.protocol) || !(u.hostname === root || u.hostname.endsWith("." + root))) continue;
+    const text = `${m[1]} ${decodeURIComponent(u.pathname)}`;
+    if (!/\.pdf$/i.test(u.pathname) || !/fee|tuition/i.test(text) || /domestic|csp|commonwealth|refund|policy|procedure|form/i.test(text)) continue;
+    u.hash = "";
+    const y = Math.max(0, ...[...text.matchAll(/\b(202[5-9])\b/g)].map((x) => +x[1]));
+    out.set(u.toString(), Math.max(out.get(u.toString()) ?? 0, y));
+  }
+  return [...out.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([url, year]) => ({ url, year: year || null }));
+}
 export function parseFeeRows(md: string) {
   const year = feeDocYear(md);
   const out: { course_code: string; amount: number; basis: string; fee_year: number | null; column_label: string; row_text: string }[] = [];
-  let header: string[] = [], tableRows = 0;
+  // lastFee: the last heading row that named a fee basis. A schedule split across pages (PDFs) continues in tables whose
+  // first row is a course row, not a heading; such a table takes lastFee when it has the same number of columns.
+  let header: string[] = [], lastFee: string[] = [], tableRows = 0;
   for (const raw of md.split("\n")) {
     const line = raw.trim();
     if (!line) { header = []; continue }
@@ -123,12 +143,18 @@ export function parseFeeRows(md: string) {
       const cells = line.split("|").slice(1, -1).map((x) => x.trim());
       if (cells.every((x) => /^:?-{2,}:?$/.test(x) || x === "")) continue;
       const money = cells.map((x) => [...x.matchAll(FEE_MONEY)].map((m) => Number(m[1].replace(/,/g, ""))));
-      if (!codes.length && money.every((m) => !m.length)) { header = cells; continue }
+      if (!codes.length && money.every((m) => !m.length)) {
+        // a section row inside a table ("| FACULTY OF HEALTH |  |  |") does not replace a heading row that named fees
+        if (!header.some((x) => FEE_HEAD.test(x))) header = cells;
+        if (cells.some((x) => feeBasis(x))) lastFee = cells;
+        continue;
+      }
       tableRows++;
       if (codes.length !== 1) continue;
+      const head = header.some((x) => FEE_HEAD.test(x)) ? header : (lastFee.length === cells.length ? lastFee : []);
       money.forEach((ms, i) => {
         if (ms.length !== 1) return;
-        const label = header[i] || "";
+        const label = head[i] || "";
         const basis = feeBasis(label);
         if (!basis) return;
         out.push({ course_code: codes[0], amount: ms[0], basis, fee_year: (label.match(/\b(202[5-9])\b/) ? +label.match(/\b(202[5-9])\b/)![1] : year), column_label: label.slice(0, 120), row_text: line.slice(0, 500) });
@@ -409,7 +435,9 @@ Deno.serve(async (req) => {
           const up = await c.storage.from("evidence").upload(path, await gzip(md), { contentType: "application/gzip", upsert: true });
           if (up.error) path = null;
           const parsed = it.kind === "fee_schedule" ? parseFeeRows(md) : { rows: [], summary: { chars: md.length } };
-          const res = await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "read", p_http: http, p_storage_path: path, p_sha256: path ? sha : null, p_mime: "text/markdown", p_rows: parsed.rows, p_summary: { ...parsed.summary, chars: md.length, title: String(d?.data?.metadata?.title || "").slice(0, 200) } });
+          const links = it.kind === "fee_schedule" ? feeLinks(md, it.url) : [];
+          const res = await rpc("svc_provider_facts_read_record_v2", { p_id: it.id, p_status: "read", p_http: http, p_storage_path: path, p_sha256: path ? sha : null, p_mime: "text/markdown", p_rows: parsed.rows, p_summary: { ...parsed.summary, chars: md.length, title: String(d?.data?.metadata?.title || "").slice(0, 200) }, p_links: links });
+          tally.linked = (tally.linked || 0) + Number(res?.linked || 0);
           tally[it.kind] = (tally[it.kind] || 0) + 1; tally.fee_rows = (tally.fee_rows || 0) + Number(res?.fee_rows || 0);
         } catch (e) {
           await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: null, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: e instanceof Error ? e.message : String(e) } });
