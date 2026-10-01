@@ -28,7 +28,7 @@ test('menu map: five plain sections, every page reachable, old addresses and nam
   }
   expect(Object.keys(LEGACY_ADMIN_SECTIONS).length).toBeGreaterThanOrEqual(11)
   expect(Object.keys(LEGACY).length).toBeGreaterThanOrEqual(25)
-  expect(hrefFor('layer3', 'models')).toBe('#layer-3-ai?tab=models')
+  expect(resolveTarget('layer-3-ai', new URLSearchParams({ tab: 'models' })).page).toBe('services')
   expect(hrefFor('layer3', 'routing')).toBe('#layer-3-ai')
 })
 
@@ -124,9 +124,8 @@ test.describe('mocked browser', () => {
     await expect.poll(() => page.l3calls.map(c => c.p_action)).toContain('tier_add')
     await page.getByRole('button', { name: 'Pause all' }).click()
     await expect.poll(() => page.l3calls.map(c => c.p_action)).toContain('run_all')
-    await page.getByRole('tab', { name: 'Models' }).click()
-    await expect(page.locator('tbody tr')).toHaveCount(8)
-    await expect(page.getByText('Qualified, not used')).toBeVisible()
+    // v2.15.122: the Models tab moved to Platform settings › Models & services.
+    await expect(page.getByRole('tab', { name: 'Models' })).toHaveCount(0)
   })
 
   test('Layer 4 flagged values: tuition recorded as per year can be confirmed, edited or removed', async ({ page }) => {

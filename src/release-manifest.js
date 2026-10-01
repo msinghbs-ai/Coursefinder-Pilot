@@ -1,21 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.121'
-export const PACKAGE_VERSION='0.1.48'
+export const UI_VERSION='2.15.122'
+export const PACKAGE_VERSION='0.1.49'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Reference sources and editable Key dates',
+  title:'One home for each setting',
   changes:[
-    'Reference data › Key links is now Reference sources: every third-party site the platform refers to (Hotcourses, Study Australia, regulators, ranking publishers, search and social sites), each with a domain, an on/off switch and ticked uses.',
-    'The platform reads this list instead of fixed patterns in code: sites marked Never a university website are skipped when finding a university’s site, sites marked Never a course page are refused as course pages, scholarships sourced only from a placeholder site need a university page before publishing, and Ranking imports takes its publisher addresses from here.',
-    'Names, addresses and purpose can be edited in place, and Check now (or Check all) shows whether each site is reachable. Adding or retiring a site, or changing how it is used, needs a reason and is logged.',
-    'Key dates shows the list first. Edit a title, date, kind, precision, source or warning in place, cancel a date, or add one from a short form. Dates show as dd/mm/yyyy.'
+    'Platform settings › Models & services is now the only place to switch an AI model or a page-fetching service on or off. Environment & integrations keeps the keys only, and Scrapers & fetchers keeps addresses, limits and routing; each links to the others.',
+    'A model can be switched on only after it has passed its test. Until then its switch is greyed out with Pass its test first.',
+    'Layer 3 › Models is gone: its list is on Models & services, and old links open that page. Each model’s tasks link to Layer 3 › Control.',
+    'A new page-fetching service starts switched off.'
   ],
   bugFixes:[
-    'Rankings and statistics still pointed to Layer 1 Register for ranking imports; it now points to Reference data › Ranking imports.'
+    'Adding a model to a cascade in Layer 3 › Control also switched the model on without the usual checks. It now has to be switched on in Models & services first.'
   ]
 }
 

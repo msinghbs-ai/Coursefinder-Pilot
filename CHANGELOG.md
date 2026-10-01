@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.49 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.122** (One home per setting: Models & services is the only on/off place; Environment holds keys only).
+- Database (applied live): 20261001120000 (switching a model on needs a passed test; adding to a cascade no longer switches a model on).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.48 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.121** (Reference data: Reference sources control how third-party sites are used; Key dates edited in place).

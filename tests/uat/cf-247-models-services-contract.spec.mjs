@@ -30,6 +30,9 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-model="sonnet-english"]')).toHaveClass(/ms-off/)
     await expect(page.locator('[data-model="old-model"] [role="switch"]')).toHaveCount(0)
     await expect(page.locator('.ms-retired summary')).toContainText('Retired models (1)')
+    // v2.15.122: a model that has not passed its test cannot be switched on.
+    await expect(page.getByRole('switch', { name: 'Switch on vendor/new-candidate' })).toBeDisabled()
+    await expect(page.locator('[data-model="new-candidate"]')).toContainText('Pass its test first')
     await page.getByRole('switch', { name: 'Switch off qwen/qwen3-30b-a3b' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_kind === 'model')).toEqual({ p_kind: 'model', p_id: 'm1', p_enabled: false, p_reason: 'Too slow' })
     expect(prompts[0]).toContain('English step 1, Intake step 1')
@@ -39,4 +42,17 @@ test.describe('mocked browser', () => {
     await expect.poll(() => page.l3calls.find(c => c.p_kind === 'service')?.p_enabled).toBe(true)
     await expect(page.locator('[data-service="custom-gateway"] [role="switch"]')).toHaveAttribute('aria-checked', 'true')
   })
+})
+
+test('v2.15.122: one home — Environment holds keys only, Layer 3 Models is Models & services, switching on needs a passed test, cascades never switch a model on', () => {
+  const env = read('src/EnvironmentMigrationWorkspace.jsx')
+  expect(env).not.toContain('Activate profile')
+  expect(env).not.toContain('Pause profile')
+  expect(env).not.toContain('Enabled</label>')
+  expect(env).toContain('href="#models-services"')
+  const m = read('supabase/migrations/20261001120000_cf247_one_home_models.sql')
+  expect(m).toContain("raise exception 'this model has not passed its tests for any task yet, so it cannot be switched on';")
+  expect(m).toContain("raise exception 'switch this model on in Platform settings › Models & services first'")
+  expect(m).toContain("position('set enabled=true, paused=false' in v_new) > 0")
+  expect(read('src/layer2-provider-entry.jsx')).toContain('A new service starts switched off.')
 })

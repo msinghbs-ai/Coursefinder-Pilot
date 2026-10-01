@@ -51,7 +51,6 @@ export const PAGES = {
   ] },
   layer3: { label: 'Layer 3 AI validation', slug: 'layer-3-ai', icon: 'ai', subtitle: 'Run or pause each task, set its daily limit and choose the model cascade.', tabs: [
     { key: 'routing', label: 'Control', min: 3 },
-    { key: 'models', label: 'Models', min: 3 },
     { key: 'work', label: 'Work queue', min: 3 },
   ] },
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
@@ -178,6 +177,8 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   p.delete('tab')
   // Layer 1 tabs moved in v2.15.112: old links keep working.
   if (hit.page === 'layer1' && MOVED_L1[tab]) return { page: MOVED_L1[tab].page, tab: MOVED_L1[tab].tab, params: p }
+  // v2.15.122: the Layer 3 Models list is Platform settings › Models & services.
+  if (hit.page === 'layer3' && tab === 'models') return { page: 'services', tab: '', params: p }
   return { page: hit.page, tab, params: p }
 }
 
