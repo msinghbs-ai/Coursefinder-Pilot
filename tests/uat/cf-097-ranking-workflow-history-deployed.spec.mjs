@@ -10,7 +10,7 @@ test.describe('CF-097/226 ranking workflow, history and datasets @deployed',()=>
  test('full THE history remains visible and applied editions no longer require manual review',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
-  await expect(page.getByRole('heading',{name:'Ranking import workflow'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.getByRole('heading',{name:'Imported files'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const filter=page.locator('.m-compact-filter select')
   await filter.selectOption('the_wur')
   for(const year of ['2026','2025','2024','2023','2022','2021','2020','2019','2018','2017','2016','2015']){

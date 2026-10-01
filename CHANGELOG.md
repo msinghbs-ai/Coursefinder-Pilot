@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.59 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.132** (Older screens in the compact style).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.58 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.131** (Melbourne time, plain wording, clear counts and tidy-ups).

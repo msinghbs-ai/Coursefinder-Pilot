@@ -75,9 +75,9 @@ function JobRow({j,rank,busy,act}){
     <td><StatusChip value={j.active?'on':'paused'} tone={j.active?'success':'warning'} label={j.active?'Running':'Paused'}/></td>
     {rank>=5&&<td>{allowed?<div className="au-controls">
       <div className="l3c-row-actions">
-        {j.active?<Button compact onClick={()=>act(j.job,'pause',{},`Pause "${j.label}"?`)} disabled={!can}><Pause size={14}/>Pause</Button>
+        {j.active?<Button compact onClick={()=>act(j.job,'pause',{},`Pause "${j.label}"?`)} disabled={!can} aria-label="Pause" title="Pause"><Pause size={14}/></Button>
           :<Button compact variant="primary" onClick={()=>act(j.job,'resume')} disabled={!can}><Play size={14}/>Resume</Button>}
-        <Button compact onClick={()=>act(j.job,'run_now',{},`Run "${j.label}" now? It runs once, in addition to its schedule.`)} disabled={!can}><Zap size={14}/>Run now</Button>
+        <Button compact onClick={()=>act(j.job,'run_now',{},`Run "${j.label}" now? It runs once, in addition to its schedule.`)} disabled={!can} aria-label="Run now" title="Run now (once, in addition to the schedule)"><Zap size={14}/></Button>
       </div>
       <select className="fv-input" value={s.every&&EVERY.some(x=>x[0]===s.every)?String(s.every):''} onChange={e=>{const v=Number(e.target.value);if(v)act(j.job,'set_every',{minutes:v},`Run "${j.label}" ${EVERY.find(x=>x[0]===v)[1].toLowerCase()}?`)}} disabled={!can} aria-label={`How often ${j.label} runs`}>
         <option value="">{s.every&&EVERY.some(x=>x[0]===s.every)?'':'Change how often…'}</option>{EVERY.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>

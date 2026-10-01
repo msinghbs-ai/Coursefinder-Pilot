@@ -32,6 +32,8 @@ export const COMPLETENESS_STATES=[
 const CSTATE=Object.fromEntries(COMPLETENESS_STATES.map(s=>[s.key,s]))
 const STATE_LABEL={admitted:'Admitted',candidate:'Found on verified page (awaiting admission)',in_review:'In human review (Layer 4)',awaiting_l3:'Awaiting AI check (Layer 3)',not_on_page:'Page read, not published',
   blocked:'Site blocked',page_found:'Page found, not read',site_known:'Site known, page not found',no_website:'No website known',missing_l1:'Missing in CRICOS'}
+// v2.15.132 (att-wide-table): short column headings; the full wording is on hover and in the legend.
+const STATE_SHORT={admitted:'Admitted',candidate:'Awaiting admission',in_review:'Person',awaiting_l3:'AI check',not_on_page:'Not published',blocked:'Blocked',page_found:'Not read',site_known:'No page',no_website:'No site',missing_l1:'Not in CRICOS'}
 const STATE_ORDER=['admitted','candidate','in_review','awaiting_l3','not_on_page','blocked','page_found','site_known','no_website','missing_l1']
 const ATTR={official_url:{label:'Official course page',layer:'Layer 2'},provider_tuition:{label:'Provider tuition (fee year)',layer:'Layer 2'},
   english:{label:'English requirements',layer:'Layer 2'},intakes:{label:'Intakes / start dates',layer:'Layer 2'},
@@ -123,7 +125,7 @@ export function CoverageView({view='all'}={}){
 
     {view!=='courses'&&<>
     <section className="cc-panel">
-      <header><div><h2>Coverage by pipeline stage</h2><p>Where each attribute sits in the acquisition pipeline. Hover a segment for counts; select a count in the table to list the courses.</p></div>
+      <header><div><h2>Coverage by pipeline stage</h2><p>Where each attribute is in the pipeline. The panel above says whether a course has a value; this one says how far the work to get it has gone. Hover a segment for counts; select a count in the table to list the courses.</p></div>
         <small>{data?.computed_at?`Updated ${fmtDateTime(data.computed_at)} · rebuilt hourly`:''}</small></header>
       <div className="cc-legend">{COVERAGE_STAGES.map(s=><span key={s.key}><i style={{background:s.color}}/>{s.label}</span>)}</div>
       <div className="cc-bars" onMouseLeave={()=>setTip(null)}>
@@ -139,7 +141,7 @@ export function CoverageView({view='all'}={}){
           </div>})}
       </div>
       {tip&&<div className="cc-tip" style={{left:tip.x+12,top:tip.y+12}}><strong>{tip.attr}</strong><span>{tip.stage}</span><b>{fmtNumber(tip.n)} courses · {fmtShare(tip.n,tip.total)}</b></div>}
-      <div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Attribute</th>{STATE_ORDER.map(s=><th key={s} className="num">{STATE_LABEL[s]}</th>)}<th className="num">Total</th></tr></thead>
+      <div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Attribute</th>{STATE_ORDER.map(s=><th key={s} className="num" title={STATE_LABEL[s]}>{STATE_SHORT[s]||STATE_LABEL[s]}</th>)}<th className="num">Total</th></tr></thead>
         <tbody>{attrs.map(a=><tr key={a.attribute}><td><strong>{ATTR[a.attribute]?.label||a.attribute}</strong><small>{ATTR[a.attribute]?.layer}</small></td>
           {STATE_ORDER.map(s=>{const n=Number(a.states?.[s]||0);return <td key={s} className="num">{n?<button className={`cc-count ${pick?.attribute===a.attribute&&pick?.state===s?'active':''}`} onClick={()=>choose({attribute:a.attribute,state:s})}>{fmtNumber(n)}</button>:<span className="cc-zero">–</span>}</td>})}
           <td className="num"><strong>{fmtNumber(a.total)}</strong></td></tr>)}</tbody></table></div>
