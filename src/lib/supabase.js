@@ -236,12 +236,24 @@ export const api = {
 
   rankingSummary: () => adminRead('ranking_summary'),
   rankingFilters: (systemCode = '') => adminRead('ranking_filters', { system_code: systemCode || null }),
-  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '', sort = 'rank', direction = 'asc' } = {}) =>
+  rankingObservations: ({ limit = 50, offset = 0, query = '', systemCode = '', editionYear = '', providerId = '', country = '', state = '', link = '', sort = 'rank', direction = 'asc' } = {}) =>
     adminRead('ranking_observations', {
       limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0), query: query || null,
       system_code: systemCode || null, edition_year: editionYear === '' ? null : Number(editionYear),
-      provider_id: providerId || null, sort, direction,
+      provider_id: providerId || null, country: country || null, state: state || null, link: link || null, sort, direction,
     }),
+  // Decision 208: ranking filters (country, state, provider), linking ranked universities to providers.
+  rankingFilterOptions: ({ systemCode = '', editionYear = '', country = '' } = {}) => adminRead('ranking_filter_options', {
+    system_code: systemCode || null, edition_year: editionYear === '' ? null : Number(editionYear), country: country || null,
+  }),
+  rankingLinkCandidates: (publisherInstitutionId) => adminRead('ranking_link_candidates', { publisher_institution_id: publisherInstitutionId }),
+  rankingProviderSearch: ({ query = '', country = '' } = {}) => adminRead('ranking_provider_search', { query: query || null, country: country || null }),
+  providerRankingHistory: (providerId) => adminRead('provider_ranking_history', { provider_id: providerId }),
+  rankingLink: async ({ publisherInstitutionId, action, providerId = null, note = null }) => {
+    const { data, error } = await supabase.rpc('admin_ranking_link', { p_publisher_institution_id: publisherInstitutionId, p_action: action, p_provider_id: providerId, p_note: note })
+    if (error) throw error
+    return data
+  },
   rankingImports: ({ limit = 50, offset = 0 } = {}) => adminRead('ranking_imports', {
     limit: bounded(limit, 50), offset: Math.max(Number(offset) || 0, 0),
   }),

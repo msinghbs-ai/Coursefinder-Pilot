@@ -6,6 +6,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
   const context = { ...F.context, role_rank: rank, role: rank >= 6 ? 'platform_admin' : 'viewer' }
   const session = { access_token: 'mock-token', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 360000, expires_at: Math.floor(Date.now() / 1000) + 360000, user: { id: context.user_id, email: 'admin@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } }
   const adminRead = {
+    ranking_filters: F.rankingFilters, ranking_filter_options: F.rankingFilterOptions, ranking_observations: F.rankingObservations,
+    ranking_link_candidates: F.rankingLinkCandidates, ranking_provider_search: { items: [] }, provider_ranking_history: F.providerRankingHistory,
     context, dashboard: F.dashboard, layer_status_summary: F.layerStatus, platform_health: F.platformHealth,
     course_coverage: F.courseCoverage, data_quality_overview: F.dataQualityOverview,
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
@@ -59,6 +61,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_link_refresh_read: { ...F.linkRefresh, can_edit: rank >= 4 },
     admin_link_refresh_edit: b => { calls.push({ linkRefresh: b }); return F.linkRefresh },
     admin_provider_fee_schedules_read: b => b?.p_source_id ? { ...F.feeScheduleRows, can_decide: rank >= 6 } : { ...F.feeSchedules, can_decide: rank >= 6 },
+    admin_ranking_link: b => { calls.push({ rankingLink: b }); return { linked: true, observations_linked: 7 } },
     admin_provider_fee_schedule_decide: b => { calls.push({ feeDecide: b }); return { decision: b.p_action === 'approve' ? 'approved' : 'rejected', written: 131 } },
     statistics_dataset_registry_read: F.statDatasets,
     statistics_dataset_registry_write: b => { calls.push({ datasetWrite: b }); return null },
