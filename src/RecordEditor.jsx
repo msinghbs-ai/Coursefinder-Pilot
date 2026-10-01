@@ -9,6 +9,7 @@ import React,{useEffect,useRef,useState}from'react'
 import{Archive,Check,History,Lock,Pencil,Plus,RotateCcw,Trash2,Unlock,X}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtMoney,fmtNumber}from'./ui-kit'
+import{CourseLinks,CURRENCY_BY_COUNTRY,ProviderApplicants}from'./CourseLinks'
 
 export const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December']
 export const BASIS={annual:'Per year',per_semester:'Per semester',per_trimester:'Per trimester',total_indicative:'Whole course'}
@@ -73,8 +74,8 @@ function EnglishEdit({rows,tests,onSave,onCancel,busy}){
       onSave={()=>onSave(list.map(x=>({test:x.test,overall:x.overall,...(x.min_band?{components:{min_band:Number(x.min_band)}}:{})})))} onCancel={onCancel}/></div>
 }
 
-function TuitionEdit({row,onSave,onCancel,busy}){
-  const[v,setV]=useState({amount:row?.amount!=null?String(Math.round(Number(row.amount))):'',fee_year:row?.fee_year?String(row.fee_year):String(new Date().getFullYear()+1),basis:BASIS[row?.basis]?row.basis:'annual',currency:row?.currency||'AUD'})
+function TuitionEdit({row,onSave,onCancel,busy,currency='AUD'}){
+  const[v,setV]=useState({amount:row?.amount!=null?String(Math.round(Number(row.amount))):'',fee_year:row?.fee_year?String(row.fee_year):String(new Date().getFullYear()+1),basis:BASIS[row?.basis]?row.basis:'annual',currency:row?.currency||currency})
   return <div className="re-editor"><div className="re-line">
       <input className="fv-input re-amount" inputMode="numeric" placeholder="Amount, e.g. 45000" value={v.amount} onChange={e=>setV({...v,amount:e.target.value.replace(/[^\d.]/g,'')})} aria-label="Tuition amount"/>
       <select className="fv-input" value={v.currency} onChange={e=>setV({...v,currency:e.target.value})} aria-label="Currency">{['AUD','NZD','CAD','GBP','USD','EUR'].map(c=><option key={c}>{c}</option>)}</select>
@@ -90,7 +91,8 @@ function HistoryList({rows}){
 
 export function CourseEditor({courseId,onChanged,onError}){
   const[data,setData,busy,setBusy]=useRecord('admin_course_edit_read','p_course_id',courseId,onError)
-  const[open,setOpen]=useState(false),[editing,setEditing]=useState(''),[reason,setReason]=useState('')
+  const[open,setOpen]=useState(false),[editing,setEditing]=useState(''),[reason,setReason]=useState(''),[country,setCountry]=useState('')
+  useEffect(()=>{if(!courseId)return;supabase.rpc('admin_course_links_read',{p_course_id:courseId}).then(({data:d})=>setCountry(d?.applicants?.country||'')).catch(()=>{})},[courseId])
   if(!data)return busy?<section className="m-detail-section re-panel"><Loading label="Loading editable values…"/></section>:null
   const c=data.course||{},locks=data.locks||{},can=Boolean(data.can_edit)&&!busy
   const act=async(action,args={},confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_course_edit',{p_course_id:courseId,p_action:action,p_args:{...args,...(reason.trim()?{reason:reason.trim()}:{})}});if(error)throw error;setData(d);setEditing('');onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
@@ -107,6 +109,7 @@ export function CourseEditor({courseId,onChanged,onError}){
         editor={<TextEdit value={link?.url} type="url" placeholder="https://" busy={busy} onSave={v=>act('set_official_url',{url:v})} onCancel={()=>setEditing('')}/>}>
         {link?<a href={link.url} target="_blank" rel="noreferrer" className="cf-link">{link.url}</a>:locks.official_url?.mode==='removed'?'No official page':'—'}
       </Row>
+      <CourseLinks courseId={courseId} reason={reason} onChanged={onChanged} onError={onError}/>
       <Row label="Intakes" lock={locks.intakes} can={can} onRelease={()=>release('intakes')} {...ed('intakes')}
         onRemove={data.intakes?.length?()=>act('remove_intakes',{},'Remove all intakes for this course? Automation will not add them back.'):null}
         editor={<IntakeEdit rows={data.intakes} busy={busy} onSave={v=>act('set_intakes',{intakes:v})} onCancel={()=>setEditing('')}/>}>
@@ -119,8 +122,8 @@ export function CourseEditor({courseId,onChanged,onError}){
       </Row>
       <Row label="Tuition (international)" lock={locks.tuition} can={can} onRelease={()=>release('tuition')} {...ed('tuition')}
         onRemove={tuition?()=>act('remove_tuition',{},'Remove the current tuition for this course? Automation will not add it back.'):null}
-        editor={<TuitionEdit row={tuition} busy={busy} onSave={v=>act('set_tuition',v)} onCancel={()=>setEditing('')}/>}>
-        {tuition?`${fmtMoney(tuition.amount,tuition.currency||'AUD')} · ${BASIS[tuition.basis]||String(tuition.basis||'').replaceAll('_',' ')}${tuition.fee_year?` · ${tuition.fee_year}`:''}`:'—'}
+        editor={<TuitionEdit row={tuition} currency={CURRENCY_BY_COUNTRY[country]||'AUD'} busy={busy} onSave={v=>act('set_tuition',v)} onCancel={()=>setEditing('')}/>}>
+        {tuition?`${fmtMoney(tuition.amount,tuition.currency||CURRENCY_BY_COUNTRY[country]||'AUD')} · ${BASIS[tuition.basis]||String(tuition.basis||'').replaceAll('_',' ')}${tuition.fee_year?` · ${tuition.fee_year}`:''}`:'—'}
       </Row>
       <Row label="Title shown" lock={locks.display_title} can={can} onRelease={()=>release('display_title')} {...ed('title')}
         editor={<TextEdit value={c.display_title||c.canonical_title} busy={busy} onSave={v=>act('set_core',{field:'display_title',value:v})} onCancel={()=>setEditing('')}/>}>
@@ -165,6 +168,7 @@ export function ProviderEditor({providerId,onChanged,onError}){
       {data.can_edit&&<label className="re-reason"><small>Reason for the change (optional, kept in the history)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
       {text('display_name','Name shown')}
       {text('website','Website',{type:'url',link:true,placeholder:'https://'})}
+      <ProviderApplicants providerId={providerId} onChanged={onChanged} onError={onError}/>
       <Row label="Course finder address" lock={null} can={can} {...ed('finder')}
         editor={<TextEdit value={cf?.address} type="url" placeholder="https://… the page or site that lists the courses" busy={busy} onSave={v=>act('set_course_finder',{url:v},'Use this address to find course pages? The provider goes back into page discovery.')} onCancel={()=>setEditing('')}/>}>
         {cf?.address?<><a href={cf.address} target="_blank" rel="noreferrer" className="cf-link">{cf.address}</a><span className="l3v-code">{[cf.status,cf.pages_found!=null&&`${fmtNumber(cf.pages_found)} course pages found`,cf.mapped_at&&`last looked ${fmtDateTime(cf.mapped_at)}`].filter(Boolean).join(' · ')}</span></>:'—'}

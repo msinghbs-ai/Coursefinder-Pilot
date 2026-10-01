@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.60 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.133** (course links of every kind, who can apply, link refresh schedules, country admission rules).
+- Migrations 20261001170000, 171000, 172000, 173000 and 174000 applied to fxcwkweaxjtknorudmwp; each stored statement's md5 equals its file.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.59 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.132** (Older screens in the compact style).
