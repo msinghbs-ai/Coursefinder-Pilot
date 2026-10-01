@@ -262,3 +262,8 @@ export const services = { can_control: true,
     { id: 's3', key: 'custom-gateway', name: 'Custom gateway', type: 'custom', enabled: false, credential: false, routes: 0, last_test: { at: null, status: null } },
   ],
   events: [{ at: '2026-10-01T00:00:00Z', action: 'switch_off', target: 'anthropic/claude-sonnet', by: 'admin@example.com' }] }
+
+// v2.15.120 Edit in list.
+export const courseEditRows = { can_edit: true, rows: {
+  [courseRow.id]: { display_title: 'Associate Degree in Business', duration_value: 2, duration_unit: 'years', delivery_mode: null, official_url: 'https://www.rmit.edu.au/study-with-us/levels-of-study/vocational-study/associate-degrees/associate-degree-in-business-ad021', locks: { display_title: 'value' } },
+  c2: { display_title: 'Bachelor of Business (Accountancy)', duration_value: null, duration_unit: null, delivery_mode: 'On campus', official_url: null, locks: {} } } }

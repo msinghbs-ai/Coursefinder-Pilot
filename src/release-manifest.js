@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.119'
-export const PACKAGE_VERSION='0.1.46'
+export const UI_VERSION='2.15.120'
+export const PACKAGE_VERSION='0.1.47'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Parse.bot removed',
+  title:'Edit in list for Courses and Providers',
   changes:[
-    'Parse.bot has been removed completely: its settings card, its routes on every source profile and its stored key.',
-    'Ranking imports are now file upload only. The publisher URL option (which used Parse.bot) is gone; rankings and files already imported are kept.'
+    'Courses and Providers have a new Edit in list button. The editable fields become columns you can change in place: for courses the title, duration, delivery and course page; for providers the name, city, website, phone and email.',
+    'Click a cell to edit it; press Enter or move away to save, or Esc to cancel. A tick shows each save.',
+    'Each change is saved and logged the same way as in the record panel, and is locked so automation will not change it. A lock icon shows values entered by hand.'
   ],
   bugFixes:[]
 }

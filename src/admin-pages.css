@@ -212,3 +212,15 @@ td>.l3v-model{display:block}
 .ms-table td .cf-chip{margin:0 4px 4px 0}
 .ms-retired{margin-top:var(--cf-space-3)}.ms-retired summary{cursor:pointer;color:var(--cf-text-2);font-size:var(--cf-fs-sm)}
 .ms-events{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:var(--cf-fs-sm)}.ms-events .l3v-code{margin-left:8px}
+/* Edit in list (v2.15.120). */
+.le-table td.le-cell{padding:4px 6px;vertical-align:middle}
+.le-view{display:inline-flex;align-items:center;gap:5px;min-height:28px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.le-btn{width:100%;border:1px dashed transparent;border-radius:var(--cf-radius-sm);background:none;padding:3px 6px;text-align:left;cursor:text;color:var(--cf-text);font:inherit}
+.le-btn:hover,.le-btn:focus-visible{border-color:var(--cf-border-input);background:var(--cf-surface)}
+.le-btn span{overflow:hidden;text-overflow:ellipsis}
+.le-empty{color:var(--cf-muted);font-style:italic}
+.le-lock{flex:none;color:var(--cf-text-2)}.le-tick{flex:none;color:var(--cf-success)}
+.le-ok{border-color:var(--cf-success)}
+.le-input{width:100%;min-width:0}
+.le-duration{display:flex;gap:4px}.le-duration input{width:70px}
+.le-err-row td{padding-top:0}

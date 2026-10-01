@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.47 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.120** (Courses and Providers: Edit in list — change fields in place in the list).
+- Database (applied live): 20260930180000 (admin_catalogue_edit_rows).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.46 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.119** (Parse.bot removed completely; ranking imports are file upload only).
