@@ -39,9 +39,10 @@ test.describe('M2.5 Pilot deployment currentness @deployed',()=>{
       const layer3=await openLayer3(page)
       const queue=layer3.locator('[data-layer3-source-pattern-queue]')
       await expect(queue).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-      await expect(queue.getByRole('heading',{name:'Governed Provider source-pattern queue',exact:true})).toBeVisible()
-      await expect(queue).toContainText(/manual-governed/i)
-      await expect(queue.getByRole('button',{name:'Run source-pattern interpretation',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(queue.getByRole('heading',{name:'Course-page pattern requests',exact:true})).toBeVisible()
+      await expect(queue).toContainText(/Run by hand, one at a time/i)
+      // v2.15.127: the run button appears only while a request is waiting.
+      await expect(queue.getByRole('button',{name:'Run source-pattern interpretation',exact:true}).or(queue.getByText('No course-page pattern requests waiting.')).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
       await expect(page.getByRole('button',{name:/Run all source-pattern/i})).toHaveCount(0)
 
       await milestoneScreenshot(page,testInfo,'m2-5-pilot-deployment-currentness')

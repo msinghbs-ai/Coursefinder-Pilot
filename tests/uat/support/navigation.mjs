@@ -33,7 +33,7 @@ async function openAdministrationTool(page,tabName,heading){
 }
 
 export async function openLayer2Advanced(page) {
-  return openAdministrationTool(page,'Extraction Profiles','Enrichment Source Configuration')
+  return openAdministrationTool(page,'Extraction Profiles','Source profiles')
 }
 
 export async function openLayer2Providers(page) {
@@ -49,8 +49,9 @@ export async function openLayer3(page) {
   await clickPrimaryNav(page, 'Layer 3 — AI Interpretation')
   // v2.15.107: the Layer 3 operations workspace is the Work queue tab of the Layer 3 AI validation page.
   await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: 'Work queue' }).first().click(ui)
-  const workspace = page.locator('.m23-stack').first()
-  await expect(workspace.getByRole('heading', { name: 'Layer 3 status' })).toBeVisible(ui)
+  // v2.15.127: the Work queue is Layer3Work.jsx.
+  const workspace = page.locator('[data-layer3-work]').first()
+  await expect(workspace.getByRole('heading', { name: 'Work by task' })).toBeVisible(ui)
   return workspace
 }
 

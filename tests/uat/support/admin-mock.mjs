@@ -9,7 +9,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     context, dashboard: F.dashboard, layer_status_summary: F.layerStatus, platform_health: F.platformHealth,
     course_coverage: F.courseCoverage, data_quality_overview: F.dataQualityOverview,
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
-    layer3_queue_status: { by_task_class: [] }, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [],
+    layer3_queue_status: F.layer3Queue, layer2_profiles: F.layer2Profiles, layer2_profile_detail: F.layer2ProfileDetail, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [{ id: 'rt1', provider_id: 'pv1', display_name: 'Direct HTTP', adapter_type: 'direct_http', priority: 10, enabled: true }],
   }
   const calls = []; page.l3calls = calls
   const rpc = {
@@ -49,6 +49,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_key_date_save: b => { calls.push({ dateSave: b }); return { ...F.keyDates, items: F.keyDates.items.map(x => x.id === b.p_id ? { ...x, ...b.p_fields } : x), saved: b.p_id || 'd-new' } },
     admin_key_date_action: b => { calls.push({ dateAction: b }); return { ...F.keyDates, items: F.keyDates.items.map(x => x.id === b.p_id ? { ...x, status: b.p_action === 'cancel' ? 'cancelled' : 'active' } : x) } },
     admin_waiting_read: F.waiting,
+    layer3_source_pattern_queue: F.layer3SourcePatterns,
+    layer3_recent_interpretations: F.layer3Recent,
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)

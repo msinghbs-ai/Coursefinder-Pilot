@@ -4,7 +4,7 @@
 //               Admins can pause or resume, change the limit, switch a step on or off, reorder, add a qualified
 //               model or remove one. Every change is logged.
 //   Models      only the models in a cascade or qualified to join one, with their test scores and cost.
-//   Work queue  the operator workspace (evidence waiting, history), without the old per-profile list.
+//   Work queue  Layer3Work.jsx (v2.15.127): work by task, course-page pattern requests, recent results.
 // v2.15.110: each task card can send the items the AI raised for review back to Layer 3 (public.admin_requeue,
 // migration 20260930050000_cf247_ui_control_sweep); grouped by reason on Layer 4 Review > Send back to AI.
 // Read: public.admin_layer3_control_read(); write: public.admin_layer3_control(action, args) (migration
@@ -13,7 +13,7 @@ import React,{useEffect,useState}from'react'
 import{ArrowDown,ArrowUp,BrainCircuit,CircleDollarSign,Pause,Play,Plus,RefreshCw,Route,Trash2,Undo2}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtMoney,fmtNumber}from'./ui-kit'
-import{Layer3 as Layer3Workspace}from'./m2-3-intelligence-entry'
+import Layer3Work from'./Layer3Work'
 import{FailedWork}from'./SendBackToAI'
 
 const usd=(v,d=2)=>fmtMoney(Number(v||0),'USD',{decimals:d})
@@ -28,7 +28,7 @@ export default function Layer3Operations({tab='routing',rank,onError}){
   const act=async(action,args,confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_layer3_control',{p_action:action,p_args:args});if(error)throw error;setData(d||{})}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
   const sendBack=async(field,n,label)=>{if(!window.confirm(`Send the ${label} items the AI raised for review back to Layer 3 to be tried again? Items that differ from a value already held stay with a person.`))return;setBusy(true);try{const{error}=await supabase.rpc('admin_requeue',{p_action:'send_back',p_args:{field}});if(error)throw error}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}load()}
   useEffect(()=>{if(tab!=='work'&&!data)load()},[tab])
-  if(tab==='work')return <div className="m-page-stack"><Layer3Workspace rank={rank} hideHeader onError={e=>onError?.(e?.message||String(e))}/></div>
+  if(tab==='work')return <Layer3Work rank={rank} onError={onError}/>
   if(!data&&!failed)return <section className="m-panel"><Loading label="Loading Layer 3…"/></section>
   if(failed&&!data)return <section className="m-panel"><Empty text={`Layer 3 could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
   const refresh=<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>

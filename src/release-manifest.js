@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.126'
-export const PACKAGE_VERSION='0.1.53'
+export const UI_VERSION='2.15.127'
+export const PACKAGE_VERSION='0.1.54'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Fee rules, flagged values and Layer 3 easier to read',
+  title:'Layer 3 Work queue and Layer 2 Source profiles simplified',
   changes:[
-    'Fee rules: the preview opens directly under the rule you clicked, and shows the page words around the rule wording with that wording highlighted, instead of a long panel below the table.',
-    'Flagged values: filter by university and search by course; once a university is chosen, Confirm all as per year confirms every listed fee in one go, with progress shown.',
-    'Send back to AI: reasons are shortened (full text on hover) and show how many days ago each item was flagged.',
-    'Layer 3 work that failed now sits on Layer 3 under Control, next to the models doing the work.',
-    'Layer 3 Control: model names are shown in short form (full ID on hover), every task table uses the same column widths, and a task over its daily limit says stopped for today.'
+    'Layer 3 Work queue now shows the work by task (waiting, settled, no value on the page, sent to a person, failed), course-page pattern requests and the latest model results, 25 at a time.',
+    'Removed from the Work queue: the paused banner that could disagree with Control, the one-off manual run form for task types that no longer run, and duplicate links.',
+    'Layer 2 Source profiles use the compact style: plain headings, status chips and a shorter problem column; internal change-control text is gone.',
+    'Which fetchers a source uses is now shown, added and tested in that source\'s detail panel. Scrapers & fetchers points there instead of having its own routing panel.'
   ],
   bugFixes:[]
 }
