@@ -7,7 +7,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('Layer 4 has a Batch rules tab; rules are role-checked, never touch values entered by hand, and are logged', () => {
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'flags', 'sendback', 'rules'])
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'flags', 'sendback', 'rules', 'blocks'])
   const m = read('supabase/migrations/20260930140000_cf247_fee_wording_rules.sql')
   expect(m).toContain("if auth.uid() is null or v_rank < 4 then raise exception 'Pipeline Operator role or above required'")
   expect(m).toContain("if p_action in ('approve','run','pause','resume') and v_rank < 5 then raise exception 'PIM Operator role or above required to approve or run a rule'")

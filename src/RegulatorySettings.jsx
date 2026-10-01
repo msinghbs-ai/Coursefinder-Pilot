@@ -8,6 +8,7 @@ import{fmtNumber,fmtDateTime,fmtPercent}from'./lib/format.js'
 import { api } from './lib/supabase'
 import './settings.css'
 
+const IN_SCOPE = ['AU', 'NZ']
 const DEFAULT_BATCH = 2500
 const RESULT_KEY = 'coursefinder-layer1-country-result-v2'
 const STATCAN_RESULT_KEY = 'coursefinder-layer2a-statcan-ca-result-v1'
@@ -78,7 +79,12 @@ const COUNTRY_POLICY = {
   },
 }
 
-export default function RegulatorySettings({ onError }) {
+// v2.15.123: Regulatory settings is split by the screen review (merge into Layer 1, move the reset). mode 'batch' is
+// Layer 1 Register › Manual batch runs (Platform Admin): the bounded country runner, in-scope countries first; mode
+// 'reset' is the Pilot reset on Platform settings › Go-live checklist. The source registry table and the catalogue
+// counts were copies of Layer 1 › Source settings and the Dashboard and are gone.
+export default function RegulatorySettings({ onError, mode = 'batch' }) {
+  const [showAll, setShowAll] = useState(false)
   const [rows, setRows] = useState([])
   const [catalogue, setCatalogue] = useState(null)
   const [q, setQ] = useState('')
@@ -99,7 +105,7 @@ export default function RegulatorySettings({ onError }) {
     setBusy(true)
     Promise.all([api.regulatorySources(), api.dashboard()])
       .then(([sources, dashboard]) => {
-        setRows(sources || [])
+        setRows(Array.isArray(sources) ? sources : Array.isArray(sources?.items) ? sources.items : Array.isArray(sources?.rows) ? sources.rows : [])
         setCatalogue(dashboard || null)
       })
       .catch(e => onError(e.message))
@@ -152,8 +158,8 @@ export default function RegulatorySettings({ onError }) {
 
   const configuredCountries = useMemo(() => {
     const codes = [...new Set(rows.filter(r => r.source_id).map(r => r.country_code).filter(Boolean))]
-    return codes.filter(code => COUNTRY_POLICY[code]).sort((a, b) => COUNTRY_POLICY[a].label.localeCompare(COUNTRY_POLICY[b].label))
-  }, [rows])
+    return codes.filter(code => COUNTRY_POLICY[code] && (showAll || IN_SCOPE.includes(code))).sort((a, b) => COUNTRY_POLICY[a].label.localeCompare(COUNTRY_POLICY[b].label))
+  }, [rows, showAll])
 
   const selectedSources = useMemo(() => rows.filter(r => r.country_code === country), [rows, country])
   const policy = COUNTRY_POLICY[country] || COUNTRY_POLICY.AU
@@ -245,14 +251,20 @@ export default function RegulatorySettings({ onError }) {
 
   const batchValue = Math.max(1, Math.min(Number(batchSize || policy.recommendedBatch), policy.maxBatch))
 
+  const confirmModal = () => <div className="confirm-backdrop" role="presentation" onMouseDown={()=>setConfirmMode(null)}><div className="confirm-card" role="dialog" aria-modal="true" onMouseDown={e=>e.stopPropagation()}><div className="confirm-icon"><AlertTriangle size={22}/></div><span className="kicker">{confirmMode === 'reset' ? 'Destructive UAT reset' : 'Bounded regulatory write'}</span><h3>{confirmMode === 'reset' ? 'Reset the Pilot database?' : `Apply ${country} records ${fmtNumber(pendingOffset)}–${fmtNumber((pendingOffset + batchValue - 1))}?`}</h3><p>{confirmMode === 'reset' ? 'This removes business/runtime UAT data while preserving the Layer 1 execution seed and platform configuration.' : `The request will use the ${policy.adapter} adapter, offset ${fmtNumber(pendingOffset)} and a maximum batch size of ${fmtNumber(batchValue)}. Search Projection is rebuilt after the write.`}</p><label>Type <strong>{confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`}</strong> to confirm</label><input autoFocus value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder={confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`}/><div className="confirm-actions"><button className="secondary" onClick={()=>setConfirmMode(null)}>Cancel</button><button className="danger-soft" disabled={confirmText.trim().toUpperCase() !== (confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`)} onClick={approve}><AlertTriangle size={15}/>{confirmMode === 'reset' ? 'Reset Database' : 'Apply bounded batch'}</button></div></div></div>
+
+  if (mode === 'reset') return <div className="stack">
+    <section className="panel full"><div className="panel-title"><div><span className="kicker">Pilot only</span><h3>Reset the Pilot database</h3><p>Removes all catalogue data from the Pilot so a full test run can start again. Never use it on Production. You will be asked to type RESET DATABASE.</p></div><button className="danger-soft" onClick={()=>{ setConfirmMode('reset'); setConfirmText('') }} disabled={runBusy}><RotateCcw size={15}/>Reset database</button></div></section>
+    {confirmMode && confirmModal()}
+  </div>
+
   return <div className="stack">
     <div className="section-head">
       <div>
-        <span className="kicker">Platform Admin · Production Layer 1</span>
-        <h2>Regulatory ingestion</h2>
-        <p>Country-specific Layer 1 execution with bounded batches, deterministic offsets, evidence capture and canonical reconciliation.</p>
+        <h2>Manual batch runs</h2>
+        <p>Run one country's register in bounded batches with a fixed offset. Scheduled runs are on the Runs tab; use this only to load or repair a country by hand.</p>
       </div>
-      <div style={{display:'flex',gap:8}}><button className="secondary" onClick={load}><RefreshCw size={15} className={busy ? 'spin' : ''}/>Refresh</button></div>
+      <div style={{display:'flex',gap:8,alignItems:'center'}}><label className="rs-check"><input type="checkbox" checked={showAll} onChange={e=>setShowAll(e.target.checked)}/>Show countries not in scope</label><button className="secondary" onClick={load}><RefreshCw size={15} className={busy ? 'spin' : ''}/>Refresh</button></div>
     </div>
 
     <section className="panel full ingestion-control">
@@ -325,15 +337,11 @@ export default function RegulatorySettings({ onError }) {
       <div className="idempotency-hint"><ShieldCheck size={16}/><span>{hasMore ? `Batch complete. Next production offset is ${fmtNumber(nextOffset)}.` : 'Adapter reports no further records in this source scope.'}</span></div>
     </section>}
 
-    <div className="metric-grid compact-grid"><Metric icon={Database} label="Configured regulatory sources" value={rows.filter(r=>r.source_id).length}/><Metric icon={Settings2} label="Countries configured" value={configuredCountries.length}/><Metric icon={Database} label="Catalogue providers" value={num(catalogue?.providers)}/><Metric icon={Database} label="Catalogue courses" value={num(catalogue?.courses)}/><Metric icon={MapPin} label="Campuses" value={num(catalogue?.campuses)}/><Metric icon={MapPin} label="Course↔Campus" value={num(catalogue?.course_campus_links)}/><Metric icon={Search} label="Search documents" value={num(catalogue?.search_documents)}/></div>
 
-    <section className="panel full"><div className="panel-title table-title"><div><span className="kicker">Country → source → programmed adapter</span><h3>Layer 1 source registry</h3><p>Execution is country-specific; this table remains the authoritative source configuration used by the Edge Function.</p></div><div className="searchbox"><Search size={16}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search country or source…"/></div></div><div className="table-wrap"><table><thead><tr><th>Country</th><th>Source</th><th>Adapter</th><th>Coverage</th><th>Auth</th><th>Trust</th><th>Status</th><th>Last success</th></tr></thead><tbody>{shown.length ? shown.map((r,i)=><tr key={r.source_id || `${r.country_code}-${i}`}><td><div className="cell-title"><strong>{r.country_name}</strong><span>{r.country_code} · {r.catalogue_status}</span></div></td><td>{r.source_id ? <div className="cell-title"><strong>{r.source_label}</strong><a href={r.source_url || r.system_base_url} target="_blank" rel="noreferrer">{r.system_name || r.source_url}</a></div> : <span className="source-missing">Not configured</span>}</td><td>{COUNTRY_POLICY[r.country_code]?.adapter || r.system_config?.acquisition_method || r.source_type || '—'}</td><td><div className="coverage-list">{(r.system_config?.coverage || []).map(x=><span key={x}>{String(x).replaceAll('_',' ')}</span>)}</div></td><td>{r.system_config?.auth || 'none'}</td><td>{r.trust_rank ?? '—'}</td><td><span className={`badge badge-${String(r.source_status || 'missing').replace(/[^a-z0-9]+/gi,'-').toLowerCase()}`}>{r.source_status || 'missing'}</span></td><td>{fmt(r.last_success_at)}</td></tr>) : <tr><td colSpan="8"><div className="table-empty">No regulatory source records returned.</div></td></tr>}</tbody></table></div></section>
 
-    <section className="panel settings-note"><div><strong>Production execution</strong><span>Run one country at a time. Every request carries a deterministic offset and bounded batch size, so failed runs can be restarted without replaying the whole source.</span></div><div><strong>Canada</strong><span>CA Layer 1 uses live IRCC DLI Provider authority. The separate StatsCan PSIS Layer 2A dry-run validates outcomes acquisition and provider-mapping candidates without writing canonical identities.</span></div><div><strong>Other countries</strong><span>Country-specific adapters preserve stable regulatory/source identity and can be replaced without changing the Settings execution contract.</span></div></section>
 
-    <section className="panel full"><div className="panel-title"><div><span className="kicker">Danger zone</span><h3>Reset Pilot database</h3><p>UAT-only destructive reset. This is not part of normal production ingestion.</p></div><button className="danger-soft" onClick={()=>{setConfirmMode('reset');setConfirmText('')}} disabled={runBusy || statsCanBusy}><RotateCcw size={15}/>Reset Database</button></div></section>
 
-    {confirmMode && <div className="confirm-backdrop" role="presentation" onMouseDown={()=>setConfirmMode(null)}><div className="confirm-card" role="dialog" aria-modal="true" onMouseDown={e=>e.stopPropagation()}><div className="confirm-icon"><AlertTriangle size={22}/></div><span className="kicker">{confirmMode === 'reset' ? 'Destructive UAT reset' : 'Bounded regulatory write'}</span><h3>{confirmMode === 'reset' ? 'Reset the Pilot database?' : `Apply ${country} records ${fmtNumber(pendingOffset)}–${fmtNumber((pendingOffset + batchValue - 1))}?`}</h3><p>{confirmMode === 'reset' ? 'This removes business/runtime UAT data while preserving the Layer 1 execution seed and platform configuration.' : `The request will use the ${policy.adapter} adapter, offset ${fmtNumber(pendingOffset)} and a maximum batch size of ${fmtNumber(batchValue)}. Search Projection is rebuilt after the write.`}</p><label>Type <strong>{confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`}</strong> to confirm</label><input autoFocus value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder={confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`}/><div className="confirm-actions"><button className="secondary" onClick={()=>setConfirmMode(null)}>Cancel</button><button className="danger-soft" disabled={confirmText.trim().toUpperCase() !== (confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`)} onClick={approve}><AlertTriangle size={15}/>{confirmMode === 'reset' ? 'Reset Database' : 'Apply bounded batch'}</button></div></div></div>}
+    {confirmMode && confirmModal()}
   </div>
 }
 
