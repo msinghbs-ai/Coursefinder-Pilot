@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
-import { openLayer2, openLayer2Providers } from './support/navigation.mjs'
+import { openLayer2, openLayer2Tab, openLayer2Providers } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 async function firecrawlDrawer(page){const b=page.locator('.l2p-provider-list > button').filter({hasText:'Firecrawl'}).first();await expect(b).toBeVisible();await b.click();const d=page.locator('.l2p-drawer');await expect(d).toBeVisible();return d}
@@ -10,13 +10,13 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL)throw new Error('UAT_BASE_URL is required');if(!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('UAT credentials are required');await writeRunEnvironment({suite:'deployed-layer2-operations-m2-4-2-v1.7',change_control:'CF-CHG-20260827-044'})})
 
  test('routine Layer 2 workspace exposes bounded scope with one background enrichment action',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const workspace=await openLayer2(page)
+  await loginAsUatUser(page);const workspace=await openLayer2Tab(page,'Fetch an area')
   await expect(page.getByRole('heading',{name:'Layer 2 Discovery & reading',exact:true}).first()).toBeVisible()
-  await expect(workspace.getByRole('heading',{name:'Background Course enrichment',exact:true})).toBeVisible()
+  await expect(workspace.getByRole('heading',{name:'Fetch an area',exact:true})).toBeVisible()
   const country=workspace.getByLabel('Layer 2 sync country'),scope=workspace.getByLabel('Layer 2 fetch scope')
   await expect(country).toHaveValue('AU');await expect(scope).toHaveValue('country');const countryLabels=await country.locator('option').allTextContents();expect(countryLabels.join(' ')).toMatch(/Australia.*Canada.*New Zealand/i)
   const scopeLabels=await scope.locator('option').allTextContents();expect(scopeLabels.join(' ')).toMatch(/Country.*State.*University/i)
-  for(const label of ['Layer 1 Institutions','Layer 1 Courses','L2 Qualified','Needs qualification','Ready with governed URL'])await expect(workspace.getByText(label,{exact:true}).first()).toBeVisible()
+  for(const label of ['Institutions','Courses','Firecrawl this month','Each wave'])await expect(workspace.getByText(label,{exact:true}).first()).toBeVisible()
   await expect(workspace.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible()
 
   await scope.selectOption('state')
@@ -30,7 +30,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   const uni=workspace.getByLabel('Layer 2 sync university');await expect(uni).toBeVisible()
   await expect.poll(async()=>((await uni.innerText()).trim()),{timeout:45000,message:'Waiting for initial University scope resolution'}).not.toBe('Choose university')
   await uni.click();const uniList=workspace.getByRole('listbox',{name:'University options'});await expect(uniList).toBeVisible();const uniOptions=uniList.getByRole('option');await expect(uniOptions.first()).toBeVisible({timeout:45000});expect(await uniOptions.count()).toBeLessThanOrEqual(10)
-  await expect(workspace.locator('.l2o-route-chain')).toContainText(/Firecrawl direct.*Background scheduler.*Budget guard.*Evidence/i)
+  await expect(workspace.getByText('Firecrawl used / limit',{exact:true}).first()).toBeVisible()
   await expect(workspace.getByRole('button',{name:/Run bounded trial|Qualify next wave|Discover & sync|Sync now/})).toHaveCount(0)
   await expect(workspace.getByText(/no manual per-Provider action is required/i)).toHaveCount(0)
   const blockerPanel=workspace.locator('.l2o-blockers')
@@ -39,15 +39,15 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
  }finally{await finish(testInfo,runtime)}})
 
  test('routine Layer 2 screen keeps policy and engineering controls out of the operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const workspace=await openLayer2(page)
+  await loginAsUatUser(page);const workspace=await openLayer2Tab(page,'Fetch an area')
   await expect(workspace.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
   await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
   await expect(workspace.getByRole('button',{name:/Schedule & run policy|Advanced provider config/i})).toHaveCount(0)
   await expect(workspace.getByText(/provider credentials|route priority|vendor concurrency/i)).toHaveCount(0)
   await expect(workspace.getByRole('button',{name:/delete|reset|truncate/i})).toHaveCount(0)
-  await expect(workspace.getByText('Qualification Providers / batch',{exact:true})).toBeVisible()
-  await expect(workspace.getByText('Production Course wave',{exact:true})).toBeVisible()
+  await expect(workspace.getByText('Firecrawl this month',{exact:true})).toBeVisible()
+  await expect(workspace.getByText('Each wave',{exact:true})).toBeVisible()
  }finally{await finish(testInfo,runtime)}})
 
  test('advanced acquisition provider controls are centralised under Administration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{

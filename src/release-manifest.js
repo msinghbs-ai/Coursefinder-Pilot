@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.127'
-export const PACKAGE_VERSION='0.1.54'
+export const UI_VERSION='2.15.128'
+export const PACKAGE_VERSION='0.1.55'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Layer 3 Work queue and Layer 2 Source profiles simplified',
+  title:'Layer 2 split into tabs',
   changes:[
-    'Layer 3 Work queue now shows the work by task (waiting, settled, no value on the page, sent to a person, failed), course-page pattern requests and the latest model results, 25 at a time.',
-    'Removed from the Work queue: the paused banner that could disagree with Control, the one-off manual run form for task types that no longer run, and duplicate links.',
-    'Layer 2 Source profiles use the compact style: plain headings, status chips and a shorter problem column; internal change-control text is gone.',
-    'Which fetchers a source uses is now shown, added and tested in that source\'s detail panel. Scrapers & fetchers points there instead of having its own routing panel.'
+    'Layer 2 Discovery & reading now has four tabs: Overview (coverage, where work stops, fetchers, by hour, what is not ready and recently accepted facts), Fetch an area, History (progress, runs, recent page fetches and the execution trace) and Source profiles.',
+    'The by-hour table shows 9 plain columns instead of 25; hover a row for the full breakdown.',
+    'Provider onboarding (checking each provider’s course catalogue page) moved to Fetch an area. Removed duplicates of other screens: acquisition policy (Scrapers & fetchers), the Data Quality and Evidence boxes and an extra row of tiles. Internal wording and change-control references are gone.'
   ],
   bugFixes:[]
 }

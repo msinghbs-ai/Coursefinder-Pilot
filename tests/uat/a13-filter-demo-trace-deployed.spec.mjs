@@ -1,6 +1,6 @@
 import{test,expect}from'@playwright/test'
 import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'
-import{openLayer2}from'./support/navigation.mjs'
+import{openLayer2,openLayer2Tab}from'./support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
@@ -36,26 +36,18 @@ test.describe('A13 stable Course filters and Layer 2 acquisition Evidence trace 
 
  test('Layer 2 explains governed Firecrawl production route and opens accepted UQ Evidence',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
-  const dialog=await openLayer2(page)
+  // v2.15.128: the policy chain and the fixed UQ example were removed from Layer 2 (policy lives on Scrapers &
+  // fetchers); History lists the latest page fetches, each opening the evidence it saved.
+  const dialog=await openLayer2Tab(page,'History')
   await expect(page.getByRole('heading',{name:'Layer 2 Discovery & reading'}).first()).toBeVisible()
-  await expect(dialog.getByRole('heading',{name:'Effective acquisition policy',exact:true})).toBeVisible()
-  const route=page.locator('.l2o-route-chain')
-  await expect(route).toContainText(/Firecrawl direct.*Background scheduler.*Budget guard.*Evidence/i)
-  const demo=page.locator('.l2o-demo-proof')
-  await expect(demo.getByText(/Recent accepted acquisition example/i)).toBeVisible()
-  await demo.locator('summary').click()
-  await expect(demo.getByText(/Firecrawl acquisition evidence/i)).toBeVisible()
-  await expect(demo.getByText(/study\.uq\.edu\.au\/study-options\/programs\/bachelor-arts-2000/)).toBeVisible()
-  await expect(demo.getByText(/HTTP 200/)).toBeVisible()
-  await milestoneScreenshot(page,testInfo,'a13-layer2-firecrawl-demo-proof')
-  await demo.getByRole('button',{name:/Open captured Evidence/}).click()
-  await expect(page).toHaveURL(/#evidence\?evidence_id=eb305cd4-577e-4ced-988b-243fc3318f6e/)
+  await expect(dialog.getByRole('heading',{name:'Recent page fetches',exact:true})).toBeVisible()
+  const first=dialog.locator('.l2o-attempts .l2o-attempt').filter({has:page.getByRole('button',{name:'Evidence',exact:true})}).first()
+  await expect(first).toBeVisible({timeout:45000})
+  await milestoneScreenshot(page,testInfo,'a13-layer2-recent-fetches')
+  await first.getByRole('button',{name:'Evidence',exact:true}).click()
+  await expect(page).toHaveURL(/#evidence\?evidence_id=[0-9a-f-]{36}/)
   await expect(page.getByText('Evidence artifact',{exact:true})).toBeVisible({timeout:15000})
   await expect(page.getByText(/Private evidence boundary/)).toBeVisible()
-  const evidenceDrawer=page.locator('aside.evidence-drawer')
-  await expect(evidenceDrawer.locator('[data-artifact-format="JSON"]')).toBeVisible({timeout:20000})
-  await expect(evidenceDrawer).toContainText(/Structured JSON Evidence/i)
-  await expect(evidenceDrawer.locator('.evidence-visual-card')).toHaveCount(0)
-  await milestoneScreenshot(page,testInfo,'a13-uq-firecrawl-evidence-drawer')
+  await milestoneScreenshot(page,testInfo,'a13-layer2-fetch-evidence-drawer')
  }finally{await finish(testInfo,runtime)}})
 })

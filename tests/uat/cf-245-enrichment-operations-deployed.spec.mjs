@@ -27,10 +27,9 @@ test.describe('CF-245 Enrichment Operations deployed acceptance @deployed',()=>{
     expect(body?.change_control_ref).toBe('CF-CHG-20260915-245')
     expect(Array.isArray(body?.coverage)).toBeTruthy()
     expect(Array.isArray(body?.hourly)).toBeTruthy()
-    await expect(ops.getByRole('heading',{name:'Enrichment Operations',exact:true})).toBeVisible()
-    for(const heading of ['Coverage & backlog','Where work stops','Provider yield & latency','Hourly enrichment funnel','Recent field admissions','Recent execution trace'])await expect(ops.getByText(heading,{exact:true})).toBeVisible()
-    await expect(ops).toContainText(/Acquisition, admission and publication remain separate stages/i)
-    await expect(ops).toContainText(/Official course URL/i)
+    // v2.15.128: compact Overview; the execution trace is on History.
+    for(const heading of ['Coverage and what is left','Where work stops','Fetchers','By hour','Not ready to fetch','Recently accepted facts'])await expect(ops.getByRole('heading',{name:heading,exact:true})).toBeVisible()
+    await expect(ops).toContainText(/Course page link|Intakes|English requirements|Tuition/i)
     await expect(ops).toContainText(/Layer 3/i)
     await milestoneScreenshot(page,testInfo,'cf-245-enrichment-operations')
   }finally{await finish(testInfo,runtime)}})

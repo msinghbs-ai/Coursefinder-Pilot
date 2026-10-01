@@ -9,7 +9,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     context, dashboard: F.dashboard, layer_status_summary: F.layerStatus, platform_health: F.platformHealth,
     course_coverage: F.courseCoverage, data_quality_overview: F.dataQualityOverview,
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
-    layer3_queue_status: F.layer3Queue, layer2_profiles: F.layer2Profiles, layer2_profile_detail: F.layer2ProfileDetail, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [{ id: 'rt1', provider_id: 'pv1', display_name: 'Direct HTTP', adapter_type: 'direct_http', priority: 10, enabled: true }],
+    layer3_queue_status: F.layer3Queue, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_profiles: F.layer2Profiles, layer2_profile_detail: F.layer2ProfileDetail, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [{ id: 'rt1', provider_id: 'pv1', display_name: 'Direct HTTP', adapter_type: 'direct_http', priority: 10, enabled: true }],
   }
   const calls = []; page.l3calls = calls
   const rpc = {
@@ -67,6 +67,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
       return json(op in adminRead ? adminRead[op] : {})
     }
     if (u.pathname.startsWith('/rest/v1/rpc/')) { const v = rpc[u.pathname.split('/').pop()]; return json(typeof v === 'function' ? v(body) : (v ?? [])) }
+    if (u.pathname.endsWith('/functions/v1/layer2-sync-control')) return json(body.action === 'options' ? F.layer2SyncOptions : body.action === 'preview_background' ? F.layer2SyncPreview : {})
     if (u.pathname.startsWith('/functions/v1/')) return json(u.pathname.endsWith('platform-environment-control') ? F.environmentRead : {})
     return json([])
   })

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
-import { openLayer1, openLayer2, openLayer3, openLayer4, openLayer2Advanced } from './support/navigation.mjs'
+import { openLayer1, openLayer2, openLayer2Tab, openLayer3, openLayer4, openLayer2Advanced } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
@@ -27,8 +27,8 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
 
   test('Layer 1 and Layer 2 open as embedded canonical workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const l1=await openLayer1(page);await expect(l1.locator('.l1o-backdrop')).toHaveCount(0)
-    const l2=await openLayer2(page)
-    await expect(l2.getByRole('heading',{name:'Background Course enrichment',exact:true})).toBeVisible()
+    const l2=await openLayer2Tab(page,'Fetch an area')
+    await expect(l2.getByRole('heading',{name:'Fetch an area',exact:true})).toBeVisible()
     await expect(l2.getByLabel('Layer 2 sync country')).toBeVisible()
     await expect(l2.getByLabel('Layer 2 fetch scope')).toBeVisible()
     await expect(l2.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)

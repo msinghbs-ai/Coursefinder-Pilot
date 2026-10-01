@@ -1,0 +1,33 @@
+// v2.15.128 Layer 2 split into tabs: Overview, Fetch an area, History, Source profiles. Duplicate panels removed.
+import { test, expect } from '@playwright/test'
+import fs from 'node:fs'
+import { PAGES } from '../../src/nav-map.js'
+import { mockAdmin } from './support/admin-mock.mjs'
+
+test('tabs and removed duplicates', () => {
+  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Overview', 'Fetch an area', 'History', 'Source profiles'])
+  const w = fs.readFileSync('src/layer2-operations-entry.jsx', 'utf8')
+  for (const gone of ['Effective acquisition policy', 'Results / Data Quality', '<h2>Evidence</h2>', 'l2o-kpis']) expect(w).not.toContain(gone)
+  const e = fs.readFileSync('src/EnrichmentOperations.jsx', 'utf8')
+  expect(e).not.toContain('Metrics are observational')
+  expect(e).not.toContain("'CF-CHG-20260915-245'")
+})
+
+test.describe('mocked browser', () => {
+  test('each tab shows its own part', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#layer-2-discovery')
+    const ops = page.locator('[data-cf245-enrichment-operations="true"]')
+    await expect(ops.getByRole('heading', { name: 'Coverage and what is left' })).toBeVisible()
+    await expect(ops.locator('.eops-hourly thead th')).toHaveCount(9)
+    await expect(ops).toContainText('Passed to Layer 3 (AI)')
+    await expect(page.getByRole('button', { name: 'Start production enrichment' })).toHaveCount(0)
+    await page.getByRole('tab', { name: 'Fetch an area' }).click()
+    await expect(page.getByRole('button', { name: 'Start production enrichment' })).toBeVisible()
+    await expect(page.getByText('41 sites checked · 145 still to check')).toBeVisible()
+    await page.getByRole('tab', { name: 'History' }).click()
+    await expect(page.locator('[data-l2-latest-terminal="true"]')).toContainText('Cancelled')
+    await expect(page.getByRole('heading', { name: 'Recent page fetches' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Recent execution trace' })).toBeVisible()
+  })
+})

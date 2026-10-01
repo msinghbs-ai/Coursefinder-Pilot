@@ -28,17 +28,15 @@ test.describe('CF-245 Enrichment Operations contract',()=>{
   expect(migration).not.toContain('grant select on pipeline.enrichment_coverage_snapshots to authenticated')
   expect(migration).not.toContain('grant select on pipeline.enrichment_coverage_snapshots to anon')
 
+  // v2.15.128: compact Overview and a separate execution trace view (History tab).
   for(const text of [
-   'Enrichment Operations',
-   'What actually enriched, where work stopped, and what reached Search/website',
    "adminRead('enrichment_operations'",
-   'Coverage & backlog',
-   'Hourly enrichment funnel',
+   'Coverage and what is left',
+   'By hour',
    'Where work stops',
-   'Provider yield & latency',
-   'Recent field admissions',
+   'title="Fetchers"',
+   'Recently accepted facts',
    'Recent execution trace',
-   'Baseline pending',
    'facts_admitted_lower_bound',
    'rejected_or_blocked',
    'layer3_escalated',
@@ -48,12 +46,13 @@ test.describe('CF-245 Enrichment Operations contract',()=>{
    'vendor_cost_usd',
    'p50_extraction_ms',
    'p95_extraction_ms',
-   'openNav(\'Jobs\')',
    'openEvidence(x.evidence_id)',
   ])expect(report).toContain(text)
+  expect(report).not.toContain('CF-CHG-20260915-245')
 
   expect(layer2).toContain("import EnrichmentOperations from'./EnrichmentOperations'")
-  expect(layer2).toContain('<EnrichmentOperations rank={rank} openNav={openNav} openEvidence={openEvidence}/>')
+  expect(layer2).toContain('<EnrichmentOperations rank={rank} view="overview" openNav={openNav} openEvidence={openEvidence}/>')
+  expect(layer2).toContain('<EnrichmentOperations rank={rank} view="trace" openNav={openNav} openEvidence={openEvidence}/>')
 
   // CF-245 outcome reporting must not turn Scheduled Tasks into a second reporting/mutation surface.
   expect(scheduled).not.toContain('EnrichmentOperations')

@@ -13,6 +13,7 @@ test.describe('M2.5 Layer 2 terminal run observability correction @deployed',()=
     try{
       await loginAsUatUser(page)
       await clickPrimaryNav(page,'Layer 2 — Enrichment')
+      await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'History'}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT}) // v2.15.128
       const ws=page.getByLabel('Layer 2 Operations')
       await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
 
@@ -33,7 +34,7 @@ test.describe('M2.5 Layer 2 terminal run observability correction @deployed',()=
       }
 
       await expect(ws.getByRole('heading',{name:'Current progress',exact:true})).toBeVisible()
-      await expect(ws.getByText(/Active parent work is shown separately from the latest terminal production history/i)).toBeVisible()
+      await expect(ws.getByText(/The run in progress, or the last finished one/i)).toBeVisible()
       await milestoneScreenshot(page,testInfo,'m2-5-layer2-terminal-run-observability')
     } finally { await finish(testInfo,runtime) }
   })

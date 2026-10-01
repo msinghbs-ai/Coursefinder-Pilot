@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.55 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.128** (Layer 2 split into Overview, Fetch an area, History and Source profiles).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.54 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.127** (Layer 3 Work queue and Layer 2 Source profiles in the compact style).

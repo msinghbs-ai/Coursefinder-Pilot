@@ -45,7 +45,9 @@ export const PAGES = {
     { key: 'links', label: 'Reference sources', min: 3 },
   ] },
   layer2: { label: 'Layer 2 Discovery & reading', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'Finding provider pages and reading the facts on them.', tabs: [
-    { key: 'operations', label: 'Runs', min: 4 },
+    { key: 'operations', label: 'Overview', min: 4 },
+    { key: 'start', label: 'Fetch an area', min: 4 },
+    { key: 'history', label: 'History', min: 4 },
     { key: 'profiles', label: 'Source profiles', min: 4 },
   ] },
   layer3: { label: 'Layer 3 AI validation', slug: 'layer-3-ai', icon: 'ai', subtitle: 'Run or pause each task, set its daily limit and choose the model cascade.', tabs: [
