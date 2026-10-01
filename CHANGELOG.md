@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.69 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.142** (Decision 215: evidence link indexing fixed; Live activity shows worker errors).
+- Database: migrations 20261002180900, 20261002181000 and 20261002181100 applied to fxcwkweaxjtknorudmwp; edge function evidence-link-index v4.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.68 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.141** (Live activity; scholarship discovery refill; release check fixed).

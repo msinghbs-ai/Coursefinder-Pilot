@@ -504,6 +504,8 @@ td>.l3v-model{display:block}
 .la .la-state.failing,.la .la-state.stuck{color:var(--cf-red-600)}
 .la .la-state.paused,.la .la-state.scheduled{color:var(--cf-muted)}
 .la .la-sum{font-size:var(--cf-fs-sm)}
+.la .la-msg{display:block;max-width:420px;overflow-wrap:anywhere;font-family:var(--cf-font-mono,monospace)}
+.la .la-errors{border-left:3px solid var(--cf-red-600)}
 .la .la-spin{animation:la-spin 1.2s linear infinite}
 @keyframes la-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.la .la-spin{animation:none}}

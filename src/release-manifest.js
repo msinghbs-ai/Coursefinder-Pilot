@@ -1,20 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.141'
-export const PACKAGE_VERSION='0.1.68'
+export const UI_VERSION='2.15.142'
+export const PACKAGE_VERSION='0.1.69'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Live activity',
+  title:'Evidence link indexing fixed; worker errors shown on Live activity',
   changes:[
-    'New screen Live activity (under Dashboard): every scheduled job by layer, shown as Running now, Working (what is left, done in 24 hours and about how long to go), Up to date, Paused, Stuck or Failing, with its last run, the worker\'s last result and the next run in Melbourne time. It refreshes every 20 seconds.',
-    'Waiting for a person: tiles for fee schedules, scholarships to publish or check, Layer 4 reviews, flagged values and ranking links, each opening its screen.',
-    'Scholarship discovery no longer stops when its list runs out: 100 more providers were lined up, the next largest are added every hour, and each run now searches 6 providers instead of 3.'
+    'Index evidence links works again: it had been refused for two days because the old automation key expired. It now signs in with a one-time run pass made for each run.',
+    'Compressed saved pages (about 11,700) are now read; they had been marked as having no links. They are being indexed again, 200 pages every 10 minutes.',
+    'Live activity has a new Workers sending back errors panel: error replies from workers in the last few hours, what each means in plain English, how often and when last. A job can show its run as succeeded while the worker refuses the work; this makes that visible.',
+    'Live activity shows Index evidence links with pages left, pages done in 24 hours and links found.',
+    'Platform guide updated: Live activity, Evidence, a new signal for repeating worker errors, and run passes under Budgets and keys.'
   ],
   bugFixes:[
-    'The release check after each merge failed since v2.15.136 although the site had updated: it cut the download short while looking for the version. It now downloads first, then looks.'
+    'Index evidence links returned "invalid_pilot_automation_key" on every run since 30 Sep 2026 while its schedule showed success.',
+    'Compressed (.html.gz) saved pages were read as unreadable and recorded as having no links.'
   ]
 }
 
