@@ -218,7 +218,7 @@ export function scholarshipCriteria(body: string): Criterion[] {
   // student type: domestic (citizens, permanent residents), international, or both
   const dom = firstPlain(t, /\b(?:australian citizens?|permanent residents?(?: of australia)?|australian permanent residents?|domestic students?|new zealand citizens?|(?:permanent )?humanitarian visa(?: holders?)?|student type:? domestic|domestic(?=,| and| or))\b/gi);
   // stated as a requirement, not a menu link ("Applying to RMIT International students Parents")
-  const intl = firstPlain(t, /\b(?:be|is|are|an?|or|and|new|commencing|current|continuing|offshore|onshore|eligible|open to|all) (?:an? )?international(?: students?| applicants?| candidates?|,)|\binternational (?:students?|applicants?|candidates?) (?:who|must|may|are|will|can|only|commencing|applying|from|studying|enrolling|holding|with|in|on)\b|\b(?:student type|domestic(?: and|,| or| \/)?|citizenship|residency)[ :,/a-z]{0,25}\binternational\b/gi);
+  const intl = firstPlain(t, /\b(?:be|is|are|an?|or|and|new|commencing|current|continuing|offshore|onshore|eligible|open to|all) (?:an? )?international(?: students?| applicants?| candidates?|,)|\b(?:international|overseas) (?:students?|applicants?|candidates?) (?:who|must|may|are|will|can|only|commencing|applying|from|studying|enrolling|holding|with|in|on)\b|\b(?:student type|domestic(?: and|,| or| \/)?|citizenship|residency)[ :,/a-z]{0,25}\binternational\b/gi);
   // a shortened list ("Australian citizen, Permanent resident +2 more") hides the rest: domestic-only is not certain
   const hidden = /\+\s?\d+ more\b/i.test(t);
   if (intl || (dom && !hidden)) {

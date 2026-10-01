@@ -2,7 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.5.2";
+const SCH_VERSION = "scholarship-sweep-v0.5.3";
+// v0.5.3: "Overseas students are eligible to apply" includes international students.
 // v0.5.2 (2 Oct 2026, second hand-check, 14 domestic-only readings): "... New Zealand citizen or International student" and
 // "both domestic (...) and international students" include international students.
 // v0.5.1 (2 Oct 2026, first 30 hand-checked): the eligibility section ends at the next part of the page (how to apply,

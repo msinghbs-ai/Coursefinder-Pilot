@@ -34,6 +34,7 @@ test('reader: criteria from the eligibility wording, negations respected', async
   expect(kinds(scholarshipCriteria('Eligibility Applying to RMIT International students Parents and partners Alumni. Applicants must hold a first class Honours degree.'))).toEqual([])
   expect(kinds(scholarshipCriteria('To be eligible for this scholarship you must: be an Australian citizen, Australian permanent resident, New Zealand citizen or International student; have and maintain an academic progression status'))).toEqual([['student_type', ['domestic', 'international']]])
   expect(kinds(scholarshipCriteria('Eligibility The scholarship is open to both domestic (Australian/New Zealand citizens or Australian permanent residents) and international students.'))).toEqual([['student_type', ['domestic', 'international']]])
+  expect(kinds(scholarshipCriteria('Eligibility A scholarship to cover tuition fees for Australian citizens, New Zealand citizens, and permanent residents. Overseas students are eligible to apply, however, they may be required to pay'))).toEqual([['student_type', ['domestic', 'international']]])
   // "future or current" is mixed: left out; "an equivalent international degree" is not a student type
   expect(kinds(scholarshipCriteria('Eligibility Future or current PhD student. You hold an Honours degree or an equivalent international degree.'))).toEqual([])
   for (const c of scholarshipCriteria('Eligibility: be an international student commencing full-time study')) expect(c.text.length).toBeGreaterThan(10)
