@@ -3,7 +3,7 @@ import {createClient} from "npm:@supabase/supabase-js@2";
 
 const VERSION="hotcourses-directory-v1";
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
-const H=(r:Request)=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":r.headers.get("origin")===ORIGIN?ORIGIN:ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key","access-control-allow-methods":"POST,OPTIONS"});
+const H=(r:Request)=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":r.headers.get("origin")===ORIGIN?ORIGIN:ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-run-nonce","access-control-allow-methods":"POST,OPTIONS"});
 const J=(r:Request,s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:H(r)});
 const uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const clean=(s:string)=>String(s||"").replace(/<script\b[\s\S]*?<\/script>/gi," ").replace(/<style\b[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&amp;/gi,"&").replace(/&nbsp;/gi," ").replace(/&#39;/g,"'").replace(/&quot;/gi,'"').replace(/\s+/g," ").trim();
@@ -11,8 +11,8 @@ const attr=(tag:string,n:string)=>{const m=tag.match(new RegExp("\\b"+n+"\\s*=\\
 const abs=(base:string,u:string)=>{try{return new URL(u,base).toString()}catch{return""}};
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw Error(n+": "+error.message);return data}
 async function auth(req:Request,svc:any,sb:string,anon:string){
- const key=(req.headers.get("x-cf-pilot-key")||"").trim();
- if(key){if(await rpc(svc,"svc_pilot_automation_authorize",{p_key:key})!==true)throw Error("invalid_pilot_automation_key");return}
+ const key=(req.headers.get("x-cf-run-nonce")||"").trim();
+ if(key){if(await rpc(svc,"svc_pilot_consume_nonce",{p_function:"layer2-hotcourses-directory-parse",p_nonce:key})!==true)throw Error("invalid_run_nonce");return}
  const ah=req.headers.get("authorization")||"";if(!/^Bearer /i.test(ah))throw Error("authentication_required");
  const u=createClient(sb,anon,{global:{headers:{Authorization:ah}},auth:{persistSession:false}});
  const{data:ctx,error}=await u.rpc("admin_read",{p_operation:"context",p_args:{}});
