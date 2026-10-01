@@ -400,8 +400,8 @@ export const feeSchedules = {
   can_decide: true,
   totals: { providers_searched: 12, providers_queued: 138, documents_found: 31, documents_read: 9, with_fee_rows: 2, awaiting_decision: 1 },
   documents: [
-    { id: 'fs1', provider_id: 'p-acu', provider: 'Australian Catholic University', url: 'https://www.acu.edu.au/media/acu-2027-schedule-of-tuition-fees.pdf', fee_year: '2027', read_at: '2026-10-01T09:00:00Z', decision: null, decided_at: null, apply_summary: null, rows: 152, new: 131, same: 0, differs: 2, no_course: 19 },
-    { id: 'fs2', provider_id: 'p-x', provider: 'Example Institute', url: 'https://example.edu.au/fees.pdf', fee_year: '2027', read_at: '2026-10-01T08:00:00Z', decision: 'approved', decided_at: '2026-10-01T08:30:00Z', apply_summary: { written: 20, refused: 0 }, rows: 22, new: 0, same: 20, differs: 0, no_course: 2 },
+    { id: 'fs1', provider_id: 'p-acu', country: 'AU', provider: 'Australian Catholic University', url: 'https://www.acu.edu.au/media/acu-2027-schedule-of-tuition-fees.pdf', fee_year: '2027', read_at: '2026-10-01T09:00:00Z', decision: null, decided_at: null, apply_summary: null, rows: 152, new: 131, same: 0, differs: 2, no_course: 19 },
+    { id: 'fs2', provider_id: 'p-x', country: 'AU', provider: 'Example Institute', url: 'https://example.edu.au/fees.pdf', fee_year: '2027', read_at: '2026-10-01T08:00:00Z', decision: 'approved', decided_at: '2026-10-01T08:30:00Z', apply_summary: { written: 20, refused: 0 }, rows: 22, new: 0, same: 20, differs: 0, no_course: 2 },
   ],
 }
 export const feeScheduleRows = { can_decide: true, rows: [

@@ -14,20 +14,55 @@ export function htmlToText(html: string) {
 export function titleOf(html: string) { const m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i); return m ? htmlToText(m[1]) : "" }
 export function h1Of(html: string) { const m = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i); return m ? htmlToText(m[1]) : "" }
 const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim()
+// New Zealand titles: "NZ" and "New Zealand" are the same words.
+const normNz = (s: string) => norm(clean(s).replace(/\+/g, " and ")).replace(/\bnz\b/g, "new zealand")
 
 // Identity: the CRICOS course code is printed on the page, or the exact course title is the page heading or the
 // start of the page title. Anything else is a mismatch and nothing from the page is used.
+// Decision 217 (2 Oct 2026, NZ): two more ways a New Zealand page proves it is the course's page:
+//  - "nzqa_code": the NZQA qualification number is printed with its label ("NZQA", "qualification", "programme code");
+//  - "title_level": the NZQA title ends "(Level N)"; the page heading is that title without the level (or with the same
+//    level), no other level appears in the heading, and the page shows "Level N".
 export function identity(html: string, text: string, courseTitle: string, courseCode: string, codeOnly = false) {
   const code = clean(courseCode).toUpperCase()
   if (code.length >= 6 && new RegExp(`\\b${code}\\b`).test(text.toUpperCase())) return "cricos_code"
+  if (/^[0-9]{3,5}$/.test(code) && new RegExp(`(nzqa|qualification|programme|program)\\s*(number|code|id|ref(erence)?|no\\.?)?\\s*[:#]?\\s*${code}\\b`, "i").test(text)) return "nzqa_code"
   if (codeOnly) return null
   const t = norm(courseTitle), h1 = norm(h1Of(html)), title = norm(titleOf(html))
   if (t && (h1 === t || title === t || title.startsWith(t + " ") || h1.startsWith(t + " international"))) return "exact_title"
+  return titleLevel(h1Of(html), titleOf(html), text, courseTitle)
+}
+
+export function titleLevel(rawH1: string, rawTitle: string, text: string, courseTitle: string) {
+  const m = clean(courseTitle).match(/^(.*?)\s*\(\s*Level\s+(\d{1,2})\s*\)\s*$/i)
+  if (!m) return null
+  const base = normNz(m[1]), lvl = m[2], withLevel = `${base} level ${lvl}`
+  if (base.split(" ").length < 3) return null
+  // the page title's first part, before the site name ("Bachelor of X | Wintec", "Bachelor of X - EIT")
+  const titleHead = clean(rawTitle).split(/\s+[|\u2013\u2014:-]\s+|\s*\|\s*/)[0] || ""
+  for (const h of [normNz(rawH1), normNz(titleHead)]) {
+    if (!h) continue
+    if (h === withLevel) return "title_level"
+    // a provider may drop "New Zealand" from the qualification name ("Certificate in Cookery"); the level must still show
+    const sameName = h === base || ("new zealand " + h === base && h.split(" ").length >= 3)
+    if (sameName && new RegExp(`\\blevel\\s*${lvl}\\b`, "i").test(text)) {
+      // the same qualification named at another level on the page: the page is not this course's alone
+      const t = normNz(text), other = [...t.matchAll(new RegExp(`${base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} level (\\d{1,2})`, "g"))].some((x) => x[1] !== lvl)
+      if (!other) return "title_level"
+    }
+  }
   return null
 }
 
-export function fee(text: string) {
-  const rows = [...text.matchAll(/(?:AUD\s*\$?|A\$|AU\s?\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi)].map((m) => {
+// Decision 217: New Zealand pages are read in NZD (NZD, NZ$ or a bare $); amounts marked as another currency
+// (AUD, A$, US$) are left out there. Australian pages are read exactly as before.
+// a currency marker written immediately before "$" (US$, A$, AU$) or as a word before it (AUD 5,000 / USD $5,000)
+const foreignBefore = (pre: string) => /(?:^|[^A-Za-z])(?:US|AU|A|C|S|HK)$/.test(pre) || /(?:^|[^A-Za-z])(?:AUD|USD|CAD|SGD|HKD)\s*$/i.test(pre)
+export function fee(text: string, currency: "AUD" | "NZD" = "AUD") {
+  const nz = currency === "NZD"
+  const re = nz ? /(?:NZD\s*\$?|NZ\s?\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi
+                : /(?:AUD\s*\$?|A\$|AU\s?\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi
+  const rows = [...text.matchAll(re)].filter((m) => !nz || /^NZ/i.test(m[0]) || !foreignBefore(text.slice(Math.max(0, (m.index || 0) - 6), m.index || 0))).map((m) => {
     const idx = m.index || 0, amount = Number(m[1].replace(/,/g, ""))
     const before = text.slice(Math.max(0, idx - 180), idx), after = text.slice(idx + m[0].length, idx + m[0].length + 180)
     const context = clean(before + " " + m[0] + " " + after), near = clean(text.slice(Math.max(0, idx - 320), idx + m[0].length + 320))
@@ -41,17 +76,17 @@ export function fee(text: string) {
     const total = /(total (indicative |estimated |course |program(me)? )?(tuition )?fees?|total cost|entire (course|program)|full (course|program)|\(\s*20[2-3]\d\s+total\s*\)|fee to complete|full fee to complete)/i.test(local2)
     const annualLocal = /(per year|a year|per annum|annual|first[- ]year|\(\s*20[2-3]\d\s+annual\s*\))/i.test(local2)
     const tuition = /(tuition|fee)/i.test(context)
-    const explicitAud = /(?:AUD\s*|A\$|AU\s?\$)\s*[\d,]+/i.test(token)
+    const explicitAud = nz ? /(?:NZD\s*|NZ\s?\$)\s*[\d,]+/i.test(token) : /(?:AUD\s*|A\$|AU\s?\$)\s*[\d,]+/i.test(token)
     const cricosNear = /CRICOS(?:\s+Code)?/i.test(near)
     const year = (after.match(/\b(20[2-3]\d)\b/) || before.slice(-80).match(/\b(20[2-3]\d)\b/) || [])[1]
     const score = (international ? 5 : 0) + (cricosNear ? 4 : 0) + (explicitAud ? 4 : 0) + (indicative ? 3 : 0) + (tuition ? 1 : 0) - (domestic ? 8 : 0)
     return { amount, score, international, domestic, indicative, total, annualLocal, fee_year: year ? Number(year) : null, context: context.slice(0, 300) }
   }).filter((r) => r.amount >= 1000 && r.amount <= 500000).sort((a, b) => b.score - a.score || b.amount - a.amount)
-  if (!rows.length) return { value: null, safe: false, ambiguous: false, rejection_reason: "no_fee_candidate", candidates: [] as unknown[] }
+  if (!rows.length) return { value: null, safe: false, ambiguous: false, rejection_reason: "no_fee_candidate", candidates: [] as unknown[], ...(nz ? { currency } : {}) }
   const top = rows[0], same = rows.filter((r) => r.score === top.score && r.amount !== top.amount)
   const ambiguous = same.length > 0, safe = top.score >= 4 && !ambiguous && !top.domestic
   const basis = top.total && !top.annualLocal ? "total" : top.annualLocal && !top.total ? "annual" : null
-  return { value: safe ? top.amount : null, safe, ambiguous, basis,
+  return { value: safe ? top.amount : null, safe, ambiguous, basis, ...(nz ? { currency } : {}),
     fee_year: top.fee_year, rejection_reason: safe ? null : ambiguous ? "multiple_equal_rank_fee_candidates" : top.domestic ? "domestic_csp_fee_candidate" : "low_confidence_international_fee_candidate",
     candidates: rows.slice(0, 3) }
 }

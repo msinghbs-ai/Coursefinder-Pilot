@@ -1,22 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.143'
-export const PACKAGE_VERSION='0.1.70'
+export const UI_VERSION='2.15.144'
+export const PACKAGE_VERSION='0.1.71'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Every background job signs in with one-time run passes',
+  title:'New Zealand course pages, search and tuition',
   changes:[
-    'The 27 background functions that still used the old automation key (expired 30 Sep 2026) now sign in with one-time run passes, like the other jobs. No function accepts the old key any more, so there is no shared key left to expire or leak.',
-    'Functions that call other functions (Layer 2 batch runner, scholarship scope jobs) make a fresh pass for each call.',
-    'One allow-list now decides which functions can be given a pass.',
-    'All 27 are now deployed from the repository by the deploy workflow; the Ontario college course loader (v0.3.0), which was running without its code in the repository, has been added to it.',
-    'Platform guide updated: Budgets and keys, the repeating worker error signal, and the Live activity reading of an old-key error.'
+    'Fee schedules on Coverage › Attributes now follow the country and university chosen above. Fee schedules are matched by CRICOS code, so choosing New Zealand says there are none and why.',
+    'New Zealand course pages are now accepted when the heading is the NZQA title without "(Level N)" and the page shows the same level, or when the page prints the course NZQA number with its label. A page naming the same qualification at another level is not accepted on its title. The 2,584 NZ pages previously rejected are being read again.',
+    'The course-page search now covers New Zealand: about 2,900 NZ courses with no page are being searched on their provider own site, by title.',
+    'New Zealand tuition is read in NZ dollars and, as in Australia, taken only from a page that prints the course code, then checked by the tested AI model before it is added.',
+    'Platform guide updated: how a course page is accepted in each country, and the fee schedule scope.'
   ],
   bugFixes:[
-    'Layer 1 Canada loaders, Layer 2 acquisition and extraction, and scholarship scope jobs would have been refused if run, because they still relied on the expired automation key.'
+    'Fee schedules ignored the Coverage country, so Australian schedules showed when New Zealand was chosen.',
+    'New Zealand courses were never searched for their course page, and correct NZ pages were rejected because NZQA titles end in "(Level N)".'
   ]
 }
 
