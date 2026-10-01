@@ -1,21 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.131'
-export const PACKAGE_VERSION='0.1.58'
+export const UI_VERSION='2.15.132'
+export const PACKAGE_VERSION='0.1.59'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Melbourne time, plainer screens',
+  title:'Older screens tidied',
   changes:[
-    'All times are shown in Melbourne time (with daylight saving) for every viewer; Automations no longer shows India time, and weekly or monthly schedules name the Melbourne day.',
-    'Plain wording replaces internal terms (governed, canonical, bounded, milestone and change-control codes) on Evidence, Rankings, Providers, Layer 1, Scheduled jobs, Platform maturity and Users. Known job errors read in plain words.',
-    'Counts say what they cover: Dashboard and lists count every status; Coverage counts active Australian courses.',
-    'Rankings › Datasets is a proper list: show or hide each dataset, add one, and go to its imports.',
-    'Providers › Onboarding now holds the provider onboarding queue (moved from Layer 2), with the older onboarding cases collapsed beneath it.',
-    'Users & roles explains what each role can do; the leftover Admin button is gone.',
-    'Scholarship publishing reasons and Platform health issues link to where they are fixed.'
+    'Logos & assets and the Rankings overview use small tiles and buttons; the Edition selects are styled like the rest.',
+    'Compare has a light header in plain words, and its statistics controls are readable.',
+    'Ranking imports: smaller controls and no tall empty box; the history is called Imported files.',
+    'Automations: pause and run now are icon buttons beside how often and the batch size, so each automation takes two short rows instead of four.',
+    'Coverage › Attributes: short column headings (full wording on hover), and a line explaining how the two panels differ.',
+    'Layer 1: the country filter always shows a value, the repeated description is gone, and Source settings has a light header.',
+    'Platform health: a short history chart, with the table on request.'
   ],
   bugFixes:[]
 }

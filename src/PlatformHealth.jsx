@@ -87,6 +87,6 @@ function HealthHistory({history}){
         <div className="ph-stack">{c>0&&<span className="critical" style={{height:`${c/max*100}%`}}/>}{w>0&&<span className="warning" style={{height:`${w/max*100}%`}}/>}</div>
         <small>{fmtDayMonth(d.day)}</small></div>})}
     </div>
-    <div className="cf-table-wrap ph-history-table"><table className="cf-table"><thead><tr><th>Day</th><th className="num">Warning</th><th className="num">Critical</th></tr></thead><tbody>{[...days].reverse().filter(d=>d.warning||d.critical).map(d=><tr key={d.day}><td>{fmtDate(d.day)}</td><td className="num">{fmtNumber(d.warning||0)}</td><td className="num">{fmtNumber(d.critical||0)}</td></tr>)}{!days.some(d=>d.warning||d.critical)&&<tr><td colSpan={3} className="cf-empty-cell">No warnings or critical issues in the last 14 days.</td></tr>}</tbody></table></div>
+    <details className="ph-history-details"><summary>Show as a table</summary><div className="cf-table-wrap ph-history-table"><table className="cf-table"><thead><tr><th>Day</th><th className="num">Warning</th><th className="num">Critical</th></tr></thead><tbody>{[...days].reverse().filter(d=>d.warning||d.critical).map(d=><tr key={d.day}><td>{fmtDate(d.day)}</td><td className="num">{fmtNumber(d.warning||0)}</td><td className="num">{fmtNumber(d.critical||0)}</td></tr>)}{!days.some(d=>d.warning||d.critical)&&<tr><td colSpan={3} className="cf-empty-cell">No warnings or critical issues in the last 14 days.</td></tr>}</tbody></table></div></details>
   </section>
 }
