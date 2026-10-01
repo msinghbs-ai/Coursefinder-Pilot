@@ -1,6 +1,6 @@
 // Layer 3 AI validation › Work queue (v2.15.127). Replaces the older operator workspace on this tab.
 //   Work by task      public.admin_read('layer3_queue_status'): the cascade work items per task and state.
-//   Course-page pattern requests
+//   Course-page pattern requests (Decision 213: retired 2 Oct 2026; shown only when a request is waiting)
 //                     public.layer3_source_pattern_queue(50) + layer3-interpret {source_pattern_request_id}: run by
 //                     hand, one at a time (unchanged behaviour; a suggested pattern goes back to Layer 2 for the
 //                     3-course check, and AI never approves a provider or writes course links).
@@ -49,14 +49,15 @@ export default function Layer3Work({rank,onError}){
           return <tr key={q.task_class} data-task={q.task_class}><td><strong>{task(q.task_class)}</strong></td>{COLS.map(([k])=><td key={k} className="num">{fmtNumber(v(k))}</td>)}<td>{ago(q.oldest_pending_seconds)}</td><td>{q.last_completed_at?fmtDateTime(q.last_completed_at):'—'}</td></tr>})}</tbody></table></div>}
     </section>
 
-    <section className="m-panel" data-layer3-source-pattern-queue>
+    {/* Decision 213: the course-page pattern requests were retired (the course-link search finds course pages); the panel shows only if any appear again */}
+    {patterns.length>0&&<section className="m-panel" data-layer3-source-pattern-queue>
       <SectionTitle icon={Route} title="Course-page pattern requests" subtitle="Run by hand, one at a time. A suggested pattern goes back to Layer 2 to be checked on three courses; the AI never approves a provider or writes course links."/>
       {patterns.length===0?<Empty text="No course-page pattern requests waiting."/>:<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Provider</th><th>Waiting since</th><th>State</th><th>Source page</th><th></th></tr></thead>
         <tbody>{patterns.map(x=><tr key={x.request_id}><td><strong>{x.provider_name||x.entity_id}</strong><small className="l3w-sub">{x.country_code}</small>{x.schedule_error&&<small className="l3w-err">Last attempt: {x.schedule_error}</small>}</td><td>{fmtDateTime(x.created_at)}</td>
           <td><StatusChip value={x.status} tone={result(x.status)[1]} label={result(x.status)[0]}/></td>
           <td>{x.source_url?<a href={x.source_url} target="_blank" rel="noreferrer">Open <ExternalLink size={12}/></a>:'—'}</td>
           <td><Button compact data-source-pattern-run={x.request_id} disabled={Boolean(running)||rank<3} onClick={()=>runSourcePattern(x.request_id)}><Play size={13}/>{running===x.request_id?'Running…':'Run source-pattern interpretation'}</Button></td></tr>)}</tbody></table></div>}
-    </section>
+    </section>}
 
     <section className="m-panel">
       <SectionTitle icon={Sparkles} title="Recent results" subtitle="The latest answers from the models, newest first."/>

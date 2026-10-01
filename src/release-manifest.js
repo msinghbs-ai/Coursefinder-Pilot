@@ -1,21 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.139'
-export const PACKAGE_VERSION='0.1.66'
+export const UI_VERSION='2.15.140'
+export const PACKAGE_VERSION='0.1.67'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Scholarship publishing rules',
+  title:'Coverage by country and university; fee schedule bulk approval',
   changes:[
-    'Scholarships whose provider page names domestic students only are no longer published. Scholarships › Publishing › Domestic only lists them with the page\'s words; a Platform Admin can confirm that international students can apply.',
-    'A single stated maximum ("up to $5,000", "up to 50%") is now recorded and shown as "Up to ...". It is never used to work out a fee saving.',
-    'Course records show the saving a year for percentage-off-tuition scholarships, from the provider\'s annual international tuition fee. Savings are refreshed daily.',
-    'The website scholarship search marks values that are a maximum.'
+    'Coverage & completeness now covers every country (Australia, New Zealand and Canada) and opens on all countries. Choose a country, or type a university, to narrow every count and list.',
+    'Fee schedules: tick several waiting schedules and choose Approve selected or Reject selected; Review rows opens every row of a schedule; Show switches between waiting, decided and all.',
+    'A fee schedule with nothing to add can now be closed (Close, nothing to add); before, it stayed waiting with Approve unavailable.',
+    'The old course-page pattern requests on Layer 3 › Work queue were retired; the course-link search finds course pages.'
   ],
   bugFixes:[
-    'A scholarship page listing "Australian Citizen, New Zealand Citizen, International Student" was read as domestic only; it now includes international students.'
+    'Layer 3 › Work queue: Run on a course-page pattern request failed with "Edge Function returned a non-2xx status code" because every request was tied to a retired, paused model. The 1,655 requests were retired (kept, not deleted).',
+    'Fee schedules showed only the newest 50; waiting schedules are now listed first, up to 300.'
   ]
 }
 
