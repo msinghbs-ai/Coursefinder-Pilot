@@ -14,7 +14,7 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
       fs.readFile('src/release-currentness-entry.js','utf8'),
     ])
     expect(layer1).toContain('Layer 1 Operations')
-    expect(layer1).toContain('Operate governed regulatory, statistical and ranking ingestion by country, source health, schedule and Evidence.')
+    expect(layer1).toContain('Official registers, statistics and rankings by country: health, schedule and the files loaded.')
     expect(layer1).toContain('label="Country"')
     expect(layer1).toContain('label="Dataset"')
     expect(layer1).toContain('label="Status"')

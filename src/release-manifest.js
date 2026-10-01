@@ -1,18 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.130'
-export const PACKAGE_VERSION='0.1.57'
+export const UI_VERSION='2.15.131'
+export const PACKAGE_VERSION='0.1.58'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Edit in list for more values',
+  title:'Melbourne time, plainer screens',
   changes:[
-    'Courses › Edit in list now also edits tuition (amount, per year, semester, trimester or whole course, and year), intakes (for example February 2027, July 2027) and English (for example IELTS 6.5, PTE 58). Start dates and sub-scores already held are kept; unknown tests and wrong formats are explained in the row.',
-    'Campuses and Scholarships have Edit in list: campus name, address, city, postcode, phone and website; scholarship name, award as written, amount, % of fees, closing date (dd/mm/yyyy) and page. A value entered by hand is never overwritten by automation.',
-    'The course panel is shorter: corrections, additional information, regulatory facts and operational state start collapsed, and the wording is plain.',
-    'Scholarships: the list page is the list only. Fill links from clear scopes and Course decision support moved to Course links. Type and audience show plain labels.'
+    'All times are shown in Melbourne time (with daylight saving) for every viewer; Automations no longer shows India time, and weekly or monthly schedules name the Melbourne day.',
+    'Plain wording replaces internal terms (governed, canonical, bounded, milestone and change-control codes) on Evidence, Rankings, Providers, Layer 1, Scheduled jobs, Platform maturity and Users. Known job errors read in plain words.',
+    'Counts say what they cover: Dashboard and lists count every status; Coverage counts active Australian courses.',
+    'Rankings › Datasets is a proper list: show or hide each dataset, add one, and go to its imports.',
+    'Providers › Onboarding now holds the provider onboarding queue (moved from Layer 2), with the older onboarding cases collapsed beneath it.',
+    'Users & roles explains what each role can do; the leftover Admin button is gone.',
+    'Scholarship publishing reasons and Platform health issues link to where they are fixed.'
   ],
   bugFixes:[]
 }

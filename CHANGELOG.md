@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.58 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.131** (Melbourne time, plain wording, clear counts and tidy-ups).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.57 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.130** (Edit in list for tuition, intakes, English, campuses and scholarships).

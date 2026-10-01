@@ -14,6 +14,8 @@ const REASON={'no stated award value':'No award value on the page','no provider 
   'held after hand-check':'Held after a hand check','provider page limits it to citizens and residents':'For citizens and residents only',
   'provider page does not mention international students':'Page does not mention international students','course link broader than the scholarship':'Linked to more courses than it covers',
   'not currently offered (provider page)':'Not currently offered'}
+// v2.15.131 (pub-reasons-dead): where each reason is fixed.
+const FIX_AT={'no stated award value':['#scholarships','Scholarships › Edit in list'],'no provider page':['#scholarships','Scholarships › Edit in list'],'no linked course':['#scholarships?tab=links','Course links'],'course link broader than the scholarship':['#scholarships?tab=links','Course links']}
 const ACTION={publish_batch:'Batch published',hold:'Held',release:'Hold released',withdraw:'Withdrawn'}
 
 export default function ScholarshipPublishing({onError}){
@@ -60,7 +62,7 @@ export default function ScholarshipPublishing({onError}){
     <section className="m-panel">
       <SectionTitle title="Why the others are not published" subtitle="Active scholarships that fail a publishing check. One scholarship can fail more than one."/>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Reason</th><th className="num">Scholarships</th></tr></thead><tbody>
-        {reasons.length?reasons.map(([k,v])=><tr key={k}><td>{REASON[k]||k}</td><td className="num">{fmtNumber(v)}</td></tr>):<tr><td colSpan={2} className="cf-empty-cell">None.</td></tr>}
+        {reasons.length?reasons.map(([k,v])=><tr key={k} data-reason={k}><td>{REASON[k]||k}{FIX_AT[k]&&<a className="sp-fix" href={FIX_AT[k][0]}>Fix on {FIX_AT[k][1]}</a>}</td><td className="num">{fmtNumber(v)}</td></tr>):<tr><td colSpan={2} className="cf-empty-cell">None.</td></tr>}
       </tbody></table></div>
     </section>
     {(data.events||[]).length>0&&<section className="m-panel"><SectionTitle title="Recent changes"/>

@@ -1,5 +1,5 @@
 // Automations (v2.15.110): every scheduled job on the platform, in plain words, grouped by area. For each one: what it
-// does, how often it runs (times in IST), its last run and the last 24 hours. Platform Admins can pause or resume one
+// does, how often it runs (times in Melbourne time), its last run and the last 24 hours. Platform Admins can pause or resume one
 // job or a whole area, run a job now, change how often it runs and, where the job works in batches, the batch size.
 // Three upkeep jobs (health checks, job-history trim, duplicate-file removal) need the top admin role. Every change is
 // logged and shown under "Recent changes".
@@ -15,6 +15,9 @@ import{EVERY,describeSchedule}from'./automation-schedule'
 const STATUS={succeeded:['success','Succeeded'],failed:['danger','Failed'],running:['info','Running'],starting:['info','Starting']}
 const ACTION_LABEL={pause:'Paused',resume:'Resumed',pause_area:'Area paused',resume_area:'Area resumed',run_now:'Run now',set_every:'Frequency changed',set_batch:'Batch size changed'}
 
+// v2.15.131 (au-error-text): known database errors in plain words; the original text stays in the tooltip.
+const ERRORS=[[/statement timeout/i,'Took too long and was stopped by the database time limit'],[/deadlock/i,'Clashed with another job and was stopped; it will run again'],[/could not obtain lock|lock timeout/i,'Another job was using the same data; it will run again'],[/permission denied/i,'Not allowed to run: a permission is missing'],[/connection|network|fetch failed/i,'Could not connect; it will run again']]
+const plainError=m=>{const hit=ERRORS.find(([r])=>r.test(String(m||'')));return hit?hit[1]:String(m||'').replace(/^ERROR:\s*/i,'').slice(0,160)}
 export default function Automations({onError}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(''),[area,setArea]=useState('all'),[show,setShow]=useState('all'),[q,setQ]=useState('')
   const load=async()=>{setBusy(true);setFailed('');try{const{data:d,error}=await supabase.rpc('admin_automations_read');if(error)throw error;setData(d||{})}catch(e){setFailed(e.message||String(e))}finally{setBusy(false)}}
@@ -33,7 +36,7 @@ export default function Automations({onError}){
       <Metric label="Failed in the last 24 hours" value={failing?`${failing} automation${failing===1?'':'s'}`:'None'} tone={failing?'danger':'success'} icon={AlarmClock}/>
     </div>
     <section className="m-panel">
-      <SectionTitle icon={AlarmClock} title="Automations" subtitle="Everything the platform runs on a schedule, in plain words. Times are shown in IST." action={<div className="l3c-actions">
+      <SectionTitle icon={AlarmClock} title="Automations" subtitle="Everything the platform runs on a schedule, in plain words. Times are Melbourne time." action={<div className="l3c-actions">
         <input className="au-search" type="search" placeholder="Find an automation" value={q} onChange={e=>setQ(e.target.value)} aria-label="Find an automation"/>
         <select className="fv-filter" value={area} onChange={e=>setArea(e.target.value)} aria-label="Area"><option value="all">All areas</option>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
         <select className="fv-filter" value={show} onChange={e=>setShow(e.target.value)} aria-label="Show"><option value="all">All</option><option value="paused">Paused ({paused})</option><option value="failed">Failed in 24h ({failing})</option></select>
@@ -67,7 +70,7 @@ function JobRow({j,rank,busy,act}){
   return <tr className={j.active?'':'l3c-off'} data-job={j.job}>
     <td><strong>{j.label}</strong><span className="au-desc">{j.description}</span><span className="l3v-code">{j.job}</span></td>
     <td>{s.text}{j.batch!=null&&<span className="l3v-code">{fmtNumber(j.batch)} per run</span>}</td>
-    <td>{last?<><StatusChip value={last.status} tone={st[0]} label={st[1]}/><span className="l3v-code">{fmtDateTime(last.at)}{last.seconds!=null&&` · ${last.seconds}s`}</span>{last.message&&<span className="au-error">{last.message}</span>}</>:'Not run yet'}</td>
+    <td>{last?<><StatusChip value={last.status} tone={st[0]} label={st[1]}/><span className="l3v-code">{fmtDateTime(last.at)}{last.seconds!=null&&` · ${last.seconds}s`}</span>{last.message&&<span className="au-error" title={last.message}>{plainError(last.message)}</span>}</>:'Not run yet'}</td>
     <td className="num">{fmtNumber(j.runs_24h||0)} runs<span className={`l3v-code ${Number(j.failed_24h)>0?'l3v-bad':''}`}>{fmtNumber(j.failed_24h||0)} failed</span></td>
     <td><StatusChip value={j.active?'on':'paused'} tone={j.active?'success':'warning'} label={j.active?'Running':'Paused'}/></td>
     {rank>=5&&<td>{allowed?<div className="au-controls">

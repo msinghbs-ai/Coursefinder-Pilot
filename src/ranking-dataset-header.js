@@ -1,6 +1,6 @@
 const DATASET_META={
-  qs_wur:{title:'QS World University Rankings',subtitle:'Accepted QS ranking observations by edition, mapped to canonical Providers with Evidence retained.'},
-  the_wur:{title:'Times Higher Education',subtitle:'Accepted THE ranking observations by edition, mapped to canonical Providers with Evidence retained.'}
+  qs_wur:{title:'QS World University Rankings',subtitle:'QS ranking positions by edition, matched to our providers, with the source file kept.'},
+  the_wur:{title:'Times Higher Education',subtitle:'Times Higher Education ranking positions by edition, matched to our providers, with the source file kept.'}
 }
 let queued=null
 function currentDataset(){

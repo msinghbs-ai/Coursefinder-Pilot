@@ -4,7 +4,6 @@ import{createRoot}from'react-dom/client'
 import{Activity,AlertTriangle,Archive,ChevronRight,Clock3,Cog,Database,Gauge,RefreshCw,ShieldCheck,SlidersHorizontal,X}from'lucide-react'
 import{adminRead,api,supabase}from'./lib/supabase'
 import EnrichmentOperations from'./EnrichmentOperations'
-import ProviderOnboarding from'./layer2-provider-onboarding'
 import'./layer2-operations.css'
 import{fmtDateTime,fmtMoney}from'./lib/format.js'
 
@@ -33,7 +32,7 @@ export function Workspace({rank,onClose=()=>{},embedded=false,view='overview'}){
  const runSync=async()=>{if(!preview)return;setBusy(true);setError('');setSyncResult(null);try{const r=await invoke({action:'start_background',country_code:country,scope_type:scopeType,scope_id:scopeId||null});setSyncResult(r);setPreview(await invoke({action:'preview_background',country_code:country,scope_type:scopeType,scope_id:scopeId||null}));try{const[next,parents]=await Promise.all([adminRead('layer2_ops_overview'),adminRead('layer2_parent_runs',{limit:10})]);setData(next);setParentRuns(Array.isArray(parents)?parents:[])}catch(refreshError){setError('Production request was accepted, but the operator view could not refresh: '+(refreshError?.message||String(refreshError)))} }catch(e){setError(e.message)}finally{setBusy(false)}}
  const countryRows=scopeOptions.countries||[],scopeLabel=scopeType==='country'?country:(scopeOptionLabel||(scopeType==='state'?'State':'University'))
  // v2.15.128: one view per tab — overview (outcomes), start (fetch a whole area), history (progress, runs, fetches,
- // trace). Provider onboarding (per-provider catalogue page check) is on the start tab. Removed as duplicates:
+ // trace). Provider onboarding moved to Providers › Onboarding (v2.15.131). Removed as duplicates:
  // acquisition policy (Scrapers & fetchers), Data Quality and Evidence boxes (Coverage, Evidence) and the extra tiles row.
  return <div className={embedded?'l2o-shell l2o-embedded':'l2o-shell'} role={embedded?'region':'dialog'} aria-label="Layer 2 Operations" data-l2-view={view}><main className="l2o-main">{error&&<div className="fr-error" role="alert">{error}</div>}
  {view==='overview'&&<>
@@ -41,7 +40,6 @@ export function Workspace({rank,onClose=()=>{},embedded=false,view='overview'}){
  <EnrichmentOperations rank={rank} view="overview" openNav={openNav} openEvidence={openEvidence}/>
  </>}
  {view==='start'&&<>
- <ProviderOnboarding rank={rank} openEvidence={openEvidence}/>
  <section className="l2o-panel l2o-sync-panel"><div className="l2o-panel-head"><div><h2>Fetch an area</h2><p>Pick a country, state or university. Sites not yet checked are checked first in the background; then the courses are fetched in waves on the schedule.</p></div></div>
  <div className="l2o-sync-selectors"><label>Country<select aria-label="Layer 2 sync country" value={country} onChange={e=>chooseCountry(e.target.value)}>{countryRows.map(x=><option key={x.code} value={x.code}>{x.name} ({x.code}) · {x.providers||0} institutions · {x.courses||0} Courses</option>)}</select></label><label>Fetch scope<select aria-label="Layer 2 fetch scope" value={scopeType} onChange={e=>chooseType(e.target.value)}><option value="country">Country — full Layer 1 catalogue</option><option value="state">State — full Layer 1 catalogue in state</option><option value="university">University / provider — all Layer 1 Courses</option></select></label>{scopeType==='state'&&<PagedScopeSelect ariaLabel="Layer 2 sync state" label="State" kind="state" country={country} value={scopeId} valueLabel={scopeOptionLabel} loadPage={scopePage} onChange={chooseScope}/>} {scopeType==='university'&&<PagedScopeSelect ariaLabel="Layer 2 sync university" label="University" kind="university" country={country} value={scopeId} valueLabel={scopeOptionLabel} loadPage={scopePage} onChange={chooseScope}/>} </div>
  {preview?<div className="l2o-sync-card"><div className="cf-metric-grid">

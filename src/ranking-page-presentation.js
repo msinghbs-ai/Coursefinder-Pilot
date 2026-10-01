@@ -1,6 +1,6 @@
 const RANKING_LABELS={
- qs_wur:['QS World University Rankings','Accepted QS ranking observations by edition, mapped to canonical Providers with Evidence retained.'],
- the_wur:['Times Higher Education','Accepted THE ranking observations by edition, mapped to canonical Providers with Evidence retained.']
+ qs_wur:['QS World University Rankings','QS ranking positions by edition, matched to our providers, with the source file kept.'],
+ the_wur:['Times Higher Education','Times Higher Education ranking positions by edition, matched to our providers, with the source file kept.']
 }
 const BREADCRUMB_ROUTES={
  '#outcomes-qilt':[

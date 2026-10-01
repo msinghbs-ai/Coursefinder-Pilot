@@ -336,3 +336,20 @@ td>.l3v-model{display:block}
 .le-table th:first-child,.le-table td:first-child{position:sticky;left:0;z-index:1;background:var(--cf-surface);box-shadow:1px 0 0 var(--cf-border)}
 .cf-collapse{border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface);margin:8px 0}.cf-collapse>summary{cursor:pointer;padding:9px 12px;font-weight:600;font-size:var(--cf-fs-sm)}.cf-collapse[open]>summary{border-bottom:1px solid var(--cf-border)}
 .sl-tools .m-filter-select span{font-size:var(--cf-fs-xs);color:var(--cf-text-2);margin-right:6px}.sl-tools .m-filter-bar{margin:6px 0 10px}
+.cc-scope{margin:0 0 10px;font-size:var(--cf-fs-sm);color:var(--cf-text-2)}
+/* Rankings › Datasets (v2.15.131). */
+.sd-actions{display:flex;gap:6px}.sd-desc{display:block;color:var(--cf-text-2);font-size:var(--cf-fs-xs);max-width:560px}
+.sd-add{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 12px;padding:10px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md)}
+.sd-add label{display:grid;gap:2px}.sd-add small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}.sd-add .sd-wide{grid-column:1/-1}
+.sd-form-actions{grid-column:1/-1;display:flex;gap:8px;align-items:center}.sd-toggle{display:inline-flex;gap:6px;align-items:center}
+@media(max-width:760px){.sd-add{grid-template-columns:1fr}}
+.onb-ids{margin:8px 0}.onb-ids>summary{cursor:pointer;font-size:var(--cf-fs-sm);color:var(--cf-text-2)}.onb-cases .m23-stack{padding:10px}
+.evidence-table th:first-child,.evidence-table td:first-child,.pc-table th:first-child,.pc-table td:first-child{position:sticky;left:0;z-index:1;background:var(--cf-surface);box-shadow:1px 0 0 var(--cf-border)}
+/* Users & roles (v2.15.131). */
+.ar-embedded .ar-empty{font-size:var(--cf-fs-sm)}
+.ar-roles-help{margin:0 0 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface)}
+.ar-roles-help>summary{cursor:pointer;padding:9px 12px;font-weight:600;font-size:var(--cf-fs-sm)}
+.ar-roles-help table{width:100%;border-collapse:collapse;font-size:var(--cf-fs-sm)}.ar-roles-help th{text-align:left;width:170px;padding:6px 12px;vertical-align:top}
+.ar-roles-help td{padding:6px 12px;color:var(--cf-text-2)}.ar-roles-help tr+tr{border-top:1px solid var(--cf-border)}.ar-roles-help p{margin:6px 12px 10px;font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
+.sp-fix{margin-left:10px;font-size:var(--cf-fs-xs)}
+.ph-fix{display:inline-block;margin:0 0 0 8px;font-size:var(--cf-fs-xs)}

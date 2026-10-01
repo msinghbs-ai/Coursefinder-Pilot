@@ -5,7 +5,8 @@
 //   Money        A$31,680 (AUD); other currencies keep their own prefix (NZ$, CA$, US$ ...)
 //   Percentages  49.2% (one decimal)
 // Empty or unreadable values render as an em dash, never "Invalid Date" or "NaN".
-// Times are shown in the viewer's own time zone.
+// Times are shown in Melbourne time (Australia/Melbourne, with daylight saving) for every viewer (v2.15.131);
+// plain calendar dates ("YYYY-MM-DD") are shown as written.
 
 export const EMPTY = '—'
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -24,21 +25,43 @@ export function toDate(value) {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
-function time12(d) {
-  const h = d.getHours(), m = d.getMinutes()
-  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}`
+// Melbourne wall-clock parts of an instant. formatToParts is the one place a time zone is applied.
+const MEL = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Melbourne', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' })
+function mel(d) {
+  const p = {}
+  for (const x of MEL.formatToParts(d)) p[x.type] = x.value
+  return { y: Number(p.year), mo: Number(p.month) - 1, d: Number(p.day), h: Number(p.hour) % 24, mi: Number(p.minute) }
 }
+// A plain "YYYY-MM-DD" is a calendar date: shown as written, never shifted.
+function cal(value, d) {
+  const m = typeof value === 'string' ? value.match(DATE_ONLY) : null
+  return m ? { y: Number(m[1]), mo: Number(m[2]) - 1, d: Number(m[3]), h: 0, mi: 0 } : mel(d)
+}
+function clock(h, m) { return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'am' : 'pm'}` }
+function time12(d) { const p = mel(d); return clock(p.h, p.mi) }
 
 /** 29 Sep 2026 */
 export function fmtDate(value, fallback = EMPTY) {
   const d = toDate(value)
-  return d ? `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}` : fallback
+  if (!d) return fallback
+  const p = cal(value, d)
+  return `${p.d} ${MONTHS[p.mo]} ${p.y}`
+}
+
+/** A UTC hour and minute (scheduled jobs run on UTC) as Melbourne clock time today, plus how many days later that is
+ *  in Melbourne (0 or 1), so weekly and monthly schedules can name the right day. */
+export function utcClockToMelbourne(utcHour, utcMinute, ref = new Date()) {
+  const d = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), ref.getUTCDate(), Number(utcHour), Number(utcMinute)))
+  const p = mel(d)
+  return { time: clock(p.h, p.mi), dayShift: p.d === d.getUTCDate() ? 0 : 1 }
 }
 
 /** 29 Sep (charts and compact columns) */
 export function fmtDayMonth(value, fallback = EMPTY) {
   const d = toDate(value)
-  return d ? `${d.getDate()} ${MONTHS[d.getMonth()]}` : fallback
+  if (!d) return fallback
+  const p = cal(value, d)
+  return `${p.d} ${MONTHS[p.mo]}`
 }
 
 /** 29 Sep 2026, 2:37 pm  (a plain calendar date renders without a time) */

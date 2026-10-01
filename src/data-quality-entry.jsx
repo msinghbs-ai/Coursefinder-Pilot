@@ -92,11 +92,11 @@ function ExceptionsView({selected,data,busy,offset,query,setQuery,submitQuery,se
         <td><div className="dq-source"><strong>{row.source_label||'No domain source recorded'}</strong><small>{row.evidence_id?'Evidence linked':'No evidence ID on this exception row'}</small>{row.evidence_id&&rank>=3&&<button onClick={()=>openEvidence(row)}><BookOpen size={13}/>Evidence</button>}</div></td>
         <td><strong>{dateOnly(row.last_verified_at)||'Not verified'}</strong><small>{row.updated_at?`Updated ${dateOnly(row.updated_at)}`:''}</small></td>
         <td><div className="dq-context"><small>{row.review_id?'Review item linked':'No open review item'}</small>{row.review_id&&rank>=3&&<button onClick={openReview}>Open Review Queue</button>}</div></td>
-        <td><button className="dq-open" title="Open canonical entity" onClick={()=>openEntity(row)}><ExternalLink size={15}/></button></td>
+        <td><button className="dq-open" title="Open record" onClick={()=>openEntity(row)}><ExternalLink size={15}/></button></td>
       </tr>)}</tbody></table></div>}
       <footer className="dq-pager"><button disabled={offset===0||busy} onClick={()=>setOffset(Math.max(0,offset-PAGE_SIZE))}><ChevronLeft size={15}/>Previous</button><span>Page {Math.floor(offset/PAGE_SIZE)+1} · {fmt(total)} total</span><button disabled={offset+PAGE_SIZE>=total||busy} onClick={()=>setOffset(offset+PAGE_SIZE)}>Next<ChevronRight size={15}/></button></footer>
     </section>
-    <section className="dq-read-contract"><Database size={16}/><p>This drill-down is one bounded server-side exception page. Opening an entity, Evidence artifact or Review Queue is an explicit operator action; the page does not issue per-row detail RPCs.</p></section>
+    <section className="dq-read-contract"><Database size={16}/><p>One page of exceptions at a time. Open a record, its source page or the review queue from each row.</p></section>
   </div>
 }
 
