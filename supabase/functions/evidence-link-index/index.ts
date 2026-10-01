@@ -5,10 +5,14 @@ import {createClient} from "npm:@supabase/supabase-js@2";
 // Reads STORED evidence from Supabase Storage (bucket "evidence") and records the links each page
 // contains. It never fetches from the web: evidence is captured once and reused.
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
-const H=()=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key","access-control-allow-methods":"POST,OPTIONS"});
+const H=()=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key,x-cf-run-nonce","access-control-allow-methods":"POST,OPTIONS"});
 const J=(s:number,b:unknown)=>new Response(JSON.stringify(b),{status:s,headers:H()});
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw Error(`${n}: ${error.message}`);return data}
 async function auth(req:Request,svc:any,sb:string,anon:string){
+  // Decision 215 (2 Oct 2026): the scheduled job sends a one-time nonce (pipeline.svc_pilot_submit_nonce), like the
+  // other current workers. The long-lived automation key expired on 30 Sep 2026 and is still accepted only while valid.
+  const nonce=(req.headers.get("x-cf-run-nonce")||"").trim();
+  if(nonce){if(await rpc(svc,"svc_pilot_consume_nonce",{p_function:"evidence-link-index",p_nonce:nonce})!==true)throw Error("invalid_run_nonce");return}
   const key=(req.headers.get("x-cf-pilot-key")||"").trim();
   if(key){if(await rpc(svc,"svc_pilot_automation_authorize",{p_key:key})!==true)throw Error("invalid_pilot_automation_key");return}
   const ah=req.headers.get("authorization")||"";if(!/^Bearer /i.test(ah))throw Error("authentication_required");
