@@ -16,6 +16,7 @@ import ScholarshipLinks from'./ScholarshipLinks'
 import FeeRules from'./FeeRules'
 import ModelsServices from'./ModelsServices'
 import ListEdit from'./ListEdit'
+import DashboardHome from'./Dashboard'
 import ReferenceSources from'./ReferenceSources'
 import KeyDates from'./KeyDates'
 import ContextualInsights from'./ContextualInsights'
@@ -170,7 +171,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
   return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{body}</PageLayout>
   function pageBody(){
     switch(pageKey){
-      case'dashboard':return <Dashboard onError={onError} navigate={navigate}/>
+      case'dashboard':return <DashboardHome onError={onError}/>
       case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId}/>
@@ -453,49 +454,6 @@ function ScholarshipFillControl({onError}){
   <div className="m-attention-grid"><Attention tone="info" icon={SearchCheck} title="Preview mapping" text="Count Courses, explicit deterministic mappings and review-only candidates." action="Preview" onClick={()=>run('preview')}/><Attention tone="success" icon={CheckCircle2} title="Fill mapped Scholarships" text="Idempotently writes only explicit include-scope mappings; no Course canonical fields or publication state are changed." action="Fill now" onClick={()=>run('fill')}/><Attention tone="warning" icon={ClipboardCheck} title="Queue unresolved" text="Provider-owned Scholarships without explicit Course/Provider scope are retained for review rather than inferred." action="Queue review" onClick={()=>run('queue_review')}/></div>
   {busy&&<div className="m-empty-inline">Running governed Scholarship mapping…</div>}{result&&<div className="m-summary-strip"><SummaryCard icon={GraduationCap} label="Courses" value={fmtNumber(result.courses??result.deterministic_mappings??0)} tone="blue"/><SummaryCard icon={Sparkles} label="Deterministic mappings" value={fmtNumber(result.deterministic_mappings??result.written_or_refreshed??0)} tone="green"/><SummaryCard icon={ClipboardCheck} label="Review candidates" value={fmtNumber(result.provider_level_candidates??0)} tone="amber"/><div className="m-summary-note"><strong>{humanise(result.status||'preview ready')}</strong><span>{result.rule||'No Scholarship eligibility is manufactured.'}</span></div></div>}
  </section>
-}
-
-function Dashboard({onError,navigate}){
-  const[data,setData]=useState(null),[layerStatus,setLayerStatus]=useState(null),[platformHealth,setPlatformHealth]=useState(null),[busy,setBusy]=useState(true)
-  const load=()=>{setBusy(true);Promise.all([adminRead('dashboard'),adminRead('layer_status_summary'),adminRead('platform_health').catch(()=>null)]).then(([d,l,h])=>{setData(d);setLayerStatus(l);setPlatformHealth(h)}).catch(e=>onError(e.message)).finally(()=>setBusy(false))}
-  useEffect(load,[])
-  if(busy&&!data)return <DashboardSkeleton/>
-  const op=data?.operational??{},failed=Number(op.failed_jobs_24h||0),running=Number(op.running_jobs||0),reviews=Number(data?.open_reviews||0)
-  const health=failed>0?'attention':running>0?'active':'healthy'
-  const metrics=[
-    ['Providers',data?.providers,Building2,'indigo','Providers'],['Courses',data?.courses,GraduationCap,'blue','Courses'],
-    ['Evidence',data?.evidence,FileCheck2,'violet','Evidence'],['Open reviews',data?.open_reviews,ClipboardCheck,reviews?'amber':'green','Layer 4 — Human Resolution'],
-    ['Jobs',data?.jobs,Workflow,'teal','Jobs'],['Search documents',data?.search_documents,SearchCheck,'cyan','Courses'],
-    ['Scholarships',data?.scholarships,Sparkles,'pink','Scholarships'],['Attributes',data?.attributes,Tags,'slate','Attributes'],
-  ]
-  return <div className="m-page-stack">
-    <section className="m-dashboard-intro"><div><span className={`m-health m-health-${health}`}><span/>{health==='healthy'?'Operationally healthy':health==='active'?'Pipeline activity in progress':'Attention required'}</span><h2>Operational command view</h2><p>Counts, freshness and human-attention signals from the governed canonical and pipeline layers.</p>{data?.snapshot_at&&<small className="m-help" title={`Summary calculated ${fmtDate(data.snapshot_at)}`}>Updated {relativeTime(data.snapshot_at)} · refreshes every 2 minutes</small>}</div><button className="m-secondary" onClick={load}><RefreshCw size={15}/>Refresh</button></section>
-    <div className="m-metric-grid">{metrics.map(([label,value,Icon,tone,target])=><button className={`m-metric-card tone-${tone}`} key={label} onClick={()=>navigate(target)}><span className="m-metric-icon"><Icon size={18}/></span><span className="m-metric-copy"><small>{label}</small><strong>{fmtNumber(value)}</strong></span><span className="m-metric-arrow">→</span></button>)}</div>
-    {platformHealth&&<section className="m-panel"><PanelTitle icon={ShieldCheck} title="Platform health" subtitle="Jobs, Edge workloads, security and data movement" action={typeof platformHealth.overall==='string'?<button className="m-secondary compact" onClick={()=>navigate('health')}><StatusDot tone={healthTone(platformHealth.overall)} label={HEALTH_WORDS[healthTone(platformHealth.overall)]}/>{HEALTH_WORDS[healthTone(platformHealth.overall)]} · open checks</button>:null}/><div className="m-pulse-grid"><Pulse label="Running jobs" value={platformHealth.jobs?.running} tone={platformHealth.jobs?.running?'info':'neutral'} icon={Workflow}/><Pulse label="Failed · 24h" value={platformHealth.jobs?.failed_24h} tone={platformHealth.jobs?.failed_24h?'danger':'success'} icon={AlertTriangle}/><Pulse label="Evidence fetched · 24h" value={platformHealth.data?.evidence_fetched_24h} tone="violet" icon={FileCheck2}/><Pulse label="Edge workloads · 24h" value={platformHealth.edge_runtime?.completed_24h} tone="teal" icon={Activity}/></div>{platformHealth.api_activity&&<div className="m-freshness"><Fresh label="Layer 2 provider API calls · 24h" value={platformHealth.api_activity.layer2_provider_requests_24h} number/><Fresh label="Layer 3 model calls · 24h" value={platformHealth.api_activity.layer3_external_calls_24h} number/><Fresh label="Layer 3 cost · 24h" text value={fmtMoney(platformHealth.api_activity.layer3_cost_24h_usd||0,'USD',{decimals:4})}/><Fresh label="Scholarship AI active runs" value={platformHealth.scholarship_ai?.active_runs} number/></div>}{platformHealth.security&&<div className="m-summary-note"><strong>Security · {humanise(platformHealth.security.status)}</strong><span>{platformHealth.security.note}</span></div>}</section>}
-    {layerStatus&&<section className="m-panel">
-      <PanelTitle icon={Layers3} title="Layer status" subtitle="Operational state across authority, enrichment, interpretation and human resolution"/>
-      <div className="m-grid-2">
-        <div className="m-record"><strong>Layer 1 · Authority</strong><span>{fmtNumber(layerStatus.layer1?.active_sources)} active source(s) · {fmtNumber(layerStatus.layer1?.running_jobs)} running job(s)</span><small>{fmtNumber(layerStatus.layer1?.failed_24h)} failed in 24h · latest {layerStatus.layer1?.latest_activity?relativeTime(layerStatus.layer1.latest_activity):'—'}</small></div>
-        <div className="m-record"><strong>Layer 2 · Enrichment</strong><span>{fmtNumber(layerStatus.layer2?.active_batches)} active batch(es) · {fmtNumber(layerStatus.layer2?.scheduled_wave_requests)} scheduled wave request(s)</span><small>{fmtNumber(layerStatus.layer2?.wave_pending_courses)} Courses pending · {fmtNumber(layerStatus.layer2?.processed_24h)} processed in 24h · {fmtNumber(layerStatus.layer2?.evidence_24h)} Evidence captures</small></div>
-        <div className="m-record"><strong>Layer 3 · AI interpretation</strong><span>{fmtNumber(layerStatus.layer3?.qualified_profiles)} qualified profile(s) · {fmtNumber(layerStatus.layer3?.pending_evidence_candidates)} pending Evidence candidate(s)</span><small>{fmtNumber(layerStatus.layer3?.interpretations_24h)} interpretations · {fmtNumber(layerStatus.layer3?.calls_24h)} calls · {fmtNumber(layerStatus.layer3?.tokens_24h)} tokens · {fmtMoney(layerStatus.layer3?.recorded_cost_24h||0,'USD',{decimals:4})} recorded</small></div>
-        <div className="m-record"><strong>Layer 4 · Human resolution</strong><span>{fmtNumber(layerStatus.layer4?.pending_reviews)} pending review(s) · {fmtNumber(layerStatus.layer4?.active_overrides)} active override(s)</span><small>{fmtNumber(layerStatus.layer4?.publication_decisions)} publication decision event(s) · {fmtNumber(layerStatus.scholarships?.course_mappings)} Course-Scholarship mappings</small></div>
-      </div>
-    </section>}
-    <div className="m-grid-2 dashboard-grid">
-      <section className="m-panel"><PanelTitle icon={Zap} title="Operational pulse" subtitle="What requires attention now"/>
-        <div className="m-pulse-grid"><Pulse label="Running jobs" value={op.running_jobs} tone={running?'info':'neutral'} icon={Workflow}/><Pulse label="Failed jobs · 24h" value={op.failed_jobs_24h} tone={failed?'danger':'success'} icon={AlertTriangle}/><Pulse label="Completed jobs · 24h" value={op.completed_jobs_24h} tone="success" icon={CheckCircle2}/><Pulse label="Evidence captured · 24h" value={op.evidence_24h} tone="violet" icon={FileCheck2}/></div>
-        <div className="m-freshness"><Fresh label="Latest pipeline activity" value={op.latest_job_at}/><Fresh label="Latest evidence" value={op.latest_evidence_at}/><Fresh label="Search projection rebuilt" value={op.search_rebuilt_at}/><Fresh label="Search projection rows" value={op.search_row_count} number/></div>
-      </section>
-      <section className="m-panel"><PanelTitle icon={History} title="Recent activity" subtitle="Latest jobs, review events and evidence captures"/><ActivityFeed items={data?.recent_activity??[]} navigate={navigate}/></section>
-    </div>
-    <section className="m-panel"><PanelTitle icon={AlertTriangle} title="Attention & next actions" subtitle="Exception-first operational guidance"/>
-      <div className="m-attention-grid">
-        <Attention tone={failed?'danger':'success'} icon={failed?AlertTriangle:CheckCircle2} title={failed?`${failed} failed job${failed===1?'':'s'} in the last 24 hours`:'No failed jobs in the last 24 hours'} text={failed?'Review pipeline failures before the next scheduled run.':'Pipeline failure signal is clear.'} action="Open Jobs" onClick={()=>navigate('Jobs')}/>
-        <Attention tone={reviews?'warning':'success'} icon={ClipboardCheck} title={reviews?`${reviews} review item${reviews===1?'':'s'} awaiting resolution`:'Review queue is clear'} text={reviews?'Prioritise high-impact or identity-sensitive exceptions.':'No current human-resolution backlog.'} action="Open Layer 4" onClick={()=>navigate('Layer 4 — Human Resolution')}/>
-        <Attention tone="info" icon={SearchCheck} title={`${fmtNumber(op.search_row_count??data?.search_documents)} projected Search rows`} text={op.search_rebuilt_at?`Last rebuilt ${relativeTime(op.search_rebuilt_at)}.`:'Search rebuild timestamp is not available.'} action="Open Courses" onClick={()=>navigate('Courses')}/>
-      </div>
-    </section>
-  </div>
 }
 
 function DashboardSkeleton(){return <div className="m-page-stack"><div className="m-skeleton hero"/><div className="m-metric-grid">{Array.from({length:8}).map((_,i)=><div className="m-skeleton metric" key={i}/>)}</div><div className="m-grid-2"><div className="m-skeleton panel"/><div className="m-skeleton panel"/></div></div>}

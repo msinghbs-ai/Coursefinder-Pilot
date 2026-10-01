@@ -254,3 +254,18 @@ td>.l3v-model{display:block}
 .ms-task{margin-right:6px;white-space:nowrap}
 .env-links{display:block;color:var(--cf-text-2)}
 .cov-by-area>summary{cursor:pointer;font-weight:600;padding:var(--cf-space-2) 0}
+/* Dashboard "Today" (v2.15.125). */
+.db-waiting{list-style:none;margin:0;padding:0;display:grid}
+.db-waiting li{display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 4px;border-top:1px solid var(--cf-border)}
+.db-waiting li:first-child{border-top:0}
+.db-count{font-size:var(--cf-fs-2xl);font-variant-numeric:tabular-nums;text-align:right}
+.db-label{display:grid;gap:2px}.db-label small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.db-clear{display:flex;gap:6px;align-items:center;color:var(--cf-success);margin:0}
+.db-allclear{margin:var(--cf-space-2) 0 0;color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.db-tile{all:unset;cursor:pointer;display:block}.db-tile:focus-visible{outline:2px solid var(--cf-border-input);border-radius:var(--cf-radius-md)}
+.db-health{padding:0}
+.db-health-row{all:unset;cursor:pointer;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 16px;width:100%;box-sizing:border-box}
+.db-health-row>span:not(.cf-status-dot){color:var(--cf-text-2);font-size:var(--cf-fs-sm);flex:1;min-width:200px}.db-health-row .cf-status-dot{flex:none}
+.db-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.db-layers button{all:unset;cursor:pointer;display:grid;gap:2px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface)}
+.db-layers small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}.db-layers strong{font-size:var(--cf-fs-lg);font-variant-numeric:tabular-nums}.db-layers span{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
