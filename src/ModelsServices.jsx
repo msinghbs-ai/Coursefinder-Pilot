@@ -40,11 +40,11 @@ export default function ModelsServices({onError}){
   }
   const modelRow=m=><tr key={m.id} className={m.enabled?'':'ms-off'} data-model={m.code}>
     <td><strong>{m.model}</strong><span className="l3v-code">{m.provider}</span></td>
-    <td>{(m.tasks||[]).map(humanLabel).join(', ')||'—'}</td>
+    <td>{(m.tasks||[]).length?(m.tasks||[]).map(t=><a key={t} className="cf-link ms-task" href="#layer-3-ai">{humanLabel(t)}</a>):'—'}</td>
     <td>{(m.steps||[]).length?(m.steps||[]).map(s=><StatusChip key={s.task+s.step} value={s.active?'active':'off'} tone={s.active?'success':'neutral'} label={`${humanLabel(s.task)} · step ${s.step}`}/>):<span className="l3v-code">Not in a cascade</span>}</td>
     <td className="num">{fmtNumber(m.calls_7d||0)}<span className="l3v-code">{usd(m.cost_7d_usd)}</span></td>
     <td>{m.qualified?<StatusChip value="passed" tone="success" label="Passed"/>:<span className="l3v-code">Not tested</span>}</td>
-    <td>{m.retired?<span className="l3v-code">{m.retired_reason||'Retired'}</span>:<Switch on={Boolean(m.enabled)} label={`${m.enabled?'Switch off':'Switch on'} ${m.model}`} disabled={!can||busy} onChange={on=>flip('model',m,on)}/>}</td>
+    <td>{m.retired?<span className="l3v-code">{m.retired_reason||'Retired'}</span>:<><Switch on={Boolean(m.enabled)} label={`${m.enabled?'Switch off':'Switch on'} ${m.model}`} disabled={!can||busy||(!m.enabled&&!m.qualified)} onChange={on=>flip('model',m,on)}/>{!m.enabled&&!m.qualified&&<span className="l3v-code">Pass its test first</span>}</>}</td>
   </tr>
   const head=<thead><tr><th>Model</th><th>Used for</th><th>Cascade steps</th><th className="num">Last 7 days</th><th>Tests</th><th>On</th></tr></thead>
   return <>
@@ -67,10 +67,10 @@ export default function ModelsServices({onError}){
           <td><Switch on={Boolean(s.enabled)} label={`${s.enabled?'Switch off':'Switch on'} ${s.name}`} disabled={!can||busy} onChange={on=>flip('service',s,on)}/></td>
         </tr>)}
       </tbody></table></div>
-      <p className="l3v-note">Keys and limits for each service are on Platform settings › Scrapers & fetchers.</p>
+      <p className="l3v-note">Keys are on <a href="#environment">Environment &amp; integrations</a>. Address, limits and routing are on <a href="#scrapers">Scrapers &amp; fetchers</a>.</p>
     </section>
     <section className="m-panel">
-      <SectionTitle icon={BrainCircuit} title="AI models" subtitle="Models Layer 3 can use to read course and scholarship pages. Switching a model off also switches off its cascade steps. Switching it back on makes it available again; add it to a cascade in Layer 3 › Control."/>
+      <SectionTitle icon={BrainCircuit} title="AI models" subtitle="Models Layer 3 can use to read course and scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps; add it to a cascade in Layer 3 › Control."/>
       {live.length?<div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{live.map(modelRow)}</tbody></table></div>:<Empty text="No models."/>}
       {retired.length>0&&<details className="ms-retired"><summary>Retired models ({retired.length}) — failed their tests and cannot be switched on</summary>
         <div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{retired.map(modelRow)}</tbody></table></div></details>}

@@ -251,3 +251,5 @@ td>.l3v-model{display:block}
 .rs-wide{grid-column:span 2}
 .rs-more{background:none;border:0;padding:0;justify-self:start;cursor:pointer}
 @media (max-width:640px){.rs-wide{grid-column:auto}}
+.ms-task{margin-right:6px;white-space:nowrap}
+.env-links{display:block;color:var(--cf-text-2)}

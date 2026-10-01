@@ -254,6 +254,7 @@ export const services = { can_control: true,
   models: [
     { id: 'm1', code: 'qwen3-30b', model: 'qwen/qwen3-30b-a3b', provider: 'openrouter', tasks: ['intake', 'english'], enabled: true, retired: false, qualified: true, steps: [{ task: 'english', step: 1, active: true }, { task: 'intake', step: 1, active: true }], calls_7d: 1204, cost_7d_usd: 0.84 },
     { id: 'm2', code: 'sonnet-english', model: 'anthropic/claude-sonnet', provider: 'openrouter', tasks: ['english'], enabled: false, retired: false, qualified: true, steps: [{ task: 'english', step: 3, active: false }], calls_7d: 0, cost_7d_usd: 0 },
+    { id: 'm4', code: 'new-candidate', model: 'vendor/new-candidate', provider: 'openrouter', tasks: ['intake'], enabled: false, retired: false, qualified: false, steps: [], calls_7d: 0, cost_7d_usd: 0 },
     { id: 'm3', code: 'old-model', model: 'vendor/old-model', provider: 'openrouter', tasks: ['tuition'], enabled: false, retired: true, retired_reason: 'Failed the tuition test', qualified: false, steps: [], calls_7d: 0, cost_7d_usd: 0 },
   ],
   services: [

@@ -31,7 +31,6 @@ export default function Layer3Operations({tab='routing',rank,onError}){
   if(!data&&!failed)return <section className="m-panel"><Loading label="Loading Layer 3…"/></section>
   if(failed&&!data)return <section className="m-panel"><Empty text={`Layer 3 could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
   const refresh=<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>
-  if(tab==='models')return <Models data={data} action={refresh}/>
   return <Control data={data} act={act} busy={busy} action={refresh} sendBack={sendBack}/>
 }
 
@@ -97,22 +96,10 @@ function TaskCard({t,can,admin,act,sendBack}){
     </tbody></table></div>
     {admin&&t.cascade&&<form className="l3c-add" onSubmit={e=>{e.preventDefault();if(add)act('tier_add',{task:t.task_class,profile:add});setAdd('')}}>
       <label><small>Add a model</small><select value={add} onChange={e=>setAdd(e.target.value)} disabled={!can||!(t.addable||[]).length}>
-        <option value="">{(t.addable||[]).length?'Choose a qualified model…':'No other model has passed the test for this task'}</option>
+        <option value="">{(t.addable||[]).length?'Choose a qualified model…':'No other switched-on model has passed the test for this task'}</option>
         {(t.addable||[]).map(m=><option key={m.profile} value={m.profile}>{m.model} — {pct(m.test_right_pct)} right, {usd(m.cost_per_1000_usd)} per 1,000</option>)}
       </select></label><Button compact type="submit" disabled={!can||!add}><Plus size={14}/>Add as last step</Button>
-      <span className="l3v-note">Only models with at least 80% right and no wrong answers on the test pages can be added.</span></form>}
+      <span className="l3v-note">Only models that are switched on in <a href="#models-services">Models &amp; services</a> and have at least 80% right and no wrong answers on the test pages can be added.</span></form>}
   </section>
 }
 
-function Models({data,action}){
-  const rows=[]
-  for(const t of data.tasks||[]){for(const x of t.tiers||[])rows.push({task:t.label,model:x.model,right:x.test_right_pct,wrong:x.test_wrong,cost:x.cost_per_1000_usd,state:x.active?`Step ${x.tier}`:'In cascade, off'});for(const m of t.addable||[])rows.push({task:t.label,model:m.model,right:m.test_right_pct,wrong:m.test_wrong,cost:m.cost_per_1000_usd,state:'Qualified, not used'})}
-  return <section className="m-panel">
-    <SectionTitle icon={BrainCircuit} title="Models" subtitle="Only models in use or qualified to be used. Models that failed their tests or were never tested are not shown." action={action}/>
-    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th>Model</th><th className="num">Test score</th><th className="num">Wrong answers</th><th className="num">Cost per 1,000 pages</th><th>Status</th></tr></thead><tbody>
-      {rows.length?rows.map((r,i)=><tr key={i}><td>{r.task}</td><td><span className="l3v-model">{r.model}</span></td><td className="num">{pct(r.right)}</td><td className={`num ${Number(r.wrong)>0?'l3v-bad':'l3v-good'}`}>{fmtNumber(r.wrong||0)}</td><td className="num">{usd(r.cost)}</td><td>{r.state}</td></tr>)
-        :<tr><td colSpan={6} className="cf-empty-cell">No qualified models.</td></tr>}
-    </tbody></table></div>
-    <p className="l3v-note">A model qualifies when it gets at least 80% of the test pages right and gives no wrong answers. Test pages are fixed before any model is tried, so scores cannot be tuned.</p>
-  </section>
-}

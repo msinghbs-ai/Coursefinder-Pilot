@@ -12,7 +12,8 @@ test.describe('CF-085 Firecrawl scraper configuration contract',()=>{
   // Config owns the Firecrawl quota) is unchanged.
   // v2.15.107: Scraper Config is the Platform settings > Scrapers & fetchers page.
   expect(await fs.readFile('src/nav-map.js','utf8')).toContain("scrapers: { label: 'Scrapers & fetchers'")
-  expect(shell).toContain("case'scrapers':return <><Layer2ProviderConfig")
+  expect(shell).toContain("case'scrapers':return <>")
+  expect(shell).toContain("<Layer2ProviderConfig rank={rank} embedded/>")
   expect(provider).toContain('aria-label="Firecrawl monthly limit"')
   expect(provider).toContain('aria-label="Firecrawl safety reserve"')
   expect(provider).toContain('monthly_vendor_units_limit:limit')
