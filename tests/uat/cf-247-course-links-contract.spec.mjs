@@ -109,3 +109,16 @@ test.describe('mocked browser', () => {
     await expect(page.getByRole('button', { name: 'Add schedule' })).toHaveCount(0)
   })
 })
+
+test('worker: course-link search runs in coverage-sweep, bounded and budgeted; the old tick stops sending when switched', () => {
+  const w = read('supabase/functions/coverage-sweep/index.ts')
+  expect(w).toContain('if (mode === "link_search") {')
+  expect(w).toContain('await rpc("svc_course_link_search_next", { p_limit: Math.min(Number(body.limit || 40), 120) })')
+  expect(w).toContain('await pool(items, Math.min(Number(body.concurrency || 6), 10), async (it) => {')
+  expect(w).toContain('if (!(await useFc("course_link_search", it.provider_id, it.query)))')
+  expect(w).toContain('const units = /search$/.test(purpose) ? 2 : 1;')
+  const m = read('supabase/migrations/20261001175000_cf247_link_search_in_worker.sql')
+  expect(m).toContain("if p_error in ('time budget', 'credit budget') then")
+  expect(m).toContain("'ab94cc87e67ecf30cb35fac0c977161f'")
+  expect(m).toContain("grant execute on function public.svc_course_link_search_next(int) to service_role;")
+})
