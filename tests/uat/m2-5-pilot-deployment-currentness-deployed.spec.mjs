@@ -8,7 +8,7 @@ import {
   observeRuntime,
   writeRunEnvironment,
 } from './support/runtime-evidence.mjs'
-import { openLayer2, openLayer3 } from './support/navigation.mjs'
+import { openLayer2, openLayer2Tab, openLayer3 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){
   await attachRuntimeEvidence(testInfo,runtime)
@@ -28,7 +28,7 @@ test.describe('M2.5 Pilot deployment currentness @deployed',()=>{
     try{
       await loginAsUatUser(page)
 
-      const layer2=await openLayer2(page)
+      const layer2=await openLayer2Tab(page,'History') // v2.15.128
       const terminal=layer2.locator('[data-l2-latest-terminal="true"]')
       await expect(terminal).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
       const classification=terminal.locator('[data-l2-wave-classification]')

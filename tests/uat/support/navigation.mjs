@@ -12,6 +12,15 @@ export async function openLayer1(page) {
   return workspace
 }
 
+// v2.15.128: Layer 2 is split into tabs — Overview, Fetch an area, History, Source profiles.
+export async function openLayer2Tab(page, tab) {
+  await openLayer2(page)
+  await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: tab }).first().click(ui)
+  const workspace = page.locator('.l2o-shell')
+  await expect(workspace).toBeVisible(ui)
+  return workspace
+}
+
 export async function openLayer2(page) {
   await clickPrimaryNav(page, 'Layer 2 — Enrichment')
   const workspace = page.locator('.l2o-shell')

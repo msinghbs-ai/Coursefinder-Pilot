@@ -1,56 +1,63 @@
+// Layer 2 outcome reporting (CF-245), compact style from v2.15.128.
+//   view="overview"  tiles, coverage and backlog, where work stops, fetcher yield, hourly summary (8 columns, the
+//                    detail per hour is in the row tooltip), backlog blockers and recent field admissions.
+//   view="trace"     recent execution trace (History tab).
+// Read: adminRead('enrichment_operations', {country_code, hours, limit}); observational only, nothing is changed here.
 import React,{useEffect,useState}from'react'
-import{Metric as Card,Empty}from'./ui-kit'
-import{Activity,AlertTriangle,BookOpen,CheckCircle2,Clock3,DollarSign,RefreshCw,ShieldCheck,Workflow}from'lucide-react'
+import{Button,Empty,Metric as Card,SectionTitle}from'./ui-kit'
+import{Activity,AlertTriangle,BarChart3,BookOpen,CheckCircle2,DollarSign,ListTree,RefreshCw,Workflow}from'lucide-react'
 import{adminRead}from'./lib/supabase'
 import'./enrichment-operations.css'
 import{fmtNumber,fmtDateTime,fmtMoney,fmtPercent}from'./lib/format.js'
 
 const n=v=>fmtNumber(v||0)
 const ms=v=>v==null?'—':`${fmtNumber(Math.round(Number(v)))} ms`
-const money=v=>v==null?'—':fmtMoney(v,'USD',{decimals:4})
+const money=v=>v==null?'—':fmtMoney(v,'USD',{decimals:2})
 const when=v=>v?fmtDateTime(v):'—'
-const human=v=>String(v??'—').replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase())
-const fieldLabel=v=>({official_course_url:'Official course URL',intake_availability:'Intake availability',english_requirements:'English requirements',provider_current_international_tuition:'Provider-current tuition',scholarship:'Scholarships'}[v]||human(v))
+const REASON={layer3_required:'Passed to Layer 3 (AI)',source_profile_qualification_required:'Site not checked yet',no_official_course_url:'No course page link yet',layer4_required:'Sent to a person',fetch_failed:'Page could not be fetched'}
+const human=v=>REASON[v]||String(v??'—').replace(/[_-]+/g,' ').replace(/^\w/,m=>m.toUpperCase())
+const fieldLabel=v=>({official_course_url:'Course page link',intake_availability:'Intakes',english_requirements:'English requirements',provider_current_international_tuition:'Tuition',scholarship:'Scholarships'}[v]||human(v))
+const found=x=>Number(x.official_urls_found||0)+Number(x.intakes_found||0)+Number(x.english_requirements_found||0)+Number(x.provider_current_tuition_found||0)+Number(x.scholarships_found||0)
+const hourTip=x=>`Course page links ${n(x.official_urls_found)} · intakes ${n(x.intakes_found)} · English ${n(x.english_requirements_found)} · tuition ${n(x.provider_current_tuition_found)} · scholarships ${n(x.scholarships_found)}\nUnchanged ${n(x.unchanged)} · rejected or blocked ${n(x.rejected_or_blocked)} · to Layer 4 ${n(x.layer4_referred)} · courses improved ${n(x.courses_improved_lower_bound)}\nRetries ${n(x.retries)} · 429 ${n(x.http_429)} · 5xx ${n(x.http_5xx)} · other failures ${n(x.other_runtime_failures)}\nResponse ${ms(x.p50_response_ms)} / ${ms(x.p95_response_ms)} · reading ${ms(x.p50_extraction_ms)} / ${ms(x.p95_extraction_ms)} (median / slowest 5%)`
 
-export default function EnrichmentOperations({rank=4,openNav=()=>{},openEvidence=()=>{}}){
+export default function EnrichmentOperations({rank=4,view='overview',openNav=()=>{},openEvidence=()=>{}}){
  const[data,setData]=useState(null),[country,setCountry]=useState(''),[hours,setHours]=useState(24),[busy,setBusy]=useState(false),[error,setError]=useState('')
  const load=async()=>{setBusy(true);setError('');try{setData(await adminRead('enrichment_operations',{country_code:country||null,hours,limit:30}))}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  useEffect(()=>{if(rank>=4)load()},[rank,country,hours])
  const coverage=data?.coverage||[],work=data?.work||{},hourly=data?.hourly||[],blockers=data?.blockers||[],providers=data?.providers||[],reasons=data?.stop_reasons||[],admissions=data?.admissions||[],recent=data?.recent_items||[]
  if(rank<4)return null
- return <section className="eops" data-cf245-enrichment-operations="true">
-  <div className="eops-head"><div><span className="eops-kicker">Outcome reporting</span><h2>Enrichment Operations</h2><p>What actually enriched, where work stopped, and what reached Search/website. Acquisition, admission and publication remain separate stages.</p></div><div className="eops-actions"><label>Country<select value={country} onChange={e=>setCountry(e.target.value)}><option value="">AU + NZ</option><option value="AU">Australia</option><option value="NZ">New Zealand</option></select></label><label>Window<select value={hours} onChange={e=>setHours(Number(e.target.value))}><option value="24">24 hours</option><option value="48">48 hours</option><option value="168">7 days</option></select></label><button onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button></div></div>
-  {error&&<div className="eops-alert"><AlertTriangle size={15}/>{error}</div>}
-  <div className="eops-note"><ShieldCheck size={15}/><span>{data?.authority_note||'Metrics are observational and do not authorise canonical or publication mutation.'}</span></div>
-  <div className="eops-kpis">
-   <Card icon={Workflow} label="Queued / processing" value={`${n(work.queued)} / ${n(work.processing)}`} detail="Current managed-run state"/>
-   <Card icon={Activity} label="Fetched · 24h" value={n(work.fetched)} detail={`${n(work.fetch_failures)} fetch failures`}/>
-   <Card icon={BookOpen} label="Evidence · 24h" value={n(work.evidence_24h)} detail={`${n(work.layer3_24h)} Layer 3 fall-out`}/>
-   <Card icon={CheckCircle2} label="Admitted source records · 24h" value={n(work.admitted_source_records_24h)} detail="Separate from Search publication"/>
-   <Card icon={DollarSign} label="Vendor cost · 24h" value={money(work.vendor_cost_usd_24h)} detail={`${n(work.vendor_units_24h)} vendor units`}/>
-   <Card icon={AlertTriangle} label="429 / 5xx · 24h" value={`${n(work.http_429_24h)} / ${n(work.http_5xx_24h)}`} detail="Provider/runtime pressure"/>
-  </div>
-  <div className="eops-grid">
-   <article className="eops-panel eops-wide"><Panel title="Coverage & backlog" subtitle="Search/website-visible coverage from the latest hourly snapshot."/>
-    <div className="eops-table-wrap"><table><thead><tr><th>Country</th><th>Field</th><th>Current</th><th>Coverage</th><th>+ hour</th><th>+ day</th><th>Remaining</th><th>Queueable</th><th>Blocked</th><th>Awaiting qualification</th></tr></thead><tbody>{coverage.map(x=><tr key={`${x.country_code}-${x.field_key}`}><td>{x.country_code}</td><td><strong>{fieldLabel(x.field_key)}</strong></td><td>{n(x.current)} / {n(x.total)}</td><td>{fmtPercent(x.coverage_pct||0)}</td><td>{x.added_hour==null?<span className="eops-muted">Baseline pending</span>:signed(x.added_hour)}</td><td>{x.added_day==null?<span className="eops-muted">Baseline pending</span>:signed(x.added_day)}</td><td>{n(x.remaining)}</td><td>{n(x.queueable)}</td><td>{n(x.blocked)}</td><td>{n(x.awaiting_qualification)}</td></tr>)}</tbody></table></div>
-    {!coverage.length&&!busy&&<Empty text="No coverage snapshot is available yet."/>}
-   </article>
-   <article className="eops-panel"><Panel title="Where work stops" subtitle="Seven-day item stop reasons."/><Bars rows={reasons.map(x=>({label:human(x.reason),value:x.items,detail:`${n(x.fields_resolved)} / ${n(x.fields_targeted)} fields resolved`}))}/></article>
-   <article className="eops-panel"><Panel title="Provider yield & latency" subtitle="Seven-day acquisition route performance."/><div className="eops-list">{providers.map(x=><div key={x.provider}><div><strong>{human(x.provider)}</strong><small>{n(x.succeeded)} succeeded · {n(x.failed)} failed · {n(x.retries)} retries</small></div><span>{ms(x.p50_ms)} p50<br/>{ms(x.p95_ms)} p95</span></div>)}</div></article>
-   <article className="eops-panel eops-wide"><Panel title="Hourly enrichment funnel" subtitle="Acquisition and deterministic extraction are not reported as published enrichment."/>
-    <div className="eops-table-wrap"><table><thead><tr><th>Hour</th><th>Country</th><th>Items</th><th>Fetched</th><th>Fetch fail</th><th>Evidence</th><th>Extraction</th><th>URLs</th><th>Intakes</th><th>English</th><th>Tuition</th><th>Scholarships</th><th>Admitted</th><th>Unchanged</th><th>Rejected / blocked</th><th>Layer 3</th><th>Layer 4</th><th>Courses improved</th><th>Vendor units / cost</th><th>Retries</th><th>429</th><th>5xx</th><th>Other failures</th><th>Response p50 / p95</th><th>Extraction p50 / p95</th></tr></thead><tbody>{hourly.slice(-24).reverse().map((x,i)=><tr key={`${x.hour_utc}-${x.country_code}-${x.domain}-${i}`}><td>{when(x.hour_utc)}</td><td>{x.country_code||'—'}</td><td>{n(x.items)}</td><td>{n(x.fetched)}</td><td>{n(x.fetch_failures)}</td><td>{n(x.evidence_created)}</td><td>{n(x.extraction_attempted)}</td><td>{n(x.official_urls_found)}</td><td>{n(x.intakes_found)}</td><td>{n(x.english_requirements_found)}</td><td>{n(x.provider_current_tuition_found)}</td><td>{n(x.scholarships_found)}</td><td>{n(x.facts_admitted_lower_bound)}</td><td>{n(x.unchanged)}</td><td>{n(x.rejected_or_blocked)}</td><td>{n(x.layer3_escalated)}</td><td>{n(x.layer4_referred)}</td><td>{n(x.courses_improved_lower_bound)}</td><td>{n(x.vendor_units)} / {money(x.vendor_cost_usd)}</td><td>{n(x.retries)}</td><td>{n(x.http_429)}</td><td>{n(x.http_5xx)}</td><td>{n(x.other_runtime_failures)}</td><td>{ms(x.p50_response_ms)} / {ms(x.p95_response_ms)}</td><td>{ms(x.p50_extraction_ms)} / {ms(x.p95_extraction_ms)}</td></tr>)}</tbody></table></div>
-    {!hourly.length&&!busy&&<Empty text="No managed Layer 2 activity exists in this window."/>}
-   </article>
-   <article className="eops-panel"><Panel title="Backlog blockers" subtitle="Missing data classified before workload generation."/><div className="eops-list">{blockers.slice(0,12).map((x,i)=><div key={`${x.country_code}-${x.field_key}-${x.reason}-${i}`}><div><strong>{x.country_code} · {fieldLabel(x.field_key)}</strong><small>{human(x.reason||x.state)}</small></div><b>{n(x.courses)}</b></div>)}</div></article>
-   <article className="eops-panel"><Panel title="Recent field admissions" subtitle="Canonical decision ledger; publication remains separate."/><div className="eops-list">{admissions.slice(0,12).map(x=><div key={x.id}><div><strong>{x.provider_name||'Provider'} · {x.course_title||x.course_id}</strong><small>{fieldLabel(x.field_key)} · {human(x.status)} · {human(x.reason_code)}</small></div><button onClick={()=>openEvidence(x.evidence_id)}>Evidence</button></div>)}</div></article>
-   <article className="eops-panel eops-wide"><Panel title="Recent execution trace" subtitle="Drill into Jobs and Evidence without direct SQL."/><div className="eops-table-wrap"><table><thead><tr><th>Event</th><th>Provider / Course</th><th>Status</th><th>Fields</th><th>Evidence</th><th>Stop reason</th><th>Drill-down</th></tr></thead><tbody>{recent.slice(0,20).map((x,i)=><tr key={x.run_item_id||i}><td>{when(x.event_at)}</td><td>{x.provider_name||'—'}<small className="eops-block">{x.course_code||x.course_id||'—'}</small></td><td>{human(x.status)}</td><td>{n(x.fields_resolved)} / {n(x.fields_targeted)}</td><td>{n(x.evidence_count)}</td><td>{human(x.stop_reason)}</td><td><div className="eops-row-actions"><button onClick={()=>openNav('Jobs')}>Jobs</button>{x.evidence_id&&<button onClick={()=>openEvidence(x.evidence_id)}>Evidence</button>}</div></td></tr>)}</tbody></table></div></article>
-  </div>
-  <footer className="eops-footer"><Clock3 size={14}/><span>Observed {when(data?.observed_at)} · {data?.change_control_ref||'CF-CHG-20260915-245'} · Hour/day velocity remains unavailable until a real prior snapshot exists.</span></footer>
+ const filters=<div className="eops-filters"><select aria-label="Country" value={country} onChange={e=>setCountry(e.target.value)}><option value="">AU + NZ</option><option value="AU">Australia</option><option value="NZ">New Zealand</option></select><select aria-label="Window" value={hours} onChange={e=>setHours(Number(e.target.value))}><option value="24">Last 24 hours</option><option value="48">Last 48 hours</option><option value="168">Last 7 days</option></select><Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</Button></div>
+ if(view==='trace')return <section className="m-panel" data-cf245-enrichment-trace="true">
+  <SectionTitle icon={ListTree} title="Recent execution trace" subtitle="The latest courses Layer 2 worked on and where each one stopped." action={filters}/>
+  {error&&<p className="fr-error" role="alert">{error}</p>}
+  {recent.length?<div className="cf-table-wrap"><table className="cf-table eops-trace"><thead><tr><th>When</th><th>Provider / course</th><th>Result</th><th className="num">Facts</th><th className="num">Evidence</th><th>Stopped because</th><th></th></tr></thead><tbody>{recent.slice(0,20).map((x,i)=><tr key={x.run_item_id||i}><td>{when(x.event_at)}</td><td>{x.provider_name||'—'}<small className="eops-block">{x.course_code||x.course_id||'—'}</small></td><td>{human(x.status)}</td><td className="num">{n(x.fields_resolved)} of {n(x.fields_targeted)}</td><td className="num">{n(x.evidence_count)}</td><td>{x.stop_reason?human(x.stop_reason):'—'}</td><td>{x.evidence_id&&<Button compact onClick={()=>openEvidence(x.evidence_id)}>Evidence</Button>}</td></tr>)}</tbody></table></div>:<Empty text={busy?'Loading…':'No Layer 2 activity in this window.'}/>}
  </section>
+ return <div className="m-page-stack eops-root" data-cf245-enrichment-operations="true">
+  {error&&<p className="fr-error" role="alert">{error}</p>}
+  <div className="cf-metric-grid">
+   <Card icon={Workflow} label="Waiting / working" value={`${n(work.queued)} / ${n(work.processing)}`} detail="Courses in the current runs"/>
+   <Card icon={Activity} label="Pages fetched" value={n(work.fetched)} detail={`${n(work.fetch_failures)} failed · ${n(work.http_429_24h)} rate-limited · ${n(work.http_5xx_24h)} site errors`} tone={Number(work.fetch_failures||0)>Number(work.fetched||0)/5?'warning':'neutral'}/>
+   <Card icon={CheckCircle2} label="Facts accepted" value={n(work.admitted_source_records_24h)} detail={`${n(work.evidence_24h)} pages saved as evidence · ${n(work.layer3_24h)} passed to Layer 3`} tone="success"/>
+   <Card icon={DollarSign} label="Fetcher cost" value={money(work.vendor_cost_usd_24h)} detail={`${n(work.vendor_units_24h)} paid units`}/>
+  </div>
+  <section className="m-panel">
+   <SectionTitle icon={BarChart3} title="Coverage and what is left" subtitle="Courses that show each fact on Search and the website, from the latest hourly count." action={filters}/>
+   {coverage.length?<div className="cf-table-wrap"><table className="cf-table eops-cov"><thead><tr><th>Country</th><th>Fact</th><th className="num">Have</th><th className="num">Coverage</th><th className="num">Added today</th><th className="num">Still missing</th><th className="num">Ready to fetch</th><th className="num">Blocked</th></tr></thead><tbody>{coverage.map(x=><tr key={`${x.country_code}-${x.field_key}`}><td>{x.country_code}</td><td><strong>{fieldLabel(x.field_key)}</strong></td><td className="num">{n(x.current)} of {n(x.total)}</td><td className="num">{fmtPercent(x.coverage_pct||0)}</td><td className="num">{x.added_day==null?<span className="eops-muted" title="Shown once a day-old count exists">—</span>:signed(x.added_day)}</td><td className="num">{n(x.remaining)}</td><td className="num">{n(x.queueable)}</td><td className="num" title={`${n(x.awaiting_qualification)} waiting for the site to be checked`}>{n(x.blocked)}</td></tr>)}</tbody></table></div>:<Empty text={busy?'Loading…':'No coverage count is available yet.'}/>}
+  </section>
+  <div className="eops-two">
+   <section className="m-panel"><SectionTitle icon={AlertTriangle} title="Where work stops" subtitle="Why courses stopped in the last 7 days."/>{reasons.length?<Bars rows={reasons.map(x=>({label:human(x.reason),value:x.items,detail:`${n(x.fields_resolved)} of ${n(x.fields_targeted)} facts found`}))}/>:<Empty text="Nothing stopped."/>}</section>
+   <section className="m-panel"><SectionTitle icon={Activity} title="Fetchers" subtitle="Last 7 days: pages fetched, failures and response time."/>{providers.length?<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Fetcher</th><th className="num">Fetched</th><th className="num">Failed</th><th className="num" title="Typical response time, then the slowest 5%">Response time</th></tr></thead><tbody>{providers.map(x=><tr key={x.provider}><td>{human(x.provider)}</td><td className="num">{n(x.succeeded)}</td><td className="num" title={`${n(x.retries)} retries`}>{n(x.failed)}</td><td className="num">{ms(x.p50_ms)}<small className="eops-block">slowest {ms(x.p95_ms)}</small></td></tr>)}</tbody></table></div>:<Empty text="No fetches in the last 7 days."/>}</section>
+  </div>
+  <section className="m-panel">
+   <SectionTitle icon={BarChart3} title="By hour" subtitle="Pages fetched and facts found each hour. Hover a row for the full breakdown."/>
+   {hourly.length?<div className="cf-table-wrap"><table className="cf-table eops-hourly"><thead><tr><th>Hour</th><th>Country</th><th className="num">Courses</th><th className="num">Pages fetched</th><th className="num">Failed</th><th className="num">Facts found</th><th className="num">Accepted</th><th className="num">To Layer 3</th><th className="num">Cost</th></tr></thead><tbody>{hourly.slice(-24).reverse().map((x,i)=><tr key={`${x.hour_utc}-${x.country_code}-${x.domain}-${i}`} title={hourTip(x)}><td>{when(x.hour_utc)}</td><td>{x.country_code||'—'}</td><td className="num">{n(x.items)}</td><td className="num">{n(x.fetched)}</td><td className="num">{n(x.fetch_failures)}</td><td className="num">{n(found(x))}</td><td className="num">{n(x.facts_admitted_lower_bound)}</td><td className="num">{n(x.layer3_escalated)}</td><td className="num">{money(x.vendor_cost_usd)}</td></tr>)}</tbody></table></div>:<Empty text={busy?'Loading…':'No Layer 2 activity in this window.'}/>}
+  </section>
+  <div className="eops-two">
+   <section className="m-panel"><SectionTitle icon={AlertTriangle} title="Not ready to fetch" subtitle="Missing facts that cannot be fetched yet, and why."/>{blockers.length?<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Fact</th><th>Why</th><th className="num">Courses</th></tr></thead><tbody>{blockers.slice(0,12).map((x,i)=><tr key={`${x.country_code}-${x.field_key}-${x.reason}-${i}`}><td>{x.country_code} · {fieldLabel(x.field_key)}</td><td>{human(x.reason||x.state)}</td><td className="num">{n(x.courses)}</td></tr>)}</tbody></table></div>:<Empty text="Nothing blocked."/>}</section>
+   <section className="m-panel"><SectionTitle icon={BookOpen} title="Recently accepted facts" subtitle="Facts Layer 2 accepted; publishing is a separate step."/>{admissions.length?<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Course</th><th>Fact</th><th></th></tr></thead><tbody>{admissions.slice(0,12).map(x=><tr key={x.id}><td>{x.course_title||x.course_id}<small className="eops-block">{x.provider_name||''}</small></td><td>{fieldLabel(x.field_key)}<small className="eops-block">{human(x.status)}</small></td><td>{x.evidence_id&&<Button compact onClick={()=>openEvidence(x.evidence_id)}>Evidence</Button>}</td></tr>)}</tbody></table></div>:<Empty text="Nothing accepted in this window."/>}</section>
+  </div>
+ </div>
 }
-
-
-function Panel({title,subtitle}){return <div className="eops-panel-head"><div><h3>{title}</h3><p>{subtitle}</p></div></div>}
 
 function signed(v){const x=Number(v||0);return <span className={x>0?'eops-positive':''}>{x>0?'+':''}{n(x)}</span>}
 function Bars({rows}){const max=Math.max(1,...rows.map(x=>Number(x.value||0)));return <div className="eops-bars">{rows.slice(0,10).map((x,i)=><div key={`${x.label}-${i}`}><span><strong>{x.label}</strong><small>{x.detail}</small></span><i><b style={{width:`${Math.max(3,100*Number(x.value||0)/max)}%`}}/></i><em>{n(x.value)}</em></div>)}</div>}

@@ -298,3 +298,17 @@ td>.l3v-model{display:block}
 .l2-problem{max-width:280px;font-size:var(--cf-fs-xs);color:var(--cf-text-2);overflow-wrap:anywhere}
 .l2-fetchers{margin:6px 0;padding-left:20px;display:grid;gap:4px}.l2-fetchers small{margin-left:8px;color:var(--cf-text-2)}
 .l2-run{margin:8px 0 0;font-size:var(--cf-fs-sm);color:var(--cf-success)}
+/* Layer 2 tabs (v2.15.128): no outer frame; panels sit on the page like other screens. */
+.l2o-shell.l2o-embedded{border:0;box-shadow:none;background:transparent;overflow:visible;border-radius:0}
+.l2o-shell.l2o-embedded .l2o-main{padding:0;display:grid;gap:var(--cf-space-4,16px)}
+.eops-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cf-space-4,16px)}
+@media(max-width:1000px){.eops-two{grid-template-columns:1fr}}
+.eops-filters{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.eops-filters select{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:5px 8px;font:inherit;font-size:var(--cf-fs-sm);background:var(--cf-surface)}
+.eops-block{display:block;color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.l2-start-row{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--cf-border)}
+.l2-start-row strong{display:block;font-size:var(--cf-fs-md)}.l2-start-row span{color:var(--cf-text-2);font-size:var(--cf-fs-sm)}
+.l2o-shell.l2o-embedded .l2o-sync-card{background:transparent;border:0;padding:0}
+.l2o-shell.l2o-embedded .l2o-panel{margin:0}
+.l2o-shell.l2o-embedded .l2o-panel-head h2{font-size:var(--cf-fs-lg)}
+.l2o-shell.l2o-embedded .l2o-active strong{font-size:var(--cf-fs-md)}
