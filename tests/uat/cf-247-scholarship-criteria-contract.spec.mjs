@@ -27,6 +27,11 @@ test('reader: criteria from the eligibility wording, negations respected', async
   expect(kinds(scholarshipCriteria('Key information Eligible citizenship Australian citizen, Permanent resident +2 more Eligible student type Current student'))).toEqual([['study_stage', 'current']])
   expect(kinds(scholarshipCriteria('Who is eligible? You must be a citizen of India, Sri Lanka, Nepal or Bangladesh.'))).toEqual([['nationality', ['BD', 'IN', 'LK', 'NP']]])
   expect(kinds(scholarshipCriteria('Eligibility: commencing a Bachelor with an Australian Tertiary Admission Rank (ATAR) of 85 or higher'))).toEqual([['study_stage', 'commencing'], ['academic_minimum', 'ATAR', 85]])
+  // hand-check 2 Oct: a footer offering scholarships to domestic and international students is not this scholarship's rule;
+  // an exclusion list after "not eligible ... if you:" is not domestic; a menu link is not a student type
+  expect(kinds(scholarshipCriteria('Am I eligible for this scholarship? To be eligible you must: Be an offshore international student (ie not an Australian citizen, New Zealand citizen or permanent resident). When do applications open and close for this scholarship? Scholarships With a broad offering for both domestic and international applicants'))).toEqual([['student_type', ['international']]])
+  expect(kinds(scholarshipCriteria('Eligibility requirements: you are an international, full-fee-paying student. You are not eligible to receive this scholarship if you: are an Australian citizen or a permanent resident visa holder.'))).toEqual([['student_type', ['international']]])
+  expect(kinds(scholarshipCriteria('Eligibility Applying to RMIT International students Parents and partners Alumni. Applicants must hold a first class Honours degree.'))).toEqual([])
   // "future or current" is mixed: left out; "an equivalent international degree" is not a student type
   expect(kinds(scholarshipCriteria('Eligibility Future or current PhD student. You hold an Honours degree or an equivalent international degree.'))).toEqual([])
   for (const c of scholarshipCriteria('Eligibility: be an international student commencing full-time study')) expect(c.text.length).toBeGreaterThan(10)
@@ -57,7 +62,7 @@ test('database: criteria rows marked by the sweep, other sources untouched; old 
   expect(m).not.toMatch(/set\s+publication_status/)
   const idx = read('supabase/functions/coverage-sweep/index.ts')
   expect(idx).toContain('mode === "scholarship_reextract"')
-  expect(idx).toContain('scholarship-sweep-v0.5.0')
+  expect(idx).toMatch(/scholarship-sweep-v0\.5\.\d/)
 })
 
 test('browser: scholarship record shows eligibility and award duration (active rows only)', async ({ page }) => {

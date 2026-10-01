@@ -2,7 +2,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.5.0";
+const SCH_VERSION = "scholarship-sweep-v0.5.1";
+// v0.5.1 (2 Oct 2026, first 30 hand-checked): the eligibility section ends at the next part of the page (how to apply,
+// related scholarships); "key details" lines only as label + values; international as a stated requirement, not a menu
+// link; "not eligible ... if you: are an Australian citizen" read as an exclusion.
 // v0.5.0 (2 Oct 2026, Decision 211): eligibility criteria (student type, study stage, full-time, ATAR/GPA/WAM minimum,
 // gender, nationality, applying without an application) and award scope (one-off, first year, per year, per year for the
 // course, whole course; what it pays for) are read from the eligibility and benefit wording.

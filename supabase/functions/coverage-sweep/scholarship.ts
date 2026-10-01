@@ -160,14 +160,14 @@ export function scholarshipFacts(html: string, titleText: string, name: string) 
 // anything mixed (e.g. "future or current student") is left out rather than guessed.
 
 type Criterion = { type: string; operator: string; value_text?: string; value_number?: number; value_codes?: string[]; scale?: number; text: string };
-const NEGATED = /\b(?:not|non|excluding|except|other than|nor|ineligible|cannot)\b[^.;]{0,55}$/i;
+const NEGATED = /\b(?:not|non|excluding|except|other than|nor|ineligible|cannot)\b[^.;]{0,85}$/i;
 const snip = (t: string, at: number, len = 220) => clean(t.slice(Math.max(0, at - 40), at + len)).slice(0, 300);
 // "... are not eligible", "... cannot apply" after the words also excludes them
 const NEGATED_AFTER = /^[^.;:]{0,70}?\b(?:(?:are|is) (?:not|in)eligible|(?:are|is) not (?:eligible|able to apply)|cannot (?:apply|receive|be awarded)|(?:are|is) excluded)\b/i;
 function firstPlain(t: string, re: RegExp) {
   for (const m of t.matchAll(re)) {
     const at = m.index || 0;
-    if (!NEGATED.test(t.slice(Math.max(0, at - 60), at)) && !NEGATED_AFTER.test(t.slice(at + m[0].length, at + m[0].length + 90))) return m;
+    if (!NEGATED.test(t.slice(Math.max(0, at - 100), at)) && !NEGATED_AFTER.test(t.slice(at + m[0].length, at + m[0].length + 90))) return m;
   }
   return null;
 }
@@ -176,11 +176,20 @@ function firstPlain(t: string, re: RegExp) {
 export function eligibilityText(body: string) {
   const t = body.slice(0, 12000), parts: string[] = [];
   const at = t.search(/\b(?:eligibility(?: criteria| requirements)?\b|who (?:is|can be|'s) eligible|am i eligible|to be eligible|you must:)/i);
-  if (at >= 0) parts.push(t.slice(at, at + 2500));
+  if (at >= 0) {
+    // the section ends at the next part of the page (how to apply, related scholarships, page footer)
+    let sec = t.slice(at, at + 2500);
+    const end = sec.slice(80).search(/\b(?:how (?:do i |to )apply|when do applications|application process|more about scholarships|explore (?:similar|other|more) scholarships|(?:related|similar|other) scholarships|read more|contact us|terms and conditions)\b/i);
+    if (end >= 0) sec = sec.slice(0, end + 80);
+    parts.push(sec);
+  }
   let n = 0;
-  for (const m of t.matchAll(/\b(?:eligible (?:citizenship|student type|study stage)|student type|residency|citizenship)\b/gi)) {
+  for (const m of t.matchAll(/\b(?:eligible (?:citizenship|student type|study stage)|student type|residency|citizenship)\b:?\s+/gi)) {
+    const at = m.index || 0, after = t.slice(at + m[0].length, at + m[0].length + 140);
+    // a label followed by its values ("Student type Domestic, International"), not a sentence ("citizenship from a country")
+    if (!/^[A-Z]/.test(after)) continue;
     if (n++ >= 3) break;
-    parts.push(t.slice(m.index || 0, (m.index || 0) + 160));
+    parts.push(t.slice(at, at + m[0].length) + after.split(/(?<=[a-z)])\.\s|\?\s/)[0]);
   }
   return parts.join(" \n ");
 }
@@ -208,7 +217,8 @@ export function scholarshipCriteria(body: string): Criterion[] {
   const out: Criterion[] = [];
   // student type: domestic (citizens, permanent residents), international, or both
   const dom = firstPlain(t, /\b(?:australian citizens?|permanent residents?(?: of australia)?|australian permanent residents?|domestic students?|new zealand citizens?|(?:permanent )?humanitarian visa(?: holders?)?|student type:? domestic|domestic(?=,| and| or))\b/gi);
-  const intl = firstPlain(t, /\binternational (?:students?|applicants?|candidates?|onshore|offshore)\b|\b(?:student type|domestic(?: and|,| or| \/)?|citizenship|residency)[ :,/a-z]{0,25}\binternational\b/gi);
+  // stated as a requirement, not a menu link ("Applying to RMIT International students Parents")
+  const intl = firstPlain(t, /\b(?:be|is|are|an?|new|commencing|current|continuing|offshore|onshore|eligible|open to|all) (?:an? )?international(?: students?| applicants?| candidates?|,)|\binternational (?:students?|applicants?|candidates?) (?:who|must|may|are|will|can|only|commencing|applying|from|studying|enrolling|holding|with|in|on)\b|\b(?:student type|domestic(?: and|,| or| \/)?|citizenship|residency)[ :,/a-z]{0,25}\binternational\b/gi);
   // a shortened list ("Australian citizen, Permanent resident +2 more") hides the rest: domestic-only is not certain
   const hidden = /\+\s?\d+ more\b/i.test(t);
   if (intl || (dom && !hidden)) {
@@ -238,7 +248,7 @@ export function scholarshipCriteria(body: string): Criterion[] {
   const codes = new Set<string>(); let natAt = -1;
   for (const m of t.matchAll(/\b(?:citizens?(?:hip)? (?:of|from|in)|nationals? of|passport holders? (?:of|from)|born in|students from|applicants from|from one of the following(?: countries)?)\b/gi)) {
     const at = m.index || 0;
-    if (NEGATED.test(t.slice(Math.max(0, at - 60), at))) continue;
+    if (NEGATED.test(t.slice(Math.max(0, at - 100), at))) continue;
     const win = t.slice(at, at + 320).split(/\b(?:and be|and have|must|you must|be enrolled|enrol)\b/i)[0];
     for (const [re, code] of COUNTRIES) if (re.test(win)) { codes.add(code); if (natAt < 0) natAt = at }
   }
