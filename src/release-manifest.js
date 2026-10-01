@@ -1,22 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.140'
-export const PACKAGE_VERSION='0.1.67'
+export const UI_VERSION='2.15.141'
+export const PACKAGE_VERSION='0.1.68'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Coverage by country and university; fee schedule bulk approval',
+  title:'Live activity',
   changes:[
-    'Coverage & completeness now covers every country (Australia, New Zealand and Canada) and opens on all countries. Choose a country, or type a university, to narrow every count and list.',
-    'Fee schedules: tick several waiting schedules and choose Approve selected or Reject selected; Review rows opens every row of a schedule; Show switches between waiting, decided and all.',
-    'A fee schedule with nothing to add can now be closed (Close, nothing to add); before, it stayed waiting with Approve unavailable.',
-    'The old course-page pattern requests on Layer 3 › Work queue were retired; the course-link search finds course pages.'
+    'New screen Live activity (under Dashboard): every scheduled job by layer, shown as Running now, Working (what is left, done in 24 hours and about how long to go), Up to date, Paused, Stuck or Failing, with its last run, the worker\'s last result and the next run in Melbourne time. It refreshes every 20 seconds.',
+    'Waiting for a person: tiles for fee schedules, scholarships to publish or check, Layer 4 reviews, flagged values and ranking links, each opening its screen.',
+    'Scholarship discovery no longer stops when its list runs out: 100 more providers were lined up, the next largest are added every hour, and each run now searches 6 providers instead of 3.'
   ],
   bugFixes:[
-    'Layer 3 › Work queue: Run on a course-page pattern request failed with "Edge Function returned a non-2xx status code" because every request was tied to a retired, paused model. The 1,655 requests were retired (kept, not deleted).',
-    'Fee schedules showed only the newest 50; waiting schedules are now listed first, up to 300.'
+    'The release check after each merge failed since v2.15.136 although the site had updated: it cut the download short while looking for the version. It now downloads first, then looks.'
   ]
 }
 

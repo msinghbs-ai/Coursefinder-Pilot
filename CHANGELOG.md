@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.68 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.141** (Live activity; scholarship discovery refill; release check fixed).
+- Migrations 20261002180600-180800 (Decision 214).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.67 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.140** (coverage by country and university; fee schedule bulk approval; course-page pattern requests retired).
