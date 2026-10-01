@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.66 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.139** (scholarship publishing rules: domestic only, up-to values, savings per year).
+- Migration 20261002180400_cf247_scholarship_publishing_rules (Decision 212); scholarship reader v0.5.4.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.65 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.138** (scholarship eligibility and award scope from provider pages).
