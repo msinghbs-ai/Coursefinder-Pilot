@@ -8,6 +8,8 @@
 
 export const PAGES = {
   dashboard: { label: 'Dashboard', slug: 'dashboard', icon: 'dashboard', min: 1, title: 'Dashboard', subtitle: 'What needs attention today, and recent activity.' },
+  // v2.15.141 (Decision 214): what is running at each layer right now, refreshed every 20 seconds.
+  activity: { label: 'Live activity', slug: 'live-activity', icon: 'activity', min: 1, subtitle: 'What is running at each layer now, what each job last did, what runs next, and what waits for a person.' },
 
   courses: { label: 'Courses', slug: 'courses', icon: 'course', min: 1, subtitle: 'Every course, with its sources and evidence.' },
   providers: { label: 'Providers', slug: 'providers', icon: 'provider', subtitle: 'Providers, their campuses and their logos.', tabs: [
@@ -88,7 +90,7 @@ export const PAGES = {
 }
 
 export const SECTIONS = [
-  { label: '', pages: ['dashboard'] },
+  { label: '', pages: ['dashboard', 'activity'] },
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources'] },

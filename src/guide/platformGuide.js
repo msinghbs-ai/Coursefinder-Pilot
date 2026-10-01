@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.140'
+export const GUIDE_REVIEWED_FOR = '2.15.141'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.' },
@@ -26,6 +26,7 @@ export const RULES = [
 ]
 
 export const DAILY_ROUTINE = [
+  { title: 'Live activity', page: 'activity', text: 'Glance at each layer: anything Stuck or Failing, and the Waiting for a person tiles. Running and Working are normal.' },
   { title: 'Dashboard › Waiting for you', page: 'dashboard', text: 'Note review items, flagged records and scholarships waiting. A number that does not fall over two days means reviewers are behind.' },
   { title: 'Platform health › Needs attention', page: 'health', text: 'Clear every Critical item today. Read each Warning: fix it, or note why it can wait.' },
   { title: 'Scheduled jobs › Automations', page: 'jobs', tab: 'automations', text: 'Check "Failed in the last 24 hours". Open any failed automation and read its last error (see Signal → action).' },
@@ -39,6 +40,7 @@ export const DAILY_ROUTINE = [
 // `act` = what a person does there.
 export const SCREENS = {
   dashboard: { answers: 'What is waiting for a person today?', read: ['Waiting for you: review items, flagged records and scholarships, each opening its list.', 'Platform health bar: green, amber or red summary.', 'Layers panel: what each layer handled in the last 24 hours; zero for a day means a stuck job.'], act: ['Click a card to go straight to the work.'] },
+  activity: { answers: 'What is running at each layer right now, and is anything stuck?', read: ['Waiting for a person: fee schedules, scholarships to publish or check, Layer 4 reviews, flagged values and ranking links, each opening its screen.', 'Each layer lists its jobs: Running now, Working (with what is left, done in 24 hours and about how long to go), Up to date, Scheduled, Paused, Stuck or Failing; the last run, the worker\'s last result and when it runs next (Melbourne time).', 'It refreshes every 20 seconds while open; Pause updates stops that.'], act: ['Stuck or Failing: open Scheduled jobs for that job\'s history, or tell the Platform Admin.', 'Waiting for a person: open the screen from its tile and clear it.'] },
   courses: { answers: 'What do we hold for each course, and where did each value come from?', read: ['Filters include "International students" (open to international, domestic only, both, not known).', 'Each value shows its source and evidence; a value changed by hand shows "set by hand".'], act: ['Edit a course (Curator and above). Your change is locked against automation until you release it.', 'Course links: official page, handbook, international page, how to apply, admission centre, regulator listing.'] },
   providers: { answers: 'Who are the providers, and what do we know about each?', read: ['Provider record: details, who can apply, World rankings (QS and THE by edition), outcomes and scholarships.', 'Campuses, Logos & assets and Onboarding tabs.'], act: ['Edit provider details and "Enrols international students" (Pipeline Operator and above).'] },
   contacts: { answers: 'Who are the international recruitment contacts for each provider?', read: ['Contacts with their source and when they were last checked.'], act: ['Correct or add a contact.'] },

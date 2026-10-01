@@ -60,9 +60,12 @@ jobs:
           # JavaScript carries the expected version, not just until the page answers.
           for attempt in $(seq 1 80); do
             body=$(curl -L -sS --max-time 15 "$UAT_BASE_URL/?release_probe=${GITHUB_SHA}" || true)
-            if printf '%s' "$body" | grep -q 'id="root"'; then
-              for asset in $(printf '%s' "$body" | grep -o 'assets/[^"]*\.js' | sort -u); do
-                if curl -L -sS --max-time 20 "$UAT_BASE_URL/$asset" | grep -q "${expected}"; then
+            # The step runs with pipefail: piping a download into "grep -q" fails whenever grep stops reading before
+            # the download ends (the version sits mid-file since v2.15.136). Download to a file, then search it.
+            if grep -q 'id="root"' <<<"$body"; then
+              for asset in $(grep -o 'assets/[^"]*\.js' <<<"$body" | sort -u); do
+                curl -L -sS --max-time 30 -o "$RUNNER_TEMP/probe.js" "$UAT_BASE_URL/$asset" || continue
+                if grep -qF "${expected}" "$RUNNER_TEMP/probe.js"; then
                   echo "Deployed frontend serves v${expected} (attempt ${attempt}/80)."
                   exit 0
                 fi

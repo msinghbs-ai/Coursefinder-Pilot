@@ -421,3 +421,21 @@ export const rankingObservations = { total: 2, limit: 50, offset: 0, items: [
 ] }
 export const rankingLinkCandidates = { can_link: true, items: [{ provider_id: 'p-cqu', provider_name: 'Central Queensland University', state: 'AU-QLD', confidence: 0.5 }] }
 export const providerRankingHistory = { items: [{ system_code: 'qs_wur', ranking_name: 'QS World University Rankings', edition_year: 2027, rank_display: '13', overall_score: 90.8, publisher_name: 'The University of Melbourne' }] }
+
+// Decision 214: Live activity
+export const liveActivity = {
+  now: '2026-10-01T21:40:00Z', in_flight: 2,
+  needs_person: { fee_schedules: 12, scholarships_ready: 344, scholarships_domestic: 236, layer4_reviews: 3097, flagged_values: 456, ranking_links: 27 },
+  jobs: [
+    { job: 'scholarship-discover', area: 'Scholarships', label: 'Discover scholarships', description: 'Finds scholarship pages on provider websites.', schedule: '*/10 * * * *', active: true, running: false, runs_24h: 144, failed_24h: 0,
+      last: { start: '2026-10-01T21:30:00Z', status: 'succeeded' }, queue: { unit: 'providers', left: 94, done_24h: 6 },
+      worker: { mode: 'scholarship_discover', at: '2026-10-01T21:33:16Z', result: { ok: true, mode: 'scholarship_discover', ms: 65297, candidates: { items: 21, tally: { 'read:rejected': 18 } } } } },
+    { job: 'scholarship-read', area: 'Scholarships', label: 'Read scholarship pages', description: 'Reads each page.', schedule: '*/5 * * * *', active: true, running: false, runs_24h: 288, failed_24h: 0,
+      last: { start: '2026-10-01T21:35:00Z', status: 'succeeded' }, queue: { unit: 'pages', left: 0, done_24h: 0 }, worker: null },
+    { job: 'coverage-read', area: 'Course pages', label: 'Read course pages', description: 'Fetches matched course pages.', schedule: '30 seconds', active: true, running: true, runs_24h: 2879, failed_24h: 0,
+      last: { start: '2026-10-01T21:39:50Z', status: 'running' }, queue: { unit: 'course pages', left: 120, done_24h: 11857 }, worker: null },
+    { job: 'coverage-find-site', area: 'Course pages', label: 'Find provider websites', description: 'Finds missing websites.', schedule: '*/15 * * * *', active: false, running: false, runs_24h: 0, failed_24h: 0, last: {}, queue: null, worker: null },
+    { job: 'evidence-link-index', area: 'Reports', label: 'Index evidence links', description: 'Indexes links.', schedule: '*/10 * * * *', active: true, running: false, runs_24h: 140, failed_24h: 140,
+      last: { start: '2026-10-01T21:39:00Z', status: 'failed', message: 'HTTP 401' }, queue: null, worker: null },
+  ],
+}

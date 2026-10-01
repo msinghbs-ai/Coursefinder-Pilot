@@ -41,6 +41,7 @@ import LinkRefresh from'./LinkRefresh'
 import FeeSchedules from'./FeeSchedules'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import ScholarshipEligibility from'./ScholarshipEligibility'
+import LiveActivity from'./LiveActivity'
 import PlatformGuide from'./PlatformGuide'
 import Layer4Intervention from'./Layer4Intervention'
 import{Layer1Operations,Layer1SourceSettings}from'./layer1-operations-entry'
@@ -180,6 +181,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
       case'guide':return <PlatformGuide rank={rank} navigate={navigate}/>
+      case'activity':return <LiveActivity navigate={navigate}/>
       case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>

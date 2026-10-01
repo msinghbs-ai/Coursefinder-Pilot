@@ -486,3 +486,24 @@ td>.l3v-model{display:block}
 .cc-where .cc-found button{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 8px;font:inherit;cursor:pointer;color:var(--cf-text)}
 .cc-where .cc-found button:hover{background:var(--cf-surface-2)}
 .cc-where .cc-found small{color:var(--cf-muted)}
+/* Live activity (Decision 214) */
+.la{display:grid;gap:12px}
+.la .la-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:center}
+.la .la-head>div:first-child{display:grid;gap:2px}
+.la .la-toggle{display:inline-flex;gap:6px;align-items:center;font-size:var(--cf-fs-sm)}
+.la .la-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 8px;font-size:var(--cf-fs-base)}
+.la .la-needs{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.la .la-need{display:grid;gap:2px;text-align:left;border:1px solid var(--cf-border);border-radius:8px;padding:8px 10px;background:var(--cf-surface);cursor:pointer;font:inherit;color:var(--cf-text)}
+.la .la-need b{font-size:var(--cf-fs-lg)}
+.la .la-need.on{border-color:var(--cf-amber-500)}
+.la .la-table td{vertical-align:top}
+.la .la-table td small{display:block}
+.la .la-state{display:inline-flex;align-items:center;gap:5px;font-weight:600;white-space:nowrap}
+.la .la-state.running,.la .la-state.working{color:var(--cf-link)}
+.la .la-state.done{color:var(--cf-green-700)}
+.la .la-state.failing,.la .la-state.stuck{color:var(--cf-red-600)}
+.la .la-state.paused,.la .la-state.scheduled{color:var(--cf-muted)}
+.la .la-sum{font-size:var(--cf-fs-sm)}
+.la .la-spin{animation:la-spin 1.2s linear infinite}
+@keyframes la-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.la .la-spin{animation:none}}
