@@ -38,6 +38,7 @@ export const PAGES = {
     { key: 'operations', label: 'Runs', min: 4 },
     { key: 'sources', label: 'Sources', min: 4 },
     { key: 'settings', label: 'Source settings', min: 6 },
+    { key: 'batch', label: 'Manual batch runs', min: 6 },
   ] },
   // v2.15.112 (Platform Admin, 30 Sep 2026): reference data that is not a register run moved out of Layer 1.
   reference: { label: 'Reference data', slug: 'reference-data', icon: 'book', subtitle: 'Ranking files, key dates and the third-party sites the platform refers to.', tabs: [
@@ -58,11 +59,12 @@ export const PAGES = {
     { key: 'flags', label: 'Flagged values', min: 3 },
     { key: 'sendback', label: 'Send back to AI', min: 3 },
     { key: 'rules', label: 'Batch rules', min: 3 },
+    { key: 'blocks', label: 'Blocks', min: 5 },
   ] },
 
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database.', tabs: [
     { key: 'checks', label: 'Health checks', min: 3 },
-    { key: 'readiness', label: 'Readiness & capacity', min: 6 },
+    { key: 'readiness', label: 'Capacity', min: 6 },
   ] },
   jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, the order work is taken in, job history and refresh schedules.', tabs: [
     { key: 'automations', label: 'Automations', min: 4 },
@@ -72,11 +74,10 @@ export const PAGES = {
   ] },
   evidence: { label: 'Evidence', slug: 'evidence', icon: 'book', min: 3, subtitle: 'Saved source pages and files, and what they changed.' },
 
-  environment: { label: 'Environment & integrations', slug: 'environment', icon: 'plug', min: 6, subtitle: 'External services, keys (names only) and usage against budgets.' },
+  environment: { label: 'Environment & keys', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Keys for outside services (never shown) and usage against budgets.' },
   scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: providers, limits and routing.' },
   services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off. Anything off is not offered anywhere else.' },
-  regulatory: { label: 'Regulatory settings', slug: 'regulatory-settings', icon: 'shield', min: 6, subtitle: 'Regulator source registry and bounded ingestion controls.' },
-  migration: { label: 'Environment migration', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up when moving to Production.' },
+  migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on.' },
   dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5, subtitle: 'Attributes, families, groups and options.' },
 
   users: { label: 'Users & roles', slug: 'users-roles', icon: 'users', min: 6, subtitle: 'Who can sign in and what each person may do.' },
@@ -88,7 +89,7 @@ export const SECTIONS = [
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence'] },
-  { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'regulatory', 'migration', 'dataModel'] },
+  { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'migration'] },
   { label: 'Administration', pages: ['users'] },
 ]
 
@@ -110,6 +111,8 @@ export const LEGACY = {
   'student-flow-prisms': { page: 'rankings', tab: 'prisms' },
   'layer-1-operations': { page: 'layer1', tab: 'operations' },
   'layer-1-regulatory': { page: 'layer1', tab: 'operations' },
+  // v2.15.123: Regulatory settings merged into Layer 1 (Manual batch runs); its Pilot reset moved to the Go-live checklist.
+  'regulatory-settings': { page: 'layer1', tab: 'batch' },
   'layer-1-authority': { page: 'layer1', tab: 'operations' },
   'sources': { page: 'layer1', tab: 'sources' },
   'onboarding': { page: 'providers', tab: 'onboarding' },

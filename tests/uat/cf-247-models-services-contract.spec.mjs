@@ -7,7 +7,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('Models & services is a Platform settings page; switching is role-checked, logged, and a model off leaves every operation screen', () => {
-  expect(SECTIONS.find(s => s.label === 'Platform settings').pages).toEqual(['environment', 'scrapers', 'services', 'regulatory', 'migration', 'dataModel'])
+  expect(SECTIONS.find(s => s.label === 'Platform settings').pages).toEqual(['environment', 'scrapers', 'services', 'dataModel', 'migration'])
   expect(PAGES.services.min).toBe(4)
   const m = read('supabase/migrations/20260930160000_cf247_models_services_toggles.sql')
   expect(m).toContain("if auth.uid() is null or security.current_role_rank() < 5 then raise exception 'PIM Operator role or above required'")

@@ -1,21 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.122'
-export const PACKAGE_VERSION='0.1.49'
+export const UI_VERSION='2.15.123'
+export const PACKAGE_VERSION='0.1.50'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'One home for each setting',
+  title:'Fewer, clearer settings pages',
   changes:[
-    'Platform settings › Models & services is now the only place to switch an AI model or a page-fetching service on or off. Environment & integrations keeps the keys only, and Scrapers & fetchers keeps addresses, limits and routing; each links to the others.',
-    'A model can be switched on only after it has passed its test. Until then its switch is greyed out with Pass its test first.',
-    'Layer 3 › Models is gone: its list is on Models & services, and old links open that page. Each model’s tasks link to Layer 3 › Control.',
-    'A new page-fetching service starts switched off.'
+    'Regulatory settings is gone from the menu. Its country batch runner is now Layer 1 Register › Manual batch runs (Platform Admin), showing Australia and New Zealand first, with other countries behind Show countries not in scope.',
+    'Environment migration is now the Go-live checklist: production settings, the migration checklist, the readiness gates and UAT, and the Pilot database reset, in one place.',
+    'Platform health › Readiness & capacity is now Capacity, shown as one page without tabs inside tabs.',
+    'Blocking a provider, course, campus or scholarship moved to Layer 4 Review › Blocks.',
+    'Environment & integrations is now Environment & keys. Old links to Regulatory settings open Manual batch runs.'
   ],
   bugFixes:[
-    'Adding a model to a cascade in Layer 3 › Control also switched the model on without the usual checks. It now has to be switched on in Models & services first.'
+    'Regulatory settings stopped with an error when the source list came back in an unexpected shape; it now shows an empty list instead.'
   ]
 }
 

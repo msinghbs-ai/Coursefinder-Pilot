@@ -35,7 +35,7 @@ test('menu map: five plain sections, every page reachable, old addresses and nam
 test('role gates are unchanged from the screens they came from', () => {
   const min = (p, t) => PAGES[p].tabs ? PAGES[p].tabs.find(x => x.key === t).min : PAGES[p].min
   expect([min('layer1', 'operations'), min('layer1', 'settings'), min('layer2', 'operations'), min('layer3', 'routing'), min('layer4', 'review'), min('jobs', 'jobs'), min('evidence')]).toEqual([4, 6, 4, 3, 3, 4, 3])
-  expect([min('users'), min('environment'), min('migration'), min('regulatory'), min('dataModel'), min('scrapers'), min('health', 'readiness')]).toEqual([6, 6, 6, 6, 5, 4, 6])
+  expect([min('users'), min('environment'), min('migration'), min('layer1', 'batch'), min('dataModel'), min('scrapers'), min('health', 'readiness')]).toEqual([6, 6, 6, 6, 5, 4, 6])
   expect(canOpen('users', 5)).toBe(false)
   // v2.15.112: Key dates and Key links moved to Reference data, Onboarding to Providers (still rank 3)
   expect(canOpen('layer1', 3)).toBe(false)

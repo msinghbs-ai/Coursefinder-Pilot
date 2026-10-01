@@ -33,7 +33,11 @@ function Metric({label,value,detail,tone='neutral',Icon=Database}){return <KitMe
 function SectionTitle({icon=ServerCog,title,subtitle,action}){return <KitSectionTitle icon={icon} title={title} subtitle={subtitle} action={action}/>}
 
 
-export default function PlatformMaturity({rank,onError}){
+// v2.15.123 (screen review: no tabs inside tabs; readiness gates and UAT belong with the go-live checklist; Layer 4 blocks
+// belong in Layer 4): view 'capacity' = Platform health › Capacity (overview, capacity, performance as sections);
+// view 'golive' = Platform settings › Go-live checklist (environment gates, UAT); view 'blocks' = Layer 4 › Blocks.
+const VIEW_TITLE={capacity:['Capacity and integrity','Database size, evidence storage, workloads and retention.'],golive:['Readiness gates and UAT','What must pass before Production is switched on.'],blocks:['Blocks','Hide a provider, course, campus or scholarship from operations, publishing or search, and undo it.']}
+export default function PlatformMaturity({rank,onError,view=''}){
   const[tab,setTab]=useState('overview')
   const[environment,setEnvironment]=useState('pilot')
   const[data,setData]=useState({readiness:null,capacity:null,gates:null,uat:null,workloads:null,retention:null,blocks:null})
@@ -61,25 +65,32 @@ export default function PlatformMaturity({rank,onError}){
   const cap=data.capacity||{},integrity=cap.integrity_classification||{},policy=cap.platform_capacity_policy||{},evidencePolicy=cap.evidence_capacity_policy||{}
   const productionEnabled=num(data.readiness?.production_source_capabilities_enabled)+num(data.readiness?.production_scrapers_enabled)+num(data.readiness?.production_ai_profiles_enabled)
 
-  return <div className="pm-shell" data-platform-maturity="true">
+  const[vt,vs]=VIEW_TITLE[view]||['Platform operations & readiness','Environment gates, capacity, UAT, retention, workload budgets and reversible Layer 4 blocking.']
+  return <div className="pm-shell" data-platform-maturity="true" data-view={view||'all'}>
     <section className="pm-hero">
-      <div className="pm-hero-copy"><span className="pm-eyebrow">M2.5 · Platform maturity</span><h2>Platform operations & readiness</h2><p>Environment gates, capacity, UAT, retention, workload budgets and reversible Layer 4 blocking in one governed Administration surface.</p></div>
-      <div className="pm-hero-actions"><label className="pm-env-control"><span>View environment</span><select value={environment} onChange={e=>setEnvironment(e.target.value)}><option value="pilot">Pilot</option><option value="production">Production</option></select></label><button className="pm-button secondary" onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button></div>
+      <div className="pm-hero-copy"><h2>{vt}</h2><p>{vs}</p></div>
+      <div className="pm-hero-actions">{view!=='blocks'&&<label className="pm-env-control"><span>View environment</span><select value={environment} onChange={e=>setEnvironment(e.target.value)}><option value="pilot">Pilot</option><option value="production">Production</option></select></label>}<button className="pm-button secondary" onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button></div>
     </section>
 
-    <section className="pm-boundary-banner">
+    {view!=='blocks'&&<section className="pm-boundary-banner">
       <ShieldCheck size={18}/>
-      <div><strong>Production boundary remains closed</strong><span>No Production project is provisioned. This workspace is read-first; it cannot enable Production sources, scrapers, AI profiles, PITR or destructive purge.</span></div>
+      <div><strong>Production boundary remains closed</strong><span>No Production project is provisioned. This view is read-only; it cannot enable Production sources, scrapers, AI profiles, PITR or destructive purge.</span></div>
       <Pill tone={productionEnabled?'danger':'success'}>{productionEnabled?'Unexpected Production enablement':'0 Production enablement expected'}</Pill>
-    </section>
+    </section>}
 
     {error&&<div className="pm-alert"><AlertTriangle size={16}/><span>{error}</span></div>}
 
+    {busy&&!data.readiness?<div className="pm-loading"><span className="pm-spinner"/>Loading…</div>:view==='capacity'?<>
+      <Overview readiness={data.readiness} capacity={cap} acceptedPilot={acceptedPilot} prodOpen={prodOpen}/>
+      <Capacity capacity={cap} integrity={integrity} policy={policy} evidencePolicy={evidencePolicy}/>
+      <Performance workloads={list(data.workloads)} retention={data.retention}/>
+    </>:view==='golive'?<>
+      <Gates gates={data.gates} environment={environment}/>
+      <Uat items={uatItems}/>
+    </>:view==='blocks'?<BlockConsole rank={rank} blocks={list(data.blocks)} reload={load}/>:<>
     <nav className="pm-tabs" aria-label="Platform maturity sections">
       {TABS.map(([key,label,Icon])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(key)}><Icon size={15}/><span>{label}</span></button>)}
     </nav>
-
-    {busy&&!data.readiness?<div className="pm-loading"><span className="pm-spinner"/>Loading governed platform state…</div>:<>
       {tab==='overview'&&<Overview readiness={data.readiness} capacity={cap} acceptedPilot={acceptedPilot} prodOpen={prodOpen}/>}
       {tab==='capacity'&&<Capacity capacity={cap} integrity={integrity} policy={policy} evidencePolicy={evidencePolicy}/>}
       {tab==='gates'&&<Gates gates={data.gates} environment={environment}/>}

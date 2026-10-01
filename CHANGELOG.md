@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.50 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.123** (Duplicate screens merged: Regulatory settings into Layer 1, Go-live checklist, flat Capacity, Layer 4 Blocks).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.49 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.122** (One home per setting: Models & services is the only on/off place; Environment holds keys only).
