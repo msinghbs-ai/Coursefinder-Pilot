@@ -77,7 +77,7 @@
 
 /* Flagged values */
 .fv-filter,.fv-input{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;background:var(--cf-surface);font:inherit;font-size:var(--cf-fs-sm)}
-.fv-input{max-width:130px}
+.cf-table td .fv-input,.m-table td .fv-input{max-width:130px}.le-table td .fv-input{max-width:none}
 .fv-quote{display:block;font-size:var(--cf-fs-xs);color:var(--cf-text-2);font-style:italic;overflow-wrap:anywhere;margin-bottom:4px}
 
 /* Sources side by side */
@@ -116,9 +116,9 @@ td>.l3v-model{display:block}
 .au-desc{display:block;font-size:var(--cf-fs-xs);color:var(--cf-text-2);margin-top:2px;max-width:420px}
 .au-error{display:block;font-size:var(--cf-fs-xs);color:var(--cf-danger);margin-top:2px;overflow-wrap:anywhere;max-width:320px}
 .au-controls{display:grid;gap:6px;min-width:190px}
-.au-controls .fv-input{max-width:none}
+.au-controls .fv-input,.cf-table td .au-controls .fv-input,.m-table td .au-controls .fv-input{max-width:none}
 .au-batch{display:flex;gap:6px;align-items:center}
-.au-batch .fv-input{max-width:80px}
+.au-batch .fv-input,.cf-table td .au-batch .fv-input,.m-table td .au-batch .fv-input{max-width:80px}
 .sb-done{margin:var(--cf-space-2) 0 0;font-size:var(--cf-fs-sm);color:var(--cf-success)}
 .sp-publish{display:flex;gap:var(--cf-space-2);align-items:end;flex-wrap:wrap}
 .sp-publish label{display:grid;gap:4px;flex:1 1 320px}

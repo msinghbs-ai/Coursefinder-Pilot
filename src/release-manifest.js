@@ -14,7 +14,8 @@ export const RELEASE={
     'Each change is saved and logged the same way as in the record panel, and is locked so automation will not change it. A lock icon shows values entered by hand.'
   ],
   bugFixes:[
-    'On wide lists (Courses, Providers, Evidence, Scheduled jobs and others) the page ran off the right edge, hiding buttons such as Add course and Compare, the result count and the pager. Pages now fit the window and wide tables scroll inside their panel.'
+    'On wide lists (Courses, Providers, Evidence, Scheduled jobs and others) the page ran off the right edge, hiding buttons such as Add course and Compare, the result count and the pager. Pages now fit the window and wide tables scroll inside their panel.',
+    'Text boxes in forms (for example a new batch rule\'s wording, or the title words for scholarship course links) were cut to a narrow width. They now use the full width available.'
   ]
 }
 
