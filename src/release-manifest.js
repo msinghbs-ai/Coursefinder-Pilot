@@ -1,21 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.120'
-export const PACKAGE_VERSION='0.1.47'
+export const UI_VERSION='2.15.121'
+export const PACKAGE_VERSION='0.1.48'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Edit in list for Courses and Providers',
+  title:'Reference sources and editable Key dates',
   changes:[
-    'Courses and Providers have a new Edit in list button. The editable fields become columns you can change in place: for courses the title, duration, delivery and course page; for providers the name, city, website, phone and email.',
-    'Click a cell to edit it; press Enter or move away to save, or Esc to cancel. A tick shows each save.',
-    'Each change is saved and logged the same way as in the record panel, and is locked so automation will not change it. A lock icon shows values entered by hand.'
+    'Reference data › Key links is now Reference sources: every third-party site the platform refers to (Hotcourses, Study Australia, regulators, ranking publishers, search and social sites), each with a domain, an on/off switch and ticked uses.',
+    'The platform reads this list instead of fixed patterns in code: sites marked Never a university website are skipped when finding a university’s site, sites marked Never a course page are refused as course pages, scholarships sourced only from a placeholder site need a university page before publishing, and Ranking imports takes its publisher addresses from here.',
+    'Names, addresses and purpose can be edited in place, and Check now (or Check all) shows whether each site is reachable. Adding or retiring a site, or changing how it is used, needs a reason and is logged.',
+    'Key dates shows the list first. Edit a title, date, kind, precision, source or warning in place, cancel a date, or add one from a short form. Dates show as dd/mm/yyyy.'
   ],
   bugFixes:[
-    'On wide lists (Courses, Providers, Evidence, Scheduled jobs and others) the page ran off the right edge, hiding buttons such as Add course and Compare, the result count and the pager. Pages now fit the window and wide tables scroll inside their panel.',
-    'Text boxes in forms (for example a new batch rule\'s wording, or the title words for scholarship course links) were cut to a narrow width. They now use the full width available.'
+    'Rankings and statistics still pointed to Layer 1 Register for ranking imports; it now points to Reference data › Ranking imports.'
   ]
 }
 

@@ -42,6 +42,12 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_services_read: F.services,
     admin_services_control: b => { calls.push(b); const off = b.p_kind === 'model' && !b.p_enabled; return { ...F.services, models: F.services.models.map(m => m.id === b.p_id ? { ...m, enabled: b.p_enabled, steps: m.steps.map(x => ({ ...x, active: off ? false : x.active })) } : m), services: F.services.services.map(x => x.id === b.p_id ? { ...x, enabled: b.p_enabled } : x), steps_switched_off: off ? 2 : 0 } },
     admin_catalogue_edit_rows: b => { calls.push({ editRows: b }); return b.p_type === 'course' ? F.courseEditRows : { can_edit: true, rows: {} } },
+    admin_reference_sources_read: F.referenceSources,
+    admin_reference_source_save: b => { calls.push({ refSave: b }); return { ...F.referenceSources, items: F.referenceSources.items.map(x => x.id === b.p_id ? { ...x, ...(b.p_fields.uses ? { uses: b.p_fields.uses } : {}), ...(b.p_fields.name ? { name: b.p_fields.name } : {}), ...('enabled' in b.p_fields ? { enabled: b.p_fields.enabled } : {}) } : x), saved: b.p_id || 'r-new' } },
+    admin_reference_source_action: b => { calls.push({ refAction: b }); return { ...F.referenceSources, items: F.referenceSources.items.map(x => x.id === b.p_id ? { ...x, checking: b.p_action === 'check', retired: b.p_action === 'retire' } : x) } },
+    admin_key_dates_read: F.keyDates,
+    admin_key_date_save: b => { calls.push({ dateSave: b }); return { ...F.keyDates, items: F.keyDates.items.map(x => x.id === b.p_id ? { ...x, ...b.p_fields } : x), saved: b.p_id || 'd-new' } },
+    admin_key_date_action: b => { calls.push({ dateAction: b }); return { ...F.keyDates, items: F.keyDates.items.map(x => x.id === b.p_id ? { ...x, status: b.p_action === 'cancel' ? 'cancelled' : 'active' } : x) } },
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
   await page.addInitScript(s => { try { localStorage.setItem('sb-example-auth-token', JSON.stringify(s)) } catch {} }, session)
