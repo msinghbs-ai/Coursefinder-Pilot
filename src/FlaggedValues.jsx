@@ -9,6 +9,8 @@ import{Button,Empty,Loading,SectionTitle,StatusChip,fmtDateTime,fmtMoney,fmtNumb
 
 const FLAG_TEXT={tuition_period_assumed_annual:'Tuition shown without a period — recorded as per year'}
 const BASIS={annual:'Per year',total_indicative:'Whole course'}
+// v2.15.137 (Decision 210): an approved fee schedule settles flags it answers; the rest show the schedule's fee.
+const BY_SCHEDULE={confirmed_by_fee_schedule:'Same fee in the approved fee schedule',period_confirmed_by_fee_schedule:'Per year supported by the approved fee schedule'}
 const quoteList=q=>Array.isArray(q)?q:(()=>{try{return JSON.parse(q||'[]')}catch{return[]}})()
 
 export default function FlaggedValues({onError}){
@@ -25,7 +27,7 @@ export default function FlaggedValues({onError}){
     setBusy(true);let ok=0,failed=0;for(const f of items){setBulk(`Confirming ${ok+failed+1} of ${items.length}…`);try{const{error}=await supabase.rpc('admin_data_flag_resolve',{p_flag_id:f.id,p_action:'confirm',p_args:{}});if(error)throw error;ok++}catch{failed++}}
     setBulk(`${ok} confirmed${failed?`, ${failed} could not be confirmed`:''}.`);setBusy(false);load()}
   return <section className="m-panel">
-    <SectionTitle icon={Flag} title="Flagged values" subtitle="Values recorded automatically under an assumption. Confirm them, correct them, or remove them." action={<div className="l3c-actions">
+    <SectionTitle icon={Flag} title="Flagged values" subtitle="Values recorded automatically under an assumption. An approved fee schedule settles the ones it answers; confirm, correct or remove the rest." action={<div className="l3c-actions">
       <select className="fv-filter" value={status} onChange={e=>setStatus(e.target.value)} aria-label="Show">
         <option value="open">To check ({fmtNumber(c.open||0)})</option><option value="confirmed">Confirmed ({fmtNumber(c.confirmed||0)})</option>
         <option value="corrected">Corrected ({fmtNumber(c.corrected||0)})</option><option value="removed">Removed ({fmtNumber(c.removed||0)})</option><option value="all">All</option></select>
@@ -39,14 +41,15 @@ export default function FlaggedValues({onError}){
       {items.length?items.map(f=><tr key={f.id}>
         <td><strong>{f.course||'Course'}</strong><span className="l3v-code">{[f.course_code,f.provider].filter(Boolean).join(' · ')}</span></td>
         <td>{FLAG_TEXT[f.flag]||f.flag}<span className="l3v-code">{fmtDateTime(f.created_at)}</span></td>
-        <td className="num">{edit?.id===f.id?<input className="fv-input" type="number" min="1" step="1" value={edit.amount} onChange={e=>setEdit({...edit,amount:e.target.value})} aria-label="Fee amount"/>:fmtMoney(Number(f.amount||0),f.currency||'AUD',{decimals:0})}</td>
+        <td className="num">{edit?.id===f.id?<input className="fv-input" type="number" min="1" step="1" value={edit.amount} onChange={e=>setEdit({...edit,amount:e.target.value})} aria-label="Fee amount"/>:<>{fmtMoney(Number(f.amount||0),f.currency||'AUD',{decimals:0})}{f.schedule&&<span className="l3v-code fv-schedule" data-schedule-fee>Fee schedule: {fmtMoney(Number(f.schedule.amount),f.currency||'AUD',{decimals:0})} a year{f.schedule.year?` (${f.schedule.year})`:''}</span>}</>}</td>
         <td>{edit?.id===f.id?<select className="fv-input" value={edit.basis} onChange={e=>setEdit({...edit,basis:e.target.value})} aria-label="Fee period"><option value="annual">Per year</option><option value="total_indicative">Whole course</option></select>:(BASIS[f.basis]||f.basis||'—')}</td>
         <td>{quoteList(f.quotes).slice(0,2).map((q,i)=><q key={i} className="fv-quote">{q}</q>)}{f.page_url&&<a className="l3v-code" href={f.page_url} target="_blank" rel="noreferrer">Open the page</a>}</td>
-        <td><StatusChip value={f.status} tone={f.status==='open'?'warning':f.status==='removed'?'neutral':'success'} label={{open:'To check',confirmed:'Confirmed',corrected:'Corrected',removed:'Removed'}[f.status]||f.status}/></td>
+        <td><StatusChip value={f.status} tone={f.status==='open'?'warning':f.status==='removed'?'neutral':'success'} label={{open:'To check',confirmed:'Confirmed',corrected:'Corrected',removed:'Removed'}[f.status]||f.status}/>{BY_SCHEDULE[f.resolution?.action]&&<span className="l3v-code">{BY_SCHEDULE[f.resolution.action]}</span>}</td>
         {data.can_edit&&status==='open'&&<td><div className="l3c-row-actions">{edit?.id===f.id?<>
           <Button compact variant="primary" onClick={()=>act(f.id,'correct',{amount:Number(edit.amount),basis:edit.basis})} disabled={!can||!(Number(edit.amount)>0)}><Check size={14}/>Save</Button>
           <Button compact onClick={()=>setEdit(null)} disabled={busy}><X size={14}/>Cancel</Button></>:<>
           <Button compact variant="primary" onClick={()=>act(f.id,'confirm')} disabled={!can}><Check size={14}/>Confirm per year</Button>
+          {f.schedule&&<Button compact onClick={()=>act(f.id,'correct',{amount:Number(f.schedule.amount),basis:'annual',note:'Fee from the approved fee schedule'+(f.schedule.year?` (${f.schedule.year})`:'')},`Use the fee schedule's ${f.schedule.amount} a year for this course?`)} disabled={!can}>Use schedule fee</Button>}
           <Button compact onClick={()=>setEdit({id:f.id,amount:String(f.amount||''),basis:f.basis||'annual'})} disabled={!can} aria-label="Edit fee" title="Edit fee"><Pencil size={14}/></Button>
           <Button compact variant="danger" onClick={()=>act(f.id,'remove',{},'Remove this fee from the course?')} disabled={!can} aria-label="Remove fee"><Trash2 size={14}/></Button></>}</div></td>}
       </tr>):<tr><td colSpan={7} className="cf-empty-cell">{status==='open'?'Nothing to check.':'None.'}</td></tr>}
