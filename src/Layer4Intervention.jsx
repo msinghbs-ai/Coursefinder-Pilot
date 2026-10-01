@@ -80,42 +80,43 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
  const fields=Array.isArray(layer4?.fields)?layer4.fields:[]
  const providerContext=type==='provider'?data?.id:(data?.provider_id||data?.provider?.id||'')
  return <section className="m-detail-section cf-layer4-override">
-  <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start'}}>
-   <div><h3>Layer 4 governed intervention</h3><p className="m-help">Effective-value overlay only. Underlying source and canonical history remain preserved.</p></div>
-   <span className="m-role-pill">{Number(layer4?.active_override_count||0)} active Layer 4</span>
-  </div>
+  {/* v2.15.130: collapsed unless a correction is active (screen review crs-detail-long, crs-detail-jargon). */}
+  <details className="l4i-details" open={Number(layer4?.active_override_count||0)>0}><summary style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start',cursor:'pointer'}}>
+   <div><h3>Corrections shown instead of the source</h3><p className="m-help">A correction changes only what is shown and published; the source value and its history are kept.</p></div>
+   <span className="m-role-pill">{Number(layer4?.active_override_count||0)} active</span>
+  </summary>
   <div className="m-record-list">
    {fields.map(f=><div className="m-record" key={f.field_code} style={f.effective_source==='L4'?{borderColor:'var(--cf-indigo-300)'}:{}}>
     <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
      <strong>{f.display_label}</strong>
-     {f.effective_source==='L4'&&<span className="m-role-pill">Layer 4 effective</span>}
-     {f.editability_class==='immutable'&&<small>Immutable source/history</small>}
+     {f.effective_source==='L4'&&<span className="m-role-pill">Corrected</span>}
+     {f.editability_class==='immutable'&&<small>Cannot be corrected here</small>}
     </div>
-    <span>Underlying: {fmt(f.underlying_value)}</span>
-    <span>Effective: {fmt(f.effective_value)}</span>
-    {f.upstream_changed&&<small style={{color:'var(--cf-amber-700)',fontWeight:800}}>Underlying source changed after this override — review required.</small>}
+    <span>From the source: {fmt(f.underlying_value)}</span>
+    <span>Shown: {fmt(f.effective_value)}</span>
+    {f.upstream_changed&&<small style={{color:'var(--cf-amber-700)',fontWeight:800}}>The source changed after this correction — check it again.</small>}
     {f.effective_source==='L4'&&<small>Edited by {f.actor_email||f.actor_id||'authorised user'} · {when(f.edited_at)} · {human(f.reason_code||'human decision')}{f.comment?' · '+f.comment:''}</small>}
     <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-     {f.can_edit&&<button className="m-secondary compact" disabled={busy===f.field_code} onClick={()=>edit(f)}>Edit effective value</button>}
+     {f.can_edit&&<button className="m-secondary compact" disabled={busy===f.field_code} onClick={()=>edit(f)}>Correct this value</button>}
      {f.effective_source==='L4'&&f.can_edit&&<button className="m-secondary compact" disabled={busy===f.field_code} onClick={()=>revert(f)}>Revert</button>}
      {Number(f.history_count||0)>0&&<button className="m-secondary compact" disabled={busy==='history'} onClick={()=>audit(f)}>Audit ({f.history_count})</button>}
     </div>
    </div>)}
   </div>
   {publicationEnabled&&<div className="m-record" style={{marginTop:8}}>
-   <strong>Publication control · preview required</strong>
-   <label style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>Target<select value={pubScope} onChange={e=>changePublicationScope(e.target.value)} disabled={busy==='publication'}><option value="governed_publication">Governed publication</option><option value="search_api">Search / API</option><option value="website">Website</option><option value="zoho">Zoho</option></select></label>
+   <strong>Publishing decision</strong>
+   <label style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>Target<select value={pubScope} onChange={e=>changePublicationScope(e.target.value)} disabled={busy==='publication'}><option value="governed_publication">All publishing</option><option value="search_api">Search and API</option><option value="website">Website</option><option value="zoho">Zoho</option></select></label>
    <span>{human(pub?.effective_decision||'no_override')}{pub?.actor_email?' · '+pub.actor_email:''}{pub?.decided_at?' · '+when(pub.decided_at):''}</span>
    {pub?.can_decide&&<div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
     <button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('publish')}>Preview & mark publishable</button>
     <button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('unpublish')}>Preview & mark not publishable</button>
     {pub?.effective_decision!=='no_override'&&<button className="m-secondary compact" disabled={busy==='publication'} onClick={()=>publication('rollback')}>Preview & rollback</button>}
    </div>}
-   <small>Automatic publication is disabled. This control records an audited Layer 4 decision; it does not itself authorise Production, Website or Zoho cutover.</small>
+   <small>Nothing is published automatically. This records a decision with its reason; it does not switch on the website, Search or Zoho.</small>
   </div>}
   {['provider','course','campus','scholarship'].includes(type)&&<div className="m-record" style={{marginTop:8}}>
-   <strong>Source-backed PIM candidate workflow</strong>
-   <span>Register a new governed source candidate without writing canonical identity or publication state.</span>
+   <strong>Suggest a new record from a source</strong>
+   <span>Adds a candidate for review. Nothing changes in the catalogue until it is approved.</span>
    <button className="m-secondary compact" onClick={()=>setCandidatesOpen(x=>!x)}>{candidatesOpen?'Close candidate workspace':'Open candidate workspace'}</button>
    {candidatesOpen&&<div style={{marginTop:8}}><ManualPimCandidateWorkspace initialEntityType={type} initialProviderId={providerContext} onError={e=>window.alert(e?.message||String(e))}/></div>}
   </div>}
@@ -123,5 +124,6 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
    <strong>Audit history · {history.field.display_label}</strong>
    {history.rows.map(x=><div className="m-record" key={x.id}><span>{human(x.event_type)} · {x.actor_email||x.actor_id} · {when(x.created_at)}</span><small>{human(x.reason_code)}{x.comment?' · '+x.comment:''}</small></div>)}
   </div>}
+  </details>
  </section>
 }

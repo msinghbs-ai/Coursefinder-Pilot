@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.57 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.130** (Edit in list for tuition, intakes, English, campuses and scholarships).
+- Database (applied live): 20261001140000 (list read for tuition, intakes, English) and 20261001150000 (campus and scholarship edits with the manual lock guard).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.56 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.129** (Layer 4 review queue tidy-up).

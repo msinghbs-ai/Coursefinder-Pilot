@@ -267,7 +267,11 @@ export const services = { can_control: true,
 // v2.15.120 Edit in list.
 export const courseEditRows = { can_edit: true, rows: {
   [courseRow.id]: { display_title: 'Associate Degree in Business', duration_value: 2, duration_unit: 'years', delivery_mode: null, official_url: 'https://www.rmit.edu.au/study-with-us/levels-of-study/vocational-study/associate-degrees/associate-degree-in-business-ad021', locks: { display_title: 'value' } },
-  c2: { display_title: 'Bachelor of Business (Accountancy)', duration_value: null, duration_unit: null, delivery_mode: 'On campus', official_url: null, locks: {} } } }
+  c2: { display_title: 'Bachelor of Business (Accountancy)', duration_value: null, duration_unit: null, delivery_mode: 'On campus', official_url: null, locks: {},
+    tuition: { amount: 60952, fee_year: 2027, basis: 'indicative_annual', currency: 'AUD' },
+    intakes: [{ label: 'Semester 1', year: 2027, start_date: '2027-02-22' }, { label: 'Semester 2', year: 2027, start_date: '2027-07-26' }],
+    english: [{ test: 'IELTS', overall: 6.5, components: { reading: 6, writing: 6 } }, { test: 'PTE', overall: 64, components: { minimum_each: 60 } }] } },
+  english_tests: [{ code: 'CAE', name: 'Cambridge C1 Advanced' }, { code: 'IELTS', name: 'IELTS Academic' }, { code: 'PTE', name: 'PTE Academic' }, { code: 'TOEFL_IBT', name: 'TOEFL iBT' }] }
 
 // v2.15.121 Reference sources and Key dates.
 const refUses = [{ key: 'reference', label: 'Reference link', help: 'Shown to staff.' }, { key: 'data_source', label: 'Data source', help: 'Read by the platform.' }, { key: 'not_provider_site', label: 'Never a university website', help: 'Skipped.' }, { key: 'not_course_page', label: 'Never a course page', help: 'Refused.' }, { key: 'scholarship_placeholder', label: 'Scholarship placeholder', help: 'Needs a university page.' }, { key: 'logo_directory', label: 'Logo directory', help: 'Logos only.' }, { key: 'ranking_publisher', label: 'Ranking publisher', help: 'Default address.' }]
@@ -345,3 +349,10 @@ export const l4Batches = { can_apply: true, groups: [{ key: 'g1', task: 'Intakes
 export const l4MassSummary = { role_rank: 6, mass_mutation_allowed: true, open_findings: 0, scholarship_scope_pending: 37200, generic_review_pending: 1803 }
 export const l4Departures = [{ id: 'dp1', provider_name: 'Example Institute', country_code: 'AU', status: 'pending', detected_at: '2026-09-20T00:00:00Z' }]
 export const l4History = [{ id: 'h1', target_kind: 'course_tuition', action: 'fee_wording_rule_run', reason: 'Fee wording rule #1: UNSW Sydney', created_at: '2026-09-30T23:48:26Z', before_count: 214, affected_count: 214 }]
+
+// Campus and scholarship edit in list (v2.15.130).
+export const campusesPage = { total: 2, items: [{ id: 'cp1', name: 'RMIT City', provider_name: 'RMIT University', campus_code: '00122A', city: 'Melbourne' }, { id: 'cp2', name: 'RMIT Brunswick', provider_name: 'RMIT University', campus_code: '00122B', city: 'Brunswick' }] }
+export const campusEditRows = { can_edit: true, rows: { cp1: { name: 'RMIT City', address_line1: '124 La Trobe Street', city: 'Melbourne', postcode: '3000', phone: null, website: null, locks: {} }, cp2: { name: 'RMIT Brunswick', address_line1: null, city: 'Brunswick', postcode: '3056', phone: null, website: null, locks: { city: 'value' } } } }
+export const scholarshipEditRows = { can_edit: true, rows: {
+  '5f92fc8c-ad2b-5182-a3b7-2e9bba5b3d99': { name: 'RMIT Irana Turynska Scholarship', award_value_text: 'AUD $10,000 annually', award_amount: 10000, award_percentage: null, application_close_date: '2026-11-30', source_url: 'https://www.rmit.edu.au/scholarships/irana', locks: {} },
+  s2: { name: 'RMIT David Phillips Memorial Scholarship', award_value_text: 'AUD $5,000 annually', award_amount: null, award_percentage: null, application_close_date: null, source_url: null, locks: { award_amount: 'value' } } } }

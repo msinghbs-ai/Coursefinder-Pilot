@@ -1,17 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.129'
-export const PACKAGE_VERSION='0.1.56'
+export const UI_VERSION='2.15.130'
+export const PACKAGE_VERSION='0.1.57'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Layer 4 review queue easier to use',
+  title:'Edit in list for more values',
   changes:[
-    'Layer 4 Review queue: four even status tiles, clearer filters (All tasks, Everyone, Mine, Unassigned) and smaller controls. Items you are reviewing show Yours; items another person has open show With someone else.',
-    'Batches is now Bulk decisions. Below the groups: provider departures, errors and improvements, and the decision history (renamed from Mass audit).',
-    'Scholarship scope cohorts and reusable scope rules are no longer on Layer 4: which courses a scholarship applies to is decided on Scholarships › Course links, linked from here. The older generic cohorts are covered by the Bulk decisions groups.'
+    'Courses › Edit in list now also edits tuition (amount, per year, semester, trimester or whole course, and year), intakes (for example February 2027, July 2027) and English (for example IELTS 6.5, PTE 58). Start dates and sub-scores already held are kept; unknown tests and wrong formats are explained in the row.',
+    'Campuses and Scholarships have Edit in list: campus name, address, city, postcode, phone and website; scholarship name, award as written, amount, % of fees, closing date (dd/mm/yyyy) and page. A value entered by hand is never overwritten by automation.',
+    'The course panel is shorter: corrections, additional information, regulatory facts and operational state start collapsed, and the wording is plain.',
+    'Scholarships: the list page is the list only. Fill links from clear scopes and Course decision support moved to Course links. Type and audience show plain labels.'
   ],
   bugFixes:[]
 }
