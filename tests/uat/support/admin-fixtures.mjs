@@ -169,13 +169,14 @@ export const requeue = {
 // Scholarship publishing (shape of public.admin_scholarship_publishing_read)
 export const scholarshipPublishing = {
   can_control: true,
-  counts: { published: 124, eligible: 2, held: 1, active: 631 },
+  counts: { published: 124, eligible: 2, held: 1, active: 631, domestic_only: 1 },
   not_publishable_reasons: { 'no stated award value': 375, 'no provider page': 111, 'no linked course': 71 },
   eligible: [
     { id: 'e1', name: 'Doherty Supplementary Scholarship', provider: 'Australian National University', value: 'A$7,000', page: 'https://jcsmr.anu.edu.au/study/scholarships/doherty-supplementary-scholarship', courses: 290 },
     { id: 'e2', name: 'Global Excellence Scholarship', provider: 'Example University', value: '25% of tuition', page: null, courses: 40 },
   ],
   held: [{ id: 'h1', name: 'Held Scholarship', provider: 'Example University', reason: 'Value on page is for domestic students', at: now }],
+  domestic_only: [{ id: 'd1', name: 'Women in STEM Scholarship', provider: 'Example University', page: 'https://example.edu/women-in-stem', published: true, words: 'be an Australian citizen, an Australian permanent resident or a permanent humanitarian visa holder' }],
   published: [{ id: 'p1', name: 'RMIT Irana Turynska Scholarship', provider: 'RMIT University', page: 'https://www.rmit.edu.au/scholarships/coursework/irana-turynska' }],
   events: [],
 }
