@@ -335,3 +335,13 @@ export const layer2Overview = {
 export const layer2Parents = [{ parent_run_id: 'f120fb4b-ec69-4f2c-8147-550a338c6f3d', status: 'cancelled', scope_type: 'university', country_code: 'AU', total_items: 263, processed_items: 0, resolved_l2: 0, escalated_l3: 25, blocked: 0, child_jobs: 25, evidence_count: 75, completed_items: 0, rescheduled_items: 0, failed_items: 0, recorded_failed_items: 0, scheduled_remainder: 263, updated_at: '2026-09-26T06:52:50Z' }]
 export const layer2SyncOptions = { countries: [{ code: 'AU', name: 'Australia', providers: 186, courses: 26103 }, { code: 'NZ', name: 'New Zealand', providers: 34, courses: 4210 }] }
 export const layer2SyncPreview = { university_count: 186, catalogue_count: 26103, qualified_provider_count: 41, qualification_required_count: 145, queueable_count: 12, production_accepted_wave_size: 50, execution_policy: { qualification_provider_wave_size: 5, qualification_sample_size: 3, production_target_wave_size: 50 }, firecrawl_budget: { used_units: 1124, limit_units: 100000 }, firecrawl: { usable_remaining_units: 88876, reserve_units: 10000 } }
+
+// Layer 4 review (v2.15.129).
+export const l4Desk = { summary: { waiting: 1803, oldest_days: 11, by_task: { Intakes: 866, Tuition: 712, 'English requirements': 225 } }, items: [
+  { id: 'q1', status: 'pending', task: 'Intakes', age_days: 11, entity: { title: 'Bachelor of Nursing', code: '012345A', provider: 'RMIT University' }, suggestion: { action: 'reject', text: 'No intake dates on the page' }, claim_active: true, claimed_by_me: true },
+  { id: 'q2', status: 'pending', task: 'Tuition', age_days: 3, entity: { title: 'Master of Data Science', code: '098765B', provider: 'Monash University' }, suggestion: { action: 'approve', text: 'Page shows a yearly fee' }, claim_active: true, claimed_by_me: false },
+] }
+export const l4Batches = { can_apply: true, groups: [{ key: 'g1', task: 'Intakes', action: 'reject', text: 'No intake dates on the page', count: 120, oldest_days: 11, can_approve: false, item_ids: ['q1'], samples: [{ id: 'q1', title: 'Bachelor of Nursing' }] }] }
+export const l4MassSummary = { role_rank: 6, mass_mutation_allowed: true, open_findings: 0, scholarship_scope_pending: 37200, generic_review_pending: 1803 }
+export const l4Departures = [{ id: 'dp1', provider_name: 'Example Institute', country_code: 'AU', status: 'pending', detected_at: '2026-09-20T00:00:00Z' }]
+export const l4History = [{ id: 'h1', target_kind: 'course_tuition', action: 'fee_wording_rule_run', reason: 'Fee wording rule #1: UNSW Sydney', created_at: '2026-09-30T23:48:26Z', before_count: 214, affected_count: 214 }]

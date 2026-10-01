@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.128'
-export const PACKAGE_VERSION='0.1.55'
+export const UI_VERSION='2.15.129'
+export const PACKAGE_VERSION='0.1.56'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Layer 2 split into tabs',
+  title:'Layer 4 review queue easier to use',
   changes:[
-    'Layer 2 Discovery & reading now has four tabs: Overview (coverage, where work stops, fetchers, by hour, what is not ready and recently accepted facts), Fetch an area, History (progress, runs, recent page fetches and the execution trace) and Source profiles.',
-    'The by-hour table shows 9 plain columns instead of 25; hover a row for the full breakdown.',
-    'Provider onboarding (checking each provider’s course catalogue page) moved to Fetch an area. Removed duplicates of other screens: acquisition policy (Scrapers & fetchers), the Data Quality and Evidence boxes and an extra row of tiles. Internal wording and change-control references are gone.'
+    'Layer 4 Review queue: four even status tiles, clearer filters (All tasks, Everyone, Mine, Unassigned) and smaller controls. Items you are reviewing show Yours; items another person has open show With someone else.',
+    'Batches is now Bulk decisions. Below the groups: provider departures, errors and improvements, and the decision history (renamed from Mass audit).',
+    'Scholarship scope cohorts and reusable scope rules are no longer on Layer 4: which courses a scholarship applies to is decided on Scholarships › Course links, linked from here. The older generic cohorts are covered by the Bulk decisions groups.'
   ],
   bugFixes:[]
 }

@@ -312,3 +312,23 @@ td>.l3v-model{display:block}
 .l2o-shell.l2o-embedded .l2o-panel{margin:0}
 .l2o-shell.l2o-embedded .l2o-panel-head h2{font-size:var(--cf-fs-lg)}
 .l2o-shell.l2o-embedded .l2o-active strong{font-size:var(--cf-fs-md)}
+/* Layer 4 review (v2.15.129): even status tiles; bulk decisions section. */
+.l4-status-h{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.l4-status{padding:0;border:0;background:transparent;box-shadow:none}
+.l4b-pointer{margin:14px 0 4px}
+.cf-l4mass-compact{margin-top:6px}
+.l4d-chip.mine{background:var(--cf-indigo-50);color:var(--cf-indigo-700)}
+.l4d .l4d-view button{font-size:var(--cf-fs-sm);padding:6px 12px;min-height:0}
+.l4d .l4d-filters select{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:5px 8px;font:inherit;font-size:var(--cf-fs-sm);background:var(--cf-surface);min-width:200px}
+.l4d .l4d-filters label{font-size:var(--cf-fs-xs);color:var(--cf-text-2);display:grid;gap:2px}
+.l4d .l4d-chips button{font-size:var(--cf-fs-sm);padding:4px 10px}
+.l4d .l4d-actions button{font-size:var(--cf-fs-sm);padding:7px 14px}
+.l4d input:not([type=checkbox]){border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;font:inherit;font-size:var(--cf-fs-sm)}
+.l4d .l4d-suggest,.l4d [class*=suggest] strong{font-size:var(--cf-fs-md)}
+.cf-l4mass-compact{border:0;padding:0;background:transparent;box-shadow:none}
+.cf-l4mass-compact .cf-l4mass-tabs button{font-size:var(--cf-fs-sm);padding:5px 12px}
+.cf-l4mass-compact .cf-l4mass-body,.cf-l4mass-compact article{font-size:var(--cf-fs-sm)}
+.cf-l4mass-compact article strong{font-size:var(--cf-fs-md)}
+.cf-l4mass-compact select{font-size:var(--cf-fs-sm)}
+.l4b .l4b-group{font-size:var(--cf-fs-sm)}.l4b .l4b-group strong{font-size:var(--cf-fs-md)}
+.l4b .l4b-group button{font-size:var(--cf-fs-sm);padding:5px 12px}

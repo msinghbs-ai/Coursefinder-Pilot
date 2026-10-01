@@ -12,7 +12,7 @@ test('CF-205 Layer 4 mass operations is loaded and release current',async()=>{
  assert.match(entry,/Layer 4 mass operations/)
  assert.match(entry,/Scholarship scope/)
  assert.match(entry,/Errors & improvements/)
- assert.match(entry,/Mass audit/)
+ assert.match(entry,/Decision history/) // v2.15.129: renamed from Mass audit
  assert.match(entry,/layer4_scholarship_scope_preview/)
  assert.match(entry,/layer4_scholarship_scope_bulk_decide/)
  assert.match(entry,/layer4_review_bulk_decide/)
