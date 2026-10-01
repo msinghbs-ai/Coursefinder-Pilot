@@ -1,18 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.136'
-export const PACKAGE_VERSION='0.1.63'
+export const UI_VERSION='2.15.137'
+export const PACKAGE_VERSION='0.1.64'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Platform guide',
+  title:'Fee schedules settle flagged fees',
   changes:[
-    'New Help › Platform guide: how the platform works, who does what, the daily routine, every screen (with a button to open it), signal → action, Platform Admin duties, alert emails, and what changed in this release.',
-    'The guide is reviewed with every release: a release cannot pass its checks until the guide is marked reviewed for that version and every menu page has a guide entry.'
+    'An approved fee schedule now settles flagged fees it answers: the same fee, or a per-year fee close to it, is confirmed without a person.',
+    'Layer 4 › Flagged values shows the approved schedule\'s fee beside a flagged fee, with Use schedule fee.',
+    'Approving a fee schedule also settles the flags it answers.',
+    'Fee documents of universities with flagged fees are read first.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    '30 flagged fees (Charles Sturt University 25, University of the Sunshine Coast 5) were settled by their approved fee schedules and no longer ask a person.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

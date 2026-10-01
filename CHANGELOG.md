@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.64 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.137** (fee schedules settle flagged fees).
+- Migration 20261001180200 (fee schedule settles flagged fees) applied live; stored md5 matches the file.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.63 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.136** (Platform guide in the menu).
