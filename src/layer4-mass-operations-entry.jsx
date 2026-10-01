@@ -41,9 +41,13 @@ function ProviderDepartures({canDecide}){
 }
 
 // v2.15.85: rendered inside the Layer 4 desk (Batches view); no longer inserts itself into the page.
-export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=false}={}){
+export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=false,sections=null}={}){
+ // v2.15.129: Layer 4 › Bulk decisions passes sections=['departures','quality','history'] and shows only those, open,
+ // without the old header and tiles. Scholarship scope cohorts are decided on Scholarships › Course links and the
+ // generic review cohorts are covered by the Bulk decisions groups above it, so neither is shown there.
+ const compact=Array.isArray(sections)
  const[summary,setSummary]=useState({}),[groups,setGroups]=useState([]),[reviewGroups,setReviewGroups]=useState([]),[diagnostics,setDiagnostics]=useState([]),[findings,setFindings]=useState([]),[history,setHistory]=useState([])
- const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(initialQuery||''),[tab,setTab]=useState('scope'),[open,setOpen]=useState(!!startOpen),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[query,setQuery]=useState(initialQuery||''),[tab,setTab]=useState(Array.isArray(sections)?sections[0]:'scope'),[open,setOpen]=useState(!!startOpen||Array.isArray(sections)),[decision,setDecision]=useState(null),[resolve,setResolve]=useState(null)
  const load=async()=>{setBusy(true);setError('');try{const[s,g,r,d,f,h]=await Promise.all([rpc('layer4_mass_summary'),rpc('layer4_scholarship_scope_groups',{p_limit:200}),rpc('layer4_review_groups',{p_limit:200}),rpc('layer4_quality_diagnostics'),rpc('layer4_quality_findings_read',{p_status:'open',p_limit:100}),rpc('layer4_mass_operations_history',{p_limit:50})]);setSummary(s||{});setGroups(Array.isArray(g)?g:[]);setReviewGroups(Array.isArray(r)?r:[]);setDiagnostics(Array.isArray(d)?d:[]);setFindings(Array.isArray(f)?f:[]);setHistory(Array.isArray(h)?h:[])}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  // Package 5 (L4): collapsed -> only the light summary for the cards; the five heavy reads load when batch work is opened.
  useEffect(()=>{if(open)load();else rpc('layer4_mass_summary').then(x=>setSummary(x||{})).catch(e=>setError(e.message||String(e)))},[open])
@@ -54,22 +58,23 @@ export function Layer4MassOperations({embedded=false,initialQuery='',startOpen=f
  const track=async d=>{setBusy(true);setError('');try{await rpc('layer4_quality_finding_upsert',{p_finding_type:d.type,p_domain:'layer4',p_title:d.title,p_detail:`${d.detail} ${d.recommendation||''}`.trim(),p_severity:d.severity,p_group_key:{diagnostic:d.title}});await load()}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  const resolveFinding=async()=>{if(!resolve?.id||!resolve?.note?.trim())return;setBusy(true);setError('');try{await rpc('layer4_quality_finding_resolve',{p_finding_id:resolve.id,p_status:'resolved',p_note:resolve.note});setResolve(null);await load()}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
  const mutationAllowed=Boolean(summary.mass_mutation_allowed)
- return <section className="cf-l4mass" data-cf-layer4-mass-operations>
-  <div className="cf-l4mass-head">
+ return <section className={`cf-l4mass${compact?' cf-l4mass-compact':''}`} data-cf-layer4-mass-operations>
+  {!compact&&<><div className="cf-l4mass-head">
    <div><small>Batch decisions and history</small><h2>Layer 4 mass operations</h2><p>Resolve repeatable review work by governed cohort instead of one record at a time. Every mass decision is previewed, confirmed and audited; Publication remains separate.</p></div>
    <button onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button>
   </div>
-  {error&&<div className="cf-l4mass-error"><AlertTriangle size={14}/>{error}</div>}
   <div className="cf-l4mass-cards">
    <article><strong>{count(summary.scholarship_scope_pending)}</strong><span>Scholarship Course-scope review</span><small>{count(summary.scholarship_scope_groups)} cohort(s)</small></article>
    <article><strong>{count(summary.generic_review_pending)}</strong><span>Generic Layer 4 review</span><small>{count(summary.generic_review_groups)} cohort(s)</small></article>
    <article><strong>{count(summary.missing_evidence+summary.provider_mismatch)}</strong><span>Structural blockers</span><small>{count(summary.missing_evidence)} missing Evidence · {count(summary.provider_mismatch)} provider mismatch</small></article>
    <article><strong>{count(summary.open_findings)}</strong><span>Tracked findings</span><small>Errors, issues and improvements</small></article>
   </div>
+  </>}
+  {error&&<div className="cf-l4mass-error"><AlertTriangle size={14}/>{error}</div>}
   {/* v2.15.84: collapsed by default and placed below the review desk, so operators land on the desk. */}
   {!open?<div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(true)}>Open batch work</button><small>Decide repeat cases together — every batch is previewed, confirmed and audited.</small></div>:<>
-  <div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(false)}>Close batch work</button></div>
-  <div className="cf-l4mass-tabs">{[['scope','Scholarship scope'],['review','Review queue'],['departures','Provider departures'],['quality','Errors & improvements'],['history','Mass audit']].map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>{setTab(k);setDecision(null)}}>{l}</button>)}</div>
+  {!compact&&<div className="cf-l4mass-collapsed"><button onClick={()=>setOpen(false)}>Close batch work</button></div>}
+  <div className="cf-l4mass-tabs" role="tablist" aria-label="More bulk work">{[['scope','Scholarship scope'],['review','Review queue'],['departures','Provider departures'],['quality','Errors & improvements'],['history','Decision history']].filter(([k])=>!compact||sections.includes(k)).map(([k,l])=><button key={k} className={tab===k?'active':''} onClick={()=>{setTab(k);setDecision(null)}}>{l}</button>)}</div>
   {tab==='scope'&&<div className="cf-l4mass-body">
    <div className="cf-l4mass-toolbar"><label><Search size={14}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search university, scholarship, rule or course"/></label><span>{filtered.length} cohort(s) shown</span></div>
    <div className="cf-l4mass-list">{filtered.map(g=><article key={g.group_id} className={g.structural_ready?'':'blocked'}>

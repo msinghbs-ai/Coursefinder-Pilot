@@ -35,6 +35,8 @@ function ScopeRules(){
 
 let node=null,root=null,pending=false
 function mount(){const active=location.hash.includes('layer-4-human-resolution')||location.hash.includes('layer-4-review');// v2.15.107: '#layer-4-review' is the Layer 4 Review address
-if(!active)return;if(node?.isConnected)return;const host=document.querySelector('[data-cf-layer4-mass-operations]');if(!host)return;node=document.createElement('div');node.dataset.cfLayer4RulesMount='true';host.insertAdjacentElement('afterend',node);root=createRoot(node);root.render(<ScopeRules/>)}
+if(!active)return;if(node?.isConnected)return;// v2.15.129: not shown on Layer 4 any more (no rule was ever saved; Scholarships › Course links decides which
+// courses a scholarship applies to). It mounts only beside the full, non-compact mass operations panel.
+const host=document.querySelector('[data-cf-layer4-mass-operations]:not(.cf-l4mass-compact)');if(!host)return;node=document.createElement('div');node.dataset.cfLayer4RulesMount='true';host.insertAdjacentElement('afterend',node);root=createRoot(node);root.render(<ScopeRules/>)}
 function schedule(){if(pending)return;pending=true;setTimeout(()=>{pending=false;mount()},60)}
 new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});addEventListener('hashchange',schedule);if(document.readyState==='loading')addEventListener('DOMContentLoaded',schedule,{once:true});else schedule()

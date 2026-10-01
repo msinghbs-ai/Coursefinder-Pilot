@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState}from'react'
-import{StatusChip,Empty}from'./ui-kit'
+import{StatusChip,Empty,Metric}from'./ui-kit'
 import{createRoot}from'react-dom/client'
 import{BrainCircuit,CalendarClock,Check,ExternalLink,FileCheck2,KeyRound,Link2,RefreshCw,Route,ShieldCheck,X}from'lucide-react'
 import{supabase,api}from'./lib/supabase'
@@ -132,19 +132,20 @@ export function Layer4({onError}){
  const chip=a=>a==='reject'?'Suggest reject':a==='approve'?'Suggest approve':a==='return_layer3'?'Suggest send back':'Check'
  return <div className="m23-stack">
    <LayerWorkspaceHeader layer="4" eyebrow="Layer 4 · governed human resolution" title="Layer 4 — Human Resolution" subtitle="Decide the items automation could not settle. Each decision is recorded with its reason and can be reversed." onRefresh={()=>load(selectedId)} busy={busy}/>
-   <section className="m23-panel"><Head icon={ShieldCheck} title="Layer 4 status"/><div className="m23-cards">
-     <article><strong>{fmtNumber(data.summary?.waiting||0)}</strong><span>Waiting for review</span><small>{tasks.map(([t,n])=>`${t} ${n}`).join(' · ')||'—'}</small></article>
-     <article className={Number(data.summary?.oldest_days||0)>target?'l4d-late':''}><strong>{data.summary?.oldest_days??'—'} days</strong><span>Oldest item</span><small>Target: nothing waits more than {target} days.</small></article>
-     <article><strong>{suggestedCount('reject')}</strong><span>Suggested reject</span><small>The reason is shown on each item.</small></article>
-     <article><strong>{suggestedCount('approve')}</strong><span>Suggested approve</span><small>Page shows the amount as a yearly fee.</small></article>
+   {/* v2.15.129: four even tiles in the compact style. */}
+   <section className="m-panel l4-status"><h2 className="l4-status-h">Layer 4 status</h2><div className="cf-metric-grid">
+     <Metric label="Waiting for review" value={Number(data.summary?.waiting||0)} detail={tasks.map(([t,n])=>`${t} ${fmtNumber(n)}`).join(' · ')||'—'}/>
+     <Metric label="Oldest item" value={`${data.summary?.oldest_days??'—'} days`} detail={`Target: nothing waits more than ${target} days`} tone={Number(data.summary?.oldest_days||0)>target?'warning':'neutral'}/>
+     <Metric label="Suggested reject" value={suggestedCount('reject')} detail="The reason is shown on each item"/>
+     <Metric label="Suggested approve" value={suggestedCount('approve')} detail="Page shows the amount as a yearly fee"/>
    </div></section>
    <section className="m23-panel l4d"><Head icon={ShieldCheck} title="Human resolution queue"/>
      <div className="l4d-filters">
        <label>Status<select value={status} onChange={e=>rememberFilters({status:e.target.value})}>{[['pending','Waiting for review'],['approved','Approved'],['edited_approved','Edited & approved'],['rejected','Rejected'],['more_evidence','More evidence requested'],['returned_layer2','Sent back to Layer 2'],['returned_layer3','Sent back to Layer 3'],['','All statuses']].map(([v,l])=><option key={v||'all'} value={v}>{l}</option>)}</select></label>
-       <div className="l4d-chips">{[['',status==='pending'?`All (${fmtNumber(data.summary?.waiting||0)})`:'All'],...tasks.map(([t,n])=>[t,status==='pending'?`${t} (${fmtNumber(n)})`:t])].map(([v,l])=><button key={v||'all'} type="button" className={task===v?'on':''} onClick={()=>rememberFilters({task:v})}>{l}</button>)}</div>
+       <div className="l4d-chips">{[['',status==='pending'?`All tasks (${fmtNumber(data.summary?.waiting||0)})`:'All tasks'],...tasks.map(([t,n])=>[t,status==='pending'?`${t} (${fmtNumber(n)})`:t])].map(([v,l])=><button key={v||'all'} type="button" className={task===v?'on':''} onClick={()=>rememberFilters({task:v})}>{l}</button>)}</div>
        {(status!=='pending'||task)&&<button type="button" className="m23-clear" onClick={clearFilters}>Reset filters</button>}
-       {view==='review'&&<div className="l4d-chips">{[['all','All'],['mine','Mine'],['unassigned','Unassigned']].map(([v,l])=><button key={v} type="button" className={who===v?'on':''} onClick={()=>rememberFilters({who:v})}>{l}</button>)}</div>}
-       <div className="l4d-view">{[['review','Review one by one'],['batches','Batches'],['team','Team and forecast']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>rememberFilters({view:v})}>{l}</button>)}</div>
+       {view==='review'&&<div className="l4d-chips">{[['all','Everyone'],['mine','Mine'],['unassigned','Unassigned']].map(([v,l])=><button key={v} type="button" className={who===v?'on':''} onClick={()=>rememberFilters({who:v})}>{l}</button>)}</div>}
+       <div className="l4d-view">{[['review','Review one by one'],['batches','Bulk decisions'],['team','Team and forecast']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>rememberFilters({view:v})}>{l}</button>)}</div>
      </div>
      {view==='team'?<div className="l4t">
        {!team?<Empty text="Loading…"/>:<>
@@ -182,13 +183,14 @@ export function Layer4({onError}){
          <small>Oldest {g.oldest_days} days · e.g. {(g.samples||[]).slice(0,3).map(x=>x.title).join('; ')}</small>
          <div><button onClick={()=>openPreview(g)}>Preview batch</button></div>
        </article>)}{(batches.groups||[]).length===0&&<Empty text="No repeat cases to batch right now."/>}</div>}
-       <h3 className="l4b-sub">Scholarship scope batches and audit history</h3>
-       <Layer4MassOperations key={scopeQuery||'all'} embedded initialQuery={scopeQuery} startOpen={!!scopeQuery}/>
+       <p className="l4b-note l4b-pointer">Which courses a scholarship applies to is decided on <a href="#scholarships?tab=links">Scholarships › Course links</a>.</p>
+       <h3 className="l4b-sub">Provider departures, findings and decision history</h3>
+       <Layer4MassOperations embedded sections={['departures','quality','history']}/>
      </div>:items.length===0?<Empty text="Nothing waiting here. Try another status or task."/>:<div className="l4d-grid">
        <ol className="l4d-queue">{items.map(r=><li key={r.id} className={r.id===selectedId?'on':''} onClick={()=>setSelectedId(r.id)}>
          <strong>{title(r)}</strong>
          <span>{[r.entity?.code,r.task].filter(Boolean).join(' · ')}</span>
-         <span className="l4d-meta"><em className={`l4d-chip ${r.suggestion?.action||'check'}`}>{chip(r.suggestion?.action)}</em>{r.claim_active&&!r.claimed_by_me&&<em className="l4d-chip taken">In review</em>}<b className={r.age_days>target?'late':''}>{r.age_days} d</b></span>
+         <span className="l4d-meta"><em className={`l4d-chip ${r.suggestion?.action||'check'}`}>{chip(r.suggestion?.action)}</em>{r.claim_active&&!r.claimed_by_me&&<em className="l4d-chip taken">With someone else</em>}{r.claim_active&&r.claimed_by_me&&<em className="l4d-chip mine">Yours</em>}<b className={r.age_days>target?'late':''}>{r.age_days} d</b></span>
        </li>)}</ol>
        {current&&<article className="l4d-panel">
          <header><h3>{title(current)}{current.entity?.code&&<small> · {current.entity.code}</small>}</h3><p>{[current.entity?.provider,current.task,`${current.age_days} days waiting`].filter(Boolean).join(' · ')}</p></header>
