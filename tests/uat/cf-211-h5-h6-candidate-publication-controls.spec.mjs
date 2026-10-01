@@ -29,7 +29,7 @@ test('CF-211 H5 operator workspace states candidate boundary clearly and resolve
 test('CF-211 H5 is exposed from the existing canonical Layer 4 detail surface',async()=>{
  const src=await read('src/Layer4Intervention.jsx')
  assert.match(src,/ManualPimCandidateWorkspace/)
- assert.match(src,/Source-backed PIM candidate workflow/)
+ assert.match(src,/Suggest a new record from a source/) // v2.15.130 plain wording
  assert.match(src,/Open candidate workspace/)
  assert.match(src,/initialEntityType=\{type\}/)
  assert.match(src,/initialProviderId=\{providerContext\}/)
@@ -66,9 +66,9 @@ test('CF-211 detail publication control uses target-scoped preview execute rollb
  const src=await read('src/Layer4Intervention.jsx')
  assert.match(src,/publication_control_preview/)
  assert.match(src,/publication_control_execute/)
- assert.match(src,/Search \/ API/)
+ assert.match(src,/Search and API/) // v2.15.130 plain wording
  assert.match(src,/Website/)
  assert.match(src,/Zoho/)
  assert.match(src,/Preview & rollback/)
- assert.match(src,/Automatic publication is disabled/)
+ assert.match(src,/Nothing is published automatically/)
 })

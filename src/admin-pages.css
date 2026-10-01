@@ -332,3 +332,7 @@ td>.l3v-model{display:block}
 .cf-l4mass-compact select{font-size:var(--cf-fs-sm)}
 .l4b .l4b-group{font-size:var(--cf-fs-sm)}.l4b .l4b-group strong{font-size:var(--cf-fs-md)}
 .l4b .l4b-group button{font-size:var(--cf-fs-sm);padding:5px 12px}
+.le-tuition input{width:90px}.le-tuition .le-year{width:60px}.le-tuition select{width:auto}
+.le-table th:first-child,.le-table td:first-child{position:sticky;left:0;z-index:1;background:var(--cf-surface);box-shadow:1px 0 0 var(--cf-border)}
+.cf-collapse{border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface);margin:8px 0}.cf-collapse>summary{cursor:pointer;padding:9px 12px;font-weight:600;font-size:var(--cf-fs-sm)}.cf-collapse[open]>summary{border-bottom:1px solid var(--cf-border)}
+.sl-tools .m-filter-select span{font-size:var(--cf-fs-xs);color:var(--cf-text-2);margin-right:6px}.sl-tools .m-filter-bar{margin:6px 0 10px}

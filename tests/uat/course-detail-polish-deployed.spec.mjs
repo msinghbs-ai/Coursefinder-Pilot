@@ -39,6 +39,7 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.x standardised oper
       await expect(drawer.getByText(/IELTS Academic/i)).toBeVisible()
       await expect(drawer.getByText(/Overall score 6/i)).toBeVisible()
       await expect(drawer.getByRole('heading',{name:'Locations',exact:true})).toBeVisible()
+      await drawer.locator('details.cf-collapse > summary',{hasText:'Operational state'}).first().click() // v2.15.130: collapsed by default
       await expect(drawer.getByRole('heading',{name:'Operational state',exact:true})).toBeVisible()
       await milestoneScreenshot(page,testInfo,'course-drawer-v2-15-standardised')
       const contextual=drawer.getByRole('button',{name:'Evidence',exact:true}).first()
@@ -71,6 +72,7 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.x standardised oper
       await expect(drawer.getByRole('heading',{name:'Categories',exact:true})).toHaveCount(0)
       await expect(drawer.getByRole('heading',{name:'Collections',exact:true})).toHaveCount(0)
       await expect(drawer.getByRole('heading',{name:'Locations',exact:true})).toBeVisible()
+      await drawer.locator('details.cf-collapse > summary',{hasText:'Operational state'}).first().click() // v2.15.130: collapsed by default
       await expect(drawer.getByRole('heading',{name:'Operational state',exact:true})).toBeVisible()
       await milestoneScreenshot(page,testInfo,'science-honours-v2-15-required-gaps-only')
     }finally{await finish(testInfo,runtime)}

@@ -9,7 +9,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     context, dashboard: F.dashboard, layer_status_summary: F.layerStatus, platform_health: F.platformHealth,
     course_coverage: F.courseCoverage, data_quality_overview: F.dataQualityOverview,
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
-    layer3_queue_status: F.layer3Queue, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_profiles: F.layer2Profiles, layer2_profile_detail: F.layer2ProfileDetail, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [{ id: 'rt1', provider_id: 'pv1', display_name: 'Direct HTTP', adapter_type: 'direct_http', priority: 10, enabled: true }],
+    layer3_queue_status: F.layer3Queue, campuses_page: F.campusesPage, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_profiles: F.layer2Profiles, layer2_profile_detail: F.layer2ProfileDetail, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [{ id: 'rt1', provider_id: 'pv1', display_name: 'Direct HTTP', adapter_type: 'direct_http', priority: 10, enabled: true }],
   }
   const calls = []; page.l3calls = calls
   const rpc = {
@@ -41,7 +41,9 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_fee_rule_control: b => { calls.push(b); return { ...F.feeRules, result: b.p_action === 'approve' ? { admitted: 214, ambiguous: 0, already_had_fee: 0, entered_by_hand: 0 } : null } },
     admin_services_read: F.services,
     admin_services_control: b => { calls.push(b); const off = b.p_kind === 'model' && !b.p_enabled; return { ...F.services, models: F.services.models.map(m => m.id === b.p_id ? { ...m, enabled: b.p_enabled, steps: m.steps.map(x => ({ ...x, active: off ? false : x.active })) } : m), services: F.services.services.map(x => x.id === b.p_id ? { ...x, enabled: b.p_enabled } : x), steps_switched_off: off ? 2 : 0 } },
-    admin_catalogue_edit_rows: b => { calls.push({ editRows: b }); return b.p_type === 'course' ? F.courseEditRows : { can_edit: true, rows: {} } },
+    admin_catalogue_edit_rows: b => { calls.push({ editRows: b }); return b.p_type === 'course' ? F.courseEditRows : b.p_type === 'scholarship' ? F.scholarshipEditRows : b.p_type === 'campus' ? F.campusEditRows : { can_edit: true, rows: {} } },
+    admin_scholarship_edit: b => { calls.push(b); return {} },
+    admin_campus_edit: b => { calls.push(b); return {} },
     admin_reference_sources_read: F.referenceSources,
     admin_reference_source_save: b => { calls.push({ refSave: b }); return { ...F.referenceSources, items: F.referenceSources.items.map(x => x.id === b.p_id ? { ...x, ...(b.p_fields.uses ? { uses: b.p_fields.uses } : {}), ...(b.p_fields.name ? { name: b.p_fields.name } : {}), ...('enabled' in b.p_fields ? { enabled: b.p_fields.enabled } : {}) } : x), saved: b.p_id || 'r-new' } },
     admin_reference_source_action: b => { calls.push({ refAction: b }); return { ...F.referenceSources, items: F.referenceSources.items.map(x => x.id === b.p_id ? { ...x, checking: b.p_action === 'check', retired: b.p_action === 'retire' } : x) } },
