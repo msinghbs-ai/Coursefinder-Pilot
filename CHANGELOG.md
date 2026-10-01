@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.61 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.134** (fee schedules for approval; Layer 3 claim fixes).
+- Migrations 20261001179000 (Layer 3 stale claim), 179100 (Layer 3 claim speed) and 179200 (fee schedule proposals) applied live; stored md5 matches each file.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.60 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.133** (course links of every kind, who can apply, link refresh schedules, country admission rules).

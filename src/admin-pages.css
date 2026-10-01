@@ -409,3 +409,10 @@ td>.l3v-model{display:block}
 .cl-empty{color:var(--cf-text-2);font-size:var(--cf-fs-sm);margin:0}
 .lr-panel .cf-table td{vertical-align:top}.lr-sub{margin:14px 0 6px;font-size:var(--cf-fs-sm)}
 @media (max-width:640px){.cl-link{grid-template-columns:1fr}.cl-link .re-actions{grid-row:auto;grid-column:1}}
+/* Coverage › Attributes › Fee schedules (Decision 205) */
+.fs-panel .cf-table td{vertical-align:top}
+.fs-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:0 0 12px}
+.fs-totals div{border:1px solid var(--cf-border);border-radius:8px;padding:8px 10px}
+.fs-totals dt{font-size:var(--cf-fs-xs);color:var(--cf-muted)}.fs-totals dd{margin:2px 0 0;font-weight:600}
+.fs-open{background:none;border:0;padding:0;margin-right:6px;cursor:pointer;font:inherit;text-align:left}
+.fs-detail>td{background:var(--cf-surface-2)}

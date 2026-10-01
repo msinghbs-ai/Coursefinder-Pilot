@@ -58,6 +58,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_provider_applicants_edit: b => { calls.push({ providerApplicants: b }); return {} },
     admin_link_refresh_read: { ...F.linkRefresh, can_edit: rank >= 4 },
     admin_link_refresh_edit: b => { calls.push({ linkRefresh: b }); return F.linkRefresh },
+    admin_provider_fee_schedules_read: b => b?.p_source_id ? { ...F.feeScheduleRows, can_decide: rank >= 6 } : { ...F.feeSchedules, can_decide: rank >= 6 },
+    admin_provider_fee_schedule_decide: b => { calls.push({ feeDecide: b }); return { decision: b.p_action === 'approve' ? 'approved' : 'rejected', written: 131 } },
     statistics_dataset_registry_read: F.statDatasets,
     statistics_dataset_registry_write: b => { calls.push({ datasetWrite: b }); return null },
     layer4_review_desk_v1: F.l4Desk,

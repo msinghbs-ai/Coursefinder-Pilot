@@ -1,23 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.133'
-export const PACKAGE_VERSION='0.1.60'
+export const UI_VERSION='2.15.134'
+export const PACKAGE_VERSION='0.1.61'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Course links, who can apply and link refresh',
+  title:'Fee schedules for approval and faster Layer 3 claims',
   changes:[
-    'Course editor: other course links (handbook, international page, how to apply, admission centre, regulator listing) can be added, changed and removed; a link set by hand is left alone by automation until handed back.',
-    'Course editor: who can apply (international and domestic students); an English requirement is expected only where international students can apply.',
-    'Provider editor: enrols international students, applied to its courses that nobody set by hand.',
-    'Courses: new filter International students (open to international, domestic only, open to both, not yet known).',
-    'Coverage › Courses: Link refresh schedules by country, provider and link type, and the portals that supply course links.',
-    'Tuition entered by hand starts in the course country currency.'
+    'Coverage › Attributes now has a Fee schedules panel: each university international fee schedule is found, read and matched to its courses by CRICOS code, and a Platform Admin approves each one.',
+    'Approving a fee schedule adds a fee only to courses that have none; courses with a different fee on record are listed, not changed.',
+    'The reader now follows fee schedule documents (usually PDFs) linked from a university fee page, and keeps schedules that continue across page breaks.'
   ],
   bugFixes:[
-    'The Layer 2 dispatcher contract still expected wording replaced in v2.15.131.'
+    'English and intake checks by the AI step no longer stall for up to 45 minutes after a lost call.',
+    'The English and intake claim is about 15 times faster, so it no longer runs out of time.'
   ]
 }
 
