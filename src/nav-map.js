@@ -56,7 +56,7 @@ export const PAGES = {
     { key: 'review', label: 'Review queue', min: 3 },
     { key: 'flags', label: 'Flagged values', min: 3 },
     { key: 'sendback', label: 'Send back to AI', min: 3 },
-    { key: 'rules', label: 'Batch rules', min: 3 },
+    { key: 'rules', label: 'Fee rules', min: 3 },
     { key: 'blocks', label: 'Blocks', min: 5 },
   ] },
 

@@ -28,7 +28,7 @@ export default function FeeRules({onError}){
       <Metric label="Wordings found" value={fmtNumber(sug.filter(s=>!s.has_rule).length)} detail="Repeated on 10 or more pages with no fee yet" icon={Sparkles}/>
     </div>
     <section className="m-panel">
-      <SectionTitle icon={Scale} title="Batch rules: fee wording" subtitle="When a university words its international fee the same way on every course page, one rule settles all of them. Preview first, then approve. Values entered by hand are never changed." action={<div className="l3c-actions">
+      <SectionTitle icon={Scale} title="Fee rules" subtitle="When a university words its international fee the same way on every course page, one rule settles all of them. Preview first, then approve. Values entered by hand are never changed." action={<div className="l3c-actions">
         {data.can_create&&<Button compact variant="primary" onClick={()=>setDraft({provider_id:'',provider:'',phrase:'',basis:'annual'})}><Plus size={14}/>New rule</Button>}
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button></div>}/>
       {!data.can_create&&<p className="l3v-note">You can view these. A Pipeline Operator or above can prepare a rule; a PIM Operator or above approves it.</p>}
@@ -39,7 +39,7 @@ export default function FeeRules({onError}){
     <section className="m-panel">
       <SectionTitle title="Rules" subtitle={rules.length?`${rules.length} rule${rules.length===1?'':'s'}`:'No rules yet.'}/>
       {rules.length>0&&<div className="cf-table-wrap"><table className="cf-table fr-rules"><thead><tr><th>University</th><th>Words before the fee</th><th>Period</th><th>Status</th><th className="num">Admitted</th><th>Change</th></tr></thead><tbody>
-        {rules.map(r=>{const st=STATUS[r.status]||['neutral',r.status];return <tr key={r.id} data-rule={r.id}>
+        {rules.map(r=>{const st=STATUS[r.status]||['neutral',r.status];return <React.Fragment key={r.id}><tr data-rule={r.id}>
           <td><strong>{r.provider}</strong>{r.note&&<span className="l3v-code">{r.note}</span>}</td>
           <td><q className="fr-phrase">{r.phrase}</q><span className="l3v-code">{[r.created_by&&`Prepared by ${r.created_by}`,fmtDateTime(r.created_at)].filter(Boolean).join(' · ')}</span></td>
           <td>{PERIOD[r.basis]||r.basis}</td>
@@ -51,9 +51,10 @@ export default function FeeRules({onError}){
             {r.status==='active'&&data.can_approve&&<><Button compact onClick={()=>act('run',{id:r.id})} disabled={busy} aria-label={`Run rule ${r.id}`}><Zap size={13}/>Run now</Button><Button compact onClick={()=>act('pause',{id:r.id})} disabled={busy} aria-label={`Pause rule ${r.id}`}><Pause size={13}/>Pause</Button></>}
             {r.status==='paused'&&data.can_approve&&<Button compact onClick={()=>act('resume',{id:r.id})} disabled={busy} aria-label={`Resume rule ${r.id}`}><Play size={13}/>Resume</Button>}
             {r.status==='draft'&&data.can_create&&<Button compact variant="danger" onClick={()=>act('delete',{id:r.id},'Delete this draft rule?')} disabled={busy} aria-label={`Delete rule ${r.id}`}><Trash2 size={13}/></Button>}
-          </div></td></tr>})}
+          </div></td></tr>
+          {preview?.id===r.id&&<tr className="fr-preview-row"><td colSpan={6}><div className="fr-preview-panel" data-preview-rule={r.id}><Preview providerId={r.provider_id} phrase={r.phrase} urlPattern={r.url_pattern} onError={onError}/></div></td></tr>}
+          </React.Fragment>})}
       </tbody></table></div>}
-      {preview&&<div className="fr-preview-panel" data-preview-rule={preview.id}><div className="fr-preview-head"><strong>Preview · {preview.provider}</strong><q className="fr-phrase">{preview.phrase}</q><Button compact onClick={()=>setPreview(null)}>Close</Button></div><Preview providerId={preview.provider_id} phrase={preview.phrase} urlPattern={preview.url_pattern} onError={onError}/></div>}
     </section>
     <section className="m-panel">
       <SectionTitle icon={Sparkles} title="Wordings found on pages with no fee yet" subtitle="The words just before an amount, repeated on many course pages of the same university. Not every wording is a tuition fee: preview before making a rule."/>
@@ -78,7 +79,7 @@ function Preview({providerId,phrase,urlPattern,onError}){
   if(!p)return <Loading label="Checking the saved pages…"/>
   return <div className="fr-preview" data-preview>
     <p><strong>{fmtNumber(p.would_admit||0)} course{Number(p.would_admit)===1?'':'s'} would get a fee.</strong>{p.ambiguous?` ${fmtNumber(p.ambiguous)} skipped: the words appear with more than one amount.`:''}{p.already_had_fee?` ${fmtNumber(p.already_had_fee)} already have a fee and are left as they are.`:''}{p.amount_range?.min!=null?` Amounts from ${fmtMoney(p.amount_range.min,'AUD')} to ${fmtMoney(p.amount_range.max,'AUD')}.`:''}{busy?' Updating…':''}</p>
-    {(p.samples||[]).length>0&&<div className="cf-table-wrap fr-sample-wrap"><table className="cf-table fr-samples"><thead><tr><th>Course</th><th className="num">Fee</th><th>Year</th><th>Words on the page</th></tr></thead><tbody>{p.samples.map(s=><tr key={s.course_id}><td className="fr-trunc" title={s.course}>{s.course}<span className="l3v-code">{s.code}</span></td><td className="num">{fmtMoney(s.amount,'AUD')}{s.has_fee?<span className="l3v-code">has a fee</span>:null}{s.amounts>1?<span className="l3v-code">more than one amount</span>:null}</td><td>{s.fee_year||'—'}</td><td className="fr-trunc" title={s.text}>{s.text}</td></tr>)}</tbody></table></div>}
+    {(p.samples||[]).length>0&&<div className="cf-table-wrap fr-sample-wrap"><table className="cf-table fr-samples"><thead><tr><th>Course</th><th className="num">Fee</th><th>Year</th><th>Words on the page</th></tr></thead><tbody>{p.samples.map(s=><tr key={s.course_id}><td className="fr-trunc" title={s.course}>{s.course}<span className="l3v-code">{s.code}</span></td><td className="num">{fmtMoney(s.amount,'AUD')}{s.has_fee?<span className="l3v-code">has a fee</span>:null}{s.amounts>1?<span className="l3v-code">more than one amount</span>:null}</td><td>{s.fee_year||'—'}</td><td className="fr-quote" title={s.text}><Quote text={s.text} phrase={phrase}/></td></tr>)}</tbody></table></div>}
   </div>
 }
 
@@ -100,4 +101,12 @@ function RuleBuilder({init,busy,onCancel,onSave,onError}){
     <Preview providerId={v.provider_id} phrase={v.phrase} urlPattern={v.url_pattern} onError={onError}/>
     <div className="re-foot"><Button compact variant="primary" onClick={()=>onSave({provider_id:v.provider_id,phrase:v.phrase,basis:v.basis,url_pattern:v.url_pattern||'',note:v.note||'',label:`${v.provider}: ${v.phrase}`})} disabled={busy||!v.provider_id||v.phrase.trim().length<6}><Check size={13}/>Save as draft</Button><Button compact onClick={onCancel} disabled={busy}>Cancel</Button></div>
   </section>
+}
+
+// The words on the page, centred on the rule's wording with the wording highlighted (full text on hover).
+function Quote({text,phrase}){
+  const t=String(text||''),w=String(phrase||'').trim(),i=w?t.toLowerCase().indexOf(w.toLowerCase()):-1
+  if(i<0)return <span className="fr-trunc-inline">{t.length>140?t.slice(0,140)+'…':t}</span>
+  const a=Math.max(0,i-40),b=Math.min(t.length,i+w.length+70)
+  return <span>{a>0?'…':''}{t.slice(a,i)}<mark>{t.slice(i,i+w.length)}</mark>{t.slice(i+w.length,b)}{b<t.length?'…':''}</span>
 }

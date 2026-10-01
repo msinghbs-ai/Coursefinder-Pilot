@@ -145,7 +145,14 @@ const TABBED_NAV={
   'Important Links':['Reference data','Reference sources'],'Administration':['Scrapers & fetchers',''],
 }
 export async function clickPrimaryNav(page,label){
-  if(TABBED_NAV[label]){const[menu,tab]=TABBED_NAV[label];await clickPrimaryNav(page,menu);if(tab)await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT});return}
+  if(TABBED_NAV[label]){const[menu,tab]=TABBED_NAV[label];await clickPrimaryNav(page,menu);if(tab){
+    // v2.15.126: a page whose only visible tab is the one asked for shows no tab bar (ui-kit PageTabs needs 2+),
+    // e.g. Layer 1 Register for a rank-4 operator since Sources moved to Operations; the page already shows it.
+    const bar=page.locator('.cf-page-tabs')
+    await expect(page.locator('h1').filter({hasText:menu}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    if(await bar.count()===0)return
+    await bar.locator('[role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})}
+  return}
   const item=page.locator('button.m-nav-item').filter({hasText:label}).first()
   await expect(item,`Missing accepted primary navigation item: ${label}`).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   if(!(await inViewport(item,page))){

@@ -1,17 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.125'
-export const PACKAGE_VERSION='0.1.52'
+export const UI_VERSION='2.15.126'
+export const PACKAGE_VERSION='0.1.53'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Dashboard shows what is waiting for you',
+  title:'Fee rules, flagged values and Layer 3 easier to read',
   changes:[
-    'The Dashboard opens with Waiting for you: one row per queue that needs a person (review items, flagged values, fee rules to approve, scholarships to link or publish, unreachable reference sites, key dates coming up, failed jobs and automations), with the count, how long the oldest has waited and an Open button to the right tab.',
-    'Only queues you can act on are shown; cleared queues are listed in one line.',
-    'Four tiles remain (providers, courses, scholarships, open reviews), platform health is one line linking to Platform health, and the four layers are small tiles. The repeated pulse and attention panels are gone.'
+    'Fee rules: the preview opens directly under the rule you clicked, and shows the page words around the rule wording with that wording highlighted, instead of a long panel below the table.',
+    'Flagged values: filter by university and search by course; once a university is chosen, Confirm all as per year confirms every listed fee in one go, with progress shown.',
+    'Send back to AI: reasons are shortened (full text on hover) and show how many days ago each item was flagged.',
+    'Layer 3 work that failed now sits on Layer 3 under Control, next to the models doing the work.',
+    'Layer 3 Control: model names are shown in short form (full ID on hover), every task table uses the same column widths, and a task over its daily limit says stopped for today.'
   ],
   bugFixes:[]
 }

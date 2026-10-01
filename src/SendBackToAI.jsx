@@ -15,6 +15,8 @@ import{Button,Empty,Loading,Metric,SectionTitle,fmtDateTime,fmtNumber}from'./ui-
 export const FIELD_LABEL={course_intake:'Intakes',course_english:'English requirements',provider_current_tuition_validation:'Tuition',official_course_url:'Official course page',scope_resolution:'Course scope'}
 const TASK_OF={provider_intake_validation:'course_intake',provider_english_validation:'course_english',provider_current_tuition_validation:'provider_current_tuition_validation'}
 const reasonText=r=>String(r||'').replaceAll('[amount]','a fee').replaceAll('Layer [n]','Layer 2').replaceAll('[n]','a number')
+const shortReason=r=>{const t=reasonText(r);return t.length>90?t.slice(0,88).replace(/\s+\S*$/,'')+'…':t}
+const daysAgo=v=>{if(!v)return'—';const d=Math.floor((Date.now()-new Date(v).getTime())/86400000);return d<=0?'today':d===1?'1 day':`${d} days`}
 
 export default function SendBackToAI({onError}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(''),[done,setDone]=useState(''),[pick,setPick]=useState({})
@@ -38,22 +40,33 @@ export default function SendBackToAI({onError}){
     </section>
     {fields.map(f=>{const gs=groups.filter(g=>g.field===f),n=gs.reduce((s,g)=>s+Number(g.items||0),0),models=(data.models||{})[f]||[],prof=pick[f]||'',to=prof?(models.find(m=>m.profile===prof)?.model||prof):'the cheap-model cascade',args=x=>({field:f,...x,...(prof?{profile:prof}:{})});return <section key={f} className="m-panel sb-field" data-field={f}>
       <SectionTitle title={FIELD_LABEL[f]||f} subtitle={`${fmtNumber(n)} item${n===1?'':'s'} in ${gs.length} group${gs.length===1?'':'s'}`} action={data.can_control&&<div className="l3c-actions">
-        <select className="fv-filter" value={prof} onChange={e=>setPick({...pick,[f]:e.target.value})} aria-label={`Model for ${FIELD_LABEL[f]||f}`}><option value="">Cheap-model cascade</option>{models.map(m=><option key={m.profile} value={m.profile}>{m.model}{m.in_cascade?'':' (only when sent from here)'}{m.cost_per_1000_usd!=null?` — US$${m.cost_per_1000_usd} per 1,000`:''}</option>)}</select>
+        <select className="fv-filter sb-model" value={prof} onChange={e=>setPick({...pick,[f]:e.target.value})} aria-label={`Model for ${FIELD_LABEL[f]||f}`}><option value="">Cheap-model cascade</option>{models.map(m=><option key={m.profile} value={m.profile}>{m.model}{m.in_cascade?'':' (only when sent from here)'}{m.cost_per_1000_usd!=null?` — US$${m.cost_per_1000_usd} per 1,000`:''}</option>)}</select>
         <Button compact variant="primary" onClick={()=>act('send_back',args({}),`Send all ${fmtNumber(n)} ${FIELD_LABEL[f]||f} items back to Layer 3, to ${to}?`,`${FIELD_LABEL[f]||f} sent back`)} disabled={!can}><Undo2 size={14}/>Send all {fmtNumber(n)} back</Button></div>}/>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Reason</th><th className="num">Items</th><th>Oldest</th>{data.can_control&&<th>Action</th>}</tr></thead><tbody>
-        {gs.map((g,i)=><tr key={i}><td>{reasonText(g.reason)}</td><td className="num">{fmtNumber(g.items)}</td><td>{fmtDateTime(g.oldest)}</td>
+        {gs.map((g,i)=><tr key={i}><td className="sb-reason" title={reasonText(g.reason)}>{shortReason(g.reason)}</td><td className="num">{fmtNumber(g.items)}</td><td>{daysAgo(g.oldest)}</td>
           {data.can_control&&<td><Button compact onClick={()=>act('send_back',args({reason:g.reason}),`Send these ${fmtNumber(g.items)} items back to Layer 3, to ${to}?`,'Group sent back')} disabled={!can} aria-label={`Send ${g.items} back`}><Undo2 size={14}/>Send back</Button></td>}</tr>)}
       </tbody></table></div>
     </section>})}
     {!fields.length&&<section className="m-panel"><Empty text="Nothing raised by the AI is waiting for a person."/></section>}
-    <section className="m-panel">
-      <SectionTitle icon={RotateCcw} title="Layer 3 work that failed" subtitle="Intake and English pages that fail are released and retried automatically. Work that stopped without being released can be retried here."/>
-      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th className="num">Failed, not retried</th>{data.can_control&&<th>Action</th>}</tr></thead><tbody>
-        {Object.keys(TASK_OF).map(t=><tr key={t}><td>{FIELD_LABEL[TASK_OF[t]]}</td><td className="num">{fmtNumber(failedWork[t]||0)}</td>
-          {data.can_control&&<td><Button compact onClick={()=>act('retry_failed',{task:t},`Retry failed ${FIELD_LABEL[TASK_OF[t]]} work?`,'Retry')} disabled={!can||!Number(failedWork[t]||0)}><RotateCcw size={14}/>Retry</Button></td>}</tr>)}
-      </tbody></table></div>
-    </section>
     {(data.events||[]).length>0&&<section className="m-panel"><SectionTitle title="Recent changes"/>
       <ul className="l3c-events">{data.events.map((e,i)=><li key={i}><span>{fmtDateTime(e.at)}</span><strong>{e.action==='send_back'?'Sent back to Layer 3':'Retried'}</strong><small>{[FIELD_LABEL[e.target]||FIELD_LABEL[TASK_OF[e.target]]||e.target,e.detail?.moved!=null&&`${fmtNumber(e.detail.moved)} items`].filter(Boolean).join(' · ')}</small></li>)}</ul></section>}
   </>
+}
+
+// v2.15.126 (screen review sb-failed-placement): Layer 3 work that stopped without being released, shown on Layer 3 › Control.
+export function FailedWork({onError}){
+  const[data,setData]=useState(null),[busy,setBusy]=useState(false),[done,setDone]=useState('')
+  const load=async()=>{try{const{data:d,error}=await supabase.rpc('admin_requeue_read');if(error)throw error;setData(d||{})}catch(e){onError?.(e.message||String(e))}}
+  useEffect(()=>{load()},[])
+  const act=async(task)=>{if(!window.confirm(`Retry failed ${FIELD_LABEL[TASK_OF[task]]} work?`))return;setBusy(true);setDone('');try{const{data:d,error}=await supabase.rpc('admin_requeue',{p_action:'retry_failed',p_args:{task}});if(error)throw error;setData(d||{});setDone('Retry started.')}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
+  if(!data)return null
+  const failedWork=data.layer3_failed||{},can=Boolean(data.can_control)&&!busy
+  return <section className="m-panel" data-failed-work>
+      <SectionTitle icon={RotateCcw} title="Layer 3 work that failed" subtitle="Intake and English pages that fail are released and retried automatically. Work that stopped without being released can be retried here."/>
+      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th className="num">Failed, not retried</th>{data.can_control&&<th>Action</th>}</tr></thead><tbody>
+        {Object.keys(TASK_OF).map(t=><tr key={t}><td>{FIELD_LABEL[TASK_OF[t]]}</td><td className="num">{fmtNumber(failedWork[t]||0)}</td>
+          {data.can_control&&<td><Button compact onClick={()=>act(t)} disabled={!can||!Number(failedWork[t]||0)}><RotateCcw size={14}/>Retry</Button></td>}</tr>)}
+      </tbody></table></div>
+    {done&&<p className="sb-done" role="status">{done}</p>}
+  </section>
 }

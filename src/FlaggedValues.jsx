@@ -12,20 +12,30 @@ const BASIS={annual:'Per year',total_indicative:'Whole course'}
 const quoteList=q=>Array.isArray(q)?q:(()=>{try{return JSON.parse(q||'[]')}catch{return[]}})()
 
 export default function FlaggedValues({onError}){
-  const[data,setData]=useState(null),[status,setStatus]=useState('open'),[busy,setBusy]=useState(false),[edit,setEdit]=useState(null)
+  const[data,setData]=useState(null),[status,setStatus]=useState('open'),[busy,setBusy]=useState(false),[edit,setEdit]=useState(null),[uni,setUni]=useState(''),[q,setQ]=useState(''),[bulk,setBulk]=useState('')
   const load=async(s=status)=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_data_flags_read',{p_args:{status:s,limit:200}});if(error)throw error;setData(d||{})}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
   const act=async(id,action,args={},confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_data_flag_resolve',{p_flag_id:id,p_action:action,p_args:args});if(error)throw error;setEdit(null);if(status==='open')setData(d||{});else load()}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
   useEffect(()=>{load(status)},[status])
   if(!data)return <section className="m-panel"><Loading label="Loading flagged values…"/></section>
-  const items=data.items||[],can=Boolean(data.can_edit)&&!busy,c=data.counts||{}
+  const all=data.items||[],can=Boolean(data.can_edit)&&!busy,c=data.counts||{}
+  const unis=[...new Set(all.map(f=>f.provider).filter(Boolean))].sort()
+  const items=all.filter(f=>(!uni||f.provider===uni)&&(!q||`${f.course||''} ${f.course_code||''}`.toLowerCase().includes(q.toLowerCase())))
+  // v2.15.126 (screen review flag-bulk): confirm every value shown for one university, one by one, with progress.
+  const confirmAll=async()=>{if(!uni||!items.length)return;if(!window.confirm(`Confirm ${items.length} fee${items.length===1?'':'s'} at ${uni} as per year?`))return
+    setBusy(true);let ok=0,failed=0;for(const f of items){setBulk(`Confirming ${ok+failed+1} of ${items.length}…`);try{const{error}=await supabase.rpc('admin_data_flag_resolve',{p_flag_id:f.id,p_action:'confirm',p_args:{}});if(error)throw error;ok++}catch{failed++}}
+    setBulk(`${ok} confirmed${failed?`, ${failed} could not be confirmed`:''}.`);setBusy(false);load()}
   return <section className="m-panel">
     <SectionTitle icon={Flag} title="Flagged values" subtitle="Values recorded automatically under an assumption. Confirm them, correct them, or remove them." action={<div className="l3c-actions">
       <select className="fv-filter" value={status} onChange={e=>setStatus(e.target.value)} aria-label="Show">
         <option value="open">To check ({fmtNumber(c.open||0)})</option><option value="confirmed">Confirmed ({fmtNumber(c.confirmed||0)})</option>
         <option value="corrected">Corrected ({fmtNumber(c.corrected||0)})</option><option value="removed">Removed ({fmtNumber(c.removed||0)})</option><option value="all">All</option></select>
+      <select className="fv-filter" value={uni} onChange={e=>setUni(e.target.value)} aria-label="University"><option value="">All universities</option>{unis.map(u=><option key={u} value={u}>{u}</option>)}</select>
+      <span className="pq-search sl-search"><input type="search" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a course" aria-label="Find a course"/></span>
+      {data.can_edit&&status==='open'&&uni&&items.length>0&&<Button compact variant="primary" onClick={confirmAll} disabled={busy}><Check size={14}/>Confirm all {fmtNumber(items.length)} as per year</Button>}
       <Button compact onClick={()=>load()} disabled={busy}><RefreshCw size={14}/>Refresh</Button></div>}/>
+    {bulk&&<p className="sb-done" role="status">{bulk}</p>}
     {!data.can_edit&&<p className="l3v-note">You can view these. Pipeline operators and admins can confirm or change them.</p>}
-    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Course</th><th>What was assumed</th><th className="num">Fee</th><th>Period</th><th>From the page</th><th>Status</th>{data.can_edit&&status==='open'&&<th>Action</th>}</tr></thead><tbody>
+    <div className="cf-table-wrap"><table className="cf-table fv-table"><thead><tr><th>Course</th><th>What was assumed</th><th className="num">Fee</th><th>Period</th><th>From the page</th><th>Status</th>{data.can_edit&&status==='open'&&<th>Action</th>}</tr></thead><tbody>
       {items.length?items.map(f=><tr key={f.id}>
         <td><strong>{f.course||'Course'}</strong><span className="l3v-code">{[f.course_code,f.provider].filter(Boolean).join(' · ')}</span></td>
         <td>{FLAG_TEXT[f.flag]||f.flag}<span className="l3v-code">{fmtDateTime(f.created_at)}</span></td>
@@ -37,7 +47,7 @@ export default function FlaggedValues({onError}){
           <Button compact variant="primary" onClick={()=>act(f.id,'correct',{amount:Number(edit.amount),basis:edit.basis})} disabled={!can||!(Number(edit.amount)>0)}><Check size={14}/>Save</Button>
           <Button compact onClick={()=>setEdit(null)} disabled={busy}><X size={14}/>Cancel</Button></>:<>
           <Button compact variant="primary" onClick={()=>act(f.id,'confirm')} disabled={!can}><Check size={14}/>Confirm per year</Button>
-          <Button compact onClick={()=>setEdit({id:f.id,amount:String(f.amount||''),basis:f.basis||'annual'})} disabled={!can}><Pencil size={14}/>Edit</Button>
+          <Button compact onClick={()=>setEdit({id:f.id,amount:String(f.amount||''),basis:f.basis||'annual'})} disabled={!can} aria-label="Edit fee" title="Edit fee"><Pencil size={14}/></Button>
           <Button compact variant="danger" onClick={()=>act(f.id,'remove',{},'Remove this fee from the course?')} disabled={!can} aria-label="Remove fee"><Trash2 size={14}/></Button></>}</div></td>}
       </tr>):<tr><td colSpan={7} className="cf-empty-cell">{status==='open'?'Nothing to check.':'None.'}</td></tr>}
     </tbody></table></div>
