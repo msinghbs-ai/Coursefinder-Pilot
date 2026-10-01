@@ -148,8 +148,153 @@ export function scholarshipFacts(html: string, titleText: string, name: string) 
     deadline: scholarshipDeadline(body),
     international: /\binternational\b/i.test(titleText + " " + body.slice(0, 4000)),
     eligibility_excerpt: (() => { const at = body.search(/eligib/i); return at >= 0 ? clean(body.slice(at, at + 900)) : null })(),
+    criteria: scholarshipCriteria(body),
+    award_scope: awardScope(body),
     text_length: body.length,
   };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// v0.5.0 (CF-247 Decision 211, 2 Oct 2026): eligibility criteria and award scope, read from the page's own eligibility
+// and "key details" text. Each criterion carries the words it came from. Only what the page states plainly is kept;
+// anything mixed (e.g. "future or current student") is left out rather than guessed.
+
+type Criterion = { type: string; operator: string; value_text?: string; value_number?: number; value_codes?: string[]; scale?: number; text: string };
+const NEGATED = /\b(?:not|non|excluding|except|other than|nor|ineligible|cannot)\b[^.;]{0,85}$/i;
+const snip = (t: string, at: number, len = 220) => clean(t.slice(Math.max(0, at - 40), at + len)).slice(0, 300);
+// "... are not eligible", "... cannot apply" after the words also excludes them
+const NEGATED_AFTER = /^[^.;:]{0,70}?\b(?:(?:are|is) (?:not|in)eligible|(?:are|is) not (?:eligible|able to apply)|cannot (?:apply|receive|be awarded)|(?:are|is) excluded)\b/i;
+function firstPlain(t: string, re: RegExp) {
+  for (const m of t.matchAll(re)) {
+    const at = m.index || 0;
+    if (!NEGATED.test(t.slice(Math.max(0, at - 100), at)) && !NEGATED_AFTER.test(t.slice(at + m[0].length, at + m[0].length + 90))) return m;
+  }
+  return null;
+}
+// The text that states who can apply: the eligibility section, plus short "key details" lines (Eligible citizenship,
+// Student type, Residency) that many university pages put above it.
+export function eligibilityText(body: string) {
+  const t = body.slice(0, 12000), parts: string[] = [];
+  const at = t.search(/\b(?:eligibility(?: criteria| requirements)?\b|who (?:is|can be|'s) eligible|am i eligible|to be eligible|you must:)/i);
+  if (at >= 0) {
+    // the section ends at the next part of the page (how to apply, related scholarships, page footer)
+    let sec = t.slice(at, at + 2500);
+    const end = sec.slice(80).search(/\b(?:how (?:do i |to )apply|when do applications|application process|more about scholarships|explore (?:similar|other|more) scholarships|(?:related|similar|other) scholarships|read more|contact us|terms and conditions)\b/i);
+    if (end >= 0) sec = sec.slice(0, end + 80);
+    parts.push(sec);
+  }
+  let n = 0;
+  for (const m of t.matchAll(/\b(?:eligible (?:citizenship|student type|study stage)|student type|residency|citizenship)\b:?\s+/gi)) {
+    const at = m.index || 0, after = t.slice(at + m[0].length, at + m[0].length + 140);
+    // a label followed by its values ("Student type Domestic, International"), not a sentence ("citizenship from a country")
+    if (!/^[A-Z]/.test(after)) continue;
+    if (n++ >= 3) break;
+    parts.push(t.slice(at, at + m[0].length) + after.split(/(?<=[a-z)])\.\s|\?\s/)[0]);
+  }
+  return parts.join(" \n ");
+}
+
+const COUNTRIES: [RegExp, string][] = [
+  [/\bindia\b/i, "IN"], [/\bchina\b|\bchinese mainland\b/i, "CN"], [/\bvietnam\b|\bviet nam\b/i, "VN"], [/\bindonesia\b/i, "ID"], [/\bmalaysia\b/i, "MY"],
+  [/\bthailand\b/i, "TH"], [/\bsingapore\b/i, "SG"], [/\bphilippines\b/i, "PH"], [/\bsri lanka\b/i, "LK"], [/\bnepal\b/i, "NP"], [/\bbangladesh\b/i, "BD"],
+  [/\bpakistan\b/i, "PK"], [/\bcambodia\b/i, "KH"], [/\bmyanmar\b/i, "MM"], [/\blaos\b|\blao pdr\b/i, "LA"], [/\bmongolia\b/i, "MN"], [/\bjapan\b/i, "JP"],
+  [/\bsouth korea\b|\brepublic of korea\b|\bkorea\b/i, "KR"], [/\btaiwan\b/i, "TW"], [/\bhong kong\b/i, "HK"], [/\bmacau\b|\bmacao\b/i, "MO"], [/\bbhutan\b/i, "BT"],
+  [/\bfiji\b/i, "FJ"], [/\bpapua new guinea\b/i, "PG"], [/\bsamoa\b/i, "WS"], [/\btonga\b/i, "TO"], [/\bvanuatu\b/i, "VU"], [/\bsolomon islands\b/i, "SB"],
+  [/\btimor[- ]leste\b|\beast timor\b/i, "TL"], [/\bkiribati\b/i, "KI"], [/\btuvalu\b/i, "TV"], [/\bnauru\b/i, "NR"],
+  [/\bunited states\b|\busa\b/i, "US"], [/\bcanada\b/i, "CA"], [/\bmexico\b/i, "MX"], [/\bbrazil\b/i, "BR"], [/\bcolombia\b/i, "CO"], [/\bchile\b/i, "CL"],
+  [/\bperu\b/i, "PE"], [/\bargentina\b/i, "AR"], [/\becuador\b/i, "EC"], [/\bhonduras\b/i, "HN"],
+  [/\bunited kingdom\b/i, "GB"], [/\bireland\b/i, "IE"], [/\bgermany\b/i, "DE"], [/\bfrance\b/i, "FR"], [/\bitaly\b/i, "IT"], [/\bspain\b/i, "ES"], [/\bnorway\b/i, "NO"],
+  [/\bsweden\b/i, "SE"], [/\bnetherlands\b/i, "NL"], [/\bturkey\b|\btürkiye\b/i, "TR"],
+  [/\bsaudi arabia\b/i, "SA"], [/\bunited arab emirates\b|\buae\b/i, "AE"], [/\biran\b/i, "IR"], [/\biraq\b/i, "IQ"], [/\bjordan\b/i, "JO"], [/\begypt\b/i, "EG"],
+  [/\bkenya\b/i, "KE"], [/\bnigeria\b/i, "NG"], [/\bghana\b/i, "GH"], [/\bsouth africa\b/i, "ZA"], [/\bethiopia\b/i, "ET"], [/\buganda\b/i, "UG"], [/\btanzania\b/i, "TZ"],
+  [/\bzimbabwe\b/i, "ZW"], [/\brwanda\b/i, "RW"], [/\bkazakhstan\b/i, "KZ"], [/\buzbekistan\b/i, "UZ"],
+];
+const WORD_NUM: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
+
+export function scholarshipCriteria(body: string): Criterion[] {
+  const t = eligibilityText(body);
+  if (!t) return [];
+  const out: Criterion[] = [];
+  // student type: domestic (citizens, permanent residents), international, or both
+  const dom = firstPlain(t, /\b(?:australian citizens?|permanent residents?(?: of australia)?|australian permanent residents?|domestic students?|new zealand citizens?|(?:permanent )?humanitarian visa(?: holders?)?|student type:? domestic|domestic(?=,| and| or))\b/gi);
+  // stated as a requirement, not a menu link ("Applying to RMIT International students Parents")
+  const intl = firstPlain(t, /\b(?:be|is|are|an?|or|and|new|commencing|current|continuing|offshore|onshore|eligible|open to|all) (?:an? )?international(?: students?| applicants?| candidates?|,)|\b(?:international|overseas) (?:students?|applicants?|candidates?) (?:who|must|may|are|will|can|only|commencing|applying|from|studying|enrolling|holding|with|in|on)\b|\b(?:student type|domestic(?: and|,| or| \/)?|citizenship|residency)[ :,/a-z]{0,25}\binternational\b/gi);
+  // a shortened list ("Australian citizen, Permanent resident +2 more") hides the rest: domestic-only is not certain
+  const hidden = /\+\s?\d+ more\b/i.test(t);
+  if (intl || (dom && !hidden)) {
+    const codes = [...(dom ? ["domestic"] : []), ...(intl ? ["international"] : [])];
+    const at = Math.min(dom?.index ?? Infinity, intl?.index ?? Infinity);
+    out.push({ type: "student_type", operator: "in", value_codes: codes, text: snip(t, at) });
+  }
+  // study stage: commencing (new) or current (continuing) students; both named -> left out
+  const comm = firstPlain(t, /\b(?:commencing|new students?|future study|intending to enrol|be enrolling|commence (?:study|studies|your)|first[- ]year (?:student|entry))\b/gi);
+  const cur = firstPlain(t, /\b(?:current(?:ly enrolled)? students?|continuing students?|currently enrolled|in (?:your|their) (?:second|third|fourth|final|2nd|3rd|4th)(?: (?:or|and|,) (?:third|fourth|final|3rd|4th))? year|have completed at least)\b/gi);
+  if (comm && !cur) out.push({ type: "study_stage", operator: "equals", value_text: "commencing", text: snip(t, comm.index || 0) });
+  else if (cur && !comm) out.push({ type: "study_stage", operator: "equals", value_text: "current", text: snip(t, cur.index || 0) });
+  // study load
+  const ft = firstPlain(t, /\bfull[- ]time\b/gi);
+  if (ft && !/\bpart[- ]time\b/i.test(t)) out.push({ type: "study_load", operator: "equals", value_text: "full_time", text: snip(t, ft.index || 0) });
+  // academic minimum: ATAR, GPA or a weighted average (first stated of each)
+  const atar = t.match(/\bATAR\b[^.;]{0,45}?(?:of|at least|minimum(?: of)?|above|or higher than)?\s*(\d{2}(?:\.\d{1,2})?)\b/i);
+  if (atar && Number(atar[1]) >= 30 && Number(atar[1]) <= 99.95) out.push({ type: "academic_minimum", operator: ">=", value_text: "ATAR", value_number: Number(atar[1]), text: snip(t, atar.index || 0) });
+  const gpa = t.match(/\b(?:GPA|grade point average)\b(?:\s*\([^)]{0,10}\))?[^.;]{0,45}?(?:of|at least|minimum(?: of)?|above)?\s*(\d(?:\.\d{1,2})?)(?:\s*(?:\/|out of)\s*(4|5|7))?(?![\d%])/i);
+  if (gpa && Number(gpa[1]) > 0 && Number(gpa[1]) <= 7) out.push({ type: "academic_minimum", operator: ">=", value_text: "GPA", value_number: Number(gpa[1]), ...(gpa[2] ? { scale: Number(gpa[2]) } : {}), text: snip(t, gpa.index || 0) });
+  const wam = t.match(/\b(?:WAM|weighted average mark|average mark|average (?:grade|score)|course average)\b[^.;]{0,40}?(?:of|at least|minimum(?: of)?|above)?\s*(\d{2})\s*%?/i);
+  if (wam && Number(wam[1]) >= 40 && Number(wam[1]) <= 100) out.push({ type: "academic_minimum", operator: ">=", value_text: "WAM", value_number: Number(wam[1]), text: snip(t, wam.index || 0) });
+  // gender, when the page restricts it
+  const g = firstPlain(t, /\b(?:identify(?:ing)? as (?:a )?(woman|women|female|man|male)|(female|women|male) (?:students?|applicants?)|must be (?:a )?(woman|female|man|male))\b/gi);
+  if (g) { const w = String(g[1] || g[2] || g[3]).toLowerCase(); out.push({ type: "gender", operator: "equals", value_text: /^(woman|women|female)$/.test(w) ? "women" : "men", text: snip(t, g.index || 0) }) }
+  // nationality: countries named right after "citizens of", "nationals of", "born in", "from"
+  const codes = new Set<string>(); let natAt = -1;
+  for (const m of t.matchAll(/\b(?:citizens?(?:hip)? (?:of|from|in)|nationals? of|passport holders? (?:of|from)|born in|students from|applicants from|from one of the following(?: countries)?)\b/gi)) {
+    const at = m.index || 0;
+    if (NEGATED.test(t.slice(Math.max(0, at - 100), at))) continue;
+    const win = t.slice(at, at + 320).split(/\b(?:and be|and have|must|you must|be enrolled|enrol)\b/i)[0];
+    for (const [re, code] of COUNTRIES) if (re.test(win)) { codes.add(code); if (natAt < 0) natAt = at }
+  }
+  if (codes.size) out.push({ type: "nationality", operator: "in", value_codes: [...codes].sort(), text: snip(t, natAt, 320) });
+  // applying: some scholarships are given without an application
+  const auto = body.match(/\b(?:automatic(?:ally)? (?:consider|assess)\w*|open for automatic consideration|no (?:separate )?application (?:is )?(?:required|needed|necessary)|you do not need to apply|you don'?t need to apply)\b/i);
+  if (auto) out.push({ type: "application_method", operator: "equals", value_text: "automatic", text: snip(body, auto.index || 0) });
+  return out;
+}
+
+// Award scope: how long and what the award pays for, from the benefit wording ("$5,000 per year for up to three years",
+// "one-off payment", "for the standard duration of your degree", "tuition fees").
+export function benefitText(body: string) {
+  const t = body.slice(0, 10000), parts: string[] = [];
+  let n = 0;
+  for (const m of t.matchAll(/\b(?:benefits?|value and duration|what you(?:'ll| will) (?:receive|get)|(?:this|the) (?:scholarship|award|bursary|grant) (?:provides|is valued|covers|offers|will provide|is worth|pays)|scholarship value|award value|benefit (?:amount|duration)|duration of (?:the |this )?(?:scholarship|award)|total value|value|worth)\b/gi)) {
+    if (n++ >= 6) break;
+    parts.push(t.slice(m.index || 0, (m.index || 0) + 260));
+  }
+  return parts.join(" \n ");
+}
+export function awardScope(body: string) {
+  const t = benefitText(body);
+  if (!t) return null;
+  const annual = /\bper (?:academic )?(?:year|annum)\b|\bp\.\s?a\.|\beach (?:academic )?year\b|\bannually\b|\ba year\b|\byearly\b|\bper calendar year\b/i.test(t);
+  const yrs = t.match(/\b(?:for )?up to (\d|one|two|three|four|five|six)(?:\.\d)? (?:years?|academic years?)\b|\bfor (\d|two|three|four|five|six) (?:years|academic years)\b/i);
+  const program = /\b(?:normal|standard|minimum|full|remaining|entire|prescribed)?\s*duration of (?:your|the|their|a|an|his|her) (?:course|degree|program|programme|studies|study|candidature)\b|\bfor the (?:length|life) of (?:your|the) (?:course|degree|program)\b/i.test(t) || !!yrs;
+  const oneOff = /\bone[- ]?off\b|\bonce[- ]off\b|\bone[- ]time\b|\bsingle (?:payment|instalment)\b|\bpaid once\b|\bone year only\b/i.test(t);
+  const firstYear = /\bfirst[- ]year (?:of study )?only\b|\b(?:for|in) (?:the|your) first year(?: of (?:study|your (?:degree|course|program)))?\b(?! and)|\bfirst[- ]year tuition\b/i.test(t);
+  const sem = /\bper semester\b|\beach semester\b/i.test(t);
+  let duration: string | null = null;
+  if (oneOff && !annual && !program) duration = "one_off";
+  else if (firstYear && !program && !oneOff) duration = "first_year";
+  else if (annual && program && !oneOff) duration = "annual_program_duration";
+  else if (annual && !oneOff && !firstYear) duration = "annual";
+  else if (program && !oneOff && !firstYear) duration = "program_duration";
+  else if (sem && !annual && !oneOff) duration = "per_semester";
+  const y = yrs ? (yrs[1] || yrs[2]) : null;
+  const years = y ? (WORD_NUM[y.toLowerCase()] ?? Number(y)) : null;
+  const appliesTo = [
+    ...(/\btuition\b|\bcourse fees?\b|\bfee (?:reduction|remission|waiver|discount)\b/i.test(t) ? ["tuition_fee"] : []),
+    ...(/\bstipend\b|\bliving (?:allowance|costs?)\b|\ballowance\b/i.test(t) ? ["living_allowance"] : []),
+    ...(/\baccommodation\b/i.test(t) ? ["accommodation"] : []),
+  ];
+  if (!duration && !years && !appliesTo.length) return null;
+  return { duration, years: years && years > 0 && years <= 8 ? years : null, applies_to: appliesTo, text: clean(t.slice(0, 400)) };
 }
 
 // ---------------------------------------------------------------------------------------------------------------

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.65 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.138** (scholarship eligibility and award scope from provider pages).
+- Migration 20261002180300_cf247_scholarship_criteria_and_scope (Decision 211); coverage-sweep worker v0.9.0, scholarship reader v0.5.3.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.64 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.137** (fee schedules settle flagged fees).

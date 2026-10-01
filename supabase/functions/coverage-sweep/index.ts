@@ -1,8 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
-import { admissionCheck, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.4.6";
+import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
+const SCH_VERSION = "scholarship-sweep-v0.5.3";
+// v0.5.3: "Overseas students are eligible to apply" includes international students.
+// v0.5.2 (2 Oct 2026, second hand-check, 14 domestic-only readings): "... New Zealand citizen or International student" and
+// "both domestic (...) and international students" include international students.
+// v0.5.1 (2 Oct 2026, first 30 hand-checked): the eligibility section ends at the next part of the page (how to apply,
+// related scholarships); "key details" lines only as label + values; international as a stated requirement, not a menu
+// link; "not eligible ... if you: are an Australian citizen" read as an exclusion.
+// v0.5.0 (2 Oct 2026, Decision 211): eligibility criteria (student type, study stage, full-time, ATAR/GPA/WAM minimum,
+// gender, nationality, applying without an application) and award scope (one-off, first year, per year, per year for the
+// course, whole course; what it pays for) are read from the eligibility and benefit wording.
 // v0.4.6 (step-2 hand-check): amounts in another currency (Swinburne "$5,000 USD") or stated as a maximum ("up to
 // A$7,496", "up to AUD$20,000") are not a single AUD value; the eligibility section is a heading-like "Eligibility"
 // (not "eligible countries") and when it states no level the page start is used.
@@ -32,7 +41,8 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.4"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.8.0";
+const WORKER = "coverage-sweep-worker-v0.9.0";
+// v0.9.0 (Decision 211): mode scholarship_reextract adds eligibility criteria and award scope to stored scholarship pages.
 // v0.8.0: mode scholarship_discover (provider scholarship pages from site maps, Firecrawl map/search fallbacks, matching
 // held Study Australia-only scholarships, reading unheld pages at Australian universities for admission as new
 // unpublished scholarships; Firecrawl only for pages the site refuses, keeping 800 credits for step 1) and mode scholarship_inspect (read only: stored or live page headings and text for hand checks).
@@ -566,6 +576,24 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, phase, ...out, firecrawlRemainingAboveReserve: fcRemaining, scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
     }
     // read only: headings, name check, admission rules and page text of stored evidence (or a live page) for hand checks
+    // v0.9.0 (Decision 211): eligibility criteria and award scope from stored scholarship pages (no fetch). Only the
+    // two new facts are added; the page's other facts and course links stay as they are.
+    if (mode === "scholarship_reextract") {
+      const rows: { scholarship_id: string; storage_path: string }[] = await rpc("svc_scholarship_reextract_next", { p_limit: Math.min(Number(body.limit || 100), 300), p_version: SCH_VERSION });
+      let done = 0, failed = 0; const changes: Record<string, number> = {};
+      await pool(rows, 10, async (r) => {
+        try {
+          const { data, error } = await c.storage.from("evidence").download(r.storage_path);
+          if (error || !data) throw Error(error?.message || "missing");
+          const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+          const text = mainText(html);
+          const res = await rpc("svc_scholarship_reextract_record", { p_scholarship_id: r.scholarship_id, p_facts: { criteria: scholarshipCriteria(text), award_scope: awardScope(text), criteria_extractor: SCH_VERSION } });
+          for (const k of (res?.changes || []) as string[]) changes[k] = (changes[k] || 0) + 1;
+          done++;
+        } catch { failed++ }
+      });
+      return j({ ok: true, mode, rows: rows.length, done, failed, changes, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
+    }
     if (mode === "scholarship_inspect") {
       const chars = Math.min(Number(body.chars || 2500), 8000);
       const paths = await rpc("svc_scholarship_inspect_paths", { p_scholarship_ids: body.scholarship_ids || [], p_candidate_ids: body.candidate_ids || [] });
@@ -640,7 +668,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, link_search, provider_facts, scholarship_read, scholarship_discover, scholarship_inspect", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, link_search, provider_facts, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
