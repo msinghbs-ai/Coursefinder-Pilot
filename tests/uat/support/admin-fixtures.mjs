@@ -362,3 +362,36 @@ export const statDatasets = [
   { dataset_key: 'qs_wur', label: 'QS World University Rankings', dataset_type: 'ranking', description: 'Global institutional ranking.', display_enabled: true, display_order: 30, compare_enabled: true, source_authority: 'QS Quacquarelli Symonds', admin_import_system: 'qs_wur' },
   { dataset_key: 'arwu', label: 'Academic Ranking of World Universities', dataset_type: 'ranking', description: 'Shanghai ranking.', display_enabled: false, display_order: 50, compare_enabled: true, source_authority: 'ShanghaiRanking', admin_import_system: null },
 ]
+
+// v2.15.133 (Decisions 200–201): course links, who can apply, link refresh.
+export const courseLinks = {
+  can_edit: true,
+  types: [
+    { code: 'official_course', label: 'Official course page', applicant: 'any' },
+    { code: 'handbook', label: 'Handbook entry', applicant: 'any' },
+    { code: 'international_page', label: 'International students page', applicant: 'international' },
+    { code: 'application', label: 'How to apply', applicant: 'any' },
+    { code: 'admission_centre', label: 'Admission centre listing', applicant: 'domestic' },
+    { code: 'regulator_listing', label: 'Regulator listing', applicant: 'any' },
+  ],
+  links: [
+    { id: 'l-off', link_type: 'official_course', type_label: 'Official course page', url: 'https://www.rmit.edu.au/study-with-us/levels-of-study/undergraduate-study/bachelor-degrees/bachelor-of-business-bp343', label: 'Official provider course page', status: 'active', is_primary: true, last_verified_at: '2026-10-01T06:00:00Z', source: 'RMIT course pages (coverage sweep)', by_hand: false },
+    { id: 'l-hb', link_type: 'handbook', type_label: 'Handbook entry', url: 'https://www.rmit.edu.au/students/my-course/program-structures/bp343', label: 'Handbook entry', status: 'active', is_primary: true, last_verified_at: null, source: 'Manual entry', by_hand: true },
+  ],
+  locks: { 'link:handbook': 'value' },
+  applicants: { open_to_international: true, open_to_domestic: null, basis: 'CRICOS course registration', provider_enrols_international: true, english_expected: true, provider: 'RMIT University', country: 'AU' },
+}
+export const providerApplicants = { can_edit: true, enrols_international: true, basis: 'CRICOS provider registration', country: 'AU', locked: false, courses: { open_to_international: 412, domestic_only: 0, not_known: 3, set_by_hand: 1 } }
+export const linkRefresh = {
+  can_edit: true,
+  policies: [
+    { id: 'p1', country: null, country_name: null, provider: null, link_type: 'official_course', type_label: 'Official course page', every_days: 30, active: true, last_run_at: '2026-10-01T07:10:00Z', last_result: { reread: 0, searched_again: 0, verified: 295, unverified: 0, regulator_added: 0 } },
+    { id: 'p2', country: null, country_name: null, provider: null, link_type: 'regulator_listing', type_label: 'Regulator listing', every_days: 90, active: true, last_run_at: null, last_result: null },
+  ],
+  portals: [
+    { code: 'nzqa', label: 'NZQA qualification search', country: 'NZ', kind: 'regulator', link_type: 'regulator_listing', base_url: 'https://www.nzqa.govt.nz/nzqf/search/', applicant: 'any', active: true, every_days: 90 },
+    { code: 'uac', label: 'UAC course search (NSW, ACT)', country: 'AU', kind: 'admission_centre', link_type: 'admission_centre', base_url: 'https://uac.edu.au/course-search/', applicant: 'domestic', active: false, every_days: 90 },
+  ],
+  types: [{ code: 'official_course', label: 'Official course page' }, { code: 'handbook', label: 'Handbook entry' }, { code: 'regulator_listing', label: 'Regulator listing' }],
+  countries: ['AU', 'CA', 'NZ'],
+}

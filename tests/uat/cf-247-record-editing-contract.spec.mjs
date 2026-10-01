@@ -52,7 +52,7 @@ test.describe('mocked browser', () => {
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'set_official_url')?.p_args?.url).toBe('https://www.rmit.edu.au/study/ad029')
     await panel.getByRole('button', { name: 'Remove Intakes' }).click()
     await expect.poll(() => page.l3calls.some(c => c.p_action === 'remove_intakes')).toBe(true)
-    await panel.getByRole('button', { name: 'Let automation update this' }).click()
+    await panel.locator('.re-row', { hasText: 'Tuition (international)' }).getByRole('button', { name: 'Let automation update this' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'release')?.p_args?.field).toBe('tuition')
     await expect(panel.getByRole('button', { name: 'Archive course' })).toBeVisible()
     await expect(panel).toContainText('Changes made by hand (1)')

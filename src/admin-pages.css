@@ -396,3 +396,16 @@ td>.l3v-model{display:block}
 .l1s-toolbar h2{color:var(--cf-text)!important;font-size:var(--cf-fs-lg)!important}.l1s-toolbar p{color:var(--cf-text-2)!important;font-size:var(--cf-fs-sm)!important}
 .l1s-toolbar small{display:none}
 .au-table th:nth-child(1){width:28%!important}.au-table th:nth-child(3){width:17%!important}.au-table th:nth-child(6){width:25%!important}.au-controls>select.fv-input{max-width:150px}
+
+/* v2.15.133 (Decisions 200–201): course links, who can apply, link refresh */
+.cl-panel{display:grid;gap:10px;padding:8px 0;border-top:1px solid var(--cf-border);border-bottom:1px solid var(--cf-border)}
+.cl-applicants,.cl-links{display:grid;gap:6px}
+.cl-note{display:block;font-weight:400;color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.cl-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px}.cl-form label{display:grid;gap:2px}.cl-form .cl-url{flex:1 1 260px}
+.cl-type{display:grid;gap:4px;padding:4px 0}.cl-type-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:var(--cf-fs-xs);font-weight:650;color:var(--cf-text-2);text-transform:uppercase;letter-spacing:.02em}
+.cl-link{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:center;font-size:var(--cf-fs-sm)}
+.cl-link .cf-link{word-break:break-all;display:inline-flex;gap:4px;align-items:center}.cl-link .cl-meta{grid-column:1;display:flex;gap:6px;align-items:center;color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.cl-link .re-actions{grid-row:1 / span 2;grid-column:2}.cl-link.muted{opacity:.6}
+.cl-empty{color:var(--cf-text-2);font-size:var(--cf-fs-sm);margin:0}
+.lr-panel .cf-table td{vertical-align:top}.lr-sub{margin:14px 0 6px;font-size:var(--cf-fs-sm)}
+@media (max-width:640px){.cl-link{grid-template-columns:1fr}.cl-link .re-actions{grid-row:auto;grid-column:1}}
