@@ -83,6 +83,8 @@ export const PAGES = {
 
   users: { label: 'Users & roles', slug: 'users-roles', icon: 'users', min: 6, subtitle: 'Who can sign in and what each person may do.' },
   contacts: { label: 'Provider contacts', slug: 'provider-contacts', icon: 'users', min: 1, subtitle: 'International recruitment contacts for each provider.' },
+  // v2.15.136 (Decision 209): the operator and Platform Admin walkthrough, reviewed every release.
+  guide: { label: 'Platform guide', slug: 'platform-guide', icon: 'guide', min: 1, subtitle: 'How to run the platform: the screens, what the numbers mean and what to do.' },
 }
 
 export const SECTIONS = [
@@ -92,6 +94,7 @@ export const SECTIONS = [
   { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources'] },
   { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'migration'] },
   { label: 'Administration', pages: ['users'] },
+  { label: 'Help', pages: ['guide'] },
 ]
 
 for (const [key, p] of Object.entries(PAGES)) { p.key = key; if (p.tabs) p.min = Math.min(...p.tabs.map(t => t.min)); p.title = p.title || p.label }

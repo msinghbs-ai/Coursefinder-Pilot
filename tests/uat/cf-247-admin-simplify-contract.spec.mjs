@@ -9,7 +9,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('menu map: five plain sections, every page reachable, old addresses and names redirect', () => {
-  expect(SECTIONS.map(s => s.label)).toEqual(['', 'Catalogue', 'Data pipeline', 'Operations', 'Platform settings', 'Administration'])
+  expect(SECTIONS.map(s => s.label)).toEqual(['', 'Catalogue', 'Data pipeline', 'Operations', 'Platform settings', 'Administration', 'Help'])
   expect(SECTIONS.find(s => s.label === 'Catalogue').pages).toContain('contacts')
   expect(SECTIONS.find(s => s.label === 'Administration').pages).toEqual(['users'])
   const inMenu = SECTIONS.flatMap(s => s.pages)
