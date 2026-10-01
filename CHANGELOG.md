@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.70 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.143** (Decision 216: every background function signs in with one-time run passes).
+- Database: migration 20261002181200 applied to fxcwkweaxjtknorudmwp; 28 edge functions redeployed from CI.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.69 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.142** (Decision 215: evidence link indexing fixed; Live activity shows worker errors).

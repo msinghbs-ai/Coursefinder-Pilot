@@ -3,7 +3,7 @@ import {createClient} from "npm:@supabase/supabase-js@2";
 const J=(s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw Error(`${n}: ${error.message}`);return data}
-async function postJson(url:string,key:string,body:any){const r=await fetch(url,{method:"POST",headers:{"content-type":"application/json","x-cf-pilot-key":key},body:JSON.stringify(body)});const t=await r.text();let j:any={};try{j=t?JSON.parse(t):{}}catch{j={raw:t.slice(0,500)}};if(!r.ok)throw Error(`${url.split('/').pop()} ${r.status}: ${j?.error||j?.detail||t.slice(0,200)}`);return j}
+async function postJson(url:string,svc:any,body:any){const nonce=String(await rpc(svc,"svc_pilot_issue_nonce",{p_function:url.split("/").pop()}));const r=await fetch(url,{method:"POST",headers:{"content-type":"application/json","x-cf-run-nonce":nonce},body:JSON.stringify(body)});const t=await r.text();let j:any={};try{j=t?JSON.parse(t):{}}catch{j={raw:t.slice(0,500)}};if(!r.ok)throw Error(`${url.split('/').pop()} ${r.status}: ${j?.error||j?.detail||t.slice(0,200)}`);return j}
 async function extractChain(sb:string,key:string,svc:any,jobId:string,evidenceId:string){
  let ec=await rpc(svc,"scholarship_detail_extraction_context",{p_job_id:jobId,p_evidence_id:evidenceId});
  if(!ec?.eligible)return{skipped:true,reason:ec?.reason||"not_current_detail_ready",classification:ec?.classification||null,candidate_id:ec?.candidate_id||null};
@@ -11,7 +11,7 @@ async function extractChain(sb:string,key:string,svc:any,jobId:string,evidenceId
  if(!normalizedId){
    if(!ec?.attempt_id)throw Error("detail evidence has no acquisition attempt_id");
    try{
-     const norm=await postJson(`${sb}/functions/v1/layer2-extract-v2`,key,{attempt_id:ec.attempt_id});
+     const norm=await postJson(`${sb}/functions/v1/layer2-extract-v2`,svc,{attempt_id:ec.attempt_id});
      normalizedId=String(norm?.normalized_evidence_id||"");
    }catch(e:any){
      const msg=String(e?.message||e);
@@ -24,7 +24,7 @@ async function extractChain(sb:string,key:string,svc:any,jobId:string,evidenceId
    if(!normalizedId)throw Error("normalisation collision recovery found no normalized_evidence_id");
  }
  try{
-   const scholarship=await postJson(`${sb}/functions/v1/layer2-scholarship-extract`,key,{normalized_evidence_id:normalizedId});
+   const scholarship=await postJson(`${sb}/functions/v1/layer2-scholarship-extract`,svc,{normalized_evidence_id:normalizedId});
    return{skipped:false,source_evidence_id:evidenceId,normalized_evidence_id:normalizedId,reused_normalized_evidence:Boolean(ec?.existing_normalized_evidence_id),source_record_id:scholarship?.source_record_id||null,candidate:scholarship?.candidate||null,layer3_required:Boolean(scholarship?.layer3_required),layer4_required:Boolean(scholarship?.layer4_required)};
  }catch(e:any){
    const msg=String(e?.message||e);
@@ -37,9 +37,9 @@ async function extractChain(sb:string,key:string,svc:any,jobId:string,evidenceId
 }
 Deno.serve(async(req:Request)=>{
  if(req.method!=="POST")return J(405,{error:"method_not_allowed"});
- const key=(req.headers.get("x-cf-pilot-key")||"").trim();if(!key)return J(401,{error:"automation_key_required"});
+ const key=(req.headers.get("x-cf-run-nonce")||"").trim();if(!key)return J(401,{error:"run_nonce_required"});
  const sb=Deno.env.get("SUPABASE_URL")!,sk=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;const svc=createClient(sb,sk,{auth:{persistSession:false}});
- try{if(await rpc(svc,"svc_pilot_automation_authorize",{p_key:key})!==true)return J(401,{error:"invalid_automation_key"})}catch{return J(401,{error:"invalid_automation_key"})}
+ try{if(await rpc(svc,"svc_pilot_consume_nonce",{p_function:"scholarship-scope-job-execute",p_nonce:key})!==true)return J(401,{error:"invalid_run_nonce"})}catch{return J(401,{error:"invalid_run_nonce"})}
  const b=await req.json().catch(()=>({})),jobId=String(b.job_id||"");if(!jobId)return J(400,{error:"job_id_required"});
  let ctx:any;try{ctx=await rpc(svc,"scholarship_scope_job_execution_context",{p_job_id:jobId})}catch(e:any){return J(500,{error:"job_context_failed",detail:String(e.message)})}
  if(!ctx?.job_id)return J(404,{error:"job_not_found"});
@@ -56,7 +56,7 @@ Deno.serve(async(req:Request)=>{
      await rpc(svc,"scholarship_scope_job_mark",{p_job_id:jobId,p_status:"succeeded",p_result:result,p_error:null,p_execution:execution});
      return J(200,{ok:true,job_id:jobId,...result});
    }
-   const ar=await postJson(`${sb}/functions/v1/layer2-acquire-v2`,key,{profile_id:ctx.profile_id,target_url:ctx.target_url});
+   const ar=await postJson(`${sb}/functions/v1/layer2-acquire-v2`,svc,{profile_id:ctx.profile_id,target_url:ctx.target_url});
    let sharedFetchId=String(ar?.shared_fetch_id||"");
    let sharedFetchBridge:any=null;
    const isDetail=String(ctx?.payload?.acquisition_stage||"")==="first_party_detail";
@@ -65,7 +65,7 @@ Deno.serve(async(req:Request)=>{
      sharedFetchId=String(sharedFetchBridge?.shared_fetch_id||"");
    }
    let fanout:any=null;
-   if(sharedFetchId){try{fanout=await postJson(`${sb}/functions/v1/layer2-provider-page-fanout`,key,{shared_fetch_id:sharedFetchId})}catch(e:any){fanout={error:String(e.message)}}}
+   if(sharedFetchId){try{fanout=await postJson(`${sb}/functions/v1/layer2-provider-page-fanout`,svc,{shared_fetch_id:sharedFetchId})}catch(e:any){fanout={error:String(e.message)}}}
    let extraction:any=null;
    if(isDetail&&ar?.evidence_id){extraction=await extractChain(sb,key,svc,jobId,String(ar.evidence_id));}
    const result={acquisition_job_id:ar?.job_id||null,evidence_id:ar?.evidence_id||null,shared_fetch_id:sharedFetchId||null,shared_fetch_bridge:sharedFetchBridge,provider_key:ar?.provider_key||null,shared_fetch_reused:ar?.shared_fetch_reused||false,fanout,extraction,publication_changed:false,canonical_mutation_authorised:false};

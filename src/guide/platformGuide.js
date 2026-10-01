@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.142'
+export const GUIDE_REVIEWED_FOR = '2.15.143'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.' },
@@ -70,7 +70,7 @@ export const SIGNALS = [
   { see: '"Stopped for today" on a Layer 3 task', where: 'Layer 3', means: 'Its daily limit was reached', act: 'Nothing; it restarts tomorrow. Raise the limit only if the credit allows', who: 'Platform Admin' },
   { see: 'OpenRouter credit approaching the floor', where: 'Layer 3, Platform health', means: 'The AI step will stop at the floor', act: 'Top up the OpenRouter account the platform\'s key uses', who: 'Platform Admin' },
   { see: 'Firecrawl balance near the reserve', where: 'Platform health › budgets', means: 'Searches and reads stop to protect the reserve', act: 'Lower search pace, add credits, or wait for the monthly refresh', who: 'Platform Admin' },
-  { see: 'A worker error repeating every run on Live activity (for example "invalid_pilot_automation_key")', where: 'Live activity › Workers sending back errors', means: 'The job runs on time but its worker refuses the work, so nothing is done', act: 'Tell the Platform Admin; jobs are moved to one-time run passes instead of the old automation key', who: 'Operator' },
+  { see: 'A worker error repeating every run on Live activity (for example "invalid_pilot_automation_key")', where: 'Live activity › Workers sending back errors', means: 'The job runs on time but its worker refuses the work, so nothing is done', act: 'Tell the Platform Admin. Every job now signs in with one-time run passes, so a refused old automation key means something outside the platform\'s own jobs is still sending it', who: 'Operator' },
   { see: '"Retrying" keeps rising on a Layer 3 task', where: 'Layer 3', means: 'Model calls are failing or timing out', act: 'Check the model in Models & services; pause the task if errors persist', who: 'Operator' },
   { see: 'Layer 4 waiting count rises for 2 or more days', where: 'Dashboard, Layer 4', means: 'Reviewers are behind', act: 'Work oldest first; send repeat cases back to the AI with a reason', who: 'Curator' },
   { see: 'A coverage count flat for a day', where: 'Coverage', means: 'Its job is paused, failing or out of budget', act: 'Check that job in Scheduled jobs and the budgets check', who: 'Operator' },
@@ -81,7 +81,7 @@ export const SIGNALS = [
 
 export const ADMIN_DUTIES = [
   { title: 'Approvals (daily)', items: ['Fee schedules: compare three or four rows against the provider\'s document, then approve.', 'Fee rules and other rules: preview first, then approve.', 'New AI models: switched on only after they pass the task\'s test.'] },
-  { title: 'Budgets and keys (weekly)', items: ['Firecrawl: monthly plan; the guard follows the balance Firecrawl reports and stops at the reserve.', 'OpenRouter: prepaid credit; each AI task has a daily limit and all stop at the floor.', 'Supabase: project plan; screens stop a call after 8 seconds.', 'Keys live in Environment & keys and Models & services.', 'Scheduled workers sign in with a one-time run pass made for each run. The old long-lived automation key expired on 30 Sep 2026; any worker error mentioning it means that job still needs moving to run passes.'] },
+  { title: 'Budgets and keys (weekly)', items: ['Firecrawl: monthly plan; the guard follows the balance Firecrawl reports and stops at the reserve.', 'OpenRouter: prepaid credit; each AI task has a daily limit and all stop at the floor.', 'Supabase: project plan; screens stop a call after 8 seconds.', 'Keys live in Environment & keys and Models & services.', 'Every background job and worker signs in with a one-time run pass, made for each call and usable once within 5 minutes. A worker that calls another worker makes a fresh pass for each call. Only functions on the run-pass allow-list can be given one. The old long-lived automation key expired on 30 Sep 2026 and is accepted nowhere; there is no shared key to rotate.'] },
   { title: 'Users (as needed)', items: ['Lowest role that does the job; expiry dates for contractors.'] },
   { title: 'Adding a country', items: ['Load its register in Layer 1.', 'Set its admission rule (which identities are accepted for links, English and intakes, and its currency).', 'Add a link refresh schedule only if it needs a different pace.', 'Switch on its portal in Link refresh, if one exists.', 'Ranked universities in the new country link automatically within the hour.', 'Watch Coverage for two days before announcing it.'] },
 ]

@@ -9,7 +9,7 @@ const H=(r:Request)=>({
   "content-type":"application/json",
   "cache-control":"no-store",
   "access-control-allow-origin":r.headers.get("origin")===ORIGIN?ORIGIN:ORIGIN,
-  "access-control-allow-headers":"authorization,content-type,x-cf-pilot-key",
+  "access-control-allow-headers":"authorization,content-type,x-cf-run-nonce",
   "access-control-allow-methods":"POST,OPTIONS"
 });
 const J=(r:Request,s:number,b:any)=>new Response(JSON.stringify(b),{status:s,headers:H(r)});
@@ -21,9 +21,9 @@ async function rpc(c:any,n:string,a:any={}){
   return data;
 }
 async function auth(req:Request,svc:any,sb:string,anon:string){
-  const key=(req.headers.get("x-cf-pilot-key")||"").trim();
+  const key=(req.headers.get("x-cf-run-nonce")||"").trim();
   if(key){
-    if(await rpc(svc,"svc_pilot_automation_authorize",{p_key:key})!==true)throw Error("invalid_pilot_automation_key");
+    if(await rpc(svc,"svc_pilot_consume_nonce",{p_function:"layer2-provider-page-fanout",p_nonce:key})!==true)throw Error("invalid_run_nonce");
     return;
   }
   const ah=req.headers.get("authorization")||"";

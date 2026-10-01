@@ -4,7 +4,7 @@ const V="layer1-ca-ab-alis-degrees-v0.2.3",SYS="ca_ab_alis_programs",SCHEME="ab_
 const clean=(x:any)=>String(x??"").replace(/\s+/g," ").trim();
 const out=(x:any,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 async function rpc(c:any,n:string,a:any={}){const{data,error}=await c.rpc(n,a);if(error)throw new Error(`${n}: ${error.message}`);return data}
-async function auth(req:Request,c:any){const k=clean(req.headers.get("x-cf-pilot-key"));if(!k||!await rpc(c,"svc_pilot_automation_authorize",{p_key:k}))throw new Error("valid Pilot automation key required")}
+async function auth(req:Request,c:any){const k=clean(req.headers.get("x-cf-run-nonce"));if(!k||!await rpc(c,"svc_pilot_consume_nonce",{p_function:"layer1-ca-ab-alis-degrees",p_nonce:k}))throw new Error("valid run pass required")}
 async function sha(b:Uint8Array){return[...new Uint8Array(await crypto.subtle.digest("SHA-256",b))].map(x=>x.toString(16).padStart(2,"0")).join("")}
 function decode(s:string){return s.replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCodePoint(parseInt(h,16))).replace(/&#([0-9]+);/g,(_,d)=>String.fromCodePoint(parseInt(d,10))).replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&apos;/gi,"'").replace(/&lt;/gi,"<").replace(/&gt;/gi,">")}
 function strip(h:string){return clean(decode(h.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ")))}

@@ -76,6 +76,33 @@ jobs:
             [layer2-provider-control]=true
             [layer2-acquire-v2]=false
             [layer2-scope-discover-scheduled]=false
+            # Decision 216: background functions moved to one-time run passes (previously deployed by hand)
+            [layer1-ca-ab-alis-degrees]=false
+            [layer1-ca-algonquin-catalogue]=false
+            [layer1-ca-bc-epbc-programs]=false
+            [layer1-ca-cna-programs]=false
+            [layer1-ca-conestoga-catalogue]=false
+            [layer1-ca-durham-programs]=false
+            [layer1-ca-fanshawe-pgwp]=false
+            [layer1-ca-firstparty-catalogues]=false
+            [layer1-ca-mb-programs]=false
+            [layer1-ca-mohawk-catalogue]=false
+            [layer1-ca-ns-sk-programs]=false
+            [layer1-ca-on-college-programs]=false
+            [layer1-ca-provider-geography]=false
+            [layer1-ca-qc-university-programs]=false
+            [layer1-ca-sk-programs]=false
+            [layer2-batch-runner]=false
+            [layer2-course-fact-extract-v2]=false
+            [layer2-extract-v2]=false
+            [layer2-hotcourses-directory-parse]=false
+            [layer2-provider-asset-promote]=false
+            [layer2-provider-page-fanout]=false
+            [layer2-scholarship-catalogue-enumerate]=false
+            [layer2-scholarship-extract]=false
+            [layer2-scholarship-extract-v2]=false
+            [layer2-v2-diagnostic]=false
+            [scholarship-scope-job-execute]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
