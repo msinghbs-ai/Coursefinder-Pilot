@@ -4,7 +4,7 @@ import{
   Activity,AlertTriangle,ArrowDown,ArrowUp,ArrowLeftRight,BarChart3,BookOpen,Building2,CheckCircle2,ChevronDown,
   CircleGauge,ClipboardCheck,Database,FileCheck2,Filter,GraduationCap,History,LayoutDashboard,
   ListChecks,LogOut,Menu,RefreshCw,Search,SearchCheck,Settings2,SlidersHorizontal,Sparkles,
-  ShieldCheck,Tags,UsersRound,Workflow,X,Zap,MapPin,Layers3,Clock3,PanelLeftClose,PanelLeftOpen,ExternalLink,HeartPulse,Plug,BrainCircuit,Plus
+  ShieldCheck,Tags,UsersRound,Workflow,X,Zap,MapPin,Layers3,Clock3,PanelLeftClose,PanelLeftOpen,ExternalLink,HeartPulse,Plug,BrainCircuit,Plus,Pencil
 }from'lucide-react'
 import{fmtDate,fmtDateTime,fmtMoney,fmtPercent,fmtShare}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
@@ -15,6 +15,7 @@ import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
 import ScholarshipLinks from'./ScholarshipLinks'
 import FeeRules from'./FeeRules'
 import ModelsServices from'./ModelsServices'
+import ListEdit from'./ListEdit'
 import ContextualInsights from'./ContextualInsights'
 import ComparisonWorkspace from'./ComparisonWorkspace'
 import ProviderContactsWorkspace from'./ProviderContactsWorkspace'
@@ -504,7 +505,7 @@ const ENTITY={
 }
 
 function Catalogue({type,onError,navigate,initialId='',completenessMode=false,rank=0}){
-  const[creating,setCreating]=useState(false)
+  const[creating,setCreating]=useState(false),[listEdit,setListEdit]=useState(false)
   const cfg=ENTITY[type]
   const[offset,setOffset]=useState(0)
   // UI-2: search, filters, sort and layout are remembered per user and screen via the shared kit.
@@ -531,10 +532,10 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
     
     <section className="m-panel m-catalogue-panel">
       <div className="m-workspace-head"><div><h2>{completenessMode?'Course readiness workspace':`${humanise(type)} catalogue`}</h2><p>{completenessMode?'Find missing core-presence signals without treating completeness as truth.':'Filter → inspect → cross-check → decide.'}</p></div><div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(total)}</strong><span>matching</span></>}</div></div>
-      <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={cfg.search}/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label>{type==='course'&&<button className={`m-filter-toggle ${advanced?'active':''}`} onClick={()=>setAdvanced(x=>!x)}><SlidersHorizontal size={15}/>Filters{active.length?` · ${active.length}`:''}</button>}<button className="m-secondary compact" onClick={()=>{setQuery('');setFilters({});setFilterLabels({});setOffset(0)}} disabled={!query&&!active.length}><RefreshCw size={14}/>Clear</button>{!completenessMode&&['provider','course'].includes(type)&&<button className="m-secondary compact" onClick={()=>navigate?.('Compare',{type})}><Activity size={14}/>Compare {type}s</button>}{!completenessMode&&['provider','course'].includes(type)&&Number(rank)>=5&&<button className="m-secondary compact" onClick={()=>setCreating(true)}><Plus size={14}/>Add {type}</button>}</div>
+      <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={cfg.search}/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label>{type==='course'&&<button className={`m-filter-toggle ${advanced?'active':''}`} onClick={()=>setAdvanced(x=>!x)}><SlidersHorizontal size={15}/>Filters{active.length?` · ${active.length}`:''}</button>}<button className="m-secondary compact" onClick={()=>{setQuery('');setFilters({});setFilterLabels({});setOffset(0)}} disabled={!query&&!active.length}><RefreshCw size={14}/>Clear</button>{!completenessMode&&['provider','course'].includes(type)&&<button className="m-secondary compact" onClick={()=>navigate?.('Compare',{type})}><Activity size={14}/>Compare {type}s</button>}{!completenessMode&&['provider','course'].includes(type)&&Number(rank)>=5&&<button className="m-secondary compact" onClick={()=>setCreating(true)}><Plus size={14}/>Add {type}</button>}{!completenessMode&&['provider','course'].includes(type)&&Number(rank)>=3&&<button className={`m-secondary compact${listEdit?' active':''}`} aria-pressed={listEdit} onClick={()=>setListEdit(x=>!x)}><Pencil size={14}/>{listEdit?'Done editing':'Edit in list'}</button>}</div>
       <FilterBar type={type} filters={filters} filterLabels={filterLabels} patch={patch} data={filterData} busy={filterBusy} advanced={advanced}/>
       {(query||active.length>0)&&<div className="m-chip-row">{query&&<FilterChip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><FilterChip key={k} label={`${filterLabel(k)}: ${filterLabels[k]||filterValueLabel(k,v,filterData)}`} onRemove={()=>patch(k,'')}/>)}</div>}
-      <DataTable rows={rows} columns={cols} loading={busy} sort={sort} direction={direction} onSort={changeSort} onRow={open} selected={selected}/>
+      {listEdit&&!busy&&rows.length?<ListEdit type={type} rows={rows} onError={onError}/>:<DataTable rows={rows} columns={cols} loading={busy} sort={sort} direction={direction} onSort={changeSort} onRow={open} selected={selected}/>}
       <Pager offset={offset} limit={PAGE_SIZE} total={total} onOffset={setOffset}/>
     </section>
     {selected&&<DetailDrawer type={type} data={detail} busy={detailBusy} navigate={navigate} onError={onError} onChanged={()=>adminRead(cfg.detail,{id:selected}).then(setDetail).catch(e=>onError(e.message))} onClose={()=>{setSelected(null);setDetail(null)}}/>}
