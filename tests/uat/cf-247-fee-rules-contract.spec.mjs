@@ -26,7 +26,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept())
     await page.goto('/#layer-4-review?tab=rules')
-    await expect(page.getByRole('tab', { name: 'Batch rules' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('tab', { name: 'Fee rules' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.fr-rules tbody tr')).toHaveCount(2)
     await page.getByRole('button', { name: 'Preview rule 1' }).click()
     await expect(page.locator('[data-preview-rule="1"] [data-preview]')).toContainText('214 courses would get a fee.')

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.53 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.126** (Fee rules, Flagged values, Send back and Layer 3 Control tidy-up).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.52 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.125** (Dashboard: Waiting for you first).

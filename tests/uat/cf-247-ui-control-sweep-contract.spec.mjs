@@ -104,7 +104,10 @@ test.describe('mocked browser', () => {
     await intake.getByLabel('Model for Intakes').selectOption('openrouter-intake-l3r-claude-sonnet-4-6-v1')
     await intake.getByRole('button', { name: 'Send 12 back' }).click()
     await expect.poll(() => page.l3calls.filter(c => c.p_action === 'send_back').map(c => c.p_args)).toContainEqual({ field: 'course_intake', reason: F.requeue.groups[2].reason, profile: 'openrouter-intake-l3r-claude-sonnet-4-6-v1' })
-    await page.getByRole('row', { name: /Tuition/ }).getByRole('button', { name: 'Retry' }).click()
+    // v2.15.126: failed Layer 3 work is retried from Layer 3 › Control.
+    await expect(page.locator('[data-failed-work]')).toHaveCount(0)
+    await page.goto('/#layer-3-ai')
+    await page.locator('[data-failed-work]').getByRole('row', { name: /Tuition/ }).getByRole('button', { name: 'Retry' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'retry_failed')?.p_args).toEqual({ task: 'provider_current_tuition_validation' })
   })
 
@@ -112,7 +115,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept())
     await page.goto('/#layer-3-ai')
-    await page.locator('.l3c-task', { hasText: 'Intakes' }).getByRole('button', { name: 'Send back to AI' }).click()
+    await page.locator('.l3c-task', { hasText: 'Intakes' }).getByRole('button', { name: 'Send these back to the AI' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'send_back')?.p_args).toEqual({ field: 'course_intake' })
   })
 

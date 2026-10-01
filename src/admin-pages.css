@@ -269,3 +269,17 @@ td>.l3v-model{display:block}
 .db-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
 .db-layers button{all:unset;cursor:pointer;display:grid;gap:2px;padding:10px 12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);background:var(--cf-surface)}
 .db-layers small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}.db-layers strong{font-size:var(--cf-fs-lg);font-variant-numeric:tabular-nums}.db-layers span{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+/* Fee rules (v2.15.126): preview opens under its own rule; page words centred on the rule's wording. */
+.fr-preview-row>td{padding:0 8px 10px;background:var(--cf-slate-50)}
+.fr-preview-row .fr-preview-panel{margin-top:0}
+.fr-quote{font-size:var(--cf-fs-xs);color:var(--cf-text-2);line-height:1.4;overflow-wrap:anywhere}
+.fr-quote mark{background:color-mix(in srgb,var(--cf-warning) 28%,transparent);color:var(--cf-text);padding:0 2px;border-radius:2px}
+.fv-table .l3c-row-actions{flex-wrap:nowrap}
+.sb-model{width:280px;max-width:100%}
+.sb-reason{max-width:520px}
+/* Layer 3 Control (v2.15.126): over-limit shown plainly; same column widths for every task. */
+.l3c-over strong{color:var(--cf-danger)}.l3c-over b{color:var(--cf-danger)}
+.l3c-more{display:block;font-size:var(--cf-fs-xs);margin-top:4px}
+.l3c-tiers{table-layout:fixed;width:100%}
+.l3c-tiers th:nth-child(1){width:56px}.l3c-tiers th:nth-child(2){width:22%}
+.l3c-tiers th:last-child{width:250px}.l3c-tiers .l3c-row-actions{flex-wrap:nowrap}.l3c-tiers th:nth-child(4){width:120px}.l3c-tiers th{white-space:normal}
