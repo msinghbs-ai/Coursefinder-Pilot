@@ -26,8 +26,8 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
 
     expect(shell).toContain("import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'")
     // v2.15.107: Jobs is the Scheduled jobs > Jobs tab and Sources the Layer 1 Register > Sources tab (both role rank 4).
-    expect(shell).toContain("case'jobs':return tab==='schedules'?<div className=\"m-page-stack\"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>")
-    expect(shell).toContain("if(tab==='sources')return <SourcesWorkspace/>")
+    expect(shell).toContain(`tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>`)
+    expect(shell).toContain("case'sources':return <SourcesWorkspace/>")
     expect(shell).not.toContain('OperationalList operation="jobs"')
     expect(shell).not.toContain('OperationalList operation="sources"')
 

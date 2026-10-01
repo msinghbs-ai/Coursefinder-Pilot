@@ -32,11 +32,9 @@ export const PAGES = {
   coverage: { label: 'Coverage & completeness', slug: 'coverage', icon: 'check', subtitle: 'How complete each course is, and each attribute across all courses.', tabs: [
     { key: 'courses', label: 'Courses', min: 1 },
     { key: 'attributes', label: 'Attributes', min: 1 },
-    { key: 'domains', label: 'Readiness by area', min: 1 },
   ] },
   layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', subtitle: 'Official registers such as CRICOS: runs, sources and their settings.', tabs: [
     { key: 'operations', label: 'Runs', min: 4 },
-    { key: 'sources', label: 'Sources', min: 4 },
     { key: 'settings', label: 'Source settings', min: 6 },
     { key: 'batch', label: 'Manual batch runs', min: 6 },
   ] },
@@ -70,9 +68,10 @@ export const PAGES = {
     { key: 'automations', label: 'Automations', min: 4 },
     { key: 'priority', label: 'Priority queue', min: 3 },
     { key: 'jobs', label: 'Jobs', min: 4 },
-    { key: 'schedules', label: 'Schedules', min: 4 },
   ] },
   evidence: { label: 'Evidence', slug: 'evidence', icon: 'book', min: 3, subtitle: 'Saved source pages and files, and what they changed.' },
+  // v2.15.124 (screen review): the cross-layer source list moved out of Layer 1 to Operations.
+  sources: { label: 'Sources', slug: 'pipeline-sources', icon: 'database', min: 4, subtitle: 'Every source the pipeline reads, across all layers, with its health and history.' },
 
   environment: { label: 'Environment & keys', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Keys for outside services (never shown) and usage against budgets.' },
   scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: providers, limits and routing.' },
@@ -88,7 +87,7 @@ export const SECTIONS = [
   { label: '', pages: ['dashboard'] },
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4'] },
-  { label: 'Operations', pages: ['health', 'jobs', 'evidence'] },
+  { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources'] },
   { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'migration'] },
   { label: 'Administration', pages: ['users'] },
 ]
@@ -103,8 +102,8 @@ export function slugify(v) { return String(v).toLowerCase().replace(/[^a-z0-9]+/
 export const LEGACY = {
   'campuses': { page: 'providers', tab: 'campuses' },
   'provider-contacts': { page: 'contacts' },
-  'completeness': { page: 'coverage', tab: 'domains' },
-  'data-quality-readiness': { page: 'coverage', tab: 'domains' },
+  'completeness': { page: 'coverage', tab: 'attributes' },
+  'data-quality-readiness': { page: 'coverage', tab: 'attributes' },
   'course-coverage': { page: 'coverage', tab: 'courses' },
   'compare': { page: 'rankings', tab: 'compare' },
   'outcomes-qilt': { page: 'rankings', tab: 'qilt' },
@@ -114,7 +113,7 @@ export const LEGACY = {
   // v2.15.123: Regulatory settings merged into Layer 1 (Manual batch runs); its Pilot reset moved to the Go-live checklist.
   'regulatory-settings': { page: 'layer1', tab: 'batch' },
   'layer-1-authority': { page: 'layer1', tab: 'operations' },
-  'sources': { page: 'layer1', tab: 'sources' },
+  'sources': { page: 'sources' },
   'onboarding': { page: 'providers', tab: 'onboarding' },
   'important-dates': { page: 'reference', tab: 'dates' },
   'important-links': { page: 'reference', tab: 'links' },
@@ -125,8 +124,9 @@ export const LEGACY = {
   'review-queue': { page: 'layer4' },
   'jobs-schedules': { page: 'jobs' },
   'jobs': { page: 'jobs', tab: 'jobs' },
-  'scheduled-tasks': { page: 'jobs', tab: 'schedules' },
-  'refresh-scheduling': { page: 'jobs', tab: 'schedules' },
+  // v2.15.124: Schedules folded into Automations (refresh schedules and one-off runs) and Jobs (history).
+  'scheduled-tasks': { page: 'jobs', tab: 'automations' },
+  'refresh-scheduling': { page: 'jobs', tab: 'automations' },
   'attributes': { page: 'dataModel' },
   // The old '#settings' address opened Administration > Platform (readiness), not the regulatory page.
   'settings': { page: 'health', tab: 'readiness' },
@@ -180,6 +180,10 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   p.delete('tab')
   // Layer 1 tabs moved in v2.15.112: old links keep working.
   if (hit.page === 'layer1' && MOVED_L1[tab]) return { page: MOVED_L1[tab].page, tab: MOVED_L1[tab].tab, params: p }
+  // v2.15.124: Readiness by area is part of Attributes; Layer 1 › Sources is Operations › Sources.
+  if (hit.page === 'jobs' && tab === 'schedules') return { page: 'jobs', tab: 'automations', params: p }
+  if (hit.page === 'coverage' && tab === 'domains') return { page: 'coverage', tab: 'attributes', params: p }
+  if (hit.page === 'layer1' && tab === 'sources') return { page: 'sources', tab: '', params: p }
   // v2.15.122: the Layer 3 Models list is Platform settings › Models & services.
   if (hit.page === 'layer3' && tab === 'models') return { page: 'services', tab: '', params: p }
   return { page: hit.page, tab, params: p }

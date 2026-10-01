@@ -184,9 +184,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='prisms')return <Prisms onError={onError}/>
         if(tab==='datasets')return <div className="m-page-stack" data-cf-stat-admin-host/>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':return tab==='domains'?<DomainReadiness rank={rank}/>:<CoverageView view={tab==='attributes'?'attributes':'courses'}/>
+      case'coverage':return tab==='attributes'?<div className="m-page-stack"><CoverageView view="attributes"/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details></div>:<CoverageView view="courses"/>
       case'layer1':
-        if(tab==='sources')return <SourcesWorkspace/>
         if(tab==='settings')return <Layer1SourceSettings/>
         if(tab==='batch')return <div className="m-legacy-host"><RegulatorySettings onError={onError} mode="batch"/></div>
         return <Layer1Operations embedded/>
@@ -200,8 +199,9 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
       case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
-      case'jobs':return tab==='priority'?<div className="m-page-stack"><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/></div>:tab==='schedules'?<div className="m-page-stack"><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
+      case'jobs':return tab==='priority'?<div className="m-page-stack"><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
+      case'sources':return <SourcesWorkspace/>
       case'environment':return <EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/>
       case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Environment &amp; integrations</a>.</p><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>
       case'services':return <div className="m-page-stack"><ModelsServices onError={err}/></div>

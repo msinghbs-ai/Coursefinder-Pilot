@@ -16,7 +16,7 @@ test('menu map: five plain sections, every page reachable, old addresses and nam
   expect(new Set(inMenu).size).toBe(inMenu.length)
   expect(Object.keys(PAGES).sort()).toEqual([...inMenu].sort())
   // Every old menu entry, hidden route and alias.
-  const old = { 'dashboard': 'dashboard', 'providers': 'providers', 'courses': 'courses', 'campuses': 'providers', 'scholarships': 'scholarships', 'provider-contacts': 'contacts', 'layer-1-operations': 'layer1', 'layer-2-enrichment': 'layer2', 'layer-3-ai-interpretation': 'layer3', 'layer-4-human-resolution': 'layer4', 'jobs-schedules': 'jobs', 'evidence': 'evidence', 'completeness': 'coverage', 'data-quality-readiness': 'coverage', 'course-coverage': 'coverage', 'statistics-rankings': 'rankings', 'compare': 'rankings', 'administration': 'scrapers', 'outcomes-qilt': 'rankings', 'student-flow-prisms': 'rankings', 'sources': 'layer1', 'attributes': 'dataModel', 'settings': 'health', 'onboarding': 'providers', 'jobs': 'jobs', 'scheduled-tasks': 'jobs', 'important-links': 'reference', 'important-dates': 'reference', 'review-queue': 'layer4', 'refresh-scheduling': 'jobs', 'layer-1-regulatory': 'layer1', 'layer-1-authority': 'layer1', 'layer-2-operations': 'layer2', 'layer-3-ai': 'layer3', 'layer-4-review': 'layer4', 'users-roles': 'users' }
+  const old = { 'dashboard': 'dashboard', 'providers': 'providers', 'courses': 'courses', 'campuses': 'providers', 'scholarships': 'scholarships', 'provider-contacts': 'contacts', 'layer-1-operations': 'layer1', 'layer-2-enrichment': 'layer2', 'layer-3-ai-interpretation': 'layer3', 'layer-4-human-resolution': 'layer4', 'jobs-schedules': 'jobs', 'evidence': 'evidence', 'completeness': 'coverage', 'data-quality-readiness': 'coverage', 'course-coverage': 'coverage', 'statistics-rankings': 'rankings', 'compare': 'rankings', 'administration': 'scrapers', 'outcomes-qilt': 'rankings', 'student-flow-prisms': 'rankings', 'sources': 'sources', 'attributes': 'dataModel', 'settings': 'health', 'onboarding': 'providers', 'jobs': 'jobs', 'scheduled-tasks': 'jobs', 'important-links': 'reference', 'important-dates': 'reference', 'review-queue': 'layer4', 'refresh-scheduling': 'jobs', 'layer-1-regulatory': 'layer1', 'layer-1-authority': 'layer1', 'layer-2-operations': 'layer2', 'layer-3-ai': 'layer3', 'layer-4-review': 'layer4', 'users-roles': 'users' }
   for (const [slug, page] of Object.entries(old)) expect(resolveTarget(slug).page, slug).toBe(page)
   // Old menu labels passed to navigate().
   for (const [label, page] of [['Layer 4 — Human Resolution', 'layer4'], ['Statistics & Rankings', 'rankings'], ['Outcomes (QILT)', 'rankings'], ['Provider Contacts', 'contacts'], ['Jobs', 'jobs'], ['Compare', 'rankings'], ['Evidence', 'evidence']]) expect(resolveTarget(label).page, label).toBe(page)
@@ -74,11 +74,12 @@ test.describe('mocked browser', () => {
   test('Coverage & completeness renders inside the app shell and the old address redirects', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#data-quality-readiness')
-    await expect(page).toHaveURL(/#coverage\?tab=domains$/)
+    await expect(page).toHaveURL(/#coverage\?tab=attributes$/)
     await expect(page.locator('.m-sidebar')).toBeVisible()
     await expect(page.locator('.dq-shell')).toHaveCount(0)
     await expect(page.locator('.m-topbar h1')).toHaveText('Coverage & completeness')
-    await expect(page.getByRole('tab', { name: 'Readiness by area' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('tab', { name: 'Attributes' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByText('By area: providers, courses, campuses and scholarships')).toBeVisible()
     await page.getByRole('tab', { name: 'Courses' }).click()
     await expect(page).toHaveURL(/#coverage$/)
     await expect(page.getByText('Course completeness score').first()).toBeVisible()

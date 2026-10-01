@@ -1,23 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.123'
-export const PACKAGE_VERSION='0.1.50'
+export const UI_VERSION='2.15.124'
+export const PACKAGE_VERSION='0.1.51'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Fewer, clearer settings pages',
+  title:'Schedules, coverage and sources tidied',
   changes:[
-    'Regulatory settings is gone from the menu. Its country batch runner is now Layer 1 Register › Manual batch runs (Platform Admin), showing Australia and New Zealand first, with other countries behind Show countries not in scope.',
-    'Environment migration is now the Go-live checklist: production settings, the migration checklist, the readiness gates and UAT, and the Pilot database reset, in one place.',
-    'Platform health › Readiness & capacity is now Capacity, shown as one page without tabs inside tabs.',
-    'Blocking a provider, course, campus or scholarship moved to Layer 4 Review › Blocks.',
-    'Environment & integrations is now Environment & keys. Old links to Regulatory settings open Manual batch runs.'
+    'Scheduled jobs › Schedules is gone. Refresh schedules, one-off runs for a scope and the refresh queue now sit under Automations; job history stays on Jobs, so the copied list of recent runs is removed.',
+    'Coverage & completeness › Readiness by area is now part of Attributes, under By area. The contradictory note about having no single completeness score is removed.',
+    'Layer 1 Register › Sources listed sources for every layer, so it moved to Operations › Sources.',
+    'Old links to Schedules, Readiness by area and Layer 1 Sources open the new places.'
   ],
-  bugFixes:[
-    'Regulatory settings stopped with an error when the source list came back in an unexpected shape; it now shows an empty list instead.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

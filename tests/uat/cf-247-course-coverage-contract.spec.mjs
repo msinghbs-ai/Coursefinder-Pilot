@@ -19,7 +19,7 @@ test('Course coverage is reachable from Coverage & completeness and uses the val
   expect(nav).toContain("{ key: 'courses', label: 'Courses', min: 1 }")
   expect(nav).toContain("{ key: 'attributes', label: 'Attributes', min: 1 }")
   expect(nav).toContain("'course-coverage': { page: 'coverage', tab: 'courses' }")
-  expect(main).toContain("case'coverage':return tab==='domains'?<DomainReadiness rank={rank}/>:<CoverageView view={tab==='attributes'?'attributes':'courses'}/>")
+  expect(main).toContain(`case'coverage':return tab==='attributes'?<div className="m-page-stack"><CoverageView view="attributes"/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details></div>:<CoverageView view="courses"/>`)
   expect(v).toContain("adminRead('course_coverage'")
   expect(v).toContain("adminRead('course_coverage_courses'")
   expect(v).toContain("states:['candidate','in_review','awaiting_l3']")

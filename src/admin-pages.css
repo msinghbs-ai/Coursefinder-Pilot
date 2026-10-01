@@ -253,3 +253,4 @@ td>.l3v-model{display:block}
 @media (max-width:640px){.rs-wide{grid-column:auto}}
 .ms-task{margin-right:6px;white-space:nowrap}
 .env-links{display:block;color:var(--cf-text-2)}
+.cov-by-area>summary{cursor:pointer;font-weight:600;padding:var(--cf-space-2) 0}
