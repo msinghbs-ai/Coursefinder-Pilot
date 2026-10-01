@@ -48,7 +48,7 @@ alter table pipeline.provider_fact_search enable row level security;
 
 create table if not exists pipeline.provider_fee_rows (
   id uuid primary key default gen_random_uuid(),
-  source_id uuid not null references pipeline.provider_fact_sources(id) on delete cascade,
+  source_id uuid not null references pipeline.provider_fact_sources(id),
   provider_id uuid not null references catalogue.providers(id),
   course_code text not null,
   amount numeric not null check (amount > 0),
@@ -57,6 +57,7 @@ create table if not exists pipeline.provider_fee_rows (
   fee_year int,
   column_label text,
   row_text text,
+  current boolean not null default true,
   created_at timestamptz not null default now(),
   constraint provider_fee_rows_key unique (source_id, course_code, amount, basis)
 );
@@ -167,7 +168,8 @@ begin
     end if;
   end if;
   select a.currency_code into v_cur from catalogue.providers p join pipeline.coverage_admission_countries a on a.country_id = p.country_id where p.id = f.provider_id;
-  delete from pipeline.provider_fee_rows where source_id = p_id;
+  -- a re-read replaces the rows parsed before (kept, marked not current, for the record)
+  update pipeline.provider_fee_rows set current = false where source_id = p_id and current;
   if f.kind = 'fee_schedule' and v_cur is not null then
     insert into pipeline.provider_fee_rows(source_id, provider_id, course_code, amount, currency_code, basis, fee_year, column_label, row_text)
     select p_id, f.provider_id, upper(btrim(r->>'course_code')), (r->>'amount')::numeric, v_cur, nullif(r->>'basis', ''), nullif(r->>'fee_year', '')::int,
@@ -176,7 +178,7 @@ begin
      where coalesce(r->>'course_code', '') ~ '^[0-9A-Za-z]{4,12}$' and coalesce(r->>'amount', '') ~ '^[0-9]+(\.[0-9]+)?$'
        and (r->>'amount')::numeric between 1000 and 200000
        and coalesce(nullif(r->>'basis', ''), 'annual') in ('annual','per_semester','per_trimester','total_indicative')
-    on conflict on constraint provider_fee_rows_key do nothing;
+    on conflict on constraint provider_fee_rows_key do update set current = true, fee_year = excluded.fee_year, column_label = excluded.column_label, row_text = excluded.row_text;
     get diagnostics v_n = row_count;
   end if;
   update pipeline.provider_fact_sources set status = case when f.kind <> 'fee_schedule' then 'read' when v_n > 0 then 'parsed' else 'no_values' end,
