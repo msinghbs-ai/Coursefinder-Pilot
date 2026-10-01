@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.52 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.125** (Dashboard: Waiting for you first).
+- Database (applied live): 20261001130000 (admin_waiting_read).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.51 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.124** (Schedules folded into Automations; Readiness by area into Attributes; Sources moved to Operations).

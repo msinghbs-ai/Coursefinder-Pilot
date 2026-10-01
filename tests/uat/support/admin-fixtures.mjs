@@ -282,3 +282,11 @@ export const referenceSources = { can_edit: true, can_manage: true, uses: refUse
 export const keyDates = { can_edit: true, items: [
   { id: 'd1', country: 'AU', event_type: 'provider_application_window', title: 'UQ Semester 1 2027 international application deadline', source_url: 'https://study.uq.edu.au/admissions', precision: 'exact', starts_on: '2026-11-30', ends_on: null, wording: 'Semester 1: 30 November of the previous year', warning_days: 45, scope: 'provider', refresh_layer: 2, status: 'active' },
   { id: 'd2', country: 'AU', event_type: 'regulatory_dataset_release', title: 'QILT GOS 2026 release', source_url: 'https://www.qilt.edu.au/', precision: 'source_vague', starts_on: null, ends_on: null, wording: 'Usually released in late March', warning_days: 14, scope: 'country_reference', refresh_layer: null, status: 'active' } ], events: [] }
+
+// v2.15.125 Dashboard waiting list.
+export const waiting = { rank: 6, rows: [
+  { key: 'review', label: 'Review items to decide', count: 1803, oldest: '2026-09-02T00:00:00Z', href: '#layer-4-review', min: 3 },
+  { key: 'flags', label: 'Flagged values to check', count: 236, oldest: '2026-09-20T00:00:00Z', href: '#layer-4-review?tab=flags', min: 3 },
+  { key: 'rules', label: 'Fee rules waiting for approval', count: 0, oldest: null, href: '#layer-4-review?tab=rules', min: 5 },
+  { key: 'scholarship_links', label: 'Scholarships to link to courses', count: 87, oldest: '2026-09-25T00:00:00Z', href: '#scholarships?tab=links', min: 4 },
+  { key: 'failed_jobs', label: 'Jobs that failed in the last 24 hours', count: 0, oldest: null, href: '#scheduled-jobs?tab=jobs', min: 4 } ] }
