@@ -13,7 +13,8 @@ test('Layer 1 background runs: driver-safe control, live card status, readable f
   // workers are called with the service identity, never a user's sign-in token
   expect(control).not.toMatch(/authorization:`Bearer \$\{token\}`/)
   const nz=fs.readFileSync('supabase/functions/layer1-nz-live/index.ts','utf8')
-  expect(nz).toContain('const VERSION="layer1-nz-live-v1.2.0"')
+  expect(nz).toContain('const VERSION="layer1-nz-live-v1.2.1"')
+  expect(nz).toContain(String.raw`.replace(/^(https?:\/\/)+/i,"https://")`)
   expect(nz).toContain('svc_layer1_evidence_by_hash')
   expect(nz).toContain('if(doApply&&!hasMore)catalogueStats')
   const card=fs.readFileSync('src/layer1-operations-entry.jsx','utf8')
