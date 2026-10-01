@@ -112,3 +112,15 @@ test.describe('browser: fee schedules panel', () => {
     await expect(page.locator('[data-fee-schedules]')).toHaveCount(0)
   })
 })
+
+test('database: provider facts scheduled; Firecrawl guard follows the balance Firecrawl reports', () => {
+  const s = read('supabase/migrations/20261001179400_cf247_provider_facts_schedule.sql')
+  expect(s).toContain(`select cron.schedule('provider-facts', '*/10 * * * *',`)
+  expect(s).toContain('"mode":"provider_facts","search_limit":12,"read_limit":8')
+  const b = read('supabase/migrations/20261001179500_cf247_firecrawl_observed_balance.sql')
+  expect(b).toContain("if v is distinct from '5f76be10ad2334c9f550421e0c2fb611' then raise exception")
+  expect(b).toContain("v_remaining:=least(v_remaining, coalesce((select greatest(o.remaining_units")
+  expect(b).toContain("o.observed_at>now()-interval ''2 hours''")
+  expect(b).toContain("https://api.firecrawl.dev/v1/team/credit-usage")
+  expect(b.toLowerCase()).not.toContain('delete from')
+})
