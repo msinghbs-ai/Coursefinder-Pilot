@@ -20,7 +20,7 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     expect(workspace).toContain("Number(policy?.layer)<=2")
     expect(workspace).toContain('Layer 3 remains Evidence/profile/model-qualified')
     // 'terminalJob' no longer exists in the Scheduled Tasks workspace (stale; removed in Package 2).
-    expect(workspace).toContain("Data Operations · Scheduled Tasks")
+    expect(workspace).toContain("<h2>Refresh schedules and one-off runs</h2>")
     expect(workspace).not.toContain("supabase.rpc('refresh_policy_upsert_v2'")
     expect(workspace).not.toContain('scheduler_policy_control')
     expect(workspace).not.toMatch(/supabase\.from\s*\(/)
@@ -32,9 +32,10 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     const ops=nav.match(/label: 'Operations', pages: \[(.*?)\]/)?.[1]||''
     expect(ops.indexOf("'jobs'")).toBeGreaterThan(-1)
     expect(ops.indexOf("'jobs'")).toBeLessThan(ops.indexOf("'evidence'"))
-    expect(nav).toContain("{ key: 'schedules', label: 'Schedules', min: 4 }")
-    expect(nav).toContain("'scheduled-tasks': { page: 'jobs', tab: 'schedules' }")
-    expect(shell).toContain("case'jobs':return tab==='schedules'?")
+    // v2.15.124: the Schedules tab is folded into Automations (refresh schedules and one-off runs) and Jobs (history).
+    expect(nav).not.toContain("{ key: 'schedules', label: 'Schedules', min: 4 }")
+    expect(nav).toContain("'scheduled-tasks': { page: 'jobs', tab: 'automations' }")
+    expect(shell).toContain(`tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>`)
     expect(shell).not.toContain("{key:'scheduling',label:'Scheduling'")
     expect(shell).not.toContain("tool==='scheduling'")
     expect(shell).not.toContain("item('Refresh & Scheduling'")
@@ -42,7 +43,7 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
     expect(navUat).toContain("clickPrimaryNav(page,'Scheduled Tasks')")
     expect(navUat).not.toContain("getByRole('tab',{name:'Scheduling',exact:true}).click()")
 
-    for(const label of ['Scheduled Jobs & Run Control','Schedule Configuration','Scheduled Target','Freshness Policy','Cadence','Next Run','Schedule Status','Latest Refresh Queue','Recent Job Runs','Edit schedule','Run on demand','Previous','Next'])expect(workspace).toContain(label)
+    for(const label of ['Refresh schedules and one-off runs','Schedule Configuration','Scheduled Target','Freshness Policy','Cadence','Next Run','Schedule Status','Latest Refresh Queue','Edit schedule','Run on demand','Previous','Next'])expect(workspace).toContain(label)
     for(const route of ['#layer-1-operations','#layer-2-enrichment','#layer-3-ai-interpretation','#jobs','#evidence'])expect(workspace).toContain(route)
     expect(workspace).toContain('Historical Jobs are never reset or replayed')
     expect(workspace).toContain('does not change its recurring cadence or next-run time')

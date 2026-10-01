@@ -59,13 +59,10 @@ export function DomainReadiness({rank=0}){
   function openReview(){if(rank>=3)goAdmin('#layer-4-review')}
 
   return <div className="dq-embedded">
-    <div className="cf-page-toolbar"><p className="dq-embedded-intro">{selected?`${selected.label} · ${ENTITY_LABEL[selected.entity_type]} · ${STATE_LABEL[selected.state]}`:'Completeness is shown by area, not as one score. Select a count to list those records.'}</p>
+    <div className="cf-page-toolbar"><p className="dq-embedded-intro">{selected?`${selected.label} · ${ENTITY_LABEL[selected.entity_type]} · ${STATE_LABEL[selected.state]}`:'Each area counted separately. Select a count to list those records.'}</p>
       <div className="dq-actions"><label>Scope<select value={country} onChange={e=>setCountry(e.target.value)}><option value="">AU + NZ</option><option value="AU">Australia</option><option value="NZ">New Zealand</option></select></label><button className="dq-icon" title="Refresh" aria-label="Refresh" onClick={loadOverview} disabled={busy}><RefreshCw size={17}/></button></div></div>
     {error&&<div className="dq-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
     {!selected?<>
-      <section className="dq-policy">
-        <div className="dq-policy-icon"><ShieldCheck size={21}/></div><div><strong>No single completeness score</strong><p>{overview?.policy?.reason||'Regulatory authority, enrichment coverage, Search admission and publication are independent decisions.'} <b>Present</b> and a real <b>zero</b> count as ready; <b>not applicable</b> is left out of the total.</p></div><span>{scope}</span>
-      </section>
       <section className="dq-legend"><span>Metric state</span>{STATE_ORDER.map(s=><em key={s} className={`dq-state s-${s}`}>{STATE_LABEL[s]}</em>)}</section>
       {busy&&!overview?<ReadinessSkeleton/>:<div className="dq-domain-grid">{groups.map(group=><DomainCard key={group.domain} group={group} onState={openState}/>)}</div>}
     </>:<ExceptionsView selected={selected} data={exceptions} busy={exceptionBusy} offset={offset} query={query} setQuery={setQuery} submitQuery={()=>{setOffset(0);setSubmittedQuery(query.trim())}} setOffset={setOffset} clear={()=>{setSelected(null);setExceptions(null)}} rank={rank} openEntity={openEntity} openEvidence={openEvidence} openReview={openReview}/>}

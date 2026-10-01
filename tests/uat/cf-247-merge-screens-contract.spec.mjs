@@ -32,3 +32,22 @@ test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live, 
   expect(pm).toContain("view==='golive'?<>")
   expect(pm).toContain("view==='blocks'?<BlockConsole")
 })
+
+test('v2.15.124: Readiness by area is part of Attributes; the cross-layer Sources list is under Operations', () => {
+  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes'])
+  expect(resolveTarget('coverage', new URLSearchParams({ tab: 'domains' })).tab).toBe('attributes')
+  expect(resolveTarget('data-quality-readiness').tab).toBe('attributes')
+  expect(PAGES.layer1.tabs.map(t => t.key)).toEqual(['operations', 'settings', 'batch'])
+  expect(SECTIONS.find(s => s.label === 'Operations').pages).toEqual(['health', 'jobs', 'evidence', 'sources'])
+  expect(resolveTarget('layer-1-register', new URLSearchParams({ tab: 'sources' })).page).toBe('sources')
+  expect(read('src/data-quality-entry.jsx')).not.toContain('No single completeness score')
+})
+
+test('v2.15.124: Schedules folded into Automations; the copied job list is gone (history is on Jobs)', () => {
+  expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs'])
+  expect(resolveTarget('scheduled-jobs', new URLSearchParams({ tab: 'schedules' })).tab).toBe('automations')
+  expect(resolveTarget('scheduled-tasks').tab).toBe('automations')
+  const w = read('src/ScheduledJobsWorkspace.jsx')
+  expect(w).not.toContain('<h3>Recent Job Runs</h3>')
+  expect(w).toContain('cf-scheduler-v2-native')
+})
