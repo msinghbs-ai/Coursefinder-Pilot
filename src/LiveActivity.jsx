@@ -3,10 +3,13 @@
 // queue (left, done in 24 hours, about how long to go), up to date, paused or failing; its last run and the worker's last
 // summary; when it runs next; and what is waiting for a person. Read: admin_read('live_activity'), every 20 seconds
 // while the page is open and visible. Read only.
+// Decision 215 (v2.15.142): a scheduled run only sends the request, so it "succeeds" even when the worker refuses the
+// work. Error replies from workers in the last few hours are now listed with a plain-English reading.
 import React,{useEffect,useMemo,useRef,useState}from'react'
 import{Activity,AlertTriangle,CheckCircle2,CirclePause,Clock,Loader2,RefreshCw,UserCheck}from'lucide-react'
 import{adminRead}from'./lib/supabase'
 import{fmtNumber,fmtTime}from'./lib/format.js'
+import{errorReading}from'./lib/workerErrors.js'
 import{Button}from'./ui-kit'
 
 const REFRESH_MS=20000
@@ -50,6 +53,7 @@ export const ago=(d,now=new Date())=>{if(!d)return'—';const s=Math.round((now-
 export const until=(d,now=new Date())=>{if(!d)return'—';const s=Math.round((d-now)/1000);if(s<60)return'in under a minute';if(s<3600)return`in ${Math.round(s/60)} min`;if(s<86400)return`in ${Math.round(s/3600)} h`;return`in ${Math.round(s/86400)} d`}
 const melb=d=>d?fmtTime(d,''):''
 
+
 // What a job is doing now, in one word, with the reason
 export function jobState(j){
   const q=j.queue
@@ -87,7 +91,7 @@ export default function LiveActivity({navigate}){
   if(!data&&!err)return <section className="m-panel"><p className="sd-desc">Loading live activity…</p></section>
   return <div className="la" data-live-activity>
     <section className="m-panel la-head">
-      <div><strong>{counts.running} running now · {counts.working} working through a queue{counts.failing+counts.stuck?` · ${counts.failing+counts.stuck} need attention`:''}{counts.paused?` · ${counts.paused} paused`:''}</strong>
+      <div><strong>{counts.running} running now · {counts.working} working through a queue{counts.failing+counts.stuck?` · ${counts.failing+counts.stuck} need attention`:''}{counts.paused?` · ${counts.paused} paused`:''}{data?.worker_errors?.length?` · ${fmtNumber(data.worker_errors.reduce((t,e)=>t+Number(e.count||0),0))} worker error replies`:''}</strong>
         <small className="sd-desc" data-live-updated>{live?`Live: refreshes every ${REFRESH_MS/1000} s`:'Paused'} · updated {melb(data?.now)}{busy?' · updating…':''}{data?.in_flight?` · ${fmtNumber(data.in_flight)} worker calls in flight`:''}</small></div>
       <div className="sd-actions">
         <label className="la-toggle"><input type="checkbox" checked={onlyActive} onChange={e=>setOnlyActive(e.target.checked)}/> Only what is busy or needs attention</label>
@@ -101,6 +105,16 @@ export default function LiveActivity({navigate}){
       <div className="la-needs">{NEEDS.map(([k,label,page,tab])=><button type="button" key={k} className={Number(np[k])?'la-need on':'la-need'} onClick={()=>navigate?.(page,tab?{tab}:{})} data-need={k}>
         <b>{fmtNumber(np[k]||0)}</b><span>{label}</span></button>)}</div>
     </section>
+
+    {(data?.worker_errors||[]).length>0&&<section className="m-panel la-errors" data-worker-errors>
+      <h3 className="la-h"><AlertTriangle size={16}/>Workers sending back errors<small className="sd-desc">A job’s run can show as succeeded while the worker it calls refuses the work. These are the error replies from the last few hours.</small></h3>
+      <div className="cf-table-wrap"><table className="cf-table la-table"><thead><tr><th>Reply</th><th>What it means</th><th>How often</th><th>Last</th></tr></thead>
+        <tbody>{data.worker_errors.map((e,i)=><tr key={i} data-worker-error={e.status??'none'}>
+          <td><span className="la-state failing"><AlertTriangle size={13}/>{e.timed_out?'Timed out':e.status==null?'No reply':`Error ${e.status}`}</span><small className="sd-desc la-msg">{e.message||'—'}</small></td>
+          <td>{errorReading(e)}</td>
+          <td>{fmtNumber(e.count)}</td>
+          <td>{ago(e.last,now)}<small className="sd-desc">{melb(e.last)}</small></td></tr>)}</tbody></table></div>
+    </section>}
 
     {AREAS.filter(([a])=>byArea.has(a)).map(([area,title,about])=>{
       const jobs=byArea.get(area).filter(j=>!onlyActive||['running','working','failing','stuck'].includes(jobState(j)[0]))

@@ -425,6 +425,10 @@ export const providerRankingHistory = { items: [{ system_code: 'qs_wur', ranking
 // Decision 214: Live activity
 export const liveActivity = {
   now: '2026-10-01T21:40:00Z', in_flight: 2,
+  worker_errors: [
+    { status: 401, timed_out: false, message: '{"error":"invalid_pilot_automation_key"}', count: 36, last: '2026-10-01T21:29:00Z' },
+    { status: 500, timed_out: false, message: '{"success":false,"code":"UNKNOWN_ERROR","error":"An unexpected error occurred (firecrawl)"}', count: 1, last: '2026-10-01T18:00:34Z' },
+  ],
   needs_person: { fee_schedules: 12, scholarships_ready: 344, scholarships_domestic: 236, layer4_reviews: 3097, flagged_values: 456, ranking_links: 27 },
   jobs: [
     { job: 'scholarship-discover', area: 'Scholarships', label: 'Discover scholarships', description: 'Finds scholarship pages on provider websites.', schedule: '*/10 * * * *', active: true, running: false, runs_24h: 144, failed_24h: 0,
