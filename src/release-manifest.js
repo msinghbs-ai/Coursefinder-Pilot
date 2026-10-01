@@ -1,23 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.142'
-export const PACKAGE_VERSION='0.1.69'
+export const UI_VERSION='2.15.143'
+export const PACKAGE_VERSION='0.1.70'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Evidence link indexing fixed; worker errors shown on Live activity',
+  title:'Every background job signs in with one-time run passes',
   changes:[
-    'Index evidence links works again: it had been refused for two days because the old automation key expired. It now signs in with a one-time run pass made for each run.',
-    'Compressed saved pages (about 11,700) are now read; they had been marked as having no links. They are being indexed again, 200 pages every 10 minutes.',
-    'Live activity has a new Workers sending back errors panel: error replies from workers in the last few hours, what each means in plain English, how often and when last. A job can show its run as succeeded while the worker refuses the work; this makes that visible.',
-    'Live activity shows Index evidence links with pages left, pages done in 24 hours and links found.',
-    'Platform guide updated: Live activity, Evidence, a new signal for repeating worker errors, and run passes under Budgets and keys.'
+    'The 27 background functions that still used the old automation key (expired 30 Sep 2026) now sign in with one-time run passes, like the other jobs. No function accepts the old key any more, so there is no shared key left to expire or leak.',
+    'Functions that call other functions (Layer 2 batch runner, scholarship scope jobs) make a fresh pass for each call.',
+    'One allow-list now decides which functions can be given a pass.',
+    'All 27 are now deployed from the repository by the deploy workflow; the Ontario college course loader (v0.3.0), which was running without its code in the repository, has been added to it.',
+    'Platform guide updated: Budgets and keys, the repeating worker error signal, and the Live activity reading of an old-key error.'
   ],
   bugFixes:[
-    'Index evidence links returned "invalid_pilot_automation_key" on every run since 30 Sep 2026 while its schedule showed success.',
-    'Compressed (.html.gz) saved pages were read as unreadable and recorded as having no links.'
+    'Layer 1 Canada loaders, Layer 2 acquisition and extraction, and scholarship scope jobs would have been refused if run, because they still relied on the expired automation key.'
   ]
 }
 
