@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     let schLeft = mode.startsWith("scholarship") ? Math.max(0, SCH_FC_CAP - Number(await rpc("svc_scholarship_fc_used", {}) ?? SCH_FC_CAP)) : 0;
     const useFc = async (purpose: string, providerId: string | null, url: string) => {
       if (!fc?.secret || fcRemaining < 1) return false;
-      const units = purpose === "search" || purpose === "sch_search" ? 2 : 1; if (fcRemaining < units) return false;
+      const units = /search$/.test(purpose) ? 2 : 1; if (fcRemaining < units) return false;
       if (purpose.startsWith("sch_")) { if (schLeft < units) return false; schLeft -= units }
       fcRemaining -= units; await rpc("svc_coverage_usage", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true;
     };
@@ -299,6 +299,30 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, applied, firecrawlRemainingAboveReserve: fcRemaining, scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
     }
+    // 1 Oct 2026 (Decision 204): course-link search runs here, a bounded number at a time, instead of through the
+    // database's outbound queue (pg_net), which sends in rounds of 200 and waits for the slowest call. Each result is
+    // recorded through public.svc_course_link_search_record (same pick, bind and title-search rules as before).
+    if (mode === "link_search") {
+      const items: { course_id: string; provider_id: string; stage: string; query: string }[] =
+        await rpc("svc_course_link_search_next", { p_limit: Math.min(Number(body.limit || 40), 120) });
+      let searched = 0, found = 0, failed = 0;
+      await pool(items, Math.min(Number(body.concurrency || 6), 10), async (it) => {
+        if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_course_link_search_record", { p_course_id: it.course_id, p_http: 0, p_urls: [], p_error: "time budget" }); return }
+        if (!(await useFc("course_link_search", it.provider_id, it.query))) { await rpc("svc_course_link_search_record", { p_course_id: it.course_id, p_http: 0, p_urls: [], p_error: "credit budget" }); return }
+        let http = 0, urls: string[] = [], err: string | null = null;
+        try {
+          const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: it.query, limit: 5 }), signal: AbortSignal.timeout(45000) });
+          http = r.status;
+          const d = await r.json().catch(() => ({}));
+          urls = Array.isArray(d?.data) ? d.data.map((x: { url?: string }) => String(x?.url || "")).filter(Boolean) : [];
+          if (!r.ok) err = String(d?.error || `HTTP ${r.status}`);
+        } catch (e) { err = e instanceof Error ? e.message : String(e) }
+        searched++; if (err) failed++;
+        if (await rpc("svc_course_link_search_record", { p_course_id: it.course_id, p_http: http, p_urls: urls, p_error: err }) === "found") found++;
+      });
+      return j({ ok: true, mode, workerVersion: VERSION, picked: items.length, searched, found, failed, ms: Date.now() - t0 });
+    }
+
     // v0.8.0: scholarship discovery. Phase discover: a provider's own scholarship pages from its site maps (and a
     // scholarships.<domain> subdomain's), one Firecrawl map with search "scholarship" only when the site maps give none;
     // held Study Australia-only scholarships are matched to a page by exact name (address or title). Phase search: one
@@ -492,7 +516,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, scholarship_read, scholarship_discover, scholarship_inspect", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, link_search, scholarship_read, scholarship_discover, scholarship_inspect", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
