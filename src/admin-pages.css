@@ -227,3 +227,27 @@ td>.l3v-model{display:block}
 /* v2.15.120: older scheduler panels wrap instead of running off the right edge. */
 .cf-scheduler-v2__head,.cf-workflow-builder__head{flex-wrap:wrap}
 .cf-scheduler-v2,.cf-workflow-builder{min-width:0;max-width:100%;overflow-x:auto}
+/* Reference sources and Key dates (v2.15.121). */
+.rs-table td{vertical-align:top}
+.rs-site{display:grid;gap:2px;min-width:240px;max-width:420px}
+.rs-cell{display:flex;align-items:center;gap:4px;min-width:0}
+.rs-cell .le-btn{padding:1px 4px}
+.rs-strong .le-btn,.rs-strong>span{font-weight:600}
+.rs-muted{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.rs-mono{font-family:var(--cf-font-mono);font-size:var(--cf-fs-xs)}
+.rs-site .rs-cell:nth-child(2){font-size:var(--cf-fs-xs);color:var(--cf-text-2);word-break:break-all}
+.rs-uses{display:flex;flex-wrap:wrap;gap:4px}
+.rs-uses-edit{position:relative;display:inline-block}
+.rs-uses-btn{padding:2px}
+.rs-pop{position:absolute;z-index:5;top:100%;left:0;min-width:240px;background:var(--cf-surface);border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);box-shadow:0 6px 18px color-mix(in srgb,var(--cf-slate-900) 18%,transparent);padding:var(--cf-space-2);display:grid;gap:4px;font-size:var(--cf-fs-sm)}
+.rs-pop label{display:flex;gap:6px;align-items:center}
+.rs-pop-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:4px}
+.rs-actions{white-space:nowrap}.rs-actions .cf-btn{margin-right:4px}
+.rs-check{display:inline-flex;gap:5px;align-items:center;font-size:var(--cf-fs-sm);color:var(--cf-text-2)}
+.rs-help{margin:0 0 var(--cf-space-3);font-size:var(--cf-fs-sm);color:var(--cf-text-2)}.rs-help summary{cursor:pointer}.rs-help ul{margin:6px 0;padding-left:18px}
+.rs-add{border:1px dashed var(--cf-border-input);border-radius:var(--cf-radius-md);padding:var(--cf-space-3);margin-bottom:var(--cf-space-3);display:grid;gap:var(--cf-space-2)}
+.rs-add-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.rs-add-grid label{display:grid;gap:3px}.rs-add-grid .fv-input,.rs-add-grid .fv-filter{width:100%;box-sizing:border-box}
+.rs-wide{grid-column:span 2}
+.rs-more{background:none;border:0;padding:0;justify-self:start;cursor:pointer}
+@media (max-width:640px){.rs-wide{grid-column:auto}}

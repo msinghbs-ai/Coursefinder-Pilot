@@ -212,7 +212,11 @@ Deno.serve(async (req) => {
     if (mode === "find_site") {
       const provs: { provider_id: string; name: string; trading: string | null; cricos: string }[] = await rpc("svc_coverage_site_next", { p_limit: Math.min(Number(body.limit || 5), 10) });
       const out: unknown[] = [];
-      const SKIP = /(cricos\.education\.gov\.au|education\.gov\.au|studyaustralia|studyinaustralia|hotcourses|idp\.com|studyin|linkedin|facebook|instagram|youtube|twitter|x\.com|yellowpages|abr\.business|asic\.gov|training\.gov\.au|myskills|seek\.com|indeed|glassdoor|wikipedia|google\.|bing\.|yelp|truelocal|hotfrog|startlocal|opencorporates|dnb\.com|zoominfo|asqa\.gov|teqsa\.gov|studiesinaustralia|educations\.com|coursefinder|topuniversities|timeshighereducation)/i;
+      // v0.6.4: sites that are never a university's own website come from Reference sources (use not_provider_site),
+      // managed in the admin, instead of a fixed pattern here. No list means no search (fail closed).
+      const skipDomains: string[] = await rpc("svc_reference_domains", { p_use: "not_provider_site" });
+      if (!Array.isArray(skipDomains) || skipDomains.length === 0) return j({ ok: false, mode, error: "reference sources list is empty or unavailable" }, 503);
+      const SKIP = { test: (host: string) => { const h = host.toLowerCase(); return skipDomains.some((d) => d.includes(".") ? (h === d || h.endsWith("." + d)) : new RegExp("(^|\\.)" + d.replace(/[^a-z0-9-]/g, "")).test(h)); } };
       await pool(provs, 3, async (p) => {
         const code = String(p.cricos || "").toUpperCase();
         const codeRe = new RegExp("(^|[^0-9A-Z])" + code.split("").join("\\s?") + "([^0-9A-Z]|$)", "i");

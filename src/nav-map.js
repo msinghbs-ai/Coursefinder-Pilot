@@ -40,10 +40,10 @@ export const PAGES = {
     { key: 'settings', label: 'Source settings', min: 6 },
   ] },
   // v2.15.112 (Platform Admin, 30 Sep 2026): reference data that is not a register run moved out of Layer 1.
-  reference: { label: 'Reference data', slug: 'reference-data', icon: 'book', subtitle: 'Ranking files, key dates and key links used across the catalogue.', tabs: [
+  reference: { label: 'Reference data', slug: 'reference-data', icon: 'book', subtitle: 'Ranking files, key dates and the third-party sites the platform refers to.', tabs: [
     { key: 'imports', label: 'Ranking imports', min: 4 },
     { key: 'dates', label: 'Key dates', min: 3 },
-    { key: 'links', label: 'Key links', min: 3 },
+    { key: 'links', label: 'Reference sources', min: 3 },
   ] },
   layer2: { label: 'Layer 2 Discovery & reading', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'Finding provider pages and reading the facts on them.', tabs: [
     { key: 'operations', label: 'Runs', min: 4 },

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.48 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.121** (Reference data: Reference sources control how third-party sites are used; Key dates edited in place).
+- Database (applied live): 20261001110000, 20261001111000 (reference sources), 20261001112000 (key dates). Edge function: coverage-sweep reads the list.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.47 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.120** (Courses and Providers: Edit in list — change fields in place in the list; pages no longer run off the right edge).

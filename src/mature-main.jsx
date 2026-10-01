@@ -16,6 +16,8 @@ import ScholarshipLinks from'./ScholarshipLinks'
 import FeeRules from'./FeeRules'
 import ModelsServices from'./ModelsServices'
 import ListEdit from'./ListEdit'
+import ReferenceSources from'./ReferenceSources'
+import KeyDates from'./KeyDates'
 import ContextualInsights from'./ContextualInsights'
 import ComparisonWorkspace from'./ComparisonWorkspace'
 import ProviderContactsWorkspace from'./ProviderContactsWorkspace'
@@ -35,7 +37,7 @@ import{CoverageView}from'./course-coverage'
 import Layer4Intervention from'./Layer4Intervention'
 import{Layer1Operations,Layer1SourceSettings}from'./layer1-operations-entry'
 import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
-import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Links as ImportantLinksWorkspace,Dates as ImportantDatesWorkspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
+import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
 import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
 import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
 import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'
@@ -58,7 +60,10 @@ const PAGE_SIZE=50
 const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:system==='the_wur'?Array.from({length:16},(_,i)=>2026-i):Array.from({length:12},(_,i)=>2026-i)
 const rankingDefaultYear=system=>rankingYearOptions(system)[0]
 const rankingPublisherName=system=>system==='the_wur'?'Times Higher Education':system==='arwu'?'ShanghaiRanking Consultancy':'QS Quacquarelli Symonds'
-const rankingSourceUrl=system=>system==='the_wur'?'https://www.timeshighereducation.com/world-university-rankings/latest/world-ranking':system==='arwu'?'https://www.shanghairanking.com/rankings/arwu/2026':'https://www.topuniversities.com/world-university-rankings'
+// v2.15.121: ranking publisher addresses come from Reference sources (use "Ranking publisher", by ranking key), not code.
+let RANKING_SOURCES={}
+const rankingSourceUrl=system=>RANKING_SOURCES[system]||''
+async function loadRankingSources(){try{const{data}=await supabase.rpc('admin_reference_sources_read');RANKING_SOURCES=Object.fromEntries((data?.items||[]).filter(x=>x.ref_key&&x.enabled&&!x.retired&&(x.uses||[]).includes('ranking_publisher')).map(x=>[x.ref_key,x.url]))}catch{}return RANKING_SOURCES}
 const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x=>({value:x,label:humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
 
@@ -185,8 +190,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='settings')return <Layer1SourceSettings/>
         return <Layer1Operations embedded/>
       case'reference':
-        if(tab==='dates')return <div className="m-page-stack"><ImportantDatesWorkspace rank={rank} onError={err}/></div>
-        if(tab==='links')return <div className="m-page-stack"><ImportantLinksWorkspace rank={rank} onError={err}/></div>
+        if(tab==='dates')return <div className="m-page-stack"><KeyDates onError={err}/></div>
+        if(tab==='links')return <div className="m-page-stack"><ReferenceSources onError={err}/></div>
         return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
       case'layer2':
         if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
@@ -244,7 +249,7 @@ function StatisticsRankings({onError,navigate,rank,routeParams}){
     <div><b>Provider context</b><span>QILT, PRISMS and institutional rankings retain their native source grain.</span></div>
     <div><b>Years / editions</b><span>QS and THE use independent edition selectors; Compare retains its own per-ranking edition controls.</span></div>
     <div><b>Evidence</b><span>Every accepted observation remains traceable to governed source Evidence.</span></div>
-    <div><b>Historical publisher files</b><span>{rank>=4?'Ranking import management is available only through Layer 1 Register → Ranking imports.':'Import controls are restricted to authorised operator roles.'}</span></div>
+    <div><b>Historical publisher files</b><span>{rank>=4?'Ranking files are imported in Reference data › Ranking imports.':'Import controls are restricted to authorised operator roles.'}</span></div>
    </div>
   </section>
  </div>
@@ -299,6 +304,7 @@ function RankingImportPanel({onError,routeParams,navigate}){
  const requested=routeParams?.get?.('system'),presetSystem=['qs_wur','the_wur','arwu'].includes(requested)?requested:'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
  const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for CourseFinder ingestion.',revisionNote:'',mode:'file'})
  const[form,setForm]=useState(makeForm()),[files,setFiles]=useState([]),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([]),[detected,setDetected]=useState(null),[advanced,setAdvanced]=useState(false),[processingId,setProcessingId]=useState(''),[lastParsedKey,setLastParsedKey]=useState(''),[overwriteKey,setOverwriteKey]=useState(''),[historySystem,setHistorySystem]=useState('all')
+ useEffect(()=>{let live=true;loadRankingSources().then(()=>{if(live)setForm(x=>x.sourceUrl?x:{...x,sourceUrl:rankingSourceUrl(x.systemCode)})});return()=>{live=false}},[])
  const sameEditionImports=imports.filter(x=>x.system_code===form.systemCode&&String(x.edition_year)===String(form.editionYear))
  const existingCountries=[...new Set(sameEditionImports.flatMap(x=>Array.isArray(x.detected_scope)?x.detected_scope:[]).map(x=>String(x||'').trim()).filter(Boolean))]
  const selectedCountries=Array.isArray(detected?.countries)?detected.countries:[]
@@ -379,7 +385,7 @@ function RankingImportPanel({onError,routeParams,navigate}){
  }
  return <div className="m-page-stack m-ranking-import-page">
   <section className="m-panel m-ranking-import-compact">
-   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Layer 1 Register / Ranking imports</div><h2>Register ranking publisher file</h2><p>File upload is the preferred ranking acquisition route. Upload one global file or combine multiple country/page JSON/TXT files for the same publisher and edition.</p></div><FileCheck2 size={22}/></div>
+   <div className="m-ranking-import-head"><div><div className="m-section-kicker">Reference data / Ranking imports</div><h2>Register ranking publisher file</h2><p>File upload is the preferred ranking acquisition route. Upload one global file or combine multiple country/page JSON/TXT files for the same publisher and edition.</p></div><FileCheck2 size={22}/></div>
    <form className="m-ranking-import-form compact" onSubmit={submit}>
     <div className="m-ranking-essentials">
       <label>Ranking system<select value={form.systemCode} onChange={e=>chooseSystem(e.target.value)}><option value="qs_wur">QS World University Rankings</option><option value="the_wur">Times Higher Education</option><option value="arwu">Academic Ranking of World Universities</option></select></label>

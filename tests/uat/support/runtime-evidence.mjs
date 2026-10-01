@@ -142,7 +142,7 @@ const TABBED_NAV={
   'Layer 3 — AI Interpretation':['Layer 3 AI validation',''],'Layer 4 — Human Resolution':['Layer 4 Review',''],
   'Completeness':['Coverage & completeness',''],'Statistics & Rankings':['Rankings & statistics',''],'Compare':['Rankings & statistics','Compare'],
   'Campuses':['Providers','Campuses'],'Provider Contacts':['Provider contacts',''],'Important Dates':['Layer 1 Register','Key dates'],
-  'Important Links':['Layer 1 Register','Key links'],'Administration':['Scrapers & fetchers',''],
+  'Important Links':['Reference data','Reference sources'],'Administration':['Scrapers & fetchers',''],
 }
 export async function clickPrimaryNav(page,label){
   if(TABBED_NAV[label]){const[menu,tab]=TABBED_NAV[label];await clickPrimaryNav(page,menu);if(tab)await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT});return}
