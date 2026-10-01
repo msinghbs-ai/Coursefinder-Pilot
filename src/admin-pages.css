@@ -462,3 +462,14 @@ td>.l3v-model{display:block}
 .pg ul{margin:4px 0;padding-left:18px}
 .pg .pg-screen-body>.pg-open{grid-column:1/-1;justify-self:start}
 .pg .pg-screen-head b{font-size:var(--cf-fs-md)}
+/* Scholarship eligibility and award (Decision 211) */
+.se-panel{margin:12px 0;border:1px solid var(--cf-border);border-radius:8px;padding:10px 12px;background:var(--cf-surface-2)}
+.se-panel h4{display:flex;align-items:center;gap:6px;margin:0 0 8px}
+.se-panel .se-duration{display:flex;gap:8px;align-items:baseline;margin:0 0 8px}
+.se-panel .se-duration small,.se-panel dt{color:var(--cf-muted);font-size:var(--cf-fs-xs)}
+.se-panel .se-list{display:grid;gap:8px;margin:0}
+.se-panel .se-list>div{display:grid;grid-template-columns:minmax(120px,160px) 1fr;gap:10px}
+.se-panel dd{margin:0;display:grid;gap:2px;min-width:0}
+.se-panel dd small{color:var(--cf-muted);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.se-panel dd em{color:var(--cf-muted);font-size:var(--cf-fs-xs);font-style:normal}
+@media (max-width:560px){.se-panel .se-list>div{grid-template-columns:1fr;gap:2px}}

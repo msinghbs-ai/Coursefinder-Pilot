@@ -1,21 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.137'
-export const PACKAGE_VERSION='0.1.64'
+export const UI_VERSION='2.15.138'
+export const PACKAGE_VERSION='0.1.65'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'1 Oct 2026',
-  title:'Fee schedules settle flagged fees',
+  date:'2 Oct 2026',
+  title:'Scholarship eligibility from provider pages',
   changes:[
-    'An approved fee schedule now settles flagged fees it answers: the same fee, or a per-year fee close to it, is confirmed without a person.',
-    'Layer 4 › Flagged values shows the approved schedule\'s fee beside a flagged fee, with Use schedule fee.',
-    'Approving a fee schedule also settles the flags it answers.',
-    'Fee documents of universities with flagged fees are read first.'
+    'The scholarship reader now records who can apply, from the provider page: domestic or international students, new or current students, full-time study, minimum ATAR, GPA or average, citizenship, women or men, and scholarships given without an application.',
+    'The reader also records how long an award runs: one-off, first year only, each year, each year for the length of the course, or for the length of the course.',
+    'Catalogue › Scholarships: the record shows Eligibility and award, each line with the provider page\'s own words.',
+    'Pages already stored are read again for these details without fetching them again; course links and other values are unchanged.'
   ],
   bugFixes:[
-    '30 flagged fees (Charles Sturt University 25, University of the Sunshine Coast 5) were settled by their approved fee schedules and no longer ask a person.'
+    '37,200 course-link suggestions left from 3–5 Sep 2026 were retired (kept as superseded, not deleted); 17,008 of them were already linked by later rules.'
   ]
 }
 
