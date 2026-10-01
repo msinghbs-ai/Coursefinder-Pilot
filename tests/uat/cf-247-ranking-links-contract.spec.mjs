@@ -20,6 +20,12 @@ test('database: automatic rules are exact or confirmed by two sources; anything 
   expect(m.toLowerCase()).not.toContain('delete from')
 })
 
+test('the ranking read is executable by signed-in users (public.admin_read runs as the user)', () => {
+  // Found live 1 Oct 2026 23:28: "permission denied for function admin_ranking_links_read"; the mocked tests could not see it.
+  const g = read('supabase/migrations/20261001180100_cf247_ranking_links_read_grant.sql')
+  expect(g).toContain('grant execute on function security.admin_ranking_links_read(text, jsonb) to authenticated;')
+})
+
 test('provider record shows QS and THE history', () => {
   const main = read('src/mature-main.jsx')
   expect(main).toContain("{type==='provider'&&data.id&&<ProviderRankings providerId={data.id} navigate={navigate}/>}")
