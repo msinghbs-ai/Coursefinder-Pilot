@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.67 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.140** (coverage by country and university; fee schedule bulk approval; course-page pattern requests retired).
+- Migration 20261002180500_cf247_coverage_countries_fee_review_patterns (Decision 213).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.66 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.139** (scholarship publishing rules: domestic only, up-to values, savings per year).

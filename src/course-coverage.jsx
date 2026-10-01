@@ -4,7 +4,8 @@ import{adminRead}from'./lib/supabase'
 import{fmtNumber,fmtDate,fmtDateTime,fmtPercent,fmtShare}from'./lib/format.js'
 import{Metric,Button}from'./ui-kit'
 
-// CF-247 complete coverage: every active Australian course is accounted for, attribute by attribute.
+// CF-247 complete coverage: every active course is accounted for, attribute by attribute (Decision 213: every country,
+// filtered by country and by university; the hourly build ranks provider tiers within each country).
 // Server: admin_read('course_coverage' | 'course_coverage_courses'), rebuilt hourly (security.course_coverage_build_v1,
 // security.course_completeness_build_v1). R12: completeness states per attribute and the course completeness score
 // (migration 20260929190000_cf247_coverage_completeness_states).
@@ -31,28 +32,33 @@ export const COMPLETENESS_STATES=[
 ]
 const CSTATE=Object.fromEntries(COMPLETENESS_STATES.map(s=>[s.key,s]))
 const STATE_LABEL={admitted:'Admitted',candidate:'Found on verified page (awaiting admission)',in_review:'In human review (Layer 4)',awaiting_l3:'Awaiting AI check (Layer 3)',not_on_page:'Page read, not published',
-  blocked:'Site blocked',page_found:'Page found, not read',site_known:'Site known, page not found',no_website:'No website known',missing_l1:'Missing in CRICOS'}
+  blocked:'Site blocked',page_found:'Page found, not read',site_known:'Site known, page not found',no_website:'No website known',missing_l1:'Missing in the register'}
 // v2.15.132 (att-wide-table): short column headings; the full wording is on hover and in the legend.
-const STATE_SHORT={admitted:'Admitted',candidate:'Awaiting admission',in_review:'Person',awaiting_l3:'AI check',not_on_page:'Not published',blocked:'Blocked',page_found:'Not read',site_known:'No page',no_website:'No site',missing_l1:'Not in CRICOS'}
+const STATE_SHORT={admitted:'Admitted',candidate:'Awaiting admission',in_review:'Person',awaiting_l3:'AI check',not_on_page:'Not published',blocked:'Blocked',page_found:'Not read',site_known:'No page',no_website:'No site',missing_l1:'Not in register'}
 const STATE_ORDER=['admitted','candidate','in_review','awaiting_l3','not_on_page','blocked','page_found','site_known','no_website','missing_l1']
 const ATTR={official_url:{label:'Official course page',layer:'Layer 2'},provider_tuition:{label:'Provider tuition (fee year)',layer:'Layer 2'},
   english:{label:'English requirements',layer:'Layer 2'},intakes:{label:'Intakes / start dates',layer:'Layer 2'},
-  registered_tuition:{label:'Registered tuition (CRICOS)',layer:'Layer 1'},duration:{label:'Duration (CRICOS)',layer:'Layer 1'},campus:{label:'Campus (CRICOS)',layer:'Layer 1'}}
+  registered_tuition:{label:'Registered tuition (register)',layer:'Layer 1'},duration:{label:'Duration (register)',layer:'Layer 1'},campus:{label:'Campus (register)',layer:'Layer 1'}}
 const TIERS=[['','All providers'],['top_10','Top 10'],['top_11_40','11–40'],['top_41_100','41–100'],['rest','All others']]
+const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const PAGE=50
 
 // v2.15.112: view 'courses' (course completeness) or 'attributes' (attribute completeness and pipeline stage); both
 // kept by default for older callers. Platform Admin 30 Sep 2026: separate course and attribute completion in tabs.
 export function CoverageView({view='all'}={}){
   const[tier,setTier]=useState(''),[data,setData]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState('')
+  // Decision 213: country and university filters (opens on all countries)
+  const[country,setCountry]=useState(''),[provider,setProvider]=useState(null),[pq,setPq]=useState(''),[found,setFound]=useState([])
+  const scope=()=>({...(tier?{tier}:{}),...(country?{country}:{}),...(provider?{provider:provider.id}:{})})
   const[pick,setPick]=useState(null),[list,setList]=useState(null),[offset,setOffset]=useState(0),[listBusy,setListBusy]=useState(false),[tip,setTip]=useState(null)
-  const load=()=>{setBusy(true);setError('');adminRead('course_coverage',tier?{tier}:{}).then(setData).catch(e=>setError(e.message||String(e))).finally(()=>setBusy(false))}
-  useEffect(()=>{setPick(null);load()},[tier])
+  const load=()=>{setBusy(true);setError('');adminRead('course_coverage',scope()).then(setData).catch(e=>setError(e.message||String(e))).finally(()=>setBusy(false))}
+  useEffect(()=>{setPick(null);load()},[tier,country,provider])
+  useEffect(()=>{if(pq.trim().length<2){setFound([]);return}let live=true;const t=setTimeout(()=>adminRead('course_coverage_providers',{query:pq.trim(),...(country?{country}:{})}).then(d=>live&&setFound(Array.isArray(d)?d:[])).catch(()=>{}),250);return()=>{live=false;clearTimeout(t)}},[pq,country])
   useEffect(()=>{
     if(!pick){setList(null);return}
     setListBusy(true)
     const filter=pick.cstate?{completeness_state:pick.cstate}:{state:pick.state}
-    adminRead('course_coverage_courses',{attribute:pick.attribute,...filter,tier:tier||null,limit:PAGE,offset})
+    adminRead('course_coverage_courses',{attribute:pick.attribute,...filter,...scope(),tier:tier||null,limit:PAGE,offset})
       .then(setList).catch(e=>setError(e.message||String(e))).finally(()=>setListBusy(false))
   },[pick,offset])
   const attrs=data?.attributes||[]
@@ -67,7 +73,14 @@ export function CoverageView({view='all'}={}){
 
   return <div className="cc-wrap">
     {/* v2.15.131 (cc-counts-consistency): say what is counted here, as other screens count different sets. */}
-    <p className="cc-scope" data-count-scope>Counts here cover <strong>{fmtNumber(data?.courses||0)} active Australian courses</strong>, recounted every hour. Courses lists every course in any status and country.</p>
+    <p className="cc-scope" data-count-scope>Counts here cover <strong>{fmtNumber(data?.courses||0)} active courses</strong> {provider?`at ${provider.name}`:country?`in ${COUNTRY_NAME[country]||country}`:'in every country'}, recounted every hour. Layer 1 values come from each country's register (CRICOS in Australia, NZQA in New Zealand).</p>
+    <section className="cf-filterbar cc-where" aria-label="Country and university">
+      <label><span>Country</span><select className="fv-filter" value={country} onChange={e=>{setCountry(e.target.value);setProvider(null);setPq('')}} aria-label="Coverage country">
+        <option value="">All countries</option>{(data?.countries||[]).map(c=><option key={c.code} value={c.code}>{COUNTRY_NAME[c.code]||c.code} ({fmtNumber(c.courses)})</option>)}</select></label>
+      <div className="cc-provider"><span>University or provider</span>{provider?<span className="cc-chosen" data-provider-filter><strong>{provider.name}</strong><button type="button" className="m-link-button" onClick={()=>{setProvider(null);setPq('')}}>Clear</button></span>
+        :<><input className="au-search" type="search" value={pq} onChange={e=>setPq(e.target.value)} placeholder="Type 2+ letters…" aria-label="Find a university or provider"/>
+          {found.length>0&&<ul className="cc-found" role="listbox">{found.map(f=><li key={f.id}><button type="button" onClick={()=>{setProvider({id:f.id,name:f.name});setFound([])}}>{f.name} <small>{f.country} · {fmtNumber(f.courses)} courses</small></button></li>)}</ul>}</>}</div>
+    </section>
     <section className="cf-filterbar" aria-label="Provider tier">
       <span>Provider tier</span>
       {TIERS.map(([k,l])=><button key={k||'all'} className={tier===k?'active':''} onClick={()=>setTier(k)}>{l}</button>)}

@@ -9,7 +9,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     ranking_filters: F.rankingFilters, ranking_filter_options: F.rankingFilterOptions, ranking_observations: F.rankingObservations,
     ranking_link_candidates: F.rankingLinkCandidates, ranking_provider_search: { items: [] }, provider_ranking_history: F.providerRankingHistory,
     context, dashboard: F.dashboard, layer_status_summary: F.layerStatus, platform_health: F.platformHealth,
-    course_coverage: F.courseCoverage, data_quality_overview: F.dataQualityOverview,
+    course_coverage: F.courseCoverage, course_coverage_providers: [{ id: 'prov-monash', name: 'Monash University', country: 'AU', courses: 640 }], data_quality_overview: F.dataQualityOverview,
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
     layer3_queue_status: F.layer3Queue, campuses_page: F.campusesPage, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_profiles: F.layer2Profiles, layer2_profile_detail: F.layer2ProfileDetail, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [{ id: 'rt1', provider_id: 'pv1', display_name: 'Direct HTTP', adapter_type: 'direct_http', priority: 10, enabled: true }],
   }
@@ -85,6 +85,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     if (u.pathname.startsWith('/auth/v1/')) return json(session)
     if (u.pathname === '/rest/v1/rpc/admin_read') {
       const op = body.p_operation
+      ;(page.readCalls ||= []).push(body)
       if (op === 'platform_health' && healthMissing) return json({ code: 'P0001', message: 'unknown admin_read operation platform_health' }, 400)
       return json(op in adminRead ? adminRead[op] : {})
     }

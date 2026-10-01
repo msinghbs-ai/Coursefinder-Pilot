@@ -473,3 +473,16 @@ td>.l3v-model{display:block}
 .se-panel dd small{color:var(--cf-muted);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .se-panel dd em{color:var(--cf-muted);font-size:var(--cf-fs-xs);font-style:normal}
 @media (max-width:560px){.se-panel .se-list>div{grid-template-columns:1fr;gap:2px}}
+/* Fee schedules: bulk approval and review (Decision 213) */
+.fs-panel .fs-bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:10px;margin:10px 0}
+.fs-panel .fs-bar label{display:grid;gap:4px}
+.fs-panel .fs-review{display:block;margin-top:2px;border:0;background:none;padding:0;color:var(--cf-link);cursor:pointer;font:inherit;font-size:var(--cf-fs-xs)}
+/* Coverage: country and university filters (Decision 213) */
+.cc-where{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.cc-where label,.cc-where .cc-provider{display:grid;gap:4px;position:relative}
+.cc-where .cc-provider{min-width:min(320px,100%)}
+.cc-where .cc-chosen{display:inline-flex;gap:8px;align-items:center}
+.cc-where .cc-found{position:absolute;top:100%;left:0;z-index:5;list-style:none;margin:4px 0 0;padding:4px;min-width:100%;max-height:280px;overflow:auto;background:var(--cf-surface);border:1px solid var(--cf-border);border-radius:8px}
+.cc-where .cc-found button{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 8px;font:inherit;cursor:pointer;color:var(--cf-text)}
+.cc-where .cc-found button:hover{background:var(--cf-surface-2)}
+.cc-where .cc-found small{color:var(--cf-muted)}
