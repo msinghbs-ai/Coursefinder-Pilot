@@ -93,6 +93,57 @@ async function siteMapUrls(origin: string, deadline: number, pri: (u: string) =>
   return { urls: [...urls], files };
 }
 
+// 1 Oct 2026 (Decision 205): fee schedules. A fee row is kept only when the same row carries exactly one course code
+// in CRICOS form (6 digits and a check character) and an amount; the basis comes from the column heading (or the line's
+// own wording outside tables). Nothing is inferred across rows. The document year is the fee year most often named.
+const FEE_CODE = /\b(\d{6}[0-9A-Z])\b/g;
+const FEE_MONEY = /\$\s?(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?/g;
+function feeBasis(label: string) {
+  const l = label.toLowerCase();
+  if (/total|whole|full course|entire|course fee \(total\)/.test(l)) return "total_indicative";
+  if (/semester/.test(l)) return "per_semester";
+  if (/trimester/.test(l)) return "per_trimester";
+  if (/annual|per year|yearly|p\.a\.|per annum|eftsl|full[- ]time|1st year|first year|\b20\d\d\b/.test(l)) return "annual";
+  return "";
+}
+function feeDocYear(text: string) {
+  const n = new Map<number, number>();
+  for (const m of text.matchAll(/\b(202[5-9])\b/g)) n.set(+m[1], (n.get(+m[1]) || 0) + 1);
+  return [...n.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0]?.[0] ?? null;
+}
+export function parseFeeRows(md: string) {
+  const year = feeDocYear(md);
+  const out: { course_code: string; amount: number; basis: string; fee_year: number | null; column_label: string; row_text: string }[] = [];
+  let header: string[] = [], tableRows = 0;
+  for (const raw of md.split("\n")) {
+    const line = raw.trim();
+    if (!line) { header = []; continue }
+    const codes = [...new Set([...line.matchAll(FEE_CODE)].map((m) => m[1]))];
+    if (line.startsWith("|")) {
+      const cells = line.split("|").slice(1, -1).map((x) => x.trim());
+      if (cells.every((x) => /^:?-{2,}:?$/.test(x) || x === "")) continue;
+      const money = cells.map((x) => [...x.matchAll(FEE_MONEY)].map((m) => Number(m[1].replace(/,/g, ""))));
+      if (!codes.length && money.every((m) => !m.length)) { header = cells; continue }
+      tableRows++;
+      if (codes.length !== 1) continue;
+      money.forEach((ms, i) => {
+        if (ms.length !== 1) return;
+        const label = header[i] || "";
+        const basis = feeBasis(label);
+        if (!basis) return;
+        out.push({ course_code: codes[0], amount: ms[0], basis, fee_year: (label.match(/\b(202[5-9])\b/) ? +label.match(/\b(202[5-9])\b/)![1] : year), column_label: label.slice(0, 120), row_text: line.slice(0, 500) });
+      });
+    } else if (codes.length === 1) {
+      const ms = [...line.matchAll(FEE_MONEY)].map((m) => Number(m[1].replace(/,/g, "")));
+      const basis = feeBasis(line);
+      if (ms.length === 1 && basis) out.push({ course_code: codes[0], amount: ms[0], basis, fee_year: year, column_label: "", row_text: line.slice(0, 500) });
+    }
+  }
+  const seen = new Set<string>();
+  const rows = out.filter((r) => r.amount >= 1000 && r.amount <= 200000 && !seen.has(`${r.course_code}|${r.amount}|${r.basis}`) && (seen.add(`${r.course_code}|${r.amount}|${r.basis}`), true));
+  return { rows, summary: { fee_year: year, table_rows: tableRows, codes_seen: new Set([...md.matchAll(FEE_CODE)].map((m) => m[1])).size, rows: rows.length } };
+}
+
 Deno.serve(async (req) => {
   const t0 = Date.now();
   if (req.method !== "POST") return j({ error: "POST required", workerVersion: VERSION }, 405);
@@ -323,6 +374,51 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, workerVersion: VERSION, picked: items.length, searched, found, failed, ms: Date.now() - t0 });
     }
 
+    // 1 Oct 2026 (Decision 205): institution-level sources. Search each provider's site for its international fee schedule,
+    // English language policy and academic calendar; read each document (PDFs included) as evidence; parse fee rows.
+    // Nothing is written to the catalogue here: parsed rows become a proposal a person approves.
+    if (mode === "provider_facts") {
+      const searches: { provider_id: string; kind: string; query: string }[] = await rpc("svc_provider_facts_search_next", { p_limit: Math.min(Number(body.search_limit || 12), 40) });
+      let found = 0;
+      await pool(searches, 6, async (it) => {
+        if (Date.now() - t0 > BUDGET_MS / 2 || !(await useFc("provider_facts_search", it.provider_id, it.query))) { await rpc("svc_provider_facts_search_record", { p_provider_id: it.provider_id, p_kind: it.kind, p_http: 0, p_results: [], p_error: "budget" }); return }
+        let http = 0, results: { url: string; title: string }[] = [];
+        try {
+          const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: it.query, limit: 6 }), signal: AbortSignal.timeout(45000) });
+          http = r.status; const d = await r.json().catch(() => ({}));
+          results = Array.isArray(d?.data) ? d.data.map((x: { url?: string; title?: string }) => ({ url: String(x?.url || ""), title: String(x?.title || "") })).filter((x: { url: string }) => x.url) : [];
+        } catch { http = 0 }
+        found += Number(await rpc("svc_provider_facts_search_record", { p_provider_id: it.provider_id, p_kind: it.kind, p_http: http, p_results: results, p_error: null }) || 0);
+      });
+      const docs: { id: string; provider_id: string; kind: string; url: string; country: string; currency: string }[] = await rpc("svc_provider_facts_read_next", { p_limit: Math.min(Number(body.read_limit || 6), 20) });
+      const tally: Record<string, number> = {};
+      await pool(docs, 4, async (it) => {
+        if (Date.now() - t0 > BUDGET_MS || !(await useFc("provider_facts_scrape", it.provider_id, it.url))) {
+          await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: null, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: "budget" } }); return
+        }
+        try {
+          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["markdown"], onlyMainContent: true }), signal: AbortSignal.timeout(90000) });
+          const d = await r.json().catch(() => ({}));
+          const md: string = d?.data?.markdown || "";
+          const http = Number(d?.data?.metadata?.statusCode ?? r.status);
+          const extra = Math.max(0, Number(d?.data?.metadata?.creditsUsed ?? d?.creditsUsed ?? 1) - 1);
+          if (extra > 0) await rpc("svc_coverage_usage", { p_units: extra, p_purpose: "provider_facts_scrape", p_provider_id: it.provider_id, p_url: it.url });
+          if (!r.ok || md.length < 200) { await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: http, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: d?.error || "no content", chars: md.length } }); tally.failed = (tally.failed || 0) + 1; return }
+          const sha = await sha256(new TextEncoder().encode(md));
+          let path: string | null = `layer2/${it.country || "XX"}/provider-facts/${it.provider_id}/${it.id}/${sha}.md.gz`;
+          const up = await c.storage.from("evidence").upload(path, await gzip(md), { contentType: "application/gzip", upsert: true });
+          if (up.error) path = null;
+          const parsed = it.kind === "fee_schedule" ? parseFeeRows(md) : { rows: [], summary: { chars: md.length } };
+          const res = await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "read", p_http: http, p_storage_path: path, p_sha256: path ? sha : null, p_mime: "text/markdown", p_rows: parsed.rows, p_summary: { ...parsed.summary, chars: md.length, title: String(d?.data?.metadata?.title || "").slice(0, 200) } });
+          tally[it.kind] = (tally[it.kind] || 0) + 1; tally.fee_rows = (tally.fee_rows || 0) + Number(res?.fee_rows || 0);
+        } catch (e) {
+          await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: null, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: e instanceof Error ? e.message : String(e) } });
+          tally.failed = (tally.failed || 0) + 1;
+        }
+      });
+      return j({ ok: true, mode, workerVersion: VERSION, searched: searches.length, sources_found: found, read: docs.length, tally, ms: Date.now() - t0 });
+    }
+
     // v0.8.0: scholarship discovery. Phase discover: a provider's own scholarship pages from its site maps (and a
     // scholarships.<domain> subdomain's), one Firecrawl map with search "scholarship" only when the site maps give none;
     // held Study Australia-only scholarships are matched to a page by exact name (address or title). Phase search: one
@@ -516,7 +612,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, link_search, scholarship_read, scholarship_discover, scholarship_inspect", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, link_search, provider_facts, scholarship_read, scholarship_discover, scholarship_inspect", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
