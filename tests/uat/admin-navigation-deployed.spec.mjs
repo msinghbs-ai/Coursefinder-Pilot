@@ -38,11 +38,11 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
   test('Layer 3 and Layer 4 are separate permanent routes',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     let ws=await openLayer3(page)
-    await expect(ws.getByRole('heading',{name:'Layer 3 status',exact:true})).toBeVisible()
+    await expect(ws.getByRole('heading',{name:'Work by task',exact:true})).toBeVisible()
     await expect(ws.getByRole('heading',{name:'Layer 4 status',exact:true})).toHaveCount(0)
     ws=await openLayer4(page)
     await expect(ws.getByRole('heading',{name:'Layer 4 status',exact:true})).toBeVisible()
-    await expect(ws.getByRole('heading',{name:'Layer 3 status',exact:true})).toHaveCount(0)
+    await expect(ws.getByRole('heading',{name:'Work by task',exact:true})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'layers3-4-separate-routes')
   }finally{await finish(testInfo,runtime)}})
 
@@ -53,8 +53,8 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
     await expect(page.getByRole('tab',{name:'Extraction Profiles',exact:true})).toBeVisible()
     await openLayer2Advanced(page)
-    await expect(page.getByRole('heading',{name:'Enrichment Source Configuration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.getByText('Configuration is separate from execution.')).toBeVisible()
+    await expect(page.getByRole('heading',{name:'Source profiles',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByText(/Changes create a new version; nothing here changes catalogue values directly/)).toBeVisible()
     await milestoneScreenshot(page,testInfo,'layer2-config-central-administration')
   }finally{await finish(testInfo,runtime)}})
 

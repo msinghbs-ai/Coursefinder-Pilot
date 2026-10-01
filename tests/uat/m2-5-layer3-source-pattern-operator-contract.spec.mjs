@@ -12,7 +12,7 @@ test.describe('M2.5 Layer 3 source-pattern operator execution contract',()=>{
       fs.readFile('supabase/migrations/20260901091800_m2_5_layer3_source_pattern_legacy_completion_guard.sql','utf8'),
       fs.readFile('supabase/migrations/20260901092500_m2_5_layer3_source_pattern_legacy_http_host_reconcile.sql','utf8'),
       fs.readFile('supabase/functions/layer3-interpret/index.ts','utf8'),
-      fs.readFile('src/m2-3-intelligence-entry.jsx','utf8'),
+      fs.readFile('src/Layer3Work.jsx','utf8'), // v2.15.127: the Work queue moved here
       fs.readFile('supabase/migrations/20260831115800_m2_4_4_a23_qualification_finalizer_handoff.sql','utf8'),
     ])
 

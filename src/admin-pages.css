@@ -283,3 +283,18 @@ td>.l3v-model{display:block}
 .l3c-tiers{table-layout:fixed;width:100%}
 .l3c-tiers th:nth-child(1){width:56px}.l3c-tiers th:nth-child(2){width:22%}
 .l3c-tiers th:last-child{width:250px}.l3c-tiers .l3c-row-actions{flex-wrap:nowrap}.l3c-tiers th:nth-child(4){width:120px}.l3c-tiers th{white-space:normal}
+/* Layer 3 Work queue (v2.15.127). */
+.l3w-tasks td:first-child{white-space:nowrap}
+.l3w-sub{display:block;color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.l3w-err{display:block;color:var(--cf-danger);font-size:var(--cf-fs-xs);max-width:420px;overflow-wrap:anywhere}
+.l3w-runs td{white-space:nowrap}
+/* Layer 2 Source profiles (v2.15.127): compact list; fetchers per source in the detail panel. */
+.l2-filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(140px,1fr));gap:8px;margin:0 0 10px}
+.l2-filters select{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;font:inherit;font-size:var(--cf-fs-sm);background:var(--cf-surface)}
+@media(max-width:760px){.l2-filters{grid-template-columns:1fr}}
+.l2-profiles .l2-row{cursor:pointer}
+.l2-open{all:unset;cursor:pointer;font-weight:600;color:var(--cf-text)}.l2-open:hover,.l2-open:focus-visible{text-decoration:underline}
+.l2-sub{display:block;color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.l2-problem{max-width:280px;font-size:var(--cf-fs-xs);color:var(--cf-text-2);overflow-wrap:anywhere}
+.l2-fetchers{margin:6px 0;padding-left:20px;display:grid;gap:4px}.l2-fetchers small{margin-left:8px;color:var(--cf-text-2)}
+.l2-run{margin:8px 0 0;font-size:var(--cf-fs-sm);color:var(--cf-success)}

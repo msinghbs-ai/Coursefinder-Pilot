@@ -290,3 +290,22 @@ export const waiting = { rank: 6, rows: [
   { key: 'rules', label: 'Fee rules waiting for approval', count: 0, oldest: null, href: '#layer-4-review?tab=rules', min: 5 },
   { key: 'scholarship_links', label: 'Scholarships to link to courses', count: 87, oldest: '2026-09-25T00:00:00Z', href: '#scholarships?tab=links', min: 4 },
   { key: 'failed_jobs', label: 'Jobs that failed in the last 24 hours', count: 0, oldest: null, href: '#scheduled-jobs?tab=jobs', min: 4 } ] }
+
+// Layer 3 Work queue (v2.15.127), live-shaped from 1 Oct 2026.
+export const layer3Queue = { by_task_class: [
+  { task_class: 'provider_current_tuition_validation', status_counts: { admitted: 1205, failed: 8, layer4_required: 712 }, total: 1925, oldest_pending_seconds: null, last_completed_at: '2026-09-30T23:48:26Z' },
+  { task_class: 'provider_english_validation', status_counts: { admitted: 2999, failed: 249, layer4_required: 172, no_candidate: 2808 }, total: 6228, oldest_pending_seconds: null, last_completed_at: '2026-10-01T01:01:03Z' },
+  { task_class: 'provider_intake_validation', status_counts: { admitted: 2655, failed: 281, layer4_required: 866, no_candidate: 5348, pending: 40 }, total: 9190, oldest_pending_seconds: 5400, last_completed_at: '2026-10-01T01:01:06Z' },
+] }
+export const layer3SourcePatterns = [
+  { request_id: 'sp1', provider_name: 'Kaplan Business School', entity_id: 'p1', country_code: 'AU', status: 'queued', created_at: '2026-09-07T05:40:00Z', source_url: 'https://www.kbs.edu.au/courses', schedule_error: 'model error (provider returned 502)' },
+]
+export const layer3Recent = Array.from({ length: 30 }, (_, i) => ({ id: 'i' + i, created_at: new Date(Date.UTC(2026, 9, 1, 1, 0) - i * 600000).toISOString(), task_class: ['provider_intake_validation', 'provider_english_validation', 'provider_current_tuition_validation'][i % 3], status: ['validated', 'no_candidate', 'escalated', 'rejected_validation'][i % 4], model_identifier: 'qwen/qwen3-30b-a3b-instruct-2507', estimated_cost_usd: 0.0002, review_state: i % 4 === 2 ? 'pending' : 'not_created', escalation_reason: i % 4 === 2 ? 'differs from value held' : null }))
+
+// Layer 2 Source profiles (v2.15.127).
+export const layer2Profiles = { total: 2, limit: 50, offset: 0, has_more: false, summary: { profiles: 2, valid: 2, healthy: 1 }, options: { countries: ['AU'], methods: ['html_scrape'], health: ['healthy', 'stale'] },
+  items: [
+    { profile_id: 'lp1', source_label: 'RMIT University courses', profile_key: 'au-rmit-courses', country_code: 'AU', acquisition_method: 'html_scrape', affected_provider_name: 'RMIT University', target_entity_type: 'course', current_version: 3, validation_status: 'valid', health: 'healthy', enabled: true, paused: false, last_success_at: '2026-09-30T22:00:00Z', last_inventory_count: 412 },
+    { profile_id: 'lp2', source_label: 'Monash University courses', profile_key: 'au-monash-courses', country_code: 'AU', acquisition_method: 'html_scrape', affected_provider_name: 'Monash University', target_entity_type: 'course', current_version: 1, validation_status: 'valid', health: 'stale', enabled: true, paused: false, last_success_at: '2026-09-20T22:00:00Z', last_inventory_count: null },
+  ] }
+export const layer2ProfileDetail = { profile: { id: 'lp1', profile_key: 'au-rmit-courses', source_label: 'RMIT University courses', country_code: 'AU', acquisition_method: 'html_scrape', target_entity_type: 'course', enabled: true, paused: false }, current_version: { id: 'v3', version_no: 3, validation_status: 'valid', configuration: { base_domain: 'www.rmit.edu.au' } }, history: [], recent_jobs: [], recent_evidence: [] }
