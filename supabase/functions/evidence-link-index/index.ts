@@ -4,6 +4,7 @@ import {createClient} from "npm:@supabase/supabase-js@2";
 // Package 7 (Decision 146): evidence link index.
 // Reads STORED evidence from Supabase Storage (bucket "evidence") and records the links each page
 // contains. It never fetches from the web: evidence is captured once and reused.
+// Decision 215 (2 Oct 2026): run by a one-time nonce; gzipped pages (.html.gz) are read decompressed.
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 const H=()=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-pilot-key,x-cf-run-nonce","access-control-allow-methods":"POST,OPTIONS"});
 const J=(s:number,b:unknown)=>new Response(JSON.stringify(b),{status:s,headers:H()});
@@ -59,7 +60,12 @@ async function indexOne(svc:any,a:any){
     const{data,error}=await svc.storage.from("evidence").download(a.path);
     if(error||!data)throw Error(`download: ${error?.message||"not found"}`);
     if(data.size>MAX_BYTES){await rpc(svc,"svc_evidence_link_index_record_v1",{p_evidence_id:a.id,p_status:"unsupported",p_links:[],p_error:`too large (${data.size} bytes)`});return{status:"unsupported",links:0}}
-    const text=await data.text();const out=new Map<string,{text:string}>();let base=String(a.url||"");
+    // Decision 215: pages the coverage sweep keeps are gzipped (.html.gz, gzip bytes 1f 8b); read them decompressed.
+    const buf=new Uint8Array(await data.arrayBuffer());
+    const gz=/\.gz$/i.test(String(a.path||""))||(buf[0]===0x1f&&buf[1]===0x8b);
+    const text=gz?await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text():new TextDecoder().decode(buf);
+    if(text.length>MAX_BYTES*4){await rpc(svc,"svc_evidence_link_index_record_v1",{p_evidence_id:a.id,p_status:"unsupported",p_links:[],p_error:`too large unpacked (${text.length} chars)`});return{status:"unsupported",links:0}}
+    const out=new Map<string,{text:string}>();let base=String(a.url||"");
     if(/json/i.test(a.mime||"")){let j:any;try{j=JSON.parse(text)}catch{throw Error("invalid json")}base=base||baseFromJson(j);fromJson(j,base,out)}
     else fromHtml(text,base,out);
     const own=base?(()=>{try{return siteOf(new URL(base).hostname)}catch{return""}})():"";

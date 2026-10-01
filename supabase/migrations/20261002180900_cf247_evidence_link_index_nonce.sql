@@ -5,7 +5,7 @@
 -- current workers (coverage-sweep, layer3-model-routing). The edge function accepts the nonce (deployed with this change).
 -- md5 guard on pipeline.svc_pilot_submit_nonce.
 
-do $n$
+do $m$
 declare s text; d text; v text;
   o text := $o$'layer3-work-dispatch','layer3-intake-benchmark','layer3-model-routing')$o$;
   n text := $n$'layer3-work-dispatch','layer3-intake-benchmark','layer3-model-routing','evidence-link-index')$n$;
@@ -16,6 +16,6 @@ begin
   if v is distinct from '007a1af8f142511a3e1e19100a29ce53' then raise exception 'svc_pilot_submit_nonce changed (md5 %); not replacing', v; end if;
   if (length(d) - length(replace(d, o, ''))) / length(o) <> 1 then raise exception 'allow-list end not found once'; end if;
   execute replace(d, o, n);
-end $n$;
+end $m$;
 
 select cron.schedule('evidence-link-index', '9-59/10 * * * *', $$select pipeline.svc_pilot_submit_nonce('evidence-link-index','{"limit":60}'::jsonb)$$);
