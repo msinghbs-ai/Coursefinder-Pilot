@@ -43,7 +43,9 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.4"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.9.0";
+const WORKER = "coverage-sweep-worker-v0.9.1";
+// v0.9.1 (2 Oct 2026, Decision 217): New Zealand pages are proven by a labelled NZQA number or by the NZQA title with the
+// same level ("title_level"), their fees are read in NZD, and they are stored under layer2/NZ/.
 // v0.9.0 (Decision 211): mode scholarship_reextract adds eligibility criteria and award scope to stored scholarship pages.
 // v0.8.0: mode scholarship_discover (provider scholarship pages from site maps, Firecrawl map/search fallbacks, matching
 // held Study Australia-only scholarships, reading unheld pages at Australian universities for admission as new
@@ -617,7 +619,7 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, pages: out, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
     if (mode === "read") {
-      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
+      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const tally: Record<string, number> = {};
       await pool(items, 8, async (it) => {
         if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_identity_basis: null, p_storage_path: null, p_sha256: null, p_candidates: null }); return }
@@ -659,10 +661,10 @@ Deno.serve(async (req) => {
           }
           if (!identityBasis) status = "identity_mismatch";
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
-          path = `layer2/AU/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
+          path = `layer2/${it.country === "NZ" ? "NZ" : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
           const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
           if (up.error) { path = null; sha = null }
-          candidates = identityBasis ? { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION }
+          candidates = identityBasis ? { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, it.country === "NZ" ? "NZD" : "AUD"), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION }
                                      : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200) };
         }
         await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: status, p_http_status: http, p_fetched_via: via, p_identity_basis: identityBasis, p_storage_path: path, p_sha256: sha, p_candidates: candidates });
