@@ -2,7 +2,7 @@
 
 ## 0.1.47 — 1 Oct 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.120** (Courses and Providers: Edit in list — change fields in place in the list).
+- Prepared visible PIM Admin release candidate **v2.15.120** (Courses and Providers: Edit in list — change fields in place in the list; pages no longer run off the right edge).
 - Database (applied live): 20260930180000 (admin_catalogue_edit_rows).
 - v2.15.79 remains the accepted recovery release.
 

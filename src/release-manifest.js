@@ -13,7 +13,9 @@ export const RELEASE={
     'Click a cell to edit it; press Enter or move away to save, or Esc to cancel. A tick shows each save.',
     'Each change is saved and logged the same way as in the record panel, and is locked so automation will not change it. A lock icon shows values entered by hand.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'On wide lists (Courses, Providers, Evidence, Scheduled jobs and others) the page ran off the right edge, hiding buttons such as Add course and Compare, the result count and the pager. Pages now fit the window and wide tables scroll inside their panel.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

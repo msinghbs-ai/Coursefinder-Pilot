@@ -224,3 +224,6 @@ td>.l3v-model{display:block}
 .le-input{width:100%;min-width:0}
 .le-duration{display:flex;gap:4px}.le-duration input{width:70px}
 .le-err-row td{padding-top:0}
+/* v2.15.120: older scheduler panels wrap instead of running off the right edge. */
+.cf-scheduler-v2__head,.cf-workflow-builder__head{flex-wrap:wrap}
+.cf-scheduler-v2,.cf-workflow-builder{min-width:0;max-width:100%;overflow-x:auto}
