@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.62 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.135** (QS and THE filters by country, state and provider; ranked universities linked to providers).
+- Migration 20261001180000 (ranking links and filters) applied live; stored md5 matches the file.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.61 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.134** (fee schedules for approval; Layer 3 claim fixes).

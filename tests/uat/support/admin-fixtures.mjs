@@ -407,3 +407,16 @@ export const feeScheduleRows = { can_decide: true, rows: [
   { row_id: 'r1', course_code: '001293G', course_id: 'c1', course_title: 'Bachelor of Nursing', amount: 39672, currency_code: 'AUD', basis: 'annual', fee_year: 2027, current_amount: null, current_basis: null, outcome: 'new' },
   { row_id: 'r2', course_code: '079454F', course_id: 'c2', course_title: 'Bachelor of Accounting and Finance', amount: 36016, currency_code: 'AUD', basis: 'annual', fee_year: 2027, current_amount: 35000, current_basis: 'annual', outcome: 'differs' },
 ] }
+export const rankingFilters = { systems: [{ code: 'qs_wur', label: 'QS World University Rankings' }], years: [2027, 2026], editions: [], statuses: [] }
+export const rankingFilterOptions = {
+  can_link: true, linked: 37, not_linked: 1, not_linked_in_catalogue_countries: 1,
+  countries: [{ value: 'Australia', count: 38, in_catalogue: true }, { value: 'Canada', count: 31, in_catalogue: true }, { value: 'Japan', count: 52, in_catalogue: false }],
+  states: [{ value: 'AU-VIC', label: 'Victoria', count: 7 }, { value: 'AU-NSW', label: 'New South Wales', count: 11 }],
+  providers: [{ value: 'p-mel', label: 'The University of Melbourne' }],
+}
+export const rankingObservations = { total: 2, limit: 50, offset: 0, items: [
+  { id: 'o1', system_code: 'qs_wur', ranking_name: 'QS World University Rankings', edition_year: 2027, publisher_institution_id: 'pi-mel', publisher_institution_name: 'The University of Melbourne', country_text: 'Australia', provider_id: 'p-mel', provider_name: 'The University of Melbourne', state_code: 'AU-VIC', state_name: 'Victoria', rank_display: '13', rank_exact: 13, overall_score: 90.8, evidence_artifact_id: null },
+  { id: 'o2', system_code: 'qs_wur', ranking_name: 'QS World University Rankings', edition_year: 2027, publisher_institution_id: 'pi-cqu', publisher_institution_name: 'Central Queensland University Australia (CQUniversity)', country_text: 'Australia', provider_id: null, provider_name: null, state_code: null, rank_display: '801-850', overall_score: null, evidence_artifact_id: null },
+] }
+export const rankingLinkCandidates = { can_link: true, items: [{ provider_id: 'p-cqu', provider_name: 'Central Queensland University', state: 'AU-QLD', confidence: 0.5 }] }
+export const providerRankingHistory = { items: [{ system_code: 'qs_wur', ranking_name: 'QS World University Rankings', edition_year: 2027, rank_display: '13', overall_score: 90.8, publisher_name: 'The University of Melbourne' }] }

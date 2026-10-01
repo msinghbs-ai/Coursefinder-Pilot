@@ -1,21 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.134'
-export const PACKAGE_VERSION='0.1.61'
+export const UI_VERSION='2.15.135'
+export const PACKAGE_VERSION='0.1.62'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Fee schedules for approval and faster Layer 3 claims',
+  title:'Ranking filters and provider links',
   changes:[
-    'Coverage › Attributes now has a Fee schedules panel: each university international fee schedule is found, read and matched to its courses by CRICOS code, and a Platform Admin approves each one.',
-    'Approving a fee schedule adds a fee only to courses that have none; courses with a different fee on record are listed, not changed.',
-    'The reader now follows fee schedule documents (usually PDFs) linked from a university fee page, and keeps schedules that continue across page breaks.'
+    'QS and THE: filter by country, state, provider and whether a university is linked to a provider.',
+    'A linked provider opens its provider record, and the provider record now shows its QS and THE ranks by edition.',
+    'A Curator can link a ranked university to a provider from suggestions or a search; the link applies to every edition.',
+    'A new hourly job links ranked universities to providers in every country we hold, including countries added later.'
   ],
   bugFixes:[
-    'English and intake checks by the AI step no longer stall for up to 45 minutes after a lost call.',
-    'The English and intake claim is about 15 times faster, so it no longer runs out of time.'
+    '8 Australian and New Zealand universities whose ranking name differed slightly (for example The University of Adelaide) are now linked across 42 ranking entries.'
   ]
 }
 
