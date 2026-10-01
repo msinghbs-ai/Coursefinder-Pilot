@@ -71,7 +71,7 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
     expect(platform).toContain('Raw missing Storage refs')
     expect(platform).toContain('Reconciled legacy refs')
     expect(platform).toContain('Unresolved missing Storage objects')
-    expect(platform).toContain('CF-055/059 preserve raw lineage counts')
+    expect(platform).toContain('with proven duplicates, past corrections and open problems shown separately') // v2.15.131 plain wording
 
     const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]

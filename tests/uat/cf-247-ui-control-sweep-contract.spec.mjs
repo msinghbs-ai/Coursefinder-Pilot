@@ -4,6 +4,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { PAGES, resolveTarget, hrefFor } from '../../src/nav-map.js'
 import { describeSchedule } from '../../src/automation-schedule.js'
+import { utcClockToMelbourne } from '../../src/lib/format.js'
 import { mockAdmin } from './support/admin-mock.mjs'
 import * as F from './support/admin-fixtures.mjs'
 
@@ -18,13 +19,16 @@ test('menu: Automations, Send back to AI and Publishing tabs; old links still la
   expect(hrefFor('scholarships', 'publishing')).toBe('#scholarships?tab=publishing')
 })
 
-test('schedules read in plain words, times in IST', () => {
+test('schedules read in plain words, times in Melbourne time (v2.15.131)', () => {
   expect(describeSchedule('* * * * *')).toEqual({ text: 'Every minute', every: 1 })
   expect(describeSchedule('3-59/10 * * * *')).toEqual({ text: 'Every 10 minutes', every: 10 })
   expect(describeSchedule('*/5 * * * *').every).toBe(5)
   expect(describeSchedule('12 * * * *').text).toBe('Every hour (at :12)')
   expect(describeSchedule('17 */6 * * *')).toEqual({ text: 'Every 6 hours', every: 360 })
-  expect(describeSchedule('17 20 * * *').text).toBe('Daily at 01:47 IST')
+  expect(describeSchedule('17 20 * * *').text).toBe(`Daily at ${utcClockToMelbourne(20, 17).time}`)
+  expect(utcClockToMelbourne(20, 17, new Date('2026-09-30T00:00:00Z'))).toEqual({ time: '6:17 am', dayShift: 1 })
+  expect(utcClockToMelbourne(20, 17, new Date('2026-10-10T00:00:00Z'))).toEqual({ time: '7:17 am', dayShift: 1 })
+  expect(describeSchedule('0 14 * * 0').text).toContain('Monday')
   expect(describeSchedule('27,57 * * * *').text).toBe('2 times an hour')
   expect(describeSchedule('20 5 * * 0').text).toContain('Sunday')
   expect(describeSchedule('23 21 * 10-12 1').text).toContain('Oct–Dec')
@@ -67,8 +71,8 @@ test.describe('mocked browser', () => {
     await expect(read).toContainText('Read course pages')
     await expect(read).toContainText('Every 2 minutes')
     await expect(read).toContainText('60 per run')
-    await expect(page.locator('tr[data-job="coverage-discover"]')).toContainText('statement timeout')
-    await expect(page.locator('tr[data-job="course-completeness-build"]')).toContainText('Daily at 01:47 IST')
+    await expect(page.locator('tr[data-job="coverage-discover"]')).toContainText('Took too long and was stopped by the database time limit')
+    await expect(page.locator('tr[data-job="course-completeness-build"]')).toContainText(`Daily at ${utcClockToMelbourne(20, 17).time}`)
     await expect(page.locator('tr[data-job="cron-history-retention"]')).toContainText('Top admin only')
     await read.getByRole('button', { name: 'Pause' }).click()
     await expect.poll(() => page.l3calls.map(c => c.p_action)).toContain('pause')

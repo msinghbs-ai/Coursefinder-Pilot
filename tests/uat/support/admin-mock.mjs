@@ -51,6 +51,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_key_date_save: b => { calls.push({ dateSave: b }); return { ...F.keyDates, items: F.keyDates.items.map(x => x.id === b.p_id ? { ...x, ...b.p_fields } : x), saved: b.p_id || 'd-new' } },
     admin_key_date_action: b => { calls.push({ dateAction: b }); return { ...F.keyDates, items: F.keyDates.items.map(x => x.id === b.p_id ? { ...x, status: b.p_action === 'cancel' ? 'cancelled' : 'active' } : x) } },
     admin_waiting_read: F.waiting,
+    statistics_dataset_registry_read: F.statDatasets,
+    statistics_dataset_registry_write: b => { calls.push({ datasetWrite: b }); return null },
     layer4_review_desk_v1: F.l4Desk,
     layer4_review_batches_v1: F.l4Batches,
     layer4_mass_summary: F.l4MassSummary,

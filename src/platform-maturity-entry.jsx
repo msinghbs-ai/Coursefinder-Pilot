@@ -110,10 +110,10 @@ function Overview({readiness,capacity,acceptedPilot,prodOpen}){
       <Metric Icon={Activity} label="Production AI profiles" value={fmtNumber(readiness?.production_ai_profiles_enabled)} detail="Separate benchmark required" tone={num(readiness?.production_ai_profiles_enabled)?'danger':'success'}/>
       <Metric Icon={TestTube2} label="Open Production hard gates" value={fmtNumber(readiness?.production_uat_open)} detail={prodOpen.length+' visible in catalogue'} tone={num(readiness?.production_uat_open)?'warning':'success'}/>
       <Metric Icon={HardDrive} label="Evidence storage" value={fmtBytes(capacity?.evidence_object_bytes)} detail={fmtNumber(capacity?.evidence_object_count)+' objects · '+fmtPercent(num(capacity?.evidence_planning_capacity_pct))+' planning envelope'} tone={toneFor(capacity?.severity)}/>
-      <Metric Icon={CheckCircle2} label="Accepted Pilot UAT domains" value={fmtNumber(acceptedPilot.length)} detail="M2.4.4 permanent baseline" tone="success"/>
+      <Metric Icon={CheckCircle2} label="Accepted Pilot UAT domains" value={fmtNumber(acceptedPilot.length)} detail="Accepted at the Pilot baseline" tone="success"/>
     </div>
 
-    <section className="pm-panel"><SectionTitle icon={Workflow} title="Current Layer 2 wave" subtitle="Latest governed wave state; not a request to start new work."/>
+    <section className="pm-panel"><SectionTitle icon={Workflow} title="Current Layer 2 wave" subtitle="The latest wave; this does not start new work."/>
       {wave?.id?<div className="pm-kv-grid">
         <div><span>Status</span><strong><Pill tone={toneFor(wave.status)}>{title(wave.status)}</Pill></strong></div>
         <div><span>Country / scope</span><strong>{wave.country_code||'—'} · {title(wave.scope_type||'—')}</strong></div>
@@ -124,7 +124,7 @@ function Overview({readiness,capacity,acceptedPilot,prodOpen}){
       </div>:<Empty>No Layer 2 wave state is currently recorded.</Empty>}
     </section>
 
-    <section className="pm-panel"><SectionTitle icon={Archive} title="Governance inventory" subtitle="Foundation counts from the accepted M2.5 platform model."/>
+    <section className="pm-panel"><SectionTitle icon={Archive} title="Governance inventory" subtitle="Counts of the main records the platform keeps."/>
       <div className="pm-inline-stats"><span><strong>{fmtNumber(readiness?.retention_policy_classes)}</strong> retention classes</span><span><strong>{fmtNumber(readiness?.performance_profiles)}</strong> workload profiles</span><span><strong>{fmtNumber(prodOpen.length)}</strong> Production UAT entries not passed</span></div>
     </section>
   </div>
@@ -135,11 +135,11 @@ function Capacity({capacity,integrity,policy,evidencePolicy}){
     <div className="pm-metric-grid">
       <Metric Icon={Database} label="Logical database" value={fmtBytes(capacity?.database_bytes)} detail={'Warn '+fmtBytes(policy?.database_warn_bytes)+' · High '+fmtBytes(policy?.database_high_bytes)} tone={num(capacity?.database_bytes)>=num(policy?.database_warn_bytes)?'warning':'success'}/>
       <Metric Icon={HardDrive} label="Evidence storage" value={fmtBytes(capacity?.evidence_object_bytes)} detail={fmtNumber(capacity?.evidence_object_count)+' objects'} tone={toneFor(capacity?.severity)}/>
-      <Metric Icon={Activity} label="Planning utilisation" value={fmtPercent(num(capacity?.evidence_planning_capacity_pct))} detail="Governed 60 GiB planning envelope · not vendor hard quota" tone={num(capacity?.evidence_planning_capacity_pct)>=num(evidencePolicy?.warn_pct)?'warning':'success'}/>
+      <Metric Icon={Activity} label="Planning utilisation" value={fmtPercent(num(capacity?.evidence_planning_capacity_pct))} detail="Against a 60 GiB planning figure (not the hosting limit)" tone={num(capacity?.evidence_planning_capacity_pct)>=num(evidencePolicy?.warn_pct)?'warning':'success'}/>
       <Metric Icon={AlertTriangle} label="Integrity severity" value={title(capacity?.severity||'unknown')} detail={'Severity input '+fmtNumber(capacity?.integrity_count_for_severity)} tone={toneFor(capacity?.severity)}/>
     </div>
 
-    <section className="pm-panel"><SectionTitle icon={AlertTriangle} title="Evidence lineage classification" subtitle="CF-055/059 preserve raw lineage counts while separating proven duplicates, governed historical reconciliations and unresolved faults. No cleanup is authorised here."/>
+    <section className="pm-panel"><SectionTitle icon={AlertTriangle} title="Evidence lineage classification" subtitle="Stored pages counted as fetched, with proven duplicates, past corrections and open problems shown separately. Nothing is cleaned up from here."/>
       <div className="pm-kv-grid">
         <div><span>Raw unlinked Storage objects</span><strong>{fmtNumber(capacity?.unlinked_storage_object_count_raw)}</strong></div>
         <div><span>Proven duplicates</span><strong>{fmtNumber(capacity?.duplicate_unlinked_storage_object_count)}</strong></div>
@@ -246,7 +246,7 @@ function BlockConsole({rank,blocks,reload}){
         <div className="pm-block-picker">
           <label><span>Entity type</span><select value={entityType} onChange={e=>setEntityType(e.target.value)}>{ENTITY_TYPES.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
           <label className="pm-search-field"><span>Find target</span><div><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={'Search '+entityType+'s'} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();searchTargets()}}}/><button className="pm-button secondary" onClick={searchTargets} disabled={busy}><Search size={14}/>Search</button></div></label>
-          <div className="pm-target-results">{results.length?results.map(x=><button key={itemId(x)} className={selected&&itemId(selected)===itemId(x)?'selected':''} onClick={()=>choose(x)}><strong>{itemLabel(x)}</strong><small>{x.stable_key||x.course_code||x.country_code||itemId(x)}</small></button>):<Empty>Search for a governed catalogue entity.</Empty>}</div>
+          <div className="pm-target-results">{results.length?results.map(x=><button key={itemId(x)} className={selected&&itemId(selected)===itemId(x)?'selected':''} onClick={()=>choose(x)}><strong>{itemLabel(x)}</strong><small>{x.stable_key||x.course_code||x.country_code||itemId(x)}</small></button>):<Empty>Search the catalogue.</Empty>}</div>
         </div>
 
         <div className="pm-block-form">

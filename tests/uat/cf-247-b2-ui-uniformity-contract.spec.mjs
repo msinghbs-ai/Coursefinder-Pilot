@@ -19,7 +19,10 @@ test('one token set: colour literals live only in tokens.css, loaded first', () 
 
 test('en-AU formats from one shared module', () => {
   expect(fmtDate('2026-09-29')).toBe('29 Sep 2026')
-  expect(fmtDateTime(new Date(2026, 8, 29, 14, 37))).toBe('29 Sep 2026, 2:37 pm')
+  // v2.15.131: times are Melbourne time for every viewer (AEST +10 here, AEDT +11 from 4 Oct).
+  expect(fmtDateTime('2026-09-29T04:37:00Z')).toBe('29 Sep 2026, 2:37 pm')
+  expect(fmtDateTime('2026-10-05T04:37:00Z')).toBe('5 Oct 2026, 3:37 pm')
+  expect(fmtDate('2026-09-30T15:00:00Z')).toBe('1 Oct 2026')
   expect(fmtDateTime(null)).toBe('—')
   expect(fmtNumber(25978)).toBe('25,978')
   expect(fmtMoney(31680, 'AUD')).toBe('A$31,680')

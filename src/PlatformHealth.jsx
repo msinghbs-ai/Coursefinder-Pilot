@@ -24,12 +24,19 @@ export async function readPlatformHealth(){try{const h=await adminRead('platform
 function human(v){return String(v??'').replaceAll('_',' ').replace(/^\w/,c=>c.toUpperCase())}
 function scalar(k,v){if(v==null||v==='')return'—';if(typeof v==='number')return fmtNumber(v);if(typeof v==='boolean')return v?'yes':'no';if(/(_at|since|_end)$/.test(k)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);return String(v)}
 /** Detail text or object → short readable lines. Nested objects are summarised one level deep. */
+// v2.15.131 (hc-details-text, hc-actions): plain names for detail keys, and where to go to fix each check.
+const KEY_LABEL={layer3_stuck_over_1h:'Layer 3 items stuck over 1 hour',stuck_over_2h:'Stuck over 2 hours',openrouter_daily_ceiling_usd:'OpenRouter daily limit (US$)',openrouter_spend_24h_usd:'OpenRouter spend, last 24 h (US$)',
+  scholarship_firecrawl_cap:'Scholarship Firecrawl allowance',scholarship_firecrawl_used:'Scholarship Firecrawl used',jobs_overdue:'Jobs overdue',jobs_failing:'Jobs failing',active_jobs:'Active jobs',created_24h:'New in 24 h',decided_24h:'Decided in 24 h',
+  invoked_last_24h:'Called in 24 h',window_minutes:'Window (minutes)',by_function:'By function',db_size:'Database size',max_connections:'Connection limit',active_connections:'Active connections',compute_size:'Compute size',ms:'Response (ms)',run_ms:'Run time (ms)',slowest_probe_ms:'Slowest probe (ms)'}
+const keyLabel=k=>KEY_LABEL[k]||human(k)
+export const FIX_AT={cron:['#scheduled-jobs?tab=automations','Automations'],edge_calls:['#scheduled-jobs?tab=jobs','Jobs'],coverage_queues:['#coverage','Coverage & completeness'],admission:['#coverage','Coverage & completeness'],
+  scholarship_queues:['#scholarships?tab=publishing','Scholarship publishing'],scholarship_review:['#scholarships?tab=publishing','Scholarship publishing'],layer_queues:['#layer-4-review','Layer 4 Review'],budgets:['#layer-3-ai','Layer 3 Control'],db_capacity:['#platform-health?tab=readiness','Capacity']}
 export function DetailText({value}){
   if(value==null||value==='')return null
   if(typeof value!=='object')return <span className="ph-detail">{String(value)}</span>
   const entries=Object.entries(value).filter(([,v])=>v!=null&&v!=='')
   if(!entries.length)return null
-  return <span className="ph-detail">{entries.slice(0,6).map(([k,v])=><span key={k}><b>{human(k)}:</b> {Array.isArray(v)?(v.length&&typeof v[0]!=='object'?v.join(', '):`${fmtNumber(v.length)} item${v.length===1?'':'s'}`):typeof v==='object'?Object.entries(v).slice(0,4).map(([a,b])=>`${human(a)} ${scalar(a,b)}`).join(' · '):scalar(k,v)}</span>)}</span>
+  return <span className="ph-detail">{entries.slice(0,6).map(([k,v])=><span key={k}><b>{keyLabel(k)}:</b> {Array.isArray(v)?(v.length&&typeof v[0]!=='object'?v.join(', '):`${fmtNumber(v.length)} item${v.length===1?'':'s'}`):typeof v==='object'?Object.entries(v).slice(0,4).map(([a,b])=>`${keyLabel(a)} ${scalar(a,b)}`).join(' · '):scalar(k,v)}</span>)}</span>
 }
 
 export default function PlatformHealth({onError}){
@@ -57,13 +64,13 @@ export default function PlatformHealth({onError}){
     <section className="m-panel">
       <SectionTitle icon={AlertTriangle} title="Open issues" subtitle="Grouped by area, newest first. An issue closes by itself when its check passes again."/>
       {areas.length?<div className="ph-areas">{areas.map(([area,items])=><div className="ph-area" key={area}><h3>{human(area)} <span>{fmtNumber(items.length)}</span></h3>
-        <ul>{items.map(i=><li key={i.id||i.check_key+i.title}><StatusChip value={i.severity} tone={SEVERITY_TONE[i.severity]||'neutral'} label={human(i.severity)}/><div><strong>{i.title}</strong><DetailText value={i.detail}/><small>First seen {fmtDateTime(i.first_seen)} · last seen {fmtDateTime(i.last_seen)}{Number(i.occurrences||0)>1?` · seen ${fmtNumber(i.occurrences)} times`:''}{i.acknowledged_at?` · acknowledged ${fmtDateTime(i.acknowledged_at)}`:''}</small></div></li>)}</ul></div>)}</div>
+        <ul>{items.map(i=><li key={i.id||i.check_key+i.title}><StatusChip value={i.severity} tone={SEVERITY_TONE[i.severity]||'neutral'} label={human(i.severity)}/><div><strong>{i.title}</strong>{FIX_AT[i.check_key]&&<a className="ph-fix" href={FIX_AT[i.check_key][0]}>Go to {FIX_AT[i.check_key][1]}</a>}<DetailText value={i.detail}/><small>First seen {fmtDateTime(i.first_seen)} · last seen {fmtDateTime(i.last_seen)}{Number(i.occurrences||0)>1?` · seen ${fmtNumber(i.occurrences)} times`:''}{i.acknowledged_at?` · acknowledged ${fmtDateTime(i.acknowledged_at)}`:''}</small></div></li>)}</ul></div>)}</div>
       :<Empty icon={CheckCircle2} text="No open issues."/>}
     </section>
     <section className="m-panel">
       <SectionTitle icon={CheckCircle2} title="Checks" subtitle="Every automatic check and its latest result. Skipped means the check could not run here, not that it failed."/>
       <div className="cf-table-wrap"><table className="cf-table ph-checks"><thead><tr><th>Check</th><th>Area</th><th>Result</th><th>Details</th><th>Checked</th></tr></thead><tbody>
-        {checks.map(c=><tr key={c.key}><td><strong>{c.label||human(c.key)}</strong></td><td>{human(c.area)}</td><td><StatusChip value={c.status} tone={CHECK_TONE[c.status]||'neutral'} label={c.status==='ok'?'OK':human(c.status)}/></td><td><DetailText value={c.detail}/></td><td>{fmtDateTime(c.checked_at)}</td></tr>)}
+        {checks.map(c=><tr key={c.key}><td><strong>{c.label||human(c.key)}</strong></td><td>{human(c.area)}</td><td><StatusChip value={c.status} tone={CHECK_TONE[c.status]||'neutral'} label={c.status==='ok'?'OK':human(c.status)}/></td><td><DetailText value={c.detail}/>{c.status!=='ok'&&FIX_AT[c.key]&&<a className="ph-fix" href={FIX_AT[c.key][0]}>Go to {FIX_AT[c.key][1]}</a>}</td><td>{fmtDateTime(c.checked_at)}</td></tr>)}
       </tbody></table></div>
     </section>
     <HealthHistory history={data.history||[]}/>

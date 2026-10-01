@@ -24,7 +24,7 @@ test('CF-093 target builder exposes only server-authorised AU Layer 2 Course Fac
  expect(ui).toContain("scheduler_workflow_run_now_v2")
  expect(ui).not.toContain("scheduler_workflow_run_now_v1',{p_workflow_key")
  expect(ui).toContain("p_preview_token:preview.preview_token")
- expect(ui).toContain("Preview governed scope")
+ expect(ui).toContain(">Preview<") // v2.15.131 plain wording
  expect(ui).toContain("Run acquisition + deterministic Layer 2")
  expect(ui).toContain("Automatic Layer 2 → conditional Layer 3 / Layer 4 and Evidence reprocessing remain disabled here")
  expect(ui).not.toContain("refresh_policy_upsert_v2")
@@ -114,7 +114,7 @@ test('CF-093 builder preserves server preview-before-dispatch, rank gate and dis
  const ui=read('src/scheduler-workflow-builder-entry.jsx')
  const previewFix=read('supabase/migrations/20260911022312_cf_093_scheduler_workflow_preview_token_idempotency.sql')
 
- expect(ui).toContain("if(!preview?.preview_token){setError('Preview the governed scope before running it.')")
+ expect(ui).toContain("if(!preview?.preview_token){setError('Preview what would run before starting it.')")
  expect(ui).toContain("preview?.executable!==true")
  expect(ui).toContain("execution_block_reason")
  expect(ui).toContain("governance reason of at least 5 characters")
@@ -126,7 +126,7 @@ test('CF-093 builder preserves server preview-before-dispatch, rank gate and dis
  expect(ui).toContain("setDispatchBusy(false)")
  expect(ui).toContain("const locked=dispatchBusy||!operator")
  expect(ui).toContain("const operator=contextLoaded&&rank>=4")
- expect(ui).toContain("Pipeline Operator rank 4 or higher is required")
+ expect(ui).toContain("A Pipeline Operator or above can preview and start a run") // v2.15.131 plain wording
  expect(ui).toContain("api.context()")
  expect(ui).toContain("if(generation!==previewGeneration.current)return")
  expect(ui).toContain("optionGeneration=useRef(0)")

@@ -20,14 +20,14 @@ function OutcomeCard({x,navigate}){
   {(num(x.confidence_low)!=null&&num(x.confidence_high)!=null)&&<div className="ci-confidence">CI {pct(x.confidence_low,unit)} – {pct(x.confidence_high,unit)}</div>}
   {x.response_count!=null&&<div className="ci-responses">Based on {fmtNumber(x.response_count)} responses</div>}
   <div className="ci-benchmark-track" aria-hidden="true"><span style={{width:clamp(value)+'%'}}/><i style={{left:clamp(bench)+'%'}}/></div>
-  <div className="ci-card-foot"><small>{[x.collection_year_from,x.collection_year_to].filter(Boolean).join('–')||'Latest governed period'}</small><EvidenceButton id={x.evidence_id} navigate={navigate}/></div>
+  <div className="ci-card-foot"><small>{[x.collection_year_from,x.collection_year_to].filter(Boolean).join('–')||'Latest period'}</small><EvidenceButton id={x.evidence_id} navigate={navigate}/></div>
  </article>
 }
 function OutcomePanel({group,navigate}){
  const rows=(group?.items||[]).slice(0,5)
  return <section className="ci-panel ci-qilt">
   <header className="ci-panel-head"><div className="ci-title"><span><Activity size={16}/></span><div><h3>Student outcomes & benchmarks <b>({group?.source_label||'QILT'})</b></h3><p>{human(group?.granularity||'provider context')} · contextual benchmark data</p></div></div><div className="ci-head-actions"><ContextPill>{human(group?.relationship_state||'not available')}</ContextPill><WorkspaceButton target="Outcomes (QILT)" navigate={navigate}/></div></header>
-  {rows.length?<div className="ci-outcome-grid">{rows.map((x,i)=><OutcomeCard x={x} navigate={navigate} key={x.id||i}/>)}</div>:<div className="ci-empty">No governed outcome metrics are currently related to this entity.</div>}
+  {rows.length?<div className="ci-outcome-grid">{rows.map((x,i)=><OutcomeCard x={x} navigate={navigate} key={x.id||i}/>)}</div>:<div className="ci-empty">No outcome figures are linked to this record yet.</div>}
  </section>
 }
 function MiniTrend({values=[]}){const nums=values.map(num).filter(v=>v!=null);if(nums.length<2)return <div className="ci-trend-empty">Trend appears when multiple comparable observations are available.</div>;const min=Math.min(...nums),max=Math.max(...nums),range=max-min||1,pts=nums.slice(0,8).map((v,i)=>[i*(100/Math.max(1,Math.min(nums.length,8)-1)),38-((v-min)/range)*30]);return <svg className="ci-trend" viewBox="0 0 100 42" preserveAspectRatio="none" aria-label="Context trend"><polyline points={pts.map(p=>p.join(',')).join(' ')} fill="none" vectorEffect="non-scaling-stroke"/></svg>}
@@ -41,9 +41,9 @@ function FlowPanel({group,navigate}){
  return <section className="ci-panel ci-prisms">
   <header className="ci-panel-head"><div className="ci-title"><span><CircleGauge size={16}/></span><div><h3>International student flow <b>({group?.source_label||'PRISMS'})</b></h3><p>{human(group?.granularity||'context')} · governed student-flow context</p></div></div><div className="ci-head-actions"><ContextPill tone={direct?'good':'info'}>{human(group?.relationship_state||'not available')}</ContextPill><WorkspaceButton target="Student Flow (PRISMS)" navigate={navigate}/></div></header>
   <div className="ci-flow-grid">
-   <div className="ci-flow-state"><span className="ci-big-icon"><Users size={24}/></span><strong>{direct?'Directly mapped':'Context only'}</strong><p>{direct?'This observation is governed at the Provider/Course grain shown.':'No direct governed Course relationship is implied; displayed values retain their Provider/regional/study-area grain.'}</p></div>
-   <div className="ci-flow-feature"><small>{latest?.metric_name||latest?.metric_code||'Latest governed observation'}</small><strong>{latest?fmt(latest.metric_value):'—'}</strong><span>{latest?[latest.subdivision,latest.study_area,latest.period_end&&date(latest.period_end)].filter(Boolean).join(' · '):'No directly comparable numeric observation available'}</span><MiniTrend values={values}/></div>
-   <div className="ci-markets"><div className="ci-market-title"><TrendingUp size={13}/><strong>Source-market context</strong></div>{markets.length?<div className="ci-market-chips">{markets.map(x=><span key={x}>{x}</span>)}</div>:<p>No nationality breakdown is present in this bounded contextual response.</p>}{visible[0]?.evidence_id&&<EvidenceButton id={visible[0].evidence_id} navigate={navigate}/>}</div>
+   <div className="ci-flow-state"><span className="ci-big-icon"><Users size={24}/></span><strong>{direct?'Directly mapped':'Context only'}</strong><p>{direct?'This figure is for the provider or course shown.':'These figures are for the provider, region or study area, not this course on its own.'}</p></div>
+   <div className="ci-flow-feature"><small>{latest?.metric_name||latest?.metric_code||'Latest figure'}</small><strong>{latest?fmt(latest.metric_value):'—'}</strong><span>{latest?[latest.subdivision,latest.study_area,latest.period_end&&date(latest.period_end)].filter(Boolean).join(' · '):'No directly comparable numeric observation available'}</span><MiniTrend values={values}/></div>
+   <div className="ci-markets"><div className="ci-market-title"><TrendingUp size={13}/><strong>Source-market context</strong></div>{markets.length?<div className="ci-market-chips">{markets.map(x=><span key={x}>{x}</span>)}</div>:<p>No breakdown by nationality is available.</p>}{visible[0]?.evidence_id&&<EvidenceButton id={visible[0].evidence_id} navigate={navigate}/>}</div>
   </div>
  </section>
 }
@@ -51,7 +51,7 @@ function ScholarshipPanel({group,navigate}){
  const rows=(group?.items||[]).slice(0,3)
  return <section className="ci-panel ci-scholarships">
   <header className="ci-panel-head"><div className="ci-title"><span><GraduationCap size={16}/></span><div><h3>Scholarships & funding</h3><p>Governed scope · exclusions override broad inclusion</p></div></div><ContextPill tone={rows.length?'good':'neutral'}>{rows.length?group.total+' related':'None related'}</ContextPill></header>
-  {rows.length?<div className="ci-sch-list">{rows.map((x,i)=><div className="ci-sch-row" key={x.id||i}><div><strong>{x.name||'Scholarship'}</strong><small>{[human(x.relationship),x.audience,x.application_close_date?'Closes '+date(x.application_close_date):null].filter(Boolean).join(' · ')}</small></div><div><b>{x.award_value_text||'See details'}</b><EvidenceButton id={x.evidence_id} navigate={navigate}/></div></div>)}</div>:<div className="ci-sch-empty"><GraduationCap size={24}/><div><strong>No related governed scope</strong><p>No Scholarship is currently related to this entity by an accepted Course/Provider/field/study-level/campus scope.</p></div></div>}
+  {rows.length?<div className="ci-sch-list">{rows.map((x,i)=><div className="ci-sch-row" key={x.id||i}><div><strong>{x.name||'Scholarship'}</strong><small>{[human(x.relationship),x.audience,x.application_close_date?'Closes '+date(x.application_close_date):null].filter(Boolean).join(' · ')}</small></div><div><b>{x.award_value_text||'See details'}</b><EvidenceButton id={x.evidence_id} navigate={navigate}/></div></div>)}</div>:<div className="ci-sch-empty"><GraduationCap size={24}/><div><strong>Nothing related yet</strong><p>No Scholarship is currently related to this entity by an accepted Course/Provider/field/study-level/campus scope.</p></div></div>}
   <WorkspaceButton target="Scholarships" navigate={navigate}/>
  </section>
 }
@@ -59,7 +59,7 @@ export default function ContextualInsights({data,navigate,entityType='provider'}
  if(!data)return null
  const outcomes=data.student_outcomes||{},flow=data.student_flow||{},sch=data.scholarships||{}
  return <section className="ci-workbench">
-  <div className="ci-workbench-title"><div><h2>Related insights & funding</h2><p>{entityType==='course'?'Decision context alongside the Course. Provider/regional statistics retain their actual granularity and are not Course facts.':'Governed contextual outcomes, student flow and funding related to this Provider.'}</p></div><Info size={15}/></div>
+  <div className="ci-workbench-title"><div><h2>Related insights & funding</h2><p>{entityType==='course'?'Decision context alongside the Course. Provider/regional statistics retain their actual granularity and are not Course facts.':'Graduate outcomes, student numbers and funding related to this provider.'}</p></div><Info size={15}/></div>
   <OutcomePanel group={outcomes} navigate={navigate}/>
   <div className="ci-lower-grid"><FlowPanel group={flow} navigate={navigate}/><ScholarshipPanel group={sch} navigate={navigate}/></div>
   <p className="ci-authority">{data.authority_note}</p>

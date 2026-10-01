@@ -356,3 +356,9 @@ export const campusEditRows = { can_edit: true, rows: { cp1: { name: 'RMIT City'
 export const scholarshipEditRows = { can_edit: true, rows: {
   '5f92fc8c-ad2b-5182-a3b7-2e9bba5b3d99': { name: 'RMIT Irana Turynska Scholarship', award_value_text: 'AUD $10,000 annually', award_amount: 10000, award_percentage: null, application_close_date: '2026-11-30', source_url: 'https://www.rmit.edu.au/scholarships/irana', locks: {} },
   s2: { name: 'RMIT David Phillips Memorial Scholarship', award_value_text: 'AUD $5,000 annually', award_amount: null, award_percentage: null, application_close_date: null, source_url: null, locks: { award_amount: 'value' } } } }
+
+// Rankings › Datasets (v2.15.131).
+export const statDatasets = [
+  { dataset_key: 'qs_wur', label: 'QS World University Rankings', dataset_type: 'ranking', description: 'Global institutional ranking.', display_enabled: true, display_order: 30, compare_enabled: true, source_authority: 'QS Quacquarelli Symonds', admin_import_system: 'qs_wur' },
+  { dataset_key: 'arwu', label: 'Academic Ranking of World Universities', dataset_type: 'ranking', description: 'Shanghai ranking.', display_enabled: false, display_order: 50, compare_enabled: true, source_authority: 'ShanghaiRanking', admin_import_system: null },
+]

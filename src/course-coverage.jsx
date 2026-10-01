@@ -64,6 +64,8 @@ export function CoverageView({view='all'}={}){
   const maxBand=Math.max(1,...(score?.by_admitted||[]).map(b=>Number(b.courses||0)))
 
   return <div className="cc-wrap">
+    {/* v2.15.131 (cc-counts-consistency): say what is counted here, as other screens count different sets. */}
+    <p className="cc-scope" data-count-scope>Counts here cover <strong>{fmtNumber(data?.courses||0)} active Australian courses</strong>, recounted every hour. Courses lists every course in any status and country.</p>
     <section className="cf-filterbar" aria-label="Provider tier">
       <span>Provider tier</span>
       {TIERS.map(([k,l])=><button key={k||'all'} className={tier===k?'active':''} onClick={()=>setTier(k)}>{l}</button>)}

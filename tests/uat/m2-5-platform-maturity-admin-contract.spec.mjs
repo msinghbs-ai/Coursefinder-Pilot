@@ -32,7 +32,7 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     ]) expect(component).toContain("adminRead('"+op+"'")
     expect(component).toContain("supabase.rpc('layer4_block_decide'")
     expect(component).toContain("supabase.rpc('layer4_block_state'")
-    expect(component).toContain('not vendor hard quota')
+    expect(component).toContain('(not the hosting limit)')
     expect(component).toContain('No destructive purge action exists in this workspace.')
     expect(component).toContain('Production boundary remains closed')
     expect(component).not.toMatch(/supabase\.rpc\(['"](?:.*production.*enable|.*purge|.*delete)/i)
