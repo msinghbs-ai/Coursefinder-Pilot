@@ -1,22 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.135'
-export const PACKAGE_VERSION='0.1.62'
+export const UI_VERSION='2.15.136'
+export const PACKAGE_VERSION='0.1.63'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'1 Oct 2026',
-  title:'Ranking filters and provider links',
+  title:'Platform guide',
   changes:[
-    'QS and THE: filter by country, state, provider and whether a university is linked to a provider.',
-    'A linked provider opens its provider record, and the provider record now shows its QS and THE ranks by edition.',
-    'A Curator can link a ranked university to a provider from suggestions or a search; the link applies to every edition.',
-    'A new hourly job links ranked universities to providers in every country we hold, including countries added later.'
+    'New Help › Platform guide: how the platform works, who does what, the daily routine, every screen (with a button to open it), signal → action, Platform Admin duties, alert emails, and what changed in this release.',
+    'The guide is reviewed with every release: a release cannot pass its checks until the guide is marked reviewed for that version and every menu page has a guide entry.'
   ],
-  bugFixes:[
-    '8 Australian and New Zealand universities whose ranking name differed slightly (for example The University of Adelaide) are now linked across 42 ranking entries.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

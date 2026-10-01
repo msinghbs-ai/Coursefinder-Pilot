@@ -42,5 +42,11 @@ if(/const VERSION='2\.15\.\d+'/.test(overlay))fail('release-currentness overlay 
 if(/Coursefinder PIM Admin v2\.15\.\d+/.test(html))fail('index.html contains a duplicate current-version literal')
 if(!html.includes('<title>Coursefinder PIM Admin</title>'))fail('index.html must keep a version-neutral bootstrap title')
 if(!overlay.includes('document.title=`Coursefinder PIM Admin v${VERSION}`'))fail('runtime title is not reconciled from the canonical manifest')
+// Decision 209: the in-app Platform guide is reviewed with every release.
+const guide=await import(`${pathToFileURL(path.join(root,'src/guide/platformGuide.js')).href}?t=${Date.now()}`)
+const nav=await import(`${pathToFileURL(path.join(root,'src/nav-map.js')).href}?t=${Date.now()}`)
+if(guide.GUIDE_REVIEWED_FOR!==UI_VERSION)fail(`Platform guide reviewed for ${guide.GUIDE_REVIEWED_FOR}, not ${UI_VERSION}: review src/guide/platformGuide.js for this release, then set GUIDE_REVIEWED_FOR`)
+const guideMissing=Object.keys(nav.PAGES).filter(k=>k!=='guide'&&!guide.SCREENS?.[k])
+if(guideMissing.length)fail(`Platform guide has no entry for menu page(s): ${guideMissing.join(', ')}`)
 if(process.exitCode)process.exit(process.exitCode)
 console.log(`release-contract: PASS ${RELEASE_STATE} v${UI_VERSION} / package ${PACKAGE_VERSION}; recovery v${RECOVERY_RELEASE.version} @ ${RECOVERY_RELEASE.pilotMain}`)

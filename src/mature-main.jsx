@@ -40,6 +40,7 @@ import{CoverageView}from'./course-coverage'
 import LinkRefresh from'./LinkRefresh'
 import FeeSchedules from'./FeeSchedules'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
+import PlatformGuide from'./PlatformGuide'
 import Layer4Intervention from'./Layer4Intervention'
 import{Layer1Operations,Layer1SourceSettings}from'./layer1-operations-entry'
 import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
@@ -74,7 +75,7 @@ const STATUS_OPTIONS=['active','inactive','suspended','retired','unknown'].map(x
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
 
 // v2.15.107: the menu, page titles, tabs, role gates and old-address redirects all come from nav-map.js.
-const ICONS={dashboard:LayoutDashboard,course:GraduationCap,provider:Building2,scholarship:Sparkles,chart:BarChart3,check:CheckCircle2,database:Database,activity:Activity,ai:BrainCircuit,review:ListChecks,health:HeartPulse,workflow:Workflow,book:BookOpen,plug:Plug,sliders:SlidersHorizontal,shield:ShieldCheck,tags:Tags,users:UsersRound}
+const ICONS={dashboard:LayoutDashboard,course:GraduationCap,provider:Building2,scholarship:Sparkles,chart:BarChart3,check:CheckCircle2,database:Database,activity:Activity,ai:BrainCircuit,review:ListChecks,health:HeartPulse,workflow:Workflow,book:BookOpen,plug:Plug,sliders:SlidersHorizontal,shield:ShieldCheck,tags:Tags,users:UsersRound,guide:BookOpen}
 
 function routeFromHash(){
   const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?')
@@ -177,6 +178,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
   function pageBody(){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
+      case'guide':return <PlatformGuide rank={rank} navigate={navigate}/>
       case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>

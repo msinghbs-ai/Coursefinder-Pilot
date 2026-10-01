@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.63 — 1 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.136** (Platform guide in the menu).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.62 — 1 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.135** (QS and THE filters by country, state and provider; ranked universities linked to providers).
