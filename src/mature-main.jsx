@@ -64,7 +64,21 @@ import'./admin-pages.css'
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
 function CoverageAttributes({rank}){
   const[scope,setScope]=useState({country:'',provider:null})
-  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<FeeSchedules country={scope.country} provider={scope.provider}/>}{rank>=4&&<ProviderPolicies country={scope.country} provider={scope.provider}/>}</div>
+  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-4-review?tab=attributes">Layer 4 Review › Attributes</a>.</p>}</div>
+}
+
+// v2.15.157 (Platform Admin, 3 Oct 2026 02:00: "Move english and fees from coverage attributes to layer 4 as the attributes
+// tab"): university-level documents a person approves (fee schedules, English policies, academic calendars) sit with the
+// other Layer 4 decisions. The country filter narrows both panels, as the Coverage filter did.
+const ATTR_COUNTRIES=[['','All countries'],['AU','Australia'],['NZ','New Zealand'],['CA','Canada']]
+function Layer4Attributes(){
+  const[country,setCountry]=useState('')
+  return <div className="m-page-stack">
+    <section className="m-panel" data-attributes-scope><div className="fs-bar"><label><small>Country</small><select className="fv-filter" aria-label="Attributes country" value={country} onChange={e=>setCountry(e.target.value)}>{ATTR_COUNTRIES.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label></div>
+      <p className="sd-desc">University documents a person approves: fee schedules, English language policies and academic calendars. Approval fills only courses with no value and none entered by hand.</p></section>
+    <FeeSchedules country={country}/>
+    <ProviderPolicies country={country}/>
+  </div>
 }
 
 const UI_VERSION='2.15.78'
@@ -217,7 +231,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
         return <Layer2Workspace rank={rank} embedded navigate={navigate} view={tab==='start'?'start':tab==='history'?'history':'overview'}/>
       case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
-      case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
+      case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:tab==='attributes'?<Layer4Attributes/>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
       case'jobs':return tab==='priority'?<div className="m-page-stack"><SearchCapCard/><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>

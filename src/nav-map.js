@@ -62,6 +62,8 @@ export const PAGES = {
     { key: 'websites', label: 'Websites to find', min: 3 },
     { key: 'sendback', label: 'Send back to AI', min: 3 },
     { key: 'rules', label: 'Fee rules', min: 3 },
+    // v2.15.157 (Platform Admin, 3 Oct 2026 02:00): fee schedules, English policies and academic calendars moved here from Coverage › Attributes
+    { key: 'attributes', label: 'Attributes', min: 4 },
     { key: 'blocks', label: 'Blocks', min: 5 },
   ] },
 

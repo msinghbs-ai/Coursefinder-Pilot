@@ -85,7 +85,7 @@ test.describe('browser: fee schedules panel', () => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page)
     page.on('dialog', d => d.accept())
-    await page.goto('/#coverage?tab=attributes')
+    await page.goto('/#layer-4-review?tab=attributes')
     const fs = page.locator('[data-fee-schedules]')
     await expect(fs).toContainText('Waiting for approval')
     await expect(fs.locator('[data-doc="fs2"]')).toContainText('20 fees added')
@@ -98,7 +98,7 @@ test.describe('browser: fee schedules panel', () => {
   test('Pipeline Operator sees the panel but cannot decide; viewer does not see it', async ({ page }) => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page, { rank: 4 })
-    await page.goto('/#coverage?tab=attributes')
+    await page.goto('/#layer-4-review?tab=attributes')
     const fs = page.locator('[data-fee-schedules]')
     await expect(fs.locator('[data-doc="fs1"]')).toContainText('Waiting for a Platform Admin')
     await expect(fs.getByRole('button', { name: 'Approve' })).toHaveCount(0)

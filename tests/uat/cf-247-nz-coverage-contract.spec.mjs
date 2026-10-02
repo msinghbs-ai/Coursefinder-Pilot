@@ -59,24 +59,24 @@ test('migrations: NZ rule, country-aware tuition hand-off, title search without 
   expect(w).toContain('fee(text, currencyFor(it.country))')
 })
 
-test('browser: fee schedules follow the Coverage country', async ({ page }) => {
+test('browser: fee schedules follow the Layer 4 Attributes country', async ({ page }) => {
   await mockAdmin(page)
-  await page.goto('/#coverage?tab=attributes')
+  await page.goto('/#layer-4-review?tab=attributes')
   const fsx = page.locator('[data-fee-schedules]')
   await expect(fsx.locator('[data-doc="fs1"]')).toHaveCount(1)
   await expect(fsx.locator('[data-fee-scope]')).toHaveCount(0)
-  await page.getByLabel('Coverage country').selectOption('NZ')
+  await page.getByLabel('Attributes country').selectOption('NZ')
   await expect(fsx.locator('[data-fee-scope]')).toContainText('No fee schedules for New Zealand')
   await expect(fsx.locator('[data-fee-scope]')).toContainText('Australian providers only')
   await expect(fsx.locator('[data-doc="fs1"]')).toHaveCount(0)
-  await page.getByLabel('Coverage country').selectOption('AU')
+  await page.getByLabel('Attributes country').selectOption('AU')
   await expect(fsx.locator('[data-fee-scope]')).toContainText('Showing')
   await expect(fsx.locator('[data-doc="fs1"]')).toHaveCount(1)
 })
 
 test('platform guide explains NZ page rules and fee schedule scope', () => {
   const g = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
-  expect(g).toContain('Fee schedules follow the country and university chosen above')
+  expect(g).toContain('Fee schedules follow the country chosen at the top of the tab')
   expect(g).toContain('NZQA title without')
 })
 
