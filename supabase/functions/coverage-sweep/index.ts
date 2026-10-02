@@ -45,7 +45,7 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.12.1";
+const WORKER = "coverage-sweep-worker-v0.13.0";
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -244,7 +244,7 @@ Deno.serve(async (req) => {
     let schLeft = mode.startsWith("scholarship") ? Math.max(0, SCH_FC_CAP - Number(await rpc("svc_scholarship_fc_used", {}) ?? SCH_FC_CAP)) : 0;
     const useFc = async (purpose: string, providerId: string | null, url: string) => {
       if (!fc?.secret || fcRemaining < 1) return false;
-      const units = /search$/.test(purpose) ? 2 : 1; if (fcRemaining < units) return false;
+      const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1; if (fcRemaining < units) return false; // v0.13.0: a JSON-format scrape costs 5 credits
       if (purpose.startsWith("sch_")) { if (schLeft < units) return false; schLeft -= units }
       fcRemaining -= units; await rpc("svc_coverage_usage", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true;
     };
@@ -405,6 +405,57 @@ Deno.serve(async (req) => {
     }
     // v0.10.1: the OpenRouter key's own limits (weekly, daily, total), read with the governed credential; the key is
     // never returned.
+    // v0.13.0 (3 Oct 2026, Platform Admin "Yes, qualify now"): Firecrawl's own AI extraction (JSON format) as a CANDIDATE
+    // route for intakes and English. Qualification only: each frozen holdout case is fetched and rendered by Firecrawl,
+    // which returns fields against a fixed schema; the answer is scored against the gold value and recorded
+    // (svc_fc_extract_result). Nothing is admitted and no cascade changes. Firecrawl does not name its model, so a pass
+    // admits it only as a provider-level route (re-tested weekly, paused on a failure), never a model-cascade step.
+    if (mode === "fc_extract_qualify") {
+      const task = String(body.task_class || "");
+      if (!["provider_intake_validation", "provider_english_validation"].includes(task)) return j({ ok: false, mode, error: "task_class must be provider_intake_validation or provider_english_validation", workerVersion: VERSION }, 422);
+      const runLabel = String(body.run_label || "");
+      if (!/^q-fcx-[a-z0-9.-]{3,60}$/.test(runLabel)) return j({ ok: false, mode, error: "run_label q-fcx-... required", workerVersion: VERSION }, 422);
+      if (!fc?.secret) return j({ ok: false, mode, error: "Firecrawl credential unavailable", workerVersion: VERSION }, 503);
+      const intake = task === "provider_intake_validation";
+      const schema = intake
+        ? { type: "object", properties: { status: { type: "string", enum: ["months", "not_stated"] }, months: { type: "array", items: { type: "integer", minimum: 1, maximum: 12 } }, quote: { type: "string" } }, required: ["status", "months", "quote"] }
+        : { type: "object", properties: { status: { type: "string", enum: ["stated", "not_stated"] }, tests: { type: "array", items: { type: "object", properties: { test: { type: "string", enum: ["IELTS", "PTE", "TOEFL_IBT", "CAE"] }, overall: { type: "number" }, min_band: { type: ["number", "null"] } }, required: ["test", "overall"] } }, quote: { type: "string" } }, required: ["status", "tests", "quote"] };
+      const prompt = intake
+        ? "This is one course's page. Give the months of the year in which this course starts (intakes) for new students, ONLY where the page states them as month names or full dates for this course. Semester, trimester or term names without a month are NOT months: then status is not_stated and months is empty. Do not infer. quote = the exact words from the page that state the months."
+        : "This is one course's page. Give the English language test scores this course requires of international applicants, ONLY where the page states them for this course: IELTS, PTE, TOEFL_IBT or CAE with the overall score and the minimum band if stated. A statement that English is required without a score, or a link to a policy, is not_stated. Do not infer. quote = the exact words from the page that state the scores.";
+      const cases: { case_id: string; task_class: string; url: string; gold: any }[] = await rpc("svc_fc_extract_cases", { p_task_class: task, p_offset: Number(body.offset || 0), p_limit: Math.min(Number(body.limit || 50), 100) });
+      const tally: Record<string, number> = {}; let credits = 0;
+      const norm = (s: string) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
+      const sameSet = (a: unknown[], b: unknown[]) => { const x = [...new Set(a.map(String))].sort().join(","), y = [...new Set(b.map(String))].sort().join(","); return x === y };
+      await pool(cases, Math.min(Number(body.concurrency || 4), 6), async (k) => {
+        if (Date.now() - t0 > BUDGET_MS) { tally.time = (tally.time || 0) + 1; return }
+        let answer: any = null, outcome = "error", quoteIn: boolean | null = null, http: number | null = null, err: string | null = null, c1 = 0;
+        try {
+          if (!(await useFc("fcx_qualify", null, k.url))) throw Error("credit budget");
+          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: k.url, formats: ["markdown", { type: "json", schema, prompt }], onlyMainContent: false }), signal: AbortSignal.timeout(90000) });
+          http = r.status; const d = await r.json().catch(() => ({}));
+          if (!r.ok || !d?.data) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || "").slice(0, 160)}`);
+          c1 = Number(d?.data?.metadata?.creditsUsed || 5); credits += c1;
+          answer = d.data.json || null; const md = String(d.data.markdown || "");
+          const q = norm(answer?.quote || ""); quoteIn = q.length >= 8 ? norm(md).includes(q) : false;
+          const g = k.gold || {};
+          if (intake) {
+            const gm = Array.isArray(g.months) ? g.months : [], am = Array.isArray(answer?.months) ? answer.months : [];
+            const gStated = g.status === "months" && gm.length > 0, aStated = answer?.status === "months" && am.length > 0 && quoteIn === true;
+            outcome = !gStated && !aStated ? "exact_not_stated" : gStated && aStated && sameSet(gm, am) ? "exact" : aStated ? "wrong_admitted" : "missed";
+          } else {
+            const key = (t: any) => `${String(t?.test || "").toUpperCase()}:${Number(t?.overall)}`;
+            const gt = Array.isArray(g.tests) ? g.tests.map(key) : [], at = Array.isArray(answer?.tests) ? answer.tests.map(key) : [];
+            const gStated = g.status === "stated" && gt.length > 0, aStated = answer?.status === "stated" && at.length > 0 && quoteIn === true;
+            // right = every test the answer gives is in the gold with the same overall score, and the gold's tests are all given
+            outcome = !gStated && !aStated ? "exact_not_stated" : gStated && aStated && sameSet(gt, at) ? "exact" : aStated ? "wrong_admitted" : "missed";
+          }
+        } catch (e) { err = e instanceof Error ? e.message : String(e); outcome = "error" }
+        await rpc("svc_fc_extract_result", { p_run_label: runLabel, p_case_id: k.case_id, p_task_class: task, p_answer: answer, p_outcome: outcome, p_quote_in_page: quoteIn, p_credits: c1, p_http: http, p_error: err });
+        tally[outcome] = (tally[outcome] || 0) + 1;
+      });
+      return j({ ok: true, mode, run_label: runLabel, task_class: task, cases: cases.length, tally, credits, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
     if (mode === "openrouter_key") {
       let key = Deno.env.get("OPENROUTER_API_KEY") || "";
       if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
