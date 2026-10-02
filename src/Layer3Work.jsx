@@ -4,7 +4,9 @@
 //                     public.layer3_source_pattern_queue(50) + layer3-interpret {source_pattern_request_id}: run by
 //                     hand, one at a time (unchanged behaviour; a suggested pattern goes back to Layer 2 for the
 //                     3-course check, and AI never approves a provider or writes course links).
-//   Recent results    public.layer3_recent_interpretations(100), shown 25 at a time.
+//   Recent results    public.layer3_recent_interpretations(100), shown 25 at a time. Decision 221: a cascade claim no
+//                     step has answered yet shows "Cascade · step not chosen yet" (it used to show its placeholder
+//                     profile, Claude Sonnet 4.6, although no call went to it); answered rows show the cascade step.
 // Removed here: the "AI interpretation is paused" banner (it counted the older model-route records and could
 // contradict Control), the one-off manual run form for task types that no longer run, and duplicate links.
 import React,{useEffect,useMemo,useState}from'react'
@@ -64,7 +66,8 @@ export default function Layer3Work({rank,onError}){
       {runs.length===0?<Empty text="No recent results."/>:<><div className="cf-table-wrap"><table className="cf-table l3w-runs"><thead><tr><th>When</th><th>Task</th><th>Result</th><th>Model</th><th className="num">Cost</th><th>Next</th></tr></thead>
         <tbody>{runs.slice(offset,offset+25).map((r,i)=><tr key={r.id||r.interpretation_id||i}><td>{fmtDateTime(r.created_at||r.updated_at)}</td><td>{task(r.task_class)}</td>
           <td><StatusChip value={r.status} tone={result(r.status)[1]} label={result(r.status)[0]}/></td>
-          <td><span title={r.aggregator_response_model||r.model_identifier}>{shortModel(r.aggregator_response_model||r.model_identifier)}</span></td>
+          <td>{r.model_pending?<span className="sd-desc" data-model-pending title="Waiting for the cascade: the model is the step that answers, cheapest switched-on step first">Cascade · step not chosen yet</span>
+            :<span title={r.aggregator_response_model||r.model_identifier}>{shortModel(r.aggregator_response_model||r.model_identifier)}{r.cascade_tier_no?<small className="sd-desc"> · step {r.cascade_tier_no}</small>:null}</span>}</td>
           <td className="num">{fmtMoney(Number(r.estimated_cost_usd||0),'USD',{decimals:4})}</td>
           <td className="l3w-next">{r.review_state&&r.review_state!=='not_created'?<span title={r.escalation_reason||''}>With a person</span>:'—'}</td></tr>)}</tbody></table></div>
         {runs.length>25&&<Pager offset={offset} limit={25} total={runs.length} onOffset={setOffset}/>}</>}

@@ -22,6 +22,8 @@ import { AUDIT_RATE, CASCADE_VERSION, cascadeSignal, sameAnswer } from "../_shar
 //              is a separate governed SQL step (security.layer3_fact_admit_v1).
 //   guard      OpenRouter credit floor: below US$5 remaining, the Layer 3 route crons are switched off.
 const FN = "layer3-model-routing", V = ROUTING_VERSION;
+// Decision 221 (2 Oct 2026): a cascade task (intake, English) never falls back to the single routed profile; with no
+// cascade step switched on, nothing is claimed and no model is called.
 const QUALIFICATION_CAP_USD = 8.0, RESERVE_USD = 0.03;
 const CREDIT_FLOOR_USD = 5.0;
 const OPENROUTER = "https://openrouter.ai/api/v1";
@@ -232,6 +234,11 @@ Deno.serve(async (req: Request) => {
       const c = await credits();
       if (c.remaining < CREDIT_FLOOR_USD) return j(200, { ok: true, mode, task, worker_version: V, stopped: await rpc("layer3_route_credit_floor_service", { p_remaining: c.remaining, p_floor: CREDIT_FLOOR_USD }) });
       const worker = `layer3-model-routing:${task}:${crypto.randomUUID().slice(0, 8)}`;
+      // Decision 221: a cascade task never falls back to the single routed profile. With no cascade step switched on,
+      // nothing is claimed and no model is called.
+      const pre = await rpc("layer3_cascade_ladder_service", { p_task_class: TASKS[task] });
+      const usable = (l: any) => (l?.tiers || []).filter((t: any) => t.active && t.profile?.enabled && !t.profile?.paused && isPinnedModel(String(t.profile?.model_identifier)));
+      if (pre?.route_mode === "ladder" && !usable(pre).length) return j(200, { ok: true, mode, task, worker_version: V, claimed: 0, reason: "no cascade step is switched on; nothing sent to any model" });
       // the claim resolves the routed profile; the binding hash sent must equal the one qualified
       const probe = await rpc("layer3_fact_route_profile_service", { p_task_class: TASKS[task] });
       if (!probe?.id) return j(200, { ok: true, mode, task, worker_version: V, claimed: 0, reason: probe?.reason || "no routed profile" });
@@ -244,10 +251,11 @@ Deno.serve(async (req: Request) => {
       const tally: Record<string, number> = {}; let cost = 0;
       // cascade ladder (route_mode = ladder): active tiers, cheapest first; otherwise the single routed profile
       const ladder = await rpc("layer3_cascade_ladder_service", { p_task_class: TASKS[task] });
-      const tiers: any[] = ladder?.route_mode === "ladder" ? (ladder.tiers || []).filter((t: any) => t.active && t.profile?.enabled && !t.profile?.paused && isPinnedModel(String(t.profile?.model_identifier))) : [];
+      const isLadder = ladder?.route_mode === "ladder";
+      const tiers: any[] = isLadder ? usable(ladder) : [];
       const tierTally: Record<string, number> = {};
       let refused = "";  // OpenRouter refused a call (key, billing or rate limit): stop and release, never escalate or send to Layer 4
-      if (tiers.length) {
+      if (isLadder) {
         const finalTier = tiers[tiers.length - 1];
         await pool(items, Math.min(Math.max(1, Number(body.concurrency || 4)), 8), async (it) => {
           let status = "complete_error";
@@ -267,7 +275,7 @@ Deno.serve(async (req: Request) => {
                 input_tokens: r.input, output_tokens: r.output, latency_ms: r.latency, external_calls: 1, safety_blockers: [], text_sha256: textSha, binding_hash: null };
               return { chk, result, cost: Number(r.cost || 0) };
             };
-            if (task === "intake" && blockers.length) {
+            if (task === "intake" && blockers.length && tiers.length) {
               // deterministic safety rule: no model call, recorded against the first tier
               const result = { valid: true, status: "not_stated", admitted: null, errors: [], answer: { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" },
                 returned_model: null, cost_usd: 0, external_calls: 0, safety_blockers: blockers.map((b) => b.code), text_sha256: textSha, binding_hash: null };
@@ -280,6 +288,8 @@ Deno.serve(async (req: Request) => {
               // switched off, e.g. Claude Sonnet 4.6); no escalation and no spot check - an unsettled answer returns to Layer 4
               const pin = it.pinned_profile_id ? (ladder.tiers || []).find((t: any) => t.profile?.id === it.pinned_profile_id && t.profile?.enabled && !t.profile?.paused && isPinnedModel(String(t.profile?.model_identifier))) : null;
               const its: any[] = pin ? [pin] : tiers;
+              // Decision 221: a step switched off between the check and the claim - release, never call another model
+              if (!its.length) { const r = await rpc("layer3_fact_release_service", { p_work_item_id: it.work_item_id, p_interpretation_id: it.interpretation_id, p_reason: "no cascade step is switched on" }); status = r?.work_status || "released"; tally[status] = (tally[status] || 0) + 1; return }
               if (pin) tierTally["pinned"] = (tierTally["pinned"] || 0) + 1;
               for (let i = 0; i < its.length; i++) {
                 const t = its[i], last = i === its.length - 1;
