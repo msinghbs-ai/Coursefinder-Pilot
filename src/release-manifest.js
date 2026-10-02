@@ -1,21 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.150'
-export const PACKAGE_VERSION='0.1.77'
+export const UI_VERSION='2.15.151'
+export const PACKAGE_VERSION='0.1.78'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Fees follow the page\'s domestic or international view',
+  title:'Tuition reviews settled against the international view',
   changes:[
-    'Course-page fees follow the page’s own domestic or international view; a course total or a fee for one study period, trimester or unit is never taken as an annual fee. Every saved page is re-read once with these rules.',
-    'Re-reading saved pages reads New Zealand and Canadian pages in NZD and CAD.'
+    'Course-page reader v0.5.6 leaves out amounts that are not tuition (bursaries, scholarships, loan caps, health cover, salaries, deposits, other fees) and reads Session fee / Course fee tables correctly.',
+    'Layer 4 tuition reviews are settled every 10 minutes against the page’s international view: a review about an amount that is not the international annual fee is closed with both amounts kept, and the page’s international fee goes to the AI check.'
   ],
   bugFixes:[
-    'A UQ tuition review asked a person to choose between the domestic fee ($10,520) and the international fee (A$60,952) although A$60,952, from the page’s international view, was already recorded. 15 such reviews were closed.',
-    'The retired pipeline still fed its August page snapshots to the AI fee check; that feed is paused.',
-    'Domestic-view fees, course totals and part-year fees were handed to the AI fee check as international annual fees, filling Layer 4 with reviews.'
+    'Layer 4 tuition reviews asked people about domestic prices, VET Student Loan caps, bursaries, scholarships and course totals instead of the international annual fee (RMIT Diploma of Business asked about A$12,858, a loan cap; its international fee is AU$16,250).'
   ]
 }
 

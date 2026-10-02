@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.78 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.151** (tuition reviews settled against the page's international view).
+- Migrations 20261002182400 and 182500 (applied): review pages re-read first; tuition reviews settled every 10 minutes (job layer4-tuition-settle).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.77 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.150** (fees follow the page's domestic or international view; answered tuition reviews closed).
