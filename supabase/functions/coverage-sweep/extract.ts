@@ -56,13 +56,21 @@ export function titleLevel(rawH1: string, rawTitle: string, text: string, course
 
 // Decision 217: New Zealand pages are read in NZD (NZD, NZ$ or a bare $); amounts marked as another currency
 // (AUD, A$, US$) are left out there. Australian pages are read exactly as before.
+// Decision 220: Canadian pages are read in CAD (CAD, CA$, C$ or a bare $) the same way.
 // a currency marker written immediately before "$" (US$, A$, AU$) or as a word before it (AUD 5,000 / USD $5,000)
-const foreignBefore = (pre: string) => /(?:^|[^A-Za-z])(?:US|AU|A|C|S|HK)$/.test(pre) || /(?:^|[^A-Za-z])(?:AUD|USD|CAD|SGD|HKD)\s*$/i.test(pre)
-export function fee(text: string, currency: "AUD" | "NZD" = "AUD") {
-  const nz = currency === "NZD"
-  const re = nz ? /(?:NZD\s*\$?|NZ\s?\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi
+const foreignBefore = (pre: string) => /(?:^|[^A-Za-z])(?:US|AU|A|C|S|HK)$/.test(pre) || /(?:^|[^A-Za-z])(?:AUD|USD|CAD|SGD|HKD|NZD)\s*$/i.test(pre)
+const FEE_RE: Record<string, { re: RegExp; own: RegExp; explicit: RegExp }> = {
+  NZD: { re: /(?:NZD\s*\$?|NZ\s?\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi, own: /^NZ/i, explicit: /(?:NZD\s*|NZ\s?\$)\s*[\d,]+/i },
+  CAD: { re: /(?:CAD\s*\$?|CA\s?\$|C\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi, own: /^C/i, explicit: /(?:CAD\s*|CA\s?\$|C\$)\s*[\d,]+/i },
+}
+export function currencyFor(country: string | null | undefined): "AUD" | "NZD" | "CAD" {
+  return country === "NZ" ? "NZD" : country === "CA" ? "CAD" : "AUD"
+}
+export function fee(text: string, currency: "AUD" | "NZD" | "CAD" = "AUD") {
+  const own = FEE_RE[currency], nz = Boolean(own)
+  const re = own ? new RegExp(own.re.source, "gi")
                 : /(?:AUD\s*\$?|A\$|AU\s?\$|\$)\s*(\d{1,3}(?:,\d{3})+|\d{4,6})(?:\.\d{2})?(?![\d,])/gi
-  const rows = [...text.matchAll(re)].filter((m) => !nz || /^NZ/i.test(m[0]) || !foreignBefore(text.slice(Math.max(0, (m.index || 0) - 6), m.index || 0))).map((m) => {
+  const rows = [...text.matchAll(re)].filter((m) => !own || own.own.test(m[0]) || !foreignBefore(text.slice(Math.max(0, (m.index || 0) - 6), m.index || 0))).map((m) => {
     const idx = m.index || 0, amount = Number(m[1].replace(/,/g, ""))
     const before = text.slice(Math.max(0, idx - 180), idx), after = text.slice(idx + m[0].length, idx + m[0].length + 180)
     const context = clean(before + " " + m[0] + " " + after), near = clean(text.slice(Math.max(0, idx - 320), idx + m[0].length + 320))
@@ -76,7 +84,7 @@ export function fee(text: string, currency: "AUD" | "NZD" = "AUD") {
     const total = /(total (indicative |estimated |course |program(me)? )?(tuition )?fees?|total cost|entire (course|program)|full (course|program)|\(\s*20[2-3]\d\s+total\s*\)|fee to complete|full fee to complete)/i.test(local2)
     const annualLocal = /(per year|a year|per annum|annual|first[- ]year|\(\s*20[2-3]\d\s+annual\s*\))/i.test(local2)
     const tuition = /(tuition|fee)/i.test(context)
-    const explicitAud = nz ? /(?:NZD\s*|NZ\s?\$)\s*[\d,]+/i.test(token) : /(?:AUD\s*|A\$|AU\s?\$)\s*[\d,]+/i.test(token)
+    const explicitAud = own ? own.explicit.test(token) : /(?:AUD\s*|A\$|AU\s?\$)\s*[\d,]+/i.test(token)
     const cricosNear = /CRICOS(?:\s+Code)?/i.test(near)
     const year = (after.match(/\b(20[2-3]\d)\b/) || before.slice(-80).match(/\b(20[2-3]\d)\b/) || [])[1]
     const score = (international ? 5 : 0) + (cricosNear ? 4 : 0) + (explicitAud ? 4 : 0) + (indicative ? 3 : 0) + (tuition ? 1 : 0) - (domestic ? 8 : 0)
@@ -191,4 +199,17 @@ export function robotsAllows(robots: string, path: string) {
     if (re.test(path) && (!best || r.p.length > best.len || (r.p.length === best.len && r.allow))) best = { allow: r.allow, len: r.p.length }
   }
   return best ? best.allow : true
+}
+
+// Decision 220: a Canadian provider's own site is accepted when its home page prints the provider's IRCC DLI number, or
+// names the provider in the page title or main heading (accents, "The", "&" and punctuation ignored). Names of three
+// letters or fewer, or a single word, are never matched by name alone.
+const siteNorm = (s: string) => clean(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").replace(/\bthe\b/g, " ").replace(/\s+/g, " ").trim()
+export function siteNameMatch(html: string, text: string, name: string, dli: string): "dli_number" | "name_on_home_page" | null {
+  const code = clean(dli).toUpperCase()
+  if (/^O\d{9,13}$/.test(code) && new RegExp(`\\b${code}\\b`).test(text.toUpperCase())) return "dli_number"
+  const n = siteNorm(name)
+  if (n.length <= 3 || n.split(" ").length < 2) return null
+  for (const h of [titleOf(html), h1Of(html)]) { const t = siteNorm(h); if (t && (" " + t + " ").includes(" " + n + " ")) return "name_on_home_page" }
+  return null
 }
