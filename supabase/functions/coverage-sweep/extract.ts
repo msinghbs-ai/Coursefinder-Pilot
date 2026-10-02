@@ -23,7 +23,7 @@ const normNz = (s: string) => norm(clean(s).replace(/\+/g, " and ")).replace(/\b
 //  - "nzqa_code": the NZQA qualification number is printed with its label ("NZQA", "qualification", "programme code");
 //  - "title_level": the NZQA title ends "(Level N)"; the page heading is that title without the level (or with the same
 //    level), no other level appears in the heading, and the page shows "Level N".
-export function identity(html: string, text: string, courseTitle: string, courseCode: string, codeOnly = false) {
+export function identity(html: string, text: string, courseTitle: string, courseCode: string, codeOnly = false, country = "") {
   const code = clean(courseCode).toUpperCase()
   if (code.length >= 6 && new RegExp(`\\b${code}\\b`).test(text.toUpperCase())) return "cricos_code"
   if (/^[0-9]{3,5}$/.test(code) && new RegExp(`(nzqa|qualification|programme|program)\\s*(number|code|id|ref(erence)?|no\\.?)?\\s*[:#]?\\s*${code}\\b`, "i").test(text)) return "nzqa_code"
@@ -36,7 +36,67 @@ export function identity(html: string, text: string, courseTitle: string, course
   const codeless = (s: string) => clean(s).replace(/^(?:[A-Z]{3,4}\d{5}|\d{5}NAT)\s*[-–—:|]?\s*/, "")
   const titleHead = clean(titleOf(html)).split(/\s+[|–—]\s+|\s+-\s+/)[0] || ""
   if (t && t.split(" ").length >= 2 && (norm(codeless(h1Of(html))) === t || norm(codeless(titleHead)) === t)) return "exact_title"
-  return titleLevel(h1Of(html), titleOf(html), text, courseTitle)
+  return titleLevel(h1Of(html), titleOf(html), text, courseTitle) ?? (country === "CA" ? fieldAward(h1Of(html), titleOf(html), text, courseTitle) : null)
+}
+
+// Decision 235 (2 Oct 2026, Platform Admin 22:55): Canadian catalogue titles are written "Field: Award (ABBR) - Campus"
+// ("Medical Genetics: Doctor of Philosophy (PhD) - UBCV") or "Award Field" ("Master of Science Health Sciences"), while
+// the university's page says "Doctor of Philosophy in Medical Genetics". A page matches when its main heading (or the
+// first part of its title) holds the same award (in words or its abbreviation) and, once the award and joining words are
+// taken out, exactly the same field. Double, combined and dual awards, generic awards and unclear titles never match.
+const AWARDS = ["doctor of philosophy", "doctor of education", "master of business administration", "master of public health",
+  "master of applied science", "master of engineering", "master of science", "master of arts", "master of education",
+  "master of fine arts", "master of music", "master of social work", "master of nursing", "master of public policy",
+  "masters in education", "bachelor of applied science", "bachelor of business administration", "bachelor of science",
+  "bachelor of arts", "bachelor of education", "bachelor of commerce", "bachelor of fine arts", "bachelor of music",
+  "bachelor of engineering", "bachelor of kinesiology", "bachelor of nursing", "bachelor of social work",
+  "bachelor of health science", "bachelor of design", "bachelor of computing science", "bachelor of management"]
+const JOIN = new Set(["in", "of", "the", "degree", "program", "programme", "major", "honours", "honors", "and"])
+export function parseCaTitle(courseTitle: string): { field: string; award: string; abbr: string; campus: string } | null {
+  let s = clean(courseTitle)
+  if (/\b(combined|dual|double|joint|concurrent)\b/i.test(s)) return null
+  let campus = ""
+  const camp = s.match(/\s*[-(]\s*(UBCV|UBCO)\s*\)?\s*$/i) || s.match(/\(\s*(UBCV|UBCO)\s*\)/i)
+  if (camp) { campus = camp[1].toUpperCase(); s = s.replace(camp[0], " ").trim() }
+  let field = "", award = "", abbr = ""
+  if (s.includes(":")) {
+    field = s.slice(0, s.indexOf(":"))
+    let rest = s.slice(s.indexOf(":") + 1)
+    const ab = rest.match(/\(([A-Za-z.]{2,8})\)/); if (ab) { abbr = ab[1].replace(/\./g, ""); rest = rest.replace(ab[0], " ") }
+    rest = rest.replace(/\s+-\s+(major|honours|open learning).*$/i, "").replace(/\bdegree\b/i, " ")
+    award = norm(rest)
+  } else {
+    const t = norm(s)
+    const a = AWARDS.find((x) => t.startsWith(x + " "))
+    if (!a) return null
+    award = a; field = t.slice(a.length).replace(/^in\s+/, "")
+  }
+  field = norm(field)
+  if (!AWARDS.includes(award) || !field || field.split(" ").length > 8 || /\bco op\b|\boption\b/.test(field)) return null
+  return { field, award, abbr: abbr.toLowerCase(), campus }
+}
+export function fieldAward(rawH1: string, rawTitle: string, text: string, courseTitle: string) {
+  const p = parseCaTitle(courseTitle)
+  if (!p) return null
+  const titleHead = clean(rawTitle).split(/\s+[|–—]\s+|\s+-\s+|\s*\|\s*/)[0] || ""
+  const okanagan = /\bokanagan\b/i.test(text)
+  if (p.campus === "UBCO" && !okanagan) return null
+  for (const raw of [rawH1, titleHead]) {
+    let h = " " + norm(raw.replace(/\(([A-Za-z.]{2,8})\)/g, (_m, x) => " " + x.replace(/\./g, "") + " ")) + " "
+    if (h.trim().length === 0) continue
+    if (p.campus === "UBCV" && /\bokanagan\b/.test(h)) continue
+    let hasAward = false
+    if (h.includes(" " + p.award + " ")) { h = h.replace(" " + p.award + " ", " "); hasAward = true }
+    if (p.abbr && h.includes(" " + p.abbr + " ")) { h = h.replace(" " + p.abbr + " ", " "); hasAward = true }
+    if (!hasAward) continue
+    // the award must not be named twice in different words (a page about two awards)
+    if (AWARDS.some((a) => a !== p.award && h.includes(" " + a + " "))) continue
+    const words = h.trim().split(/\s+/)
+    while (words.length && JOIN.has(words[0]) && !p.field.startsWith(words[0] + " ")) words.shift()
+    while (words.length && JOIN.has(words[words.length - 1]) && !p.field.endsWith(" " + words[words.length - 1])) words.pop()
+    if (words.join(" ") === p.field) return "field_award"
+  }
+  return null
 }
 
 export function titleLevel(rawH1: string, rawTitle: string, text: string, courseTitle: string) {
@@ -242,11 +302,26 @@ export function robotsAllows(robots: string, path: string) {
 // names the provider in the page title or main heading (accents, "The", "&" and punctuation ignored). Names of three
 // letters or fewer, or a single word, are never matched by name alone.
 const siteNorm = (s: string) => clean(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ").replace(/\bthe\b/g, " ").replace(/\s+/g, " ").trim()
-export function siteNameMatch(html: string, text: string, name: string, dli: string): "dli_number" | "name_on_home_page" | null {
+export function siteNameMatch(html: string, text: string, name: string, dli: string, host = ""): "dli_number" | "name_on_home_page" | "name_in_page_and_domain" | null {
   const code = clean(dli).toUpperCase()
   if (/^O\d{9,13}$/.test(code) && new RegExp(`\\b${code}\\b`).test(text.toUpperCase())) return "dli_number"
   const n = siteNorm(name)
   if (n.length <= 3 || n.split(" ").length < 2) return null
   for (const h of [titleOf(html), h1Of(html)]) { const t = siteNorm(h); if (t && (" " + t + " ").includes(" " + n + " ")) return "name_on_home_page" }
+  // Decision 235 (Platform Admin, 22:50): many universities use a short name in the page title (BCIT, UFV). The full
+  // name anywhere on the home page (often the footer or copyright line) is enough when the address itself fits the
+  // name: its first label is the name's initials (bcit.ca, ufv.ca, nic.bc.ca, ecuad.ca) or holds a distinctive word of
+  // the name (royalroads.ca, macewan.ca, kingsu.ca).
+  if (host && (" " + siteNorm(text) + " ").includes(" " + n + " ") && domainFitsName(host, n)) return "name_in_page_and_domain"
   return null
+}
+const GENERIC = new Set(["university", "college", "institute", "technology", "school", "polytechnic", "community", "art", "arts", "design", "of", "and", "the", "at", "for", "in"])
+export function domainFitsName(host: string, normName: string) {
+  const label = host.toLowerCase().replace(/^www\./, "").split(".")[0].replace(/[^a-z0-9]/g, "")
+  if (label.length < 3) return false
+  const words = normName.split(" ").filter(Boolean)
+  const sig = words.filter((w) => !["of", "and", "the", "at", "for", "in"].includes(w))
+  const initials = sig.map((w) => w[0]).join(""), allInitials = words.map((w) => w[0]).join("")
+  if (label === initials || label === allInitials || label === initials + "u") return true
+  return words.some((w) => w.length >= 4 && !GENERIC.has(w) && label.includes(w))
 }

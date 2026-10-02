@@ -68,3 +68,30 @@ test('22:26 decisions: AU English by exact title too; robots.txt per RFC 9309; F
   expect(idx).toContain('if (robotsState === "unreadable") return j(')
   expect(idx).toContain('robotsAllows(await robotsFor(new URL(u.origin)), "/") && await useFc("site_hint", it.provider_id, u.origin + "/")')
 })
+
+test('Decision 235: Canadian field + award rule (Canada only) and the website name rule', async () => {
+  const { identity, fieldAward, domainFitsName, siteNameMatch } = await bundle('supabase/functions/coverage-sweep/extract.ts', 'ex235')
+  const fa = (h1, t, text = 'Vancouver') => fieldAward(h1, '', text, t) === 'field_award'
+  expect(fa('Doctor of Philosophy in Medical Genetics', 'Medical Genetics: Doctor of Philosophy (PhD) - UBCV')).toBe(true)
+  expect(fa('Medical Genetics (PhD)', 'Medical Genetics: Doctor of Philosophy (PhD) - UBCV')).toBe(true)
+  expect(fa('Master of Science in Health Sciences', 'Master of Science Health Sciences')).toBe(true)
+  expect(fa('Doctor of Philosophy in Clinical Psychology', 'Psychology: Doctor of Philosophy (PhD)')).toBe(false)
+  expect(fa('Master of Arts in Psychology', 'Psychology: Doctor of Philosophy (PhD)')).toBe(false)
+  expect(fa('Psychology', 'Psychology: Master of Arts (MA)')).toBe(false)
+  expect(fa('Graduate programs', 'Physics: Doctor of Philosophy (PhD)')).toBe(false)
+  expect(fa('Master of Science and Doctor of Philosophy in Physics', 'Physics: Doctor of Philosophy (PhD)')).toBe(false)
+  expect(fa('Bachelor of Arts in English (Okanagan)', 'English: Bachelor of Arts Degree (BA) - UBCV')).toBe(false)
+  expect(fa('Biochemistry and Molecular Biology (PhD)', 'Biochemistry and Molecular Biology: Doctor of Philosophy (PhD) - UBCO', 'Vancouver')).toBe(false)
+  expect(fa('Combined Bachelor of Music', 'Combined Bachelor of Music/Bachelor of Education World Music')).toBe(false)
+  const page = '<html><head><title>Bachelor of Science Biology</title></head><body><h1>Bachelor of Science in Biology</h1></body></html>'
+  expect(identity(page, 'x', 'Bachelor of Science Biology', '', false, 'AU')).toBe('exact_title')
+  expect(identity('<h1>Bachelor of Science in Biology</h1>', 'x', 'Biology: Bachelor of Science (BSc)', '', false, 'AU')).toBe(null)
+  expect(identity('<h1>Bachelor of Science in Biology</h1>', 'x', 'Biology: Bachelor of Science (BSc)', '', false, 'CA')).toBe('field_award')
+  expect(domainFitsName('www.bcit.ca', 'british columbia institute of technology')).toBe(true)
+  expect(domainFitsName('www.ufv.ca', 'university of fraser valley')).toBe(true)
+  expect(domainFitsName('www.royalroads.ca', 'royal roads university')).toBe(true)
+  expect(domainFitsName('www.universitystudy.ca', 'university of victoria')).toBe(false)
+  const home = '<html><head><title>BCIT</title></head><body><h1>Welcome</h1><footer>© British Columbia Institute of Technology</footer></body></html>'
+  expect(siteNameMatch(home, '© British Columbia Institute of Technology', 'British Columbia Institute of Technology', '', 'www.bcit.ca')).toBe('name_in_page_and_domain')
+  expect(siteNameMatch(home, '© British Columbia Institute of Technology', 'British Columbia Institute of Technology', '', 'www.studyinbc.ca')).toBe(null)
+})
