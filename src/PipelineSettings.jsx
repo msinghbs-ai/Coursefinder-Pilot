@@ -5,7 +5,7 @@
 // once and writes an audit row. Prompts and rules are listed with their version and hash; they change as versions,
 // tested on the holdout and switched on separately (Layer 3 Control), never edited in place here.
 // Read: public.admin_pipeline_settings_read() (Pipeline Operator and above); write: admin_pipeline_settings_write(key,
-// value) (Platform Admin) — migration 20261003001200.
+// value) (Platform Admin) — migrations 20261003001200 (cron helper), 20261003001210 (read), 20261003001230 (write).
 import React,{useEffect,useState}from'react'
 import{Save,Sliders}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -82,8 +82,8 @@ export default function PipelineSettings({onError}){
 
     <section className="m-panel" data-settings-section="budgets">
       <SectionTitle icon={Sliders} title="9 · Budgets" subtitle={`Firecrawl this month: ${fmtNumber(Number(bg.firecrawl_used_this_month||0))} of ${fmtNumber(Number(bg.firecrawl_monthly_limit||0))} credits used, ${fmtNumber(fcLeft)} left. OpenRouter balance: ${bg.openrouter?.remaining_usd!=null?`US$${Number(bg.openrouter.remaining_usd).toFixed(2)} (seen ${fmtDateTime(bg.openrouter.observed_at)})`:'not read yet'}.`}/>
-      <NumberRow label="Firecrawl monthly limit" help="Credits the pipeline may use this calendar month, across page reads, searches, maps and extraction." value={bg.firecrawl_monthly_limit} min={1000} max={2000000} step={1000} unit="credits" can={can} busy={busy} confirm="Set the Firecrawl monthly limit to {v} credits?" onSave={v=>write('budgets.firecrawl_monthly_limit',v,'Firecrawl monthly limit')}/>
-      <NumberRow label="Firecrawl safety reserve" help="The pipeline stops when this many credits are left, so the account never runs dry." value={bg.firecrawl_stop_at_remaining} min={0} max={100000} step={100} unit="credits" can={can} busy={busy} onSave={v=>write('budgets.firecrawl_stop_at_remaining',v,'Firecrawl reserve')}/>
+      <NumberRow label="Firecrawl monthly limit" help="Credits the pipeline may use this calendar month, across page reads, searches, maps and extraction. Changed on Scrapers & fetchers › Firecrawl until that record's control moves here." value={bg.firecrawl_monthly_limit} min={1000} max={2000000} unit="credits" can={false} busy={busy} onSave={()=>{}}/>
+      <NumberRow label="Firecrawl safety reserve" help="The pipeline stops when this many credits are left, so the account never runs dry. Changed on Scrapers & fetchers › Firecrawl." value={bg.firecrawl_stop_at_remaining} min={0} max={100000} unit="credits" can={false} busy={busy} onSave={()=>{}}/>
       {bg.firecrawl_by_purpose&&<p className="ps-note">By purpose: {Object.entries(bg.firecrawl_by_purpose).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${fmtNumber(Number(v))}`).join(' · ')}</p>}
     </section>
 
