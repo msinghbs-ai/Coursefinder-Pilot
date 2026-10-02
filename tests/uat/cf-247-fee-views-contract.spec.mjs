@@ -1,0 +1,47 @@
+// CF-247 Decision 223 (v2.15.150): course-page fees follow the page's own domestic or international view; course
+// totals and part-year fees are not annual fees; re-extraction reads each page in its country's currency; Layer 4
+// reviews already answered by the recorded fee are closed; the retired pipeline's fee feed is paused.
+import fs from 'node:fs/promises'
+import { test, expect } from '@playwright/test'
+import { build } from 'esbuild'
+
+async function extractor() {
+  const out = await build({ entryPoints: ['supabase/functions/coverage-sweep/extract.ts'], bundle: true, format: 'esm', write: false, platform: 'neutral', logLevel: 'silent' })
+  return import('data:text/javascript;base64,' + Buffer.from(out.outputFiles[0].text).toString('base64'))
+}
+
+test('reader: view markers, totals and part-year fees', async () => {
+  const { fee, viewBefore } = await extractor()
+  expect(viewBefore('This content is for domestic students. If you are not a domestic student, please switch from domestic to international content.')).toBe('domestic')
+  expect(viewBefore('Fees for overseas students')).toBe('international')
+  // QIBT: a domestic-view fee is never an international one
+  const qibt = fee('PROGRAM FEES DOMESTIC STUDENTS This content is for domestic students. If you are not a domestic student, please switch from domestic to international content . 2026 TUITION FEES: A$29,950 Non-Tuition fees apply.')
+  expect(qibt.value).toBeNull(); expect(qibt.candidates[0].domestic).toBe(true); expect(qibt.candidates[0].international).toBe(false)
+  // Collarts: "Local Student Fee Breakdown Switch to International Student"
+  expect(fee('Fees & Scholarships Local Student Fee Breakdown Switch to International Student UNIT $3,211.00 TRIMESTER $12,844.00 (full-time study) DIPLOMA $25,688.00 (two trimesters)').candidates.every(c => c.domestic)).toBe(true)
+  // AIM: per study period is part of a year; the course total is a total
+  const aim = fee('International Indicative Annual Course Fees: Study Period 1: $11,484 Study Period 2: $11,484 Study Period 3: $7,656 Total Indicative Course Fees: $30,624 * Fees provided')
+  expect(aim.basis).toBe('total'); expect(aim.candidates.filter(c => c.amount === 11484).every(c => c.partial)).toBe(true)
+  // CCMT: "total" belongs to the first amount only
+  const ccmt = fee('Estimated Total Course Cost A$20,550 Tuition Fee A$18,000 per year for international students')
+  expect(ccmt.value).toBe(18000); expect(ccmt.basis).toBe('annual')
+  // UQ: the international view's AUD amount is still chosen
+  const uq = fee('Approximate yearly cost of tuition (16 units). $10,520 2026 Fee information for 2027 is not yet available. Fees A$60952 Duration 4 Years Approximate yearly cost of tuition (16 units). AUD $60,952 2027')
+  expect(uq.value).toBe(60952)
+  // an ordinary page is unchanged
+  const plain = fee('International students: annual tuition fee A$42,000 (2026). Domestic students: $9,000 per year.')
+  expect(plain.value).toBe(42000); expect(plain.basis).toBe('annual')
+})
+
+test('worker and migrations', async () => {
+  const ix = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(ix).toContain('const VERSION = "coverage-sweep-v0.5.5";')
+  expect(ix).toContain('fee: fee(text, currencyFor(r.country))')
+  const a = await fs.readFile('supabase/migrations/20261002182100_cf247_l4_stale_tuition_answered.sql', 'utf8')
+  expect(a).toContain("set status = 'superseded'"); expect(a).toContain("(g.candidates->'fee'->>'value')::numeric = f.amount")
+  const b = await fs.readFile('supabase/migrations/20261002182200_cf247_old_tuition_feed_paused.sql', 'utf8')
+  expect(b).toContain("j.jobname = 'layer3-tuition-enqueue'"); expect(b).toContain('active := false')
+  const c = await fs.readFile('supabase/migrations/20261002182300_cf247_reextract_country.sql', 'utf8')
+  expect(c).toContain("'a9617910c957420c8c641b75fd0eec21'"); expect(c).toContain("'country',security.coverage_country(cp.provider_id)")
+  for (const m of [a, b, c]) expect(m).not.toMatch(/\bdrop\s|delete\s+from|truncate/i)
+})
