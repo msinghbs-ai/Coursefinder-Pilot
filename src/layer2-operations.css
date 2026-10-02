@@ -47,3 +47,5 @@
 .l2po-cands small{display:block;color:var(--cf-slate-500);word-break:break-all}
 .l2po-cands button{border:1px solid var(--cf-slate-300);background:var(--cf-white);border-radius:var(--cf-radius-md);padding:3px 9px;font-size:var(--cf-fs-md)}
 .l2po-cands button.link{border:0;background:none;color:var(--cf-blue-700);text-decoration:underline}
+
+/* Decision 220 */.l2o-action>div{display:grid;gap:3px;min-width:0}.l2o-action span{color:var(--cf-slate-700)}.l2o-action small{color:var(--cf-slate-600)}.l2o-action-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.l2o-ok{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between}.l2o-country{display:flex;align-items:center;gap:6px;font-size:var(--cf-fs-sm);font-weight:700;color:var(--cf-slate-600)}.l2o-country select{padding:7px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);background:var(--cf-white)}.l2o-delta{display:block;font-size:var(--cf-fs-xs);color:var(--cf-green-700)}

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.74 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.147** (old Layer 2 pipeline retired; actionable Layer 2 overview; daily progress by country; Canada admission).
+- Migration 20261002181800 (applied): 7 old Layer 2 jobs paused; Canada admission rule (CAD) and discovery queue; site finder returns country and DLI.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.73 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.146** (Decision 219: New Zealand regions and country-named state filter; bulk flagged values).

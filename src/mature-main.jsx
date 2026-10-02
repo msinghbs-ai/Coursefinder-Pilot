@@ -212,7 +212,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
       case'layer2':
         if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
-        return <Layer2Workspace rank={rank} embedded view={tab==='start'?'start':tab==='history'?'history':'overview'}/>
+        return <Layer2Workspace rank={rank} embedded navigate={navigate} view={tab==='start'?'start':tab==='history'?'history':'overview'}/>
       case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
       case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>

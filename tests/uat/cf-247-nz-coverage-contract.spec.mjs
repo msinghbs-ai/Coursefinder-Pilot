@@ -55,7 +55,8 @@ test('migrations: NZ rule, country-aware tuition hand-off, title search without 
   const d = fs.readFileSync('supabase/migrations/20261002181400_cf247_nz_reread_and_search.sql', 'utf8')
   expect(d).toContain(`select c.id, c.provider_id, 'title', 'queued', now()`)
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('fee(text, it.country === "NZ" ? "NZD" : "AUD")')
+  // Decision 220: the reader's currency now comes from currencyFor (NZ → NZD, CA → CAD, otherwise AUD).
+  expect(w).toContain('fee(text, currencyFor(it.country))')
 })
 
 test('browser: fee schedules follow the Coverage country', async ({ page }) => {

@@ -35,13 +35,10 @@ test.describe('M2.5 Layer 2 finalizer fairness and wave classification @deployed
     await clickPrimaryNav(page,'Layer 2 — Enrichment')
     const ws=page.getByLabel('Layer 2 Operations')
     await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    const latest=ws.locator('[data-l2-latest-terminal="true"]')
-    await expect(latest).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    const classification=latest.locator('[data-l2-wave-classification]')
-    await expect(classification).toBeVisible()
-    await expect(classification).toContainText(/completed .* acceptance-isolation\/rescheduled .* operational failures/i)
-    await expect(latest).toContainText(/Jobs retained/i)
-    await expect(latest).toContainText(/Evidence/i)
+    // Decision 220 (v2.15.147): the old Layer 2 pipeline is retired (its jobs paused); its run lineage panel is gone and
+    // the Overview lists only actionable Layer 2 items.
+    await expect(ws.locator('[data-l2-latest-terminal]')).toHaveCount(0)
+    await expect(ws.locator('[data-l2-action]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await milestoneScreenshot(page,testInfo,'m2-5-layer2-finalizer-fairness')
   }finally{await finish(testInfo,runtime)}})
 })

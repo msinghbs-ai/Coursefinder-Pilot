@@ -40,14 +40,11 @@ test.describe('A13 stable Course filters and Layer 2 acquisition Evidence trace 
   // fetchers); History lists the latest page fetches, each opening the evidence it saved.
   const dialog=await openLayer2Tab(page,'History')
   await expect(page.getByRole('heading',{name:'Layer 2 Discovery & reading'}).first()).toBeVisible()
-  await expect(dialog.getByRole('heading',{name:'Recent page fetches',exact:true})).toBeVisible()
-  const first=dialog.locator('.l2o-attempts .l2o-attempt').filter({has:page.getByRole('button',{name:'Evidence',exact:true})}).first()
-  await expect(first).toBeVisible({timeout:45000})
-  await milestoneScreenshot(page,testInfo,'a13-layer2-recent-fetches')
-  await first.getByRole('button',{name:'Evidence',exact:true}).click()
-  await expect(page).toHaveURL(/#evidence\?evidence_id=[0-9a-f-]{36}/)
-  await expect(page.getByText('Evidence artifact',{exact:true})).toBeVisible({timeout:15000})
-  await expect(page.getByText(/Private evidence boundary/)).toBeVisible()
-  await milestoneScreenshot(page,testInfo,'a13-layer2-fetch-evidence-drawer')
+  // Decision 220 (v2.15.147): the retired pipeline's fetch list is gone; History shows daily progress by country and
+  // the execution trace, whose rows still open their evidence.
+  await expect(dialog.getByRole('heading',{name:'Daily progress',exact:true})).toBeVisible()
+  await expect(dialog.getByRole('heading',{name:'Recent page fetches',exact:true})).toHaveCount(0)
+  await expect(dialog.locator('[data-l2-daily] tbody tr').first()).toBeVisible({timeout:45000})
+  await milestoneScreenshot(page,testInfo,'a13-layer2-daily-progress')
  }finally{await finish(testInfo,runtime)}})
 })

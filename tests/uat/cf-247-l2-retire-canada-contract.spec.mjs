@@ -1,0 +1,75 @@
+// CF-247 Decision 220 (v2.15.147): the old Layer 2 pipeline is retired (its 7 jobs paused, nothing removed); Layer 2
+// Overview lists only actionable items with buttons; History shows daily progress by country; Canada is admitted like
+// New Zealand (site found by name, checked by DLI number or the name on its own .ca home page; exact title; CAD).
+import fs from 'node:fs/promises'
+import { test, expect } from '@playwright/test'
+import { mockAdmin } from './support/admin-mock.mjs'
+
+const MIG = 'supabase/migrations/20261002181800_cf247_layer2_retire_canada_admission.sql'
+
+test.describe('static contract', () => {
+  test('migration pauses the old jobs, adds the Canadian rule and queue, behind md5 guards', async () => {
+    const sql = await fs.readFile(MIG, 'utf8')
+    for (const j of ['coursefinder-layer2-fanout-scheduler', 'coursefinder-layer2-refresh-dispatcher', 'coursefinder-layer2-qualification-scheduler',
+      'coursefinder-layer2-wave-scheduler', 'layer2-auto-discovery', 'coursefinder-layer2-qualification-finalizer', 'layer2-stale-wave-closer']) expect(sql).toContain(`'${j}'`)
+    expect(sql).toContain('cron.alter_job(j.jobid, active := false)')
+    expect(sql).not.toMatch(/cron\.unschedule|\bdrop\s|delete\s+from|truncate/i)
+    expect(sql).not.toContain("'coursefinder-layer2-housekeeping'")
+    expect(sql).not.toContain("'layer2-onboarding-snapshot'")
+    expect(sql).toContain("'CAD'")
+    expect(sql).toContain(`'official_url', '["exact_title"]'::jsonb`)
+    expect(sql).toContain(`'tuition',      '["cricos_code"]'::jsonb`)
+    expect(sql).toContain("lower(pr.registration_scheme)='ircc_dli'")
+    expect(sql).toContain("'search_verified_'||nullif(p_evidence->>'basis','')")
+    expect(sql).toContain("v_dom ~ '^[a-z0-9.-]+\\.ca$'")
+    expect(sql).toContain("v_cur not in ('AUD','NZD','CAD')")
+    expect(sql.match(/md5 guard|is distinct from r\.guard/g)?.length).toBeGreaterThanOrEqual(2)
+  })
+
+  test('worker finds Canadian sites by name or DLI, never on an empty code, and reads CAD', async () => {
+    const ix = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
+    const ex = await fs.readFile('supabase/functions/coverage-sweep/extract.ts', 'utf8')
+    expect(ix).toContain('coverage-sweep-worker-v0.9.2')
+    expect(ix).toContain('findCanadianSite')
+    expect(ix).toContain('if (!host.endsWith(".ca")')
+    expect(ix).toContain('no CRICOS provider code to check a site against')
+    expect(ix).toContain('fee(text, currencyFor(it.country))')
+    expect(ix).toContain('["NZ", "CA"].includes(it.country)')
+    expect(ex).toContain('export function siteNameMatch')
+    expect(ex).toContain('"dli_number"')
+    expect(ex).toMatch(/CAD: \{ re:/)
+    expect(ex).toContain('country === "CA" ? "CAD"')
+  })
+
+  test('Layer 2 screen no longer reads the old alerts or shows the old run lists', async () => {
+    const ui = await fs.readFile('src/layer2-operations-entry.jsx', 'utf8')
+    expect(ui).not.toContain("adminRead('layer2_ops_alerts')")
+    expect(ui).not.toContain('Recent managed runs')
+    expect(ui).not.toContain('Recent page fetches')
+    expect(ui).toContain('function ActionRequired')
+    expect(ui).toContain('function DailyProgress')
+    const main = await fs.readFile('src/mature-main.jsx', 'utf8')
+    expect(main).toContain('<Layer2Workspace rank={rank} embedded navigate={navigate}')
+  })
+})
+
+test.describe('mocked browser', () => {
+  test('Overview action panel gives guidance and buttons; History shows daily progress by country', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#layer-2-discovery')
+    const action = page.locator('[data-l2-action]')
+    await expect(action.getByRole('heading', { name: 'Action required' })).toBeVisible()
+    const items = action.locator('[data-l2-action-item]')
+    if (await items.count()) await expect(items.first()).toContainText('What to do:')
+    else await expect(action.locator('[data-l2-action-none]')).toBeVisible()
+    await expect(action.getByRole('button', { name: 'Open Live activity' }).first()).toBeVisible()
+    await page.getByRole('tab', { name: 'History' }).click()
+    const daily = page.locator('[data-l2-daily]')
+    await expect(daily.getByRole('heading', { name: 'Daily progress' })).toBeVisible()
+    await expect(daily.locator('tbody tr').first()).toBeVisible()
+    await expect(daily.getByRole('combobox', { name: 'Daily progress country' }).locator('option')).toHaveCount(3)
+    await page.getByRole('tab', { name: 'Overview' }).click()
+    await page.locator('[data-l2-action]').getByRole('button', { name: 'Open Live activity' }).first().click()
+    await expect(page).toHaveURL(/live-activity/)
+  })
+})
