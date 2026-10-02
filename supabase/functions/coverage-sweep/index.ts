@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, siteNameMatch, titleOf } from "./extract.ts";
+import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
@@ -45,7 +45,7 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.11.1";
+const WORKER = "coverage-sweep-worker-v0.11.2";
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -96,7 +96,7 @@ const REFERENCE_FILES: Record<string, string> = { hipo: "https://raw.githubuserc
 // AI page-identity candidates (qualification only), each pinned to one named model
 const PAGE_ID_MODELS = ["qwen/qwen3-30b-a3b-instruct-2507", "anthropic/claude-haiku-4.5", "xiaomi/mimo-v2.6-pro", "moonshotai/kimi-k2-0905"];
 // identity rule version used by mode reidentify (extract.ts identity(); v0.5.7 = national code before the title)
-const IDENTITY_RULE = "identity-v0.5.9";
+const IDENTITY_RULE = "identity-v0.5.10";
 const AI_MATCH_PROFILE ="openrouter-intake-l3c-qwen3-30b-a3b-2507-v1"; // credential source only; its contract is not used here
 export const AI_MATCH_SYSTEM = `You match a course from a government register to its own page on the education provider's website. You get the course (title, level, code) and a numbered list of candidate pages from the provider's site (address, and page title when known).
 Pick the one page that is this course's own page: the page for this exact qualification at this level.
@@ -495,6 +495,7 @@ Deno.serve(async (req) => {
           const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
           const text = htmlToText(html);
           basis = identity(html, text, r.title, r.code, false, r.country || "");
+          if (basis === "field_award" && staleCalendarUrl(r.url)) basis = null;
           if (basis) cand = { final_url: r.url, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(r.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION };
           const st = await rpc("svc_coverage_reidentify_record", { p_course_id: r.course_id, p_evidence_id: r.evidence_id, p_rule: rule, p_identity_basis: basis, p_candidates: cand });
           tally[st] = (tally[st] || 0) + 1;
@@ -1001,6 +1002,8 @@ Deno.serve(async (req) => {
               text = htmlToText(html); identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous", it.country || "");
             }
           }
+          // Decision 235: a field + award match on an archived calendar page (a year in the address more than a year old) is not used
+          if (identityBasis === "field_award" && staleCalendarUrl(finalUrl)) identityBasis = null;
           if (!identityBasis) status = "identity_mismatch";
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
           path = `layer2/${["NZ", "CA"].includes(it.country) ? it.country : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
