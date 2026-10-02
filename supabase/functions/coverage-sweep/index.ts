@@ -45,7 +45,7 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.13.2";
+const WORKER = "coverage-sweep-worker-v0.13.3";
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -422,14 +422,19 @@ Deno.serve(async (req) => {
         : { type: "object", properties: { status: { type: "string", enum: ["stated", "not_stated"] }, tests: { type: "array", items: { type: "object", properties: { test: { type: "string", enum: ["IELTS", "PTE", "TOEFL_IBT", "CAE"] }, overall: { type: "number" }, min_band: { type: ["number", "null"] } }, required: ["test", "overall"] } }, quote: { type: "string" } }, required: ["status", "tests", "quote"] };
       // v0.13.1: two prompt wordings, chosen by body.prompt_version (1 = the strict wording of the first run, 2 = plainer);
       // the wording used is recorded with every answer so runs are comparable.
-      const pv = Number(body.prompt_version || 2) === 1 ? 1 : 2;
+      // v0.13.3: prompt 3 adds the two rules of the live English contract the first English run broke (direct-entry
+      // score only, never a pathway score that needs an English course first; never a score for a test the page only
+      // calls "equivalent") and asks for one continuous quote (joined lines fail the on-page check).
+      const pv = [1, 2, 3].includes(Number(body.prompt_version)) ? Number(body.prompt_version) : 3;
+      const quoteRule = " quote must be ONE continuous passage copied exactly from the page (one sentence, line or table row); never join separate lines with '...' or '|'.";
       const prompt = intake
         ? pv === 1
           ? "This is one course's page. Give the months of the year in which this course starts (intakes) for new students, ONLY where the page states them as month names or full dates for this course. Semester, trimester or term names without a month are NOT months: then status is not_stated and months is empty. Do not infer. quote = the exact words from the page that state the months."
-          : "Extract the intake (start) months of this course from this page. Look for intakes, intake dates, start dates, commencement dates or course start lists. When the page names months (for example 'February, May, August') or full dates (for example '14 September 2026'), set status to 'months' and list the month numbers (1 to 12). When the page gives only semester, trimester or term names with no month or date, or says nothing about when the course starts, set status to 'not_stated' and months to an empty list. quote: copy the exact line or sentence from the page that states the intakes."
+          : "Extract the intake (start) months of this course from this page. Look for intakes, intake dates, start dates, commencement dates or course start lists. When the page names months (for example 'February, May, August') or full dates (for example '14 September 2026'), set status to 'months' and list the month numbers (1 to 12). When the page gives only semester, trimester or term names with no month or date, or says nothing about when the course starts, set status to 'not_stated' and months to an empty list. quote: copy the exact line or sentence from the page that states the intakes." + (pv === 3 ? quoteRule : "")
         : pv === 1
           ? "This is one course's page. Give the English language test scores this course requires of international applicants, ONLY where the page states them for this course: IELTS, PTE, TOEFL_IBT or CAE with the overall score and the minimum band if stated. A statement that English is required without a score, or a link to a policy, is not_stated. Do not infer. quote = the exact words from the page that state the scores."
-          : "Extract the English language test scores this course requires of international applicants from this page. Look for entry requirements, English language requirements or admission criteria. When the page states a score for IELTS, PTE, TOEFL_IBT or CAE, set status to 'stated' and list each test with its overall score and the minimum band (min_band) if given. When the page only says English is required, or links to a policy, without a score, set status to 'not_stated' and tests to an empty list. quote: copy the exact line or sentence from the page that states the scores.";
+          : "Extract the English language test scores this course requires of international applicants from this page. Look for entry requirements, English language requirements or admission criteria. When the page states a score for IELTS, PTE, TOEFL_IBT or CAE, set status to 'stated' and list each test with its overall score and the minimum band (min_band) if given. When the page only says English is required, or links to a policy, without a score, set status to 'not_stated' and tests to an empty list. quote: copy the exact line or sentence from the page that states the scores."
+            + (pv === 3 ? " Rules: list only the score for direct entry to this course; a lower score that is accepted only together with an English course first (ELICOS, EAP, a pathway) is NOT listed. List a test only when the page gives that test its own number; a test the page merely calls 'equivalent' or 'also accepted' is NOT listed. One entry per test." + quoteRule : "");
       const cases: { case_id: string; task_class: string; url: string; gold: any }[] = await rpc("svc_fc_extract_cases", { p_task_class: task, p_offset: Number(body.offset || 0), p_limit: Math.min(Number(body.limit || 50), 100) });
       const tally: Record<string, number> = {}; let credits = 0;
       // v0.13.2: the quote is matched on letters and digits only (Firecrawl's markdown adds table pipes, escapes and
