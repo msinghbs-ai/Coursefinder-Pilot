@@ -90,6 +90,35 @@ test.describe('browser: English policies panel', () => {
     await expect(pp.locator('[data-policy="cp1"]')).toContainText('Semester 1: March')
   })
 
+  test('v2.15.155: bulk approval sends only documents that can be approved; blocked ones keep a reason', async ({ page }) => {
+    const { mockAdmin } = await import('./support/admin-mock.mjs')
+    await mockAdmin(page)
+    page.on('dialog', (d) => d.accept())
+    await page.goto('/#coverage?tab=attributes')
+    const pp = page.locator('[data-provider-policies]')
+    await expect(pp.locator('[data-policy-bulk]')).toBeVisible()
+    await expect(pp.locator('[data-policy="ep2"]').getByRole('button', { name: 'Approve' })).toHaveAttribute('title', /cannot be approved/)
+    await pp.getByRole('button', { name: /Select all that can be approved/ }).click()
+    await expect(pp.locator('[data-policy="ep2"] input[type=checkbox]')).not.toBeChecked()
+    await pp.getByRole('button', { name: /Approve selected/ }).click()
+    await expect.poll(() => page.l3calls.find((c) => c.policyBulk)?.policyBulk?.p_action).toEqual('approve')
+    expect(page.l3calls.find((c) => c.policyBulk).policyBulk.p_ids).not.toContain('ep2')
+    await expect(pp.locator('[data-policy-bulk-result]')).toContainText('Approved')
+  })
+
+  test('v2.15.155: Platform Admin raises the course-page search cap on the Priority queue screen', async ({ page }) => {
+    const { mockAdmin } = await import('./support/admin-mock.mjs')
+    await mockAdmin(page)
+    page.on('dialog', (d) => d.accept())
+    await page.goto('/#jobs?tab=priority')
+    const c = page.locator('[data-search-cap]')
+    await expect(c.locator('[data-cap-reached]')).toContainText('320 searches are waiting')
+    await c.getByLabel('Course-page search monthly cap').fill('80000')
+    await c.getByRole('button', { name: 'Save cap' }).click()
+    await expect.poll(() => page.l3calls.find((x) => x.searchCap)?.searchCap).toEqual({ p_monthly_credit_cap: 80000 })
+    await expect(c).toContainText('Saved: 80,000 credits a month.')
+  })
+
   test('Pipeline Operator sees the panel but cannot decide', async ({ page }) => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page, { rank: 4 })
