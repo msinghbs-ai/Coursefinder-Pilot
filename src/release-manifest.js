@@ -1,23 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.145'
-export const PACKAGE_VERSION='0.1.72'
+export const UI_VERSION='2.15.146'
+export const PACKAGE_VERSION='0.1.73'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Fee periods settled automatically; clearer worker errors',
+  title:'Regions for New Zealand; bulk decisions on flagged values',
   changes:[
-    'Flagged values: a new automatic period check in the Layer 3 fee automation confirms fees whose page wording says per year (for example "1st year indicative fee" or "for 1 yr full-time") or whose course runs a year or less. It runs every 10 minutes; only fees whose page names no period, or another period, stay for a person.',
-    'Live activity: each worker error now shows the job that got it, and a Pipeline Operator or Platform Admin can mark an error as seen. It shows again only if it happens again.',
-    'Errors already understood (the old automation key, test calls and two compute-limit replies) are marked as seen.',
-    'Evidence link indexing works on four pages at a time instead of six, after two runs hit the worker compute limit.',
-    'Platform guide: what Layer 4 is, the automatic period check, and Mark as seen.'
+    'Providers: New Zealand regions are now in the state filter (402 of 414 NZ providers placed by their town). Canada already lists its provinces and territories.',
+    'The filter is named the way each country names its divisions: State / territory (Australia), Province / territory (Canada), Region (New Zealand).',
+    'Layer 4 › Flagged values: tick rows or Select all shown, then Confirm selected per year, Mark selected as whole course, or Remove selected in one step. Each is recorded as your decision.',
+    'Platform guide updated for both.'
   ],
   bugFixes:[
-    'About 400 flagged fees waited for a person although their page stated the fee per year, because the check did not recognise wording such as "1st year" or "1 yr full-time".',
-    'Live activity listed old and test errors with no way to tell which job they came from or to clear them.'
+    'New Zealand had no regions, so the state filter showed nothing for New Zealand.'
   ]
 }
 

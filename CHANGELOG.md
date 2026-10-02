@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.73 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.146** (Decision 219: New Zealand regions and country-named state filter; bulk flagged values).
+- Database: migration 20261002181700 applied to fxcwkweaxjtknorudmwp.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.72 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.145** (Decision 218: fee periods settled automatically; Live activity names the job behind each error).
