@@ -64,6 +64,7 @@ test('22:26 decisions: AU English by exact title too; robots.txt per RFC 9309; F
   expect(f).not.toMatch(/status = 'approved', decided_by/) // the flag step approves nothing
   const idx = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('else if (direct && (direct.status === 404 || direct.status === 410)) robotsState = "none";')
+  expect(idx).toContain('else if (direct?.ok) robotsState = "no_rules";')
   expect(idx).toContain('if (robotsState === "unreadable") return j(')
   expect(idx).toContain('robotsAllows(await robotsFor(new URL(u.origin)), "/") && await useFc("site_hint", it.provider_id, u.origin + "/")')
 })
