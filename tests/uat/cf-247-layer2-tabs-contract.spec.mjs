@@ -26,8 +26,11 @@ test.describe('mocked browser', () => {
     await expect(page.getByRole('button', { name: 'Start production enrichment' })).toBeVisible()
     await expect(page.getByText('41 sites checked · 145 still to check')).toBeVisible()
     await page.getByRole('tab', { name: 'History' }).click()
-    await expect(page.locator('[data-l2-latest-terminal="true"]')).toContainText('Cancelled')
-    await expect(page.getByRole('heading', { name: 'Recent page fetches' })).toBeVisible()
+    // Decision 220: History shows each country's daily progress; the retired pipeline's run and fetch lists are gone.
+    await expect(page.getByRole('heading', { name: 'Daily progress' })).toBeVisible()
+    await expect(page.locator('[data-l2-daily] tbody tr').first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Recent page fetches' })).toHaveCount(0)
+    await expect(page.locator('[data-l2-latest-terminal]')).toHaveCount(0)
     await expect(page.getByRole('heading', { name: 'Recent execution trace' })).toBeVisible()
   })
 })

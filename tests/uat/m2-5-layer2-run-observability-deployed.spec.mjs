@@ -17,24 +17,11 @@ test.describe('M2.5 Layer 2 terminal run observability correction @deployed',()=
       const ws=page.getByLabel('Layer 2 Operations')
       await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
 
-      const attempts=ws.locator('.l2o-attempts .l2o-attempt')
-      await expect(attempts.first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-      await expect(attempts.first().locator('small').first()).toContainText(/\d{1,2}[/.-]\d{1,2}[/.-]\d{4}/)
-
-      const managed=ws.locator('.l2o-runs .l2o-run')
-      await expect(managed.first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-      await expect(managed.first().locator('.l2o-state small')).toContainText(/\d{1,2}[/.-]\d{1,2}[/.-]\d{4}/)
-
-      const latest=ws.locator('[data-l2-latest-terminal="true"]')
-      if(await latest.count()){
-        await expect(latest).toContainText('Latest terminal production run')
-        await expect(latest).toContainText(/\b\d+ Jobs retained\b/)
-        await expect(latest).not.toContainText('0 Jobs retained')
-        await expect(latest).toContainText(/Evidence/)
-      }
-
-      await expect(ws.getByRole('heading',{name:'Current progress',exact:true})).toBeVisible()
-      await expect(ws.getByText(/The run in progress, or the last finished one/i)).toBeVisible()
+      // Decision 220 (v2.15.147): the old pipeline is retired; History shows daily progress by country instead of its
+      // batches, runs and fetches.
+      await expect(ws.getByRole('heading',{name:'Daily progress',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(ws.locator('[data-l2-daily] tbody tr').first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(ws.getByRole('heading',{name:'Current progress',exact:true})).toHaveCount(0)
       await milestoneScreenshot(page,testInfo,'m2-5-layer2-terminal-run-observability')
     } finally { await finish(testInfo,runtime) }
   })
@@ -51,9 +38,8 @@ test.describe('M2.5 Layer 2 terminal run observability correction @deployed',()=
 
     expect(ui).toContain("syncResult.status==='qualification_waiting'")
     expect(ui).toContain('Server observed {fmtDate(syncResult.observed_at)}')
-    expect(ui).toContain("a.completed_at||a.started_at")
-    expect(ui).toContain('data-l2-latest-terminal="true"')
-    expect(ui).toContain('Jobs retained')
+    expect(ui).not.toContain('data-l2-latest-terminal="true"')
+    expect(ui).toContain('data-l2-daily')
     expect(ui).toContain("setError('Production request was accepted, but the operator view could not refresh:")
   })
 })

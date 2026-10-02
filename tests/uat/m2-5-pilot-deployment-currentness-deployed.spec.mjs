@@ -29,12 +29,9 @@ test.describe('M2.5 Pilot deployment currentness @deployed',()=>{
       await loginAsUatUser(page)
 
       const layer2=await openLayer2Tab(page,'History') // v2.15.128
-      const terminal=layer2.locator('[data-l2-latest-terminal="true"]')
-      await expect(terminal).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-      const classification=terminal.locator('[data-l2-wave-classification]')
-      await expect(classification).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-      await expect(classification).toContainText(/acceptance-isolation\/rescheduled/i)
-      await expect(classification).toContainText(/operational failures/i)
+      // Decision 220 (v2.15.147): History shows daily progress by country (the retired pipeline's run panel is gone).
+      await expect(layer2.locator('[data-l2-daily]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+      await expect(layer2.locator('[data-l2-latest-terminal]')).toHaveCount(0)
 
       const layer3=await openLayer3(page)
       const queue=layer3.locator('[data-layer3-source-pattern-queue]')

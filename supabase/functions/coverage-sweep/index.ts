@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, titleOf } from "./extract.ts";
+import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, siteNameMatch, titleOf } from "./extract.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.5.4";
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -43,7 +43,10 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.4"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.9.1";
+const WORKER = "coverage-sweep-worker-v0.9.2";
+// v0.9.2 (2 Oct 2026, Decision 220): Canada. find_site finds a Canadian provider's own site by name (search in Canada),
+// accepted only on a .ca site whose home page names the provider or prints its DLI number; course pages are read in CAD
+// and stored under layer2/CA/. A provider with no code to check is never accepted on an empty pattern.
 // v0.9.1 (2 Oct 2026, Decision 217): New Zealand pages are proven by a labelled NZQA number or by the NZQA title with the
 // same level ("title_level"), their fees are read in NZD, and they are stored under layer2/NZ/.
 // v0.9.0 (Decision 211): mode scholarship_reextract adds eligibility criteria and award scope to stored scholarship pages.
@@ -301,15 +304,47 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, rows: rows.length, done, failed, errors, ms: Date.now() - t0, workerVersion: VERSION });
     }
     if (mode === "find_site") {
-      const provs: { provider_id: string; name: string; trading: string | null; cricos: string }[] = await rpc("svc_coverage_site_next", { p_limit: Math.min(Number(body.limit || 5), 10) });
+      const provs: { provider_id: string; name: string; trading: string | null; cricos: string; country?: string; dli?: string }[] = await rpc("svc_coverage_site_next", { p_limit: Math.min(Number(body.limit || 5), 10) });
       const out: unknown[] = [];
       // v0.6.4: sites that are never a university's own website come from Reference sources (use not_provider_site),
       // managed in the admin, instead of a fixed pattern here. No list means no search (fail closed).
       const skipDomains: string[] = await rpc("svc_reference_domains", { p_use: "not_provider_site" });
       if (!Array.isArray(skipDomains) || skipDomains.length === 0) return j({ ok: false, mode, error: "reference sources list is empty or unavailable" }, 503);
       const SKIP = { test: (host: string) => { const h = host.toLowerCase(); return skipDomains.some((d) => d.includes(".") ? (h === d || h.endsWith("." + d)) : new RegExp("(^|\\.)" + d.replace(/[^a-z0-9-]/g, "")).test(h)); } };
+      // Decision 220: a Canadian provider's site, found by name. Accepted only on a .ca host (not a directory or
+      // register) whose home page names the provider or prints its IRCC DLI number.
+      const findCanadianSite = async (p: { provider_id: string; name: string; dli?: string }) => {
+        const query = `${p.name} official website`;
+        if (!(await useFc("search", p.provider_id, p.name))) { await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return { provider_id: p.provider_id, status: "budget" } }
+        let accepted: string | null = null, basis: string | null = null; const tried: unknown[] = [];
+        try {
+          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query, limit: 8, country: "CA" }), signal: AbortSignal.timeout(45000) });
+          const d = await r.json().catch(() => ({}));
+          const results = (d?.data?.web || d?.data || []).map((x: any) => ({ url: x.url })).filter((x: any) => typeof x.url === "string");
+          const seenHosts = new Set<string>();
+          for (const res of results) {
+            let u: URL; try { u = new URL(res.url) } catch { continue }
+            const host = u.hostname.toLowerCase();
+            if (!host.endsWith(".ca") || SKIP.test(host) || seenHosts.has(host)) { tried.push({ page: res.url, skipped: true }); continue }
+            seenHosts.add(host);
+            try {
+              const h = await fetch(u.origin + "/", { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) });
+              const html = h.ok ? await h.text() : "";
+              let finalHost = host; try { finalHost = new URL(h.url || u.origin).hostname.toLowerCase() } catch { /* keep */ }
+              const b = finalHost.endsWith(".ca") ? siteNameMatch(html, htmlToText(html), p.name, p.dli || "") : null;
+              tried.push({ page: u.origin + "/", http: h.status, basis: b });
+              if (b) { accepted = new URL(h.url || u.origin).origin; basis = b; break }
+            } catch { tried.push({ page: u.origin + "/", error: true }) }
+            if (seenHosts.size >= 4) break;
+          }
+        } catch (e) { tried.push({ error: e instanceof Error ? e.message : String(e) }) }
+        await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: accepted, p_evidence: { query, country: "CA", tried, accepted, basis, worker: WORKER } });
+        return { provider_id: p.provider_id, status: accepted ? "found" : "not_found", website: accepted, basis };
+      };
       await pool(provs, 3, async (p) => {
+        if ((p.country || "AU") === "CA") { out.push(await findCanadianSite(p)); return }
         const code = String(p.cricos || "").toUpperCase();
+        if (code.length < 5) { await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "no CRICOS provider code to check a site against", worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "no_code" }); return }
         const codeRe = new RegExp("(^|[^0-9A-Z])" + code.split("").join("\\s?") + "([^0-9A-Z]|$)", "i");
         if (!(await useFc("search", p.provider_id, p.name))) { out.push({ provider_id: p.provider_id, status: "budget" }); await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return }
         let accepted: string | null = null; const tried: unknown[] = [];
@@ -661,10 +696,10 @@ Deno.serve(async (req) => {
           }
           if (!identityBasis) status = "identity_mismatch";
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
-          path = `layer2/${it.country === "NZ" ? "NZ" : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
+          path = `layer2/${["NZ", "CA"].includes(it.country) ? it.country : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
           const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
           if (up.error) { path = null; sha = null }
-          candidates = identityBasis ? { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, it.country === "NZ" ? "NZD" : "AUD"), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION }
+          candidates = identityBasis ? { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(it.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION }
                                      : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200) };
         }
         await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: status, p_http_status: http, p_fetched_via: via, p_identity_basis: identityBasis, p_storage_path: path, p_sha256: sha, p_candidates: candidates });
