@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.80 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.153** (Decisions 226-227: quote failures re-run; English from each university's policy).
+- Database: migrations 20261002182700-20261002183200 (quote-failure re-run, reading English policies and calendars, policy proposals, English plan/approval/apply, agreement gate); coverage-sweep worker v0.9.5 (parser provider-policy-v0.2.1).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.79 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.152** (Australian tuition from CRICOS only).

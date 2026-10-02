@@ -40,6 +40,7 @@ import{DomainReadiness}from'./data-quality-entry'
 import{CoverageView}from'./course-coverage'
 import LinkRefresh from'./LinkRefresh'
 import FeeSchedules from'./FeeSchedules'
+import ProviderPolicies from'./ProviderPolicies'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import ScholarshipEligibility from'./ScholarshipEligibility'
 import LiveActivity from'./LiveActivity'
@@ -62,7 +63,7 @@ import'./admin-pages.css'
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
 function CoverageAttributes({rank}){
   const[scope,setScope]=useState({country:'',provider:null})
-  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<FeeSchedules country={scope.country} provider={scope.provider}/>}</div>
+  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<FeeSchedules country={scope.country} provider={scope.provider}/>}{rank>=4&&<ProviderPolicies country={scope.country} provider={scope.provider}/>}</div>
 }
 
 const UI_VERSION='2.15.78'
