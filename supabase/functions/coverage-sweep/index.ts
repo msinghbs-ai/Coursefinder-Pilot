@@ -45,7 +45,8 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.10.0";
+const WORKER = "coverage-sweep-worker-v0.10.1";
+// v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
 // deterministic) into proposals a Platform Admin approves; modes provider_facts_inspect and provider_facts_parse work on
@@ -89,7 +90,9 @@ const UA = "Mozilla/5.0 (compatible; CourseFinder-Pilot/coverage-0.1; +https://c
 // Map-first link matcher (v0.10.0): one pinned model, structured output; it chooses a page, it never admits a value.
 export const AI_MATCH_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";
 // third-party directories that may be captured as hints (Platform Admin 2 Oct 2026: Hotcourses for Canada and NZ)
-const DIRECTORY_HOSTS: Record<string, string> = { hotcourses: "www.hotcoursesabroad.com" };
+const DIRECTORY_HOSTS: Record<string, string> = { hotcourses: "www.hotcoursesabroad.com", univcc: "univ.cc" };
+// reference lists read as a whole file (Platform Admin 2 Oct 2026, 22:11); MIT-licensed
+const REFERENCE_FILES: Record<string, string> = { hipo: "https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json" };
 // AI page-identity candidates (qualification only), each pinned to one named model
 const PAGE_ID_MODELS = ["qwen/qwen3-30b-a3b-instruct-2507", "anthropic/claude-haiku-4.5", "xiaomi/mimo-v2.6-pro", "moonshotai/kimi-k2-0905"];
 // identity rule version used by mode reidentify (extract.ts identity(); v0.5.7 = national code before the title)
@@ -336,7 +339,14 @@ Deno.serve(async (req) => {
           const links: string[] = Array.isArray(d?.data?.links) ? d.data.links.map(String) : [];
           const rec = await rpc("svc_directory_page_record", { p_site: site, p_country: country || null, p_url: u, p_final_url: d?.data?.metadata?.sourceURL || u, p_http: d?.data?.metadata?.statusCode ?? 200,
             p_storage_path: up.error ? null : path, p_sha256: up.error ? null : sha, p_title: titleOf(html).slice(0, 300), p_links: links.slice(0, 5000), p_text: htmlToText(html).slice(0, 20000) });
-          out.push({ url: u, status: "stored", links: links.length, page_id: rec });
+          // univ.cc lists each institution as a link to its own website: link text = name, address = website hint
+          let hints: unknown = null;
+          if (site === "univcc" && country) {
+            const anchors = [...html.matchAll(/<a\b[^>]*href\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]{1,300}?)<\/a>/gi)]
+              .map((m) => ({ href: m[1], text: htmlToText(m[2]) })).filter((a) => { try { return !new URL(a.href).hostname.endsWith("univ.cc") } catch { return false } });
+            hints = await rpc("svc_directory_anchor_hints", { p_site: site, p_country: country, p_page_id: rec, p_page_url: u, p_anchors: anchors });
+          }
+          out.push({ url: u, status: "stored", links: links.length, page_id: rec, hints });
         } catch (e) { out.push({ url: u, status: "failed", error: e instanceof Error ? e.message : String(e) }) }
       });
       return j({ ok: true, mode, site, country, robots: robotsTxt ? "read" : "not_available", pages: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
@@ -382,6 +392,72 @@ Deno.serve(async (req) => {
         tally[o] = (tally[o] || 0) + 1;
       });
       return j({ ok: true, mode, run_label: runLabel, model, contract: PAGE_ID_CONTRACT, cases: cases.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
+    // v0.10.1: the OpenRouter key's own limits (weekly, daily, total), read with the governed credential; the key is
+    // never returned.
+    if (mode === "openrouter_key") {
+      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
+      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
+      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", workerVersion: VERSION }, 503);
+      const r = await fetch("https://openrouter.ai/api/v1/key", { headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000) });
+      const d = (await r.json().catch(() => ({})))?.data || {};
+      const pick = ["label", "limit", "limit_remaining", "limit_reset", "include_byok_in_limit", "usage", "usage_daily", "usage_weekly", "usage_monthly", "is_free_tier"];
+      return j({ ok: r.ok, mode, http: r.status, key: Object.fromEntries(pick.filter((k) => k in d).map((k) => [k, d[k]])), workerVersion: VERSION, worker: WORKER });
+    }
+    // v0.10.1: reference lists read as a whole file (Hipo university-domains-list, MIT), stored as evidence, loaded as
+    // website hints (Decision 232). Only allow-listed files.
+    if (mode === "reference_capture") {
+      const src = String(body.source || ""), url = REFERENCE_FILES[src];
+      if (!url) return j({ ok: false, mode, error: "unknown reference source", workerVersion: VERSION }, 422);
+      const r = await fetch(url, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(60000) });
+      const txt = r.ok ? await r.text() : "";
+      let rows: unknown[] = []; try { rows = JSON.parse(txt) } catch { /* not JSON */ }
+      if (!Array.isArray(rows) || !rows.length) return j({ ok: false, mode, error: `could not read ${src} (HTTP ${r.status})`, workerVersion: VERSION }, 502);
+      const sha = await sha256(new TextEncoder().encode(txt));
+      const path = `reference/${src}/${sha}.json.gz`;
+      const up = await c.storage.from("evidence").upload(path, await gzip(txt), { contentType: "application/gzip", upsert: true });
+      const res = await rpc("svc_reference_institutions_load", { p_source: src, p_rows: rows, p_storage_path: up.error ? null : path });
+      return j({ ok: true, mode, source: src, rows: rows.length, stored: up.error ? null : path, result: res, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
+    // v0.10.1: website hints (reference lists, directories) are accepted only when our own website rule passes on the
+    // home page: AU the CRICOS provider code on the page; CA a .ca site naming the provider or printing its DLI number;
+    // NZ a .nz site naming the provider.
+    if (mode === "site_hint_verify") {
+      const items: { provider_id: string; name: string; country: string; cricos: string | null; dli: string | null; urls: { url: string; via: string }[] }[] =
+        await rpc("svc_site_hint_next", { p_limit: Math.min(Number(body.limit || 20), 60) });
+      const tally: Record<string, number> = {};
+      await pool(items, 6, async (it) => {
+        let done = false;
+        for (const h of it.urls.slice(0, 4)) {
+          if (Date.now() - t0 > BUDGET_MS) return;
+          let accepted = false, basis: string | null = null, ev: Record<string, unknown> = { hint: h.url, via: h.via, worker: WORKER };
+          try {
+            const u = new URL(/^https?:/i.test(h.url) ? h.url : "https://" + h.url);
+            const resp = await fetch(u.origin + "/", { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) });
+            const html = resp.ok ? await resp.text() : "";
+            const host = new URL(resp.url || u.origin).hostname.toLowerCase();
+            ev = { ...ev, final: resp.url, http: resp.status };
+            if (!done && html) {
+              if (it.country === "AU") {
+                const code = String(it.cricos || "").toUpperCase();
+                if (code.length >= 5 && new RegExp("(^|[^0-9A-Z])" + code.split("").join("\\s?") + "([^0-9A-Z]|$)", "i").test(htmlToText(html))) { accepted = true; basis = "cricos_code" }
+              } else if ((it.country === "CA" && host.endsWith(".ca")) || (it.country === "NZ" && host.endsWith(".nz"))) {
+                const b = siteNameMatch(html, htmlToText(html), it.name, it.dli || "");
+                if (b) { accepted = true; basis = String(b) }
+              }
+            }
+            const site = accepted ? new URL(resp.url || u.origin).origin : h.url;
+            const st = await rpc("svc_site_hint_record", { p_provider_id: it.provider_id, p_url: accepted ? site : h.url, p_accepted: accepted, p_basis: basis, p_evidence: ev });
+            if (accepted && site !== h.url) await rpc("svc_site_hint_record", { p_provider_id: it.provider_id, p_url: h.url, p_accepted: false, p_basis: "redirected", p_evidence: { ...ev, accepted_as: site } });
+            tally[st] = (tally[st] || 0) + 1;
+            if (accepted) { done = true; break }
+          } catch (e) {
+            await rpc("svc_site_hint_record", { p_provider_id: it.provider_id, p_url: h.url, p_accepted: false, p_basis: "fetch_failed", p_evidence: { ...ev, error: e instanceof Error ? e.message : String(e) } });
+            tally.failed = (tally.failed || 0) + 1;
+          }
+        }
+      });
+      return j({ ok: true, mode, providers: items.length, tally, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     // v0.10.0: pages stored as identity mismatches are checked again with the current identity rule from their stored
     // copy (no fetch). A page that now passes is set back to read; the usual admission runs on it.
@@ -918,7 +994,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, ai_match, reidentify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }

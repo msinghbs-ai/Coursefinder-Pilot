@@ -54,5 +54,5 @@ test('page identity is qualification only and directory pages are hints only', a
     expect(await fs.readFile(`supabase/migrations/${f}`, 'utf8')).not.toMatch(/coverage_course_pages\s+set|insert into catalogue\.|update catalogue\./i)
   const d = await fs.readFile('supabase/migrations/20261002184800_cf247_directory_capture.sql', 'utf8')
   expect(d).toContain('nothing from them is admitted')
-  expect(idx).toContain('const DIRECTORY_HOSTS: Record<string, string> = { hotcourses: "www.hotcoursesabroad.com" };')
+  expect(idx).toContain('const DIRECTORY_HOSTS: Record<string, string> = { hotcourses: "www.hotcoursesabroad.com", univcc: "univ.cc" };')
 })
