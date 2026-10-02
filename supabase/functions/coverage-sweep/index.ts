@@ -87,6 +87,8 @@ const WORKER = "coverage-sweep-worker-v0.10.0";
 const UA = "Mozilla/5.0 (compatible; CourseFinder-Pilot/coverage-0.1; +https://coursefinder-pilot.techm.workers.dev)";
 // Map-first link matcher (v0.10.0): one pinned model, structured output; it chooses a page, it never admits a value.
 export const AI_MATCH_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";
+// third-party directories that may be captured as hints (Platform Admin 2 Oct 2026: Hotcourses for Canada and NZ)
+const DIRECTORY_HOSTS: Record<string, string> = { hotcourses: "www.hotcoursesabroad.com" };
 // identity rule version used by mode reidentify (extract.ts identity(); v0.5.7 = national code before the title)
 const IDENTITY_RULE = "identity-v0.5.7";
 const AI_MATCH_PROFILE ="openrouter-intake-l3c-qwen3-30b-a3b-2507-v1"; // credential source only; its contract is not used here
@@ -296,6 +298,46 @@ Deno.serve(async (req) => {
     }
 
 
+    // v0.10.0 (2 Oct 2026, Platform Admin 21:18): third-party directory capture, hints only. Only allow-listed directory
+    // hosts; robots.txt respected; each page fetched through Firecrawl (scrape, html + links), stored gzipped in the
+    // evidence bucket under thirdparty/<site>/<country>/ and recorded with its links. Nothing from a directory is
+    // admitted; names, website links and course counts become hints that our own rules verify.
+    if (mode === "directory_capture") {
+      const site = String(body.site || "");
+      const host = DIRECTORY_HOSTS[site];
+      if (!host) return j({ ok: false, mode, error: "unknown directory site", workerVersion: VERSION }, 422);
+      const country = String(body.country || "").toUpperCase();
+      const urls: string[] = (Array.isArray(body.urls) ? body.urls : []).map(String).filter((u: string) => { try { return new URL(u).hostname === host } catch { return false } }).slice(0, 25);
+      let robotsTxt = await robotsFor(new URL(`https://${host}/`));
+      // a directory that refuses our direct request: its robots.txt is read through Firecrawl; unreadable = stop
+      if (!robotsTxt && await useFc("directory_scrape", null, `https://${host}/robots.txt`)) {
+        const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: `https://${host}/robots.txt`, formats: ["rawHtml"] }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+        const d = r ? await r.json().catch(() => ({})) : {};
+        robotsTxt = htmlToText(String(d?.data?.rawHtml || "")).replace(/ \n /g, "\n");
+        if (/user-agent/i.test(String(d?.data?.rawHtml || ""))) robotsTxt = String(d.data.rawHtml).replace(/<[^>]+>/g, "");
+      }
+      if (!/user-agent/i.test(robotsTxt || "")) return j({ ok: false, mode, error: "robots.txt could not be read; nothing captured", workerVersion: VERSION }, 409);
+      const out: unknown[] = [];
+      await pool(urls, 4, async (u) => {
+        const url = new URL(u);
+        if (robotsTxt && !robotsAllows(robotsTxt, url.pathname + url.search)) { out.push({ url: u, status: "robots_disallowed" }); return }
+        if (!(await useFc("directory_scrape", null, u))) { out.push({ url: u, status: "credit_budget" }); return }
+        try {
+          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: u, formats: ["html", "links"], onlyMainContent: false, ...(body.wait_ms ? { waitFor: Math.min(Number(body.wait_ms), 8000) } : {}) }), signal: AbortSignal.timeout(90000) });
+          const d = await r.json().catch(() => ({}));
+          const html = String(d?.data?.html || "");
+          if (!r.ok || !html) { out.push({ url: u, status: "failed", http: r.status, error: String(d?.error || "").slice(0, 160) }); return }
+          const sha = await sha256(new TextEncoder().encode(html));
+          const path = `thirdparty/${site}/${country || "XX"}/${sha}.html.gz`;
+          const up = await c.storage.from("evidence").upload(path, await gzip(html), { contentType: "application/gzip", upsert: true });
+          const links: string[] = Array.isArray(d?.data?.links) ? d.data.links.map(String) : [];
+          const rec = await rpc("svc_directory_page_record", { p_site: site, p_country: country || null, p_url: u, p_final_url: d?.data?.metadata?.sourceURL || u, p_http: d?.data?.metadata?.statusCode ?? 200,
+            p_storage_path: up.error ? null : path, p_sha256: up.error ? null : sha, p_title: titleOf(html).slice(0, 300), p_links: links.slice(0, 5000), p_text: htmlToText(html).slice(0, 20000) });
+          out.push({ url: u, status: "stored", links: links.length, page_id: rec });
+        } catch (e) { out.push({ url: u, status: "failed", error: e instanceof Error ? e.message : String(e) }) }
+      });
+      return j({ ok: true, mode, site, country, robots: robotsTxt ? "read" : "not_available", pages: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
     // v0.10.0: pages stored as identity mismatches are checked again with the current identity rule from their stored
     // copy (no fetch). A page that now passes is set back to read; the usual admission runs on it.
     if (mode === "reidentify") {
