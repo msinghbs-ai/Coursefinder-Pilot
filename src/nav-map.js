@@ -80,7 +80,7 @@ export const PAGES = {
   // v2.15.124 (screen review): the cross-layer source list moved out of Layer 1 to Operations.
   sources: { label: 'Sources', slug: 'pipeline-sources', icon: 'database', min: 4, subtitle: 'Every source the pipeline reads, across all layers, with its health and history.' },
 
-  environment: { label: 'Environment & keys', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Keys for outside services (never shown) and usage against budgets.' },
+  environment: { label: 'Settings', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity, Layer 3 limits and budgets; keys for outside services below (never shown).' },
   scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: providers, limits and routing.' },
   services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off. Anything off is not offered anywhere else.' },
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on.' },
