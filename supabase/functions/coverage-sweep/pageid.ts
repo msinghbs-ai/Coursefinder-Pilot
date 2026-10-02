@@ -4,7 +4,7 @@
 // checks pass: the copied name is on the page, its qualification type is the course's, and the titles share their words.
 import { clean, h1Of, htmlToText, titleOf } from "./extract.ts";
 
-export const PAGE_ID_CONTRACT = "cf247-page-identity-v1.0.0";
+export const PAGE_ID_CONTRACT = "cf247-page-identity-v1.0.1";
 export const PAGE_ID_SYSTEM = `You check whether a page on an education provider's website is the page for one specific course from a government register.
 You get the course (title, level, provider) and the page (its heading, its title and its text; course codes are hidden as [code]).
 1. page_course_name: copy, character for character from the page, the name of the qualification this page is about (usually the heading). If the page is a list, a search page, a faculty or subject-area page, or is not about one qualification, copy the heading and answer same_course false.
@@ -13,7 +13,7 @@ You get the course (title, level, provider) and the page (its heading, its title
 Answer JSON only, fields in order: reason, page_course_name, same_course.`;
 
 const STOP = new Set(["of", "and", "in", "the", "with", "for", "a", "an", "to", "international", "course", "program", "programme", "online", "on", "campus"]);
-const words = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/\([^)]*\)/g, (m) => /international|^\(\s*level\s+\d+\s*\)$|^\([A-Z0-9]{2,8}\)$/i.test(m) ? " " : m)
+const words = (s: string) => clean(s).replace(/\([^)]*\)/g, (m) => /international|^\(\s*level\s+\d+\s*\)$/i.test(m) || /^\([A-Z0-9]{2,8}\)$/.test(m) ? " " : m).toLowerCase().replace(/&/g, " and ")
   .replace(/\b(?:[a-z]{3,4}\d{5}|\d{5}nat)\b/g, " ").replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter((w) => w && !STOP.has(w))
   .map((w) => w.length > 4 && w.endsWith("s") && !w.endsWith("ss") ? w.slice(0, -1) : w);
 
@@ -22,7 +22,7 @@ const TYPES: [string, RegExp][] = [
   ["advanced diploma", /\badvanced diploma\b/i], ["graduate diploma", /\bgraduate diploma\b/i], ["graduate certificate", /\bgraduate certificate\b/i],
   ["associate degree", /\bassociate degree\b/i], ["diploma", /\bdiploma\b/i], ["certificate iv", /\bcertificate (?:iv|4)\b/i], ["certificate iii", /\bcertificate (?:iii|3)\b/i],
   ["certificate ii", /\bcertificate (?:ii|2)\b/i], ["certificate i", /\bcertificate (?:i|1)\b/i], ["certificate", /\bcertificate\b/i],
-  ["bachelor honours", /\bbachelor\b[^/]*\bhonours\b/i], ["bachelor", /\bbachelor\b/i], ["master", /\bmaster\b/i], ["doctor", /\bdoctor|\bphd\b/i],
+  ["bachelor honours", /\bbachelors?\b[^/]*\bhonours\b/i], ["bachelor", /\bbachelors?\b/i], ["master", /\bmaster\b/i], ["doctor", /\bdoctor|\bphd\b/i],
 ];
 export const qualType = (s: string) => TYPES.find(([, re]) => re.test(s))?.[0] ?? null;
 const isDouble = (s: string) => (s.match(/\b(bachelor|master|diploma|certificate|doctor)\b/gi) || []).length >= 2;
@@ -49,12 +49,16 @@ export function pageIdChecks(courseTitle: string, answer: { page_course_name?: u
   const name = clean(String(answer?.page_course_name ?? ""));
   const flat = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "");
   const onPage = name.length >= 6 && flat(fullText).includes(flat(name));
+  // v1.0.1 (tuned on the development holdout pid-h1): the page's main name is its name without bracketed parts and
+  // without a trailing " - campus / college / stream" part; the course's every word must be somewhere in the page's
+  // name, and the main name may add no words of its own (a stream in brackets or after a dash is allowed).
+  const core = name.replace(/\s+[-\u2013\u2014|:]\s+.*$/, "").replace(/\([^)]*\)|\[[^\]]*\]/g, " ");
   const ct = qualType(courseTitle), nt = qualType(name);
-  const sameType = ct !== null && ct === nt && isDouble(courseTitle) === isDouble(name);
-  const cw = [...new Set(words(courseTitle))], nw = new Set(words(name));
+  const sameType = ct === nt && isDouble(courseTitle) === isDouble(name.replace(/\bbachelors\b/gi, "bachelor bachelor"));
+  const cw = [...new Set(words(courseTitle))], nw = new Set(words(name)), kw = [...new Set(words(core))];
   const covered = cw.length ? cw.filter((w) => nw.has(w)).length / cw.length : 0;
-  const back = nw.size ? [...nw].filter((w) => cw.includes(w)).length / nw.size : 0;
-  const wordsMatch = covered >= 0.75 && back >= 0.85;
+  const back = kw.length ? kw.filter((w) => cw.includes(w)).length / kw.length : 0;
+  const wordsMatch = covered === 1 && back >= 0.85;
   const yes = answer?.same_course === true;
   return { accepted: yes && onPage && sameType && wordsMatch, said_yes: yes, on_page: onPage, course_type: ct, page_type: nt, same_type: sameType, covered: Math.round(covered * 100) / 100, back: Math.round(back * 100) / 100 };
 }
