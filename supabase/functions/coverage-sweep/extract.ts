@@ -36,7 +36,9 @@ export function identity(html: string, text: string, courseTitle: string, course
   const codeless = (s: string) => clean(s).replace(/^(?:[A-Z]{3,4}\d{5}|\d{5}NAT)\s*[-–—:|]?\s*/, "")
   const titleHead = clean(titleOf(html)).split(/\s+[|–—]\s+|\s+-\s+/)[0] || ""
   if (t && t.split(" ").length >= 2 && (norm(codeless(h1Of(html))) === t || norm(codeless(titleHead)) === t)) return "exact_title"
-  return titleLevel(h1Of(html), titleOf(html), text, courseTitle) ?? (country === "CA" ? fieldAward(h1Of(html), titleOf(html), text, courseTitle) : null)
+  return titleLevel(h1Of(html), titleOf(html), text, courseTitle)
+    ?? (country === "CA" ? fieldAward(h1Of(html), titleOf(html), text, courseTitle) : null)
+    ?? (country === "NZ" ? nzDegreeName(h1Of(html), titleOf(html), text, courseTitle) : null)
 }
 
 // Decision 235 (2 Oct 2026, Platform Admin 22:55): Canadian catalogue titles are written "Field: Award (ABBR) - Campus"
@@ -121,6 +123,35 @@ export function titleLevel(rawH1: string, rawTitle: string, text: string, course
       const t = normNz(text), other = [...t.matchAll(new RegExp(`${base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} level (\\d{1,2})`, "g"))].some((x) => x[1] !== lvl)
       if (!other) return "title_level"
     }
+  }
+  return null
+}
+
+// Decision 236 (3 Oct 2026, Platform Admin 00:57 "yes NZ"): New Zealand university pages name a degree without its NZQA
+// level ("Master of Fire Engineering Studies", "Master of Literature MLitt"). For degrees only (bachelor, graduate,
+// postgraduate, master, doctor; levels 7 to 10) the heading may be exactly the degree name, optionally followed by its
+// abbreviation (a single word with two or more capitals), when the page names no other level of it. Conjoint, double
+// and combined degrees never match.
+export function nzDegreeName(rawH1: string, rawTitle: string, text: string, courseTitle: string) {
+  const m = clean(courseTitle).match(/^(.*?)\s*\(\s*Level\s+(\d{1,2})\s*\)\s*$/i)
+  if (!m || Number(m[2]) < 7 || Number(m[2]) > 10) return null
+  const rawBase = clean(m[1])
+  if (!/^(bachelor|graduate|postgraduate|master|doctor)\b/i.test(rawBase) || /(conjoint|double|combined|\/)/i.test(rawBase)) return null
+  const base = normNz(rawBase)
+  if (base.split(" ").length < 3) return null
+  const titleHead = clean(rawTitle).split(/\s+[|\u2013\u2014:-]\s+|\s*\|\s*/)[0] || ""
+  for (const raw of [clean(rawH1), titleHead]) {
+    if (!raw) continue
+    let h = normNz(raw)
+    if (h !== base) {
+      const words = raw.trim().split(/\s+/), last = words[words.length - 1] || ""
+      if (!(/^[A-Z][A-Za-z]*[A-Z][A-Za-z]*$/.test(last) && !/^honou?rs$/i.test(last) && normNz(words.slice(0, -1).join(" ")) === base)) continue
+      h = base
+    }
+    // the same degree named at a level on the page other than this course's: not this course's page alone
+    const t = normNz(text)
+    if ([...t.matchAll(new RegExp(`${base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} level (\\d{1,2})`, "g"))].some((x) => x[1] !== m[2])) return null
+    return "degree_name"
   }
   return null
 }
