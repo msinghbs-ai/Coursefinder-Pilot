@@ -87,6 +87,7 @@ const WORKER = "coverage-sweep-worker-v0.10.0";
 const UA = "Mozilla/5.0 (compatible; CourseFinder-Pilot/coverage-0.1; +https://coursefinder-pilot.techm.workers.dev)";
 // Map-first link matcher (v0.10.0): one pinned model, structured output; it chooses a page, it never admits a value.
 export const AI_MATCH_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";
+const AI_MATCH_PROFILE = "openrouter-intake-l3c-qwen3-30b-a3b-2507-v1"; // credential source only; its contract is not used here
 export const AI_MATCH_SYSTEM = `You match a course from a government register to its own page on the education provider's website. You get the course (title, level, code) and a numbered list of candidate pages from the provider's site (address, and page title when known).
 Pick the one page that is this course's own page: the page for this exact qualification at this level.
 Do not pick: a list, search or faculty page; a subject-area page; a page for a different level, major, specialisation, campus-only variant or double degree; a page about entry requirements, fees, careers, news, events, research or applying.
@@ -717,8 +718,16 @@ Deno.serve(async (req) => {
     // one of those addresses (checked again in the database); the page is then read by mode read and accepted only under
     // the identity rule. Nothing is admitted here. No Firecrawl credit is used.
     if (mode === "ai_match") {
-      const key = Deno.env.get("OPENROUTER_API_KEY");
-      if (!key) return j({ ok: false, mode, error: "OPENROUTER_API_KEY not set", workerVersion: VERSION }, 503);
+      // the account key: the Edge secret when set, otherwise the governed OpenRouter credential (vault) of the pinned
+      // model's own Layer 3 profile, as layer3-model-routing resolves it
+      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
+      if (!key) {
+        const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE });
+        if (prof?.model_identifier !== AI_MATCH_MODEL) return j({ ok: false, mode, error: "pinned model profile not found", workerVersion: VERSION }, 503);
+        const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof.id });
+        key = typeof data === "string" ? data : "";
+      }
+      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", workerVersion: VERSION }, 503);
       const items: { id: number; title: string; code: string | null; level: string | null; provider: string; country: string; candidates: { url: string; title: string }[] }[] =
         await rpc("svc_coverage_ai_match_next", { p_limit: Math.min(Number(body.limit || 40), 80) });
       const tally: Record<string, number> = {}; let cost = 0;
