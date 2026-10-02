@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.86 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.159** (course drawer opens on its values, each with its Change button; the foldable editor and the comparison strip are gone).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.85 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.158** (Fee schedules open on Waiting; Academic calendars explained).

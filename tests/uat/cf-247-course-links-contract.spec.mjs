@@ -53,8 +53,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept())
     await page.goto(`/#courses?id=${COURSE}`)
-    const panel = page.locator('[data-editor="course"]')
-    await panel.getByRole('button', { name: /Edit this course/ }).click()
+    const panel = page.locator('[data-editor="course"]') // v2.15.159: open on the values, no fold to click
     const links = panel.locator('[data-course-links]')
     await expect(links).toContainText('International students: Yes')
     await expect(links).toContainText('An English requirement is expected for international applicants.')

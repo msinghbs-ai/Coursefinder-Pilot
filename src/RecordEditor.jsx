@@ -89,9 +89,12 @@ function HistoryList({rows}){
   return <details className="re-history"><summary><History size={12}/>Changes made by hand ({rows.length})</summary><ul>{rows.map((h,i)=><li key={i}><span>{fmtDateTime(h.at)}</span><strong>{ACTION[h.action]||h.action}{h.field&&h.action!=='create'?` · ${FIELD[h.field]||h.field}`:''}</strong><small>{[h.by,h.reason].filter(Boolean).join(' · ')}</small></li>)}</ul></details>
 }
 
-export function CourseEditor({courseId,onChanged,onError}){
+// v2.15.159 (Platform Admin, 3 Oct 2026 09:26: "the existing field that has the data needs the edit button, not another
+// foldable edit field"): inline mode shows every value with its Change button as soon as the course opens; no fold,
+// no separate comparison strip. The fold stays available for the older callers.
+export function CourseEditor({courseId,onChanged,onError,inline=false}){
   const[data,setData,busy,setBusy]=useRecord('admin_course_edit_read','p_course_id',courseId,onError)
-  const[open,setOpen]=useState(false),[editing,setEditing]=useState(''),[reason,setReason]=useState(''),[country,setCountry]=useState('')
+  const[open,setOpen]=useState(inline),[editing,setEditing]=useState(''),[reason,setReason]=useState(''),[country,setCountry]=useState('')
   useEffect(()=>{if(!courseId)return;supabase.rpc('admin_course_links_read',{p_course_id:courseId}).then(({data:d})=>setCountry(d?.applicants?.country||'')).catch(()=>{})},[courseId])
   if(!data)return busy?<section className="m-detail-section re-panel"><Loading label="Loading editable values…"/></section>:null
   const c=data.course||{},locks=data.locks||{},can=Boolean(data.can_edit)&&!busy
@@ -100,7 +103,8 @@ export function CourseEditor({courseId,onChanged,onError}){
   const ed=k=>({editing:editing===k,setEditing:x=>setEditing(x?k:'')})
   const link=(data.official_links||[])[0],tuition=(data.tuition||[])[0],manualCount=Object.keys(locks).filter(k=>k!=='course_url').length
   return <section className="m-detail-section re-panel" data-editor="course">
-    <button type="button" className="re-toggle" onClick={()=>setOpen(o=>!o)} aria-expanded={open}><Pencil size={14}/><span><strong>Edit this course</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All values come from automation'}</small></span><span className="re-caret">{open?'Hide':'Show'}</span></button>
+    {inline?<div className="re-toggle re-static"><Pencil size={14}/><span><strong>Course values</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand; the rest come from the pipeline`:'All values come from the pipeline. Change a value here and the pipeline leaves it alone.'}</small></span></div>
+    :<button type="button" className="re-toggle" onClick={()=>setOpen(o=>!o)} aria-expanded={open}><Pencil size={14}/><span><strong>Edit this course</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All values come from automation'}</small></span><span className="re-caret">{open?'Hide':'Show'}</span></button>}
     {open&&<div className="re-body">
       {!data.can_edit&&<p className="l3v-note">You can view these values. A Curator or above can change them.</p>}
       {data.can_edit&&<label className="re-reason"><small>Reason for the change (optional, kept in the history)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. Checked on the university website 1 Oct 2026"/></label>}
