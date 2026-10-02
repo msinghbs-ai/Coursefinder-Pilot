@@ -275,6 +275,7 @@ td>.l3v-model{display:block}
 .fr-quote{font-size:var(--cf-fs-xs);color:var(--cf-text-2);line-height:1.4;overflow-wrap:anywhere}
 .fr-quote mark{background:color-mix(in srgb,var(--cf-warning) 28%,transparent);color:var(--cf-text);padding:0 2px;border-radius:2px}
 .fv-table .l3c-row-actions{flex-wrap:nowrap}
+.fv-bulk{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0}.fv-pick{width:36px;text-align:center}.fv-pick-all{display:inline-flex;align-items:center;gap:6px;font-size:var(--cf-fs-sm)}
 .sb-model{width:280px;max-width:100%}
 .sb-reason{max-width:520px}
 /* Layer 3 Control (v2.15.126): over-limit shown plainly; same column widths for every task. */
