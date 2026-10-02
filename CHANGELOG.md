@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.79 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.152** (Australian tuition from CRICOS only).
+- Migration 20261002182600 (applied): Australian tuition from CRICOS; provider-page tuition chased only where the regulator publishes none.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.78 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.151** (tuition reviews settled against the page's international view).

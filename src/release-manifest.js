@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.151'
-export const PACKAGE_VERSION='0.1.78'
+export const UI_VERSION='2.15.152'
+export const PACKAGE_VERSION='0.1.79'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Tuition reviews settled against the international view',
+  title:'Tuition from the regulator; no provider-page chase for Australia',
   changes:[
-    'Course-page reader v0.5.6 leaves out amounts that are not tuition (bursaries, scholarships, loan caps, health cover, salaries, deposits, other fees) and reads Session fee / Course fee tables correctly.',
-    'Layer 4 tuition reviews are settled every 10 minutes against the page’s international view: a review about an amount that is not the international annual fee is closed with both amounts kept, and the page’s international fee goes to the AI check.'
+    'Australian tuition comes from CRICOS (the international course cost it publishes); provider pages and fee schedules are no longer searched for a fee in Australia. New Zealand and Canada, whose regulators publish none, keep the provider-page tuition check for international students.',
+    'Layer 2 › History shows Australia’s CRICOS tuition.'
   ],
   bugFixes:[
-    'Layer 4 tuition reviews asked people about domestic prices, VET Student Loan caps, bursaries, scholarships and course totals instead of the international annual fee (RMIT Diploma of Business asked about A$12,858, a loan cap; its international fee is AU$16,250).'
+    '648 Australian tuition reviews in Layer 4 asked people to confirm fees already published by CRICOS; they are closed.'
   ]
 }
 

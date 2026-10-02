@@ -108,15 +108,17 @@ function ActionRequired({go}){const[d,setD]=useState(null),[err,setErr]=useState
 // Decision 220 (v2.15.147): History shows each country's daily progress — courses with each fact admitted, one row per
 // day, with the change from the day before — from the hourly coverage build. It replaces the old pipeline's batch,
 // run and fetch lists, which stopped when that pipeline was retired.
+// Decision 225: where the regulator publishes tuition (Australia: CRICOS), the tuition column shows that registered fee
 const FACTS=[['official_url','Official page'],['english','English'],['intakes','Intakes'],['provider_tuition','Tuition']]
+const factsFor=c=>c==='AU'?[...FACTS.slice(0,3),['registered_tuition','Tuition (CRICOS)']]:FACTS
 function DailyProgress(){const[country,setCountry]=useState(''),[d,setD]=useState(null),[err,setErr]=useState('')
   useEffect(()=>{let live=true;setErr('');adminRead('course_coverage',country?{country}:{}).then(x=>{if(!live)return;setD(x||{});if(!country){const top=(x?.countries||[])[0]?.code;if(top)setCountry(top)}}).catch(e=>live&&setErr(e.message||String(e)));return()=>{live=false}},[country])
   const days=useMemo(()=>{const m=new Map();for(const t of d?.trend||[]){if(!m.has(t.date))m.set(t.date,{date:t.date,total:0});const r=m.get(t.date);r[t.attribute]=Number(t.admitted||0);r.total=Math.max(r.total,Number(t.total||0))}return[...m.values()].sort((a,b)=>a.date<b.date?1:-1).slice(0,14)},[d])
   return <section className="l2o-panel" data-l2-daily>
     <div className="l2o-panel-head"><div><h2>Daily progress</h2><p>Courses with each fact admitted, by day, for one country. The last build of each day is kept; today updates every hour.</p></div>
       <label className="l2o-country">Country <select aria-label="Daily progress country" value={country} onChange={e=>setCountry(e.target.value)}>{(d?.countries||[]).map(c=><option key={c.code} value={c.code}>{c.code} · {fmtNumber(c.courses)} courses</option>)}</select></label></div>
-    {err?<div className="fr-error" role="alert">{err}</div>:!d?<div className="l2o-empty">Loading…</div>:days.length?<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Day</th>{FACTS.map(([,l])=><th key={l} className="num">{l}</th>)}<th className="num">Courses</th></tr></thead><tbody>
-      {days.map((r,i)=>{const prev=days[i+1];return <tr key={r.date} data-l2-day={r.date}><td>{r.date}</td>{FACTS.map(([k])=>{const v=r[k]||0,ch=prev?v-(prev[k]||0):null;return <td key={k} className="num">{fmtNumber(v)}{ch?<small className="l2o-delta">{ch>0?'+':''}{fmtNumber(ch)}</small>:null}</td>})}<td className="num">{fmtNumber(r.total)}</td></tr>})}
+    {err?<div className="fr-error" role="alert">{err}</div>:!d?<div className="l2o-empty">Loading…</div>:days.length?<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Day</th>{factsFor(country).map(([,l])=><th key={l} className="num">{l}</th>)}<th className="num">Courses</th></tr></thead><tbody>
+      {days.map((r,i)=>{const prev=days[i+1];return <tr key={r.date} data-l2-day={r.date}><td>{r.date}</td>{factsFor(country).map(([k])=>{const v=r[k]||0,ch=prev?v-(prev[k]||0):null;return <td key={k} className="num">{fmtNumber(v)}{ch?<small className="l2o-delta">{ch>0?'+':''}{fmtNumber(ch)}</small>:null}</td>})}<td className="num">{fmtNumber(r.total)}</td></tr>})}
     </tbody></table></div>:<div className="l2o-empty">No daily figures for this country yet.</div>}
   </section>}
 
