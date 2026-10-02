@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, siteNameMatch, titleOf } from "./extract.ts";
+import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.5.4";
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -43,7 +44,10 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.9.4";
+const WORKER = "coverage-sweep-worker-v0.9.5";
+// v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
+// deterministic) into proposals a Platform Admin approves; modes provider_facts_inspect and provider_facts_parse work on
+// the stored copies (no Firecrawl credit).
 // v0.9.4 / extractor v0.5.6 (2 Oct 2026, Decision 224): amounts that are not tuition (bursaries, scholarships, loan caps,
 // health cover, salaries, deposits, payment limits, other fees) are left out; in a "Session fee / Course fee" table the
 // first amount is one session and the second the whole course.
@@ -458,6 +462,32 @@ Deno.serve(async (req) => {
     // 1 Oct 2026 (Decision 205): institution-level sources. Search each provider's site for its international fee schedule,
     // English language policy and academic calendar; read each document (PDFs included) as evidence; parse fee rows.
     // Nothing is written to the catalogue here: parsed rows become a proposal a person approves.
+    // Decision 227: stored provider documents, parsed again without reading the site (no Firecrawl credit).
+    // provider_facts_inspect returns the stored text (or the lines that match "lines") and what the parser makes of it;
+    // provider_facts_parse records the parser's proposal for each document.
+    if (mode === "provider_facts_inspect" || mode === "provider_facts_parse") {
+      const docs: { id: string; provider: string; kind: string; url: string; storage_path: string }[] = await rpc("svc_provider_facts_docs", { p_ids: body.ids || null, p_kind: body.kind || null, p_limit: Math.min(Number(body.limit || 5), 400) });
+      const chars = Math.min(Number(body.chars || 6000), 60000), from = Math.max(0, Number(body.offset || 0));
+      const out: unknown[] = []; const tally: Record<string, number> = {};
+      await pool(docs, 6, async (d) => {
+        try {
+          const { data, error } = await c.storage.from("evidence").download(d.storage_path); if (error || !data) throw Error(error?.message || "missing");
+          const md = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+          const parsed = d.kind === "english_policy" ? englishPolicy(md) : d.kind === "intake_calendar" ? calendarStarts(md) : null;
+          if (mode === "provider_facts_parse") {
+            if (!parsed) return;
+            const r = await rpc("svc_provider_policy_record", { p_source_id: d.id, p_parsed: parsed });
+            tally[String(r?.status || "recorded")] = (tally[String(r?.status || "recorded")] || 0) + 1;
+            if (body.summary) out.push({ id: d.id, provider: d.provider, kind: d.kind, status: r?.status, style: (parsed as { style?: string }).style, defaults: (parsed as { defaults?: unknown }).defaults, periods: (parsed as { periods?: unknown }).periods });
+            return;
+          }
+          const lines = body.lines ? md.split("\n").filter((l) => new RegExp(String(body.lines), "i").test(l)).map((l) => l.slice(0, Number(body.line_chars || 400))).slice(0, Number(body.max_lines || 120)) : null;
+          out.push({ id: d.id, provider: d.provider, kind: d.kind, url: d.url, chars: md.length, ...(lines ? { lines } : { text: md.slice(from, from + chars) }), ...(body.no_parse ? {} : { parsed }) });
+        } catch (e) { tally.failed = (tally.failed || 0) + 1; out.push({ id: d.id, url: d.url, error: e instanceof Error ? e.message : String(e) }) }
+      });
+      return j({ ok: true, mode, workerVersion: WORKER, parser: POLICY_PARSER, docs: docs.length, tally, out });
+    }
+
     if (mode === "provider_facts") {
       const searches: { provider_id: string; kind: string; query: string }[] = await rpc("svc_provider_facts_search_next", { p_limit: Math.min(Number(body.search_limit || 12), 40) });
       let found = 0;
@@ -492,6 +522,11 @@ Deno.serve(async (req) => {
           const parsed = it.kind === "fee_schedule" ? parseFeeRows(md) : { rows: [], summary: { chars: md.length } };
           const links = it.kind === "fee_schedule" ? feeLinks(md, it.url) : [];
           const res = await rpc("svc_provider_facts_read_record_v2", { p_id: it.id, p_status: "read", p_http: http, p_storage_path: path, p_sha256: path ? sha : null, p_mime: "text/markdown", p_rows: parsed.rows, p_summary: { ...parsed.summary, chars: md.length, title: String(d?.data?.metadata?.title || "").slice(0, 200) }, p_links: links });
+          // Decision 227: English policy and academic calendar documents are parsed into a proposal (approved by a person)
+          if (it.kind === "english_policy" || it.kind === "intake_calendar") {
+            try { await rpc("svc_provider_policy_record", { p_source_id: it.id, p_parsed: it.kind === "english_policy" ? englishPolicy(md) : calendarStarts(md) }); tally.proposals = (tally.proposals || 0) + 1 }
+            catch { tally.proposal_failed = (tally.proposal_failed || 0) + 1 }
+          }
           tally.linked = (tally.linked || 0) + Number(res?.linked || 0);
           tally[it.kind] = (tally[it.kind] || 0) + 1; tally.fee_rows = (tally.fee_rows || 0) + Number(res?.fee_rows || 0);
         } catch (e) {
@@ -713,7 +748,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, link_search, provider_facts, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
