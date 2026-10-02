@@ -153,10 +153,12 @@ test.describe('mocked browser', () => {
     await expect(s.locator('thead th', { hasText: 'Government (Study Australia)' })).toBeVisible()
     await expect(s.locator('tr[data-compare-state="differs"]')).toHaveCount(2)
     await expect(s.locator('tr[data-compare-state="same"]')).toHaveCount(1)
+    // v2.15.159 (Platform Admin, 3 Oct 2026): the course drawer no longer carries the comparison strip; it opens on the
+    // course's values with their Change buttons. The strip stays on the scholarship drawer.
     await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
-    const c = page.locator('[data-source-comparison="course"]')
-    await expect(c.locator('thead th', { hasText: 'Regulator (CRICOS)' })).toBeVisible()
-    await expect(c.locator('tr.cf-diff')).toHaveCount(1)
-    await expect(c.getByText('Provider page is A$1,920 higher a year.')).toBeVisible()
+    await expect(page.locator('[data-source-comparison="course"]')).toHaveCount(0)
+    const panel = page.locator('[data-editor="course"]')
+    await expect(panel).toContainText('Course values')
+    await expect(panel.getByRole('button', { name: 'Change Tuition (international)' })).toBeVisible()
   })
 })

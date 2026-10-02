@@ -32,8 +32,8 @@ test.describe('mocked browser', () => {
     page.on('dialog', d => d.accept())
     await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
     const panel = page.locator('[data-editor="course"]')
-    await expect(panel).toContainText('1 value entered by hand')
-    await panel.getByRole('button', { name: /Edit this course/ }).click()
+    await expect(panel).toContainText('1 value entered by hand') // v2.15.159: values and their Change buttons show at once; no fold
+    await expect(panel.getByRole('button', { name: /Edit this course/ })).toHaveCount(0)
     await expect(panel).toContainText('Entered by hand')
     await panel.getByLabel(/^Reason for the change/).fill('Checked on the RMIT website')
     await panel.getByRole('button', { name: 'Change Tuition (international)' }).click()
