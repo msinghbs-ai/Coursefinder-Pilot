@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.77 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.150** (fees follow the page's domestic or international view; answered tuition reviews closed).
+- Migrations 20261002182100-182300 (applied): answered tuition reviews closed, retired fee feed paused, re-extraction in each country's currency.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.76 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.149** (Fetch an area on the course-page sweep; Websites to find; worker errors say what to do).

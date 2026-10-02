@@ -1,22 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.149'
-export const PACKAGE_VERSION='0.1.76'
+export const UI_VERSION='2.15.150'
+export const PACKAGE_VERSION='0.1.77'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Fetch an area on the course-page sweep; Websites to find; errors with steps',
+  title:'Fees follow the page\'s domestic or international view',
   changes:[
-    'Layer 2 › Fetch an area works on the course-page sweep: for a country, state or university it shows sites mapped or not found, pages found and read, facts admitted and a one-line reading of what is holding it up. Start puts it first in the sweep.',
-    'Layer 4 › Websites to find: universities whose website the finder could not confirm, with the search and the pages tried. A website entered here is kept as entered by a person, and the course-page search starts.',
-    'Live activity and Layer 2 Action required: each worker error says what to do, often nothing, and when to switch a job off or tell the Platform Admin.',
-    'The AI tuition check is given 5 minutes before its caller gives up, and the tuition hand-off picks its pages about six times faster.'
+    'Course-page fees follow the page’s own domestic or international view; a course total or a fee for one study period, trimester or unit is never taken as an annual fee. Every saved page is re-read once with these rules.',
+    'Re-reading saved pages reads New Zealand and Canadian pages in NZD and CAD.'
   ],
   bugFixes:[
-    'Fetch an area still started the retired Layer 2 pipeline, so a request (La Trobe) would never run; its Open Jobs button did nothing.',
-    'Worker error replies gave no steps to resolve them.'
+    'A UQ tuition review asked a person to choose between the domestic fee ($10,520) and the international fee (A$60,952) although A$60,952, from the page’s international view, was already recorded. 15 such reviews were closed.',
+    'The retired pipeline still fed its August page snapshots to the AI fee check; that feed is paused.',
+    'Domestic-view fees, course totals and part-year fees were handed to the AI fee check as international annual fees, filling Layer 4 with reviews.'
   ]
 }
 

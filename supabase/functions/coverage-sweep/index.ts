@@ -42,8 +42,11 @@ const SCH_FC_CAP = 3000;
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.5.4"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.9.2";
+const VERSION = "coverage-sweep-v0.5.5"; // extractor version (unchanged by v0.6.0 worker modes)
+const WORKER = "coverage-sweep-worker-v0.9.3";
+// v0.9.3 / extractor v0.5.5 (2 Oct 2026, Decision 223): a fee's audience follows the page's own domestic or international
+// view marker before it ("This content is for domestic students", "Local Student Fee"); course totals ("Total Indicative
+// Course Fees", "Estimated total course cost") are totals; re-extraction reads each page in its country's currency.
 // v0.9.2 (2 Oct 2026, Decision 220): Canada. find_site finds a Canadian provider's own site by name (search in Canada),
 // accepted only on a .ca site whose home page names the provider or prints its DLI number; course pages are read in CAD
 // and stored under layer2/CA/. A provider with no code to check is never accepted on an empty pattern.
@@ -266,7 +269,7 @@ Deno.serve(async (req) => {
 
 
     if (mode === "reextract") {
-      const rows: { course_id: string; storage_path: string; title: string; code: string; status: string; url: string }[] = await rpc("svc_coverage_reextract_next", { p_limit: Math.min(Number(body.limit || 100), 200), p_version: VERSION });
+      const rows: { course_id: string; storage_path: string; title: string; code: string; status: string; url: string; country?: string }[] = await rpc("svc_coverage_reextract_next", { p_limit: Math.min(Number(body.limit || 100), 200), p_version: VERSION });
       let done = 0, failed = 0;
       await pool(rows, 10, async (r) => {
         try {
@@ -274,7 +277,7 @@ Deno.serve(async (req) => {
           if (error || !data) throw Error(error?.message || "missing");
           const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
           const text = htmlToText(html);
-          const cand = { final_url: r.url, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION };
+          const cand = { final_url: r.url, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(r.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION };
           await rpc("svc_coverage_candidates_update", { p_course_id: r.course_id, p_candidates: cand }); done++;
         } catch { failed++ }
       });

@@ -66,6 +66,16 @@ const FEE_RE: Record<string, { re: RegExp; own: RegExp; explicit: RegExp }> = {
 export function currencyFor(country: string | null | undefined): "AUD" | "NZD" | "CAD" {
   return country === "NZ" ? "NZD" : country === "CA" ? "CAD" : "AUD"
 }
+// v0.5.5: which student view the text just before an amount belongs to, from the last view marker in it.
+const VIEW_MARKERS: [RegExp, "domestic" | "international"][] = [
+  [/content is for domestic students|switch(?: from domestic)? to international|local student fee|fees? for (?:australian|domestic|local) students|domestic students? fees?|domestic (?:student )?fee breakdown|commonwealth supported place/gi, "domestic"],
+  [/content is for international students|switch(?: from international)? to (?:domestic|local)|international students? fees?|fees? for (?:international|overseas) students|international (?:indicative )?(?:annual )?(?:course |tuition )?fees?|overseas students? fees?/gi, "international"],
+]
+export function viewBefore(pre: string): "domestic" | "international" | null {
+  let best = -1, view: "domestic" | "international" | null = null
+  for (const [re, v] of VIEW_MARKERS) for (const m of pre.matchAll(re)) if ((m.index ?? -1) > best) { best = m.index ?? -1; view = v }
+  return view
+}
 export function fee(text: string, currency: "AUD" | "NZD" | "CAD" = "AUD") {
   const own = FEE_RE[currency], nz = Boolean(own)
   const re = own ? new RegExp(own.re.source, "gi")
@@ -77,18 +87,29 @@ export function fee(text: string, currency: "AUD" | "NZD" | "CAD" = "AUD") {
     const token = clean(text.slice(Math.max(0, idx - 8), idx + m[0].length + 8))
     // audience from the amount's own sentence (a page often lists domestic and international fees side by side)
     const local = clean((before.split(/[.;!?]\s/).pop() || "") + " " + m[0] + " " + (after.split(/[.;!?]\s/)[0] || ""))
-    const domestic = /(domestic|csp|commonwealth supported|student contribution|hecs)/i.test(local)
-    const international = /(international|overseas)/i.test(local) || (!domestic && /(international|overseas)/i.test(context))
+    // v0.5.5: a page that switches between a domestic and an international view says which view a block belongs to
+    // ("This content is for domestic students", "Local Student Fee", "Switch to International Student"); the last such
+    // marker before the amount decides its audience, ahead of words further away.
+    const view = viewBefore(text.slice(Math.max(0, idx - 1500), idx))
+    const domestic = view === "domestic" || (view !== "international" && /(domestic|csp|commonwealth supported|student contribution|hecs)/i.test(local))
+    const international = view === "international" || (view !== "domestic" && (/(international|overseas)/i.test(local) || (!domestic && /(international|overseas)/i.test(context))))
     const indicative = /(indicative fee|indicative annual fee|typical first-year|first year enrolment|annual|per year|a year|yearly cost|per annum)/i.test(context)
-    const local2 = clean(before.slice(-120) + " " + m[0] + " " + after.slice(0, 60))
-    const total = /(total (indicative |estimated |course |program(me)? )?(tuition )?fees?|total cost|entire (course|program)|full (course|program)|\(\s*20[2-3]\d\s+total\s*\)|fee to complete|full fee to complete)/i.test(local2)
-    const annualLocal = /(per year|a year|per annum|annual|first[- ]year|\(\s*20[2-3]\d\s+annual\s*\))/i.test(local2)
+    // v0.5.5: the wording that belongs to this amount starts after the previous amount ("Total Course Cost A$20,550
+    // Tuition Fee A$18,000": "total" is about the first amount only)
+    const pre120 = before.slice(-120), lastAmt = [...pre120.matchAll(/\$\s?\d[\d,]{2,}(?:\.\d{2})?/g)].pop()
+    const ownPre = lastAmt ? pre120.slice((lastAmt.index || 0) + lastAmt[0].length) : pre120
+    const after60 = after.slice(0, 60), nextAmt = after60.search(/\$\s?\d[\d,]{2,}/)
+    const local2 = clean(ownPre + " " + m[0] + " " + (nextAmt >= 0 ? after60.slice(0, nextAmt) : after60))
+    // a fee for part of a year ("Study Period 1: $11,484", "Trimester $12,844", "per unit") is not an annual fee
+    const partial = /(study period|trimester|semester|term|per unit|per subject|per credit|unit fee|per course unit)\s*\d?\s*:?\s*(fees?)?\s*:?\s*$/i.test(clean(ownPre)) || /^\s*(per|a|each)\s+(unit|subject|credit|trimester|semester|term|study period)\b/i.test(after60)
+    const total = /(total (indicative |estimated |course |program(me)? )?(tuition )?fees?|total (indicative |estimated )?(course |program(me)? )+(tuition )?(fees?|costs?)|estimated total (course |program(me)? )?(fees?|costs?)|total cost|course total|entire (course|program)|full (course|program)|\(\s*20[2-3]\d\s+total\s*\)|fee to complete|full fee to complete)/i.test(local2)
+    const annualLocal = !partial && /(per year|a year|per annum|annual|first[- ]year|\(\s*20[2-3]\d\s+annual\s*\))/i.test(local2)
     const tuition = /(tuition|fee)/i.test(context)
     const explicitAud = own ? own.explicit.test(token) : /(?:AUD\s*|A\$|AU\s?\$)\s*[\d,]+/i.test(token)
     const cricosNear = /CRICOS(?:\s+Code)?/i.test(near)
     const year = (after.match(/\b(20[2-3]\d)\b/) || before.slice(-80).match(/\b(20[2-3]\d)\b/) || [])[1]
-    const score = (international ? 5 : 0) + (cricosNear ? 4 : 0) + (explicitAud ? 4 : 0) + (indicative ? 3 : 0) + (tuition ? 1 : 0) - (domestic ? 8 : 0)
-    return { amount, score, international, domestic, indicative, total, annualLocal, fee_year: year ? Number(year) : null, context: context.slice(0, 300) }
+    const score = (international ? 5 : 0) + (cricosNear ? 4 : 0) + (explicitAud ? 4 : 0) + (indicative ? 3 : 0) + (tuition ? 1 : 0) - (domestic ? 8 : 0) - (total && !annualLocal ? 1 : 0) - (partial ? 3 : 0) // v0.5.5: an annual fee outranks a course total of equal standing
+    return { amount, score, international, domestic, indicative, total, annualLocal, partial, fee_year: year ? Number(year) : null, context: context.slice(0, 300) }
   }).filter((r) => r.amount >= 1000 && r.amount <= 500000).sort((a, b) => b.score - a.score || b.amount - a.amount)
   if (!rows.length) return { value: null, safe: false, ambiguous: false, rejection_reason: "no_fee_candidate", candidates: [] as unknown[], ...(nz ? { currency } : {}) }
   const top = rows[0], same = rows.filter((r) => r.score === top.score && r.amount !== top.amount)
