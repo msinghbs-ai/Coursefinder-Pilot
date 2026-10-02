@@ -81,8 +81,11 @@ test('Decision 235: Canadian field + award rule (Canada only) and the website na
   expect(fa('Graduate programs', 'Physics: Doctor of Philosophy (PhD)')).toBe(false)
   expect(fa('Master of Science and Doctor of Philosophy in Physics', 'Physics: Doctor of Philosophy (PhD)')).toBe(false)
   expect(fa('Bachelor of Arts in English (Okanagan)', 'English: Bachelor of Arts Degree (BA) - UBCV')).toBe(false)
-  expect(fa('Biochemistry and Molecular Biology (PhD)', 'Biochemistry and Molecular Biology: Doctor of Philosophy (PhD) - UBCO', 'Vancouver')).toBe(false)
+  expect(fa('Biochemistry and Molecular Biology (PhD)', 'Biochemistry and Molecular Biology: Doctor of Philosophy (PhD) - UBCO', 'Okanagan')).toBe(false)
   expect(fa('Combined Bachelor of Music', 'Combined Bachelor of Music/Bachelor of Education World Music')).toBe(false)
+  expect(fa('Mathematics Honours (Bachelor of Science)', 'Mathematics: Bachelor of Science Degree (BSc)')).toBe(false)
+  expect(fieldAward('Master of Science in Mathematics (MSc)', 'Master of Science in Mathematics (MSc) | Graduate School', 'menu: Okanagan campus', 'Mathematics: Master of Science (MSc) - UBCO')).toBe(null)
+  expect(fieldAward('Master of Science in Mathematics (MSc)', 'Master of Science in Mathematics (MSc) - Okanagan | Graduate School', 'x', 'Mathematics: Master of Science (MSc) - UBCO')).toBe('field_award')
   const page = '<html><head><title>Bachelor of Science Biology</title></head><body><h1>Bachelor of Science in Biology</h1></body></html>'
   expect(identity(page, 'x', 'Bachelor of Science Biology', '', false, 'AU')).toBe('exact_title')
   expect(identity('<h1>Bachelor of Science in Biology</h1>', 'x', 'Biology: Bachelor of Science (BSc)', '', false, 'AU')).toBe(null)

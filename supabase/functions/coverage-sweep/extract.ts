@@ -51,7 +51,7 @@ const AWARDS = ["doctor of philosophy", "doctor of education", "master of busine
   "bachelor of arts", "bachelor of education", "bachelor of commerce", "bachelor of fine arts", "bachelor of music",
   "bachelor of engineering", "bachelor of kinesiology", "bachelor of nursing", "bachelor of social work",
   "bachelor of health science", "bachelor of design", "bachelor of computing science", "bachelor of management"]
-const JOIN = new Set(["in", "of", "the", "degree", "program", "programme", "major", "honours", "honors", "and"])
+const JOIN = new Set(["in", "of", "the", "degree", "program", "programme", "major", "and"])
 export function parseCaTitle(courseTitle: string): { field: string; award: string; abbr: string; campus: string } | null {
   let s = clean(courseTitle)
   if (/\b(combined|dual|double|joint|concurrent)\b/i.test(s)) return null
@@ -79,8 +79,8 @@ export function fieldAward(rawH1: string, rawTitle: string, text: string, course
   const p = parseCaTitle(courseTitle)
   if (!p) return null
   const titleHead = clean(rawTitle).split(/\s+[|–—]\s+|\s+-\s+|\s*\|\s*/)[0] || ""
-  const okanagan = /\bokanagan\b/i.test(text)
-  if (p.campus === "UBCO" && !okanagan) return null
+  // UBC Okanagan: the heading or the page title must say Okanagan (the Vancouver page can mention it in menus)
+  if (p.campus === "UBCO" && !/\bokanagan\b/i.test(rawH1 + " " + rawTitle)) return null
   for (const raw of [rawH1, titleHead]) {
     let h = " " + norm(raw.replace(/\(([A-Za-z.]{2,8})\)/g, (_m, x) => " " + x.replace(/\./g, "") + " ")) + " "
     if (h.trim().length === 0) continue
