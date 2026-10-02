@@ -87,7 +87,9 @@ const WORKER = "coverage-sweep-worker-v0.10.0";
 const UA = "Mozilla/5.0 (compatible; CourseFinder-Pilot/coverage-0.1; +https://coursefinder-pilot.techm.workers.dev)";
 // Map-first link matcher (v0.10.0): one pinned model, structured output; it chooses a page, it never admits a value.
 export const AI_MATCH_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";
-const AI_MATCH_PROFILE = "openrouter-intake-l3c-qwen3-30b-a3b-2507-v1"; // credential source only; its contract is not used here
+// identity rule version used by mode reidentify (extract.ts identity(); v0.5.7 = national code before the title)
+const IDENTITY_RULE = "identity-v0.5.7";
+const AI_MATCH_PROFILE ="openrouter-intake-l3c-qwen3-30b-a3b-2507-v1"; // credential source only; its contract is not used here
 export const AI_MATCH_SYSTEM = `You match a course from a government register to its own page on the education provider's website. You get the course (title, level, code) and a numbered list of candidate pages from the provider's site (address, and page title when known).
 Pick the one page that is this course's own page: the page for this exact qualification at this level.
 Do not pick: a list, search or faculty page; a subject-area page; a page for a different level, major, specialisation, campus-only variant or double degree; a page about entry requirements, fees, careers, news, events, research or applying.
@@ -294,6 +296,29 @@ Deno.serve(async (req) => {
     }
 
 
+    // v0.10.0: pages stored as identity mismatches are checked again with the current identity rule from their stored
+    // copy (no fetch). A page that now passes is set back to read; the usual admission runs on it.
+    if (mode === "reidentify") {
+      const rule = IDENTITY_RULE;
+      const rows: { course_id: string; evidence_id: string; storage_path: string; url: string; title: string; code: string; country?: string }[] =
+        await rpc("svc_coverage_reidentify_next", { p_limit: Math.min(Number(body.limit || 100), 400), p_rule: rule });
+      const tally: Record<string, number> = {};
+      await pool(rows, 10, async (r) => {
+        let basis: string | null = null, cand: unknown = null;
+        try {
+          if (Date.now() - t0 > BUDGET_MS) return;
+          const { data, error } = await c.storage.from("evidence").download(r.storage_path);
+          if (error || !data) throw Error(error?.message || "missing");
+          const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+          const text = htmlToText(html);
+          basis = identity(html, text, r.title, r.code, false);
+          if (basis) cand = { final_url: r.url, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(r.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION };
+          const st = await rpc("svc_coverage_reidentify_record", { p_course_id: r.course_id, p_evidence_id: r.evidence_id, p_rule: rule, p_identity_basis: basis, p_candidates: cand });
+          tally[st] = (tally[st] || 0) + 1;
+        } catch { tally.failed = (tally.failed || 0) + 1 }
+      });
+      return j({ ok: true, mode, rule, rows: rows.length, tally, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
     if (mode === "reextract") {
       const rows: { course_id: string; storage_path: string; title: string; code: string; status: string; url: string; country?: string }[] = await rpc("svc_coverage_reextract_next", { p_limit: Math.min(Number(body.limit || 100), 200), p_version: VERSION });
       let done = 0, failed = 0;
@@ -806,7 +831,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, ai_match, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, ai_match, reidentify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
