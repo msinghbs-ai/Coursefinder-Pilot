@@ -45,7 +45,7 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.13.1";
+const WORKER = "coverage-sweep-worker-v0.13.2";
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -432,7 +432,13 @@ Deno.serve(async (req) => {
           : "Extract the English language test scores this course requires of international applicants from this page. Look for entry requirements, English language requirements or admission criteria. When the page states a score for IELTS, PTE, TOEFL_IBT or CAE, set status to 'stated' and list each test with its overall score and the minimum band (min_band) if given. When the page only says English is required, or links to a policy, without a score, set status to 'not_stated' and tests to an empty list. quote: copy the exact line or sentence from the page that states the scores.";
       const cases: { case_id: string; task_class: string; url: string; gold: any }[] = await rpc("svc_fc_extract_cases", { p_task_class: task, p_offset: Number(body.offset || 0), p_limit: Math.min(Number(body.limit || 50), 100) });
       const tally: Record<string, number> = {}; let credits = 0;
-      const norm = (s: string) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
+      // v0.13.2: the quote is matched on letters and digits only (Firecrawl's markdown adds table pipes, escapes and
+      // line breaks that the model does not copy), and the same automatic check the live intake route applies is
+      // applied here: a month counts only when its name appears in the quote (no month inferred from "rolling",
+      // "Trimester 1" or "Autumn session"); for English, a score counts only when its number appears in the quote.
+      const norm = (s: string) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+      const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+      const monthInQuote = (m: number, quote: string) => { const n = MONTHS[m - 1]; return !!n && new RegExp("\\b(" + n + "|" + n.slice(0, 3) + ")\\b", "i").test(quote) };
       const sameSet = (a: unknown[], b: unknown[]) => { const x = [...new Set(a.map(String))].sort().join(","), y = [...new Set(b.map(String))].sort().join(","); return x === y };
       await pool(cases, Math.min(Number(body.concurrency || 4), 6), async (k) => {
         if (Date.now() - t0 > BUDGET_MS) { tally.time = (tally.time || 0) + 1; return }
@@ -445,6 +451,10 @@ Deno.serve(async (req) => {
           c1 = Number(d?.data?.metadata?.creditsUsed || 5); credits += c1;
           answer = d.data.json || null; const md = String(d.data.markdown || "");
           const q = norm(answer?.quote || ""); quoteIn = q.length >= 8 ? norm(md).includes(q) : false;
+          if (answer && typeof answer === "object") {
+            if (intake && Array.isArray(answer.months)) { const kept = answer.months.filter((m: unknown) => monthInQuote(Number(m), String(answer.quote || ""))); answer = { ...answer, months_given: answer.months, months: kept, status: kept.length ? answer.status : "not_stated" } }
+            if (!intake && Array.isArray(answer.tests)) { const kept = answer.tests.filter((t: any) => new RegExp("(^|[^0-9.])(" + String(Number(t?.overall)).replace(".", "\\.") + "|" + Number(t?.overall).toFixed(1).replace(".", "\\.") + ")(?![0-9]|\\.[0-9])").test(String(answer.quote || ""))); answer = { ...answer, tests_given: answer.tests, tests: kept, status: kept.length ? answer.status : "not_stated" } }
+          }
           // v0.13.1: what Firecrawl rendered is recorded in brief (size, head) so a miss can be told from an unread page
           if (answer && typeof answer === "object") answer = { ...answer, _diag: { prompt_version: pv, md_chars: md.length, md_head: md.replace(/\s+/g, " ").slice(0, 300), status_code: d?.data?.metadata?.statusCode ?? null } };
           const g = k.gold || {};
