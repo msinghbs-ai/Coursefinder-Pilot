@@ -5,7 +5,7 @@ import { intakeSafetyBlockers, quoteInText } from "../_shared/cf247-intake-valid
 import { CF247_TUITION_BINDING_SOURCE_MANIFEST } from "../_shared/cf247-tuition-binding-source-manifest.ts";
 import { tuitionBenchmarkRuntimeBindingHash } from "../_shared/cf247-tuition-benchmark-binding.ts";
 import {
-  checkEnglish, checkIntake, checkTuition, contractComponents, contractVersion, englishRequestBody, factBindingDescriptor, intakeRequestBody,
+  checkEnglish, checkIntake, checkTuition, contractComponents, contractVersion, contractVersionFor, englishRequestBody, factBindingDescriptor, intakeBodyFor, intakeCheckFor, intakeRequestBody,
   isPinnedModel, parseModelJson, ROUTING_VERSION, scoreEnglish, scoreIntake, scoreTuition, TaskKey, TASKS, tuitionEvidenceText, tuitionMaxChars,
   tuitionRequestBody,
 } from "../_shared/cf247-model-routing.ts";
@@ -21,6 +21,8 @@ import { AUDIT_RATE, CASCADE_VERSION, cascadeSignal, sameAnswer } from "../_shar
 //              hash, the daily spend guard and the credit floor), call the pinned model, validate, record. Admission
 //              is a separate governed SQL step (security.layer3_fact_admit_v1).
 //   guard      OpenRouter credit floor: below US$5 remaining, the Layer 3 route crons are switched off.
+// Decision 229 (2 Oct 2026): a profile whose prompt_profile_version is cf247-intake-validation-v1.3.0 runs the v1.3.0 intake
+// contract (request body, checks, binding); every other profile runs exactly what it was qualified on.
 const FN = "layer3-model-routing", V = ROUTING_VERSION;
 // Decision 221 (2 Oct 2026): a cascade task (intake, English) never falls back to the single routed profile; with no
 // cascade step switched on, nothing is claimed and no model is called.
@@ -176,7 +178,7 @@ Deno.serve(async (req: Request) => {
       const binding = await bindingHash(task, profile);
       const runLabel = String(body.run_label || "").trim();
       if (!/^q-[a-z0-9][a-z0-9._-]{2,60}$/i.test(runLabel)) throw new Error("run_label q-... required");
-      if (mode === "finalise") return j(200, { ok: true, mode, worker_version: V, recorded: await rpc("layer3_holdout_finalise_service", { p_run_label: runLabel, p_binding_hash: binding, p_summary: { worker_version: V, contract: contractVersion(task) } }) });
+      if (mode === "finalise") return j(200, { ok: true, mode, worker_version: V, recorded: await rpc("layer3_holdout_finalise_service", { p_run_label: runLabel, p_binding_hash: binding, p_summary: { worker_version: V, contract: contractVersionFor(task, profile) } }) });
 
       let spent = Number(profile.qualification_spent_usd || 0);
       if (spent + RESERVE_USD >= QUALIFICATION_CAP_USD) throw new Error(`qualification cap US$${QUALIFICATION_CAP_USD} reached (spent ${spent})`);
@@ -193,7 +195,7 @@ Deno.serve(async (req: Request) => {
         let r: any = { ok: false, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null }, calls = 0;
         if (task === "intake" && blockers.length) r = { ...r, ok: true, answer: { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" } };
         else {
-          const reqBody = task === "intake" ? intakeRequestBody(model, text, Number(profile.max_output_tokens))
+          const reqBody = task === "intake" ? intakeBodyFor(profile, model, text, Number(profile.max_output_tokens))
             : task === "english" ? englishRequestBody(model, text, Number(profile.max_output_tokens))
             : tuitionRequestBody(profile, c.source_url, c.candidate_context, text);
           const attempts = Math.max(1, Math.min(Number(profile.retry_ceiling || 0) + 1, 2));
@@ -207,7 +209,7 @@ Deno.serve(async (req: Request) => {
         if (!calls && r.error === "qualification_cap_reached") return;
         const modelOk = !calls || r.returned === model;
         let chk = r.answer
-          ? task === "intake" ? checkIntake(r.answer, text, blockers) : task === "english" ? checkEnglish(r.answer, text) : checkTuition(r.answer, text, c.candidate_context, profile, r.cost)
+          ? task === "intake" ? intakeCheckFor(profile, r.answer, text, blockers) : task === "english" ? checkEnglish(r.answer, text) : checkTuition(r.answer, text, c.candidate_context, profile, r.cost)
           : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
         if (!modelOk) chk = { valid: false, errors: [...chk.errors, `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
         const sc: any = task === "intake" ? scoreIntake(c.gold, chk) : task === "english" ? scoreEnglish(c.gold, chk) : scoreTuition(c.gold, chk);
@@ -266,10 +268,10 @@ Deno.serve(async (req: Request) => {
             const signal = cascadeSignal(task as "intake" | "english", text);
             const ask = async (tp: any) => {
               const m = String(tp.model_identifier);
-              const reqBody = task === "intake" ? intakeRequestBody(m, text, Number(tp.max_output_tokens)) : englishRequestBody(m, text, Number(tp.max_output_tokens));
+              const reqBody = task === "intake" ? intakeBodyFor(tp, m, text, Number(tp.max_output_tokens)) : englishRequestBody(m, text, Number(tp.max_output_tokens));
               let r: any = { ok: false, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null };
               try { r = await callModel(tp, reqBody) } catch (e) { r.error = String((e as Error)?.message || e).slice(0, 200) }
-              let chk: any = r.answer ? (task === "intake" ? checkIntake(r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+              let chk: any = r.answer ? (task === "intake" ? intakeCheckFor(tp, r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
               if (r.returned && r.returned !== m) chk = { valid: false, errors: [...chk.errors, `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
               const result = { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, answer: r.answer, returned_model: r.returned, cost_usd: r.cost,
                 input_tokens: r.input, output_tokens: r.output, latency_ms: r.latency, external_calls: 1, safety_blockers: [], text_sha256: textSha, binding_hash: null };
@@ -327,7 +329,7 @@ Deno.serve(async (req: Request) => {
           let r: any = { ok: true, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null }, calls = 0;
           if (task === "intake" && blockers.length) r.answer = { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" };
           else {
-            const reqBody = task === "intake" ? intakeRequestBody(model, text, Number(profile.max_output_tokens)) : englishRequestBody(model, text, Number(profile.max_output_tokens));
+            const reqBody = task === "intake" ? intakeBodyFor(profile, model, text, Number(profile.max_output_tokens)) : englishRequestBody(model, text, Number(profile.max_output_tokens));
             const attempts = Math.max(1, Math.min(Number(profile.retry_ceiling || 0) + 1, 2));
             for (let i = 0; i < attempts; i++) {
               calls++;
@@ -337,7 +339,7 @@ Deno.serve(async (req: Request) => {
           }
           cost += r.cost;
           const modelOk = !calls || r.returned === model;
-          let chk = r.answer ? (task === "intake" ? checkIntake(r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+          let chk = r.answer ? (task === "intake" ? intakeCheckFor(profile, r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
           if (!modelOk) chk = { valid: false, errors: [...chk.errors, `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
           result = { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, answer: r.answer, returned_model: r.returned, cost_usd: r.cost,
             input_tokens: r.input, output_tokens: r.output, latency_ms: r.latency, external_calls: calls, safety_blockers: blockers.map((b) => b.code), text_sha256: await sha256(text), binding_hash: binding };
