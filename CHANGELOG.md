@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.75 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.148** (Layer 3 cascade never falls back to a switched-off model; pending cascade claims labelled).
+- Migration 20261002181900 (applied): Recent results hides the placeholder profile of an unanswered cascade claim.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.74 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.147** (old Layer 2 pipeline retired; actionable Layer 2 overview; daily progress by country; Canada admission).

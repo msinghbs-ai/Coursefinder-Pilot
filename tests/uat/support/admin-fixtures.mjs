@@ -305,7 +305,9 @@ export const layer3Queue = { by_task_class: [
 export const layer3SourcePatterns = [
   { request_id: 'sp1', provider_name: 'Kaplan Business School', entity_id: 'p1', country_code: 'AU', status: 'queued', created_at: '2026-09-07T05:40:00Z', source_url: 'https://www.kbs.edu.au/courses', schedule_error: 'model error (provider returned 502)' },
 ]
-export const layer3Recent = Array.from({ length: 30 }, (_, i) => ({ id: 'i' + i, created_at: new Date(Date.UTC(2026, 9, 1, 1, 0) - i * 600000).toISOString(), task_class: ['provider_intake_validation', 'provider_english_validation', 'provider_current_tuition_validation'][i % 3], status: ['validated', 'no_candidate', 'escalated', 'rejected_validation'][i % 4], model_identifier: 'qwen/qwen3-30b-a3b-instruct-2507', estimated_cost_usd: 0.0002, review_state: i % 4 === 2 ? 'pending' : 'not_created', escalation_reason: i % 4 === 2 ? 'differs from value held' : null }))
+const layer3RecentBase = Array.from({ length: 30 }, (_, i) => ({ id: 'i' + i, created_at: new Date(Date.UTC(2026, 9, 1, 1, 0) - i * 600000).toISOString(), task_class: ['provider_intake_validation', 'provider_english_validation', 'provider_current_tuition_validation'][i % 3], status: ['validated', 'no_candidate', 'escalated', 'rejected_validation'][i % 4], model_identifier: 'qwen/qwen3-30b-a3b-instruct-2507', estimated_cost_usd: 0.0002, review_state: i % 4 === 2 ? 'pending' : 'not_created', escalation_reason: i % 4 === 2 ? 'differs from value held' : null }))
+// Decision 221: a cascade claim no step has answered yet (placeholder profile hidden), and an answer from step 2
+export const layer3Recent = layer3RecentBase.map((r, i) => i === 0 ? { ...r, status: 'calling', model_identifier: null, profile_code: null, aggregator_response_model: null, model_pending: true, cascade_tier_no: null } : i === 1 ? { ...r, cascade_tier_no: 2 } : r)
 
 // Layer 2 Source profiles (v2.15.127).
 export const layer2Profiles = { total: 2, limit: 50, offset: 0, has_more: false, summary: { profiles: 2, valid: 2, healthy: 1 }, options: { countries: ['AU'], methods: ['html_scrape'], health: ['healthy', 'stale'] },
