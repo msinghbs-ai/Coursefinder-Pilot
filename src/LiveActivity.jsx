@@ -7,7 +7,7 @@
 // work. Error replies from workers in the last few hours are now listed with a plain-English reading.
 import React,{useEffect,useMemo,useRef,useState}from'react'
 import{Activity,AlertTriangle,CheckCircle2,CirclePause,Clock,Loader2,RefreshCw,UserCheck}from'lucide-react'
-import{adminRead}from'./lib/supabase'
+import{adminRead,supabase}from'./lib/supabase'
 import{fmtNumber,fmtTime}from'./lib/format.js'
 import{errorReading}from'./lib/workerErrors.js'
 import{Button}from'./ui-kit'
@@ -77,9 +77,11 @@ function summary(result){
   return parts.slice(0,8).join(' · ')
 }
 
-export default function LiveActivity({navigate}){
+export default function LiveActivity({navigate,rank=0}){
   const[data,setData]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[live,setLive]=useState(true),[onlyActive,setOnlyActive]=useState(false),[tick,setTick]=useState(Date.now())
   const timer=useRef(null)
+  // Decision 218: an operator marks an error as seen; it shows again only if it happens again
+  const seen=async e=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_live_error_ack',{p_function:e.function||'',p_status:e.status??null,p_message:e.message||''});if(error)throw error;if(d)setData(d);setErr('')}catch(x){setErr(x.message||String(x))}finally{setBusy(false)}}
   const load=async()=>{setBusy(true);try{const d=await adminRead('live_activity',{});setData(d);setErr('')}catch(e){setErr(e.message||String(e))}finally{setBusy(false);setTick(Date.now())}}
   useEffect(()=>{load()},[])
   useEffect(()=>{clearInterval(timer.current);if(!live)return
@@ -107,13 +109,15 @@ export default function LiveActivity({navigate}){
     </section>
 
     {(data?.worker_errors||[]).length>0&&<section className="m-panel la-errors" data-worker-errors>
-      <h3 className="la-h"><AlertTriangle size={16}/>Workers sending back errors<small className="sd-desc">A job’s run can show as succeeded while the worker it calls refuses the work. These are the error replies from the last few hours.</small></h3>
-      <div className="cf-table-wrap"><table className="cf-table la-table"><thead><tr><th>Reply</th><th>What it means</th><th>How often</th><th>Last</th></tr></thead>
+      <h3 className="la-h"><AlertTriangle size={16}/>Workers sending back errors<small className="sd-desc">A job’s run can show as succeeded while the worker it calls refuses the work. These are the error replies from the last few hours. Mark one as seen once it is understood; it shows again only if it happens again.</small></h3>
+      <div className="cf-table-wrap"><table className="cf-table la-table"><thead><tr><th>Job</th><th>Reply</th><th>What it means</th><th>How often</th><th>Last</th>{rank>=4&&<th>Action</th>}</tr></thead>
         <tbody>{data.worker_errors.map((e,i)=><tr key={i} data-worker-error={e.status??'none'}>
+          <td><strong>{e.job||e.function||'Unknown job'}</strong>{e.job&&e.function?<small className="sd-desc">{e.function}</small>:null}</td>
           <td><span className="la-state failing"><AlertTriangle size={13}/>{e.timed_out?'Timed out':e.status==null?'No reply':`Error ${e.status}`}</span><small className="sd-desc la-msg">{e.message||'—'}</small></td>
           <td>{errorReading(e)}</td>
           <td>{fmtNumber(e.count)}</td>
-          <td>{ago(e.last,now)}<small className="sd-desc">{melb(e.last)}</small></td></tr>)}</tbody></table></div>
+          <td>{ago(e.last,now)}<small className="sd-desc">{melb(e.last)}</small></td>
+          {rank>=4&&<td><Button compact disabled={busy} onClick={()=>seen(e)} data-error-seen>Mark as seen</Button></td>}</tr>)}</tbody></table></div>
     </section>}
 
     {AREAS.filter(([a])=>byArea.has(a)).map(([area,title,about])=>{

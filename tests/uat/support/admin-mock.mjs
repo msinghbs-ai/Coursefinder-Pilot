@@ -19,6 +19,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_layer3_control_read: F.layer3Control,
     admin_data_flags_read: F.dataFlags,
     admin_data_flag_resolve: b => { calls.push(b); return F.dataFlags },
+    admin_live_error_ack: b => { calls.push({ errorSeen: b }); return { ...F.liveActivity, worker_errors: F.liveActivity.worker_errors.filter(e => !(e.status === b.p_status && e.message === b.p_message)) } },
     admin_layer3_control: b => { calls.push(b); return F.layer3Control },
     admin_automations_read: F.automations,
     admin_automation_control: b => { calls.push(b); return F.automations },
