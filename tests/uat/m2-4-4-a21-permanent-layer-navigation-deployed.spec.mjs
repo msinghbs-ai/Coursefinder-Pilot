@@ -43,8 +43,8 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await expect(page.locator('.m-sidebar')).toBeVisible()
     await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
     await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
-    await expect(workspace.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible()
-    await expect(workspace.getByText('Firecrawl used / limit',{exact:true}).first()).toBeVisible()
+    // Decision 222 (v2.15.149): the old pipeline's Start production enrichment is gone; Fetch an area drives the sweep.
+    await expect(workspace.getByRole('button',{name:'Start production enrichment',exact:true})).toHaveCount(0)
     await expect(page.getByRole('button',{name:'Close Layer 2'})).toHaveCount(0)
     await expect(page.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'a21-layer2-embedded')

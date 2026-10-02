@@ -36,10 +36,11 @@ test.describe('M2.5 Layer 2 terminal run observability correction @deployed',()=
     expect(migration).toContain("'child_jobs',coalesce(items.child_jobs,0)")
     expect(migration).toContain("'evidence_count',coalesce(ev.evidence_count,0)")
 
-    expect(ui).toContain("syncResult.status==='qualification_waiting'")
-    expect(ui).toContain('Server observed {fmtDate(syncResult.observed_at)}')
+    // Decision 222 (v2.15.149): Fetch an area drives the course-page sweep; the old pipeline's start, run and sync-result
+    // texts are gone with that pipeline.
+    expect(ui).not.toContain("syncResult.status==='qualification_waiting'")
     expect(ui).not.toContain('data-l2-latest-terminal="true"')
     expect(ui).toContain('data-l2-daily')
-    expect(ui).toContain("setError('Production request was accepted, but the operator view could not refresh:")
+    expect(ui).toContain("supabase.rpc('admin_coverage_fetch_area'")
   })
 })

@@ -27,12 +27,12 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
   test('Layer 2 uses production wording, canonical Jobs/Evidence links and actionable blockers only',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     // v2.15.128: Layer 2 tabs — the start action is on Fetch an area, progress and evidence links on History.
+    // Decision 222 (v2.15.149): Fetch an area drives the course-page sweep; History shows daily progress and the trace.
     let ws=await openLayer2Tab(page,'Fetch an area')
-    await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible()
+    await expect(ws.locator('[data-fetch-area]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     ws=await openLayer2Tab(page,'History')
-    await expect(ws.getByText(/Parent [0-9a-f]{8}…/i).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(ws.locator('[data-l2-daily]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(ws.getByText(/no manual per-Provider action is required/i)).toHaveCount(0)
-    await expect(ws.getByRole('button',{name:'Evidence',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     ws=await openLayer2Tab(page,'Overview')
     const blockerPanel=ws.locator('.l2o-blockers')
     if(await blockerPanel.count())await expect(blockerPanel.getByRole('heading',{name:'Action required',exact:true})).toBeVisible()

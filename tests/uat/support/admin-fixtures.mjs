@@ -445,3 +445,12 @@ export const liveActivity = {
       last: { start: '2026-10-01T21:39:00Z', status: 'failed', message: 'HTTP 401' }, queue: null, worker: null },
   ],
 }
+
+// Decision 222: Fetch an area (course-page sweep) and Websites to find
+export const fetchAreaOptions = { countries: [{ code: 'AU', name: 'Australia', providers: 1546, courses: 26103 }, { code: 'NZ', name: 'New Zealand', providers: 287, courses: 6475 }, { code: 'CA', name: 'Canada', providers: 34, courses: 2382 }] }
+export const fetchAreaScope = { items: [{ value: 'prov-latrobe', label: 'La Trobe University', meta: '248 courses · site found, 239 pages read' }], total: 1, offset: 0, has_more: false }
+export const fetchAreaPreview = { country: 'AU', scope_type: 'university', scope_id: 'prov-latrobe', providers: 1, courses: 248, sites: { known: 1, mapped: 1, not_found: 0, to_search: 0, failed: 0, not_queued: 0 }, pages: { found: 239, read: 239, to_read: 0, not_this_course: 9, no_page: 0 }, searches_waiting: 0, facts: { official_url: 239, english: 0, intakes: 23, provider_tuition: 0 }, facts_built_at: '2026-10-02T02:47:00Z', first_in_sweep: false }
+export const fetchAreaStarted = { joined: 0, site_search_again: 0, site_map_retry: 0, page_searches_queued: 0, pages_to_read_now: 0 }
+export const providerWebsites = { total: 2, can_edit: true, countries: { AU: 1, CA: 1 }, items: [
+  { provider_id: 'prov-macewan', name: 'Grant MacEwan University', country: 'CA', courses: 44, cricos: null, dli: 'O19092022262', searched_at: '2026-10-02T02:16:41Z', query: 'Grant MacEwan University official website', note: null, tried: ['https://www.macewan.ca/', 'https://en.wikipedia.org/wiki/MacEwan_University'] },
+  { provider_id: 'prov-small', name: 'Example Training College', country: 'AU', courses: 12, cricos: '01234A', dli: null, searched_at: '2026-10-01T02:16:41Z', query: 'Example Training College CRICOS 01234A', note: null, tried: [] }] }

@@ -59,6 +59,7 @@ export const PAGES = {
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
     { key: 'review', label: 'Review queue', min: 3 },
     { key: 'flags', label: 'Flagged values', min: 3 },
+    { key: 'websites', label: 'Websites to find', min: 3 },
     { key: 'sendback', label: 'Send back to AI', min: 3 },
     { key: 'rules', label: 'Fee rules', min: 3 },
     { key: 'blocks', label: 'Blocks', min: 5 },

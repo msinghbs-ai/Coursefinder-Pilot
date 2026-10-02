@@ -9,7 +9,7 @@ import React,{useEffect,useMemo,useRef,useState}from'react'
 import{Activity,AlertTriangle,CheckCircle2,CirclePause,Clock,Loader2,RefreshCw,UserCheck}from'lucide-react'
 import{adminRead,supabase}from'./lib/supabase'
 import{fmtNumber,fmtTime}from'./lib/format.js'
-import{errorReading}from'./lib/workerErrors.js'
+import{errorReading,errorSteps}from'./lib/workerErrors.js'
 import{Button}from'./ui-kit'
 
 const REFRESH_MS=20000
@@ -110,11 +110,11 @@ export default function LiveActivity({navigate,rank=0}){
 
     {(data?.worker_errors||[]).length>0&&<section className="m-panel la-errors" data-worker-errors>
       <h3 className="la-h"><AlertTriangle size={16}/>Workers sending back errors<small className="sd-desc">A job’s run can show as succeeded while the worker it calls refuses the work. These are the error replies from the last few hours. Mark one as seen once it is understood; it shows again only if it happens again.</small></h3>
-      <div className="cf-table-wrap"><table className="cf-table la-table"><thead><tr><th>Job</th><th>Reply</th><th>What it means</th><th>How often</th><th>Last</th>{rank>=4&&<th>Action</th>}</tr></thead>
+      <div className="cf-table-wrap"><table className="cf-table la-table"><thead><tr><th>Job</th><th>Reply</th><th>What it means and what to do</th><th>How often</th><th>Last</th>{rank>=4&&<th>Action</th>}</tr></thead>
         <tbody>{data.worker_errors.map((e,i)=><tr key={i} data-worker-error={e.status??'none'}>
           <td><strong>{e.job||e.function||'Unknown job'}</strong>{e.job&&e.function?<small className="sd-desc">{e.function}</small>:null}</td>
           <td><span className="la-state failing"><AlertTriangle size={13}/>{e.timed_out?'Timed out':e.status==null?'No reply':`Error ${e.status}`}</span><small className="sd-desc la-msg">{e.message||'—'}</small></td>
-          <td>{errorReading(e)}</td>
+          <td>{errorReading(e)}<small className="sd-desc la-todo" data-error-todo><b>What to do:</b> {errorSteps(e)}</small></td>
           <td>{fmtNumber(e.count)}</td>
           <td>{ago(e.last,now)}<small className="sd-desc">{melb(e.last)}</small></td>
           {rank>=4&&<td><Button compact disabled={busy} onClick={()=>seen(e)} data-error-seen>Mark as seen</Button></td>}</tr>)}</tbody></table></div>

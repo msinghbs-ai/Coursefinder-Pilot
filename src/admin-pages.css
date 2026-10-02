@@ -511,3 +511,5 @@ td>.l3v-model{display:block}
 .la .la-spin{animation:la-spin 1.2s linear infinite}
 @keyframes la-spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.la .la-spin{animation:none}}
+
+/* Decision 222: Websites to find */.wtf-tried{margin:4px 0 0;padding-left:16px;font-size:var(--cf-fs-xs);max-width:420px}.wtf-tried a{word-break:break-all}.wtf-edit{display:flex;gap:6px;align-items:center;min-width:240px}.wtf-edit input{flex:1;min-width:0}.la-todo{display:block;margin-top:4px}
