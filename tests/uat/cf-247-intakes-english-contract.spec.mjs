@@ -33,7 +33,7 @@ test('Decision 227: English policy and calendar documents are read, parsed into 
   expect(gate).toContain('bff1631490ab3348960e8564b8909eba')
   for (const m of [read, prop, plan, gate]) expect(m).not.toMatch(/\bdrop\s|delete\s+from|truncate|on delete cascade/i)
   const w = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toMatch(/coverage-sweep-worker-v0\.9\.[5-9]/)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(?:9\.[5-9]|1\d\.\d+)/)
   expect(w).toContain('mode === "provider_facts_inspect" || mode === "provider_facts_parse"')
   expect(w).toContain('svc_provider_policy_record')
 })

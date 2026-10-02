@@ -30,6 +30,12 @@ export function identity(html: string, text: string, courseTitle: string, course
   if (codeOnly) return null
   const t = norm(courseTitle), h1 = norm(h1Of(html)), title = norm(titleOf(html))
   if (t && (h1 === t || title === t || title.startsWith(t + " ") || h1.startsWith(t + " international"))) return "exact_title"
+  // v0.5.7 (2 Oct 2026): a vocational page often puts the national qualification code before the title
+  // ("CHC52025 Diploma of Community Services", "10973NAT Certificate IV in ..."): the title after that code is still
+  // the exact course title. Only the code is removed; everything else must match exactly.
+  const codeless = (s: string) => clean(s).replace(/^(?:[A-Z]{3,4}\d{5}|\d{5}NAT)\s*[-–—:|]?\s*/, "")
+  const titleHead = clean(titleOf(html)).split(/\s+[|–—]\s+|\s+-\s+/)[0] || ""
+  if (t && t.split(" ").length >= 2 && (norm(codeless(h1Of(html))) === t || norm(codeless(titleHead)) === t)) return "exact_title"
   return titleLevel(h1Of(html), titleOf(html), text, courseTitle)
 }
 
