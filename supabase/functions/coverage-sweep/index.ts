@@ -44,7 +44,8 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.9.5";
+const WORKER = "coverage-sweep-worker-v0.10.0";
+// v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
 // deterministic) into proposals a Platform Admin approves; modes provider_facts_inspect and provider_facts_parse work on
 // the stored copies (no Firecrawl credit).
@@ -84,6 +85,23 @@ const WORKER = "coverage-sweep-worker-v0.9.5";
 // map runs when the site maps give fewer course pages than 60% of the provider's courses, and a second map focused on
 // "course" only when still short (at most 2 credits per provider). Binding runs separately (cron coverage-bind).
 const UA = "Mozilla/5.0 (compatible; CourseFinder-Pilot/coverage-0.1; +https://coursefinder-pilot.techm.workers.dev)";
+// Map-first link matcher (v0.10.0): one pinned model, structured output; it chooses a page, it never admits a value.
+export const AI_MATCH_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";
+export const AI_MATCH_SYSTEM = `You match a course from a government register to its own page on the education provider's website. You get the course (title, level, code) and a numbered list of candidate pages from the provider's site (address, and page title when known).
+Pick the one page that is this course's own page: the page for this exact qualification at this level.
+Do not pick: a list, search or faculty page; a subject-area page; a page for a different level, major, specialisation, campus-only variant or double degree; a page about entry requirements, fees, careers, news, events, research or applying.
+A closely named qualification is a different course (for example "Bachelor of X (Honours)" when the course is "Bachelor of X", or "Bachelor of X/Bachelor of Y" when the course is "Bachelor of X"). A register title may add "(International)" or a short code in brackets; the provider's page may leave these out.
+If no candidate is clearly this course's own page, answer 0. Answer JSON only: reason first, then choice (the candidate number, or 0).`;
+export function aiMatchRequest(it: { title: string; code: string | null; level: string | null; provider: string; candidates: { url: string; title: string }[] }) {
+  const list = it.candidates.map((x, i) => `${i + 1}. ${x.url}${x.title ? ` | ${x.title}` : ""}`).join("\n");
+  return {
+    model: AI_MATCH_MODEL, temperature: 0, max_tokens: 300, usage: { include: true }, provider: { require_parameters: true },
+    response_format: { type: "json_schema", json_schema: { name: "page_choice", strict: true, schema: { type: "object", additionalProperties: false, required: ["reason", "choice"],
+      properties: { reason: { type: "string" }, choice: { type: "integer", minimum: 0, maximum: it.candidates.length } } } } },
+    messages: [{ role: "system", content: AI_MATCH_SYSTEM },
+      { role: "user", content: `Course: ${it.title}\nLevel: ${it.level || "not given"}\nCode: ${it.code || "none"}\nProvider: ${it.provider}\nCandidates:\n${list}` }],
+  };
+}
 const BUDGET_MS = 110_000;
 const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
 
@@ -694,6 +712,37 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, pages: out, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
+    // v0.10.0 (2 Oct 2026, map-first link matcher): for a course with no verified page, one pinned model picks the
+    // course's own page from the 25 closest addresses in its university's stored site map, or none. The choice must be
+    // one of those addresses (checked again in the database); the page is then read by mode read and accepted only under
+    // the identity rule. Nothing is admitted here. No Firecrawl credit is used.
+    if (mode === "ai_match") {
+      const key = Deno.env.get("OPENROUTER_API_KEY");
+      if (!key) return j({ ok: false, mode, error: "OPENROUTER_API_KEY not set", workerVersion: VERSION }, 503);
+      const items: { id: number; title: string; code: string | null; level: string | null; provider: string; country: string; candidates: { url: string; title: string }[] }[] =
+        await rpc("svc_coverage_ai_match_next", { p_limit: Math.min(Number(body.limit || 40), 80) });
+      const tally: Record<string, number> = {}; let cost = 0;
+      await pool(items, Math.min(Number(body.concurrency || 8), 12), async (it) => {
+        if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_coverage_ai_match_record", { p_id: it.id, p_url: null, p_answer: null, p_model: AI_MATCH_MODEL, p_cost: 0, p_error: "time budget" }); return }
+        let url: string | null = null, answer: unknown = null, err: string | null = null, c1 = 0;
+        try {
+          const r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+            body: JSON.stringify(aiMatchRequest(it)), signal: AbortSignal.timeout(45000) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 160)}`);
+          if (d?.model && d.model !== AI_MATCH_MODEL) throw Error(`returned model ${d.model}`);
+          c1 = Number(d?.usage?.cost || 0);
+          const a = JSON.parse(String(d?.choices?.[0]?.message?.content || "{}"));
+          const n = Number(a?.choice);
+          answer = { choice: n, reason: String(a?.reason || "").slice(0, 400) };
+          if (Number.isInteger(n) && n >= 1 && n <= it.candidates.length) url = it.candidates[n - 1].url;
+        } catch (e) { err = e instanceof Error ? e.message : String(e) }
+        cost += c1;
+        const st = await rpc("svc_coverage_ai_match_record", { p_id: it.id, p_url: url, p_answer: answer, p_model: AI_MATCH_MODEL, p_cost: c1, p_error: err });
+        tally[st] = (tally[st] || 0) + 1;
+      });
+      return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
     if (mode === "read") {
       const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const tally: Record<string, number> = {};
@@ -748,7 +797,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, ai_match, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
