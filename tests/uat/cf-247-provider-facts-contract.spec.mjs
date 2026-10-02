@@ -88,6 +88,8 @@ test.describe('browser: fee schedules panel', () => {
     await page.goto('/#layer-4-review?tab=attributes')
     const fs = page.locator('[data-fee-schedules]')
     await expect(fs).toContainText('Waiting for approval')
+    await expect(fs.getByLabel('Show schedules')).toHaveValue('waiting') // v2.15.158: opens on what is waiting
+    await fs.getByLabel('Show schedules').selectOption('all')
     await expect(fs.locator('[data-doc="fs2"]')).toContainText('20 fees added')
     await fs.getByRole('button', { name: 'Australian Catholic University' }).click()
     await expect(fs.locator('[data-fee-rows] [data-outcome="differs"]')).toContainText('Different fee on record (not changed)')
