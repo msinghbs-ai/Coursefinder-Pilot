@@ -78,3 +78,10 @@ test('platform guide explains NZ page rules and fee schedule scope', () => {
   expect(g).toContain('Fee schedules follow the country and university chosen above')
   expect(g).toContain('NZQA title without')
 })
+
+test('rejected NZ pages flow into the title search each minute (non-CRICOS courses only)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261002181500_cf247_nz_mismatch_to_search.sql', 'utf8')
+  expect(m).toContain("if md5(s) is distinct from '7895c1193a3cae89d5c5bb4c0319c62a' then raise exception")
+  expect(m).toContain("and coalesce(c.course_code, '') !~ '^[0-9]{6}[0-9A-Z]$'")
+  expect(m).toContain("and not exists (select 1 from pipeline.manual_locks k where k.entity = 'course' and k.entity_id = p.course_id and k.field = 'official_url')")
+})
