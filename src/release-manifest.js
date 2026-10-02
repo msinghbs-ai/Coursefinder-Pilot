@@ -1,21 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.154'
-export const PACKAGE_VERSION='0.1.81'
+export const UI_VERSION='2.15.155'
+export const PACKAGE_VERSION='0.1.82'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'2 Oct 2026',
-  title:'English policies applied; intake cascade step 2',
+  date:'3 Oct 2026',
+  title:'Bulk English policy approval; search budget; Canada and New Zealand course pages',
   changes:[
-    'English policies from 11 universities approved: 632 courses with no English requirement now carry their university policy score. Values already on record, including any that differ, are left as they are.',
-    'English policies: the agree and differ counts are kept and refreshed every 10 minutes, so the list opens quickly; approval is written within 10 minutes.',
-    'Intakes: step 2 of the AI cascade, Claude Haiku 4.5, is switched on. A page step 1 cannot settle goes to Haiku before a person. Rolling or monthly intakes stay with a person.',
-    'Intake check v1.3.0 was built as a separate contract with two paused candidate models. Both failed qualification on the frozen holdout, so nothing changed in the live cascade.'
+    'Coverage › Attributes › English policies: tick several and choose Approve selected or Reject selected. Select all that can be approved leaves out documents most course pages disagree with.',
+    'Approving one document of a university closes its other waiting documents of the same kind, so an approved university no longer shows a greyed Approve button.',
+    'Jobs › Priority queue › Course-page search budget: see this month\'s search credits and raise the monthly cap (Platform Admin).',
+    'Australian English is also taken from a page whose title is exactly the course title (the CRICOS code is no longer required for English).',
+    'Canada: course pages are searched by the title\'s words and accepted when the heading names the same field and the same award; university websites are accepted when the full name is on the home page and the address fits the name.',
+    'New Zealand: a university page whose heading is exactly the degree name (optionally with its abbreviation) is accepted for degrees, checked by hand before it was switched on.'
   ],
   bugFixes:[
-    'English policy list and approval no longer time out on large universities.'
+    'Universities with an approved English policy no longer show other documents waiting with a greyed Approve button.'
   ]
 }
 

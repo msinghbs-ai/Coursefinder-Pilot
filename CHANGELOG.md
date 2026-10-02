@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.82 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.155** (English policies: bulk approval and one approved document per university; course-page search budget on the Priority queue screen; overnight admission rules for Australia, Canada and New Zealand, Decisions 233-236).
+- Database: reference sources and website hints; Australian English by exact title; English policy flag rule; Canada and New Zealand pinned first; Canadian search by title words; Canadian field + award and New Zealand degree-name page rules; bulk policy decisions; search cap setting.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.81 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.154** (English policies applied for 11 universities, faster policy counts, intake cascade step 2, intake check v1.3.0 contract (not qualified)).

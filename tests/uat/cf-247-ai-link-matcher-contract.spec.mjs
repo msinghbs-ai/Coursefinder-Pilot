@@ -101,3 +101,20 @@ test('Decision 235: Canadian field + award rule (Canada only) and the website na
   expect(siteNameMatch(home, '© British Columbia Institute of Technology', 'British Columbia Institute of Technology', '', 'www.bcit.ca')).toBe('name_in_page_and_domain')
   expect(siteNameMatch(home, '© British Columbia Institute of Technology', 'British Columbia Institute of Technology', '', 'www.studyinbc.ca')).toBe(null)
 })
+
+test('Decision 236: New Zealand degree name (NZ only), with an optional abbreviation', async () => {
+  const { identity, nzDegreeName } = await bundle('supabase/functions/coverage-sweep/extract.ts', 'ex236')
+  const nz = (h1, t, text = 'x') => nzDegreeName(h1, '', text, t) === 'degree_name'
+  expect(nz('Master of Fire Engineering Studies', 'Master of Fire Engineering Studies (Level 9)')).toBe(true)
+  expect(nz('Master of Literature MLitt', 'Master of Literature (Level 9)')).toBe(true)
+  expect(nz('Bachelor of Arts / Bachelor of Commerce Conjoint BA/BCom', 'Conjoint: Bachelor of Arts/Bachelor of Commerce (Level 7)')).toBe(false)
+  expect(nz('Postgraduate Certificate in Design PGCertDes', 'Certificate in Design (Level 5)')).toBe(false)
+  expect(nz('Bachelor of Arts Honours', 'Bachelor of Arts (Level 7)')).toBe(false)
+  expect(nz('Master of Science', 'Master of Science in Physics (Level 9)')).toBe(false)
+  expect(nz('Master of Fine Arts', 'Master of Fine Arts (Level 9)', 'master of fine arts level 8')).toBe(false)
+  expect(nz('Master of Arts', 'Master of Arts (Level 9)')).toBe(false)
+  expect(nz('Bachelor of Laws LLB', 'Bachelor of Laws (Level 7)')).toBe(false)
+  expect(nz('Master of Planning', 'Master of Planning (Level 9)')).toBe(true)
+  expect(identity('<h1>Master of Literature MLitt</h1>', 'x', 'Master of Literature (Level 9)', '', false, 'AU')).toBe(null)
+  expect(identity('<h1>Master of Literature MLitt</h1>', 'x', 'Master of Literature (Level 9)', '', false, 'NZ')).toBe('degree_name')
+})

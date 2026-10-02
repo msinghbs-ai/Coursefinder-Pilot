@@ -70,6 +70,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_ranking_link: b => { calls.push({ rankingLink: b }); return { linked: true, observations_linked: 7 } },
     admin_provider_policies_read: b => b?.p_id ? F.policyRows : { ...(b?.p_kind === 'intake_calendar' ? F.calendarPolicies : F.englishPolicies), can_decide: rank >= 6 },
     admin_provider_policy_decide: b => { calls.push({ policyDecide: b }); return { status: b.p_action === 'approve' ? 'approved' : 'rejected', written: 197 } },
+    admin_provider_policy_decide_bulk: b => { calls.push({ policyBulk: b }); return { done: b.p_ids.length, to_fill: 197, skipped: [] } },
+    admin_course_link_search_settings: b => { if (b?.p_monthly_credit_cap) calls.push({ searchCap: b }); return { enabled: true, monthly_credit_cap: b?.p_monthly_credit_cap ?? 50000, used_this_month: 49840, queued: 320, can_change: rank >= 6 } },
     admin_provider_fee_schedule_decide: b => { calls.push({ feeDecide: b }); return { decision: b.p_action === 'approve' ? 'approved' : 'rejected', written: 131 } },
     statistics_dataset_registry_read: F.statDatasets,
     statistics_dataset_registry_write: b => { calls.push({ datasetWrite: b }); return null },
