@@ -6,7 +6,7 @@
 //    to all (or the standard) courses of that level; course-by-course pages, English bands and faculty tables are
 //    reported, not turned into a default.
 //  * calendarStarts: the months in which each semester or trimester starts, from an academic calendar.
-export const POLICY_PARSER = "provider-policy-v0.2.0";
+export const POLICY_PARSER = "provider-policy-v0.2.1";
 
 export type TestCode = "IELTS" | "PTE" | "TOEFL_IBT" | "CAE";
 export type Req = { test_code: TestCode; overall_score: number; component_scores: Record<string, number>; quote: string };
@@ -45,7 +45,7 @@ export function parseScore(code: TestCode, text: string): { overall: number; com
   }
   if (overall == null) return null;
   const comps: Record<string, number> = {};
-  const all = s.match(new RegExp(`no (?:individual |single |other )?(?:band|section|sub-?test|sub-?score|skill|component|communicative skill|score)s?(?: score)?(?: (?:less|lower) than| below| under)\\s*${NUM}`, "i"))
+  const all = s.match(new RegExp(`no (?:individual |single |other )?(?:band|section|sub-?test|sub-?score|skill|component|communicative skill|score)s?(?: score)?(?: (?:less|lower) than| below| under)\\s*(?:an? )?${NUM}`, "i"))
     || s.match(new RegExp(`${NUM}\\s*(?:or (?:above|higher|more|better)\\s*)?(?:in|for|on) (?:each|all|every)(?: of the)?(?: four)?(?: (?:band|section|sub-?test|skill|component|communicative skill|sub-?score)s?)?`, "i"))
     || s.match(new RegExp(`(?:each|all|every) (?:band|section|sub-?test|skill|component|communicative skill|sub-?score)s?(?: (?:of|at least|minimum|min\\.?))*\\s*[:\\-]?\\s*${NUM}`, "i"))
     || s.match(new RegExp(`(?:minimum|min\\.?) (?:band|section|sub-?test|skill|component|sub-?score)(?: score)?(?: of)?\\s*${NUM}`, "i"));
@@ -269,7 +269,8 @@ export function englishPolicy(md: string) {
   if (!levelled.length) {
     // one requirement stated for the whole document with no level: offered for both levels, flagged
     const loose = statements.filter((x) => x.isDefault && !x.level);
-    const keys = new Set(loose.flatMap((x) => x.reqs.filter((r) => r.test_code === "IELTS").map((r) => r.overall_score)));
+    // every IELTS score anywhere in the document (named courses included) must be the same one
+    const keys = new Set(statements.flatMap((x) => x.reqs.filter((r) => r.test_code === "IELTS").map((r) => r.overall_score)));
     if (loose.length && keys.size === 1 && !signals.has("bands") && !signals.has("by_faculty")) { loose.forEach((x) => x.reqs.forEach((r) => put("both", r))); caveats.add("level_not_stated") }
   }
   const usedDefault = statements.filter((x) => x.isDefault);
