@@ -42,8 +42,11 @@ const SCH_FC_CAP = 3000;
 //   mode discover: Firecrawl map per provider website (1 credit per call), inside the monthly budget guard.
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
-const VERSION = "coverage-sweep-v0.5.5"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.9.3";
+const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
+const WORKER = "coverage-sweep-worker-v0.9.4";
+// v0.9.4 / extractor v0.5.6 (2 Oct 2026, Decision 224): amounts that are not tuition (bursaries, scholarships, loan caps,
+// health cover, salaries, deposits, payment limits, other fees) are left out; in a "Session fee / Course fee" table the
+// first amount is one session and the second the whole course.
 // v0.9.3 / extractor v0.5.5 (2 Oct 2026, Decision 223): a fee's audience follows the page's own domestic or international
 // view marker before it ("This content is for domestic students", "Local Student Fee"); course totals ("Total Indicative
 // Course Fees", "Estimated total course cost") are totals; re-extraction reads each page in its country's currency.

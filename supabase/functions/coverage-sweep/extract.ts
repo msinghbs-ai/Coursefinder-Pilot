@@ -100,17 +100,27 @@ export function fee(text: string, currency: "AUD" | "NZD" | "CAD" = "AUD") {
     const ownPre = lastAmt ? pre120.slice((lastAmt.index || 0) + lastAmt[0].length) : pre120
     const after60 = after.slice(0, 60), nextAmt = after60.search(/\$\s?\d[\d,]{2,}/)
     const local2 = clean(ownPre + " " + m[0] + " " + (nextAmt >= 0 ? after60.slice(0, nextAmt) : after60))
+    // v0.5.6: amounts that are not tuition at all: bursaries, scholarships, loan caps, health cover, salaries, deposits
+    // and payment limits, from the amount's own wording just before or after it
+    // the label before the amount, or one or two words straight after it ("AUD$5,000 Regional bursary")
+    const label = clean(ownPre.slice(-80)), tail = (nextAmt >= 0 ? after60.slice(0, nextAmt) : after60)
+    const notTuition = (!/(?<!non[- ])tuition/i.test(label.slice(-40)) && /(bursary|scholarship|worth up to|student loan|vsl\b|loan cap|health cover|oshc|salary|earnings?\b|deposit|accept payment of more than|refund|application fee|enrolment fee|enrollment fee|materials? fee|resource fee|uniform|ppe\b|non[- ]tuition|service fee|amenit|levy|insurance|accommodation|living cost|airport|homestay)[^$]{0,40}$/i.test(label))
+      || /^[\s*)\]-]*(?:[A-Za-z]+\s){0,2}(bursary|scholarship|salary|health cover|oshc|deposit)\b/i.test(tail)
+      || /not accept payment of more than\s*$/i.test(label)
+    // UOW-style table "Session fee* Course fee*": the first amount of each row is one session, the second the course
+    const sessionHdr = before.search(/session fee\*?\s+course fee\*?/i)
+    const sessionCol = sessionHdr >= 0 ? ([...before.slice(sessionHdr).matchAll(/\$\s?\d[\d,]{2,}/g)].length % 2 === 0 ? "session" : "course") : null
     // a fee for part of a year ("Study Period 1: $11,484", "Trimester $12,844", "per unit") is not an annual fee
-    const partial = /(study period|trimester|semester|term|per unit|per subject|per credit|unit fee|per course unit)\s*\d?\s*:?\s*(fees?)?\s*:?\s*$/i.test(clean(ownPre)) || /^\s*(per|a|each)\s+(unit|subject|credit|trimester|semester|term|study period)\b/i.test(after60)
-    const total = /(total (indicative |estimated |course |program(me)? )?(tuition )?fees?|total (indicative |estimated )?(course |program(me)? )+(tuition )?(fees?|costs?)|estimated total (course |program(me)? )?(fees?|costs?)|total cost|course total|entire (course|program)|full (course|program)|\(\s*20[2-3]\d\s+total\s*\)|fee to complete|full fee to complete)/i.test(local2)
-    const annualLocal = !partial && /(per year|a year|per annum|annual|first[- ]year|\(\s*20[2-3]\d\s+annual\s*\))/i.test(local2)
+    const partial = sessionCol === "session" || /\b\d{1,3}\s*x\s*$/i.test(ownPre) || /(study period|trimester|semester|term|per unit|per subject|per credit|unit fee|per course unit)\s*\d?\s*:?\s*(fees?)?\s*:?\s*$/i.test(clean(ownPre)) || /^\s*(per|a|each)\s+(unit|subject|credit|trimester|semester|term|study period|session)\b/i.test(after60)
+    const total = sessionCol === "course" || /(total (indicative |estimated |course |program(me)? )?(tuition )?fees?|total (indicative |estimated )?(course |program(me)? )+(tuition )?(fees?|costs?)|estimated total (course |program(me)? )?(fees?|costs?)|total cost|course total|entire (course|program)|full (course|program)|\(\s*20[2-3]\d\s+total\s*\)|fee to complete|full fee to complete)/i.test(local2)
+    const annualLocal = !partial && /(per year|a year|per annum|annual|first[- ]year|for 1 (?:yr|year)|1 year full[- ]time|\(\s*20[2-3]\d\s+annual\s*\))/i.test(local2)
     const tuition = /(tuition|fee)/i.test(context)
     const explicitAud = own ? own.explicit.test(token) : /(?:AUD\s*|A\$|AU\s?\$)\s*[\d,]+/i.test(token)
     const cricosNear = /CRICOS(?:\s+Code)?/i.test(near)
     const year = (after.match(/\b(20[2-3]\d)\b/) || before.slice(-80).match(/\b(20[2-3]\d)\b/) || [])[1]
-    const score = (international ? 5 : 0) + (cricosNear ? 4 : 0) + (explicitAud ? 4 : 0) + (indicative ? 3 : 0) + (tuition ? 1 : 0) - (domestic ? 8 : 0) - (total && !annualLocal ? 1 : 0) - (partial ? 3 : 0) // v0.5.5: an annual fee outranks a course total of equal standing
-    return { amount, score, international, domestic, indicative, total, annualLocal, partial, fee_year: year ? Number(year) : null, context: context.slice(0, 300) }
-  }).filter((r) => r.amount >= 1000 && r.amount <= 500000).sort((a, b) => b.score - a.score || b.amount - a.amount)
+    const score = (international ? 5 : 0) + (cricosNear ? 4 : 0) + (explicitAud ? 4 : 0) + (indicative ? 3 : 0) + (tuition ? 1 : 0) + (/(?<!non[- ])tuition(?: fees?)?\s*:?\s*$/i.test(label) ? 1 : 0) - (domestic ? 8 : 0) - (total && !annualLocal ? 1 : 0) - (partial ? 3 : 0) // v0.5.5: an annual fee outranks a course total of equal standing
+    return { amount, score, international, domestic, indicative, total, annualLocal, partial, notTuition, fee_year: year ? Number(year) : null, context: context.slice(0, 300) }
+  }).filter((r) => r.amount >= 1000 && r.amount <= 500000 && !r.notTuition).sort((a, b) => b.score - a.score || b.amount - a.amount)
   if (!rows.length) return { value: null, safe: false, ambiguous: false, rejection_reason: "no_fee_candidate", candidates: [] as unknown[], ...(nz ? { currency } : {}) }
   const top = rows[0], same = rows.filter((r) => r.score === top.score && r.amount !== top.amount)
   const ambiguous = same.length > 0, safe = top.score >= 4 && !ambiguous && !top.domestic

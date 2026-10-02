@@ -33,9 +33,27 @@ test('reader: view markers, totals and part-year fees', async () => {
   expect(plain.value).toBe(42000); expect(plain.basis).toBe('annual')
 })
 
+test('reader v0.5.6: amounts that are not tuition are left out; session and course columns; units', async () => {
+  const { fee } = await extractor()
+  for (const t of [
+    'TAFE fees and charges AUD$5,000 Regional bursary AUD$5,000 WA Regional TAFE International Student Bursary',
+    'who can demonstrate circumstances which impact their study; worth up to $5,000 . Andreas Florez Music Equity Scholarship',
+    'through a VET Student Loan (VSL) 2026 VET Student Loan cap for Diploma of Business: $12858 2026 VET Student Loan cap for',
+    'Single Overseas Student Health Cover $ 550 per Annum Approximately Family Overseas Student Health Cover $ 5000 per Annum',
+    'Operations Manager Possible salary approximately A$73,000.00 /year',
+    'would not accept payment of more than $1500 from each individual student prior to the commencement',
+  ]) expect(fee(t).candidates).toHaveLength(0)
+  const uow = fee('International Course fees table Campus Delivery method Session fee* Course fee* Wollongong On Campus $19488 (2026) $116928 (2026) * Session fees are for one session for the year shown.')
+  expect(uow.candidates.find(c => c.amount === 19488).partial).toBe(true); expect(uow.candidates.find(c => c.amount === 116928).total).toBe(true)
+  expect(fee('Fees International Annual Tuition Fee $21,936 Annual Service Fee $312 Estimated Annual Fee $22,248 Service & Amenity Fees').value).toBe(21936)
+  expect(fee('Bachelor of Music International Fees Units x Costs ($AUD) 22 x $3,495 1 x $6,990 Annual Course Fee (Indicative)* (based on 1.0 EFTSL**) $27,960 AUD Plus Student Services').value).toBe(27960)
+  expect(fee('International fee Fees are per 48 credit points which represents a standard full-time course load for a year. The fees for 2027 are: General education studies - D60020: A$45,340').value).toBe(45340)
+  expect(fee('Fees for overseas students Tuition fee $28,000 Non tuition fee $3,000 (Includes uniform) Estimated total course cost $31,000').candidates.some(c => c.amount === 3000)).toBe(false)
+})
+
 test('worker and migrations', async () => {
   const ix = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(ix).toContain('const VERSION = "coverage-sweep-v0.5.5";')
+  expect(ix).toMatch(/const VERSION = "coverage-sweep-v0\.5\.[5-9]";/)
   expect(ix).toContain('fee: fee(text, currencyFor(r.country))')
   const a = await fs.readFile('supabase/migrations/20261002182100_cf247_l4_stale_tuition_answered.sql', 'utf8')
   expect(a).toContain("set status = 'superseded'"); expect(a).toContain("(g.candidates->'fee'->>'value')::numeric = f.amount")
