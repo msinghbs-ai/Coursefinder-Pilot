@@ -139,6 +139,8 @@ export function nzDegreeName(rawH1: string, rawTitle: string, text: string, cour
   if (!/^(bachelor|graduate|postgraduate|master|doctor)\b/i.test(rawBase) || /(conjoint|double|combined|\/)/i.test(rawBase)) return null
   const base = normNz(rawBase)
   if (base.split(" ").length < 3) return null
+  // a broad degree taught in many subjects has a page per subject ("Master of Arts" on the Linguistics page): never by name
+  if (/^(bachelor|master|doctor) of (arts|science|commerce|philosophy|business|education|engineering|music|fine arts|laws|health science|design)( with honours| honours)?$/.test(base)) return null
   const titleHead = clean(rawTitle).split(/\s+[|\u2013\u2014:-]\s+|\s*\|\s*/)[0] || ""
   for (const raw of [clean(rawH1), titleHead]) {
     if (!raw) continue
