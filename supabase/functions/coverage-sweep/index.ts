@@ -45,7 +45,7 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.13.0";
+const WORKER = "coverage-sweep-worker-v0.13.1";
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -420,9 +420,16 @@ Deno.serve(async (req) => {
       const schema = intake
         ? { type: "object", properties: { status: { type: "string", enum: ["months", "not_stated"] }, months: { type: "array", items: { type: "integer", minimum: 1, maximum: 12 } }, quote: { type: "string" } }, required: ["status", "months", "quote"] }
         : { type: "object", properties: { status: { type: "string", enum: ["stated", "not_stated"] }, tests: { type: "array", items: { type: "object", properties: { test: { type: "string", enum: ["IELTS", "PTE", "TOEFL_IBT", "CAE"] }, overall: { type: "number" }, min_band: { type: ["number", "null"] } }, required: ["test", "overall"] } }, quote: { type: "string" } }, required: ["status", "tests", "quote"] };
+      // v0.13.1: two prompt wordings, chosen by body.prompt_version (1 = the strict wording of the first run, 2 = plainer);
+      // the wording used is recorded with every answer so runs are comparable.
+      const pv = Number(body.prompt_version || 2) === 1 ? 1 : 2;
       const prompt = intake
-        ? "This is one course's page. Give the months of the year in which this course starts (intakes) for new students, ONLY where the page states them as month names or full dates for this course. Semester, trimester or term names without a month are NOT months: then status is not_stated and months is empty. Do not infer. quote = the exact words from the page that state the months."
-        : "This is one course's page. Give the English language test scores this course requires of international applicants, ONLY where the page states them for this course: IELTS, PTE, TOEFL_IBT or CAE with the overall score and the minimum band if stated. A statement that English is required without a score, or a link to a policy, is not_stated. Do not infer. quote = the exact words from the page that state the scores.";
+        ? pv === 1
+          ? "This is one course's page. Give the months of the year in which this course starts (intakes) for new students, ONLY where the page states them as month names or full dates for this course. Semester, trimester or term names without a month are NOT months: then status is not_stated and months is empty. Do not infer. quote = the exact words from the page that state the months."
+          : "Extract the intake (start) months of this course from this page. Look for intakes, intake dates, start dates, commencement dates or course start lists. When the page names months (for example 'February, May, August') or full dates (for example '14 September 2026'), set status to 'months' and list the month numbers (1 to 12). When the page gives only semester, trimester or term names with no month or date, or says nothing about when the course starts, set status to 'not_stated' and months to an empty list. quote: copy the exact line or sentence from the page that states the intakes."
+        : pv === 1
+          ? "This is one course's page. Give the English language test scores this course requires of international applicants, ONLY where the page states them for this course: IELTS, PTE, TOEFL_IBT or CAE with the overall score and the minimum band if stated. A statement that English is required without a score, or a link to a policy, is not_stated. Do not infer. quote = the exact words from the page that state the scores."
+          : "Extract the English language test scores this course requires of international applicants from this page. Look for entry requirements, English language requirements or admission criteria. When the page states a score for IELTS, PTE, TOEFL_IBT or CAE, set status to 'stated' and list each test with its overall score and the minimum band (min_band) if given. When the page only says English is required, or links to a policy, without a score, set status to 'not_stated' and tests to an empty list. quote: copy the exact line or sentence from the page that states the scores.";
       const cases: { case_id: string; task_class: string; url: string; gold: any }[] = await rpc("svc_fc_extract_cases", { p_task_class: task, p_offset: Number(body.offset || 0), p_limit: Math.min(Number(body.limit || 50), 100) });
       const tally: Record<string, number> = {}; let credits = 0;
       const norm = (s: string) => String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
@@ -438,6 +445,8 @@ Deno.serve(async (req) => {
           c1 = Number(d?.data?.metadata?.creditsUsed || 5); credits += c1;
           answer = d.data.json || null; const md = String(d.data.markdown || "");
           const q = norm(answer?.quote || ""); quoteIn = q.length >= 8 ? norm(md).includes(q) : false;
+          // v0.13.1: what Firecrawl rendered is recorded in brief (size, head) so a miss can be told from an unread page
+          if (answer && typeof answer === "object") answer = { ...answer, _diag: { prompt_version: pv, md_chars: md.length, md_head: md.replace(/\s+/g, " ").slice(0, 300), status_code: d?.data?.metadata?.statusCode ?? null } };
           const g = k.gold || {};
           if (intake) {
             const gm = Array.isArray(g.months) ? g.months : [], am = Array.isArray(answer?.months) ? answer.months : [];
