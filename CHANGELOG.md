@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.83 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.156** (Course-page search budget moved to the top of Jobs › Priority queue).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.82 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.155** (English policies: bulk approval and one approved document per university; course-page search budget on the Priority queue screen; overnight admission rules for Australia, Canada and New Zealand, Decisions 233-236).
