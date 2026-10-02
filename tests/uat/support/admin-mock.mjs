@@ -15,6 +15,10 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
   }
   const calls = []; page.l3calls = calls
   const rpc = {
+    // Decision 222: Fetch an area on the course-page sweep; Websites to find
+    admin_coverage_fetch_area: b => { calls.push({ fetchArea: b }); return b.p_action === 'options' ? F.fetchAreaOptions : b.p_action === 'scope_page' ? F.fetchAreaScope : b.p_action === 'start' ? { ...F.fetchAreaPreview, first_in_sweep: true, started: F.fetchAreaStarted } : F.fetchAreaPreview },
+    admin_provider_websites: F.providerWebsites,
+    admin_provider_website_set: b => { calls.push({ websiteSet: b }); return { ...F.providerWebsites, total: F.providerWebsites.total - 1, items: F.providerWebsites.items.filter(i => i.provider_id !== b.p_provider_id) } },
     admin_layer3_operations: F.layer3Operations,
     admin_layer3_control_read: F.layer3Control,
     admin_data_flags_read: F.dataFlags,

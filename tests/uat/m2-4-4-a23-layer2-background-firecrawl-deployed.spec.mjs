@@ -4,17 +4,17 @@ import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINI
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-4-4-a23-layer2-background-firecrawl',change_control:'CF-CHG-20260830-048'})})
- test('operator Layer 2 shows effective background policy, not manual qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ // Decision 222 (v2.15.149): the old background pipeline (waves, qualification batches) is retired; Fetch an area puts an
+ // area first in the course-page sweep and shows no qualification knobs.
+ test('operator Fetch an area works on the course-page sweep, with no qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await clickPrimaryNav(page,'Layer 2 — Enrichment')
-  await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Fetch an area'}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT}) // v2.15.128
+  await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Fetch an area'}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})
   const ws=page.getByLabel('Layer 2 Operations');await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(ws.locator('[data-fetch-area]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toHaveCount(0)
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0);await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
-  await expect(ws.getByText('Firecrawl used / limit',{exact:true}).first()).toBeVisible()
-  await expect(ws.getByText(/Qualification Providers \/ batch/i)).toBeVisible()
-  await expect(ws.getByText('Each wave',{exact:true})).toBeVisible()
-  await expect(ws).toContainText(/identity check|identity samples/i)
-  await milestoneScreenshot(page,testInfo,'a23-layer2-background-policy')
+  await expect(ws.getByText(/Qualification Providers \/ batch/i)).toHaveCount(0)
+  await milestoneScreenshot(page,testInfo,'a23-layer2-fetch-area-sweep')
  }finally{await finish(testInfo,runtime)}})
 
  test('Administration owns Layer 2 configuration with role-appropriate edit controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{

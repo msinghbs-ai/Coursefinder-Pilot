@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.76 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.149** (Fetch an area on the course-page sweep; Websites to find; worker errors say what to do).
+- Migration 20261002182000 (applied): admin_coverage_fetch_area, Websites to find, 5-minute wait for the AI tuition check, faster tuition hand-off.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.75 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.148** (Layer 3 cascade never falls back to a switched-off model; pending cascade claims labelled).

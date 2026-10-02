@@ -21,10 +21,10 @@ test.describe('mocked browser', () => {
     await expect(ops.getByRole('heading', { name: 'Coverage and what is left' })).toBeVisible()
     await expect(ops.locator('.eops-hourly thead th')).toHaveCount(9)
     await expect(ops).toContainText('Passed to Layer 3 (AI)')
-    await expect(page.getByRole('button', { name: 'Start production enrichment' })).toHaveCount(0)
     await page.getByRole('tab', { name: 'Fetch an area' }).click()
-    await expect(page.getByRole('button', { name: 'Start production enrichment' })).toBeVisible()
-    await expect(page.getByText('41 sites checked · 145 still to check')).toBeVisible()
+    // Decision 222: Fetch an area shows where the area stands in the course-page sweep
+    await expect(page.locator('[data-fetch-area]')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Start production enrichment' })).toHaveCount(0)
     await page.getByRole('tab', { name: 'History' }).click()
     // Decision 220: History shows each country's daily progress; the retired pipeline's run and fetch lists are gone.
     await expect(page.getByRole('heading', { name: 'Daily progress' })).toBeVisible()

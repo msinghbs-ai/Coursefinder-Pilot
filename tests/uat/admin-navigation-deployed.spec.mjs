@@ -29,8 +29,8 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     await loginAsUatUser(page);const l1=await openLayer1(page);await expect(l1.locator('.l1o-backdrop')).toHaveCount(0)
     const l2=await openLayer2Tab(page,'Fetch an area')
     await expect(l2.getByRole('heading',{name:'Fetch an area',exact:true})).toBeVisible()
-    await expect(l2.getByLabel('Layer 2 sync country')).toBeVisible()
-    await expect(l2.getByLabel('Layer 2 fetch scope')).toBeVisible()
+    await expect(l2.getByLabel('Fetch an area country')).toBeVisible() // Decision 222: course-page sweep
+    await expect(l2.getByLabel('Fetch an area scope')).toBeVisible()
     await expect(l2.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'layers1-2-canonical')
   }finally{await finish(testInfo,runtime)}})
