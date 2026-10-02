@@ -89,10 +89,31 @@ test('worker and database contract: nothing written to the catalogue, budget gua
   expect(w).toContain('robotsAllows(')
   expect(w).toContain('status = "needs_render"')
   expect(w).toContain('const ok = codeRe.test(htmlToText(html));')
-  expect(w).toContain('const units = /search$/.test(purpose) ? 2 : 1;')
+  expect(w).toContain('const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1;') // v0.13.0 counts a JSON-format scrape at 5 credits
   expect(w).toContain('(it.status === "bound" || it.priority === true) && (http === null')
   const m = fs.readFileSync('supabase/migrations/20260929120000_cf247_coverage_sweep.sql', 'utf8')
   expect(m).toContain('v_used:=v_used+coalesce((select sum(u.units) from pipeline.coverage_vendor_usage u')
   expect(m).toContain("case when by_code or (sc>=0.8 and sc-nxt>=0.1) then 'bound' else 'ambiguous' end")
   expect(m).not.toContain('insert into catalogue.')
+})
+
+// v0.13.0 (3 Oct 2026, Platform Admin "Yes, qualify now"): Firecrawl's own AI extraction is run against the frozen
+// holdouts and recorded only. It must not write a value, change a cascade tier, or run without a q-fcx- run label.
+test('Firecrawl AI extraction mode is qualification only: records outcomes, admits nothing', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const start = w.indexOf('if (mode === "fc_extract_qualify") {'), end = w.indexOf('if (mode === "openrouter_key") {')
+  expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start)
+  const block = w.slice(start, end)
+  expect(block).toContain('/^q-fcx-[a-z0-9.-]{3,60}$/.test(runLabel)')
+  expect(block).toContain('await rpc("svc_fc_extract_cases"')
+  expect(block).toContain('await rpc("svc_fc_extract_result"')
+  expect(block).toContain('useFc("fcx_qualify"')
+  expect(block).toContain('quoteIn === true') // a value counts as stated only when its quote is on the rendered page
+  for (const forbidden of ['svc_coverage_apply', 'coverage_apply_course', 'layer3_route_tiers', 'layer3_model_profiles', 'svc_coursefacts', 'svc_layer3_'])
+    expect(block).not.toContain(forbidden)
+  const m = fs.readFileSync('supabase/migrations/20261003000800_cf247_firecrawl_extract_qualify.sql', 'utf8')
+  expect(m).toContain("check (outcome in ('exact', 'exact_not_stated', 'wrong_admitted', 'missed', 'error'))")
+  expect(m).toContain("'pass_80_rule', (n >= 30 and ok::numeric / n >= 0.80 and wrong = 0)")
+  expect(m).not.toContain('layer3_route_tiers'); expect(m).not.toContain('insert into catalogue.')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
