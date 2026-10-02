@@ -35,7 +35,7 @@ function Rows({id}){
 const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 // Decision 217: follows the Coverage country and university filter (country/provider props)
 export default function FeeSchedules({country='',provider=null}={}){
-  const[data,setData]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[open,setOpen]=useState(null),[show,setShow]=useState('all'),[picked,setPicked]=useState(()=>new Set()),[progress,setProgress]=useState('')
+  const[data,setData]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[open,setOpen]=useState(null),[show,setShow]=useState('waiting'),[picked,setPicked]=useState(()=>new Set()),[progress,setProgress]=useState('')
   const load=async()=>{setErr('');try{const{data:d,error}=await supabase.rpc('admin_provider_fee_schedules_read',{p_source_id:null,p_limit:300});if(error)throw error;setData(d);setPicked(new Set())}catch(e){setErr(errText(e))}}
   useEffect(()=>{load()},[])
   const one=async(doc,action)=>{const{error}=await supabase.rpc('admin_provider_fee_schedule_decide',{p_source_id:doc.id,p_action:action,p_note:null});if(error)throw error}
