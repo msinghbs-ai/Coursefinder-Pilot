@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.87 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.160** (Settings page: every throttle, budget and page-identity proof editable in one place, by pipeline step).
+- Migration 20261003001200 adds admin_pipeline_settings_read/write.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.86 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.159** (course drawer opens on its values, each with its Change button; the foldable editor and the comparison strip are gone).

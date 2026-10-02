@@ -9,7 +9,7 @@ test('Regulatory settings merged into Layer 1; its Pilot reset and the readiness
   expect(PAGES.regulatory).toBeUndefined()
   expect(SECTIONS.find(s => s.label === 'Platform settings').pages).toEqual(['environment', 'scrapers', 'services', 'dataModel', 'migration'])
   expect(PAGES.migration.label).toBe('Go-live checklist')
-  expect(PAGES.environment.label).toBe('Environment & keys')
+  expect(PAGES.environment.label).toBe('Settings') // v2.15.160: the pipeline settings page, keys below
   expect(PAGES.layer1.tabs.find(t => t.key === 'batch')).toEqual({ key: 'batch', label: 'Manual batch runs', min: 6 })
   const r = resolveTarget('regulatory-settings')
   expect([r.page, r.tab]).toEqual(['layer1', 'batch'])

@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.159'
+export const GUIDE_REVIEWED_FOR = '2.15.160'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.' },
@@ -56,7 +56,7 @@ export const SCREENS = {
   jobs: { answers: 'Is every automation running?', read: ['Top cards: running, paused, runs and failures in 24 hours.', 'Each automation: what it does, how often, last run and its reason when it failed.'], act: ['Pause, resume, run now, change how often and how many per run (Pipeline Operator and above).', 'Priority queue › Course-page search budget (the first panel on the page): this month\'s search credits and the monthly cap; when the cap is reached searches wait. A Platform Admin can raise the cap there.'] },
   evidence: { answers: 'Which saved page or file supports a value?', read: ['Saved source pages and files, and what they changed.', 'Links from saved pages to the records they support are added every 10 minutes by Index evidence links; its progress is on Live activity.'], act: ['Open the evidence behind any value.'] },
   sources: { answers: 'Is every source the pipeline reads healthy?', read: ['Every source across all layers, with its health and history.'], act: ['Pause or re-check a source.'] },
-  environment: { answers: 'Are the outside services set up, and within budget?', read: ['Keys for outside services (never shown) and usage against budgets.'], act: ['Rotate a key (Platform Admin). Never paste keys into notes or tickets.'] },
+  environment: { answers: 'What is the pipeline allowed to do, how fast, and at what cost?', read: ['Every setting in one place, by pipeline step: universities per matcher run, matcher and search speed, pages read per batch, which page proofs admit each attribute per country, Layer 3 requests a day and daily spend guards, the Firecrawl limit and reserve.', 'Prompts and models are listed with their version, hash and holdout result; a prompt is never edited in place (Decision 238).', 'Keys for outside services (never shown) and usage against budgets.'], act: ['Change a number and Save (Platform Admin): it applies at once and is logged under Recent changes.', 'Tick or untick a page proof per country and attribute (Platform Admin): the identity rule changes at once; the decisions behind it stay on the row.', 'Rotate a key (Platform Admin). Never paste keys into notes or tickets.'] },
   scrapers: { answers: 'How are pages fetched?', read: ['Fetching providers, limits and routing.'], act: ['Change limits or routing (Pipeline Operator and above).'] },
   services: { answers: 'Which AI models and page services are switched on?', read: ['Models and services, and whether each passed its test.'], act: ['Switch a model on only after it passes its test (Platform Admin); anything off is offered nowhere else.'] },
   dataModel: { answers: 'Which attributes, families, groups and options exist?', read: ['The catalogue\'s attribute definitions.'], act: ['Read only. Changes are made as reviewed database changes.'] },
