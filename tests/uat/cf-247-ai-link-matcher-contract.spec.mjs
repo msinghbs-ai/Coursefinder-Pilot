@@ -70,7 +70,7 @@ test('22:26 decisions: AU English by exact title too; robots.txt per RFC 9309; F
 })
 
 test('Decision 235: Canadian field + award rule (Canada only) and the website name rule', async () => {
-  const { identity, fieldAward, domainFitsName, siteNameMatch } = await bundle('supabase/functions/coverage-sweep/extract.ts', 'ex235')
+  const { identity, fieldAward, domainFitsName, siteNameMatch, staleCalendarUrl } = await bundle('supabase/functions/coverage-sweep/extract.ts', 'ex235')
   const fa = (h1, t, text = 'Vancouver') => fieldAward(h1, '', text, t) === 'field_award'
   expect(fa('Doctor of Philosophy in Medical Genetics', 'Medical Genetics: Doctor of Philosophy (PhD) - UBCV')).toBe(true)
   expect(fa('Medical Genetics (PhD)', 'Medical Genetics: Doctor of Philosophy (PhD) - UBCV')).toBe(true)
@@ -90,6 +90,9 @@ test('Decision 235: Canadian field + award rule (Canada only) and the website na
   expect(identity(page, 'x', 'Bachelor of Science Biology', '', false, 'AU')).toBe('exact_title')
   expect(identity('<h1>Bachelor of Science in Biology</h1>', 'x', 'Biology: Bachelor of Science (BSc)', '', false, 'AU')).toBe(null)
   expect(identity('<h1>Bachelor of Science in Biology</h1>', 'x', 'Biology: Bachelor of Science (BSc)', '', false, 'CA')).toBe('field_award')
+  expect(staleCalendarUrl('https://www.sfu.ca/students/calendar/2015/spring/programs/finance/master-of-science.html', new Date('2026-10-02'))).toBe(true)
+  expect(staleCalendarUrl('http://www.sfu.ca/students/calendar/2026/fall/programs/mathematics/major/bachelor-of-science.html', new Date('2026-10-02'))).toBe(false)
+  expect(staleCalendarUrl('https://www.grad.ubc.ca/prospective-students/graduate-degree-programs/phd-linguistics', new Date('2026-10-02'))).toBe(false)
   expect(domainFitsName('www.bcit.ca', 'british columbia institute of technology')).toBe(true)
   expect(domainFitsName('www.ufv.ca', 'university of fraser valley')).toBe(true)
   expect(domainFitsName('www.royalroads.ca', 'royal roads university')).toBe(true)

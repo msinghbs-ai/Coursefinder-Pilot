@@ -75,6 +75,11 @@ export function parseCaTitle(courseTitle: string): { field: string; award: strin
   if (!AWARDS.includes(award) || !field || field.split(" ").length > 8 || /\bco op\b|\boption\b/.test(field)) return null
   return { field, award, abbr: abbr.toLowerCase(), campus }
 }
+// an address holding a calendar year more than a year before now ("/calendar/2015/spring/") is an archived page
+export function staleCalendarUrl(url: string, now = new Date()) {
+  const years = [...String(url || "").matchAll(/(?:^|[\/_-])((?:19|20)\d{2})(?=[\/_-]|$)/g)].map((m) => Number(m[1]))
+  return years.some((y) => y < now.getUTCFullYear() - 1)
+}
 export function fieldAward(rawH1: string, rawTitle: string, text: string, courseTitle: string) {
   const p = parseCaTitle(courseTitle)
   if (!p) return null
