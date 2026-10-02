@@ -84,7 +84,7 @@ test('robots.txt is respected', async () => {
 test('worker and database contract: nothing written to the catalogue, budget guard counts sweep usage', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toMatch(/const VERSION = "coverage-sweep-v0\.5\.[4-9]";/) // v0.5.5 (Decision 223) re-reads every saved page
-  expect(w).toContain('identity(html, text, it.title, it.code, it.status === "ambiguous")')
+  expect(w).toContain('identity(html, text, it.title, it.code, it.status === "ambiguous", it.country || "")') // Decision 235 passes the country
   expect(w).not.toContain('svc_coursefacts_apply_record')
   expect(w).toContain('robotsAllows(')
   expect(w).toContain('status = "needs_render"')
