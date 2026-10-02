@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, siteNameMatch, titleOf } from "./extract.ts";
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
+import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.5.4";
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -89,6 +90,8 @@ const UA = "Mozilla/5.0 (compatible; CourseFinder-Pilot/coverage-0.1; +https://c
 export const AI_MATCH_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";
 // third-party directories that may be captured as hints (Platform Admin 2 Oct 2026: Hotcourses for Canada and NZ)
 const DIRECTORY_HOSTS: Record<string, string> = { hotcourses: "www.hotcoursesabroad.com" };
+// AI page-identity candidates (qualification only), each pinned to one named model
+const PAGE_ID_MODELS = ["qwen/qwen3-30b-a3b-instruct-2507", "anthropic/claude-haiku-4.5", "xiaomi/mimo-v2.6-pro", "moonshotai/kimi-k2-0905"];
 // identity rule version used by mode reidentify (extract.ts identity(); v0.5.7 = national code before the title)
 const IDENTITY_RULE = "identity-v0.5.7";
 const AI_MATCH_PROFILE ="openrouter-intake-l3c-qwen3-30b-a3b-2507-v1"; // credential source only; its contract is not used here
@@ -337,6 +340,48 @@ Deno.serve(async (req) => {
         } catch (e) { out.push({ url: u, status: "failed", error: e instanceof Error ? e.message : String(e) }) }
       });
       return j({ ok: true, mode, site, country, robots: robotsTxt ? "read" : "not_available", pages: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
+    // v0.10.0: AI page-identity check, qualification only (contract cf247-page-identity-v1.0.0). Runs one pinned model on
+    // the frozen holdout and records each answer with the deterministic checks. Nothing is admitted or switched on.
+    if (mode === "id_qualify") {
+      const model = String(body.model || "");
+      if (!PAGE_ID_MODELS.includes(model)) return j({ ok: false, mode, error: "model is not a pinned candidate", workerVersion: VERSION }, 422);
+      const runLabel = String(body.run_label || "");
+      if (!/^q-pid-[a-z0-9.-]{3,60}$/.test(runLabel)) return j({ ok: false, mode, error: "run_label q-pid-... required", workerVersion: VERSION }, 422);
+      const goldSet = String(body.gold_set || "pid-h1");
+      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
+      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
+      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", workerVersion: VERSION }, 503);
+      const cases: { case_no: number; storage_path: string; gold: boolean; title: string; code: string; level: string | null; provider: string }[] =
+        await rpc("svc_coverage_identity_cases", { p_gold_set: goldSet, p_offset: Number(body.offset || 0), p_limit: Math.min(Number(body.limit || 60), 120) });
+      const tally: Record<string, number> = {}; let cost = 0;
+      await pool(cases, Math.min(Number(body.concurrency || 8), 12), async (k) => {
+        if (Date.now() - t0 > BUDGET_MS) { tally.time = (tally.time || 0) + 1; return }
+        let answer: any = null, checks: any = null, accepted: boolean | null = null, returned: string | null = null, c1 = 0;
+        try {
+          const { data, error } = await c.storage.from("evidence").download(k.storage_path);
+          if (error || !data) throw Error(error?.message || "missing page");
+          const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
+          // a wrong pairing whose own code is printed on the page is not a wrong pairing (one page for two courses)
+          if (!k.gold && k.code && new RegExp(`\\b${String(k.code).replace(/[^0-9A-Z]/gi, "")}\\b`, "i").test(htmlToText(html))) { checks = { excluded: "asked course's code is on the page" } }
+          else {
+            const page = pageIdInput(html, mainText);
+            const r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(pageIdRequest(model, k, page)), signal: AbortSignal.timeout(60000) });
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 160)}`);
+            returned = d?.model || null; c1 = Number(d?.usage?.cost || 0);
+            answer = JSON.parse(String(d?.choices?.[0]?.message?.content || "{}"));
+            checks = pageIdChecks(k.title, answer, page.fullText);
+            accepted = returned === model ? checks.accepted : false;
+            if (returned !== model) checks.returned_model_mismatch = returned;
+          }
+        } catch (e) { checks = { ...(checks || {}), error: e instanceof Error ? e.message : String(e) } }
+        cost += c1;
+        await rpc("svc_coverage_identity_result", { p_run_label: runLabel, p_gold_set: goldSet, p_case_no: k.case_no, p_model: model, p_returned: returned, p_answer: answer, p_checks: checks, p_accepted: accepted, p_cost: c1 });
+        const o = checks?.excluded ? "excluded" : accepted === null ? "error" : accepted === k.gold ? "right" : k.gold ? "missed" : "WRONG_ACCEPTED";
+        tally[o] = (tally[o] || 0) + 1;
+      });
+      return j({ ok: true, mode, run_label: runLabel, model, contract: PAGE_ID_CONTRACT, cases: cases.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     // v0.10.0: pages stored as identity mismatches are checked again with the current identity rule from their stored
     // copy (no fetch). A page that now passes is set back to read; the usual admission runs on it.
