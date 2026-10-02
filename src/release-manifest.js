@@ -1,20 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.156'
-export const PACKAGE_VERSION='0.1.83'
+export const UI_VERSION='2.15.157'
+export const PACKAGE_VERSION='0.1.84'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Search budget at the top of the Priority queue',
+  title:'Fee schedules and English policies move to Layer 4 › Attributes',
   changes:[
-    'Jobs › Priority queue: the Course-page search budget (credits used this month, the monthly cap and searches waiting) is now the first panel on the page, above the priority list.',
-    'From v2.15.155: English policies bulk approval; one approved document per university; New Zealand degree-name and Canadian field + award page rules; Australian English by exact title.'
+    'Layer 4 Review has a new Attributes tab (Pipeline Operator and above) with Fee schedules, English policies and Academic calendars, and a country filter for both panels.',
+    'Coverage › Attributes keeps the counts by attribute and links to Layer 4 Review › Attributes for approvals.',
+    'Jobs › Priority queue: the Course-page search budget is the first panel on the page (v2.15.156).'
   ],
-  bugFixes:[
-    'The Course-page search budget was placed below the 60-row priority list and was easy to miss.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

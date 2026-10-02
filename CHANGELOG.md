@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.84 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.157** (Fee schedules, English policies and Academic calendars moved from Coverage › Attributes to a new Layer 4 Review › Attributes tab).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.83 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.156** (Course-page search budget moved to the top of Jobs › Priority queue).
