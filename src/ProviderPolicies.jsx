@@ -45,7 +45,7 @@ export default function ProviderPolicies({country='',provider=null}={}){
   useEffect(()=>{setData(null);setOpen(null);load(kind)},[kind])
   const decide=async(x,action)=>{
     const add=Number(x.plan?.write||0)
-    const text=action==='approve'?(kind==='english_policy'?`Approve the English policy for ${x.provider}? ${fmtNumber(add)} courses with no English requirement get it now; courses that already have one are not changed.`:`Approve the academic calendar for ${x.provider}? Its start months are recorded for turning semester names into months.`):`Reject this ${kind==='english_policy'?'English policy':'calendar'} for ${x.provider}? Nothing is written.`
+    const text=action==='approve'?(kind==='english_policy'?`Approve the English policy for ${x.provider}? ${fmtNumber(add)} courses with no English requirement get it within 10 minutes; courses that already have one are not changed.`:`Approve the academic calendar for ${x.provider}? Its start months are recorded for turning semester names into months.`):`Reject this ${kind==='english_policy'?'English policy':'calendar'} for ${x.provider}? Nothing is written.`
     if(!window.confirm(text))return
     setBusy(true);setErr('')
     try{const{error}=await supabase.rpc('admin_provider_policy_decide',{p_id:x.id,p_action:action,p_note:null});if(error)throw error;await load()}catch(e){setErr(errText(e))}finally{setBusy(false)}}

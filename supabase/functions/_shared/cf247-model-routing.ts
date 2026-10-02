@@ -19,6 +19,7 @@ import {
   applyIntakeSafetyRule, focusText, INTAKE_RESPONSE_SCHEMA, INTAKE_SAFETY_RULES, INTAKE_SYSTEM_PROMPT, INTAKE_VALIDATOR_VERSION,
   intakeSafetyBlockers, MAX_QUOTES, validateIntakeAnswer,
 } from "./cf247-intake-validation.ts";
+import { INTAKE_SYSTEM_PROMPT_V13, INTAKE_VALIDATOR_VERSION_V13, ROLLING_RE, monthsWrittenV13, quoteInTextV13, validateIntakeAnswerV13 } from "./cf247-intake-validation-v13.ts";
 import {
   ENGLISH_RESPONSE_SCHEMA, ENGLISH_SYSTEM_PROMPT, ENGLISH_VALIDATOR_VERSION, englishFocusText, scoreEnglishCase, validateEnglishAnswer,
 } from "./cf247-english-validation.ts";
@@ -216,7 +217,49 @@ export function contractVersion(task: TaskKey) {
 // Profile-bound binding descriptor for intake and English (tuition uses the live interpreter's runtime binding hash).
 export function factBindingDescriptor(task: TaskKey, profile: any) {
   return JSON.stringify({
-    routing: ROUTING_VERSION, task: TASKS[task], contract: contractComponents(task), model: profile.model_identifier,
+    routing: ROUTING_VERSION, task: TASKS[task], contract: contractComponentsFor(task, profile), model: profile.model_identifier,
     max_output_tokens: Number(profile.max_output_tokens), timeout_ms: Number(profile.timeout_ms), prompt_profile_version: profile.prompt_profile_version,
   });
+}
+
+// ---------- Decision 229: intake check v1.3.0, a separate contract chosen per profile ----------
+// A profile is on v1.3.0 only when its prompt_profile_version says so; every other profile (all qualified profiles
+// today) keeps v1.2.0 and the same binding descriptor, byte for byte.
+export function isIntakeV13(task: TaskKey, profile: any) {
+  return task === "intake" && String(profile?.prompt_profile_version || "") === INTAKE_VALIDATOR_VERSION_V13;
+}
+export function intakeRequestBodyV13(model: string, text: string, maxTokens: number) {
+  return {
+    model, temperature: 0, max_tokens: maxTokens,
+    provider: { require_parameters: true }, usage: { include: true },
+    response_format: { type: "json_schema", json_schema: { name: "cf247_intake_months", strict: true, schema: INTAKE_RESPONSE_SCHEMA } },
+    messages: [
+      { role: "system", content: INTAKE_SYSTEM_PROMPT_V13 },
+      { role: "user", content: `Course page text:\n${focusText(text, INTAKE_MAX_CHARS)}` },
+    ],
+  };
+}
+export function checkIntakeV13(answer: any, text: string, blockers: { code: string; quote: string }[]): Checked {
+  const v = applyIntakeSafetyRule(validateIntakeAnswerV13(answer, text), blockers);
+  return { valid: v.valid, errors: v.errors, status: v.status, admitted: v.valid && v.status === "months" ? { months: v.months } : null, detail: { quotes: v.quotes } };
+}
+export function contractComponentsFor(task: TaskKey, profile: any): Record<string, unknown> {
+  if (!isIntakeV13(task, profile)) return contractComponents(task);
+  return {
+    version: INTAKE_VALIDATOR_VERSION_V13, prompt: INTAKE_SYSTEM_PROMPT_V13, schema: INTAKE_RESPONSE_SCHEMA, max_quotes: MAX_QUOTES, max_chars: INTAKE_MAX_CHARS,
+    safety_rules: INTAKE_SAFETY_RULES.map((r) => ({ code: r.code, re: String(r.re) })), validate: validateIntakeAnswerV13.toString(),
+    quote_rule: quoteInTextV13.toString(), months_rule: monthsWrittenV13.toString(), rolling: String(ROLLING_RE),
+    safety_blockers: intakeSafetyBlockers.toString(), safety_apply: applyIntakeSafetyRule.toString(), focus: focusText.toString(),
+    request_body: intakeRequestBodyV13.toString(), check: checkIntakeV13.toString(), score: scoreIntake.toString(),
+  };
+}
+export function contractVersionFor(task: TaskKey, profile: any) {
+  return isIntakeV13(task, profile) ? INTAKE_VALIDATOR_VERSION_V13 : contractVersion(task);
+}
+// the request body and checks a profile runs (v1.3.0 profiles: the v1.3.0 contract; all others unchanged)
+export function intakeBodyFor(profile: any, model: string, text: string, maxTokens: number) {
+  return isIntakeV13("intake", profile) ? intakeRequestBodyV13(model, text, maxTokens) : intakeRequestBody(model, text, maxTokens);
+}
+export function intakeCheckFor(profile: any, answer: any, text: string, blockers: { code: string; quote: string }[]) {
+  return isIntakeV13("intake", profile) ? checkIntakeV13(answer, text, blockers) : checkIntake(answer, text, blockers);
 }

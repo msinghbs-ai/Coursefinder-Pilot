@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.81 — 2 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.154** (English policies applied for 11 universities, faster policy counts, intake cascade step 2, intake check v1.3.0 contract (not qualified)).
+- Database: English policy plan counts kept and refreshed every 10 minutes; group-1 English policies approved; semester month helpers; intake step 2 (Claude Haiku 4.5) switched on and quoting failures sent back once; paused v1.3.0 intake profiles.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.80 — 2 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.153** (Decisions 226-227: quote failures re-run; English from each university's policy).

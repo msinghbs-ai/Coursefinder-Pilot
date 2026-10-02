@@ -1,22 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.153'
-export const PACKAGE_VERSION='0.1.80'
+export const UI_VERSION='2.15.154'
+export const PACKAGE_VERSION='0.1.81'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'English from each university\'s own policy',
+  title:'English policies applied; intake cascade step 2',
   changes:[
-    'Coverage › Attributes › English policies: each university\'s English language policy is read from its own site and parsed without AI into a default score for undergraduate and postgraduate coursework courses, plus any courses it names with their own score.',
-    'Review courses shows what approval does to each course. A Platform Admin approves each policy; approval fills only courses with no English requirement, no review open and no page still to read, and holds back research degrees, double degrees, other levels and courses the policy names. Approved policies are applied again every six hours.',
-    'Each policy shows how many courses whose own pages already give a score agree or differ with it; a default that most course pages disagree with (at least 10 compared) cannot be approved. Warnings show when a policy has exceptions it does not name or when some courses need more.',
-    'Coverage › Attributes › Academic calendars: the month each semester, trimester or term starts, read from each university\'s calendar, for a Platform Admin to approve.',
-    'The 446 intake and English reviews where the AI quoted text that was not on the saved page were sent back to the AI check.'
+    'English policies from 11 universities approved: 632 courses with no English requirement now carry their university policy score. Values already on record, including any that differ, are left as they are.',
+    'English policies: the agree and differ counts are kept and refreshed every 10 minutes, so the list opens quickly; approval is written within 10 minutes.',
+    'Intakes: step 2 of the AI cascade, Claude Haiku 4.5, is switched on. A page step 1 cannot settle goes to Haiku before a person. Rolling or monthly intakes stay with a person.',
+    'Intake check v1.3.0 was built as a separate contract with two paused candidate models. Both failed qualification on the frozen holdout, so nothing changed in the live cascade.'
   ],
   bugFixes:[
-    'Retry failed for tuition no longer brings back tuition work parked because the regulator publishes the fee (Decision 225).'
+    'English policy list and approval no longer time out on large universities.'
   ]
 }
 
