@@ -45,7 +45,7 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.10.1";
+const WORKER = "coverage-sweep-worker-v0.10.2";
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -314,15 +314,23 @@ Deno.serve(async (req) => {
       if (!host) return j({ ok: false, mode, error: "unknown directory site", workerVersion: VERSION }, 422);
       const country = String(body.country || "").toUpperCase();
       const urls: string[] = (Array.isArray(body.urls) ? body.urls : []).map(String).filter((u: string) => { try { return new URL(u).hostname === host } catch { return false } }).slice(0, 25);
-      let robotsTxt = await robotsFor(new URL(`https://${host}/`));
-      // a directory that refuses our direct request: its robots.txt is read through Firecrawl; unreadable = stop
-      if (!robotsTxt && await useFc("directory_scrape", null, `https://${host}/robots.txt`)) {
+      // v0.10.2: robots.txt per RFC 9309. A file with rules is followed. A site that answers 404 or 410 has no
+      // robots.txt, which means no rules. A site that refuses or fails our direct request is asked through Firecrawl;
+      // if it still cannot be read, nothing is captured.
+      let robotsTxt = "", robotsState = "unreadable";
+      const direct = await fetch(`https://${host}/robots.txt`, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(8000) }).catch(() => null);
+      const directText = direct?.ok ? await direct.text().catch(() => "") : "";
+      if (/user-agent/i.test(directText)) { robotsTxt = directText; robotsState = "read" }
+      else if (direct && (direct.status === 404 || direct.status === 410)) robotsState = "none";
+      else if (await useFc("directory_scrape", null, `https://${host}/robots.txt`)) {
         const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: `https://${host}/robots.txt`, formats: ["rawHtml"] }), signal: AbortSignal.timeout(45000) }).catch(() => null);
         const d = r ? await r.json().catch(() => ({})) : {};
-        robotsTxt = htmlToText(String(d?.data?.rawHtml || "")).replace(/ \n /g, "\n");
-        if (/user-agent/i.test(String(d?.data?.rawHtml || ""))) robotsTxt = String(d.data.rawHtml).replace(/<[^>]+>/g, "");
+        const raw = String(d?.data?.rawHtml || "");
+        const sc = Number(d?.data?.metadata?.statusCode || 0);
+        if (/user-agent/i.test(raw)) { robotsTxt = raw.replace(/<[^>]+>/g, ""); robotsState = "read_via_firecrawl" }
+        else if (sc === 404 || sc === 410) robotsState = "none";
       }
-      if (!/user-agent/i.test(robotsTxt || "")) return j({ ok: false, mode, error: "robots.txt could not be read; nothing captured", workerVersion: VERSION }, 409);
+      if (robotsState === "unreadable") return j({ ok: false, mode, error: "robots.txt could not be read; nothing captured", robotsHttp: direct?.status ?? null, workerVersion: VERSION }, 409);
       const out: unknown[] = [];
       await pool(urls, 4, async (u) => {
         const url = new URL(u);
@@ -349,7 +357,7 @@ Deno.serve(async (req) => {
           out.push({ url: u, status: "stored", links: links.length, page_id: rec, hints });
         } catch (e) { out.push({ url: u, status: "failed", error: e instanceof Error ? e.message : String(e) }) }
       });
-      return j({ ok: true, mode, site, country, robots: robotsTxt ? "read" : "not_available", pages: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+      return j({ ok: true, mode, site, country, robots: robotsState, pages: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     // v0.10.0: AI page-identity check, qualification only (contract cf247-page-identity-v1.0.0). Runs one pinned model on
     // the frozen holdout and records each answer with the deterministic checks. Nothing is admitted or switched on.
@@ -433,20 +441,30 @@ Deno.serve(async (req) => {
           let accepted = false, basis: string | null = null, ev: Record<string, unknown> = { hint: h.url, via: h.via, worker: WORKER };
           try {
             const u = new URL(/^https?:/i.test(h.url) ? h.url : "https://" + h.url);
-            const resp = await fetch(u.origin + "/", { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) });
-            const html = resp.ok ? await resp.text() : "";
-            const host = new URL(resp.url || u.origin).hostname.toLowerCase();
-            ev = { ...ev, final: resp.url, http: resp.status };
-            if (!done && html) {
+            const resp = await fetch(u.origin + "/", { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) }).catch(() => null);
+            let html = resp?.ok ? await resp.text() : "";
+            let finalUrl = resp?.url || u.origin + "/";
+            ev = { ...ev, final: finalUrl, http: resp?.status ?? null };
+            const check = (page: string, at: string) => {
+              const host = new URL(at).hostname.toLowerCase();
               if (it.country === "AU") {
                 const code = String(it.cricos || "").toUpperCase();
-                if (code.length >= 5 && new RegExp("(^|[^0-9A-Z])" + code.split("").join("\\s?") + "([^0-9A-Z]|$)", "i").test(htmlToText(html))) { accepted = true; basis = "cricos_code" }
+                if (code.length >= 5 && new RegExp("(^|[^0-9A-Z])" + code.split("").join("\\s?") + "([^0-9A-Z]|$)", "i").test(htmlToText(page))) { accepted = true; basis = "cricos_code" }
               } else if ((it.country === "CA" && host.endsWith(".ca")) || (it.country === "NZ" && host.endsWith(".nz"))) {
-                const b = siteNameMatch(html, htmlToText(html), it.name, it.dli || "");
+                const b = siteNameMatch(page, htmlToText(page), it.name, it.dli || "");
                 if (b) { accepted = true; basis = String(b) }
               }
+            };
+            if (!done && html) check(html, finalUrl);
+            // v0.10.2: a home page that refuses our direct request, or does not prove itself as fetched (often a page
+            // drawn by script), is read once through Firecrawl (rendered). robots.txt is respected; the same rule decides.
+            if (!done && !accepted && robotsAllows(await robotsFor(new URL(u.origin)), "/") && await useFc("site_hint", it.provider_id, u.origin + "/")) {
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: u.origin + "/", formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
+              const d = r ? await r.json().catch(() => ({})) : {};
+              const fh = String(d?.data?.html || "");
+              if (fh) { html = fh; finalUrl = String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || finalUrl); ev = { ...ev, via_firecrawl: true, final: finalUrl, http_firecrawl: d?.data?.metadata?.statusCode ?? null }; check(html, finalUrl) }
             }
-            const site = accepted ? new URL(resp.url || u.origin).origin : h.url;
+            const site = accepted ? new URL(finalUrl).origin : h.url;
             const st = await rpc("svc_site_hint_record", { p_provider_id: it.provider_id, p_url: accepted ? site : h.url, p_accepted: accepted, p_basis: basis, p_evidence: ev });
             if (accepted && site !== h.url) await rpc("svc_site_hint_record", { p_provider_id: it.provider_id, p_url: h.url, p_accepted: false, p_basis: "redirected", p_evidence: { ...ev, accepted_as: site } });
             tally[st] = (tally[st] || 0) + 1;

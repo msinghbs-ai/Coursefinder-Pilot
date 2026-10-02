@@ -56,3 +56,14 @@ test('page identity is qualification only and directory pages are hints only', a
   expect(d).toContain('nothing from them is admitted')
   expect(idx).toContain('const DIRECTORY_HOSTS: Record<string, string> = { hotcourses: "www.hotcoursesabroad.com", univcc: "univ.cc" };')
 })
+
+test('22:26 decisions: AU English by exact title too; robots.txt per RFC 9309; Firecrawl only when direct reading fails', async () => {
+  const m = await fs.readFile('supabase/migrations/20261002185600_cf247_au_english_exact_title.sql', 'utf8')
+  expect(m).toContain(`jsonb_build_object('english', '["cricos_code", "exact_title"]'::jsonb)`)
+  const f = await fs.readFile('supabase/migrations/20261002185700_cf247_english_policy_flag_step.sql', 'utf8')
+  expect(f).not.toMatch(/status = 'approved', decided_by/) // the flag step approves nothing
+  const idx = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(idx).toContain('else if (direct && (direct.status === 404 || direct.status === 410)) robotsState = "none";')
+  expect(idx).toContain('if (robotsState === "unreadable") return j(')
+  expect(idx).toContain('robotsAllows(await robotsFor(new URL(u.origin)), "/") && await useFc("site_hint", it.provider_id, u.origin + "/")')
+})
