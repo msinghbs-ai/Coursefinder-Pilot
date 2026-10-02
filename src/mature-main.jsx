@@ -187,7 +187,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
       case'guide':return <PlatformGuide rank={rank} navigate={navigate}/>
-      case'activity':return <LiveActivity navigate={navigate}/>
+      case'activity':return <LiveActivity navigate={navigate} rank={rank}/>
       case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>

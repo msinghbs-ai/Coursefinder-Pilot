@@ -5,6 +5,8 @@ import {createClient} from "npm:@supabase/supabase-js@2";
 // Reads STORED evidence from Supabase Storage (bucket "evidence") and records the links each page
 // contains. It never fetches from the web: evidence is captured once and reused.
 // Decision 215 (2 Oct 2026): run by a one-time nonce; gzipped pages (.html.gz) are read decompressed.
+// Decision 218 (2 Oct 2026): four pages at a time (was six) and unpacked pages over 12 MB skipped, after two runs hit the
+// worker's compute limit.
 const ORIGIN="https://coursefinder-pilot.techm.workers.dev";
 const H=()=>({"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":ORIGIN,"access-control-allow-headers":"authorization,content-type,x-cf-run-nonce","access-control-allow-methods":"POST,OPTIONS"});
 const J=(s:number,b:unknown)=>new Response(JSON.stringify(b),{status:s,headers:H()});
@@ -62,7 +64,7 @@ async function indexOne(svc:any,a:any){
     const buf=new Uint8Array(await data.arrayBuffer());
     const gz=/\.gz$/i.test(String(a.path||""))||(buf[0]===0x1f&&buf[1]===0x8b);
     const text=gz?await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text():new TextDecoder().decode(buf);
-    if(text.length>MAX_BYTES*4){await rpc(svc,"svc_evidence_link_index_record_v1",{p_evidence_id:a.id,p_status:"unsupported",p_links:[],p_error:`too large unpacked (${text.length} chars)`});return{status:"unsupported",links:0}}
+    if(text.length>MAX_BYTES*2){await rpc(svc,"svc_evidence_link_index_record_v1",{p_evidence_id:a.id,p_status:"unsupported",p_links:[],p_error:`too large unpacked (${text.length} chars)`});return{status:"unsupported",links:0}}
     const out=new Map<string,{text:string}>();let base=String(a.url||"");
     if(/json/i.test(a.mime||"")){let j:any;try{j=JSON.parse(text)}catch{throw Error("invalid json")}base=base||baseFromJson(j);fromJson(j,base,out)}
     else fromHtml(text,base,out);
@@ -85,7 +87,7 @@ Deno.serve(async req=>{
     try{await auth(req,svc,sb,anon)}catch(e:any){return J(String(e.message).includes("role")?403:401,{error:String(e.message)})}
     const b=await req.json().catch(()=>({}));const limit=Math.max(1,Math.min(Number(b.limit)||60,200));
     const batch:any[]=await rpc(svc,"svc_evidence_link_index_next_v1",{p_limit:limit})||[];
-    const started=Date.now(),summary:Record<string,number>={indexed:0,no_links:0,unsupported:0,error:0},C=6;let links=0,i=0;
+    const started=Date.now(),summary:Record<string,number>={indexed:0,no_links:0,unsupported:0,error:0},C=4;let links=0,i=0;
     while(i<batch.length&&Date.now()-started<110_000){
       const res=await Promise.all(batch.slice(i,i+C).map(a=>indexOne(svc,a)));i+=C;
       for(const r of res){summary[r.status]=(summary[r.status]||0)+1;links+=r.links}
