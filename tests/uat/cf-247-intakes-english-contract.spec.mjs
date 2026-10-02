@@ -113,6 +113,8 @@ test.describe('browser: English policies panel', () => {
     await page.goto('/#jobs?tab=priority')
     const c = page.locator('[data-search-cap]')
     await expect(c.locator('[data-cap-reached]')).toContainText('320 searches are waiting')
+    // the budget is the first panel on the page, above the priority list
+    expect(await page.locator('.m-page-stack > section').first().getAttribute('data-search-cap')).not.toBeNull()
     await c.getByLabel('Course-page search monthly cap').fill('80000')
     await c.getByRole('button', { name: 'Save cap' }).click()
     await expect.poll(() => page.l3calls.find((x) => x.searchCap)?.searchCap).toEqual({ p_monthly_credit_cap: 80000 })

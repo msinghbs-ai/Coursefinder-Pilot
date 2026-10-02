@@ -1,4 +1,4 @@
-// Jobs › Priority queue › Course-page search budget (v2.15.155, Platform Admin request 3 Oct 2026 00:57: "Where do I
+// Jobs › Priority queue › Course-page search budget, at the top of the page since v2.15.156 (v2.15.155, Platform Admin request 3 Oct 2026 00:57: "Where do I
 // increase search cap?"). The course-page search (Firecrawl search, 2 credits each) stops for the month when this cap
 // would be passed; the queue waits and resumes when the cap is raised or a new month starts. It is separate from the
 // Firecrawl monthly limit and safety reserve in Layer 2 › Scraper config, which still apply.
