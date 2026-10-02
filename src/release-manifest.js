@@ -1,19 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.152'
-export const PACKAGE_VERSION='0.1.79'
+export const UI_VERSION='2.15.153'
+export const PACKAGE_VERSION='0.1.80'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'2 Oct 2026',
-  title:'Tuition from the regulator; no provider-page chase for Australia',
+  title:'English from each university\'s own policy',
   changes:[
-    'Australian tuition comes from CRICOS (the international course cost it publishes); provider pages and fee schedules are no longer searched for a fee in Australia. New Zealand and Canada, whose regulators publish none, keep the provider-page tuition check for international students.',
-    'Layer 2 › History shows Australia’s CRICOS tuition.'
+    'Coverage › Attributes › English policies: each university\'s English language policy is read from its own site and parsed without AI into a default score for undergraduate and postgraduate coursework courses, plus any courses it names with their own score.',
+    'Review courses shows what approval does to each course. A Platform Admin approves each policy; approval fills only courses with no English requirement, no review open and no page still to read, and holds back research degrees, double degrees, other levels and courses the policy names. Approved policies are applied again every six hours.',
+    'Each policy shows how many courses whose own pages already give a score agree or differ with it; a default that most course pages disagree with (at least 10 compared) cannot be approved. Warnings show when a policy has exceptions it does not name or when some courses need more.',
+    'Coverage › Attributes › Academic calendars: the month each semester, trimester or term starts, read from each university\'s calendar, for a Platform Admin to approve.',
+    'The 446 intake and English reviews where the AI quoted text that was not on the saved page were sent back to the AI check.'
   ],
   bugFixes:[
-    '648 Australian tuition reviews in Layer 4 asked people to confirm fees already published by CRICOS; they are closed.'
+    'Retry failed for tuition no longer brings back tuition work parked because the regulator publishes the fee (Decision 225).'
   ]
 }
 

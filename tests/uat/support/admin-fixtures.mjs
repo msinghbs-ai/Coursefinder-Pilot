@@ -406,6 +406,31 @@ export const feeSchedules = {
     { id: 'fs2', provider_id: 'p-x', country: 'AU', provider: 'Example Institute', url: 'https://example.edu.au/fees.pdf', fee_year: '2027', read_at: '2026-10-01T08:00:00Z', decision: 'approved', decided_at: '2026-10-01T08:30:00Z', apply_summary: { written: 20, refused: 0 }, rows: 22, new: 0, same: 20, differs: 0, no_course: 2 },
   ],
 }
+// Decision 227: English policies and academic calendars
+const pTotals = { documents_found: 413, documents_read: 116, providers_found: 150, no_values_by_style: { bands: 6, by_faculty: 9, course_specific: 12, none: 55 } }
+export const englishPolicies = { can_decide: true, totals: pTotals, proposals: [
+  { id: 'ep1', provider_id: 'p-fl', provider: 'Flinders University', country: 'AU', url: 'https://www.flinders.edu.au/international/apply/entry-requirements/english-language-requirements', style: 'level_default', status: 'proposed',
+    caveats: [], conflicts: [], named_requirements: 2, named_courses: 4,
+    defaults: { undergraduate: [{ test_code: 'IELTS', overall_score: 6, component_scores: { speaking: 6, writing: 6 } }], postgraduate: [{ test_code: 'IELTS', overall_score: 6.5, component_scores: { listening: 6, reading: 6, speaking: 6, writing: 6 } }] },
+    plan: { write: 197, agrees: 57, differs: 12, held: 210 } },
+  { id: 'ep2', provider_id: 'p-uts', provider: 'University of Technology Sydney', country: 'AU', url: 'https://www.uts.edu.au/english', style: 'level_default', status: 'proposed',
+    caveats: ['level_not_stated'], conflicts: [], named_requirements: 0, named_courses: 0,
+    defaults: { undergraduate: [{ test_code: 'IELTS', overall_score: 7, component_scores: { listening: 7, reading: 7, speaking: 7, writing: 7 } }] },
+    plan: { write: 227, agrees: 2, differs: 204, held: 97 } },
+  { id: 'ep3', provider_id: 'p-wa', provider: 'William Angliss Institute', country: 'AU', url: 'https://www.angliss.edu.au/entry', style: 'level_default', status: 'approved', decided_at: '2026-10-02T07:30:00Z',
+    caveats: [], conflicts: [], named_requirements: 0, named_courses: 0, apply_summary: { written: 19 },
+    defaults: { undergraduate: [{ test_code: 'IELTS', overall_score: 6, component_scores: { listening: 5.5, reading: 5.5, speaking: 5.5, writing: 5.5 } }] },
+    plan: { write: 0, held: 18 } },
+] }
+export const calendarPolicies = { can_decide: true, totals: { ...pTotals, no_values_by_style: { none: 90 } }, proposals: [
+  { id: 'cp1', provider_id: 'p-acu', provider: 'Australian Catholic University', country: 'AU', url: 'https://www.acu.edu.au/study-at-acu/important-dates', status: 'proposed',
+    periods: [{ period: 'semester 1', months: [3], years: [2027] }, { period: 'semester 2', months: [8], years: [2027] }] },
+] }
+export const policyRows = { provider: 'Flinders University', rows: [
+  { course_id: 'c1', title: 'Bachelor of Business', study_level: 'bachelor', plan: 'default', reason: null, outcome: 'write', existing: {}, ielts: 6 },
+  { course_id: 'c2', title: 'Bachelor of Nursing', study_level: 'bachelor', plan: 'default', reason: null, outcome: 'differs', existing: { IELTS: 7 }, ielts: 6 },
+  { course_id: 'c3', title: 'Doctor of Philosophy', study_level: 'doctorate', plan: 'held', reason: 'research degree', outcome: 'held', existing: {}, ielts: null },
+] }
 export const feeScheduleRows = { can_decide: true, rows: [
   { row_id: 'r1', course_code: '001293G', course_id: 'c1', course_title: 'Bachelor of Nursing', amount: 39672, currency_code: 'AUD', basis: 'annual', fee_year: 2027, current_amount: null, current_basis: null, outcome: 'new' },
   { row_id: 'r2', course_code: '079454F', course_id: 'c2', course_title: 'Bachelor of Accounting and Finance', amount: 36016, currency_code: 'AUD', basis: 'annual', fee_year: 2027, current_amount: 35000, current_basis: 'annual', outcome: 'differs' },
