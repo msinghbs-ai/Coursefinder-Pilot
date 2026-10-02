@@ -4,7 +4,7 @@
 // checks pass: the copied name is on the page, its qualification type is the course's, and the titles share their words.
 import { clean, h1Of, htmlToText, titleOf } from "./extract.ts";
 
-export const PAGE_ID_CONTRACT = "cf247-page-identity-v1.0.1";
+export const PAGE_ID_CONTRACT = "cf247-page-identity-v1.0.2";
 export const PAGE_ID_SYSTEM = `You check whether a page on an education provider's website is the page for one specific course from a government register.
 You get the course (title, level, provider) and the page (its heading, its title and its text; course codes are hidden as [code]).
 1. page_course_name: copy, character for character from the page, the name of the qualification this page is about (usually the heading). If the page is a list, a search page, a faculty or subject-area page, or is not about one qualification, copy the heading and answer same_course false.
@@ -48,11 +48,13 @@ export function pageIdRequest(model: string, course: { title: string; level: str
 export function pageIdChecks(courseTitle: string, answer: { page_course_name?: unknown; same_course?: unknown }, fullText: string) {
   const name = clean(String(answer?.page_course_name ?? ""));
   const flat = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "");
-  const onPage = name.length >= 6 && flat(fullText).includes(flat(name));
-  // v1.0.1 (tuned on the development holdout pid-h1): the page's main name is its name without bracketed parts and
+  // the name may carry a site or campus suffix the page writes differently; its part before the last dash must be on the page
+  const unsuffixed = name.replace(/\s+[-\u2013\u2014|]\s+[^-\u2013\u2014|]*$/, "");
+  const onPage = name.length >= 6 && (flat(fullText).includes(flat(name)) || (unsuffixed.length >= 6 && flat(fullText).includes(flat(unsuffixed))));
+  // v1.0.1/v1.0.2 (tuned on the development holdout pid-h1; v1.0.2: a leading training code before a dash is not the name): the page's main name is its name without bracketed parts and
   // without a trailing " - campus / college / stream" part; the course's every word must be somewhere in the page's
   // name, and the main name may add no words of its own (a stream in brackets or after a dash is allowed).
-  const core = name.replace(/\s+[-\u2013\u2014|:]\s+.*$/, "").replace(/\([^)]*\)|\[[^\]]*\]/g, " ");
+  const core = name.replace(/^\s*(?:[A-Z]{3,4}\d{5}|\d{5}NAT)\s*[-\u2013\u2014:|]?\s*/i, "").replace(/\s+[-\u2013\u2014|:]\s+.*$/, "").replace(/\([^)]*\)|\[[^\]]*\]/g, " ");
   const ct = qualType(courseTitle), nt = qualType(name);
   const sameType = ct === nt && isDouble(courseTitle) === isDouble(name.replace(/\bbachelors\b/gi, "bachelor bachelor"));
   const cw = [...new Set(words(courseTitle))], nw = new Set(words(name)), kw = [...new Set(words(core))];
