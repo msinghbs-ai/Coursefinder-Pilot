@@ -6,7 +6,7 @@
 //    to all (or the standard) courses of that level; course-by-course pages, English bands and faculty tables are
 //    reported, not turned into a default.
 //  * calendarStarts: the months in which each semester or trimester starts, from an academic calendar.
-export const POLICY_PARSER = "provider-policy-v0.2.1";
+export const POLICY_PARSER = "provider-policy-v0.2.2";
 
 export type TestCode = "IELTS" | "PTE" | "TOEFL_IBT" | "CAE";
 export type Req = { test_code: TestCode; overall_score: number; component_scores: Record<string, number>; quote: string };
@@ -309,19 +309,25 @@ export function calendarStarts(md: string) {
   };
   const PERIOD = /\b(semester|trimester|term|study period|teaching period|session)\s*([1-6]|one|two|three|four|I{1,3})\b/i;
   const words: Record<string, string> = { one: "1", two: "2", three: "3", four: "4", i: "1", ii: "2", iii: "3" };
+  const keyOf = (p: RegExpMatchArray) => `${p[1].toLowerCase().replace(/ period$/, "_period")} ${words[p[2].toLowerCase()] || p[2]}`;
+  const DATE = new RegExp(`(?:\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+${MON_RE}|${MON_RE}\\s+(\\d{1,2})(?:st|nd|rd|th)?)(?:,?\\s+(20\\d\\d))?`, "i");
+  const startWords = /\b(start|starts|begin|begins|commence|commences|commencement|first day|week 1|teaching begins|classes begin|lectures begin)\b/i;
   for (const b of blocks(md)) {
     const rows = b.kind === "table" ? b.rows.map((r) => r.join(" | ")) : [b.text];
+    // v0.2.2 (3 Oct 2026): a period named on its own — a table section row ("| Semester 1 |") or the block's heading —
+    // applies to the "Start date | Monday 16 February" rows that follow it until the next period is named (Curtin's layout).
+    const hp = b.heading.match(PERIOD); let section: string | null = hp ? keyOf(hp) : null;
     for (const row of rows) {
-      const p = row.match(PERIOD); if (!p) continue;
-      const startWords = /\b(start|starts|begin|begins|commence|commences|commencement|first day|week 1|teaching begins|classes begin|lectures begin)\b/i;
-      if (!startWords.test(row) && !(b.kind === "table" && /start|commence|begin/i.test(b.rows[0]?.join(" ") || ""))) continue;
+      const p = row.match(PERIOD);
+      const d = row.match(DATE);
+      if (p && !d && clean(row.replace(/\|/g, " ")).length <= 40) { section = keyOf(p); continue }
+      const period = p ? keyOf(p) : section; if (!period) continue;
+      if (!startWords.test(row) && !(b.kind === "table" && p && /start|commence|begin/i.test(b.rows[0]?.join(" ") || ""))) continue;
       if (/\b(census|exams?|examinations?|results|holidays?|break|recess|ends?|finish(?:es)?|last day|deadline|closing|closes?|orientation)\b/i.test(row) && !startWords.test(row)) continue;
-      const d = row.match(new RegExp(`(?:\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+${MON_RE}|${MON_RE}\\s+(\\d{1,2})(?:st|nd|rd|th)?)(?:,?\\s+(20\\d\\d))?`, "i"));
       if (!d) continue;
       const mon = monthNo(d[2] || d[3]); if (mon < 1) continue;
       const yr = Number(d[5] || (row.match(/\b(20\d\d)\b/) || [])[1] || (b.heading.match(/\b(20\d\d)\b/) || [])[1] || 0) || null;
-      const n = words[p[2].toLowerCase()] || p[2];
-      add(`${p[1].toLowerCase().replace(/ period$/, "_period")} ${n}`, mon, yr, row);
+      add(period, mon, yr, row);
     }
   }
   const periods = Object.entries(found).map(([period, f]) => ({ period, months: [...f.months].sort((a, b) => a - b), years: [...f.years].sort(), quotes: f.quotes }));
