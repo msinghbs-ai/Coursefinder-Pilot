@@ -87,7 +87,9 @@ test.describe('browser: English policies panel', () => {
     await pp.locator('[data-policy="ep1"]').getByRole('button', { name: 'Approve' }).click()
     await expect.poll(() => page.l3calls.find((c) => c.policyDecide)?.policyDecide).toEqual({ p_id: 'ep1', p_action: 'approve', p_note: null })
     await pp.getByRole('button', { name: 'Academic calendars' }).click()
-    await expect(pp.locator('[data-policy="cp1"]')).toContainText('Semester 1: March')
+    // v2.15.162: each period is a column; the suggested month is an input the Platform Admin can change before approving
+    await expect(pp.locator('[data-policy="cp1"] [data-period="semester 1"] select')).toHaveValue('3')
+    await expect(pp.locator('[data-policy="cp1"]').getByRole('button', { name: 'Approve' })).toBeVisible()
   })
 
   test('v2.15.155: bulk approval sends only documents that can be approved; blocked ones keep a reason', async ({ page }) => {

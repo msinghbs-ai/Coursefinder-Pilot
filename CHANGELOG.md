@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.89 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.162** (Academic calendars: one column per study period with the suggested month as an input; Approve applies what is shown).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.88 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.161** (start months by hand on Layer 4 › Attributes › Academic calendars; the calendar step is live).
