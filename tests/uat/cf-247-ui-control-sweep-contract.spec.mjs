@@ -12,11 +12,11 @@ const read = p => fs.readFileSync(p, 'utf8')
 
 test('menu: Automations, Send back to AI and Publishing tabs; old links still land', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs'])
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'flags', 'websites', 'sendback', 'rules', 'attributes', 'blocks']) // Decision 222: Websites to find; v2.15.157: Attributes
-  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['links', 3], ['publishing', 3]])
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'flags', 'websites', 'sendback', 'rules', 'attributes', 'publishing', 'blocks']) // Decision 222: Websites to find; v2.15.157: Attributes
+  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['links', 3]]) // v2.15.169: Publishing is Layer 4 › Scholarship publishing
   expect(PAGES.scholarships.min).toBe(1)
   expect(resolveTarget('jobs').params?.get?.('tab') ?? 'jobs').toBe('jobs')
-  expect(hrefFor('scholarships', 'publishing')).toBe('#scholarships?tab=publishing')
+  expect(hrefFor('layer4', 'publishing')).toBe('#layer-4-review?tab=publishing')
 })
 
 test('schedules read in plain words, times in Melbourne time (v2.15.131)', () => {
@@ -126,7 +126,7 @@ test.describe('mocked browser', () => {
   test('Scholarship publishing: ready list, publish batch with approval, hold, release', async ({ page }) => {
     await mockAdmin(page)
     page.on('dialog', d => d.type() === 'prompt' ? d.accept('Value is for domestic students') : d.accept())
-    await page.goto('/#scholarships?tab=publishing')
+    await page.goto('/#layer-4-review?tab=publishing')
     await expect(page.getByRole('tab', { name: 'Publishing' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByText('Doherty Supplementary Scholarship')).toBeVisible()
     await expect(page.getByText('No award value on the page')).toBeVisible()

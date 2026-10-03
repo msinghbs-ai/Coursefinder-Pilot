@@ -25,7 +25,7 @@ test('database: publishing check, admin confirmation, maximum values, per-year s
 test('browser: Domestic only list; a Platform Admin confirms international students with a note', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.type() === 'prompt' ? d.accept('Page lists international students under Residency') : d.accept())
-  await page.goto('/#scholarships?tab=publishing')
+  await page.goto('/#layer-4-review?tab=publishing')
   await page.getByLabel('Show').selectOption('domestic_only')
   await expect(page.locator('[data-domestic-words]')).toContainText('Australian citizen')
   await expect(page.locator('[data-domestic-words]')).toContainText('taken off at the next daily review')
