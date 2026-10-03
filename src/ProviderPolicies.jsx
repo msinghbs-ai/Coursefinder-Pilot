@@ -137,8 +137,9 @@ export default function ProviderPolicies({country='',provider=null}={}){
       {bulk&&<th aria-label="Choose"/>}<th>University</th>{english?<th>What the policy says</th>:<><th>Intake 1</th><th>Intake 2</th><th>Raw value captured</th></>}{english&&<><th>Course pages</th><th>Will be added</th></>}<th>Decision</th></tr></thead>
       <tbody>{list.map(x=>{const ag=agreement(x.plan);return <React.Fragment key={x.id}><tr data-policy={x.id}>
         {bulk&&<td>{x.status==='proposed'&&<input type="checkbox" aria-label={`Choose ${x.provider}`} checked={sel.has(x.id)} onChange={()=>toggle(x.id)} disabled={busy}/>}</td>}
-        <td>{english?<button type="button" className="cf-link fs-open" onClick={()=>setOpen(open===x.id?null:x.id)} aria-expanded={open===x.id}>{x.provider}</button>:x.provider}
+        <td>{english?<button type="button" className="cf-link fs-open" onClick={()=>setOpen(open===x.id?null:x.id)} aria-expanded={open===x.id}>{x.provider}</button>:<a href={`#providers?id=${x.provider_id}`} className="cf-link" data-provider-link title="Open the university in CourseFinder">{x.provider}</a>}
           <a href={x.url} target="_blank" rel="noreferrer" className="cf-link" aria-label="Open the document"><ExternalLink size={12}/></a>
+          {!english&&<div className="sd-desc"><a href={x.url} target="_blank" rel="noreferrer" className="cf-link">Calendar page ↗</a> · <a href={`#providers?id=${x.provider_id}`} className="cf-link">University in CourseFinder</a></div>}
           {english&&<button type="button" className="m-link-button fs-review" onClick={()=>setOpen(open===x.id?null:x.id)}>{open===x.id?'Hide courses':'Review courses'}</button>}</td>
         {english&&<td>{Object.entries(x.defaults||{}).map(([lv,reqs])=><div key={lv} data-policy-default={lv}><strong>{LEVEL[lv]||lv}:</strong> {(reqs||[]).filter(r=>r.test_code==='IELTS').map(describeReq).join('; ')}</div>)}
             {Number(x.named_requirements||0)>0&&<div className="sd-desc">{fmtNumber(x.named_requirements)} courses named with their own score</div>}

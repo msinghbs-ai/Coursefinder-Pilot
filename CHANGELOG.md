@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.92 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.165** (Academic calendars: internal and external links on each row; months set by hand win; Not an intake no longer holds a course).
+- Migration 20261003001700 applied.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.91 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.164** (Academic calendars: Intake 1 and 2 pre-filled from Trimester or Semester 1 and 2, raw value beside them).
