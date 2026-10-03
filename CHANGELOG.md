@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.88 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.161** (start months by hand on Layer 4 › Attributes › Academic calendars; the calendar step is live).
+- Migrations 20261003001500–001520 (Decision 228 parts 2 and 3) applied.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.87 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.160** (Settings page: every throttle, budget and page-identity proof editable in one place, by pipeline step).

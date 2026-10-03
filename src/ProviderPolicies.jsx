@@ -121,3 +121,36 @@ export default function ProviderPolicies({country='',provider=null}={}){
       </tr>{open===x.id&&<tr className="fs-detail"><td colSpan={bulk?6:5}><PlanRows id={x.id}/></td></tr>}</React.Fragment>})}</tbody></table></div>}
   </section>
 }
+
+// v2.15.161 (Decision 228, rapid admission plan step 1): universities whose course pages name only study periods, with
+// the start months a Platform Admin enters by hand from the university's calendar. The job provider-calendar-intakes
+// answers the waiting reviews within 10 minutes; a calendar never adds a start to a course whose page names none.
+// Read: public.admin_semester_intakes_read(); write: public.admin_provider_calendar_set (migrations 20261003001500/001510).
+export function CalendarByHand({country=''}){
+  const[data,setData]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[form,setForm]=useState({}),[note,setNote]=useState('')
+  const load=async()=>{setErr('');const{data:d,error}=await supabase.rpc('admin_semester_intakes_read');if(error)throw error;setData(d)}
+  useEffect(()=>{load().catch(e=>setErr(errText(e)))},[])
+  if(!data)return <section className="m-panel fs-panel" data-calendar-by-hand>{err?<p className="fr-error" role="alert">{err}</p>:<Loading label="Loading waiting intake reviews…"/>}</section>
+  const rows=(data.providers||[])
+  const save=async p=>{const f=form[p.provider_id]||{};const periods=(p.periods||[]).map(per=>({period:per,month:f[per]||''})).filter(x=>x.month)
+    if(!periods.length||!/^https?:\/\//.test(f.url||'')){setErr('Give a month for at least one period and the calendar page address.');return}
+    if(!window.confirm(`Set ${p.provider}: ${periods.map(x=>`${periodName(x.period)} starts in ${MONTHS[Number(x.month)-1]}`).join(', ')}? The waiting reviews are answered within 10 minutes; courses with intakes already are left alone.`))return
+    setBusy(true);setErr('');setNote('')
+    try{const{data:r,error}=await supabase.rpc('admin_provider_calendar_set',{p_provider_id:p.provider_id,p_periods:periods,p_url:f.url,p_note:f.note||null});if(error)throw error
+      setNote(`Saved for ${p.provider}: ${fmtNumber(r?.to_answer||0)} reviews will be answered.`);await load()}catch(e){setErr(errText(e))}finally{setBusy(false)}}
+  const set=(id,k,v)=>setForm(x=>({...x,[id]:{...(x[id]||{}),[k]:v}}))
+  return <section className="m-panel fs-panel" data-calendar-by-hand>
+    <SectionTitle icon={CalendarDays} title="Start months by hand" subtitle={`${fmtNumber(rows.reduce((a,r)=>a+Number(r.reviews||0),0))} intake reviews wait because the course page names only a study period. Enter the month each period starts, from the university's calendar page, and the reviews are answered within 10 minutes (Decision 228). Courses with intakes already, or set by hand, are left alone.`}/>
+    {err&&<p className="fr-error" role="alert">{err}</p>}{note&&<p className="sd-desc" role="status">{note}</p>}
+    {!rows.length?<p className="sd-desc">No intake review is waiting on a calendar.</p>:
+    <div className="cf-table-wrap"><table className="cf-table" data-calendar-by-hand-list><thead><tr><th>University</th><th>Waiting</th><th>Periods on its pages</th><th>Start months</th>{data.can_set&&<th>Calendar page and save</th>}</tr></thead><tbody>
+      {rows.map(p=>{const f=form[p.provider_id]||{};const known=p.months||{};return <tr key={p.provider_id} data-calendar-provider={p.provider_id}>
+        <td><strong>{p.provider}</strong>{p.sample&&<div className="sd-desc">{String(p.sample).slice(0,120)}</div>}</td>
+        <td>{fmtNumber(p.reviews||0)}{Number(p.answerable||0)>0&&<div className="sd-desc">{fmtNumber(p.answerable)} answerable now</div>}</td>
+        <td>{(p.periods||[]).map(periodName).join(', ')||'—'}</td>
+        <td>{(p.periods||[]).map(per=><div key={per} className="re-line"><small>{periodName(per)}</small>{data.can_set?<select className="fv-input" aria-label={`${p.provider} ${periodName(per)} month`} value={f[per]??(known[per]||'')} onChange={e=>set(p.provider_id,per,e.target.value)} disabled={busy}><option value="">Month…</option>{MONTHS.map((m,i)=><option key={m} value={i+1}>{m}</option>)}</select>:<span>{known[per]?MONTHS[Number(known[per])-1]:'—'}</span>}</div>)}</td>
+        {data.can_set&&<td><input className="fv-input" type="url" placeholder={p.calendar_url||'https://'} value={f.url??(p.calendar_url||'')} onChange={e=>set(p.provider_id,'url',e.target.value)} aria-label={`${p.provider} calendar page`} disabled={busy}/>
+          <Button compact variant="primary" onClick={()=>save(p)} disabled={busy}><Check size={13}/>Save</Button></td>}
+      </tr>})}</tbody></table></div>}
+  </section>
+}
