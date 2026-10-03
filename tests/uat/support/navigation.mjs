@@ -94,16 +94,3 @@ export async function openGovernanceProvider(page) {
   return dialog
 }
 
-export async function openScholarshipSelection(page) {
-  await clickPrimaryNav(page, 'Scholarships')
-  await expect(page.locator('.m-title-wrap h1')).toContainText(/Scholarships/i, ui)
-  // v2.15.130: decision support moved to Scholarships › Course links, under "More ways to link scholarships to courses".
-  await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: 'Course links' }).first().click(ui)
-  await page.locator('details.sl-tools > summary').click(ui)
-  const open = page.getByRole('button', { name: 'Open Course decision support', exact: true })
-  await expect(open).toBeVisible(ui)
-  await open.click()
-  const dialog = page.getByRole('dialog', { name: 'Scholarship Selection' })
-  await expect(dialog).toBeVisible(ui)
-  return dialog
-}
