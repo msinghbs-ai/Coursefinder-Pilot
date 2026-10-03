@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.102 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.175** (Course decision support retired with Course links (only reachable from that screen); the course record's scholarship cards cover it).
+- none
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.101 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.174** (Scholarships: Course links tab retired with its code; list heading removed (count on the search row); Firecrawl credit cap and reserve are Layer 2 settings shown with credits used).

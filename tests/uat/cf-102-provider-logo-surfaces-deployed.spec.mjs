@@ -17,7 +17,6 @@ test.describe('CF-102 Provider logos across detail, list and comparison @targete
    const logo=fs.readFileSync('src/ProviderLogo.jsx','utf8')
    const edge=fs.readFileSync('supabase/functions/provider-asset-access/index.ts','utf8')
    const api=fs.readFileSync('src/lib/supabase.js','utf8')
-   const scholarship=fs.readFileSync('src/scholarship-selection-entry.jsx','utf8')
 
    // Feature contract, deliberately NOT pinned to an old UI version.
    expect(main).toContain("import ProviderLogo,{ProviderBrand}from'./ProviderLogo'")
@@ -42,8 +41,9 @@ test.describe('CF-102 Provider logos across detail, list and comparison @targete
    expect(api).toContain("providerAssetAccess: providerId => invoke('provider-asset-access'")
 
    // Later Scholarship work must coexist with, not replace, CF-102 logo wiring.
-   expect(main).toContain("import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'")
-   expect(scholarship).toContain('International students only')
+   // v2.15.174: Course decision support (scholarship-selection-entry) retired with Scholarships › Course links;
+   // the course record's scholarship cards show which scholarships apply to a course.
+   expect(fs.existsSync('src/scholarship-selection-entry.jsx')).toBe(false)
  })
 
  test('deployed Provider, Course and Compare render approved primary logos',async({page},testInfo)=>{

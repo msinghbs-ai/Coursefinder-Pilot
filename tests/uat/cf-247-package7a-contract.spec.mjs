@@ -13,7 +13,7 @@ test('source: Melbourne time, no IST, onboarding merged, datasets component, no 
   expect(main).toContain("if(tab==='datasets')return <StatisticsDatasets rank={rank}/>")
   expect(main).toContain('<ProviderOnboarding rank={rank} openEvidence=')
   expect(fs.readFileSync('src/layer2-operations-entry.jsx', 'utf8')).not.toContain('<ProviderOnboarding')
-  for (const f of ['src/platform-maturity-entry.jsx', 'src/pipeline-ops-entry.jsx', 'src/ScholarshipRuntimeWorkspace.jsx', 'src/scholarship-selection-entry.jsx', 'src/EvidenceWorkspace.jsx'])
+  for (const f of ['src/platform-maturity-entry.jsx', 'src/pipeline-ops-entry.jsx', 'src/ScholarshipRuntimeWorkspace.jsx', 'src/EvidenceWorkspace.jsx'])
     expect(fs.readFileSync(f, 'utf8')).not.toMatch(/M2\.4\.4 permanent baseline|M1-PIPELINE-OPS · |M2\.4\.5 · Scholarship PIM|Private governed evidence/)
 })
 
