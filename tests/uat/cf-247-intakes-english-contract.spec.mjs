@@ -89,7 +89,8 @@ test.describe('browser: English policies panel', () => {
     await pp.getByRole('button', { name: 'Academic calendars' }).click()
     // v2.15.162: each period is a column; the suggested month is an input the Platform Admin can change before approving
     await expect(pp.locator('[data-policy="cp1"] [data-intake="1"] select')).toHaveValue('3') // Intake 1 = semester 1, March
-    await expect(pp.locator('[data-policy="cp1"] [data-intake="2"]')).toContainText('Semester 2')
+    await expect(pp.locator('[data-policy="cp1"] [data-intake="2"] select')).toHaveValue('8') // Intake 2 = semester 2, August
+    await expect(pp.locator('[data-policy="cp1"] [data-raw]')).toContainText('Semester 1: March')
     await expect(pp.locator('[data-policy="cp1"]').getByRole('button', { name: 'Approve' })).toBeVisible()
   })
 
