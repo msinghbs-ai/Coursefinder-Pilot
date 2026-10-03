@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.167'
-export const PACKAGE_VERSION='0.1.94'
+export const UI_VERSION='2.15.168'
+export const PACKAGE_VERSION='0.1.95'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Scholarship audience from wording',
+  title:'Scholarship tiers, nationality and the Zoho scholarships action',
   changes:[
-    'Scholarships: the audience (who the scholarship is for) is now read from each scholarship\'s own wording — International students, Domestic students, International and domestic, or Not stated on the page — with the matched phrase kept as the basis (migration 20261003002000; job scholarship-audience, hourly). Before this every scholarship carried International as a default. Result today: 311 international, 187 international and domestic, 278 domestic, 459 not stated; the Publishing ready list is 177 (international and both), and scholarships open to everyone are now offered to international students on course and provider pages as well.'
+    'Scholarships: a page that states several values now gives award tiers with the page as evidence, and the value shows as a range (20% to 70% of tuition fees; Up to A$15,000 with the amounts stated) — 283 scholarships, 707 tiers; a range counts as a stated value for publishing, never as a saving (Decision 245). Nationalities named on the page are read hourly with the phrase kept and shown on the list and the record (Decision 246; 59 scholarships name one). Both readings are on Automations.',
+    'Zoho course API: action scholarships (course_id or stable_key) returns the published scholarships that apply to a course with value and tiers, audience, nationalities, who qualifies in the page\'s words, the saving per year where known, dates and the page link.'
   ],
   bugFixes:[]
 }

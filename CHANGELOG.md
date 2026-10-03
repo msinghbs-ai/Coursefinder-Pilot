@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.95 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.168** (Scholarship award tiers and nationality from wording; Zoho scholarships action (Decisions 245, 246)).
+- Migrations 20261003002100–002400; jobs scholarship-nationality (hourly).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.94 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.167** (Scholarship audience read from wording (Decision 244)).

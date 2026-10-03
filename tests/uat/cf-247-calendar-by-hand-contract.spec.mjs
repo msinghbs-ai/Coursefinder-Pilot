@@ -115,3 +115,20 @@ test('scholarship award tiers from the page: migration shape', () => {
   expect(m).toContain("or exists (select 1 from scholarship.award_tiers t where t.scholarship_id=s.id and t.tier_code like 'page_tier_%')")
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
+
+// v2.15.168 (Decisions 245, 246): nationalities on the list and the record; Zoho scholarships action; migrations shaped.
+test('scholarship nationality and Zoho scholarships action', () => {
+  const main = read('src/mature-main.jsx')
+  expect(main).toContain("{key:'nationalities',label:'Nationalities',width:130}")
+  const el = read('src/ScholarshipEligibility.jsx')
+  expect(el).toContain('data-audience')
+  const z = read('supabase/functions/zoho-course-api/index.ts')
+  expect(z).toContain('action === "scholarships"')
+  expect(z).toContain('svc.rpc("zoho_edge_scholarships_v1", { p_course: course })')
+  for (const f of ['20261003002200_cf247_scholarship_nationality_from_wording', '20261003002300_cf247_scholarship_selection_fields_and_zoho', '20261003002400_cf247_scholarship_reads_nationalities']) {
+    const m = read(`supabase/migrations/${f}.sql`)
+    for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  }
+  const n = read('supabase/migrations/20261003002200_cf247_scholarship_nationality_from_wording.sql')
+  expect(n).toContain("where x.code <> 'AU' and not (x.code = 'NZ' and t.study_country = 'AU')")
+})
