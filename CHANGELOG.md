@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.93 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.166** (Academic calendars: Start months by hand folded into the one list; calendar parser v0.2.2 reads section-row layouts (Curtin)).
+- Worker coverage-sweep v0.13.5 (calendar parser provider-policy-v0.2.2); 392 stored calendar pages re-parsed, 68 proposals.
+- Provider drawer edited inline in priority order; Scholarships Audience filter (migration 20261003001900) and clipped Award column; course tuition field named against the CRICOS cost.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.92 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.165** (Academic calendars: internal and external links on each row; months set by hand win; Not an intake no longer holds a course).

@@ -159,6 +159,6 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-source-comparison="course"]')).toHaveCount(0)
     const panel = page.locator('[data-editor="course"]')
     await expect(panel).toContainText('Course values')
-    await expect(panel.getByRole('button', { name: 'Change Tuition (international)' })).toBeVisible()
+    await expect(panel.getByRole('button', { name: 'Change Tuition from the course page (international)' })).toBeVisible()
   })
 })

@@ -6,14 +6,21 @@ import fs from 'node:fs'
 
 const read = p => fs.readFileSync(p, 'utf8')
 
-test('calendar by hand: read and set through the Decision 228 functions, on the Attributes page', () => {
+// v2.15.166 (Platform Admin, 3 Oct 2026 13:50): the by-hand panel is folded into the Academic calendars list — a
+// university with no months found is a row of the same shape (Intake 1, Intake 2, periods on its pages) with the
+// calendar page address to fill in; "Save months" writes them by hand and nothing is rejected.
+test('calendar by hand: folded into the calendars list, set through the Decision 228 functions', () => {
   const pp = read('src/ProviderPolicies.jsx')
   expect(pp).toContain("supabase.rpc('admin_semester_intakes_read')")
-  expect(pp).toContain("supabase.rpc('admin_provider_calendar_set',{p_provider_id:p.provider_id,p_periods:periods,p_url:f.url,p_note:f.note||null})")
-  expect(pp).toContain('if(!window.confirm(`Set ${p.provider}:')
+  expect(pp).toContain("if(x.byhand){const{error:e0}=await supabase.rpc('admin_provider_calendar_set',{p_provider_id:x.provider_id,p_periods:periods,p_url:url,")
+  expect(pp).toContain("if(x.byhand&&!/^https?:\\/\\//.test(url||'')){setErr('Give the calendar page address.');return}")
+  expect(pp).toContain("{x.byhand?'Save months':!english&&edited(x)?'Approve as edited':'Approve'}")
+  expect(pp).toContain("{!x.byhand&&<Button compact onClick={()=>decide(x,'reject')}>")
+  expect(pp).not.toContain('CalendarByHand')
   expect(pp).not.toMatch(/toLocale|Intl\./)
   const main = read('src/mature-main.jsx')
-  expect(main).toContain('<ProviderPolicies country={country}/>\n    <CalendarByHand country={country}/>')
+  expect(main).toContain('<ProviderPolicies country={country}/>')
+  expect(main).not.toContain('CalendarByHand')
   const a1 = read('supabase/migrations/20261003001510_cf247_calendar_intakes_on_a1.sql')
   expect(a1).toContain("update pipeline.layer4_review_items set status = 'superseded', decided_at = now(), escalation_reason = v_reason where id = r.review_id and status = 'pending';")
   const a2 = read('supabase/migrations/20261003001500_cf247_calendar_intakes_on_a2.sql')
@@ -45,4 +52,47 @@ test('calendar rows: internal and external links', () => {
   const m = read('supabase/migrations/20261003001700_cf247_calendar_byhand_wins.sql')
   expect(m).toContain("order by e->>'period', (x.style = 'by_hand') desc nulls last, x.decided_at desc nulls last")
   expect(m).toContain("when q.missing > 0 and not (q.byhand and q.mon is not null) then 'period_unknown'")
+})
+
+test.describe('browser: calendars list with a by-hand row', () => {
+  test('v2.15.166: a university with no months found is a row; Save months writes every period of that rank by hand', async ({ page }) => {
+    const { mockAdmin } = await import('./support/admin-mock.mjs')
+    await mockAdmin(page)
+    const calls = page.l3calls
+    page.on('dialog', (d) => d.accept())
+    await page.goto('/#layer-4-review?tab=attributes')
+    const pp = page.locator('[data-provider-policies]')
+    await pp.getByRole('button', { name: 'Academic calendars' }).click()
+    const row = pp.locator('tr[data-policy="byhand:pv-byhand"]')
+    await expect(row.locator('[data-byhand]')).toContainText('45 intake reviews waiting')
+    await expect(row.locator('[data-raw]')).toContainText('Semester 1, Semester 2, Trimester 3')
+    await expect(row.getByRole('button', { name: 'Reject' })).toHaveCount(0)
+    await row.locator('[data-intake="1"] select').selectOption('2')
+    await row.locator('[data-intake="2"] select').selectOption('7')
+    await row.getByRole('button', { name: 'Save months' }).click()
+    await expect.poll(() => calls.find(c => c.calendarSet)?.calendarSet.p_periods.map(x => `${x.period}=${x.month}`).sort()).toEqual(['semester 1=2', 'semester 2=7', 'trimester 1=2', 'trimester 2=7'])
+    expect(calls.find(c => c.calendarSet).calendarSet.p_url).toBe('https://byhand.edu.au/calendar')
+    expect(calls.find(c => c.policyDecide)).toBeUndefined()
+  })
+})
+
+// v2.15.166 (Platform Admin, 3 Oct 2026 14:12 and 14:21): provider drawer edited inline in priority order; Scholarships
+// list gets an Audience filter (backed by migration 001900) and a clipped Award cell; the course editor says what its
+// tuition field is beside the registered CRICOS cost.
+test('provider drawer inline, scholarship audience filter, tuition field named', () => {
+  const re = read('src/RecordEditor.jsx')
+  expect(re).toContain('export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=null})')
+  expect(re).toContain('<strong>Provider values</strong>')
+  expect(re).toContain('<h4 className="re-group">Contact details</h4>')
+  expect(re).toContain('label="Tuition from the course page (international)"')
+  expect(re).toContain('data-tuition-note')
+  const main = read('src/mature-main.jsx')
+  expect(main).toContain('<ProviderEditor inline providerId={data.id} onChanged={onChanged} onError={onError} facts={grid}/>')
+  expect(main.indexOf('facts={grid}/>')).toBeLessThan(main.indexOf('<InternationalContacts data={data} navigate={navigate}/>{data.id&&<ProviderRankings'))
+  expect(main).toContain(`<FilterSelect label="Audience" value={filters.audience||''}`)
+  expect(main).toContain("if(type==='scholarship'&&filters.audience)a.audience=filters.audience;")
+  expect(main).toContain('className="m-cell-clip"')
+  const m = read('supabase/migrations/20261003001900_cf247_scholarships_page_audience.sql')
+  expect(m).toContain("and (nullif(p_args->>'audience','') is null or s.audience::text=p_args->>'audience')")
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
