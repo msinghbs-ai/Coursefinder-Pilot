@@ -96,3 +96,14 @@ test('provider drawer inline, scholarship audience filter, tuition field named',
   expect(m).toContain("and (nullif(p_args->>'audience','') is null or s.audience::text=p_args->>'audience')")
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
+
+// v2.15.167 (Decision 244): scholarship audience read from each scholarship's wording; labels for the two new values.
+test('scholarship audience from wording: labels and migration shape', () => {
+  const main = read('src/mature-main.jsx')
+  expect(main).toContain("international_and_domestic:'International and domestic',not_stated:'Not stated on the page'")
+  const m = read('supabase/migrations/20261003002000_cf247_scholarship_audience_from_wording.sql')
+  expect(m).toContain("check (audience in ('international','domestic','international_and_domestic','not_stated'))")
+  expect(m).toContain("and not exists (select 1 from pipeline.manual_locks k where k.entity = 'scholarship' and k.entity_id = s.id and k.field = 'audience');")
+  expect(m).toContain("select cron.schedule('scholarship-audience', '41 * * * *'")
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+})

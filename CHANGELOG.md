@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.94 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.167** (Scholarship audience read from wording (Decision 244)).
+- Migration 20261003002000 scholarship_audience_from_wording; job scholarship-audience hourly.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.93 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.166** (Academic calendars: Start months by hand folded into the one list; calendar parser v0.2.2 reads section-row layouts (Curtin)).
