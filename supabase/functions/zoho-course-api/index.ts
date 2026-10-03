@@ -92,7 +92,8 @@ Deno.serve(async (req:Request) => {
   delete body.integration_token;
 
   const action = cleanText(body.action);
-  if (!["search","lookup","provider_options","filter_options","reference_bundle"].includes(action)) {
+  // "report" (3 Oct 2026, Platform Admin): a counsellor flags a course value that needs a look; it lands on Layer 4 › Flagged values.
+  if (!["search","lookup","provider_options","filter_options","reference_bundle","report"].includes(action)) {
     return safeError(400, "INVALID_ACTION", requestId);
   }
 
@@ -179,6 +180,17 @@ Deno.serve(async (req:Request) => {
       }));
     } else if (action === "reference_bundle") {
       ({data,error} = await svc.rpc("zoho_edge_reference_bundle_v1"));
+    } else if (action === "report") {
+      const course = cleanText(body.course_id) || cleanText(body.stable_key);
+      const note = typeof body.note === "string" ? body.note.trim().slice(0, 1000) : "";
+      if (!course || note.length < 3) return safeError(400, "INVALID_JSON", requestId);
+      const reporter = (body.reporter && typeof body.reporter === "object") ? body.reporter as Record<string,unknown> : {};
+      ({data,error} = await svc.rpc("zoho_edge_report_v1", {
+        p_course: course,
+        p_field: cleanText(body.field) || "other",
+        p_note: note,
+        p_reporter: { name: cleanText(reporter.name).slice(0,120), email: cleanText(reporter.email).slice(0,160), ref: cleanText(reporter.ref).slice(0,120) }
+      }));
     }
 
     if (error) {
@@ -194,7 +206,7 @@ Deno.serve(async (req:Request) => {
 
     const object = (data && typeof data === "object") ? data as Record<string,unknown> : {};
 
-    if (action === "lookup" && (object.error === "NOT_FOUND" || object.code === "NOT_FOUND")) {
+    if ((action === "lookup" || action === "report") && (object.error === "NOT_FOUND" || object.code === "NOT_FOUND")) {
       return safeError(404, "NOT_FOUND", requestId);
     }
 
