@@ -107,3 +107,11 @@ test('scholarship audience from wording: labels and migration shape', () => {
   expect(m).toContain("select cron.schedule('scholarship-audience', '41 * * * *'")
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
+
+// Decision 245: several values stated on a page become award tiers with the page as evidence; the value text is the range.
+test('scholarship award tiers from the page: migration shape', () => {
+  const m = read('supabase/migrations/20261003002100_cf247_scholarship_award_tiers_from_page.sql')
+  expect(m).toContain("and not exists (select 1 from pipeline.manual_locks k where k.entity = 'scholarship' and k.entity_id = s.id and k.field in ('award', 'award_value')))")
+  expect(m).toContain("or exists (select 1 from scholarship.award_tiers t where t.scholarship_id=s.id and t.tier_code like 'page_tier_%')")
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+})
