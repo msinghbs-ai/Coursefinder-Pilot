@@ -80,7 +80,7 @@ test('browser: publishing — four tiles and the reasons with what they mean', a
   const why = page.locator('[data-publishing-reasons]')
   await why.locator('[data-reason="no linked course"]').click()
   await expect(why.locator('[data-reason-detail]')).toContainText('It applies to no course in CourseFinder yet.')
-  await expect(why.locator('[data-reason-detail] a')).toHaveAttribute('href', '#scholarships?tab=links')
+  await expect(why.locator('[data-reason-detail] a')).toHaveCount(0) // v2.15.174: Course links retired; links come from the page
 })
 
 test('browser: course drawer — published scholarship cards with saving and estimate', async ({ page }) => {

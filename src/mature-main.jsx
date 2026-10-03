@@ -12,7 +12,6 @@ import RegulatorySettings from'./RegulatorySettings'
 import EvidenceWorkspace from'./EvidenceWorkspace'
 import CourseDetailPolish from'./CourseDetailPolish'
 import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
-import ScholarshipLinks from'./ScholarshipLinks'
 import FeeRules from'./FeeRules'
 import ModelsServices from'./ModelsServices'
 import ListEdit from'./ListEdit'
@@ -54,7 +53,6 @@ import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
 import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
 import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
 import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
-import{ScholarshipSelectionWorkspace}from'./scholarship-selection-entry'
 import PlatformMaturity from'./platform-maturity-entry'
 import EnvironmentMigrationWorkspace from'./EnvironmentMigrationWorkspace'
 import{AccessRolesEmbedded}from'./access-roles-entry'
@@ -213,7 +211,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
         if(tab==='onboarding')return <div className="m-page-stack">{/* v2.15.131: Layer 2's provider onboarding queue merged here (screen review l2r-onboard, l2r-qualify: merge/keep into Providers › Onboarding). */}<ProviderOnboarding rank={rank} openEvidence={id=>{location.hash=`#evidence${id?`?evidence_id=${encodeURIComponent(id)}`:''}`}}/><details className="cf-collapse onb-cases"><summary>Country and source onboarding cases</summary><OnboardingWorkspace rank={rank} onError={err}/></details></div>
         return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
-      case'scholarships':return tab==='links'?<div className="m-page-stack"><ScholarshipLinks onError={err}/><ScholarshipLinkTools rank={rank} onError={onError}/></div>:<ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
+      case'scholarships':return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
         if(tab==='compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
         if(tab==='qilt')return <Qilt onError={onError}/>
@@ -496,24 +494,7 @@ function Layer2ExecutionPolicySettings(){
  </section>
 }
 
-// v2.15.130 (screen review sch-fill-overlap, sch-decision-support): the list page is the list only. The bulk fill and
-// course decision support moved to Scholarships › Course links, so everything that links scholarships to courses is in
-// one place (ScholarshipLinkTools below the Course links list).
 function ScholarshipWorkspace({rank,onError,navigate,initialId}){return <div className="m-page-stack"><Catalogue type="scholarship" onError={onError} navigate={navigate} initialId={initialId} rank={rank}/></div>}
-function ScholarshipLinkTools({rank,onError}){const[selectionOpen,setSelectionOpen]=useState(false);return <details className="cf-collapse sl-tools"><summary>More ways to link scholarships to courses</summary><div className="m-drawer-body">
-  {rank>=4&&<ScholarshipFillControl onError={onError}/>}
-  <section className="m-panel"><PanelTitle icon={GraduationCap} title="Course decision support" subtitle="For one course, see which scholarships could apply and why. Eligibility for a particular student is not decided here."/><button className="m-secondary compact" onClick={()=>setSelectionOpen(true)}><GraduationCap size={15}/>Open Course decision support</button></section>
-  {selectionOpen&&<ScholarshipSelectionWorkspace onClose={()=>setSelectionOpen(false)}/>}</div></details>}
-function ScholarshipFillControl({onError}){
- const[country,setCountry]=useState('AU'),[busy,setBusy]=useState(false),[result,setResult]=useState(null)
- const run=async action=>{setBusy(true);try{const{data,error}=await supabase.functions.invoke('scholarship-course-fill-control',{body:{action,country_code:country}});if(error)throw error;if(data?.error)throw new Error(data.error);setResult(data)}catch(e){onError(e.message||String(e))}finally{setBusy(false)}}
- return <section className="m-panel"><PanelTitle icon={Sparkles} title="Fill links from clear scopes" subtitle="Links a scholarship to courses only where its page names the course or the whole university. Anything less clear stays on this tab for a person to decide."/>
-  <div className="m-filter-bar"><label className="m-filter-select"><span>Country</span><select className="fv-filter" aria-label="Scholarship fill country" value={country} onChange={e=>setCountry(e.target.value)}><option value="AU">Australia</option><option value="NZ">New Zealand</option></select></label></div>
-  <div className="m-attention-grid"><Attention tone="info" icon={SearchCheck} title="Preview" text="Count the courses and links this would add, and those left for review." action="Preview" onClick={()=>run('preview')}/><Attention tone="success" icon={CheckCircle2} title="Fill links" text="Adds only the clear links; running it again changes nothing. Course details and publishing are not changed." action="Fill now" onClick={()=>run('fill')}/><Attention tone="warning" icon={ClipboardCheck} title="Send the rest for review" text="Scholarships whose page does not say which courses they cover are listed for a person on this tab; nothing is guessed." action="Queue review" onClick={()=>run('queue_review')}/></div>
-  {busy&&<div className="m-empty-inline">Filling links…</div>}{result&&<div className="m-summary-strip"><SummaryCard icon={GraduationCap} label="Courses" value={fmtNumber(result.courses??result.deterministic_mappings??0)} tone="blue"/><SummaryCard icon={Sparkles} label="Deterministic mappings" value={fmtNumber(result.deterministic_mappings??result.written_or_refreshed??0)} tone="green"/><SummaryCard icon={ClipboardCheck} label="Review candidates" value={fmtNumber(result.provider_level_candidates??0)} tone="amber"/><div className="m-summary-note"><strong>{humanise(result.status||'preview ready')}</strong><span>{result.rule||'No Scholarship eligibility is manufactured.'}</span></div></div>}
- </section>
-}
-
 function DashboardSkeleton(){return <div className="m-page-stack"><div className="m-skeleton hero"/><div className="m-metric-grid">{Array.from({length:8}).map((_,i)=><div className="m-skeleton metric" key={i}/>)}</div><div className="m-grid-2"><div className="m-skeleton panel"/><div className="m-skeleton panel"/></div></div>}
 function Fresh({label,value,number,text}){return <div><small>{label}</small><strong>{number?fmtNumber(value):text?(value??'—'):value?`${relativeTime(value)} · ${fmtDateTime(value)}`:'—'}</strong></div>}
 function ActivityFeed({items,navigate}){if(!items.length)return <EmptyInline text="No recent activity."/>;return <div className="m-activity-list">{items.map((x,i)=>{const Icon=x.kind==='job'?Workflow:x.kind==='review'?ClipboardCheck:FileCheck2;const target=x.kind==='job'?'Jobs':x.kind==='review'?'Review Queue':'Evidence';const params=x.kind==='evidence'&&x.id?{evidence_id:x.id}:{};return <button key={x.id||i} onClick={()=>navigate(target,params)} className="m-activity-row"><span className={`m-activity-icon kind-${x.kind}`}><Icon size={15}/></span><span className="m-activity-copy"><strong>{x.title||humanise(x.kind)}</strong><small>{x.detail||'Governed activity'} · {relativeTime(x.occurred_at)}</small></span><Status value={x.status}/></button>})}</div>}
@@ -553,8 +534,8 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   return <div className="m-page-stack">
     
     <section className="m-panel m-catalogue-panel">
-      <div className="m-workspace-head"><div><h2>{completenessMode?'Course readiness workspace':`${humanise(type)} catalogue`}</h2>{completenessMode&&<p>Courses missing key facts, by what is missing.</p>}</div><div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(total)}</strong><span>{active.some(([k])=>/lifecycle/i.test(String(k)))?'matching':'matching · any status'}</span></>}</div></div>
-      <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={cfg.search}/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label>{type==='course'&&<button className={`m-filter-toggle ${advanced?'active':''}`} onClick={()=>setAdvanced(x=>!x)}><SlidersHorizontal size={15}/>Filters{active.length?` · ${active.length}`:''}</button>}<button className="m-secondary compact" onClick={()=>{setQuery('');setFilters({});setFilterLabels({});setOffset(0)}} disabled={!query&&!active.length}><RefreshCw size={14}/>Clear</button>{!completenessMode&&['provider','course'].includes(type)&&<button className="m-secondary compact" onClick={()=>navigate?.('Compare',{type})}><Activity size={14}/>Compare {type}s</button>}{!completenessMode&&['provider','course'].includes(type)&&Number(rank)>=5&&<button className="m-secondary compact" onClick={()=>setCreating(true)}><Plus size={14}/>Add {type}</button>}{!completenessMode&&['provider','course','campus','scholarship'].includes(type)&&Number(rank)>=3&&<button className={`m-secondary compact${listEdit?' active':''}`} aria-pressed={listEdit} onClick={()=>setListEdit(x=>!x)}><Pencil size={14}/>{listEdit?'Done editing':'Edit in list'}</button>}</div>
+      {type!=='scholarship'&&<div className="m-workspace-head"><div><h2>{completenessMode?'Course readiness workspace':`${humanise(type)} catalogue`}</h2>{completenessMode&&<p>Courses missing key facts, by what is missing.</p>}</div><div className="m-result-count">{busy?<><span className="m-spinner"/>Loading…</>:<><strong>{fmtNumber(total)}</strong><span>{active.some(([k])=>/lifecycle/i.test(String(k)))?'matching':'matching · any status'}</span></>}</div></div>}
+      <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={cfg.search}/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label>{type==='course'&&<button className={`m-filter-toggle ${advanced?'active':''}`} onClick={()=>setAdvanced(x=>!x)}><SlidersHorizontal size={15}/>Filters{active.length?` · ${active.length}`:''}</button>}<button className="m-secondary compact" onClick={()=>{setQuery('');setFilters({});setFilterLabels({});setOffset(0)}} disabled={!query&&!active.length}><RefreshCw size={14}/>Clear</button>{type==='scholarship'&&<span className="sch-count" data-sch-count>{busy?'Loading…':<><strong>{fmtNumber(total)}</strong> published</>}</span>}{!completenessMode&&['provider','course'].includes(type)&&<button className="m-secondary compact" onClick={()=>navigate?.('Compare',{type})}><Activity size={14}/>Compare {type}s</button>}{!completenessMode&&['provider','course'].includes(type)&&Number(rank)>=5&&<button className="m-secondary compact" onClick={()=>setCreating(true)}><Plus size={14}/>Add {type}</button>}{!completenessMode&&['provider','course','campus','scholarship'].includes(type)&&Number(rank)>=3&&<button className={`m-secondary compact${listEdit?' active':''}`} aria-pressed={listEdit} onClick={()=>setListEdit(x=>!x)}><Pencil size={14}/>{listEdit?'Done editing':'Edit in list'}</button>}</div>
       <FilterBar type={type} filters={filters} filterLabels={filterLabels} patch={patch} data={filterData} busy={filterBusy} advanced={advanced}/>
       {(query||active.length>0)&&<div className="m-chip-row">{query&&<FilterChip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><FilterChip key={k} label={`${k==='subdivision'?regionLabel(filters.country):filterLabel(k)}: ${filterLabels[k]||filterValueLabel(k,v,filterData)}`} onRemove={()=>patch(k,'')}/>)}</div>}
       {/* v2.15.172 (Platform Admin, 4 Oct 2026 00:11): the module lists published scholarships only; status is handled in Layers 1 to 4 */}

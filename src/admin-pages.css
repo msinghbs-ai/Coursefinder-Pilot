@@ -171,22 +171,10 @@ td>.l3v-model{display:block}
 .re-picked{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 9px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md)}
 @media(max-width:620px){.re-row-body{flex-direction:column}.re-year,.re-score,.re-amount{width:100%}.re-history li{grid-template-columns:1fr}.re-history li small{grid-column:1}}
 
-/* v2.15.115 scholarship course links (ScholarshipLinks.jsx) */
+/* shared search and choice styles (kept from the retired Course links screen, v2.15.174) */
 .sl-search{min-width:240px}
-.sl-list tbody tr{cursor:pointer}.sl-list tr.sl-picked{background:var(--cf-indigo-50)}
-.sl-name{border:0;background:transparent;padding:0;text-align:left;font-weight:700;color:var(--cf-slate-900);cursor:pointer;font-size:var(--cf-fs-sm)}
-.sl-decide{display:grid;gap:10px}
-.sl-current{margin:0;font-size:var(--cf-fs-sm);color:var(--cf-slate-600)}
-.sl-suggest{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:var(--cf-radius-md);background:var(--cf-violet-50);color:var(--cf-slate-800);font-size:var(--cf-fs-sm)}
-.sl-suggest span{flex:1;min-width:200px}
 .sl-choice{display:flex;gap:14px;flex-wrap:wrap;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);padding:8px 10px;margin:0}
 .sl-choice legend{font-size:var(--cf-fs-xs);color:var(--cf-slate-500);padding:0 4px}.sl-choice label{display:inline-flex;align-items:center;gap:6px;font-size:var(--cf-fs-sm);font-weight:600}
-.sl-filter{display:grid;gap:10px}.sl-filter small{color:var(--cf-slate-500);font-size:var(--cf-fs-xs)}
-.sl-checks{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:4px}.sl-checks label{display:inline-flex;align-items:center;gap:5px;font-size:var(--cf-fs-sm)}.sl-checks span{color:var(--cf-slate-500);font-size:var(--cf-fs-xs)}
-.sl-title{display:grid;gap:4px}
-.sl-preview{padding:9px 10px;border:1px dashed var(--cf-slate-300);border-radius:var(--cf-radius-md);font-size:var(--cf-fs-sm)}
-.sl-preview ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:3px}.sl-preview li{display:flex;gap:8px;justify-content:space-between}
-.sl-save{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}.sl-save .re-reason{flex:1;min-width:240px}
 @media(max-width:620px){.sl-search{min-width:0;width:100%}.sl-choice{flex-direction:column;gap:6px}}
 
 /* v2.15.116 Layer 4 batch rules (FeeRules.jsx) */

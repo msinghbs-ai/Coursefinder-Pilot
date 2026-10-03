@@ -8,7 +8,7 @@ test('source: renamed view, compact sections, pointer to Course links', () => {
   const s = fs.readFileSync('src/m2-3-intelligence-entry.jsx', 'utf8')
   expect(s).toContain("['batches','Bulk decisions']")
   expect(s).toContain("<Layer4MassOperations embedded sections={['departures','quality','history']}/>")
-  expect(s).toContain('href="#scholarships?tab=links"')
+  expect(s).toContain('comes from the study levels, fields and courses its own page names') // v2.15.174: Course links retired
   expect(s).not.toContain('Scholarship scope batches and audit history')
 })
 
@@ -25,7 +25,7 @@ test.describe('mocked browser', () => {
     await expect(page.getByText('120 × Intakes')).toBeVisible()
     const more = page.getByRole('tablist', { name: 'More bulk work' })
     await expect(more.getByRole('button')).toHaveText(['Provider departures', 'Errors & improvements', 'Decision history'])
-    await expect(page.getByRole('link', { name: 'Scholarships › Course links' })).toBeVisible()
+    await expect(page.getByText('comes from the study levels, fields and courses its own page names')).toBeVisible()
     await expect(page.getByText('Scholarship Course-scope review')).toHaveCount(0)
   })
 })
