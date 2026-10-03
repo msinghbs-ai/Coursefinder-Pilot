@@ -45,7 +45,7 @@ const SCH_FC_CAP = 3000;
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.13.3";
+const WORKER = "coverage-sweep-worker-v0.13.4";
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -1037,11 +1037,14 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     if (mode === "read") {
-      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
+      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string; basis?: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const tally: Record<string, number> = {};
       await pool(items, 8, async (it) => {
         if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_identity_basis: null, p_storage_path: null, p_sha256: null, p_candidates: null }); return }
         let status = "fetch_failed", http: number | null = null, via: string | null = null, html = "", finalUrl = it.url;
+        // v0.13.4: a search candidate (basis title_search / cricos_search, picked by a URL recipe and often not the course's
+        // page) is read directly only; it is never rendered through Firecrawl. The matcher's pages and hand-entered pages keep the fallback.
+        const searchCandidate = it.basis === "title_search" || it.basis === "cricos_search";
         try {
           const u = new URL(it.url);
           if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) status = "robots_disallowed";
@@ -1052,7 +1055,9 @@ Deno.serve(async (req) => {
               if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) { html = await r.text(); via = "direct" }
             } catch { http = null }
             const thin = html && htmlToText(html).length < 1500;
-            if ((!html || thin) && (it.status === "bound" || it.priority === true) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
+            // v0.13.4: a search candidate (basis title_search / cricos_search, picked by a URL recipe and often not the course's
+            // page) is read directly only; it is never rendered through Firecrawl. The matcher's pages and hand-entered pages keep the fallback.
+            if (!searchCandidate && (!html || thin) && (it.status === "bound" || it.priority === true) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
               const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
               const d = await r.json().catch(() => ({}));
               if (r.ok && d?.data?.html) { html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
@@ -1069,7 +1074,7 @@ Deno.serve(async (req) => {
           identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous", it.country || "") || (it.manual === true ? "manual" : null);
           // v0.6.2: a priority page read directly without the code may be a script-rendered handbook (UNSW, Melbourne):
           // render it once through Firecrawl before calling it a mismatch.
-          if (!identityBasis && via === "direct" && it.priority === true && await useFc("scrape", it.provider_id, it.url)) {
+          if (!identityBasis && via === "direct" && it.priority === true && !searchCandidate && await useFc("scrape", it.provider_id, it.url)) {
             const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
             const d = r ? await r.json().catch(() => ({})) : {};
             if (r?.ok && d?.data?.html) {
