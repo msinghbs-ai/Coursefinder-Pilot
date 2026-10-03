@@ -149,6 +149,9 @@ test.describe('mocked browser', () => {
   test('scholarship and course detail show both sources and highlight differences', async ({ page }) => {
     await mockAdmin(page, { courseDiffers: true })
     await page.goto('/#scholarships?id=5f92fc8c-ad2b-5182-a3b7-2e9bba5b3d99')
+    // v2.15.171 (mockup): the scholarship drawer opens on the record; the government comparison is folded beneath it.
+    await expect(page.locator('[data-scholarship-record]')).toBeVisible()
+    await page.locator('[data-sr-compare] summary').click()
     const s = page.locator('[data-source-comparison="scholarship"]')
     await expect(s.locator('thead th', { hasText: 'Government (Study Australia)' })).toBeVisible()
     await expect(s.locator('tr[data-compare-state="differs"]')).toHaveCount(2)

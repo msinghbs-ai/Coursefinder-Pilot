@@ -129,7 +129,7 @@ test.describe('mocked browser', () => {
     await page.goto('/#layer-4-review?tab=publishing')
     await expect(page.getByRole('tab', { name: 'Publishing' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByText('Doherty Supplementary Scholarship')).toBeVisible()
-    await expect(page.getByText('No award value on the page')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'No award value on the page' })).toBeVisible() // v2.15.171: reasons are a list
     const publish = page.getByRole('button', { name: 'Publish 2' })
     await expect(publish).toBeDisabled()
     await page.getByLabel('Approval note').fill('Approved by Platform Admin, 30 Sep')

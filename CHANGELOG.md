@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.98 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.171** (Scholarship screens follow the mockup: list status pills and columns, record drawer with source and hand edits, publishing tiles and reasons, course scholarship cards).
+- 20261003003000_cf247_scholarships_page_status; 20261003003100_cf247_scholarship_screens_to_mockup
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.97 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.170** (Platform guide reviewed for the scholarship module).

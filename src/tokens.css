@@ -91,4 +91,6 @@
   --ops-violet:var(--cf-violet-700);--ops-violet-soft:var(--cf-violet-50);
   --cf-insight-ink:var(--cf-text);--cf-insight-navy:var(--cf-slate-750);--cf-insight-accent:var(--cf-brand);--cf-insight-accent-soft:var(--cf-brand-soft);
   --cf-insight-border:var(--cf-slate-225);--cf-insight-surface:var(--cf-surface-2);
+  /* v2.15.171 scholarship status chips (mockup) */
+  --cf-sch-pub-bg:#E3F2E8;--cf-sch-pub-ink:#1D5E35;--cf-sch-ready-bg:#E3ECFB;--cf-sch-ready-ink:#1F4A8A;--cf-sch-held-bg:#FFF1D6;--cf-sch-held-ink:#7A4A00;--cf-sch-warn-ink:#8A2A14;
 }
