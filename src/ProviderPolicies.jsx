@@ -28,9 +28,17 @@ export function describeReq(r){const b=minBand(r.component_scores);return `${TES
 // agreement with the scores course pages already gave (the approval gate: at least 10 compared, more differ than agree)
 export function agreement(plan){const a=Number(plan?.agrees||0),d=Number(plan?.differs||0);return{a,d,blocked:a+d>=10&&d>a}}
 const periodName=p=>p.replace(/^(\w)/,m=>m.toUpperCase()).replace('_',' ')
-// v2.15.163 (Platform Admin, 3 Oct 2026 12:30): the columns are Intake 1, Intake 2 … in the order the calendar names its periods;
-// a later intake can be left as "Not an intake", and only the intakes with a month are applied.
-const intakeCols=list=>Math.min(6,Math.max(1,...list.map(x=>(x.periods||[]).length)))
+// v2.15.164 (Platform Admin, 3 Oct 2026 12:41): two intakes at most and the raw value captured beside them. Intake 1 is
+// pre-filled from Trimester 1 (or Semester 1 when there is no trimester; otherwise the first period); Intake 2 from the
+// second period of the same kind only when its month differs, else left empty. On Approve each intake's month is written
+// to every period of that rank the calendar names (semester 1, trimester 1, term 1 …), so a course page is answered
+// whatever it calls its periods; only intakes with a month are applied.
+const KINDS=['trimester','semester','term','session','study_period','teaching_period']
+const kindOf=per=>KINDS.find(k=>String(per||'').startsWith(k))||''
+const rankOf=per=>Number(String(per||'').match(/(\d)$/)?.[1]||0)
+const suggestIntakes=x=>{const ps=x.periods||[];const kind=KINDS.find(k=>ps.some(q=>q.period===`${k} 1`&&q.months?.[0]))||kindOf(ps[0]?.period)
+  const m1=ps.find(q=>q.period===`${kind} 1`)?.months?.[0]||ps[0]?.months?.[0]||'';const m2=ps.find(q=>q.period===`${kind} 2`)?.months?.[0]||''
+  return[m1?String(m1):'',m2&&String(m2)!==String(m1)?String(m2):'']}
 
 function PlanRows({id}){
   const[rows,setRows]=useState(null),[err,setErr]=useState('')
@@ -51,12 +59,14 @@ export default function ProviderPolicies({country='',provider=null}={}){
   // Approve applies the months as shown, edited or not. Edited months are saved by hand (admin_provider_calendar_set) and the
   // parsed document is closed, so what the course pages get is always what the Platform Admin saw.
   const[months,setMonths]=useState({})
-  const monthOf=(x,per)=>{const e=months[x.id]?.[per];if(e!==undefined)return e;const f=(x.periods||[]).find(q=>q.period===per);return f?.months?.[0]?String(f.months[0]):''}
-  const edited=x=>(x.periods||[]).some(q=>{const e=months[x.id]?.[q.period];return e!==undefined&&e!==(q.months?.[0]?String(q.months[0]):'')})
+  const intakeOf=(x,i)=>{const e=months[x.id]?.[i];return e!==undefined?e:suggestIntakes(x)[i-1]}
+  const edited=x=>{const sg=suggestIntakes(x);return [1,2].some(i=>{const e=months[x.id]?.[i];return e!==undefined&&e!==sg[i-1]})}
   const approveCalendar=async x=>{
-    const periods=(x.periods||[]).map(q=>({period:q.period,month:monthOf(x,q.period)})).filter(q=>q.month)
-    if(!periods.length){setErr('Give a month for at least one period.');return}
-    const text=`Approve the academic calendar for ${x.provider}: ${periods.map(q=>`${periodName(q.period)} starts in ${MONTHS[Number(q.month)-1]}`).join(', ')}? Waiting intake reviews for its semester-only course pages are answered within 10 minutes; courses with intakes already are not changed.`
+    const intakes=[1,2].map(i=>({rank:i,month:intakeOf(x,i)})).filter(q=>q.month)
+    if(!intakes.length){setErr('Give a month for Intake 1.');return}
+    const kinds=[...new Set((x.periods||[]).map(q=>kindOf(q.period)).filter(Boolean))];if(!kinds.length)kinds.push('semester')
+    const periods=intakes.flatMap(q=>kinds.map(k=>({period:`${k} ${q.rank}`,month:q.month})))
+    const text=`Approve the academic calendar for ${x.provider}: ${intakes.map(q=>`Intake ${q.rank} in ${MONTHS[Number(q.month)-1]}`).join(', ')}${intakes.length<2?' (no Intake 2)':''}? Course pages naming ${kinds.map(k=>periodName(k)).join(' or ')} 1${intakes.length>1?' or 2':''} get these months; waiting intake reviews are answered within 10 minutes; courses with intakes already are not changed.`
     if(!window.confirm(text))return
     setBusy(true);setErr('')
     try{
@@ -124,7 +134,7 @@ export default function ProviderPolicies({country='',provider=null}={}){
     {note&&<p className="sd-desc" role="status" data-policy-bulk-result>{note}</p>}
     {!list.length?<p className="sd-desc">{show==='waiting'?'Nothing is waiting for approval.':'Nothing here yet.'}</p>:
     <div className="cf-table-wrap"><table className="cf-table" data-policy-list><thead><tr>
-      {bulk&&<th aria-label="Choose"/>}<th>University</th>{english?<th>What the policy says</th>:Array.from({length:intakeCols(list)},(_,i)=><th key={i}>Intake {i+1}</th>)}{english&&<><th>Course pages</th><th>Will be added</th></>}<th>Decision</th></tr></thead>
+      {bulk&&<th aria-label="Choose"/>}<th>University</th>{english?<th>What the policy says</th>:<><th>Intake 1</th><th>Intake 2</th><th>Raw value captured</th></>}{english&&<><th>Course pages</th><th>Will be added</th></>}<th>Decision</th></tr></thead>
       <tbody>{list.map(x=>{const ag=agreement(x.plan);return <React.Fragment key={x.id}><tr data-policy={x.id}>
         {bulk&&<td>{x.status==='proposed'&&<input type="checkbox" aria-label={`Choose ${x.provider}`} checked={sel.has(x.id)} onChange={()=>toggle(x.id)} disabled={busy}/>}</td>}
         <td>{english?<button type="button" className="cf-link fs-open" onClick={()=>setOpen(open===x.id?null:x.id)} aria-expanded={open===x.id}>{x.provider}</button>:x.provider}
@@ -133,7 +143,8 @@ export default function ProviderPolicies({country='',provider=null}={}){
         {english&&<td>{Object.entries(x.defaults||{}).map(([lv,reqs])=><div key={lv} data-policy-default={lv}><strong>{LEVEL[lv]||lv}:</strong> {(reqs||[]).filter(r=>r.test_code==='IELTS').map(describeReq).join('; ')}</div>)}
             {Number(x.named_requirements||0)>0&&<div className="sd-desc">{fmtNumber(x.named_requirements)} courses named with their own score</div>}
             {(x.caveats||[]).map(c=><div key={c} className="pp-caveat" data-caveat={c}>{POLICY_CAVEAT[c]||c}</div>)}</td>}
-        {!english&&Array.from({length:intakeCols(list)},(_,i)=>{const q=(x.periods||[])[i];return <td key={i} data-intake={i+1} data-period={q?.period||''}>{!q?'—':<>{x.status==='proposed'&&can?<select className="fv-input" aria-label={`${x.provider} intake ${i+1} (${periodName(q.period)}) month`} value={monthOf(x,q.period)} onChange={e=>setMonths(m=>({...m,[x.id]:{...(m[x.id]||{}),[q.period]:e.target.value}}))} disabled={busy}><option value="">Not an intake</option>{MONTHS.map((m,j)=><option key={m} value={j+1}>{m}</option>)}</select>:(q.months||[]).map(m=>MONTHS[m-1]).join(', ')||'—'}<small className="sd-desc">{periodName(q.period)}{q.months?.length>1?' · several dates found':''}</small></>}</td>})}
+        {!english&&[1,2].map(i=><td key={i} data-intake={i}>{x.status==='proposed'&&can?<select className="fv-input" aria-label={`${x.provider} intake ${i} month`} value={intakeOf(x,i)} onChange={e=>setMonths(m=>({...m,[x.id]:{...(m[x.id]||{}),[i]:e.target.value}}))} disabled={busy}><option value="">Not an intake</option>{MONTHS.map((m,j)=><option key={m} value={j+1}>{m}</option>)}</select>:(intakeOf(x,i)?MONTHS[Number(intakeOf(x,i))-1]:'—')}</td>)}
+        {!english&&<td data-raw>{(x.periods||[]).map(q=><div key={q.period}><small className="sd-desc">{periodName(q.period)}: {(q.months||[]).map(m=>MONTHS[m-1]).join(', ')||'—'}{q.months?.length>1?' (several dates found)':''}</small></div>)||'—'}</td>}
         {english&&<><td data-agreement>{ag.a+ag.d?`${fmtNumber(ag.a)} agree · ${fmtNumber(ag.d)} differ`:'None to compare'}{ag.blocked&&<div className="pp-caveat" data-blocked>Does not match most course pages, so it cannot be approved</div>}</td>
           <td>{fmtNumber(x.plan?.write||0)}{x.apply_summary?.written!=null&&<small className="sd-desc"> · {fmtNumber(x.apply_summary.written)} added</small>}</td></>}
         <td>{x.status!=='proposed'?<><StatusChip value={x.status} tone={x.status==='approved'?'success':'neutral'} label={x.status==='approved'?'Approved':'Rejected'}/>{x.decided_at&&<small className="sd-desc">{fmtDateTime(x.decided_at)}</small>}</>

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.91 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.164** (Academic calendars: Intake 1 and 2 pre-filled from Trimester or Semester 1 and 2, raw value beside them).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.90 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.163** (Academic calendars: Intake 1, 2 … columns; a later intake can be left as Not an intake).
