@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.164'
-export const PACKAGE_VERSION='0.1.91'
+export const UI_VERSION='2.15.165'
+export const PACKAGE_VERSION='0.1.92'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Academic calendars: two intakes, raw value captured',
+  title:'Academic calendars: links on each row; by-hand months win',
   changes:[
-    'Layer 4 › Attributes › Academic calendars: Intake 1 and Intake 2 only, with the raw value captured beside them. Intake 1 is pre-filled from Trimester 1 (or Semester 1 when there is no trimester); Intake 2 from the second period of the same kind only when its month differs, else Not an intake. On Approve each intake month goes to every period of that rank the calendar names, so a course page is answered whatever it calls its periods.'
+    'Academic calendars: each row links to the university in CourseFinder and to its calendar page.',
+    'Months entered by hand win over parsed ones for the same period, and where a calendar was set by hand a period left as Not an intake no longer holds the course back: it gets the months that were approved (migration 20261003001700).'
   ],
   bugFixes:[]
 }

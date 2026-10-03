@@ -35,3 +35,14 @@ test('calendars list: period columns with the suggested month as an input; appro
   expect(pp).toContain("supabase.rpc('admin_provider_calendar_set',{p_provider_id:x.provider_id,p_periods:periods,p_url:x.url,")
   expect(pp).toContain("{p_id:x.id,p_action:'reject',p_note:'Replaced by the months entered on the Academic calendars list'}")
 })
+
+// v2.15.165 (Platform Admin, 3 Oct 2026 12:51): calendar rows carry an internal link (the university in CourseFinder) and
+// the external calendar page, for navigation and checking.
+test('calendar rows: internal and external links', () => {
+  const pp = read('src/ProviderPolicies.jsx')
+  expect(pp).toContain('href={`#providers?id=${x.provider_id}`} className="cf-link" data-provider-link')
+  expect(pp).toContain('className="cf-link">Calendar page ↗</a>')
+  const m = read('supabase/migrations/20261003001700_cf247_calendar_byhand_wins.sql')
+  expect(m).toContain("order by e->>'period', (x.style = 'by_hand') desc nulls last, x.decided_at desc nulls last")
+  expect(m).toContain("when q.missing > 0 and not (q.byhand and q.mon is not null) then 'period_unknown'")
+})
