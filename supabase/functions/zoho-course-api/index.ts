@@ -93,7 +93,7 @@ Deno.serve(async (req:Request) => {
 
   const action = cleanText(body.action);
   // "report" (3 Oct 2026, Platform Admin): a counsellor flags a course value that needs a look; it lands on Layer 4 › Flagged values.
-  if (!["search","lookup","provider_options","filter_options","reference_bundle","report"].includes(action)) {
+  if (!["search","lookup","provider_options","filter_options","reference_bundle","report","scholarships"].includes(action)) {
     return safeError(400, "INVALID_ACTION", requestId);
   }
 
@@ -191,6 +191,12 @@ Deno.serve(async (req:Request) => {
         p_note: note,
         p_reporter: { name: cleanText(reporter.name).slice(0,120), email: cleanText(reporter.email).slice(0,160), ref: cleanText(reporter.ref).slice(0,120) }
       }));
+    } else if (action === "scholarships") {
+      // 3 Oct 2026 (scholarship plan step 7): published scholarships that apply to a course, with value (and tiers),
+      // audience, nationalities, who qualifies in the page's words, the saving per year where known, dates and page.
+      const course = cleanText(body.course_id) || cleanText(body.stable_key);
+      if (!course) return safeError(400, "INVALID_JSON", requestId);
+      ({data,error} = await svc.rpc("zoho_edge_scholarships_v1", { p_course: course }));
     }
 
     if (error) {
@@ -206,7 +212,7 @@ Deno.serve(async (req:Request) => {
 
     const object = (data && typeof data === "object") ? data as Record<string,unknown> : {};
 
-    if ((action === "lookup" || action === "report") && (object.error === "NOT_FOUND" || object.code === "NOT_FOUND")) {
+    if ((action === "lookup" || action === "report" || action === "scholarships") && (object.error === "NOT_FOUND" || object.code === "NOT_FOUND")) {
       return safeError(404, "NOT_FOUND", requestId);
     }
 
