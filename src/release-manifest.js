@@ -1,15 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.162'
-export const PACKAGE_VERSION='0.1.89'
+export const UI_VERSION='2.15.163'
+export const PACKAGE_VERSION='0.1.90'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Academic calendars: a column per period, approve as shown',
+  title:'Academic calendars: Intake 1, 2 … columns',
   changes:[
-    'Layer 4 › Attributes › Academic calendars shows Semester 1, Semester 2 and Trimester 1–3 as separate columns, each with the suggested start month as an input (other periods in a last column). Approve applies the months as shown; a changed month is saved by hand and the parsed document is closed, so the course pages get exactly what the Platform Admin saw.'
+    'Layer 4 › Attributes › Academic calendars: the columns are Intake 1, Intake 2 … in the order the calendar names its periods (the period shown under each month); a later intake can be set to Not an intake and only the intakes with a month are applied on Approve.'
   ],
   bugFixes:[]
 }
