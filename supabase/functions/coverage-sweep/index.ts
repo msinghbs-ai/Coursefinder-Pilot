@@ -4,7 +4,7 @@ import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, 
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.5.4";
+const SCH_VERSION = "scholarship-sweep-v0.6.0"; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
 // Student") includes international students.
 // v0.5.3: "Overseas students are eligible to apply" includes international students.
@@ -689,7 +689,7 @@ Deno.serve(async (req) => {
     // v0.7.0: scholarship sweep. Each active scholarship's own provider page is read (robots.txt respected; Firecrawl
     // only when a direct read is refused or script-only), kept as gzipped evidence, and deterministic facts are recorded.
     if (mode === "scholarship_read") {
-      const items: { scholarship_id: string; url: string; name: string; provider_id: string; url_source?: string; names?: string[] }[] = await rpc("svc_scholarship_read_next", { p_limit: Math.min(Number(body.limit || 20), 40) });
+      const items: { scholarship_id: string; url: string; name: string; provider_id: string; currency?: string; url_source?: string; names?: string[] }[] = await rpc("svc_scholarship_read_next", { p_limit: Math.min(Number(body.limit || 20), 40) });
       const tally: Record<string, number> = {}; const applied: unknown[] = [];
       await pool(items, 6, async (it) => {
         let status = "fetch_failed", http: number | null = null, via: string | null = null, html = "", finalUrl = it.url;
@@ -725,7 +725,7 @@ Deno.serve(async (req) => {
         }
         if (status === "read") {
           const t = titleOf(html) + " " + h1Of(html);
-          facts = { ...scholarshipFacts(html, t, it.name), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION, name_check: nc };
+          facts = { ...scholarshipFacts(html, t, it.name, it.currency || "AUD"), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION, name_check: nc };
           if (it.url_source === "admitted") { let h = ""; try { h = new URL(it.url).hostname } catch { /* */ } (facts as any).admission = admissionCheck(html, finalUrl, [h, new URL(finalUrl).hostname]) }
           const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
           path = `layer2/AU/scholarships/${it.provider_id}/${it.scholarship_id}/${sha}.html.gz`;
@@ -922,7 +922,7 @@ Deno.serve(async (req) => {
         out.search = done;
       }
       if ((phase === "all" || phase === "candidates") && Date.now() < deadline - 30000) {
-        const items: { candidate_id: number; url: string; provider_id: string; site: string; hosts?: string[] }[] = await rpc("svc_scholarship_candidate_next", { p_limit: Math.min(Number(body.read_limit || 30), 60) });
+        const items: { candidate_id: number; url: string; provider_id: string; site: string; currency?: string; hosts?: string[] }[] = await rpc("svc_scholarship_candidate_next", { p_limit: Math.min(Number(body.read_limit || 30), 60) });
         const tally: Record<string, number> = {}; const admitted: unknown[] = [];
         await pool(items, 6, async (it) => {
           if (Date.now() > deadline) { await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_final_url: null, p_storage_path: null, p_sha256: null, p_facts: null }); return }
@@ -941,7 +941,7 @@ Deno.serve(async (req) => {
           if (pg.status === "read") {
             let host = ""; try { host = new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
             const adm = admissionCheck(pg.html, pg.finalUrl, [host, ...(it.hosts || [])]);
-            facts = { ...scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || ""), page_title: titleOf(pg.html).slice(0, 200), h1: h1Of(pg.html).slice(0, 200), final_url: pg.finalUrl, extractor: SCH_VERSION, admission: adm };
+            facts = { ...scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || "", it.currency || "AUD"), page_title: titleOf(pg.html).slice(0, 200), h1: h1Of(pg.html).slice(0, 200), final_url: pg.finalUrl, extractor: SCH_VERSION, admission: adm };
             if (adm.admit) {
               const gz = await gzip(pg.html); sha = await sha256(new TextEncoder().encode(pg.html));
               path = `layer2/AU/scholarships/${it.provider_id}/candidates/${it.candidate_id}/${sha}.html.gz`;

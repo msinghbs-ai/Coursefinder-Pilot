@@ -1,20 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.171'
-export const PACKAGE_VERSION='0.1.98'
+export const UI_VERSION='2.15.172'
+export const PACKAGE_VERSION='0.1.99'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Scholarship screens to mockup',
+  title:'Published-only Scholarships; NZ and Canada',
   changes:[
-    'Scholarships list: Scholarship (provider, courses linked), Value, Who it is for, Closes, Status; status pills with counts',
-    'Scholarship record drawer: one row per fact with Read from page / Entered by hand, page words, Change, Let automation update this, history, Hold from publishing',
-    'Who it is for and nationalities can be set by hand (kept against the hourly readers)',
-    'Scholarship publishing: four tiles incl. Published but now failing a check; reasons list with what it means and who fixes it',
-    'Course drawer: scholarship cards with saving a year (estimate marked), nationality filter, include not yet published',
-    'Fix: the page-tier reader now respects values entered by hand'
+    'Scholarships list: published only; no Status column, status pills, Lifecycle or Publication filters',
+    'Scholarship record: courses it applies to by study level, with the list of linked courses; publishing status and holds left to Layer 4',
+    'Course record: published scholarships only',
+    'Decision 250: New Zealand and Canadian universities queued for scholarship discovery; amounts in A$/NZ$/C$; NZ and Canadian domestic wording; Manaaki and Study in Canada registered in Layer 1',
+    'Page reader v0.6.0: amounts in the provider country currency'
   ],
   bugFixes:[]
 }

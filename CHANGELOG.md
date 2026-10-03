@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.99 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.172** (Scholarships module lists published scholarships only (no status pills or status filters); record lists its courses; New Zealand and Canadian university scholarships (Decision 250)).
+- 20261004000100_cf247_scholarships_nz_ca
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.98 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.171** (Scholarship screens follow the mockup: list status pills and columns, record drawer with source and hand edits, publishing tiles and reasons, course scholarship cards).

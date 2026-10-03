@@ -80,11 +80,22 @@ function fullTuitionStated(t: string) {
   }
   return false;
 }
-export function scholarshipValue(body: string, name = "") {
+// v0.6.0 (Decision 250): amounts are in the provider country's currency (AUD, NZD or CAD); "$" alone is that currency,
+// an amount marked in another currency is foreign (an Australian page's "NZ$5,000" is no longer read as AUD).
+const CUR_HOME: Record<string, RegExp> = { AUD: /^(?:A\$|AUD)/i, NZD: /^(?:NZ\$|NZD)/i, CAD: /^(?:CA\$|C\$|CAD)/i };
+function amountCurrency(prefix: string, suffix: string | undefined, home: string) {
+  const sfx = String(suffix || "").trim().toUpperCase();
+  if (sfx) return sfx === "US" ? "USD" : sfx;
+  if (/^(?:US\$|USD)/i.test(prefix)) return "USD";
+  for (const [code, re] of Object.entries(CUR_HOME)) if (re.test(prefix)) return code;
+  return home;
+}
+export function scholarshipValue(body: string, name = "", currency = "AUD") {
+  const home = String(currency || "AUD").toUpperCase();
   const t = body.slice(0, 6000);
   const nameAmt = [...String(name).matchAll(/\$\s?(\d{1,3}(?:,\d{3})+|\d{3,6})\b/g)].map((m) => Number(m[1].replace(/,/g, "")));
   if (nameAmt.length === 1 && nameAmt[0] >= 500 && new RegExp(`\\$\\s?${nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?")}(?![\\d,])`).test(t))
-    return { type: "fixed_amount", amount: nameAmt[0], currency: "AUD", basis: "scholarship_name", context: ctx(t, new RegExp(nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?"))) };
+    return { type: "fixed_amount", amount: nameAmt[0], currency: home, basis: "scholarship_name", context: ctx(t, new RegExp(nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?"))) };
   // v0.4.2: full tuition only when no other percentage is stated (HonduFuturo: full tuition for PhD, 20% for coursework)
   const otherPct = [...t.matchAll(/(\d{1,3})\s?%/g)].map((m) => Number(m[1])).filter((v) => v >= 5 && v < 100);
   if (fullTuitionStated(t))
@@ -97,10 +108,10 @@ export function scholarshipValue(body: string, name = "") {
   }
   const amt = new Set<number>(); let foreign = false;
   const stipend = /\bstipend\b/i.test(t);
-  for (const m of t.matchAll(/(?:A\$|AUD\s?\$?|US\$|USD\s?\$?|\$)\s?(\d{1,3}(?:,\d{3})+|\d{3,6})(?:\.\d{2})?(\s?(?:USD|US|NZD|CAD|GBP|EUR))?/g)) {
+  for (const m of t.matchAll(/(?:A\$|AUD\s?\$?|NZ\$|NZD\s?\$?|CA\$|C\$|CAD\s?\$?|US\$|USD\s?\$?|\$)\s?(\d{1,3}(?:,\d{3})+|\d{3,6})(?:\.\d{2})?(\s?(?:USD|US|NZD|CAD|AUD|GBP|EUR))?/g)) {
     const at = m.index || 0, around = t.slice(Math.max(0, at - 90), at + 90).toLowerCase();
-    // v0.4.6: an amount in another currency, or a maximum ("up to A$7,496"), is not a single AUD value
-    if (/^(?:US\$|USD)/i.test(m[0]) || m[2] || /\b(?:USD|US\$)\s*$/i.test(t.slice(Math.max(0, at - 8), at))) { foreign = true; continue }
+    // v0.4.6: an amount in another currency, or a maximum ("up to A$7,496"), is not a single value
+    if (amountCurrency(m[0], m[2], home) !== home || /\b(?:USD|US\$)\s*$/i.test(t.slice(Math.max(0, at - 8), at))) { foreign = true; continue }
     if (/up to\s*(?:a|au)?\s*$/i.test(t.slice(Math.max(0, at - 12), at))) upTo = true;
     if (!/(scholarship|award|valued?|worth|stipend|bursary|grant|per year|per annum|each year|one-off|one off|once-off)/.test(around)) continue;
     if (/(accommodation|application fee|cost of|visa|oshc|health cover)/.test(around) || (!stipend && /living/.test(around))) continue;
@@ -112,7 +123,7 @@ export function scholarshipValue(body: string, name = "") {
   if (upTo) return { type: "ambiguous", up_to: true, percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && allPct.size > 1) return { type: "ambiguous", percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && amt.size === 0) { const p = [...pct][0]; return { type: "percentage", percentage: p, applies_to: "tuition_fee", context: ctx(t, new RegExp(`${p}\\s?%`)) } }
-  if (amt.size === 1 && pct.size === 0) { const a = [...amt][0]; return { type: "fixed_amount", amount: a, currency: "AUD", context: ctx(t, new RegExp(a.toLocaleString("en-AU").replace(/,/g, ",?"))) } }
+  if (amt.size === 1 && pct.size === 0) { const a = [...amt][0]; return { type: "fixed_amount", amount: a, currency: home, context: ctx(t, new RegExp(a.toLocaleString("en-AU").replace(/,/g, ",?"))) } }
   if (pct.size || amt.size) return { type: "ambiguous", percentages: [...pct].sort((a, b) => a - b), amounts: [...amt].sort((a, b) => a - b) };
   return null;
 }
@@ -132,7 +143,7 @@ export function scholarshipDeadline(body: string) {
 
 function ctx(t: string, re: RegExp) { const m = t.match(new RegExp(re.source, re.flags.replace("g", ""))); if (!m) return null; const at = m.index || 0; return clean(t.slice(Math.max(0, at - 120), at + 160)) }
 
-export function scholarshipFacts(html: string, titleText: string, name: string) {
+export function scholarshipFacts(html: string, titleText: string, name: string, currency = "AUD") {
   const body = mainText(html);
   // levels from the eligibility section when the page has one (pages mention other levels elsewhere); else the page start
   // v0.4.6: the eligibility section is a heading-like "Eligibility" / "Who is eligible" (not "eligible countries"), and
@@ -144,7 +155,7 @@ export function scholarshipFacts(html: string, titleText: string, name: string) 
     levels: fromElig.length ? fromElig : scholarshipLevels(titleText + " " + name, body),
     levels_from: fromElig.length ? "eligibility" : "page",
     ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped } })(),
-    value: scholarshipValue(body, name),
+    value: scholarshipValue(body, name, currency),
     deadline: scholarshipDeadline(body),
     international: /\binternational\b/i.test(titleText + " " + body.slice(0, 4000)),
     eligibility_excerpt: (() => { const at = body.search(/eligib/i); return at >= 0 ? clean(body.slice(at, at + 900)) : null })(),
@@ -445,8 +456,9 @@ export function scholarshipTitle(html: string) {
 }
 export function internationalEligibility(text: string) {
   const t = text.slice(0, 12000);
-  const excluded = /(not (?:open|available) to international|international students (?:are|will) not (?:be )?eligible|(?:only|solely) (?:open|available) to (?:domestic|australian)|domestic students only|must be an? (?:australian|new zealand) citizen|australian citizens?(?:,| or| and) (?:new zealand citizens?,? )?(?:or |and )?permanent residents? only)/i.test(t);
-  const explicit = /(\binternational (?:students?|applicants?|candidates?|undergraduate|postgraduate|school leavers?|high school)|open to international|onshore (?:and|or) offshore|offshore students|student visa|overseas students?|full[- ]fee[- ]paying international)/i.test(t);
+  // v0.6.0 (Decision 250): Canadian and New Zealand domestic-only wording; a Canadian study permit is a student visa
+  const excluded = /(not (?:open|available) to international|international students (?:are|will) not (?:be )?eligible|(?:only|solely) (?:open|available) to (?:domestic|australian|canadian|new zealand)|domestic students only|must be an? (?:australian|new zealand|canadian) citizen|australian citizens?(?:,| or| and) (?:new zealand citizens?,? )?(?:or |and )?permanent residents? only|(?:canadian|new zealand) citizens?(?:,| or| and) (?:or |and )?permanent residents?(?: \(or protected persons?\))? only|canadian citizens?, permanent residents? (?:or|and) protected persons? only)/i.test(t);
+  const explicit = /(\binternational (?:students?|applicants?|candidates?|undergraduate|postgraduate|school leavers?|high school)|open to international|onshore (?:and|or) offshore|offshore students|student visa|study permit|overseas students?|full[- ]fee[- ]paying international)/i.test(t);
   return { explicit: explicit && !excluded, excluded };
 }
 export function currentlyOffered(text: string, today = new Date()) {
