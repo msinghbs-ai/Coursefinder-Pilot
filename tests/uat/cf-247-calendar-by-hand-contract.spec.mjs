@@ -28,8 +28,8 @@ test('calendar by hand: read and set through the Decision 228 functions, on the 
 // document is closed, so what the course pages get is always what the Platform Admin saw.
 test('calendars list: period columns with the suggested month as an input; approve applies what is shown', () => {
   const pp = read('src/ProviderPolicies.jsx')
-  expect(pp).toContain("const CAL_COLS=['semester 1','semester 2','trimester 1','trimester 2','trimester 3']")
-  expect(pp).toContain("{english?<th>What the policy says</th>:CAL_COLS.map(c=><th key={c}>{periodName(c)}</th>)}")
+  expect(pp).toContain("Array.from({length:intakeCols(list)},(_,i)=><th key={i}>Intake {i+1}</th>)") // v2.15.163: Intake 1, 2 … in the calendar's order
+  expect(pp).toContain('<option value="">Not an intake</option>')
   expect(pp).toContain("onClick={()=>english?decide(x,'approve'):approveCalendar(x)}")
   expect(pp).toContain("supabase.rpc('admin_provider_calendar_set',{p_provider_id:x.provider_id,p_periods:periods,p_url:x.url,")
   expect(pp).toContain("{p_id:x.id,p_action:'reject',p_note:'Replaced by the months entered on the Academic calendars list'}")

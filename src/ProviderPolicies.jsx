@@ -28,7 +28,9 @@ export function describeReq(r){const b=minBand(r.component_scores);return `${TES
 // agreement with the scores course pages already gave (the approval gate: at least 10 compared, more differ than agree)
 export function agreement(plan){const a=Number(plan?.agrees||0),d=Number(plan?.differs||0);return{a,d,blocked:a+d>=10&&d>a}}
 const periodName=p=>p.replace(/^(\w)/,m=>m.toUpperCase()).replace('_',' ')
-const CAL_COLS=['semester 1','semester 2','trimester 1','trimester 2','trimester 3']
+// v2.15.163 (Platform Admin, 3 Oct 2026 12:30): the columns are Intake 1, Intake 2 … in the order the calendar names its periods;
+// a later intake can be left as "Not an intake", and only the intakes with a month are applied.
+const intakeCols=list=>Math.min(6,Math.max(1,...list.map(x=>(x.periods||[]).length)))
 
 function PlanRows({id}){
   const[rows,setRows]=useState(null),[err,setErr]=useState('')
@@ -122,7 +124,7 @@ export default function ProviderPolicies({country='',provider=null}={}){
     {note&&<p className="sd-desc" role="status" data-policy-bulk-result>{note}</p>}
     {!list.length?<p className="sd-desc">{show==='waiting'?'Nothing is waiting for approval.':'Nothing here yet.'}</p>:
     <div className="cf-table-wrap"><table className="cf-table" data-policy-list><thead><tr>
-      {bulk&&<th aria-label="Choose"/>}<th>University</th>{english?<th>What the policy says</th>:CAL_COLS.map(c=><th key={c}>{periodName(c)}</th>)}{!english&&<th>Other periods</th>}{english&&<><th>Course pages</th><th>Will be added</th></>}<th>Decision</th></tr></thead>
+      {bulk&&<th aria-label="Choose"/>}<th>University</th>{english?<th>What the policy says</th>:Array.from({length:intakeCols(list)},(_,i)=><th key={i}>Intake {i+1}</th>)}{english&&<><th>Course pages</th><th>Will be added</th></>}<th>Decision</th></tr></thead>
       <tbody>{list.map(x=>{const ag=agreement(x.plan);return <React.Fragment key={x.id}><tr data-policy={x.id}>
         {bulk&&<td>{x.status==='proposed'&&<input type="checkbox" aria-label={`Choose ${x.provider}`} checked={sel.has(x.id)} onChange={()=>toggle(x.id)} disabled={busy}/>}</td>}
         <td>{english?<button type="button" className="cf-link fs-open" onClick={()=>setOpen(open===x.id?null:x.id)} aria-expanded={open===x.id}>{x.provider}</button>:x.provider}
@@ -131,8 +133,7 @@ export default function ProviderPolicies({country='',provider=null}={}){
         {english&&<td>{Object.entries(x.defaults||{}).map(([lv,reqs])=><div key={lv} data-policy-default={lv}><strong>{LEVEL[lv]||lv}:</strong> {(reqs||[]).filter(r=>r.test_code==='IELTS').map(describeReq).join('; ')}</div>)}
             {Number(x.named_requirements||0)>0&&<div className="sd-desc">{fmtNumber(x.named_requirements)} courses named with their own score</div>}
             {(x.caveats||[]).map(c=><div key={c} className="pp-caveat" data-caveat={c}>{POLICY_CAVEAT[c]||c}</div>)}</td>}
-        {!english&&CAL_COLS.map(c=>{const q=(x.periods||[]).find(z=>z.period===c);return <td key={c} data-period={c}>{!q?'—':x.status==='proposed'&&can?<select className="fv-input" aria-label={`${x.provider} ${periodName(c)} month`} value={monthOf(x,c)} onChange={e=>setMonths(m=>({...m,[x.id]:{...(m[x.id]||{}),[c]:e.target.value}}))} disabled={busy}><option value="">Month…</option>{MONTHS.map((m,i)=><option key={m} value={i+1}>{m}</option>)}</select>:(q.months||[]).map(m=>MONTHS[m-1]).join(', ')}{q&&q.months?.length>1&&<small className="sd-desc"> several dates found</small>}</td>})}
-        {!english&&<td>{(x.periods||[]).filter(q=>!CAL_COLS.includes(q.period)).map(q=><div key={q.period}>{periodName(q.period)}: {x.status==='proposed'&&can?<select className="fv-input" aria-label={`${x.provider} ${periodName(q.period)} month`} value={monthOf(x,q.period)} onChange={e=>setMonths(m=>({...m,[x.id]:{...(m[x.id]||{}),[q.period]:e.target.value}}))} disabled={busy}><option value="">Month…</option>{MONTHS.map((m,i)=><option key={m} value={i+1}>{m}</option>)}</select>:(q.months||[]).map(m=>MONTHS[m-1]).join(', ')}</div>)||'—'}</td>}
+        {!english&&Array.from({length:intakeCols(list)},(_,i)=>{const q=(x.periods||[])[i];return <td key={i} data-intake={i+1} data-period={q?.period||''}>{!q?'—':<>{x.status==='proposed'&&can?<select className="fv-input" aria-label={`${x.provider} intake ${i+1} (${periodName(q.period)}) month`} value={monthOf(x,q.period)} onChange={e=>setMonths(m=>({...m,[x.id]:{...(m[x.id]||{}),[q.period]:e.target.value}}))} disabled={busy}><option value="">Not an intake</option>{MONTHS.map((m,j)=><option key={m} value={j+1}>{m}</option>)}</select>:(q.months||[]).map(m=>MONTHS[m-1]).join(', ')||'—'}<small className="sd-desc">{periodName(q.period)}{q.months?.length>1?' · several dates found':''}</small></>}</td>})}
         {english&&<><td data-agreement>{ag.a+ag.d?`${fmtNumber(ag.a)} agree · ${fmtNumber(ag.d)} differ`:'None to compare'}{ag.blocked&&<div className="pp-caveat" data-blocked>Does not match most course pages, so it cannot be approved</div>}</td>
           <td>{fmtNumber(x.plan?.write||0)}{x.apply_summary?.written!=null&&<small className="sd-desc"> · {fmtNumber(x.apply_summary.written)} added</small>}</td></>}
         <td>{x.status!=='proposed'?<><StatusChip value={x.status} tone={x.status==='approved'?'success':'neutral'} label={x.status==='approved'?'Approved':'Rejected'}/>{x.decided_at&&<small className="sd-desc">{fmtDateTime(x.decided_at)}</small>}</>
