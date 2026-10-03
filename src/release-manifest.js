@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.172'
-export const PACKAGE_VERSION='0.1.99'
+export const UI_VERSION='2.15.173'
+export const PACKAGE_VERSION='0.1.100'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Published-only Scholarships; NZ and Canada',
+  title:'Scholarships by layer',
   changes:[
-    'Scholarships list: published only; no Status column, status pills, Lifecycle or Publication filters',
-    'Scholarship record: courses it applies to by study level, with the list of linked courses; publishing status and holds left to Layer 4',
-    'Course record: published scholarships only',
-    'Decision 250: New Zealand and Canadian universities queued for scholarship discovery; amounts in A$/NZ$/C$; NZ and Canadian domestic wording; Manaaki and Study in Canada registered in Layer 1',
-    'Page reader v0.6.0: amounts in the provider country currency'
+    'Layer 1 › Scholarships: countries on/off, sources by country and use (Ingest, University pages, Reference, Validation), feed timing, add/pause/change use',
+    'Layer 2 › Scholarships: found/read/added/refused by country, refusal reasons, worker answers, per-run limits and job pause',
+    'Layer 3 › Scholarships: AI check by country (off until a model passes its benchmark), models, benchmark/run control',
+    'Layer 4 › Scholarship publishing: jobs after publishing',
+    'Four reference/validation sites registered; job limits read from settings'
   ],
   bugFixes:[]
 }

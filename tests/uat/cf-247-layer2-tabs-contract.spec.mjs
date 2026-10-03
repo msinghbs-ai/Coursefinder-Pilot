@@ -5,7 +5,7 @@ import { PAGES } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('tabs and removed duplicates', () => {
-  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Overview', 'Fetch an area', 'History', 'Source profiles'])
+  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Overview', 'Fetch an area', 'History', 'Source profiles', 'Scholarships']) // v2.15.173 Decision 251
   const w = fs.readFileSync('src/layer2-operations-entry.jsx', 'utf8')
   for (const gone of ['Effective acquisition policy', 'Results / Data Quality', '<h2>Evidence</h2>', 'l2o-kpis']) expect(w).not.toContain(gone)
   const e = fs.readFileSync('src/EnrichmentOperations.jsx', 'utf8')

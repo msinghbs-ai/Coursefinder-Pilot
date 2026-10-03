@@ -45,6 +45,7 @@ import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import ScholarshipRecord from'./ScholarshipRecord'
+import ScholarshipLayer from'./ScholarshipLayer'
 import LiveActivity from'./LiveActivity'
 import PlatformGuide from'./PlatformGuide'
 import Layer4Intervention from'./Layer4Intervention'
@@ -221,6 +222,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
       case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       case'layer1':
+        if(tab==='scholarships')return <ScholarshipLayer layer={1} rank={rank} onError={err}/>
         if(tab==='settings')return <Layer1SourceSettings/>
         if(tab==='batch')return <div className="m-legacy-host"><RegulatorySettings onError={onError} mode="batch"/></div>
         return <Layer1Operations embedded/>
@@ -229,9 +231,10 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='links')return <div className="m-page-stack"><ReferenceSources onError={err}/></div>
         return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
       case'layer2':
+        if(tab==='scholarships')return <ScholarshipLayer layer={2} rank={rank} onError={err}/>
         if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
         return <Layer2Workspace rank={rank} embedded navigate={navigate} view={tab==='start'?'start':tab==='history'?'history':'overview'}/>
-      case'layer3':return <Layer3Operations tab={tab} rank={rank} onError={onError}/>
+      case'layer3':return tab==='scholarships'?<ScholarshipLayer layer={3} rank={rank} onError={err}/>:<Layer3Operations tab={tab} rank={rank} onError={onError}/>
       case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:tab==='attributes'?<Layer4Attributes/>:tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
       case'jobs':return tab==='priority'?<div className="m-page-stack"><SearchCapCard/><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>

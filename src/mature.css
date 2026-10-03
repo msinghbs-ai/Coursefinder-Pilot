@@ -254,3 +254,32 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .sr-courses ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto}
 .sr-courses li{display:flex;flex-direction:column;gap:1px;font-size:var(--cf-fs-sm)}
 .sr-courses small{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500)}
+/* v2.15.173 scholarships by layer (Decision 251) */
+.sl-sub{display:block;color:var(--cf-slate-500);font-size:var(--cf-fs-2xs);line-height:1.4;margin-top:2px;white-space:normal}
+.sl-bad{color:var(--cf-danger-ink);display:block;font-size:var(--cf-fs-2xs);white-space:normal}
+.sl-state{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sl-val{display:inline-flex;gap:6px;align-items:center}
+.sl-val input{width:72px;min-height:34px;border:1px solid var(--cf-slate-300);border-radius:8px;padding:0 8px}
+.sl-feed{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.sl-feed small{color:var(--cf-slate-500);font-size:var(--cf-fs-2xs)}
+.sl-group{margin-top:12px}
+.sl-group h4,.sl-h4{margin:10px 0 6px;font-size:var(--cf-fs-sm)}
+.sl-group h4 small{font-weight:500;color:var(--cf-slate-500)}
+.sl-add{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px;padding:12px;border-radius:12px;background:var(--cf-slate-50);align-items:end}
+.sl-add h4{grid-column:1/-1;margin:0}
+.sl-add label{display:flex;flex-direction:column;gap:4px}
+.sl-add input,.sl-add select{min-height:38px;border:1px solid var(--cf-slate-300);border-radius:8px;padding:0 8px;background:var(--cf-white)}
+.sl-wide{grid-column:1/-1}
+@media (max-width:900px){.sl-add{grid-template-columns:1fr 1fr}}
+.sl-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.sl-card{border:1px solid var(--cf-slate-200);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.sl-card h4{margin:0}
+.sl-card h4 small{font-weight:500;color:var(--cf-slate-500)}
+.sl-counts>small{font-size:var(--cf-fs-2xs);font-weight:700;color:var(--cf-slate-600);text-transform:uppercase;letter-spacing:.04em}
+.sl-counts ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.sl-counts li{display:flex;justify-content:space-between;gap:10px;font-size:var(--cf-fs-xs)}
+.sl-status{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:var(--cf-sch-pub-bg);color:var(--cf-sch-pub-ink);font-size:var(--cf-fs-sm)}
+.sl-status.sl-off{background:var(--cf-sch-held-bg);color:var(--cf-sch-held-ink)}
+.sl-add label small{font-size:var(--cf-fs-xs);font-weight:700;color:var(--cf-slate-600)}
+.sl-add input,.sl-add select{font-size:var(--cf-fs-sm)}
+.sl-add h4{font-size:var(--cf-fs-sm)}
