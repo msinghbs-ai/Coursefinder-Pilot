@@ -1,15 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.170'
-export const PACKAGE_VERSION='0.1.97'
+export const UI_VERSION='2.15.171'
+export const PACKAGE_VERSION='0.1.98'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Platform guide: scholarship module',
+  title:'Scholarship screens to mockup',
   changes:[
-    'Platform guide reviewed for the scholarship module: where scholarship data comes from, what a course shows (scholarships with savings, estimates marked), what happens when a provider changes a value, the course API\'s scholarships action, the scholarship automations and their Melbourne times, a daily step and an approval duty for Scholarship publishing, and three new signals (withdrawn at 06:17, Value not stated, estimated saving). Two stale references to Coverage › Attributes now point to Layer 4 Review › Attributes.'
+    'Scholarships list: Scholarship (provider, courses linked), Value, Who it is for, Closes, Status; status pills with counts',
+    'Scholarship record drawer: one row per fact with Read from page / Entered by hand, page words, Change, Let automation update this, history, Hold from publishing',
+    'Who it is for and nationalities can be set by hand (kept against the hourly readers)',
+    'Scholarship publishing: four tiles incl. Published but now failing a check; reasons list with what it means and who fixes it',
+    'Course drawer: scholarship cards with saving a year (estimate marked), nationality filter, include not yet published',
+    'Fix: the page-tier reader now respects values entered by hand'
   ],
   bugFixes:[]
 }

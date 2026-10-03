@@ -72,9 +72,10 @@ test('database: criteria rows marked by the sweep, other sources untouched; old 
 test('browser: scholarship record shows eligibility and award duration (active rows only)', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#scholarships?id=5f92fc8c-ad2b-5182-a3b7-2e9bba5b3d99')
-  const p = page.locator('[data-scholarship-eligibility]')
-  await expect(p).toContainText('Each year, for the length of the course')
-  await expect(p).toContainText('International students')
-  await expect(p).toContainText('GPA 5.5 out of 7 or higher')
+  // v2.15.171 (mockup): the record drawer shows these as rows; only active criteria are returned by the read
+  const p = page.locator('[data-scholarship-record]')
+  await expect(p.locator('[data-sr-row="duration"]')).toContainText('Each year, for the length of the course')
+  await expect(p.locator('[data-sr-row="audience"]')).toContainText('International students')
+  await expect(p.locator('[data-sr-row="who"]')).toContainText('GPA 5.5 out of 7 or higher')
   await expect(p).not.toContainText('old reading')
 })

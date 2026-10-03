@@ -31,6 +31,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_requeue_read: F.requeue,
     admin_requeue: b => { calls.push(b); return { ...F.requeue, moved: 12 } },
     admin_scholarship_publishing_read: F.scholarshipPublishing,
+    admin_scholarship_record_read: F.scholarshipRecord,
     admin_scholarship_publishing: b => { calls.push(b); return F.scholarshipPublishing },
     admin_priority_read: F.priority,
     admin_priority_search: () => F.prioritySearch,
