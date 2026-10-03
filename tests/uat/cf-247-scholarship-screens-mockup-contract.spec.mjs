@@ -130,6 +130,12 @@ test('migration 20261004000100 shaped: currency, universities, discovery, Layer 
   expect(m).toContain('pipeline.coverage_provider_discovery')
   expect(m).not.toMatch(/set\s+publication_status\s*=\s*'published'/)
   const idx = read('supabase/functions/coverage-sweep/index.ts')
-  expect(idx).toContain('scholarship-sweep-v0.6.0')
+  expect(idx).toMatch(/scholarship-sweep-v0\.6\.\d/)
   expect(idx).toContain('scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || "", it.currency || "AUD")')
+})
+
+test('reader v0.6.1: numeric character references in a scholarship title are decoded', async () => {
+  const { scholarshipTitle } = await loadReader()
+  expect(scholarshipTitle('<html><head><title>x</title></head><body><h1>Vice-Chancellor&#039;s International Excellence Scholarship</h1></body></html>')).toBe("Vice-Chancellor's International Excellence Scholarship")
+  expect(scholarshipTitle('<h1>UTS President&#x27;s Scholarship</h1>')).toBe("UTS President's Scholarship")
 })
