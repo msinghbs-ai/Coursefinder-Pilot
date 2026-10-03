@@ -27,8 +27,8 @@ export const AREAS=[
 ]
 const NEEDS=[
   ['fee_schedules','Fee schedules to approve','coverage','attributes'],
-  ['scholarships_ready','Scholarships ready to publish','scholarships','publishing'],
-  ['scholarships_domestic','Domestic-only scholarships to check','scholarships','publishing'],
+  ['scholarships_ready','Scholarships ready to publish','layer4','publishing'],
+  ['scholarships_domestic','Domestic-only scholarships to check','layer4','publishing'],
   ['layer4_reviews','Layer 4 reviews','layer4',null],
   ['flagged_values','Flagged values','layer4','flags'],
   ['ranking_links','Ranking links to review','rankings','datasets'],

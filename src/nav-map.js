@@ -21,7 +21,7 @@ export const PAGES = {
   scholarships: { label: 'Scholarships', slug: 'scholarships', icon: 'scholarship', subtitle: 'Scholarships, where each value came from, and what is published.', tabs: [
     { key: 'list', label: 'Scholarships', min: 1 },
     { key: 'links', label: 'Course links', min: 3 },
-    { key: 'publishing', label: 'Publishing', min: 3 },
+    // v2.15.169 (Decision 249): Publishing moved to Layer 4 Review — publishing is a person's decision
   ] },
   rankings: { label: 'Rankings & statistics', slug: 'statistics-rankings', icon: 'chart', subtitle: 'QILT, PRISMS, QS and THE data, and side-by-side comparison.', tabs: [
     { key: 'overview', label: 'Overview', min: 1 },
@@ -64,6 +64,8 @@ export const PAGES = {
     { key: 'rules', label: 'Fee rules', min: 3 },
     // v2.15.157 (Platform Admin, 3 Oct 2026 02:00): fee schedules, English policies and academic calendars moved here from Coverage › Attributes
     { key: 'attributes', label: 'Attributes', min: 4 },
+    // v2.15.169 (Decision 249): scholarship publishing is a decision a person makes, so it sits with the other decisions
+    { key: 'publishing', label: 'Scholarship publishing', min: 3 },
     { key: 'blocks', label: 'Blocks', min: 5 },
   ] },
 
@@ -196,6 +198,8 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'layer1' && tab === 'sources') return { page: 'sources', tab: '', params: p }
   // v2.15.122: the Layer 3 Models list is Platform settings › Models & services.
   if (hit.page === 'layer3' && tab === 'models') return { page: 'services', tab: '', params: p }
+  // v2.15.169 (Decision 249): Scholarships › Publishing is Layer 4 Review › Scholarship publishing.
+  if (hit.page === 'scholarships' && tab === 'publishing') return { page: 'layer4', tab: 'publishing', params: p }
   return { page: hit.page, tab, params: p }
 }
 

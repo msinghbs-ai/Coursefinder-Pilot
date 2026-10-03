@@ -30,7 +30,7 @@ const KEY_LABEL={layer3_stuck_over_1h:'Layer 3 items stuck over 1 hour',stuck_ov
   invoked_last_24h:'Called in 24 h',window_minutes:'Window (minutes)',by_function:'By function',db_size:'Database size',max_connections:'Connection limit',active_connections:'Active connections',compute_size:'Compute size',ms:'Response (ms)',run_ms:'Run time (ms)',slowest_probe_ms:'Slowest probe (ms)'}
 const keyLabel=k=>KEY_LABEL[k]||human(k)
 export const FIX_AT={cron:['#scheduled-jobs?tab=automations','Automations'],edge_calls:['#scheduled-jobs?tab=jobs','Jobs'],coverage_queues:['#coverage','Coverage & completeness'],admission:['#coverage','Coverage & completeness'],
-  scholarship_queues:['#scholarships?tab=publishing','Scholarship publishing'],scholarship_review:['#scholarships?tab=publishing','Scholarship publishing'],layer_queues:['#layer-4-review','Layer 4 Review'],budgets:['#layer-3-ai','Layer 3 Control'],db_capacity:['#platform-health?tab=readiness','Capacity']}
+  scholarship_queues:['#layer-4-review?tab=publishing','Scholarship publishing'],scholarship_review:['#layer-4-review?tab=publishing','Scholarship publishing'],layer_queues:['#layer-4-review','Layer 4 Review'],budgets:['#layer-3-ai','Layer 3 Control'],db_capacity:['#platform-health?tab=readiness','Capacity']}
 export function DetailText({value}){
   if(value==null||value==='')return null
   if(typeof value!=='object')return <span className="ph-detail">{String(value)}</span>

@@ -7,7 +7,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('Scholarships has a Course links tab; decisions are role-checked, logged and govern the sweep', () => {
-  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['links', 3], ['publishing', 3]])
+  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['links', 3]]) // v2.15.169: Publishing is Layer 4 › Scholarship publishing
   const m = read('supabase/migrations/20260930130000_cf247_scholarship_course_links.sql')
   expect(m).toContain("security.current_role_rank() < 4 then raise exception 'Pipeline Operator role or above required'")
   expect(m).toContain("check (decision in ('all','filter','none'))")

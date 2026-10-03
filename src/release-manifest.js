@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.168'
-export const PACKAGE_VERSION='0.1.95'
+export const UI_VERSION='2.15.169'
+export const PACKAGE_VERSION='0.1.96'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Scholarship tiers, nationality and the Zoho scholarships action',
+  title:'Scholarship publishing in Layer 4, course search, savings on courses',
   changes:[
-    'Scholarships: a page that states several values now gives award tiers with the page as evidence, and the value shows as a range (20% to 70% of tuition fees; Up to A$15,000 with the amounts stated) — 283 scholarships, 707 tiers; a range counts as a stated value for publishing, never as a saving (Decision 245). Nationalities named on the page are read hourly with the phrase kept and shown on the list and the record (Decision 246; 59 scholarships name one). Both readings are on Automations.',
-    'Zoho course API: action scholarships (course_id or stable_key) returns the published scholarships that apply to a course with value and tiers, audience, nationalities, who qualifies in the page\'s words, the saving per year where known, dates and the page link.'
+    'Scholarship publishing has moved to Layer 4 Review › Scholarship publishing (Decision 249): publishing is a person\'s decision. Old links to Scholarships › Publishing open the new place.',
+    'Scholarships list: search by Course (title or CRICOS code) lists the scholarships linked to that course; the Value column shows the value built from what was recorded, never page text (Decision 248).',
+    'Course scholarships (search, website, Zoho) are the published scholarships linked to the course, with value, audience, nationalities and saving per year; refreshed every 15 minutes and fully each night (Decision 247). For Australian courses with no provider annual fee, the saving is estimated from the registered CRICOS course cost and marked as an estimate — savings now worked out for 13,406 course–scholarship pairs (was 3,450).'
   ],
   bugFixes:[]
 }

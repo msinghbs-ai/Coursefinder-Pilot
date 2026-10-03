@@ -132,3 +132,19 @@ test('scholarship nationality and Zoho scholarships action', () => {
   const n = read('supabase/migrations/20261003002200_cf247_scholarship_nationality_from_wording.sql')
   expect(n).toContain("where x.code <> 'AU' and not (x.code = 'NZ' and t.study_country = 'AU')")
 })
+
+// v2.15.169 (Decisions 247–249): saving estimate, course attribute sync, clean value label, Publishing in Layer 4, course search.
+test('scholarship operations: Layer 4 publishing, course search, migrations shaped', async () => {
+  const { PAGES, resolveTarget } = await import('../../src/nav-map.js')
+  expect(PAGES.layer4.tabs.map(t => t.key)).toContain('publishing')
+  expect(PAGES.scholarships.tabs.map(t => t.key)).not.toContain('publishing')
+  expect(resolveTarget('scholarships', new URLSearchParams('tab=publishing'))).toMatchObject({ page: 'layer4', tab: 'publishing' })
+  const main = read('src/mature-main.jsx')
+  expect(main).toContain("if(type==='scholarship'&&filters.course)a.course=filters.course;")
+  expect(main).toContain('data-course-filter')
+  for (const f of ['20261003002500_cf247_scholarship_saving_estimate_and_course_attribute', '20261003002600_cf247_scholarship_course_attribute_sync', '20261003002700_cf247_scholarship_value_label', '20261003002800_cf247_scholarships_page_course_search']) {
+    const m = read(`supabase/migrations/${f}.sql`)
+    for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  }
+  expect(read('supabase/migrations/20261003002600_cf247_scholarship_course_attribute_sync.sql')).toContain("select cron.schedule('scholarship-course-attribute', '*/15 * * * *'")
+})

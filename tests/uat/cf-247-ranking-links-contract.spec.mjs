@@ -28,7 +28,7 @@ test('the ranking read is executable by signed-in users (public.admin_read runs 
 
 test('provider record shows QS and THE history', () => {
   const main = read('src/mature-main.jsx')
-  expect(main).toContain("{type==='provider'&&data.id&&<ProviderRankings providerId={data.id} navigate={navigate}/>}")
+  expect(main).toContain('{data.id&&<ProviderRankings providerId={data.id} navigate={navigate}/>}') // v2.15.166: provider drawer in priority order
   const rl = read('src/RankingLinks.jsx')
   expect(rl).toContain("api.providerRankingHistory(providerId)")
 })
