@@ -22,3 +22,15 @@ test('calendar by hand: read and set through the Decision 228 functions, on the 
   expect(b).toContain("select cron.schedule('provider-calendar-intakes', '7-59/10 * * * *'")
   for (const m of [a1, a2, b]) for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
+
+// v2.15.162 (Platform Admin, 3 Oct 2026 12:05): on the Academic calendars list each study period is its own column with
+// the suggested month as an input; Approve applies the months as shown. Edited months are saved by hand and the parsed
+// document is closed, so what the course pages get is always what the Platform Admin saw.
+test('calendars list: period columns with the suggested month as an input; approve applies what is shown', () => {
+  const pp = read('src/ProviderPolicies.jsx')
+  expect(pp).toContain("const CAL_COLS=['semester 1','semester 2','trimester 1','trimester 2','trimester 3']")
+  expect(pp).toContain("{english?<th>What the policy says</th>:CAL_COLS.map(c=><th key={c}>{periodName(c)}</th>)}")
+  expect(pp).toContain("onClick={()=>english?decide(x,'approve'):approveCalendar(x)}")
+  expect(pp).toContain("supabase.rpc('admin_provider_calendar_set',{p_provider_id:x.provider_id,p_periods:periods,p_url:x.url,")
+  expect(pp).toContain("{p_id:x.id,p_action:'reject',p_note:'Replaced by the months entered on the Academic calendars list'}")
+})

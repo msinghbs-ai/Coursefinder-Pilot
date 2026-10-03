@@ -28,6 +28,7 @@ export function describeReq(r){const b=minBand(r.component_scores);return `${TES
 // agreement with the scores course pages already gave (the approval gate: at least 10 compared, more differ than agree)
 export function agreement(plan){const a=Number(plan?.agrees||0),d=Number(plan?.differs||0);return{a,d,blocked:a+d>=10&&d>a}}
 const periodName=p=>p.replace(/^(\w)/,m=>m.toUpperCase()).replace('_',' ')
+const CAL_COLS=['semester 1','semester 2','trimester 1','trimester 2','trimester 3']
 
 function PlanRows({id}){
   const[rows,setRows]=useState(null),[err,setErr]=useState('')
@@ -44,6 +45,24 @@ function PlanRows({id}){
 const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 export default function ProviderPolicies({country='',provider=null}={}){
   const[kind,setKind]=useState('english_policy'),[data,setData]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[open,setOpen]=useState(null),[show,setShow]=useState('waiting'),[sel,setSel]=useState(()=>new Set()),[note,setNote]=useState('')
+  // v2.15.162 (Platform Admin, 3 Oct 2026 12:05): each study period is its own column with the suggested month as an input;
+  // Approve applies the months as shown, edited or not. Edited months are saved by hand (admin_provider_calendar_set) and the
+  // parsed document is closed, so what the course pages get is always what the Platform Admin saw.
+  const[months,setMonths]=useState({})
+  const monthOf=(x,per)=>{const e=months[x.id]?.[per];if(e!==undefined)return e;const f=(x.periods||[]).find(q=>q.period===per);return f?.months?.[0]?String(f.months[0]):''}
+  const edited=x=>(x.periods||[]).some(q=>{const e=months[x.id]?.[q.period];return e!==undefined&&e!==(q.months?.[0]?String(q.months[0]):'')})
+  const approveCalendar=async x=>{
+    const periods=(x.periods||[]).map(q=>({period:q.period,month:monthOf(x,q.period)})).filter(q=>q.month)
+    if(!periods.length){setErr('Give a month for at least one period.');return}
+    const text=`Approve the academic calendar for ${x.provider}: ${periods.map(q=>`${periodName(q.period)} starts in ${MONTHS[Number(q.month)-1]}`).join(', ')}? Waiting intake reviews for its semester-only course pages are answered within 10 minutes; courses with intakes already are not changed.`
+    if(!window.confirm(text))return
+    setBusy(true);setErr('')
+    try{
+      if(edited(x)){
+        const{error:e1}=await supabase.rpc('admin_provider_calendar_set',{p_provider_id:x.provider_id,p_periods:periods,p_url:x.url,p_note:'Months set by a Platform Admin on the Academic calendars list'});if(e1)throw e1
+        const{error:e2}=await supabase.rpc('admin_provider_policy_decide',{p_id:x.id,p_action:'reject',p_note:'Replaced by the months entered on the Academic calendars list'});if(e2)throw e2
+      }else{const{error}=await supabase.rpc('admin_provider_policy_decide',{p_id:x.id,p_action:'approve',p_note:null});if(error)throw error}
+      setSel(new Set());await load()}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   const load=async(k=kind)=>{setErr('');try{const{data:d,error}=await supabase.rpc('admin_provider_policies_read',{p_kind:k,p_id:null});if(error)throw error;setData(d)}catch(e){setErr(errText(e))}}
   useEffect(()=>{setData(null);setOpen(null);setSel(new Set());setNote('');load(kind)},[kind])
   const decide=async(x,action)=>{
@@ -103,20 +122,21 @@ export default function ProviderPolicies({country='',provider=null}={}){
     {note&&<p className="sd-desc" role="status" data-policy-bulk-result>{note}</p>}
     {!list.length?<p className="sd-desc">{show==='waiting'?'Nothing is waiting for approval.':'Nothing here yet.'}</p>:
     <div className="cf-table-wrap"><table className="cf-table" data-policy-list><thead><tr>
-      {bulk&&<th aria-label="Choose"/>}<th>University</th><th>{english?'What the policy says':'Start months'}</th>{english&&<><th>Course pages</th><th>Will be added</th></>}<th>Decision</th></tr></thead>
+      {bulk&&<th aria-label="Choose"/>}<th>University</th>{english?<th>What the policy says</th>:CAL_COLS.map(c=><th key={c}>{periodName(c)}</th>)}{!english&&<th>Other periods</th>}{english&&<><th>Course pages</th><th>Will be added</th></>}<th>Decision</th></tr></thead>
       <tbody>{list.map(x=>{const ag=agreement(x.plan);return <React.Fragment key={x.id}><tr data-policy={x.id}>
         {bulk&&<td>{x.status==='proposed'&&<input type="checkbox" aria-label={`Choose ${x.provider}`} checked={sel.has(x.id)} onChange={()=>toggle(x.id)} disabled={busy}/>}</td>}
         <td>{english?<button type="button" className="cf-link fs-open" onClick={()=>setOpen(open===x.id?null:x.id)} aria-expanded={open===x.id}>{x.provider}</button>:x.provider}
           <a href={x.url} target="_blank" rel="noreferrer" className="cf-link" aria-label="Open the document"><ExternalLink size={12}/></a>
           {english&&<button type="button" className="m-link-button fs-review" onClick={()=>setOpen(open===x.id?null:x.id)}>{open===x.id?'Hide courses':'Review courses'}</button>}</td>
-        <td>{english?<>{Object.entries(x.defaults||{}).map(([lv,reqs])=><div key={lv} data-policy-default={lv}><strong>{LEVEL[lv]||lv}:</strong> {(reqs||[]).filter(r=>r.test_code==='IELTS').map(describeReq).join('; ')}</div>)}
+        {english&&<td>{Object.entries(x.defaults||{}).map(([lv,reqs])=><div key={lv} data-policy-default={lv}><strong>{LEVEL[lv]||lv}:</strong> {(reqs||[]).filter(r=>r.test_code==='IELTS').map(describeReq).join('; ')}</div>)}
             {Number(x.named_requirements||0)>0&&<div className="sd-desc">{fmtNumber(x.named_requirements)} courses named with their own score</div>}
-            {(x.caveats||[]).map(c=><div key={c} className="pp-caveat" data-caveat={c}>{POLICY_CAVEAT[c]||c}</div>)}</>
-          :(x.periods||[]).map(p=><div key={p.period}>{periodName(p.period)}: {(p.months||[]).map(m=>MONTHS[m-1]).join(', ')}{p.months?.length>1?' (several dates found)':''}</div>)}</td>
+            {(x.caveats||[]).map(c=><div key={c} className="pp-caveat" data-caveat={c}>{POLICY_CAVEAT[c]||c}</div>)}</td>}
+        {!english&&CAL_COLS.map(c=>{const q=(x.periods||[]).find(z=>z.period===c);return <td key={c} data-period={c}>{!q?'—':x.status==='proposed'&&can?<select className="fv-input" aria-label={`${x.provider} ${periodName(c)} month`} value={monthOf(x,c)} onChange={e=>setMonths(m=>({...m,[x.id]:{...(m[x.id]||{}),[c]:e.target.value}}))} disabled={busy}><option value="">Month…</option>{MONTHS.map((m,i)=><option key={m} value={i+1}>{m}</option>)}</select>:(q.months||[]).map(m=>MONTHS[m-1]).join(', ')}{q&&q.months?.length>1&&<small className="sd-desc"> several dates found</small>}</td>})}
+        {!english&&<td>{(x.periods||[]).filter(q=>!CAL_COLS.includes(q.period)).map(q=><div key={q.period}>{periodName(q.period)}: {x.status==='proposed'&&can?<select className="fv-input" aria-label={`${x.provider} ${periodName(q.period)} month`} value={monthOf(x,q.period)} onChange={e=>setMonths(m=>({...m,[x.id]:{...(m[x.id]||{}),[q.period]:e.target.value}}))} disabled={busy}><option value="">Month…</option>{MONTHS.map((m,i)=><option key={m} value={i+1}>{m}</option>)}</select>:(q.months||[]).map(m=>MONTHS[m-1]).join(', ')}</div>)||'—'}</td>}
         {english&&<><td data-agreement>{ag.a+ag.d?`${fmtNumber(ag.a)} agree · ${fmtNumber(ag.d)} differ`:'None to compare'}{ag.blocked&&<div className="pp-caveat" data-blocked>Does not match most course pages, so it cannot be approved</div>}</td>
           <td>{fmtNumber(x.plan?.write||0)}{x.apply_summary?.written!=null&&<small className="sd-desc"> · {fmtNumber(x.apply_summary.written)} added</small>}</td></>}
         <td>{x.status!=='proposed'?<><StatusChip value={x.status} tone={x.status==='approved'?'success':'neutral'} label={x.status==='approved'?'Approved':'Rejected'}/>{x.decided_at&&<small className="sd-desc">{fmtDateTime(x.decided_at)}</small>}</>
-          :can?<div className="sd-actions"><Button compact variant="primary" disabled={english&&ag.blocked} title={english&&ag.blocked?'Most course pages give a different score, so this document cannot be approved. Reject it, or approve another document of this university.':undefined} onClick={()=>decide(x,'approve')}><Check size={13}/>Approve</Button><Button compact onClick={()=>decide(x,'reject')}><X size={13}/>Reject</Button></div>
+          :can?<div className="sd-actions"><Button compact variant="primary" disabled={english&&ag.blocked} title={english&&ag.blocked?'Most course pages give a different score, so this document cannot be approved. Reject it, or approve another document of this university.':undefined} onClick={()=>english?decide(x,'approve'):approveCalendar(x)}><Check size={13}/>{!english&&edited(x)?'Approve as edited':'Approve'}</Button><Button compact onClick={()=>decide(x,'reject')}><X size={13}/>Reject</Button></div>
           :<StatusChip value="pending" tone="warning" label="Waiting for a Platform Admin"/>}</td>
       </tr>{open===x.id&&<tr className="fs-detail"><td colSpan={bulk?6:5}><PlanRows id={x.id}/></td></tr>}</React.Fragment>})}</tbody></table></div>}
   </section>

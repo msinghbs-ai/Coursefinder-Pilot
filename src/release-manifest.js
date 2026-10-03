@@ -1,16 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.161'
-export const PACKAGE_VERSION='0.1.88'
+export const UI_VERSION='2.15.162'
+export const PACKAGE_VERSION='0.1.89'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Start months by hand; calendar step live',
+  title:'Academic calendars: a column per period, approve as shown',
   changes:[
-    'Layer 4 › Attributes › Academic calendars gains Start months by hand: each university whose course pages name only a study period is listed with its waiting reviews; a Platform Admin enters the month each period starts and the calendar page, and the reviews are answered within 10 minutes (Decision 228).',
-    'Approving a parsed calendar now shows how many reviews it will answer; the job provider-calendar-intakes runs every 10 minutes.'
+    'Layer 4 › Attributes › Academic calendars shows Semester 1, Semester 2 and Trimester 1–3 as separate columns, each with the suggested start month as an input (other periods in a last column). Approve applies the months as shown; a changed month is saved by hand and the parsed document is closed, so the course pages get exactly what the Platform Admin saw.'
   ],
   bugFixes:[]
 }
