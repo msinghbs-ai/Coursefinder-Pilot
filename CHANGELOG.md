@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.97 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.170** (Platform guide reviewed for the scholarship module).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.96 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.169** (Scholarship publishing in Layer 4; course search; clean values; course attribute with savings (Decisions 247-249)).
