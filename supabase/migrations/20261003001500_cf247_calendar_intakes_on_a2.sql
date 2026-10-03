@@ -1,5 +1,5 @@
--- CF-247 (Decision 228, 2 Oct 2026), part 3 of 3: Platform Admin calendar entry, read, approval report and the 10-minute job.
-
+-- CF-247 (Decision 228 switched on, 3 Oct 2026; Platform Admin "yes calendars", "Try again now"). Part A2 of
+-- 20261003000500: the Platform Admin's set-by-hand function and the read of waiting semester-only intake reviews.
 -- 5. Platform Admin: set a university's start months by hand (from its calendar); the job answers its waiting reviews
 create or replace function public.admin_provider_calendar_set(p_provider_id uuid, p_periods jsonb, p_url text, p_note text default null)
 returns jsonb language plpgsql security definer set search_path to '' as $f$
@@ -13,7 +13,6 @@ begin
     from jsonb_array_elements(coalesce(p_periods, '[]'::jsonb)) e
    where lower(btrim(e->>'period')) ~ '^(semester|trimester|term|session|study_period|teaching_period) [1-6]$' and (e->>'month') ~ '^([1-9]|1[0-2])$';
   if v_clean is null then raise exception 'give at least one period (for example semester 1) with a month from 1 to 12'; end if;
-  -- the calendar page the months were taken from is kept as a source (and read as evidence by the reader)
   insert into pipeline.provider_fact_sources(provider_id, kind, url, title, rank, found_via, status)
   values (p_provider_id, 'intake_calendar', btrim(p_url), 'Calendar page given by a Platform Admin', 9, 'manual', 'found')
   on conflict on constraint provider_fact_sources_key do nothing;
@@ -50,25 +49,3 @@ begin
 end $f$;
 revoke all on function public.admin_semester_intakes_read() from public, anon;
 grant execute on function public.admin_semester_intakes_read() to authenticated;
-
--- 7. approving a parsed calendar reports how many reviews it will answer; the job answers them every 10 minutes
-do $p$
-declare s text; d text;
-  o1 text := $o$if p_action = 'approve' and x.kind = 'english_policy' then v := jsonb_build_object('to_fill', coalesce((v_sum->>'write')::int, 0)); end if;$o$;
-  n1 text := $n$if p_action = 'approve' and x.kind = 'english_policy' then v := jsonb_build_object('to_fill', coalesce((v_sum->>'write')::int, 0)); end if;
-  if p_action = 'approve' and x.kind = 'intake_calendar' then
-    v := jsonb_build_object('to_answer', (select count(*) from security.semester_intake_plan_v1(x.provider_id) r where r.outcome = 'answer'));
-  end if;$n$;
-begin
-  select p.prosrc, pg_get_functiondef(p.oid) into s, d from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
-   where ns.nspname = 'public' and p.proname = 'admin_provider_policy_decide';
-  if md5(s) is distinct from '878f85c1a27d9f5aa16cac9504855a10' then raise exception 'admin_provider_policy_decide changed (md5 %); not replacing', md5(s); end if;
-  if (length(d) - length(replace(d, o1, ''))) / length(o1) <> 1 then raise exception 'piece not found once'; end if;
-  execute replace(d, o1, n1);
-end $p$;
-
-select cron.schedule('provider-calendar-intakes', '7-59/10 * * * *', $$select security.semester_intake_apply_v1(null)$$);
-insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable)
-values ('provider-calendar-intakes', 'Admission', 63, 'Answer semester-only intakes from calendars',
-        'Every 10 minutes: answers a waiting intake review whose course page names only its study periods ("Semester 1", "Trimester 2") from the university''s approved calendar, where every period named has one start month. The course page stays the evidence; courses with intakes already, or set by hand, are left alone.', 5, false)
-on conflict (jobname) do nothing;
