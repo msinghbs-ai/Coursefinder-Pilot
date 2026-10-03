@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.169'
-export const PACKAGE_VERSION='0.1.96'
+export const UI_VERSION='2.15.170'
+export const PACKAGE_VERSION='0.1.97'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Scholarship publishing in Layer 4, course search, savings on courses',
+  title:'Platform guide: scholarship module',
   changes:[
-    'Scholarship publishing has moved to Layer 4 Review › Scholarship publishing (Decision 249): publishing is a person\'s decision. Old links to Scholarships › Publishing open the new place.',
-    'Scholarships list: search by Course (title or CRICOS code) lists the scholarships linked to that course; the Value column shows the value built from what was recorded, never page text (Decision 248).',
-    'Course scholarships (search, website, Zoho) are the published scholarships linked to the course, with value, audience, nationalities and saving per year; refreshed every 15 minutes and fully each night (Decision 247). For Australian courses with no provider annual fee, the saving is estimated from the registered CRICOS course cost and marked as an estimate — savings now worked out for 13,406 course–scholarship pairs (was 3,450).'
+    'Platform guide reviewed for the scholarship module: where scholarship data comes from, what a course shows (scholarships with savings, estimates marked), what happens when a provider changes a value, the course API\'s scholarships action, the scholarship automations and their Melbourne times, a daily step and an approval duty for Scholarship publishing, and three new signals (withdrawn at 06:17, Value not stated, estimated saving). Two stale references to Coverage › Attributes now point to Layer 4 Review › Attributes.'
   ],
   bugFixes:[]
 }
