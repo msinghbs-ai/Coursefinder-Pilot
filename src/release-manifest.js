@@ -1,19 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.166'
-export const PACKAGE_VERSION='0.1.93'
+export const UI_VERSION='2.15.167'
+export const PACKAGE_VERSION='0.1.94'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'One Academic calendars list; parser reads Curtin-style calendars',
+  title:'Scholarship audience from wording',
   changes:[
-    'Layer 4 › Attributes › Academic calendars: the Start months by hand panel is folded into the list. A university whose calendar page gave no months is a row of the same shape — Intake 1, Intake 2, the periods its course pages name, the number of intake reviews waiting — with the calendar page address to fill in; Save months writes the months by hand and the waiting intake reviews are answered within 10 minutes.',
-    'Calendar parser v0.2.2 (worker v0.13.5): a period named on its own section row or heading (Semester 1, then Start date | Monday 16 February) is read, as on Curtin\'s calendar. All 392 stored calendar pages were re-parsed: 68 carry a proposal; Curtin now suggests February and July.',
-    'Provider drawer (Providers › open a provider): values are edited inline, no fold — name, website, city, course finder address, applicants and description first, then the provider\'s facts in priority order (university group, ID, stable key, country, course and scholarship counts, status), then contact details, then the contact card, then world rankings and context.',
-    'Scholarships list: an Audience filter (International students / Domestic / All) and the Award column clipped to one line so the table no longer runs past the page. Finding: every scholarship on record is marked for international students today, so the filter separates nothing until the audience is read from each scholarship\'s wording — a separate step.',
-    'Course drawer: the editable tuition field is named "Tuition from the course page (international)"; for an Australian course with none it says the tuition shown to counsellors is the registered CRICOS course cost below (Decision 242), so the two are not the same field.'
+    'Scholarships: the audience (who the scholarship is for) is now read from each scholarship\'s own wording — International students, Domestic students, International and domestic, or Not stated on the page — with the matched phrase kept as the basis (migration 20261003002000; job scholarship-audience, hourly). Before this every scholarship carried International as a default. Result today: 311 international, 187 international and domestic, 278 domestic, 459 not stated; the Publishing ready list is 177 (international and both), and scholarships open to everyone are now offered to international students on course and provider pages as well.'
   ],
   bugFixes:[]
 }
