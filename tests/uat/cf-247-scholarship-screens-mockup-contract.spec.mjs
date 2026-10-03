@@ -12,7 +12,7 @@ const SCH = '5f92fc8c-ad2b-5182-a3b7-2e9bba5b3d99'
 async function override(page, op, data) {
   await page.route('https://example.supabase.co/rest/v1/rpc/admin_read', async route => {
     let b = {}; try { b = route.request().postDataJSON() || {} } catch {}
-    if (b.p_operation === op) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) })
+    if (b.p_operation === op) { (page.readCalls ||= []).push(b); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) }) }
     return route.fallback()
   })
 }
@@ -32,15 +32,16 @@ test('migrations shaped: status, record read, hand edits for audience and nation
   for (const h of ['994d9c4de7d9d1837b8a9d625b9df0d6', '1e8c07f7235810fa7925d367ece9fac1', 'f4f6a010181049c35283bb072a4b7e30', 'f21f413bfeff5ac2479df06e5258036f']) expect(m).toContain(`is distinct from '${h}'`)
 })
 
-test('browser: list follows the mockup — columns, status pills, who it is for, courses line', async ({ page }) => {
+test('browser: list shows published scholarships only — no status pills or status filters (v2.15.172)', async ({ page }) => {
   await mockAdmin(page)
   const row = { ...F.scholarshipRow, value_label: 'A$10,000 a year', nationalities: ['VN'], status: 'held', held_reasons: ['no linked course'], mapped_course_count: 12, application_close_date: '2027-03-08' }
   await override(page, 'scholarships_page', { total: 1, items: [row], status_counts: { published: 123, ready: 268, held: 844, inactive: 25 } })
   await page.goto('/#scholarships')
-  for (const h of ['Scholarship', 'Value', 'Who it is for', 'Closes', 'Status']) await expect(page.locator('thead th', { hasText: h }).first()).toBeVisible()
-  const pills = page.locator('[data-scholarship-status]')
-  await expect(pills.getByRole('button', { name: 'All · 1,235' })).toBeVisible()
-  await expect(pills.getByRole('button', { name: 'Ready to publish · 268' })).toBeVisible()
+  for (const h of ['Scholarship', 'Value', 'Who it is for', 'Closes']) await expect(page.locator('thead th', { hasText: h }).first()).toBeVisible()
+  await expect(page.locator('thead th', { hasText: 'Status' })).toHaveCount(0)
+  await expect(page.locator('[data-scholarship-status]')).toHaveCount(0)
+  for (const l of ['Lifecycle', 'Publication']) await expect(page.locator('.m-filter-bar').getByText(l, { exact: true })).toHaveCount(0)
+  await expect.poll(() => (page.readCalls || []).filter(c => c.p_operation === 'scholarships_page').map(c => c.p_args?.status)).toContain('published')
   await expect(page.locator('[data-sch-courses]').first()).toContainText('12 linked')
   await expect(page.locator('tbody')).toContainText('Vietnam')
   await expect(page.locator('tbody')).toContainText('A$10,000 a year')
@@ -51,7 +52,10 @@ test('browser: record drawer — rows with their source, change who it is for, h
   page.on('dialog', d => d.accept())
   await page.goto(`/#scholarships?id=${SCH}`)
   const r = page.locator('[data-scholarship-record]')
-  await expect(r.locator('[data-sch-record-status]')).toHaveText('Held')
+  await expect(r.locator('[data-sch-record-status]')).toHaveCount(0)
+  await expect(r.locator('[data-sr-row="courses"]')).toContainText('Bachelor 1')
+  await r.locator('[data-sr-courses] summary').click()
+  await expect(r.locator('[data-sr-courses] li')).toContainText('Bachelor of Business')
   await expect(r.locator('[data-sr-row="value"]')).toContainText('A$10,000 a year')
   await expect(r.locator('[data-sr-row="value"]')).toContainText('Page: “AUD $10,000 annually”')
   await expect(r.locator('[data-sr-row="nationalities"]')).toContainText('Vietnam')
@@ -79,7 +83,7 @@ test('browser: publishing — four tiles and the reasons with what they mean', a
   await expect(why.locator('[data-reason-detail] a')).toHaveAttribute('href', '#scholarships?tab=links')
 })
 
-test('browser: course drawer — scholarship cards with saving and estimate', async ({ page }) => {
+test('browser: course drawer — published scholarship cards with saving and estimate', async ({ page }) => {
   await mockAdmin(page)
   const items = [
     { mapping_id: 'm1', scholarship_id: 's1', name: 'Global Excellence Scholarship', audience: 'international', nationalities: [], value_label: '25% of tuition fees', publication_status: 'published', lifecycle_status: 'active', application_close_date: null, source_url: 'https://example.edu/ges', calculation: { fee_basis: 'estimated_annual_from_registered_total', scholarship_saving_amount: 8000, net_fee_amount: 24000, currency_code: 'AUD' } },
@@ -90,8 +94,42 @@ test('browser: course drawer — scholarship cards with saving and estimate', as
   const p = page.locator('[data-course-scholarships]')
   await expect(p.locator('[data-cs-card]')).toHaveCount(1)
   await expect(p.locator('[data-cs-saving]')).toContainText('estimate from the registered CRICOS course cost')
-  await p.getByLabel('Include not yet published').check()
-  await expect(p.locator('[data-cs-card]')).toHaveCount(2)
-  await p.getByLabel('Student nationality').selectOption('VN')
-  await expect(p.locator('[data-cs-card]')).toHaveCount(2)
+  // v2.15.172: published only — no toggle and no status chips
+  await expect(p.getByLabel('Include not yet published')).toHaveCount(0)
+  await expect(p).not.toContainText('Not published')
+})
+
+// Decision 250 (v2.15.172): New Zealand and Canadian scholarships
+async function loadReader() {
+  const { execFileSync } = await import('node:child_process'); const os = await import('node:os'); const path = await import('node:path')
+  const out = path.join(os.tmpdir(), `sch-nzca-${process.pid}.mjs`)
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/scholarship.ts', '--bundle', '--format=esm', `--outfile=${out}`])
+  return import(out)
+}
+test('reader v0.6.0: amounts in the provider country currency; NZ and Canadian domestic wording', async () => {
+  const { scholarshipValue, internationalEligibility } = await loadReader()
+  const nz = 'The scholarship is worth $10,000 for international students.'
+  expect(scholarshipValue(nz, '', 'NZD')).toMatchObject({ type: 'fixed_amount', amount: 10000, currency: 'NZD' })
+  expect(scholarshipValue('The award is valued at NZ$5,000 per year.', '', 'NZD')).toMatchObject({ type: 'fixed_amount', amount: 5000, currency: 'NZD' })
+  expect(scholarshipValue('The award is valued at C$8,000 per year.', '', 'CAD')).toMatchObject({ type: 'fixed_amount', amount: 8000, currency: 'CAD' })
+  // an Australian page naming a New Zealand dollar amount is no longer read as AUD
+  expect(scholarshipValue('The scholarship is worth NZ$5,000.', '', 'AUD')).toMatchObject({ type: 'ambiguous', foreign_currency: true })
+  // Australia unchanged
+  expect(scholarshipValue('The scholarship is worth A$10,000 per year.')).toMatchObject({ type: 'fixed_amount', amount: 10000, currency: 'AUD' })
+  expect(internationalEligibility('Open to Canadian citizens or permanent residents only.').excluded).toBe(true)
+  expect(internationalEligibility('Must be a New Zealand citizen.').excluded).toBe(true)
+  expect(internationalEligibility('Students holding a valid study permit are eligible.').explicit).toBe(true)
+})
+test('migration 20261004000100 shaped: currency, universities, discovery, Layer 1 sources', () => {
+  const m = read('supabase/migrations/20261004000100_cf247_scholarships_nz_ca.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain('create or replace function scholarship.provider_currency(p_provider_id uuid)')
+  expect(m).toContain('create or replace function security.scholarship_university(p_provider_id uuid)')
+  expect(m).toContain("'nz_mfat_manaaki'")
+  expect(m).toContain("'ca_gac_study_in_canada'")
+  expect(m).toContain('pipeline.coverage_provider_discovery')
+  expect(m).not.toMatch(/set\s+publication_status\s*=\s*'published'/)
+  const idx = read('supabase/functions/coverage-sweep/index.ts')
+  expect(idx).toContain('scholarship-sweep-v0.6.0')
+  expect(idx).toContain('scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || "", it.currency || "AUD")')
 })

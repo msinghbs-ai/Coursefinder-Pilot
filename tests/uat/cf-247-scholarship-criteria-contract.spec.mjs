@@ -66,7 +66,7 @@ test('database: criteria rows marked by the sweep, other sources untouched; old 
   expect(m).not.toMatch(/set\s+publication_status/)
   const idx = read('supabase/functions/coverage-sweep/index.ts')
   expect(idx).toContain('mode === "scholarship_reextract"')
-  expect(idx).toMatch(/scholarship-sweep-v0\.5\.\d/)
+  expect(idx).toMatch(/scholarship-sweep-v0\.[56]\.\d/)
 })
 
 test('browser: scholarship record shows eligibility and award duration (active rows only)', async ({ page }) => {

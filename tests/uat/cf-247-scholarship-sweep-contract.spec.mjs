@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('const SCH_FC_CAP = 3000')
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toMatch(/scholarship-sweep-v0\.[45]\.\d/)
+  expect(idx).toMatch(/scholarship-sweep-v0\.[456]\.\d/)
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {
