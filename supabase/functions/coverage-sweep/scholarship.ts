@@ -446,12 +446,18 @@ export function namedScholarshipTitle(t: string) {
   if (plural && (!m[2] || /^\s+for\s+(?:all\s+|new\s+|current\s+|commencing\s+|future\s+)?(?:international\s+|domestic\s+)?students?\b/i.test(m[2]))) return false;
   return true;
 }
+// v0.6.1: numeric character references in a title ("Vice-Chancellor&#039;s", "&#x27;", "&#8217;") are decoded
+export function decodeEntities(t: string) {
+  return String(t ?? "").replace(/&#x([0-9a-f]{1,6});/gi, (_, h) => { const c = parseInt(h, 16); return c > 0 && c < 0x110000 ? String.fromCodePoint(c) : "" })
+    .replace(/&#(\d{1,7});/g, (_, d) => { const c = Number(d); return c > 0 && c < 0x110000 ? String.fromCodePoint(c) : "" })
+    .replace(/&apos;/gi, "'").replace(/&amp;/gi, "&");
+}
 export function scholarshipTitle(html: string) {
   const h1s = [...html.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(htmlToText(m[1]))).filter(Boolean);
   const head = (html.match(/<head[\s\S]*?<\/head>/i) || [""])[0];
   const og = (head.match(/<meta[^>]+property=["']og:title["'][^>]*content=["']([^"']*)["']/i) || [])[1];
   const title = (head.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
-  const opts = [...h1s, og ? htmlToText(og).split(/\s+[|–]\s+|\s+-\s+/)[0] : "", title ? htmlToText(title).split(/\s+[|–]\s+|\s+-\s+/)[0] : ""].map(clean);
+  const opts = [...h1s, og ? htmlToText(og).split(/\s+[|–]\s+|\s+-\s+/)[0] : "", title ? htmlToText(title).split(/\s+[|–]\s+|\s+-\s+/)[0] : ""].map((x) => clean(decodeEntities(x)));
   return opts.find((t) => t.length >= 8 && t.length <= 160 && !GENERIC_TITLE.test(t) && !NOT_A_SCHOLARSHIP_TITLE.test(t) && namedScholarshipTitle(t)) || null;
 }
 export function internationalEligibility(text: string) {

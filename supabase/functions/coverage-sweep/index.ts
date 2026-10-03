@@ -4,7 +4,7 @@ import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, 
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.6.0"; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
+const SCH_VERSION = "scholarship-sweep-v0.6.1"; // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
 // Student") includes international students.
 // v0.5.3: "Overseas students are eligible to apply" includes international students.
