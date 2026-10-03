@@ -124,10 +124,10 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
         editor={<EnglishEdit rows={data.english} tests={data.english_tests} busy={busy} onSave={v=>act('set_english',{tests:v})} onCancel={()=>setEditing('')}/>}>
         {data.english?.length?data.english.map(x=>`${x.test_name} ${Number(x.overall)}${x.components?.min_band!=null?` (no band below ${x.components.min_band})`:''}`).join('; '):'—'}
       </Row>
-      <Row label="Tuition (international)" lock={locks.tuition} can={can} onRelease={()=>release('tuition')} {...ed('tuition')}
+      <Row label="Tuition from the course page (international)" lock={locks.tuition} can={can} onRelease={()=>release('tuition')} {...ed('tuition')}
         onRemove={tuition?()=>act('remove_tuition',{},'Remove the current tuition for this course? Automation will not add it back.'):null}
         editor={<TuitionEdit row={tuition} currency={CURRENCY_BY_COUNTRY[country]||'AUD'} busy={busy} onSave={v=>act('set_tuition',v)} onCancel={()=>setEditing('')}/>}>
-        {tuition?`${fmtMoney(tuition.amount,tuition.currency||CURRENCY_BY_COUNTRY[country]||'AUD')} · ${BASIS[tuition.basis]||String(tuition.basis||'').replaceAll('_',' ')}${tuition.fee_year?` · ${tuition.fee_year}`:''}`:'—'}
+        {tuition?`${fmtMoney(tuition.amount,tuition.currency||CURRENCY_BY_COUNTRY[country]||'AUD')} · ${BASIS[tuition.basis]||String(tuition.basis||'').replaceAll('_',' ')}${tuition.fee_year?` · ${tuition.fee_year}`:''}`:country==='AU'?<span>— <span className="l3v-code" data-tuition-note>Australia: the tuition shown to counsellors is the registered CRICOS course cost below; a fee read from the course page is recorded here beside it (Decision 242)</span></span>:'—'}
       </Row>
       <Row label="Title shown" lock={locks.display_title} can={can} onRelease={()=>release('display_title')} {...ed('title')}
         editor={<TextEdit value={c.display_title||c.canonical_title} busy={busy} onSave={v=>act('set_core',{field:'display_title',value:v})} onCancel={()=>setEditing('')}/>}>
@@ -153,9 +153,13 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
   </section>
 }
 
-export function ProviderEditor({providerId,onChanged,onError}){
+// v2.15.166 (Platform Admin, 3 Oct 2026 14:12: "provide the fields to be edited inline — no collapse"): inline mode shows
+// the provider's values with their Change buttons as soon as the drawer opens, grouped by priority — identity (name,
+// website, city, course finder, applicants, description), then the read-only facts passed in `facts`, then contact
+// details — so the page reads header › provider values › contacts › rankings. The fold stays for older callers.
+export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=null}){
   const[data,setData,busy,setBusy]=useRecord('admin_provider_edit_read','p_provider_id',providerId,onError)
-  const[open,setOpen]=useState(false),[editing,setEditing]=useState(''),[reason,setReason]=useState('')
+  const[open,setOpen]=useState(inline),[editing,setEditing]=useState(''),[reason,setReason]=useState('')
   if(!data)return busy?<section className="m-detail-section re-panel"><Loading label="Loading editable values…"/></section>:null
   const p=data.provider||{},locks=data.locks||{},can=Boolean(data.can_edit)&&!busy,cf=data.course_finder
   const act=async(action,args={},confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_provider_edit',{p_provider_id:providerId,p_action:action,p_args:{...args,...(reason.trim()?{reason:reason.trim()}:{})}});if(error)throw error;setData(d);setEditing('');onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
@@ -166,23 +170,28 @@ export function ProviderEditor({providerId,onChanged,onError}){
       {opts.link&&p[key]?<a href={p[key]} target="_blank" rel="noreferrer" className="cf-link">{p[key]}</a>:<span className={opts.multiline?'re-desc':''}>{p[key]||'—'}</span>}</Row>
   const manualCount=Object.keys(locks).length
   return <section className="m-detail-section re-panel" data-editor="provider">
-    <button type="button" className="re-toggle" onClick={()=>setOpen(o=>!o)} aria-expanded={open}><Pencil size={14}/><span><strong>Edit this provider</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All values come from automation'}</small></span><span className="re-caret">{open?'Hide':'Show'}</span></button>
+    {inline?<div className="re-toggle re-static"><Pencil size={14}/><span><strong>Provider values</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand; the rest come from the pipeline`:'All values come from the pipeline. Change a value here and the pipeline leaves it alone.'}</small></span></div>
+    :<button type="button" className="re-toggle" onClick={()=>setOpen(o=>!o)} aria-expanded={open}><Pencil size={14}/><span><strong>Edit this provider</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All values come from automation'}</small></span><span className="re-caret">{open?'Hide':'Show'}</span></button>}
     {open&&<div className="re-body">
       {!data.can_edit&&<p className="l3v-note">You can view these values. A Curator or above can change them.</p>}
       {data.can_edit&&<label className="re-reason"><small>Reason for the change (optional, kept in the history)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
       {text('display_name','Name shown')}
       {text('website','Website',{type:'url',link:true,placeholder:'https://'})}
+      {inline&&text('primary_city','City')}
       <ProviderApplicants providerId={providerId} onChanged={onChanged} onError={onError}/>
       <Row label="Course finder address" lock={null} can={can} {...ed('finder')}
         editor={<TextEdit value={cf?.address} type="url" placeholder="https://… the page or site that lists the courses" busy={busy} onSave={v=>act('set_course_finder',{url:v},'Use this address to find course pages? The provider goes back into page discovery.')} onCancel={()=>setEditing('')}/>}>
         {cf?.address?<><a href={cf.address} target="_blank" rel="noreferrer" className="cf-link">{cf.address}</a><span className="l3v-code">{[cf.status,cf.pages_found!=null&&`${fmtNumber(cf.pages_found)} course pages found`,cf.mapped_at&&`last looked ${fmtDateTime(cf.mapped_at)}`].filter(Boolean).join(' · ')}</span></>:'—'}
       </Row>
+      {inline&&text('description','Description',{multiline:true})}
+      {facts}
+      {inline&&<h4 className="re-group">Contact details</h4>}
       {text('phone','Phone')}
       {text('email','Email',{type:'email'})}
       {text('address_line1','Address')}
-      {text('primary_city','City')}
+      {!inline&&text('primary_city','City')}
       {text('postcode','Postcode')}
-      {text('description','Description',{multiline:true})}
+      {!inline&&text('description','Description',{multiline:true})}
       {data.can_manage&&<div className="re-manage"><span>Provider status: <StatusChip value={p.lifecycle_status} tone={p.lifecycle_status==='active'?'success':'warning'} label={p.lifecycle_status==='active'?'Active':'Archived'}/></span>
         {p.lifecycle_status==='active'?<Button compact variant="danger" onClick={()=>act('archive',{},'Archive this provider? Its courses stay as they are. You can restore it later.')} disabled={busy}><Archive size={13}/>Archive provider</Button>
           :<Button compact onClick={()=>act('restore')} disabled={busy}><RotateCcw size={13}/>Restore provider</Button>}</div>}

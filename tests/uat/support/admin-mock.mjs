@@ -69,6 +69,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_provider_fee_schedules_read: b => b?.p_source_id ? { ...F.feeScheduleRows, can_decide: rank >= 6 } : { ...F.feeSchedules, can_decide: rank >= 6 },
     admin_ranking_link: b => { calls.push({ rankingLink: b }); return { linked: true, observations_linked: 7 } },
     admin_provider_policies_read: b => b?.p_id ? F.policyRows : { ...(b?.p_kind === 'intake_calendar' ? F.calendarPolicies : F.englishPolicies), can_decide: rank >= 6 },
+    admin_semester_intakes_read: { can_set: rank >= 6, providers: [{ provider_id: 'pv-byhand', provider: 'Byhand University', reviews: 45, answerable: 0, periods: ['semester 1', 'semester 2', 'trimester 3'], months: {}, calendar_url: 'https://byhand.edu.au/calendar', sample: 'Semester 1 | Semester 2' }] },
+    admin_provider_calendar_set: b => { calls.push({ calendarSet: b }); return { id: 'cal-byhand', to_answer: 44 } },
     admin_provider_policy_decide: b => { calls.push({ policyDecide: b }); return { status: b.p_action === 'approve' ? 'approved' : 'rejected', written: 197 } },
     admin_provider_policy_decide_bulk: b => { calls.push({ policyBulk: b }); return { done: b.p_ids.length, to_fill: 197, skipped: [] } },
     admin_course_link_search_settings: b => { if (b?.p_monthly_credit_cap) calls.push({ searchCap: b }); return { enabled: true, monthly_credit_cap: b?.p_monthly_credit_cap ?? 50000, used_this_month: 49840, queued: 320, can_change: rank >= 6 } },

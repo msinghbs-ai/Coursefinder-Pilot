@@ -66,6 +66,10 @@ test('policy parser: level defaults, split levels, named courses, exclusions', a
   expect(englishPolicy('| Test | Overall |\n|---|---|\n| IELTS | 6.5 |\n\n## Bachelor of Nursing\n| Test | Overall |\n|---|---|\n| IELTS | 7.0 |').defaults).toEqual({})
   const cal = calendarStarts('## 2027 key dates\n| Date | Event |\n|---|---|\n| 1 March 2027 | Semester 1 starts |\n| 26 July 2027 | Semester 2 begins |\n| 10 June 2027 | Semester 1 exams |')
   expect(cal.periods.map((p) => `${p.period}:${p.months.join(',')}`)).toEqual(['semester 1:3', 'semester 2:7'])
+  // v0.2.2: a period named on its own section row (Curtin's calendar) applies to the Start date rows that follow it;
+  // census/end rows under it add nothing, and a period in a heading works the same way
+  const curtin = calendarStarts('## Semesters\n| Session | Key dates |\n|---|---|\n| Semester 1 |\n| O-Week | Monday 9 February - Friday 13 February |\n| Start date | Monday 16 February |\n| Census date | Friday 13 March |\n| End date | Friday 12 June |\n| Semester 2 |\n| Start date | Monday 20 July |\n| End date | Friday 13 November |\n\n## Trimester 1\n- Teaching begins: Monday 2 March\n- Census date: 31 March')
+  expect(curtin.periods.map((p) => `${p.period}:${p.months.join(',')}`)).toEqual(['semester 1:2', 'semester 2:7', 'trimester 1:3'])
 })
 
 test.describe('browser: English policies panel', () => {
