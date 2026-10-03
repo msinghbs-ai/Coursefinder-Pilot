@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.160'
-export const PACKAGE_VERSION='0.1.87'
+export const UI_VERSION='2.15.161'
+export const PACKAGE_VERSION='0.1.88'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Settings: one page, every pipeline setting',
+  title:'Start months by hand; calendar step live',
   changes:[
-    'Environment & keys becomes Settings: a section per pipeline step with the universities per matcher run, matcher and search speed, pages read per batch, page proofs per country and attribute, Layer 3 requests a day, daily spend guards and credit floor, the Firecrawl limit and reserve. A Platform Admin changes a number and it applies at once, logged under Recent changes.',
-    'Prompts and models are listed with version, hash, steps and holdout result; a prompt is never edited in place (Decision 238).'
+    'Layer 4 › Attributes › Academic calendars gains Start months by hand: each university whose course pages name only a study period is listed with its waiting reviews; a Platform Admin enters the month each period starts and the calendar page, and the reviews are answered within 10 minutes (Decision 228).',
+    'Approving a parsed calendar now shows how many reviews it will answer; the job provider-calendar-intakes runs every 10 minutes.'
   ],
   bugFixes:[]
 }

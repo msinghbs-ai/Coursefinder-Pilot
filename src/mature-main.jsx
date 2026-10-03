@@ -42,7 +42,7 @@ import{DomainReadiness}from'./data-quality-entry'
 import{CoverageView}from'./course-coverage'
 import LinkRefresh from'./LinkRefresh'
 import FeeSchedules from'./FeeSchedules'
-import ProviderPolicies from'./ProviderPolicies'
+import ProviderPolicies,{CalendarByHand}from'./ProviderPolicies'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import ScholarshipEligibility from'./ScholarshipEligibility'
 import LiveActivity from'./LiveActivity'
@@ -79,6 +79,7 @@ function Layer4Attributes(){
       <p className="sd-desc">University documents a person approves: fee schedules, English language policies and academic calendars. Approval fills only courses with no value and none entered by hand.</p></section>
     <FeeSchedules country={country}/>
     <ProviderPolicies country={country}/>
+    <CalendarByHand country={country}/>
   </div>
 }
 
