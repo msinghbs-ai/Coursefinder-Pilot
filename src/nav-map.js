@@ -20,7 +20,7 @@ export const PAGES = {
   ] },
   scholarships: { label: 'Scholarships', slug: 'scholarships', icon: 'scholarship', subtitle: 'Scholarships, where each value came from, and what is published.', tabs: [
     { key: 'list', label: 'Scholarships', min: 1 },
-    { key: 'links', label: 'Course links', min: 3 },
+    // v2.15.174 (Platform Admin, 4 Oct 2026 01:57): Course links retired — links come from each scholarship's page (Layer 2)
     // v2.15.169 (Decision 249): Publishing moved to Layer 4 Review — publishing is a person's decision
   ] },
   rankings: { label: 'Rankings & statistics', slug: 'statistics-rankings', icon: 'chart', subtitle: 'QILT, PRISMS, QS and THE data, and side-by-side comparison.', tabs: [
@@ -203,6 +203,8 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'layer3' && tab === 'models') return { page: 'services', tab: '', params: p }
   // v2.15.169 (Decision 249): Scholarships › Publishing is Layer 4 Review › Scholarship publishing.
   if (hit.page === 'scholarships' && tab === 'publishing') return { page: 'layer4', tab: 'publishing', params: p }
+  // v2.15.174: Scholarships › Course links retired; the old address opens the list
+  if (hit.page === 'scholarships' && tab === 'links') return { page: 'scholarships', tab: 'list', params: p }
   return { page: hit.page, tab, params: p }
 }
 

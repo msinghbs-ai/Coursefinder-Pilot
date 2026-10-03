@@ -1,13 +1,17 @@
 // v2.15.115 scholarship course links: one decision per scholarship (all, matching courses, none).
+// v2.15.174 (Platform Admin, 4 Oct 2026 01:57): the Course links tab is retired; links come from each scholarship's
+// page (Layer 2). The database decisions already made stay in force (the decision guard is unchanged).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { PAGES } from '../../src/nav-map.js'
+import { PAGES, resolveTarget } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = p => fs.readFileSync(p, 'utf8')
 
-test('Scholarships has a Course links tab; decisions are role-checked, logged and govern the sweep', () => {
-  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['links', 3]]) // v2.15.169: Publishing is Layer 4 › Scholarship publishing
+test('Course links tab retired; the decisions made earlier keep governing the sweep', () => {
+  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1]])
+  expect(resolveTarget('scholarships', new URLSearchParams('tab=links'))).toMatchObject({ page: 'scholarships', tab: 'list' })
+  expect(fs.existsSync('src/ScholarshipLinks.jsx')).toBe(false)
   const m = read('supabase/migrations/20260930130000_cf247_scholarship_course_links.sql')
   expect(m).toContain("security.current_role_rank() < 4 then raise exception 'Pipeline Operator role or above required'")
   expect(m).toContain("check (decision in ('all','filter','none'))")
@@ -24,23 +28,11 @@ test('Scholarships has a Course links tab; decisions are role-checked, logged an
 })
 
 test.describe('mocked browser', () => {
-  test('list, open a scholarship, use the suggestion, narrow by level and save', async ({ page }) => {
+  test('the old Course links address opens the list, with no tabs and no heading', async ({ page }) => {
     await mockAdmin(page)
-    page.on('dialog', d => d.accept())
     await page.goto('/#scholarships?tab=links')
-    await expect(page.getByRole('tab', { name: 'Course links' })).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('.sl-list tbody tr')).toHaveCount(2)
-    await page.getByRole('button', { name: 'Master of Global Medicines Development Pioneers Scholarship' }).click()
-    const panel = page.locator('[data-decide="sch-mgmd"]')
-    await expect(panel).toContainText('Suggested: Only matching courses')
-    await expect(panel).toContainText('1 course will be linked, 580 rejected.')
-    await expect(panel.getByLabel('Only matching courses')).toBeChecked()
-    await panel.getByLabel(/Masters Degree \(Coursework\)/).check()
-    await panel.getByLabel(/^Reason/).fill('Scholarship page names this one course')
-    await panel.getByRole('button', { name: 'Save decision' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.p_decision)).toEqual({ p_scholarship_id: 'sch-mgmd', p_decision: 'filter', p_filter: { levels: ['lv-mc'], title: 'Master of Global Medicines Development' }, p_reason: 'Scholarship page names this one course' })
-    await expect(panel).toContainText('Saved: 1 linked, 580 rejected, 24 automatic links removed.')
-    await panel.getByLabel('No courses').check()
-    await expect.poll(() => page.l3calls.filter(c => c.detail?.p_decision === 'none').length).toBeGreaterThan(0)
+    await expect(page.getByRole('tab', { name: 'Course links' })).toHaveCount(0)
+    await expect(page.getByText('Scholarship catalogue')).toHaveCount(0)
+    await expect(page.locator('[data-sch-count]')).toContainText('published')
   })
 })

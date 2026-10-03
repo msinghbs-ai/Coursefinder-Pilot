@@ -68,3 +68,18 @@ test('browser: Layer 3 Scholarships — AI off until a model passes; Layer 4 job
   await page.goto('/#layer-4-review?tab=publishing')
   await expect(page.locator('[data-scholarship-layer="4"] [data-sl-job="scholarship-publication-review"]')).toContainText('Daily at 06:17 AEST')
 })
+
+test('Firecrawl cap and reserve: Layer 2 settings the worker reads; none left in the code', async ({ page }) => {
+  const idx = read('supabase/functions/coverage-sweep/index.ts')
+  expect(idx).not.toContain('SCH_FC_CAP')
+  expect(idx).not.toMatch(/schLeft > \d/)
+  expect(idx).toContain('await rpc("svc_scholarship_fc_budget", {})')
+  const m = read('supabase/migrations/20261004000400_cf247_scholarship_firecrawl_cap_setting.sql')
+  expect(m).toContain("('firecrawl_cap', 2,")
+  expect(m).toContain("('firecrawl_reserve', 2,")
+  await mockAdmin(page)
+  await page.goto('/#layer-2-discovery?tab=scholarships')
+  const c = page.locator('[data-sl-credits]')
+  await expect(c).toContainText('304 left of 3,000')
+  await expect(c.locator('[data-sl-credit-state]')).toContainText('Below the reserve')
+})

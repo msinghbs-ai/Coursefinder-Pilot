@@ -13,7 +13,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 test('menu: Automations, Send back to AI and Publishing tabs; old links still land', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs'])
   expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'flags', 'websites', 'sendback', 'rules', 'attributes', 'publishing', 'blocks']) // Decision 222: Websites to find; v2.15.157: Attributes
-  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['links', 3]]) // v2.15.169: Publishing is Layer 4 › Scholarship publishing
+  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1]]) // v2.15.174: Course links retired; Publishing is Layer 4
   expect(PAGES.scholarships.min).toBe(1)
   expect(resolveTarget('jobs').params?.get?.('tab') ?? 'jobs').toBe('jobs')
   expect(hrefFor('layer4', 'publishing')).toBe('#layer-4-review?tab=publishing')
@@ -142,9 +142,10 @@ test.describe('mocked browser', () => {
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'release')?.p_args).toEqual({ id: 'h1' })
   })
 
-  test('Scholarships list still opens on its own tab', async ({ page }) => {
+  test('Scholarships list opens directly, with no tabs (v2.15.174)', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#scholarships')
-    await expect(page.getByRole('tab', { name: 'Scholarships' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('tab')).toHaveCount(0)
+    await expect(page.locator('[data-sch-count]')).toBeVisible()
   })
 })

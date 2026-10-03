@@ -117,6 +117,18 @@ function Layer1({d,can,write}){
 
 function Counts({title,obj,labels}){const e=Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]);return <div className="sl-counts"><small>{title}</small>{e.length?<ul>{e.map(([k,v])=><li key={k}><span>{labels[k]||human(k)}</span><b>{fmtNumber(v)}</b></li>)}</ul>:<span className="sl-sub">None yet</span>}</div>}
 
+const PURPOSE={sch_map:'Mapping university sites',sch_search:'Searching for a page',sch_scrape:'Reading pages that refuse a direct read'}
+function Credits({fc}){
+  const cap=Number(fc.cap||0),used=Number(fc.used||0),reserve=Number(fc.reserve||0),left=Math.max(0,cap-used),pct=cap?Math.min(100,Math.round(used/cap*100)):100
+  const state=left<=0?'All used: scholarship work no longer uses Firecrawl.':left<=reserve?`Below the reserve: new pages that refuse a direct read are not retried; the ${fmtNumber(left)} left are kept for re-reading held scholarships' pages.`:'Within the cap.'
+  return <section className="m-panel" data-sl-credits><SectionTitle title="Firecrawl credits for scholarships" subtitle="Firecrawl is used only when a university site refuses a direct read, and to map and search sites. The cap and the reserve are the settings below."/>
+    <div className="sl-credit"><div className="sl-credit-bar" role="img" aria-label={`${fmtNumber(used)} of ${fmtNumber(cap)} credits used`}><span style={{width:`${pct}%`}}/>{cap>0&&<i style={{left:`${Math.max(0,Math.min(100,(cap-reserve)/cap*100))}%`}} title="Reserve starts here"/>}</div>
+      <div className="sl-credit-figs"><span><b>{fmtNumber(used)}</b> used</span><span><b>{fmtNumber(left)}</b> left of <b>{fmtNumber(cap)}</b></span><span>Reserve <b>{fmtNumber(reserve)}</b></span></div>
+      <p className={`sl-status ${left<=reserve?'sl-off':''}`} data-sl-credit-state>{state}</p>
+      <ul className="sl-credit-use">{Object.entries(fc.by_purpose||{}).map(([k,v])=><li key={k}><span>{PURPOSE[k]||human(k)}</span><b>{fmtNumber(v.all)}</b><small>{fmtNumber(v.last_7_days)} in 7 days</small></li>)}</ul></div>
+  </section>
+}
+
 function Layer2({d}){
   const names={AU:'Australia',NZ:'New Zealand',CA:'Canada',GB:'United Kingdom',US:'United States'}
   return <>
@@ -128,6 +140,7 @@ function Layer2({d}){
         <div className="sl-counts"><small>Most common reasons for refusing a page</small>{(c.refusals||[]).length?<ul>{c.refusals.map(r=><li key={r.reason}><span>{REFUSAL[r.reason]||human(r.reason)}</span><b>{fmtNumber(r.pages)}</b></li>)}</ul>:<span className="sl-sub">None</span>}</div>
         <Counts title="Known scholarship pages — last read" obj={c.rereads} labels={READ}/>
       </article>)}</div></section>
+    {d.firecrawl&&<Credits fc={d.firecrawl}/>}
     <section className="m-panel" data-sl-worker><SectionTitle title="Worker answers (last 6 hours)" subtitle="Each job run sends work to the reading worker; this is what came back. Older answers are not kept."/>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Work</th><th className="num">Sent</th><th className="num">Answered</th><th className="num">Succeeded</th><th className="num">Failed</th><th>Last failure</th></tr></thead><tbody>
         {(d.worker||[]).length?d.worker.map(w=><tr key={w.mode}><td>{MODE[w.mode]||human(w.mode)}</td><td className="num">{fmtNumber(w.sent)}</td><td className="num">{fmtNumber(w.answered)}</td><td className="num">{fmtNumber(w.ok)}</td><td className="num">{Number(w.failed)?<b className="sl-bad">{fmtNumber(w.failed)}</b>:'0'}</td><td><small>{w.last_failure||'—'}</small></td></tr>)

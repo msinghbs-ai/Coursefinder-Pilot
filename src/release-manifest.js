@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.173'
-export const PACKAGE_VERSION='0.1.100'
+export const UI_VERSION='2.15.174'
+export const PACKAGE_VERSION='0.1.101'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Scholarships by layer',
+  title:'Scholarships tidy; Firecrawl cap in Layer 2',
   changes:[
-    'Layer 1 › Scholarships: countries on/off, sources by country and use (Ingest, University pages, Reference, Validation), feed timing, add/pause/change use',
-    'Layer 2 › Scholarships: found/read/added/refused by country, refusal reasons, worker answers, per-run limits and job pause',
-    'Layer 3 › Scholarships: AI check by country (off until a model passes its benchmark), models, benchmark/run control',
-    'Layer 4 › Scholarship publishing: jobs after publishing',
-    'Four reference/validation sites registered; job limits read from settings'
+    'Scholarships: Course links tab and its screen code retired; old address opens the list',
+    'Scholarships list: no tabs or heading; count beside Clear',
+    'Layer 2 › Scholarships: Firecrawl credits used, left, reserve and use by purpose; cap and reserve are settings',
+    'Worker v0.6.2: cap and reserve read from settings, no constants',
+    'Publishing: scholarship names open their record; course-link reasons explained'
   ],
   bugFixes:[]
 }

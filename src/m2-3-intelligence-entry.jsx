@@ -183,7 +183,7 @@ export function Layer4({onError}){
          <small>Oldest {g.oldest_days} days · e.g. {(g.samples||[]).slice(0,3).map(x=>x.title).join('; ')}</small>
          <div><button onClick={()=>openPreview(g)}>Preview batch</button></div>
        </article>)}{(batches.groups||[]).length===0&&<Empty text="No repeat cases to batch right now."/>}</div>}
-       <p className="l4b-note l4b-pointer">Which courses a scholarship applies to is decided on <a href="#scholarships?tab=links">Scholarships › Course links</a>.</p>
+       <p className="l4b-note l4b-pointer">Which courses a scholarship applies to comes from the study levels, fields and courses its own page names (Layer 2 › Scholarships).</p>
        <h3 className="l4b-sub">Provider departures, findings and decision history</h3>
        <Layer4MassOperations embedded sections={['departures','quality','history']}/>
      </div>:items.length===0?<Empty text="Nothing waiting here. Try another status or task."/>:<div className="l4d-grid">

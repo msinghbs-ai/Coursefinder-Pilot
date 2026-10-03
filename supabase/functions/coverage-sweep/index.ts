@@ -4,7 +4,7 @@ import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, 
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.6.1"; // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
+const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
 // Student") includes international students.
 // v0.5.3: "Overseas students are eligible to apply" includes international students.
@@ -35,8 +35,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.1"; // v0.6.1: numeric character ref
 // (terms and conditions, FAQs, how to apply, recipients, news) are not scholarships.
 // v0.4.0 (scholarship discovery): the reader confirms the page names the scholarship (title, og:title, <h1>, or the whole
 // name in one of the first <h2>s) before anything is applied - otherwise read_status "name_mismatch"; Firecrawl for
-// scholarship work is capped at 3,000 credits (purposes sch_map, sch_search, sch_scrape).
-const SCH_FC_CAP = 3000;
+// scholarship work has its own credit cap (purposes sch_map, sch_search, sch_scrape); v0.6.2: the cap and reserve are Layer 2 settings.
 
 // CF-247 complete coverage sweep (Platform Admin direction 29 Sep 2026). Nonce-only. Nothing is written to the
 // catalogue: discovery lists a provider's course-like pages, reading keeps each bound course page as evidence and
@@ -65,7 +64,7 @@ const WORKER = "coverage-sweep-worker-v0.13.5"; // v0.13.5: calendar parser v0.2
 // v0.9.0 (Decision 211): mode scholarship_reextract adds eligibility criteria and award scope to stored scholarship pages.
 // v0.8.0: mode scholarship_discover (provider scholarship pages from site maps, Firecrawl map/search fallbacks, matching
 // held Study Australia-only scholarships, reading unheld pages at Australian universities for admission as new
-// unpublished scholarships; Firecrawl only for pages the site refuses, keeping 800 credits for step 1) and mode scholarship_inspect (read only: stored or live page headings and text for hand checks).
+// unpublished scholarships; Firecrawl only for pages the site refuses, keeping a reserve (Layer 2 setting) for step 1) and mode scholarship_inspect (read only: stored or live page headings and text for hand checks).
 // v0.5.2: discovery drops requirement, scholarship and applying pages (pilot: RMIT inherent-requirements pages).
 // v0.5.1: PTE/TOEFL only when stated as overall or directly after the test name.
 // v0.5.0: English overall only when stated as overall or in a score table; minimum band after the overall; fee basis
@@ -240,8 +239,11 @@ Deno.serve(async (req) => {
     const fc = await rpc("svc_coverage_firecrawl", {});
     let fcRemaining = fc?.budget_status?.allowed === false ? 0 : Math.max(0, Number(fc?.budget_status?.remaining_units ?? 0) - Number(fc?.budget_status?.stop_at_remaining_units ?? 0));
     const fcHeaders = { authorization: `Bearer ${fc?.secret}`, "content-type": "application/json" };
-    // scholarship work (purposes sch_*) also stays inside its own 3,000-credit cap
-    let schLeft = mode.startsWith("scholarship") ? Math.max(0, SCH_FC_CAP - Number(await rpc("svc_scholarship_fc_used", {}) ?? SCH_FC_CAP)) : 0;
+    // v0.6.2 (Decision 251): scholarship work (purposes sch_*) stays inside its own cap; the cap and the reserve kept for
+    // re-reading held scholarships' pages are Layer 2 settings read each run. If they cannot be read, nothing is spent.
+    const schBudget = mode.startsWith("scholarship") ? await rpc("svc_scholarship_fc_budget", {}).catch(() => null) : null;
+    let schLeft = schBudget && Number.isFinite(Number(schBudget.cap)) ? Math.max(0, Number(schBudget.cap) - Number(schBudget.used ?? schBudget.cap)) : 0;
+    const schReserve = schBudget && Number.isFinite(Number(schBudget.reserve)) ? Number(schBudget.reserve) : Number.POSITIVE_INFINITY;
     const useFc = async (purpose: string, providerId: string | null, url: string) => {
       if (!fc?.secret || fcRemaining < 1) return false;
       const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1; if (fcRemaining < units) return false; // v0.13.0: a JSON-format scrape costs 5 credits
@@ -929,8 +931,8 @@ Deno.serve(async (req) => {
           const pg = await readDirect(it.url);
           let via = pg.status === "read" ? "direct" : null;
           // many university sites refuse direct reads (403); Firecrawl then, inside the scholarship cap, keeping a
-          // reserve of 800 credits for step 1 (provider pages of held scholarships)
-          if (["blocked", "fetch_failed", "too_thin"].includes(pg.status) && schLeft > 800 && await useFc("sch_scrape", it.provider_id, it.url)) {
+          // the reserve (Layer 2 setting) is kept for step 1 (provider pages of held scholarships)
+          if (["blocked", "fetch_failed", "too_thin"].includes(pg.status) && schLeft > schReserve && await useFc("sch_scrape", it.provider_id, it.url)) {
             try {
               const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
               const d = await r.json().catch(() => ({}));

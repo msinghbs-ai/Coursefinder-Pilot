@@ -27,14 +27,15 @@ const EXPLAIN={
   'eligibility lists domestic students only':['The eligibility section names Australian citizens or residents only.','A Platform Admin can record that international students can apply, with a note (Show › Domestic only).'],
   'provider page limits it to citizens and residents':['The page restricts it to citizens and permanent residents.','Stays held unless the page says otherwise.'],
   'no provider page':['No page of the provider’s own was found for it.','A Curator adds the page address in the scholarship record; the reader then reads it.'],
-  'no linked course':['It applies to no course in CourseFinder yet.','Course links: decide which courses it applies to.'],
+  'no linked course':['It applies to no course in CourseFinder yet.','Links come from the study levels, fields and courses its page names (Layer 2). It stays held until the page names them; the page is read again at least every 30 days.'],
   'held after hand-check':['A person held it after checking.','Release it here (Show › Held after a hand check) when it is fixed.'],
   'provider page does not mention international students':['The page never mentions international students.','A Curator decides from the page and sets who it is for in the scholarship record.'],
-  'course link broader than the scholarship':['It is linked to more courses than its page names.','Course links: narrow it to the courses the page names.'],
+  'course link broader than the scholarship':['It is linked to more courses than its page names.','The links are rebuilt from the page when it is read again; it stays held until they match.'],
   'not currently offered (provider page)':['The page says it is not currently offered.','Stays held until the page offers it again.'],
 }
 // v2.15.131 (pub-reasons-dead): where each reason is fixed.
-const FIX_AT={'no stated award value':['#scholarships','Scholarships › Edit in list'],'no provider page':['#scholarships','Scholarships › Edit in list'],'no linked course':['#scholarships?tab=links','Course links'],'course link broader than the scholarship':['#scholarships?tab=links','Course links']}
+// v2.15.174: Course links retired; a value or page is fixed on the scholarship's record (open it from the lists below)
+const FIX_AT={}
 const ACTION={publish_batch:'Batch published',hold:'Held',release:'Hold released',withdraw:'Withdrawn',confirm_international:'International students confirmed'}
 
 export default function ScholarshipPublishing({onError}){
@@ -75,7 +76,7 @@ export default function ScholarshipPublishing({onError}){
       {!data.can_control&&<p className="l3v-note">You can view publishing. Only a Platform Admin can publish or hold.</p>}
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Scholarship</th><th>Provider</th>{view==='eligible'&&<><th>Value</th><th className="num">Courses</th></>}{['held','published_failing'].includes(view)&&<th>Reason</th>}{view==='domestic_only'&&<th>What the page says</th>}{data.can_control&&<th>Action</th>}</tr></thead><tbody>
         {list.length?list.map(s=><tr key={s.id}>
-          <td><strong>{s.name}</strong>{s.page&&<a className="l3v-code" href={s.page} target="_blank" rel="noreferrer">Open the page</a>}{view==='held'&&<span className="l3v-code">{fmtDateTime(s.at)}</span>}</td>
+          <td><a className="sp-name" href={`#scholarships?id=${s.id}`}><strong>{s.name}</strong></a>{s.page&&<a className="l3v-code" href={s.page} target="_blank" rel="noreferrer">Open the page</a>}{view==='held'&&<span className="l3v-code">{fmtDateTime(s.at)}</span>}</td>
           <td>{s.provider||'—'}</td>
           {view==='eligible'&&<><td>{s.value||'—'}</td><td className="num">{fmtNumber(s.courses||0)}</td></>}
           {['held','published_failing'].includes(view)&&<td>{view==='published_failing'?String(s.reason||'').split('; ').map(x=>REASON[x]||x).join('; '):s.reason}</td>}

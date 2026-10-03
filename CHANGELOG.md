@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.101 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.174** (Scholarships: Course links tab retired with its code; list heading removed (count on the search row); Firecrawl credit cap and reserve are Layer 2 settings shown with credits used).
+- 20261004000400_cf247_scholarship_firecrawl_cap_setting
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.100 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.173** (Scholarships at each layer: sources per country and their use (Layer 1), discovery and reading results with per-run limits and job switches (Layer 2), AI check by country (Layer 3), jobs after publishing (Layer 4) — Decision 251).

@@ -112,7 +112,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   expect(sql).toContain("cron.schedule('scholarship-discover','*/10 * * * *'")
   expect(sql).not.toMatch(/website_edge_|zoho|wix-|coverage_admission|layer3/i)
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(idx).toContain('const SCH_FC_CAP = 3000')
+  expect(idx).toContain('await rpc("svc_scholarship_fc_budget", {})') // v0.6.2 (Decision 251): the cap is a Layer 2 setting
   expect(idx).toContain('"name_mismatch"')
   expect(idx).toMatch(/scholarship-sweep-v0\.[456]\.\d/)
 })
