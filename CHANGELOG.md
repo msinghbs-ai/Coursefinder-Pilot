@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.100 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.173** (Scholarships at each layer: sources per country and their use (Layer 1), discovery and reading results with per-run limits and job switches (Layer 2), AI check by country (Layer 3), jobs after publishing (Layer 4) — Decision 251).
+- 20261004000300_cf247_scholarship_layer_settings
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.99 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.172** (Scholarships module lists published scholarships only (no status pills or status filters); record lists its courses; New Zealand and Canadian university scholarships (Decision 250)).

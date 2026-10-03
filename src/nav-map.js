@@ -39,6 +39,7 @@ export const PAGES = {
     { key: 'operations', label: 'Runs', min: 4 },
     { key: 'settings', label: 'Source settings', min: 6 },
     { key: 'batch', label: 'Manual batch runs', min: 6 },
+    { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
   // v2.15.112 (Platform Admin, 30 Sep 2026): reference data that is not a register run moved out of Layer 1.
   reference: { label: 'Reference data', slug: 'reference-data', icon: 'book', subtitle: 'Ranking files, key dates and the third-party sites the platform refers to.', tabs: [
@@ -51,10 +52,12 @@ export const PAGES = {
     { key: 'start', label: 'Fetch an area', min: 4 },
     { key: 'history', label: 'History', min: 4 },
     { key: 'profiles', label: 'Source profiles', min: 4 },
+    { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
   layer3: { label: 'Layer 3 AI validation', slug: 'layer-3-ai', icon: 'ai', subtitle: 'Run or pause each task, set its daily limit and choose the model cascade.', tabs: [
     { key: 'routing', label: 'Control', min: 3 },
     { key: 'work', label: 'Work queue', min: 3 },
+    { key: 'scholarships', label: 'Scholarships', min: 3 },
   ] },
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
     { key: 'review', label: 'Review queue', min: 3 },

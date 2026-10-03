@@ -32,6 +32,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_requeue: b => { calls.push(b); return { ...F.requeue, moved: 12 } },
     admin_scholarship_publishing_read: F.scholarshipPublishing,
     admin_scholarship_record_read: F.scholarshipRecord,
+    admin_scholarship_layer_read: b => F.scholarshipLayer(b.p_layer),
+    admin_scholarship_layer_write: b => { calls.push({ p_action: b.p_action, p_args: b.p_args }); return { ok: true } },
     admin_scholarship_publishing: b => { calls.push(b); return F.scholarshipPublishing },
     admin_priority_read: F.priority,
     admin_priority_search: () => F.prioritySearch,

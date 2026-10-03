@@ -12,6 +12,7 @@
 import React,{useEffect,useState}from'react'
 import{AlertTriangle,Globe,Lock,RefreshCw,Send,Unlock}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import ScholarshipLayer from'./ScholarshipLayer'
 import{Button,Empty,Loading,Metric,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
 
 const REASON={'no stated award value':'No award value on the page','no provider page':'No page on the provider website','no linked course':'Not linked to a course',
@@ -96,6 +97,8 @@ export default function ScholarshipPublishing({onError}){
         {FIX_AT[sel[0]]&&<a className="sp-fix" href={FIX_AT[sel[0]][0]}>Fix on {FIX_AT[sel[0]][1]}</a>}
       </section>}
     </div>
+    {/* v2.15.173 (Decision 251): the Layer 4 scholarship jobs */}
+    <ScholarshipLayer layer={4} compact onError={onError}/>
     {(data.events||[]).length>0&&<section className="m-panel"><SectionTitle title="Recent changes"/>
       <ul className="l3c-events">{data.events.map((e,i)=><li key={i}><span>{fmtDateTime(e.at)}</span><strong>{ACTION[e.action]||e.action}</strong><small>{[e.detail?.result?.published!=null&&`${fmtNumber(e.detail.result.published)} published`,e.detail?.reason,e.detail?.approval].filter(Boolean).join(' · ')}</small></li>)}</ul></section>}
   </>
