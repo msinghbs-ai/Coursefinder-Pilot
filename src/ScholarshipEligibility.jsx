@@ -28,9 +28,13 @@ export default function ScholarshipEligibility({data}){
   const all=data?.criteria
   const items=(Array.isArray(all)?all:[]).filter(c=>c.status==='active')
   const dur=data?.award_duration_basis
-  if(!items.length&&!dur)return null
+  // v2.15.168 (Decisions 244 and 246): who the scholarship is for, read from its own wording — audience and nationalities
+  const AUD={international:'International students',domestic:'Domestic students',international_and_domestic:'International and domestic students',not_stated:'Not stated on the page'}
+  const nats=Array.isArray(data?.nationalities)?data.nationalities:[]
+  if(!items.length&&!dur&&!data?.audience)return null
   return <section className="se-panel" data-scholarship-eligibility>
     <h4><ListChecks size={14}/>Eligibility and award</h4>
+    {data?.audience&&<p className="se-duration" data-audience><small>Who it is for</small><b>{AUD[data.audience]||data.audience}{nats.length?` · nationalities named: ${nats.join(', ')}`:''}</b></p>}
     {dur&&<p className="se-duration"><small>Award runs</small><b>{DURATION[dur]||dur}</b></p>}
     {items.length>0?<dl className="se-list">{items.map(c=>{const[k,v]=criterionLabel(c);return <div key={c.id}><dt>{k}</dt><dd><b>{v}</b>{c.human_text&&<small title={c.human_text}>“{c.human_text}”</small>}<em>{SOURCE[c.value_json?.by]||'recorded'}</em></dd></div>})}</dl>:<small>No eligibility read from the provider page yet.</small>}
   </section>
