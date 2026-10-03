@@ -1,9 +1,12 @@
--- CF-247 (Decision 228, 2 Oct 2026), part 2 of 3: answering semester-only intake reviews from approved calendars.
-
--- 4. answer the reviews the plan can answer
+-- CF-247 (Decision 228 switched on, 3 Oct 2026; Platform Admin "yes calendars", "Try again now"). Part A1 of
+-- 20261003000500: answer the waiting intake reviews the plan can answer from an approved calendar.
+-- A waiting intake review whose course page names only study periods ("Semester 1", "Trimester 2") is answered from
+-- the university's approved calendar when every period named has one start month; the months are written as the
+-- course's intakes with the course page as evidence. A calendar never adds a start to a course whose page names none;
+-- courses with intakes already, or set by hand, are left alone. Only the review that was answered is closed.
 create or replace function security.semester_intake_apply_v1(p_provider_id uuid default null)
 returns jsonb language plpgsql security definer set search_path to 'pg_catalog', 'catalogue', 'pipeline', 'security', 'search' as $f$
-declare r record; v_ev pipeline.evidence_artifacts%rowtype; v_ok int := 0; v_err int := 0; v_last text; v_courses uuid[] := '{}';
+declare r record; v_ev pipeline.evidence_artifacts%rowtype; v_ok int := 0; v_err int := 0; v_last text; v_courses uuid[] := '{}'; v_reason text;
   v_names text[] := array['January','February','March','April','May','June','July','August','September','October','November','December'];
 begin
   for r in select * from security.semester_intake_plan_v1(p_provider_id) where outcome = 'answer' loop
@@ -12,11 +15,10 @@ begin
       perform security.coverage_apply_course_v1(r.course_id, security.coverage_sweep_source(r.provider_id), v_ev.id, v_ev.source_url, v_ev.content_hash,
         jsonb_build_object('intakes', (select jsonb_agg(jsonb_build_object('intake_label', v_names[m], 'source_intake_key', 'calendar:' || r.course_id || ':' || lower(v_names[m])))
                                          from unnest(r.months) m)));
-      update pipeline.layer4_review_items set status = 'superseded', decided_at = now(),
-             escalation_reason = 'Answered from the course page (' || left(r.quotes, 200) || ') and the university''s approved calendar ('
-                                 || (select string_agg(initcap(replace(x, '_', ' ')) || ' starts in ' || v_names[(security.calendar_period_months(r.provider_id)->>x)::int], '; ') from unnest(r.periods) x)
-                                 || '); Decision 228.'
-       where id = r.review_id and status = 'pending';
+      v_reason := 'Answered from the course page (' || left(r.quotes, 200) || ') and the university''s approved calendar ('
+                  || (select string_agg(initcap(replace(x, '_', ' ')) || ' starts in ' || v_names[(security.calendar_period_months(r.provider_id)->>x)::int], '; ') from unnest(r.periods) x)
+                  || '); Decision 228.';
+      update pipeline.layer4_review_items set status = 'superseded', decided_at = now(), escalation_reason = v_reason where id = r.review_id and status = 'pending';
       v_ok := v_ok + 1; v_courses := v_courses || r.course_id;
     exception when others then v_err := v_err + 1; v_last := left(sqlerrm, 200);
     end;
