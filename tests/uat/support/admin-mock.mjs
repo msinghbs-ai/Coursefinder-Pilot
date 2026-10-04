@@ -42,6 +42,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_search_pass_read: F.searchPass,
     // Decision 253: Firecrawl work
     admin_firecrawl_read: F.firecrawlWork,
+    admin_uni_adapter_read: F.uniAdapter,
+    admin_uni_adapter_write: b => { calls.push({ adapter: b.p_action, args: b.p_args }); return { ok: true, preview_id: 'pv2', pages_read_again: 66 } },
     admin_firecrawl_report: b => { calls.push({ fcReport: b.p_since }); return F.firecrawlReport },
     admin_firecrawl_write: b => { calls.push({ firecrawl: b.p_action, args: b.p_args }); return { ok: true, run_id: 'fc000000-0000-4000-8000-000000000003', items: 1102 } },
     admin_search_pass_start: b => { calls.push({ pass: b }); return { ok: true, run_id: 'p1', courses: 2050 } },

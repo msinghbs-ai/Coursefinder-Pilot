@@ -581,3 +581,12 @@ export const firecrawlReport = { since: '2026-09-27T05:00:00Z', generated_at: '2
   errors: [{ error: 'Request timed out', calls: 3, first_at: '2026-10-04T05:13:00Z', last_at: '2026-10-04T05:30:00Z', sample_scrape_id: '01a10555-0b96-720b-9ea2-dfe988faa072', sample_url: 'https://www.otago.ac.nz/study/qualification/bachelor-of-arts' }],
   by_site: [{ site: 'otago.ac.nz', calls: 12, failed: 3, page_statuses: { 403: 2, none: 1 }, errors: ['Request timed out'], proxies: ['stealth'], samples: [{ url: 'https://www.otago.ac.nz/study/qualification/bachelor-of-arts', scrape_id: '01a10555-0b96-720b-9ea2-dfe988faa072', http: 408, page_status: null, error: 'Request timed out', at: '2026-10-04T05:30:00Z' }] }],
 }
+export const uniAdapter = { can_manage: true, provider: { id: 'u1', name: 'The University of Sydney', website: 'https://sydney.edu.au' },
+  adapter: { enabled: true, json_source: '__NEXT_DATA__', json_paths: { title: 'props.pageProps.pageContent.title', code: 'props.pageProps.pageContent.cricos_code' }, sections: {}, section_chars: 2000, title_strip: null, course_title_strip: null, notes: 'CourseLoop handbook' },
+  pages: { read: 346, needs_render: 38, identity_mismatch: 12 },
+  previews: [{ id: 'pv1', created_at: '2026-10-04T06:00:00Z', done_at: '2026-10-04T06:00:20Z', adapter: {}, result: { pages: [
+    { course: 'Bachelor of Accounting and Finance', code: '065056B', url: 'https://handbook.example.edu.au/courses/2026/baf', was: 'identity_mismatch', identity: 'adapter_title', how: 'title in page data (props.pageProps.pageContent.title)', json_found: true, page: { title: 'BAF Bachelor of Accounting and Finance', h1: 'Handbook', text_chars: 2283, scripts: [{ id: '__NEXT_DATA__', chars: 103091 }] }, found: { intakes: ['February', 'July'], english: { ielts_overall: 6.5 }, fee: null } },
+    { course: 'Bachelor of Psychology (Honours)', code: '021498F', url: 'https://handbook.example.edu.au/courses/2026/c9', was: 'identity_mismatch', identity: null, how: '', json_found: true, page: { title: 'Bachelor of Psychology', h1: 'Handbook', text_chars: 16295, scripts: [] }, found: null },
+  ], json_shape: ['props.pageProps.pageContent.title: Bachelor of Accounting and Finance', 'props.pageProps.pageContent.cricos_code: null'] } }],
+  applied: [{ identity: 'adapter_title', before: 'identity_mismatch', n: 41, last_at: '2026-10-04T06:05:00Z' }],
+  allowed: [{ country: 'AU', identities: { english: ['cricos_code', 'exact_title'] } }] }

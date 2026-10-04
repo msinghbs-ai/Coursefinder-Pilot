@@ -2,7 +2,7 @@
 -- stored pages. Found with the Firecrawl probe: handbooks built in the browser (CourseLoop: Flinders, Macquarie,
 -- Murdoch) send every course's data in the page itself (a __NEXT_DATA__ script: title, CRICOS code, IELTS scores,
 -- offerings, duration). A plain fetch has it, so these pages need no browser and no Firecrawl credits once the
--- university's adapter knows where the data is. Firecrawl's cleaned HTML drops that script, which is why the Read pages
+-- university's adapter knows where the data is. Firecrawl's cleaned HTML leaves that script out, which is why the Read pages
 -- pilot saw "Handbook" and refused them.
 --   * svc_uni_adapters(): the switched-on adapters, for the worker.
 --   * Applying an adapter now also sends that university's pages back to the reader: pages waiting for a browser, and

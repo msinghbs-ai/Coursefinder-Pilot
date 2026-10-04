@@ -38,7 +38,7 @@ export function reportMarkdown(r,org='CourseFinder'){
 }
 
 export default function FirecrawlWork({onError}){
-  const[d,setD]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false)
+  const[d,setD]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false),[adapterFor,setAdapterFor]=useState(null)
   const load=async()=>{setFailed('');try{const{data,error}=await supabase.rpc('admin_firecrawl_read');if(error)throw error;setD(data||{})}catch(e){setFailed(errText(e))}}
   useEffect(()=>{load()},[])
   useEffect(()=>{if(!(d?.runs||[]).some(r=>r.status==='running'))return;const t=setTimeout(load,20000);return()=>clearTimeout(t)},[d])
@@ -70,8 +70,9 @@ export default function FirecrawlWork({onError}){
         <tr className="tn-total"><td><strong>All targets</strong></td>{['courses','confirmed','unreadable','no_page','intakes','english','any_fee'].map(k=><td key={k} className="num"><strong>{fmtNumber(sum(k))}</strong></td>)}<td/></tr>
         {targets.map(t=><tr key={t.provider_id} data-firecrawl-target={t.provider_id} className={t.included?'':'tn-out'}><td>{t.name}<small className="sl-sub">{t.country} · {t.domain||'no website known'}{t.override_reason?` · by hand: ${t.override_reason}`:t.rule_match?'':' · not matched by the rule'}</small></td>
           {['courses','confirmed','unreadable','no_page','intakes','english','any_fee'].map(k=><td key={k} className="num">{fmtNumber(t[k])}</td>)}
-          <td>{can&&<Button compact onClick={()=>write('target',{provider_id:t.provider_id,included:!t.included},t.included?`Take ${t.name} out of the targets? Firecrawl will not be used for it.`:`Add ${t.name} to the targets?`)}>{t.included?'Take out':'Add'}</Button>}</td></tr>)}
+          <td><span className="sl-state"><Button compact onClick={()=>setAdapterFor(adapterFor===t.provider_id?null:t.provider_id)}>{adapterFor===t.provider_id?'Close adapter':'Adapter'}</Button>{can&&<Button compact onClick={()=>write('target',{provider_id:t.provider_id,included:!t.included},t.included?`Take ${t.name} out of the targets? Firecrawl will not be used for it.`:`Add ${t.name} to the targets?`)}>{t.included?'Take out':'Add'}</Button>}</span></td></tr>)}
       </tbody></table></div>
+      {adapterFor&&<AdapterEditor key={adapterFor} providerId={adapterFor} onError={onError}/>}
       {(d.spend||[]).length>0&&<><h4 className="sl-h4">Firecrawl credits this period, by work</h4><div className="cf-table-wrap"><table className="cf-table" data-firecrawl-spend><thead><tr><th>Work</th><th className="num">Target universities</th><th className="num">Other providers</th></tr></thead><tbody>
         {[...new Set(d.spend.map(s=>s.purpose))].map(p=><tr key={p}><td>{p.replace(/_/g,' ')}</td><td className="num">{fmtNumber(d.spend.filter(s=>s.purpose===p&&s.target===true).reduce((a,s)=>a+Number(s.units),0))}</td><td className="num">{fmtNumber(d.spend.filter(s=>s.purpose===p&&s.target!==true).reduce((a,s)=>a+Number(s.units),0))}</td></tr>)}
       </tbody></table></div></>}
@@ -102,4 +103,43 @@ function SupportReport({onError}){
       {(t.calls||0)===0&&<Empty text="No Firecrawl calls logged in this period."/>}
     </>}
   </section>
+}
+
+// ---- university adapter (field mappings), one university at a time ---------------------------------------------------
+const AD_FIELDS=[['title_strip','Taken off page titles','A pattern (regular expression) removed from the page title and heading before comparing, for example ^[A-Z]{2,8}\\s+ for a course code in front.'],
+  ['course_title_strip','Taken off catalogue titles','A pattern removed from our course title before comparing, for example \\s*\\(level \\d+\\)$.'],
+  ['json_source','Page data script','The id of a <script> holding the page’s data as JSON, for example __NEXT_DATA__ (CourseLoop handbooks). Empty if none.']]
+export function AdapterEditor({providerId,onError}){
+  const[d,setD]=useState(null),[a,setA]=useState(null),[paths,setPaths]=useState('{}'),[sections,setSections]=useState('{}'),[busy,setBusy]=useState(false),[err,setErr]=useState('')
+  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_uni_adapter_read',{p_provider_id:providerId});if(error)throw error;setD(data||{});if(!a){const x=data?.adapter||{};setA({enabled:Boolean(x.enabled),title_strip:x.title_strip||'',course_title_strip:x.course_title_strip||'',json_source:x.json_source||'',section_chars:x.section_chars||2000,notes:x.notes||''});setPaths(JSON.stringify(x.json_paths||{},null,2));setSections(JSON.stringify(x.sections||{},null,2))}}catch(e){onError?.(errText(e))}}
+  useEffect(()=>{load()},[providerId])
+  useEffect(()=>{const p=(d?.previews||[])[0];if(!p||p.done_at)return;const t=setTimeout(load,6000);return()=>clearTimeout(t)},[d])
+  const body=()=>{let jp,sc;try{jp=JSON.parse(paths||'{}');sc=JSON.parse(sections||'{}')}catch{throw new Error('JSON paths and headings must be valid JSON objects')}return{...a,json_paths:jp,sections:sc}}
+  const act=async(action,q)=>{setErr('');let adapter;try{adapter=body()}catch(e){setErr(e.message);return}const reason=ask(q);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_uni_adapter_write',{p_action:action,p_args:{provider_id:providerId,adapter,reason}});if(error)throw error;await load()}catch(e){setErr(errText(e))}finally{setBusy(false)}}
+  if(!d||!a)return <div className="tn-adapter"><Loading label="Loading the adapter…"/></div>
+  const can=Boolean(d.can_manage)&&!busy,prev=(d.previews||[])[0],res=prev?.result
+  return <div className="tn-adapter" data-adapter-editor={providerId}><h4 className="sl-h4">Adapter: {d.provider?.name}</h4>
+    <p className="sl-sub">How this university names and lays out its course pages. A page the adapter confirms gets the identity basis adapter_code or adapter_title. Nothing from it is admitted until that basis is allowed for the country on Platform settings › Pipeline settings (admission identities). Pages now: {Object.entries(d.pages||{}).map(([k,v])=>`${k.replace(/_/g,' ')} ${fmtNumber(v)}`).join(' · ')}</p>
+    <div className="tn-adapter-grid">
+      <label><input type="checkbox" checked={a.enabled} disabled={!can} onChange={e=>setA({...a,enabled:e.target.checked})}/> Switched on (the reader and Read pages use it)</label>
+      {AD_FIELDS.map(([k,l,h])=><label key={k}><strong>{l}</strong><input aria-label={l} value={a[k]} disabled={!can} onChange={e=>setA({...a,[k]:e.target.value})}/><small className="sl-sub">{h}</small></label>)}
+      <label><strong>Where each field is in the page data</strong><textarea aria-label="JSON paths" rows={6} value={paths} disabled={!can} onChange={e=>setPaths(e.target.value)}/><small className="sl-sub">Field to dotted path: title, code (CRICOS or programme code), ielts_overall, ielts_min_band, english, intakes, fee, duration. * takes every item of a list.</small></label>
+      <label><strong>Where each field is on the page</strong><textarea aria-label="Headings" rows={4} value={sections} disabled={!can} onChange={e=>setSections(e.target.value)}/><small className="sl-sub">Field to heading pattern, for example {'{"intakes":"(start dates|intakes)"}'}. The field is read from the text after the heading.</small></label>
+      <label><strong>Notes</strong><input aria-label="Notes" value={a.notes} disabled={!can} onChange={e=>setA({...a,notes:e.target.value})}/></label>
+    </div>
+    {err&&<p className="cf-chip tone-danger">{err}</p>}
+    {d.can_manage&&<div className="tn-starts"><Button compact disabled={!can} onClick={()=>act('preview','Try this adapter on up to 8 stored pages of this university? No Firecrawl credits, nothing changed.')}>Preview on stored pages</Button>
+      <Button compact variant="primary" disabled={!can} onClick={()=>act('save','Save this adapter?')}>Save</Button>
+      <Button compact disabled={!can||!d.adapter?.enabled} onClick={()=>act('apply','Apply the saved adapter to this university’s stored pages and read its waiting pages again? Every change is logged. Nothing is admitted unless the identity basis is allowed for the country.')}>Apply</Button></div>}
+    {prev&&<div data-adapter-preview><h4 className="sl-h4">Preview {fmtDateTime(prev.created_at)}{prev.done_at?'':' (running…)'}</h4>
+      {res&&<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Course</th><th>Was</th><th>Adapter</th><th>Page</th><th>Found</th></tr></thead><tbody>
+        {(res.pages||[]).map((x,i)=><tr key={i}><td>{x.course}<small className="sl-sub">{x.code} · {x.url}</small></td><td>{(x.was||'').replace(/_/g,' ')}{x.identity_before?` (${x.identity_before})`:''}</td>
+          <td>{x.identity?<span className="cf-chip tone-success">{x.identity}</span>:<span className="cf-chip tone-neutral">no match</span>}<small className="sl-sub">{x.how||''}{x.json_found===false&&a.json_source?' · no page data':''}</small></td>
+          <td><small className="sl-sub">{x.page?.title||'—'} · {x.page?.h1||'—'} · {fmtNumber(x.page?.text_chars)} characters{(x.page?.scripts||[]).length?` · scripts: ${x.page.scripts.map(s=>s.id||s.type).join(', ')}`:''}</small></td>
+          <td><small className="sl-sub">{x.found?`intakes ${(x.found.intakes||[]).join(', ')||'—'} · IELTS ${x.found.english?.ielts_overall??'—'} · fee ${x.found.fee??'—'}`:x.error||'—'}</small></td></tr>)}
+      </tbody></table></div>}
+      {res?.json_shape&&<details className="tn-items"><summary>Page data paths ({res.json_shape.length})</summary><pre className="tn-pre">{res.json_shape.join('\n')}</pre></details>}
+    </div>}
+    {(d.applied||[]).length>0&&<p className="sl-sub" data-adapter-applied>Applied: {d.applied.map(x=>`${x.before==='identity_mismatch'?'refused pages confirmed':'fields added'} (${x.identity}) ${fmtNumber(x.n)}`).join(' · ')}</p>}
+  </div>
 }

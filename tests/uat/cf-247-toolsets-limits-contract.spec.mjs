@@ -199,3 +199,48 @@ test('browser: Firecrawl work — plan from Firecrawl, runs started with a reaso
   await expect(r.locator('[data-report-totals]')).toContainText('461')
   await expect(page.locator('[data-toolsets]')).not.toContainText(/trial/i)
 })
+
+test('university adapters: migrations shaped, worker uses adapters, nothing admitted without the country rule', async () => {
+  const files = ['20261004001230_cf247_firecrawl_target_cache', '20261004001240_cf247_university_adapters', '20261004001250_cf247_adapters_in_reader']
+  const m = files.map(f => read(`supabase/migrations/${f}.sql`)).join('\n')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).not.toMatch(/insert into catalogue\.|update catalogue\.|coverage_admission_countries set/)
+  for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
+  for (const line of m.split('\n')) if (/^\s*update\s+\S+\s+(\w+\s+)?set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  expect(m).toContain("if p_identity not in ('adapter_code', 'adapter_title') or p_candidates is null then return 'nothing'")
+  expect(m).toContain("k.field = 'official_url'")
+  const w = read('supabase/functions/coverage-sweep/index.ts')
+  expect(w).toContain('rpc("svc_uni_adapters", {})')
+  expect(w).toContain('!(adDirect?.json_found && adDirect.identity)')
+  const { execFileSync } = await import('node:child_process'); const os = await import('node:os'); const path = await import('node:path')
+  const out = path.join(os.tmpdir(), `adapters-${process.pid}.mjs`)
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/adapters.ts', '--bundle', '--format=esm', `--outfile=${out}`])
+  const mod = await import(out)
+  const data = { props: { pageProps: { pageContent: { title: 'Bachelor of Accounting and Finance', cricos_code: null, ielts_overall_score: 6.5 } } } }
+  const html = `<html><head><title>BAF Bachelor of Accounting and Finance - Example</title></head><body><h1>Handbook</h1><script id="__NEXT_DATA__" type="application/json">${JSON.stringify(data)}</script></body></html>`
+  const a = { json_source: '__NEXT_DATA__', json_paths: { title: 'props.pageProps.pageContent.title', code: 'props.pageProps.pageContent.cricos_code', ielts_overall: 'props.pageProps.pageContent.ielts_overall_score' } }
+  const r = mod.applyAdapter(a, html, { title: 'Bachelor of Accounting and Finance', code: '065056B', country: 'AU' }, 'x')
+  expect(r).toMatchObject({ identity: 'adapter_title', json_found: true })
+  expect(r.candidates.english.ielts_overall).toBe(6.5)
+  expect(mod.applyAdapter(a, html, { title: 'Bachelor of Accounting and Finance (Honours)', code: '000000X', country: 'AU' }, 'x').identity).toBeNull()
+  expect(mod.applyAdapter({ title_strip: '^[A-Z]{2,8}\\s+' }, html, { title: 'Bachelor of Accounting and Finance', code: '', country: 'AU' }, 'x').identity).toBe('adapter_title')
+  expect(mod.jsonFind(data, '^(title|cricos_code)$')).toEqual(['props.pageProps.pageContent.title: Bachelor of Accounting and Finance', 'props.pageProps.pageContent.cricos_code: null'])
+})
+
+test('browser: university adapter — preview on stored pages, save and apply with a reason', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Decision 253 adapter'))
+  await page.goto('/#models-services')
+  const t = page.locator('[data-firecrawl-targets]')
+  await t.locator('[data-firecrawl-target="u1"]').getByRole('button', { name: 'Adapter' }).click()
+  const ed = page.locator('[data-adapter-editor="u1"]')
+  await expect(ed.locator('[data-adapter-preview]')).toContainText('adapter_title')
+  await expect(ed.locator('[data-adapter-applied]')).toContainText('refused pages confirmed (adapter_title) 41')
+  await ed.getByRole('textbox', { name: 'Taken off page titles' }).fill('^[A-Z]{2,8}\\s+')
+  await ed.getByRole('button', { name: 'Preview on stored pages' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.adapter === 'preview')?.args).toMatchObject({ provider_id: 'u1', adapter: { title_strip: '^[A-Z]{2,8}\\s+', json_source: '__NEXT_DATA__' } })
+  await ed.getByRole('button', { name: 'Save' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.adapter === 'save')?.args?.reason).toBe('Decision 253 adapter')
+  await ed.getByRole('button', { name: 'Apply' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.adapter === 'apply')?.args?.provider_id).toBe('u1')
+})
