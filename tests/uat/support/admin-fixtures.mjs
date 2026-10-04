@@ -602,3 +602,11 @@ export const adapterEvaluation = { settings: { no_page_share: 0.3, unreadable_sh
   { provider_id: 'u2', name: 'Australian National University', country: 'AU', courses: 423, confirmed: 405, no_page: 18, unreadable: 0, intakes: 17, english: 0, adapter: 'none', gap: 829, next: 'adapter_intakes' },
   { provider_id: 'u3', name: 'Macquarie University', country: 'AU', courses: 461, confirmed: 270, no_page: 25, unreadable: 166, intakes: 82, english: 111, adapter: 'testing', gap: 729, next: 'adapter_page_data' },
   { provider_id: 'u9', name: 'Flinders University', country: 'AU', courses: 476, confirmed: 360, no_page: 18, unreadable: 98, intakes: 215, english: 305, adapter: 'admitting', gap: 432, next: 'admitting' }] }
+
+export const adapterBuilder = { can_manage: true, budget: { used_usd: 0.0021, proposals: 1, limit_usd: 0.5, limit_proposals: 30, model: 'qwen/qwen3-30b-a3b-instruct-2507' },
+  drafts: [{ id: 'dr1', provider_id: 'u1', status: 'proposed', samples: [], marks: [{ sample: 0, kind: 'block', ref: '3', field: 'intakes', value: 'March July' }], comments: 'Start dates in the international view',
+    captures: [{ course: 'Bachelor of Engineering', code: '111210M', kind: 'undergraduate', url: 'https://www.example.edu.au/study/courses/be', credits: 1, screenshot_url: null, json_source: '__NEXT_DATA__',
+      blocks: [{ id: 3, heading: 'Key information', text: 'CRICOS code 111210M Start dates March July Annual fee 2026: $47,300' }], leaves: [{ path: 'props.pageProps.pageContent.duration_ft_std', value: '4' }] }],
+    proposals: [{ at: '2026-10-04T13:00:00Z', kind: 'proposal', model: 'qwen/qwen3-30b-a3b-instruct-2507', cost: 0.0021, reason: 'Start dates follow the CRICOS code.', dropped: [],
+      adapter: { json_source: '__NEXT_DATA__', json_paths: { duration: 'props.pageProps.pageContent.duration_ft_std' }, patterns: { intakes: 'CRICOS(?:.|\\n){0,200}?Start dates((?:.|\\n){0,60})' }, pick: { intakes: 'first' } },
+      output: [{ course: 'Bachelor of Engineering', code: '111210M', identity: 'cricos_code', intakes: ['March', 'July'], fee: 47300, fee_year: 2026, ielts: 6, extra: { duration: '4' } }] }] }] }

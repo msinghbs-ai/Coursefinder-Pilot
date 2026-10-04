@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.185'
-export const PACKAGE_VERSION='0.1.112'
+export const UI_VERSION='2.15.186'
+export const PACKAGE_VERSION='0.1.113'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'University adapters: admitting, replacing held values, next step per university',
+  title:'University adapters: visual builder and fees',
   changes:[
-    'An adapter that is switched on and admitting replaces held intakes and IELTS scores with what it reads itself. Values entered or locked by hand are never changed. Every change is logged and review items about the same field are closed as superseded.',
-    'Admitting adapters are listed as one collapsed line each, stating whether the adapter is enabled and admission is on. Expand a line to work on it.',
-    'A new table shows what each target university needs next: find pages first, an adapter for page data, an adapter for start dates or English, or nothing (admitted as it is). The thresholds are settings.',
-    'Firecrawl can search for a better page for a university\'s courses (Flinders study pages instead of handbook pages). Only a result matching the page pattern replaces a page, never one entered by hand.'
+    'Visual adapter builder: capture three sample pages of a university with Firecrawl (screenshot and page), see each page as text blocks and page-data values, mark which one holds each attribute and add comments.',
+    'The pinned preferred model (Qwen3 30B, the cheapest vetted one) proposes the adapter settings and they are tried on the samples. Use this proposal fills the settings; Save, Apply and admission stay separate.',
+    'The builder keeps to a daily AI allowance (US$ 0.50 and 30 proposals a day by default, both settings).',
+    'International annual fees read by an admitting adapter are now admitted, replacing the held fee of the same year. Fees entered by hand are never changed.',
+    'Every Firecrawl search result is kept in the evidence bucket with its run.'
   ],
   bugFixes:[]
 }
