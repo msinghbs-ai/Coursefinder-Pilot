@@ -395,3 +395,12 @@ test('browser: admitting adapter collapsed with its switches, evaluation lists t
   await ev.locator('[data-eval-row="u2"]').getByRole('button', { name: 'Set up adapter' }).click()
   await expect(page.locator('[data-adapter-editor="u2"]')).toBeVisible()
 })
+
+test('better page refused by the identity check is undone: earlier page bound again, logged, hand-entered links kept', () => {
+  const m = read('supabase/migrations/20261004001330_cf247_better_page_revert.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  expect(m).toContain("where pg.basis = 'firecrawl_upgrade' and pg.read_status = 'identity_mismatch'")
+  expect(m).toContain("k.field = 'official_url'")
+  expect(m).toContain("'better page refused by the identity check: earlier page bound again'")
+})
