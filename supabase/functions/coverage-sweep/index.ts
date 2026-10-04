@@ -3,6 +3,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
+import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
+import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson } from "./adapters.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -44,7 +46,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.13.5"; // v0.13.5: calendar parser v0.2.2 (section rows)
+const WORKER = "coverage-sweep-worker-v0.15.1"; // v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -244,8 +246,16 @@ Deno.serve(async (req) => {
     const schBudget = mode.startsWith("scholarship") ? await rpc("svc_scholarship_fc_budget", {}).catch(() => null) : null;
     let schLeft = schBudget && Number.isFinite(Number(schBudget.cap)) ? Math.max(0, Number(schBudget.cap) - Number(schBudget.used ?? schBudget.cap)) : 0;
     const schReserve = schBudget && Number.isFinite(Number(schBudget.reserve)) ? Number(schBudget.reserve) : Number.POSITIVE_INFINITY;
+    // v0.14.0 (Decision 253): when the setting is on, Firecrawl is used only for target universities.
+    const targets = await rpc("svc_fc_targets", {}).catch(() => null);
+    const targetOnly = targets ? targets.target_only !== false : true;
+    const targetIds = new Set<string>((targets?.ids || []).map(String));
+    const isTarget = (providerId: string | null) => !targetOnly || (!!providerId && targetIds.has(providerId));
+    // v0.15.1: switched-on university adapters, by provider (pipeline.uni_adapters, set in the UI)
+    const adapters: Record<string, any> = ["read", "fc_run"].includes(mode) ? (await rpc("svc_uni_adapters", {}).catch(() => null)) || {} : {};
     const useFc = async (purpose: string, providerId: string | null, url: string) => {
       if (!fc?.secret || fcRemaining < 1) return false;
+      if (!isTarget(providerId)) return false;
       const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1; if (fcRemaining < units) return false; // v0.13.0: a JSON-format scrape costs 5 credits
       if (purpose.startsWith("sch_")) { if (schLeft < units) return false; schLeft -= units }
       fcRemaining -= units; await rpc("svc_coverage_usage", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true;
@@ -1038,6 +1048,165 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
+    // v0.14.0 (Decision 253): a Firecrawl run (Read pages or Find pages) for target universities. Every option comes from
+    // the run's settings and every call is logged (svc_fc_call_log) for the Firecrawl support report.
+    // v0.14.1: read chosen pages with chosen Firecrawl options (Platform Admin test of read settings and university
+    // adapters). Nothing is recorded on a course: only the call log and this reply.
+    // v0.15.0 (Decision 253): university adapters, tried and applied on stored pages (no Firecrawl credits).
+    const storedHtml = async (path: string) => { const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "missing"); return await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() };
+    if (mode === "adapter_preview") {
+      const n = await rpc("svc_adapter_preview_next", { p_preview_id: String(body.preview_id || "") });
+      if (!n) return j({ error: "unknown preview", worker: WORKER }, 404);
+      const out: unknown[] = []; let shape: string[] | null = null;
+      await pool(n.pages || [], 4, async (pg: any) => {
+        try {
+          const html = await storedHtml(pg.storage_path);
+          const r = applyAdapter(n.adapter || {}, html, { title: pg.title, code: pg.code, country: pg.country, status: pg.status }, VERSION);
+          if (!shape && n.adapter?.json_source) { const d = pageJson(html, n.adapter.json_source); if (d) shape = n.adapter.json_find ? jsonFind(d, String(n.adapter.json_find)) : jsonShape(d, 5) }
+          out.push({ course: pg.title, code: pg.code, url: pg.url, was: pg.read_status, identity_before: pg.identity_basis, identity: r.identity, how: r.how, json_found: r.json_found, course_title_seen: r.course_title_seen,
+                     page: inspectPage(html), found: r.candidates ? { intakes: (r.candidates as any).intakes, english: (r.candidates as any).english, fee: (r.candidates as any).fee?.value ?? null, fee_basis: (r.candidates as any).fee?.basis ?? null } : null });
+        } catch (e) { out.push({ course: pg.title, url: pg.url, error: e instanceof Error ? e.message : String(e) }) }
+      });
+      await rpc("svc_adapter_preview_record", { p_preview_id: body.preview_id, p_result: { pages: out, json_shape: shape, worker: WORKER } });
+      return j({ ok: true, mode, pages: out.length, worker: WORKER });
+    }
+    if (mode === "adapter_apply") {
+      const tally: Record<string, number> = {}; let after: string | null = null, pages = 0;
+      while (Date.now() - t0 < BUDGET_MS - 20000) {
+        const n = await rpc("svc_adapter_apply_next", { p_provider_id: String(body.provider_id || ""), p_after: after, p_limit: 120 });
+        const list: any[] = n?.pages || []; if (!n?.adapter || !list.length) break;
+        await pool(list, 8, async (pg: any) => {
+          try {
+            const html = await storedHtml(pg.storage_path);
+            const r = applyAdapter(n.adapter, html, { title: pg.title, code: pg.code, country: pg.country, status: pg.status }, VERSION);
+            // a refused page the adapter confirms, or a confirmed page whose missing fields the adapter's mappings fill
+            const confirms = pg.read_status === "identity_mismatch" && !!r.identity?.startsWith("adapter_");
+            const fills = pg.read_status === "read" && !!pg.identity_basis && !!r.candidates;
+            const st = confirms || fills ? await rpc("svc_adapter_page_record", { p_course_id: pg.course_id, p_identity: confirms ? r.identity : "adapter_title", p_how: confirms ? r.how : `fields only, page already confirmed (${pg.identity_basis})`, p_candidates: r.candidates }) : "no_identity";
+            tally[st] = (tally[st] || 0) + 1;
+          } catch { tally.error = (tally.error || 0) + 1 }
+        });
+        pages += list.length; after = list[list.length - 1].course_id;
+      }
+      const more = Date.now() - t0 >= BUDGET_MS - 20000; // press Apply again to carry on from the start (applied pages are skipped as already read)
+      return j({ ok: true, mode, pages, tally, more, worker: WORKER });
+    }
+    if (mode === "fc_probe") {
+      if (!fc?.secret) return j({ error: "no Firecrawl key", workerVersion: WORKER }, 500);
+      const pages: { url: string; course?: string; code?: string; country?: string; provider_id?: string; course_id?: string }[] = (Array.isArray(body.pages) ? body.pages : []).slice(0, 10);
+      const s = { read_proxy: "auto", read_wait_ms: 3000, read_timeout_ms: 60000, read_location: true, read_formats: ["rawHtml"], ...(body.options || {}) };
+      const out: unknown[] = [];
+      await pool(pages, 5, async (pg) => {
+        if (!isTarget(pg.provider_id || null) && pg.provider_id) { out.push({ url: pg.url, skipped: "not a target university" }); return }
+        const reqBody: Record<string, unknown> = scrapeBody(pg.url, s, pg.country || "");
+        if (Array.isArray(s.actions)) reqBody.actions = s.actions;
+        const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
+        try { const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(100000) }); http = r.status; hdrs = r.headers; d = await r.json().catch(() => null) } catch (e) { err = e instanceof Error ? e.message : String(e) }
+        const rec = callRecord(http, d, hdrs, Date.now() - started, err);
+        const html = pageHtml(d), text = html ? htmlToText(html) : "";
+        const idb = html ? identity(html, text, String(pg.course || ""), String(pg.code || ""), false, pg.country || "") : null;
+        const used = rec.credits_used ?? 1;
+        await rpc("svc_coverage_usage", { p_units: used, p_purpose: "fc_probe", p_provider_id: pg.provider_id || null, p_url: pg.url }).catch(() => null);
+        const { url: _u, ...opts } = reqBody;
+        await rpc("svc_fc_call_log", { p: { run_id: null, item_id: null, use_case: "probe", endpoint: "scrape", provider_id: pg.provider_id || null, course_id: pg.course_id || null, url: pg.url, request: opts, ...rec, credits_used: used, outcome: readOutcome(rec, html, text.length) } }).catch(() => null);
+        out.push({ url: pg.url, http, page_status: rec.page_status, error: rec.error, credits: used, proxy: rec.proxy_used, scrape_id: rec.scrape_id, title: titleOf(html).slice(0, 160) || d?.data?.metadata?.title || null, h1: h1Of(html).slice(0, 160), text_chars: text.length,
+                   page: html ? inspectPage(html) : null, json_shape: html && s.json_source ? (s.json_find ? jsonFind(s.json_root ? jsonAt(pageJson(html, String(s.json_source)), String(s.json_root)) : pageJson(html, String(s.json_source)), String(s.json_find), Number(s.json_limit || 80)) : jsonShape(pageJson(html, String(s.json_source)), 5)) : null,
+                   code_found: !!(pg.code && text.includes(String(pg.code))), identity: idb, warning: d?.data?.warning || rec.meta?.warning || null, intakes: idb ? intakes(text) : null, english: idb ? english(text) : null, fee: idb ? fee(text, currencyFor(pg.country)).value : null });
+      });
+      return j({ ok: true, mode, options: s, pages: out, ms: Date.now() - t0, worker: WORKER });
+    }
+    if (mode === "fc_run") {
+      const runId = String(body.run_id || "");
+      if (!/^[0-9a-f-]{36}$/i.test(runId)) return j({ error: "run_id required", workerVersion: WORKER }, 400);
+      if (!fc?.secret) return j({ error: "no Firecrawl key", workerVersion: WORKER }, 500);
+      const tally: Record<string, number> = {}; let credits = 0, calls = 0, stopReason: string | null = null;
+      const WALL_MS = 95000; // under the database's 120-second wait for a worker call, so other scheduled calls are not held up
+      const fcCall = async (endpoint: "scrape" | "search", reqBody: Record<string, unknown>, ctx: { run_id: string; item_id: string; use_case: string; provider_id: string | null; course_id: string | null; url: string | null }, estimate: number) => {
+        const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
+        try {
+          const left = WALL_MS - (Date.now() - t0);
+          if (reqBody.timeout) reqBody.timeout = Math.max(10000, Math.min(Number(reqBody.timeout), left - 15000));
+          const r = await fetch(`https://api.firecrawl.dev/v2/${endpoint}`, { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(Math.max(5000, Math.min(Number(reqBody.timeout || 45000) + 15000, left - 3000))) });
+          http = r.status; hdrs = r.headers; d = await r.json().catch(() => null);
+        } catch (e) { err = e instanceof Error ? `${e.name}: ${e.message}` : String(e) }
+        const rec = callRecord(http, d, hdrs, Date.now() - started, err);
+        const used = rec.credits_used ?? (http !== null && http < 500 && http !== 429 ? estimate : 0);
+        calls++; credits += used; fcRemaining -= used;
+        if (used > 0) await rpc("svc_coverage_usage", { p_units: used, p_purpose: ctx.use_case === "read_page" ? "fc_read" : "fc_search", p_provider_id: ctx.provider_id, p_url: ctx.url || String(reqBody.query || "") }).catch(() => null);
+        const { url: _u, query: _q, ...opts } = reqBody as Record<string, unknown>;
+        return { d, rec: { ...rec, credits_used: used }, log: { ...ctx, endpoint, url: ctx.url || null, request: { ...opts, ...(endpoint === "search" ? { query: reqBody.query } : {}) }, ...rec, credits_used: used } };
+      };
+      while (Date.now() - t0 < WALL_MS - 60000) {
+        const next = await rpc("svc_fc_run_next", { p_run_id: runId, p_limit: 0 });
+        const run = next?.run || {}; const s = run.settings || {};
+        if (run.status !== "running") { stopReason = run.status || "not_running"; break }
+        const batch = await rpc("svc_fc_run_next", { p_run_id: runId, p_limit: Math.min(Math.max(Number(s.run_batch_per_call || 40), 1), 200) });
+        const items: { id: string; course_id: string; provider_id: string; country: string; url: string | null; input: any; result: any }[] = batch?.items || [];
+        if (!items.length) { stopReason = batch?.run?.status === "running" ? "nothing_left" : batch?.run?.status || "done"; break }
+        if (fcRemaining < 10) { stopReason = "plan_reserve"; for (const it of items) await rpc("svc_fc_run_record", { p_item_id: it.id, p_outcome: "retry", p_result: null, p_credits: 0 }); break }
+        await pool(items, Math.min(Math.max(Number(s.run_concurrency || 12), 1), 50), async (it) => {
+          const ctx = { run_id: runId, item_id: it.id, use_case: String(run.use_case), provider_id: it.provider_id, course_id: it.course_id, url: it.url };
+          // not enough of this worker call's time left for one more Firecrawl call: back to the queue, untouched
+          if (WALL_MS - (Date.now() - t0) < 30000) { await rpc("svc_fc_run_record", { p_item_id: it.id, p_outcome: "retry", p_result: it.result ?? null, p_credits: 0 }); tally.deferred = (tally.deferred || 0) + 1; return }
+          let outcome = "error", result: Record<string, unknown> = {}, used = 0;
+          try {
+            if (run.use_case === "read_page") {
+              const u = new URL(String(it.url));
+              if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) {
+                outcome = "robots_disallowed";
+                await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: "robots_disallowed", p_http_status: null, p_fetched_via: null, p_identity_basis: null, p_storage_path: null, p_sha256: null, p_candidates: null });
+              } else {
+                const proxy = String(s.read_proxy || "auto").toLowerCase();
+                const { d, rec, log } = await fcCall("scrape", scrapeBody(String(it.url), s, it.country), ctx, /stealth|enhanced/.test(proxy) ? 5 : 1);
+                used = rec.credits_used || 0;
+                const html = pageHtml(d); const text = html ? htmlToText(html) : "";
+                outcome = readOutcome(rec, html, text.length);
+                let identityBasis: string | null = null, path: string | null = null, sha: string | null = null, candidates: unknown = null, readStatus: string | null = null;
+                const finalUrl = String(d?.data?.metadata?.sourceURL || d?.data?.metadata?.url || it.url);
+                const ad = adapters[it.provider_id];
+                const adHit = ad && html ? applyAdapter(ad, html, { title: String(it.input?.course || ""), code: String(it.input?.code || ""), country: it.country || "", status: it.input?.page_status }, VERSION) : null;
+                if (adHit?.json_found && adHit.identity && outcome === "thin") outcome = "read";
+                if (outcome === "read") {
+                  identityBasis = identity(html, text, String(it.input?.course || ""), String(it.input?.code || ""), it.input?.page_status === "ambiguous", it.country || "");
+                  if (identityBasis === "field_award" && staleCalendarUrl(finalUrl)) identityBasis = null;
+                  if (!identityBasis && adHit?.identity) identityBasis = adHit.identity;
+                  readStatus = identityBasis ? "read" : "identity_mismatch"; outcome = identityBasis ? "read_course_page" : "read_other_page";
+                  const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
+                  path = `layer2/${["NZ", "CA"].includes(it.country) ? it.country : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
+                  const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
+                  if (up.error) { path = null; sha = null }
+                  candidates = identityBasis ? (adHit?.candidates && (adHit.json_found || identityBasis.startsWith("adapter_")) ? { ...(adHit.candidates as Record<string, unknown>), final_url: finalUrl }
+                                                : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(it.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION })
+                                             : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200) };
+                } else if (outcome === "blocked") readStatus = "blocked";
+                else if (outcome === "not_found") readStatus = "fetch_failed";
+                else if (outcome === "thin") readStatus = "too_thin";
+                if (readStatus) await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: readStatus, p_http_status: rec.page_status ?? 200, p_fetched_via: "firecrawl", p_identity_basis: identityBasis, p_storage_path: path, p_sha256: sha, p_candidates: candidates });
+                await rpc("svc_fc_call_log", { p: { ...log, outcome } }).catch(() => null);
+                result = { page_status: rec.page_status, proxy_used: rec.proxy_used, scrape_id: rec.scrape_id, identity_basis: identityBasis, error: rec.error, final_url: finalUrl,
+                           found: candidates && identityBasis ? { intakes: (candidates as any).intakes, english: (candidates as any).english?.ielts_overall ?? null, fee: (candidates as any).fee?.value ?? null } : null };
+              }
+            } else if (run.use_case === "find_page") {
+              const { d, rec, log } = await fcCall("search", searchBody(it.input || {}, s, it.country), { ...ctx, url: null }, 2);
+              used = rec.credits_used || 0;
+              if (!rec.success) { outcome = rec.http === 429 ? "rate_limited" : "fc_error"; result = { error: rec.error } }
+              else {
+                const found = searchCandidates(it.input || {}, searchResults(d), Number(s.find_min_title_match ?? 0.6));
+                outcome = found.outcome; result = { candidates: found.candidates, top: found.top };
+                if (found.candidates.length) { const b = await rpc("svc_fc_find_bind", { p_item_id: it.id, p_candidates: found.candidates }); result.bind = b; if (b !== "bound") outcome = `found_not_bound_${b}` }
+              }
+              await rpc("svc_fc_call_log", { p: { ...log, outcome } }).catch(() => null);
+            }
+          } catch (e) { outcome = "error"; result = { error: e instanceof Error ? e.message : String(e) } }
+          const retry = ["rate_limited", "timeout", "fc_error", "error"].includes(outcome) && !(Number(it.result?.tries || 0) >= 1);
+          if (retry) { result.tries = 1 }
+          await rpc("svc_fc_run_record", { p_item_id: it.id, p_outcome: retry ? "retry" : outcome, p_result: result, p_credits: used });
+          tally[outcome] = (tally[outcome] || 0) + 1;
+        });
+        if (tally.rate_limited && tally.rate_limited >= 3) { stopReason = "rate_limited"; break }
+      }
+      return j({ ok: true, mode, run_id: runId, tally, calls, credits, stop: stopReason, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
     if (mode === "read") {
       const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string; basis?: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const tally: Record<string, number> = {};
@@ -1059,28 +1228,36 @@ Deno.serve(async (req) => {
             const thin = html && htmlToText(html).length < 1500;
             // v0.13.4: a search candidate (basis title_search / cricos_search, picked by a URL recipe and often not the course's
             // page) is read directly only; it is never rendered through Firecrawl. The matcher's pages and hand-entered pages keep the fallback.
-            if (!searchCandidate && (!html || thin) && (it.status === "bound" || it.priority === true) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
+            // v0.15.1: no Firecrawl call when the university's adapter already reads the page's own data from the plain fetch
+            const adDirect = thin && adapters[it.provider_id] ? applyAdapter(adapters[it.provider_id], html, { title: it.title, code: it.code, country: it.country || "", status: it.status }, VERSION) : null;
+            if (!searchCandidate && !(adDirect?.json_found && adDirect.identity) && (!html || thin) && (it.status === "bound" || it.priority === true) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["rawHtml"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
               const d = await r.json().catch(() => ({}));
-              if (r.ok && d?.data?.html) { html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
+              if (r.ok && pageHtml(d)) { html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
             }
             if (html && via === "direct" && htmlToText(html).length < 1500) status = "needs_render";
             else if (html) status = "read";
             else if (http && [401, 403, 406, 429].includes(http)) status = "blocked";
           }
         } catch { status = "fetch_failed" }
+        // v0.15.1: a university adapter may read the page's own data (for example a handbook's __NEXT_DATA__), so a page
+        // that would need a browser can be read from the plain fetch, at no Firecrawl cost.
+        const ad = adapters[it.provider_id];
+        const adHit = ad && html && (status === "read" || status === "needs_render") ? applyAdapter(ad, html, { title: it.title, code: it.code, country: it.country || "", status: it.status }, VERSION) : null;
+        if (adHit?.json_found && adHit.identity && status === "needs_render") status = "read";
         let identityBasis: string | null = null, path: string | null = null, sha: string | null = null, candidates: unknown = null;
         if (status === "read") {
           let text = htmlToText(html);
           // v0.6.3: a page a person entered on the course page is the course's page (Decision 179).
           identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous", it.country || "") || (it.manual === true ? "manual" : null);
+          if (!identityBasis && adHit?.identity) identityBasis = adHit.identity;
           // v0.6.2: a priority page read directly without the code may be a script-rendered handbook (UNSW, Melbourne):
           // render it once through Firecrawl before calling it a mismatch.
           if (!identityBasis && via === "direct" && it.priority === true && !searchCandidate && await useFc("scrape", it.provider_id, it.url)) {
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
+            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["rawHtml"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
             const d = r ? await r.json().catch(() => ({})) : {};
-            if (r?.ok && d?.data?.html) {
-              html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? http; finalUrl = d.data?.metadata?.sourceURL || finalUrl;
+            if (r?.ok && pageHtml(d)) {
+              html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? http; finalUrl = d.data?.metadata?.sourceURL || finalUrl;
               text = htmlToText(html); identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous", it.country || "");
             }
           }
@@ -1091,7 +1268,8 @@ Deno.serve(async (req) => {
           path = `layer2/${["NZ", "CA"].includes(it.country) ? it.country : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
           const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
           if (up.error) { path = null; sha = null }
-          candidates = identityBasis ? { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(it.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION }
+          candidates = identityBasis ? (adHit?.candidates && (adHit.json_found || identityBasis.startsWith("adapter_")) ? { ...(adHit.candidates as Record<string, unknown>), final_url: finalUrl }
+                                        : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(it.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION })
                                      : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200) };
         }
         await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: status, p_http_status: http, p_fetched_via: via, p_identity_basis: identityBasis, p_storage_path: path, p_sha256: sha, p_candidates: candidates });

@@ -1,20 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.179'
-export const PACKAGE_VERSION='0.1.106'
+export const UI_VERSION='2.15.180'
+export const PACKAGE_VERSION='0.1.107'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Search pass into the identity check; page addresses repaired',
+  title:'Firecrawl work: target universities, use cases and a report for Firecrawl support',
   changes:[
-    'Models & services › Toolsets and limits has a Search pass: Serper searches the courses still without a page and sends each page it finds on the provider’s own site to the identity check. Nothing is admitted by the pass. A confirmed page or a link entered by hand is never replaced.',
-    'If the identity check refuses a page, the next candidate is tried, then the course is left as before. This runs inside the existing course-link-search job (no new scheduled job).',
-    'Search pass settings: courses per country, credits one pass may use, carry on after each worker call, look again for pages that could not be read, and what a course page address looks like.',
-    '392 page addresses that had lost their query string (for example University of Alberta calendar pages) were restored from the stored search results and sent back to the reader. Every change is logged.'
+    'Firecrawl is used by use case: Read pages (course-like pages that need a browser or refused a plain read) and Find pages (a search on the university’s own site for courses without a page). Each run is started with a reason and stops at its own credit allowance.',
+    'Target universities: a rule of settings (countries, name pattern, exclusions, least active courses per country, international-student registers) plus additions or removals by hand. Firecrawl is used only for targets (a setting).',
+    'Every Firecrawl call a run makes is logged with the scrape id, HTTP status, page status, error, credits and proxy used. The report for Firecrawl support can be copied or downloaded.',
+    'The platform’s Firecrawl allowance now follows the balance Firecrawl reports (Growth plan, 500,000 credits).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'The monthly Firecrawl limit was still the old 100,000-credit plan, so the platform was about to stop its own Firecrawl work at 86,000 credits used while Firecrawl reported 490,000 left.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

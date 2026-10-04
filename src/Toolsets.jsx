@@ -6,10 +6,13 @@
 // Reads: admin_toolsets_read(), admin_platform_notices_read(layer), admin_toolset_samples_read(run).
 // Writes: admin_toolsets_write(action,args), admin_toolset_sample_write(action,args) — Platform Admin with a reason;
 // sample runs are done by the toolset-runner edge function (migrations 20261004000600 to 20261004000900).
+// v2.15.180 (Decision 253): Firecrawl settings by section (Target universities, Read pages, Find pages, Runs) and the
+// Firecrawl work panel (FirecrawlWork.jsx): runs by use case, target universities and the report for Firecrawl support.
 import React,{useEffect,useState}from'react'
 import{RefreshCw,BellRing,Check}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
+import FirecrawlWork from'./FirecrawlWork'
 
 const errText=e=>e?.message||String(e)
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -65,12 +68,13 @@ export default function Toolsets({onError}){
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </section>
     {(d.toolsets||[]).map(t=><Toolset key={t.key} t={t} d={d} can={can} write={write}/>)}
+    <FirecrawlWork onError={onError}/>
     <SearchPass can={Boolean(d.can_manage)} onError={onError}/>
     <SampleRuns toolsets={d.toolsets||[]} can={Boolean(d.can_manage)} onError={onError}/>
   </div>
 }
 
-const SECTION_ORDER=['Key and plan limits','How the service is used','Search pass','Sample runs','Notices']
+const SECTION_ORDER=['Key and plan limits','How the service is used','Target universities','Read pages','Find pages','Runs','Search pass','Sample runs','Notices']
 function Toolset({t,d,can,write}){
   const or=t.key==='openrouter'?d.openrouter||{}:null
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))

@@ -509,6 +509,14 @@ export const platformNotices = layer => {
 export const toolsets = {
   can_manage: true,
   toolsets: [
+    { key: 'firecrawl', label: 'Firecrawl (page reading and site maps)', kind: 'scrape', layers: [2], enforcement: null, help: 'Search, map, scrape and crawl.',
+      settings: [
+        { key: 'target_min_courses', label: 'Least active courses, by country', help: 'For example AU:100.', kind: 'list', value: ['AU:100', 'NZ:100', 'CA:30'], section: 'Target universities' },
+        { key: 'target_only', label: 'Use Firecrawl only for target universities', help: '', kind: 'boolean', value: true, section: 'Target universities' },
+        { key: 'read_proxy', label: 'Proxy', help: 'basic, auto, stealth or enhanced.', kind: 'text', value: 'auto', section: 'Read pages' },
+        { key: 'find_query', label: 'Search wording', help: '', kind: 'text', value: '{course} site:{domain}', section: 'Find pages' },
+        { key: 'run_concurrency', label: 'Calls at the same time', help: '', kind: 'number', value: 12, min: 1, max: 50, unit: 'calls', section: 'Runs' },
+      ] },
     { key: 'openrouter', label: 'OpenRouter (AI models)', kind: 'ai', layers: [3], enforcement: 'observe', help: 'Observe only: the daily spend guards and the credit floor are shown and raise notices but do not stop Layer 3.', reason: 'Decision 252', updated_at: '2026-10-04T03:30:00Z',
       settings: [{ key: 'low_balance_warn_usd', label: 'Warn when the balance is below', help: 'A notice is raised on Layer 3.', kind: 'number', value: 10, min: 0, max: 1000, unit: 'US$' }] },
     { key: 'serper', label: 'Serper (web search)', kind: 'search', layers: [2], enforcement: null, help: 'Finds a course\'s official page, or a provider\'s website, where the site map has none.', key_saved: true, switched_on: false,
@@ -550,3 +558,35 @@ export const searchPass = { can_manage: true,
   links: [{ country: 'AU', refind: false, state: 'found', n: 210 }, { country: 'AU', refind: false, state: 'verified', n: 64 }, { country: 'NZ', refind: false, state: 'none', n: 12 }],
   reading: [{ read_status: 'waiting', n: 180 }],
   repairs: [{ reason: 'query string restored from the stored search results (Decision 252 step 2)', n: 392, last_at: '2026-10-04T05:00:00Z' }, { reason: 'search pass: page found', n: 274, last_at: '2026-10-04T05:12:00Z' }] }
+// Decision 253 (v2.15.180): Firecrawl work — target universities, runs by use case, report for Firecrawl support
+export const firecrawlWork = { can_manage: true,
+  plan: { budget: { allowed: true, remaining_units: 490830, stop_at_remaining_units: 2000, limit_units: 500000 }, vendor: { plan_credits: 500000, remaining: 490846, period_start: '2026-10-02T15:57:21.000Z', period_end: '2026-11-02T15:57:21+00:00', observed_at: '2026-10-04T05:00:00Z' } },
+  backlog: { read_page: 1102, find_page: 3975 },
+  runs: [
+    { id: 'fc000000-0000-4000-8000-000000000002', use_case: 'find_page', status: 'running', reason: 'Decision 253', items: 3975, done: 420, credits_cap: 15000, credits_used: 840, outcomes: { found_on_provider_site: 260, provider_site_no_title_match: 120, no_results: 40 }, created_at: '2026-10-04T05:20:00Z', last_call_at: '2026-10-04T05:40:00Z' },
+    { id: 'fc000000-0000-4000-8000-000000000001', use_case: 'read_page', status: 'stopped_credit_cap', reason: 'Decision 253 pilot', items: 1684, done: 39, credits_cap: 120, credits_used: 331, outcomes: { read_other_page: 39 }, created_at: '2026-10-04T05:12:00Z' },
+  ],
+  targets: [
+    { provider_id: 'u1', country: 'AU', name: 'The University of Sydney', domain: 'sydney.edu.au', rule_match: true, included: true, courses: 655, confirmed: 346, unreadable: 65, no_page: 244, intakes: 15, english: 487, web_fee: 0, any_fee: 655 },
+    { provider_id: 'u2', country: 'NZ', name: 'University of Auckland', domain: 'auckland.ac.nz', rule_match: true, included: true, courses: 458, confirmed: 216, unreadable: 40, no_page: 202, intakes: 120, english: 150, web_fee: 3, any_fee: 3 },
+    { provider_id: 'u3', country: 'AU', name: 'Avondale University', domain: 'avondale.edu.au', rule_match: false, included: false, courses: 21, confirmed: 20, unreadable: 0, no_page: 1, intakes: 0, english: 5, web_fee: 0, any_fee: 21 },
+  ],
+  spend: [{ purpose: 'scrape', target: true, units: 5341 }, { purpose: 'scrape', target: false, units: 1751 }, { purpose: 'fc_read', target: true, units: 331 }],
+}
+export const firecrawlReport = { since: '2026-09-27T05:00:00Z', generated_at: '2026-10-04T05:45:00Z',
+  account: { plan_credits: 500000, remaining: 490846, period_start: '2026-10-02T15:57:21.000Z', period_end: '2026-11-02T15:57:21+00:00', observed_at: '2026-10-04T05:00:00Z' },
+  totals: { calls: 461, succeeded: 452, failed: 9, credits: 1171, api_errors: 4, timeouts: 3, rate_limited: 0, stealth_used: 12, median_ms: 6100 },
+  by_endpoint: [{ endpoint: 'scrape', use_case: 'read_page', calls: 41, succeeded: 39, credits: 331 }, { endpoint: 'search', use_case: 'find_page', calls: 420, succeeded: 413, credits: 840 }],
+  by_outcome: { read_other_page: 39, timeout: 2, found_on_provider_site: 260 },
+  errors: [{ error: 'Request timed out', calls: 3, first_at: '2026-10-04T05:13:00Z', last_at: '2026-10-04T05:30:00Z', sample_scrape_id: '01a10555-0b96-720b-9ea2-dfe988faa072', sample_url: 'https://www.otago.ac.nz/study/qualification/bachelor-of-arts' }],
+  by_site: [{ site: 'otago.ac.nz', calls: 12, failed: 3, page_statuses: { 403: 2, none: 1 }, errors: ['Request timed out'], proxies: ['stealth'], samples: [{ url: 'https://www.otago.ac.nz/study/qualification/bachelor-of-arts', scrape_id: '01a10555-0b96-720b-9ea2-dfe988faa072', http: 408, page_status: null, error: 'Request timed out', at: '2026-10-04T05:30:00Z' }] }],
+}
+export const uniAdapter = { can_manage: true, provider: { id: 'u1', name: 'The University of Sydney', website: 'https://sydney.edu.au' },
+  adapter: { enabled: true, json_source: '__NEXT_DATA__', json_paths: { title: 'props.pageProps.pageContent.title', code: 'props.pageProps.pageContent.cricos_code' }, sections: {}, section_chars: 2000, title_strip: null, course_title_strip: null, notes: 'CourseLoop handbook' },
+  pages: { read: 346, needs_render: 38, identity_mismatch: 12 },
+  previews: [{ id: 'pv1', created_at: '2026-10-04T06:00:00Z', done_at: '2026-10-04T06:00:20Z', adapter: {}, result: { pages: [
+    { course: 'Bachelor of Accounting and Finance', code: '065056B', url: 'https://handbook.example.edu.au/courses/2026/baf', was: 'identity_mismatch', identity: 'adapter_title', how: 'title in page data (props.pageProps.pageContent.title)', json_found: true, page: { title: 'BAF Bachelor of Accounting and Finance', h1: 'Handbook', text_chars: 2283, scripts: [{ id: '__NEXT_DATA__', chars: 103091 }] }, found: { intakes: ['February', 'July'], english: { ielts_overall: 6.5 }, fee: null } },
+    { course: 'Bachelor of Psychology (Honours)', code: '021498F', url: 'https://handbook.example.edu.au/courses/2026/c9', was: 'identity_mismatch', identity: null, how: '', json_found: true, page: { title: 'Bachelor of Psychology', h1: 'Handbook', text_chars: 16295, scripts: [] }, found: null },
+  ], json_shape: ['props.pageProps.pageContent.title: Bachelor of Accounting and Finance', 'props.pageProps.pageContent.cricos_code: null'] } }],
+  applied: [{ identity: 'adapter_title', before: 'identity_mismatch', n: 41, last_at: '2026-10-04T06:05:00Z' }],
+  allowed: [{ country: 'AU', identities: { english: ['cricos_code', 'exact_title'] } }] }
