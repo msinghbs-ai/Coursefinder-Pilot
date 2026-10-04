@@ -472,3 +472,10 @@ test('adapter {code} anchor: a page covering several courses is read per course,
   expect(mod.withCode('{code}x', 'A.B')).toBe('A\\.Bx')
   expect(mod.withCode('{code}x', '')).toBeNull()
 })
+
+test('adapter fee with no year on the page takes the year held (or this year), so it is written once', () => {
+  const m = read('supabase/migrations/20261004001360_cf247_adapter_fee_year_default.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain("is distinct from '52b52638ef96a485d2866dfc53ed7854'")
+  expect(m).toContain('extract(year from now())::int')
+})
