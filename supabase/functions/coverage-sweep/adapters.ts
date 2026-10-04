@@ -18,6 +18,7 @@ export type Adapter = {
   // "pick" chooses one: intakes, fee, ielts_overall, campus, mode, duration, study_level, student_type, not_admitting.
   patterns?: Record<string, string>;
   pick?: Record<string, string>;        // field -> "first" (default), "last" or "all"
+  term_months?: Record<string, string>; // v0.17.3: term name -> month name(s), the university's published mapping ("Semester 1": "February")
 };
 
 // Fields an adapter may give besides intakes, English and fee. They are shown for testing only and never admitted.
@@ -95,6 +96,15 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
     if (v) extra[f] = v;
   }
   // a pattern for intakes or fee is the adapter's own reading: it replaces the general reader's and is marked as such
+  // v0.17.3: term names in the intakes reading become the months the university publishes for them
+  if (pat.intakes && a.term_months) {
+    const add: string[] = [];
+    for (const [term, months] of Object.entries(a.term_months)) {
+      const t = String(term || "").trim(); if (t.length < 3) continue;
+      if (new RegExp(`(?:^|[^A-Za-z0-9])${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9])`, "i").test(pat.intakes)) add.push(String(months));
+    }
+    if (add.length) pat.intakes = `${pat.intakes} ${add.join(" ")}`;
+  }
   // month names as printed, capitalised ("May" the month, not "may" the verb)
   const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b(?:${m}|${m.slice(0, 3)})\\b`).test(pat.intakes)) : null;
   // v0.17.2: a fee kept as a number in the page data (json_paths.fee) counts as the adapter's own reading too

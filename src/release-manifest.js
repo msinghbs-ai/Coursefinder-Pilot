@@ -1,21 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.186'
-export const PACKAGE_VERSION='0.1.113'
+export const UI_VERSION='2.15.187'
+export const PACKAGE_VERSION='0.1.114'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'University adapters: visual builder and fees',
+  title:'University adapters: term names to months',
   changes:[
-    'Visual adapter builder: capture three sample pages of a university with Firecrawl (screenshot and page), see each page as text blocks and page-data values, mark which one holds each attribute and add comments.',
-    'The pinned preferred model (Qwen3 30B, the cheapest vetted one) proposes the adapter settings and they are tried on the samples. Use this proposal fills the settings; Save, Apply and admission stay separate.',
-    'The builder keeps to a daily AI allowance (US$ 0.50 and 30 proposals a day by default, both settings).',
-    'International annual fees read by an admitting adapter are now admitted, replacing the held fee of the same year. Fees entered by hand are never changed.',
-    'Every Firecrawl search result is kept in the evidence bucket with its run.'
+    'Adapters can hold the university’s own mapping of term names to months (for example Semester 1 = February), set in the adapter settings. Start dates printed as Autumn Session, Semester 1 or Fall are then read as months.',
+    'A corrected adapter pattern now clears the earlier reading it no longer makes.',
+    'Page-data adapters can pick one item from a list by its type (for example the international fee among domestic and international fees).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Applying an adapter re-read pages already refused after a Firecrawl read, spending credits each time. They are now sent back once, and only for adapters that read page data.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
