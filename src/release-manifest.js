@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.182'
-export const PACKAGE_VERSION='0.1.109'
+export const UI_VERSION='2.15.183'
+export const PACKAGE_VERSION='0.1.110'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'University adapters on their own, under the Firecrawl settings',
+  title:'University adapters: text patterns and extra fields (Flinders)',
   changes:[
-    'The Firecrawl work panel now sits straight under the Firecrawl settings, with a link to it from the settings.',
-    'A University adapters section lists every adapter with its state (Testing or Admitting), pages it confirmed, pages waiting and open requests, with Open and Set up buttons and three steps to test, then admit.'
+    'University adapters can now read values from the page text with patterns (intakes, fee, IELTS, campus, mode, duration, level, student type, not admitting, AQF level), and choose the first, last or every match when a page prints a field twice.',
+    'The adapter panel lists what each adapter read on pages already confirmed by CRICOS code: intakes, fee and other fields, next to the intakes held now.',
+    'Intakes are admitted only when the adapter itself read them and its admission switch is on. English read by an adapter also needs the switch. Tuition is still not admitted from pages.',
+    'Flinders adapter set up for its study pages (international start dates, fee, delivery mode and duration) and its handbook (location, mode, student type, level).'
   ],
-  bugFixes:[
-    'The Firecrawl work panel took about 7 seconds to load against an 8-second limit, so it often did not show at all. Its figures are now kept by scheduled jobs and it loads at once.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

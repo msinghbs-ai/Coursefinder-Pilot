@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.110 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.183** (university adapters read page text patterns, extra fields shown for testing, intakes admitted from the adapter's own reading only after the admit switch).
+- Migration 20261004001280 (adapter patterns, pick, adapter readings marked, admission plan gate for adapter intakes and English, schedule coverage-admit-intakes); coverage-sweep worker v0.16.0.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.109 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.182** (University adapters easy to find and the Firecrawl panel loads at once).
