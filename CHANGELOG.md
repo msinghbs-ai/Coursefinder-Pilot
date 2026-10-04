@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.115 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.188** (admission by field and course exclusions).
+- Database: admission by field and course exclusions (migrations 20261005001400 and 20261005001410).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.114 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.187** (adapter term names to months, wave 1 and 2 fixes).

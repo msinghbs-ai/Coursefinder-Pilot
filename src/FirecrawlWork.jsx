@@ -230,29 +230,39 @@ export function AdapterBuilder({providerId,onUse,onError}){
 }
 
 // Test before admitting, then switch admission on; ask for improvements (Decision 253 amended, Platform Admin 17:19).
+// Admission by field and course exclusions (Decision 254, Platform Admin 5 Oct 05:50).
+const ADMIT_FIELDS=[['intakes','Intakes'],['english','English (IELTS)'],['fee','Fees']]
+const ADMIT_LABEL=Object.fromEntries(ADMIT_FIELDS)
 export function AdapterReview({providerId,can,onError}){
   const[r,setR]=useState(null),[req,setReq]=useState(''),[busy,setBusy]=useState(false)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_uni_adapter_review',{p_provider_id:providerId});if(error)throw error;setR(data||{})}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[providerId])
   const control=async(action,args,q)=>{const reason=q?ask(q):'request';if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_uni_adapter_control',{p_action:action,p_args:{provider_id:providerId,...args,reason}});if(error)throw error;if(action==='request')setReq('');await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   if(!r)return null
-  const on=Boolean(r.admit?.on)
+  const on=Boolean(r.admit?.on),fields=r.admit?.fields||ADMIT_FIELDS.map(([k])=>k)
   return <div className="tn-adapter-review" data-adapter-review={providerId}>
     <h4 className="sl-h4">Test, then admit</h4>
     <p className="sl-sub">{fmtNumber(r.confirmed_total)} pages confirmed by this adapter. Check the values below against the pages. Nothing this adapter confirms is admitted until admission is switched on here (the country rules allow adapter identities).</p>
     <div className="tn-plan-row" data-adapter-admit><span className={`cf-chip tone-${on?'success':'warning'}`}>{on?'Admitting what this adapter confirms':'Not admitting yet'}</span>
       {r.admit?.reason&&<small className="sl-sub">{r.admit.reason} · {fmtDateTime(r.admit.changed_at)}</small>}
-      {can&&<Button compact variant={on?undefined:'primary'} disabled={busy} onClick={()=>control('admit',{admit:!on},on?'Stop admitting what this adapter confirms? Values already admitted stay.':'Admit what this adapter confirms (links, English, intakes) through the existing admission rules?')}>{on?'Stop admitting':'Admit from this adapter'}</Button>}</div>
+      {can&&<Button compact variant={on?undefined:'primary'} disabled={busy} onClick={()=>control('admit',{admit:!on},on?'Stop admitting what this adapter confirms? Values already admitted stay.':'Admit what this adapter confirms (the fields ticked below) through the existing admission rules?')}>{on?'Stop admitting':'Admit from this adapter'}</Button>}</div>
+    <div className="tn-plan-row" data-adapter-admit-fields><small className="sl-sub">Fields admitted when admission is on:</small>
+      {ADMIT_FIELDS.map(([k,label])=><label key={k} className="tn-check"><input type="checkbox" aria-label={`Admit ${label}`} checked={fields.includes(k)} disabled={!can||busy}
+        onChange={e=>{const next=e.target.checked?[...fields,k]:fields.filter(x=>x!==k);control('admit',{admit:on,fields:next},`${e.target.checked?'Admit':'Stop admitting'} ${label.toLowerCase()} from this adapter? Values already admitted stay.`)}}/> {label}</label>)}</div>
+    {(r.exclusions||[]).length>0&&<details className="tn-items" data-adapter-exclusions><summary>Courses excluded from admission ({fmtNumber(r.exclusions.length)})</summary>
+      <ul className="tn-list">{r.exclusions.map((x,i)=><li key={i}><span className="cf-chip tone-warning">{ADMIT_LABEL[x.field]||x.field}</span> {x.course} <small className="sl-sub">{x.code} · {x.reason} · {fmtDateTime(x.set_at)}</small>
+        {can&&<Button compact disabled={busy} onClick={()=>control('exclude',{course_id:x.course_id,field:x.field,exclude:false},`Admit ${(ADMIT_LABEL[x.field]||x.field).toLowerCase()} for ${x.course} again?`)}>Stop excluding</Button>}</li>)}</ul></details>}
     {(r.confirmed||[]).length>0&&<details className="tn-items" open><summary>What it would admit (latest {r.confirmed.length})</summary><div className="cf-table-wrap"><table className="cf-table" data-adapter-confirmed><thead><tr><th>Course</th><th>How</th><th>Intakes</th><th>IELTS</th><th>Admitted</th></tr></thead><tbody>
       {r.confirmed.map((x,i)=><tr key={i}><td>{x.course}<small className="sl-sub">{x.code} · <a href={x.url} target="_blank" rel="noreferrer">{x.url}</a></small></td><td>{x.identity}</td><td>{(x.intakes||[]).join(', ')||'—'}</td><td>{x.ielts??'—'}{x.english_context&&<small className="sl-sub">{x.english_context}</small>}</td><td>{x.link_admitted?'link':''}{x.english_admitted?' English':''}{!x.link_admitted&&!x.english_admitted?'—':''}</td></tr>)}
     </tbody></table></div></details>}
     {(r.readings||[]).length>0&&<details className="tn-items" open><summary>What it read on pages confirmed by CRICOS code ({fmtNumber(r.readings_total)} pages, intakes on {fmtNumber(r.intakes_by_adapter)}, latest {r.readings.length})</summary>
-      <p className="sl-sub">Intakes marked “pattern” are admitted only with admission switched on above. Location, mode, duration and level are shown for checking and are not admitted. The fee is shown only; tuition is not admitted from pages.</p>
-      <div className="cf-table-wrap"><table className="cf-table" data-adapter-readings><thead><tr><th>Course</th><th>Intakes</th><th>Held now</th><th>Fee</th><th>Other fields</th></tr></thead><tbody>
+      <p className="sl-sub">Values marked “pattern” are the adapter’s own reading. They are admitted only with admission switched on above, for the fields ticked, and never for an excluded course. Location, mode, duration and level are shown for checking and are not admitted. Use Exclude on a row whose reading is wrong.</p>
+      <div className="cf-table-wrap"><table className="cf-table" data-adapter-readings><thead><tr><th>Course</th><th>Intakes</th><th>Held now</th><th>Fee</th><th>Other fields</th>{can&&<th>Exclude</th>}</tr></thead><tbody>
       {r.readings.map((x,i)=><tr key={i}><td>{x.course}<small className="sl-sub">{x.code} · <a href={x.url} target="_blank" rel="noreferrer">{x.url}</a></small></td>
         <td>{(x.intakes||[]).join(', ')||'—'}{x.intakes_by==='adapter'&&<span className="cf-chip tone-neutral">pattern</span>}{x.intake_context&&<small className="sl-sub">{x.intake_context}</small>}</td>
         <td>{(x.intakes_now||[]).join(', ')||'—'}</td><td>{x.fee!=null?fmtNumber(x.fee):'—'}{x.fee_by==='adapter'&&<span className="cf-chip tone-neutral">pattern</span>}</td>
-        <td><small className="sl-sub">{Object.entries(x.extra||{}).map(([k,v])=>`${k.replace(/_/g,' ')}: ${v}`).join(' · ')||'—'}</small></td></tr>)}
+        <td><small className="sl-sub">{Object.entries(x.extra||{}).map(([k,v])=>`${k.replace(/_/g,' ')}: ${v}`).join(' · ')||'—'}</small></td>
+        {can&&<td>{ADMIT_FIELDS.map(([k,label])=><Button key={k} compact disabled={busy} aria-label={`Exclude ${label} for ${x.course}`} onClick={()=>control('exclude',{url:x.url,field:k,exclude:true},`Exclude ${label.toLowerCase()} for ${x.course} from admission? Give the reason (kept in the log).`)}>{label}</Button>)}</td>}</tr>)}
     </tbody></table></div></details>}
     <h4 className="sl-h4">Ask for an improvement</h4>
     {can&&<div className="tn-request"><textarea aria-label="Improvement request" rows={2} value={req} placeholder="For example: intakes are under 'Start dates', IELTS is in the entry requirements tab" onChange={e=>setReq(e.target.value)}/>

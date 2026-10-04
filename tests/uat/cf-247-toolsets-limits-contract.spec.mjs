@@ -526,3 +526,39 @@ test('adapter measures: read-only wave report function, operators and admins onl
   expect(m).toContain("'intakes_agree'")
   expect(m).toContain('grant execute on function public.admin_adapter_measures(uuid[]) to authenticated')
 })
+
+// Platform Admin 5 Oct 05:50 "switch on the admissions": admission by field, course exclusions
+test('admission by field: migrations shaped, overwrite and coverage admission honour fields and exclusions', () => {
+  for (const f of ['20261005001400_cf247_admit_by_field_and_exclusions', '20261005001410_cf247_exclusions_in_coverage_admission']) {
+    const m = read(`supabase/migrations/${f}.sql`)
+    for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+    for (const lit of m.replace(/--[^\n]*/g, '').replace(/\$s\$[\s\S]*?\$s\$/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
+    for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
+    for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  }
+  const m = read('supabase/migrations/20261005001400_cf247_admit_by_field_and_exclusions.sql')
+  expect(m).toContain("is distinct from '7b1e9a975b86b1bcd5fd1fd1799f9bee'")
+  expect(m).toContain("is distinct from 'c3661b790649c1511f40032350f5bfbb'")
+  expect(m).toContain("and 'fee' = any (r.af) and not security.uni_adapter_excluded(r.course_id, 'fee')")
+  expect(m).toContain("(case p_attr when 'tuition' then 'fee' else p_attr end) = any (u.admit_fields)")
+  expect(m).toContain("if security.uni_adapter_excluded(p_course_id, 'intakes') then p_candidates := p_candidates - 'intakes'")
+  expect(read('supabase/migrations/20261005001410_cf247_exclusions_in_coverage_admission.sql')).toContain("if r.props ? 'intakes' and not security.uni_adapter_excluded(r.course_id, 'intakes') then")
+})
+
+test('browser: adapter — admit by field, exclude a course reading, stop excluding', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Fees checked against the fee table'))
+  await page.goto('/#models-services')
+  await page.locator('[data-university-adapters] [data-adapter-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  const r = page.locator('[data-adapter-review="u1"]')
+  await expect(r.getByRole('checkbox', { name: 'Admit Fees' })).toBeChecked()
+  await r.getByRole('checkbox', { name: 'Admit Intakes' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.adapterControl === 'admit')?.args).toMatchObject({ provider_id: 'u1', admit: false, fields: ['english', 'fee'] })
+  await r.getByRole('button', { name: /^Exclude Fees for Bachelor of Engineering/ }).click()
+  await expect.poll(() => page.l3calls.find(c => c.adapterControl === 'exclude')?.args).toMatchObject({ provider_id: 'u1', url: 'https://www.example.edu.au/study/courses/bachelor-engineering', field: 'fee', exclude: true, reason: 'Fees checked against the fee table' })
+  const ex = r.locator('[data-adapter-exclusions]')
+  await ex.locator('summary').click()
+  await expect(ex).toContainText('Graduate Certificate of Arts')
+  await ex.getByRole('button', { name: 'Stop excluding' }).click()
+  await expect.poll(() => page.l3calls.filter(c => c.adapterControl === 'exclude').find(c => c.args.exclude === false)?.args).toMatchObject({ course_id: 'c9', field: 'fee' })
+})

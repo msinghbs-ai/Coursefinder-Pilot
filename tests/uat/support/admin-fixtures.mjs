@@ -592,7 +592,8 @@ export const uniAdapter = { can_manage: true, provider: { id: 'u1', name: 'The U
   ], json_shape: ['props.pageProps.pageContent.title: Bachelor of Accounting and Finance', 'props.pageProps.pageContent.cricos_code: null'] } }],
   applied: [{ identity: 'adapter_title', before: 'identity_mismatch', n: 41, last_at: '2026-10-04T06:05:00Z' }],
   allowed: [{ country: 'AU', identities: { english: ['cricos_code', 'exact_title'] } }] }
-export const uniAdapterReview = { admit: { on: false, reason: null, changed_at: null }, confirmed_total: 19,
+export const uniAdapterReview = { admit: { on: false, fields: ['english', 'fee', 'intakes'], reason: null, changed_at: null }, confirmed_total: 19,
+  exclusions: [{ course_id: 'c9', course: 'Graduate Certificate of Arts', code: '116337M', field: 'fee', reason: 'course shorter than a year, page prints the course total', set_at: '2026-10-05T08:00:00Z' }],
   confirmed: [{ course: 'Master of Advanced Practice (Clinical)', code: '121373J', url: 'https://handbook.example.edu.au/courses/2027/MAPC', identity: 'adapter_code', intakes: ['February', 'July'], ielts: 7, english_context: 'page data: IELTS 7', link_admitted: false, english_admitted: false }],
   readings_total: 262, intakes_by_adapter: 240,
   readings: [{ course: 'Bachelor of Engineering (Electrical and Electronic) (Honours)', code: '111210M', url: 'https://www.example.edu.au/study/courses/bachelor-engineering', identity: 'cricos_code', intakes: ['March', 'July'], intakes_by: 'adapter', intake_context: 'adapter pattern: March July', fee: 47300, fee_by: 'adapter', ielts: 6, english_by: null, extra: { campus: 'In person: Tonsley', duration: '5 years full-time' }, intakes_now: null }],
