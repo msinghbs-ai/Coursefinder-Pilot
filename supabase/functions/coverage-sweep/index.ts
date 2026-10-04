@@ -4,6 +4,7 @@ import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, 
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
+import { applyAdapter, inspectPage, jsonShape, pageJson } from "./adapters.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -45,7 +46,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.14.1"; // v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
+const WORKER = "coverage-sweep-worker-v0.15.0"; // v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -1049,6 +1050,45 @@ Deno.serve(async (req) => {
     // the run's settings and every call is logged (svc_fc_call_log) for the Firecrawl support report.
     // v0.14.1: read chosen pages with chosen Firecrawl options (Platform Admin test of read settings and university
     // adapters). Nothing is recorded on a course: only the call log and this reply.
+    // v0.15.0 (Decision 253): university adapters, tried and applied on stored pages (no Firecrawl credits).
+    const storedHtml = async (path: string) => { const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "missing"); return await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() };
+    if (mode === "adapter_preview") {
+      const n = await rpc("svc_adapter_preview_next", { p_preview_id: String(body.preview_id || "") });
+      if (!n) return j({ error: "unknown preview", worker: WORKER }, 404);
+      const out: unknown[] = []; let shape: string[] | null = null;
+      await pool(n.pages || [], 4, async (pg: any) => {
+        try {
+          const html = await storedHtml(pg.storage_path);
+          const r = applyAdapter(n.adapter || {}, html, { title: pg.title, code: pg.code, country: pg.country, status: pg.status }, VERSION);
+          if (!shape && n.adapter?.json_source) { const d = pageJson(html, n.adapter.json_source); if (d) shape = jsonShape(d, 5) }
+          out.push({ course: pg.title, code: pg.code, url: pg.url, was: pg.read_status, identity_before: pg.identity_basis, identity: r.identity, how: r.how, json_found: r.json_found, course_title_seen: r.course_title_seen,
+                     page: inspectPage(html), found: r.candidates ? { intakes: (r.candidates as any).intakes, english: (r.candidates as any).english, fee: (r.candidates as any).fee?.value ?? null, fee_basis: (r.candidates as any).fee?.basis ?? null } : null });
+        } catch (e) { out.push({ course: pg.title, url: pg.url, error: e instanceof Error ? e.message : String(e) }) }
+      });
+      await rpc("svc_adapter_preview_record", { p_preview_id: body.preview_id, p_result: { pages: out, json_shape: shape, worker: WORKER } });
+      return j({ ok: true, mode, pages: out.length, worker: WORKER });
+    }
+    if (mode === "adapter_apply") {
+      const tally: Record<string, number> = {}; let after: string | null = null, pages = 0;
+      while (Date.now() - t0 < BUDGET_MS - 20000) {
+        const n = await rpc("svc_adapter_apply_next", { p_provider_id: String(body.provider_id || ""), p_after: after, p_limit: 120 });
+        const list: any[] = n?.pages || []; if (!n?.adapter || !list.length) break;
+        await pool(list, 8, async (pg: any) => {
+          try {
+            const html = await storedHtml(pg.storage_path);
+            const r = applyAdapter(n.adapter, html, { title: pg.title, code: pg.code, country: pg.country, status: pg.status }, VERSION);
+            // a refused page the adapter confirms, or a confirmed page whose missing fields the adapter's mappings fill
+            const confirms = pg.read_status === "identity_mismatch" && !!r.identity?.startsWith("adapter_");
+            const fills = pg.read_status === "read" && !!pg.identity_basis && !!r.candidates;
+            const st = confirms || fills ? await rpc("svc_adapter_page_record", { p_course_id: pg.course_id, p_identity: confirms ? r.identity : "adapter_title", p_how: confirms ? r.how : `fields only, page already confirmed (${pg.identity_basis})`, p_candidates: r.candidates }) : "no_identity";
+            tally[st] = (tally[st] || 0) + 1;
+          } catch { tally.error = (tally.error || 0) + 1 }
+        });
+        pages += list.length; after = list[list.length - 1].course_id;
+      }
+      const more = Date.now() - t0 >= BUDGET_MS - 20000; // press Apply again to carry on from the start (applied pages are skipped as already read)
+      return j({ ok: true, mode, pages, tally, more, worker: WORKER });
+    }
     if (mode === "fc_probe") {
       if (!fc?.secret) return j({ error: "no Firecrawl key", workerVersion: WORKER }, 500);
       const pages: { url: string; course?: string; code?: string; country?: string; provider_id?: string; course_id?: string }[] = (Array.isArray(body.pages) ? body.pages : []).slice(0, 10);
