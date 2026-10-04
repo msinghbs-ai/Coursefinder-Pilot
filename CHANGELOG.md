@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.108 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.181** (Decision 253 amended: admit from university adapters after testing, refuse archived and test sites).
+- Migration 20261004001260 applied and checked. 380 pages on archived or test sites refused, 317 links, 96 English and 42 intake values from them taken out of use (logged).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.107 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.180** (Decision 253: Firecrawl by use case for target universities, call log and support report).

@@ -334,4 +334,7 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .tn-adapter-grid label{display:flex;flex-direction:column;gap:4px;font-size:var(--cf-fs-sm)}
 .tn-adapter-grid input:not([type=checkbox]),.tn-adapter-grid textarea{border:1px solid var(--cf-slate-300);border-radius:8px;padding:6px 8px;font:inherit}
 .tn-adapter-grid textarea{font-family:ui-monospace,monospace;font-size:var(--cf-fs-xs)}
+.tn-adapter-review{border-top:1px solid var(--cf-slate-200);padding-top:8px;display:flex;flex-direction:column;gap:8px}
+.tn-request{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.tn-request textarea{flex:1;min-width:240px;border:1px solid var(--cf-slate-300);border-radius:8px;padding:6px 8px;font:inherit}
 .tn-pre{max-height:320px;overflow:auto;font-size:var(--cf-fs-2xs);background:var(--cf-slate-50);padding:8px;border-radius:8px;white-space:pre-wrap}
