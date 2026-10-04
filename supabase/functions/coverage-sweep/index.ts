@@ -46,7 +46,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.16.0"; // v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
+const WORKER = "coverage-sweep-worker-v0.16.2"; // v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -1071,25 +1071,32 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, pages: out.length, worker: WORKER });
     }
     if (mode === "adapter_apply") {
-      const tally: Record<string, number> = {}; let after: string | null = null, pages = 0;
-      while (Date.now() - t0 < BUDGET_MS - 20000) {
-        const n = await rpc("svc_adapter_apply_next", { p_provider_id: String(body.provider_id || ""), p_after: after, p_limit: 120 });
+      // v0.16.1: an edge call may use only about two seconds of processor time. Pages are read one after another and the
+      // call stops after ADAPTER_CPU_MS of reading, then asks for the next call to carry on after the last page.
+      const ADAPTER_CPU_MS = 900;
+      const tally: Record<string, number> = {}; let after: string | null = body.after ? String(body.after) : null, pages = 0, cpu = 0, stopped = false;
+      while (!stopped && Date.now() - t0 < BUDGET_MS - 20000) {
+        const n = await rpc("svc_adapter_apply_next", { p_provider_id: String(body.provider_id || ""), p_after: after, p_limit: 20 });
         const list: any[] = n?.pages || []; if (!n?.adapter || !list.length) break;
-        await pool(list, 8, async (pg: any) => {
+        for (const pg of list) {
           try {
             const html = await storedHtml(pg.storage_path);
+            const c0 = performance.now();
             const r = applyAdapter(n.adapter, html, { title: pg.title, code: pg.code, country: pg.country, status: pg.status }, VERSION);
-            // a refused page the adapter confirms, or a confirmed page whose missing fields the adapter's mappings fill
+            cpu += performance.now() - c0;
+            // a refused page the adapter confirms, or a confirmed page whose fields the adapter's mappings fill or replace
             const confirms = pg.read_status === "identity_mismatch" && !!r.identity?.startsWith("adapter_");
             const fills = pg.read_status === "read" && !!pg.identity_basis && !!r.candidates;
             const st = confirms || fills ? await rpc("svc_adapter_page_record", { p_course_id: pg.course_id, p_identity: confirms ? r.identity : "adapter_title", p_how: confirms ? r.how : `fields only, page already confirmed (${pg.identity_basis})`, p_candidates: r.candidates }) : "no_identity";
             tally[st] = (tally[st] || 0) + 1;
           } catch { tally.error = (tally.error || 0) + 1 }
-        });
-        pages += list.length; after = list[list.length - 1].course_id;
+          pages++; after = pg.course_id;
+          if (cpu > ADAPTER_CPU_MS || Date.now() - t0 >= BUDGET_MS - 20000) { stopped = true; break }
+        }
       }
-      const more = Date.now() - t0 >= BUDGET_MS - 20000; // press Apply again to carry on from the start (applied pages are skipped as already read)
-      return j({ ok: true, mode, pages, tally, more, worker: WORKER });
+      // carry on in a fresh call from the last page read (the cursor only moves forward, so the chain ends)
+      const cont = stopped && after ? await rpc("svc_adapter_apply_continue", { p_provider_id: String(body.provider_id || ""), p_after: after }).catch(() => null) : null;
+      return j({ ok: true, mode, pages, tally, more: stopped, continued: cont, after, cpu_ms: Math.round(cpu), worker: WORKER });
     }
     if (mode === "fc_probe") {
       if (!fc?.secret) return j({ error: "no Firecrawl key", workerVersion: WORKER }, 500);

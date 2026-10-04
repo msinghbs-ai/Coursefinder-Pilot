@@ -92,7 +92,8 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
     if (v) extra[f] = v;
   }
   // a pattern for intakes or fee is the adapter's own reading: it replaces the general reader's and is marked as such
-  const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b${m}\\b|\\b${m.slice(0, 3)}\\b`, "i").test(pat.intakes)) : null;
+  // month names as printed, capitalised ("May" the month, not "may" the verb)
+  const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b(?:${m}|${m.slice(0, 3)})\\b`).test(pat.intakes)) : null;
   const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : NaN;
   const pIelts = pat.ielts_overall ? Number(pat.ielts_overall) : NaN;
   if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
