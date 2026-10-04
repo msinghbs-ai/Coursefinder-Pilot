@@ -75,7 +75,10 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
     if (data && paths[f]) { const t = jsonText(jsonAt(data, paths[f])); if (t) return t }
     return sectionText(text, a.sections?.[f], Number(a.section_chars || 2000)) ?? text;
   };
-  const candidates = basis ? { final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(part("fee"), currencyFor(course.country)), english: english(part("english")), intakes: intakes(part("intakes")), intake_context: intakeEvidence(part("intakes")), extractor, adapter: true } : null;
+  // an IELTS score kept as a number in the page data (json_paths.ielts_overall, json_paths.ielts_min_band)
+  const num = (k: string) => { const v = data && paths[k] ? Number(jsonText(jsonAt(data, paths[k]))) : NaN; return Number.isFinite(v) && v > 0 && v <= 9 ? v : null };
+  const eng = (() => { const e: Record<string, unknown> = english(part("english")); const o = num("ielts_overall"), b = num("ielts_min_band"); if (o !== null && e.ielts_overall == null) { e.ielts_overall = o; e.context = `page data: IELTS ${o}${b !== null ? `, no band below ${b}` : ""}` } if (b !== null && e.ielts_min_band == null) e.ielts_min_band = b; return e })();
+  const candidates = basis ? { final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(part("fee"), currencyFor(course.country)), english: eng, intakes: intakes(part("intakes")), intake_context: intakeEvidence(part("intakes")), extractor, adapter: true } : null;
   return { identity: basis, how, json_found: !!data, page_title: titleOf(html).slice(0, 160), h1: h1Of(html).slice(0, 160), course_title_seen: ct, candidates };
 }
 
