@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.178'
-export const PACKAGE_VERSION='0.1.105'
+export const UI_VERSION='2.15.179'
+export const PACKAGE_VERSION='0.1.106'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Keys with plan limits set in the UI; sample runs replace trials',
+  title:'Search pass into the identity check; page addresses repaired',
   changes:[
-    'Serper and ScrapingBee each show the key in use and its plan: plan name, credits, whether they renew monthly, the date credits are counted from, credits kept back and calls at once. Moving to a production key is: save the new key on Environment & integrations, then enter the new plan here.',
-    'Work using either service stops when the key’s plan reaches its reserve, with a notice on Layer 2.',
-    'Settings on Models & services › Toolsets and limits are grouped: Key and plan limits, How the service is used, Sample runs, Notices.',
-    'Trials are now sample runs; the worker is toolset-runner. Nothing a sample run finds is admitted.'
+    'Models & services › Toolsets and limits has a Search pass: Serper searches the courses still without a page and sends each page it finds on the provider’s own site to the identity check. Nothing is admitted by the pass. A confirmed page or a link entered by hand is never replaced.',
+    'If the identity check refuses a page, the next candidate is tried, then the course is left as before. This runs inside the existing course-link-search job (no new scheduled job).',
+    'Search pass settings: courses per country, credits one pass may use, carry on after each worker call, look again for pages that could not be read, and what a course page address looks like.',
+    '392 page addresses that had lost their query string (for example University of Alberta calendar pages) were restored from the stored search results and sent back to the reader. Every change is logged.'
   ],
   bugFixes:[]
 }
