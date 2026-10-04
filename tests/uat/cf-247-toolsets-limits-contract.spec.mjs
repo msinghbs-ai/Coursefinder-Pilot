@@ -519,3 +519,10 @@ test('term months: migration shaped, worker maps term names to the published mon
   await page.locator('[data-adapter-editor="u1"] [data-adapter-settings] > summary').click()
   await expect(page.getByRole('textbox', { name: 'Term months' })).toBeVisible()
 })
+
+test('adapter measures: read-only wave report function, operators and admins only', () => {
+  const m = read('supabase/migrations/20261005001390_cf247_adapter_measures.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade', 'update ', 'insert into']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain("'intakes_agree'")
+  expect(m).toContain('grant execute on function public.admin_adapter_measures(uuid[]) to authenticated')
+})
