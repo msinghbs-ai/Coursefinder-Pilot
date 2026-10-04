@@ -1,21 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.187'
-export const PACKAGE_VERSION='0.1.114'
+export const UI_VERSION='2.15.188'
+export const PACKAGE_VERSION='0.1.115'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'University adapters: term names to months',
+  title:'Admission by field and course exclusions',
   changes:[
-    'Adapters can hold the university’s own mapping of term names to months (for example Semester 1 = February), set in the adapter settings. Start dates printed as Autumn Session, Semester 1 or Fall are then read as months.',
-    'A corrected adapter pattern now clears the earlier reading it no longer makes.',
-    'Page-data adapters can pick one item from a list by its type (for example the international fee among domestic and international fees).'
+    'University adapters: tick which fields an adapter admits (intakes, English, fees) instead of one switch for all.',
+    'University adapters: exclude a course reading that is wrong (a short-course total, a scholarship, a domestic fee) with a reason, and stop excluding it later.',
+    'Exclusions also stop the general reader’s wrong intakes and English on pages an adapter confirms.'
   ],
-  bugFixes:[
-    'Applying an adapter re-read pages already refused after a Firecrawl read, spending credits each time. They are now sent back once, and only for adapters that read page data.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

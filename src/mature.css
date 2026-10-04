@@ -349,3 +349,5 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .tn-blocks select{margin-left:6px;font-size:12px}
 .tn-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 @media (max-width:760px){.tn-builder{grid-template-columns:1fr}}
+/* Admission by field (Decision 254, 5 Oct) */
+.tn-check{display:inline-flex;align-items:center;gap:.3rem;margin-inline-start:.75rem;font-size:.9rem}
