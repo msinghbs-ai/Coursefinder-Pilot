@@ -66,7 +66,7 @@ test('browser: Layer 3 Scholarships — AI off until a model passes; Layer 4 job
   await expect(page.locator('[data-sl-ai-state]')).toContainText('no model has passed its benchmark yet')
   await expect(page.locator('[data-sl-ai-country="AU"]')).toContainText('Off')
   await page.goto('/#layer-4-review?tab=publishing')
-  await expect(page.locator('[data-scholarship-layer="4"] [data-sl-job="scholarship-publication-review"]')).toContainText('Daily at 06:17 AEST')
+  await expect(page.locator('[data-scholarship-layer="4"] [data-sl-job="scholarship-publication-review"]')).toContainText(/Daily at \d{1,2}:17 ?[ap]m Melbourne time/)
 })
 
 test('Firecrawl cap and reserve: Layer 2 settings the worker reads; none left in the code', async ({ page }) => {

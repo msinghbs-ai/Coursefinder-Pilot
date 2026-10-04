@@ -11,6 +11,7 @@ import React,{useEffect,useState}from'react'
 import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
+import{utcClockToMelbourne}from'./lib/format.js'
 import ScholarshipAiControl from'./ScholarshipAiControl'
 
 const ROLE={ingest:'Ingest — read into records',provider_pages:'University pages',reference:'Reference — for looking up',validation:'Validation — compare with our records'}
@@ -25,15 +26,15 @@ const MODE={scholarship_discover:'Find pages',scholarship_read:'Re-read pages',s
 const errText=e=>e?.message||String(e)
 const human=v=>String(v??'').replace(/_/g,' ')
 
-// cron schedules are in UTC; shown in Melbourne time (AEST, UTC+10)
+// cron schedules are in UTC; shown in Melbourne clock time with daylight saving (shared helper in lib/format.js)
 export function scheduleText(s){
   const p=String(s||'').trim().split(/\s+/);if(p.length!==5)return s||'—'
-  const[mi,h,dom,mon,dow]=p,pad=n=>String(n).padStart(2,'0'),loc=hh=>(Number(hh)+10)%24
+  const[mi,h,dom,mon,dow]=p,pad=n=>String(n).padStart(2,'0')
   if(/^\*\/\d+$/.test(mi)&&h==='*')return `Every ${mi.slice(2)} minutes`
   if(/^\d+-\d+\/\d+$/.test(mi)&&h==='*')return `Every ${mi.split('/')[1]} minutes`
   if(/^\d+$/.test(mi)&&h==='*')return `Hourly at :${pad(mi)}`
   if(/^\d+$/.test(mi)&&/^\*\/\d+$/.test(h))return `Every ${h.slice(2)} hours at :${pad(mi)}`
-  if(/^\d+$/.test(mi)&&/^\d+$/.test(h)&&dom==='*'&&mon==='*'){const t=`${pad(loc(h))}:${pad(mi)} AEST`;if(dow==='*')return `Daily at ${t}`;const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];const d=(Number(dow)+(Number(h)+10>=24?1:0))%7;return `${days[d]||'Weekly'}s at ${t}`}
+  if(/^\d+$/.test(mi)&&/^\d+$/.test(h)&&dom==='*'&&mon==='*'){const m=utcClockToMelbourne(h,mi),t=`${m.time} Melbourne time`;if(dow==='*')return `Daily at ${t}`;const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];return `${days[(Number(dow)+m.dayShift)%7]||'Weekly'}s at ${t}`}
   return s
 }
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
