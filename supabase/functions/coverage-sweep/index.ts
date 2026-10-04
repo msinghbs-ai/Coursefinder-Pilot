@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
+import { callRecord, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -44,7 +45,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.13.5"; // v0.13.5: calendar parser v0.2.2 (section rows)
+const WORKER = "coverage-sweep-worker-v0.14.0"; // v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -244,8 +245,14 @@ Deno.serve(async (req) => {
     const schBudget = mode.startsWith("scholarship") ? await rpc("svc_scholarship_fc_budget", {}).catch(() => null) : null;
     let schLeft = schBudget && Number.isFinite(Number(schBudget.cap)) ? Math.max(0, Number(schBudget.cap) - Number(schBudget.used ?? schBudget.cap)) : 0;
     const schReserve = schBudget && Number.isFinite(Number(schBudget.reserve)) ? Number(schBudget.reserve) : Number.POSITIVE_INFINITY;
+    // v0.14.0 (Decision 253): when the setting is on, Firecrawl is used only for target universities.
+    const targets = await rpc("svc_fc_targets", {}).catch(() => null);
+    const targetOnly = targets ? targets.target_only !== false : true;
+    const targetIds = new Set<string>((targets?.ids || []).map(String));
+    const isTarget = (providerId: string | null) => !targetOnly || (!!providerId && targetIds.has(providerId));
     const useFc = async (purpose: string, providerId: string | null, url: string) => {
       if (!fc?.secret || fcRemaining < 1) return false;
+      if (!isTarget(providerId)) return false;
       const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1; if (fcRemaining < units) return false; // v0.13.0: a JSON-format scrape costs 5 credits
       if (purpose.startsWith("sch_")) { if (schLeft < units) return false; schLeft -= units }
       fcRemaining -= units; await rpc("svc_coverage_usage", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true;
@@ -1037,6 +1044,95 @@ Deno.serve(async (req) => {
         tally[st] = (tally[st] || 0) + 1;
       });
       return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
+    // v0.14.0 (Decision 253): a Firecrawl run (Read pages or Find pages) for target universities. Every option comes from
+    // the run's settings and every call is logged (svc_fc_call_log) for the Firecrawl support report.
+    if (mode === "fc_run") {
+      const runId = String(body.run_id || "");
+      if (!/^[0-9a-f-]{36}$/i.test(runId)) return j({ error: "run_id required", workerVersion: WORKER }, 400);
+      if (!fc?.secret) return j({ error: "no Firecrawl key", workerVersion: WORKER }, 500);
+      const tally: Record<string, number> = {}; let credits = 0, calls = 0, stopReason: string | null = null;
+      const WALL_MS = 140000; // under the edge function's wall-clock limit
+      const fcCall = async (endpoint: "scrape" | "search", reqBody: Record<string, unknown>, ctx: { run_id: string; item_id: string; use_case: string; provider_id: string | null; course_id: string | null; url: string | null }, estimate: number) => {
+        const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
+        try {
+          const left = WALL_MS - (Date.now() - t0);
+          if (reqBody.timeout) reqBody.timeout = Math.max(10000, Math.min(Number(reqBody.timeout), left - 15000));
+          const r = await fetch(`https://api.firecrawl.dev/v2/${endpoint}`, { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(Math.max(5000, Math.min(Number(reqBody.timeout || 45000) + 15000, left - 3000))) });
+          http = r.status; hdrs = r.headers; d = await r.json().catch(() => null);
+        } catch (e) { err = e instanceof Error ? `${e.name}: ${e.message}` : String(e) }
+        const rec = callRecord(http, d, hdrs, Date.now() - started, err);
+        const used = rec.credits_used ?? (http !== null && http < 500 && http !== 429 ? estimate : 0);
+        calls++; credits += used; fcRemaining -= used;
+        if (used > 0) await rpc("svc_coverage_usage", { p_units: used, p_purpose: ctx.use_case === "read_page" ? "fc_read" : "fc_search", p_provider_id: ctx.provider_id, p_url: ctx.url || String(reqBody.query || "") }).catch(() => null);
+        const { url: _u, query: _q, ...opts } = reqBody as Record<string, unknown>;
+        return { d, rec: { ...rec, credits_used: used }, log: { ...ctx, endpoint, url: ctx.url || null, request: { ...opts, ...(endpoint === "search" ? { query: reqBody.query } : {}) }, ...rec, credits_used: used } };
+      };
+      while (Date.now() - t0 < WALL_MS - 60000) {
+        const next = await rpc("svc_fc_run_next", { p_run_id: runId, p_limit: 0 });
+        const run = next?.run || {}; const s = run.settings || {};
+        if (run.status !== "running") { stopReason = run.status || "not_running"; break }
+        const batch = await rpc("svc_fc_run_next", { p_run_id: runId, p_limit: Math.min(Math.max(Number(s.run_batch_per_call || 40), 1), 200) });
+        const items: { id: string; course_id: string; provider_id: string; country: string; url: string | null; input: any; result: any }[] = batch?.items || [];
+        if (!items.length) { stopReason = batch?.run?.status === "running" ? "nothing_left" : batch?.run?.status || "done"; break }
+        if (fcRemaining < 10) { stopReason = "plan_reserve"; for (const it of items) await rpc("svc_fc_run_record", { p_item_id: it.id, p_outcome: "retry", p_result: null, p_credits: 0 }); break }
+        await pool(items, Math.min(Math.max(Number(s.run_concurrency || 12), 1), 50), async (it) => {
+          const ctx = { run_id: runId, item_id: it.id, use_case: String(run.use_case), provider_id: it.provider_id, course_id: it.course_id, url: it.url };
+          // not enough of this worker call's time left for one more Firecrawl call: back to the queue, untouched
+          if (WALL_MS - (Date.now() - t0) < 30000) { await rpc("svc_fc_run_record", { p_item_id: it.id, p_outcome: "retry", p_result: it.result ?? null, p_credits: 0 }); tally.deferred = (tally.deferred || 0) + 1; return }
+          let outcome = "error", result: Record<string, unknown> = {}, used = 0;
+          try {
+            if (run.use_case === "read_page") {
+              const u = new URL(String(it.url));
+              if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) {
+                outcome = "robots_disallowed";
+                await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: "robots_disallowed", p_http_status: null, p_fetched_via: null, p_identity_basis: null, p_storage_path: null, p_sha256: null, p_candidates: null });
+              } else {
+                const proxy = String(s.read_proxy || "auto").toLowerCase();
+                const { d, rec, log } = await fcCall("scrape", scrapeBody(String(it.url), s, it.country), ctx, /stealth|enhanced/.test(proxy) ? 5 : 1);
+                used = rec.credits_used || 0;
+                const html = String(d?.data?.html || ""); const text = html ? htmlToText(html) : "";
+                outcome = readOutcome(rec, html, text.length);
+                let identityBasis: string | null = null, path: string | null = null, sha: string | null = null, candidates: unknown = null, readStatus: string | null = null;
+                const finalUrl = String(d?.data?.metadata?.sourceURL || d?.data?.metadata?.url || it.url);
+                if (outcome === "read") {
+                  identityBasis = identity(html, text, String(it.input?.course || ""), String(it.input?.code || ""), it.input?.page_status === "ambiguous", it.country || "");
+                  if (identityBasis === "field_award" && staleCalendarUrl(finalUrl)) identityBasis = null;
+                  readStatus = identityBasis ? "read" : "identity_mismatch"; outcome = identityBasis ? "read_course_page" : "read_other_page";
+                  const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
+                  path = `layer2/${["NZ", "CA"].includes(it.country) ? it.country : "AU"}/coverage/${it.provider_id}/${it.course_id}/${sha}.html.gz`;
+                  const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
+                  if (up.error) { path = null; sha = null }
+                  candidates = identityBasis ? { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(text, currencyFor(it.country)), english: english(text), intakes: intakes(text), intake_context: intakeEvidence(text), extractor: VERSION }
+                                             : { final_url: finalUrl, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200) };
+                } else if (outcome === "blocked") readStatus = "blocked";
+                else if (outcome === "not_found") readStatus = "fetch_failed";
+                else if (outcome === "thin") readStatus = "too_thin";
+                if (readStatus) await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: readStatus, p_http_status: rec.page_status ?? 200, p_fetched_via: "firecrawl", p_identity_basis: identityBasis, p_storage_path: path, p_sha256: sha, p_candidates: candidates });
+                await rpc("svc_fc_call_log", { p: { ...log, outcome } }).catch(() => null);
+                result = { page_status: rec.page_status, proxy_used: rec.proxy_used, scrape_id: rec.scrape_id, identity_basis: identityBasis, error: rec.error, final_url: finalUrl,
+                           found: candidates && identityBasis ? { intakes: (candidates as any).intakes, english: (candidates as any).english?.ielts_overall ?? null, fee: (candidates as any).fee?.value ?? null } : null };
+              }
+            } else if (run.use_case === "find_page") {
+              const { d, rec, log } = await fcCall("search", searchBody(it.input || {}, s, it.country), { ...ctx, url: null }, 2);
+              used = rec.credits_used || 0;
+              if (!rec.success) { outcome = rec.http === 429 ? "rate_limited" : "fc_error"; result = { error: rec.error } }
+              else {
+                const found = searchCandidates(it.input || {}, searchResults(d), Number(s.find_min_title_match ?? 0.6));
+                outcome = found.outcome; result = { candidates: found.candidates, top: found.top };
+                if (found.candidates.length) { const b = await rpc("svc_fc_find_bind", { p_item_id: it.id, p_candidates: found.candidates }); result.bind = b; if (b !== "bound") outcome = `found_not_bound_${b}` }
+              }
+              await rpc("svc_fc_call_log", { p: { ...log, outcome } }).catch(() => null);
+            }
+          } catch (e) { outcome = "error"; result = { error: e instanceof Error ? e.message : String(e) } }
+          const retry = ["rate_limited", "timeout", "fc_error", "error"].includes(outcome) && !(Number(it.result?.tries || 0) >= 1);
+          if (retry) { result.tries = 1 }
+          await rpc("svc_fc_run_record", { p_item_id: it.id, p_outcome: retry ? "retry" : outcome, p_result: result, p_credits: used });
+          tally[outcome] = (tally[outcome] || 0) + 1;
+        });
+        if (tally.rate_limited && tally.rate_limited >= 3) { stopReason = "rate_limited"; break }
+      }
+      return j({ ok: true, mode, run_id: runId, tally, calls, credits, stop: stopReason, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     if (mode === "read") {
       const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string; basis?: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
