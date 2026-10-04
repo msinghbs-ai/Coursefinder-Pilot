@@ -110,11 +110,13 @@ test('the live tuition request is the interpreter request, unchanged; intake and
   expect(isPinnedModel('anthropic/claude-haiku-4.5')).toBe(true)
 })
 
-test('Edge function: nonce-only, returned model must equal the pinned id, US$8 qualification cap, US$5 credit floor', () => {
+test('Edge function: nonce-only, returned model must equal the pinned id, US$8 qualification cap, credit floor from the register (Decision 252)', () => {
   const fn = read('supabase/functions/layer3-model-routing/index.ts')
   expect(fn).toContain('svc_pilot_consume_nonce')
   expect(fn).toMatch(/QUALIFICATION_CAP_USD = 8\.0/)
-  expect(fn).toMatch(/CREDIT_FLOOR_USD = 5\.0/)
+  // Decision 252 (4 Oct 2026): the floor and whether it applies come from the toolset register, not a constant
+  expect(fn).not.toContain('CREDIT_FLOOR_USD')
+  expect(fn).toContain('rpc("svc_layer3_credit_policy", {})')
   expect(fn).toContain('returned_model_mismatch')
   expect(fn).toContain('candidate profile must be paused during qualification')
   expect(fn).toContain('gold set ${body.gold_set} is not frozen or changed since it was frozen')

@@ -34,6 +34,12 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_scholarship_record_read: F.scholarshipRecord,
     admin_scholarship_layer_read: b => F.scholarshipLayer(b.p_layer),
     admin_scholarship_layer_write: b => { calls.push({ p_action: b.p_action, p_args: b.p_args }); return { ok: true } },
+    // Decision 252: toolsets, notices and trials
+    admin_toolsets_read: F.toolsets,
+    admin_platform_notices_read: b => F.platformNotices(b.p_layer),
+    admin_toolsets_write: b => { calls.push({ toolsets: b.p_action, args: b.p_args }); return { ok: true } },
+    admin_toolset_trials_read: b => F.toolsetTrials(b.p_run_id),
+    admin_toolset_trial_write: b => { calls.push({ trial: b.p_action, args: b.p_args }); return { ok: true, run_id: '7d1e0000-0000-4000-8000-000000000002', cases: 45 } },
     admin_scholarship_publishing: b => { calls.push(b); return F.scholarshipPublishing },
     admin_priority_read: F.priority,
     admin_priority_search: () => F.prioritySearch,
@@ -106,6 +112,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     }
     if (u.pathname.startsWith('/rest/v1/rpc/')) { const v = rpc[u.pathname.split('/').pop()]; return json(typeof v === 'function' ? v(body) : (v ?? [])) }
     if (u.pathname.endsWith('/functions/v1/layer2-sync-control')) return json(body.action === 'options' ? F.layer2SyncOptions : body.action === 'preview_background' ? F.layer2SyncPreview : {})
+    if (u.pathname.endsWith('/functions/v1/toolset-trial')) { calls.push({ trialKick: body }); return json({ ok: true, run_id: body.run_id }) }
     if (u.pathname.startsWith('/functions/v1/')) return json(u.pathname.endsWith('platform-environment-control') ? F.environmentRead : {})
     return json([])
   })

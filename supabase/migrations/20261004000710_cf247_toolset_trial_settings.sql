@@ -1,0 +1,27 @@
+-- CF-247 Decision 252: trial settings as rows the Platform Admin changes in the UI (part 2 of the trials change).
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason) values
+  ('serper', 'trial_countries', 'Countries in a trial', 'Country codes sampled in each trial run. Any country with courses can be added.', 'list', '["AU", "NZ", "CA"]', null, null, null, 10, 'Decision 252'),
+  ('serper', 'trial_sample_per_country', 'Cases per country in a run', 'How many cases each run samples per country. Cases tried in earlier runs are skipped.', 'number', '20', 1, 500, 'cases', 20, 'Decision 252'),
+  ('serper', 'trial_max_credits_per_run', 'Credits a run may use', 'A run stops when it has used this many Serper credits.', 'number', '200', 1, 10000, 'credits', 30, 'Decision 252'),
+  ('serper', 'trial_seconds_per_call', 'Time per worker call', 'The worker stops taking new cases after this long and the run waits for Continue. Keep it under the edge function limit.', 'number', '120', 20, 380, 'seconds', 40, 'Decision 252'),
+  ('serper', 'trial_concurrency', 'Calls at the same time', 'Parallel searches within one worker call.', 'number', '4', 1, 10, 'calls', 50, 'Decision 252'),
+  ('serper', 'course_query', 'Search wording: course page', 'Words sent to search. {course}, {provider}, {code}, {country} are filled in.', 'text', '"{course} {provider}"', null, null, null, 60, 'Decision 252'),
+  ('serper', 'course_site_filter', 'Limit the course search to the provider''s website', 'Adds site:<provider website> to the course search when the provider has one.', 'boolean', 'true', null, null, null, 70, 'Decision 252'),
+  ('serper', 'provider_query', 'Search wording: provider website', 'Words sent to search for a provider with no website. {provider}, {city}, {country} are filled in.', 'text', '"{provider} {city} {country} official website"', null, null, null, 80, 'Decision 252'),
+  ('serper', 'results_per_query', 'Results read per search', 'Serper charges one credit for up to 10 results.', 'number', '10', 1, 10, 'results', 90, 'Decision 252'),
+  ('serper', 'title_match_min', 'Title match needed', 'Share of the course or provider name''s words that must appear in a result''s title for it to count as a match.', 'number', '0.6', 0.1, 1, 'share', 100, 'Decision 252'),
+  ('serper', 'directory_hosts', 'Sites that are never a provider''s own', 'Results on these sites are not taken as a provider''s website.', 'list',
+   '["facebook.com", "linkedin.com", "wikipedia.org", "instagram.com", "youtube.com", "hotcourses", "studyportals", "mastersportal", "bachelorsportal", "idp.com", "cricos.education.gov.au", "myskills.gov.au", "training.gov.au", "nzqa.govt.nz", "educanada.ca", "universitiescanada.ca", "studyinnewzealand", "studyaustralia.gov.au", "yelp", "glassdoor", "indeed"]',
+   null, null, null, 110, 'Decision 252'),
+  ('serper', 'usd_per_1k_credits', 'Price per 1,000 credits', 'Your plan''s price per 1,000 credits, used only for the cost projection.', 'number', '1.0', 0, 100, 'US$', 120, 'Decision 252: Serper published price from US$1 per 1,000'),
+  ('scrapingbee', 'trial_countries', 'Countries in a trial', 'Country codes sampled in each trial run. Any country with courses can be added.', 'list', '["AU", "NZ", "CA"]', null, null, null, 10, 'Decision 252'),
+  ('scrapingbee', 'trial_sample_per_country', 'Cases per country in a run', 'How many pages each run samples per country. Pages tried in earlier runs are skipped.', 'number', '15', 1, 500, 'pages', 20, 'Decision 252'),
+  ('scrapingbee', 'trial_max_credits_per_run', 'Credits a run may use', 'A run stops when it has used this many ScrapingBee credits (a rendered page costs 5; with premium proxies 25).', 'number', '500', 1, 100000, 'credits', 30, 'Decision 252'),
+  ('scrapingbee', 'trial_seconds_per_call', 'Time per worker call', 'The worker stops taking new pages after this long and the run waits for Continue. Keep it under the edge function limit.', 'number', '120', 20, 380, 'seconds', 40, 'Decision 252'),
+  ('scrapingbee', 'trial_concurrency', 'Pages at the same time', 'Parallel page reads within one worker call (the trial plan allows a few).', 'number', '3', 1, 10, 'pages', 50, 'Decision 252'),
+  ('scrapingbee', 'render_js', 'Render the page in a browser', 'Runs the page''s scripts before reading it.', 'boolean', 'true', null, null, null, 60, 'Decision 252'),
+  ('scrapingbee', 'premium_proxy', 'Use premium proxies', 'For sites that block ordinary proxies. Costs more per page.', 'boolean', 'false', null, null, null, 70, 'Decision 252'),
+  ('scrapingbee', 'wait_ms', 'Wait after loading', 'Milliseconds to wait for the page to finish drawing before reading it.', 'number', '2000', 0, 15000, 'ms', 80, 'Decision 252'),
+  ('scrapingbee', 'title_match_min', 'Title match needed', 'Share of the course title''s words that must appear in the page heading or title for the page to count as the course page.', 'number', '0.6', 0.1, 1, 'share', 90, 'Decision 252'),
+  ('scrapingbee', 'usd_per_1k_credits', 'Price per 1,000 credits', 'Your plan''s price per 1,000 credits, used only for the cost projection.', 'number', '0.33', 0, 100, 'US$', 100, 'Decision 252: about US$49 for 150,000 credits')
+on conflict (toolset_key, key) do nothing;
