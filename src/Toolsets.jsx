@@ -67,8 +67,7 @@ export default function Toolsets({onError}){
       {!d.can_manage&&<p className="l3v-note">You can view this. Only a Platform Admin can change it.</p>}
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </section>
-    {(d.toolsets||[]).map(t=><Toolset key={t.key} t={t} d={d} can={can} write={write}/>)}
-    <FirecrawlWork onError={onError}/>
+    {(d.toolsets||[]).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<FirecrawlWork onError={onError}/>}</React.Fragment>)}
     <SearchPass can={Boolean(d.can_manage)} onError={onError}/>
     <SampleRuns toolsets={d.toolsets||[]} can={Boolean(d.can_manage)} onError={onError}/>
   </div>
@@ -80,6 +79,7 @@ function Toolset({t,d,can,write}){
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
   return <section className="m-panel" data-toolset={t.key}>
     <SectionTitle title={t.label} subtitle={`${(t.layers||[]).map(l=>LAYER[l]).join(', ')}. ${t.help}`}/>
+    {t.key==='firecrawl'&&<p className="tn-jump"><a href="#university-adapters" onClick={e=>{e.preventDefault();document.getElementById('university-adapters')?.scrollIntoView({behavior:'smooth'})}}>University adapters, runs and the support report are below these settings ↓</a></p>}
     {t.enforcement&&<div className="tn-mode" data-toolset-mode={t.key}>
       <span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only — not stopped by the platform':'Stop at limits'}</span>
       {can&&<Button compact onClick={()=>write('enforcement',{toolset:t.key,enforcement:t.enforcement==='observe'?'stop':'observe'},t.enforcement==='observe'?`Make ${t.label} stop at its spend guards and credit floor?`:`Let ${t.label} run past its spend guards and credit floor (observe only)?`)}>{t.enforcement==='observe'?'Switch to stop at limits':'Switch to observe only'}</Button>}

@@ -48,7 +48,20 @@ export default function FirecrawlWork({onError}){
   const can=Boolean(d.can_manage)&&!busy,v=d.plan?.vendor,b=d.plan?.budget||{},open=new Set((d.runs||[]).filter(r=>r.status==='running').map(r=>r.use_case))
   const targets=(d.targets||[]),inc=targets.filter(t=>t.included)
   const sum=k=>inc.reduce((a,t)=>a+Number(t[k]||0),0)
+  const withAdapter=targets.filter(t=>t.adapter&&t.adapter!=='none'),opened=adapterFor?targets.find(t=>t.provider_id===adapterFor):null
+  const ADS={testing:['Testing — not admitting','warning'],admitting:['Admitting','success'],off:['Switched off','neutral']}
   return <div className="m-page-stack" data-firecrawl-work>
+    <section className="m-panel" id="university-adapters" data-university-adapters><SectionTitle title="University adapters" subtitle="One adapter per university: where its course pages keep each field. Test an adapter on its confirmed pages, then switch admission on for it, or ask for an improvement."/>
+      <ol className="tn-steps"><li><strong>Open</strong> a university below (or set one up).</li><li>Under <strong>Test, then admit</strong>, check the values it found against the course pages (each page link opens).</li><li>If they are right, press <strong>Admit from this adapter</strong>. If not, write what is wrong under <strong>Ask for an improvement</strong>.</li></ol>
+      {withAdapter.length===0?<Empty text="No university adapters yet."/>:<div className="cf-table-wrap"><table className="cf-table" data-adapter-list><thead><tr><th>University</th><th>State</th><th className="num">Confirmed by the adapter</th><th className="num">Waiting to be read</th><th className="num">Open requests</th><th></th></tr></thead><tbody>
+        {withAdapter.map(t=><tr key={t.provider_id} data-adapter-row={t.provider_id} className={adapterFor===t.provider_id?'tn-sel':''}><td>{t.name}<small className="sl-sub">{t.country} · {t.domain}</small></td><td><span className={`cf-chip tone-${(ADS[t.adapter]||ADS.off)[1]}`}>{(ADS[t.adapter]||ADS.off)[0]}</span></td>
+          <td className="num">{fmtNumber(t.adapter_confirmed)}</td><td className="num">{fmtNumber(t.waiting_read)}</td><td className="num">{fmtNumber(t.requests_open)}</td>
+          <td><Button compact variant={adapterFor===t.provider_id?undefined:'primary'} onClick={()=>setAdapterFor(adapterFor===t.provider_id?null:t.provider_id)}>{adapterFor===t.provider_id?'Close':'Open'}</Button></td></tr>)}
+      </tbody></table></div>}
+      {d.can_manage&&<label className="tn-setup">Set up an adapter for <select aria-label="Set up an adapter for" value="" onChange={e=>e.target.value&&setAdapterFor(e.target.value)}><option value="">choose a university…</option>{targets.filter(t=>t.included&&(!t.adapter||t.adapter==='none')).map(t=><option key={t.provider_id} value={t.provider_id}>{t.name} ({t.country})</option>)}</select></label>}
+      {opened&&<AdapterEditor key={adapterFor} providerId={adapterFor} onError={onError}/>}
+      {d.figures_at&&<small className="sl-sub">Figures as at {fmtDateTime(d.figures_at)} (refreshed every 5 minutes).</small>}
+    </section>
     <section className="m-panel"><SectionTitle title="Firecrawl work" subtitle="Firecrawl is used by use case, only for the target universities below. Every call a run makes is logged for the support report."/>
       <div className="tn-plan" data-firecrawl-plan>
         <div className="tn-plan-row">{v?<><strong>{fmtNumber(v.remaining)} of {fmtNumber(v.plan_credits)} credits left</strong><span>as Firecrawl reports it, period {fmtDateTime(v.period_start)} to {fmtDateTime(v.period_end)}, read {fmtDateTime(v.observed_at)}</span></>:<span>No reading from Firecrawl yet.</span>}
@@ -70,9 +83,8 @@ export default function FirecrawlWork({onError}){
         <tr className="tn-total"><td><strong>All targets</strong></td>{['courses','confirmed','unreadable','no_page','intakes','english','any_fee'].map(k=><td key={k} className="num"><strong>{fmtNumber(sum(k))}</strong></td>)}<td/></tr>
         {targets.map(t=><tr key={t.provider_id} data-firecrawl-target={t.provider_id} className={t.included?'':'tn-out'}><td>{t.name}<small className="sl-sub">{t.country} · {t.domain||'no website known'}{t.override_reason?` · by hand: ${t.override_reason}`:t.rule_match?'':' · not matched by the rule'}</small></td>
           {['courses','confirmed','unreadable','no_page','intakes','english','any_fee'].map(k=><td key={k} className="num">{fmtNumber(t[k])}</td>)}
-          <td><span className="sl-state"><Button compact onClick={()=>setAdapterFor(adapterFor===t.provider_id?null:t.provider_id)}>{adapterFor===t.provider_id?'Close adapter':'Adapter'}</Button>{can&&<Button compact onClick={()=>write('target',{provider_id:t.provider_id,included:!t.included},t.included?`Take ${t.name} out of the targets? Firecrawl will not be used for it.`:`Add ${t.name} to the targets?`)}>{t.included?'Take out':'Add'}</Button>}</span></td></tr>)}
+          <td><span className="sl-state"><Button compact onClick={()=>{setAdapterFor(t.provider_id);document.getElementById('university-adapters')?.scrollIntoView({behavior:'smooth'})}}>Adapter</Button>{can&&<Button compact onClick={()=>write('target',{provider_id:t.provider_id,included:!t.included},t.included?`Take ${t.name} out of the targets? Firecrawl will not be used for it.`:`Add ${t.name} to the targets?`)}>{t.included?'Take out':'Add'}</Button>}</span></td></tr>)}
       </tbody></table></div>
-      {adapterFor&&<AdapterEditor key={adapterFor} providerId={adapterFor} onError={onError}/>}
       {(d.spend||[]).length>0&&<><h4 className="sl-h4">Firecrawl credits this period, by work</h4><div className="cf-table-wrap"><table className="cf-table" data-firecrawl-spend><thead><tr><th>Work</th><th className="num">Target universities</th><th className="num">Other providers</th></tr></thead><tbody>
         {[...new Set(d.spend.map(s=>s.purpose))].map(p=><tr key={p}><td>{p.replace(/_/g,' ')}</td><td className="num">{fmtNumber(d.spend.filter(s=>s.purpose===p&&s.target===true).reduce((a,s)=>a+Number(s.units),0))}</td><td className="num">{fmtNumber(d.spend.filter(s=>s.purpose===p&&s.target!==true).reduce((a,s)=>a+Number(s.units),0))}</td></tr>)}
       </tbody></table></div></>}
@@ -119,7 +131,9 @@ export function AdapterEditor({providerId,onError}){
   if(!d||!a)return <div className="tn-adapter"><Loading label="Loading the adapter…"/></div>
   const can=Boolean(d.can_manage)&&!busy,prev=(d.previews||[])[0],res=prev?.result
   return <div className="tn-adapter" data-adapter-editor={providerId}><h4 className="sl-h4">Adapter: {d.provider?.name}</h4>
-    <p className="sl-sub">How this university names and lays out its course pages. A page the adapter confirms gets the identity basis adapter_code or adapter_title. Nothing from it is admitted until that basis is allowed for the country on Platform settings › Pipeline settings (admission identities). Pages now: {Object.entries(d.pages||{}).map(([k,v])=>`${k.replace(/_/g,' ')} ${fmtNumber(v)}`).join(' · ')}</p>
+    <AdapterReview providerId={providerId} can={Boolean(d.can_manage)} onError={onError}/>
+    <details className="tn-items" data-adapter-settings><summary>Adapter settings (where this university keeps each field)</summary>
+    <p className="sl-sub">How this university names and lays out its course pages. Change them, press Preview to try them on stored pages, then Save and Apply. Pages now: {Object.entries(d.pages||{}).map(([k,v])=>`${k.replace(/_/g,' ')} ${fmtNumber(v)}`).join(' · ')}</p>
     <div className="tn-adapter-grid">
       <label><input type="checkbox" checked={a.enabled} disabled={!can} onChange={e=>setA({...a,enabled:e.target.checked})}/> Switched on (the reader and Read pages use it)</label>
       {AD_FIELDS.map(([k,l,h])=><label key={k}><strong>{l}</strong><input aria-label={l} value={a[k]} disabled={!can} onChange={e=>setA({...a,[k]:e.target.value})}/><small className="sl-sub">{h}</small></label>)}
@@ -140,7 +154,7 @@ export function AdapterEditor({providerId,onError}){
       </tbody></table></div>}
       {res?.json_shape&&<details className="tn-items"><summary>Page data paths ({res.json_shape.length})</summary><pre className="tn-pre">{res.json_shape.join('\n')}</pre></details>}
     </div>}
-    <AdapterReview providerId={providerId} can={Boolean(d.can_manage)} onError={onError}/>
+    </details>
     {(d.applied||[]).length>0&&<p className="sl-sub" data-adapter-applied>Applied: {d.applied.map(x=>`${x.before==='identity_mismatch'?'refused pages confirmed':'fields added'} (${x.identity}) ${fmtNumber(x.n)}`).join(' · ')}</p>}
   </div>
 }

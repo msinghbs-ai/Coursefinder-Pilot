@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.109 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.182** (University adapters easy to find and the Firecrawl panel loads at once).
+- Migration 20261004001270 applied and checked: the Firecrawl panel figures are kept by scheduled jobs (7 seconds down to 0.2).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.108 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.181** (Decision 253 amended: admit from university adapters after testing, refuse archived and test sites).
