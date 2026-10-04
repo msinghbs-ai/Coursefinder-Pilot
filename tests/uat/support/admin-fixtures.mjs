@@ -543,3 +543,10 @@ export const toolsetSamples = run => ({
     { toolset: 'scrapingbee', purpose: 'render_page', country: 'AU', n: 1187 }],
   items: run ? [{ country: 'AU', input: { course: 'Bachelor of Nursing', provider: 'Example University' }, outcome: 'found_on_provider_site', credits: 1, result: { found_url: 'https://example.edu.au/nursing', same_as_earlier_candidate: true } }] : [],
 })
+
+// Decision 252 step 1 (v2.15.179): search pass
+export const searchPass = { can_manage: true,
+  runs: [{ id: 'p0', status: 'running', credits_used: 640, created_at: '2026-10-04T05:10:00Z', courses: 2050, done: 640 }],
+  links: [{ country: 'AU', refind: false, state: 'found', n: 210 }, { country: 'AU', refind: false, state: 'verified', n: 64 }, { country: 'NZ', refind: false, state: 'none', n: 12 }],
+  reading: [{ read_status: 'waiting', n: 180 }],
+  repairs: [{ reason: 'query string restored from the stored search results (Decision 252 step 2)', n: 392, last_at: '2026-10-04T05:00:00Z' }, { reason: 'search pass: page found', n: 274, last_at: '2026-10-04T05:12:00Z' }] }

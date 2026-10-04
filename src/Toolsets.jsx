@@ -65,11 +65,12 @@ export default function Toolsets({onError}){
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </section>
     {(d.toolsets||[]).map(t=><Toolset key={t.key} t={t} d={d} can={can} write={write}/>)}
+    <SearchPass can={Boolean(d.can_manage)} onError={onError}/>
     <SampleRuns toolsets={d.toolsets||[]} can={Boolean(d.can_manage)} onError={onError}/>
   </div>
 }
 
-const SECTION_ORDER=['Key and plan limits','How the service is used','Sample runs','Notices']
+const SECTION_ORDER=['Key and plan limits','How the service is used','Search pass','Sample runs','Notices']
 function Toolset({t,d,can,write}){
   const or=t.key==='openrouter'?d.openrouter||{}:null
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
@@ -176,4 +177,27 @@ function Results({d,sel}){
         <td><small className="sl-sub">{i.result?.found_url||i.result?.suggested_site||i.result?.h1||i.result?.message||(i.result?.top||[]).map(t=>t.link).slice(0,1).join('')||'—'}{i.result?.same_as_earlier_candidate?' · same page the identity check refused earlier':''}{i.result?.markers?` · intake ${i.result.markers.intake?'yes':'no'}, English ${i.result.markers.english?'yes':'no'}, tuition ${i.result.markers.tuition?'yes':'no'}`:''}</small></td><td className="num">{fmtNumber(i.credits)}</td></tr>)}
     </tbody></table></div></details>}
   </div>
+}
+
+// ---- search pass (Decision 252 step 1): Serper's found pages go to the identity check; the reader decides -----------------
+const LINK_STATE={found:'Waiting for the identity check',verified:'Confirmed by the identity check',none:'Refused, no other candidate'}
+export function SearchPass({can,onError}){
+  const[d,setD]=useState(null),[busy,setBusy]=useState(false)
+  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_search_pass_read');if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
+  useEffect(()=>{load()},[])
+  useEffect(()=>{const live=(d?.runs||[]).some(r=>['running','paused_time_limit'].includes(r.status));if(!live)return;const t=setTimeout(load,15000);return()=>clearTimeout(t)},[d])
+  const start=async()=>{const reason=ask('Run the Serper search pass? It searches the courses still without a page (per the Search pass settings) and sends each page it finds to the identity check. Nothing is admitted by the pass.');if(!reason)return
+    setBusy(true);try{const{error}=await supabase.rpc('admin_search_pass_start',{p_reason:reason});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!d)return null
+  const countries=[...new Set((d.links||[]).map(l=>l.country))]
+  return <section className="m-panel" data-search-pass><SectionTitle title="Search pass" subtitle="Serper searches the courses the first search left without a page. Each page it finds on the provider’s own site goes to the identity check, like any other page. A confirmed page or a link entered by hand is never replaced."/>
+    {can&&<div className="tn-starts"><Button compact variant="primary" disabled={busy} onClick={start}>Run the search pass</Button></div>}
+    {(d.runs||[]).length>0&&<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Started</th><th>Status</th><th className="num">Courses searched</th><th className="num">Credits</th></tr></thead><tbody>
+      {d.runs.map(r=><tr key={r.id} data-pass-run={r.id}><td>{fmtDateTime(r.created_at)}</td><td>{STATUS[r.status]||r.status}{r.status_note&&<small className="sl-sub">{r.status_note}</small>}</td><td className="num">{fmtNumber(r.done)} of {fmtNumber(r.courses)}</td><td className="num">{fmtNumber(r.credits_used)}</td></tr>)}
+    </tbody></table></div>}
+    {countries.length>0&&<><h4 className="sl-h4">Pages sent to the identity check</h4><div className="cf-table-wrap"><table className="cf-table" data-pass-links><thead><tr><th>State</th>{countries.map(c=><th key={c} className="num">{c}</th>)}</tr></thead><tbody>
+      {Object.keys(LINK_STATE).map(st=><tr key={st} data-pass-state={st}><td>{LINK_STATE[st]}</td>{countries.map(c=><td key={c} className="num">{fmtNumber((d.links||[]).filter(l=>l.country===c&&l.state===st).reduce((a,l)=>a+Number(l.n),0))}</td>)}</tr>)}
+    </tbody></table></div></>}
+    {(d.repairs||[]).length>0&&<><h4 className="sl-h4">Page addresses changed (all logged)</h4><ul className="tn-list" data-pass-repairs>{d.repairs.map(r=><li key={r.reason}>{r.reason}: <strong>{fmtNumber(r.n)}</strong> <small className="sl-sub">last {fmtDateTime(r.last_at)}</small></li>)}</ul></>}
+  </section>
 }
