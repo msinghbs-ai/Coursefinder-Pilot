@@ -14,7 +14,14 @@ export type Adapter = {
   json_paths?: Record<string, string>;  // field -> dotted path in that JSON: title, code, intakes, english, fee, duration
   sections?: Record<string, string>;    // field -> heading pattern; the field is read from the text after it
   section_chars?: number | null;        // how much text after a heading belongs to it (default 2,000)
+  // v0.16.0: field -> pattern on the page text with one bracketed part, the value. Several matches are kept in order and
+  // "pick" chooses one: intakes, fee, ielts_overall, campus, mode, duration, study_level, student_type, not_admitting.
+  patterns?: Record<string, string>;
+  pick?: Record<string, string>;        // field -> "first" (default), "last" or "all"
 };
+
+// Fields an adapter may give besides intakes, English and fee. They are shown for testing only and never admitted.
+export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location"];
 
 const clean = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
 const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
@@ -78,8 +85,44 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   // an IELTS score kept as a number in the page data (json_paths.ielts_overall, json_paths.ielts_min_band)
   const num = (k: string) => { const v = data && paths[k] ? Number(jsonText(jsonAt(data, paths[k]))) : NaN; return Number.isFinite(v) && v > 0 && v <= 9 ? v : null };
   const eng = (() => { const e: Record<string, unknown> = english(part("english")); const o = num("ielts_overall"), b = num("ielts_min_band"); if (o !== null && e.ielts_overall == null) { e.ielts_overall = o; e.context = `page data: IELTS ${o}${b !== null ? `, no band below ${b}` : ""}` } if (b !== null && e.ielts_min_band == null) e.ielts_min_band = b; return e })();
-  const candidates = basis ? { final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), fee: fee(part("fee"), currencyFor(course.country)), english: eng, intakes: intakes(part("intakes")), intake_context: intakeEvidence(part("intakes")), extractor, adapter: true } : null;
-  return { identity: basis, how, json_found: !!data, page_title: titleOf(html).slice(0, 160), h1: h1Of(html).slice(0, 160), course_title_seen: ct, candidates };
+  const pat = patternValues(a, text);
+  const extra: Record<string, string> = {};
+  for (const f of EXTRA_FIELDS) {
+    const v = pat[f] ?? (data && paths[f] ? clean(jsonText(jsonAt(data, paths[f]))).slice(0, 300) : "");
+    if (v) extra[f] = v;
+  }
+  // a pattern for intakes or fee is the adapter's own reading: it replaces the general reader's and is marked as such
+  const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b${m}\\b|\\b${m.slice(0, 3)}\\b`, "i").test(pat.intakes)) : null;
+  const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : NaN;
+  const pIelts = pat.ielts_overall ? Number(pat.ielts_overall) : NaN;
+  if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
+  const candidates = basis ? {
+    final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200),
+    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", rejection_reason: null, candidates: [], context: `adapter pattern: ${pat.fee}` } : fee(part("fee"), currencyFor(course.country)),
+    english: eng,
+    intakes: pIntakes && pIntakes.length ? pIntakes : intakes(part("intakes")),
+    intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${pat.intakes}`.slice(0, 200)] : intakeEvidence(part("intakes")),
+    ...(pIntakes && pIntakes.length ? { intakes_by: "adapter" } : {}),
+    ...(Number.isFinite(pFee) && pFee >= 1000 ? { fee_by: "adapter" } : {}),
+    ...(Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9 ? { english_by: "adapter" } : (num("ielts_overall") !== null ? { english_by: "adapter" } : {})),
+    ...(Object.keys(extra).length ? { adapter_extra: extra } : {}),
+    extractor, adapter: true } : null;
+  return { identity: basis, how, json_found: !!data, page_title: titleOf(html).slice(0, 160), h1: h1Of(html).slice(0, 160), course_title_seen: ct, candidates, extra, patterns_found: pat };
+}
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+// The value each pattern finds on the page text (its first bracketed part, or the whole match). "pick" chooses which
+// match when the page has several (a page with a domestic and an international view prints some fields twice).
+export function patternValues(a: Adapter, text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [f, p] of Object.entries(a.patterns || {})) {
+    let r: RegExp; try { r = new RegExp(p, "gi") } catch { continue }
+    const ms = [...text.matchAll(r)].slice(0, 20).map((m) => clean(m[1] ?? m[0])).filter(Boolean);
+    if (!ms.length) continue;
+    const how = (a.pick || {})[f] || "first";
+    out[f] = (how === "last" ? ms[ms.length - 1] : how === "all" ? [...new Set(ms)].join(" | ") : ms[0]).slice(0, 300);
+  }
+  return out;
 }
 
 // What a stored page offers an adapter author: its title and heading, JSON scripts and headings.

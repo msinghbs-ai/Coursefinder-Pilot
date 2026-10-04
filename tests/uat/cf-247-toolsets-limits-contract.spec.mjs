@@ -289,3 +289,48 @@ test('firecrawl panel reads kept figures (fast), adapters listed on their own', 
   const ui = read('src/FirecrawlWork.jsx')
   expect(ui).toContain('id="university-adapters"')
 })
+
+// Platform Admin 21:50 (Flinders): text patterns, extra fields, intakes admitted from the adapter's own reading only
+test('adapter patterns: migration shaped, intakes and adapter English need the admit switch, patterns read the international block', async () => {
+  const m = read('supabase/migrations/20261004001280_cf247_adapter_patterns_and_intakes.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const lit of m.replace(/--[^\n]*/g, '').replace(/\$s\$[\s\S]*?\$s\$/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
+  for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  expect(m).toContain("is distinct from '2043cdcd8cf89b27c83197a6d11f6ca9'")
+  expect(m).toContain("and pg.c->>'intakes_by'='adapter' and exists (select 1 from pipeline.uni_adapters u where u.provider_id=pg.provider_id and u.enabled and u.admit)")
+  expect(m).toContain("coalesce(pg.c->>'english_by','')<>'adapter' or exists")
+  expect(m).toContain("array['intakes']")
+  const os = await import('node:os'), path = await import('node:path'), { execFileSync } = await import('node:child_process')
+  const out = path.join(os.tmpdir(), `adapters-p-${process.pid}.mjs`)
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/adapters.ts', '--bundle', '--format=esm', `--outfile=${out}`])
+  const mod = await import(out)
+  const A = { patterns: {
+    intakes: 'CRICOS[\\s\\S]{0,700}?Start dates(?:[^>]{0,120}>)?((?:\\s*[–-]?\\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\\b)+)',
+    fee: 'CRICOS[\\s\\S]{0,500}?Annual (?:indicative )?fee[\\s\\S]{0,60}?\\$([0-9][0-9,]+)(?![0-9,])(?!\\s*\\((?:CSP|FFP)\\))',
+    campus: 'CRICOS[\\s\\S]{0,200}?Delivery mode\\s*:?\\s*(.{2,80}?)\\s+(?:Duration|Deferrable|Annual|Start)' } }
+  const html = '<title>Study X</title><h1>Bachelor X</h1><p>Delivery mode In person: Tonsley Annual indicative fee 2026 : $9,537 (CSP) Start dates – March – July</p><p>CRICOS code 111210M Delivery mode In person: Tonsley Duration 5 years full-time Annual fee 2026 : $9,537 (CSP) 2026: $47,300 Start dates – March – October Entry requirements</p>'
+  const r = mod.applyAdapter(A, html, { title: 'x', code: '111210M', country: 'AU' }, 'v')
+  expect(r.identity).toBe('cricos_code')
+  expect(r.candidates).toMatchObject({ intakes: ['March', 'October'], intakes_by: 'adapter', fee_by: 'adapter', adapter_extra: { campus: 'In person: Tonsley' } })
+  expect(r.candidates.fee.value).toBe(47300)
+  expect(mod.applyAdapter({}, html, { title: 'x', code: '111210M', country: 'AU' }, 'v').candidates.intakes_by).toBeUndefined()
+  const w = read('supabase/functions/coverage-sweep/index.ts')
+  expect(w).toContain('Object.keys(adHit.patterns_found || {}).length > 0')
+})
+
+test('browser: adapter — patterns saved, readings on CRICOS-confirmed pages shown with extra fields', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Flinders study pages'))
+  await page.goto('/#models-services')
+  await page.locator('[data-university-adapters] [data-adapter-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  const r = page.locator('[data-adapter-review="u1"]')
+  await expect(r.locator('[data-adapter-readings]')).toContainText('111210M')
+  await expect(r.locator('[data-adapter-readings]')).toContainText('campus: In person: Tonsley')
+  await expect(r.locator('[data-adapter-readings]')).toContainText('pattern')
+  const ed = page.locator('[data-adapter-editor="u1"]')
+  await ed.locator('[data-adapter-settings] > summary').click()
+  await ed.getByRole('textbox', { name: 'Patterns' }).fill('{"intakes":"Start dates(.{0,40})"}')
+  await ed.getByRole('textbox', { name: 'Pick' }).fill('{"intakes":"last"}')
+  await ed.getByRole('button', { name: 'Save' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.adapter === 'save')?.args?.adapter).toMatchObject({ patterns: { intakes: 'Start dates(.{0,40})' }, pick: { intakes: 'last' } })
+})

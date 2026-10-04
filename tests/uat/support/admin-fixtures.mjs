@@ -593,4 +593,6 @@ export const uniAdapter = { can_manage: true, provider: { id: 'u1', name: 'The U
   allowed: [{ country: 'AU', identities: { english: ['cricos_code', 'exact_title'] } }] }
 export const uniAdapterReview = { admit: { on: false, reason: null, changed_at: null }, confirmed_total: 19,
   confirmed: [{ course: 'Master of Advanced Practice (Clinical)', code: '121373J', url: 'https://handbook.example.edu.au/courses/2027/MAPC', identity: 'adapter_code', intakes: ['February', 'July'], ielts: 7, english_context: 'page data: IELTS 7', link_admitted: false, english_admitted: false }],
+  readings_total: 262, intakes_by_adapter: 240,
+  readings: [{ course: 'Bachelor of Engineering (Electrical and Electronic) (Honours)', code: '111210M', url: 'https://www.example.edu.au/study/courses/bachelor-engineering', identity: 'cricos_code', intakes: ['March', 'July'], intakes_by: 'adapter', intake_context: 'adapter pattern: March July', fee: 47300, fee_by: 'adapter', ielts: 6, english_by: null, extra: { campus: 'In person: Tonsley', duration: '5 years full-time' }, intakes_now: null }],
   requests: [{ id: 1, request: 'Intakes are under Start dates', status: 'open', requested_at: '2026-10-04T06:30:00Z' }] }
