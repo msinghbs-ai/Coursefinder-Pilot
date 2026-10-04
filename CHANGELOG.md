@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.116 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.189** (Coverage › Universities tab and central pages).
+- Database: central pages and the universities view (migrations 20261005001420 to 20261005001450).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.115 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.188** (admission by field and course exclusions).

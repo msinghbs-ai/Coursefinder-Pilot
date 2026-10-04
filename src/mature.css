@@ -351,3 +351,11 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 @media (max-width:760px){.tn-builder{grid-template-columns:1fr}}
 /* Admission by field (Decision 254, 5 Oct) */
 .tn-check{display:inline-flex;align-items:center;gap:.3rem;margin-inline-start:.75rem;font-size:.9rem}
+/* Coverage › Universities (Decision 254, 5 Oct) */
+.uc-table td{vertical-align:top}.uc-table td>strong{display:block}
+.uc-meta,.uc-fields,.uc-src,.uc-links{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:4px}
+.uc-cov{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.uc-policy{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.uc-val{display:block;font-weight:650;margin-bottom:3px}
+.uc-open>td{background:var(--cf-slate-25)}.uc-detail>td{background:var(--cf-slate-25);padding:10px 12px}
+.uc-attach{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}.uc-attach .au-search{min-width:280px;flex:1}
+.uc-pages{margin:0 0 8px}.uc-legend .cf-chip{margin-right:2px}.uc-pages li{margin-bottom:4px}

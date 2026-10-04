@@ -39,6 +39,7 @@ import PipelineSettings from'./PipelineSettings'
 import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
 import{CoverageView}from'./course-coverage'
+import{UniversitiesCoverage}from'./UniversitiesCoverage'
 import LinkRefresh from'./LinkRefresh'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
@@ -221,7 +222,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='prisms')return <Prisms onError={onError}/>
         if(tab==='datasets')return <StatisticsDatasets rank={rank}/>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
+      case'coverage':return tab==='universities'?<div className="m-page-stack"><UniversitiesCoverage rank={rank}/></div>:tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       case'layer1':
         if(tab==='scholarships')return <ScholarshipLayer layer={1} rank={rank} onError={err}/>
         if(tab==='settings')return <Layer1SourceSettings/>
