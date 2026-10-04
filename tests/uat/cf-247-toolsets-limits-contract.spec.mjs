@@ -113,3 +113,28 @@ test('browser: Models & services — OpenRouter observe only, key and plan limit
   await expect(tr.locator('[data-sample-results] [data-sample-outcome="found_on_provider_site"]')).toContainText('14 (70%)')
   await expect(tr.locator('[data-sample-projection]')).toContainText('US$7.33')
 })
+
+// Decision 252 steps 1 and 2 (v2.15.179): search pass into the identity check; addresses repaired from stored results
+test('search pass: migration shaped, worker binds found pages only for a pass, never replaces a confirmed page', () => {
+  const m = read('supabase/migrations/20261004001100_cf247_search_pass_and_link_repair.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const h of ['12c2663ee54572ddde516881d2d5aa76', '17cbb1540acdcdd9f01cd9a73e7ac79b', 'eaac20b00a5b42d145ba5604ac084577']) expect(m).toContain(`is distinct from '${h}'`)
+  expect(m).toContain("if v_pg.course_id is not null and v_pg.status = 'bound' and (v_pg.read_status = 'read' or v_pg.identity_basis is not null) then return 'already_confirmed'")
+  expect(m).toContain("k.field = 'official_url'")
+  expect(m).not.toMatch(/insert into catalogue\.|update catalogue\./)
+  for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
+  const w = read('supabase/functions/toolset-runner/index.ts')
+  expect(w).toContain('if (batch.applies && res.outcome === "found_on_provider_site")')
+  expect(w).toContain('rpc("svc_toolset_sample_continue", { p_run_id: runId })')
+})
+
+test('browser: search pass panel — start with a reason, pages sent to the identity check, repairs listed', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Decision 252 step 1'))
+  await page.goto('/#models-services')
+  const p = page.locator('[data-search-pass]')
+  await expect(p.locator('[data-pass-links] [data-pass-state="verified"]')).toContainText('64')
+  await expect(p.locator('[data-pass-repairs]')).toContainText('392')
+  await p.getByRole('button', { name: 'Run the search pass' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.pass)?.pass).toMatchObject({ p_reason: 'Decision 252 step 1' })
+})

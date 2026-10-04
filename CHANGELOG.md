@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.106 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.179** (Decision 252 steps 1-2: Serper search pass into the identity check; page addresses repaired).
+- Migrations 20261004001000 and 20261004001100 applied and verified; toolset-runner v1.3.0.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.105 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.178** (Decision 252 amended: no trial wording; Serper and ScrapingBee keys carry plan limits set in the UI; sample runs).

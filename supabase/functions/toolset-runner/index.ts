@@ -7,7 +7,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "toolset-runner-v1.2.0";
+const VERSION = "toolset-runner-v1.3.0";
 const ORIGIN = "https://coursefinder-pilot.techm.workers.dev";
 const hdrs = (req: Request) => { const o = req.headers.get("origin") || ""; return { "access-control-allow-origin": o === ORIGIN || o.startsWith("http://localhost") ? o : ORIGIN, "access-control-allow-headers": "authorization, x-client-info, apikey, content-type", "access-control-allow-methods": "POST, OPTIONS", "content-type": "application/json", "cache-control": "no-store", vary: "origin" } };
 const reply = (req: Request, s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: hdrs(req) });
@@ -23,9 +23,12 @@ const norm = (u: string) => String(u || "").toLowerCase().replace(/^https?:\/\/(
 // Classify one search for a course page.
 export function classifyCourseSearch(input: any, organic: any[], min: number) {
   const top = organic.slice(0, 10).map((r: any) => ({ title: String(r.title || ""), link: String(r.link || ""), position: r.position, on_site: onSite(String(r.link || ""), input.domain), score: Math.round(titleScore(input.course, String(r.title || "")) * 100) / 100 }));
+  // every provider-site result that passed the title match, best first: the search pass offers them to the identity check in turn
+  const all = organic.slice(0, 10).map((r: any) => ({ link: String(r.link || ""), score: titleScore(input.course, String(r.title || "")), on_site: onSite(String(r.link || ""), input.domain) }));
+  const candidates = [...new Set(all.filter((r) => r.on_site && r.score >= min).sort((a, b) => b.score - a.score).map((r) => r.link.replace(/#.*$/, "")))];
   const match = top.find((r) => r.on_site && r.score >= min);
   const outcome = !top.length ? "no_results" : match ? "found_on_provider_site" : top.some((r) => r.on_site) ? "provider_site_no_title_match" : "other_sites_only";
-  return { outcome, found_url: match?.link || null, found_title: match?.title || null, same_as_earlier_candidate: !!(match && input.earlier_candidate && norm(match.link) === norm(input.earlier_candidate)), top: top.slice(0, 3) };
+  return { outcome, found_url: match?.link || null, found_title: match?.title || null, same_as_earlier_candidate: !!(match && input.earlier_candidate && norm(match.link) === norm(input.earlier_candidate)), top: top.slice(0, 3), candidates };
 }
 // Classify one search for a provider's website.
 export function classifyProviderSearch(input: any, organic: any[], min: number, directories: string[]) {
@@ -113,6 +116,8 @@ Deno.serve(async (req: Request) => {
             } catch (e) { res = { outcome: "error", credits: 0, message: String((e as Error)?.message || e).slice(0, 200) } }
             res.latency_ms = Date.now() - started; res.worker_version = VERSION;
             const rec = await rpc("svc_toolset_sample_record", { p_item_id: it.id, p_result: res });
+            // a search pass sends the page it found to the identity check (nothing is admitted here)
+            if (batch.applies && res.outcome === "found_on_provider_site") { try { await rpc("svc_search_pass_bind", { p_item_id: it.id }) } catch (e) { console.error("bind", String(e)) } }
             if (!rec?.continue) go = false;
           }
         }));
@@ -120,6 +125,8 @@ Deno.serve(async (req: Request) => {
       }
     } catch (e) { console.error("toolset-runner", runId, String((e as Error)?.message || e)) }
     try { await rpc("svc_toolset_sample_close", { p_run_id: runId, p_timed_out: timedOut }) } catch (e) { console.error("close", String(e)) }
+    // a search pass carries on by itself after a time limit when its setting says so
+    if (timedOut) { try { await rpc("svc_toolset_sample_continue", { p_run_id: runId }) } catch (e) { console.error("continue", String(e)) } }
   };
   // @ts-ignore EdgeRuntime is provided by Supabase
   EdgeRuntime.waitUntil(work());

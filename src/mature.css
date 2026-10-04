@@ -323,3 +323,4 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .tn-plan{display:flex;flex-direction:column;gap:8px;margin:0 0 12px;padding:12px;border-radius:12px;background:var(--cf-slate-50)}
 .tn-plan-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:var(--cf-fs-sm)}
 .tn-section{margin-top:12px}
+.tn-list{margin:0;padding-left:18px;font-size:var(--cf-fs-sm);display:flex;flex-direction:column;gap:4px}
