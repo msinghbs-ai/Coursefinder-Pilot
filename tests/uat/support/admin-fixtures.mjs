@@ -494,3 +494,46 @@ export const scholarshipLayer = layer => ({ layer, can_manage: true, jobs: slJob
       { id: 's-iefa', country: 'ALL', type: 'scholarship_reference', role: 'validation', label: 'IEFA', url: 'https://www.iefa.org/', status: 'active', records: 0, reader: 'none', use: 'Comparison list only' }] } : {}),
   ...(layer === 2 ? { countries: [{ code: 'NZ', pages_found: 1829, discovery: { mapped: 8 }, page_reads: { read: 38, waiting: 1761 }, outcomes: { admitted: 7, rejected: 30 }, refusals: [{ reason: 'international_not_stated', pages: 20 }], rereads: { read: 7 } }], worker: [{ mode: 'scholarship_discover', sent: 37, answered: 36, ok: 36, failed: 0, last_failure: null }], firecrawl: { used: 2696, cap: 3000, reserve: 800, by_purpose: { sch_scrape: { all: 1781, last_7_days: 1781 } } } } : {}),
   ...(layer === 3 ? { ai: [{ country: 'AU', enabled: false, state: 'benchmark_required', profile: null, task: 'scholarship_page_classification', budget_usd: 1, max_records: 25, runs: 0 }], profiles: [{ code: 'openrouter-scholarship-gemini-flash-lite-v1', model: 'google/gemini-2.5-flash-lite', enabled: true, paused: true, benchmark_pass: false }] } : {}) })
+
+// Decision 252 (v2.15.177): toolsets and limits, notices per layer, Serper and ScrapingBee trials
+const notice = (o) => ({ count: 1, first_at: '2026-10-04T02:00:00Z', last_at: '2026-10-04T02:45:00Z', acknowledged: false, ...o })
+export const platformNotices = layer => {
+  const all = [
+    notice({ key: 'openrouter:3:refused:key_limit', layer: 3, toolset: 'openrouter', kind: 'refused', severity: 'high', title: 'OpenRouter refused calls: the key\'s own spending limit was reached', detail: '92 work items in the last 24 hours were released and will be retried.', hint: 'The limit is set on the key at OpenRouter (Workspaces › Keys), not in CourseFinder.' }),
+    notice({ key: 'openrouter:3:low_balance', layer: 3, toolset: 'openrouter', kind: 'low_balance', severity: 'warning', title: 'OpenRouter balance is US$27.67', detail: 'Below the warning level of US$30.' }),
+    notice({ key: 'scheduled_jobs:2:timeout:scholarship-nationality', layer: 2, toolset: 'scheduled_jobs', kind: 'timeout', severity: 'high', title: 'Job "scholarship-nationality" hit the database time limit 10 times', detail: 'In the last 24 hours (16 runs in all).', hint: 'Lower the job\'s batch size setting so each run finishes inside the limit.' }),
+    notice({ key: 'scheduled_jobs:2:failed:coverage-bind', layer: 2, toolset: 'scheduled_jobs', kind: 'failed', severity: 'warning', title: 'Job "coverage-bind" failed 1 times', acknowledged: true, acknowledged_at: '2026-10-04T03:00:00Z' }),
+  ]
+  return { can_manage: true, notices: layer == null ? all : all.filter(n => n.layer === layer) }
+}
+export const toolsets = {
+  can_manage: true,
+  toolsets: [
+    { key: 'openrouter', label: 'OpenRouter (AI models)', kind: 'ai', layers: [3], enforcement: 'observe', help: 'Observe only: the daily spend guards and the credit floor are shown and raise notices but do not stop Layer 3.', reason: 'Decision 252', updated_at: '2026-10-04T03:30:00Z',
+      settings: [{ key: 'low_balance_warn_usd', label: 'Warn when the balance is below', help: 'A notice is raised on Layer 3.', kind: 'number', value: 10, min: 0, max: 1000, unit: 'US$' }] },
+    { key: 'serper', label: 'Serper (web search)', kind: 'search', layers: [2], enforcement: null, help: 'On trial.', key_saved: true,
+      settings: [
+        { key: 'trial_countries', label: 'Countries in a trial', help: 'Country codes sampled.', kind: 'list', value: ['AU', 'NZ', 'CA'] },
+        { key: 'trial_sample_per_country', label: 'Cases per country in a run', help: '', kind: 'number', value: 20, min: 1, max: 500, unit: 'cases' },
+        { key: 'course_query', label: 'Search wording: course page', help: '', kind: 'text', value: '{course} {provider}' },
+        { key: 'course_site_filter', label: 'Limit the course search to the provider\'s website', help: '', kind: 'boolean', value: true }] },
+    { key: 'scrapingbee', label: 'ScrapingBee (pages that need a browser)', kind: 'fetch', layers: [2], enforcement: null, help: 'On trial.', key_saved: false, settings: [] },
+  ],
+  openrouter: { balance: { remaining_usd: 27.67, total_credits: 75, observed_at: '2026-10-04T02:45:00Z' }, guards: [{ task_class: 'provider_intake_validation', daily_usd_max: 20, credit_floor_usd: 5, spent_today: 0.42 }], spend_by_day: [{ day: '2026-10-03', usd: 1.2, calls: 340 }] },
+  job_layers: {},
+}
+const RUN = '7d1e0000-0000-4000-8000-000000000001'
+export const toolsetTrials = run => ({
+  can_manage: true,
+  runs: [{ id: RUN, toolset: 'serper', purpose: 'find_course_page', countries: ['AU', 'NZ', 'CA'], status: 'paused_time_limit', status_note: '12 cases left', credits_used: 48, cases: 60, done: 48, usd_per_1k_credits: 1, created_at: '2026-10-04T04:00:00Z' }],
+  summary: [
+    { toolset: 'serper', purpose: 'find_course_page', country: 'AU', outcome: 'found_on_provider_site', n: 14, credits: 14 },
+    { toolset: 'serper', purpose: 'find_course_page', country: 'AU', outcome: 'other_sites_only', n: 6, credits: 6 },
+    { toolset: 'serper', purpose: 'find_course_page', country: 'NZ', outcome: 'found_on_provider_site', n: 9, credits: 9 },
+    { toolset: 'serper', purpose: 'find_course_page', country: 'NZ', outcome: 'no_results', n: 7, credits: 7 },
+    { toolset: 'serper', purpose: 'find_course_page', country: 'CA', outcome: 'provider_site_no_title_match', n: 12, credits: 12 },
+  ],
+  backlog: [{ toolset: 'serper', purpose: 'find_course_page', country: 'AU', n: 7325 }, { toolset: 'serper', purpose: 'find_course_page', country: 'NZ', n: 3797 }, { toolset: 'serper', purpose: 'find_course_page', country: 'CA', n: 1227 },
+    { toolset: 'scrapingbee', purpose: 'render_page', country: 'AU', n: 1187 }],
+  items: run ? [{ country: 'AU', input: { course: 'Bachelor of Nursing', provider: 'Example University' }, outcome: 'found_on_provider_site', credits: 1, result: { found_url: 'https://example.edu.au/nursing', same_as_earlier_candidate: true } }] : [],
+})

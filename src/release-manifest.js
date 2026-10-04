@@ -1,16 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.176'
-export const PACKAGE_VERSION='0.1.103'
+export const UI_VERSION='2.15.177'
+export const PACKAGE_VERSION='0.1.104'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Daylight saving for scholarship job times',
+  title:'Toolsets and limits: notices on each layer, OpenRouter observed not capped, Serper and ScrapingBee trials',
   changes:[
-    'Scholarship tabs show job times from the schedule in Melbourne time (daylight saving)',
-    'Fixed clock times removed from the guide, the publishing tile and job descriptions'
+    'Each Layer page (1 to 4) shows a notice when a toolset it depends on hits a limit or times out: OpenRouter refusals and balance, spend past a guard, Firecrawl balance and caps, scheduled jobs that hit the database time limit, edge function time-outs, and trials stopped by a limit. Notices can be acknowledged and come back if it happens again.',
+    'OpenRouter is set to observe only: the daily spend guards and the credit floor are shown and raise notices but no longer stop Layer 3. One switch on Models & services returns it to stop at limits. The routing worker no longer has a fixed US$5 floor in its code.',
+    'Models & services › Toolsets and limits: every limit, look-back and threshold is a setting the Platform Admin changes with a reason; OpenRouter balance, today’s spend by task and 14 days of spend are shown.',
+    'Serper and ScrapingBee are registered switched off. Trials sample the real backlog in every country listed (AU, NZ and CA to start), record each call’s outcome and credits, and show results by country with a cost projection for the whole backlog. Nothing a trial finds is admitted.'
   ],
   bugFixes:[]
 }

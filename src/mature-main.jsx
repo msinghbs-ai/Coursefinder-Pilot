@@ -45,6 +45,7 @@ import ProviderPolicies from'./ProviderPolicies'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import ScholarshipRecord from'./ScholarshipRecord'
 import ScholarshipLayer from'./ScholarshipLayer'
+import Toolsets,{LayerNotices}from'./Toolsets'
 import LiveActivity from'./LiveActivity'
 import PlatformGuide from'./PlatformGuide'
 import Layer4Intervention from'./Layer4Intervention'
@@ -199,7 +200,9 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
   const page=PAGES[pageKey],tabs=allowedTabs(page,rank)
   const onTab=key=>navigate(pageKey,{tab:key})
   const body=pageBody()
-  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{body}</PageLayout>
+  // v2.15.177 (Decision 252): a notice on the layer's page when a toolset it depends on hits a limit or times out
+  const layerNo=/^layer[1-4]$/.test(pageKey)?Number(pageKey.slice(5)):null
+  return <PageLayout tabs={tabs} active={tab} onTab={onTab} label={`${page.label} sections`}>{layerNo&&<LayerNotices layer={layerNo}/>}{body}</PageLayout>
   function pageBody(){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
@@ -240,7 +243,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'sources':return <SourcesWorkspace/>
       case'environment':return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
       case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Environment &amp; integrations</a>.</p><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>
-      case'services':return <div className="m-page-stack"><ModelsServices onError={err}/></div>
+      case'services':return <div className="m-page-stack"><ModelsServices onError={err}/><Toolsets onError={err}/></div>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/><div className="m-legacy-host"><RegulatorySettings onError={onError} mode="reset"/></div></div>
       case'dataModel':return <Attributes onError={onError}/>
       case'users':return <AccessRolesEmbedded actorId={actorId}/>

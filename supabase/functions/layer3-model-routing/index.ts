@@ -27,7 +27,12 @@ const FN = "layer3-model-routing", V = ROUTING_VERSION;
 // Decision 221 (2 Oct 2026): a cascade task (intake, English) never falls back to the single routed profile; with no
 // cascade step switched on, nothing is claimed and no model is called.
 const QUALIFICATION_CAP_USD = 8.0, RESERVE_USD = 0.03;
-const CREDIT_FLOOR_USD = 5.0;
+// Decision 252 (4 Oct 2026): the credit floor and whether it stops anything come from the toolset register, which the
+// Platform Admin changes in the UI (Models & services › Toolsets and limits). If it cannot be read, the floor applies.
+async function creditPolicy(rpc: (n: string, a?: Record<string, unknown>) => Promise<any>): Promise<{ enforce: boolean; floor: number }> {
+  try { const p = await rpc("svc_layer3_credit_policy", {}); return { enforce: p?.enforce !== false, floor: Number(p?.floor_usd ?? 0) } }
+  catch { return { enforce: true, floor: Number.POSITIVE_INFINITY } }
+}
 const OPENROUTER = "https://openrouter.ai/api/v1";
 const CREDIT_PROFILE_CODE = "openrouter-provider-tuition-validation-mistral-small-3-2-v1";
 const j = (s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -226,15 +231,17 @@ Deno.serve(async (req: Request) => {
 
     if (mode === "guard") {
       const c = await credits();
-      const res = c.remaining < CREDIT_FLOOR_USD ? await rpc("layer3_route_credit_floor_service", { p_remaining: c.remaining, p_floor: CREDIT_FLOOR_USD }) : null;
-      return j(200, { ok: true, mode, worker_version: V, credits: c, floor: CREDIT_FLOOR_USD, stopped: res });
+      const pol = await creditPolicy(rpc);
+      const res = pol.enforce && c.remaining < pol.floor ? await rpc("layer3_route_credit_floor_service", { p_remaining: c.remaining, p_floor: pol.floor }) : null;
+      return j(200, { ok: true, mode, worker_version: V, credits: c, floor: pol.floor, enforced: pol.enforce, stopped: res });
     }
 
     if (mode === "work") {
       const task = taskOf(body.task);
       if (task === "tuition") throw new Error("tuition runs through layer3-work-dispatch / layer3-work-interpret");
       const c = await credits();
-      if (c.remaining < CREDIT_FLOOR_USD) return j(200, { ok: true, mode, task, worker_version: V, stopped: await rpc("layer3_route_credit_floor_service", { p_remaining: c.remaining, p_floor: CREDIT_FLOOR_USD }) });
+      const pol = await creditPolicy(rpc);
+      if (pol.enforce && c.remaining < pol.floor) return j(200, { ok: true, mode, task, worker_version: V, stopped: await rpc("layer3_route_credit_floor_service", { p_remaining: c.remaining, p_floor: pol.floor }) });
       const worker = `layer3-model-routing:${task}:${crypto.randomUUID().slice(0, 8)}`;
       // Decision 221: a cascade task never falls back to the single routed profile. With no cascade step switched on,
       // nothing is claimed and no model is called.

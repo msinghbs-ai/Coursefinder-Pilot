@@ -74,6 +74,8 @@ jobs:
             [layer3-intake-benchmark]=false
             [layer3-model-routing]=false
             [layer2-provider-control]=true
+            # Decision 252: Serper and ScrapingBee trial runs (Platform Admin, user JWT)
+            [toolset-trial]=true
             [layer2-acquire-v2]=false
             [layer2-scope-discover-scheduled]=false
             # Decision 216: background functions moved to one-time run passes (previously deployed by hand)

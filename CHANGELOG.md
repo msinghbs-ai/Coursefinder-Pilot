@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.104 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.177** (Decision 252: toolsets and limits, layer notices, OpenRouter observe only, Serper and ScrapingBee trials).
+- Migrations 20261004000600 to 20261004000800 applied and verified against the live project; layer3-model-routing reads its credit policy; new toolset-trial worker.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.103 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.176** (Scholarship job times follow Melbourne daylight saving; fixed clock times removed from screens and guide).
