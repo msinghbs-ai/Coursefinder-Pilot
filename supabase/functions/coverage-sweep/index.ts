@@ -1108,6 +1108,7 @@ Deno.serve(async (req) => {
         const { url: _u, ...opts } = reqBody;
         await rpc("svc_fc_call_log", { p: { run_id: null, item_id: null, use_case: "probe", endpoint: "scrape", provider_id: pg.provider_id || null, course_id: pg.course_id || null, url: pg.url, request: opts, ...rec, credits_used: used, outcome: readOutcome(rec, html, text.length) } }).catch(() => null);
         out.push({ url: pg.url, http, page_status: rec.page_status, error: rec.error, credits: used, proxy: rec.proxy_used, scrape_id: rec.scrape_id, title: titleOf(html).slice(0, 160) || d?.data?.metadata?.title || null, h1: h1Of(html).slice(0, 160), text_chars: text.length,
+                   page: html ? inspectPage(html) : null, json_shape: html && s.json_source ? jsonShape(pageJson(html, String(s.json_source)), 5) : null,
                    code_found: !!(pg.code && text.includes(String(pg.code))), identity: idb, warning: d?.data?.warning || rec.meta?.warning || null, intakes: idb ? intakes(text) : null, english: idb ? english(text) : null, fee: idb ? fee(text, currencyFor(pg.country)).value : null });
       });
       return j({ ok: true, mode, options: s, pages: out, ms: Date.now() - t0, worker: WORKER });
