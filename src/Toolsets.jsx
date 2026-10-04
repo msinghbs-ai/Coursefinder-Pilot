@@ -1,10 +1,11 @@
 // Toolsets and limits (v2.15.177, Decision 252). Platform Admin, 4 Oct 2026 13:37: OpenRouter is not capped by the
 // platform (observe, collect logs, top up when required); each layer shows a notice when a toolset it depends on hits a
-// limit or times out; Serper and ScrapingBee are tested on trial keys across every country before any use; and every
+// limit or times out; Serper and ScrapingBee run on a key whose plan limits are settings (a free key now, a production
+// key later), with sample runs across every country before scheduled use; and every
 // variable is a setting the Platform Admin changes here — nothing fixed in code.
-// Reads: admin_toolsets_read(), admin_platform_notices_read(layer), admin_toolset_trials_read(run).
-// Writes: admin_toolsets_write(action,args), admin_toolset_trial_write(action,args) — Platform Admin with a reason;
-// the trial worker is the toolset-trial edge function (migrations 20261004000600 and 20261004000700).
+// Reads: admin_toolsets_read(), admin_platform_notices_read(layer), admin_toolset_samples_read(run).
+// Writes: admin_toolsets_write(action,args), admin_toolset_sample_write(action,args) — Platform Admin with a reason;
+// sample runs are done by the toolset-runner edge function (migrations 20261004000600 to 20261004000900).
 import React,{useEffect,useState}from'react'
 import{RefreshCw,BellRing,Check}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -14,8 +15,9 @@ const errText=e=>e?.message||String(e)
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const LAYER={0:'Platform',1:'Layer 1',2:'Layer 2',3:'Layer 3',4:'Layer 4'}
 const SEV={high:'danger',warning:'warning',info:'neutral'}
+const NAME={serper:'Serper',scrapingbee:'ScrapingBee'}
 const PURPOSE={find_course_page:'Find course pages',find_provider_site:'Find provider websites',render_page:'Read pages that need a browser'}
-const TRIALS={serper:['find_course_page','find_provider_site'],scrapingbee:['render_page']}
+const SAMPLES={serper:['find_course_page','find_provider_site'],scrapingbee:['render_page']}
 const STATUS={ready:'Ready',running:'Running',paused_time_limit:'Paused at the time limit',done:'Finished',stopped:'Stopped',stopped_credit_cap:'Stopped at its credit allowance',stopped_vendor_limit:'Stopped: the service refused calls'}
 const OUT={found_on_provider_site:'Found on the provider’s site',provider_site_no_title_match:'Provider’s site, title did not match',other_sites_only:'Other sites only',no_results:'No results',
   likely_official_site:'Likely official website',directories_only:'Directories only',no_confident_match:'No confident match',
@@ -63,23 +65,46 @@ export default function Toolsets({onError}){
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </section>
     {(d.toolsets||[]).map(t=><Toolset key={t.key} t={t} d={d} can={can} write={write}/>)}
-    <Trials toolsets={d.toolsets||[]} can={Boolean(d.can_manage)} onError={onError}/>
+    <SampleRuns toolsets={d.toolsets||[]} can={Boolean(d.can_manage)} onError={onError}/>
   </div>
 }
 
+const SECTION_ORDER=['Key and plan limits','How the service is used','Sample runs','Notices']
 function Toolset({t,d,can,write}){
-  const[vals,setVals]=useState({})
   const or=t.key==='openrouter'?d.openrouter||{}:null
+  const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
   return <section className="m-panel" data-toolset={t.key}>
     <SectionTitle title={t.label} subtitle={`${(t.layers||[]).map(l=>LAYER[l]).join(', ')}. ${t.help}`}/>
     {t.enforcement&&<div className="tn-mode" data-toolset-mode={t.key}>
       <span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only — not stopped by the platform':'Stop at limits'}</span>
       {can&&<Button compact onClick={()=>write('enforcement',{toolset:t.key,enforcement:t.enforcement==='observe'?'stop':'observe'},t.enforcement==='observe'?`Make ${t.label} stop at its spend guards and credit floor?`:`Let ${t.label} run past its spend guards and credit floor (observe only)?`)}>{t.enforcement==='observe'?'Switch to stop at limits':'Switch to observe only'}</Button>}
       <small className="sl-sub">{t.reason}{t.updated_at?` · ${fmtDateTime(t.updated_at)}`:''}</small></div>}
-    {t.key in TRIALS&&<p className="sl-sub" data-toolset-key={t.key}>{t.key_saved?'Key saved in the vault.':'No key yet — save it on '}{!t.key_saved&&<a href="#environment">Environment &amp; integrations</a>}</p>}
+    {t.key in SAMPLES&&<KeyPlan t={t}/>}
     {or&&<OpenRouter or={or}/>}
-    {(t.settings||[]).length>0&&<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Setting</th><th>Value</th><th>Last change</th></tr></thead><tbody>
-      {t.settings.map(s=>{const shown=s.kind==='list'?(s.value||[]).join(', '):String(s.value??'');const v=vals[s.key]??shown;const changed=String(v)!==shown
+    {sections.map(sec=><Settings key={sec} title={sec} t={t} rows={t.settings.filter(s=>(s.section||'Notices')===sec)} can={can} write={write}/>)}
+  </section>
+}
+
+// The key in use and the limits of its plan: replace the key on Environment & integrations, then enter the new plan here.
+function KeyPlan({t}){
+  const p=t.plan||{},pct=p.credits?Math.min(100,Math.round(100*Number(p.used||0)/Number(p.credits))):0
+  return <div className="tn-plan" data-toolset-key={t.key}>
+    <div className="tn-plan-row"><span className={`cf-chip tone-${t.key_saved?'success':'warning'}`}>{t.key_saved?'Key saved in the vault':'No key saved'}</span>
+      <span className={`cf-chip tone-${t.switched_on?'success':'neutral'}`}>{t.switched_on?'Switched on in Models & services':'Switched off in Models & services'}</span>
+      <a href="#environment">{t.key_saved?'Replace the key':'Save the key'} on Environment &amp; integrations</a></div>
+    <div className="tn-plan-row" data-toolset-plan={t.key}><strong>{p.name||'Plan not named'}</strong><span>{fmtNumber(p.used)} of {fmtNumber(p.credits)} credits used{p.counted_from?` since ${p.counted_from}`:''}{p.renews_monthly?' (renews monthly)':''}</span>
+      <span>{fmtNumber(p.left)} left · {fmtNumber(p.reserve)} kept back · up to {fmtNumber(p.max_concurrency)} calls at once</span>
+      {p.at_reserve&&<span className="cf-chip tone-danger">At its reserve — work using this key has stopped</span>}</div>
+    <div className="sl-credit-bar" aria-hidden><span style={{width:`${pct}%`}}/></div>
+    <small className="sl-sub">When you move to a production key: save the new key on Environment &amp; integrations, then set its plan name, credits, renewal, “Count credits from” (the day you changed it) and calls at once below. Nothing else changes.</small>
+  </div>
+}
+
+function Settings({title,t,rows,can,write}){
+  const[vals,setVals]=useState({})
+  return <div className="tn-section" data-toolset-section={`${t.key}:${title}`}><h4 className="sl-h4">{title}</h4>
+    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Setting</th><th>Value</th><th>Last change</th></tr></thead><tbody>
+      {rows.map(s=>{const shown=s.kind==='list'?(s.value||[]).join(', '):String(s.value??'');const v=vals[s.key]??shown;const changed=String(v)!==shown
         const value=s.kind==='list'?v.split(',').map(x=>x.trim()).filter(Boolean):s.kind==='boolean'?v==='true':v
         return <tr key={s.key} data-toolset-setting={`${t.key}.${s.key}`}><td><strong>{s.label}</strong><small className="sl-sub">{s.help}</small></td>
           <td><span className="sl-val tn-val">{s.kind==='boolean'?<select aria-label={s.label} value={v} disabled={!can} onChange={e=>setVals(x=>({...x,[s.key]:e.target.value}))}><option value="true">Yes</option><option value="false">No</option></select>
@@ -87,8 +112,7 @@ function Toolset({t,d,can,write}){
             <small>{s.unit}{s.kind==='number'&&s.min!=null?` (${fmtNumber(s.min)} to ${fmtNumber(s.max)})`:''}</small>
             {can&&changed&&<Button compact variant="primary" onClick={()=>write('setting',{toolset:t.key,key:s.key,value},`Change "${s.label}" to ${v}?`)}>Save</Button>}</span></td>
           <td><small>{s.reason||'—'}{s.updated_at?` · ${fmtDateTime(s.updated_at)}`:''}</small></td></tr>})}
-    </tbody></table></div>}
-  </section>
+    </tbody></table></div></div>
 }
 
 function OpenRouter({or}){
@@ -102,29 +126,29 @@ function OpenRouter({or}){
   </div>
 }
 
-// ---- trials ----------------------------------------------------------------------------------------------------------
-function Trials({toolsets,can,onError}){
+// ---- sample runs ----------------------------------------------------------------------------------------------------------
+function SampleRuns({toolsets,can,onError}){
   const[d,setD]=useState(null),[run,setRun]=useState(''),[busy,setBusy]=useState(false)
-  const load=async(r=run)=>{try{const{data,error}=await supabase.rpc('admin_toolset_trials_read',{p_run_id:r||null});if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
+  const load=async(r=run)=>{try{const{data,error}=await supabase.rpc('admin_toolset_samples_read',{p_run_id:r||null});if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[run])
   useEffect(()=>{const live=(d?.runs||[]).some(r=>r.status==='running');if(!live)return;const t=setTimeout(()=>load(),8000);return()=>clearTimeout(t)},[d])
-  const kick=async id=>{const{data,error}=await supabase.functions.invoke('toolset-trial',{body:{action:'run',run_id:id}});if(error)throw error;if(data?.error)throw new Error(data.error)}
-  const start=async(toolset,purpose)=>{const reason=ask(`Start a ${toolset} trial: ${PURPOSE[purpose]}? It samples each country set below and uses trial credits. Nothing it finds is admitted.`);if(!reason)return
-    setBusy(true);try{const{data,error}=await supabase.rpc('admin_toolset_trial_write',{p_action:'start',p_args:{toolset,purpose,reason}});if(error)throw error;await kick(data.run_id);setRun(data.run_id);await load(data.run_id)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  const kick=async id=>{const{data,error}=await supabase.functions.invoke('toolset-runner',{body:{action:'run',run_id:id}});if(error)throw error;if(data?.error)throw new Error(data.error)}
+  const start=async(toolset,purpose)=>{const reason=ask(`Start a ${NAME[toolset]} sample run: ${PURPOSE[purpose]}? It takes cases from each country in the settings and uses the key's credits. Nothing it finds is admitted.`);if(!reason)return
+    setBusy(true);try{const{data,error}=await supabase.rpc('admin_toolset_sample_write',{p_action:'start',p_args:{toolset,purpose,reason}});if(error)throw error;await kick(data.run_id);setRun(data.run_id);await load(data.run_id)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const resume=async id=>{setBusy(true);try{await kick(id);await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  const stop=async id=>{const reason=ask('Stop this trial run?');if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_toolset_trial_write',{p_action:'stop',p_args:{run_id:id,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  if(!d)return <section className="m-panel"><Loading label="Loading trials…"/></section>
+  const stop=async id=>{const reason=ask('Stop this sample run?');if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_toolset_sample_write',{p_action:'stop',p_args:{run_id:id,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!d)return <section className="m-panel"><Loading label="Loading sample runs…"/></section>
   const keys=Object.fromEntries(toolsets.map(t=>[t.key,t]))
   const sel=(d.runs||[]).find(r=>r.id===run)
-  return <section className="m-panel" data-toolset-trials><SectionTitle title="Trials" subtitle="Each run samples real cases from every country listed in the toolset’s settings, calls the service and records what came back. Results are for review; nothing is admitted or written to a course, provider or page."/>
-    {can&&<div className="tn-starts">{Object.entries(TRIALS).map(([k,ps])=>ps.map(p=><Button key={k+p} compact disabled={busy||!keys[k]?.key_saved} onClick={()=>start(k,p)} title={keys[k]?.key_saved?'':'Save the key first'}>{`Start ${k==='serper'?'Serper':'ScrapingBee'}: ${PURPOSE[p]}`}</Button>))}</div>}
-    <h4 className="sl-h4">Backlog the trials sample from</h4>
-    <div className="cf-table-wrap"><table className="cf-table" data-trial-backlog><thead><tr><th>Trial</th>{[...new Set((d.backlog||[]).map(b=>b.country))].map(c=><th key={c} className="num">{c}</th>)}</tr></thead><tbody>
+  return <section className="m-panel" data-toolset-samples><SectionTitle title="Sample runs" subtitle="Each run takes real cases from every country in the service’s settings, calls the service with the key in use and records what came back. Results are for review. Nothing is admitted or written to a course, provider or page."/>
+    {can&&<div className="tn-starts">{Object.entries(SAMPLES).map(([k,ps])=>ps.map(p=><Button key={k+p} compact disabled={busy||!keys[k]?.key_saved} onClick={()=>start(k,p)} title={keys[k]?.key_saved?'':'Save the key first'}>{`Run a sample with ${NAME[k]}: ${PURPOSE[p]}`}</Button>))}</div>}
+    <h4 className="sl-h4">Backlog the runs take cases from</h4>
+    <div className="cf-table-wrap"><table className="cf-table" data-sample-backlog><thead><tr><th>Work</th>{[...new Set((d.backlog||[]).map(b=>b.country))].map(c=><th key={c} className="num">{c}</th>)}</tr></thead><tbody>
       {Object.keys(PURPOSE).map(p=><tr key={p}><td>{PURPOSE[p]}</td>{[...new Set((d.backlog||[]).map(b=>b.country))].map(c=>{const b=(d.backlog||[]).find(x=>x.purpose===p&&x.country===c);return <td key={c} className="num">{b?fmtNumber(b.n):'—'}</td>})}</tr>)}
     </tbody></table></div>
     <h4 className="sl-h4">Runs</h4>
-    {(d.runs||[]).length===0?<Empty text="No trial runs yet."/>:<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Started</th><th>Service</th><th>Trial</th><th>Countries</th><th>Status</th><th className="num">Cases done</th><th className="num">Credits</th><th></th></tr></thead><tbody>
-      {d.runs.map(r=><tr key={r.id} data-trial-run={r.id} className={r.id===run?'tn-sel':''}><td>{fmtDateTime(r.created_at)}</td><td>{r.toolset}</td><td>{PURPOSE[r.purpose]}</td><td>{(r.countries||[]).join(', ')}</td>
+    {(d.runs||[]).length===0?<Empty text="No sample runs yet."/>:<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Started</th><th>Service</th><th>Work</th><th>Countries</th><th>Status</th><th className="num">Cases done</th><th className="num">Credits</th><th></th></tr></thead><tbody>
+      {d.runs.map(r=><tr key={r.id} data-sample-run={r.id} className={r.id===run?'tn-sel':''}><td>{fmtDateTime(r.created_at)}</td><td>{NAME[r.toolset]||r.toolset}</td><td>{PURPOSE[r.purpose]}</td><td>{(r.countries||[]).join(', ')}</td>
         <td>{STATUS[r.status]||r.status}{r.status_note&&<small className="sl-sub">{r.status_note}</small>}</td><td className="num">{fmtNumber(r.done)} of {fmtNumber(r.cases)}</td><td className="num">{fmtNumber(r.credits_used)}</td>
         <td><span className="sl-state"><Button compact onClick={()=>setRun(r.id===run?'':r.id)}>{r.id===run?'Hide':'Results'}</Button>
           {can&&['ready','paused_time_limit'].includes(r.status)&&<Button compact variant="primary" disabled={busy} onClick={()=>resume(r.id)}>Continue</Button>}
@@ -138,14 +162,14 @@ function Results({d,sel}){
   const rows=(d.summary||[])
   if(!rows.length)return null
   const groups=[...new Set(rows.map(r=>`${r.toolset}|${r.purpose}`))]
-  return <div className="tn-results" data-trial-results>{groups.map(g=>{const[toolset,purpose]=g.split('|');const rs=rows.filter(r=>r.toolset===toolset&&r.purpose===purpose)
+  return <div className="tn-results" data-sample-results>{groups.map(g=>{const[toolset,purpose]=g.split('|');const rs=rows.filter(r=>r.toolset===toolset&&r.purpose===purpose)
     const countries=[...new Set(rs.map(r=>r.country))],outcomes=[...new Set(rs.map(r=>r.outcome))]
     const run=sel||(d.runs||[]).find(r=>r.toolset===toolset),price=Number(run?.usd_per_1k_credits??0)
-    return <div key={g}><h4 className="sl-h4">{sel?'This run':'All runs'}: {toolset} — {PURPOSE[purpose]}</h4>
+    return <div key={g}><h4 className="sl-h4">{sel?'This run':'All runs'}: {NAME[toolset]||toolset} — {PURPOSE[purpose]}</h4>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Outcome</th>{countries.map(c=><th key={c} className="num">{c}</th>)}</tr></thead><tbody>
-        {outcomes.map(o=><tr key={o} data-trial-outcome={o} className={GOOD.has(o)?'tn-good':''}><td>{OUT[o]||o}</td>{countries.map(c=>{const tot=rs.filter(r=>r.country===c).reduce((a,r)=>a+Number(r.n),0),x=rs.find(r=>r.country===c&&r.outcome===o);return <td key={c} className="num">{x?`${fmtNumber(x.n)} (${pct(x.n,tot)})`:'—'}</td>})}</tr>)}
+        {outcomes.map(o=><tr key={o} data-sample-outcome={o} className={GOOD.has(o)?'tn-good':''}><td>{OUT[o]||o}</td>{countries.map(c=>{const tot=rs.filter(r=>r.country===c).reduce((a,r)=>a+Number(r.n),0),x=rs.find(r=>r.country===c&&r.outcome===o);return <td key={c} className="num">{x?`${fmtNumber(x.n)} (${pct(x.n,tot)})`:'—'}</td>})}</tr>)}
         <tr><td><strong>Credits per case</strong></td>{countries.map(c=>{const r2=rs.filter(r=>r.country===c),n=r2.reduce((a,r)=>a+Number(r.n),0),cr=r2.reduce((a,r)=>a+Number(r.credits||0),0);return <td key={c} className="num">{n?(cr/n).toFixed(1):'—'}</td>})}</tr>
-        <tr data-trial-projection><td><strong>Projected cost for the whole backlog</strong><small className="sl-sub">Backlog × credits per case × price per 1,000 credits (from the settings).</small></td>{countries.map(c=>{const r2=rs.filter(r=>r.country===c),n=r2.reduce((a,r)=>a+Number(r.n),0),cr=r2.reduce((a,r)=>a+Number(r.credits||0),0),b=(d.backlog||[]).find(x=>x.purpose===purpose&&x.country===c)?.n;return <td key={c} className="num">{n&&b!=null?money(b*(cr/n)*price/1000):'—'}</td>})}</tr>
+        <tr data-sample-projection><td><strong>Projected cost for the whole backlog</strong><small className="sl-sub">Backlog × credits per case × price per 1,000 credits (from the settings).</small></td>{countries.map(c=>{const r2=rs.filter(r=>r.country===c),n=r2.reduce((a,r)=>a+Number(r.n),0),cr=r2.reduce((a,r)=>a+Number(r.credits||0),0),b=(d.backlog||[]).find(x=>x.purpose===purpose&&x.country===c)?.n;return <td key={c} className="num">{n&&b!=null?money(b*(cr/n)*price/1000):'—'}</td>})}</tr>
       </tbody></table></div></div>})}
     {sel&&(d.items||[]).length>0&&<details className="tn-items"><summary>Every case in this run ({d.items.length})</summary><div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Country</th><th>Case</th><th>Outcome</th><th>What came back</th><th className="num">Credits</th></tr></thead><tbody>
       {d.items.map((i,k)=><tr key={k}><td>{i.country}</td><td>{i.input?.course||i.input?.provider}<small className="sl-sub">{i.input?.provider&&i.input?.course?i.input.provider:''}{i.input?.url?` · ${i.input.url}`:''}</small></td><td>{OUT[i.outcome]||i.outcome}</td>

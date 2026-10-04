@@ -1,12 +1,13 @@
-// CF-247 Decision 252 (4 Oct 2026): trial runs of Serper (web search) and ScrapingBee (browser rendering) against samples
-// of the real backlog in each country. Started and continued from Platform settings › Models & services › Toolsets and
-// limits by the Platform Admin. Every limit (cases, credits, time per call, parallel calls, query wording, rendering
-// options, match threshold) comes from the run's settings snapshot, which the Platform Admin set in the UI.
+// CF-247 Decision 252 (4 Oct 2026, amended 14:26): sample runs of Serper (web search) and ScrapingBee (browser rendering)
+// against the real backlog in each country. Started and continued from Platform settings › Models & services › Toolsets
+// and limits by the Platform Admin. The key comes from the vault; every limit (the key's plan limits, cases, credits,
+// time per call, calls at the same time, query wording, rendering options, match threshold) comes from settings the
+// Platform Admin sets in the UI. Replacing the key and its plan limits needs no change here.
 // Nothing found here is admitted or written to a course, provider or page: results are recorded for review only.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "toolset-trial-v1.0.0";
+const VERSION = "toolset-runner-v1.1.0";
 const ORIGIN = "https://coursefinder-pilot.techm.workers.dev";
 const hdrs = (req: Request) => { const o = req.headers.get("origin") || ""; return { "access-control-allow-origin": o === ORIGIN || o.startsWith("http://localhost") ? o : ORIGIN, "access-control-allow-headers": "authorization, x-client-info, apikey, content-type", "access-control-allow-methods": "POST, OPTIONS", "content-type": "application/json", "cache-control": "no-store", vary: "origin" } };
 const reply = (req: Request, s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: hdrs(req) });
@@ -67,11 +68,12 @@ Deno.serve(async (req: Request) => {
     const t0 = Date.now(); let timedOut = false, go = true;
     try {
       while (go) {
-        const batch = await rpc("svc_toolset_trial_next", { p_run_id: runId, p_limit: 10 });
+        const batch = await rpc("svc_toolset_sample_next", { p_run_id: runId, p_limit: 10 });
         const items: any[] = batch?.items || []; if (!items.length) break;
         const s = batch.settings || {}, prov = batch.provider || {}, purpose = String(batch.purpose);
-        const budgetMs = Number(s.trial_seconds_per_call) * 1000, conc = Math.max(1, Number(s.trial_concurrency) || 1), min = Number(s.title_match_min);
-        if (!prov.secret) { for (const it of items) await rpc("svc_toolset_trial_record", { p_item_id: it.id, p_result: { outcome: "vendor_limit", message: "no key saved" } }); break }
+        const budgetMs = Number(s.sample_seconds_per_call) * 1000, min = Number(s.title_match_min);
+        const planMax = Number(batch.plan?.max_concurrency) || Number(s.plan_max_concurrency) || 1, conc = Math.max(1, Math.min(Number(s.sample_concurrency) || 1, planMax));
+        if (!prov.secret) { for (const it of items) await rpc("svc_toolset_sample_record", { p_item_id: it.id, p_result: { outcome: "vendor_limit", message: "no key saved" } }); break }
         let i = 0;
         await Promise.all(Array.from({ length: Math.min(conc, items.length) }, async () => {
           while (go && i < items.length) {
@@ -101,14 +103,14 @@ Deno.serve(async (req: Request) => {
               }
             } catch (e) { res = { outcome: "error", credits: 0, message: String((e as Error)?.message || e).slice(0, 200) } }
             res.latency_ms = Date.now() - started; res.worker_version = VERSION;
-            const rec = await rpc("svc_toolset_trial_record", { p_item_id: it.id, p_result: res });
+            const rec = await rpc("svc_toolset_sample_record", { p_item_id: it.id, p_result: res });
             if (!rec?.continue) go = false;
           }
         }));
         if (Date.now() - t0 > budgetMs) { timedOut = true; break }
       }
-    } catch (e) { console.error("toolset-trial", runId, String((e as Error)?.message || e)) }
-    try { await rpc("svc_toolset_trial_close", { p_run_id: runId, p_timed_out: timedOut }) } catch (e) { console.error("close", String(e)) }
+    } catch (e) { console.error("toolset-runner", runId, String((e as Error)?.message || e)) }
+    try { await rpc("svc_toolset_sample_close", { p_run_id: runId, p_timed_out: timedOut }) } catch (e) { console.error("close", String(e)) }
   };
   // @ts-ignore EdgeRuntime is provided by Supabase
   EdgeRuntime.waitUntil(work());

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.105 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.178** (Decision 252 amended: no trial wording; Serper and ScrapingBee keys carry plan limits set in the UI; sample runs).
+- Migration 20261004000900 applied and verified; worker toolset-runner replaces toolset-trial.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.104 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.177** (Decision 252: toolsets and limits, layer notices, OpenRouter observe only, Serper and ScrapingBee trials).
