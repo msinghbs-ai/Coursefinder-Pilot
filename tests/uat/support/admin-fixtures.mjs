@@ -495,7 +495,7 @@ export const scholarshipLayer = layer => ({ layer, can_manage: true, jobs: slJob
   ...(layer === 2 ? { countries: [{ code: 'NZ', pages_found: 1829, discovery: { mapped: 8 }, page_reads: { read: 38, waiting: 1761 }, outcomes: { admitted: 7, rejected: 30 }, refusals: [{ reason: 'international_not_stated', pages: 20 }], rereads: { read: 7 } }], worker: [{ mode: 'scholarship_discover', sent: 37, answered: 36, ok: 36, failed: 0, last_failure: null }], firecrawl: { used: 2696, cap: 3000, reserve: 800, by_purpose: { sch_scrape: { all: 1781, last_7_days: 1781 } } } } : {}),
   ...(layer === 3 ? { ai: [{ country: 'AU', enabled: false, state: 'benchmark_required', profile: null, task: 'scholarship_page_classification', budget_usd: 1, max_records: 25, runs: 0 }], profiles: [{ code: 'openrouter-scholarship-gemini-flash-lite-v1', model: 'google/gemini-2.5-flash-lite', enabled: true, paused: true, benchmark_pass: false }] } : {}) })
 
-// Decision 252 (v2.15.177): toolsets and limits, notices per layer, Serper and ScrapingBee trials
+// Decision 252 (v2.15.177, amended v2.15.178): toolsets and limits, notices per layer, keys with plan limits, sample runs
 const notice = (o) => ({ count: 1, first_at: '2026-10-04T02:00:00Z', last_at: '2026-10-04T02:45:00Z', acknowledged: false, ...o })
 export const platformNotices = layer => {
   const all = [
@@ -511,19 +511,25 @@ export const toolsets = {
   toolsets: [
     { key: 'openrouter', label: 'OpenRouter (AI models)', kind: 'ai', layers: [3], enforcement: 'observe', help: 'Observe only: the daily spend guards and the credit floor are shown and raise notices but do not stop Layer 3.', reason: 'Decision 252', updated_at: '2026-10-04T03:30:00Z',
       settings: [{ key: 'low_balance_warn_usd', label: 'Warn when the balance is below', help: 'A notice is raised on Layer 3.', kind: 'number', value: 10, min: 0, max: 1000, unit: 'US$' }] },
-    { key: 'serper', label: 'Serper (web search)', kind: 'search', layers: [2], enforcement: null, help: 'On trial.', key_saved: true,
+    { key: 'serper', label: 'Serper (web search)', kind: 'search', layers: [2], enforcement: null, help: 'Finds a course\'s official page, or a provider\'s website, where the site map has none.', key_saved: true, switched_on: false,
+      plan: { name: 'Free plan', credits: 2500, used: 48, left: 2452, reserve: 100, counted_from: '2026-10-04', renews_monthly: false, max_concurrency: 5, at_reserve: false },
       settings: [
-        { key: 'trial_countries', label: 'Countries in a trial', help: 'Country codes sampled.', kind: 'list', value: ['AU', 'NZ', 'CA'] },
-        { key: 'trial_sample_per_country', label: 'Cases per country in a run', help: '', kind: 'number', value: 20, min: 1, max: 500, unit: 'cases' },
-        { key: 'course_query', label: 'Search wording: course page', help: '', kind: 'text', value: '{course} {provider}' },
-        { key: 'course_site_filter', label: 'Limit the course search to the provider\'s website', help: '', kind: 'boolean', value: true }] },
-    { key: 'scrapingbee', label: 'ScrapingBee (pages that need a browser)', kind: 'fetch', layers: [2], enforcement: null, help: 'On trial.', key_saved: false, settings: [] },
+        { key: 'plan_name', label: 'Plan of the key in use', help: 'Change it when you replace the key.', kind: 'text', value: 'Free plan', section: 'Key and plan limits' },
+        { key: 'plan_credits', label: 'Credits in the plan', help: 'Credits the key\'s plan gives.', kind: 'number', value: 2500, min: 0, max: 100000000, unit: 'credits', section: 'Key and plan limits' },
+        { key: 'plan_counted_from', label: 'Count credits from', help: 'The date this key started (YYYY-MM-DD).', kind: 'text', value: '2026-10-04', section: 'Key and plan limits' },
+        { key: 'plan_renews_monthly', label: 'Credits renew each month', help: '', kind: 'boolean', value: false, section: 'Key and plan limits' },
+        { key: 'course_query', label: 'Search wording: course page', help: '', kind: 'text', value: '{course} {provider}', section: 'How the service is used' },
+        { key: 'course_site_filter', label: 'Limit the course search to the provider\'s website', help: '', kind: 'boolean', value: true, section: 'How the service is used' },
+        { key: 'sample_countries', label: 'Countries sampled', help: 'Country codes a sample run takes cases from.', kind: 'list', value: ['AU', 'NZ', 'CA'], section: 'Sample runs' },
+        { key: 'sample_cases_per_country', label: 'Cases per country', help: '', kind: 'number', value: 20, min: 1, max: 500, unit: 'cases', section: 'Sample runs' }] },
+    { key: 'scrapingbee', label: 'ScrapingBee (pages that need a browser)', kind: 'fetch', layers: [2], enforcement: null, help: 'Reads pages that need a browser to render.', key_saved: false, switched_on: false,
+      plan: { name: 'Free plan', credits: 1000, used: 0, left: 1000, reserve: 50, counted_from: '2026-10-04', renews_monthly: false, max_concurrency: 5, at_reserve: false }, settings: [] },
   ],
   openrouter: { balance: { remaining_usd: 27.67, total_credits: 75, observed_at: '2026-10-04T02:45:00Z' }, guards: [{ task_class: 'provider_intake_validation', daily_usd_max: 20, credit_floor_usd: 5, spent_today: 0.42 }], spend_by_day: [{ day: '2026-10-03', usd: 1.2, calls: 340 }] },
   job_layers: {},
 }
 const RUN = '7d1e0000-0000-4000-8000-000000000001'
-export const toolsetTrials = run => ({
+export const toolsetSamples = run => ({
   can_manage: true,
   runs: [{ id: RUN, toolset: 'serper', purpose: 'find_course_page', countries: ['AU', 'NZ', 'CA'], status: 'paused_time_limit', status_note: '12 cases left', credits_used: 48, cases: 60, done: 48, usd_per_1k_credits: 1, created_at: '2026-10-04T04:00:00Z' }],
   summary: [

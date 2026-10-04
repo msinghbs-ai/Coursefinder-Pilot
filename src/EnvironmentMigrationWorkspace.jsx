@@ -41,7 +41,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{},view=
    <div className="env-grid">
     {firecrawl&&<ProviderCard provider={firecrawl} title="Firecrawl" hint="Credential and endpoint status only. Monthly entitlement and reserve are managed in Platform settings → Scrapers & fetchers." onSaved={refresh}/>}
     {zenrows&&<ProviderCard provider={zenrows} title="ZenRows" hint="Fallback page-fetching service." onSaved={refresh}/>}
-    {otherProviders.map(p=><ProviderCard key={p.id} provider={p} title={p.display_name} hint="Page-fetching service." onSaved={refresh}/>)}
+    {otherProviders.map(p=><ProviderCard key={p.id} provider={p} title={p.display_name} hint={PLAN_KEYED.has(p.provider_key)?'Saving a new key (for example a production key) replaces the one in use. Then enter the new plan’s limits on Models & services › Toolsets and limits.':'Page-fetching service.'} onSaved={refresh}/>)}
    </div>
   </section>
 
@@ -84,6 +84,8 @@ function ServicesOverview({data}){
 
 function Summary({label,value,good=false}){return <div className={'env-summary-card '+(good?'good':'')}><small>{label}</small><strong>{value}</strong></div>}
 
+// v2.15.178 (Decision 252): services whose key carries plan limits set on Models & services › Toolsets and limits
+const PLAN_KEYED=new Set(['serper','scrapingbee'])
 function ProviderCard({provider:p,title,hint,onSaved}){
  // v2.15.122: keys only here. On/off is on Models & services; address, limits and routing are on Scrapers & fetchers.
  const[secret,setSecret]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
