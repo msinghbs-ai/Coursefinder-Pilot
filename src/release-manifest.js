@@ -10,7 +10,8 @@ export const RELEASE={
   title:'University adapters: safe patterns, Apply on large pages',
   changes:[
     'Applying an adapter now reads stored pages one after another and carries on in a fresh call, so universities with large course pages (Flinders) are applied in full instead of stopping.',
-    'A pattern that writes any text as (.|\\s) is refused when saved: on long pages it could stall the page reader. The settings explain the safe form.'
+    'A pattern that writes any text as (.|\\s) is refused when saved: on long pages it could stall the page reader. The settings explain the safe form.',
+    'Adapter start dates are read as printed month names only (May the month, not may the word), so start dates written with commas or ampersands are read in full.'
   ],
   bugFixes:[
     'Apply and Preview on Flinders stopped with CPU Time exceeded before recording anything.'

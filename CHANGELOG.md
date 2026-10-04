@@ -3,7 +3,7 @@
 ## 0.1.111 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.184** (adapter Apply works through large pages within the edge time limit, unsafe adapter patterns refused).
-- Migrations 20261004001290 (adapter pattern safety) and 20261004001300 (adapter apply carries on); coverage-sweep worker v0.16.1.
+- Migrations 20261004001290 (adapter pattern safety) and 20261004001300 (adapter apply carries on); coverage-sweep worker v0.16.2.
 - v2.15.79 remains the accepted recovery release.
 
 ## 0.1.110 — 4 Oct 2026

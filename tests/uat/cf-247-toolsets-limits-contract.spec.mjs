@@ -349,3 +349,17 @@ test('adapter safety: overlapping patterns refused, apply reads within the proce
   expect(w).toContain('rpc("svc_adapter_apply_continue", { p_provider_id: String(body.provider_id || ""), p_after: after })')
   expect(w).toContain('let after: string | null = body.after ? String(body.after) : null')
 })
+
+test('adapter patterns: Flinders layouts (comma and ampersand start dates, foundation programs), capitalised months only', async () => {
+  const os = await import('node:os'), path = await import('node:path'), { execFileSync } = await import('node:child_process')
+  const out = path.join(os.tmpdir(), `adapters-f-${process.pid}.mjs`)
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/adapters.ts', '--bundle', '--format=esm', `--outfile=${out}`])
+  const mod = await import(out)
+  const C = 'CRICOS(?: code)?:?\\s*[0-9]{6}[A-Z]'
+  const A = { patterns: { intakes: C + '(?:.|\\n){0,250}?Start dates(?:[^>]{0,80}aria-expanded[^>]{0,12}>)?\\s*((?:.|\\n){0,120}?)\\s*(?:Annual|Delivery|Entry|Student|Information|Duration|Availability|Deferrable|Start dates|Save course|SATAC|CRICOS|$)' } }
+  const run = (code, t) => mod.applyAdapter(A, `<title>x</title><h1>x</h1><p>${t}</p>`, { title: 'x', code, country: 'AU' }, 'v').candidates
+  expect(run('109332H', 'CRICOS code 109332H Duration 8 or 12 months Start Dates February - 12 month program June & October - 8 month program Delivery Mode Full-time').intakes).toEqual(['February', 'June', 'October'])
+  expect(run('094009B', 'Start dates March, July Annual indicative fees (2025) $4,656 (CSP) CRICOS 094009B Duration 0.5 Years Start dates March, July Annual indicative fees (2026) $20,700').intakes).toEqual(['March', 'July'])
+  const may = run('111111A', 'CRICOS 111111A Duration 3 years Start dates may vary, see the website. Annual fee $40,000')
+  expect(may.intakes_by).toBeUndefined()
+})
