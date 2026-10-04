@@ -499,3 +499,23 @@ test('wave 1 fixes: stale adapter readings cleared, pages sent back once, page-d
   const r = mod.applyAdapter({ json_source: '__NEXT_DATA__', json_paths: { code: 'p.code', fee: 'p.fees[fee_type=international_fee_paying].estimated_annual_fee' } }, html, { title: 'Master of X', code: '012345A', country: 'AU' }, 'v')
   expect(r.candidates).toMatchObject({ fee_by: 'adapter', fee: { value: 45000 } })
 })
+
+test('term months: migration shaped, worker maps term names to the published months, editor has the field', async ({ page }) => {
+  const m = read('supabase/migrations/20261005001380_cf247_adapter_term_months.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain("is distinct from 'd052e28f18c9b9481912fb65f490b20d'")
+  expect(m).toContain("coalesce(u.json_source, '') <> ''")
+  const os = await import('node:os'), path = await import('node:path'), { execFileSync } = await import('node:child_process')
+  const out = path.join(os.tmpdir(), `adapters-tm-${process.pid}.mjs`)
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/adapters.ts', '--bundle', '--format=esm', `--outfile=${out}`])
+  const mod = await import(out)
+  const A = { patterns: { intakes: 'INTAKE\\s+((?:.|\\n){1,80}?)\\s+FEES' }, term_months: { 'Autumn Session': 'February', 'Spring Session': 'July', 'Semester 1': 'February' } }
+  const run = t => mod.applyAdapter(A, `<title>x</title><h1>x</h1><p>CRICOS 012345A ${t}</p>`, { title: 'x', code: '012345A', country: 'AU' }, 'v').candidates.intakes
+  expect(run('INTAKE Autumn Session 2027 Spring Session 2027 FEES')).toEqual(['February', 'July'])
+  expect(run('INTAKE Semester 12 FEES')).toEqual([])
+  await mockAdmin(page)
+  await page.goto('/#models-services')
+  await page.locator('[data-university-adapters] [data-adapter-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  await page.locator('[data-adapter-editor="u1"] [data-adapter-settings] > summary').click()
+  await expect(page.getByRole('textbox', { name: 'Term months' })).toBeVisible()
+})

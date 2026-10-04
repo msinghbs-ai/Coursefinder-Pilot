@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.114 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.187** (adapter term names to months, wave 1 and 2 fixes).
+- Migrations 20261005001370 and 20261005001380 (stale adapter readings cleared, refused pages sent back once and only for page-data adapters, term_months); coverage-sweep worker v0.17.3.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.113 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.186** (visual adapter builder (screenshots, text blocks, page data, marks, pinned model proposal), international fees admitted from admitting adapters, Firecrawl search results kept in the bucket).
