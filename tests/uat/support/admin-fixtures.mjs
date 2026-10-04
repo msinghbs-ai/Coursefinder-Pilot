@@ -568,6 +568,7 @@ export const firecrawlWork = { can_manage: true,
     { id: 'fc000000-0000-4000-8000-000000000001', use_case: 'read_page', status: 'stopped_credit_cap', reason: 'Decision 253 pilot', items: 1684, done: 39, credits_cap: 120, credits_used: 331, outcomes: { read_other_page: 39 }, created_at: '2026-10-04T05:12:00Z' },
   ],
   targets: [
+    { provider_id: 'u9', country: 'AU', name: 'Flinders University', domain: 'flinders.edu.au', rule_match: true, included: true, adapter: 'admitting', adapter_confirmed: 20, waiting_read: 70, requests_open: 0, courses: 476, confirmed: 360, unreadable: 98, no_page: 18, intakes: 215, english: 305, web_fee: 0, any_fee: 476 },
     { provider_id: 'u1', country: 'AU', name: 'The University of Sydney', domain: 'sydney.edu.au', rule_match: true, included: true, adapter: 'testing', adapter_confirmed: 19, waiting_read: 68, requests_open: 1, courses: 655, confirmed: 346, unreadable: 65, no_page: 244, intakes: 15, english: 487, web_fee: 0, any_fee: 655 },
     { provider_id: 'u2', country: 'NZ', name: 'University of Auckland', domain: 'auckland.ac.nz', rule_match: true, included: true, courses: 458, confirmed: 216, unreadable: 40, no_page: 202, intakes: 120, english: 150, web_fee: 3, any_fee: 3 },
     { provider_id: 'u3', country: 'AU', name: 'Avondale University', domain: 'avondale.edu.au', rule_match: false, included: false, courses: 21, confirmed: 20, unreadable: 0, no_page: 1, intakes: 0, english: 5, web_fee: 0, any_fee: 21 },
@@ -596,3 +597,8 @@ export const uniAdapterReview = { admit: { on: false, reason: null, changed_at: 
   readings_total: 262, intakes_by_adapter: 240,
   readings: [{ course: 'Bachelor of Engineering (Electrical and Electronic) (Honours)', code: '111210M', url: 'https://www.example.edu.au/study/courses/bachelor-engineering', identity: 'cricos_code', intakes: ['March', 'July'], intakes_by: 'adapter', intake_context: 'adapter pattern: March July', fee: 47300, fee_by: 'adapter', ielts: 6, english_by: null, extra: { campus: 'In person: Tonsley', duration: '5 years full-time' }, intakes_now: null }],
   requests: [{ id: 1, request: 'Intakes are under Start dates', status: 'open', requested_at: '2026-10-04T06:30:00Z' }] }
+
+export const adapterEvaluation = { settings: { no_page_share: 0.3, unreadable_share: 0.2, field_share: 0.5 }, figures_at: '2026-10-04T11:50:00Z', universities: [
+  { provider_id: 'u2', name: 'Australian National University', country: 'AU', courses: 423, confirmed: 405, no_page: 18, unreadable: 0, intakes: 17, english: 0, adapter: 'none', gap: 829, next: 'adapter_intakes' },
+  { provider_id: 'u3', name: 'Macquarie University', country: 'AU', courses: 461, confirmed: 270, no_page: 25, unreadable: 166, intakes: 82, english: 111, adapter: 'testing', gap: 729, next: 'adapter_page_data' },
+  { provider_id: 'u9', name: 'Flinders University', country: 'AU', courses: 476, confirmed: 360, no_page: 18, unreadable: 98, intakes: 215, english: 305, adapter: 'admitting', gap: 432, next: 'admitting' }] }
