@@ -305,9 +305,9 @@ test('adapter patterns: migration shaped, intakes and adapter English need the a
   execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/adapters.ts', '--bundle', '--format=esm', `--outfile=${out}`])
   const mod = await import(out)
   const A = { patterns: {
-    intakes: 'CRICOS[\\s\\S]{0,700}?Start dates(?:[^>]{0,120}>)?((?:\\s*[–-]?\\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\\b)+)',
-    fee: 'CRICOS[\\s\\S]{0,500}?Annual (?:indicative )?fee[\\s\\S]{0,60}?\\$([0-9][0-9,]+)(?![0-9,])(?!\\s*\\((?:CSP|FFP)\\))',
-    campus: 'CRICOS[\\s\\S]{0,200}?Delivery mode\\s*:?\\s*(.{2,80}?)\\s+(?:Duration|Deferrable|Annual|Start)' } }
+    intakes: 'CRICOS(?: code)?:?\\s*[0-9]{6}[A-Z](?:.|\\n){0,250}?Start dates(?:[^>]{0,120}>)?((?:\\s*[–-]?\\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\\b)+)',
+    fee: 'CRICOS(?: code)?:?\\s*[0-9]{6}[A-Z](?:.|\\n){0,250}?Annual (?:indicative )?fee(?:.|\\n){0,60}?\\$([0-9][0-9,]+)(?![0-9,])(?!\\s*\\((?:CSP|FFP)\\))',
+    campus: 'CRICOS(?: code)?:?\\s*[0-9]{6}[A-Z](?:.|\\n){0,200}?Delivery mode\\s*:?\\s*(.{2,80}?)\\s+(?:Duration|Deferrable|Annual|Start)' } }
   const html = '<title>Study X</title><h1>Bachelor X</h1><p>Delivery mode In person: Tonsley Annual indicative fee 2026 : $9,537 (CSP) Start dates – March – July</p><p>CRICOS code 111210M Delivery mode In person: Tonsley Duration 5 years full-time Annual fee 2026 : $9,537 (CSP) 2026: $47,300 Start dates – March – October Entry requirements</p>'
   const r = mod.applyAdapter(A, html, { title: 'x', code: '111210M', country: 'AU' }, 'v')
   expect(r.identity).toBe('cricos_code')
@@ -333,4 +333,19 @@ test('browser: adapter — patterns saved, readings on CRICOS-confirmed pages sh
   await ed.getByRole('textbox', { name: 'Pick' }).fill('{"intakes":"last"}')
   await ed.getByRole('button', { name: 'Save' }).click()
   await expect.poll(() => page.l3calls.find(c => c.adapter === 'save')?.args?.adapter).toMatchObject({ patterns: { intakes: 'Start dates(.{0,40})' }, pick: { intakes: 'last' } })
+})
+
+// Flinders apply (4 Oct 2026): unsafe "any text" patterns refused, Apply stays inside an edge call's processor time
+test('adapter safety: overlapping patterns refused, apply reads within the processor-time limit and carries on', () => {
+  for (const f of ['20261004001290_cf247_adapter_pattern_safety', '20261004001300_cf247_adapter_apply_continue']) {
+    const m = read(`supabase/migrations/${f}.sql`)
+    for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+    for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
+  }
+  expect(read('supabase/migrations/20261004001290_cf247_adapter_pattern_safety.sql')).toContain("is distinct from '55c5749c2ca4994a4549d99dad63b56e'")
+  expect(read('supabase/migrations/20261004001290_cf247_adapter_pattern_safety.sql')).toContain("position('.|\\s' in p) > 0")
+  const w = read('supabase/functions/coverage-sweep/index.ts')
+  expect(w).toContain('const ADAPTER_CPU_MS = 900')
+  expect(w).toContain('rpc("svc_adapter_apply_continue", { p_provider_id: String(body.provider_id || ""), p_after: after })')
+  expect(w).toContain('let after: string | null = body.after ? String(body.after) : null')
 })
