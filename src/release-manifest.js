@@ -1,17 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.188'
-export const PACKAGE_VERSION='0.1.115'
+export const UI_VERSION='2.15.189'
+export const PACKAGE_VERSION='0.1.116'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Admission by field and course exclusions',
+  title:'Coverage › Universities and central rules',
   changes:[
-    'University adapters: tick which fields an adapter admits (intakes, English, fees) instead of one switch for all.',
-    'University adapters: exclude a course reading that is wrong (a short-course total, a scholarship, a domestic fee) with a reason, and stop excluding it later.',
-    'Exclusions also stop the general reader’s wrong intakes and English on pages an adapter confirms.'
+    'Coverage & completeness › Universities: one row per target university with coloured pills for the adapter, admitted fields, exclusions, central English rule and calendar, and coverage of intakes, English and fees with where each value came from.',
+    'Open a university to see its courses in a table, each value with its source (course page by the adapter, central rule, general reader, by hand, missing), with filters for missing, excluded, adapter and central.',
+    'A Platform Admin can attach a university’s central English requirements or key-dates page. It is read through Firecrawl with evidence kept and parsed into a proposal approved in Layer 4 Review › Attributes.',
+    'An adapter fee with no year on the page is held against the current year.'
   ],
   bugFixes:[]
 }

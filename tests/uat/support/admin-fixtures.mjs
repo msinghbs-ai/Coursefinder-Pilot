@@ -611,3 +611,18 @@ export const adapterBuilder = { can_manage: true, budget: { used_usd: 0.0021, pr
     proposals: [{ at: '2026-10-04T13:00:00Z', kind: 'proposal', model: 'qwen/qwen3-30b-a3b-instruct-2507', cost: 0.0021, reason: 'Start dates follow the CRICOS code.', dropped: [],
       adapter: { json_source: '__NEXT_DATA__', json_paths: { duration: 'props.pageProps.pageContent.duration_ft_std' }, patterns: { intakes: 'CRICOS(?:.|\\n){0,200}?Start dates((?:.|\\n){0,60})' }, pick: { intakes: 'first' } },
       output: [{ course: 'Bachelor of Engineering', code: '111210M', identity: 'cricos_code', intakes: ['March', 'July'], fee: 47300, fee_year: 2026, ielts: 6, extra: { duration: '4' } }] }] }] }
+
+// Coverage › Universities (Decision 254, 5 Oct)
+export const universities = { as_at: '2026-10-05T09:00:00Z', universities: [
+  { provider_id: 'u1', name: 'Example University', country: 'AU', domain: 'example.edu.au', courses: 200, pages_read: 180,
+    adapter: { state: 'admitting', fields: ['english', 'fee', 'intakes'], exclusions: 3, admit_changed_at: '2026-10-05T07:00:00Z' },
+    english_policy: { status: 'approved', style: 'level_default', url: 'https://www.example.edu.au/english' }, calendar: { status: 'proposed', url: 'https://www.example.edu.au/key-dates' },
+    central_pages: [{ kind: 'english_policy', url: 'https://www.example.edu.au/english', status: 'parsed', read_at: '2026-10-05T08:00:00Z', evidence_id: 'ev-1' }],
+    intakes: { held: 150, adapter: 120, central: 0, reader: 30, excluded: 2 }, english: { held: 190, adapter: 40, central: 150, reader: 0, excluded: 0 }, fee: { held: 100, adapter: 100, reader: 0, excluded: 1 } },
+  { provider_id: 'u2', name: 'Northern College', country: 'NZ', domain: 'northern.ac.nz', courses: 50, pages_read: 10, adapter: null, english_policy: null, calendar: null, central_pages: [],
+    intakes: { held: 0, adapter: 0, central: 0, reader: 0, excluded: 0 }, english: { held: 5, adapter: 0, central: 0, reader: 5, excluded: 0 }, fee: { held: 0, adapter: 0, reader: 0, excluded: 0 } }] }
+export const universityCourses = { total: 2, offset: 0, limit: 100, courses: [
+  { course_id: 'c1', course: 'Bachelor of Nursing', code: '012345A', level: 'bachelor', url: 'https://www.example.edu.au/nursing', read_status: 'read', evidence_id: 'ev-2',
+    intakes: { value: ['February', 'July'], source: 'adapter', excluded: false }, english: { value: 7, source: 'central', excluded: false }, fee: { value: 41000, year: 2026, currency: 'AUD', source: 'adapter', excluded: false } },
+  { course_id: 'c2', course: 'Graduate Certificate of Arts', code: '116337M', level: 'graduate_certificate', url: null, read_status: null, evidence_id: null,
+    intakes: { value: null, source: 'missing', excluded: false }, english: { value: null, source: 'missing', excluded: false }, fee: { value: 18836, year: 2026, currency: 'AUD', source: 'reader', excluded: true } }] }

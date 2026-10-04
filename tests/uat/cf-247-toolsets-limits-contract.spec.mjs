@@ -571,3 +571,46 @@ test('adapter fee year: no year on the page means the current year', () => {
   expect(m).toContain("is distinct from '401a5d1960463594de1b711d39d3446c'")
   expect(m).toContain("extract(year from now() at time zone 'Australia/Melbourne')::int)$s$")
 })
+
+// Platform Admin 5 Oct 07:36: central rule attached to universities, Coverage › Universities tab
+test('central pages and universities view: migrations shaped', () => {
+  for (const f of ['20261005001430_cf247_central_pages_and_universities_view', '20261005001440_cf247_central_page_url_check', '20261005001450_cf247_central_page_marked_attached']) {
+    const m = read(`supabase/migrations/${f}.sql`)
+    for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+    for (const lit of m.replace(/--[^\n]*/g, '').replace(/\$s\$[\s\S]*?\$s\$/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
+    for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  }
+  const m = read('supabase/migrations/20261005001430_cf247_central_pages_and_universities_view.sql')
+  expect(m).toContain("when e.source_requirement_key like 'policy:%' then 'central'")
+  // 1440 replaced the address check, whose repeat count (above 255) the database refuses
+  expect(read('supabase/migrations/20261005001440_cf247_central_page_url_check.sql')).toContain("or length(v_url) not between 12 and 500 then$s$")
+  expect(m).toContain("found_via, status)\n    values (v_pid, v_kind, v_url")
+})
+
+test('browser: Coverage › Universities — pills, open a university, its courses, attach a central page', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Central English page from the wave run'))
+  await page.goto('/#coverage?tab=universities')
+  const w = page.locator('[data-universities-coverage]')
+  const row = w.locator('[data-university-row="u1"]')
+  await expect(row).toContainText('Admitting')
+  await expect(row).toContainText('3 excluded')
+  await expect(row).toContainText('Approved')
+  await expect(row).toContainText('central 150')
+  await w.getByRole('button', { name: 'No adapter (1)' }).click()
+  await expect(w.locator('[data-university-row="u1"]')).toHaveCount(0)
+  await w.getByRole('button', { name: 'All', exact: true }).click()
+  await row.getByRole('button', { name: 'Open' }).click()
+  const courses = w.locator('[data-university-courses="u1"]')
+  await expect(courses).toContainText('Bachelor of Nursing')
+  await expect(courses).toContainText('Central rule')
+  await expect(courses).toContainText('Course page (adapter)')
+  await expect(courses).toContainText('excluded')
+  await courses.getByRole('button', { name: 'Something missing' }).click()
+  await expect.poll(() => page.l3calls.filter(c => c.uniCourses === 'u1').at(-1)?.args?.show).toBe('missing')
+  const attach = w.locator('[data-central-attach="u1"]')
+  await attach.getByRole('textbox', { name: 'Central page address' }).fill('https://www.example.edu.au/key-dates')
+  await attach.getByRole('combobox', { name: 'Central page kind' }).selectOption('intake_calendar')
+  await attach.getByRole('button', { name: 'Attach page' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.centralPage === 'add')?.args).toMatchObject({ provider_id: 'u1', kind: 'intake_calendar', url: 'https://www.example.edu.au/key-dates', reason: 'Central English page from the wave run' })
+})

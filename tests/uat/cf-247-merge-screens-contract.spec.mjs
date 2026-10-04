@@ -34,7 +34,7 @@ test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live, 
 })
 
 test('v2.15.124: Readiness by area is part of Attributes; the cross-layer Sources list is under Operations', () => {
-  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes'])
+  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'universities']) // v2.15.189 Decision 254: Universities tab
   expect(resolveTarget('coverage', new URLSearchParams({ tab: 'domains' })).tab).toBe('attributes')
   expect(resolveTarget('data-quality-readiness').tab).toBe('attributes')
   expect(PAGES.layer1.tabs.map(t => t.key)).toEqual(['operations', 'settings', 'batch', 'scholarships']) // v2.15.173 Decision 251

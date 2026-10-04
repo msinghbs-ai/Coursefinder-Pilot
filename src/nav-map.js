@@ -34,6 +34,7 @@ export const PAGES = {
   coverage: { label: 'Coverage & completeness', slug: 'coverage', icon: 'check', subtitle: 'How complete each course is, and each attribute across all courses.', tabs: [
     { key: 'courses', label: 'Courses', min: 1 },
     { key: 'attributes', label: 'Attributes', min: 1 },
+    { key: 'universities', label: 'Universities', min: 4 },
   ] },
   layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', subtitle: 'Official registers such as CRICOS: runs, sources and their settings.', tabs: [
     { key: 'operations', label: 'Runs', min: 4 },
