@@ -590,3 +590,6 @@ export const uniAdapter = { can_manage: true, provider: { id: 'u1', name: 'The U
   ], json_shape: ['props.pageProps.pageContent.title: Bachelor of Accounting and Finance', 'props.pageProps.pageContent.cricos_code: null'] } }],
   applied: [{ identity: 'adapter_title', before: 'identity_mismatch', n: 41, last_at: '2026-10-04T06:05:00Z' }],
   allowed: [{ country: 'AU', identities: { english: ['cricos_code', 'exact_title'] } }] }
+export const uniAdapterReview = { admit: { on: false, reason: null, changed_at: null }, confirmed_total: 19,
+  confirmed: [{ course: 'Master of Advanced Practice (Clinical)', code: '121373J', url: 'https://handbook.example.edu.au/courses/2027/MAPC', identity: 'adapter_code', intakes: ['February', 'July'], ielts: 7, english_context: 'page data: IELTS 7', link_admitted: false, english_admitted: false }],
+  requests: [{ id: 1, request: 'Intakes are under Start dates', status: 'open', requested_at: '2026-10-04T06:30:00Z' }] }

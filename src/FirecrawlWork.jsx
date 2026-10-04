@@ -140,6 +140,32 @@ export function AdapterEditor({providerId,onError}){
       </tbody></table></div>}
       {res?.json_shape&&<details className="tn-items"><summary>Page data paths ({res.json_shape.length})</summary><pre className="tn-pre">{res.json_shape.join('\n')}</pre></details>}
     </div>}
+    <AdapterReview providerId={providerId} can={Boolean(d.can_manage)} onError={onError}/>
     {(d.applied||[]).length>0&&<p className="sl-sub" data-adapter-applied>Applied: {d.applied.map(x=>`${x.before==='identity_mismatch'?'refused pages confirmed':'fields added'} (${x.identity}) ${fmtNumber(x.n)}`).join(' · ')}</p>}
+  </div>
+}
+
+// Test before admitting, then switch admission on; ask for improvements (Decision 253 amended, Platform Admin 17:19).
+export function AdapterReview({providerId,can,onError}){
+  const[r,setR]=useState(null),[req,setReq]=useState(''),[busy,setBusy]=useState(false)
+  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_uni_adapter_review',{p_provider_id:providerId});if(error)throw error;setR(data||{})}catch(e){onError?.(errText(e))}}
+  useEffect(()=>{load()},[providerId])
+  const control=async(action,args,q)=>{const reason=q?ask(q):'request';if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_uni_adapter_control',{p_action:action,p_args:{provider_id:providerId,...args,reason}});if(error)throw error;if(action==='request')setReq('');await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!r)return null
+  const on=Boolean(r.admit?.on)
+  return <div className="tn-adapter-review" data-adapter-review={providerId}>
+    <h4 className="sl-h4">Test, then admit</h4>
+    <p className="sl-sub">{fmtNumber(r.confirmed_total)} pages confirmed by this adapter. Check the values below against the pages. Nothing this adapter confirms is admitted until admission is switched on here (the country rules allow adapter identities).</p>
+    <div className="tn-plan-row" data-adapter-admit><span className={`cf-chip tone-${on?'success':'warning'}`}>{on?'Admitting what this adapter confirms':'Not admitting yet'}</span>
+      {r.admit?.reason&&<small className="sl-sub">{r.admit.reason} · {fmtDateTime(r.admit.changed_at)}</small>}
+      {can&&<Button compact variant={on?undefined:'primary'} disabled={busy} onClick={()=>control('admit',{admit:!on},on?'Stop admitting what this adapter confirms? Values already admitted stay.':'Admit what this adapter confirms (links, English, intakes) through the existing admission rules?')}>{on?'Stop admitting':'Admit from this adapter'}</Button>}</div>
+    {(r.confirmed||[]).length>0&&<details className="tn-items" open><summary>What it would admit (latest {r.confirmed.length})</summary><div className="cf-table-wrap"><table className="cf-table" data-adapter-confirmed><thead><tr><th>Course</th><th>How</th><th>Intakes</th><th>IELTS</th><th>Admitted</th></tr></thead><tbody>
+      {r.confirmed.map((x,i)=><tr key={i}><td>{x.course}<small className="sl-sub">{x.code} · <a href={x.url} target="_blank" rel="noreferrer">{x.url}</a></small></td><td>{x.identity}</td><td>{(x.intakes||[]).join(', ')||'—'}</td><td>{x.ielts??'—'}{x.english_context&&<small className="sl-sub">{x.english_context}</small>}</td><td>{x.link_admitted?'link':''}{x.english_admitted?' English':''}{!x.link_admitted&&!x.english_admitted?'—':''}</td></tr>)}
+    </tbody></table></div></details>}
+    <h4 className="sl-h4">Ask for an improvement</h4>
+    {can&&<div className="tn-request"><textarea aria-label="Improvement request" rows={2} value={req} placeholder="For example: intakes are under 'Start dates', IELTS is in the entry requirements tab" onChange={e=>setReq(e.target.value)}/>
+      <Button compact disabled={busy||req.trim().length<4} onClick={()=>control('request',{request:req.trim()})}>Send request</Button></div>}
+    {(r.requests||[]).length>0&&<ul className="tn-list" data-adapter-requests>{r.requests.map(x=><li key={x.id}><span className={`cf-chip tone-${x.status==='open'?'warning':x.status==='done'?'success':'neutral'}`}>{x.status}</span> {x.request} <small className="sl-sub">{fmtDateTime(x.requested_at)}{x.answer?` · ${x.answer}`:''}</small>
+      {can&&x.status==='open'&&<Button compact onClick={()=>{const answer=window.prompt('Note (optional):','');if(answer===null)return;control('answer',{id:x.id,status:'done',answer},null)}}>Mark done</Button>}</li>)}</ul>}
   </div>
 }
