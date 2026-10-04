@@ -7,7 +7,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "toolset-runner-v1.1.0";
+const VERSION = "toolset-runner-v1.2.0";
 const ORIGIN = "https://coursefinder-pilot.techm.workers.dev";
 const hdrs = (req: Request) => { const o = req.headers.get("origin") || ""; return { "access-control-allow-origin": o === ORIGIN || o.startsWith("http://localhost") ? o : ORIGIN, "access-control-allow-headers": "authorization, x-client-info, apikey, content-type", "access-control-allow-methods": "POST, OPTIONS", "content-type": "application/json", "cache-control": "no-store", vary: "origin" } };
 const reply = (req: Request, s: number, b: unknown) => new Response(JSON.stringify(b), { status: s, headers: hdrs(req) });
@@ -50,18 +50,27 @@ export function classifyRender(input: any, status: number, html: string, min: nu
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: hdrs(req) });
   if (req.method !== "POST") return reply(req, 405, { error: "method_not_allowed" });
-  const auth = req.headers.get("authorization") || "";
-  if (!auth.toLowerCase().startsWith("bearer ")) return reply(req, 401, { error: "authentication_required" });
   const url = Deno.env.get("SUPABASE_URL"), anon = Deno.env.get("SUPABASE_ANON_KEY"), service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !anon || !service) return reply(req, 500, { error: "service_configuration_error" });
-  const user = createClient(url, anon, { global: { headers: { Authorization: auth } }, auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: ctx, error: ctxErr } = await user.rpc("admin_read", { p_operation: "context", p_args: {} });
-  if (ctxErr || !ctx?.authenticated) return reply(req, 401, { error: "authentication_required" });
-  if (Number(ctx?.role_rank || 0) < 6) return reply(req, 403, { error: "platform_admin_role_required" });
+  const svc = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
+  // Two ways in: the Platform Admin's own sign-in (Continue on the screen), or a one-time run pass issued inside the
+  // database for a run the Platform Admin already started (pipeline.svc_pilot_submit_nonce). Either way the run itself
+  // was started, with a reason, through admin_toolset_sample_write.
+  const nonce = (req.headers.get("x-cf-run-nonce") || "").trim();
+  if (nonce) {
+    const { data: ok } = await svc.rpc("svc_pilot_consume_nonce", { p_function: "toolset-runner", p_nonce: nonce });
+    if (!ok) return reply(req, 401, { error: "valid one-time run pass required" });
+  } else {
+    const auth = req.headers.get("authorization") || "";
+    if (!auth.toLowerCase().startsWith("bearer ")) return reply(req, 401, { error: "authentication_required" });
+    const user = createClient(url, anon, { global: { headers: { Authorization: auth } }, auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: ctx, error: ctxErr } = await user.rpc("admin_read", { p_operation: "context", p_args: {} });
+    if (ctxErr || !ctx?.authenticated) return reply(req, 401, { error: "authentication_required" });
+    if (Number(ctx?.role_rank || 0) < 6) return reply(req, 403, { error: "platform_admin_role_required" });
+  }
   let body: any; try { body = await req.json() } catch { return reply(req, 400, { error: "invalid_json" }) }
   const runId = String(body?.run_id || "");
   if (body?.action !== "run" || !/^[0-9a-f-]{36}$/i.test(runId)) return reply(req, 400, { error: "run_id_required" });
-  const svc = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
   const rpc = async (n: string, a: Record<string, unknown>) => { const { data, error } = await svc.rpc(n, a); if (error) throw new Error(`${n}: ${error.message}`); return data };
 
   const work = async () => {
