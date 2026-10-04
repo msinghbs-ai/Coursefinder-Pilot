@@ -85,7 +85,7 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   // an IELTS score kept as a number in the page data (json_paths.ielts_overall, json_paths.ielts_min_band)
   const num = (k: string) => { const v = data && paths[k] ? Number(jsonText(jsonAt(data, paths[k]))) : NaN; return Number.isFinite(v) && v > 0 && v <= 9 ? v : null };
   const eng = (() => { const e: Record<string, unknown> = english(part("english")); const o = num("ielts_overall"), b = num("ielts_min_band"); if (o !== null && e.ielts_overall == null) { e.ielts_overall = o; e.context = `page data: IELTS ${o}${b !== null ? `, no band below ${b}` : ""}` } if (b !== null && e.ielts_min_band == null) e.ielts_min_band = b; return e })();
-  const pat = patternValues(a, text);
+  const pat = patternValues(a, text, course.code);
   const extra: Record<string, string> = {};
   for (const f of EXTRA_FIELDS) {
     const v = pat[f] ?? (data && paths[f] ? clean(jsonText(jsonAt(data, paths[f]))).slice(0, 300) : "");
@@ -99,7 +99,7 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
   const candidates = basis ? {
     final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200),
-    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, "fee"), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: `adapter pattern: ${pat.fee}` } : fee(part("fee"), currencyFor(course.country)),
+    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: `adapter pattern: ${pat.fee}` } : fee(part("fee"), currencyFor(course.country)),
     english: eng,
     intakes: pIntakes && pIntakes.length ? pIntakes : intakes(part("intakes")),
     intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${pat.intakes}`.slice(0, 200)] : intakeEvidence(part("intakes")),
@@ -113,17 +113,26 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 // The year printed in the text a field's pattern matched (for example "Annual fee 2026: $47,300"), or null.
-export function patternYear(a: Adapter, text: string, field: string): number | null {
-  const p = (a.patterns || {})[field]; if (!p) return null;
+export function patternYear(a: Adapter, text: string, field: string, code = ""): number | null {
+  const p = withCode((a.patterns || {})[field], code); if (!p) return null;
   let r: RegExp; try { r = new RegExp(p, "i") } catch { return null }
   const m = r.exec(text); const y = m ? (m[0].match(/\b(20[2-3]\d)\b/) || [])[1] : undefined;
   return y ? Number(y) : null;
 }
 // The value each pattern finds on the page text (its first bracketed part, or the whole match). "pick" chooses which
 // match when the page has several (a page with a domestic and an international view prints some fields twice).
-export function patternValues(a: Adapter, text: string): Record<string, string> {
+// v0.17.1: "{code}" in a pattern stands for the course's own code, so a page that covers several courses (each with
+// its own CRICOS code and block) is read from this course's block. A pattern with {code} is skipped when there is no code.
+export function withCode(p: string | undefined, code: string): string | null {
+  if (!p) return null;
+  if (!p.includes("{code}")) return p;
+  const c = String(code || "").trim(); if (!c) return null;
+  return p.split("{code}").join(c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+}
+export function patternValues(a: Adapter, text: string, code = ""): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const [f, p] of Object.entries(a.patterns || {})) {
+  for (const [f, p0] of Object.entries(a.patterns || {})) {
+    const p = withCode(p0, code); if (!p) continue;
     let r: RegExp; try { r = new RegExp(p, "gi") } catch { continue }
     const ms = [...text.matchAll(r)].slice(0, 20).map((m) => clean(m[1] ?? m[0])).filter(Boolean);
     if (!ms.length) continue;

@@ -58,7 +58,7 @@ An adapter has:
 - json_paths: field -> dotted path in that JSON ("*" means every item of a list). Fields: ${BUILDER_FIELDS.join(", ")};
 - patterns: field -> regular expression (JavaScript, case-insensitive) on the page TEXT whose first bracketed group is the value. Fields: ${PATTERN_FIELDS.join(", ")};
 - pick: field -> "first", "last" or "all" when a page prints a field more than once.
-Rules for patterns: anchor them on stable labels near the value (for example the course code or a heading); for "any text" write (?:.|\\n){0,N} with N at most 250, never (.|\\s) or [\\s\\S]; for intakes capture the text holding the month names; for fee capture the amount digits of the international annual fee only (never domestic, CSP or FFP); keep each pattern short.
+Rules for patterns: anchor them on stable labels near the value; write {code} where the course's own code (for example its CRICOS code) is printed, because one page can cover several courses; for "any text" write (?:.|\\n){0,N} with N at most 250, never (.|\\s) or [\\s\\S]; for intakes capture the text holding the month names; for fee capture the amount digits of the international annual fee only (never domestic, CSP or FFP); keep each pattern short.
 Prefer a JSON path when the value is in the page data. Use only what the samples show. Answer JSON only.`;
 
 export function builderRequest(model: string, draft: any) {

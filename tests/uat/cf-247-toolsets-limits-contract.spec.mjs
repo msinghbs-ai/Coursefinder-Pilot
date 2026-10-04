@@ -455,3 +455,20 @@ test('browser: visual adapter builder — samples with blocks and page data, mar
   await expect(page.getByRole('textbox', { name: 'Patterns' })).toHaveValue(/Start dates/)
   await expect(page.getByRole('textbox', { name: 'JSON paths' })).toHaveValue(/duration_ft_std/)
 })
+
+test('adapter {code} anchor: a page covering several courses is read per course, fee compared within the same year', async () => {
+  const m = read('supabase/migrations/20261004001350_cf247_adapter_fee_same_year_and_code_anchor.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain("is distinct from '081db7a6cae9e5df0c237a8f0c978d3d'")
+  expect(m).toContain('coalesce(f.fee_year, 0) = coalesce(v_fy, 0)')
+  const os = await import('node:os'), path = await import('node:path'), { execFileSync } = await import('node:child_process')
+  const out = path.join(os.tmpdir(), `adapters-c-${process.pid}.mjs`)
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/adapters.ts', '--bundle', '--format=esm', `--outfile=${out}`])
+  const mod = await import(out)
+  const A = { patterns: { fee: '{code}(?:.|\\n){0,250}?Annual (?:indicative )?fee(?:.|\\n){0,60}?\\$([0-9][0-9,]+)(?![0-9,])' } }
+  const t = '<title>x</title><h1>x</h1><p>Graduate Certificate CRICOS 094009B Annual indicative fees (2026) $19,900 Master CRICOS 094010X Annual indicative fees (2026) $39,800</p>'
+  expect(mod.applyAdapter(A, t, { title: 'x', code: '094009B', country: 'AU' }, 'v').candidates.fee).toMatchObject({ value: 19900, fee_year: 2026 })
+  expect(mod.applyAdapter(A, t, { title: 'x', code: '094010X', country: 'AU' }, 'v').candidates.fee).toMatchObject({ value: 39800, fee_year: 2026 })
+  expect(mod.withCode('{code}x', 'A.B')).toBe('A\\.Bx')
+  expect(mod.withCode('{code}x', '')).toBeNull()
+})
