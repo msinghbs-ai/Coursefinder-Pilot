@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.103 — 3 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.176** (Scholarship job times follow Melbourne daylight saving; fixed clock times removed from screens and guide).
+- 20261004000500_cf247_scholarship_job_text_dst
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.102 — 3 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.175** (Course decision support retired with Course links (only reachable from that screen); the course record's scholarship cards cover it).

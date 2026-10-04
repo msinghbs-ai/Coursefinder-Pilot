@@ -58,7 +58,7 @@ export default function ScholarshipPublishing({onError}){
       <Metric label="Published" value={fmtNumber(c.published||0)} detail="On the website and in Zoho" icon={Globe} tone="success"/>
       <Metric label="Ready to publish" value={fmtNumber(c.eligible||0)} detail="International, or international and domestic; pass every check" icon={Send} tone={Number(c.eligible)?'warning':'neutral'}/>
       <Metric label="Held" value={fmtNumber(notOut)} detail="Kept off; reasons below" icon={Lock}/>
-      <Metric label="Published but now failing a check" value={fmtNumber(c.published_failing||0)} detail="Taken off at the daily review (06:17)" icon={AlertTriangle} tone={Number(c.published_failing)?'danger':'neutral'}/>
+      <Metric label="Published but now failing a check" value={fmtNumber(c.published_failing||0)} detail="Taken off at the daily publication review" icon={AlertTriangle} tone={Number(c.published_failing)?'danger':'neutral'}/>
     </div>
     {data.can_control&&<section className="m-panel">
       <SectionTitle icon={Send} title="Publish the ready list" subtitle={`Publishes all ${fmtNumber(c.eligible||0)} ready scholarships in one batch. If the list changes before you publish, nothing is published and you are asked to refresh.`}/>

@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.175'
-export const PACKAGE_VERSION='0.1.102'
+export const UI_VERSION='2.15.176'
+export const PACKAGE_VERSION='0.1.103'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Retire Course decision support',
+  title:'Daylight saving for scholarship job times',
   changes:[
-    'Course decision support (scholarship-selection-entry) and its deployed acceptance test retired; deployed source contract updated'
+    'Scholarship tabs show job times from the schedule in Melbourne time (daylight saving)',
+    'Fixed clock times removed from the guide, the publishing tile and job descriptions'
   ],
   bugFixes:[]
 }
