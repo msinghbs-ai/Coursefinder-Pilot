@@ -4,7 +4,7 @@ import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, 
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
-import { applyAdapter, inspectPage, jsonShape, pageJson } from "./adapters.ts";
+import { applyAdapter, inspectPage, jsonFind, jsonShape, pageJson } from "./adapters.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -1060,7 +1060,7 @@ Deno.serve(async (req) => {
         try {
           const html = await storedHtml(pg.storage_path);
           const r = applyAdapter(n.adapter || {}, html, { title: pg.title, code: pg.code, country: pg.country, status: pg.status }, VERSION);
-          if (!shape && n.adapter?.json_source) { const d = pageJson(html, n.adapter.json_source); if (d) shape = jsonShape(d, 5) }
+          if (!shape && n.adapter?.json_source) { const d = pageJson(html, n.adapter.json_source); if (d) shape = n.adapter.json_find ? jsonFind(d, String(n.adapter.json_find)) : jsonShape(d, 5) }
           out.push({ course: pg.title, code: pg.code, url: pg.url, was: pg.read_status, identity_before: pg.identity_basis, identity: r.identity, how: r.how, json_found: r.json_found, course_title_seen: r.course_title_seen,
                      page: inspectPage(html), found: r.candidates ? { intakes: (r.candidates as any).intakes, english: (r.candidates as any).english, fee: (r.candidates as any).fee?.value ?? null, fee_basis: (r.candidates as any).fee?.basis ?? null } : null });
         } catch (e) { out.push({ course: pg.title, url: pg.url, error: e instanceof Error ? e.message : String(e) }) }
@@ -1108,7 +1108,7 @@ Deno.serve(async (req) => {
         const { url: _u, ...opts } = reqBody;
         await rpc("svc_fc_call_log", { p: { run_id: null, item_id: null, use_case: "probe", endpoint: "scrape", provider_id: pg.provider_id || null, course_id: pg.course_id || null, url: pg.url, request: opts, ...rec, credits_used: used, outcome: readOutcome(rec, html, text.length) } }).catch(() => null);
         out.push({ url: pg.url, http, page_status: rec.page_status, error: rec.error, credits: used, proxy: rec.proxy_used, scrape_id: rec.scrape_id, title: titleOf(html).slice(0, 160) || d?.data?.metadata?.title || null, h1: h1Of(html).slice(0, 160), text_chars: text.length,
-                   page: html ? inspectPage(html) : null, json_shape: html && s.json_source ? jsonShape(pageJson(html, String(s.json_source)), 5) : null,
+                   page: html ? inspectPage(html) : null, json_shape: html && s.json_source ? (s.json_find ? jsonFind(pageJson(html, String(s.json_source)), String(s.json_find)) : jsonShape(pageJson(html, String(s.json_source)), 5)) : null,
                    code_found: !!(pg.code && text.includes(String(pg.code))), identity: idb, warning: d?.data?.warning || rec.meta?.warning || null, intakes: idb ? intakes(text) : null, english: idb ? english(text) : null, fee: idb ? fee(text, currencyFor(pg.country)).value : null });
       });
       return j({ ok: true, mode, options: s, pages: out, ms: Date.now() - t0, worker: WORKER });

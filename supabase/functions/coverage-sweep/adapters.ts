@@ -98,3 +98,19 @@ export function jsonShape(v: unknown, depth = 4, prefix = ""): string[] {
   }
   return out.slice(0, 160);
 }
+// Paths in a page's JSON whose key matches a pattern, with a short value (to pick an adapter's JSON paths).
+export function jsonFind(v: unknown, pattern: string, limit = 80): string[] {
+  let r: RegExp; try { r = new RegExp(pattern, "i") } catch { return [] }
+  const out: string[] = [];
+  const walk = (x: unknown, p: string, d: number) => {
+    if (out.length >= limit || d > 12 || x === null || typeof x !== "object") return;
+    for (const [k, y] of Object.entries(x as Record<string, unknown>)) {
+      const q = p ? `${p}.${Array.isArray(x) ? "*" : k}` : k;
+      if (!Array.isArray(x) && r.test(k)) out.push(`${q}: ${y !== null && typeof y === "object" ? (Array.isArray(y) ? `[${y.length}]` : "{…}") : String(y).replace(/\s+/g, " ").slice(0, 100)}`);
+      walk(y, q, d + 1);
+      if (Array.isArray(x)) break;
+    }
+  };
+  walk(v, "", 0);
+  return [...new Set(out)].slice(0, limit);
+}
