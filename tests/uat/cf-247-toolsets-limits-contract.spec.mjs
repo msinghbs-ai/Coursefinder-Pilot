@@ -479,3 +479,23 @@ test('adapter fee with no year on the page takes the year held (or this year), s
   expect(m).toContain("is distinct from '52b52638ef96a485d2866dfc53ed7854'")
   expect(m).toContain('extract(year from now())::int')
 })
+
+// Wave 1 (5 Oct): stale adapter readings taken out, Firecrawl-refused pages sent back once, page-data list filter
+test('wave 1 fixes: stale adapter readings cleared, pages sent back once, page-data fee by type', async () => {
+  const m = read('supabase/migrations/20261005001370_cf247_wave1_fixes.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  expect(m).toContain("is distinct from '9385154b9d476d484c7e13e5c84c6f74'")
+  expect(m).toContain("is distinct from '7dec88595da9b47df5cbb7e0d1a43f07'")
+  expect(m).toContain("then v_c := v_c - 'fee' - 'fee_by'")
+  expect(m).toContain("x.reason like 'university adapter: page read again%'")
+  const os = await import('node:os'), path = await import('node:path'), { execFileSync } = await import('node:child_process')
+  const out = path.join(os.tmpdir(), `adapters-w1-${process.pid}.mjs`)
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/adapters.ts', '--bundle', '--format=esm', `--outfile=${out}`])
+  const mod = await import(out)
+  const data = { p: { fees: [{ fee_type: 'domestic_fee_paying', estimated_annual_fee: 34600 }, { fee_type: 'international_fee_paying', estimated_annual_fee: 45000 }], code: '012345A' } }
+  expect(mod.jsonAt(data, 'p.fees[fee_type=international_fee_paying].estimated_annual_fee')).toBe(45000)
+  const html = `<title>Master of X</title><h1>Master of X</h1><script id="__NEXT_DATA__" type="application/json">${JSON.stringify(data)}</script>`
+  const r = mod.applyAdapter({ json_source: '__NEXT_DATA__', json_paths: { code: 'p.code', fee: 'p.fees[fee_type=international_fee_paying].estimated_annual_fee' } }, html, { title: 'Master of X', code: '012345A', country: 'AU' }, 'v')
+  expect(r.candidates).toMatchObject({ fee_by: 'adapter', fee: { value: 45000 } })
+})
