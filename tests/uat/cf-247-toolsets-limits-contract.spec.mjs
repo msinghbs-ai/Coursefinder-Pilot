@@ -363,3 +363,35 @@ test('adapter patterns: Flinders layouts (comma and ampersand start dates, found
   const may = run('111111A', 'CRICOS 111111A Duration 3 years Start dates may vary, see the website. Annual fee $40,000')
   expect(may.intakes_by).toBeUndefined()
 })
+
+// Platform Admin 22:43: admitting adapters collapsed with their switches stated, adapter readings replace held values
+// except those entered by hand, better pages found, every target university evaluated for its next step
+test('adapter overwrite, better pages and evaluation: migrations shaped, hand-entered values kept', () => {
+  for (const f of ['20261004001310_cf247_adapter_overwrite_and_better_pages', '20261004001320_cf247_adapter_evaluation']) {
+    const m = read(`supabase/migrations/${f}.sql`)
+    for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+    for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  }
+  const m = read('supabase/migrations/20261004001310_cf247_adapter_overwrite_and_better_pages.sql')
+  expect(m).toContain("is distinct from '151e73570a4ce33435647073a8047d4b'")
+  expect(m).toContain("k.field in ('intakes', 'intake')")
+  expect(m).toContain("and source_id is not null and intake_label <> all (v_itk)")
+  expect(m).toContain("join pipeline.uni_adapters u on u.provider_id = pg.provider_id and u.enabled and u.admit")
+  expect(m).toContain("k.field = 'official_url') then return 'entered_by_hand'")
+  expect(read('supabase/migrations/20261004001320_cf247_adapter_evaluation.sql')).toContain("'eval_field_share'")
+})
+
+test('browser: admitting adapter collapsed with its switches, evaluation lists the next step per university', async ({ page }) => {
+  await mockAdmin(page)
+  await page.goto('/#models-services')
+  const done = page.locator('[data-adapter-done="u9"]')
+  await expect(done.locator('summary')).toContainText('Flinders University (AU) · Adapter enabled · Admission on')
+  await expect(done).not.toHaveAttribute('open', '')
+  await expect(page.locator('[data-adapter-list] [data-adapter-row="u9"]')).toHaveCount(0)
+  await expect(page.locator('[data-adapter-list] [data-adapter-row="u1"]')).toBeVisible()
+  const ev = page.locator('[data-adapter-eval]')
+  await expect(ev.locator('[data-eval-row="u2"]')).toContainText('Adapter for start dates')
+  await expect(ev.locator('[data-eval-row="u3"]')).toContainText('Adapter for page data')
+  await ev.locator('[data-eval-row="u2"]').getByRole('button', { name: 'Set up adapter' }).click()
+  await expect(page.locator('[data-adapter-editor="u2"]')).toBeVisible()
+})

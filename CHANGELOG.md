@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.112 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.185** (admitting adapters shown collapsed with their switches, adapter readings replace held values except hand-entered ones, every target university evaluated for its next step).
+- Migrations 20261004001310 (adapter readings replace held values, better pages with Firecrawl) and 20261004001320 (adapter evaluation, three settings).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.111 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.184** (adapter Apply works through large pages within the edge time limit, unsafe adapter patterns refused).

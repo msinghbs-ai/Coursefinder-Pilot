@@ -48,18 +48,23 @@ export default function FirecrawlWork({onError}){
   const can=Boolean(d.can_manage)&&!busy,v=d.plan?.vendor,b=d.plan?.budget||{},open=new Set((d.runs||[]).filter(r=>r.status==='running').map(r=>r.use_case))
   const targets=(d.targets||[]),inc=targets.filter(t=>t.included)
   const sum=k=>inc.reduce((a,t)=>a+Number(t[k]||0),0)
-  const withAdapter=targets.filter(t=>t.adapter&&t.adapter!=='none'),opened=adapterFor?targets.find(t=>t.provider_id===adapterFor):null
+  const withAdapter=targets.filter(t=>t.adapter&&t.adapter!=='none'),done=withAdapter.filter(t=>t.adapter==='admitting'),working=withAdapter.filter(t=>t.adapter!=='admitting'),opened=adapterFor?targets.find(t=>t.provider_id===adapterFor):null
   const ADS={testing:['Testing — not admitting','warning'],admitting:['Admitting','success'],off:['Switched off','neutral']}
   return <div className="m-page-stack" data-firecrawl-work>
     <section className="m-panel" id="university-adapters" data-university-adapters><SectionTitle title="University adapters" subtitle="One adapter per university: where its course pages keep each field. Test an adapter on its confirmed pages, then switch admission on for it, or ask for an improvement."/>
       <ol className="tn-steps"><li><strong>Open</strong> a university below (or set one up).</li><li>Under <strong>Test, then admit</strong>, check the values it found against the course pages (each page link opens).</li><li>If they are right, press <strong>Admit from this adapter</strong>. If not, write what is wrong under <strong>Ask for an improvement</strong>.</li></ol>
-      {withAdapter.length===0?<Empty text="No university adapters yet."/>:<div className="cf-table-wrap"><table className="cf-table" data-adapter-list><thead><tr><th>University</th><th>State</th><th className="num">Confirmed by the adapter</th><th className="num">Waiting to be read</th><th className="num">Open requests</th><th></th></tr></thead><tbody>
-        {withAdapter.map(t=><tr key={t.provider_id} data-adapter-row={t.provider_id} className={adapterFor===t.provider_id?'tn-sel':''}><td>{t.name}<small className="sl-sub">{t.country} · {t.domain}</small></td><td><span className={`cf-chip tone-${(ADS[t.adapter]||ADS.off)[1]}`}>{(ADS[t.adapter]||ADS.off)[0]}</span></td>
+      {done.length>0&&<div className="tn-adapter-done" data-adapters-done>{done.map(t=><details key={t.provider_id} className="tn-items" data-adapter-done={t.provider_id} open={adapterFor===t.provider_id}>
+        <summary>{t.name} ({t.country}) · Adapter <strong>{t.adapter==='off'?'disabled':'enabled'}</strong> · Admission <strong>{t.adapter==='admitting'?'on':'off'}</strong> · {fmtNumber(t.intakes)} intakes, {fmtNumber(t.english)} English of {fmtNumber(t.courses)} courses</summary>
+        <p className="sl-sub">Confirmed by the adapter {fmtNumber(t.adapter_confirmed)} · waiting to be read {fmtNumber(t.waiting_read)} · open requests {fmtNumber(t.requests_open)}. What it reads itself replaces held values, except values entered by hand.</p>
+        <Button compact onClick={()=>setAdapterFor(adapterFor===t.provider_id?null:t.provider_id)}>{adapterFor===t.provider_id?'Close':'Work on this adapter'}</Button></details>)}</div>}
+      {working.length===0?(done.length===0&&<Empty text="No university adapters yet."/>):<div className="cf-table-wrap"><table className="cf-table" data-adapter-list><thead><tr><th>University</th><th>State</th><th className="num">Confirmed by the adapter</th><th className="num">Waiting to be read</th><th className="num">Open requests</th><th></th></tr></thead><tbody>
+        {working.map(t=><tr key={t.provider_id} data-adapter-row={t.provider_id} className={adapterFor===t.provider_id?'tn-sel':''}><td>{t.name}<small className="sl-sub">{t.country} · {t.domain}</small></td><td><span className={`cf-chip tone-${(ADS[t.adapter]||ADS.off)[1]}`}>{(ADS[t.adapter]||ADS.off)[0]}</span></td>
           <td className="num">{fmtNumber(t.adapter_confirmed)}</td><td className="num">{fmtNumber(t.waiting_read)}</td><td className="num">{fmtNumber(t.requests_open)}</td>
           <td><Button compact variant={adapterFor===t.provider_id?undefined:'primary'} onClick={()=>setAdapterFor(adapterFor===t.provider_id?null:t.provider_id)}>{adapterFor===t.provider_id?'Close':'Open'}</Button></td></tr>)}
       </tbody></table></div>}
       {d.can_manage&&<label className="tn-setup">Set up an adapter for <select aria-label="Set up an adapter for" value="" onChange={e=>e.target.value&&setAdapterFor(e.target.value)}><option value="">choose a university…</option>{targets.filter(t=>t.included&&(!t.adapter||t.adapter==='none')).map(t=><option key={t.provider_id} value={t.provider_id}>{t.name} ({t.country})</option>)}</select></label>}
       {opened&&<AdapterEditor key={adapterFor} providerId={adapterFor} onError={onError}/>}
+      <AdapterEvaluation onPick={id=>setAdapterFor(id)} onError={onError}/>
       {d.figures_at&&<small className="sl-sub">Figures as at {fmtDateTime(d.figures_at)} (refreshed every 5 minutes).</small>}
     </section>
     <section className="m-panel"><SectionTitle title="Firecrawl work" subtitle="Firecrawl is used by use case, only for the target universities below. Every call a run makes is logged for the support report."/>
@@ -91,6 +96,27 @@ export default function FirecrawlWork({onError}){
     </section>
     <SupportReport onError={onError}/>
   </div>
+}
+
+// What each target university needs next for data admission (Platform Admin 22:43: learn from the Flinders adapter).
+const NEXT={find_pages:['Find pages first','warning','Many courses have no page yet. Run Find pages (Firecrawl search on the university site).'],
+  adapter_page_data:['Adapter for page data','warning','Many pages cannot be read: the course data is in the page itself or needs a browser. Set up an adapter for its page data.'],
+  adapter_intakes:['Adapter for start dates','warning','Pages are confirmed but start dates are mostly missing. Set up an adapter with a start-date pattern.'],
+  adapter_english:['Adapter for English','warning','Pages are confirmed but English is mostly missing. Set up an adapter with an English pattern, or a central English policy.'],
+  admit_as_is:['Admitted as it is','success','The general reader finds the fields. No adapter needed now.'],
+  admitting:['Adapter admitting','success','Its adapter is switched on and admitting.']}
+export function AdapterEvaluation({onPick,onError}){
+  const[r,setR]=useState(null)
+  useEffect(()=>{(async()=>{try{const{data,error}=await supabase.rpc('admin_adapter_evaluation');if(error)throw error;setR(data||{})}catch(e){onError?.(errText(e))}})()},[])
+  if(!r)return null
+  const u=r.universities||[],st=r.settings||{}
+  return <details className="tn-items" data-adapter-evaluation open><summary>What each university needs next ({Object.entries(NEXT).map(([k,v])=>`${v[0]} ${u.filter(x=>x.next===k).length}`).join(' · ')})</summary>
+    <p className="sl-sub">Rules learnt from the Flinders adapter: no page on {fmtNumber(st.no_page_share*100)}% or more of courses means find pages first, unreadable pages on {fmtNumber(st.unreadable_share*100)}% or more means an adapter for the page data, and start dates or English on under {fmtNumber(st.field_share*100)}% of confirmed pages means an adapter with patterns. The shares are settings (Firecrawl, Adapter evaluation).</p>
+    <div className="cf-table-wrap"><table className="cf-table" data-adapter-eval><thead><tr><th>University</th><th className="num">Courses</th><th className="num">No page</th><th className="num">Not readable</th><th className="num">Confirmed</th><th className="num">Intakes</th><th className="num">English</th><th>Next step</th><th></th></tr></thead><tbody>
+      {u.map(x=>{const n=NEXT[x.next]||[x.next,'neutral',''];return <tr key={x.provider_id} data-eval-row={x.provider_id}><td>{x.name}<small className="sl-sub">{x.country}</small></td><td className="num">{fmtNumber(x.courses)}</td><td className="num">{fmtNumber(x.no_page)}</td><td className="num">{fmtNumber(x.unreadable)}</td><td className="num">{fmtNumber(x.confirmed)}</td><td className="num">{fmtNumber(x.intakes)}</td><td className="num">{fmtNumber(x.english)}</td>
+        <td><span className={`cf-chip tone-${n[1]}`}>{n[0]}</span><small className="sl-sub">{n[2]}</small></td><td>{x.next.startsWith('adapter_')&&<Button compact onClick={()=>onPick(x.provider_id)}>{x.adapter==='none'?'Set up adapter':'Adapter'}</Button>}</td></tr>})}
+    </tbody></table></div>
+    {r.figures_at&&<small className="sl-sub">Figures as at {fmtDateTime(r.figures_at)}.</small>}</details>
 }
 
 const SINCE={day:['Last 24 hours',1],week:['Last 7 days',7],month:['Last 30 days',30]}
