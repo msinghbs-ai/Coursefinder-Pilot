@@ -562,3 +562,12 @@ test('browser: adapter — admit by field, exclude a course reading, stop exclud
   await ex.getByRole('button', { name: 'Stop excluding' }).click()
   await expect.poll(() => page.l3calls.filter(c => c.adapterControl === 'exclude').find(c => c.args.exclude === false)?.args).toMatchObject({ course_id: 'c9', field: 'fee' })
 })
+
+// Platform Admin 5 Oct 07:36: a fee with no year on the page takes the current year
+test('adapter fee year: no year on the page means the current year', () => {
+  const m = read('supabase/migrations/20261005001420_cf247_adapter_fee_year_current.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
+  expect(m).toContain("is distinct from '401a5d1960463594de1b711d39d3446c'")
+  expect(m).toContain("extract(year from now() at time zone 'Australia/Melbourne')::int)$s$")
+})
