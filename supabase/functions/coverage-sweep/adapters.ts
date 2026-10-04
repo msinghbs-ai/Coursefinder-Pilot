@@ -99,7 +99,7 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
   const candidates = basis ? {
     final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200),
-    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", rejection_reason: null, candidates: [], context: `adapter pattern: ${pat.fee}` } : fee(part("fee"), currencyFor(course.country)),
+    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, "fee"), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: `adapter pattern: ${pat.fee}` } : fee(part("fee"), currencyFor(course.country)),
     english: eng,
     intakes: pIntakes && pIntakes.length ? pIntakes : intakes(part("intakes")),
     intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${pat.intakes}`.slice(0, 200)] : intakeEvidence(part("intakes")),
@@ -112,6 +112,13 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
 }
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+// The year printed in the text a field's pattern matched (for example "Annual fee 2026: $47,300"), or null.
+export function patternYear(a: Adapter, text: string, field: string): number | null {
+  const p = (a.patterns || {})[field]; if (!p) return null;
+  let r: RegExp; try { r = new RegExp(p, "i") } catch { return null }
+  const m = r.exec(text); const y = m ? (m[0].match(/\b(20[2-3]\d)\b/) || [])[1] : undefined;
+  return y ? Number(y) : null;
+}
 // The value each pattern finds on the page text (its first bracketed part, or the whole match). "pick" chooses which
 // match when the page has several (a page with a domestic and an international view prints some fields twice).
 export function patternValues(a: Adapter, text: string): Record<string, string> {

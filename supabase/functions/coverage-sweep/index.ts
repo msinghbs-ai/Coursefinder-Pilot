@@ -5,6 +5,7 @@ import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson } from "./adapters.ts";
+import { adapterOutput, builderRequest, jsonLeaves, mainJsonScript, proposalAdapter, textBlocks } from "./builder.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -46,7 +47,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.16.2"; // v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
+const WORKER = "coverage-sweep-worker-v0.17.0"; // v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -1098,6 +1099,79 @@ Deno.serve(async (req) => {
       const cont = stopped && after ? await rpc("svc_adapter_apply_continue", { p_provider_id: String(body.provider_id || ""), p_after: after }).catch(() => null) : null;
       return j({ ok: true, mode, pages, tally, more: stopped, continued: cont, after, cpu_ms: Math.round(cpu), worker: WORKER });
     }
+    // v0.17.0 (Decision 254, Platform Admin 23:41): the visual adapter builder. Capture: Firecrawl reads each sample page
+    // with a full-page screenshot; the page is kept (evidence bucket), the screenshot is kept (adapter-captures bucket) and
+    // the page is shown as text blocks and page-data values. Propose: the pinned preferred model proposes the adapter from
+    // the Platform Admin's marks and comments, and its output is worked out on the samples. Nothing is saved to the adapter.
+    if (mode === "adapter_capture") {
+      if (!fc?.secret) return j({ error: "no Firecrawl key", worker: WORKER }, 500);
+      const dr = await rpc("svc_adapter_draft_get", { p_draft_id: String(body.draft_id || "") });
+      if (!dr?.id) return j({ error: "unknown draft", worker: WORKER }, 404);
+      const caps: any[] = [];
+      for (const [i, sm] of (dr.samples || []).entries()) {
+        const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
+        const reqBody = { url: sm.url, formats: ["rawHtml", { type: "screenshot", fullPage: true }], onlyMainContent: false, waitFor: 3000, timeout: 60000 };
+        try { const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(90000) }); http = r.status; hdrs = r.headers; d = await r.json().catch(() => null) } catch (e) { err = e instanceof Error ? e.message : String(e) }
+        const rec = callRecord(http, d, hdrs, Date.now() - started, err);
+        const used = rec.credits_used ?? 1;
+        await rpc("svc_coverage_usage", { p_units: used, p_purpose: "adapter_builder", p_provider_id: dr.provider_id, p_url: sm.url }).catch(() => null);
+        const { url: _u, ...opts } = reqBody;
+        await rpc("svc_fc_call_log", { p: { run_id: null, item_id: null, use_case: "adapter_builder", endpoint: "scrape", provider_id: dr.provider_id, course_id: sm.course_id || null, url: sm.url, request: opts, ...rec, credits_used: used, outcome: rec.success ? "captured" : "fc_error" } }).catch(() => null);
+        const html = pageHtml(d);
+        if (!html) { caps.push({ ...sm, error: rec.error || "no page returned", credits: used }); continue }
+        const cc = ["NZ", "CA"].includes(dr.country) ? dr.country : "AU";
+        const htmlPath = `layer2/${cc}/adapters/${dr.provider_id}/${dr.id}/${i + 1}.html.gz`;
+        await c.storage.from("evidence").upload(htmlPath, await gzip(html), { contentType: "application/gzip", upsert: true });
+        let shot: string | null = null, shotPath: string | null = null;
+        const shotUrl = d?.data?.screenshot;
+        if (typeof shotUrl === "string" && /^https:/.test(shotUrl)) {
+          try {
+            const img = await fetch(shotUrl, { signal: AbortSignal.timeout(30000) });
+            if (img.ok) {
+              shotPath = `${dr.provider_id}/${dr.id}/${i + 1}.png`;
+              const up = await c.storage.from("adapter-captures").upload(shotPath, new Uint8Array(await img.arrayBuffer()), { contentType: img.headers.get("content-type") || "image/png", upsert: true });
+              if (!up.error) { const sg = await c.storage.from("adapter-captures").createSignedUrl(shotPath, 60 * 60 * 24 * 30); shot = sg.data?.signedUrl || null } else shotPath = null;
+            }
+          } catch { shotPath = null }
+        }
+        const src = mainJsonScript(html);
+        caps.push({ ...sm, title: titleOf(html).slice(0, 200), html_path: htmlPath, screenshot_path: shotPath, screenshot_url: shot, credits: used,
+                    json_source: src, blocks: textBlocks(html), leaves: src ? jsonLeaves(pageJson(html, src)) : [] });
+      }
+      await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "capture", p_data: { captures: caps, worker: WORKER }, p_cost: 0, p_model: null });
+      return j({ ok: true, mode, captured: caps.filter((x) => !x.error).length, worker: WORKER });
+    }
+    if (mode === "adapter_propose") {
+      const dr = await rpc("svc_adapter_draft_get", { p_draft_id: String(body.draft_id || "") });
+      if (!dr?.id) return j({ error: "unknown draft", worker: WORKER }, 404);
+      const model = String(dr.model || ""), profile = String(dr.model_profile || "");
+      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
+      if (!key) {
+        const prof = await rpc("layer3_routing_profile_service", { p_code: profile });
+        if (prof?.model_identifier !== model) { await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "error", p_data: { error: "the pinned model's profile was not found" }, p_cost: 0, p_model: model }); return j({ ok: false, error: "pinned model profile not found" }, 503) }
+        const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof.id });
+        key = typeof data === "string" ? data : "";
+      }
+      if (!key) { await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "error", p_data: { error: "OpenRouter credential unavailable" }, p_cost: 0, p_model: model }); return j({ ok: false, error: "no credential" }, 503) }
+      let ans: any = null, cost = 0, err: string | null = null;
+      try {
+        const r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(builderRequest(model, dr)), signal: AbortSignal.timeout(90000) });
+        const out = await r.json().catch(() => null);
+        cost = Number(out?.usage?.cost || 0);
+        if (out?.model && !String(out.model).startsWith(model)) err = `answered by ${out.model}, not the pinned model`;
+        else if (!r.ok) err = out?.error?.message || `HTTP ${r.status}`;
+        else ans = JSON.parse(String(out?.choices?.[0]?.message?.content || "null"));
+      } catch (e) { err = e instanceof Error ? e.message : String(e) }
+      if (!ans) { await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "error", p_data: { error: err || "no answer" }, p_cost: cost, p_model: model }); return j({ ok: false, error: err }) }
+      const { adapter, dropped } = proposalAdapter(ans);
+      const output: any[] = [];
+      for (const cp of (dr.captures || []).filter((x: any) => x.html_path)) {
+        try { const html = await storedHtml(cp.html_path); output.push({ course: cp.course, code: cp.code, url: cp.url, ...adapterOutput(adapter, html, { title: cp.course, code: cp.code || "", country: dr.country }) }) }
+        catch (e) { output.push({ course: cp.course, url: cp.url, error: e instanceof Error ? e.message : String(e) }) }
+      }
+      await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "proposal", p_data: { reason: String(ans.reason || "").slice(0, 600), adapter, dropped, output, worker: WORKER }, p_cost: cost, p_model: model });
+      return j({ ok: true, mode, cost, dropped: dropped.length, worker: WORKER });
+    }
     if (mode === "fc_probe") {
       if (!fc?.secret) return j({ error: "no Firecrawl key", workerVersion: WORKER }, 500);
       const pages: { url: string; course?: string; code?: string; country?: string; provider_id?: string; course_id?: string }[] = (Array.isArray(body.pages) ? body.pages : []).slice(0, 10);
@@ -1200,6 +1274,13 @@ Deno.serve(async (req) => {
               else {
                 const found = searchCandidates(it.input || {}, searchResults(d), Number(s.find_min_title_match ?? 0.6));
                 outcome = found.outcome; result = { candidates: found.candidates, top: found.top };
+                // v0.17.0 (Platform Admin 23:41): every search result is kept in the evidence bucket with the run
+                try {
+                  const body = JSON.stringify({ run_id: runId, item_id: it.id, course_id: it.course_id, query: searchBody(it.input || {}, s, it.country).query, at: new Date().toISOString(), results: searchResults(d) });
+                  const sp = `layer2/${["NZ", "CA"].includes(it.country) ? it.country : "AU"}/firecrawl/search/${runId}/${it.id}.json.gz`;
+                  const up = await c.storage.from("evidence").upload(sp, await gzip(body), { contentType: "application/gzip", upsert: true });
+                  if (!up.error) result.search_path = sp;
+                } catch { /* the run carries on; the call log keeps the outcome */ }
                 if (found.candidates.length) { const b = await rpc("svc_fc_find_bind", { p_item_id: it.id, p_candidates: found.candidates }); result.bind = b; if (b !== "bound") outcome = `found_not_bound_${b}` }
               }
               await rpc("svc_fc_call_log", { p: { ...log, outcome } }).catch(() => null);

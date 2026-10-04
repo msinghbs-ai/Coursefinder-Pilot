@@ -342,3 +342,10 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .tn-request{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
 .tn-request textarea{flex:1;min-width:240px;border:1px solid var(--cf-slate-300);border-radius:8px;padding:6px 8px;font:inherit}
 .tn-pre{max-height:320px;overflow:auto;font-size:var(--cf-fs-2xs);background:var(--cf-slate-50);padding:8px;border-radius:8px;white-space:pre-wrap}
+/* Decision 254: visual adapter builder */
+.tn-builder{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin:8px 0}
+.tn-shot img{display:block;width:100%;max-height:640px;object-fit:cover;object-position:top;border:1px solid var(--cf-slate-300);border-radius:6px}
+.tn-blocks{max-height:640px;overflow:auto}
+.tn-blocks select{margin-left:6px;font-size:12px}
+.tn-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+@media (max-width:760px){.tn-builder{grid-template-columns:1fr}}

@@ -158,6 +158,7 @@ export function AdapterEditor({providerId,onError}){
   const can=Boolean(d.can_manage)&&!busy,prev=(d.previews||[])[0],res=prev?.result
   return <div className="tn-adapter" data-adapter-editor={providerId}><h4 className="sl-h4">Adapter: {d.provider?.name}</h4>
     <AdapterReview providerId={providerId} can={Boolean(d.can_manage)} onError={onError}/>
+    <AdapterBuilder providerId={providerId} onError={onError} onUse={x=>{setA({...a,json_source:x.json_source||a.json_source||''});setPaths(JSON.stringify({...JSON.parse(paths||'{}'),...(x.json_paths||{})},null,2));setPatterns(JSON.stringify({...JSON.parse(patterns||'{}'),...(x.patterns||{})},null,2));setPick(JSON.stringify({...JSON.parse(pick||'{}'),...(x.pick||{})},null,2));const el=document.querySelector(`[data-adapter-editor="${providerId}"] [data-adapter-settings]`);if(el)el.open=true}}/>
     <details className="tn-items" data-adapter-settings><summary>Adapter settings (where this university keeps each field)</summary>
     <p className="sl-sub">How this university names and lays out its course pages. Change them, press Preview to try them on stored pages, then Save and Apply. Pages now: {Object.entries(d.pages||{}).map(([k,v])=>`${k.replace(/_/g,' ')} ${fmtNumber(v)}`).join(' · ')}</p>
     <div className="tn-adapter-grid">
@@ -185,6 +186,46 @@ export function AdapterEditor({providerId,onError}){
     </details>
     {(d.applied||[]).length>0&&<p className="sl-sub" data-adapter-applied>Applied: {d.applied.map(x=>`${x.before==='identity_mismatch'?'refused pages confirmed':'fields added'} (${x.identity}) ${fmtNumber(x.n)}`).join(' · ')}</p>}
   </div>
+}
+
+// Decision 254 (Platform Admin 23:41): the visual adapter builder. Capture sample pages with Firecrawl (screenshot, text
+// blocks, page-data values), mark which block or value holds each attribute, add comments, and ask the pinned preferred
+// model for a proposal. The proposal only fills the adapter settings below: Save, Apply and admission stay separate.
+const B_FIELDS=['intakes','fee','ielts_overall','english','campus','mode','duration','study_level','student_type','not_admitting','aqf_level','title','code']
+export function AdapterBuilder({providerId,onUse,onError}){
+  const[r,setR]=useState(null),[busy,setBusy]=useState(false),[marks,setMarks]=useState([]),[comments,setComments]=useState(''),[tab,setTab]=useState(0)
+  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_adapter_builder',{p_action:'read',p_args:{provider_id:providerId}});if(error)throw error;setR(data||{});const dr=(data?.drafts||[])[0];if(dr&&!marks.length){setMarks(dr.marks||[]);setComments(dr.comments||'')}}catch(e){onError?.(errText(e))}}
+  useEffect(()=>{load()},[providerId])
+  const dr=(r?.drafts||[])[0]
+  useEffect(()=>{if(!dr||!['capturing','proposing'].includes(dr.status))return;const t=setTimeout(load,5000);return()=>clearTimeout(t)},[r])
+  const act=async(action,args,q)=>{const reason=q?ask(q):'builder';if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:action,p_args:{provider_id:providerId,...args,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!r)return null
+  const b=r.budget||{},can=Boolean(r.can_manage)&&!busy,caps=dr?.captures||[],cap=caps[tab],last=(dr?.proposals||[]).slice(-1)[0]
+  const markOf=(kind,ref)=>marks.find(m=>m.sample===tab&&m.kind===kind&&m.ref===ref)?.field||''
+  const setMark=(kind,ref,value,field)=>setMarks(ms=>[...ms.filter(m=>!(m.sample===tab&&m.kind===kind&&m.ref===ref)),...(field?[{sample:tab,kind,ref,value:String(value||'').slice(0,160),field}]:[])])
+  const pick=(kind,ref,value)=><select aria-label={`Attribute for ${ref}`} value={markOf(kind,ref)} disabled={!can} onChange={e=>setMark(kind,ref,value,e.target.value)}><option value="">—</option>{B_FIELDS.map(f=><option key={f} value={f}>{f.replace(/_/g,' ')}</option>)}</select>
+  return <details className="tn-items" data-adapter-builder open={Boolean(dr)}><summary>Visual adapter builder {dr?`· ${dr.status}`:''} · AI today US$ {Number(b.used_usd||0).toFixed(3)} of {b.limit_usd} · {b.proposals||0} of {b.limit_proposals} proposals · model {b.model}</summary>
+    <ol className="tn-steps"><li><strong>Capture</strong> sample pages (Firecrawl, about 1 credit each).</li><li><strong>Mark</strong> the text block or page-data value that holds each attribute, and add comments.</li><li><strong>Propose</strong>: the pinned model suggests the settings and they are tried on the samples.</li><li><strong>Use this proposal</strong> fills the settings below. Then Preview, Save and Apply as usual.</li></ol>
+    {can&&<div className="tn-starts"><Button compact disabled={!can||['capturing','proposing'].includes(dr?.status)} onClick={()=>act('start',{},'Capture sample pages of this university with Firecrawl (screenshot and page)? About 1 credit a page.')}>{dr?'Capture new samples':'Capture sample pages'}</Button>
+      {dr&&caps.length>0&&<Button compact disabled={!can} onClick={()=>act('marks',{draft_id:dr.id,marks,comments},null)}>Keep marks</Button>}
+      {dr&&caps.length>0&&<Button compact variant="primary" disabled={!can||dr.status==='proposing'} onClick={()=>act('propose',{draft_id:dr.id,marks,comments},null)}>Ask for a proposal</Button>}</div>}
+    {dr?.status==='capturing'&&<Loading label="Capturing the sample pages…"/>}
+    {caps.length>0&&<><div className="tn-tabs" data-builder-samples>{caps.map((c,i)=><Button key={i} compact variant={i===tab?'primary':undefined} onClick={()=>setTab(i)}>{c.kind||`Sample ${i+1}`}: {c.course}</Button>)}</div>
+      {cap&&(cap.error?<p className="cf-chip tone-danger">{cap.error}</p>:<div className="tn-builder" data-builder-sample={tab}>
+        <div className="tn-shot">{cap.screenshot_url?<a href={cap.screenshot_url} target="_blank" rel="noreferrer"><img src={cap.screenshot_url} alt={`Screenshot of ${cap.course}`} loading="lazy"/></a>:<small className="sl-sub">No screenshot.</small>}<small className="sl-sub"><a href={cap.url} target="_blank" rel="noreferrer">{cap.url}</a> · {fmtNumber(cap.credits)} credits</small></div>
+        <div className="tn-blocks"><h5>Text blocks</h5><ul className="tn-list" data-builder-blocks>{(cap.blocks||[]).map(x=><li key={x.id}><strong>[{x.id}] {x.heading}</strong> {pick('block',String(x.id),x.text)}<small className="sl-sub">{x.text}</small></li>)}</ul>
+          {(cap.leaves||[]).length>0&&<><h5>Page data ({cap.json_source})</h5><ul className="tn-list" data-builder-leaves>{cap.leaves.map(x=><li key={x.path}><code>{x.path}</code> {pick('json',x.path,x.value)}<small className="sl-sub">{x.value}</small></li>)}</ul></>}</div></div>)}
+      <label><strong>Comments for the model</strong><textarea aria-label="Comments for the model" rows={3} value={comments} disabled={!can} placeholder="For example: start dates are the months under Start dates in the international view" onChange={e=>setComments(e.target.value)}/></label></>}
+    {dr?.status==='proposing'&&<Loading label="The model is proposing settings…"/>}
+    {last&&<div data-builder-proposal><h4 className="sl-h4">Proposal {fmtDateTime(last.at)} · {last.model} · US$ {Number(last.cost||0).toFixed(4)}</h4>
+      {last.kind==='error'?<p className="cf-chip tone-danger">{last.error}</p>:<>
+        <p className="sl-sub">{last.reason}</p>{(last.dropped||[]).length>0&&<p className="cf-chip tone-warning">Left out by the rules: {last.dropped.join(' · ')}</p>}
+        <div className="cf-table-wrap"><table className="cf-table" data-builder-output><thead><tr><th>Sample</th><th>Confirmed by</th><th>Intakes</th><th>Fee</th><th>IELTS</th><th>Other fields</th></tr></thead><tbody>
+          {(last.output||[]).map((o,i)=><tr key={i}><td>{o.course}<small className="sl-sub">{o.code}</small></td><td>{o.identity||'—'}</td><td>{(o.intakes||[]).join(', ')||'—'}</td><td>{o.fee!=null?fmtNumber(o.fee):'—'}{o.fee_year?` (${o.fee_year})`:''}</td><td>{o.ielts??'—'}</td><td><small className="sl-sub">{Object.entries(o.extra||{}).map(([k,v])=>`${k.replace(/_/g,' ')}: ${v}`).join(' · ')||'—'}</small></td></tr>)}
+        </tbody></table></div>
+        <details><summary>Proposed settings</summary><pre className="tn-pre">{JSON.stringify(last.adapter,null,2)}</pre></details>
+        {can&&<Button compact variant="primary" onClick={()=>onUse(last.adapter||{})}>Use this proposal</Button>}</>}</div>}
+  </details>
 }
 
 // Test before admitting, then switch admission on; ask for improvements (Decision 253 amended, Platform Admin 17:19).

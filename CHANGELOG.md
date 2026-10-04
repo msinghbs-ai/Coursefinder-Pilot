@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.113 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.186** (visual adapter builder (screenshots, text blocks, page data, marks, pinned model proposal), international fees admitted from admitting adapters, Firecrawl search results kept in the bucket).
+- Migration 20261004001340 (adapter fees, builder drafts, bucket adapter-captures, builder settings); coverage-sweep worker v0.17.0.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.112 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.185** (admitting adapters shown collapsed with their switches, adapter readings replace held values except hand-entered ones, every target university evaluated for its next step).
