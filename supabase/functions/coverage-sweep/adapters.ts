@@ -39,14 +39,17 @@ export function pageJson(html: string, id?: string | null): unknown {
 export function jsonAt(data: unknown, path?: string | null): unknown {
   if (!path) return undefined;
   let cur: unknown[] = [data];
-  for (const k of path.split(".")) {
+  for (const seg of path.split(".")) {
+    // v0.17.2: "fees[fee_type=international_fee_paying]" keeps only the list items whose field has that value
+    const f = seg.match(/^([^\[]+)\[([^=\]]+)=([^\]]*)\]$/);
+    const k = f ? f[1] : seg;
     const next: unknown[] = [];
     for (const c of cur) {
       if (c === null || c === undefined) continue;
       if (k === "*" && Array.isArray(c)) next.push(...c);
       else if (typeof c === "object") next.push((c as Record<string, unknown>)[k]);
     }
-    cur = next;
+    cur = f ? next.flatMap((x) => Array.isArray(x) ? x : [x]).filter((x) => x && typeof x === "object" && String((x as Record<string, unknown>)[f[2]] ?? "") === f[3]) : next;
   }
   const vals = cur.filter((v) => v !== undefined && v !== null);
   return vals.length === 0 ? undefined : vals.length === 1 ? vals[0] : vals;
@@ -94,12 +97,14 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   // a pattern for intakes or fee is the adapter's own reading: it replaces the general reader's and is marked as such
   // month names as printed, capitalised ("May" the month, not "may" the verb)
   const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b(?:${m}|${m.slice(0, 3)})\\b`).test(pat.intakes)) : null;
-  const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : NaN;
+  // v0.17.2: a fee kept as a number in the page data (json_paths.fee) counts as the adapter's own reading too
+  const jFeeRaw = !pat.fee && data && paths.fee ? jsonText(jsonAt(data, paths.fee)) : "";
+  const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : (/^\s*\$?\s*[0-9][0-9,]*(\.[0-9]+)?\s*$/.test(jFeeRaw) ? Number(jFeeRaw.replace(/[^0-9.]/g, "")) : NaN);
   const pIelts = pat.ielts_overall ? Number(pat.ielts_overall) : NaN;
   if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
   const candidates = basis ? {
     final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200),
-    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: `adapter pattern: ${pat.fee}` } : fee(part("fee"), currencyFor(course.country)),
+    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: pat.fee ? `adapter pattern: ${pat.fee}` : `page data: ${paths.fee} = ${jFeeRaw}` } : fee(part("fee"), currencyFor(course.country)),
     english: eng,
     intakes: pIntakes && pIntakes.length ? pIntakes : intakes(part("intakes")),
     intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${pat.intakes}`.slice(0, 200)] : intakeEvidence(part("intakes")),

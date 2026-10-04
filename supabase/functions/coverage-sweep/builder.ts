@@ -83,7 +83,7 @@ export function builderRequest(model: string, draft: any) {
 // Turn the model's answer into an adapter, dropping anything the rules refuse (and saying why).
 export function proposalAdapter(ans: any): { adapter: Adapter; dropped: string[] } {
   const dropped: string[] = []; const json_paths: Record<string, string> = {}, patterns: Record<string, string> = {}, pick: Record<string, string> = {};
-  for (const x of ans?.json_paths || []) { if (BUILDER_FIELDS.includes(x.field) && /^[A-Za-z0-9_.*-]+$/.test(String(x.path || ""))) json_paths[x.field] = x.path; else dropped.push(`path ${x.field}`) }
+  for (const x of ans?.json_paths || []) { if (BUILDER_FIELDS.includes(x.field) && /^[A-Za-z0-9_.*\[\]=-]+$/.test(String(x.path || ""))) json_paths[x.field] = x.path; else dropped.push(`path ${x.field}`) }
   for (const x of ans?.patterns || []) { const why = PATTERN_FIELDS.includes(x.field) ? patternSafe(String(x.pattern || "")) : "field not allowed"; if (why) dropped.push(`pattern ${x.field}: ${why}`); else patterns[x.field] = x.pattern }
   for (const x of ans?.pick || []) { if (["first", "last", "all"].includes(x.how)) pick[x.field] = x.how }
   const src = String(ans?.json_source || "").replace(/[^A-Za-z0-9_-]/g, "");
