@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.107 — 4 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.180** (Decision 253: Firecrawl by use case for target universities, call log and support report).
+- Migrations 20261004001200, 001210 and 001220 applied. coverage-sweep worker v0.14.0 deployed and checked byte for byte.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.106 — 4 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.179** (Decision 252 steps 1-2: Serper search pass into the identity check; page addresses repaired).

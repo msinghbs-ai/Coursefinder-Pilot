@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, intakes, keepUrl, robotsAllows, siteNameMatch, staleCalendarUrl, titleOf } from "./extract.ts";
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
-import { callRecord, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
+import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -45,7 +45,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.14.0"; // v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
+const WORKER = "coverage-sweep-worker-v0.14.1"; // v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -1047,6 +1047,31 @@ Deno.serve(async (req) => {
     }
     // v0.14.0 (Decision 253): a Firecrawl run (Read pages or Find pages) for target universities. Every option comes from
     // the run's settings and every call is logged (svc_fc_call_log) for the Firecrawl support report.
+    // v0.14.1: read chosen pages with chosen Firecrawl options (Platform Admin test of read settings and university
+    // adapters). Nothing is recorded on a course: only the call log and this reply.
+    if (mode === "fc_probe") {
+      if (!fc?.secret) return j({ error: "no Firecrawl key", workerVersion: WORKER }, 500);
+      const pages: { url: string; course?: string; code?: string; country?: string; provider_id?: string; course_id?: string }[] = (Array.isArray(body.pages) ? body.pages : []).slice(0, 10);
+      const s = { read_proxy: "auto", read_wait_ms: 3000, read_timeout_ms: 60000, read_location: true, read_formats: ["rawHtml"], ...(body.options || {}) };
+      const out: unknown[] = [];
+      await pool(pages, 5, async (pg) => {
+        if (!isTarget(pg.provider_id || null) && pg.provider_id) { out.push({ url: pg.url, skipped: "not a target university" }); return }
+        const reqBody: Record<string, unknown> = scrapeBody(pg.url, s, pg.country || "");
+        if (Array.isArray(s.actions)) reqBody.actions = s.actions;
+        const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
+        try { const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(100000) }); http = r.status; hdrs = r.headers; d = await r.json().catch(() => null) } catch (e) { err = e instanceof Error ? e.message : String(e) }
+        const rec = callRecord(http, d, hdrs, Date.now() - started, err);
+        const html = pageHtml(d), text = html ? htmlToText(html) : "";
+        const idb = html ? identity(html, text, String(pg.course || ""), String(pg.code || ""), false, pg.country || "") : null;
+        const used = rec.credits_used ?? 1;
+        await rpc("svc_coverage_usage", { p_units: used, p_purpose: "fc_probe", p_provider_id: pg.provider_id || null, p_url: pg.url }).catch(() => null);
+        const { url: _u, ...opts } = reqBody;
+        await rpc("svc_fc_call_log", { p: { run_id: null, item_id: null, use_case: "probe", endpoint: "scrape", provider_id: pg.provider_id || null, course_id: pg.course_id || null, url: pg.url, request: opts, ...rec, credits_used: used, outcome: readOutcome(rec, html, text.length) } }).catch(() => null);
+        out.push({ url: pg.url, http, page_status: rec.page_status, error: rec.error, credits: used, proxy: rec.proxy_used, scrape_id: rec.scrape_id, title: titleOf(html).slice(0, 160) || d?.data?.metadata?.title || null, h1: h1Of(html).slice(0, 160), text_chars: text.length,
+                   code_found: !!(pg.code && text.includes(String(pg.code))), identity: idb, warning: d?.data?.warning || rec.meta?.warning || null, intakes: idb ? intakes(text) : null, english: idb ? english(text) : null, fee: idb ? fee(text, currencyFor(pg.country)).value : null });
+      });
+      return j({ ok: true, mode, options: s, pages: out, ms: Date.now() - t0, worker: WORKER });
+    }
     if (mode === "fc_run") {
       const runId = String(body.run_id || "");
       if (!/^[0-9a-f-]{36}$/i.test(runId)) return j({ error: "run_id required", workerVersion: WORKER }, 400);
@@ -1091,7 +1116,7 @@ Deno.serve(async (req) => {
                 const proxy = String(s.read_proxy || "auto").toLowerCase();
                 const { d, rec, log } = await fcCall("scrape", scrapeBody(String(it.url), s, it.country), ctx, /stealth|enhanced/.test(proxy) ? 5 : 1);
                 used = rec.credits_used || 0;
-                const html = String(d?.data?.html || ""); const text = html ? htmlToText(html) : "";
+                const html = pageHtml(d); const text = html ? htmlToText(html) : "";
                 outcome = readOutcome(rec, html, text.length);
                 let identityBasis: string | null = null, path: string | null = null, sha: string | null = null, candidates: unknown = null, readStatus: string | null = null;
                 const finalUrl = String(d?.data?.metadata?.sourceURL || d?.data?.metadata?.url || it.url);

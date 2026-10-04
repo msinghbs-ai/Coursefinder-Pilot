@@ -324,3 +324,8 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .tn-plan-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:var(--cf-fs-sm)}
 .tn-section{margin-top:12px}
 .tn-list{margin:0;padding-left:18px;font-size:var(--cf-fs-sm);display:flex;flex-direction:column;gap:4px}
+/* v2.15.180 Decision 253: Firecrawl work */
+.tn-start{display:flex;flex-direction:column;gap:4px;max-width:420px}
+.tn-outcomes{display:flex;flex-wrap:wrap;gap:4px}
+.tn-total td{border-bottom:2px solid var(--cf-slate-300)}
+.tn-out td{opacity:.6}

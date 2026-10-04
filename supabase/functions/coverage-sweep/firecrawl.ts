@@ -13,7 +13,8 @@ const PROXIES = new Set(["basic", "auto", "stealth", "enhanced"]);
 
 // The body of a page read (POST /v2/scrape).
 export function scrapeBody(url: string, s: Record<string, unknown>, country: string) {
-  const b: Record<string, unknown> = { url, formats: ["html"], onlyMainContent: false };
+  const formats = (Array.isArray(s.read_formats) ? s.read_formats : ["rawHtml"]).map(String).filter((f) => ["rawHtml", "html", "markdown"].includes(f));
+  const b: Record<string, unknown> = { url, formats: formats.length ? formats : ["rawHtml"], onlyMainContent: false };
   const proxy = String(s.read_proxy ?? "auto").toLowerCase(); if (PROXIES.has(proxy)) b.proxy = proxy;
   const wait = num(s.read_wait_ms); if (wait && wait > 0) b.waitFor = Math.min(wait, 30000);
   const to = num(s.read_timeout_ms); if (to && to > 0) b.timeout = Math.min(Math.max(to, 10000), 120000);
@@ -33,6 +34,8 @@ export function searchCandidates(input: Record<string, unknown>, results: { url?
   const outcome = !rows.length ? "no_results" : candidates.length ? "found_on_provider_site" : rows.some((r) => r.on_site) ? "provider_site_no_title_match" : "other_sites_only";
   return { outcome, candidates, top: rows.slice(0, 5) };
 }
+// The page a read returned: the raw page (with its <title>) when asked for, otherwise Firecrawl's cleaned HTML.
+export const pageHtml = (d: any) => String(d?.data?.rawHtml || d?.data?.html || "");
 // The search results in a Firecrawl v2 (data.web) or v1 (data) reply.
 export const searchResults = (d: any) => ((Array.isArray(d?.data?.web) ? d.data.web : Array.isArray(d?.data) ? d.data : []) as any[]).filter((x) => typeof x?.url === "string").map((x) => ({ url: String(x.url), title: String(x.title || x.metadata?.title || "") }));
 
