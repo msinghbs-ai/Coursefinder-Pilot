@@ -614,3 +614,13 @@ test('browser: Coverage › Universities — pills, open a university, its cours
   await attach.getByRole('button', { name: 'Attach page' }).click()
   await expect.poll(() => page.l3calls.find(c => c.centralPage === 'add')?.args).toMatchObject({ provider_id: 'u1', kind: 'intake_calendar', url: 'https://www.example.edu.au/key-dates', reason: 'Central English page from the wave run' })
 })
+
+// Platform Admin 5 Oct 07:36: a central English rule written out from the attached page is a proposal, approved in Layer 4
+test('central English rule: written out as a proposal, never approved by the function', () => {
+  const m = read('supabase/migrations/20261005001460_cf247_central_english_rule_by_hand.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
+  expect(m).toContain("v_prop->>'style', v_prop, 'proposed', left(v_note, 500))")
+  expect(m).not.toContain("'approved', auth.uid()")
+  expect(m).toContain("security.current_role_rank() < 6")
+})
