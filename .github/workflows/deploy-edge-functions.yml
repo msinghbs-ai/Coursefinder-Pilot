@@ -75,7 +75,7 @@ jobs:
             [layer3-model-routing]=false
             [layer2-provider-control]=true
             # Decision 252: Serper and ScrapingBee sample runs (Platform Admin, user JWT)
-            [toolset-runner]=true
+            [toolset-runner]=false
             [layer2-acquire-v2]=false
             [layer2-scope-discover-scheduled]=false
             # Decision 216: background functions moved to one-time run passes (previously deployed by hand)
