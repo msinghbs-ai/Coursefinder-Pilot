@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.122 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.195** (Read pages again for many universities runs in the background).
+- Migration 20261005001630 (read pages again in the background)
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.121 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.194** (Coverage › Universities: read pages again for one university or for the universities ticked).

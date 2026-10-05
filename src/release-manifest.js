@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.194'
-export const PACKAGE_VERSION='0.1.121'
+export const UI_VERSION='2.15.195'
+export const PACKAGE_VERSION='0.1.122'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Read pages again, one university or many',
+  title:'Read pages again: many universities in the background',
   changes:[
-    'Coverage › Universities: tick universities (or every one shown) and read their pages again in one go, or use Read pages again inside an open university.',
-    'Choose pages not read or not confirmed, or all course pages, and whether to include the central English and key-date pages. A preview shows the pages and the likely Firecrawl credits before anything is sent.',
-    'A Platform Admin sends the pages with a reason, kept in the log. Pages that failed three times are tried again, and the values are admitted every 10 minutes once read.'
+    'Read pages again for many universities now records the request and returns at once: pages are sent back ten universities a minute, and the panel shows the progress.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Read pages again for 61 universities stopped at the 8-second screen limit (statement timeout) and sent nothing.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
