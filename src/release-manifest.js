@@ -1,20 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.189'
-export const PACKAGE_VERSION='0.1.116'
+export const UI_VERSION='2.15.190'
+export const PACKAGE_VERSION='0.1.117'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Coverage › Universities and central rules',
+  title:'Delivery, location and requirement in Coverage › Universities',
   changes:[
-    'Coverage & completeness › Universities: one row per target university with coloured pills for the adapter, admitted fields, exclusions, central English rule and calendar, and coverage of intakes, English and fees with where each value came from.',
-    'Open a university to see its courses in a table, each value with its source (course page by the adapter, central rule, general reader, by hand, missing), with filters for missing, excluded, adapter and central.',
-    'A Platform Admin can attach a university’s central English requirements or key-dates page. It is read through Firecrawl with evidence kept and parsed into a proposal approved in Layer 4 Review › Attributes.',
-    'An adapter fee with no year on the page is held against the current year.'
+    'Coverage & completeness › Universities: each course now shows Location (campus), Delivery and Requirement (the entry requirement read on the course page, for review)',
+    'University adapters: Delivery and Exit awards can be admitted, each by its own switch',
+    'University adapters: an International view setting reads course pages the way an international student sees them'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Excluding a reading now also withdraws the value it put in the catalogue'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

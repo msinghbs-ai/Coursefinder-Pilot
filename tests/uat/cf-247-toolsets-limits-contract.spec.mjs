@@ -606,6 +606,15 @@ test('browser: Coverage › Universities — pills, open a university, its cours
   await expect(courses).toContainText('Central rule')
   await expect(courses).toContainText('Course page (adapter)')
   await expect(courses).toContainText('excluded')
+  // 5 Oct 15:36: location, delivery and entry requirement columns
+  await expect(courses.locator('thead')).toContainText('Location (campus)')
+  await expect(courses.locator('thead')).toContainText('Delivery')
+  await expect(courses.locator('thead')).toContainText('Requirement')
+  await expect(courses).toContainText('Bundoora Campus')
+  await expect(courses).toContainText('Registered campus')
+  await expect(courses).toContainText('On campus and online')
+  await expect(courses).toContainText('Prerequisite: Year 12 Chemistry')
+  await expect(courses).toContainText('for review, not admitted')
   await courses.getByRole('button', { name: 'Something missing' }).click()
   await expect.poll(() => page.l3calls.filter(c => c.uniCourses === 'u1').at(-1)?.args?.show).toBe('missing')
   const attach = w.locator('[data-central-attach="u1"]')
@@ -650,7 +659,7 @@ test('adapter apply: no Firecrawl re-read for text-only adapters, stale adapter_
 
 // 5 Oct (Platform Admin 11:48): delivery admitted from the international view; scholarships follow admitted fees
 test('delivery: own admitted field, delivery exclusions, wording rules, hourly scholarship alignment', () => {
-  for (const f of ['20261005001490_cf247_adapter_delivery_mode.sql', '20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql', '20261005001510_cf247_international_view_and_credit_fees.sql', '20261005001520_cf247_international_view_pages_named.sql', '20261005001530_cf247_view_reads_and_course_page_rates.sql', '20261005001540_cf247_exit_awards_and_fee_from_total.sql']) {
+  for (const f of ['20261005001490_cf247_adapter_delivery_mode.sql', '20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql', '20261005001510_cf247_international_view_and_credit_fees.sql', '20261005001520_cf247_international_view_pages_named.sql', '20261005001530_cf247_view_reads_and_course_page_rates.sql', '20261005001540_cf247_exit_awards_and_fee_from_total.sql', '20261005001550_cf247_location_requirement_exclusion_withdraw.sql']) {
     const m = read('supabase/migrations/' + f)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
@@ -678,7 +687,7 @@ test('international view (page_view) and per-credit fees: guarded, hand values k
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
   expect(ad).toContain('export function withView(')
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toContain('coverage-sweep-worker-v0.17.7')
+  expect(ix).toContain('coverage-sweep-worker-v0.17.8')
   expect(ix).toContain('it.rendered_before !== true')
   const r = read('supabase/migrations/20261005001530_cf247_view_reads_and_course_page_rates.sql')
   expect(r).toContain("is distinct from '9bfcb79ff8da7eb53be7432278a2da37'")

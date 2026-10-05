@@ -51,7 +51,7 @@ export function withView(url: string, pv?: Adapter["page_view"]): string {
 // Fields an adapter may give besides intakes, English and fee. They are shown for testing only and never admitted.
 // v0.17.7 (Platform Admin 5 Oct 15:22, 15:34): fee_total (a whole-course fee) with course_years (full-time years) gives
 // the annual fee as total / years; exit_awards (the awards a student can exit with after N years of full-time study).
-export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location", "fee_total", "course_years", "exit_awards"];
+export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location", "fee_total", "course_years", "exit_awards", "entry_requirement"];
 
 const clean = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
 const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();

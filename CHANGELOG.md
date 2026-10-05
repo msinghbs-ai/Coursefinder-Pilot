@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.117 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.190** (Coverage › Universities: location, delivery and entry requirement; delivery and exit awards admitted; international view setting).
+- Migrations 20261005001490–20261005001550 (delivery, international view, fees per credit, exit awards, exclusions withdraw values); worker v0.17.8
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.116 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.189** (Coverage › Universities tab and central pages).

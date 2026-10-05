@@ -1,7 +1,7 @@
 // Coverage & completeness › Universities (CF-247 Decision 254, Platform Admin 5 Oct 07:36).
 // One row per target university: adapter state and admitted fields, exclusions, central English rule and calendar,
 // and how many courses hold intakes, English and fees, with where each value came from. Open a university to see its
-// courses in a table. A Platform Admin can attach a central English or key-dates page (read through Firecrawl, then
+// courses in a table (5 Oct 15:36: with location, delivery and entry requirement). A Platform Admin can attach a central English or key-dates page (read through Firecrawl, then
 // approved in Layer 4 Review › Attributes).
 import React,{useEffect,useMemo,useState}from'react'
 import{RefreshCw}from'lucide-react'
@@ -11,10 +11,12 @@ import{Button,Empty,Loading,Pager,SectionTitle,fmtDateTime,fmtNumber}from'./ui-k
 
 const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const ADAPTER={admitting:['Admitting','success'],testing:['Testing','warning'],off:['Switched off','neutral']}
-const FIELD={intakes:'Intakes',english:'English',fee:'Fees'}
+const FIELD={intakes:'Intakes',english:'English',fee:'Fees',delivery:'Delivery',exit_awards:'Exit awards'}
+// Delivery as held in the catalogue (security.delivery_mode_from_text)
+const DELIVERY={on_campus:'On campus',online:'Online',on_campus_and_online:'On campus and online',blended:'Blended'}
 const POLICY={approved:['Approved','success'],proposed:['Waiting for approval','warning'],no_values:['Read, no rule found','neutral']}
 // Where a held value came from
-const SOURCE={adapter:['Course page (adapter)','success'],central:['Central rule','info'],reader:['Course page (general reader)','neutral'],hand:['Entered by hand','violet'],other:['Other source','neutral'],missing:['Missing','danger']}
+const SOURCE={adapter:['Course page (adapter)','success'],central:['Central rule','info'],reader:['Course page (general reader)','neutral'],hand:['Entered by hand','violet'],other:['Other source','neutral'],missing:['Missing','danger'],catalogue:['Registered campus','info']}
 const SHOW=[['all','All courses'],['missing','Something missing'],['excluded','Excluded'],['adapter','Read by the adapter'],['central','From a central rule']]
 const errText=e=>e?.message||String(e)
 
@@ -57,13 +59,17 @@ function CourseTable({u,onError}){
   return <div className="uc-courses" data-university-courses={u.provider_id}>
     <div className="cf-filterbar" role="group" aria-label="Show courses">{SHOW.map(([k,l])=><button key={k} className={show===k?'active':''} onClick={()=>{setOffset(0);setShow(k)}}>{l}</button>)}</div>
     {busy&&!d?<Loading/>:(d?.courses||[]).length===0?<Empty text="No courses match."/>:<>
-    <div className="cf-table-wrap"><table className="cf-table uc-course-table"><thead><tr><th>Course</th><th>Intakes</th><th>English (IELTS)</th><th>Fee (international, annual)</th></tr></thead><tbody>
+    <div className="cf-table-wrap"><table className="cf-table uc-course-table"><thead><tr><th>Course</th><th>Location (campus)</th><th>Delivery</th><th>Intakes</th><th>English (IELTS)</th><th>Requirement</th><th>Fee (international, annual)</th></tr></thead><tbody>
       {d.courses.map(c=><tr key={c.course_id}>
         <td><strong>{c.course}</strong><small className="sl-sub">{c.code||'—'}{c.level?` · ${String(c.level).replace(/_/g,' ')}`:''}</small>
           <span className="uc-links">{c.url&&<a className="cf-link" href={c.url} target="_blank" rel="noreferrer">course page</a>}{c.evidence_id&&<a className="cf-link" href={`#evidence?evidence_id=${encodeURIComponent(c.evidence_id)}`}>evidence</a>}
             {c.read_status&&c.read_status!=='read'&&<Pill tone="warning">{String(c.read_status).replace(/_/g,' ')}</Pill>}</span></td>
+        <td><span className="uc-val">{c.location?.value||c.location?.read||'—'}</span>{c.location&&<SourcePill source={c.location.source}/>}{c.location?.value&&c.location?.read&&<small className="sl-sub" title="Read on the course page">page: {c.location.read}</small>}</td>
+        <td><span className="uc-val">{c.delivery?.value?(DELIVERY[c.delivery.value]||String(c.delivery.value).replace(/_/g,' ')):'—'}</span>{c.delivery&&<SourcePill source={c.delivery.source}/>}{c.delivery?.excluded&&<Pill tone="warning">excluded</Pill>}
+          {c.delivery?.read&&<small className="sl-sub" title={c.delivery.read}>page: {String(c.delivery.read).slice(0,60)}</small>}</td>
         <td><span className="uc-val">{(c.intakes?.value||[]).join(', ')||'—'}</span><SourcePill source={c.intakes?.source}/>{c.intakes?.excluded&&<Pill tone="warning">excluded</Pill>}</td>
         <td><span className="uc-val">{c.english?.value??'—'}</span><SourcePill source={c.english?.source}/>{c.english?.excluded&&<Pill tone="warning">excluded</Pill>}</td>
+        <td><span className="uc-val uc-req" title={c.requirement?.read||''}>{c.requirement?.read?String(c.requirement.read).slice(0,90):'—'}</span>{c.requirement&&<SourcePill source={c.requirement.source}/>}{c.requirement?.read&&<small className="sl-sub">for review, not admitted</small>}</td>
         <td><span className="uc-val">{c.fee?.value!=null?fmtMoney(c.fee.value,c.fee.currency||'AUD'):'—'}{c.fee?.year?` (${c.fee.year})`:''}</span><SourcePill source={c.fee?.source}/>{c.fee?.excluded&&<Pill tone="warning">excluded</Pill>}</td></tr>)}
     </tbody></table></div>
     <Pager offset={offset} limit={LIMIT} total={Number(d.total||0)} onOffset={setOffset}/></>}
