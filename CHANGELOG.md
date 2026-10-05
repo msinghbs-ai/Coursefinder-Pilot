@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.120 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.193** (Central English rules applied again for every university, pages bound by hand admitted, online courses show Online as location).
+- Migration 20261005001610; worker v0.17.10
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.119 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.192** (Coverage › Universities: hosted courses — exit and nested awards with a register check, shared pages, double degrees and pages that are gone).

@@ -206,8 +206,9 @@ function FeeRangePanel({u,can,onDone,onError}){
       {c.low!=null&&<small className="sl-sub">Lowest: {c.low_course||'—'} ({money0(c.low,r.currency)}, {(HOW[c.low_source]||[c.low_source])[0]}) · Highest: {c.high_course||'—'} ({money0(c.high,r.currency)}, {(HOW[c.high_source]||[c.high_source])[0]})</small>}
       {r.by_hand&&<small className="sl-sub">Worked out: {rangeText({...c,currency:r.currency})}{r.manual?.note?` · note: ${r.manual.note}`:''}</small>}
     </>:<small className="sl-sub">No award course with a qualifying fee yet.</small>}
+    <small className="sl-sub">This works out the fee range only. Course values (intakes, English, fees, delivery) are admitted from the course pages every 10 minutes, and central English rules every 10 minutes.</small>
     {can&&<div className="uc-attach">
-      <Button compact disabled={busy} onClick={()=>act('refresh',`Work out the range for ${u.name} again now? Give the reason (kept in the log).`)}>Work out again</Button>
+      <Button compact disabled={busy} onClick={()=>act('refresh',`Work out the range for ${u.name} again now? Give the reason (kept in the log).`)}>Work out the fee range again</Button>
       {r&&(r.published?<Button compact disabled={busy} onClick={()=>act('unpublish',`Stop publishing the whole-course fee range for ${u.name}? Give the reason (kept in the log).`)}>Stop publishing</Button>
         :<Button compact disabled={busy||r.low==null} onClick={()=>act('publish',`Publish ${rangeText(r)} as the indicative whole-course fees for ${u.name}? Give the reason (kept in the log).`)}>Publish</Button>)}
       <Button compact disabled={busy} onClick={setByHand}>Set by hand</Button>
