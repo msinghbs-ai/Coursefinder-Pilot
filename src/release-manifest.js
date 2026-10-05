@@ -1,22 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.193'
-export const PACKAGE_VERSION='0.1.120'
+export const UI_VERSION='2.15.194'
+export const PACKAGE_VERSION='0.1.121'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Central English rules and pages bound by hand',
+  title:'Read pages again, one university or many',
   changes:[
-    'Central English rules are applied again for every university: one approved rule whose page had no stored evidence had stopped every rule after it since 5 Oct 10:23. A rule now takes the evidence of its central page, and a rule that cannot be applied no longer stops the others.',
-    'A course page bound by hand is that course\'s page: its readings (intakes, English, fees, delivery) are now admitted like any other confirmed page.',
-    'A course taught only online shows Online as its location.',
-    'Coverage › Universities: the fee range button now reads Work out the fee range again, with a note that course values are admitted every 10 minutes.'
+    'Coverage › Universities: tick universities (or every one shown) and read their pages again in one go, or use Read pages again inside an open university.',
+    'Choose pages not read or not confirmed, or all course pages, and whether to include the central English and key-date pages. A preview shows the pages and the likely Firecrawl credits before anything is sent.',
+    'A Platform Admin sends the pages with a reason, kept in the log. Pages that failed three times are tried again, and the values are admitted every 10 minutes once read.'
   ],
-  bugFixes:[
-    'Athabasca and 25 other universities: values read from pages bound by hand were never admitted.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
