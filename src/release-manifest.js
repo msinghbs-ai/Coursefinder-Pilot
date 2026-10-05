@@ -1,20 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.192'
-export const PACKAGE_VERSION='0.1.119'
+export const UI_VERSION='2.15.193'
+export const PACKAGE_VERSION='0.1.120'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Hosted courses: awards, shared pages and pages that are gone',
+  title:'Central English rules and pages bound by hand',
   changes:[
-    'Coverage › Universities shows each university\'s hosted courses: an award a student can exit with or that sits inside a longer course takes its page, fee, intakes and delivery from its single-degree parent, never from a double degree, once a register check passes (the award\'s registered fee per year against the parent\'s current fee).',
-    'Awards printed as "available as an exit award of this degree" are now read. A field is copied only when the university admits that field.',
-    'A page that carries several courses (majors on one degree page, research degrees on one page) hosts them when the university admits host pages. Double degrees on an unconfirmed page and pages that are gone are listed for a Platform Admin to confirm or record by hand.',
-    'The course list marks each hosted course with its host and whether the check passed.'
+    'Central English rules are applied again for every university: one approved rule whose page had no stored evidence had stopped every rule after it since 5 Oct 10:23. A rule now takes the evidence of its central page, and a rule that cannot be applied no longer stops the others.',
+    'A course page bound by hand is that course\'s page: its readings (intakes, English, fees, delivery) are now admitted like any other confirmed page.',
+    'A course taught only online shows Online as its location.',
+    'Coverage › Universities: the fee range button now reads Work out the fee range again, with a note that course values are admitted every 10 minutes.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Athabasca and 25 other universities: values read from pages bound by hand were never admitted.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

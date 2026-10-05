@@ -853,3 +853,19 @@ test('worker v0.17.10: annual from a whole-course total for courses of a quarter
   expect(ad).toContain('tYears >= 0.25 && tYears <= 8')
   expect(ad).toContain('Math.round(tTotal / tYears * 100) / 100')
 })
+
+// 5 Oct 20:37: central English rules unblocked, pages bound by hand admitted, online courses located Online
+test('central English rules: one rule without evidence never stops the others; hand-bound pages admitted', () => {
+  const m = read('supabase/migrations/20261005001610_cf247_central_english_unblocked_hand_pages_admitted.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  expect(m).toContain("is distinct from 'b1d29a3dffbb41d62260b6b170acc578'")
+  expect(m).toContain("is distinct from '194b5a9a7e732a8e40f6912651e54e15'")
+  expect(m).toContain("is distinct from 'a63be1d2cdcda07288a0abb977c10261'")
+  expect(m).toContain("exception when others then")
+  expect(m).toContain("fs.id = x.fact_source_id and fs.url = x.url and fs.evidence_id is not null")
+  expect(m).toContain(`not (e.value ? 'manual') then e.value || '["manual"]'::jsonb`)
+  expect(m).toContain("case when co.delivery_mode = 'online' then 'Online' end")
+  const ui = read('src/UniversitiesCoverage.jsx')
+  expect(ui).toContain('Work out the fee range again')
+})
