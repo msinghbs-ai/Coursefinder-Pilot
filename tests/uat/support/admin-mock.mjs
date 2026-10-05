@@ -46,6 +46,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_uni_adapter_review: F.uniAdapterReview,
     admin_universities_read: b => { calls.push({ universities: b.p_args }); return F.universities },
     admin_university_courses_read: b => { calls.push({ uniCourses: b.p_provider_id, args: b.p_args }); return F.universityCourses },
+    admin_university_reread: b => { calls.push({ reread: b.p_action, args: b.p_args }); return b.p_action === 'preview' ? { which: b.p_args.which, central: b.p_args.central, universities: (b.p_args.provider_ids || []).map((id, i) => ({ provider_id: id, name: id === 'u1' ? 'Example University' : 'Northern College', pages: i === 0 ? 12 : 3, firecrawl_likely: i === 0 ? 2 : 0, central_pages: b.p_args.central ? 1 : 0 })) } : { ok: true, universities: (b.p_args.provider_ids || []).length, pages: 15, central_pages: 2 } },
     admin_exit_awards: b => { calls.push({ exitAwards: b.p_action, args: b.p_args }); return b.p_action === 'read' ? (b.p_args?.scope === 'settings' ? { same_year_tolerance: 0.02, lagged_tolerance: 0.06, updated_at: '2026-10-05T09:00:00Z', reason: 'defaults' } : F.exitAwards) : { ok: true } },
     admin_host_pages: b => { calls.push({ hostPages: b.p_action, args: b.p_args }); return b.p_action === 'read' ? F.hostPages : { ok: true } },
     admin_provider_fee_range: b => { calls.push({ feeRange: b.p_action, args: b.p_args }); return b.p_action === 'read' ? (b.p_args?.provider_id ? F.feeRangeOne : F.feeRanges) : { ok: true } },

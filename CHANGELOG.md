@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.121 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.194** (Coverage › Universities: read pages again for one university or for the universities ticked).
+- Migration 20261005001620 (read pages again)
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.120 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.193** (Central English rules applied again for every university, pages bound by hand admitted, online courses show Online as location).
