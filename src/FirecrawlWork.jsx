@@ -233,7 +233,7 @@ export function AdapterBuilder({providerId,onUse,onError}){
 // Test before admitting, then switch admission on; ask for improvements (Decision 253 amended, Platform Admin 17:19).
 // Admission by field and course exclusions (Decision 254, Platform Admin 5 Oct 05:50).
 // 5 Oct: delivery (international view) and exit awards (a course's earlier exit points) are admitted by their own switch
-const ADMIT_FIELDS=[['intakes','Intakes'],['english','English (IELTS)'],['fee','Fees'],['delivery','Delivery'],['exit_awards','Exit awards']]
+const ADMIT_FIELDS=[['intakes','Intakes'],['english','English (IELTS)'],['fee','Fees'],['delivery','Delivery'],['exit_awards','Exit awards'],['host_pages','Host pages']]
 const ADMIT_LABEL=Object.fromEntries(ADMIT_FIELDS)
 export function AdapterReview({providerId,can,onError}){
   const[r,setR]=useState(null),[req,setReq]=useState(''),[busy,setBusy]=useState(false)
@@ -264,7 +264,7 @@ export function AdapterReview({providerId,can,onError}){
         <td>{(x.intakes||[]).join(', ')||'—'}{x.intakes_by==='adapter'&&<span className="cf-chip tone-neutral">pattern</span>}{x.intake_context&&<small className="sl-sub">{x.intake_context}</small>}</td>
         <td>{(x.intakes_now||[]).join(', ')||'—'}</td><td>{x.fee!=null?fmtNumber(x.fee):'—'}{x.fee_by==='adapter'&&<span className="cf-chip tone-neutral">pattern</span>}</td>
         <td><small className="sl-sub">{Object.entries(x.extra||{}).map(([k,v])=>`${k.replace(/_/g,' ')}: ${v}`).join(' · ')||'—'}</small></td>
-        {can&&<td>{ADMIT_FIELDS.filter(([k])=>k!=='exit_awards').map(([k,label])=><Button key={k} compact disabled={busy} aria-label={`Exclude ${label} for ${x.course}`} onClick={()=>control('exclude',{url:x.url,field:k,exclude:true},`Exclude ${label.toLowerCase()} for ${x.course} from admission? Give the reason (kept in the log).`)}>{label}</Button>)}</td>}</tr>)}
+        {can&&<td>{ADMIT_FIELDS.filter(([k])=>k!=='exit_awards'&&k!=='host_pages').map(([k,label])=><Button key={k} compact disabled={busy} aria-label={`Exclude ${label} for ${x.course}`} onClick={()=>control('exclude',{url:x.url,field:k,exclude:true},`Exclude ${label.toLowerCase()} for ${x.course} from admission? Give the reason (kept in the log).`)}>{label}</Button>)}</td>}</tr>)}
     </tbody></table></div></details>}
     <h4 className="sl-h4">Ask for an improvement</h4>
     {can&&<div className="tn-request"><textarea aria-label="Improvement request" rows={2} value={req} placeholder="For example: intakes are under 'Start dates', IELTS is in the entry requirements tab" onChange={e=>setReq(e.target.value)}/>

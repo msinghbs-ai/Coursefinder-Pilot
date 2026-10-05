@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.119 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.192** (Coverage › Universities: hosted courses — exit and nested awards with a register check, shared pages, double degrees and pages that are gone).
+- Migration 20261005001580 (award links and host pages)
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.118 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.191** (Coverage › Universities: indicative whole-course fees per university, published per university).
