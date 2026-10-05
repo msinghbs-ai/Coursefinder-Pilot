@@ -151,7 +151,7 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
   const candidates = basis ? {
     final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200),
-    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, fromTotal ? "fee_total" : "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: pat.fee ? `adapter pattern: ${pat.fee}` : fromTotal ? `adapter: whole-course fee ${pat.fee_total} / ${tYears} full-time years (${pat.course_years})` : `page data: ${paths.fee} = ${jFeeRaw}`, ...(fromTotal ? { from_total: { total: tTotal, years: tYears } } : {}) } : fee(part("fee"), currencyFor(course.country)),
+    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, fromTotal ? "fee_total" : "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: pat.fee ? `adapter pattern: ${pat.fee}` : fromTotal ? `adapter: whole-course fee ${pat.fee_total} / ${Math.round(tYears * 100) / 100} full-time years (${pat.course_years})` : `page data: ${paths.fee} = ${jFeeRaw}`, ...(fromTotal ? { from_total: { total: tTotal, years: Math.round(tYears * 10000) / 10000 } } : {}) } : fee(part("fee"), currencyFor(course.country)),
     english: eng,
     intakes: pIntakes && pIntakes.length ? pIntakes : intakes(part("intakes")),
     intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${pat.intakes}`.slice(0, 200)] : intakeEvidence(part("intakes")),
@@ -164,11 +164,13 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
 }
 
 export function yearsOf(s: string): number {
-  const m = String(s || "").toLowerCase().match(/([0-9]+(?:\.[0-9]+)?)\s*(years?|yrs?|months?|weeks?|semesters?|trimesters?)?/);
+  // v0.17.11 (night run): "wks"/"wk" are weeks, and the years are not rounded, so 8 months gives 39,000 / (8/12) =
+  // 58,500 a year, not 58,208.96 (the fee itself is rounded to cents where it is used)
+  const m = String(s || "").toLowerCase().match(/([0-9]+(?:\.[0-9]+)?)\s*(years?|yrs?|months?|weeks?|wks?|semesters?|trimesters?)?/);
   if (!m) return NaN;
   const n = Number(m[1]), u = m[2] || "year";
-  const y = /^month/.test(u) ? n / 12 : /^week/.test(u) ? n / 52 : /^semester/.test(u) ? n / 2 : /^trimester/.test(u) ? n / 3 : n;
-  return Math.round(y * 100) / 100;
+  const y = /^month/.test(u) ? n / 12 : /^(week|wk)/.test(u) ? n / 52 : /^semester/.test(u) ? n / 2 : /^trimester/.test(u) ? n / 3 : n;
+  return y;
 }
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 // The year printed in the text a field's pattern matched (for example "Annual fee 2026: $47,300"), or null.
