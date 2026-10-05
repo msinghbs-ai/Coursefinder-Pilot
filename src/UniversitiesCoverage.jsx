@@ -7,6 +7,10 @@
 // Current fees first (printed whole-course total, else annual fee x full-time years), the CRICOS registered total as
 // the fallback, award courses only. Worked out every hour (public.admin_provider_fee_range). A Platform Admin
 // publishes each university's range on its own, can set it by hand (never overwritten) and controls the settings.
+// 5 Oct 19:18: hosted courses. An award inside or at the exit of a longer course takes its page, fee, intakes and
+// delivery from its single-degree parent once the register check passes (public.admin_exit_awards). A page that
+// carries several courses hosts them (public.admin_host_pages, admitted as 'host_pages'). Double degrees on an
+// unconfirmed page and pages that are gone are proposals a Platform Admin confirms by hand.
 import React,{useEffect,useMemo,useState}from'react'
 import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -15,7 +19,9 @@ import{Button,Empty,Loading,Pager,SectionTitle,fmtDateTime,fmtNumber}from'./ui-k
 
 const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const ADAPTER={admitting:['Admitting','success'],testing:['Testing','warning'],off:['Switched off','neutral']}
-const FIELD={intakes:'Intakes',english:'English',fee:'Fees',delivery:'Delivery',exit_awards:'Exit awards'}
+const FIELD={intakes:'Intakes',english:'English',fee:'Fees',delivery:'Delivery',exit_awards:'Exit awards',host_pages:'Host pages'}
+const HOST_KIND={exit_award:'Exit award of',nested_award:'Award within',shared_page:'Shares the page of',double_degree:'Double degree page',no_public_page:'Page gone'}
+const CHECK={pass:['Register check passed','success'],fail:['Register check failed','danger'],none:['No register to check','neutral']}
 // Delivery as held in the catalogue (security.delivery_mode_from_text)
 const DELIVERY={on_campus:'On campus',online:'Online',on_campus_and_online:'On campus and online',blended:'Blended'}
 const POLICY={approved:['Approved','success'],proposed:['Waiting for approval','warning'],no_values:['Read, no rule found','neutral']}
@@ -71,7 +77,8 @@ function CourseTable({u,onError}){
       {d.courses.map(c=><tr key={c.course_id}>
         <td><strong>{c.course}</strong><small className="sl-sub">{c.code||'—'}{c.level?` · ${String(c.level).replace(/_/g,' ')}`:''}</small>
           <span className="uc-links">{c.url&&<a className="cf-link" href={c.url} target="_blank" rel="noreferrer">course page</a>}{c.evidence_id&&<a className="cf-link" href={`#evidence?evidence_id=${encodeURIComponent(c.evidence_id)}`}>evidence</a>}
-            {c.read_status&&c.read_status!=='read'&&<Pill tone="warning">{String(c.read_status).replace(/_/g,' ')}</Pill>}</span></td>
+            {c.read_status&&c.read_status!=='read'&&<Pill tone="warning">{String(c.read_status).replace(/_/g,' ')}</Pill>}
+            {c.host&&<Pill tone={c.host.register_check==='fail'?'danger':c.host.applied?'info':'neutral'} title={c.host.url||''}>{HOST_KIND[c.host.kind]||c.host.kind}{c.host.host?` ${c.host.host}`:''}{c.host.years?` · ${fmtNumber(c.host.years)} yr`:''}{c.host.register_check==='fail'?' · check failed':c.host.applied?'':' · proposed'}</Pill>}</span></td>
         <td><span className="uc-val">{c.location?.value||c.location?.read||'—'}</span>{c.location&&<SourcePill source={c.location.source}/>}{c.location?.value&&c.location?.read&&<small className="sl-sub" title="Read on the course page">page: {c.location.read}</small>}</td>
         <td><span className="uc-val">{c.delivery?.value?(DELIVERY[c.delivery.value]||String(c.delivery.value).replace(/_/g,' ')):'—'}</span>{c.delivery&&<SourcePill source={c.delivery.source}/>}{c.delivery?.excluded&&<Pill tone="warning">excluded</Pill>}
           {c.delivery?.read&&<small className="sl-sub" title={c.delivery.read}>page: {String(c.delivery.read).slice(0,60)}</small>}</td>
@@ -115,6 +122,64 @@ function FeeRangeSettings({d,can,onDone,onError}){
       {(d.levels||[]).map(l=><label key={l.code}><input type="checkbox" disabled={!can} checked={v.excluded_level_codes.includes(l.code)} onChange={()=>flip(l.code)}/> {l.name}</label>)}</fieldset>
     {can&&<Button compact disabled={busy} onClick={save}>Save settings</Button>}
     {s.updated_at&&<small className="sl-sub">Last changed {fmtDateTime(s.updated_at)}{s.reason?` · ${s.reason}`:''}</small>}
+  </details>
+}
+
+function HostedPanel({u,can,onError}){
+  const[aw,setAw]=useState(null),[hp,setHp]=useState(null),[busy,setBusy]=useState(false),[show,setShow]=useState('')
+  const load=()=>{setBusy(true);Promise.all([supabase.rpc('admin_exit_awards',{p_action:'read',p_args:{provider_id:u.provider_id}}),supabase.rpc('admin_host_pages',{p_action:'read',p_args:{provider_id:u.provider_id}})])
+    .then(([a,h])=>{if(a.error)throw a.error;if(h.error)throw h.error;setAw(a.data||[]);setHp(h.data||[])}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
+  useEffect(()=>{load()},[u.provider_id])
+  const act=async(rpc,action,ask,extra={})=>{const reason=window.prompt(ask,'');if(!reason)return
+    setBusy(true);try{const{error}=await supabase.rpc(rpc,{p_action:action,p_args:{provider_id:u.provider_id,reason,...extra}});if(error)throw error;load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!aw||!hp)return busy?<Loading/>:null
+  const awards=aw.filter(x=>x.active),pages=hp.filter(x=>x.active)
+  const n={pass:awards.filter(x=>x.register_check==='pass').length,fail:awards.filter(x=>x.register_check==='fail').length,shared:pages.filter(x=>x.link_type==='shared_page').length,dbl:pages.filter(x=>x.link_type==='double_degree').length,gone:pages.filter(x=>x.link_type==='no_public_page').length}
+  if(awards.length+pages.length===0)return null
+  const rows=show==='awards'?awards:show==='pages'?pages:[]
+  return <div className="uc-fee-range uc-hosted" data-hosted={u.provider_id}>
+    <div className="uc-fr-head"><strong>Hosted courses</strong>
+      <Pill tone="success">{fmtNumber(n.pass)} awards checked</Pill>{n.fail>0&&<Pill tone="danger">{fmtNumber(n.fail)} awards failed the register check</Pill>}
+      {n.shared>0&&<Pill tone="info">{fmtNumber(n.shared)} on a shared page</Pill>}{n.dbl>0&&<Pill tone="warning">{fmtNumber(n.dbl)} double degrees to confirm</Pill>}{n.gone>0&&<Pill tone="warning">{fmtNumber(n.gone)} pages gone</Pill>}</div>
+    <small className="sl-sub">An award takes its page, fee, intakes and delivery from its single-degree parent once the register check passes and the university admits exit awards. A shared page is confirmed for the courses it carries when the university admits host pages. Double degrees and pages that are gone are confirmed by hand.</small>
+    <div className="uc-attach">
+      <Button compact onClick={()=>setShow(show==='awards'?'':'awards')} aria-expanded={show==='awards'}>{show==='awards'?'Hide awards':`Awards (${fmtNumber(awards.length)})`}</Button>
+      <Button compact onClick={()=>setShow(show==='pages'?'':'pages')} aria-expanded={show==='pages'}>{show==='pages'?'Hide pages':`Pages (${fmtNumber(pages.length)})`}</Button>
+      {can&&<><Button compact disabled={busy} onClick={()=>act('admin_exit_awards','detect',`Look for exit and nested awards at ${u.name} again? Give the reason (kept in the log).`)}>Find awards again</Button>
+        <Button compact disabled={busy} onClick={()=>act('admin_host_pages','detect',`Look for shared pages, double degrees and pages that are gone at ${u.name} again? Give the reason (kept in the log).`)}>Find pages again</Button></>}
+    </div>
+    {show==='awards'&&<div className="cf-table-wrap"><table className="cf-table uc-fr-table"><thead><tr><th>Award</th><th>Parent course</th><th>Years</th><th>Register check</th><th>Fee</th><th></th></tr></thead><tbody>
+      {rows.map(x=>{const[cl,ct]=CHECK[x.register_check]||['Not checked','neutral'];return <tr key={x.child_course_id}><td><strong>{x.child}</strong><small className="sl-sub">{x.child_code||''} · {HOST_KIND[x.link_type]||x.link_type}{x.set_by==='hand'?' · set by hand':''}</small></td>
+        <td>{x.parent}<small className="sl-sub" title={x.printed||''}>{String(x.printed||'').slice(0,80)}</small></td><td>{fmtNumber(x.years)}</td>
+        <td><Pill tone={ct}>{cl}</Pill><small className="sl-sub" title={x.check_detail||''}>{String(x.check_detail||'').slice(0,90)}</small></td>
+        <td>{x.annual_fee!=null?<>{fmtMoney(x.annual_fee)}{x.fee_year?` (${x.fee_year})`:''}<small className="sl-sub">whole {fmtMoney(x.total_fee)}</small></>:'—'}</td>
+        <td>{can&&<Button compact disabled={busy} onClick={()=>act('admin_exit_awards','off',`Switch this award link off for ${x.child}? Give the reason (kept in the log).`,{child_course_id:x.child_course_id})}>Switch off</Button>}</td></tr>})}
+    </tbody></table></div>}
+    {show==='pages'&&<div className="cf-table-wrap"><table className="cf-table uc-fr-table"><thead><tr><th>Course</th><th>Page</th><th>Register check</th><th></th></tr></thead><tbody>
+      {rows.map(x=>{const[cl,ct]=CHECK[x.register_check]||['—','neutral'];return <tr key={x.course_id}><td><strong>{x.course}</strong><small className="sl-sub">{x.code||''} · {HOST_KIND[x.link_type]||x.link_type}{x.host?` ${x.host}`:''}{x.applied_at?' · confirmed':''}</small></td>
+        <td><a className="cf-link" href={x.host_url} target="_blank" rel="noreferrer">{String(x.host_url||'').replace(/^https?:\/\/(www\.)?/,'').slice(0,70)}</a></td>
+        <td>{x.link_type==='shared_page'?<><Pill tone={ct}>{cl}</Pill><small className="sl-sub" title={x.check_detail||''}>{String(x.check_detail||'').slice(0,90)}</small></>:'—'}</td>
+        <td>{can&&!x.applied_at&&x.link_type!=='no_public_page'&&<Button compact disabled={busy} onClick={()=>act('admin_host_pages','confirm_page',`Confirm this page as the page of ${x.course}? Its values then come from it as admitted. Give the reason (kept in the log).`,{course_id:x.course_id})}>Confirm page</Button>}
+          {can&&!x.applied_at&&x.link_type==='no_public_page'&&<Button compact disabled={busy} onClick={()=>act('admin_host_pages','no_page',`Record that ${x.course} has no public page? The page search stops for it. Give the reason (kept in the log).`,{course_id:x.course_id})}>No public page</Button>}
+          {can&&<Button compact disabled={busy} onClick={()=>act('admin_host_pages','off',`Set this proposal aside for ${x.course}? Give the reason (kept in the log).`,{course_id:x.course_id})}>Set aside</Button>}</td></tr>})}
+    </tbody></table></div>}
+  </div>
+}
+
+function AwardLinkSettings({can,onError}){
+  const[s,setS]=useState(null),[v,setV]=useState(null),[busy,setBusy]=useState(false)
+  useEffect(()=>{supabase.rpc('admin_exit_awards',{p_action:'read',p_args:{scope:'settings'}}).then(({data,error})=>{if(error)throw error;setS(data);setV({same_year_tolerance:Math.round(Number(data?.same_year_tolerance||0)*1000)/10,lagged_tolerance:Math.round(Number(data?.lagged_tolerance||0)*1000)/10})}).catch(e=>onError?.(errText(e)))},[])
+  if(!v)return null
+  const save=async()=>{const reason=window.prompt('Save the award link tolerances? Every award link and shared page is checked again. Give the reason (kept in the log).','');if(!reason)return
+    setBusy(true);try{const{error}=await supabase.rpc('admin_exit_awards',{p_action:'settings',p_args:{same_year_tolerance:Number(v.same_year_tolerance)/100,lagged_tolerance:Number(v.lagged_tolerance)/100,reason}});if(error)throw error}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  return <details className="uc-fr-settings" data-award-link-settings><summary>Award link settings (register check)</summary>
+    <p className="sl-sub">An award takes its fee from its parent only when its registered fee per year (CRICOS) agrees with the parent's current fee. The register runs a fee year behind, so when the parent's fee year is later than the register the award may sit below the parent by the lagged tolerance.</p>
+    <div className="uc-fr-grid">
+      <label><span>Same fee year: allowed difference (%)</span><input className="au-search" type="number" min="0" max="50" step="0.5" disabled={!can} value={v.same_year_tolerance} onChange={e=>setV({...v,same_year_tolerance:e.target.value})}/></label>
+      <label><span>Parent fee year later than the register: allowed below (%)</span><input className="au-search" type="number" min="0" max="50" step="0.5" disabled={!can} value={v.lagged_tolerance} onChange={e=>setV({...v,lagged_tolerance:e.target.value})}/></label>
+    </div>
+    {can&&<Button compact disabled={busy} onClick={save}>Save settings</Button>}
+    {s?.updated_at&&<small className="sl-sub">Last changed {fmtDateTime(s.updated_at)}{s.reason?` · ${s.reason}`:''}</small>}
   </details>
 }
 
@@ -182,6 +247,7 @@ export function UniversitiesCoverage({rank=0}){
     </section>
     {error&&<div className="dq-alert"><span>{error}</span></div>}
     <FeeRangeSettings d={fr} can={can} onDone={load} onError={setError}/>
+    <AwardLinkSettings can={can} onError={setError}/>
     {busy&&!data?<Loading/>:<div className="cf-table-wrap"><table className="cf-table uc-table"><thead><tr><th>University</th><th>Adapter</th><th>Central English rule</th><th>Calendar</th><th>Intakes</th><th>English</th><th>Fees</th><th>Whole-course fees</th><th></th></tr></thead><tbody>
       {rows.map(u=>{const[al,at]=u.adapter?(ADAPTER[u.adapter.state]||[u.adapter.state,'neutral']):['No adapter','neutral'];const isOpen=open===u.provider_id
         return <React.Fragment key={u.provider_id}><tr data-university-row={u.provider_id} className={isOpen?'uc-open':''}>
@@ -200,6 +266,7 @@ export function UniversitiesCoverage({rank=0}){
             {can&&<AttachPage u={u} onDone={load} onError={setError}/>}
             {(u.central_pages||[]).length>0&&<ul className="tn-list uc-pages">{u.central_pages.map((p,i)=><li key={i}><Pill tone={p.status==='read'||p.status==='parsed'?'success':p.status==='found'?'warning':'neutral'}>{p.kind==='english_policy'?'English':'Key dates'} · {String(p.status).replace(/_/g,' ')}</Pill> <a className="cf-link" href={p.url} target="_blank" rel="noreferrer">{p.url}</a>{p.read_at&&<small className="sl-sub"> read {fmtDateTime(p.read_at)}</small>}{p.evidence_id&&<a className="cf-link" href={`#evidence?evidence_id=${encodeURIComponent(p.evidence_id)}`}> evidence</a>}</li>)}</ul>}
             <FeeRangePanel u={u} can={can} onDone={loadRanges} onError={setError}/>
+            <HostedPanel u={u} can={can} onError={setError}/>
             <CourseTable u={u} onError={setError}/></td></tr>}
         </React.Fragment>})}
       {rows.length===0&&<tr><td colSpan={9}><Empty text="No university matches."/></td></tr>}

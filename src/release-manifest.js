@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.191'
-export const PACKAGE_VERSION='0.1.118'
+export const UI_VERSION='2.15.192'
+export const PACKAGE_VERSION='0.1.119'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Indicative whole-course fees per university',
+  title:'Hosted courses: awards, shared pages and pages that are gone',
   changes:[
-    'Coverage › Universities shows each university\'s indicative whole-course fees (lowest and highest, in the country\'s currency): the whole-course fee printed on the course page, else the current annual fee x full-time years, else the CRICOS registered total. Award courses only.',
-    'Open a university to see how the range was worked out, the lowest and highest courses, the courses left out and why, and every course\'s whole-course fee.',
-    'A Platform Admin publishes each university\'s range on its own, can set it by hand (never changed by the hourly refresh) and controls the settings: courses under one year, fewest courses, oldest fee year, floor and the study levels left out.',
-    'Delivery comes from the location when a course page only lists its campuses or Online, other requirements (uniforms, placements, kits, checks) are shown with the entry requirement, and course lengths in months, weeks, semesters or trimesters count as years.'
+    'Coverage › Universities shows each university\'s hosted courses: an award a student can exit with or that sits inside a longer course takes its page, fee, intakes and delivery from its single-degree parent, never from a double degree, once a register check passes (the award\'s registered fee per year against the parent\'s current fee).',
+    'Awards printed as "available as an exit award of this degree" are now read. A field is copied only when the university admits that field.',
+    'A page that carries several courses (majors on one degree page, research degrees on one page) hosts them when the university admits host pages. Double degrees on an unconfirmed page and pages that are gone are listed for a Platform Admin to confirm or record by hand.',
+    'The course list marks each hosted course with its host and whether the check passed.'
   ],
   bugFixes:[]
 }
