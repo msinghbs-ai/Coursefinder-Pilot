@@ -166,6 +166,23 @@ function HostedPanel({u,can,onError}){
   </div>
 }
 
+function AwardLinkSettings({can,onError}){
+  const[s,setS]=useState(null),[v,setV]=useState(null),[busy,setBusy]=useState(false)
+  useEffect(()=>{supabase.rpc('admin_exit_awards',{p_action:'read',p_args:{scope:'settings'}}).then(({data,error})=>{if(error)throw error;setS(data);setV({same_year_tolerance:Math.round(Number(data?.same_year_tolerance||0)*1000)/10,lagged_tolerance:Math.round(Number(data?.lagged_tolerance||0)*1000)/10})}).catch(e=>onError?.(errText(e)))},[])
+  if(!v)return null
+  const save=async()=>{const reason=window.prompt('Save the award link tolerances? Every award link and shared page is checked again. Give the reason (kept in the log).','');if(!reason)return
+    setBusy(true);try{const{error}=await supabase.rpc('admin_exit_awards',{p_action:'settings',p_args:{same_year_tolerance:Number(v.same_year_tolerance)/100,lagged_tolerance:Number(v.lagged_tolerance)/100,reason}});if(error)throw error}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  return <details className="uc-fr-settings" data-award-link-settings><summary>Award link settings (register check)</summary>
+    <p className="sl-sub">An award takes its fee from its parent only when its registered fee per year (CRICOS) agrees with the parent's current fee. The register runs a fee year behind, so when the parent's fee year is later than the register the award may sit below the parent by the lagged tolerance.</p>
+    <div className="uc-fr-grid">
+      <label><span>Same fee year: allowed difference (%)</span><input className="au-search" type="number" min="0" max="50" step="0.5" disabled={!can} value={v.same_year_tolerance} onChange={e=>setV({...v,same_year_tolerance:e.target.value})}/></label>
+      <label><span>Parent fee year later than the register: allowed below (%)</span><input className="au-search" type="number" min="0" max="50" step="0.5" disabled={!can} value={v.lagged_tolerance} onChange={e=>setV({...v,lagged_tolerance:e.target.value})}/></label>
+    </div>
+    {can&&<Button compact disabled={busy} onClick={save}>Save settings</Button>}
+    {s?.updated_at&&<small className="sl-sub">Last changed {fmtDateTime(s.updated_at)}{s.reason?` · ${s.reason}`:''}</small>}
+  </details>
+}
+
 function FeeRangePanel({u,can,onDone,onError}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(false),[showCourses,setShowCourses]=useState(false)
   const load=()=>{setBusy(true);supabase.rpc('admin_provider_fee_range',{p_action:'read',p_args:{provider_id:u.provider_id}})
@@ -230,6 +247,7 @@ export function UniversitiesCoverage({rank=0}){
     </section>
     {error&&<div className="dq-alert"><span>{error}</span></div>}
     <FeeRangeSettings d={fr} can={can} onDone={load} onError={setError}/>
+    <AwardLinkSettings can={can} onError={setError}/>
     {busy&&!data?<Loading/>:<div className="cf-table-wrap"><table className="cf-table uc-table"><thead><tr><th>University</th><th>Adapter</th><th>Central English rule</th><th>Calendar</th><th>Intakes</th><th>English</th><th>Fees</th><th>Whole-course fees</th><th></th></tr></thead><tbody>
       {rows.map(u=>{const[al,at]=u.adapter?(ADAPTER[u.adapter.state]||[u.adapter.state,'neutral']):['No adapter','neutral'];const isOpen=open===u.provider_id
         return <React.Fragment key={u.provider_id}><tr data-university-row={u.provider_id} className={isOpen?'uc-open':''}>

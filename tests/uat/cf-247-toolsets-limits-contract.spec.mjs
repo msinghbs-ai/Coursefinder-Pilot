@@ -820,3 +820,29 @@ test('browser: Coverage › Universities — hosted courses panel, register chec
   const courses = w.locator('[data-university-courses="u1"]')
   await expect(courses).toContainText('Exit award of Bachelor of Nursing · 1 yr')
 })
+
+// 5 Oct 19:18 follow-up: year-aware register check with tolerances as settings, hand links honoured, no-fee fix
+test('award link settings: tolerances from the screen, register lag allowed, hand links applied whatever the check', () => {
+  const m = read('supabase/migrations/20261005001590_cf247_award_link_settings_year_aware_check.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  expect(m).toContain("is distinct from 'b7bbbaf995aa59b844b5cc3a67934b5c'")
+  expect(m).toContain("is distinct from 'c283d0e4caba6beab84ab1336c585983'")
+  expect(m).toContain("if r.register_check = 'fail' and r.set_by <> 'hand' then v_skipped := v_skipped + 1; continue; end if;")
+  expect(m).toContain("case when a.an is not null and (a.fy is null or c.ry is null or a.fy <= c.ry) then st.sy else st.lg end below_ok")
+  expect(m).toContain("when d.diff >= -d.below_ok and d.diff <= d.sy then")
+  const f = read('supabase/migrations/20261005001600_cf247_award_apply_no_fee_admitted_fix.sql')
+  expect(f).toContain("is distinct from 'da94c52172aef30ec5a62a2e87bea5f4'")
+  expect(f).toContain("replace(v_pair[1], '{sc}', chr(59))")
+})
+
+test('browser: Coverage › Universities — award link settings saved with a reason', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Register runs a year behind'))
+  await page.goto('/#coverage?tab=universities')
+  const st = page.locator('[data-award-link-settings]')
+  await st.locator('summary').click()
+  await st.getByLabel('Parent fee year later than the register: allowed below (%)').fill('7')
+  await st.getByRole('button', { name: 'Save settings' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.exitAwards === 'settings')?.args).toMatchObject({ same_year_tolerance: 0.02, lagged_tolerance: 0.07, reason: 'Register runs a year behind' })
+})
