@@ -627,3 +627,15 @@ export const universityCourses = { total: 2, offset: 0, limit: 100, courses: [
     delivery: { value: 'on_campus_and_online', read: 'On campus, Online', source: 'adapter', excluded: false }, location: { value: 'Bundoora Campus', read: null, source: 'catalogue' }, requirement: { read: 'Prerequisite: Year 12 Chemistry', other: 'Uniform and clinical placement kit', source: 'adapter' } },
   { course_id: 'c2', course: 'Graduate Certificate of Arts', code: '116337M', level: 'graduate_certificate', url: null, read_status: null, evidence_id: null,
     intakes: { value: null, source: 'missing', excluded: false }, english: { value: null, source: 'missing', excluded: false }, fee: { value: 18836, year: 2026, currency: 'AUD', source: 'reader', excluded: true } }] }
+
+// 5 Oct 17:04/18:04: indicative whole-course fees per university (current first, CRICOS fallback, award courses only)
+const frU1 = { provider_id: 'u1', name: 'Example University', country: 'AU', currency: 'AUD', low: 13500, high: 290400, by_hand: false,
+  computed: { low: 13500, high: 290400, low_course_id: 'c9', high_course_id: 'c8', low_course: 'Diploma of Accounting', high_course: 'Bachelor of Engineering (Honours)', low_source: 'register_total', high_source: 'current_annual_x_years',
+    courses: 499, sources: { current_total: 24, current_annual_x_years: 329, register_total: 146 }, skipped: { below_floor: 2 }, fee_year_from: 2027, fee_year_to: 2027, register_as_of: '2026-09-30', meets_minimum: true, computed_at: '2026-10-05T07:10:00Z' },
+  manual: { low: null, high: null, note: null, at: null }, published: false, published_at: null, publish_reason: null }
+export const feeRanges = { settings: { include_under_one_year: true, min_courses: 5, min_fee_year: 2026, min_whole_fee: 1000, excluded_level_codes: ['non_aqf_award', 'vocational_short_course'], updated_at: '2026-10-05T07:00:00Z', reason: 'Decision 254 defaults' },
+  levels: [{ code: 'bachelor', name: 'Bachelor' }, { code: 'non_aqf_award', name: 'Non AQF Award' }, { code: 'vocational_short_course', name: 'Vocational Short Course' }, { code: 'graduate_certificate', name: 'Graduate Certificate' }],
+  ranges: [frU1, { ...frU1, provider_id: 'u2', name: 'Northern College', country: 'NZ', currency: 'NZD', low: 24561, high: 203048, published: true, computed: { ...frU1.computed, courses: 3, meets_minimum: false } }] }
+export const feeRangeOne = { range: frU1, courses: [
+  { provider_id: 'u1', course_id: 'c8', title: 'Bachelor of Engineering (Honours)', level_code: 'bachelor', country_currency: 'AUD', currency_code: 'AUD', whole_fee: 290400, source: 'current_annual_x_years', fee_amount: 48400, fee_basis: 'annual', fee_year: 2027, years: 6, years_from: 'catalogue', register_as_of: null, skip: null },
+  { provider_id: 'u1', course_id: 'c7', title: 'Doctor of Philosophy', level_code: 'doctorate', country_currency: 'AUD', currency_code: 'AUD', whole_fee: 1, source: 'register_total', fee_amount: 1, fee_basis: 'registered_total_course', fee_year: null, years: 4, years_from: 'catalogue', register_as_of: '2026-09-30', skip: 'below_floor' }] }

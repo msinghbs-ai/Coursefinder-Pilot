@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.118 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.191** (Coverage › Universities: indicative whole-course fees per university, published per university).
+- Migrations 20261005001560–20261005001570 (delivery from location, other requirements, whole-course fee range); worker v0.17.9
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.117 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.190** (Coverage › Universities: location, delivery and entry requirement; delivery and exit awards admitted; international view setting).
