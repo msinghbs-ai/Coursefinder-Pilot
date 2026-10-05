@@ -24,12 +24,18 @@ export type Adapter = {
   // Adelaide "?student=future" with an international path, Curtin "?region=int"). render: read the page through Firecrawl
   // with the view applied (a plain fetch cannot run the page's script); suffix: added to each bound address; wait_ms: time
   // for the page's script to show the view (at most 8,000).
-  page_view?: { render?: boolean; suffix?: string; wait_ms?: number } | null;
+  // v0.17.5: url_pattern limits the view to the pages it names (La Trobe course pages, not its handbook)
+  page_view?: { render?: boolean; suffix?: string; wait_ms?: number; url_pattern?: string } | null;
 };
 
 // v0.17.4: the bound address with the university's international view applied. A suffix starting with "#" replaces the
 // address's fragment; one starting with "?" or "&" sets those query parameters (existing parameters are kept).
 // "{campus}" in the suffix is left as printed unless the address already carries a location parameter.
+export function viewApplies(url: string, pv?: Adapter["page_view"]): boolean {
+  if (!pv?.render) return false;
+  if (!pv.url_pattern) return true;
+  const r = re(pv.url_pattern); return r ? r.test(url) : false;
+}
 export function withView(url: string, pv?: Adapter["page_view"]): string {
   const sfx = String(pv?.suffix || "").trim();
   if (!sfx) return url;
