@@ -688,7 +688,7 @@ test('international view (page_view) and per-credit fees: guarded, hand values k
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
   expect(ad).toContain('export function withView(')
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toContain('coverage-sweep-worker-v0.17.9')
+  expect(ix).toContain('coverage-sweep-worker-v0.17.10')
   expect(ix).toContain('it.rendered_before !== true')
   const r = read('supabase/migrations/20261005001530_cf247_view_reads_and_course_page_rates.sql')
   expect(r).toContain("is distinct from '9bfcb79ff8da7eb53be7432278a2da37'")
@@ -845,4 +845,11 @@ test('browser: Coverage › Universities — award link settings saved with a re
   await st.getByLabel('Parent fee year later than the register: allowed below (%)').fill('7')
   await st.getByRole('button', { name: 'Save settings' }).click()
   await expect.poll(() => page.l3calls.find(c => c.exitAwards === 'settings')?.args).toMatchObject({ same_year_tolerance: 0.02, lagged_tolerance: 0.07, reason: 'Register runs a year behind' })
+})
+
+// 5 Oct 16:49/19:18: a whole-course total for a course under a year gives its annual figure too (RMIT Graduate Certificates)
+test('worker v0.17.10: annual from a whole-course total for courses of a quarter year or more', () => {
+  const ad = read('supabase/functions/coverage-sweep/adapters.ts')
+  expect(ad).toContain('tYears >= 0.25 && tYears <= 8')
+  expect(ad).toContain('Math.round(tTotal / tYears * 100) / 100')
 })

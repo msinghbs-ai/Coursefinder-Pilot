@@ -143,7 +143,9 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   // v0.17.9 (Platform Admin 16:49 "as per the term"): a duration printed in months, weeks, semesters or trimesters is
   // turned into full-time years (12 months, 52 weeks, 2 semesters, 3 trimesters to a year)
   const tYears = !pat.fee && pat.course_years ? yearsOf(pat.course_years) : NaN;
-  const fromTotal = Number.isFinite(tTotal) && Number.isFinite(tYears) && tYears >= 1 && tYears <= 8;
+  // v0.17.10 (Platform Admin 16:49 and 19:18): a course shorter than a year ("Full-time 6 months") gives its annual
+  // figure as total / years too (AU$25,440 for 6 months = 50,880 a year, as the register shows).
+  const fromTotal = Number.isFinite(tTotal) && Number.isFinite(tYears) && tYears >= 0.25 && tYears <= 8;
   const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : fromTotal ? Math.round(tTotal / tYears * 100) / 100 : (/^\s*\$?\s*[0-9][0-9,]*(\.[0-9]+)?\s*$/.test(jFeeRaw) ? Number(jFeeRaw.replace(/[^0-9.]/g, "")) : NaN);
   const pIelts = pat.ielts_overall ? Number(pat.ielts_overall) : NaN;
   if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
