@@ -650,7 +650,7 @@ test('adapter apply: no Firecrawl re-read for text-only adapters, stale adapter_
 
 // 5 Oct (Platform Admin 11:48): delivery admitted from the international view; scholarships follow admitted fees
 test('delivery: own admitted field, delivery exclusions, wording rules, hourly scholarship alignment', () => {
-  for (const f of ['20261005001490_cf247_adapter_delivery_mode.sql', '20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql', '20261005001510_cf247_international_view_and_credit_fees.sql', '20261005001520_cf247_international_view_pages_named.sql']) {
+  for (const f of ['20261005001490_cf247_adapter_delivery_mode.sql', '20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql', '20261005001510_cf247_international_view_and_credit_fees.sql', '20261005001520_cf247_international_view_pages_named.sql', '20261005001530_cf247_view_reads_and_course_page_rates.sql']) {
     const m = read('supabase/migrations/' + f)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
@@ -678,7 +678,11 @@ test('international view (page_view) and per-credit fees: guarded, hand values k
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
   expect(ad).toContain('export function withView(')
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toContain('coverage-sweep-worker-v0.17.5')
+  expect(ix).toContain('coverage-sweep-worker-v0.17.6')
+  expect(ix).toContain('it.rendered_before !== true')
+  const r = read('supabase/migrations/20261005001530_cf247_view_reads_and_course_page_rates.sql')
+  expect(r).toContain("is distinct from '9bfcb79ff8da7eb53be7432278a2da37'")
+  expect(r).toContain("if v_only not in ('all', 'view', 'outside')")
   expect(ix).toContain('|| adHit?.identity || (it.manual === true ? "manual" : null)')
   expect(ix).toContain('const viewRender = viewApplies(it.url, pv) && !searchCandidate')
   const v = read('supabase/migrations/20261005001520_cf247_international_view_pages_named.sql')
