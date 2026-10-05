@@ -94,7 +94,7 @@ export function sectionText(text: string, pattern?: string | null, n = 2000) {
 
 // Apply one adapter to one stored page. Returns the identity it finds (if any) and the field candidates, in the shape
 // the reader records, so the existing admission rules can read them.
-export function applyAdapter(a: Adapter, html: string, course: { title: string; code: string; country: string; status?: string }, extractor: string) {
+export function applyAdapter(a: Adapter, html: string, course: { title: string; code: string; country: string; status?: string; known?: string | null }, extractor: string) {
   const text = htmlToText(html);
   const base = identity(html, text, course.title, course.code, course.status === "ambiguous", course.country);
   const data = pageJson(html, a.json_source);
@@ -111,6 +111,10 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
     const heads = [h1Of(html), titleOf(html), (clean(titleOf(html)).split(/\s+[|–—]\s+|\s+-\s+/)[0] || "")].map((h) => norm(strip(h, a.title_strip)));
     if (ct && ct.split(" ").length >= 2 && heads.includes(ct)) { basis = "adapter_title"; how = "title after the adapter's patterns" }
   }
+  // v0.17.12 (night run): a page already confirmed for this course (for example bound by hand, identity "manual", when
+  // the page prints a training package code rather than the CRICOS code) is read by the adapter for its fields too.
+  // The identity stays what it was, and admission still applies its own rules to that identity.
+  if (!basis && course.known) { basis = course.known; how = `page already confirmed (${course.known})` }
   const part = (f: string) => {
     if (data && paths[f]) { const t = jsonText(jsonAt(data, paths[f])); if (t) return t }
     return sectionText(text, a.sections?.[f], Number(a.section_chars || 2000)) ?? text;
@@ -135,7 +139,8 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
     if (add.length) pat.intakes = `${pat.intakes} ${add.join(" ")}`;
   }
   // month names as printed, capitalised ("May" the month, not "may" the verb)
-  const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b(?:${m}|${m.slice(0, 3)})\\b`).test(pat.intakes)) : null;
+  // v0.17.12: "Sept" is September too
+  const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b(?:${m}|${m.slice(0, 3)}${m === "September" ? "|Sept" : ""})\\b`).test(pat.intakes)) : null;
   // v0.17.2: a fee kept as a number in the page data (json_paths.fee) counts as the adapter's own reading too
   const jFeeRaw = !pat.fee && data && paths.fee ? jsonText(jsonAt(data, paths.fee)) : "";
   // v0.17.7: no annual fee printed, but a whole-course fee and the full-time years are: annual = total / years
