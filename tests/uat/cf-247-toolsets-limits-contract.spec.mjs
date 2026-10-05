@@ -635,3 +635,15 @@ test('written-out central rules survive a parser re-read', () => {
   expect(m).toContain("and parser <> 'written out from the central page'$s$")
   expect(m).toContain("and decided_by is null and decided_at is null")
 })
+
+// 5 Oct (wave 9): a text-only adapter's apply no longer re-reads needs_render pages, and stale test-only fields are cleared
+test('adapter apply: no Firecrawl re-read for text-only adapters, stale adapter_extra cleared', () => {
+  const m = read('supabase/migrations/20261005001480_cf247_adapter_requeue_and_stale_extra.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
+  for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  expect(m).toContain("is distinct from 'b6f154cf41b044f040937b6b813e4a44'")
+  expect(m).toContain("is distinct from 'ea43d20c3596cb8a2d909f2860952f1d'")
+  expect(m).toContain("coalesce(u0.json_source, '') <> '') and (pg.read_status = 'needs_render' or")
+  expect(m).toContain("v_c := (v_c - 'adapter_extra') || case when p_candidates ? 'adapter_extra'")
+})
