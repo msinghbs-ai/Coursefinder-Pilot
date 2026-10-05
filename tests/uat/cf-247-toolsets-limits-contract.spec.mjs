@@ -688,7 +688,7 @@ test('international view (page_view) and per-credit fees: guarded, hand values k
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
   expect(ad).toContain('export function withView(')
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toContain('coverage-sweep-worker-v0.17.10')
+  expect(ix).toContain('coverage-sweep-worker-v0.17.11')
   expect(ix).toContain('it.rendered_before !== true')
   const r = read('supabase/migrations/20261005001530_cf247_view_reads_and_course_page_rates.sql')
   expect(r).toContain("is distinct from '9bfcb79ff8da7eb53be7432278a2da37'")
@@ -912,4 +912,23 @@ test('university re-read in the background: request recorded, ten universities a
   expect(m).toContain("select cron.schedule('university-reread-requests', '* * * * *'")
   expect(m).toContain('where x <> all (r.done_ids) limit 10')
   expect(m).toContain("insert into pipeline.university_reread_requests(provider_ids, which, central, reason, requested_by)")
+})
+
+// Night run wave 1 fixes: worker v0.17.11 (wks, unrounded years) and delivery wording for colleges
+test('night run fixes: wks as weeks, years not rounded before dividing, classroom/onsite/from home delivery wording', () => {
+  const ad = read('supabase/functions/coverage-sweep/adapters.ts')
+  expect(ad).toContain('|weeks?|wks?|semesters?|')
+  expect(ad).toContain('/^(week|wk)/.test(u) ? n / 52')
+  const m = read('supabase/migrations/20261005001650_cf247_delivery_wording_classroom_onsite_home.sql')
+  expect(m).toContain("is distinct from '77aa100f89d2130e4ad4793c2cd48d69'")
+  expect(m).toContain("'(study(ing)? from home|\\mfrom home\\M)'")
+})
+
+// Night run wave 2: the queue snapshot, and adapter apply reading pages bound by hand (their address unchanged)
+test('night run: queue snapshot read-only, apply reads hand-bound pages', () => {
+  const q = read('supabase/migrations/20261005001640_cf247_night_run_queue.sql')
+  expect(q).toContain("revoke all on table pipeline.night_run_queue from anon, authenticated")
+  const m = read('supabase/migrations/20261005001660_cf247_adapter_apply_hand_bound_pages.sql')
+  expect(m).toContain("is distinct from 'f32ab786207ca970b3aed9ea08658eb5'")
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
