@@ -49,7 +49,9 @@ export function withView(url: string, pv?: Adapter["page_view"]): string {
 }
 
 // Fields an adapter may give besides intakes, English and fee. They are shown for testing only and never admitted.
-export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location"];
+// v0.17.7 (Platform Admin 5 Oct 15:22, 15:34): fee_total (a whole-course fee) with course_years (full-time years) gives
+// the annual fee as total / years; exit_awards (the awards a student can exit with after N years of full-time study).
+export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location", "fee_total", "course_years", "exit_awards"];
 
 const clean = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
 const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
@@ -136,12 +138,16 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b(?:${m}|${m.slice(0, 3)})\\b`).test(pat.intakes)) : null;
   // v0.17.2: a fee kept as a number in the page data (json_paths.fee) counts as the adapter's own reading too
   const jFeeRaw = !pat.fee && data && paths.fee ? jsonText(jsonAt(data, paths.fee)) : "";
-  const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : (/^\s*\$?\s*[0-9][0-9,]*(\.[0-9]+)?\s*$/.test(jFeeRaw) ? Number(jFeeRaw.replace(/[^0-9.]/g, "")) : NaN);
+  // v0.17.7: no annual fee printed, but a whole-course fee and the full-time years are: annual = total / years
+  const tTotal = !pat.fee && pat.fee_total ? Number(pat.fee_total.replace(/[^0-9.]/g, "")) : NaN;
+  const tYears = !pat.fee && pat.course_years ? Number((pat.course_years.match(/[0-9]+(?:\.[0-9]+)?/) || [])[0]) : NaN;
+  const fromTotal = Number.isFinite(tTotal) && Number.isFinite(tYears) && tYears >= 1 && tYears <= 8;
+  const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : fromTotal ? Math.round(tTotal / tYears * 100) / 100 : (/^\s*\$?\s*[0-9][0-9,]*(\.[0-9]+)?\s*$/.test(jFeeRaw) ? Number(jFeeRaw.replace(/[^0-9.]/g, "")) : NaN);
   const pIelts = pat.ielts_overall ? Number(pat.ielts_overall) : NaN;
   if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
   const candidates = basis ? {
     final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200),
-    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: pat.fee ? `adapter pattern: ${pat.fee}` : `page data: ${paths.fee} = ${jFeeRaw}` } : fee(part("fee"), currencyFor(course.country)),
+    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, fromTotal ? "fee_total" : "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: pat.fee ? `adapter pattern: ${pat.fee}` : fromTotal ? `adapter: whole-course fee ${pat.fee_total} / ${tYears} full-time years (${pat.course_years})` : `page data: ${paths.fee} = ${jFeeRaw}`, ...(fromTotal ? { from_total: { total: tTotal, years: tYears } } : {}) } : fee(part("fee"), currencyFor(course.country)),
     english: eng,
     intakes: pIntakes && pIntakes.length ? pIntakes : intakes(part("intakes")),
     intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${pat.intakes}`.slice(0, 200)] : intakeEvidence(part("intakes")),
@@ -179,7 +185,7 @@ export function patternValues(a: Adapter, text: string, code = ""): Record<strin
     const ms = [...text.matchAll(r)].slice(0, 20).map((m) => clean(m[1] ?? m[0])).filter(Boolean);
     if (!ms.length) continue;
     const how = (a.pick || {})[f] || "first";
-    out[f] = (how === "last" ? ms[ms.length - 1] : how === "all" ? [...new Set(ms)].join(" | ") : ms[0]).slice(0, 300);
+    out[f] = (how === "last" ? ms[ms.length - 1] : how === "all" ? [...new Set(ms)].join(" | ") : ms[0]).slice(0, f === "exit_awards" ? 900 : 300);
   }
   return out;
 }
