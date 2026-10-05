@@ -647,3 +647,38 @@ test('adapter apply: no Firecrawl re-read for text-only adapters, stale adapter_
   expect(m).toContain("coalesce(u0.json_source, '') <> '') and (pg.read_status = 'needs_render' or")
   expect(m).toContain("v_c := (v_c - 'adapter_extra') || case when p_candidates ? 'adapter_extra'")
 })
+
+// 5 Oct (Platform Admin 11:48): delivery admitted from the international view; scholarships follow admitted fees
+test('delivery: own admitted field, delivery exclusions, wording rules, hourly scholarship alignment', () => {
+  for (const f of ['20261005001490_cf247_adapter_delivery_mode.sql', '20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql', '20261005001510_cf247_international_view_and_credit_fees.sql']) {
+    const m = read('supabase/migrations/' + f)
+    for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+    for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
+    for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+    for (const rep of m.matchAll(/\{(\d+),(\d+)\}/g)) expect(Number(rep[2])).toBeLessThanOrEqual(255)
+  }
+  const d = read('supabase/migrations/20261005001490_cf247_adapter_delivery_mode.sql')
+  expect(d).toContain("is distinct from 'b0bb638575bff44987fd9888fba8c8de'")
+  expect(d).toContain("'delivery' = any (r.af) and not security.uni_adapter_excluded(r.course_id, 'delivery')")
+  expect(d).toContain("k.field in ('delivery_mode', 'delivery')")
+  const w = read('supabase/migrations/20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql')
+  expect(w).toContain("cron.schedule('scholarship-fee-alignment'")
+  expect(w).toContain('\\(includes blended\\)')
+})
+
+// 5 Oct (Platform Admin 12:12, 13:02, 13:25): international view of the course page, fees per credit
+test('international view (page_view) and per-credit fees: guarded, hand values kept, formula recorded', () => {
+  const m = read('supabase/migrations/20261005001510_cf247_international_view_and_credit_fees.sql')
+  expect(m).toContain("is distinct from '576a1545bdfe9abd23bf6e1e94324425'")
+  expect(m).toContain("elsif p_action = 'read_view' then")
+  expect(m).toContain("k.field in ('tuition', 'fee', 'fees')")
+  expect(m).toContain("security.uni_adapter_excluded(c, 'fee')")
+  expect(m).toContain('round(r.rate / r.rate_credits * r.annual_credits, 2)')
+  expect(m).toContain('attach the rate page as a central page first')
+  const ad = read('supabase/functions/coverage-sweep/adapters.ts')
+  expect(ad).toContain('export function withView(')
+  const ix = read('supabase/functions/coverage-sweep/index.ts')
+  expect(ix).toContain('coverage-sweep-worker-v0.17.4')
+  expect(ix).toContain('|| adHit?.identity || (it.manual === true ? "manual" : null)')
+  expect(ix).toContain('const viewRender = pv?.render === true && !searchCandidate')
+})

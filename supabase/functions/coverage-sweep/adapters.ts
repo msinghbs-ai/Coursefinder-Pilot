@@ -19,7 +19,28 @@ export type Adapter = {
   patterns?: Record<string, string>;
   pick?: Record<string, string>;        // field -> "first" (default), "last" or "all"
   term_months?: Record<string, string>; // v0.17.3: term name -> month name(s), the university's published mapping ("Semester 1": "February")
+  // v0.17.4 (Platform Admin 5 Oct 11:48 and 13:02): the international student view of the course page. Many course pages
+  // show the domestic view unless the address says otherwise (La Trobe "#/fees?location=BU&studentType=int&year=2027",
+  // Adelaide "?student=future" with an international path, Curtin "?region=int"). render: read the page through Firecrawl
+  // with the view applied (a plain fetch cannot run the page's script); suffix: added to each bound address; wait_ms: time
+  // for the page's script to show the view (at most 8,000).
+  page_view?: { render?: boolean; suffix?: string; wait_ms?: number } | null;
 };
+
+// v0.17.4: the bound address with the university's international view applied. A suffix starting with "#" replaces the
+// address's fragment; one starting with "?" or "&" sets those query parameters (existing parameters are kept).
+// "{campus}" in the suffix is left as printed unless the address already carries a location parameter.
+export function withView(url: string, pv?: Adapter["page_view"]): string {
+  const sfx = String(pv?.suffix || "").trim();
+  if (!sfx) return url;
+  let u: URL; try { u = new URL(url) } catch { return url }
+  if (sfx.startsWith("#")) { u.hash = sfx.slice(1); return u.toString() }
+  if (sfx.startsWith("?") || sfx.startsWith("&")) {
+    for (const [k, v] of new URLSearchParams(sfx.slice(1))) u.searchParams.set(k, v);
+    return u.toString();
+  }
+  return url;
+}
 
 // Fields an adapter may give besides intakes, English and fee. They are shown for testing only and never admitted.
 export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location"];
