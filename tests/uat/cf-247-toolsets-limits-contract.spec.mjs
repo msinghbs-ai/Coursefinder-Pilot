@@ -923,3 +923,12 @@ test('night run fixes: wks as weeks, years not rounded before dividing, classroo
   expect(m).toContain("is distinct from '77aa100f89d2130e4ad4793c2cd48d69'")
   expect(m).toContain("'(study(ing)? from home|\\mfrom home\\M)'")
 })
+
+// Night run wave 2: the queue snapshot, and adapter apply reading pages bound by hand (their address unchanged)
+test('night run: queue snapshot read-only, apply reads hand-bound pages', () => {
+  const q = read('supabase/migrations/20261005001640_cf247_night_run_queue.sql')
+  expect(q).toContain("revoke all on table pipeline.night_run_queue from anon, authenticated")
+  const m = read('supabase/migrations/20261005001660_cf247_adapter_apply_hand_bound_pages.sql')
+  expect(m).toContain("is distinct from 'f32ab786207ca970b3aed9ea08658eb5'")
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+})
