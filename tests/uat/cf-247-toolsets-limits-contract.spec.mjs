@@ -900,5 +900,16 @@ test('browser: Coverage › Universities — tick universities, preview and read
   await expect.poll(() => page.l3calls.filter(c => c.reread === 'preview').at(-1)?.args?.which).toBe('all')
   await panel.getByRole('button', { name: 'Read again now' }).click()
   await expect.poll(() => page.l3calls.find(c => c.reread === 'queue')?.args).toMatchObject({ provider_ids: ['u1', 'u2'], which: 'all', central: true, reason: 'Pages changed since the last read' })
-  await expect(panel).toContainText('Sent: 15 course pages, 2 central pages')
+  await expect(panel.locator('[data-reread-progress]')).toContainText('Sent: 2 of 2 universities · 15 course pages · 2 central pages')
+})
+
+// 5 Oct 21:20: the bulk re-read stopped at the 8-second screen limit, now recorded and sent in the background
+test('university re-read in the background: request recorded, ten universities a minute, progress kept', () => {
+  const m = read('supabase/migrations/20261005001630_cf247_university_reread_in_background.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
+  expect(m).toContain("is distinct from '6da92b56224f240999c12696dbcc9dd6'")
+  expect(m).toContain("select cron.schedule('university-reread-requests', '* * * * *'")
+  expect(m).toContain('where x <> all (r.done_ids) limit 10')
+  expect(m).toContain("insert into pipeline.university_reread_requests(provider_ids, which, central, reason, requested_by)")
 })

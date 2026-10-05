@@ -192,6 +192,12 @@ function RereadPanel({ids,names,can,onClose,onDone,onError}){
   const tot=(pv?.universities||[]).reduce((a,x)=>({pages:a.pages+Number(x.pages||0),fc:a.fc+Number(x.firecrawl_likely||0),central:a.central+Number(x.central_pages||0)}),{pages:0,fc:0,central:0})
   const queue=async()=>{const reason=window.prompt(`Read ${fmtNumber(tot.pages)} course pages${central?` and ${fmtNumber(tot.central)} central pages`:''} again for ${ids.length===1?names[0]:`${fmtNumber(ids.length)} universities`}? About ${fmtNumber(tot.fc+tot.central)} Firecrawl credits. Give the reason (kept in the log).`,'');if(!reason)return
     setBusy(true);try{const{data,error}=await supabase.rpc('admin_university_reread',{p_action:'queue',p_args:{provider_ids:ids,which,central,reason}});if(error)throw error;setDone(data);onDone?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  // 21:20: the request is sent in the background, ten universities a minute: follow it here
+  const[reqs,setReqs]=useState([])
+  useEffect(()=>{if(!done?.request_id)return;let stop=false
+    const tick=()=>supabase.rpc('admin_university_reread',{p_action:'requests',p_args:{}}).then(({data})=>{if(stop)return;setReqs(data||[]);const r=(data||[]).find(x=>x.id===done.request_id);if(r&&r.status!=='sent'&&r.status!=='failed')setTimeout(tick,15000)})
+    tick();return()=>{stop=true}},[done?.request_id])
+  const mine=reqs.find(x=>x.id===done?.request_id)
   return <div className="uc-fee-range uc-reread" data-reread>
     <div className="uc-fr-head"><strong>Read pages again</strong><span className="sl-sub">{ids.length===1?names[0]:`${fmtNumber(ids.length)} universities`}</span>{onClose&&<Button compact onClick={onClose}>Close</Button>}</div>
     <div className="cf-filterbar" role="group" aria-label="Which course pages">
@@ -202,7 +208,9 @@ function RereadPanel({ids,names,can,onClose,onDone,onError}){
       {(pv.universities||[]).length>1&&<ul className="tn-list">{pv.universities.map(x=><li key={x.provider_id}>{x.name}: {fmtNumber(x.pages)} pages{central?`, ${fmtNumber(x.central_pages)} central`:''}</li>)}</ul>}
       {can?<Button compact disabled={busy||(tot.pages+tot.central)===0} onClick={queue}>Read again now</Button>:<small className="sl-sub">A Platform Admin sends pages to be read again.</small>}
     </>}
-    {done&&<Pill tone="success">Sent: {fmtNumber(done.pages)} course pages, {fmtNumber(done.central_pages)} central pages</Pill>}
+    {done&&<div data-reread-progress>{mine?<Pill tone={mine.status==='sent'?'success':mine.status==='failed'?'danger':'info'}>{mine.status==='sent'?'Sent':mine.status==='failed'?'Stopped':'Sending'}: {fmtNumber(mine.done)} of {fmtNumber(mine.universities)} universities · {fmtNumber(mine.pages)} course pages · {fmtNumber(mine.central_pages)} central pages</Pill>
+        :<Pill tone="info">Request recorded for {fmtNumber(done.universities)} universities: sending starts within a minute, ten universities a minute</Pill>}
+      {mine?.last_error&&<small className="sl-sub">{mine.last_error}</small>}</div>}
   </div>
 }
 
