@@ -69,7 +69,7 @@ function CourseTable({u,onError}){
           {c.delivery?.read&&<small className="sl-sub" title={c.delivery.read}>page: {String(c.delivery.read).slice(0,60)}</small>}</td>
         <td><span className="uc-val">{(c.intakes?.value||[]).join(', ')||'—'}</span><SourcePill source={c.intakes?.source}/>{c.intakes?.excluded&&<Pill tone="warning">excluded</Pill>}</td>
         <td><span className="uc-val">{c.english?.value??'—'}</span><SourcePill source={c.english?.source}/>{c.english?.excluded&&<Pill tone="warning">excluded</Pill>}</td>
-        <td><span className="uc-val uc-req" title={c.requirement?.read||''}>{c.requirement?.read?String(c.requirement.read).slice(0,90):'—'}</span>{c.requirement&&<SourcePill source={c.requirement.source}/>}{c.requirement?.read&&<small className="sl-sub">for review, not admitted</small>}</td>
+        <td><span className="uc-val uc-req" title={c.requirement?.read||''}>{c.requirement?.read?String(c.requirement.read).slice(0,90):'—'}</span>{c.requirement?.other&&<small className="sl-sub" title={c.requirement.other}>Other: {String(c.requirement.other).slice(0,90)}</small>}{c.requirement&&<SourcePill source={c.requirement.source}/>}{(c.requirement?.read||c.requirement?.other)&&<small className="sl-sub">for review, not admitted</small>}</td>
         <td><span className="uc-val">{c.fee?.value!=null?fmtMoney(c.fee.value,c.fee.currency||'AUD'):'—'}{c.fee?.year?` (${c.fee.year})`:''}</span><SourcePill source={c.fee?.source}/>{c.fee?.excluded&&<Pill tone="warning">excluded</Pill>}</td></tr>)}
     </tbody></table></div>
     <Pager offset={offset} limit={LIMIT} total={Number(d.total||0)} onOffset={setOffset}/></>}

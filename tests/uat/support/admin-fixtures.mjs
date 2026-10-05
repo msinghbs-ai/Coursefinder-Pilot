@@ -624,6 +624,6 @@ export const universities = { as_at: '2026-10-05T09:00:00Z', universities: [
 export const universityCourses = { total: 2, offset: 0, limit: 100, courses: [
   { course_id: 'c1', course: 'Bachelor of Nursing', code: '012345A', level: 'bachelor', url: 'https://www.example.edu.au/nursing', read_status: 'read', evidence_id: 'ev-2',
     intakes: { value: ['February', 'July'], source: 'adapter', excluded: false }, english: { value: 7, source: 'central', excluded: false }, fee: { value: 41000, year: 2026, currency: 'AUD', source: 'adapter', excluded: false },
-    delivery: { value: 'on_campus_and_online', read: 'On campus, Online', source: 'adapter', excluded: false }, location: { value: 'Bundoora Campus', read: null, source: 'catalogue' }, requirement: { read: 'Prerequisite: Year 12 Chemistry', source: 'adapter' } },
+    delivery: { value: 'on_campus_and_online', read: 'On campus, Online', source: 'adapter', excluded: false }, location: { value: 'Bundoora Campus', read: null, source: 'catalogue' }, requirement: { read: 'Prerequisite: Year 12 Chemistry', other: 'Uniform and clinical placement kit', source: 'adapter' } },
   { course_id: 'c2', course: 'Graduate Certificate of Arts', code: '116337M', level: 'graduate_certificate', url: null, read_status: null, evidence_id: null,
     intakes: { value: null, source: 'missing', excluded: false }, english: { value: null, source: 'missing', excluded: false }, fee: { value: 18836, year: 2026, currency: 'AUD', source: 'reader', excluded: true } }] }

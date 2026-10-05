@@ -51,7 +51,7 @@ export function withView(url: string, pv?: Adapter["page_view"]): string {
 // Fields an adapter may give besides intakes, English and fee. They are shown for testing only and never admitted.
 // v0.17.7 (Platform Admin 5 Oct 15:22, 15:34): fee_total (a whole-course fee) with course_years (full-time years) gives
 // the annual fee as total / years; exit_awards (the awards a student can exit with after N years of full-time study).
-export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location", "fee_total", "course_years", "exit_awards", "entry_requirement"];
+export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location", "fee_total", "course_years", "exit_awards", "entry_requirement", "other_requirements"];
 
 const clean = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
 const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
@@ -140,7 +140,9 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   const jFeeRaw = !pat.fee && data && paths.fee ? jsonText(jsonAt(data, paths.fee)) : "";
   // v0.17.7: no annual fee printed, but a whole-course fee and the full-time years are: annual = total / years
   const tTotal = !pat.fee && pat.fee_total ? Number(pat.fee_total.replace(/[^0-9.]/g, "")) : NaN;
-  const tYears = !pat.fee && pat.course_years ? Number((pat.course_years.match(/[0-9]+(?:\.[0-9]+)?/) || [])[0]) : NaN;
+  // v0.17.9 (Platform Admin 16:49 "as per the term"): a duration printed in months, weeks, semesters or trimesters is
+  // turned into full-time years (12 months, 52 weeks, 2 semesters, 3 trimesters to a year)
+  const tYears = !pat.fee && pat.course_years ? yearsOf(pat.course_years) : NaN;
   const fromTotal = Number.isFinite(tTotal) && Number.isFinite(tYears) && tYears >= 1 && tYears <= 8;
   const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : fromTotal ? Math.round(tTotal / tYears * 100) / 100 : (/^\s*\$?\s*[0-9][0-9,]*(\.[0-9]+)?\s*$/.test(jFeeRaw) ? Number(jFeeRaw.replace(/[^0-9.]/g, "")) : NaN);
   const pIelts = pat.ielts_overall ? Number(pat.ielts_overall) : NaN;
@@ -159,6 +161,13 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   return { identity: basis, how, json_found: !!data, page_title: titleOf(html).slice(0, 160), h1: h1Of(html).slice(0, 160), course_title_seen: ct, candidates, extra, patterns_found: pat };
 }
 
+export function yearsOf(s: string): number {
+  const m = String(s || "").toLowerCase().match(/([0-9]+(?:\.[0-9]+)?)\s*(years?|yrs?|months?|weeks?|semesters?|trimesters?)?/);
+  if (!m) return NaN;
+  const n = Number(m[1]), u = m[2] || "year";
+  const y = /^month/.test(u) ? n / 12 : /^week/.test(u) ? n / 52 : /^semester/.test(u) ? n / 2 : /^trimester/.test(u) ? n / 3 : n;
+  return Math.round(y * 100) / 100;
+}
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 // The year printed in the text a field's pattern matched (for example "Annual fee 2026: $47,300"), or null.
 export function patternYear(a: Adapter, text: string, field: string, code = ""): number | null {
