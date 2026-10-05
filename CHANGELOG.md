@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.123 — 5 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.196** (Read pages again shows Sending… and any error inside the panel).
+- No database change
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.122 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.195** (Read pages again for many universities runs in the background).

@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.195'
-export const PACKAGE_VERSION='0.1.122'
+export const UI_VERSION='2.15.196'
+export const PACKAGE_VERSION='0.1.123'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Read pages again: many universities in the background',
+  title:'Read pages again: clear confirmation',
   changes:[
-    'Read pages again for many universities now records the request and returns at once: pages are sent back ten universities a minute, and the panel shows the progress.'
+    'Read pages again shows Sending… while the request is recorded, then the progress, and any error inside the panel (not only at the top of the page).'
   ],
   bugFixes:[
-    'Read pages again for 61 universities stopped at the 8-second screen limit (statement timeout) and sent nothing.'
+    'After pressing Read again now nothing showed in the panel when the request failed: the error only appeared at the top of the page.'
   ]
 }
 
