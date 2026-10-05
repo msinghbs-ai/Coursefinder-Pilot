@@ -19,10 +19,39 @@ export type Adapter = {
   patterns?: Record<string, string>;
   pick?: Record<string, string>;        // field -> "first" (default), "last" or "all"
   term_months?: Record<string, string>; // v0.17.3: term name -> month name(s), the university's published mapping ("Semester 1": "February")
+  // v0.17.4 (Platform Admin 5 Oct 11:48 and 13:02): the international student view of the course page. Many course pages
+  // show the domestic view unless the address says otherwise (La Trobe "#/fees?location=BU&studentType=int&year=2027",
+  // Adelaide "?student=future" with an international path, Curtin "?region=int"). render: read the page through Firecrawl
+  // with the view applied (a plain fetch cannot run the page's script); suffix: added to each bound address; wait_ms: time
+  // for the page's script to show the view (at most 8,000).
+  // v0.17.5: url_pattern limits the view to the pages it names (La Trobe course pages, not its handbook)
+  page_view?: { render?: boolean; suffix?: string; wait_ms?: number; url_pattern?: string } | null;
 };
 
+// v0.17.4: the bound address with the university's international view applied. A suffix starting with "#" replaces the
+// address's fragment; one starting with "?" or "&" sets those query parameters (existing parameters are kept).
+// "{campus}" in the suffix is left as printed unless the address already carries a location parameter.
+export function viewApplies(url: string, pv?: Adapter["page_view"]): boolean {
+  if (!pv?.render) return false;
+  if (!pv.url_pattern) return true;
+  const r = re(pv.url_pattern); return r ? r.test(url) : false;
+}
+export function withView(url: string, pv?: Adapter["page_view"]): string {
+  const sfx = String(pv?.suffix || "").trim();
+  if (!sfx) return url;
+  let u: URL; try { u = new URL(url) } catch { return url }
+  if (sfx.startsWith("#")) { u.hash = sfx.slice(1); return u.toString() }
+  if (sfx.startsWith("?") || sfx.startsWith("&")) {
+    for (const [k, v] of new URLSearchParams(sfx.slice(1))) u.searchParams.set(k, v);
+    return u.toString();
+  }
+  return url;
+}
+
 // Fields an adapter may give besides intakes, English and fee. They are shown for testing only and never admitted.
-export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location"];
+// v0.17.7 (Platform Admin 5 Oct 15:22, 15:34): fee_total (a whole-course fee) with course_years (full-time years) gives
+// the annual fee as total / years; exit_awards (the awards a student can exit with after N years of full-time study).
+export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location", "fee_total", "course_years", "exit_awards", "entry_requirement", "other_requirements"];
 
 const clean = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
 const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
@@ -109,12 +138,18 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b(?:${m}|${m.slice(0, 3)})\\b`).test(pat.intakes)) : null;
   // v0.17.2: a fee kept as a number in the page data (json_paths.fee) counts as the adapter's own reading too
   const jFeeRaw = !pat.fee && data && paths.fee ? jsonText(jsonAt(data, paths.fee)) : "";
-  const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : (/^\s*\$?\s*[0-9][0-9,]*(\.[0-9]+)?\s*$/.test(jFeeRaw) ? Number(jFeeRaw.replace(/[^0-9.]/g, "")) : NaN);
+  // v0.17.7: no annual fee printed, but a whole-course fee and the full-time years are: annual = total / years
+  const tTotal = !pat.fee && pat.fee_total ? Number(pat.fee_total.replace(/[^0-9.]/g, "")) : NaN;
+  // v0.17.9 (Platform Admin 16:49 "as per the term"): a duration printed in months, weeks, semesters or trimesters is
+  // turned into full-time years (12 months, 52 weeks, 2 semesters, 3 trimesters to a year)
+  const tYears = !pat.fee && pat.course_years ? yearsOf(pat.course_years) : NaN;
+  const fromTotal = Number.isFinite(tTotal) && Number.isFinite(tYears) && tYears >= 1 && tYears <= 8;
+  const pFee = pat.fee ? Number(pat.fee.replace(/[^0-9.]/g, "")) : fromTotal ? Math.round(tTotal / tYears * 100) / 100 : (/^\s*\$?\s*[0-9][0-9,]*(\.[0-9]+)?\s*$/.test(jFeeRaw) ? Number(jFeeRaw.replace(/[^0-9.]/g, "")) : NaN);
   const pIelts = pat.ielts_overall ? Number(pat.ielts_overall) : NaN;
   if (Number.isFinite(pIelts) && pIelts >= 4 && pIelts <= 9) { eng.ielts_overall = pIelts; eng.context = `adapter pattern: IELTS ${pIelts}` }
   const candidates = basis ? {
     final_url: null, page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200),
-    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: pat.fee ? `adapter pattern: ${pat.fee}` : `page data: ${paths.fee} = ${jFeeRaw}` } : fee(part("fee"), currencyFor(course.country)),
+    fee: Number.isFinite(pFee) && pFee >= 1000 && pFee <= 500000 ? { value: pFee, safe: true, ambiguous: false, basis: "annual", fee_year: patternYear(a, text, fromTotal ? "fee_total" : "fee", course.code), currency: currencyFor(course.country), rejection_reason: null, candidates: [], context: pat.fee ? `adapter pattern: ${pat.fee}` : fromTotal ? `adapter: whole-course fee ${pat.fee_total} / ${tYears} full-time years (${pat.course_years})` : `page data: ${paths.fee} = ${jFeeRaw}`, ...(fromTotal ? { from_total: { total: tTotal, years: tYears } } : {}) } : fee(part("fee"), currencyFor(course.country)),
     english: eng,
     intakes: pIntakes && pIntakes.length ? pIntakes : intakes(part("intakes")),
     intake_context: pIntakes && pIntakes.length ? [`adapter pattern: ${pat.intakes}`.slice(0, 200)] : intakeEvidence(part("intakes")),
@@ -126,6 +161,13 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   return { identity: basis, how, json_found: !!data, page_title: titleOf(html).slice(0, 160), h1: h1Of(html).slice(0, 160), course_title_seen: ct, candidates, extra, patterns_found: pat };
 }
 
+export function yearsOf(s: string): number {
+  const m = String(s || "").toLowerCase().match(/([0-9]+(?:\.[0-9]+)?)\s*(years?|yrs?|months?|weeks?|semesters?|trimesters?)?/);
+  if (!m) return NaN;
+  const n = Number(m[1]), u = m[2] || "year";
+  const y = /^month/.test(u) ? n / 12 : /^week/.test(u) ? n / 52 : /^semester/.test(u) ? n / 2 : /^trimester/.test(u) ? n / 3 : n;
+  return Math.round(y * 100) / 100;
+}
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 // The year printed in the text a field's pattern matched (for example "Annual fee 2026: $47,300"), or null.
 export function patternYear(a: Adapter, text: string, field: string, code = ""): number | null {
@@ -152,7 +194,7 @@ export function patternValues(a: Adapter, text: string, code = ""): Record<strin
     const ms = [...text.matchAll(r)].slice(0, 20).map((m) => clean(m[1] ?? m[0])).filter(Boolean);
     if (!ms.length) continue;
     const how = (a.pick || {})[f] || "first";
-    out[f] = (how === "last" ? ms[ms.length - 1] : how === "all" ? [...new Set(ms)].join(" | ") : ms[0]).slice(0, 300);
+    out[f] = (how === "last" ? ms[ms.length - 1] : how === "all" ? [...new Set(ms)].join(" | ") : ms[0]).slice(0, f === "exit_awards" ? 900 : 300);
   }
   return out;
 }

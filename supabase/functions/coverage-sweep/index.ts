@@ -4,7 +4,7 @@ import { currencyFor, english, fee, h1Of, htmlToText, identity, intakeEvidence, 
 import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
-import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson } from "./adapters.ts";
+import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, viewApplies, withView } from "./adapters.ts";
 import { adapterOutput, builderRequest, jsonLeaves, mainJsonScript, proposalAdapter, textBlocks } from "./builder.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
@@ -47,7 +47,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.17.3"; // v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
+const WORKER = "coverage-sweep-worker-v0.17.9"; // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
 // v0.10.0 (2 Oct 2026): mode ai_match, the map-first link matcher (a pinned model picks a course's page from its stored site map).
 // v0.9.5 (2 Oct 2026, Decision 227): English policy and academic calendar documents are read and parsed (policy.ts,
@@ -1108,9 +1108,12 @@ Deno.serve(async (req) => {
       const dr = await rpc("svc_adapter_draft_get", { p_draft_id: String(body.draft_id || "") });
       if (!dr?.id) return j({ error: "unknown draft", worker: WORKER }, 404);
       const caps: any[] = [];
+      const capAdapters: Record<string, any> = (await rpc("svc_uni_adapters", {}).catch(() => null)) || {};
       for (const [i, sm] of (dr.samples || []).entries()) {
         const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
-        const reqBody = { url: sm.url, formats: ["rawHtml", { type: "screenshot", fullPage: true }], onlyMainContent: false, waitFor: 3000, timeout: 60000 };
+        // v0.17.4: the builder captures the international view when the university's adapter names one
+        const capPv = capAdapters?.[dr.provider_id]?.page_view;
+        const reqBody = { url: viewApplies(sm.url, capPv) ? withView(sm.url, capPv) : sm.url, formats: ["rawHtml", { type: "screenshot", fullPage: true }], onlyMainContent: false, waitFor: Math.max(3000, Math.min(Number(capPv?.wait_ms ?? 3000), 8000)), timeout: 60000 };
         try { const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(90000) }); http = r.status; hdrs = r.headers; d = await r.json().catch(() => null) } catch (e) { err = e instanceof Error ? e.message : String(e) }
         const rec = callRecord(http, d, hdrs, Date.now() - started, err);
         const used = rec.credits_used ?? 1;
@@ -1296,17 +1299,32 @@ Deno.serve(async (req) => {
       return j({ ok: true, mode, run_id: runId, tally, calls, credits, stop: stopReason, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
     if (mode === "read") {
-      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string; basis?: string }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
+      const items: { course_id: string; provider_id: string; url: string; title: string; code: string; status: string; priority?: boolean; manual?: boolean; country?: string; basis?: string; rendered_before?: boolean }[] = await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });
       const tally: Record<string, number> = {};
       await pool(items, 8, async (it) => {
         if (Date.now() - t0 > BUDGET_MS) { await rpc("svc_coverage_read_record", { p_course_id: it.course_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_identity_basis: null, p_storage_path: null, p_sha256: null, p_candidates: null }); return }
         let status = "fetch_failed", http: number | null = null, via: string | null = null, html = "", finalUrl = it.url;
         // v0.13.4: a search candidate (basis title_search / cricos_search, picked by a URL recipe and often not the course's
         // page) is read directly only; it is never rendered through Firecrawl. The matcher's pages and hand-entered pages keep the fallback.
-        const searchCandidate = it.basis === "title_search" || it.basis === "cricos_search";
+        // v0.17.6: a search page that was rendered through Firecrawl before (or sent back by a view read) keeps that fallback
+        const searchCandidate = (it.basis === "title_search" || it.basis === "cricos_search") && it.rendered_before !== true;
+        // v0.17.4: the university's international view (adapter page_view.render) is read through Firecrawl with the view
+        // applied to the bound address (kept as the page's final address); a plain fetch would only see the domestic default.
+        const pv = adapters[it.provider_id]?.page_view;
+        const viewRender = viewApplies(it.url, pv) && !searchCandidate;
         try {
           const u = new URL(it.url);
           if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) status = "robots_disallowed";
+          else if (viewRender) {
+            const viewUrl = withView(it.url, pv);
+            if (await useFc("scrape", it.provider_id, viewUrl)) {
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: viewUrl, formats: ["rawHtml"], onlyMainContent: false, waitFor: Math.max(0, Math.min(Number(pv?.wait_ms ?? 3000), 8000)) }), signal: AbortSignal.timeout(90000) }).catch(() => null);
+              const d = r ? await r.json().catch(() => ({})) : {};
+              if (r?.ok && pageHtml(d)) { html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = viewUrl }
+              else http = r?.status ?? null;
+              status = html ? "read" : http && [401, 403, 406, 429].includes(http) ? "blocked" : "fetch_failed";
+            } else status = "needs_render";
+          }
           else {
             try {
               const r = await fetch(u, { headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(20000) });
@@ -1337,8 +1355,9 @@ Deno.serve(async (req) => {
         if (status === "read") {
           let text = htmlToText(html);
           // v0.6.3: a page a person entered on the course page is the course's page (Decision 179).
-          identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous", it.country || "") || (it.manual === true ? "manual" : null);
-          if (!identityBasis && adHit?.identity) identityBasis = adHit.identity;
+          // v0.17.4: a page bound by hand that the university's adapter confirms (code or title) keeps the adapter's identity,
+          // so its readings go through the same admission rules as any adapter page; "manual" is the last resort.
+          identityBasis = identity(html, text, it.title, it.code, it.status === "ambiguous", it.country || "") || adHit?.identity || (it.manual === true ? "manual" : null);
           // v0.6.2: a priority page read directly without the code may be a script-rendered handbook (UNSW, Melbourne):
           // render it once through Firecrawl before calling it a mismatch.
           if (!identityBasis && via === "direct" && it.priority === true && !searchCandidate && await useFc("scrape", it.provider_id, it.url)) {

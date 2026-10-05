@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.189'
-export const PACKAGE_VERSION='0.1.116'
+export const UI_VERSION='2.15.191'
+export const PACKAGE_VERSION='0.1.118'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'3 Oct 2026',
-  title:'Coverage › Universities and central rules',
+  title:'Indicative whole-course fees per university',
   changes:[
-    'Coverage & completeness › Universities: one row per target university with coloured pills for the adapter, admitted fields, exclusions, central English rule and calendar, and coverage of intakes, English and fees with where each value came from.',
-    'Open a university to see its courses in a table, each value with its source (course page by the adapter, central rule, general reader, by hand, missing), with filters for missing, excluded, adapter and central.',
-    'A Platform Admin can attach a university’s central English requirements or key-dates page. It is read through Firecrawl with evidence kept and parsed into a proposal approved in Layer 4 Review › Attributes.',
-    'An adapter fee with no year on the page is held against the current year.'
+    'Coverage › Universities shows each university\'s indicative whole-course fees (lowest and highest, in the country\'s currency): the whole-course fee printed on the course page, else the current annual fee x full-time years, else the CRICOS registered total. Award courses only.',
+    'Open a university to see how the range was worked out, the lowest and highest courses, the courses left out and why, and every course\'s whole-course fee.',
+    'A Platform Admin publishes each university\'s range on its own, can set it by hand (never changed by the hourly refresh) and controls the settings: courses under one year, fewest courses, oldest fee year, floor and the study levels left out.',
+    'Delivery comes from the location when a course page only lists its campuses or Online, other requirements (uniforms, placements, kits, checks) are shown with the entry requirement, and course lengths in months, weeks, semesters or trimesters count as years.'
   ],
   bugFixes:[]
 }
