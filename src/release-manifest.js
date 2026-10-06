@@ -1,21 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.197'
-export const PACKAGE_VERSION='0.1.124'
+export const UI_VERSION='2.15.198'
+export const PACKAGE_VERSION='0.1.125'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Task manager: Qualify adapters and Admit the passing fields',
+  title:'Task manager shows only live tasks; finished tasks in Jobs; one button for long-running actions',
   changes:[
-    'Scheduled jobs › Task manager: long-running admin actions run as tasks worked by the database a slice a minute. Each shows its progress from the database (a refresh loses nothing), who started it and why, and can be paused, resumed or cancelled at the next provider.',
-    'Qualify adapters (Operator (adapters) and above): choose a country, state or province, provider kind and adapter state. Every chosen adapter is measured against the admission rules, field by field, with the counts and the reason. Nothing is admitted by the run.',
-    'Admit the passing fields (Platform Admin): a separate button on a finished Qualify run admits exactly the fields that passed, through the ordinary admission control, one logged entry per provider. Fields already admitted stay. Values entered by hand are never changed.',
-    'Adapter editor › Reading options: numeric start dates, capitalised month names and the one-academic-year rule, each off unless switched on for that adapter (worker v0.17.13).'
+    'Scheduled jobs › Task manager now lists only tasks that are waiting, running or paused (the Windows sense). A finished task (done, failed or cancelled) is written once to the Jobs history and opens there, under Scheduled jobs › Jobs, with its per-provider result and the Admit button for a finished Qualify run.',
+    'One button for every long-running admin action (JobButton): press it, give a reason, and it shows the task\'s progress from the database with a Cancel, so a refreshed page finds the same task again by its kind and scope.',
+    'The old Layer 1–4 operations console (floating Pipeline Ops launcher with its own Jobs view) is retired: it had no mount point since v2.15.107 and duplicated the Jobs tab.'
   ],
   bugFixes:[
-    'Canadian adapters read nothing because nearly every Canadian course is inactive: the builder, preview and apply now read pages of inactive courses too (admission still writes active courses only).'
+    'Four colour literals in the Universities panel styles fell outside the token set and failed the one-token-set contract.'
   ]
 }
 

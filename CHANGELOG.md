@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.125 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.198** (Task manager shows only live tasks; finished tasks in Jobs; JobButton; old operations console retired).
+- Database: migration 1730 (finished tasks written to the Jobs history, live-only Task manager read, task scope).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.124 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.197** (Task manager: Qualify adapters and Admit the passing fields; adapter Reading options).
