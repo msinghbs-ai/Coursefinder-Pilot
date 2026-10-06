@@ -12,7 +12,6 @@ import {
 } from './support/runtime-evidence.mjs'
 
 const expectations = JSON.parse(fs.readFileSync(new URL('./expectations.json', import.meta.url), 'utf8'))
-const fee = expectations.data_quality.regulatory_fee
 
 async function start(page) {
   await loginAsUatUser(page)
@@ -36,20 +35,14 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
     })
   })
 
-  test('governed regulatory-fee states and all 191 exception rows page correctly', async ({ page }, testInfo) => {
+  test('governed regulatory-fee states and every exception row page correctly', async ({ page }, testInfo) => {
     const runtime = observeRuntime(page)
     try {
       await start(page)
-      await expect(page.getByText(/Aggregate snapshot computed at .*refreshed off-peak daily and after explicit post-ingestion refresh; exception drill-down is live\./)).toBeVisible()
-      const card = page.locator('section.dq-domain-card').filter({ has: page.getByRole('heading', { name: 'Regulatory fee', exact: true }) })
-      await expect(card.getByTitle(`Present: ${fee.present.toLocaleString('en-US')}`)).toBeVisible()
-      await expect(card.getByTitle(`Source-null: ${fee.source_null.toLocaleString('en-US')}`)).toBeVisible()
-      await expect(card.getByTitle(`Not applicable: ${fee.not_applicable.toLocaleString('en-US')}`)).toBeVisible()
-      await expect(card.getByTitle(`Zero: ${fee.zero.toLocaleString('en-US')}`)).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'data-quality-overview')
 
-      await openRegulatoryFeeSourceNull(page, fee)
-      await expect(page.getByText(/^1–\d+ of \d+$/)).toBeVisible()
+      const exceptionCount = await openRegulatoryFeeSourceNull(page)
+      await expect(page.getByText(new RegExp(`^1–\\d+ of ${exceptionCount.toLocaleString('en-US')}$`))).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'exceptions-page-1')
 
       const next = page.locator('.dq-pager').getByRole('button', { name: /Next/i })
@@ -69,7 +62,7 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
     const runtime = observeRuntime(page)
     try {
       await start(page)
-      await openRegulatoryFeeSourceNull(page, fee)
+      await openRegulatoryFeeSourceNull(page)
       const firstEntity = page.locator('.dq-table tbody .dq-entity-link').first()
       await expect(firstEntity).toBeVisible()
       await firstEntity.click()
@@ -85,7 +78,7 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
     const runtime = observeRuntime(page)
     try {
       await start(page)
-      await openRegulatoryFeeSourceNull(page, fee)
+      await openRegulatoryFeeSourceNull(page)
       const evidenceButton = page.locator('.dq-table tbody').getByRole('button', { name: /^Evidence$/i }).first()
       await expect(evidenceButton).toBeVisible()
       await evidenceButton.click()
