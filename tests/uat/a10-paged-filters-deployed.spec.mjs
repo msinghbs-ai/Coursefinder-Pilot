@@ -25,7 +25,7 @@ test.describe('A10 paged filters and tablet focus @deployed',()=>{
   })
 
   test('QILT Provider and Metric use 10-item server paging without coarse-pointer autofocus',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-    await route(page,'outcomes-qilt','Outcomes')
+    await route(page,'outcomes-qilt','Rankings & statistics')
     const provider=page.locator('.m-filter-select').filter({hasText:'Provider'}).first()
     await expect(provider).toBeVisible()
     const p=await pagedOpen(page,provider,'qilt_provider')
@@ -43,7 +43,7 @@ test.describe('A10 paged filters and tablet focus @deployed',()=>{
   }finally{await finish(testInfo,runtime)}})
 
   test('PRISMS Study area uses 10-item server paging without coarse-pointer autofocus',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-    await route(page,'student-flow-prisms','Student Flow')
+    await route(page,'student-flow-prisms','Rankings & statistics')
     const study=page.locator('.m-filter-select').filter({hasText:'Study area'}).first()
     await expect(study).toBeVisible()
     const body=await pagedOpen(page,study,'prisms_study_area')
