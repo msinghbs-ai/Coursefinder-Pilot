@@ -55,3 +55,4 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     await expect(ws.getByText(/managed centrally under Administration/i).first()).toBeVisible()
   }finally{await finish(testInfo,runtime)}})
 })
+// CF-247 stale-check pass (6 Oct 2026): re-run to read current failures

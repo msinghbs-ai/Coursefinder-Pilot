@@ -33,3 +33,4 @@ test.describe('CourseFinder deployed M2.3 intelligence acceptance on canonical r
   const createHeading=ws.getByRole('heading',{name:'Create governed onboarding case',exact:true});if(await createHeading.count())await expect(createHeading).toBeVisible();else await expect(ws.getByRole('button',{name:'Create Draft',exact:true})).toHaveCount(0);await milestoneScreenshot(page,testInfo,'m2-3-onboarding-administration')
  }finally{await finish(testInfo,runtime)}})
 })
+// CF-247 stale-check pass (6 Oct 2026): re-run to read current failures
