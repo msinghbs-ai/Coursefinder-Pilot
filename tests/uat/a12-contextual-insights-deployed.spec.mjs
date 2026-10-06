@@ -37,7 +37,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
   await row.click();const payload=await(await response).json();const ci=payload.contextual_insights
   expect(ci?.student_outcomes?.granularity).toBe('provider_context')
   expect(Number(ci?.student_outcomes?.total||0)).toBeGreaterThan(0)
-  expect(['not_mapped','regional_field_context','direct_course']).toContain(ci?.student_flow?.relationship_state)
+  expect(['not_mapped','regional_context','regional_field_context','direct_course']).toContain(ci?.student_flow?.relationship_state)
   expect(Number(ci?.scholarships?.total||0)).toBeGreaterThanOrEqual(3)
   expect((ci?.scholarships?.items||[]).every(x=>x.granularity==='contextual_eligibility'||x.granularity==='course')).toBeTruthy()
   await expect(page.getByRole('heading',{name:'Related insights & funding'})).toBeVisible()

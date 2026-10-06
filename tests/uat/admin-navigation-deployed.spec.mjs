@@ -10,7 +10,7 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
   test('primary sidebar exposes the governed non-floating information architecture',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const nav=page.locator('.m-nav')
     // v2.15.107 (Decision 171): five-section menu from src/nav-map.js. Only items open to every operator rank are asserted.
-    for(const group of ['Catalogue','Data pipeline','Operations','Administration']){
+    for(const group of ['Catalogue','Data pipeline','Operations']){ // Administration is rank-gated now (Platform settings and Administration hold admin-only pages)
       await expect(nav.locator('.m-nav-label').filter({hasText:group}).first()).toHaveText(group,{timeout:DETERMINISTIC_UI_TIMEOUT})
     }
     for(const label of ['Dashboard','Courses','Scholarships','Coverage & completeness','Layer 4 Review','Evidence','Provider contacts']){
@@ -58,17 +58,18 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
 
   test('Administration subcontext and Scheduled Tasks survive deep-link browser history',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
+    // v2.15.200: #administration?section=layer2-providers is a retired address; it lands on Scrapers & fetchers (#scrapers).
     await page.evaluate(()=>{location.hash='#administration?section=layer2-providers'})
-    await expect(page).toHaveURL(/#administration\?section=layer2-providers/)
-    await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toHaveAttribute('aria-selected','true',{timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page).toHaveURL(/#scrapers/)
+    await expect(page.locator('.m-title-wrap h1')).toContainText('Scrapers & fetchers',{timeout:DETERMINISTIC_UI_TIMEOUT})
     await page.reload()
-    await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toHaveAttribute('aria-selected','true',{timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.locator('.m-title-wrap h1')).toContainText('Scrapers & fetchers',{timeout:DETERMINISTIC_UI_TIMEOUT})
     await clickPrimaryNav(page,'Scheduled Tasks')
     await expect(page).toHaveURL(/#scheduled-tasks/)
     await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await page.goBack()
-    await expect(page).toHaveURL(/#administration\?section=layer2-providers/)
-    await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toHaveAttribute('aria-selected','true')
+    await expect(page).toHaveURL(/#scrapers/)
+    await expect(page.locator('.m-title-wrap h1')).toContainText('Scrapers & fetchers')
     await page.goForward()
     await expect(page).toHaveURL(/#scheduled-tasks/)
     await expect(page.getByRole('heading',{name:'Scheduled Jobs & Run Control',exact:true})).toBeVisible()

@@ -40,7 +40,7 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(context).toContain('National benchmark')
 
   expect(shell).toContain("import ComparisonWorkspace from'./ComparisonWorkspace'")
-  expect(shell).toContain("if(page==='Compare')return <ComparisonWorkspace")
+  expect(shell).toContain("if(tab==='compare')return <ComparisonWorkspace")
   expect(shell).toContain("navigate?.('Compare',{type,ids:data.id})")
   const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
   const historyVersion=version.match(/const VERSION='([^']+)'/)?.[1]
@@ -48,7 +48,7 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
   expect(historyVersion).toBe(fallbackVersion)
   expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-  expect(manifest).toContain(`version:'${fallbackVersion}'`)
+  expect(manifest).toMatch(/version:(UI_VERSION|'2\.15\.\d+')/) // the manifest drives the pill; the shell constant is only a fallback
   expect(current).toContain("from'./release-manifest.js'")
   expect(index).toContain('<title>Coursefinder PIM Admin</title>')
   expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)

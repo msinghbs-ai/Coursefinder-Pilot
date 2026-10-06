@@ -99,7 +99,8 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(providerUi).toContain('rank>=6')
   // Wording updated in the provider screen: write-only credentials; provider and run concurrency governed separately.
   expect(providerUi).toContain('Credentials stay write-only.')
-  expect(providerUi).toContain('run concurrency, stale recovery and paid-attempt limits are governed separately')
+  // Wording reworked since: run concurrency, stale recovery and paid-attempt limits now live under Models & services; the provider screen still states its own concurrency.
+  expect(providerUi).toContain('Enablement, credential status, rate, concurrency, timeout and quota.')
 
   const alertSql=await fs.readFile('supabase/migrations/20260827224500_m2_4_2_layer2_operational_alerts.sql','utf8')
   expect(alertSql).toContain('layer2_ops_alerts')
