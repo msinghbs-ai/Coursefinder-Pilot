@@ -49,27 +49,8 @@ test.describe('static contract', () => {
     expect(ui).toContain('function ActionRequired')
     expect(ui).toContain('function DailyProgress')
     const main = await fs.readFile('src/mature-main.jsx', 'utf8')
-    expect(main).toContain('<Layer2Workspace rank={rank} embedded navigate={navigate}')
+    expect(main).toContain('<AdaptersWorkspace rank={rank} onError={err}/>') // v2.15.200: Layer 2 opens Adapters; the old Overview and History screens are no longer routed
   })
 })
 
-test.describe('mocked browser', () => {
-  test('Overview action panel gives guidance and buttons; History shows daily progress by country', async ({ page }) => {
-    await mockAdmin(page)
-    await page.goto('/#layer-2-discovery')
-    const action = page.locator('[data-l2-action]')
-    await expect(action.getByRole('heading', { name: 'Action required' })).toBeVisible()
-    const items = action.locator('[data-l2-action-item]')
-    if (await items.count()) await expect(items.first()).toContainText('What to do:')
-    else await expect(action.locator('[data-l2-action-none]')).toBeVisible()
-    await expect(action.getByRole('button', { name: 'Open Live activity' }).first()).toBeVisible()
-    await page.getByRole('tab', { name: 'History' }).click()
-    const daily = page.locator('[data-l2-daily]')
-    await expect(daily.getByRole('heading', { name: 'Daily progress' })).toBeVisible()
-    await expect(daily.locator('tbody tr').first()).toBeVisible()
-    await expect(daily.getByRole('combobox', { name: 'Daily progress country' }).locator('option')).toHaveCount(3)
-    await page.getByRole('tab', { name: 'Overview' }).click()
-    await page.locator('[data-l2-action]').getByRole('button', { name: 'Open Live activity' }).first().click()
-    await expect(page).toHaveURL(/live-activity/)
-  })
-})
+// v2.15.200 (Decision 254): the Overview and History screens are retired from Layer 2 (see cf-247-adapters-lifecycle-contract.spec.mjs for the Adapters screen).

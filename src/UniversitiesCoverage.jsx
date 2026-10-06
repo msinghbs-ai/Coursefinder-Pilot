@@ -13,23 +13,21 @@
 // unconfirmed page and pages that are gone are proposals a Platform Admin confirms by hand.
 // 5 Oct 21:04: read pages again for one university or for the universities ticked (public.admin_university_reread):
 // a preview counts the pages and the likely Firecrawl credits, then a Platform Admin sends them back with a reason.
-import React,{useEffect,useMemo,useState}from'react'
-import{RefreshCw}from'lucide-react'
+import React,{useEffect,useState}from'react'
 import{supabase}from'./lib/supabase'
 import JobButton from'./JobButton'
 import{fmtDate,fmtMoney,fmtShare}from'./lib/format'
-import{Button,Empty,Loading,Pager,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
+import{Button,Empty,Loading,Pager,fmtDateTime,fmtNumber}from'./ui-kit'
 
-const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
-const ADAPTER={admitting:['Admitting','success'],testing:['Testing','warning'],off:['Switched off','neutral']}
-const FIELD={intakes:'Intakes',english:'English',fee:'Fees',delivery:'Delivery',exit_awards:'Exit awards',host_pages:'Host pages'}
+export const ADAPTER={admitting:['Admitting','success'],testing:['Testing','warning'],off:['Switched off','neutral']}
+export const FIELD={intakes:'Intakes',english:'English',fee:'Fees',delivery:'Delivery',exit_awards:'Exit awards',host_pages:'Host pages'}
 const HOST_KIND={exit_award:'Exit award of',nested_award:'Award within',shared_page:'Shares the page of',double_degree:'Double degree page',no_public_page:'Page gone'}
 const CHECK={pass:['Register check passed','success'],fail:['Register check failed','danger'],none:['No register to check','neutral']}
 // Delivery as held in the catalogue (security.delivery_mode_from_text)
 const DELIVERY={on_campus:'On campus',online:'Online',on_campus_and_online:'On campus and online',blended:'Blended'}
 const POLICY={approved:['Approved','success'],proposed:['Waiting for approval','warning'],no_values:['Read, no rule found','neutral']}
 // Where a held value came from
-const SOURCE={adapter:['Course page (adapter)','success'],central:['Central rule','info'],reader:['Course page (general reader)','neutral'],hand:['Entered by hand','violet'],other:['Other source','neutral'],missing:['Missing','danger'],catalogue:['Registered campus','info']}
+export const SOURCE={adapter:['Course page (adapter)','success'],central:['Central rule','info'],reader:['Course page (general reader)','neutral'],hand:['Entered by hand','violet'],other:['Other source','neutral'],missing:['Missing','danger'],catalogue:['Registered campus','info']}
 const SHOW=[['all','All courses'],['missing','Something missing'],['excluded','Excluded'],['adapter','Read by the adapter'],['central','From a central rule']]
 const errText=e=>e?.message||String(e)
 // How a course's whole-course fee was worked out, and why a course was left out of the range
@@ -37,10 +35,10 @@ const HOW={current_total:['Whole-course fee on the course page','success'],curre
 const LEFT_OUT={no_course_length:'No course length',other_currency:'Other currency (not converted)',under_one_year:'Under one year',below_floor:'Below the floor'}
 const money0=(v,c)=>fmtMoney(v,c,{decimals:0})
 
-function Pill({tone='neutral',children,title}){return <span className={`cf-chip tone-${tone}`} title={title}>{children}</span>}
-function SourcePill({source}){const[l,t]=SOURCE[source]||[source,'neutral'];return <Pill tone={t}>{l}</Pill>}
+export function Pill({tone='neutral',children,title}){return <span className={`cf-chip tone-${tone}`} title={title}>{children}</span>}
+export function SourcePill({source}){const[l,t]=SOURCE[source]||[source,'neutral'];return <Pill tone={t}>{l}</Pill>}
 
-function Coverage({part,courses}){
+export function Coverage({part,courses}){
   if(!part)return '—'
   const held=Number(part.held||0)
   const tone=!courses||held===0?'danger':held>=courses?'success':'warning'
@@ -51,7 +49,7 @@ function Coverage({part,courses}){
       {part.excluded>0&&<Pill tone="warning" title="Course readings excluded from admission">excluded {fmtNumber(part.excluded)}</Pill>}</span></div>
 }
 
-function PolicyCell({p,pages,kind}){
+export function PolicyCell({p,pages,kind}){
   const own=(pages||[]).filter(x=>x.kind===kind)
   const[l,t]=p?(POLICY[p.status]||[p.status,'neutral']):['None','neutral']
   return <div className="uc-policy"><Pill tone={t}>{l}</Pill>{p?.url&&<a className="cf-link" href={p.url} target="_blank" rel="noreferrer" title={p.url}>page</a>}
@@ -60,7 +58,7 @@ function PolicyCell({p,pages,kind}){
 
 // v2.15.199 (Decision 254, job system Phase C): attaching a central page is a task (central_page_read). The button shows
 // the read's progress from the task row and the result lands under Scheduled jobs › Jobs.
-function AttachPage({u,onDone,onError}){
+export function AttachPage({u,onDone,onError}){
   const[kind,setKind]=useState('english_policy'),[url,setUrl]=useState('')
   return <div className="uc-attach" data-central-attach={u.provider_id}>
     <select className="fv-filter" aria-label="Central page kind" value={kind} onChange={e=>setKind(e.target.value)}><option value="english_policy">Central English requirements</option><option value="intake_calendar">Key dates (term months)</option></select>
@@ -70,7 +68,7 @@ function AttachPage({u,onDone,onError}){
       onStarted={()=>{setUrl('');onDone?.()}}/></div>
 }
 
-function CourseTable({u,onError}){
+export function CourseTable({u,onError}){
   const[show,setShow]=useState('all'),[offset,setOffset]=useState(0),[d,setD]=useState(null),[busy,setBusy]=useState(false)
   const LIMIT=100
   useEffect(()=>{setBusy(true);supabase.rpc('admin_university_courses_read',{p_provider_id:u.provider_id,p_args:{show,limit:LIMIT,offset}})
@@ -98,7 +96,7 @@ function CourseTable({u,onError}){
 
 function rangeText(r){return r&&r.low!=null&&r.high!=null?(Number(r.low)===Number(r.high)?money0(r.low,r.currency):`${money0(r.low,r.currency)}–${money0(r.high,r.currency)}`):'—'}
 
-function FeeRangeCell({r}){
+export function FeeRangeCell({r}){
   if(!r)return '—'
   const c=r.computed||{}
   return <div className="uc-cov" data-fee-range-cell={r.provider_id}><span className="uc-val">{rangeText(r)}</span>
@@ -107,7 +105,7 @@ function FeeRangeCell({r}){
     <small className="sl-sub">{fmtNumber(c.courses||0)} courses</small></div>
 }
 
-function FeeRangeSettings({d,can,onDone,onError}){
+export function FeeRangeSettings({d,can,onDone,onError}){
   const s=d?.settings||{}
   const[v,setV]=useState(null),[busy,setBusy]=useState(false)
   useEffect(()=>{if(d?.settings)setV({include_under_one_year:!!s.include_under_one_year,min_courses:s.min_courses,min_fee_year:s.min_fee_year,min_whole_fee:s.min_whole_fee,excluded_level_codes:s.excluded_level_codes||[]})},[d])
@@ -130,7 +128,7 @@ function FeeRangeSettings({d,can,onDone,onError}){
   </details>
 }
 
-function HostedPanel({u,can,onError}){
+export function HostedPanel({u,can,onError}){
   const[aw,setAw]=useState(null),[hp,setHp]=useState(null),[busy,setBusy]=useState(false),[show,setShow]=useState('')
   const load=()=>{setBusy(true);Promise.all([supabase.rpc('admin_exit_awards',{p_action:'read',p_args:{provider_id:u.provider_id}}),supabase.rpc('admin_host_pages',{p_action:'read',p_args:{provider_id:u.provider_id}})])
     .then(([a,h])=>{if(a.error)throw a.error;if(h.error)throw h.error;setAw(a.data||[]);setHp(h.data||[])}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
@@ -171,7 +169,7 @@ function HostedPanel({u,can,onError}){
   </div>
 }
 
-function AwardLinkSettings({can,onError}){
+export function AwardLinkSettings({can,onError}){
   const[s,setS]=useState(null),[v,setV]=useState(null),[busy,setBusy]=useState(false)
   useEffect(()=>{supabase.rpc('admin_exit_awards',{p_action:'read',p_args:{scope:'settings'}}).then(({data,error})=>{if(error)throw error;setS(data);setV({same_year_tolerance:Math.round(Number(data?.same_year_tolerance||0)*1000)/10,lagged_tolerance:Math.round(Number(data?.lagged_tolerance||0)*1000)/10})}).catch(e=>onError?.(errText(e)))},[])
   if(!v)return null
@@ -191,7 +189,7 @@ function AwardLinkSettings({can,onError}){
 // v2.15.199 (Decision 254, job system Phase C): Read pages again is a task (reread_pages). The panel keeps the preview, the
 // button shows the task's progress (sending, then pages read back) and Cancel, and the result lands under Scheduled jobs ›
 // Jobs. The panel's own request list and polling (v2.15.195) are retired.
-function RereadPanel({ids,names,can,onClose,onDone,onError}){
+export function RereadPanel({ids,names,can,onClose,onDone,onError}){
   const[which,setWhich]=useState('not_confirmed'),[central,setCentral]=useState(true),[pv,setPv]=useState(null),[busy,setBusy]=useState(false)
   useEffect(()=>{setPv(null);if(!ids.length)return;setBusy(true)
     supabase.rpc('admin_university_reread',{p_action:'preview',p_args:{provider_ids:ids,which,central}}).then(({data,error})=>{if(error)throw error;setPv(data)}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))},[ids.join(','),which,central])
@@ -211,7 +209,7 @@ function RereadPanel({ids,names,can,onClose,onDone,onError}){
   </div>
 }
 
-function FeeRangePanel({u,can,onDone,onError}){
+export function FeeRangePanel({u,can,onDone,onError}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(false),[showCourses,setShowCourses]=useState(false)
   const load=()=>{setBusy(true);supabase.rpc('admin_provider_fee_range',{p_action:'read',p_args:{provider_id:u.provider_id}})
     .then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
@@ -254,60 +252,6 @@ function FeeRangePanel({u,can,onDone,onError}){
   </div>
 }
 
-export function UniversitiesCoverage({rank=0}){
-  const[data,setData]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[country,setCountry]=useState(''),[q,setQ]=useState(''),[state,setState]=useState(''),[open,setOpen]=useState(null),[fr,setFr]=useState(null),[picked,setPicked]=useState([]),[bulk,setBulk]=useState(false)
-  const loadRanges=()=>supabase.rpc('admin_provider_fee_range',{p_action:'read',p_args:{}}).then(({data,error})=>{if(error)throw error;setFr(data)}).catch(e=>setError(errText(e)))
-  const load=()=>{setBusy(true);setError('');loadRanges();supabase.rpc('admin_universities_read',{p_args:country?{country}:{}})
-    .then(({data,error})=>{if(error)throw error;setData(data)}).catch(e=>setError(errText(e))).finally(()=>setBusy(false))}
-  const rangeOf=useMemo(()=>Object.fromEntries((fr?.ranges||[]).map(r=>[r.provider_id,r])),[fr])
-  useEffect(()=>{load()},[country])
-  const rows=useMemo(()=>(data?.universities||[]).filter(u=>(!q.trim()||u.name.toLowerCase().includes(q.trim().toLowerCase()))&&(!state||(state==='none'?!u.adapter:u.adapter?.state===state))),[data,q,state])
-  const tally=useMemo(()=>{const t={admitting:0,testing:0,none:0};for(const u of data?.universities||[])t[u.adapter?.state==='admitting'?'admitting':u.adapter?'testing':'none']++;return t},[data])
-  const can=rank>=6
-  const flip=id=>setPicked(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])
-  const allShown=rows.length>0&&rows.every(u=>picked.includes(u.provider_id))
-  const nameOf=id=>(data?.universities||[]).find(u=>u.provider_id===id)?.name||id
-  return <section className="m-panel uc-wrap" data-universities-coverage>
-    <SectionTitle title="Universities" subtitle="Each target university: its adapter, its central English rule and calendar, and how many courses hold intakes, English and fees, with where each value came from. Open a university to see its courses."
-      action={<Button compact className="cf-icon-btn" title="Refresh" aria-label="Refresh" onClick={load} disabled={busy}><RefreshCw size={14}/></Button>}/>
-    <section className="cf-filterbar cc-where uc-filters" aria-label="Country and university">
-      <label><span>Country</span><select className="fv-filter" aria-label="Universities country" value={country} onChange={e=>setCountry(e.target.value)}><option value="">All countries</option>{Object.entries(COUNTRY_NAME).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select></label>
-      <label><span>University</span><input className="au-search" type="search" aria-label="Find a university" placeholder="Find a university…" value={q} onChange={e=>setQ(e.target.value)}/></label>
-    </section>
-    <section className="cf-filterbar" aria-label="Adapter state"><span>Adapter</span>
-      {[['','All'],['admitting',`Admitting (${fmtNumber(tally.admitting)})`],['testing',`Testing (${fmtNumber(tally.testing)})`],['none',`No adapter (${fmtNumber(tally.none)})`]].map(([k,l])=><button key={k||'all'} className={state===k?'active':''} onClick={()=>setState(k)}>{l}</button>)}
-    </section>
-    {error&&<div className="dq-alert"><span>{error}</span></div>}
-    {picked.length>0&&<div className="uc-bulk" data-reread-bulk><strong>{fmtNumber(picked.length)} universities ticked</strong>
-      <Button compact onClick={()=>setBulk(true)}>Read pages again…</Button><Button compact onClick={()=>{setPicked([]);setBulk(false)}}>Clear</Button></div>}
-    {bulk&&picked.length>0&&<RereadPanel ids={picked} names={picked.map(nameOf)} can={can} onClose={()=>setBulk(false)} onDone={load} onError={setError}/>}
-    <FeeRangeSettings d={fr} can={can} onDone={load} onError={setError}/>
-    <AwardLinkSettings can={can} onError={setError}/>
-    {busy&&!data?<Loading/>:<div className="cf-table-wrap"><table className="cf-table uc-table"><thead><tr><th><input type="checkbox" aria-label="Tick every university shown" checked={allShown} onChange={()=>setPicked(allShown?picked.filter(id=>!rows.some(u=>u.provider_id===id)):[...new Set([...picked,...rows.map(u=>u.provider_id)])])}/></th><th>University</th><th>Adapter</th><th>Central English rule</th><th>Calendar</th><th>Intakes</th><th>English</th><th>Fees</th><th>Whole-course fees</th><th></th></tr></thead><tbody>
-      {rows.map(u=>{const[al,at]=u.adapter?(ADAPTER[u.adapter.state]||[u.adapter.state,'neutral']):['No adapter','neutral'];const isOpen=open===u.provider_id
-        return <React.Fragment key={u.provider_id}><tr data-university-row={u.provider_id} className={isOpen?'uc-open':''}>
-          <td><input type="checkbox" aria-label={`Tick ${u.name}`} checked={picked.includes(u.provider_id)} onChange={()=>flip(u.provider_id)}/></td>
-          <td><strong>{u.name}</strong><span className="uc-meta"><Pill>{u.country}</Pill><small className="sl-sub">{fmtNumber(u.courses)} courses · {fmtNumber(u.pages_read)} pages read</small></span></td>
-          <td><Pill tone={at}>{al}</Pill>{u.adapter?.state==='admitting'&&<span className="uc-fields">{(u.adapter.fields||[]).map(f=><Pill key={f} tone="success">{FIELD[f]||f}</Pill>)}</span>}
-            {Number(u.adapter?.exclusions||0)>0&&<Pill tone="warning" title="Course readings excluded from admission">{fmtNumber(u.adapter.exclusions)} excluded</Pill>}
-            {u.adapter?.admit_changed_at&&<small className="sl-sub">since {fmtDateTime(u.adapter.admit_changed_at)}</small>}</td>
-          <td><PolicyCell p={u.english_policy} pages={u.central_pages} kind="english_policy"/></td>
-          <td><PolicyCell p={u.calendar} pages={u.central_pages} kind="intake_calendar"/></td>
-          <td><Coverage part={u.intakes} courses={u.courses}/></td>
-          <td><Coverage part={u.english} courses={u.courses}/></td>
-          <td><Coverage part={u.fee} courses={u.courses}/></td>
-          <td><FeeRangeCell r={rangeOf[u.provider_id]}/></td>
-          <td><Button compact aria-expanded={isOpen} onClick={()=>setOpen(isOpen?null:u.provider_id)}>{isOpen?'Close':'Open'}</Button></td></tr>
-          {isOpen&&<tr className="uc-detail"><td colSpan={10}>
-            {can&&<AttachPage u={u} onDone={load} onError={setError}/>}
-            {(u.central_pages||[]).length>0&&<ul className="tn-list uc-pages">{u.central_pages.map((p,i)=><li key={i}><Pill tone={p.status==='read'||p.status==='parsed'?'success':p.status==='found'?'warning':'neutral'}>{p.kind==='english_policy'?'English':'Key dates'} · {String(p.status).replace(/_/g,' ')}</Pill> <a className="cf-link" href={p.url} target="_blank" rel="noreferrer">{p.url}</a>{p.read_at&&<small className="sl-sub"> read {fmtDateTime(p.read_at)}</small>}{p.evidence_id&&<a className="cf-link" href={`#evidence?evidence_id=${encodeURIComponent(p.evidence_id)}`}> evidence</a>}</li>)}</ul>}
-            <RereadPanel ids={[u.provider_id]} names={[u.name]} can={can} onDone={load} onError={setError}/>
-            <FeeRangePanel u={u} can={can} onDone={loadRanges} onError={setError}/>
-            <HostedPanel u={u} can={can} onError={setError}/>
-            <CourseTable u={u} onError={setError}/></td></tr>}
-        </React.Fragment>})}
-      {rows.length===0&&<tr><td colSpan={10}><Empty text="No university matches."/></td></tr>}
-    </tbody></table></div>}
-    <p className="sl-sub uc-legend">Where a value came from: <SourcePill source="adapter"/> <SourcePill source="central"/> <SourcePill source="reader"/> <SourcePill source="hand"/> <SourcePill source="missing"/>. A course page reading comes first, the central rule fills courses with no English requirement, and a value entered by hand is never changed. Approve central rules in <a className="cf-link" href="#layer-4-review?tab=attributes">Layer 4 Review › Attributes</a>; set adapters in Models & services › University adapters.</p>
-  </section>
-}
+// v2.15.200 (Decision 254, Platform Admin 6 Oct 15:38 "Retire it"): the Coverage › Universities screen is retired. Its
+// pieces above are used by each university's row in Layer 2 › Adapters (AdaptersWorkspace.jsx), which lists every
+// university with an adapter or in the Firecrawl targets.

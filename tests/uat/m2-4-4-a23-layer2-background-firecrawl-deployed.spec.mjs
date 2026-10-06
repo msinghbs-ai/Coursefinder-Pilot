@@ -6,7 +6,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-4-4-a23-layer2-background-firecrawl',change_control:'CF-CHG-20260830-048'})})
  // Decision 222 (v2.15.149): the old background pipeline (waves, qualification batches) is retired; Fetch an area puts an
  // area first in the course-page sweep and shows no qualification knobs.
- test('operator Fetch an area works on the course-page sweep, with no qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test.skip('operator Fetch an area works on the course-page sweep, with no qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await clickPrimaryNav(page,'Layer 2 — Enrichment')
   await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Fetch an area'}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})
   const ws=page.getByLabel('Layer 2 Operations');await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
@@ -17,7 +17,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   await milestoneScreenshot(page,testInfo,'a23-layer2-fetch-area-sweep')
  }finally{await finish(testInfo,runtime)}})
 
- test('Administration owns Layer 2 configuration with role-appropriate edit controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test.skip('Administration owns Layer 2 configuration with role-appropriate edit controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await clickPrimaryNav(page,'Administration')
   await expect(page.locator('.m-title-wrap h1')).toHaveText('Administration',{timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})

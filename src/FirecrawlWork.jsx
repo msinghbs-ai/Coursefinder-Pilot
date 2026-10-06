@@ -7,7 +7,8 @@ import React,{useEffect,useState}from'react'
 import{RefreshCw,Copy,Download}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import JobButton from'./JobButton'
-import{Button,Empty,Loading,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
+import Card from'./Card'
+import{Button,Empty,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 
 const errText=e=>e?.message||String(e)
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -36,60 +37,72 @@ export function reportMarkdown(r,org='CourseFinder'){
   return L.join('\n')
 }
 
-export default function FirecrawlWork({onError}){
-  const[d,setD]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false),[adapterFor,setAdapterFor]=useState(null)
+// v2.15.200 (Decision 254, Platform Admin 6 Oct 15:25 to 15:39): the university adapter list, the Firecrawl runs and the
+// target universities left Models & services for Layer 2 › Adapters, where each university's row has its own adapter,
+// its target in or out and its tasks. Models & services keeps the Firecrawl credits and the support report.
+function useFirecrawl(onError){
+  const[d,setD]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false)
   const load=async()=>{setFailed('');try{const{data,error}=await supabase.rpc('admin_firecrawl_read');if(error)throw error;setD(data||{})}catch(e){setFailed(errText(e))}}
   useEffect(()=>{load()},[])
   const write=async(action,args,question)=>{const reason=ask(question);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_firecrawl_write',{p_action:action,p_args:{...args,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  if(failed&&!d)return <section className="m-panel"><Empty text={`Firecrawl work could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
-  if(!d)return <section className="m-panel"><Loading label="Loading Firecrawl work…"/></section>
-  const can=Boolean(d.can_manage)&&!busy,v=d.plan?.vendor,b=d.plan?.budget||{}
+  return{d,failed,busy,load,write}
+}
+function Waiting({failed,load,what}){return failed?<><Empty text={`${what} could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></>:<Loading label={`Loading ${what.toLowerCase()}…`}/>}
+function Plan({d}){
+  const v=d.plan?.vendor,b=d.plan?.budget||{}
+  return <div className="tn-plan" data-firecrawl-plan>
+    <div className="tn-plan-row">{v?<><strong>{fmtNumber(v.remaining)} of {fmtNumber(v.plan_credits)} credits left</strong><span>as Firecrawl reports it, period {fmtDateTime(v.period_start)} to {fmtDateTime(v.period_end)}, read {fmtDateTime(v.observed_at)}</span></>:<span>No reading from Firecrawl yet.</span>}
+      <span>{fmtNumber(b.stop_at_remaining_units)} kept back · the platform stops Firecrawl work there</span>
+      {b.allowed===false&&<span className="cf-chip tone-danger">At the reserve — Firecrawl work has stopped</span>}</div>
+  </div>
+}
+
+// Layer 2 › Adapters: the two Firecrawl runs, started as tasks.
+export function FirecrawlRuns({onError}){
+  const{d,failed,busy,load}=useFirecrawl(onError)
+  if(!d)return <Waiting failed={failed} load={load} what="Firecrawl work"/>
+  const can=Boolean(d.can_manage)&&!busy
+  return <div data-firecrawl-work><Plan d={d}/>
+    <div className="tn-starts" data-firecrawl-starts>{Object.keys(USE_CASE).map(u=><div key={u} className="tn-start">
+      <JobButton kind="firecrawl_run" scope={u} args={{use_case:u}} label={`${USE_CASE[u]} (${fmtNumber(d.backlog?.[u])} waiting)`} disabled={!can||!(d.backlog?.[u]>0)}
+        question={`Start a Firecrawl run: ${USE_CASE[u]}? ${fmtNumber(d.backlog?.[u])} waiting. ${USE_HELP[u]} It stops at the run's credit allowance (a setting). Pause stops the run and Resume continues it, from Scheduled jobs › Task manager.`} onStarted={load} onFinished={load}/>
+      <small className="sl-sub">{USE_HELP[u]}</small></div>)}</div>
+    <p className="sl-sub" data-firecrawl-runs-note>A run is a task: its progress, pause, resume and cancel are in Scheduled jobs › Task manager, and every finished run with its outcomes and credits is under Scheduled jobs › Jobs. Firecrawl's own call log is in the support report on Platform settings › Models &amp; services. The run limits are the Firecrawl settings there.</p>
+  </div>
+}
+
+// Layer 2 › Adapters: the Firecrawl targets (the rule and the ones added or taken out by hand) and the credits spent.
+// Each university's row also has its own Firecrawl target switch.
+export function FirecrawlTargets({onError,onOpen}){
+  const{d,failed,busy,load,write}=useFirecrawl(onError)
+  if(!d)return <Waiting failed={failed} load={load} what="Firecrawl targets"/>
+  const can=Boolean(d.can_manage)&&!busy
   const targets=(d.targets||[]),inc=targets.filter(t=>t.included)
   const sum=k=>inc.reduce((a,t)=>a+Number(t[k]||0),0)
-  const withAdapter=targets.filter(t=>t.adapter&&t.adapter!=='none'),done=withAdapter.filter(t=>t.adapter==='admitting'),working=withAdapter.filter(t=>t.adapter!=='admitting'),opened=adapterFor?targets.find(t=>t.provider_id===adapterFor):null
-  const ADS={testing:['Testing — not admitting','warning'],admitting:['Admitting','success'],off:['Switched off','neutral']}
-  return <div className="m-page-stack" data-firecrawl-work>
-    <section className="m-panel" id="university-adapters" data-university-adapters><SectionTitle title="University adapters" subtitle="One adapter per university: where its course pages keep each field. Test an adapter on its confirmed pages, then switch admission on for it, or ask for an improvement."/>
-      <ol className="tn-steps"><li><strong>Open</strong> a university below (or set one up).</li><li>Under <strong>Test, then admit</strong>, check the values it found against the course pages (each page link opens).</li><li>If they are right, press <strong>Admit from this adapter</strong>. If not, write what is wrong under <strong>Ask for an improvement</strong>.</li></ol>
-      {done.length>0&&<div className="tn-adapter-done" data-adapters-done>{done.map(t=><details key={t.provider_id} className="tn-items" data-adapter-done={t.provider_id} open={adapterFor===t.provider_id}>
-        <summary>{t.name} ({t.country}) · Adapter <strong>{t.adapter==='off'?'disabled':'enabled'}</strong> · Admission <strong>{t.adapter==='admitting'?'on':'off'}</strong> · {fmtNumber(t.intakes)} intakes, {fmtNumber(t.english)} English of {fmtNumber(t.courses)} courses</summary>
-        <p className="sl-sub">Confirmed by the adapter {fmtNumber(t.adapter_confirmed)} · waiting to be read {fmtNumber(t.waiting_read)} · open requests {fmtNumber(t.requests_open)}. What it reads itself replaces held values, except values entered by hand.</p>
-        <Button compact onClick={()=>setAdapterFor(adapterFor===t.provider_id?null:t.provider_id)}>{adapterFor===t.provider_id?'Close':'Work on this adapter'}</Button></details>)}</div>}
-      {working.length===0?(done.length===0&&<Empty text="No university adapters yet."/>):<div className="cf-table-wrap"><table className="cf-table" data-adapter-list><thead><tr><th>University</th><th>State</th><th className="num">Confirmed by the adapter</th><th className="num">Waiting to be read</th><th className="num">Open requests</th><th></th></tr></thead><tbody>
-        {working.map(t=><tr key={t.provider_id} data-adapter-row={t.provider_id} className={adapterFor===t.provider_id?'tn-sel':''}><td>{t.name}<small className="sl-sub">{t.country} · {t.domain}</small></td><td><span className={`cf-chip tone-${(ADS[t.adapter]||ADS.off)[1]}`}>{(ADS[t.adapter]||ADS.off)[0]}</span></td>
-          <td className="num">{fmtNumber(t.adapter_confirmed)}</td><td className="num">{fmtNumber(t.waiting_read)}</td><td className="num">{fmtNumber(t.requests_open)}</td>
-          <td><Button compact variant={adapterFor===t.provider_id?undefined:'primary'} onClick={()=>setAdapterFor(adapterFor===t.provider_id?null:t.provider_id)}>{adapterFor===t.provider_id?'Close':'Open'}</Button></td></tr>)}
-      </tbody></table></div>}
-      {d.can_manage&&<label className="tn-setup">Set up an adapter for <select aria-label="Set up an adapter for" value="" onChange={e=>e.target.value&&setAdapterFor(e.target.value)}><option value="">choose a university…</option>{targets.filter(t=>t.included&&(!t.adapter||t.adapter==='none')).map(t=><option key={t.provider_id} value={t.provider_id}>{t.name} ({t.country})</option>)}</select></label>}
-      {opened&&<AdapterEditor key={adapterFor} providerId={adapterFor} onError={onError}/>}
-      <AdapterEvaluation onPick={id=>setAdapterFor(id)} onError={onError}/>
-      {d.figures_at&&<small className="sl-sub">Figures as at {fmtDateTime(d.figures_at)} (refreshed every 5 minutes).</small>}
-    </section>
-    <section className="m-panel"><SectionTitle title="Firecrawl work" subtitle="Firecrawl is used by use case, only for the target universities below. Every call a run makes is logged for the support report."/>
-      <div className="tn-plan" data-firecrawl-plan>
-        <div className="tn-plan-row">{v?<><strong>{fmtNumber(v.remaining)} of {fmtNumber(v.plan_credits)} credits left</strong><span>as Firecrawl reports it, period {fmtDateTime(v.period_start)} to {fmtDateTime(v.period_end)}, read {fmtDateTime(v.observed_at)}</span></>:<span>No reading from Firecrawl yet.</span>}
-          <span>{fmtNumber(b.stop_at_remaining_units)} kept back · the platform stops Firecrawl work there</span>
-          {b.allowed===false&&<span className="cf-chip tone-danger">At the reserve — Firecrawl work has stopped</span>}</div>
-      </div>
-      <div className="tn-starts" data-firecrawl-starts>{Object.keys(USE_CASE).map(u=><div key={u} className="tn-start">
-        <JobButton kind="firecrawl_run" scope={u} args={{use_case:u}} label={`${USE_CASE[u]} (${fmtNumber(d.backlog?.[u])} waiting)`} disabled={!can||!(d.backlog?.[u]>0)}
-          question={`Start a Firecrawl run: ${USE_CASE[u]}? ${fmtNumber(d.backlog?.[u])} waiting. ${USE_HELP[u]} It stops at the run's credit allowance (a setting). Pause stops the run and Resume continues it, from Scheduled jobs › Task manager.`} onStarted={load} onFinished={load}/>
-        <small className="sl-sub">{USE_HELP[u]}</small></div>)}</div>
-      <p className="sl-sub" data-firecrawl-runs-note>A run is a task: its progress, pause, resume and cancel are in Scheduled jobs › Task manager, and every finished run with its outcomes and credits is under Scheduled jobs › Jobs. Firecrawl's own call log stays in the support report below.</p>
-    </section>
-    <section className="m-panel" data-firecrawl-targets><SectionTitle title="Target universities" subtitle={`${inc.length} targets (${[...new Set(inc.map(t=>t.country))].map(c=>`${c} ${inc.filter(t=>t.country===c).length}`).join(', ')}). The rule is in the Target universities settings above. Add or take out a university by hand with a reason.`}/>
-      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>University</th><th className="num">Active courses</th><th className="num">Confirmed page</th><th className="num">Page not readable</th><th className="num">No page</th><th className="num">Intakes</th><th className="num">English</th><th className="num">International fee</th><th></th></tr></thead><tbody>
-        <tr className="tn-total"><td><strong>All targets</strong></td>{['courses','confirmed','unreadable','no_page','intakes','english','any_fee'].map(k=><td key={k} className="num"><strong>{fmtNumber(sum(k))}</strong></td>)}<td/></tr>
-        {targets.map(t=><tr key={t.provider_id} data-firecrawl-target={t.provider_id} className={t.included?'':'tn-out'}><td>{t.name}<small className="sl-sub">{t.country} · {t.domain||'no website known'}{t.override_reason?` · by hand: ${t.override_reason}`:t.rule_match?'':' · not matched by the rule'}</small></td>
-          {['courses','confirmed','unreadable','no_page','intakes','english','any_fee'].map(k=><td key={k} className="num">{fmtNumber(t[k])}</td>)}
-          <td><span className="sl-state"><Button compact onClick={()=>{setAdapterFor(t.provider_id);document.getElementById('university-adapters')?.scrollIntoView({behavior:'smooth'})}}>Adapter</Button>{can&&<Button compact onClick={()=>write('target',{provider_id:t.provider_id,included:!t.included},t.included?`Take ${t.name} out of the targets? Firecrawl will not be used for it.`:`Add ${t.name} to the targets?`)}>{t.included?'Take out':'Add'}</Button>}</span></td></tr>)}
-      </tbody></table></div>
-      {(d.spend||[]).length>0&&<><h4 className="sl-h4">Firecrawl credits this period, by work</h4><div className="cf-table-wrap"><table className="cf-table" data-firecrawl-spend><thead><tr><th>Work</th><th className="num">Target universities</th><th className="num">Other providers</th></tr></thead><tbody>
-        {[...new Set(d.spend.map(s=>s.purpose))].map(p=><tr key={p}><td>{p.replace(/_/g,' ')}</td><td className="num">{fmtNumber(d.spend.filter(s=>s.purpose===p&&s.target===true).reduce((a,s)=>a+Number(s.units),0))}</td><td className="num">{fmtNumber(d.spend.filter(s=>s.purpose===p&&s.target!==true).reduce((a,s)=>a+Number(s.units),0))}</td></tr>)}
-      </tbody></table></div></>}
-    </section>
-    <SupportReport onError={onError}/>
+  return <div data-firecrawl-targets>
+    <p className="sl-sub">{inc.length} targets ({[...new Set(inc.map(t=>t.country))].map(c=>`${c} ${inc.filter(t=>t.country===c).length}`).join(', ')}). Firecrawl is used only for these. The rule is the Target universities setting on Platform settings › Models &amp; services › Firecrawl. Add or take out a university by hand with a reason.</p>
+    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>University</th><th className="num">Active courses</th><th className="num">Confirmed page</th><th className="num">Page not readable</th><th className="num">No page</th><th className="num">Intakes</th><th className="num">English</th><th className="num">International fee</th><th></th></tr></thead><tbody>
+      <tr className="tn-total"><td><strong>All targets</strong></td>{['courses','confirmed','unreadable','no_page','intakes','english','any_fee'].map(k=><td key={k} className="num"><strong>{fmtNumber(sum(k))}</strong></td>)}<td/></tr>
+      {targets.map(t=><tr key={t.provider_id} data-firecrawl-target={t.provider_id} className={t.included?'':'tn-out'}><td>{t.name}<small className="sl-sub">{t.country} · {t.domain||'no website known'}{t.override_reason?` · by hand: ${t.override_reason}`:t.rule_match?'':' · not matched by the rule'}</small></td>
+        {['courses','confirmed','unreadable','no_page','intakes','english','any_fee'].map(k=><td key={k} className="num">{fmtNumber(t[k])}</td>)}
+        <td><span className="sl-state">{onOpen&&<Button compact onClick={()=>onOpen(t.provider_id)}>Open its row</Button>}{can&&<Button compact onClick={()=>write('target',{provider_id:t.provider_id,included:!t.included},t.included?`Take ${t.name} out of the targets? Firecrawl will not be used for it.`:`Add ${t.name} to the targets?`)}>{t.included?'Take out':'Add'}</Button>}</span></td></tr>)}
+    </tbody></table></div>
+    {(d.spend||[]).length>0&&<><h4 className="sl-h4">Firecrawl credits this period, by work</h4><div className="cf-table-wrap"><table className="cf-table" data-firecrawl-spend><thead><tr><th>Work</th><th className="num">Target universities</th><th className="num">Other providers</th></tr></thead><tbody>
+      {[...new Set(d.spend.map(s=>s.purpose))].map(p=><tr key={p}><td>{p.replace(/_/g,' ')}</td><td className="num">{fmtNumber(d.spend.filter(s=>s.purpose===p&&s.target===true).reduce((a,s)=>a+Number(s.units),0))}</td><td className="num">{fmtNumber(d.spend.filter(s=>s.purpose===p&&s.target!==true).reduce((a,s)=>a+Number(s.units),0))}</td></tr>)}
+    </tbody></table></div></>}
   </div>
+}
+
+// Platform settings › Models & services, after the Firecrawl toolset: the credits left and the support report.
+export default function FirecrawlWork({onError}){
+  const{d,failed,load}=useFirecrawl(onError)
+  return <>
+    <Card id="services.firecrawl-credits" title="Firecrawl credits" subtitle="What Firecrawl reports as left this period, and the reserve where the platform stops Firecrawl work. Runs, targets and university adapters are on Layer 2 › Adapters."
+      meta={d?.plan?.vendor?<span>{fmtNumber(d.plan.vendor.remaining)} of {fmtNumber(d.plan.vendor.plan_credits)} left</span>:null} data-firecrawl-credits>
+      {d?<><Plan d={d}/><p className="sl-sub"><a className="cf-link" href="#layer-2-discovery?tab=adapters">Firecrawl runs, targets and university adapters: Layer 2 › Adapters</a></p></>:<Waiting failed={failed} load={load} what="Firecrawl credits"/>}
+    </Card>
+    <SupportReport onError={onError}/>
+  </>
 }
 
 // What each target university needs next for data admission (Platform Admin 22:43: learn from the Flinders adapter).
@@ -115,6 +128,9 @@ export function AdapterEvaluation({onPick,onError}){
 
 const SINCE={day:['Last 24 hours',1],week:['Last 7 days',7],month:['Last 30 days',30]}
 function SupportReport({onError}){
+  return <Card id="services.firecrawl-report" title="Report for Firecrawl support" subtitle="Every Firecrawl call made by a run: what was asked, what came back, the scrape id, credits and proxy used. Copy or download it and attach it to a ticket." data-firecrawl-report><SupportReportBody onError={onError}/></Card>
+}
+function SupportReportBody({onError}){
   const[since,setSince]=useState('week'),[r,setR]=useState(null),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false)
   const load=async(s=since)=>{setBusy(true);try{const from=new Date(Date.now()-SINCE[s][1]*86400000).toISOString();const{data,error}=await supabase.rpc('admin_firecrawl_report',{p_since:from});if(error)throw error;setR(data||{})}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   useEffect(()=>{load()},[since])
@@ -122,7 +138,7 @@ function SupportReport({onError}){
   const copy=async()=>{try{await navigator.clipboard.writeText(md);setCopied(true);setTimeout(()=>setCopied(false),2500)}catch(e){onError?.(errText(e))}}
   const download=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download=`firecrawl-report-${String(r?.generated_at||'').slice(0,10)}.md`;a.click();URL.revokeObjectURL(a.href)}
   const t=r?.totals||{}
-  return <section className="m-panel" data-firecrawl-report><SectionTitle title="Report for Firecrawl support" subtitle="Every Firecrawl call made by a run: what was asked, what came back, the scrape id, credits and proxy used. Copy or download it and attach it to a ticket."/>
+  return <>
     <div className="tn-starts"><select aria-label="Report period" value={since} onChange={e=>setSince(e.target.value)}>{Object.entries(SINCE).map(([k,[l]])=><option key={k} value={k}>{l}</option>)}</select>
       <Button compact disabled={busy||!r} onClick={copy}><Copy size={13}/>{copied?'Copied':'Copy report'}</Button><Button compact disabled={busy||!r} onClick={download}><Download size={13}/>Download (.md)</Button><Button compact disabled={busy} onClick={()=>load()}><RefreshCw size={13}/>Refresh</Button></div>
     {!r?<Loading label="Loading the report…"/>:<>
@@ -134,7 +150,7 @@ function SupportReport({onError}){
         {r.by_site.map(s=><tr key={s.site}><td>{s.site}</td><td className="num">{fmtNumber(s.failed)} of {fmtNumber(s.calls)}</td><td>{Object.entries(s.page_statuses||{}).map(([k,v])=>`${k}: ${v}`).join(', ')}</td><td>{(s.proxies||[]).join(', ')||'—'}</td></tr>)}</tbody></table></div></details>}
       {(t.calls||0)===0&&<Empty text="No Firecrawl calls logged in this period."/>}
     </>}
-  </section>
+  </>
 }
 
 // ---- university adapter (field mappings), one university at a time ---------------------------------------------------

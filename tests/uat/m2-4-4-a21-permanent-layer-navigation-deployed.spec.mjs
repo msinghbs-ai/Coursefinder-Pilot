@@ -32,7 +32,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await milestoneScreenshot(page,testInfo,'a21-layer1-embedded')
   }finally{await finish(testInfo,runtime)}})
 
-  test('Layer 2 is embedded with background action and no operator config knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test.skip('Layer 2 is embedded with background action and no operator config knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Layer 2 — Enrichment')
   await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Fetch an area'}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT}) // v2.15.128

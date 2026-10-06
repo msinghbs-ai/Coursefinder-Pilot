@@ -12,7 +12,7 @@ test('source: governance footer, pipeline banner and the routing panel on Scrape
   expect(p).toContain("control('upsert_route',{profile_id:profileId,provider_id:p.id")
   const s = fs.readFileSync('src/layer2-provider-entry.jsx', 'utf8')
   expect(s).not.toContain("'Manage routes'")
-  expect(s).toContain('href="#layer-2-discovery?tab=profiles"')
+  expect(s).toContain('Source profiles</strong> on this page') // v2.15.200: Source profiles moved here from Layer 2
 })
 
 test.describe('mocked browser', () => {
@@ -20,7 +20,8 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     let routed = null
     await page.route('https://example.supabase.co/functions/v1/layer2-provider-control', r => { routed = r.request().postDataJSON(); return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }) })
-    await page.goto('/#layer-2-discovery?tab=profiles')
+    await page.goto('/#scrapers')
+    await page.locator('[data-card="scrapers.source-profiles"] .cf-card-toggle').click() // v2.15.200: cards start collapsed
     const list = page.getByRole('region', { name: 'Source profiles' })
     await expect(list.locator('tbody tr')).toHaveCount(2)
     await expect(list).not.toContainText('CF-CHG-')

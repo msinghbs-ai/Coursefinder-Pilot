@@ -1,5 +1,6 @@
 // v2.15.118 Platform settings › Models & services: on/off switch for every AI model and page-fetching service.
 import { test, expect } from '@playwright/test'
+import { openCards } from './support/cards.mjs'
 import fs from 'node:fs'
 import { PAGES, SECTIONS } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
@@ -27,6 +28,7 @@ test.describe('mocked browser', () => {
     const prompts = []
     page.on('dialog', d => { prompts.push(d.message()); d.accept('Too slow') })
     await page.goto('/#models-services')
+    await openCards(page) // v2.15.200: cards start collapsed
     await expect(page.locator('[data-model="sonnet-english"]')).toHaveClass(/ms-off/)
     await expect(page.locator('[data-model="old-model"] [role="switch"]')).toHaveCount(0)
     await expect(page.locator('.ms-retired summary')).toContainText('Retired models (1)')

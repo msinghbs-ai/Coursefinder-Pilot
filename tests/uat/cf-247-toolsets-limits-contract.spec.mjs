@@ -2,6 +2,7 @@
 // a notice on each layer when a toolset it depends on hits a limit or times out; Serper and ScrapingBee saials across
 // every country; every variable a setting the Platform Admin changes in the UI.
 import { test, expect } from '@playwright/test'
+import { openCards, openCard, openAdapter } from './support/cards.mjs'
 import { readFileSync } from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
@@ -79,6 +80,7 @@ test('browser: Models & services — OpenRouter observe only, key and plan limit
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Decision 252 sample'))
   await page.goto('/#models-services')
+  await openCards(page) // v2.15.200: cards start collapsed
   const or = page.locator('[data-toolset="openrouter"]')
   await expect(or.locator('[data-toolset-mode="openrouter"]')).toContainText('Observe only')
   await expect(or.locator('[data-openrouter]')).toContainText('Balance US$27.67')
@@ -132,6 +134,7 @@ test('browser: search pass panel — start with a reason, pages sent to the iden
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Decision 252 step 1'))
   await page.goto('/#models-services')
+  await openCards(page)
   const p = page.locator('[data-search-pass]')
   await expect(p.locator('[data-pass-links] [data-pass-state="verified"]')).toContainText('64')
   await expect(p.locator('[data-pass-repairs]')).toContainText('392')
@@ -177,11 +180,21 @@ test('firecrawl helpers: request bodies from settings, search candidates on the 
   expect(mod.readOutcome(mod.callRecord(null, null, null, 5, 'TimeoutError: aborted'), '', 0)).toBe('timeout')
 })
 
-test('browser: Firecrawl work — plan from Firecrawl, runs started with a reason, targets, support report copied', async ({ page }) => {
+test('browser: Firecrawl work — credits and report on Models & services, runs and targets on Layer 2 › Adapters', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.type() === 'prompt' && d.message().startsWith('Add credits') ? d.accept('500') : d.accept('Decision 253 run'))
   await page.goto('/#models-services')
+  await openCards(page)
   for (const sec of ['Target universities', 'Read pages', 'Find pages', 'Runs']) await expect(page.locator(`[data-toolset-section="firecrawl:${sec}"]`)).toBeVisible()
+  await expect(page.locator('[data-firecrawl-credits] [data-firecrawl-plan]')).toContainText('490,846 of 500,000 credits left')
+  await expect(page.locator('[data-firecrawl-starts]')).toHaveCount(0) // v2.15.200: runs moved to Layer 2 › Adapters
+  const r = page.locator('[data-firecrawl-report]')
+  await expect(r.locator('[data-report-errors]')).toContainText('01a10555-0b96-720b-9ea2-dfe988faa072')
+  await expect(r.locator('[data-report-totals]')).toContainText('461')
+  await expect(page.locator('[data-toolsets]')).not.toContainText(/trial/i)
+  // Layer 2 › Adapters: the two runs start as tasks, targets are added by hand
+  await page.goto('/#layer-2-discovery')
+  await openCard(page, 'adapters.firecrawl-runs')
   const w = page.locator('[data-firecrawl-work]')
   await expect(w.locator('[data-firecrawl-plan]')).toContainText('490,846 of 500,000 credits left')
   // find_page has a running task in the fixture, so its button shows the task (see the JobButton test below)
@@ -190,14 +203,11 @@ test('browser: Firecrawl work — plan from Firecrawl, runs started with a reaso
   await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'firecrawl_run')?.args).toMatchObject({ kind: 'firecrawl_run', args: { use_case: 'read_page', scope: 'read_page' }, reason: 'Decision 253 run' })
   await expect(w.locator('[data-firecrawl-runs]')).toHaveCount(0)
   await expect(w.locator('[data-firecrawl-runs-note]')).toContainText('Scheduled jobs › Task manager')
+  await openCard(page, 'adapters.firecrawl-targets')
   const t = page.locator('[data-firecrawl-targets]')
   await expect(t).toContainText('The University of Sydney')
   await t.locator('[data-firecrawl-target="u3"]').getByRole('button', { name: 'Add' }).click()
   await expect.poll(() => page.l3calls.find(c => c.firecrawl === 'target')?.args).toMatchObject({ provider_id: 'u3', included: true })
-  const r = page.locator('[data-firecrawl-report]')
-  await expect(r.locator('[data-report-errors]')).toContainText('01a10555-0b96-720b-9ea2-dfe988faa072')
-  await expect(r.locator('[data-report-totals]')).toContainText('461')
-  await expect(page.locator('[data-toolsets]')).not.toContainText(/trial/i)
 })
 
 test('university adapters: migrations shaped, worker uses adapters, nothing admitted without the country rule', async () => {
@@ -230,9 +240,7 @@ test('university adapters: migrations shaped, worker uses adapters, nothing admi
 test('browser: university adapter — preview on stored pages, save and apply with a reason', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Decision 253 adapter'))
-  await page.goto('/#models-services')
-  const t = page.locator('[data-firecrawl-targets]')
-  await t.locator('[data-firecrawl-target="u1"]').getByRole('button', { name: 'Adapter' }).click()
+  await openAdapter(page, 'u1', ['build']) // v2.15.200: the adapter is built in its row on Layer 2 › Adapters
   const ed = page.locator('[data-adapter-editor="u1"]')
   await ed.locator('[data-adapter-settings] > summary').click()
   await expect(ed.locator('[data-adapter-preview]')).toContainText('adapter_title')
@@ -264,10 +272,8 @@ test('adapter admission and refused hosts: per-adapter switch gates admission, h
 test('browser: adapter — test what it would admit, switch admission on with a reason, ask for an improvement', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Checked 10 pages against the handbook'))
-  await page.goto('/#models-services')
-  const list = page.locator('[data-university-adapters]')
-  await expect(list.locator('[data-adapter-row="u1"]')).toContainText('Testing — not admitting')
-  await list.locator('[data-adapter-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  const row = await openAdapter(page, 'u1', ['build']) // v2.15.200: Layer 2 › Adapters
+  await expect(row.locator('.ad-row-head')).toContainText('Admitting') // the fixture row on the Adapters list
   const r = page.locator('[data-adapter-review="u1"]')
   await expect(r.locator('[data-adapter-confirmed]')).toContainText('121373J')
   await expect(r.locator('[data-adapter-admit]')).toContainText('Not admitting yet')
@@ -286,8 +292,8 @@ test('firecrawl panel reads kept figures (fast), adapters listed on their own', 
   const read_ = m.slice(m.indexOf('create or replace function public.admin_firecrawl_read'))
   expect(read_.slice(0, read_.indexOf('end $f$'))).not.toContain('firecrawl_targets_v1')
   expect(m).toContain("from security.firecrawl_targets_fast() t")
-  const ui = read('src/FirecrawlWork.jsx')
-  expect(ui).toContain('id="university-adapters"')
+  const ui = read('src/AdaptersWorkspace.jsx') // v2.15.200: the adapter list moved from Models & services to Layer 2 › Adapters
+  expect(ui).toContain('data-adapters-list')
 })
 
 // Platform Admin 21:50 (Flinders): text patterns, extra fields, intakes admitted from the adapter's own reading only
@@ -321,8 +327,7 @@ test('adapter patterns: migration shaped, intakes and adapter English need the a
 test('browser: adapter — patterns saved, readings on CRICOS-confirmed pages shown with extra fields', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Flinders study pages'))
-  await page.goto('/#models-services')
-  await page.locator('[data-university-adapters] [data-adapter-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  await openAdapter(page, 'u1', ['build']) // v2.15.200: Layer 2 › Adapters
   const r = page.locator('[data-adapter-review="u1"]')
   await expect(r.locator('[data-adapter-readings]')).toContainText('111210M')
   await expect(r.locator('[data-adapter-readings]')).toContainText('campus: In person: Tonsley')
@@ -381,14 +386,11 @@ test('adapter overwrite, better pages and evaluation: migrations shaped, hand-en
   expect(read('supabase/migrations/20261004001320_cf247_adapter_evaluation.sql')).toContain("'eval_field_share'")
 })
 
-test('browser: admitting adapter collapsed with its switches, evaluation lists the next step per university', async ({ page }) => {
+test('browser: what each university needs next is a collapsed card on Layer 2 › Adapters; Set up adapter opens that row with its builder', async ({ page }) => {
   await mockAdmin(page)
-  await page.goto('/#models-services')
-  const done = page.locator('[data-adapter-done="u9"]')
-  await expect(done.locator('summary')).toContainText('Flinders University (AU) · Adapter enabled · Admission on')
-  await expect(done).not.toHaveAttribute('open', '')
-  await expect(page.locator('[data-adapter-list] [data-adapter-row="u9"]')).toHaveCount(0)
-  await expect(page.locator('[data-adapter-list] [data-adapter-row="u1"]')).toBeVisible()
+  await page.goto('/#layer-2-discovery')
+  await expect(page.locator('[data-adapter-eval]')).toHaveCount(0) // collapsed by default
+  await openCard(page, 'adapters.next')
   const ev = page.locator('[data-adapter-eval]')
   await expect(ev.locator('[data-eval-row="u2"]')).toContainText('Adapter for start dates')
   await expect(ev.locator('[data-eval-row="u3"]')).toContainText('Adapter for page data')
@@ -441,8 +443,7 @@ test('adapter fees and builder: migration shaped, hand-entered fees kept, model 
 test('browser: visual adapter builder — samples with blocks and page data, marks, proposal output, use fills the settings', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Wave 1 builder'))
-  await page.goto('/#models-services')
-  await page.locator('[data-university-adapters] [data-adapter-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  await openAdapter(page, 'u1', ['build']) // v2.15.200: Layer 2 › Adapters
   const bl = page.locator('[data-adapter-editor="u1"] [data-adapter-builder]')
   await expect(bl.locator('> summary')).toContainText('model qwen/qwen3-30b-a3b-instruct-2507')
   await expect(bl.locator('[data-builder-blocks]')).toContainText('Key information')
@@ -514,8 +515,7 @@ test('term months: migration shaped, worker maps term names to the published mon
   expect(run('INTAKE Autumn Session 2027 Spring Session 2027 FEES')).toEqual(['February', 'July'])
   expect(run('INTAKE Semester 12 FEES')).toEqual([])
   await mockAdmin(page)
-  await page.goto('/#models-services')
-  await page.locator('[data-university-adapters] [data-adapter-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  await openAdapter(page, 'u1', ['build']) // v2.15.200: Layer 2 › Adapters
   await page.locator('[data-adapter-editor="u1"] [data-adapter-settings] > summary').click()
   await expect(page.getByRole('textbox', { name: 'Term months' })).toBeVisible()
 })
@@ -548,8 +548,7 @@ test('admission by field: migrations shaped, overwrite and coverage admission ho
 test('browser: adapter — admit by field, exclude a course reading, stop excluding', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Fees checked against the fee table'))
-  await page.goto('/#models-services')
-  await page.locator('[data-university-adapters] [data-adapter-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  await openAdapter(page, 'u1', ['build']) // v2.15.200: Layer 2 › Adapters
   const r = page.locator('[data-adapter-review="u1"]')
   await expect(r.getByRole('checkbox', { name: 'Admit Fees' })).toBeChecked()
   await r.getByRole('checkbox', { name: 'Admit Intakes' }).click()
@@ -587,20 +586,20 @@ test('central pages and universities view: migrations shaped', () => {
   expect(m).toContain("found_via, status)\n    values (v_pid, v_kind, v_url")
 })
 
-test('browser: Coverage › Universities — pills, open a university, its courses, attach a central page', async ({ page }) => {
+test('browser: Layer 2 › Adapters — pills, open a university, its courses, attach a central page', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Central English page from the wave run'))
-  await page.goto('/#coverage?tab=universities')
-  const w = page.locator('[data-universities-coverage]')
-  const row = w.locator('[data-university-row="u1"]')
-  await expect(row).toContainText('Admitting')
-  await expect(row).toContainText('3 excluded')
-  await expect(row).toContainText('Approved')
-  await expect(row).toContainText('central 150')
-  await w.getByRole('button', { name: 'No adapter (1)' }).click()
-  await expect(w.locator('[data-university-row="u1"]')).toHaveCount(0)
-  await w.getByRole('button', { name: 'All', exact: true }).click()
-  await row.getByRole('button', { name: 'Open' }).click()
+  // v2.15.200: Coverage › Universities is retired into the Adapters rows
+  const row = await openAdapter(page, 'u1', ['courses', 'central'])
+  const w = page.locator('[data-adapters-workspace]')
+  await expect(row.locator('.ad-row-head')).toContainText('Admitting')
+  await expect(row.locator('[data-adapter-coverage]')).toContainText('excluded 2')
+  await expect(row.locator('[data-adapter-coverage]')).toContainText('Approved')
+  await expect(row.locator('[data-adapter-coverage]')).toContainText('central 150')
+  await w.getByRole('combobox', { name: 'Adapter state' }).selectOption('none')
+  await expect(w.locator('[data-adapter-row="u1"]')).toHaveCount(0)
+  await expect(w.locator('[data-adapter-row="u2"]')).toBeVisible()
+  await w.getByRole('combobox', { name: 'Adapter state' }).selectOption('')
   const courses = w.locator('[data-university-courses="u1"]')
   await expect(courses).toContainText('Bachelor of Nursing')
   await expect(courses).toContainText('Central rule')
@@ -742,20 +741,20 @@ test('whole-course fee range: guarded, hand values kept, published only by its o
   expect(m).toContain("coalesce(v_rank, 0) < 6 then raise exception 'Platform Admin required'")
 })
 
-test('browser: Coverage › Universities — whole-course fee range, publish and settings', async ({ page }) => {
+test('browser: Layer 2 › Adapters — whole-course fee range, publish and settings', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Range checked against the course pages'))
-  await page.goto('/#coverage?tab=universities')
-  const w = page.locator('[data-universities-coverage]')
-  await expect(w.locator('thead').first()).toContainText('Whole-course fees')
-  const cell = w.locator('[data-fee-range-cell="u1"]')
-  await expect(cell).toContainText('A$13,500–A$290,400')
-  await expect(cell).toContainText('Not published')
-  const nz = w.locator('[data-fee-range-cell="u2"]')
+  const nzRow = await openAdapter(page, 'u2')
+  const w = page.locator('[data-adapters-workspace]')
+  const nz = nzRow.locator('[data-fee-range-cell="u2"]')
   await expect(nz).toContainText('NZ$24,561–NZ$203,048')
   await expect(nz).toContainText('Published')
   await expect(nz).toContainText('few courses')
-  await w.locator('[data-university-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  await nzRow.locator('.ad-row-head .ad-row-name').click()
+  const row = await openAdapter(page, 'u1', ['fees'])
+  const cell = row.locator('[data-fee-range-cell="u1"]')
+  await expect(cell).toContainText('A$13,500–A$290,400')
+  await expect(cell).toContainText('Not published')
   const panel = w.locator('[data-fee-range="u1"]')
   await expect(panel).toContainText('Indicative whole-course fees, where listed')
   await expect(panel).toContainText('CRICOS registered total: 146')
@@ -765,6 +764,7 @@ test('browser: Coverage › Universities — whole-course fee range, publish and
   await expect(panel).toContainText('Annual fee x years')
   await panel.getByRole('button', { name: 'Publish' }).click()
   await expect.poll(() => page.l3calls.find(c => c.feeRange === 'publish')?.args).toMatchObject({ provider_id: 'u1', reason: 'Range checked against the course pages' })
+  await openCard(page, 'adapters.settings') // v2.15.200: the settings sit in a collapsed card
   const st = w.locator('[data-fee-range-settings]')
   await st.locator('summary').click()
   await st.getByLabel('Include courses under one year').uncheck()
@@ -795,12 +795,11 @@ test('award links and host pages: single-degree parent, register check gates the
   expect(fw).toContain("['host_pages','Host pages']")
 })
 
-test('browser: Coverage › Universities — hosted courses panel, register check shown, confirm a shared page', async ({ page }) => {
+test('browser: Layer 2 › Adapters — hosted courses panel, register check shown, confirm a shared page', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Checked against the course page'))
-  await page.goto('/#coverage?tab=universities')
-  const w = page.locator('[data-universities-coverage]')
-  await w.locator('[data-university-row="u1"]').getByRole('button', { name: 'Open' }).click()
+  await openAdapter(page, 'u1', ['hosted', 'courses'])
+  const w = page.locator('[data-adapters-workspace]')
   const h = w.locator('[data-hosted="u1"]')
   await expect(h).toContainText('1 awards checked')
   await expect(h).toContainText('1 awards failed the register check')
@@ -836,10 +835,11 @@ test('award link settings: tolerances from the screen, register lag allowed, han
   expect(f).toContain("replace(v_pair[1], '{sc}', chr(59))")
 })
 
-test('browser: Coverage › Universities — award link settings saved with a reason', async ({ page }) => {
+test('browser: Layer 2 › Adapters — award link settings saved with a reason', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Register runs a year behind'))
-  await page.goto('/#coverage?tab=universities')
+  await page.goto('/#layer-2-discovery')
+  await openCard(page, 'adapters.settings')
   const st = page.locator('[data-award-link-settings]')
   await st.locator('summary').click()
   await st.getByLabel('Parent fee year later than the register: allowed below (%)').fill('7')
@@ -882,15 +882,15 @@ test('university re-read: preview counts, Platform Admin queues with a reason, l
   expect(m).toContain("set status = 'found', attempts = 0")
 })
 
-test('browser: Coverage › Universities — tick universities, preview and read pages again', async ({ page }) => {
+test('browser: Layer 2 › Adapters — tick universities, preview and read pages again', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Pages changed since the last read'))
-  await page.goto('/#coverage?tab=universities')
-  const w = page.locator('[data-universities-coverage]')
+  await page.goto('/#layer-2-discovery')
+  const w = page.locator('[data-adapters-workspace]')
   await w.getByLabel('Tick Example University').check()
-  await w.getByLabel('Tick Northern College').check()
-  const bar = w.locator('[data-reread-bulk]')
-  await expect(bar).toContainText('2 universities ticked')
+  await w.getByLabel('Tick Northern College University').check()
+  const bar = w.locator('[data-adapters-bulk]')
+  await expect(bar).toContainText('2 ticked')
   await bar.getByRole('button', { name: 'Read pages again…' }).click()
   const panel = w.locator('[data-reread]').first()
   await expect(panel).toContainText('15 course pages')
@@ -1004,22 +1004,16 @@ test('job system Phase A: migration shaped, dispatcher guarded, admission stays 
   expect(nav).toContain("{ key: 'tasks', label: 'Task manager', min: 4 }")
 })
 
-test('browser: Task manager — start a Qualify run with a reason, progress from the database, pause and cancel, admit the passing fields', async ({ page }) => {
+test('browser: Task manager — lists running tasks only, with pause and cancel, and starts nothing', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Phase A check from the browser test'))
   await page.goto('/#scheduled-jobs?tab=tasks')
   const tm = page.locator('[data-task-manager]')
   await expect(tm).toBeVisible()
-  await expect(tm.locator('[data-task-start]')).toContainText('50%')
-  await expect(tm.locator('[data-task-start]')).toContainText('90%')
-  await page.locator('[data-task-start]').getByLabel('Country').selectOption('AU')
-  await page.locator('[data-task-start]').getByLabel('State', { exact: true }).selectOption('AU-VIC')
-  await page.locator('[data-task-start]').getByRole('button', { name: 'Qualify' }).click()
-  await expect.poll(() => page.l3calls.filter(c => c.jobs === 'start').length).toBe(1)
-  const start = page.l3calls.find(c => c.jobs === 'start')
-  expect(start.args.kind).toBe('qualify_adapters')
-  expect(start.args.args).toMatchObject({ country: 'AU', state: 'AU-VIC', provider_kind: 'university', adapter_state: 'enabled' })
-  expect(start.args.reason).toBe('Phase A check from the browser test')
+  // v2.15.200 (Platform Admin 6 Oct 15:25): the Task manager is a list, not a place to start a Qualify run
+  await expect(tm.locator('[data-task-start]')).toHaveCount(0)
+  await expect(tm.getByRole('button', { name: 'Qualify', exact: true })).toHaveCount(0)
+  expect(page.l3calls.filter(c => c.jobs === 'start')).toHaveLength(0)
   // the running task shows its progress from the database row
   const running = tm.locator('[data-task-row="job-run"]')
   await expect(running).toContainText('running')
@@ -1032,6 +1026,20 @@ test('browser: Task manager — start a Qualify run with a reason, progress from
   // A2 (Platform Admin 12:01): the Task manager lists only what is running or waiting. The finished run is not here.
   await expect(tm.locator('[data-task-row="job-done"]')).toHaveCount(0)
   await expect(tm).toContainText('Finished tasks move to the Jobs tab')
+})
+
+test('browser: Layer 2 › Adapters — Qualify and Admit start as tasks, one adapter or many, and admit only what passed', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Phase A check from the browser test'))
+  const row = await openAdapter(page, 'u3', ['switch'])
+  const life = row.locator('[data-adapter-lifecycle="u3"]')
+  await expect(life.locator('[data-adapter-qualify]')).toContainText('Passes')
+  await expect(life.locator('[data-adapter-consequence]')).toContainText('admitted only for the fields admitted below')
+  await life.getByRole('button', { name: 'Qualify this adapter' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'qualify_adapters')?.args).toMatchObject({ kind: 'qualify_adapters', args: { provider_ids: ['u3'], scope: 'u3' }, reason: 'Phase A check from the browser test' })
+  await life.getByRole('button', { name: 'Admit the passing fields' }).click()
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'admit_qualified')?.args).toMatchObject({ kind: 'admit_qualified', args: { provider_ids: ['u3'], scope: 'u3' } })
+  expect(page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'admit_qualified').args.args.qualification_job_id).toBeUndefined() // each adapter's own latest Qualify
 })
 
 test('browser: Jobs tab — a finished task opens to its per-provider result and offers the separate admit step', async ({ page }) => {
@@ -1073,7 +1081,12 @@ test('browser: Task manager — an Operator sees tasks but cannot admit', async 
   await page.goto('/#scheduled-jobs?tab=tasks')
   const tm = page.locator('[data-task-manager]')
   await expect(tm).toBeVisible()
-  await expect(tm.locator('[data-task-start]').getByRole('button', { name: 'Qualify' })).toBeDisabled()
+  await expect(tm.locator('[data-task-start]')).toHaveCount(0)
+  // an Operator can look at the Adapters screen but not Qualify or Admit
+  const row = await openAdapter(page, 'u3', ['switch'])
+  await expect(row.getByRole('button', { name: 'Qualify this adapter' })).toBeDisabled()
+  await expect(row.getByRole('button', { name: 'Admit the passing fields' })).toBeDisabled()
+  await expect(row.locator('[data-adapter-switch]')).toHaveCount(0)
 })
 
 
@@ -1102,7 +1115,8 @@ test('job system Phase C: watcher tasks, the kind constraint widened under the 1
 test('browser: JobButton — finds its running task after a refresh and offers Cancel', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Cancel from the button (browser test)'))
-  await page.goto('/#models-services')
+  await page.goto('/#layer-2-discovery')
+  await openCard(page, 'adapters.firecrawl-runs')
   const w = page.locator('[data-firecrawl-work]')
   // the fixture holds a running firecrawl_run task for find_page: the button shows it instead of Start
   const live = w.locator('[data-job-button="firecrawl_run"][data-job-state="running"]')

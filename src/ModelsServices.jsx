@@ -6,10 +6,12 @@
 // not put it back into a cascade (that stays a Layer 3 Control decision). Retired models are listed separately.
 // Read: public.admin_services_read(); write: public.admin_services_control(kind, id, enabled, reason)
 // (migration 20260930160000_cf247_models_services_toggles).
+// v2.15.200 (Decision 254, Platform Admin 6 Oct): each panel is a collapsed card, remembered for the browser session.
 import React,{useEffect,useState}from'react'
 import{BrainCircuit,Globe,History,Power,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber,humanLabel}from'./ui-kit'
+import Card from'./Card'
+import{Button,Empty,Loading,Metric,StatusChip,fmtDateTime,fmtNumber,humanLabel}from'./ui-kit'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const usd=v=>`US$${Number(v||0).toFixed(2)}`
@@ -55,8 +57,8 @@ export default function ModelsServices({onError}){
     </div>
     {!can&&<p className="l3v-note">You can view these. A PIM Operator or above can switch them on or off.</p>}
     {done&&<p className="sb-done" role="status">{done}</p>}
-    <section className="m-panel">
-      <SectionTitle icon={Globe} title="Page-fetching services" subtitle="External services that fetch web pages for Layer 2. A service that is off is skipped on every route and is not offered anywhere else." action={<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>}/>
+    <Card id="services.fetching" icon={Globe} title="Page-fetching services" subtitle="External services that fetch web pages for Layer 2. A service that is off is skipped on every route and is not offered anywhere else."
+      meta={<span>{services.filter(s=>s.enabled).length} of {services.length} on</span>} action={<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>}>
       <div className="cf-table-wrap"><table className="cf-table ms-table"><thead><tr><th>Service</th><th>Type</th><th>Key</th><th className="num">Routes</th><th>Last test</th><th>On</th></tr></thead><tbody>
         {services.map(s=><tr key={s.id} className={s.enabled?'':'ms-off'} data-service={s.key}>
           <td><strong>{s.name}</strong><span className="l3v-code">{s.key}</span></td>
@@ -68,16 +70,15 @@ export default function ModelsServices({onError}){
         </tr>)}
       </tbody></table></div>
       <p className="l3v-note">Keys are on <a href="#environment">Environment &amp; integrations</a>. Address, limits and routing are on <a href="#scrapers">Scrapers &amp; fetchers</a>.</p>
-    </section>
-    <section className="m-panel">
-      <SectionTitle icon={BrainCircuit} title="AI models" subtitle="Models Layer 3 can use to read course and scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps; add it to a cascade in Layer 3 › Control."/>
+    </Card>
+    <Card id="services.ai-models" icon={BrainCircuit} title="AI models" subtitle="Models Layer 3 can use to read course and scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps; add it to a cascade in Layer 3 › Control."
+      meta={<span>{live.filter(m=>m.enabled).length} of {live.length} on{retired.length?` · ${retired.length} retired`:''}</span>}>
       {live.length?<div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{live.map(modelRow)}</tbody></table></div>:<Empty text="No models."/>}
       {retired.length>0&&<details className="ms-retired"><summary>Retired models ({retired.length}) — failed their tests and cannot be switched on</summary>
         <div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{retired.map(modelRow)}</tbody></table></div></details>}
-    </section>
-    {(data.events||[]).length>0&&<section className="m-panel">
-      <SectionTitle icon={History} title="Recent changes"/>
+    </Card>
+    {(data.events||[]).length>0&&<Card id="services.recent-changes" icon={History} title="Recent changes" meta={<span>{data.events.length}</span>}>
       <ul className="ms-events">{data.events.map((e,i)=><li key={i}><strong>{e.target}</strong> switched {e.action==='switch_on'?'on':'off'}<span className="l3v-code">{[e.by,fmtDateTime(e.at)].filter(Boolean).join(' · ')}</span></li>)}</ul>
-    </section>}
+    </Card>}
   </>
 }

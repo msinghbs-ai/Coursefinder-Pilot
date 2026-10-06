@@ -4,7 +4,10 @@
 // paused. It starts a task, shows its progress from the database (so a refresh loses nothing), and lets a person pause,
 // resume or cancel it. Finished tasks (done, failed, cancelled) live under Scheduled jobs › Jobs with the other job history. The first job kinds: Qualify adapters (read-only measurement by country, state, provider kind
 // and adapter state) and Admit the passing fields (the deliberate step, Platform Admins only).
-import React,{useEffect,useMemo,useRef,useState}from'react'
+// v2.15.200 (Platform Admin 6 Oct 15:25 "Task manager doesn't seems to be the right place for the adapter qualification"):
+// the Task manager starts nothing. It lists the tasks waiting, running or paused, with pause, resume and cancel. Tasks
+// are started where the work is (Layer 2 › Adapters for Qualify and Admit, and every other JobButton).
+import React,{useEffect,useRef,useState}from'react'
 import{ListChecks,Play,Pause,Square,RefreshCw,CheckCircle2,XCircle,AlertTriangle}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Badge,Loading,SectionTitle,EmptyRow,fmtDateTime,fmtNumber}from'./ui-kit'
@@ -14,7 +17,7 @@ const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return 
 const FIELDS=['intakes','fee','english','delivery']
 const FIELD_LABEL={intakes:'Intakes',fee:'Fee',english:'English',delivery:'Delivery'}
 const STATE_TONE={queued:'neutral',running:'info',paused:'warning',done:'success',failed:'danger',cancelled:'neutral'}
-const KIND_LABEL={qualify_adapters:'Qualify adapters',admit_qualified:'Admit passing fields'}
+const KIND_LABEL={qualify_adapters:'Qualify adapters',admit_qualified:'Admit passing fields',reread_pages:'Read pages again',firecrawl_run:'Firecrawl run',adapter_apply:'Apply an adapter',central_page_read:'Read a central page'}
 const pct=p=>{const t=Number(p?.total||0),d=Number(p?.done||0);return t?Math.round(d/t*100):0}
 
 export function Progress({progress,state}){const v=pct(progress);return <div className="tm-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={v} aria-label={`${v}% done`}><span style={{width:`${v}%`}} className={`tm-progress-${state||'queued'}`}/></div>}
@@ -44,31 +47,17 @@ export function TaskResult({job,onAdmit}){
 
 export default function AdminTasks({rank=0,onError}){
   const[d,setD]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[open,setOpen]=useState(()=>{try{return new URLSearchParams(window.location.hash.split('?')[1]||'').get('job')||''}catch{return ''}})
-  const[form,setForm]=useState({country:'',state:'',provider_kind:'university',adapter_state:'enabled'})
   const timer=useRef(null)
   const load=async(id=open)=>{try{const{data,error}=await supabase.rpc('admin_jobs',{p_action:'read',p_args:id?{id}:{}});if(error)throw error;setD(data||{});setErr('')}catch(e){setErr(errText(e));onError?.(errText(e))}}
   useEffect(()=>{load(open)},[open])
   const live=Boolean((d?.jobs||[]).some(j=>['queued','running'].includes(j.state)))
   useEffect(()=>{clearInterval(timer.current);timer.current=setInterval(()=>{if(document.visibilityState==='visible')load(open)},live?5000:30000);return()=>clearInterval(timer.current)},[live,open])
   const act=async(action,args,q)=>{const reason=ask(q);if(!reason)return;setBusy(true);try{const{data,error}=await supabase.rpc('admin_jobs',{p_action:action,p_args:{...args,reason}});if(error)throw error;if(action==='start'&&data?.id)setOpen(data.id);await load(action==='start'&&data?.id?data.id:open)}catch(e){setErr(errText(e))}finally{setBusy(false)}}
-  const states=useMemo(()=>(d?.states||[]).filter(s=>!form.country||s.country===form.country),[d,form.country])
   if(!d)return <div className="m-panel"><Loading label="Loading the task manager…"/></div>
-  const job=d.job,canStart=rank>=5,canAdmit=Boolean(d.can_admit)
-  const startQualify=()=>act('start',{kind:'qualify_adapters',args:{country:form.country||null,state:form.state||null,provider_kind:form.provider_kind,adapter_state:form.adapter_state}},`Qualify the ${form.adapter_state} adapters${form.state?' in '+form.state:form.country?' in '+form.country:''}${form.provider_kind==='university'?' (universities only)':''}? This measures each field against the admission rules and admits nothing.`)
+  const job=d.job,canAdmit=Boolean(d.can_admit)
   const startAdmit=j=>act('start',{kind:'admit_qualified',args:{qualification_job_id:j.id}},`Admit the passing fields of every adapter measured by "${j.title}"? Fields already admitted stay. Values entered by hand are never changed.`)
   return <div className="m-page-stack" data-task-manager>
     {err&&<div className="m-alert compact" role="alert"><AlertTriangle size={15}/><span>{err}</span><button type="button" aria-label="Dismiss" onClick={()=>setErr('')}>×</button></div>}
-    <section className="m-panel" data-task-start>
-      <SectionTitle icon={ListChecks} title="Qualify adapters" subtitle={`Measures every chosen adapter against the admission rules: a field passes when the adapter reads it on at least ${Math.round(Number(d.settings?.min_read_share||0.5)*100)}% of the read pages and, where the catalogue already holds values, at least ${Math.round(Number(d.settings?.min_agree_share||0.9)*100)}% agree (both set under Models & services › Firecrawl › Adapter evaluation). Nothing is admitted by this run.`}/>
-      <div className="tm-form">
-        <label><span>Country</span><select aria-label="Country" value={form.country} onChange={e=>setForm({...form,country:e.target.value,state:''})}><option value="">Any</option>{(d.countries||[]).map(c=><option key={c.code} value={c.code}>{c.name} ({fmtNumber(c.adapters)} adapters)</option>)}</select></label>
-        <label><span>State or province</span><select aria-label="State" value={form.state} onChange={e=>setForm({...form,state:e.target.value})}><option value="">Any</option>{states.map(s=><option key={s.code} value={s.code}>{s.name} ({fmtNumber(s.adapters)})</option>)}</select></label>
-        <label><span>Provider kind</span><select aria-label="Provider kind" value={form.provider_kind} onChange={e=>setForm({...form,provider_kind:e.target.value})}><option value="university">Universities</option><option value="any">Any provider</option></select></label>
-        <label><span>Adapter state</span><select aria-label="Adapter state" value={form.adapter_state} onChange={e=>setForm({...form,adapter_state:e.target.value})}><option value="enabled">Switched on (testing or admitting)</option><option value="testing">Testing only</option><option value="admitting">Admitting only</option></select></label>
-        <Button variant="primary" disabled={!canStart||busy} onClick={startQualify}><Play size={14}/> Qualify</Button>
-      </div>
-      {!canStart&&<p className="sl-sub">Operators (adapters) and Platform Admins can start a Qualify run.</p>}
-    </section>
     <section className="m-panel" data-task-list>
       <SectionTitle icon={RefreshCw} title="Running and waiting" subtitle={live?'Refreshes every 5 seconds. Pause and cancel take effect at the next provider, never half way through one. Finished tasks move to the Jobs tab.':'Nothing is running or waiting. Finished tasks, with their results, are under the Jobs tab.'}/>
       <div className="cf-table-wrap"><table className="cf-table tm-table"><thead><tr><th>Task</th><th>State</th><th>Progress</th><th>Result</th><th>Started by</th><th>When</th><th>Actions</th></tr></thead><tbody>

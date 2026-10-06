@@ -34,7 +34,6 @@ export const PAGES = {
   coverage: { label: 'Coverage & completeness', slug: 'coverage', icon: 'check', subtitle: 'How complete each course is, and each attribute across all courses.', tabs: [
     { key: 'courses', label: 'Courses', min: 1 },
     { key: 'attributes', label: 'Attributes', min: 1 },
-    { key: 'universities', label: 'Universities', min: 4 },
   ] },
   layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', subtitle: 'Official registers such as CRICOS: runs, sources and their settings.', tabs: [
     { key: 'operations', label: 'Runs', min: 4 },
@@ -48,11 +47,11 @@ export const PAGES = {
     { key: 'dates', label: 'Key dates', min: 3 },
     { key: 'links', label: 'Reference sources', min: 3 },
   ] },
-  layer2: { label: 'Layer 2 Discovery & reading', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'Finding provider pages and reading the facts on them.', tabs: [
-    { key: 'operations', label: 'Overview', min: 4 },
-    { key: 'start', label: 'Fetch an area', min: 4 },
-    { key: 'history', label: 'History', min: 4 },
-    { key: 'profiles', label: 'Source profiles', min: 4 },
+  // v2.15.200 (Decision 254, Platform Admin 6 Oct 15:31 and 15:38): Layer 2 is the adapters and their whole lifecycle, plus
+  // scholarships. Overview, Fetch an area, History and Source profiles retired (unused for 30 days); their old addresses
+  // and Coverage › Universities open Adapters.
+  layer2: { label: 'Layer 2 Discovery & reading', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'University adapters: build, qualify, admit, switch on or off, and when the pages of each university are read again.', tabs: [
+    { key: 'adapters', label: 'Adapters', min: 4 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
   layer3: { label: 'Layer 3 AI validation', slug: 'layer-3-ai', icon: 'ai', subtitle: 'Run or pause each task, set its daily limit and choose the model cascade.', tabs: [
@@ -135,8 +134,8 @@ export const LEGACY = {
   'onboarding': { page: 'providers', tab: 'onboarding' },
   'important-dates': { page: 'reference', tab: 'dates' },
   'important-links': { page: 'reference', tab: 'links' },
-  'layer-2-enrichment': { page: 'layer2', tab: 'operations' },
-  'layer-2-operations': { page: 'layer2', tab: 'operations' },
+  'layer-2-enrichment': { page: 'layer2', tab: 'adapters' },
+  'layer-2-operations': { page: 'layer2', tab: 'adapters' },
   'layer-3-ai-interpretation': { page: 'layer3' },
   'layer-4-human-resolution': { page: 'layer4' },
   'review-queue': { page: 'layer4' },
@@ -159,7 +158,7 @@ export const LEGACY_ADMIN_SECTIONS = {
   'layer1-sources': { page: 'layer1', tab: 'settings' },
   'layer2-providers': { page: 'scrapers' },
   'provider-assets': { page: 'providers', tab: 'assets' },
-  'layer2-sources': { page: 'layer2', tab: 'profiles' },
+  'layer2-sources': { page: 'layer2', tab: 'adapters' },
   'onboarding': { page: 'providers', tab: 'onboarding' },
   'pim': { page: 'dataModel' },
   'users-roles': { page: 'users' },
@@ -201,6 +200,9 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   // v2.15.124: Readiness by area is part of Attributes; Layer 1 › Sources is Operations › Sources.
   if (hit.page === 'jobs' && tab === 'schedules') return { page: 'jobs', tab: 'automations', params: p }
   if (hit.page === 'coverage' && tab === 'domains') return { page: 'coverage', tab: 'attributes', params: p }
+  // v2.15.200 (Decision 254): Coverage › Universities and the retired Layer 2 tabs open Layer 2 › Adapters.
+  if (hit.page === 'coverage' && tab === 'universities') return { page: 'layer2', tab: 'adapters', params: p }
+  if (hit.page === 'layer2' && ['operations', 'start', 'history', 'profiles'].includes(tab)) return { page: 'layer2', tab: 'adapters', params: p }
   if (hit.page === 'layer1' && tab === 'sources') return { page: 'sources', tab: '', params: p }
   // v2.15.122: the Layer 3 Models list is Platform settings › Models & services.
   if (hit.page === 'layer3' && tab === 'models') return { page: 'services', tab: '', params: p }

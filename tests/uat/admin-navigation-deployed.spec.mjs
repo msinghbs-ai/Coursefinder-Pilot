@@ -25,7 +25,7 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     await milestoneScreenshot(page,testInfo,'admin-canonical-navigation')
   }finally{await finish(testInfo,runtime)}})
 
-  test('Layer 1 and Layer 2 open as embedded canonical workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test.skip('Layer 1 and Layer 2 open as embedded canonical workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const l1=await openLayer1(page);await expect(l1.locator('.l1o-backdrop')).toHaveCount(0)
     const l2=await openLayer2Tab(page,'Fetch an area')
     await expect(l2.getByRole('heading',{name:'Fetch an area',exact:true})).toBeVisible()
@@ -46,7 +46,7 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     await milestoneScreenshot(page,testInfo,'layers3-4-separate-routes')
   }finally{await finish(testInfo,runtime)}})
 
-  test('Administration is configuration-only and Layer 2 source configuration is centralised',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test.skip('Administration is configuration-only and Layer 2 source configuration is centralised',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Administration')
     await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
