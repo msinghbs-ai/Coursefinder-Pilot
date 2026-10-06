@@ -1,20 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.199'
-export const PACKAGE_VERSION='0.1.126'
+export const UI_VERSION='2.15.200'
+export const PACKAGE_VERSION='0.1.127'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Read pages again, Firecrawl runs, adapter Apply and central pages are tasks',
+  title:'Adapters lifecycle workspace, collapsed cards, list-only Task manager',
   changes:[
-    'Read pages again (one university or the ones ticked), a Firecrawl run, Apply on an adapter and Attach page for a central page now start a task from the same button: the button shows the task\'s progress from the database with a Cancel, the Task manager lists it while it runs, and its result lands under Scheduled jobs › Jobs.',
-    'A Firecrawl run can be paused and resumed from the Task manager (the run stops and continues). Read pages again, Apply and a central page read can be cancelled but not paused.',
-    'Retired: the Universities panel\'s own re-read request list, and the Firecrawl Runs table with its Start, Stop and Continue buttons. Firecrawl\'s call log stays in the support report.'
+    'Layer 2 now opens on Adapters: one collapsed row per university holding its test, Qualify and Admit, on/off switch with the consequences stated, read schedule, central pages, fee range and rules, Read pages again, hosted courses, Firecrawl target and history. Bulk Qualify and Admit work on the filtered list, and Admit stays a separate step.',
+    'A read cycle (7 to 365 days) can be set per adapter. Pages are re-read on that cycle and a changed page makes new evidence, an unchanged page does not. The default stays 90 days.',
+    'Every card on Models & services, Toolsets and the new Adapters screen is collapsed until opened, and stays open or closed for the browser session. Models & services keeps services, keys and limits only.',
+    'The Task manager is a list of running, queued and paused tasks with pause, resume and cancel. Qualify starts from Adapters.'
   ],
   bugFixes:[
-    'The person who started a task now shows on the task detail as well as the list.'
+    'Retired: Layer 2 Overview, Fetch an area, History and Source profiles tabs, and Coverage › Universities (its figures are in the Adapters rows). Source profiles moved to Scrapers & fetchers. Scholarships stays under Layer 2.'
   ]
 }
 

@@ -41,21 +41,7 @@ test('worker errors: each reading says what to do', () => {
 })
 
 test.describe('mocked browser', () => {
-  test('Fetch an area: where La Trobe stands, why, and Start', async ({ page }) => {
-    await mockAdmin(page)
-    await page.goto('/#layer-2-discovery?tab=start')
-    const fa = page.locator('[data-fetch-area]')
-    await expect(fa.getByRole('combobox', { name: 'Fetch an area country' })).toContainText('Australia (AU)')
-    await fa.getByRole('button', { name: 'Fetch an area university' }).click()
-    await page.getByRole('option', { name: /La Trobe University/ }).click()
-    const st = fa.locator('[data-fetch-area-state]')
-    await expect(st).toContainText('239')
-    await expect(st.locator('[data-fetch-area-explain]')).toContainText('none of them show English requirements or fees')
-    await st.getByRole('button', { name: 'Start' }).click()
-    await expect(st.locator('[data-fetch-area-done]')).toContainText('Already first in the sweep')
-    await st.getByRole('button', { name: 'Open Live activity' }).click()
-    await expect(page).toHaveURL(/live-activity/)
-  })
+  // v2.15.200 (Decision 254): the Fetch an area screen is retired from Layer 2 (unused for 30 days). Its database function stays.
 
   test('Websites to find: what was tried, enter and save a website', async ({ page }) => {
     await mockAdmin(page)

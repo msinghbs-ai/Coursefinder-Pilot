@@ -34,7 +34,7 @@ test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live, 
 })
 
 test('v2.15.124: Readiness by area is part of Attributes; the cross-layer Sources list is under Operations', () => {
-  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'universities']) // v2.15.189 Decision 254: Universities tab
+  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes']) // v2.15.200 Decision 254: Universities retired into Layer 2 › Adapters
   expect(resolveTarget('coverage', new URLSearchParams({ tab: 'domains' })).tab).toBe('attributes')
   expect(resolveTarget('data-quality-readiness').tab).toBe('attributes')
   expect(PAGES.layer1.tabs.map(t => t.key)).toEqual(['operations', 'settings', 'batch', 'scholarships']) // v2.15.173 Decision 251
@@ -44,7 +44,7 @@ test('v2.15.124: Readiness by area is part of Attributes; the cross-layer Source
 })
 
 test('v2.15.124: Schedules folded into Automations; the copied job list is gone (history is on Jobs)', () => {
-  expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs'])
+  expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs', 'tasks']) // v2.15.197: Task manager
   expect(resolveTarget('scheduled-jobs', new URLSearchParams({ tab: 'schedules' })).tab).toBe('automations')
   expect(resolveTarget('scheduled-tasks').tab).toBe('automations')
   const w = read('src/ScheduledJobsWorkspace.jsx')

@@ -5,7 +5,7 @@ import { PAGES } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('tabs and removed duplicates', () => {
-  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Overview', 'Fetch an area', 'History', 'Source profiles', 'Scholarships']) // v2.15.173 Decision 251
+  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Adapters', 'Scholarships']) // v2.15.200 Decision 254: Overview, Fetch an area, History and Source profiles retired
   const w = fs.readFileSync('src/layer2-operations-entry.jsx', 'utf8')
   for (const gone of ['Effective acquisition policy', 'Results / Data Quality', '<h2>Evidence</h2>', 'l2o-kpis']) expect(w).not.toContain(gone)
   const e = fs.readFileSync('src/EnrichmentOperations.jsx', 'utf8')
@@ -14,23 +14,18 @@ test('tabs and removed duplicates', () => {
 })
 
 test.describe('mocked browser', () => {
-  test('each tab shows its own part', async ({ page }) => {
+  test('Adapters is the first tab and the retired tabs open it', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-2-discovery')
-    const ops = page.locator('[data-cf245-enrichment-operations="true"]')
-    await expect(ops.getByRole('heading', { name: 'Coverage and what is left' })).toBeVisible()
-    await expect(ops.locator('.eops-hourly thead th')).toHaveCount(9)
-    await expect(ops).toContainText('Passed to Layer 3 (AI)')
-    await page.getByRole('tab', { name: 'Fetch an area' }).click()
-    // Decision 222: Fetch an area shows where the area stands in the course-page sweep
-    await expect(page.locator('[data-fetch-area]')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Start production enrichment' })).toHaveCount(0)
-    await page.getByRole('tab', { name: 'History' }).click()
-    // Decision 220: History shows each country's daily progress; the retired pipeline's run and fetch lists are gone.
-    await expect(page.getByRole('heading', { name: 'Daily progress' })).toBeVisible()
-    await expect(page.locator('[data-l2-daily] tbody tr').first()).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Recent page fetches' })).toHaveCount(0)
-    await expect(page.locator('[data-l2-latest-terminal]')).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: 'Recent execution trace' })).toBeVisible()
+    await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Adapters' })).toHaveAttribute('aria-selected', 'true')
+    for (const gone of ['Overview', 'Fetch an area', 'History', 'Source profiles']) await expect(page.getByRole('tab', { name: gone })).toHaveCount(0)
+    await expect(page.getByRole('tab', { name: 'Scholarships' })).toBeVisible()
+    for (const old of ['start', 'history', 'profiles', 'operations']) {
+      await page.goto(`/#layer-2-discovery?tab=${old}`)
+      await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
+    }
+    await page.goto('/#coverage?tab=universities')
+    await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
   })
 })

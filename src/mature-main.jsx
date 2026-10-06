@@ -39,7 +39,8 @@ import PipelineSettings from'./PipelineSettings'
 import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
 import{CoverageView}from'./course-coverage'
-import{UniversitiesCoverage}from'./UniversitiesCoverage'
+import AdaptersWorkspace from'./AdaptersWorkspace'
+import Card from'./Card'
 import LinkRefresh from'./LinkRefresh'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
@@ -52,7 +53,6 @@ import AdminTasks from'./AdminTasks'
 import PlatformGuide from'./PlatformGuide'
 import Layer4Intervention from'./Layer4Intervention'
 import{Layer1Operations,Layer1SourceSettings}from'./layer1-operations-entry'
-import{Workspace as Layer2Workspace}from'./layer2-operations-entry'
 import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
 import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
 import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
@@ -223,7 +223,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='prisms')return <Prisms onError={onError}/>
         if(tab==='datasets')return <StatisticsDatasets rank={rank}/>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':return tab==='universities'?<div className="m-page-stack"><UniversitiesCoverage rank={rank}/></div>:tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
+      case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       case'layer1':
         if(tab==='scholarships')return <ScholarshipLayer layer={1} rank={rank} onError={err}/>
         if(tab==='settings')return <Layer1SourceSettings/>
@@ -235,8 +235,9 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
       case'layer2':
         if(tab==='scholarships')return <ScholarshipLayer layer={2} rank={rank} onError={err}/>
-        if(tab==='profiles')return <Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/>
-        return <Layer2Workspace rank={rank} embedded navigate={navigate} view={tab==='start'?'start':tab==='history'?'history':'overview'}/>
+        // v2.15.200 (Decision 254): Adapters is Layer 2's first tab. Overview, Fetch an area and History retired, Source
+        // profiles moved to Scrapers & fetchers.
+        return <AdaptersWorkspace rank={rank} onError={err}/>
       case'layer3':return tab==='scholarships'?<ScholarshipLayer layer={3} rank={rank} onError={err}/>:<Layer3Operations tab={tab} rank={rank} onError={onError}/>
       case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:tab==='attributes'?<Layer4Attributes/>:tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
@@ -244,7 +245,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'sources':return <SourcesWorkspace/>
       case'environment':return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
-      case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Environment &amp; integrations</a>.</p><Layer2ProviderConfig rank={rank} embedded/>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>
+      case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Environment &amp; integrations</a>.</p><Layer2ProviderConfig rank={rank} embedded/>
+        <Card id="scrapers.source-profiles" title="Source profiles" subtitle="How each source is fetched and read, and which fetchers it uses (moved here from Layer 2 in v2.15.200)." data-source-profiles><Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/></Card>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>
       case'services':return <div className="m-page-stack"><ModelsServices onError={err}/><Toolsets onError={err}/></div>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/><div className="m-legacy-host"><RegulatorySettings onError={onError} mode="reset"/></div></div>
       case'dataModel':return <Attributes onError={onError}/>

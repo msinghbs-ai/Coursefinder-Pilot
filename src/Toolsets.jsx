@@ -8,11 +8,14 @@
 // sample runs are done by the toolset-runner edge function (migrations 20261004000600 to 20261004000900).
 // v2.15.180 (Decision 253): Firecrawl settings by section (Target universities, Read pages, Find pages, Runs) and the
 // Firecrawl work panel (FirecrawlWork.jsx): runs by use case, target universities and the report for Firecrawl support.
+// v2.15.200 (Decision 254, Platform Admin 6 Oct 15:38 "Services, keys and limits only, every card collapsed"): every
+// panel here is a collapsed card (Card.jsx). Firecrawl runs, targets and university adapters moved to Layer 2 › Adapters.
 import React,{useEffect,useState}from'react'
 import{RefreshCw,BellRing,Check}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import{Button,Empty,Loading,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
+import{Button,Empty,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import FirecrawlWork from'./FirecrawlWork'
+import Card from'./Card'
 
 const errText=e=>e?.message||String(e)
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -63,10 +66,11 @@ export default function Toolsets({onError}){
   const can=Boolean(d.can_manage)&&!busy
   const notices=(n?.notices||[])
   return <div className="m-page-stack" data-toolsets>
-    <section className="m-panel"><SectionTitle title="Toolsets and limits" subtitle="The outside services and platform limits each layer depends on. A notice appears on the layer’s page when one of them hits a limit or times out."/>
+    <Card id="services.toolsets" title="Toolsets and limits" subtitle="The outside services and platform limits each layer depends on. A notice appears on the layer’s page when one of them hits a limit or times out."
+      meta={<span className={`cf-chip tone-${notices.length?'warning':'success'}`}>{notices.length?`${fmtNumber(notices.length)} notice${notices.length===1?'':'s'}`:'No notices'}</span>}>
       {!d.can_manage&&<p className="l3v-note">You can view this. Only a Platform Admin can change it.</p>}
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
-    </section>
+    </Card>
     {(d.toolsets||[]).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<FirecrawlWork onError={onError}/>}</React.Fragment>)}
     <SearchPass can={Boolean(d.can_manage)} onError={onError}/>
     <SampleRuns toolsets={d.toolsets||[]} can={Boolean(d.can_manage)} onError={onError}/>
@@ -77,9 +81,9 @@ const SECTION_ORDER=['Key and plan limits','How the service is used','Target uni
 function Toolset({t,d,can,write}){
   const or=t.key==='openrouter'?d.openrouter||{}:null
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
-  return <section className="m-panel" data-toolset={t.key}>
-    <SectionTitle title={t.label} subtitle={`${(t.layers||[]).map(l=>LAYER[l]).join(', ')}. ${t.help}`}/>
-    {t.key==='firecrawl'&&<p className="tn-jump"><a href="#university-adapters" onClick={e=>{e.preventDefault();document.getElementById('university-adapters')?.scrollIntoView({behavior:'smooth'})}}>University adapters, runs and the support report are below these settings ↓</a></p>}
+  return <Card id={`services.toolset.${t.key}`} title={t.label} subtitle={`${(t.layers||[]).map(l=>LAYER[l]).join(', ')}. ${t.help}`} data-toolset={t.key}
+    meta={<>{t.enforcement&&<span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only':'Stops at limits'}</span>}{t.key in SAMPLES&&<span className={`cf-chip tone-${t.key_saved?'success':'warning'}`}>{t.key_saved?'Key saved':'No key'}</span>}{t.plan?.at_reserve&&<span className="cf-chip tone-danger">At its reserve</span>}</>}>
+    {t.key==='firecrawl'&&<p className="tn-jump"><a href="#layer-2-discovery?tab=adapters">Firecrawl runs, targets and university adapters are on Layer 2 › Adapters</a></p>}
     {t.enforcement&&<div className="tn-mode" data-toolset-mode={t.key}>
       <span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only — not stopped by the platform':'Stop at limits'}</span>
       {can&&<Button compact onClick={()=>write('enforcement',{toolset:t.key,enforcement:t.enforcement==='observe'?'stop':'observe'},t.enforcement==='observe'?`Make ${t.label} stop at its spend guards and credit floor?`:`Let ${t.label} run past its spend guards and credit floor (observe only)?`)}>{t.enforcement==='observe'?'Switch to stop at limits':'Switch to observe only'}</Button>}
@@ -87,7 +91,7 @@ function Toolset({t,d,can,write}){
     {t.key in SAMPLES&&<KeyPlan t={t}/>}
     {or&&<OpenRouter or={or}/>}
     {sections.map(sec=><Settings key={sec} title={sec} t={t} rows={t.settings.filter(s=>(s.section||'Notices')===sec)} can={can} write={write}/>)}
-  </section>
+  </Card>
 }
 
 // The key in use and the limits of its plan: replace the key on Environment & integrations, then enter the new plan here.
@@ -133,6 +137,9 @@ function OpenRouter({or}){
 
 // ---- sample runs ----------------------------------------------------------------------------------------------------------
 function SampleRuns({toolsets,can,onError}){
+  return <Card id="services.sample-runs" title="Sample runs" subtitle="Test a key on real cases from every country before scheduled use. Nothing is admitted." data-toolset-samples><SampleRunsBody toolsets={toolsets} can={can} onError={onError}/></Card>
+}
+function SampleRunsBody({toolsets,can,onError}){
   const[d,setD]=useState(null),[run,setRun]=useState(''),[busy,setBusy]=useState(false)
   const load=async(r=run)=>{try{const{data,error}=await supabase.rpc('admin_toolset_samples_read',{p_run_id:r||null});if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[run])
@@ -142,10 +149,10 @@ function SampleRuns({toolsets,can,onError}){
     setBusy(true);try{const{data,error}=await supabase.rpc('admin_toolset_sample_write',{p_action:'start',p_args:{toolset,purpose,reason}});if(error)throw error;await kick(data.run_id);setRun(data.run_id);await load(data.run_id)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const resume=async id=>{setBusy(true);try{await kick(id);await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const stop=async id=>{const reason=ask('Stop this sample run?');if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_toolset_sample_write',{p_action:'stop',p_args:{run_id:id,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
-  if(!d)return <section className="m-panel"><Loading label="Loading sample runs…"/></section>
+  if(!d)return <Loading label="Loading sample runs…"/>
   const keys=Object.fromEntries(toolsets.map(t=>[t.key,t]))
   const sel=(d.runs||[]).find(r=>r.id===run)
-  return <section className="m-panel" data-toolset-samples><SectionTitle title="Sample runs" subtitle="Each run takes real cases from every country in the service’s settings, calls the service with the key in use and records what came back. Results are for review. Nothing is admitted or written to a course, provider or page."/>
+  return <><p className="sl-sub">Each run takes real cases from every country in the service’s settings, calls the service with the key in use and records what came back. Results are for review. Nothing is admitted or written to a course, provider or page.</p>
     {can&&<div className="tn-starts">{Object.entries(SAMPLES).map(([k,ps])=>ps.map(p=><Button key={k+p} compact disabled={busy||!keys[k]?.key_saved} onClick={()=>start(k,p)} title={keys[k]?.key_saved?'':'Save the key first'}>{`Run a sample with ${NAME[k]}: ${PURPOSE[p]}`}</Button>))}</div>}
     <h4 className="sl-h4">Backlog the runs take cases from</h4>
     <div className="cf-table-wrap"><table className="cf-table" data-sample-backlog><thead><tr><th>Work</th>{[...new Set((d.backlog||[]).map(b=>b.country))].map(c=><th key={c} className="num">{c}</th>)}</tr></thead><tbody>
@@ -160,7 +167,7 @@ function SampleRuns({toolsets,can,onError}){
           {can&&['ready','running','paused_time_limit'].includes(r.status)&&<Button compact disabled={busy} onClick={()=>stop(r.id)}>Stop</Button>}</span></td></tr>)}
     </tbody></table></div>}
     <Results d={d} sel={sel}/>
-  </section>
+  </>
 }
 
 function Results({d,sel}){
@@ -186,6 +193,9 @@ function Results({d,sel}){
 // ---- search pass (Decision 252 step 1): Serper's found pages go to the identity check; the reader decides -----------------
 const LINK_STATE={found:'Waiting for the identity check',verified:'Confirmed by the identity check',none:'Refused, no other candidate'}
 export function SearchPass({can,onError}){
+  return <Card id="services.search-pass" title="Search pass" subtitle="Serper searches the courses the first search left without a page." data-search-pass><SearchPassBody can={can} onError={onError}/></Card>
+}
+function SearchPassBody({can,onError}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(false)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_search_pass_read');if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[])
@@ -194,7 +204,7 @@ export function SearchPass({can,onError}){
     setBusy(true);try{const{error}=await supabase.rpc('admin_search_pass_start',{p_reason:reason});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   if(!d)return null
   const countries=[...new Set((d.links||[]).map(l=>l.country))]
-  return <section className="m-panel" data-search-pass><SectionTitle title="Search pass" subtitle="Serper searches the courses the first search left without a page. Each page it finds on the provider’s own site goes to the identity check, like any other page. A confirmed page or a link entered by hand is never replaced."/>
+  return <><p className="sl-sub">Serper searches the courses the first search left without a page. Each page it finds on the provider’s own site goes to the identity check, like any other page. A confirmed page or a link entered by hand is never replaced.</p>
     {can&&<div className="tn-starts"><Button compact variant="primary" disabled={busy} onClick={start}>Run the search pass</Button></div>}
     {(d.runs||[]).length>0&&<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Started</th><th>Status</th><th className="num">Courses searched</th><th className="num">Credits</th></tr></thead><tbody>
       {d.runs.map(r=><tr key={r.id} data-pass-run={r.id}><td>{fmtDateTime(r.created_at)}</td><td>{STATUS[r.status]||r.status}{r.status_note&&<small className="sl-sub">{r.status_note}</small>}</td><td className="num">{fmtNumber(r.done)} of {fmtNumber(r.courses)}</td><td className="num">{fmtNumber(r.credits_used)}</td></tr>)}
@@ -203,5 +213,5 @@ export function SearchPass({can,onError}){
       {Object.keys(LINK_STATE).map(st=><tr key={st} data-pass-state={st}><td>{LINK_STATE[st]}</td>{countries.map(c=><td key={c} className="num">{fmtNumber((d.links||[]).filter(l=>l.country===c&&l.state===st).reduce((a,l)=>a+Number(l.n),0))}</td>)}</tr>)}
     </tbody></table></div></>}
     {(d.repairs||[]).length>0&&<><h4 className="sl-h4">Page addresses changed (all logged)</h4><ul className="tn-list" data-pass-repairs>{d.repairs.map(r=><li key={r.reason}>{r.reason}: <strong>{fmtNumber(r.n)}</strong> <small className="sl-sub">last {fmtDateTime(r.last_at)}</small></li>)}</ul></>}
-  </section>
+  </>
 }

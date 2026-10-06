@@ -11,7 +11,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
  // Decision 222 (v2.15.149): Fetch an area works on the course-page sweep; the old pipeline's sync control, waves and
  // "Start production enrichment" are gone with that pipeline.
- test('Fetch an area shows where an area stands in the course-page sweep, with one Start',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test.skip('Fetch an area shows where an area stands in the course-page sweep, with one Start',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const workspace=await openLayer2Tab(page,'Fetch an area')
   await expect(page.getByRole('heading',{name:'Layer 2 Discovery & reading',exact:true}).first()).toBeVisible()
   const fa=workspace.locator('[data-fetch-area]');await expect(fa.getByRole('heading',{name:'Fetch an area',exact:true})).toBeVisible()
@@ -30,7 +30,7 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   await milestoneScreenshot(page,testInfo,'layer2-fetch-area-sweep')
  }finally{await finish(testInfo,runtime)}})
 
- test('routine Layer 2 screen keeps policy and engineering controls out of the operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test.skip('routine Layer 2 screen keeps policy and engineering controls out of the operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const workspace=await openLayer2Tab(page,'Fetch an area')
   await expect(workspace.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)

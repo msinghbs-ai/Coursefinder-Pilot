@@ -11,7 +11,7 @@ import * as F from './support/admin-fixtures.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('menu: Automations, Send back to AI and Publishing tabs; old links still land', () => {
-  expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs'])
+  expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs', 'tasks']) // v2.15.197: Task manager
   expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'flags', 'websites', 'sendback', 'rules', 'attributes', 'publishing', 'blocks']) // Decision 222: Websites to find; v2.15.157: Attributes
   expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1]]) // v2.15.174: Course links retired; Publishing is Layer 4
   expect(PAGES.scholarships.min).toBe(1)

@@ -672,3 +672,30 @@ export const adminJobs = (id, args = {}) => ({
   states: [{ code: 'AU-NSW', name: 'New South Wales', country: 'AU', adapters: 200 }, { code: 'AU-VIC', name: 'Victoria', country: 'AU', adapters: 180 }, { code: 'CA-BC', name: 'British Columbia', country: 'CA', adapters: 10 }],
   can_admit: true,
 })
+
+// v2.15.200 (Decision 254): Layer 2 › Adapters (public.admin_adapters list and detail)
+export const adaptersList = { as_at: '2026-10-06T05:00:00Z', can_manage: true, can_qualify: true,
+  settings: { read_cycle_default: 90, read_cycle_min: 7, read_cycle_max: 365, min_read_share: 0.5, min_agree_share: 0.9 },
+  adapters: [
+    { provider_id: 'u1', name: 'Example University', country: 'AU', state: 'AU-VIC', university: true, pages: 200, pages_read: 180, next_read: '2026-12-30T00:00:00Z', last_read: '2026-10-05T08:00:00Z',
+      adapter: { state: 'admitting', fields: ['english', 'fee', 'intakes'], read_cycle_days: null, updated_at: '2026-10-05T07:00:00Z', admit_changed_at: '2026-10-05T07:00:00Z' },
+      target: { included: true, rule_match: true, override_reason: null },
+      qualify: { job_id: 'job-done', at: '2026-10-06T02:00:00Z', passing: ['english', 'fee', 'intakes', 'delivery'], pages_read: 180 } },
+    { provider_id: 'u3', name: 'Southern University', country: 'AU', state: 'AU-NSW', university: true, pages: 80, pages_read: 60, next_read: '2026-12-01T00:00:00Z', last_read: '2026-10-01T08:00:00Z',
+      adapter: { state: 'testing', fields: [], read_cycle_days: 30, updated_at: '2026-10-05T07:00:00Z', admit_changed_at: null },
+      target: null, qualify: { job_id: 'job-done', at: '2026-10-06T02:00:00Z', passing: ['fee'], pages_read: 60 } },
+    { provider_id: 'u4', name: 'Coastal Institute of Technology', country: 'AU', state: 'AU-QLD', university: false, pages: 20, pages_read: 5, next_read: null, last_read: null,
+      adapter: { state: 'off', fields: [], read_cycle_days: null, updated_at: '2026-10-05T07:00:00Z', admit_changed_at: null }, target: null, qualify: null },
+    { provider_id: 'u2', name: 'Northern College University', country: 'NZ', state: null, university: true, pages: 50, pages_read: 10, next_read: null, last_read: null,
+      adapter: null, target: { included: true, rule_match: false, override_reason: 'added by hand' }, qualify: null }] }
+export function adapterDetail(id) {
+  const row = adaptersList.adapters.find(r => r.provider_id === id) || adaptersList.adapters[0]
+  const u = universities.universities.find(x => x.provider_id === id) || universities.universities[0]
+  return { ...u, provider_id: row.provider_id, name: row.name, country: row.country, state: row.state, website: 'https://www.example.edu.au', can_manage: true, can_qualify: true,
+    schedule: { read_cycle_days: row.adapter?.read_cycle_days ?? null, read_cycle_default: 90, next_read: row.next_read, last_read: row.last_read, due_7_days: 3, due_30_days: 12, by_status: { read: row.pages_read, needs_render: 2 } },
+    qualifications: row.qualify ? [{ job_id: 'job-done', title: 'Qualify 124 adapter(s) in AU', at: row.qualify.at, pages_read: row.qualify.pages_read,
+      passing: row.qualify.passing, fields: { intakes: { pass: row.qualify.passing.includes('intakes'), read: 150, read_share: 0.83, agree_share: 0.95, why: 'passes' }, english: { pass: row.qualify.passing.includes('english'), read: 170, read_share: 0.94, agree_share: 0.97, why: 'passes' },
+        fee: { pass: true, read: 160, read_share: 0.89, agree_share: null, why: 'passes' }, delivery: { pass: row.qualify.passing.includes('delivery'), read: 20, read_share: 0.11, agree_share: null, why: 'read on 20 of 180 pages, under the share needed' } } }] : [],
+    tasks: [{ id: 'job-done', kind: 'qualify_adapters', state: 'done', title: 'Qualify 124 adapter(s) in AU', created_at: '2026-10-06T01:00:00Z', finished_at: '2026-10-06T02:00:00Z' }],
+    log: [{ at: '2026-10-05T07:00:00Z', area: 'toolsets', action: 'uni_adapter_admit', detail: { fields: ['english', 'fee', 'intakes'], reason: 'night run' }, by: 'admin@example.org' }] }
+}

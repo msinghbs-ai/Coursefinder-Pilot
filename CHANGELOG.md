@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.127 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.200** (Layer 2 Adapters lifecycle workspace, collapsed cards remembered per session, list-only Task manager; Coverage › Universities and four Layer 2 tabs retired).
+- Database: migration 1750 (adapter read cycle column, admin_adapters list/detail/set_on/set_cycle, per-adapter Admit from its own latest Qualify). No adapter was switched and nothing was admitted.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.126 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.199** (Read pages again, Firecrawl runs, adapter Apply and central pages run as tasks; old progress panels retired).
