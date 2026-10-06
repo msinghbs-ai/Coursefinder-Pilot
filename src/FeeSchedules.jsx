@@ -13,7 +13,7 @@ import{fmtDateTime,fmtNumber}from'./lib/format.js'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 export const FEE_OUTCOME={new:'Will be added',same:'Already the same',differs:'Different fee on record (not changed)',in_review:'Waiting in review (not changed)',
-  several_amounts:'Several amounts (not used)',basis_not_used:'Per semester or other basis (not used)',annual_used:'Total (annual used instead)',no_course:'No course with this code'}
+  several_amounts:'Several amounts (not used)',basis_not_used:'Per semester or other basis (not used)',annual_used:'Total (annual used instead)',no_course:'No course with this code',per_unit_row:'Per-unit price (annual used instead)'}
 const money=(n,c)=>n==null?'—':`${c||''} ${fmtNumber(Number(n))}`.trim()
 
 function Rows({id}){
