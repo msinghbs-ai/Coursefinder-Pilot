@@ -11,6 +11,10 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     context, dashboard: F.dashboard, layer_status_summary: F.layerStatus, platform_health: F.platformHealth,
     live_activity: F.liveActivity, course_coverage: F.courseCoverage, course_coverage_providers: [{ id: 'prov-monash', name: 'Monash University', country: 'AU', courses: 640 }], data_quality_overview: F.dataQualityOverview,
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
+    // Decision 254 (job system A2): a finished admin task in the Jobs history, opened to its result
+    pipeline_filters: { layers: ['L2'], statuses: ['completed', 'failed'], modes: [], countries: [], job_types: ['layer2_task'], failure_classes: [], completion_classes: [] },
+    pipeline_jobs_page: { total: 1, items: [{ id: 'pj-task', job_type: 'layer2_task', domain: 'qualify_adapters', status: 'completed', layer_code: 'L2', run_mode: 'DRY_RUN', created_at: '2026-10-06T00:10:00Z', started_at: '2026-10-06T00:11:00Z', completed_at: '2026-10-06T00:12:00Z', duration_ms: 60000, attempt_count: 1, evidence_count: 0, completion_class: 'completed', failure_class: null, provider_name: null, source_label: null }] },
+    pipeline_job_detail: { job: { id: 'pj-task', job_type: 'layer2_task', domain: 'qualify_adapters', status: 'completed', payload: { admin_job_id: 'job-done', kind: 'qualify_adapters', title: 'Qualify 2 adapter(s) in AU-NSW' }, result: { state: 'done', passing: 1, errors: 0 } }, run_semantics: {}, entity_impact: {}, safe_actions: {}, evidence: [] },
     layer3_queue_status: F.layer3Queue, campuses_page: F.campusesPage, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_profiles: F.layer2Profiles, layer2_profile_detail: F.layer2ProfileDetail, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [{ id: 'rt1', provider_id: 'pv1', display_name: 'Direct HTTP', adapter_type: 'direct_http', priority: 10, enabled: true }],
   }
   const calls = []; page.l3calls = calls
@@ -43,7 +47,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     // Decision 253: Firecrawl work
     admin_firecrawl_read: F.firecrawlWork,
     // Decision 254, job system Phase A: the Task manager
-    admin_jobs: b => { calls.push({ jobs: b.p_action, args: b.p_args }); if (b.p_action === 'read') return F.adminJobs(b.p_args?.id); return { ok: true, id: 'job-new', title: 'Qualify 11 adapter(s) in AU-VIC', providers: 11 } },
+    admin_jobs: b => { calls.push({ jobs: b.p_action, args: b.p_args }); if (b.p_action === 'read') return F.adminJobs(b.p_args?.id, b.p_args); return { ok: true, id: 'job-new', title: 'Qualify 11 adapter(s) in AU-VIC', providers: 11 } },
     admin_uni_adapter_read: F.uniAdapter,
     admin_uni_adapter_review: F.uniAdapterReview,
     admin_universities_read: b => { calls.push({ universities: b.p_args }); return F.universities },

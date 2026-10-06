@@ -1028,17 +1028,43 @@ test('browser: Task manager — start a Qualify run with a reason, progress from
   await expect.poll(() => page.l3calls.filter(c => c.jobs === 'pause').length).toBe(1)
   await running.getByRole('button', { name: 'Cancel' }).click()
   await expect.poll(() => page.l3calls.filter(c => c.jobs === 'cancel').length).toBe(1)
-  // a finished Qualify run opens to its per-provider result and offers the separate admit step
-  await tm.locator('[data-task-row="job-done"]').getByRole('button', { name: 'Qualify 2 adapter(s) in AU-NSW' }).click()
-  const detail = tm.locator('[data-task-detail="job-done"]')
+  // A2 (Platform Admin 12:01): the Task manager lists only what is running or waiting. The finished run is not here.
+  await expect(tm.locator('[data-task-row="job-done"]')).toHaveCount(0)
+  await expect(tm).toContainText('Finished tasks move to the Jobs tab')
+})
+
+test('browser: Jobs tab — a finished task opens to its per-provider result and offers the separate admit step', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Admit from the Jobs tab (browser test)'))
+  await page.goto('/#scheduled-jobs?tab=jobs')
+  await page.getByRole('button', { name: 'Expand job' }).first().click()
+  const detail = page.locator('[data-admin-task="job-done"]')
   await expect(detail).toBeVisible()
   await expect(detail.locator('[data-qualified="prov-uts"]')).toContainText('read on 83 of 358 pages, under the share needed')
   await expect(detail.locator('[data-qualified="prov-uts"]')).toContainText('Intakes, English, Delivery')
   await expect(detail.locator('[data-qualified="prov-une"]')).toContainText('not read by the adapter')
-  await tm.locator('[data-task-row="job-done"]').getByRole('button', { name: 'Admit the passing fields' }).click()
+  await detail.locator('[data-task-admit]').click()
   await expect.poll(() => page.l3calls.filter(c => c.jobs === 'start' && c.args.kind === 'admit_qualified').length).toBe(1)
   const admit = page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'admit_qualified')
   expect(admit.args.args).toMatchObject({ qualification_job_id: 'job-done' })
+})
+
+test('job system A2 and B: history rows, live-only read, scope; the old operations console is retired', () => {
+  const m = read('supabase/migrations/20261006001730_cf247_admin_jobs_history_and_scope.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain("is distinct from 'b55b349bac07080f711386f8e0b34433'")
+  expect(m).toContain("is distinct from '7a72c695a1ade7244ddf9313536e0f11'")
+  expect(m).toContain("insert into pipeline.jobs(job_type, domain, status, provider_id, requested_by, started_at, completed_at, attempt_count, payload, result, error_text)")
+  expect(m).toContain("where state in ('queued', 'running', 'paused') or (p_args->>'all')::boolean")
+  expect(m).toContain("j.scope is not distinct from nullif(p_args->>'scope', '')")
+  const jb = read('src/JobButton.jsx')
+  expect(jb).toContain("p_action:'read',p_args:{kind,scope:scope||null,limit:1}")
+  expect(jb).toContain("p_action:'cancel'")
+  const ops = read('src/pipeline-ops-entry.jsx')
+  for (const gone of ['PipelineOpsEntry', 'OpsConsole', 'ops-launcher', 'pipeline-ops-root', 'createRoot', 'PipelineOverview']) expect(ops).not.toContain(gone)
+  expect(ops).toContain('export function JobsWorkspace(){')
+  expect(ops).toContain('export function SourcesWorkspace(){')
+  expect(ops).toContain("j?.job_type==='layer2_task'&&j?.payload?.admin_job_id")
 })
 
 test('browser: Task manager — an Operator sees tasks but cannot admit', async ({ page }) => {
