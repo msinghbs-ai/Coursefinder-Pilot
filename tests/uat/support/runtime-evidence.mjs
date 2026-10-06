@@ -203,7 +203,7 @@ export async function openRegulatoryFeeSourceNull(page) {
   await expect(card.locator('[title^="Present: "]').first()).toBeVisible()
   await expect(card.locator('[title^="Not applicable: "]').first()).toBeVisible()
   await expect(card.locator('[title^="Zero: "]').first()).toBeVisible()
-  await expect(card.getByText(/^\d+\.\d\d%$/).first()).toBeVisible()
+  await expect(card.locator(".dq-rate strong").filter({ hasText: /^\d+(\.\d+)?%$/ }).first()).toBeVisible()
   await sourceNull.click()
   await expect(page.getByRole('heading', { name: 'Exceptions & decision context' })).toBeVisible()
   await expect(page.getByText(`${count.toLocaleString('en-US')} records`, { exact: true })).toBeVisible()
