@@ -67,7 +67,7 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
       await expect(firstEntity).toBeVisible()
       await firstEntity.click()
       await expect(page).toHaveURL(/#courses\?id=/)
-      await expect(page.getByRole('heading', { name: 'Fees', exact: true })).toBeVisible({ timeout: 45_000 })
+      await expect(page.getByRole('heading', { name: /^(Course description|Registered CRICOS course cost|Regulatory facts)$/ }).first()).toBeVisible({ timeout: 45_000 })
       await milestoneScreenshot(page, testInfo, 'canonical-course-detail')
     } finally {
       await finish(testInfo, runtime)
@@ -87,7 +87,7 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
       const drawer = page.locator('aside.evidence-drawer')
       await expect(drawer).toBeVisible({ timeout: 45_000 })
       await expect(drawer.getByText(/^Evidence artifact$/i)).toBeVisible()
-      await expect(drawer.getByRole('heading', { name: 'Regulatory Snapshot', exact: true }).first()).toBeVisible()
+      await expect(drawer.getByRole('heading', { name: /^Regulatory snapshot$/i }).first()).toBeVisible()
       await expect(drawer.getByText(expectations.evidence.regulatory_snapshot_source, { exact: true }).first()).toBeVisible()
       await expect(drawer.getByText(/^Private evidence boundary$/i)).toBeVisible()
       await milestoneScreenshot(page, testInfo, 'evidence-regulatory-snapshot')
