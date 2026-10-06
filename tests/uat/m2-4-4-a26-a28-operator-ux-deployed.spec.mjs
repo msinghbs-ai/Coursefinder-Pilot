@@ -11,17 +11,11 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
   test('Administration opens a non-empty default workspace and switches sub-contexts',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Administration')
-    await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    const tabs=page.getByRole('tab')
-    await expect(tabs).not.toHaveCount(0)
-    const acquisition=page.getByRole('tab',{name:'Acquisition',exact:true})
-    await acquisition.click()
-    await expect(acquisition).toHaveAttribute('aria-selected','true')
-    await expect(page.getByRole('heading',{name:'Acquisition providers',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    const scheduling=page.getByRole('tab',{name:'Scheduling',exact:true})
-    await scheduling.click()
-    await expect(scheduling).toHaveAttribute('aria-selected','true')
-    await expect(page.getByRole('heading',{name:'Schedule Configuration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    // v2.15.200: Administration opens Scrapers & fetchers; the Acquisition and Scheduling sub-tabs are retired
+    // (scheduling is on Scheduled jobs).
+    await expect(page.locator('.m-title-wrap h1')).toContainText('Scrapers & fetchers',{timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
+    await expect(page.locator('main, .m-main').first()).not.toBeEmpty()
   }finally{await finish(testInfo,runtime)}})
 
   test('Layer 2 uses production wording, canonical Jobs/Evidence links and actionable blockers only',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
@@ -47,12 +41,10 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
   test('Layer 3 exposes concise current operations and governed Evidence summary without profile mutation controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const ws=await openLayer3(page)
-    await expect(ws.getByRole('heading',{name:'Current operations summary',exact:true})).toBeVisible()
-    await expect(ws.getByText(/Governed Evidence awaiting interpretation/i)).toBeVisible()
-    await expect(ws.getByRole('button',{name:'Open Jobs',exact:true}).first()).toBeVisible()
-    await expect(ws.getByRole('button',{name:'Open Evidence',exact:true}).first()).toBeVisible()
+    // The Layer 3 Work tab shows four counts, work by task and recent results; run, pause and limits are on the Control tab.
+    await expect(ws.getByRole('heading',{name:'Work by task',exact:true})).toBeVisible()
+    for(const label of ['Waiting to run','Settled by AI','Sent to a person','Failed'])await expect(ws.getByText(label,{exact:true}).first()).toBeVisible()
+    await expect(ws.getByText(/Run, pause and limits are on the Control tab/i).first()).toBeVisible()
     await expect(ws.getByRole('button',{name:'Pause',exact:true})).toHaveCount(0)
-    await expect(ws.getByText(/managed centrally under Administration/i).first()).toBeVisible()
   }finally{await finish(testInfo,runtime)}})
 })
-// CF-247 stale-check pass (6 Oct 2026): re-run to read current failures
