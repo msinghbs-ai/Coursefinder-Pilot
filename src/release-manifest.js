@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.209'
-export const PACKAGE_VERSION='0.1.136'
+export const UI_VERSION='2.15.210'
+export const PACKAGE_VERSION='0.1.137'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Course blade scholarships: own provider only',
+  title:'Coverage against the 80% target, by field',
   changes:[
-    'The Scholarships context on the admin course blade no longer lists other providers\' scholarships. A study-level or field scope now counts only for the scholarship\'s own provider. A Vancouver Island University course listed 629 scholarships, including RMIT\'s, and now lists none; a Monash course went from 632 to 32.',
-    'Read only. No stored scholarship, link or course changed.'
+    'Coverage \u203a Attributes opens with a new panel: intakes, English and fees are each measured on their own against 80% of active courses. Each bar shows who supplied the value (adapter, central page, page reader, entered by hand or another source), a line marks 80%, and the table beneath says how many more courses each field needs.',
+    'The panel follows the country, tier and university filters and is rebuilt hourly. Read only; nothing stored changed, and no existing panel was removed or reordered.'
   ],
   bugFixes:[]
 }

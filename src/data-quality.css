@@ -36,3 +36,5 @@
 .dq-embedded .dq-exceptions{padding-top:0}
 .dq-embedded-intro{margin:0;color:var(--cf-muted);font-size:var(--cf-fs-sm)}
 .cf-page .cc-wrap{padding:0}
+
+.cc-target-wrap{position:relative}.cc-target{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--cf-slate-900);border-radius:1px;pointer-events:none}

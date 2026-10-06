@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.137 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.210** (Coverage › Attributes opens with a per-field 80% target panel for intakes, English and fees, split by who supplied the value).
+- Database: migrations 1880 to 1884 (`pipeline.course_field_source` snapshot, its build, prune and hourly schedule at :55, and `course_coverage` returning `field_sources`). Read only for operators.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.136 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.209** (the admin course blade's Scholarships context lists only the course's own provider's scholarships).
