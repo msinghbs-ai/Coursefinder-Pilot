@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.128 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.201** (Layer 2 › Adapters › Page fees against CRICOS, a read-only dry run for Decision 255).
+- Database: migration 1760 (`admin_fee_rules_report`, read only). Nothing is written or changed.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.127 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.200** (Layer 2 Adapters lifecycle workspace, collapsed cards remembered per session, list-only Task manager; Coverage › Universities and four Layer 2 tabs retired).

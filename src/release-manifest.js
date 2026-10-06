@@ -1,22 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.200'
-export const PACKAGE_VERSION='0.1.127'
+export const UI_VERSION='2.15.201'
+export const PACKAGE_VERSION='0.1.128'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Adapters lifecycle workspace, collapsed cards, list-only Task manager',
+  title:'Page fees against CRICOS: a dry run',
   changes:[
-    'Layer 2 now opens on Adapters: one collapsed row per university holding its test, Qualify and Admit, on/off switch with the consequences stated, read schedule, central pages, fee range and rules, Read pages again, hosted courses, Firecrawl target and history. Bulk Qualify and Admit work on the filtered list, and Admit stays a separate step.',
-    'A read cycle (7 to 365 days) can be set per adapter. Pages are re-read on that cycle and a changed page makes new evidence, an unchanged page does not. The default stays 90 days.',
-    'Every card on Models & services, Toolsets and the new Adapters screen is collapsed until opened, and stays open or closed for the browser session. Models & services keeps services, keys and limits only.',
-    'The Task manager is a list of running, queued and paused tasks with pause, resume and cancel. Qualify starts from Adapters.'
+    'Layer 2 › Adapters has a new collapsed card, Page fees against CRICOS (dry run). It compares each page\'s annual international fee with the CRICOS registered total divided by the course duration, and shows how many courses the page would win (page names this year or later, not entered by hand), how many keep CRICOS, and the universities and courses with the largest gaps. It is read only: nothing is applied or changed.'
   ],
-  bugFixes:[
-    'Retired: Layer 2 Overview, Fetch an area, History and Source profiles tabs, and Coverage › Universities (its figures are in the Adapters rows). Source profiles moved to Scrapers & fetchers. Scholarships stays under Layer 2.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
