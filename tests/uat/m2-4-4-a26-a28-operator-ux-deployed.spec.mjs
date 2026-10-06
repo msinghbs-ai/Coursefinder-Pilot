@@ -24,20 +24,19 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     await expect(page.getByRole('heading',{name:'Schedule Configuration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   }finally{await finish(testInfo,runtime)}})
 
-  test.skip('Layer 2 uses production wording, canonical Jobs/Evidence links and actionable blockers only',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('Layer 2 uses production wording, canonical Jobs/Evidence links and actionable blockers only',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    // v2.15.128: Layer 2 tabs — the start action is on Fetch an area, progress and evidence links on History.
-    // Decision 222 (v2.15.149): Fetch an area drives the course-page sweep; History shows daily progress and the trace.
-    let ws=await openLayer2Tab(page,'Fetch an area')
-    await expect(ws.locator('[data-fetch-area]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    ws=await openLayer2Tab(page,'History')
-    await expect(ws.locator('[data-l2-daily]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    // v2.15.200: Layer 2 has the Adapters and Scholarships tabs. Overview, Fetch an area and History are retired
+    // (finished tasks are on Scheduled jobs > Jobs, running ones on the Task manager).
+    const ws=await openLayer2Tab(page,'Adapters')
+    await expect(ws.locator('[data-adapters-list]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    const tabs=await page.locator('.cf-page-tabs [role="tab"]').allTextContents()
+    expect(tabs.map(x=>x.trim())).toEqual(expect.arrayContaining(['Adapters']))
+    for(const retired of ['Overview','Fetch an area','History','Source profiles'])expect(tabs.join('|')).not.toContain(retired)
     await expect(ws.getByText(/no manual per-Provider action is required/i)).toHaveCount(0)
-    ws=await openLayer2Tab(page,'Overview')
-    const blockerPanel=ws.locator('.l2o-blockers')
-    if(await blockerPanel.count())await expect(blockerPanel.getByRole('heading',{name:'Action required',exact:true})).toBeVisible()
     await expect(ws.getByText(/Meeting-ready Firecrawl example/i)).toHaveCount(0)
   }finally{await finish(testInfo,runtime)}})
+
 
   test('A26 child progress refreshes the owning batch heartbeat',async()=>{
     const sql=await fs.readFile('supabase/migrations/20260901101500_m2_4_4_a26_child_heartbeat.sql','utf8')

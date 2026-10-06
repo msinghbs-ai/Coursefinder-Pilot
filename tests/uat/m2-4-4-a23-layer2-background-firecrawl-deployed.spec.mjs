@@ -6,44 +6,27 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-4-4-a23-layer2-background-firecrawl',change_control:'CF-CHG-20260830-048'})})
  // Decision 222 (v2.15.149): the old background pipeline (waves, qualification batches) is retired; Fetch an area puts an
  // area first in the course-page sweep and shows no qualification knobs.
- test.skip('operator Fetch an area works on the course-page sweep, with no qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test('operator Adapters screen has no qualification knobs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);await clickPrimaryNav(page,'Layer 2 — Enrichment')
-  await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Fetch an area'}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})
-  const ws=page.getByLabel('Layer 2 Operations');await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(ws.locator('[data-fetch-area]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  const ws=page.locator('[data-adapters-workspace]');await expect(ws).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(ws.locator('[data-adapters-list]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await expect(ws.getByRole('button',{name:'Start production enrichment',exact:true})).toHaveCount(0)
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0);await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
   await expect(ws.getByText(/Qualification Providers \/ batch/i)).toHaveCount(0)
-  await milestoneScreenshot(page,testInfo,'a23-layer2-fetch-area-sweep')
+  await milestoneScreenshot(page,testInfo,'a23-layer2-adapters')
  }finally{await finish(testInfo,runtime)}})
 
- test.skip('Administration owns Layer 2 configuration with role-appropriate edit controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);await clickPrimaryNav(page,'Administration')
-  await expect(page.locator('.m-title-wrap h1')).toHaveText('Administration',{timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  const sourceTab=page.getByRole('tab',{name:'Layer 2 sources',exact:true})
-  const acquisitionTab=page.getByRole('tab',{name:'Acquisition',exact:true})
-  await expect(sourceTab).toBeVisible();await expect(acquisitionTab).toBeVisible()
-  await sourceTab.click()
-  await expect(page.getByRole('heading',{name:'Source profiles',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(page.getByText(/Changes create a new version; nothing here changes catalogue values directly/)).toBeVisible()
-  await acquisitionTab.click()
-  await expect(page.getByRole('heading',{name:'Acquisition providers',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  const policyHeading=page.getByRole('heading',{name:'Layer 2 execution policy',exact:true})
-  if(await policyHeading.count()){
-    await expect(policyHeading).toBeVisible()
-    await expect(page.getByLabel('Layer 2 qualification Providers per batch')).toBeVisible()
-    await expect(page.getByLabel('Layer 2 qualification finaliser runs per cycle')).toBeVisible()
-    await expect(page.getByLabel('Layer 2 pattern Providers per finaliser run')).toBeVisible()
-    await expect(page.getByLabel('Layer 2 production target wave')).toBeVisible()
-    await expect(page.getByLabel('Layer 2 production route mode')).toHaveValue('scraper_first')
-    await expect(page.getByText('Firecrawl monthly limit')).toBeVisible()
-    await expect(page.getByRole('button',{name:'Save Layer 2 policy'})).toBeVisible()
-  }else{
-    await expect(page.getByRole('button',{name:'Save Layer 2 policy'})).toHaveCount(0)
-  }
-  await milestoneScreenshot(page,testInfo,'a23-admin-layer2-configuration')
+
+ test('retired Layer 2 source address lands on Adapters and Source profiles sit on Scrapers & fetchers',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page)
+  await page.goto(new URL('/#administration?section=layer2-sources',process.env.UAT_BASE_URL).toString())
+  await expect(page.locator('[data-adapters-workspace]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await page.goto(new URL('/#scrapers',process.env.UAT_BASE_URL).toString())
+  const card=page.locator('[data-card="scrapers.source-profiles"]');await expect(card).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(card).toHaveAttribute('data-card-open','false') // every card is closed until opened
+  await milestoneScreenshot(page,testInfo,'a23-source-profiles-moved')
  }finally{await finish(testInfo,runtime)}})
+
  test('background qualification self-continuation uses the service-only public bridge',async()=>{
   const worker=await fs.readFile('supabase/functions/layer2-scale-qualify-scheduled/index.ts','utf8')
   const bridge=await fs.readFile('supabase/migrations/20260831105700_m2_4_4_a23_qualification_continuation_bridge.sql','utf8')

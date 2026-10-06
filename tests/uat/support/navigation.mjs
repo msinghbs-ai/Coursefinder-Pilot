@@ -12,18 +12,19 @@ export async function openLayer1(page) {
   return workspace
 }
 
-// v2.15.128: Layer 2 is split into tabs — Overview, Fetch an area, History, Source profiles.
+// v2.15.200 (Decision 254): Layer 2 opens on Adapters; Overview, Fetch an area, History and Source profiles are retired.
+// The tabs now are Adapters and Scholarships. Source profiles moved to Scrapers & fetchers (a card, closed until opened).
 export async function openLayer2Tab(page, tab) {
   await openLayer2(page)
-  await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: tab }).first().click(ui)
-  const workspace = page.locator('.l2o-shell')
-  await expect(workspace).toBeVisible(ui)
-  return workspace
+  if (tab && tab !== 'Adapters') await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: tab }).first().click(ui)
+  const workspace = tab && tab !== 'Adapters' ? page.locator('main') : page.locator('[data-adapters-workspace]')
+  await expect(workspace.first()).toBeVisible(ui)
+  return workspace.first()
 }
 
 export async function openLayer2(page) {
   await clickPrimaryNav(page, 'Layer 2 — Enrichment')
-  const workspace = page.locator('.l2o-shell')
+  const workspace = page.locator('[data-adapters-workspace]')
   await expect(workspace).toBeVisible(ui)
   // Decision 133: the screen title is the page title (Layer panels no longer repeat it).
   await expect(page.getByRole('heading', { name: 'Layer 2 Discovery & reading' }).first()).toBeVisible(ui)
@@ -31,13 +32,16 @@ export async function openLayer2(page) {
 }
 
 // v2.15.107: former Administration tools now live on their own pages (src/nav-map.js).
-const ADMIN_TOOL_ROUTES={'Extraction Profiles':['Layer 2 Discovery & reading','Source profiles'],'Scraper Config':['Scrapers & fetchers','']}
+const ADMIN_TOOL_ROUTES={'Extraction Profiles':['Scrapers & fetchers',''],'Scraper Config':['Scrapers & fetchers','']}
 async function openAdministrationTool(page,tabName,heading){
   const [menu,tab]=ADMIN_TOOL_ROUTES[tabName]||[tabName,'']
   await clickPrimaryNav(page,menu)
   if(tab)await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:tab}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})
   const headingLocator=page.getByRole('heading',{name:heading,exact:true}).first()
   await expect(headingLocator).toBeVisible(ui)
+  // v2.15.200: every card is closed until opened.
+  const toggle=headingLocator.locator('xpath=ancestor::*[contains(@class,"cf-card-head")]//button[contains(@class,"cf-card-toggle")]').first()
+  if(await toggle.count()&&(await toggle.getAttribute('aria-expanded'))==='false')await toggle.click(ui)
   return headingLocator.locator('xpath=ancestor-or-self::*[@role="region"][1] | ancestor::section[1]').first()
 }
 
