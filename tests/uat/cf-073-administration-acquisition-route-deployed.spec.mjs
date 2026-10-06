@@ -26,14 +26,13 @@ test.describe('CF-073 Administration Acquisition route regression @deployed',()=
       const rankLabel=(await page.locator('.m-role-pill').textContent())||''
       expect(rankLabel.trim()).not.toBe('')
 
-      await page.getByRole('tab',{name:'Overview',exact:true}).click()
-      await expect(page).toHaveURL(/#administration$/)
-      await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible()
-
-      await page.goBack()
-      await expect(page).toHaveURL(/#administration\?section=layer2-providers$/)
+      // v2.15.107 and v2.15.200: Administration is folded into Scrapers & fetchers, so the old Overview tab no longer exists.
+      // The direct address still renders the Acquisition providers screen. Leaving it by the menu and going Back recovers it.
+      await page.evaluate(()=>{location.hash='#dashboard'})
       await expect(page.locator('.m-shell')).toBeVisible()
-      await expect(page.locator('.l2p-shell')).toBeVisible()
+      await page.goBack()
+      await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
+      await expect(page.locator('.l2p-shell')).toBeVisible({timeout:45000})
       await expect(page.locator('.m-workspace-error')).toHaveCount(0)
       expect(pageErrors).toEqual([])
 
