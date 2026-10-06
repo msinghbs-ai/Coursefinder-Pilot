@@ -117,3 +117,4 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     }finally{await finish(testInfo,runtime)}
   })
 })
+// CF-247 stale-check pass (6 Oct 2026): re-run to read current failures
