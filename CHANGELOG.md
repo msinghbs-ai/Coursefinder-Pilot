@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.134 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.207** (Canada and NZ scholarship runtime settings added, switched off).
+- Database: migration 1820 (two `pipeline.scholarship_runtime_settings` rows, CA and NZ, `enabled` false, `auto_dispatch` false, publication not authorised; insert only, `on conflict do nothing`).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.133 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.206** (course scholarship lists only include the course's own provider's scholarships; fixes Australian scholarships showing on Canadian courses).
