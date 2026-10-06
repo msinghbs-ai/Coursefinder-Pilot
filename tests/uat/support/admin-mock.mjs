@@ -42,6 +42,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_search_pass_read: F.searchPass,
     // Decision 253: Firecrawl work
     admin_firecrawl_read: F.firecrawlWork,
+    // Decision 254, job system Phase A: the Task manager
+    admin_jobs: b => { calls.push({ jobs: b.p_action, args: b.p_args }); if (b.p_action === 'read') return F.adminJobs(b.p_args?.id); return { ok: true, id: 'job-new', title: 'Qualify 11 adapter(s) in AU-VIC', providers: 11 } },
     admin_uni_adapter_read: F.uniAdapter,
     admin_uni_adapter_review: F.uniAdapterReview,
     admin_universities_read: b => { calls.push({ universities: b.p_args }); return F.universities },

@@ -81,6 +81,8 @@ export const PAGES = {
     { key: 'automations', label: 'Automations', min: 4 },
     { key: 'priority', label: 'Priority queue', min: 3 },
     { key: 'jobs', label: 'Jobs', min: 4 },
+    // v2.15.197 (Decision 254, job system Phase A): long-running admin actions as tasks with progress, pause and cancel
+    { key: 'tasks', label: 'Task manager', min: 4 },
   ] },
   evidence: { label: 'Evidence', slug: 'evidence', icon: 'book', min: 3, subtitle: 'Saved source pages and files, and what they changed.' },
   // v2.15.124 (screen review): the cross-layer source list moved out of Layer 1 to Operations.

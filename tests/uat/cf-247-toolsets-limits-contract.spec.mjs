@@ -981,3 +981,70 @@ test('v0.17.13 reading options: opt-in numeric and capitalised dates, one academ
   expect(ui).toContain('data-adapter-reading')
   expect(ui).toContain('page_view:pv,reading}')
 })
+
+// Platform Admin 6 Oct 06:59 and 10:56 (Decision 254, job system Phase A): Task manager, Qualify adapters, Admit the passing fields
+test('job system Phase A: migration shaped, dispatcher guarded, admission stays a separate step', () => {
+  const m = read('supabase/migrations/20261006001720_cf247_admin_jobs_task_manager.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain("kind in ('qualify_adapters', 'admit_qualified')")
+  expect(m).toContain("state in ('queued', 'running', 'paused', 'done', 'failed', 'cancelled')")
+  expect(m).toContain('revoke all on table pipeline.admin_jobs from anon, authenticated')
+  expect(m).toContain('revoke all on table pipeline.adapter_qualifications from anon, authenticated')
+  expect(m).toContain("if v_rank < 6 then raise exception 'Platform Admin required'") // admit is Platform Admin only
+  expect(m).toContain("public.admin_uni_adapter_control('admit'") // through the ordinary control, never a direct write
+  expect(m).toContain('for update skip locked') // one job per lane per tick
+  expect(m).toContain("cron.schedule('admin-jobs', '* * * * *'")
+  expect(m).toContain("security.firecrawl_setting('qualify_agree_share')") // thresholds from settings, not the page
+  expect(m).not.toMatch(/update pipeline\.uni_adapters set/) // the job never writes an adapter itself
+  const d = read('supabase/migrations/20261006001710_cf247_adapters_read_inactive_courses.sql')
+  expect(d).toContain("lifecycle_status in ('active', 'inactive')")
+  expect(d).not.toMatch(/'security\.adapter_overwrite_v1\(/) // admission unchanged: that function is not patched
+  const nav = read('src/nav-map.js')
+  expect(nav).toContain("{ key: 'tasks', label: 'Task manager', min: 4 }")
+})
+
+test('browser: Task manager — start a Qualify run with a reason, progress from the database, pause and cancel, admit the passing fields', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Phase A check from the browser test'))
+  await page.goto('/#scheduled-jobs?tab=tasks')
+  const tm = page.locator('[data-task-manager]')
+  await expect(tm).toBeVisible()
+  await expect(tm.locator('[data-task-start]')).toContainText('50%')
+  await expect(tm.locator('[data-task-start]')).toContainText('90%')
+  await page.locator('[data-task-start]').getByLabel('Country').selectOption('AU')
+  await page.locator('[data-task-start]').getByLabel('State', { exact: true }).selectOption('AU-VIC')
+  await page.locator('[data-task-start]').getByRole('button', { name: 'Qualify' }).click()
+  await expect.poll(() => page.l3calls.filter(c => c.jobs === 'start').length).toBe(1)
+  const start = page.l3calls.find(c => c.jobs === 'start')
+  expect(start.args.kind).toBe('qualify_adapters')
+  expect(start.args.args).toMatchObject({ country: 'AU', state: 'AU-VIC', provider_kind: 'university', adapter_state: 'enabled' })
+  expect(start.args.reason).toBe('Phase A check from the browser test')
+  // the running task shows its progress from the database row
+  const running = tm.locator('[data-task-row="job-run"]')
+  await expect(running).toContainText('running')
+  await expect(running).toContainText('4 of 11')
+  await expect(running.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '36')
+  await running.getByRole('button', { name: 'Pause' }).click()
+  await expect.poll(() => page.l3calls.filter(c => c.jobs === 'pause').length).toBe(1)
+  await running.getByRole('button', { name: 'Cancel' }).click()
+  await expect.poll(() => page.l3calls.filter(c => c.jobs === 'cancel').length).toBe(1)
+  // a finished Qualify run opens to its per-provider result and offers the separate admit step
+  await tm.locator('[data-task-row="job-done"]').getByRole('button', { name: 'Qualify 2 adapter(s) in AU-NSW' }).click()
+  const detail = tm.locator('[data-task-detail="job-done"]')
+  await expect(detail).toBeVisible()
+  await expect(detail.locator('[data-qualified="prov-uts"]')).toContainText('read on 83 of 358 pages, under the share needed')
+  await expect(detail.locator('[data-qualified="prov-uts"]')).toContainText('Intakes, English, Delivery')
+  await expect(detail.locator('[data-qualified="prov-une"]')).toContainText('not read by the adapter')
+  await tm.locator('[data-task-row="job-done"]').getByRole('button', { name: 'Admit the passing fields' }).click()
+  await expect.poll(() => page.l3calls.filter(c => c.jobs === 'start' && c.args.kind === 'admit_qualified').length).toBe(1)
+  const admit = page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'admit_qualified')
+  expect(admit.args.args).toMatchObject({ qualification_job_id: 'job-done' })
+})
+
+test('browser: Task manager — an Operator sees tasks but cannot admit', async ({ page }) => {
+  await mockAdmin(page, { rank: 4 })
+  await page.goto('/#scheduled-jobs?tab=tasks')
+  const tm = page.locator('[data-task-manager]')
+  await expect(tm).toBeVisible()
+  await expect(tm.locator('[data-task-start]').getByRole('button', { name: 'Qualify' })).toBeDisabled()
+})
