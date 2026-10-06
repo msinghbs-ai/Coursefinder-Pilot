@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.132 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.205** (suspected half-year page fees held back in the fee-rules dry run, Decision 255).
+- Database: migration 1800 (`public.admin_fee_rules_report` adds `suspected_half` and `suspected_half_sample`, and excludes those rows from `would_change`; guarded by the live definition's md5). Read only; no stored fee is changed.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.131 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.204** (fee used: courses under a year compare against the whole-course CRICOS fee, Decision 255 correction).

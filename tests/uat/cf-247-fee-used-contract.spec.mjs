@@ -37,3 +37,13 @@ test('migration 1790 divides CRICOS by the course length only when it is a year 
   expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
   expect(m).not.toMatch(/delete\s+from/i)
 })
+
+test('migration 1800 holds suspected half-year page fees out of the page-wins count and is guarded', () => {
+  const m = fs.readFileSync('supabase/migrations/20261006001800_cf247_fee_suspected_half.sql', 'utf8')
+  expect(m).toContain('d7233b6b8ea2a5f3687c1e9d238cf322')
+  expect(m).toContain("abs(pa / ann - 0.5) < 0.03")
+  expect(m).toContain("'suspected_half'")
+  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')).toContain('data-fee-suspected-half')
+})

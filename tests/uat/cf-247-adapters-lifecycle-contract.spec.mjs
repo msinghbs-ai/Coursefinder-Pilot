@@ -171,6 +171,7 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-fee-rules-report]')).toContainText('2,349')
     await expect(page.locator('[data-fee-rules-report]')).toContainText('nothing is written')
     await expect(page.locator('[data-fee-rules-report]')).toContainText('Alpha University')
+    await expect(page.locator('[data-fee-suspected-half]')).toContainText('Beta College')
     expect(page.l3calls.filter(c => c.feeRules).length).toBeGreaterThan(0)
   })
 })
