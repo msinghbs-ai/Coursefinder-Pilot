@@ -1,18 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.196'
-export const PACKAGE_VERSION='0.1.123'
+export const UI_VERSION='2.15.197'
+export const PACKAGE_VERSION='0.1.124'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'3 Oct 2026',
-  title:'Read pages again: clear confirmation',
+  date:'6 Oct 2026',
+  title:'Task manager: Qualify adapters and Admit the passing fields',
   changes:[
-    'Read pages again shows Sending… while the request is recorded, then the progress, and any error inside the panel (not only at the top of the page).'
+    'Scheduled jobs › Task manager: long-running admin actions run as tasks worked by the database a slice a minute. Each shows its progress from the database (a refresh loses nothing), who started it and why, and can be paused, resumed or cancelled at the next provider.',
+    'Qualify adapters (Operator (adapters) and above): choose a country, state or province, provider kind and adapter state. Every chosen adapter is measured against the admission rules, field by field, with the counts and the reason. Nothing is admitted by the run.',
+    'Admit the passing fields (Platform Admin): a separate button on a finished Qualify run admits exactly the fields that passed, through the ordinary admission control, one logged entry per provider. Fields already admitted stay. Values entered by hand are never changed.',
+    'Adapter editor › Reading options: numeric start dates, capitalised month names and the one-academic-year rule, each off unless switched on for that adapter (worker v0.17.13).'
   ],
   bugFixes:[
-    'After pressing Read again now nothing showed in the panel when the request failed: the error only appeared at the top of the page.'
+    'Canadian adapters read nothing because nearly every Canadian course is inactive: the builder, preview and apply now read pages of inactive courses too (admission still writes active courses only).'
   ]
 }
 

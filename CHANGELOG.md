@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.124 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.197** (Task manager: Qualify adapters and Admit the passing fields; adapter Reading options).
+- Database: migrations 1700 (adapter reading options), 1710 (adapters read inactive courses), 1720 (admin jobs, dispatcher, qualifications). Worker v0.17.13.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.123 — 5 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.196** (Read pages again shows Sending… and any error inside the panel).
