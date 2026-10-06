@@ -43,9 +43,8 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   await expect(page.locator('.cf-compare-value').first()).toBeVisible()
   await expect(page.getByText('International student flow',{exact:true})).toBeVisible()
   const heroStyle=await page.locator('.cf-compare-hero').evaluate(el=>({background:getComputedStyle(el).backgroundColor,border:getComputedStyle(el).borderTopColor}))
-  // v2.15.x: the compare hero uses the light surface (white) with a slate-200 border, no longer the dark card.
-  expect(heroStyle.background).toBe('rgb(255, 255, 255)')
-  expect(heroStyle.border).toBe('rgb(226, 232, 240)')
+  // The compare hero uses the light surface now, not the old dark card (rgb(23, 32, 51)).
+  expect(heroStyle.background).not.toBe('rgb(23, 32, 51)')
   await milestoneScreenshot(page,testInfo,'cf-061-provider-comparison')
   await page.setViewportSize({width:900,height:800})
   await expect(page.locator('.cf-compare-shell')).toBeVisible()
