@@ -28,9 +28,9 @@ test.describe('M2.5 Pilot deployment currentness @deployed',()=>{
     try{
       await loginAsUatUser(page)
 
-      const layer2=await openLayer2Tab(page,'History') // v2.15.128
-      // Decision 220 (v2.15.147): History shows daily progress by country (the retired pipeline's run panel is gone).
-      await expect(layer2.locator('[data-l2-daily]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+      // v2.15.200: History is retired; Layer 2 opens on Adapters and the retired pipeline's run panel stays gone.
+      const layer2=await openLayer2Tab(page,'Adapters')
+      await expect(layer2.locator('[data-adapters-list]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
       await expect(layer2.locator('[data-l2-latest-terminal]')).toHaveCount(0)
 
       const layer3=await openLayer3(page)

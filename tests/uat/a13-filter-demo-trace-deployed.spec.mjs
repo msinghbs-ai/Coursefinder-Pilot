@@ -34,7 +34,8 @@ test.describe('A13 stable Course filters and Layer 2 acquisition Evidence trace 
   await milestoneScreenshot(page,testInfo,'a13-tablet-filter-anchored')
  }finally{await finish(testInfo,runtime)}})
 
- test('Layer 2 explains governed Firecrawl production route and opens accepted UQ Evidence',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ // Skipped in v2.15.203: this drives a Layer 2 screen retired in v2.15.200 (Decision 254). Its facts now live on Layer 2 > Adapters and Scheduled jobs > Jobs.
+  test.skip('Layer 2 explains governed Firecrawl production route and opens accepted UQ Evidence',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   // v2.15.128: the policy chain and the fixed UQ example were removed from Layer 2 (policy lives on Scrapers &
   // fetchers); History lists the latest page fetches, each opening the evidence it saved.
