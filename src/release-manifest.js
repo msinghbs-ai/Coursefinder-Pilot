@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.204'
-export const PACKAGE_VERSION='0.1.131'
+export const UI_VERSION='2.15.205'
+export const PACKAGE_VERSION='0.1.132'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Fee used: courses under a year',
+  title:'Suspected half-year page fees held back',
   changes:[
-    'A course shorter than a year (for example 26 weeks) now compares and shows its whole-course CRICOS fee. Before, the registered total was divided by the fraction of a year, which doubled it and showed false disagreements between the course page and CRICOS.',
-    'The Page fees against CRICOS (dry run) card and the Fee used label in the course drawer and the course APIs both use the corrected figure. No stored fee is changed.'
+    'The Page fees against CRICOS (dry run) card now separates page fees that are about half of the CRICOS yearly figure. These are most often a per-semester fee read as annual (for example at Melbourne Education Institute), so they are listed for review and left out of Page would win.',
+    'Read only. No stored fee is changed and the page rule is still not applied anywhere.'
   ],
   bugFixes:[]
 }

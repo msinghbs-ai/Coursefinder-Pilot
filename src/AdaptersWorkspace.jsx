@@ -211,6 +211,7 @@ function FeeRulesReport({onError}){
       {row('Agree',d.agree,'Nothing to decide')}
       {row('Differ',d.differ,'')}
       {row('Page would win',d.would_change,`${fmtNumber(d.page_higher)} higher, ${fmtNumber(d.page_lower)} lower than CRICOS; ${fmtNumber(d.gap_over_20)} differ by more than 20%`)}
+      {row('Held back: suspected half-year fee',d.suspected_half,'The page fee is about half of CRICOS a year, most often a per-semester fee read as annual. Reviewed first; never picked up by the page rule')}
       {row('Kept: page names an older year',d.kept_older_year,'CRICOS stays')}
       {row('Kept: page names no year',d.kept_no_year,'CRICOS stays')}
       {row('Protected: entered or locked by hand',d.protected_by_hand,'Never overwritten')}
@@ -219,6 +220,12 @@ function FeeRulesReport({onError}){
     <table className="m-table"><thead><tr><th>University</th><th>Compared</th><th>Page would win</th></tr></thead><tbody>
       {(d.by_provider||[]).map(r=><tr key={r.provider_id}><td>{r.provider}</td><td>{fmtNumber(r.compared)}</td><td>{fmtNumber(r.would_change)}</td></tr>)}
     </tbody></table>
+    {(d.suspected_half_sample||[]).length>0&&<div data-fee-suspected-half>
+      <h4>Suspected half-year fees</h4>
+      <table className="m-table"><thead><tr><th>Course</th><th>University</th><th>Page fee</th><th>CRICOS a year</th></tr></thead><tbody>
+        {d.suspected_half_sample.map(r=><tr key={r.course_id}><td>{r.title}</td><td>{r.provider}</td><td>{fmtNumber(r.page_fee)}</td><td>{fmtNumber(r.cricos_per_year)}</td></tr>)}
+      </tbody></table>
+    </div>}
     <h4>Largest gaps</h4>
     <table className="m-table"><thead><tr><th>Course</th><th>University</th><th>Page fee</th><th>Page year</th><th>CRICOS a year</th><th>Gap</th></tr></thead><tbody>
       {(d.sample||[]).map(r=><tr key={r.course_id}><td>{r.title}</td><td>{r.provider}</td><td>{fmtNumber(r.page_fee)}</td><td>{r.page_year}</td><td>{fmtNumber(r.cricos_per_year)}</td><td>{share(r.gap)}</td></tr>)}
