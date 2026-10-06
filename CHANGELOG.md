@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.133 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.206** (course scholarship lists only include the course's own provider's scholarships; fixes Australian scholarships showing on Canadian courses).
+- Database: migration 1810 (`security.scholarship_selection_for_course_impl` patched behind an md5 guard so study-level and field scopes match only the scholarship's own provider). No stored data changed.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.132 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.205** (suspected half-year page fees held back in the fee-rules dry run, Decision 255).
