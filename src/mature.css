@@ -406,3 +406,6 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ad-field{display:inline-flex;gap:4px;align-items:center;font-weight:700;font-size:var(--cf-fs-sm)}.ad-pass{color:var(--cf-green-700)}.ad-fail{color:var(--cf-slate-500)}
 .ad-more{display:flex;justify-content:center;margin-top:8px}
 @media(max-width:900px){.ad-row-head{grid-template-columns:auto 1fr auto}.ad-row-head>.ad-hide-sm{display:none}}
+
+.cf-fee-used{margin:0 0 8px;padding:8px 12px;border:1px solid var(--cf-border);border-radius:6px;background:var(--cf-surface-2)}
+.cf-fee-used small{color:var(--cf-text-2)}
