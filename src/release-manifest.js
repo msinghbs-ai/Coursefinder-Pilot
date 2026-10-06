@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.198'
-export const PACKAGE_VERSION='0.1.125'
+export const UI_VERSION='2.15.199'
+export const PACKAGE_VERSION='0.1.126'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Task manager shows only live tasks; finished tasks in Jobs; one button for long-running actions',
+  title:'Read pages again, Firecrawl runs, adapter Apply and central pages are tasks',
   changes:[
-    'Scheduled jobs › Task manager now lists only tasks that are waiting, running or paused (the Windows sense). A finished task (done, failed or cancelled) is written once to the Jobs history and opens there, under Scheduled jobs › Jobs, with its per-provider result and the Admit button for a finished Qualify run.',
-    'One button for every long-running admin action (JobButton): press it, give a reason, and it shows the task\'s progress from the database with a Cancel, so a refreshed page finds the same task again by its kind and scope.',
-    'The old Layer 1–4 operations console (floating Pipeline Ops launcher with its own Jobs view) is retired: it had no mount point since v2.15.107 and duplicated the Jobs tab.'
+    'Read pages again (one university or the ones ticked), a Firecrawl run, Apply on an adapter and Attach page for a central page now start a task from the same button: the button shows the task\'s progress from the database with a Cancel, the Task manager lists it while it runs, and its result lands under Scheduled jobs › Jobs.',
+    'A Firecrawl run can be paused and resumed from the Task manager (the run stops and continues). Read pages again, Apply and a central page read can be cancelled but not paused.',
+    'Retired: the Universities panel\'s own re-read request list, and the Firecrawl Runs table with its Start, Stop and Continue buttons. Firecrawl\'s call log stays in the support report.'
   ],
   bugFixes:[
-    'Four colour literals in the Universities panel styles fell outside the token set and failed the one-token-set contract.'
+    'The person who started a task now shows on the task detail as well as the list.'
   ]
 }
 

@@ -184,12 +184,12 @@ test('browser: Firecrawl work — plan from Firecrawl, runs started with a reaso
   for (const sec of ['Target universities', 'Read pages', 'Find pages', 'Runs']) await expect(page.locator(`[data-toolset-section="firecrawl:${sec}"]`)).toBeVisible()
   const w = page.locator('[data-firecrawl-work]')
   await expect(w.locator('[data-firecrawl-plan]')).toContainText('490,846 of 500,000 credits left')
-  await expect(w.getByRole('button', { name: 'Find pages (3,975 waiting)' })).toBeDisabled()
+  // find_page has a running task in the fixture, so its button shows the task (see the JobButton test below)
+  // Phase C (Decision 254): a run is a task started from the same button, watched by the Task manager, closed into Jobs
   await w.getByRole('button', { name: 'Read pages (1,102 waiting)' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.firecrawl === 'start')?.args).toMatchObject({ use_case: 'read_page', reason: 'Decision 253 run' })
-  await expect(w.locator('[data-firecrawl-run="fc000000-0000-4000-8000-000000000002"] [data-run-outcome="found_on_provider_site"]')).toContainText('260')
-  await w.locator('[data-firecrawl-run="fc000000-0000-4000-8000-000000000001"]').getByRole('button', { name: 'Continue' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.firecrawl === 'continue')?.args).toMatchObject({ run_id: 'fc000000-0000-4000-8000-000000000001', add_credits: 500 })
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'firecrawl_run')?.args).toMatchObject({ kind: 'firecrawl_run', args: { use_case: 'read_page', scope: 'read_page' }, reason: 'Decision 253 run' })
+  await expect(w.locator('[data-firecrawl-runs]')).toHaveCount(0)
+  await expect(w.locator('[data-firecrawl-runs-note]')).toContainText('Scheduled jobs › Task manager')
   const t = page.locator('[data-firecrawl-targets]')
   await expect(t).toContainText('The University of Sydney')
   await t.locator('[data-firecrawl-target="u3"]').getByRole('button', { name: 'Add' }).click()
@@ -243,7 +243,7 @@ test('browser: university adapter — preview on stored pages, save and apply wi
   await ed.getByRole('button', { name: 'Save' }).click()
   await expect.poll(() => page.l3calls.find(c => c.adapter === 'save')?.args?.reason).toBe('Decision 253 adapter')
   await ed.getByRole('button', { name: 'Apply' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.adapter === 'apply')?.args?.provider_id).toBe('u1')
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'adapter_apply')?.args?.args).toMatchObject({ provider_id: 'u1', scope: 'u1' })
 })
 
 // Decision 253 amended (Platform Admin 17:19): admit from adapters after testing, per adapter; refuse archived and test sites
@@ -622,7 +622,7 @@ test('browser: Coverage › Universities — pills, open a university, its cours
   await attach.getByRole('textbox', { name: 'Central page address' }).fill('https://www.example.edu.au/key-dates')
   await attach.getByRole('combobox', { name: 'Central page kind' }).selectOption('intake_calendar')
   await attach.getByRole('button', { name: 'Attach page' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.centralPage === 'add')?.args).toMatchObject({ provider_id: 'u1', kind: 'intake_calendar', url: 'https://www.example.edu.au/key-dates', reason: 'Central English page from the wave run' })
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'central_page_read')?.args).toMatchObject({ args: { provider_id: 'u1', kind: 'intake_calendar', url: 'https://www.example.edu.au/key-dates', action: 'add', scope: 'u1' }, reason: 'Central English page from the wave run' })
 })
 
 // Platform Admin 5 Oct 07:36: a central English rule written out from the attached page is a proposal, approved in Layer 4
@@ -899,8 +899,9 @@ test('browser: Coverage › Universities — tick universities, preview and read
   await panel.getByRole('button', { name: 'All course pages' }).click()
   await expect.poll(() => page.l3calls.filter(c => c.reread === 'preview').at(-1)?.args?.which).toBe('all')
   await panel.getByRole('button', { name: 'Read again now' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.reread === 'queue')?.args).toMatchObject({ provider_ids: ['u1', 'u2'], which: 'all', central: true, reason: 'Pages changed since the last read' })
-  await expect(panel.locator('[data-reread-progress]')).toContainText('Sent: 2 of 2 universities · 15 course pages · 2 central pages')
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'reread_pages')?.args).toMatchObject({ args: { provider_ids: ['u1', 'u2'], which: 'all', central: true, scope: 'universities' }, reason: 'Pages changed since the last read' })
+  // the panel's own request list is retired: progress lives on the button (from the task row) and in the Task manager
+  await expect(panel.locator('[data-reread-progress]')).toHaveCount(0)
 })
 
 // 5 Oct 21:20: the bulk re-read stopped at the 8-second screen limit, now recorded and sent in the background
@@ -1073,4 +1074,42 @@ test('browser: Task manager — an Operator sees tasks but cannot admit', async 
   const tm = page.locator('[data-task-manager]')
   await expect(tm).toBeVisible()
   await expect(tm.locator('[data-task-start]').getByRole('button', { name: 'Qualify' })).toBeDisabled()
+})
+
+
+test('job system Phase C: watcher tasks, the kind constraint widened under the 13:55 exception, old progress panels retired', () => {
+  const m = read('supabase/migrations/20261006001740_cf247_admin_jobs_phase_c_watch_tasks.sql')
+  // the one allowed removal, and nothing else destructive
+  expect(m.toLowerCase().split('drop').length - 1).toBe(1)
+  expect(m).toContain('alter table pipeline.admin_jobs drop constraint admin_jobs_kind_check')
+  for (const word of ['delete from', 'truncate', 'on delete cascade', 'drop table', 'drop function']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain("check (kind in ('qualify_adapters', 'admit_qualified', 'reread_pages', 'firecrawl_run', 'adapter_apply', 'central_page_read'))")
+  expect(m).toContain("is distinct from '625470cb5fa00d09cbb01a1f75dd20b3'")
+  expect(m).toContain("is distinct from '482e83fb4a2c26b4c749324efcd7bae2'")
+  for (const rpc of ["public.admin_university_reread('queue'", "public.admin_firecrawl_write('start'", "public.admin_uni_adapter_write('apply'", "public.admin_provider_central_page("]) expect(m).toContain(rpc)
+  expect(m).toContain("raise exception 'this task cannot be paused, only cancelled'")
+  expect(m).toContain("public.admin_firecrawl_write('continue'")
+  const fw = read('src/FirecrawlWork.jsx'), uc = read('src/UniversitiesCoverage.jsx')
+  expect(fw).not.toContain('data-firecrawl-runs>')
+  expect(fw).toContain('kind="firecrawl_run"')
+  expect(fw).toContain('kind="adapter_apply"')
+  expect(uc).toContain('kind="reread_pages"')
+  expect(uc).toContain('kind="central_page_read"')
+  expect(uc).not.toContain("p_action:'requests'")
+  expect(uc).not.toContain("p_action:'queue'")
+})
+
+test('browser: JobButton — finds its running task after a refresh and offers Cancel', async ({ page }) => {
+  await mockAdmin(page)
+  page.on('dialog', d => d.accept('Cancel from the button (browser test)'))
+  await page.goto('/#models-services')
+  const w = page.locator('[data-firecrawl-work]')
+  // the fixture holds a running firecrawl_run task for find_page: the button shows it instead of Start
+  const live = w.locator('[data-job-button="firecrawl_run"][data-job-state="running"]')
+  await expect(live).toBeVisible()
+  await expect(live).toContainText('Running · 40 of 120')
+  await expect(live.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '33')
+  await live.getByRole('button', { name: /Cancel/ }).click()
+  await expect.poll(() => page.l3calls.filter(c => c.jobs === 'cancel').length).toBe(1)
+  expect(page.l3calls.find(c => c.jobs === 'cancel').args.id).toBe('job-fc')
 })

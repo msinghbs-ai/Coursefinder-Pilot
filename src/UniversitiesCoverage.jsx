@@ -16,6 +16,7 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import JobButton from'./JobButton'
 import{fmtDate,fmtMoney,fmtShare}from'./lib/format'
 import{Button,Empty,Loading,Pager,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
 
@@ -57,14 +58,16 @@ function PolicyCell({p,pages,kind}){
     {own.length>0&&<small className="sl-sub">{fmtNumber(own.length)} attached{own.some(x=>x.status==='found')?' · waiting to be read':''}</small>}</div>
 }
 
+// v2.15.199 (Decision 254, job system Phase C): attaching a central page is a task (central_page_read). The button shows
+// the read's progress from the task row and the result lands under Scheduled jobs › Jobs.
 function AttachPage({u,onDone,onError}){
-  const[kind,setKind]=useState('english_policy'),[url,setUrl]=useState(''),[busy,setBusy]=useState(false)
-  const add=async()=>{const reason=window.prompt(`Attach this ${kind==='english_policy'?'central English requirements':'key-dates'} page to ${u.name}? It is read through Firecrawl (evidence kept) and parsed into a proposal for approval in Layer 4 Review › Attributes. Give the reason (kept in the log).`,'');if(!reason)return
-    setBusy(true);try{const{error}=await supabase.rpc('admin_provider_central_page',{p_action:'add',p_args:{provider_id:u.provider_id,kind,url:url.trim(),reason}});if(error)throw error;setUrl('');onDone?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  const[kind,setKind]=useState('english_policy'),[url,setUrl]=useState('')
   return <div className="uc-attach" data-central-attach={u.provider_id}>
     <select className="fv-filter" aria-label="Central page kind" value={kind} onChange={e=>setKind(e.target.value)}><option value="english_policy">Central English requirements</option><option value="intake_calendar">Key dates (term months)</option></select>
     <input className="au-search" type="url" aria-label="Central page address" placeholder="https://…" value={url} onChange={e=>setUrl(e.target.value)}/>
-    <Button compact disabled={busy||!/^https?:\/\/\S+$/.test(url.trim())} onClick={add}>Attach page</Button></div>
+    <JobButton kind="central_page_read" scope={u.provider_id} args={{provider_id:u.provider_id,kind,url:url.trim(),action:'add'}} label="Attach page" disabled={!/^https?:\/\/\S+$/.test(url.trim())} variant={undefined}
+      question={`Attach this ${kind==='english_policy'?'central English requirements':'key-dates'} page to ${u.name}? It is read through Firecrawl (evidence kept) and parsed into a proposal for approval in Layer 4 Review › Attributes.`}
+      onStarted={()=>{setUrl('');onDone?.()}}/></div>
 }
 
 function CourseTable({u,onError}){
@@ -185,19 +188,14 @@ function AwardLinkSettings({can,onError}){
   </details>
 }
 
+// v2.15.199 (Decision 254, job system Phase C): Read pages again is a task (reread_pages). The panel keeps the preview, the
+// button shows the task's progress (sending, then pages read back) and Cancel, and the result lands under Scheduled jobs ›
+// Jobs. The panel's own request list and polling (v2.15.195) are retired.
 function RereadPanel({ids,names,can,onClose,onDone,onError}){
-  const[which,setWhich]=useState('not_confirmed'),[central,setCentral]=useState(true),[pv,setPv]=useState(null),[busy,setBusy]=useState(false),[done,setDone]=useState(null),[sending,setSending]=useState(false),[err,setErr]=useState('')
-  useEffect(()=>{setPv(null);setDone(null);if(!ids.length)return;setBusy(true)
+  const[which,setWhich]=useState('not_confirmed'),[central,setCentral]=useState(true),[pv,setPv]=useState(null),[busy,setBusy]=useState(false)
+  useEffect(()=>{setPv(null);if(!ids.length)return;setBusy(true)
     supabase.rpc('admin_university_reread',{p_action:'preview',p_args:{provider_ids:ids,which,central}}).then(({data,error})=>{if(error)throw error;setPv(data)}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))},[ids.join(','),which,central])
   const tot=(pv?.universities||[]).reduce((a,x)=>({pages:a.pages+Number(x.pages||0),fc:a.fc+Number(x.firecrawl_likely||0),central:a.central+Number(x.central_pages||0)}),{pages:0,fc:0,central:0})
-  const queue=async()=>{const reason=window.prompt(`Read ${fmtNumber(tot.pages)} course pages${central?` and ${fmtNumber(tot.central)} central pages`:''} again for ${ids.length===1?names[0]:`${fmtNumber(ids.length)} universities`}? About ${fmtNumber(tot.fc+tot.central)} Firecrawl credits. Give the reason (kept in the log).`,'');if(!reason)return
-    setErr('');setSending(true);setBusy(true);try{const{data,error}=await supabase.rpc('admin_university_reread',{p_action:'queue',p_args:{provider_ids:ids,which,central,reason}});if(error)throw error;setDone(data);onDone?.()}catch(e){setErr(errText(e));onError?.(errText(e))}finally{setBusy(false);setSending(false)}}
-  // 21:20: the request is sent in the background, ten universities a minute: follow it here
-  const[reqs,setReqs]=useState([])
-  useEffect(()=>{if(!done?.request_id)return;let stop=false
-    const tick=()=>supabase.rpc('admin_university_reread',{p_action:'requests',p_args:{}}).then(({data})=>{if(stop)return;setReqs(data||[]);const r=(data||[]).find(x=>x.id===done.request_id);if(r&&r.status!=='sent'&&r.status!=='failed')setTimeout(tick,15000)})
-    tick();return()=>{stop=true}},[done?.request_id])
-  const mine=reqs.find(x=>x.id===done?.request_id)
   return <div className="uc-fee-range uc-reread" data-reread>
     <div className="uc-fr-head"><strong>Read pages again</strong><span className="sl-sub">{ids.length===1?names[0]:`${fmtNumber(ids.length)} universities`}</span>{onClose&&<Button compact onClick={onClose}>Close</Button>}</div>
     <div className="cf-filterbar" role="group" aria-label="Which course pages">
@@ -206,12 +204,10 @@ function RereadPanel({ids,names,can,onClose,onDone,onError}){
     {busy&&!pv?<Loading/>:pv&&<>
       <small className="sl-sub">{fmtNumber(tot.pages)} course pages · {fmtNumber(tot.central)} central pages · about {fmtNumber(tot.fc+tot.central)} Firecrawl credits (the reader fetches plainly where it can). Values are admitted every 10 minutes once read.</small>
       {(pv.universities||[]).length>1&&<ul className="tn-list">{pv.universities.map(x=><li key={x.provider_id}>{x.name}: {fmtNumber(x.pages)} pages{central?`, ${fmtNumber(x.central_pages)} central`:''}</li>)}</ul>}
-      {can?<Button compact disabled={busy||(tot.pages+tot.central)===0} onClick={queue}>{sending?'Sending…':'Read again now'}</Button>:<small className="sl-sub">A Platform Admin sends pages to be read again.</small>}
+      {can?<JobButton kind="reread_pages" scope={ids.length===1?ids[0]:'universities'} args={{provider_ids:ids,which,central}} label="Read again now" disabled={(tot.pages+tot.central)===0} variant={undefined}
+        question={`Read ${fmtNumber(tot.pages)} course pages${central?` and ${fmtNumber(tot.central)} central pages`:''} again for ${ids.length===1?names[0]:`${fmtNumber(ids.length)} universities`}? About ${fmtNumber(tot.fc+tot.central)} Firecrawl credits. Pages are sent ten universities a minute, then read; the task shows both.`}
+        onStarted={()=>onDone?.()}/>:<small className="sl-sub">A Platform Admin sends pages to be read again.</small>}
     </>}
-    {err&&<div className="dq-alert" data-reread-error><span>Not sent: {err}</span></div>}
-    {done&&<div data-reread-progress>{mine?<Pill tone={mine.status==='sent'?'success':mine.status==='failed'?'danger':'info'}>{mine.status==='sent'?'Sent':mine.status==='failed'?'Stopped':'Sending'}: {fmtNumber(mine.done)} of {fmtNumber(mine.universities)} universities · {fmtNumber(mine.pages)} course pages · {fmtNumber(mine.central_pages)} central pages</Pill>
-        :<Pill tone="info">Request recorded for {fmtNumber(done.universities)} universities: sending starts within a minute, ten universities a minute</Pill>}
-      {mine?.last_error&&<small className="sl-sub">{mine.last_error}</small>}</div>}
   </div>
 }
 
