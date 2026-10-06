@@ -24,4 +24,3 @@ test.describe('Layer screens show one title @deployed',()=>{
     await milestoneScreenshot(page,testInfo,'a24-one-title-per-layer-screen')
   }finally{await finish(testInfo,runtime)}})
 })
-// CF-247 stale-check pass (6 Oct 2026): re-run to read current failures
