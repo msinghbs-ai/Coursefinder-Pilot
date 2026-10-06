@@ -197,6 +197,36 @@ function Bulk({ids,rows,settings,can,canQualify,onClear,onChanged,onError}){
 }
 
 // ---- the screen ------------------------------------------------------------------------------------------------------
+// Decision 255 (6 Oct 2026): a read-only dry run of the page-fee rules. It changes nothing; a card that is closed reads nothing.
+function FeeRulesReport({onError}){
+  const[d,setD]=useState(null),[busy,setBusy]=useState(false)
+  const run=()=>{setBusy(true);supabase.rpc('admin_fee_rules_report',{p_args:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
+  useEffect(()=>{run()},[])
+  if(!d)return <p className="ad-note">{busy?'Measuring…':'No report yet.'}</p>
+  const row=(k,v,t)=><tr key={k}><th scope="row">{k}</th><td>{fmtNumber(v)}</td><td>{t}</td></tr>
+  return <div data-fee-rules-report>
+    <p className="ad-note">A dry run: nothing is written. A page's annual international fee is compared with the CRICOS registered total divided by the course's duration. "Differs" means more than {share(d.tolerance)} apart. The page would win only when it names {d.year} or later and the fee is not entered or locked by hand.</p>
+    <table className="m-table"><tbody>
+      {row('Compared',d.compared,'Courses with a page fee and a CRICOS total')}
+      {row('Agree',d.agree,'Nothing to decide')}
+      {row('Differ',d.differ,'')}
+      {row('Page would win',d.would_change,`${fmtNumber(d.page_higher)} higher, ${fmtNumber(d.page_lower)} lower than CRICOS; ${fmtNumber(d.gap_over_20)} differ by more than 20%`)}
+      {row('Kept: page names an older year',d.kept_older_year,'CRICOS stays')}
+      {row('Kept: page names no year',d.kept_no_year,'CRICOS stays')}
+      {row('Protected: entered or locked by hand',d.protected_by_hand,'Never overwritten')}
+    </tbody></table>
+    <h4>By university (most changes first)</h4>
+    <table className="m-table"><thead><tr><th>University</th><th>Compared</th><th>Page would win</th></tr></thead><tbody>
+      {(d.by_provider||[]).map(r=><tr key={r.provider_id}><td>{r.provider}</td><td>{fmtNumber(r.compared)}</td><td>{fmtNumber(r.would_change)}</td></tr>)}
+    </tbody></table>
+    <h4>Largest gaps</h4>
+    <table className="m-table"><thead><tr><th>Course</th><th>University</th><th>Page fee</th><th>Page year</th><th>CRICOS a year</th><th>Gap</th></tr></thead><tbody>
+      {(d.sample||[]).map(r=><tr key={r.course_id}><td>{r.title}</td><td>{r.provider}</td><td>{fmtNumber(r.page_fee)}</td><td>{r.page_year}</td><td>{fmtNumber(r.cricos_per_year)}</td><td>{share(r.gap)}</td></tr>)}
+    </tbody></table>
+    <Button compact onClick={run} disabled={busy}>Measure again</Button>
+  </div>
+}
+
 const FILTERS={country:'',state:'',kind:'university',adapter:'',qualify:'',target:'',q:''}
 function readFilters(){try{return{...FILTERS,...JSON.parse(window.sessionStorage.getItem('cf.adapters.filters')||'{}')}}catch{return FILTERS}}
 
@@ -239,6 +269,7 @@ export default function AdaptersWorkspace({onError}){
     <Card id="adapters.firecrawl-runs" title="Firecrawl runs" subtitle="Read pages and Find pages for the Firecrawl targets, started as tasks." data-adapters-firecrawl-runs><FirecrawlRuns onError={fail}/></Card>
     <Card id="adapters.firecrawl-targets" title="Firecrawl targets and credits spent" subtitle="The universities Firecrawl is used for, and the credits spent this period." data-adapters-firecrawl-targets><FirecrawlTargets onError={fail} onOpen={openRow}/></Card>
     <Card id="adapters.next" title="What each university needs next" subtitle="Rules learnt from the first adapters: find pages first, an adapter for page data, start dates or English, or admitted as it is." data-adapters-next><AdapterEvaluation onPick={openRow} onError={fail}/></Card>
+    <Card id="adapters.fee-rules" title="Page fees against CRICOS (dry run)" subtitle="What the page-fee rules would change. Read only; nothing is applied." data-adapters-fee-rules><FeeRulesReport onError={fail}/></Card>
     <Card id="adapters.settings" title="Fee range and award link settings" subtitle="Settings that apply to every university's fee range and hosted courses." data-adapters-settings>
       <FeeRangeSettings d={fr} can={can} onDone={load} onError={fail}/>
       <AwardLinkSettings can={can} onError={fail}/>

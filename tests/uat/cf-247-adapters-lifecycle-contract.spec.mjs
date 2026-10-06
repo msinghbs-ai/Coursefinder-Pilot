@@ -160,4 +160,17 @@ test.describe('mocked browser', () => {
     await openCard(page, 'adapters.firecrawl-targets')
     await expect(page.locator('[data-firecrawl-targets]')).toContainText('The University of Sydney')
   })
+
+  test('Adapters: the fee-rules dry run is read only and reads nothing until its card is opened', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#layer-2-discovery')
+    await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
+    await expect(page.locator('[data-fee-rules-report]')).toHaveCount(0)
+    expect(page.l3calls.filter(c => c.feeRules).length).toBe(0)
+    await openCard(page, 'adapters.fee-rules')
+    await expect(page.locator('[data-fee-rules-report]')).toContainText('2,349')
+    await expect(page.locator('[data-fee-rules-report]')).toContainText('nothing is written')
+    await expect(page.locator('[data-fee-rules-report]')).toContainText('Alpha University')
+    expect(page.l3calls.filter(c => c.feeRules).length).toBeGreaterThan(0)
+  })
 })
