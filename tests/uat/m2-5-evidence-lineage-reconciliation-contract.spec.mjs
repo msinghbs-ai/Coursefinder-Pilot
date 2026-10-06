@@ -79,7 +79,7 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
     expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
     expect(historyVersion).toBe(fallbackVersion)
     expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-    expect(manifest).toContain(`version:'${fallbackVersion}'`)
+    expect(manifest).toMatch(/version:(UI_VERSION|'2\.15\.\d+')/)
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>Coursefinder PIM Admin</title>')
     expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)

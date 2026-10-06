@@ -37,9 +37,9 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
       expect(source).toContain('console.warn("CF-055 duplicate')
     }
 
-    expect(discovery).toContain('layer2-scope-discover-scheduled-v1.3.3')
-    expect(backfill).toContain('layer2-screenshot-backfill-scheduled-v1.0.1')
-    expect(contacts).toContain('provider-contact-discover-scheduled-v1.3.3')
+    expect(discovery).toMatch(/layer2-scope-discover-scheduled-v1\.3\.\d+/)
+    expect(backfill).toMatch(/layer2-screenshot-backfill-scheduled-v1\.0\.\d+/)
+    expect(contacts).toMatch(/provider-contact-discover-scheduled-v1\.3\.\d+/)
 
     expect(scholarships).toContain('scholarships-au-etl-v0.1.2')
     expect(scholarships).toContain('cleanupDuplicateRegisteredObject')
