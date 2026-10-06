@@ -30,7 +30,8 @@ test.describe('M2.5 Layer 2 finalizer fairness and wave classification @deployed
     expect(stale).toContain("'handoff','layer3_source_pattern_interpretation'")
   })
 
-  test('terminal parent presents acceptance-isolation markers separately from operational failures',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  // Skipped in v2.15.203: this drives a Layer 2 screen retired in v2.15.200 (Decision 254). Its facts now live on Layer 2 > Adapters and Scheduled jobs > Jobs.
+  test.skip('terminal parent presents acceptance-isolation markers separately from operational failures',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Layer 2 — Enrichment')
     const ws=page.getByLabel('Layer 2 Operations')

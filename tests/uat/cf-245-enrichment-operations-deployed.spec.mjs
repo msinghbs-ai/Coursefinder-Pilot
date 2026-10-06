@@ -10,7 +10,8 @@ test.describe('CF-245 Enrichment Operations deployed acceptance @deployed',()=>{
     await writeRunEnvironment({suite:'cf-245-enrichment-operations-deployed',change_control:'CF-CHG-20260915-245'})
   })
 
-  test('operator can see outcome-focused enrichment reporting and current governed coverage',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  // Skipped in v2.15.203: this drives a Layer 2 screen retired in v2.15.200 (Decision 254). Its facts now live on Layer 2 > Adapters and Scheduled jobs > Jobs.
+  test.skip('operator can see outcome-focused enrichment reporting and current governed coverage',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const readResponse=page.waitForResponse(r=>{
       if(!r.url().includes('/rest/v1/rpc/admin_read'))return false
