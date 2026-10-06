@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.135 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.208** (unscoped Canada and NZ scholarships queued for review; no links created).
+- Database: migration 1830 (insert into `scholarship.course_mapping_candidates`, status needs review, for 19 Canadian and 38 NZ scholarships with no scope, against their own provider's active courses; `on conflict do nothing`).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.134 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.207** (Canada and NZ scholarship runtime settings added, switched off).
