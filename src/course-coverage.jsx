@@ -42,6 +42,10 @@ const ATTR={official_url:{label:'Official course page',layer:'Layer 2'},provider
 const TIERS=[['','All providers'],['top_10','Top 10'],['top_11_40','11–40'],['top_41_100','41–100'],['rest','All others']]
 const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const PAGE=50
+// v2.15.210 (Platform Admin, 6 Oct 2026): the 80% coverage target is measured per field, not once for the whole catalogue.
+export const COVERAGE_TARGET=80
+export const TARGET_FIELDS=[['intakes','Intakes / start dates'],['english','English requirements'],['fee','Provider tuition (fee year)']]
+export const FIELD_SOURCES=[['adapter','Adapter','var(--cf-blue-700)'],['central','Central page','var(--cf-green-700)'],['reader','Page reader','var(--cf-violet-400)'],['hand','Entered by hand','var(--cf-amber-500)'],['other','Other source','var(--cf-slate-400)']]
 
 // v2.15.112: view 'courses' (course completeness) or 'attributes' (attribute completeness and pipeline stage); both
 // kept by default for older callers. Platform Admin 30 Sep 2026: separate course and attribute completion in tabs.
@@ -69,6 +73,8 @@ export function CoverageView({view='all',onScope}={}){
   const l2=attrs.filter(a=>ATTR[a.attribute]?.layer==='Layer 2')
   const trend=useMemo(()=>{const m=new Map();for(const t of data?.trend||[]){if(!m.has(t.date))m.set(t.date,{});m.get(t.date)[t.attribute]=t}return[...m.entries()]},[data])
   const scoreByDate=useMemo(()=>Object.fromEntries((score?.trend||[]).map(t=>[t.date,t])),[score])
+  const fieldRows=useMemo(()=>TARGET_FIELDS.map(([key,label])=>{const rows=(data?.field_sources||[]).filter(r=>r.field===key),by=Object.fromEntries(rows.map(r=>[r.source,Number(r.courses||0)])),total=rows.reduce((a,r)=>a+Number(r.courses||0),0),held=total-(by.missing||0)
+    return{key,label,by,total,held,pct:total?held/total*100:null,gap:Math.max(0,Math.ceil(total*COVERAGE_TARGET/100)-held)}}),[data])
   const pickLabel=pick?(pick.cstate?CSTATE[pick.cstate]?.label:STATE_LABEL[pick.state]):''
   const choose=p=>{setOffset(0);setPick(p)}
   const maxBand=Math.max(1,...(score?.by_admitted||[]).map(b=>Number(b.courses||0)))
@@ -104,6 +110,26 @@ export function CoverageView({view='all',onScope}={}){
     {view!=='courses'&&<>
     <section className="cf-metric-grid cc-kpis">
       {l2.map(a=>{const n=Number(a.states?.admitted||0),t=Number(a.total||0);return <Metric key={a.attribute} label={ATTR[a.attribute].label} value={fmtShare(n,t)} detail={`${fmtNumber(n)} of ${fmtNumber(t)} admitted`}/>})}
+    </section>
+    </>}
+
+    {view!=='courses'&&<>
+    <section className="cc-panel" data-field-target>
+      <header><div><h2><CircleGauge size={14}/> Coverage against the {COVERAGE_TARGET}% target, by field</h2><p>Intakes, English and fees are each measured on their own: the share of active courses that hold an admitted value. The coloured part shows who supplied it; the line marks {COVERAGE_TARGET}%.</p></div>
+        <small>{data?.field_sources_at?`Updated ${fmtDateTime(data.field_sources_at)} · rebuilt hourly`:''}</small></header>
+      <div className="cc-legend">{FIELD_SOURCES.map(([k,l,c])=><span key={k}><i style={{background:c}}/>{l}</span>)}</div>
+      <div className="cc-bars">
+        {busy&&!data?<div className="dq-skeleton domain"/>:fieldRows.map(f=><div className="cc-bar-row" key={f.key}>
+          <div className="cc-bar-label"><strong>{f.label}</strong><small>{f.pct==null?'No courses':f.pct>=COVERAGE_TARGET?'Target met':`${fmtNumber(f.gap)} courses short of target`}</small></div>
+          <div className="cc-target-wrap"><div className="cc-bar" role="img" aria-label={`${f.label}: ${f.pct==null?'no courses':fmtPercent(f.pct)} held. ${FIELD_SOURCES.map(([k,l])=>`${l} ${fmtNumber(f.by[k]||0)}`).join(', ')}`}>
+            {FIELD_SOURCES.map(([k,l,c])=>{const n=f.by[k]||0;if(!n||!f.total)return null;return <span key={k} title={`${l}: ${fmtNumber(n)} courses`} style={{width:`${n/f.total*100}%`,background:c}}/>})}</div>
+            <i className="cc-target" style={{left:`${COVERAGE_TARGET}%`}} title={`${COVERAGE_TARGET}% target`}/></div>
+          <div className="cc-bar-value">{f.pct==null?'—':fmtPercent(f.pct)}</div>
+        </div>)}
+      </div>
+      <div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Field</th>{FIELD_SOURCES.map(([k,l])=><th key={k} className="num">{l}</th>)}<th className="num">Held</th><th className="num">Missing</th><th className="num">To reach {COVERAGE_TARGET}%</th></tr></thead>
+        <tbody>{fieldRows.map(f=><tr key={f.key}><td><strong>{f.label}</strong></td>{FIELD_SOURCES.map(([k])=><td key={k} className="num">{f.by[k]?fmtNumber(f.by[k]):<span className="cc-zero">–</span>}</td>)}
+          <td className="num"><strong>{fmtNumber(f.held)}</strong> <small>{f.pct==null?'':fmtPercent(f.pct)}</small></td><td className="num">{fmtNumber(f.by.missing||0)}</td><td className="num">{f.gap?`${fmtNumber(f.gap)} more`:'Met'}</td></tr>)}</tbody></table></div>
     </section>
     </>}
 
