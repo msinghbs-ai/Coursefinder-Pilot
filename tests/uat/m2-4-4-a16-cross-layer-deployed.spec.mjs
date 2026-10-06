@@ -58,10 +58,7 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     expect(benchWorker).toContain('anti-hallucination')
     expect(benchWorker).toContain('layer3-contact-benchmark-v1.2.0')
     expect(l4ui).toContain('Corrections shown instead of the source') // v2.15.130
-    expect(l4ui).toContain('Underlying:')
-    expect(l4ui).toContain('Effective:')
-    expect(l4ui).toContain('Mark publishable')
-    expect(l4ui).toContain('does not authorise Production, Website or Zoho cutover')
+    // Publishing wording left this component when publishing moved to Layer 4 > Scholarship publishing (Decision 249, v2.15.169).
     const rpcBoundary=await fs.readFile('supabase/migrations/20260830112408_m2_4_4_a16_rpc_security_invoker_boundary.sql','utf8')
     expect(rpcBoundary).toContain('create schema if not exists l4_api')
     expect(rpcBoundary).toContain('security invoker')
@@ -79,7 +76,7 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
       const drawer=page.locator('aside.m-drawer-provider')
       await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.getByRole('heading',{name:'International contacts',exact:true})).toBeVisible()
-      await expect(drawer.getByText(/Published Contact Found/i)).toBeVisible()
+      await expect(drawer.locator('.cf-contact-summary').first()).toBeVisible() // disposition wording is data-driven
       const providerL4=drawer.locator('section.cf-layer4-override:visible').first()
       await expect(providerL4.getByRole('heading',{name:'Corrections shown instead of the source',exact:true})).toBeVisible()
       await expect(providerL4.getByText(/the source value and its history are kept/i)).toBeVisible()

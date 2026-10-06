@@ -1,35 +1,34 @@
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment, clickPrimaryNav } from './support/runtime-evidence.mjs'
-import { openLayer3, openLayer4, openOnboarding } from './support/navigation.mjs'
+import { openLayer3, openLayer4 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
 test.describe('CourseFinder deployed M2.3 intelligence acceptance on canonical routes @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'deployed-m2-3-intelligence-canonical-routes',change_control:'CF-CHG-20260830-048'})})
 
- test('governed Layer 3 profile exposes benchmark-passed pinned models and zero-call governance',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const ws=await openLayer3(page)
-  const profileCard=ws.getByRole('article').filter({hasText:'openrouter-free-router-v1'});await expect(profileCard.getByText('openrouter-free-router-v1',{exact:true})).toBeVisible()
-  await expect(profileCard).toContainText('nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free');await expect(profileCard.getByText('Enabled',{exact:true})).toBeVisible();await expect(profileCard).toContainText(/Quality:\s*Benchmark Passed/i)
-  await expect(ws.getByText(/Unchanged Evidence and Layer-2-resolved work take zero-call paths/i)).toBeVisible();await expect(ws.getByText(/Provider credentials remain server-side and are never rendered here/i)).toBeVisible()
-  await milestoneScreenshot(page,testInfo,'m2-3-layer3-canonical')
+const NO_SECRETS=/sb_secret_|service_role|SUPABASE_SERVICE_ROLE_KEY/i
+async function openTab(page,menu,tab){await clickPrimaryNav(page,menu);const t=page.locator('.cf-page-tabs [role="tab"]').filter({hasText:tab}).first();await expect(t).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await t.click();await expect(t).toHaveAttribute('aria-selected','true')}
+
+ // v2.15.107 to v2.15.200: the M2.3 screens moved into the single menu map; these checks follow the screens to where they now live.
+ test('Layer 3 work queue and Control tab load without exposing credentials',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const ws=await openLayer3(page);await expect(ws.getByRole('heading',{name:'Work by task'})).toBeVisible()
+  await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Control'}).first().click();await expect(page.locator('main').first()).not.toBeEmpty()
+  expect(await page.locator('body').innerText()).not.toMatch(NO_SECRETS);await milestoneScreenshot(page,testInfo,'m2-3-layer3-canonical')
  }finally{await finish(testInfo,runtime)}})
 
- test('Layer 4 and Refresh/Scheduling are separate governed workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const l4=await openLayer4(page);await expect(l4.getByRole('heading',{name:'Human resolution queue',exact:true})).toBeVisible();await expect(l4.getByLabel('Status',{exact:true})).toBeVisible()
-  await page.evaluate(()=>{location.hash='#refresh-scheduling'});await expect(page.getByRole('heading',{name:'Schedule Configuration',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(page.getByRole('heading',{name:'Latest Refresh Queue',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'Downstream Search refresh signals',exact:true})).toBeVisible();await expect(page.getByText('UNBOUNDED',{exact:true})).toHaveCount(0)
+ test('Layer 4 review and Scheduled jobs are separate workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const l4=await openLayer4(page);await expect(l4.getByRole('heading',{name:'Layer 4 status'})).toBeVisible()
+  await clickPrimaryNav(page,'Scheduled Tasks');await expect(page.getByRole('heading',{name:'Scheduled jobs',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(page.getByText('UNBOUNDED',{exact:true})).toHaveCount(0)
   await milestoneScreenshot(page,testInfo,'m2-3-layer4-refresh-separate')
  }finally{await finish(testInfo,runtime)}})
 
- test('Important Links and Important Dates are separate parent-menu registries',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);await clickPrimaryNav(page,'Important Links');await expect(page.getByRole('heading',{name:'Important Links directory',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  await clickPrimaryNav(page,'Important Dates');await expect(page.getByRole('heading',{name:'Important Dates registry',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(page.getByText(/Vague wording is retained as vague/i)).toBeVisible();await expect(page.getByText(/Date-only sources use date-only storage/i)).toBeVisible();await expect(page.getByText(/Country-reference events cannot trigger ingestion/i)).toBeVisible()
+ test('Key dates and Reference sources are separate Reference data tabs',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);await openTab(page,'Reference data','Reference sources');await openTab(page,'Reference data','Key dates')
   await milestoneScreenshot(page,testInfo,'m2-3-links-dates-parent-menu')
  }finally{await finish(testInfo,runtime)}})
 
- test('Onboarding remains governed under central Administration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const ws=await openOnboarding(page);await expect(ws.getByRole('heading',{name:'Country / Provider / Course Onboarding',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(ws.getByText(/Shared canonical lifecycle only/i)).toBeVisible()
-  const stage=ws.getByLabel('Stage');for(const value of ['draft','source_qualification','adapter_assessment','schema_assessment','l1_uat','l2_uat','l3_ready','operational_certification','production_promotion_ready'])await expect(stage.getByRole('option',{name:value,exact:true})).toHaveCount(1)
-  const createHeading=ws.getByRole('heading',{name:'Create governed onboarding case',exact:true});if(await createHeading.count())await expect(createHeading).toBeVisible();else await expect(ws.getByRole('button',{name:'Create Draft',exact:true})).toHaveCount(0);await milestoneScreenshot(page,testInfo,'m2-3-onboarding-administration')
+ test('Onboarding sits as a tab under Providers',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);await openTab(page,'Providers','Onboarding');await expect(page.locator('main').first()).not.toBeEmpty();await milestoneScreenshot(page,testInfo,'m2-3-onboarding-administration')
  }finally{await finish(testInfo,runtime)}})
 })

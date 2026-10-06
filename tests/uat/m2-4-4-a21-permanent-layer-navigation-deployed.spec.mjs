@@ -8,7 +8,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
   test('canonical Operations navigation owns all four Layer workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const nav=page.locator('.m-nav')
-    for(const label of ['Layer 1 — Authority','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 4 — Human Resolution'])
+    for(const label of ['Layer 1 Register','Layer 2 Discovery & reading','Layer 3 AI validation','Layer 4 Review'])
       await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.locator('.l1o-backdrop')).toHaveCount(0)
     await expect(page.locator('.l2o-launcher')).toHaveCount(0)

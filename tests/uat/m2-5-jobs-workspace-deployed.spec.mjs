@@ -1,6 +1,6 @@
 import{test,expect}from'@playwright/test'
 import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
-import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'
+import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,clickPrimaryNav,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
@@ -15,7 +15,9 @@ test.describe('M2.5 Jobs workspace deployed @deployed',()=>{
   try{
    await loginAsUatUser(page)
    await expect(page.locator('.m-release-pill')).toContainText(`v${UI_VERSION}`)
-   await page.evaluate(()=>{location.hash='#jobs'})
+   // v2.15.200: Jobs is a tab of the Scheduled jobs page.
+   await clickPrimaryNav(page,'Scheduled Tasks')
+   await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:/^Jobs$/}).first().click()
    await expect(page.locator('.ops-workspace-head h2')).toHaveText('Jobs')
    const total=page.locator('.ops-result-count strong')
    await expect(total).not.toHaveText('0')
