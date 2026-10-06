@@ -688,7 +688,7 @@ test('international view (page_view) and per-credit fees: guarded, hand values k
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
   expect(ad).toContain('export function withView(')
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toContain('coverage-sweep-worker-v0.17.11')
+  expect(ix).toMatch(/coverage-sweep-worker-v0\.17\.(1[1-9]|[2-9]\d)/) // v0.17.11 or later (the version string moves on)
   expect(ix).toContain('it.rendered_before !== true')
   const r = read('supabase/migrations/20261005001530_cf247_view_reads_and_course_page_rates.sql')
   expect(r).toContain("is distinct from '9bfcb79ff8da7eb53be7432278a2da37'")
@@ -931,4 +931,53 @@ test('night run: queue snapshot read-only, apply reads hand-bound pages', () => 
   const m = read('supabase/migrations/20261005001660_cf247_adapter_apply_hand_bound_pages.sql')
   expect(m).toContain("is distinct from 'f32ab786207ca970b3aed9ea08658eb5'")
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+})
+
+// Platform Admin 6 Oct 10:56, decision D2: worker v0.17.13 reading options, each opt-in per adapter (numeric and
+// capitalised start dates read as months, 34 to 44 weeks is one academic year)
+test('v0.17.13 reading options: opt-in numeric and capitalised dates, one academic year', async () => {
+  const os = await import('node:os'), path = await import('node:path'), { execFileSync } = await import('node:child_process')
+  const out = path.join(os.tmpdir(), `adapters-rd-${process.pid}.mjs`)
+  execFileSync('node_modules/.bin/esbuild', ['supabase/functions/coverage-sweep/adapters.ts', '--bundle', '--format=esm', `--outfile=${out}`])
+  const mod = await import(out)
+  const html = (t) => `<title>x</title><h1>x</h1><p>CRICOS 012345A ${t}</p>`
+  const P = { patterns: { intakes: 'Intake dates\\s+((?:.|\\n){1,80}?)\\s+Fees' } }
+  const run = (a, t, country = 'AU') => mod.applyAdapter(a, html(t), { title: 'x', code: '012345A', country }, 'v').candidates.intakes
+  // off by default: numbers and capitals are not months
+  expect(run(P, 'Intake dates 14/09/2026 and 19/01/27 Fees')).toEqual([])
+  expect(run(P, 'Intake dates JAN SEPT NOVEMBER Fees')).toEqual([])
+  // numeric dates, day first (AU, NZ); month first for Canada when the first number can be a month
+  const N = { ...P, reading: { numeric_dates: true } }
+  expect(run(N, 'Intake dates 14/09/2026 and 19/01/27 Fees')).toEqual(['January', 'September'])
+  expect(run(N, 'Intake dates 2026-09-14, 03-02-2027 Fees')).toEqual(['February', 'September'])
+  expect(run(N, 'Intake dates 09/14/2026 Fees', 'CA')).toEqual(['September'])
+  expect(run(N, 'Intake dates 14/09/2026 Fees', 'CA')).toEqual(['September'])
+  expect(run(N, 'Intake dates 31/13/2026 Fees')).toEqual([])
+  // capitalised month names; the verb "may" in lower case is still not a month
+  const U = { ...P, reading: { upper_dates: true } }
+  expect(run(U, 'Intake dates JAN SEPT NOVEMBER Fees')).toEqual(['January', 'September', 'November'])
+  expect(run(U, 'Intake dates you may start in FEB Fees')).toEqual(['February'])
+  // one academic year: 34 to 44 weeks is a year when switched on, otherwise weeks / 52 as before
+  expect(mod.yearsOf('40 weeks')).toBeCloseTo(40 / 52, 6)
+  expect(mod.yearsOf('40 weeks', true)).toBe(1)
+  expect(mod.yearsOf('34 weeks', true)).toBe(1)
+  expect(mod.yearsOf('44 weeks', true)).toBe(1)
+  expect(mod.yearsOf('45 weeks', true)).toBeCloseTo(45 / 52, 6)
+  expect(mod.yearsOf('33 weeks', true)).toBeCloseTo(33 / 52, 6)
+  expect(mod.yearsOf('2 years', true)).toBe(2)
+  const F = { patterns: { fee_total: 'Tuition\\s+\\$([0-9,]+)', course_years: 'Duration\\s+([0-9]+ weeks)' }, reading: { academic_year: true } }
+  const r = mod.applyAdapter(F, html('Duration 40 weeks Tuition $18,000'), { title: 'x', code: '012345A', country: 'AU' }, 'v').candidates
+  expect(r.fee).toMatchObject({ value: 18000, from_total: { total: 18000, years: 1 } })
+  const r2 = mod.applyAdapter({ ...F, reading: {} }, html('Duration 40 weeks Tuition $18,000'), { title: 'x', code: '012345A', country: 'AU' }, 'v').candidates
+  expect(r2.fee.value).toBe(23400)
+  const ix = read('supabase/functions/coverage-sweep/index.ts')
+  expect(ix).toContain('coverage-sweep-worker-v0.17.13')
+  const m = read('supabase/migrations/20261006001700_cf247_adapter_reading_options.sql')
+  for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
+  expect(m).toContain("is distinct from 'cea75cd537f56ab3e03d93c55c1bb74e'")
+  expect(m).toContain("is distinct from 'dec2b629c166cd897d26990e4983c8e0'")
+  expect(m).toContain("r.key not in ('numeric_dates', 'upper_dates', 'academic_year')")
+  const ui = read('src/FirecrawlWork.jsx')
+  expect(ui).toContain('data-adapter-reading')
+  expect(ui).toContain('page_view:pv,reading}')
 })

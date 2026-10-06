@@ -26,6 +26,12 @@ export type Adapter = {
   // for the page's script to show the view (at most 8,000).
   // v0.17.5: url_pattern limits the view to the pages it names (La Trobe course pages, not its handbook)
   page_view?: { render?: boolean; suffix?: string; wait_ms?: number; url_pattern?: string } | null;
+  // v0.17.13 (Platform Admin 6 Oct 10:56, decision D2, each one opt-in per adapter):
+  //   numeric_dates: start dates printed as numbers ("14/09/2026", "19/01/26", "2026-09-14") in the intakes match are read
+  //     as months (day first for Australia and New Zealand, month first for Canada when the first number can be a month);
+  //   upper_dates: month names printed in capitals ("JAN", "SEPT", "NOVEMBER") in the intakes match are read as months;
+  //   academic_year: a course length of 34 to 44 weeks is one academic year (one year of fees), not 0.65 to 0.85 of a year.
+  reading?: { numeric_dates?: boolean; upper_dates?: boolean; academic_year?: boolean } | null;
 };
 
 // v0.17.4: the bound address with the university's international view applied. A suffix starting with "#" replaces the
@@ -140,14 +146,16 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   }
   // month names as printed, capitalised ("May" the month, not "may" the verb)
   // v0.17.12: "Sept" is September too
-  const pIntakes = pat.intakes ? MONTH_NAMES.filter((m) => new RegExp(`\\b(?:${m}|${m.slice(0, 3)}${m === "September" ? "|Sept" : ""})\\b`).test(pat.intakes)) : null;
+  // v0.17.13: capitals ("SEPT 2026") and numeric dates ("14/09/2026") when the adapter opts in (reading)
+  const pIntakes = pat.intakes ? monthsIn(pat.intakes, a.reading || {}, course.country) : null;
   // v0.17.2: a fee kept as a number in the page data (json_paths.fee) counts as the adapter's own reading too
   const jFeeRaw = !pat.fee && data && paths.fee ? jsonText(jsonAt(data, paths.fee)) : "";
   // v0.17.7: no annual fee printed, but a whole-course fee and the full-time years are: annual = total / years
   const tTotal = !pat.fee && pat.fee_total ? Number(pat.fee_total.replace(/[^0-9.]/g, "")) : NaN;
   // v0.17.9 (Platform Admin 16:49 "as per the term"): a duration printed in months, weeks, semesters or trimesters is
   // turned into full-time years (12 months, 52 weeks, 2 semesters, 3 trimesters to a year)
-  const tYears = !pat.fee && pat.course_years ? yearsOf(pat.course_years) : NaN;
+  // v0.17.13: with reading.academic_year, 34 to 44 weeks is one academic year
+  const tYears = !pat.fee && pat.course_years ? yearsOf(pat.course_years, !!(a.reading || {}).academic_year) : NaN;
   // v0.17.10 (Platform Admin 16:49 and 19:18): a course shorter than a year ("Full-time 6 months") gives its annual
   // figure as total / years too (AU$25,440 for 6 months = 50,880 a year, as the register shows).
   const fromTotal = Number.isFinite(tTotal) && Number.isFinite(tYears) && tYears >= 0.25 && tYears <= 8;
@@ -168,14 +176,42 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   return { identity: basis, how, json_found: !!data, page_title: titleOf(html).slice(0, 160), h1: h1Of(html).slice(0, 160), course_title_seen: ct, candidates, extra, patterns_found: pat };
 }
 
-export function yearsOf(s: string): number {
+export function yearsOf(s: string, academicYear = false): number {
   // v0.17.11 (night run): "wks"/"wk" are weeks, and the years are not rounded, so 8 months gives 39,000 / (8/12) =
   // 58,500 a year, not 58,208.96 (the fee itself is rounded to cents where it is used)
   const m = String(s || "").toLowerCase().match(/([0-9]+(?:\.[0-9]+)?)\s*(years?|yrs?|months?|weeks?|wks?|semesters?|trimesters?)?/);
   if (!m) return NaN;
   const n = Number(m[1]), u = m[2] || "year";
+  // v0.17.13 (decision D2, opt-in): a 34 to 44 week course is one academic year, so its printed fee is the annual fee
+  if (academicYear && /^(week|wk)/.test(u) && n >= 34 && n <= 44) return 1;
   const y = /^month/.test(u) ? n / 12 : /^(week|wk)/.test(u) ? n / 52 : /^semester/.test(u) ? n / 2 : /^trimester/.test(u) ? n / 3 : n;
   return y;
+}
+// v0.17.13: the months named in an intakes match, in calendar order. Always: month names as printed, capitalised
+// ("May" the month, not "may" the verb), "Sept" too. With upper_dates: names in capitals ("JAN", "SEPT", "NOVEMBER").
+// With numeric_dates: "14/09/2026", "14-09-26", "14.09.2026" (day first; month first for Canada when the first number
+// can only be a day or both can be a month) and "2026-09-14" (year first). A number that cannot be a date is ignored.
+export function monthsIn(s: string, reading: { numeric_dates?: boolean; upper_dates?: boolean }, country = ""): string[] {
+  const found = new Set<string>();
+  for (const m of MONTH_NAMES) {
+    const names = [m, m.slice(0, 3), ...(m === "September" ? ["Sept"] : [])];
+    if (reading.upper_dates) names.push(m.toUpperCase(), m.slice(0, 3).toUpperCase(), ...(m === "September" ? ["SEPT"] : []));
+    if (new RegExp(`\\b(?:${names.join("|")})\\b`).test(s)) found.add(m);
+  }
+  if (reading.numeric_dates) {
+    const monthFirst = String(country || "").toUpperCase() === "CA";
+    for (const x of s.matchAll(/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})\b/g)) {
+      const a = Number(x[1]), b = Number(x[2]);
+      const mo = monthFirst && a >= 1 && a <= 12 ? a : b;
+      const dy = monthFirst && a >= 1 && a <= 12 ? b : a;
+      if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31) found.add(MONTH_NAMES[mo - 1]);
+    }
+    for (const x of s.matchAll(/\b(20\d{2})-(\d{2})-(\d{2})\b/g)) {
+      const mo = Number(x[2]), dy = Number(x[3]);
+      if (mo >= 1 && mo <= 12 && dy >= 1 && dy <= 31) found.add(MONTH_NAMES[mo - 1]);
+    }
+  }
+  return MONTH_NAMES.filter((m) => found.has(m));
 }
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 // The year printed in the text a field's pattern matched (for example "Annual fee 2026: $47,300"), or null.
