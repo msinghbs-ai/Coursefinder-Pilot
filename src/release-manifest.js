@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.207'
-export const PACKAGE_VERSION='0.1.134'
+export const UI_VERSION='2.15.208'
+export const PACKAGE_VERSION='0.1.135'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Canada and NZ scholarship settings, switched off',
+  title:'Canada and NZ scholarships queued for review',
   changes:[
-    'Canada and New Zealand now have scholarship runtime settings, the same defaults as Australia (25 pages a run, a 168-hour refresh), but switched off with automatic dispatch off and publication not authorised.',
-    'Nothing is read, refreshed or published for either country until a Platform Admin turns it on in the scholarship runtime settings.'
+    'Scholarships in Canada and New Zealand that state no study level, course or provider scope (19 and 38) are now listed for review against their own provider\'s active courses: 2,560 and 15,463 course pairs, all marked needs review.',
+    'No course link was created and no eligibility assumed. Nothing is published or shown on a course until a pair is reviewed and accepted.'
   ],
   bugFixes:[]
 }

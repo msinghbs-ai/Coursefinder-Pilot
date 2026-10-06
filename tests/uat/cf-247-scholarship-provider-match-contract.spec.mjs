@@ -20,3 +20,14 @@ test('migration 1820 adds Canada and NZ scholarship runtime rows switched off an
   expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
   expect(m).not.toMatch(/delete\s+from|do update/i)
 })
+
+test('migration 1830 queues review candidates for unscoped Canada and NZ scholarships and creates no links', () => {
+  const m = fs.readFileSync('supabase/migrations/20261006001830_cf247_scholarship_review_candidates_ca_nz.sql', 'utf8')
+  expect(m).toContain('insert into scholarship.course_mapping_candidates')
+  expect(m).toContain("k.iso_alpha2 in ('CA', 'NZ')")
+  expect(m).toContain('c.provider_id = s.provider_id')
+  expect(m).toContain('not exists (select 1 from scholarship.scopes sc where sc.scholarship_id = s.id)')
+  expect(m).not.toContain('course_mappings')
+  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  expect(m).not.toMatch(/delete\s+from|do update/i)
+})
