@@ -50,7 +50,7 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
   test('Source profiles are on Scrapers & fetchers, closed until opened, and changes are versioned',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     await openLayer2Advanced(page) // v2.15.200: Source profiles moved from Layer 2 to Scrapers & fetchers (a card)
-    await expect(page.getByRole('heading',{name:'Source profiles',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('heading',{name:'Source profiles',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT}) // the card title and the panel title
     await expect(page.getByText(/Changes create a new version; nothing here changes catalogue values directly/)).toBeVisible()
     await milestoneScreenshot(page,testInfo,'layer2-config-central-administration')
   }finally{await finish(testInfo,runtime)}})
