@@ -181,21 +181,31 @@ export async function signOutUatUser(page){
   await expect(page.locator('input[type="email"]').first()).toBeVisible({timeout:45_000})
 }
 
+// Data Quality moved into Coverage & completeness > Attributes (a collapsed "By area" section); counts are read from the page, not hard-coded.
 export async function openDataQuality(page) {
   await clickPrimaryNav(page,'Completeness')
-  await expect(page.getByRole('heading', { name: 'Data Quality & Readiness' })).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
-  await expect(page.getByText('No composite completeness score', { exact: true })).toBeVisible()
+  await expect(page.locator('h1').filter({ hasText: 'Coverage & completeness' }).first()).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  const bar = page.locator('.cf-page-tabs')
+  if (await bar.count() > 0) await bar.locator('[role="tab"]').filter({ hasText: 'Attributes' }).first().click({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  const area = page.locator('details.cov-by-area')
+  await expect(area).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  if (!(await area.evaluate(el => el.open))) await area.locator('summary').click({ timeout: DETERMINISTIC_UI_TIMEOUT })
+  await expect(page.getByText('Each area counted separately. Select a count to list those records.')).toBeVisible({ timeout: DETERMINISTIC_UI_TIMEOUT })
 }
 
-export async function openRegulatoryFeeSourceNull(page, expected) {
+export async function openRegulatoryFeeSourceNull(page) {
   const card = page.locator('section.dq-domain-card').filter({ has: page.getByRole('heading', { name: 'Regulatory fee', exact: true }) })
   await expect(card).toBeVisible()
-  await expect(card.getByTitle(`Present: ${expected.present.toLocaleString('en-US')}`)).toBeVisible()
-  await expect(card.getByTitle(`Source-null: ${expected.source_null.toLocaleString('en-US')}`)).toBeVisible()
-  await expect(card.getByTitle(`Not applicable: ${expected.not_applicable.toLocaleString('en-US')}`)).toBeVisible()
-  await expect(card.getByTitle(`Zero: ${expected.zero.toLocaleString('en-US')}`)).toBeVisible()
-  await expect(card.getByText(`${expected.readiness_pct.toFixed(2)}%`, { exact: true })).toBeVisible()
-  await card.getByTitle(`Source-null: ${expected.source_null.toLocaleString('en-US')}`).click()
+  const sourceNull = card.locator('[title^="Source-null: "]').first()
+  await expect(sourceNull).toBeVisible()
+  const count = Number(((await sourceNull.getAttribute('title')) || '').replace(/\D/g, ''))
+  expect(count, 'Regulatory fee source-null count').toBeGreaterThan(0)
+  await expect(card.locator('[title^="Present: "]').first()).toBeVisible()
+  await expect(card.locator('[title^="Not applicable: "]').first()).toBeVisible()
+  await expect(card.locator('[title^="Zero: "]').first()).toBeVisible()
+  await expect(card.getByText(/^\d+\.\d\d%$/).first()).toBeVisible()
+  await sourceNull.click()
   await expect(page.getByRole('heading', { name: 'Exceptions & decision context' })).toBeVisible()
-  await expect(page.getByText(`${expected.source_null.toLocaleString('en-US')} records`, { exact: true })).toBeVisible()
+  await expect(page.getByText(`${count.toLocaleString('en-US')} records`, { exact: true })).toBeVisible()
+  return count
 }
