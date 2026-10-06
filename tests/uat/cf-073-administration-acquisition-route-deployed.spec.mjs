@@ -11,7 +11,7 @@ test.describe('CF-073 Administration Acquisition route regression @deployed',()=
     await writeRunEnvironment({suite:'cf-073-administration-acquisition-route-v1',change_control:'CF-CHG-20260902-073'})
   })
 
-  test.skip('direct Acquisition route renders and browser Back recovers without blank Admin',async({page},testInfo)=>{
+  test('direct Acquisition route renders and browser Back recovers without blank Admin',async({page},testInfo)=>{
     const runtime=observeRuntime(page),pageErrors=[]
     page.on('pageerror',error=>pageErrors.push(error.message))
     try{

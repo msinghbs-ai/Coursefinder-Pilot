@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.130 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.203** (fee_used added to the Zoho, Wix and website course APIs, Decision 255; deployed Layer 2 checks rewritten for Adapters).
+- Database: migration 1780 (`api.zoho_course_lookup_v1` and `api.zoho_course_search_v2` each gain an added `fee_used` key, behind md5 guards). No stored fee is changed.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.129 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.202** (course drawer Fees › Fee used: which fee the course uses and why, Decision 255).

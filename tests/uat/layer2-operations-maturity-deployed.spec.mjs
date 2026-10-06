@@ -11,34 +11,31 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
 
  // Decision 222 (v2.15.149): Fetch an area works on the course-page sweep; the old pipeline's sync control, waves and
  // "Start production enrichment" are gone with that pipeline.
- test.skip('Fetch an area shows where an area stands in the course-page sweep, with one Start',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const workspace=await openLayer2Tab(page,'Fetch an area')
+ test('Adapters lists one collapsed row per university and a row opens to its lifecycle',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const workspace=await openLayer2Tab(page,'Adapters')
   await expect(page.getByRole('heading',{name:'Layer 2 Discovery & reading',exact:true}).first()).toBeVisible()
-  const fa=workspace.locator('[data-fetch-area]');await expect(fa.getByRole('heading',{name:'Fetch an area',exact:true})).toBeVisible()
-  const country=fa.getByLabel('Fetch an area country'),scope=fa.getByLabel('Fetch an area scope')
-  await expect.poll(async()=>(await country.locator('option').allTextContents()).join(' '),{timeout:45000}).toMatch(/Australia.*New Zealand.*Canada|Australia.*Canada.*New Zealand/i)
-  await expect(scope.locator('option')).toHaveText(['The whole country','A state or region','One university'])
-  await expect(scope).toHaveValue('university')
-  const uni=fa.getByLabel('Fetch an area university');await uni.click()
-  const list=fa.getByRole('listbox',{name:'University options'});const opts=list.getByRole('option');await expect(opts.first()).toBeVisible({timeout:45000});expect(await opts.count()).toBeLessThanOrEqual(10)
-  await opts.first().click()
-  const st=fa.locator('[data-fetch-area-state]');await expect(st).toBeVisible({timeout:45000})
-  for(const label of ['Universities','Courses','Pages read','Facts admitted'])await expect(st.getByText(label,{exact:true}).first()).toBeVisible()
-  await expect(st.locator('[data-fetch-area-explain]')).not.toBeEmpty()
-  await expect(st.getByRole('button',{name:/^(Start|Start again)$/})).toBeVisible()
+  const country=workspace.getByLabel('Adapters country')
+  await expect.poll(async()=>(await country.locator('option').allTextContents()).join(' '),{timeout:45000}).toMatch(/Australia/i)
+  const rows=workspace.locator('[data-adapter-row]');await expect(rows.first()).toBeVisible({timeout:45000})
+  await expect(workspace.locator('[data-adapter-detail]')).toHaveCount(0) // every row is collapsed until opened
+  await rows.first().locator('button').first().click()
+  const detail=workspace.locator('[data-adapter-detail]').first();await expect(detail).toBeVisible({timeout:45000})
+  await expect(detail.locator('[data-adapter-coverage]').first()).toBeVisible()
   await expect(workspace.getByRole('button',{name:'Start production enrichment',exact:true})).toHaveCount(0)
-  await milestoneScreenshot(page,testInfo,'layer2-fetch-area-sweep')
+  await milestoneScreenshot(page,testInfo,'layer2-adapters-row')
  }finally{await finish(testInfo,runtime)}})
 
- test.skip('routine Layer 2 screen keeps policy and engineering controls out of the operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const workspace=await openLayer2Tab(page,'Fetch an area')
+
+ test('routine Layer 2 screen keeps policy and engineering controls out of the operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);const workspace=await openLayer2Tab(page,'Adapters')
   await expect(workspace.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
   await expect(page.getByLabel('Layer 2 Wave 1 Courses')).toHaveCount(0)
   await expect(page.getByLabel('Layer 2 acquisition route')).toHaveCount(0)
   await expect(workspace.getByRole('button',{name:/Schedule & run policy|Advanced provider config/i})).toHaveCount(0)
   await expect(workspace.getByText(/provider credentials|route priority|vendor concurrency/i)).toHaveCount(0)
-  await expect(workspace.getByRole('button',{name:/delete|reset|truncate/i})).toHaveCount(0)
+  await expect(workspace.getByRole('button',{name:/delete|reset all|truncate/i})).toHaveCount(0)
  }finally{await finish(testInfo,runtime)}})
+
 
  test('advanced acquisition provider controls are centralised under Administration',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const workspace=await openLayer2(page)

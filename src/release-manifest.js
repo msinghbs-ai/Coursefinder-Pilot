@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.202'
-export const PACKAGE_VERSION='0.1.129'
+export const UI_VERSION='2.15.203'
+export const PACKAGE_VERSION='0.1.130'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Fee used: which fee a course uses, and why',
+  title:'Fee used in the course APIs',
   changes:[
-    'The course drawer\'s Fees section now opens with a Fee used line: the course page fee (when the page names this year or later, or no CRICOS fee is registered) or the CRICOS registered fee (total divided by the course length), with the reason and a note when a fee was entered or locked by hand. Read only: no stored fee changes.',
-    'The Zoho, Wix and website course APIs are unchanged and gain the field in a separate step.'
+    'The Zoho, Wix and website course APIs now return fee_used on each course: the fee the course uses (course page or CRICOS registered), the amount a year, its year, the reason, and whether a fee was entered or locked by hand. It is an added key: nothing was removed or renamed and the contract versions are unchanged.',
+    'The deployed checks for Layer 2 were rewritten for the Adapters screen, and Source profiles on Scrapers & fetchers.'
   ],
   bugFixes:[]
 }

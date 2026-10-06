@@ -25,15 +25,16 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     await milestoneScreenshot(page,testInfo,'admin-canonical-navigation')
   }finally{await finish(testInfo,runtime)}})
 
-  test.skip('Layer 1 and Layer 2 open as embedded canonical workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('Layer 1 and Layer 2 open as embedded canonical workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const l1=await openLayer1(page);await expect(l1.locator('.l1o-backdrop')).toHaveCount(0)
-    const l2=await openLayer2Tab(page,'Fetch an area')
-    await expect(l2.getByRole('heading',{name:'Fetch an area',exact:true})).toBeVisible()
-    await expect(l2.getByLabel('Fetch an area country')).toBeVisible() // Decision 222: course-page sweep
-    await expect(l2.getByLabel('Fetch an area scope')).toBeVisible()
+    const l2=await openLayer2Tab(page,'Adapters') // v2.15.200: Layer 2 opens on Adapters
+    await expect(l2.getByLabel('Adapters country')).toBeVisible()
+    await expect(l2.getByLabel('Find a university')).toBeVisible()
     await expect(l2.getByRole('button',{name:/Advanced configuration/i})).toHaveCount(0)
+    for(const retired of ['Overview','Fetch an area','History','Source profiles'])await expect(page.locator('.cf-page-tabs [role="tab"]').filter({hasText:retired})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'layers1-2-canonical')
   }finally{await finish(testInfo,runtime)}})
+
 
   test('Layer 3 and Layer 4 are separate permanent routes',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
@@ -46,17 +47,14 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     await milestoneScreenshot(page,testInfo,'layers3-4-separate-routes')
   }finally{await finish(testInfo,runtime)}})
 
-  test.skip('Administration is configuration-only and Layer 2 source configuration is centralised',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('Source profiles are on Scrapers & fetchers, closed until opened, and changes are versioned',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    await clickPrimaryNav(page,'Administration')
-    await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.getByRole('tab',{name:'Scheduling',exact:true})).toHaveCount(0)
-    await expect(page.getByRole('tab',{name:'Extraction Profiles',exact:true})).toBeVisible()
-    await openLayer2Advanced(page)
+    await openLayer2Advanced(page) // v2.15.200: Source profiles moved from Layer 2 to Scrapers & fetchers (a card)
     await expect(page.getByRole('heading',{name:'Source profiles',exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByText(/Changes create a new version; nothing here changes catalogue values directly/)).toBeVisible()
     await milestoneScreenshot(page,testInfo,'layer2-config-central-administration')
   }finally{await finish(testInfo,runtime)}})
+
 
   test('Administration subcontext and Scheduled Tasks survive deep-link browser history',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
