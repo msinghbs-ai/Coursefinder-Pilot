@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.136 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.209** (the admin course blade's Scholarships context lists only the course's own provider's scholarships).
+- Database: migration 1840 (`security.admin_contextual_insights` patched behind an md5 guard so study-level and field scopes count only for the scholarship's own provider). Read only.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.135 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.208** (unscoped Canada and NZ scholarships queued for review; no links created).

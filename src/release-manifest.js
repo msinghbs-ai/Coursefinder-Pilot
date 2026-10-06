@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.208'
-export const PACKAGE_VERSION='0.1.135'
+export const UI_VERSION='2.15.209'
+export const PACKAGE_VERSION='0.1.136'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Canada and NZ scholarships queued for review',
+  title:'Course blade scholarships: own provider only',
   changes:[
-    'Scholarships in Canada and New Zealand that state no study level, course or provider scope (19 and 38) are now listed for review against their own provider\'s active courses: 2,560 and 15,463 course pairs, all marked needs review.',
-    'No course link was created and no eligibility assumed. Nothing is published or shown on a course until a pair is reviewed and accepted.'
+    'The Scholarships context on the admin course blade no longer lists other providers\' scholarships. A study-level or field scope now counts only for the scholarship\'s own provider. A Vancouver Island University course listed 629 scholarships, including RMIT\'s, and now lists none; a Monash course went from 632 to 32.',
+    'Read only. No stored scholarship, link or course changed.'
   ],
   bugFixes:[]
 }

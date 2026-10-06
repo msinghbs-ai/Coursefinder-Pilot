@@ -31,3 +31,13 @@ test('migration 1830 queues review candidates for unscoped Canada and NZ scholar
   expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
   expect(m).not.toMatch(/delete\s+from|do update/i)
 })
+
+test('migration 1840 limits the course blade scholarship context to the scholarship\'s own provider and is guarded', () => {
+  const m = fs.readFileSync('supabase/migrations/20261006001840_cf247_contextual_scholarships_provider_match.sql', 'utf8')
+  expect(m).toContain('60ca16d244029dad671c8d838558fb6b')
+  expect(m).toContain('admin_contextual_insights')
+  expect(m).toContain('s.provider_id is null or s.provider_id=v_provider')
+  expect(m).toContain("raise exception 'expected snippets not found exactly twice'")
+  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  expect(m).not.toMatch(/delete\s+from/i)
+})
