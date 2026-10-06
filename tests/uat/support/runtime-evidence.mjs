@@ -137,7 +137,7 @@ async function inViewport(locator,page){
 
 // v2.15.107: old menu labels used by the deployed suites → new menu item and page tab (src/nav-map.js).
 const TABBED_NAV={
-  'Jobs':['Scheduled jobs','Jobs'],'Scheduled Tasks':['Scheduled jobs','Schedules'],'Jobs & Schedules':['Scheduled jobs',''],
+  'Jobs':['Scheduled jobs','Jobs'],'Scheduled Tasks':['Scheduled jobs',''],'Jobs & Schedules':['Scheduled jobs',''],
   'Layer 1 — Operations':['Layer 1 Register','Runs'],'Layer 2 — Enrichment':['Layer 2 Discovery & reading','Adapters'],
   'Layer 3 — AI Interpretation':['Layer 3 AI validation',''],'Layer 4 — Human Resolution':['Layer 4 Review',''],
   'Completeness':['Coverage & completeness',''],'Statistics & Rankings':['Rankings & statistics',''],'Compare':['Rankings & statistics','Compare'],
