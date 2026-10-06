@@ -93,7 +93,7 @@ test.describe('CF-061 QILT PRISMS comparison experience @deployed',()=>{
   expect(detail.contextual_insights?.student_outcomes?.granularity).toBe('provider_context')
   expect(Number(detail.contextual_insights?.student_outcomes?.total||0)).toBeGreaterThan(0)
   await expect(page.locator('.ci-outcome-card').first()).toBeVisible()
-  await expect(page.getByText(/National benchmark/i).first()).toBeVisible()
+  await expect(page.locator('.ci-benchmark-copy').first()).toBeVisible() // a national benchmark is shown only where the source holds one; otherwise the collection years
 
   const compare=page.getByTitle('Compare this course')
   await expect(compare).toBeVisible()
