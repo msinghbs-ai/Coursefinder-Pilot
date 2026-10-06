@@ -137,7 +137,7 @@ async function inViewport(locator,page){
 
 // v2.15.107: old menu labels used by the deployed suites → new menu item and page tab (src/nav-map.js).
 const TABBED_NAV={
-  'Jobs':['Scheduled jobs','Jobs'],'Scheduled Tasks':['Scheduled jobs','Schedules'],'Jobs & Schedules':['Scheduled jobs',''],
+  'Jobs':['Scheduled jobs','Jobs'],'Scheduled Tasks':['Scheduled jobs',''],'Jobs & Schedules':['Scheduled jobs',''],
   'Layer 1 — Operations':['Layer 1 Register','Runs'],'Layer 2 — Enrichment':['Layer 2 Discovery & reading','Adapters'],
   'Layer 3 — AI Interpretation':['Layer 3 AI validation',''],'Layer 4 — Human Resolution':['Layer 4 Review',''],
   'Completeness':['Coverage & completeness',''],'Statistics & Rankings':['Rankings & statistics',''],'Compare':['Rankings & statistics','Compare'],
@@ -203,7 +203,7 @@ export async function openRegulatoryFeeSourceNull(page) {
   await expect(card.locator('[title^="Present: "]').first()).toBeVisible()
   await expect(card.locator('[title^="Not applicable: "]').first()).toBeVisible()
   await expect(card.locator('[title^="Zero: "]').first()).toBeVisible()
-  await expect(card.getByText(/^\d+\.\d\d%$/).first()).toBeVisible()
+  await expect(card.locator(".dq-rate strong").filter({ hasText: /^\d+(\.\d+)?%$/ }).first()).toBeVisible()
   await sourceNull.click()
   await expect(page.getByRole('heading', { name: 'Exceptions & decision context' })).toBeVisible()
   await expect(page.getByText(`${count.toLocaleString('en-US')} records`, { exact: true })).toBeVisible()
