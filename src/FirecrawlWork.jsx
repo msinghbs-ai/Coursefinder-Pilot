@@ -4,8 +4,9 @@
 // Admin with a reason. Runs are carried out by the coverage-sweep worker (mode fc_run). Every limit is a setting in the
 // Firecrawl panel above (Target universities, Read pages, Find pages, Runs): nothing is fixed here.
 import React,{useEffect,useState}from'react'
-import{RefreshCw,Copy,Download,Play,Square}from'lucide-react'
+import{RefreshCw,Copy,Download}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import JobButton from'./JobButton'
 import{Button,Empty,Loading,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
 
 const errText=e=>e?.message||String(e)
@@ -13,11 +14,9 @@ const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return 
 export const USE_CASE={read_page:'Read pages',find_page:'Find pages'}
 const USE_HELP={read_page:'Course-like pages of target universities that need a browser or refused a plain read. Firecrawl reads them (proxy, wait and location from the settings). Each page then goes through the identity check.',
   find_page:'Courses of target universities without a page, or whose page is not a course page. Firecrawl searches the university’s own site. A page whose title matches goes to the identity check.'}
-const RUN_STATUS={running:'Running',done:'Finished',stopped:'Stopped',stopped_credit_cap:'Stopped at its credit allowance',stopped_plan_reserve:'Stopped at the plan’s reserve'}
 export const OUTCOME={read_course_page:'Read: the course page',read_other_page:'Read: not this course’s page',blocked:'Still blocked',not_found:'Page gone (404)',thin:'Almost empty page',timeout:'Timed out',
   fc_error:'Firecrawl error',rate_limited:'Rate limited',robots_disallowed:'Site’s robots rules say no',no_content:'No content',error:'Error',
   found_on_provider_site:'Found on the university’s site',provider_site_no_title_match:'University’s site, title did not match',other_sites_only:'Other sites only',no_results:'No results'}
-const GOOD=new Set(['read_course_page','found_on_provider_site'])
 const label=o=>OUTCOME[o]||(o?.startsWith('found_not_bound_')?`Found, not used (${o.slice(16).replace(/_/g,' ')})`:o)
 
 // The support report as Markdown, ready to paste into a ticket to Firecrawl support. Dates stay as ISO text.
@@ -41,11 +40,10 @@ export default function FirecrawlWork({onError}){
   const[d,setD]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false),[adapterFor,setAdapterFor]=useState(null)
   const load=async()=>{setFailed('');try{const{data,error}=await supabase.rpc('admin_firecrawl_read');if(error)throw error;setD(data||{})}catch(e){setFailed(errText(e))}}
   useEffect(()=>{load()},[])
-  useEffect(()=>{if(!(d?.runs||[]).some(r=>r.status==='running'))return;const t=setTimeout(load,20000);return()=>clearTimeout(t)},[d])
   const write=async(action,args,question)=>{const reason=ask(question);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_firecrawl_write',{p_action:action,p_args:{...args,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   if(failed&&!d)return <section className="m-panel"><Empty text={`Firecrawl work could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></section>
   if(!d)return <section className="m-panel"><Loading label="Loading Firecrawl work…"/></section>
-  const can=Boolean(d.can_manage)&&!busy,v=d.plan?.vendor,b=d.plan?.budget||{},open=new Set((d.runs||[]).filter(r=>r.status==='running').map(r=>r.use_case))
+  const can=Boolean(d.can_manage)&&!busy,v=d.plan?.vendor,b=d.plan?.budget||{}
   const targets=(d.targets||[]),inc=targets.filter(t=>t.included)
   const sum=k=>inc.reduce((a,t)=>a+Number(t[k]||0),0)
   const withAdapter=targets.filter(t=>t.adapter&&t.adapter!=='none'),done=withAdapter.filter(t=>t.adapter==='admitting'),working=withAdapter.filter(t=>t.adapter!=='admitting'),opened=adapterFor?targets.find(t=>t.provider_id===adapterFor):null
@@ -73,15 +71,11 @@ export default function FirecrawlWork({onError}){
           <span>{fmtNumber(b.stop_at_remaining_units)} kept back · the platform stops Firecrawl work there</span>
           {b.allowed===false&&<span className="cf-chip tone-danger">At the reserve — Firecrawl work has stopped</span>}</div>
       </div>
-      <div className="tn-starts" data-firecrawl-starts>{Object.keys(USE_CASE).map(u=><div key={u} className="tn-start"><Button compact variant="primary" disabled={!can||open.has(u)||!(d.backlog?.[u]>0)} onClick={()=>write('start',{use_case:u},`Start a Firecrawl run: ${USE_CASE[u]}? ${fmtNumber(d.backlog?.[u])} waiting. ${USE_HELP[u]} It stops at the run's credit allowance (a setting).`)}><Play size={13}/>{`${USE_CASE[u]} (${fmtNumber(d.backlog?.[u])} waiting)`}</Button><small className="sl-sub">{USE_HELP[u]}</small></div>)}</div>
-      <h4 className="sl-h4">Runs</h4>
-      {(d.runs||[]).length===0?<Empty text="No Firecrawl runs yet."/>:<div className="cf-table-wrap"><table className="cf-table" data-firecrawl-runs><thead><tr><th>Started</th><th>Use</th><th>Status</th><th className="num">Done</th><th className="num">Credits</th><th>Results</th><th></th></tr></thead><tbody>
-        {d.runs.map(r=><tr key={r.id} data-firecrawl-run={r.id}><td>{fmtDateTime(r.created_at)}<small className="sl-sub">{r.reason}</small></td><td>{USE_CASE[r.use_case]||r.use_case}</td><td>{RUN_STATUS[r.status]||r.status}{r.last_call_at&&<small className="sl-sub">last call {fmtDateTime(r.last_call_at)}</small>}</td>
-          <td className="num">{fmtNumber(r.done)} of {fmtNumber(r.items)}</td><td className="num">{fmtNumber(r.credits_used)} of {fmtNumber(r.credits_cap)}</td>
-          <td><span className="tn-outcomes">{Object.entries(r.outcomes||{}).sort((a,b)=>b[1]-a[1]).map(([o,n])=><span key={o} className={`cf-chip tone-${GOOD.has(o)?'success':'neutral'}`} data-run-outcome={o}>{label(o)}: {fmtNumber(n)}</span>)}</span></td>
-          <td><span className="sl-state">{can&&r.status==='running'&&<Button compact disabled={busy} onClick={()=>write('stop',{run_id:r.id},'Stop this Firecrawl run? Pages already read stay as they are.')}><Square size={12}/>Stop</Button>}
-            {can&&['stopped','stopped_credit_cap','stopped_plan_reserve'].includes(r.status)&&r.done<r.items&&<Button compact disabled={busy} onClick={()=>{const add=window.prompt('Add credits to this run’s allowance (0 to keep it):','0');if(add===null)return;write('continue',{run_id:r.id,add_credits:Number(add)||0},'Continue this Firecrawl run?')}}>Continue</Button>}</span></td></tr>)}
-      </tbody></table></div>}
+      <div className="tn-starts" data-firecrawl-starts>{Object.keys(USE_CASE).map(u=><div key={u} className="tn-start">
+        <JobButton kind="firecrawl_run" scope={u} args={{use_case:u}} label={`${USE_CASE[u]} (${fmtNumber(d.backlog?.[u])} waiting)`} disabled={!can||!(d.backlog?.[u]>0)}
+          question={`Start a Firecrawl run: ${USE_CASE[u]}? ${fmtNumber(d.backlog?.[u])} waiting. ${USE_HELP[u]} It stops at the run's credit allowance (a setting). Pause stops the run and Resume continues it, from Scheduled jobs › Task manager.`} onStarted={load} onFinished={load}/>
+        <small className="sl-sub">{USE_HELP[u]}</small></div>)}</div>
+      <p className="sl-sub" data-firecrawl-runs-note>A run is a task: its progress, pause, resume and cancel are in Scheduled jobs › Task manager, and every finished run with its outcomes and credits is under Scheduled jobs › Jobs. Firecrawl's own call log stays in the support report below.</p>
     </section>
     <section className="m-panel" data-firecrawl-targets><SectionTitle title="Target universities" subtitle={`${inc.length} targets (${[...new Set(inc.map(t=>t.country))].map(c=>`${c} ${inc.filter(t=>t.country===c).length}`).join(', ')}). The rule is in the Target universities settings above. Add or take out a university by hand with a reason.`}/>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>University</th><th className="num">Active courses</th><th className="num">Confirmed page</th><th className="num">Page not readable</th><th className="num">No page</th><th className="num">Intakes</th><th className="num">English</th><th className="num">International fee</th><th></th></tr></thead><tbody>
@@ -179,7 +173,7 @@ export function AdapterEditor({providerId,onError}){
     {err&&<p className="cf-chip tone-danger">{err}</p>}
     {d.can_manage&&<div className="tn-starts"><Button compact disabled={!can} onClick={()=>act('preview','Try this adapter on up to 8 stored pages of this university? No Firecrawl credits, nothing changed.')}>Preview on stored pages</Button>
       <Button compact variant="primary" disabled={!can} onClick={()=>act('save','Save this adapter?')}>Save</Button>
-      <Button compact disabled={!can||!d.adapter?.enabled} onClick={()=>act('apply','Apply the saved adapter to this university’s stored pages and read its waiting pages again? Every change is logged. Nothing is admitted unless the identity basis is allowed for the country.')}>Apply</Button></div>}
+      <JobButton kind="adapter_apply" scope={providerId} args={{provider_id:providerId}} label="Apply" variant={undefined} disabled={!can||!d.adapter?.enabled} question="Apply the saved adapter to this university’s stored pages and read its waiting pages again? Every change is logged. Nothing is admitted unless the identity basis is allowed for the country." onFinished={load}/></div>}
     {prev&&<div data-adapter-preview><h4 className="sl-h4">Preview {fmtDateTime(prev.created_at)}{prev.done_at?'':' (running…)'}</h4>
       {res&&<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Course</th><th>Was</th><th>Adapter</th><th>Page</th><th>Found</th></tr></thead><tbody>
         {(res.pages||[]).map((x,i)=><tr key={i}><td>{x.course}<small className="sl-sub">{x.code} · {x.url}</small></td><td>{(x.was||'').replace(/_/g,' ')}{x.identity_before?` (${x.identity_before})`:''}</td>
