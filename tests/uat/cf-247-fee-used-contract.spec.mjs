@@ -29,3 +29,11 @@ test('fee rules: dry-run report and fee-used label are read only, guarded and ru
   expect(api).not.toMatch(/\b(drop|truncate|cascade)\b/i)
   expect(api).not.toMatch(/delete\s+from/i)
 })
+
+test('migration 1790 divides CRICOS by the course length only when it is a year or more', () => {
+  const m = fs.readFileSync('supabase/migrations/20261006001790_cf247_fee_under_one_year.sql', 'utf8')
+  expect(m).toContain('greatest(case c.duration_unit')
+  expect(m).toContain('round(cr.amount / greatest(v_yrs, 1), 0)')
+  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  expect(m).not.toMatch(/delete\s+from/i)
+})
