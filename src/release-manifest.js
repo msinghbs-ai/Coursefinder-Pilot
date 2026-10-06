@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.205'
-export const PACKAGE_VERSION='0.1.132'
+export const UI_VERSION='2.15.206'
+export const PACKAGE_VERSION='0.1.133'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Suspected half-year page fees held back',
+  title:'Scholarships only from the course\'s own provider',
   changes:[
-    'The Page fees against CRICOS (dry run) card now separates page fees that are about half of the CRICOS yearly figure. These are most often a per-semester fee read as annual (for example at Melbourne Education Institute), so they are listed for review and left out of Page would win.',
-    'Read only. No stored fee is changed and the page rule is still not applied anywhere.'
+    'A course\'s scholarship list (the Zoho scholarships API and the admin course scholarship view) no longer includes other providers\' scholarships. A scholarship that is scoped by study level or field now matches only courses of its own provider. Before, a Canadian course could list Australian and New Zealand scholarships, and an Australian course could list other universities\'.',
+    'No stored scholarship, link or course changed. The course search index was not affected.'
   ],
   bugFixes:[]
 }
