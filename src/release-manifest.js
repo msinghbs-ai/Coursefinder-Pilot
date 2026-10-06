@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.206'
-export const PACKAGE_VERSION='0.1.133'
+export const UI_VERSION='2.15.207'
+export const PACKAGE_VERSION='0.1.134'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Scholarships only from the course\'s own provider',
+  title:'Canada and NZ scholarship settings, switched off',
   changes:[
-    'A course\'s scholarship list (the Zoho scholarships API and the admin course scholarship view) no longer includes other providers\' scholarships. A scholarship that is scoped by study level or field now matches only courses of its own provider. Before, a Canadian course could list Australian and New Zealand scholarships, and an Australian course could list other universities\'.',
-    'No stored scholarship, link or course changed. The course search index was not affected.'
+    'Canada and New Zealand now have scholarship runtime settings, the same defaults as Australia (25 pages a run, a 168-hour refresh), but switched off with automatic dispatch off and publication not authorised.',
+    'Nothing is read, refreshed or published for either country until a Platform Admin turns it on in the scholarship runtime settings.'
   ],
   bugFixes:[]
 }
