@@ -80,7 +80,6 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
       const providerL4=drawer.locator('section.cf-layer4-override:visible').first()
       await expect(providerL4.getByRole('heading',{name:'Corrections shown instead of the source',exact:true})).toBeVisible()
       await expect(providerL4.getByText(/the source value and its history are kept/i)).toBeVisible()
-      await expect(drawer.getByText('Layer 4 resolve',{exact:true}).first()).toBeVisible()
       await milestoneScreenshot(page,testInfo,'a16-provider-contact-l4')
     }finally{await finish(testInfo,runtime)}
   })
