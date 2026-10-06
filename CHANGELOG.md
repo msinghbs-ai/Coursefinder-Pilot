@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.129 — 6 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.202** (course drawer Fees › Fee used: which fee the course uses and why, Decision 255).
+- Database: migration 1770 (`security.course_fee_used_v1`, read only, and a `fee_used` key on the drawer's fee summary behind an md5 guard). No stored fee is changed.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.128 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.201** (Layer 2 › Adapters › Page fees against CRICOS, a read-only dry run for Decision 255).

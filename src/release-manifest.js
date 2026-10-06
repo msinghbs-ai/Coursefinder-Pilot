@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.201'
-export const PACKAGE_VERSION='0.1.128'
+export const UI_VERSION='2.15.202'
+export const PACKAGE_VERSION='0.1.129'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'6 Oct 2026',
-  title:'Page fees against CRICOS: a dry run',
+  title:'Fee used: which fee a course uses, and why',
   changes:[
-    'Layer 2 › Adapters has a new collapsed card, Page fees against CRICOS (dry run). It compares each page\'s annual international fee with the CRICOS registered total divided by the course duration, and shows how many courses the page would win (page names this year or later, not entered by hand), how many keep CRICOS, and the universities and courses with the largest gaps. It is read only: nothing is applied or changed.'
+    'The course drawer\'s Fees section now opens with a Fee used line: the course page fee (when the page names this year or later, or no CRICOS fee is registered) or the CRICOS registered fee (total divided by the course length), with the reason and a note when a fee was entered or locked by hand. Read only: no stored fee changes.',
+    'The Zoho, Wix and website course APIs are unchanged and gain the field in a separate step.'
   ],
   bugFixes:[]
 }
