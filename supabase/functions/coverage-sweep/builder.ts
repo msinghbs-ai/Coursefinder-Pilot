@@ -59,7 +59,7 @@ An adapter has:
 - patterns: field -> regular expression (JavaScript, case-insensitive) on the page TEXT whose first bracketed group is the value. Fields: ${PATTERN_FIELDS.join(", ")};
 - pick: field -> "first", "last" or "all" when a page prints a field more than once.
 Rules for patterns: anchor them on stable labels near the value; write {code} where the course's own code (for example its CRICOS code) is printed, because one page can cover several courses; for "any text" write (?:.|\\n){0,N} with N at most 250, never (.|\\s) or [\\s\\S]; for intakes capture the text holding the month names; for fee capture the amount digits of the international annual fee only (never domestic, CSP or FFP); keep each pattern short.
-Prefer a JSON path when the value is in the page data. Use only what the samples show. Answer JSON only.`;
+Prefer a JSON path when the value is in the page data. Use only what the samples show. Keep it short: each pattern under 300 characters, never list course names or values inside a pattern, reason and notes under 400 characters each. Answer JSON only.`;
 
 export function builderRequest(model: string, draft: any) {
   const samples = (draft.captures || []).filter((c: any) => !c.error).slice(0, 2).map((c: any, i: number) => {
@@ -72,7 +72,8 @@ export function builderRequest(model: string, draft: any) {
   const marks = (draft.marks || []).map((m: any) => `- ${m.field}: sample ${m.sample + 1}, ${m.kind === "json" ? `JSON path ${m.ref}` : `text block [${m.ref}]`}${m.value ? ` (shows: ${String(m.value).slice(0, 120)})` : ""}`).join("\n");
   const pairs = (name: string, key: string) => ({ type: "array", items: { type: "object", additionalProperties: false, required: ["field", key], properties: { field: { type: "string" }, [key]: { type: "string" } } } });
   return {
-    model, temperature: 0, max_tokens: 1500, usage: { include: true }, provider: { require_parameters: true },
+    model, temperature: 0, max_tokens: 4000, // v0.17.14: 1500 cut a long answer off mid-string (Notre Dame, 7 Oct)
+    usage: { include: true }, provider: { require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "adapter_proposal", strict: true, schema: { type: "object", additionalProperties: false, required: ["reason", "json_source", "json_paths", "patterns", "pick", "notes"],
       properties: { reason: { type: "string" }, json_source: { type: "string" }, json_paths: pairs("json_paths", "path"), patterns: pairs("patterns", "pattern"), pick: pairs("pick", "how"), notes: { type: "string" } } } } },
     messages: [{ role: "system", content: BUILDER_SYSTEM },

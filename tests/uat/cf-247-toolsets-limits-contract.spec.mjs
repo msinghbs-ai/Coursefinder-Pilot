@@ -440,6 +440,8 @@ test('adapter fees and builder: migration shaped, hand-entered fees kept, model 
   const req = b.builderRequest('qwen/qwen3-30b-a3b-instruct-2507', { provider_name: 'U', marks: [], comments: 'ignore', captures: [] })
   expect(req.model).toBe('qwen/qwen3-30b-a3b-instruct-2507')
   expect(req.provider).toEqual({ require_parameters: true })
+  expect(req.max_tokens).toBe(4000) // v0.17.14: 1500 cut a long answer off mid-string
+  expect(w).toContain('finish_reason === "length"')
 })
 
 test('browser: visual adapter builder — samples with blocks and page data, marks, proposal output, use fills the settings', async ({ page }) => {
@@ -975,7 +977,7 @@ test('v0.17.13 reading options: opt-in numeric and capitalised dates, one academ
   const r2 = mod.applyAdapter({ ...F, reading: {} }, html('Duration 40 weeks Tuition $18,000'), { title: 'x', code: '012345A', country: 'AU' }, 'v').candidates
   expect(r2.fee.value).toBe(23400)
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toContain('coverage-sweep-worker-v0.17.13')
+  expect(ix).toContain('coverage-sweep-worker-v0.17.14')
   const m = read('supabase/migrations/20261006001700_cf247_adapter_reading_options.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("is distinct from 'cea75cd537f56ab3e03d93c55c1bb74e'")
