@@ -26,7 +26,7 @@ export default function EnvironmentMigrationWorkspace({rank,onError=()=>{},view=
   {showIntegrations&&<>
   <ServicesOverview data={data}/>
   <PlatformResourcesPanel onError={onError}/>
-  <section className="env-panel"><div className="env-head"><div><small>Platform settings / Environment & integrations</small><h2>Integration credentials & production portability</h2><p>Secret values are write-only. Production-specific Supabase keys remain target-generated and are never copied from Pilot.</p></div><button onClick={load}><RefreshCw size={15}/>Refresh</button></div>
+  <section className="env-panel"><div className="env-head"><div><small>Platform settings / Settings</small><h2>Integration credentials & production portability</h2><p>Secret values are write-only. Production-specific Supabase keys remain target-generated and are never copied from Pilot.</p></div><button onClick={load}><RefreshCw size={15}/>Refresh</button></div>
    {msg&&<div className="env-ok"><CheckCircle2 size={15}/>{msg}</div>}
    <div className="env-summary">
     <Summary label="Evidence rows" value={fmt(runtime.evidence_rows)}/>
@@ -72,7 +72,7 @@ function ServicesOverview({data}){
   ...providers.map(p=>({key:p.provider_key,name:p.display_name||p.provider_key,purpose:'Fetching provider pages (Layer 2)',configured:Boolean(p.credential_configured),enabled:Boolean(p.enabled),usage:p.billing_config?.monthly_vendor_units_limit??p.billing_config?.monthly_vendor_units,reserve:p.billing_config?.stop_at_vendor_units_remaining??p.billing_config?.reserve_units})),
   ...SERVICE_KEYS.map(([k,name,purpose])=>{const list=find(k);const l3cred=k==='openrouter'&&l3.some(x=>x.credential_configured);return{key:k,name,purpose,configured:list.some(x=>x.configured)||l3cred,known:list.length>0||l3cred}}),
  ]
- return <section className="env-panel"><div className="env-head"><div><small>Platform settings / Environment & integrations</small><h2>External services</h2><p>Whether each service is set up. Keys are stored in the vault and listed here by name only; their values are never shown.</p></div></div>
+ return <section className="env-panel"><div className="env-head"><div><small>Platform settings / Settings</small><h2>External services</h2><p>Whether each service is set up. Keys are stored in the vault and listed here by name only; their values are never shown.</p></div></div>
   <div className="svc-grid">{cards.map(c=><div className="svc-card" key={c.key}><header><strong>{c.name}</strong><span className={'cf-chip tone-'+(c.configured?'success':c.known===false?'neutral':'warning')}>{c.configured?'Configured':c.known===false?'Not recorded':'Not configured'}</span></header><small>{c.purpose}</small>{c.enabled!=null&&<small>{c.enabled?'Switched on':'Switched off'}{c.usage?` · monthly allowance ${fmt(c.usage)} units`:''}{c.reserve?` · reserve ${fmt(c.reserve)}`:''}</small>}</div>)}</div>
   <h3>Stored keys (names only)</h3>
   <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Name</th><th>Key name</th><th>Status</th><th>Last changed</th></tr></thead><tbody>

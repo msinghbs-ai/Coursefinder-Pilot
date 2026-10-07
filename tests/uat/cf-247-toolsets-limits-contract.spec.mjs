@@ -98,7 +98,7 @@ test('browser: Models & services — OpenRouter observe only, key and plan limit
   const plan = page.locator('[data-toolset-plan="serper"]')
   await expect(plan).toContainText('Free plan')
   await expect(plan).toContainText('48 of 2,500 credits used since 2026-10-04')
-  await expect(page.locator('[data-toolset-key="serper"]')).toContainText('Replace the key on Environment & integrations')
+  await expect(page.locator('[data-toolset-key="serper"]')).toContainText('Replace the key on Settings')
   for (const sec of ['Key and plan limits', 'How the service is used', 'Sample runs']) await expect(page.locator(`[data-toolset-section="serper:${sec}"]`)).toBeVisible()
   const credits = page.locator('[data-toolset-setting="serper.plan_credits"]')
   await credits.getByRole('textbox').fill('50000')
@@ -196,7 +196,8 @@ test('browser: Firecrawl work — credits and report on Models & services, runs 
   await page.goto('/#layer-2-discovery')
   await openCard(page, 'adapters.firecrawl-runs')
   const w = page.locator('[data-firecrawl-work]')
-  await expect(w.locator('[data-firecrawl-plan]')).toContainText('490,846 of 500,000 credits left')
+  await expect(w.locator('[data-firecrawl-plan]')).toHaveCount(0) // v2.15.213: credits shown once, on Models & services
+  await expect(w.locator('[data-firecrawl-credits-link]')).toContainText('Firecrawl credits: see Models & services')
   // find_page has a running task in the fixture, so its button shows the task (see the JobButton test below)
   // Phase C (Decision 254): a run is a task started from the same button, watched by the Task manager, closed into Jobs
   await w.getByRole('button', { name: 'Read pages (1,102 waiting)' }).click()
@@ -334,6 +335,7 @@ test('browser: adapter — patterns saved, readings on CRICOS-confirmed pages sh
   await expect(r.locator('[data-adapter-readings]')).toContainText('pattern')
   const ed = page.locator('[data-adapter-editor="u1"]')
   await ed.locator('[data-adapter-settings] > summary').click()
+  await ed.locator('[data-adapter-advanced] > summary').click() // v2.15.213: Advanced (Platform Admin)
   await ed.getByRole('textbox', { name: 'Patterns' }).fill('{"intakes":"Start dates(.{0,40})"}')
   await ed.getByRole('textbox', { name: 'Pick' }).fill('{"intakes":"last"}')
   await ed.getByRole('button', { name: 'Save' }).click()
@@ -517,6 +519,7 @@ test('term months: migration shaped, worker maps term names to the published mon
   await mockAdmin(page)
   await openAdapter(page, 'u1', ['build']) // v2.15.200: Layer 2 › Adapters
   await page.locator('[data-adapter-editor="u1"] [data-adapter-settings] > summary').click()
+  await page.locator('[data-adapter-editor="u1"] [data-adapter-advanced] > summary').click() // v2.15.213: JSON settings sit under Advanced (Platform Admin)
   await expect(page.getByRole('textbox', { name: 'Term months' })).toBeVisible()
 })
 

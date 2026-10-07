@@ -69,7 +69,7 @@ export default function ModelsServices({onError}){
           <td><Switch on={Boolean(s.enabled)} label={`${s.enabled?'Switch off':'Switch on'} ${s.name}`} disabled={!can||busy} onChange={on=>flip('service',s,on)}/></td>
         </tr>)}
       </tbody></table></div>
-      <p className="l3v-note">Keys are on <a href="#environment">Environment &amp; integrations</a>. Address, limits and routing are on <a href="#scrapers">Scrapers &amp; fetchers</a>.</p>
+      <p className="l3v-note">Keys are on <a href="#environment">Settings</a>. Address, limits and routing are on <a href="#scrapers">Scrapers &amp; fetchers</a>.</p>
     </Card>
     <Card id="services.ai-models" icon={BrainCircuit} title="AI models" subtitle="Models Layer 3 can use to read course and scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps; add it to a cascade in Layer 3 › Control."
       meta={<span>{live.filter(m=>m.enabled).length} of {live.length} on{retired.length?` · ${retired.length} retired`:''}</span>}>
