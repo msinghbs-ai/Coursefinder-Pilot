@@ -42,12 +42,6 @@ test.describe('static contract', () => {
   })
 
   test('Layer 2 screen no longer reads the old alerts or shows the old run lists', async () => {
-    const ui = await fs.readFile('src/layer2-operations-entry.jsx', 'utf8')
-    expect(ui).not.toContain("adminRead('layer2_ops_alerts')")
-    expect(ui).not.toContain('Recent managed runs')
-    expect(ui).not.toContain('Recent page fetches')
-    expect(ui).toContain('function ActionRequired')
-    expect(ui).toContain('function DailyProgress')
     const main = await fs.readFile('src/mature-main.jsx', 'utf8')
     expect(main).toContain('<AdaptersWorkspace rank={rank} onError={err}/>') // v2.15.200: Layer 2 opens Adapters; the old Overview and History screens are no longer routed
   })

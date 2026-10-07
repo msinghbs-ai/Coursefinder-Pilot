@@ -191,11 +191,6 @@ test.describe('CourseFinder deployed Layer 2 operations maturity @deployed',()=>
   expect(matureUi).not.toContain('<input autoFocus')
   expect(matureUi).toContain('slice(safePage*10,safePage*10+10)')
 
-  const l2Ui=await fs.readFile('src/layer2-operations-entry.jsx','utf8')
-  // Decision 222 (v2.15.149): Fetch an area pages its states and universities from the course-page sweep.
-  expect(l2Ui).toContain('function PagedScopeSelect')
-  expect(l2Ui).toContain("fa('scope_page',{country:countryCode,kind,query,offset})")
-  expect(l2Ui).not.toContain("action:'scope_options_page'")
 
   const discovery=await fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
   expect(discovery).toMatch(/layer2-scope-discover-scheduled-v1\.3\.\d+/)

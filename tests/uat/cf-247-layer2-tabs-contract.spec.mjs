@@ -5,12 +5,9 @@ import { PAGES } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('tabs and removed duplicates', () => {
-  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Adapters', 'Scholarships']) // v2.15.200 Decision 254: Overview, Fetch an area, History and Source profiles retired
-  const w = fs.readFileSync('src/layer2-operations-entry.jsx', 'utf8')
-  for (const gone of ['Effective acquisition policy', 'Results / Data Quality', '<h2>Evidence</h2>', 'l2o-kpis']) expect(w).not.toContain(gone)
-  const e = fs.readFileSync('src/EnrichmentOperations.jsx', 'utf8')
-  expect(e).not.toContain('Metrics are observational')
-  expect(e).not.toContain("'CF-CHG-20260915-245'")
+  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Adapters', 'Adapter builder', 'Scholarships']) // v2.15.200 Decision 254: Overview, Fetch an area, History and Source profiles retired; v2.15.211 Adapter builder
+  // v2.15.214: the retired Layer 2 screens (layer2-operations-entry.jsx, EnrichmentOperations.jsx) are deleted, not just unrouted.
+  for (const f of ['src/layer2-operations-entry.jsx', 'src/EnrichmentOperations.jsx']) expect(fs.existsSync(f)).toBe(false)
 })
 
 test.describe('mocked browser', () => {
