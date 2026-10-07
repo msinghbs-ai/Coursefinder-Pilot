@@ -97,7 +97,7 @@ export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
   const load=async(id=pid)=>{if(!id)return;try{const{data,error}=await supabase.rpc('admin_adapter_builder_basics',{p_action:'basics',p_args:{provider_id:id}});if(error)throw error;setB(data)}catch(e){onError?.(errText(e))}}
   useEffect(()=>{setB(null);load(pid)},[pid])
   useEffect(()=>{if(initialProvider&&initialProvider!==pid)setPid(initialProvider)},[initialProvider])
-  if(rank<5)return <Empty text="The adapter builder is for PIM Operators and Platform Admins."/>
+  if(rank<5)return <Empty text="The adapter builder is for PIM Admins and Platform Admins."/>
   const find=async()=>{const reason=ask(`Add ${b.name} to the Firecrawl targets so its course pages are found and read (Firecrawl credits are used)?`);if(!reason)return
     setBusy(true);try{const{error}=await supabase.rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:b.provider_id,included:true,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const read=b?.pages?.read||0

@@ -5,13 +5,14 @@ import{test,expect}from'@playwright/test'
 
 test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
   test('country-first operations and Administration configuration stay separated',async()=>{
-    const[layer1,shell,versionEntry,index,manifest,current]=await Promise.all([
+    const[layer1,shell,versionEntry,index,manifest,current,nav]=await Promise.all([
       fs.readFile('src/layer1-operations-entry.jsx','utf8'),
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('src/release-manifest.js','utf8'),
       fs.readFile('src/release-currentness-entry.js','utf8'),
+      fs.readFile('src/nav-map.js','utf8'),
     ])
     expect(layer1).toContain('Layer 1 Operations')
     expect(layer1).toContain('Official registers, statistics and rankings by country: health, schedule and the files loaded.')
@@ -28,16 +29,17 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(layer1).toContain('Source & authority')
     expect(layer1).toContain('Cadence & guardrails')
     expect(layer1).not.toContain('Advanced source configuration')
-    expect(shell).toContain("item('Layer 1 — Operations',Database,4)")
-    expect(shell).toContain("['layer1-sources','Layer 1 sources',Database,rank>=6]")
-    expect(shell).toContain("tool==='layer1-sources'&&rank>=6&&<Layer1SourceSettings/>")
+    // 7 Oct 2026: the old shell menu became nav-map tabs; Runs stay Operator (rank 4), Source settings stay Platform Admin (rank 6).
+    expect(nav).toContain("{ key: 'operations', label: 'Runs', min: 4 }")
+    expect(nav).toContain("{ key: 'settings', label: 'Source settings', min: 6 }")
+    expect(shell).toContain("if(tab==='settings')return <Layer1SourceSettings/>")
     const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
     expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
     expect(historyVersion).toBe(fallbackVersion)
     expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-    expect(manifest).toContain(`version:'${fallbackVersion}'`)
+    expect(manifest).toContain('version:UI_VERSION') // 7 Oct 2026: the manifest is the single version authority
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>Coursefinder PIM Admin</title>')
     expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)

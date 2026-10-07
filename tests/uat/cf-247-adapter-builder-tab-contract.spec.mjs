@@ -4,7 +4,7 @@ import fs from 'node:fs'
 test('Layer 2 Adapter builder tab is wired to its read function and the existing write functions', () => {
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
   expect(nav).toContain("{ key: 'builder', label: 'Adapter builder', min: 5 }")
-  expect(nav).toContain("{ key: 'adapters', label: 'Adapters', min: 5 }")
+  expect(nav).toContain("{ key: 'adapters', label: 'Adapters', min: 4 }")
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   expect(main).toContain("if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>")
   const ui = fs.readFileSync('src/AdapterBuilderTab.jsx', 'utf8')

@@ -7,13 +7,13 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   const[shell,compare,ranking,api,migration]=await Promise.all([
    fs.readFile('src/mature-main.jsx','utf8'),
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
-   fs.readFile('src/RankingDatasetViewer.js','utf8'),
+   fs.readFile('src/mature-main.jsx','utf8') /* 7 Oct 2026: RankingDatasetViewer.js was folded into mature-main.jsx */,
    fs.readFile('src/lib/supabase.js','utf8'),
    fs.readFile('supabase/migrations/20260907064251_m245_ui_read_contract_reconciliation.sql','utf8'),
   ])
 
-  // Current nominated release version must remain synchronized with the accepted shell.
-  expect(shell).toContain("const UI_VERSION='2.15.76'")
+  // 7 Oct 2026: rewritten to the current screens. The version is pinned in release-manifest.js (its own contract); the scholarship
+  // list became Scholarship, Value, Who it is for, Closes (v2.15.171); RankingDatasetViewer.js was folded into mature-main.jsx.
 
   // Scholarship catalogue: bounded Provider filter and authoritative provider_id read.
   expect(shell).toContain("if(type==='scholarship')return <div className=\"m-filter-bar\"")
@@ -21,11 +21,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   expect(shell).toContain("if(type==='scholarship'&&filters.provider)a.provider_id=filters.provider")
   expect(shell).toContain("if(['course','scholarship'].includes(type))n.provider=''")
   expect(shell).toContain("limit:10,offset")
-  expect(shell).toContain("{key:'provider_name',label:'Provider',width:250,sortKey:'provider'}")
-  expect(shell).toContain("{key:'scholarship_type',label:'Type',width:170,sortKey:'type'}")
-  expect(shell).toContain("{key:'audience',label:'Audience',width:150,sortKey:'audience'}")
-  expect(shell).toContain("{key:'award_value_text',label:'Award',width:180,sortKey:'award'}")
-  expect(shell).toContain("{key:'publication_status',label:'Publication',width:130,sortKey:'publication'}")
+  expect(shell).toContain("{key:'sch_name',label:'Scholarship',width:340,sortKey:'scholarship'},{key:'value_label',label:'Value',width:210,sortKey:'award'},{key:'sch_who',label:'Who it is for',width:240,sortKey:'audience'},{key:'application_close_date',label:'Closes',width:110,sortKey:'close'}")
   expect(shell).toContain('m-fluid-table')
   expect(shell).toContain('minWidth:`clamp(')
 
@@ -49,11 +45,10 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
 
   // QS/THE use server ordering across the full paged ranking dataset.
   expect(api).toContain("sort = 'rank', direction = 'asc'")
-  expect(api).toContain('provider_id: providerId || null, sort, direction')
-  expect(ranking).toContain("sort=p.get('sort')||'rank'")
-  expect(ranking).toContain('data-sort="${k}"')
-  expect(ranking).toContain('setParams({sort:next,direction:')
-  expect(ranking).toContain('Provider mapping remains distinct from the publisher institution identity')
+  expect(api).toContain('provider_id: providerId || null, country: country || null, state: state || null, link: link || null, sort, direction')
+  expect(ranking).toContain("[sort,setSort]=useState('rank'),[direction,setDirection]=useState('asc')")
+  expect(ranking).toContain("{sortHead('rank','Rank')}")
+  expect(ranking).toContain('Provider mapping and Evidence remain publisher-specific.')
   expect(ranking).not.toContain('min-width:760px')
   expect(migration).toContain("('institution','provider','rank','score','country','status','edition','system')")
   expect(migration).toContain('ranking.observation_provider_links')
@@ -61,12 +56,13 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   expect(migration).toContain("'sort',v_sort,'direction',v_dir")
 
   // Open Dataset / Compare and provider comparison defaults remain publisher-specific.
-  expect(shell).toContain('dataset=qs_wur&year=')
-  expect(shell).toContain('dataset=the_wur&year=')
+  expect(shell).toContain("navigate('Statistics & Rankings',{dataset:system,year:selected})")
+  expect(shell).toContain("openRanking('qs_wur','qs')")
+  expect(shell).toContain("openRanking('the_wur','the')")
   expect(shell).toMatch(/QS World University Rankings[\s\S]*Open Dataset[\s\S]*Compare/)
   expect(shell).toMatch(/Times Higher Education[\s\S]*Open Dataset[\s\S]*Compare/)
   expect(compare).toContain("datasets,setDatasets]=useState({qilt:true,prisms:true,qs:true,the:true})")
-  expect(compare).toContain('historical editions')
+  expect(compare).toContain('retained editions')
   expect(compare).toContain('No accepted observation for edition')
   expect(compare).toContain('cf-flow-sticky')
   expect(compare).toContain('<ProviderLogo providerId={logoProviderId}')
