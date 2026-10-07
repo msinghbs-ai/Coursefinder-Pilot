@@ -1,10 +1,10 @@
--- CF-247, 7 Oct 2026: automatic adapter build, part 3 of 4: the step function, run by the schedule as the Platform Admin who asked.
--- See 20261007001900 for the decisions.
+-- CF-247, 7 Oct 2026: automatic adapter build, part 4 of 6: the step function, run by the schedule as the Platform Admin who asked.
+-- See 20261007001900 for the decisions; qualifying is part 3, admitting is part 5 (by a Platform Admin).
 
 create or replace function security.adapter_autobuild_tick_v1()
 returns jsonb language plpgsql security definer set search_path to '' as $f$
-declare b record; v_read int; v_stored int; v_run pipeline.firecrawl_runs%rowtype; v_d pipeline.uni_adapter_drafts%rowtype; v_p jsonb; v_r jsonb; v_q jsonb;
-        v_adapter jsonb; v_admit text[]; v_held jsonb; v_f text; v_x jsonb; v_cur text[]; v_central jsonb; v_s record; v_n int := 0; v_why text; v_budget jsonb;
+declare b record; v_read int; v_stored int; v_run pipeline.firecrawl_runs%rowtype; v_d pipeline.uni_adapter_drafts%rowtype; v_p jsonb; v_r jsonb;
+        v_adapter jsonb; v_n int := 0; v_budget jsonb;
 begin
   for b in select * from pipeline.adapter_autobuilds where status in ('queued', 'finding_pages', 'capturing', 'proposing', 'applying', 'qualifying') order by created_at limit 10 loop
     begin
@@ -77,41 +77,7 @@ begin
           update pipeline.adapter_autobuilds set status = 'qualifying', step_started_at = now(), note = 'Qualifying each field against the admit rule.', updated_at = now() where id = b.id;
         end if;
       elsif b.status = 'qualifying' then
-        v_q := security.adapter_qualify_one_v1(b.provider_id, coalesce((security.firecrawl_setting('eval_field_share') #>> '{}')::numeric, 0.5), coalesce((security.firecrawl_setting('qualify_agree_share') #>> '{}')::numeric, 0.9));
-        v_admit := '{}'; v_held := '{}'::jsonb;
-        foreach v_f in array array['intakes', 'english', 'fee', 'delivery'] loop
-          v_x := v_q->'fields'->v_f;
-          if v_x is null then continue; end if;
-          v_why := case
-            when not coalesce((v_x->>'pass')::boolean, false) then coalesce(v_x->>'why', 'does not pass')
-            when coalesce((v_x->>'read')::int, 0) < 5 then 'read on fewer than 5 pages'
-            when coalesce((v_x->>'agree')::int, 0) < 3 or v_x->>'agree_share' is null then 'not enough held values to check against (needs 3 agreeing courses)'
-            when (v_x->>'agree_share')::numeric < 0.9 then 'agrees on under 90% of checked courses' end;
-          if v_why is null then v_admit := v_admit || v_f; else v_held := v_held || jsonb_build_object(v_f, v_why); end if;
-        end loop;
-        if cardinality(v_admit) > 0 then
-          select coalesce(admit_fields, '{}') into v_cur from pipeline.uni_adapters where provider_id = b.provider_id;
-          perform public.admin_uni_adapter_control('admit', jsonb_build_object('provider_id', b.provider_id, 'admit', true,
-                   'fields', to_jsonb(array(select distinct x from unnest(coalesce(v_cur, '{}') || v_admit) x order by 1)),
-                   'reason', 'Automatic build: ' || array_to_string(v_admit, ', ') || ' pass the admit rule and agree with held values (90% or more on 3 or more courses, read on 5 or more pages)'));
-        end if;
-        v_central := '[]'::jsonb;
-        for v_s in select distinct on (k.kind) k.kind, u.url from pipeline.coverage_provider_urls u
-                     cross join lateral (select case
-                       when u.url ~* '(key-?dates|academic-?calendar|semester-?dates|term-?dates|important-?dates|principal-?dates)' then 'intake_calendar'
-                       when u.url ~* '(international.*(fee|tuition)|(fee|tuition).*international|fee-?schedule|tuition-?fees)' then 'fee_schedule'
-                       when u.url ~* '(english-?language-?requirement|english-?requirement|english-?proficiency)' then 'english_policy' end kind) k
-                    where u.provider_id = b.provider_id and k.kind is not null
-                      and not exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = b.provider_id and f.kind = k.kind)
-                    order by k.kind, length(u.url) loop
-          begin
-            perform public.admin_provider_central_page('add', jsonb_build_object('provider_id', b.provider_id, 'kind', v_s.kind, 'url', v_s.url, 'reason', 'Automatic build: found among the provider''s stored links'));
-            v_central := v_central || jsonb_build_object('kind', v_s.kind, 'url', v_s.url);
-          exception when others then null;
-          end;
-        end loop;
-        update pipeline.adapter_autobuilds set status = 'done', result = result || jsonb_build_object('qualify', v_q, 'admitted', to_jsonb(v_admit), 'held', v_held, 'central_pages', v_central),
-               note = case when cardinality(v_admit) > 0 then 'Admitting: ' || array_to_string(v_admit, ', ') || '.' else 'Built and testing; no field passed the checks yet.' end, updated_at = now() where id = b.id;
+        perform security.adapter_autobuild_qualify_v1(b.id);
       end if;
       v_n := v_n + 1;
     exception when others then

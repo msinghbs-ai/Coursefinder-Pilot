@@ -46,19 +46,61 @@ function Qualify({q}){
   </tbody></table><p className="sl-sub">Admit rule: read on at least half the pages, at least 3 pages, and at least 90% agreement (or checked by hand). A pass is a measure, not a switch: admitting is the separate step below.</p></div>
 }
 
-export default function AdapterBuilderTab({rank,onError}){
-  const[pid,setPid]=useState(null),[b,setB]=useState(null),[busy,setBusy]=useState(false),[key,setKey]=useState(0)
+// v2.15.215 (Platform Admin, 7 Oct 2026 20:28): build automatically. The pinned OpenRouter model proposes the settings from captured
+// sample pages; Firecrawl finds and reads course pages first when fewer than 3 are read (up to the per-build credit cap); the adapter is
+// saved, applied and qualified; fields that pass the admit rule AND agree with held values (90%+ on 3+ courses, read on 5+ pages) are listed
+// as Ready to admit. Admitting stays a separate, deliberate Platform Admin step (7 Oct 2026 22:05: a passing check never auto-activates).
+const BUILD_STEPS=[['queued','Queued'],['finding_pages','Find pages'],['capturing','Capture samples'],['proposing','Model proposes'],['applying','Apply'],['qualifying','Qualify']]
+const BUILD_LABEL={queued:'Waiting to start',finding_pages:'Finding course pages',capturing:'Capturing sample pages',proposing:'Model is proposing',applying:'Applying to stored pages',qualifying:'Qualifying',done:'Finished',failed:'Stopped with a problem',stopped:'Stopped'}
+const BUILD_TONE={done:'tone-success',failed:'tone-danger',stopped:'tone-neutral'}
+export const buildActive=s=>Boolean(s)&&!['done','failed','stopped'].includes(s)
+function AutoBuild({b,onChanged,onError}){
+  const[st,setSt]=useState(null),[busy,setBusy]=useState(false)
+  const read=async()=>{try{const{data,error}=await supabase.rpc('admin_adapter_autobuild',{p_action:'read',p_args:{provider_id:b.provider_id}});if(error)throw error;setSt(data)}catch(e){onError?.(errText(e))}}
+  const status=st?.build?.status
+  useEffect(()=>{read()},[b.provider_id])
+  useEffect(()=>{if(!buildActive(status))return;const t=setInterval(read,20000);return()=>clearInterval(t)},[status,b.provider_id])
+  const prev=React.useRef(status)
+  useEffect(()=>{if(prev.current&&buildActive(prev.current)&&!buildActive(status))onChanged?.();prev.current=status},[status])
+  if(!st)return null
+  const act=async(action,msg)=>{const reason=ask(msg);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_adapter_autobuild',{p_action:action,p_args:{provider_id:b.provider_id,reason}});if(error)throw error;await read()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  const admit=async fields=>{const reason=ask(`Admit ${fields.map(f=>FIELD[f]||f).join(', ')} for ${b.name}? Values read from its pages are written to the catalogue (values entered by hand are never changed).`);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_adapter_autobuild_admit',{p_args:{provider_id:b.provider_id,fields,reason}});if(error)throw error;await read();onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  const bd=st.build,idx=BUILD_STEPS.findIndex(([k])=>k===status),res=bd?.result||{}
+  const canStart=st.can_manage&&st.adapter!=='admitting'&&!buildActive(status)
+  return <section className="ab-auto" data-autobuild>
+    <div className="ab-auto-head"><div><strong>Build automatically</strong><p className="sl-sub">The pinned model ({st.model||'not set'}) proposes the settings from sample pages. Firecrawl finds course pages first if needed (up to 150 credits). Fields that pass the checks are listed as ready to admit; you admit them with one click. {st.today??0} of {st.per_day??25} builds used today.</p></div>
+      {canStart&&<Button disabled={busy} onClick={()=>act('start',`Build an adapter for ${b.name} automatically?\n\nUses Firecrawl credits (up to the per-build cap) and the AI allowance. The adapter is saved in testing; fields that pass the admit rule and agree with held values are listed for you to admit.`)}>{bd?'Build again':'Build automatically'}</Button>}
+      {st.can_manage&&buildActive(status)&&<Button compact disabled={busy} onClick={()=>act('stop',`Stop the automatic build for ${b.name}?`)}>Stop</Button>}</div>
+    {st.adapter==='admitting'&&!bd&&<p className="sl-sub">This provider already admits through its adapter: change it with the steps below.</p>}
+    {bd&&<>
+      <p><span className={`cf-chip ${BUILD_TONE[status]||'tone-info'}`} data-build-status={status}>{BUILD_LABEL[status]||status}</span> <small className="sl-sub">{bd.note||''}</small></p>
+      {buildActive(status)&&<ol className="ab-track">{BUILD_STEPS.map(([k,l],i)=><li key={k} className={i<idx?'done':i===idx?'now':''}>{l}</li>)}</ol>}
+      {status==='failed'&&bd.error&&<p className="cf-chip tone-warning">{bd.error}</p>}
+      {status==='done'&&<ul className="tn-list" data-build-result>
+        {res.admitted?<li><strong>Admitted</strong> <small className="sl-sub">{res.admitted.map(f=>FIELD[f]||f).join(', ')}</small></li>
+          :<li><strong>Ready to admit</strong> <small className="sl-sub">{(res.ready||[]).map(f=>FIELD[f]||f).join(', ')||'nothing passed the checks yet'}</small> {st.can_manage&&(res.ready||[]).length>0&&<Button compact disabled={busy} onClick={()=>admit(res.ready)}>Admit these</Button>}</li>}
+        {Object.entries(res.held||{}).map(([f,why])=><li key={f}><strong>{FIELD[f]||f}</strong> <small className="sl-sub">held: {why}</small></li>)}
+        {(res.central_pages||[]).length>0&&<li><strong>Central pages attached</strong> <small className="sl-sub">{res.central_pages.map(c=>KIND[c.kind]||c.kind).join(', ')}</small></li>}
+      </ul>}
+    </>}
+  </section>
+}
+
+export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
+  const[pid,setPid]=useState(initialProvider||null),[b,setB]=useState(null),[busy,setBusy]=useState(false),[key,setKey]=useState(0)
   const load=async(id=pid)=>{if(!id)return;try{const{data,error}=await supabase.rpc('admin_adapter_builder_basics',{p_action:'basics',p_args:{provider_id:id}});if(error)throw error;setB(data)}catch(e){onError?.(errText(e))}}
   useEffect(()=>{setB(null);load(pid)},[pid])
+  useEffect(()=>{if(initialProvider&&initialProvider!==pid)setPid(initialProvider)},[initialProvider])
   if(rank<5)return <Empty text="The adapter builder is for PIM Operators and Platform Admins."/>
   const find=async()=>{const reason=ask(`Add ${b.name} to the Firecrawl targets so its course pages are found and read (Firecrawl credits are used)?`);if(!reason)return
     setBusy(true);try{const{error}=await supabase.rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:b.provider_id,included:true,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const read=b?.pages?.read||0
   return <div className="m-page-stack ab-builder" data-adapter-builder-tab>
-    <p className="sl-sub">Build or change an adapter in five steps. Each step uses evidence from the provider’s own pages; nothing is admitted until the last step.</p>
+    <p className="sl-sub">Build or change an adapter: build it automatically, or step through it by hand. Each step uses evidence from the provider’s own pages; by hand, nothing is admitted until the last step.</p>
     <Step n={1} title="Provider">{b?<p><strong>{b.name}</strong> <small className="sl-sub">{b.country}</small> <Button compact onClick={()=>{setPid(null);setB(null)}}>Change</Button></p>:<PickProvider onPick={setPid} onError={onError}/>}</Step>
     {pid&&!b&&<Loading label="Reading the provider…"/>}
     {b&&<>
+      <AutoBuild b={b} onChanged={()=>{setKey(k=>k+1);load()}} onError={onError}/>
       <Step n={2} title="Basics">
         <ul className="ab-facts">
           <li><span>Website</span>{b.website?<a href={b.website} target="_blank" rel="noreferrer">{b.website}</a>:'not recorded'}</li>

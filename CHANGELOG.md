@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.142 — 7 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.215** (automatic adapter build: Build automatically in Layer 2 › Adapter builder, with step-by-step progress, Stop, and Admit these for the fields ready to admit; an Adapter column on the Providers list for Platform Admins that opens the builder with the provider loaded, or Create adapter).
+- Database: migrations `20261007001900`–`20261007001905` (settings; build table and `admin_adapter_autobuild`; qualify `security.adapter_autobuild_qualify_v1`; step `security.adapter_autobuild_tick_v1`; admit `admin_adapter_autobuild_admit` (Platform Admin, reason); schedule `adapter-autobuild` every 2 minutes).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.141 — 7 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.214** (retired Layer 2 screens `layer2-operations-entry.jsx` and `EnrichmentOperations.jsx` deleted; their contract checks removed or rewritten; Adapter builder opens the visual builder in step 4 and uses only shared colour tokens; a mocked browser check of the builder was added).
