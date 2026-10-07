@@ -8,15 +8,21 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.211'
+export const GUIDE_REVIEWED_FOR = '2.15.212'
 
 export const ROLES = [
-  { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.' },
-  { role: 'Counsellor', rank: 2, who: 'Student adviser', can: 'Shortlists and notes.' },
-  { role: 'Curator', rank: 3, who: 'Content editor', can: 'Course and provider details, course links, Layer 4 decisions, linking ranked universities to providers.' },
-  { role: 'Pipeline Operator', rank: 4, who: 'Data operations', can: 'Pause, resume and pace automations; link refresh schedules and portals; who-can-apply settings; send review items back to the AI.' },
-  { role: 'PIM Admin', rank: 5, who: 'Catalogue owner', can: 'Reference data, rules and bulk catalogue actions.' },
-  { role: 'Platform Admin', rank: 6, who: 'Platform owner', can: 'Approvals that write data in bulk (fee schedules, English policies, fee rules), AI models and budgets, service keys, users and roles, new countries.' },
+  { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.',
+    daily: ['Dashboard: the headline numbers and what is waiting.', 'Courses and Providers: look up a course or provider.', 'Coverage: how much of each field is filled, against 80%.'] },
+  { role: 'Counsellor', rank: 2, who: 'Student adviser', can: 'Shortlists and notes.',
+    daily: ['Courses: find courses for a student and keep a shortlist.', 'Contacts: the provider contact for a question.', 'Rankings & statistics: compare providers.'] },
+  { role: 'Curator', rank: 3, who: 'Content editor', can: 'Course and provider details, course links, key dates, provider websites, notes on values, Layer 4 decisions, linking ranked universities to providers. Flags, priority, send back and scholarship publishing are read only at this role.',
+    daily: ['Layer 4 Review: decide the items waiting, oldest first.', 'Layer 4 › Websites: give the missing provider websites.', 'Reference data › Key dates and Links: keep them current.'] },
+  { role: 'Pipeline Operator', rank: 4, who: 'Data operations', can: 'Resolve flagged values; decide scholarship links; link refresh schedules and course-link search settings; acknowledge live errors; start jobs.',
+    daily: ['Live activity: anything stuck or failing, and acknowledge errors you have dealt with.', 'Layer 4 › Flagged values: resolve or send on.', 'Scheduled jobs: confirm the jobs ran; start one again if it failed.', 'Layer 1 Register › Runs: the latest register runs completed.'] },
+  { role: 'PIM Admin', rank: 5, who: 'Catalogue owner', can: 'Pause, resume and pace automations; send review items back to the AI; the priority queue; scholarship publishing; Layer 3 control; create courses and providers; read and test adapters in Layer 2.',
+    daily: ['Scheduled jobs › Automations: pace or pause what is behind or failing.', 'Layer 2 › Adapter builder: test adapters and check their measures.', 'Layer 4 › Send back to AI and Priority queue: move work that is stuck.', 'Layer 3 › Control: the AI steps are running within their limits.'] },
+  { role: 'Platform Admin', rank: 6, who: 'Platform owner', can: 'Approvals that write data in bulk (fee schedules, English policies, calendars, fee rules); save and admit adapters; Layer 1 commands; pipeline settings; AI models and budgets; service keys; users and roles; new countries; publishing.',
+    daily: ['Layer 4 › Attributes: approve or reject the central rules and fee schedules waiting.', 'Layer 2 › Adapter builder: save adapters and admit fields that pass, one field at a time.', 'Platform health: failing jobs and capacity.', 'Users: roles and expiry dates.'] },
 ]
 
 export const RULES = [
