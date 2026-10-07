@@ -3,7 +3,6 @@ import{readFile}from'node:fs/promises'
 
 test('M2.4.5 ranking dataset and compare-period UI contract',async()=>{
  const compare=await readFile(new URL('../../src/ComparisonWorkspace.jsx',import.meta.url),'utf8')
- const presentation=await readFile(new URL('../../src/ranking-page-presentation.js',import.meta.url),'utf8')
  const index=await readFile(new URL('../../index.html',import.meta.url),'utf8')
 
  expect(compare).toContain('cf-dataset-toggles cf-dataset-toggles-with-years')
@@ -20,9 +19,6 @@ test('M2.4.5 ranking dataset and compare-period UI contract',async()=>{
  expect(compare).toContain("filter(z=>!prismsYear||flowYear(z)===prismsYear)")
  expect(compare).toContain("{value:'multi',label:'Multi-year'}")
 
- expect(index).toContain('/src/ranking-page-presentation.js')
- expect(presentation).toContain("qs_wur:['QS World University Rankings'")
- expect(presentation).toContain("the_wur:['Times Higher Education'")
- expect(presentation).toContain('[data-react-ranking-viewer="1"]')
- expect(presentation).toContain("location.hash='#statistics-rankings'")
+ // 7 Oct 2026: ranking-page-presentation.js (the old ranking page decorator) was removed; ranking pages are React screens now.
+ expect(index).not.toContain('/src/ranking-page-presentation.js')
 })
