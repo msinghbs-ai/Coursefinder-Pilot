@@ -47,6 +47,9 @@ export default function PlatformGuide({rank=1,navigate}){
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Role</th><th>Typical person</th><th>Can change</th></tr></thead>
         <tbody>{ROLES.map(r=><tr key={r.role} className={r.rank===rank?'pg-you':''}><td><b>{r.role}</b></td><td>{r.who}</td><td>{r.can}</td></tr>)}</tbody></table></div></section>
 
+    {(()=>{const me=[...ROLES].reverse().find(r=>r.rank<=rank);return me?.daily?.length?<section className="m-panel" id="pg-myrole" data-guide-role={me.rank}><h2>Your role: {me.role}</h2><p>What a {me.role} looks at each day. Screens for other roles are not shown in your menu.</p>
+      <ul>{me.daily.map(x=><li key={x}>{x}</li>)}</ul></section>:null})()}
+
     <section className="m-panel" id="pg-daily"><h2>Daily routine</h2><p>About 15 minutes, top to bottom; stop to act only where something is amber or red. Times on screen are Melbourne time.</p>
       <ol className="pg-steps">{DAILY_ROUTINE.map(s=><li key={s.title}><div><b>{s.title}</b><span>{s.text}</span></div><OpenBtn page={s.page} tab={s.tab}/></li>)}</ol></section>
 

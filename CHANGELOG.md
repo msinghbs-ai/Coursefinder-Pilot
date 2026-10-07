@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.139 — 7 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.212** (role guides aligned with server permission checks; Your role section in the Platform guide; Automations wording).
+- No database change.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.138 — 7 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.211** (Layer 2 › Adapter builder: provider, basics, central pages, recognise attributes, validate and admit, on one screen).

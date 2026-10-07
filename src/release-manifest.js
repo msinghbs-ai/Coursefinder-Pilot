@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.211'
-export const PACKAGE_VERSION='0.1.138'
+export const UI_VERSION='2.15.212'
+export const PACKAGE_VERSION='0.1.139'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'7 Oct 2026',
-  title:'Adapter builder, one simple screen',
+  title:'Role guides match what each role can do',
   changes:[
-    'Layer 2 has a new Adapter builder tab: pick any provider (with or without an adapter), see its basics (website, courses, course pages read, adapter state), attach central pages (key dates, international fee schedule, English requirements), recognise course attributes on sample pages, check each field against the admit rule, then admit by field as a separate step.',
-    'Central pages can now also be an international fee schedule, read by the existing provider-facts job and approved under Layer 4 \u203a Attributes.',
-    'Layer 2 \u203a Adapters now opens from PIM Operator, matching what the server allows; Pipeline Operators keep Scholarships.'
+    'Platform guide \u203a Who does what now lists what each role can change as the server allows it (checked against the live permission checks), and a new Your role section lists the screens that role looks at each day.',
+    'Automations says correctly that a PIM Admin or Platform Admin can change them.'
   ],
-  bugFixes:[]
+  bugFixes:['The guide no longer says a Pipeline Operator can pause automations or send items back to the AI; both need a PIM Admin.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

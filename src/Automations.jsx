@@ -41,7 +41,7 @@ export default function Automations({onError}){
         <select className="fv-filter" value={area} onChange={e=>setArea(e.target.value)} aria-label="Area"><option value="all">All areas</option>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
         <select className="fv-filter" value={show} onChange={e=>setShow(e.target.value)} aria-label="Show"><option value="all">All</option><option value="paused">Paused ({paused})</option><option value="failed">Failed in 24h ({failing})</option></select>
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button></div>}/>
-      {rank<5&&<p className="l3v-note">You can view automations. Only a Platform Admin can change them.</p>}
+      {rank<5&&<p className="l3v-note">You can view automations. A PIM Admin or Platform Admin can change them.</p>}
     </section>
     {areas.filter(a=>shown.some(j=>j.area===a)).map(a=><AreaPanel key={a} area={a} jobs={shown.filter(j=>j.area===a)} all={jobs.filter(j=>j.area===a)} rank={rank} busy={busy} act={act}/>)}
     {!shown.length&&<section className="m-panel"><Empty text="No automation matches."/></section>}
