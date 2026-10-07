@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.217'
-export const PACKAGE_VERSION='0.1.144'
+export const UI_VERSION='2.15.218'
+export const PACKAGE_VERSION='0.1.145'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'7 Oct 2026',
-  title:'Faster first load',
+  title:'More samples and a model per adapter',
   changes:[
-    'The admin opens faster: sign-in and the dashboard load about half as much code (about 257 kB instead of 461 kB, compressed). Other screens load the first time you open them, with a short Loading\u2026 line.',
-    'Shared libraries are in their own files, so they stay cached in the browser across releases.',
-    'If a new release is deployed while the admin is open, opening a screen reloads the page once to pick up the new release, instead of showing an error.'
+    'Adapter builder: Capture samples now takes 6 course pages spread across course types (it took at most 3). Any course with a stored page can be added as a sample, up to 10: search for it in the Guided build step 2, or press Use as sample on a row of the adapter\u2019s course list.',
+    'The model reads every sample (it read only the first 2), and the proposal shows, for each sample, which attributes it could not find.',
+    'A Platform Admin can choose the model for one adapter in the Guided build step 3, from the models enabled and qualified for intake work. It stays one fixed model per adapter; the default is unchanged.'
   ],
-  bugFixes:[]
+  bugFixes:['A long model answer is no longer cut off (worker v0.17.14, 7 Oct).']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

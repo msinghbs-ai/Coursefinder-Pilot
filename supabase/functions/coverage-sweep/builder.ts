@@ -62,11 +62,14 @@ Rules for patterns: anchor them on stable labels near the value; write {code} wh
 Prefer a JSON path when the value is in the page data. Use only what the samples show. Keep it short: each pattern under 300 characters, never list course names or values inside a pattern, reason and notes under 400 characters each. Answer JSON only.`;
 
 export function builderRequest(model: string, draft: any) {
-  const samples = (draft.captures || []).filter((c: any) => !c.error).slice(0, 2).map((c: any, i: number) => {
-    let budget = 7000; const blocks: string[] = [];
+  // v0.17.15: every captured sample is read (up to 10), each with a share of the text budget, instead of the first 2
+  const good = (draft.captures || []).filter((c: any) => !c.error).slice(0, 10);
+  const per = Math.max(2500, Math.floor(28000 / Math.max(1, good.length)));
+  const samples = good.map((c: any, i: number) => {
+    let budget = per; const blocks: string[] = [];
     for (const b of c.blocks || []) { const line = `[${b.id}] ${b.heading}: ${b.text}`; if (budget - line.length < 0) break; budget -= line.length; blocks.push(line) }
     const marked = new Set((draft.marks || []).filter((m: any) => m.sample === i && m.kind === "json").map((m: any) => m.ref));
-    const leaves = (c.leaves || []).filter((l: any) => marked.has(l.path)).concat((c.leaves || []).filter((l: any) => !marked.has(l.path)).slice(0, 120));
+    const leaves = (c.leaves || []).filter((l: any) => marked.has(l.path)).concat((c.leaves || []).filter((l: any) => !marked.has(l.path)).slice(0, good.length > 3 ? 60 : 120));
     return `SAMPLE ${i + 1}: ${c.course} (code ${c.code || "none"})\nURL: ${c.url}\nPage title: ${c.title}\nJSON script id: ${c.json_source || "none"}\nTEXT BLOCKS:\n${blocks.join("\n")}\nJSON VALUES:\n${leaves.map((l: any) => `${l.path} = ${l.value}`).join("\n") || "(none)"}`;
   }).join("\n\n");
   const marks = (draft.marks || []).map((m: any) => `- ${m.field}: sample ${m.sample + 1}, ${m.kind === "json" ? `JSON path ${m.ref}` : `text block [${m.ref}]`}${m.value ? ` (shows: ${String(m.value).slice(0, 120)})` : ""}`).join("\n");

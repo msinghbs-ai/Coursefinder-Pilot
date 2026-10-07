@@ -213,6 +213,8 @@ export function AdapterEditor({providerId,onError,hideReview=false}){
 // blocks, page-data values), mark which block or value holds each attribute, add comments, and ask the pinned preferred
 // model for a proposal. The proposal only fills the adapter settings below: Save, Apply and admission stay separate.
 const B_FIELDS=['intakes','fee','ielts_overall','english','campus','mode','duration','study_level','student_type','not_admitting','aqf_level','title','code']
+// v2.15.218: every attribute the adapter can read, shown per sample as found or not found
+export const SAMPLE_ATTRS=[['intakes','Intakes',o=>(o.intakes||[]).length>0],['fee','Fee',o=>o.fee!=null],['ielts_overall','IELTS',o=>o.ielts!=null],['duration','Duration',o=>o.extra?.duration!=null],['mode','Mode',o=>o.extra?.mode!=null],['campus','Campus',o=>o.extra?.campus!=null],['study_level','Level',o=>o.extra?.study_level!=null],['aqf_level','AQF',o=>o.extra?.aqf_level!=null],['student_type','Student type',o=>o.extra?.student_type!=null]]
 export function AdapterBuilder({providerId,onUse,onError,forceOpen=false}){
   const[r,setR]=useState(null),[busy,setBusy]=useState(false),[marks,setMarks]=useState([]),[comments,setComments]=useState(''),[tab,setTab]=useState(0)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_adapter_builder',{p_action:'read',p_args:{provider_id:providerId}});if(error)throw error;setR(data||{});const dr=(data?.drafts||[])[0];if(dr&&!marks.length){setMarks(dr.marks||[]);setComments(dr.comments||'')}}catch(e){onError?.(errText(e))}}
@@ -225,8 +227,8 @@ export function AdapterBuilder({providerId,onUse,onError,forceOpen=false}){
   const markOf=(kind,ref)=>marks.find(m=>m.sample===tab&&m.kind===kind&&m.ref===ref)?.field||''
   const setMark=(kind,ref,value,field)=>setMarks(ms=>[...ms.filter(m=>!(m.sample===tab&&m.kind===kind&&m.ref===ref)),...(field?[{sample:tab,kind,ref,value:String(value||'').slice(0,160),field}]:[])])
   const pick=(kind,ref,value)=><select aria-label={`Attribute for ${ref}`} value={markOf(kind,ref)} disabled={!can} onChange={e=>setMark(kind,ref,value,e.target.value)}><option value="">—</option>{B_FIELDS.map(f=><option key={f} value={f}>{f.replace(/_/g,' ')}</option>)}</select>
-  return <details className="tn-items" data-adapter-builder open={forceOpen||Boolean(dr)}><summary>Visual adapter builder {dr?`· ${dr.status}`:''} · AI today US$ {Number(b.used_usd||0).toFixed(3)} of {b.limit_usd} · {b.proposals||0} of {b.limit_proposals} proposals · model {b.model}</summary>
-    <ol className="tn-steps"><li><strong>Capture</strong> sample pages (Firecrawl, about 1 credit each).</li><li><strong>Mark</strong> the text block or page-data value that holds each attribute, and add comments.</li><li><strong>Propose</strong>: the pinned model suggests the settings and they are tried on the samples.</li><li><strong>Use this proposal</strong> fills the settings below. Then Preview, Save and Apply as usual.</li></ol>
+  return <details className="tn-items" data-adapter-builder open={forceOpen||Boolean(dr)}><summary>Visual adapter builder {dr?`· ${dr.status}`:''} · AI today US$ {Number(b.used_usd||0).toFixed(3)} of {b.limit_usd} · {b.proposals||0} of {b.limit_proposals} proposals · model {r.model?.model||b.model}{r.model?.chosen?' (chosen for this adapter)':''}</summary>
+    <ol className="tn-steps"><li><strong>Capture</strong> sample pages (Firecrawl, about 1 credit each): {r.max_samples?'6 spread across course types; add any course with Use as sample in the course list (up to 10).':''}</li><li><strong>Mark</strong> the text block or page-data value that holds each attribute, and add comments.</li><li><strong>Propose</strong>: the pinned model suggests the settings and they are tried on the samples.</li><li><strong>Use this proposal</strong> fills the settings below. Then Preview, Save and Apply as usual.</li></ol>
     {can&&<div className="tn-starts"><Button compact disabled={!can||['capturing','proposing'].includes(dr?.status)} onClick={()=>act('start',{},'Capture sample pages of this university with Firecrawl (screenshot and page)? About 1 credit a page.')}>{dr?'Capture new samples':'Capture sample pages'}</Button>
       {dr&&caps.length>0&&<Button compact disabled={!can} onClick={()=>act('marks',{draft_id:dr.id,marks,comments},null)}>Keep marks</Button>}
       {dr&&caps.length>0&&<Button compact variant="primary" disabled={!can||dr.status==='proposing'} onClick={()=>act('propose',{draft_id:dr.id,marks,comments},null)}>Ask for a proposal</Button>}</div>}
@@ -241,8 +243,8 @@ export function AdapterBuilder({providerId,onUse,onError,forceOpen=false}){
     {last&&<div data-builder-proposal><h4 className="sl-h4">Proposal {fmtDateTime(last.at)} · {last.model} · US$ {Number(last.cost||0).toFixed(4)}</h4>
       {last.kind==='error'?<p className="cf-chip tone-danger">{last.error}</p>:<>
         <p className="sl-sub">{last.reason}</p>{(last.dropped||[]).length>0&&<p className="cf-chip tone-warning">Left out by the rules: {last.dropped.join(' · ')}</p>}
-        <div className="cf-table-wrap"><table className="cf-table" data-builder-output><thead><tr><th>Sample</th><th>Confirmed by</th><th>Intakes</th><th>Fee</th><th>IELTS</th><th>Other fields</th></tr></thead><tbody>
-          {(last.output||[]).map((o,i)=><tr key={i}><td>{o.course}<small className="sl-sub">{o.code}</small></td><td>{o.identity||'—'}</td><td>{(o.intakes||[]).join(', ')||'—'}</td><td>{o.fee!=null?fmtNumber(o.fee):'—'}{o.fee_year?` (${o.fee_year})`:''}</td><td>{o.ielts??'—'}</td><td><small className="sl-sub">{Object.entries(o.extra||{}).map(([k,v])=>`${k.replace(/_/g,' ')}: ${v}`).join(' · ')||'—'}</small></td></tr>)}
+        <div className="cf-table-wrap"><table className="cf-table" data-builder-output><thead><tr><th>Sample</th><th>Confirmed by</th><th>Intakes</th><th>Fee</th><th>IELTS</th><th>Other fields</th><th>Not found</th></tr></thead><tbody>
+          {(last.output||[]).map((o,i)=><tr key={i}><td>{o.course}<small className="sl-sub">{o.code}</small></td><td>{o.identity||'—'}</td><td>{(o.intakes||[]).join(', ')||'—'}</td><td>{o.fee!=null?fmtNumber(o.fee):'—'}{o.fee_year?` (${o.fee_year})`:''}</td><td>{o.ielts??'—'}</td><td><small className="sl-sub">{Object.entries(o.extra||{}).map(([k,v])=>`${k.replace(/_/g,' ')}: ${v}`).join(' · ')||'—'}</small></td><td data-sample-missing>{o.error?<small className="sl-sub">{o.error}</small>:<small className="sl-sub">{SAMPLE_ATTRS.filter(([,,f])=>!f(o)).map(([,l])=>l).join(', ')||'all found'}</small>}</td></tr>)}
         </tbody></table></div>
         <details><summary>Proposed settings</summary><pre className="tn-pre">{JSON.stringify(last.adapter,null,2)}</pre></details>
         {can&&<Button compact variant="primary" onClick={()=>onUse(last.adapter||{})}>Use this proposal</Button>}</>}</div>}
@@ -258,6 +260,9 @@ export function AdapterReview({providerId,can,onError}){
   const[r,setR]=useState(null),[req,setReq]=useState(''),[busy,setBusy]=useState(false)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_uni_adapter_review',{p_provider_id:providerId});if(error)throw error;setR(data||{})}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[providerId])
+  // v2.15.218 (Platform Admin, 8 Oct 2026 10:31): any course's page can be added to the builder's samples (Platform Admin), not only the ones chosen at random
+  const[sampled,setSampled]=useState('')
+  const useSample=async x=>{const reason=ask(`Add ${x.course} as a sample page for the adapter builder? Firecrawl captures it (about 1 credit) and the next proposal reads it.`);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'add_sample',p_args:{provider_id:providerId,url:x.url,reason}});if(error)throw error;setSampled(`${x.course} added as a sample. It is captured in about a minute; then ask for a proposal again.`)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const control=async(action,args,q)=>{const reason=q?ask(q):'request';if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_uni_adapter_control',{p_action:action,p_args:{provider_id:providerId,...args,reason}});if(error)throw error;if(action==='request')setReq('');await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   if(!r)return null
   const on=Boolean(r.admit?.on),fields=r.admit?.fields||ADMIT_FIELDS.map(([k])=>k)
@@ -278,11 +283,13 @@ export function AdapterReview({providerId,can,onError}){
     </tbody></table></div></details>}
     {(r.readings||[]).length>0&&<details className="tn-items" open><summary>What it read on pages confirmed by CRICOS code ({fmtNumber(r.readings_total)} pages, intakes on {fmtNumber(r.intakes_by_adapter)}, latest {r.readings.length})</summary>
       <p className="sl-sub">Values marked “pattern” are the adapter’s own reading. They are admitted only with admission switched on above, for the fields ticked, and never for an excluded course. Location, mode, duration and level are shown for checking and are not admitted. Use Exclude on a row whose reading is wrong.</p>
-      <div className="cf-table-wrap"><table className="cf-table" data-adapter-readings><thead><tr><th>Course</th><th>Intakes</th><th>Held now</th><th>Fee</th><th>Other fields</th>{can&&<th>Exclude</th>}</tr></thead><tbody>
+      {sampled&&<p className="cf-chip tone-info" data-sample-added>{sampled}</p>}
+      <div className="cf-table-wrap"><table className="cf-table" data-adapter-readings><thead><tr><th>Course</th><th>Intakes</th><th>Held now</th><th>Fee</th><th>Other fields</th>{can&&<th>Sample</th>}{can&&<th>Exclude</th>}</tr></thead><tbody>
       {r.readings.map((x,i)=><tr key={i}><td>{x.course}<small className="sl-sub">{x.code} · <a href={x.url} target="_blank" rel="noreferrer">{x.url}</a></small></td>
         <td>{(x.intakes||[]).join(', ')||'—'}{x.intakes_by==='adapter'&&<span className="cf-chip tone-neutral">pattern</span>}{x.intake_context&&<small className="sl-sub">{x.intake_context}</small>}</td>
         <td>{(x.intakes_now||[]).join(', ')||'—'}</td><td>{x.fee!=null?fmtNumber(x.fee):'—'}{x.fee_by==='adapter'&&<span className="cf-chip tone-neutral">pattern</span>}</td>
         <td><small className="sl-sub">{Object.entries(x.extra||{}).map(([k,v])=>`${k.replace(/_/g,' ')}: ${v}`).join(' · ')||'—'}</small></td>
+        {can&&<td><Button compact disabled={busy} aria-label={`Use ${x.course} as a sample`} onClick={()=>useSample(x)}>Use as sample</Button></td>}
         {can&&<td>{ADMIT_FIELDS.filter(([k])=>k!=='exit_awards'&&k!=='host_pages').map(([k,label])=><Button key={k} compact disabled={busy} aria-label={`Exclude ${label} for ${x.course}`} onClick={()=>control('exclude',{url:x.url,field:k,exclude:true},`Exclude ${label.toLowerCase()} for ${x.course} from admission? Give the reason (kept in the log).`)}>{label}</Button>)}</td>}</tr>)}
     </tbody></table></div></details>}
     <h4 className="sl-h4">Ask for an improvement</h4>
