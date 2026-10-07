@@ -94,18 +94,18 @@ function Toolset({t,d,can,write}){
   </Card>
 }
 
-// The key in use and the limits of its plan: replace the key on Environment & integrations, then enter the new plan here.
+// The key in use and the limits of its plan: replace the key on Settings, then enter the new plan here.
 function KeyPlan({t}){
   const p=t.plan||{},pct=p.credits?Math.min(100,Math.round(100*Number(p.used||0)/Number(p.credits))):0
   return <div className="tn-plan" data-toolset-key={t.key}>
     <div className="tn-plan-row"><span className={`cf-chip tone-${t.key_saved?'success':'warning'}`}>{t.key_saved?'Key saved in the vault':'No key saved'}</span>
       <span className={`cf-chip tone-${t.switched_on?'success':'neutral'}`}>{t.switched_on?'Switched on in Models & services':'Switched off in Models & services'}</span>
-      <a href="#environment">{t.key_saved?'Replace the key':'Save the key'} on Environment &amp; integrations</a></div>
+      <a href="#environment">{t.key_saved?'Replace the key':'Save the key'} on Settings</a></div>
     <div className="tn-plan-row" data-toolset-plan={t.key}><strong>{p.name||'Plan not named'}</strong><span>{fmtNumber(p.used)} of {fmtNumber(p.credits)} credits used{p.counted_from?` since ${p.counted_from}`:''}{p.renews_monthly?' (renews monthly)':''}</span>
       <span>{fmtNumber(p.left)} left · {fmtNumber(p.reserve)} kept back · up to {fmtNumber(p.max_concurrency)} calls at once</span>
       {p.at_reserve&&<span className="cf-chip tone-danger">At its reserve — work using this key has stopped</span>}</div>
     <div className="sl-credit-bar" aria-hidden><span style={{width:`${pct}%`}}/></div>
-    <small className="sl-sub">When you move to a production key: save the new key on Environment &amp; integrations, then set its plan name, credits, renewal, “Count credits from” (the day you changed it) and calls at once below. Nothing else changes.</small>
+    <small className="sl-sub">When you move to a production key: save the new key on Settings, then set its plan name, credits, renewal, “Count credits from” (the day you changed it) and calls at once below. Nothing else changes.</small>
   </div>
 }
 
@@ -131,7 +131,7 @@ function OpenRouter({or}){
     <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th className="num">Spent today (UTC)</th><th className="num">Daily guard</th><th className="num">Credit floor</th></tr></thead><tbody>
       {(or.guards||[]).map(g=><tr key={g.task_class} data-or-guard={g.task_class}><td>{g.task_class.replace(/_/g,' ')}</td><td className="num">{money(g.spent_today)}</td><td className="num">{money(g.daily_usd_max)}</td><td className="num">{money(g.credit_floor_usd)}</td></tr>)}
     </tbody></table></div>
-    <small className="sl-sub">The guards and the floor are changed on Environment &amp; integrations › Pipeline settings. Spend by day (last 14 days): {(or.spend_by_day||[]).map(x=>`${x.day} ${money(x.usd)} (${fmtNumber(x.calls)} calls)`).join(' · ')||'none'}</small>
+    <small className="sl-sub">The guards and the floor are changed on Settings. Spend by day (last 14 days): {(or.spend_by_day||[]).map(x=>`${x.day} ${money(x.usd)} (${fmtNumber(x.calls)} calls)`).join(' · ')||'none'}</small>
   </div>
 }
 

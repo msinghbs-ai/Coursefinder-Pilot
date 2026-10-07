@@ -47,7 +47,7 @@ export default function PlatformResourcesPanel({onError=()=>{}}){
   const l=data.latest||{},c=data.compute||{},daily=data.daily||[],alerts=resourceAlerts(data),costs=data.costs||{},st=data.storage||{}
   const ratio=Number(data.memory_ratio||0)
   return <section className="env-panel pr-panel" aria-label="Platform resources and cost">
-    <div className="env-head"><div><small>Platform settings / Environment & integrations</small><h2>Platform resources and cost</h2><p>Recorded hourly from the database's own statistics. Use it to plan compute size and toolset spend before limits are reached.</p></div>
+    <div className="env-head"><div><small>Platform settings / Settings</small><h2>Platform resources and cost</h2><p>Recorded hourly from the database's own statistics. Use it to plan compute size and toolset spend before limits are reached.</p></div>
       <button onClick={load} disabled={busy} aria-label="Refresh resources"><RefreshCw size={15}/>Refresh resources</button></div>
     {alerts.length>0&&<div className="pr-alerts">{alerts.map((a,i)=><div key={i} className={`pr-alert ${a.level}`}><AlertTriangle size={15}/><span>{a.text}</span></div>)}</div>}
     <div className="pr-tiles">

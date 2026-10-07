@@ -264,25 +264,6 @@ export default function AdaptersWorkspace({onError}){
   const openRow=(id,block='build')=>{const r=all.find(x=>x.provider_id===id);if(r){if(block)rememberOpen(`adapters.block.${block}`);setF({...FILTERS,kind:'any',q:r.name});setOpen(id)}}
 
   return <div className="m-page-stack" data-adapters-workspace>
-    <Card id="adapters.how" title="How an adapter goes from built to admitting" meta={<span>Build · Qualify · Admit · Schedule</span>} data-adapters-how>
-      <ol className="tn-steps">
-        <li><strong>Build</strong> the adapter in its row (Build and test the adapter): the visual builder picks each field on a stored page, Preview tries it on stored pages, Save keeps it, Apply reads the stored pages again with it.</li>
-        <li><strong>Qualify</strong> it: a task that measures what it reads against the admission rules. It admits nothing.</li>
-        <li><strong>Admit</strong> the fields that passed: a separate task, a Platform Admin with a reason. Values entered or locked by hand are never changed.</li>
-        <li><strong>Schedule</strong>: every page read is read again on its cycle (platform default {fmtNumber(settings.read_cycle_default)} days, or the university's own). Only a changed page produces new evidence for the adapter to read.</li>
-        <li><strong>Switch off</strong> to stop it: {OFF_EFFECT}</li>
-      </ol>
-    </Card>
-    <Card id="adapters.firecrawl-runs" title="Firecrawl runs" subtitle="Read pages and Find pages for the Firecrawl targets, started as tasks." data-adapters-firecrawl-runs><FirecrawlRuns onError={fail}/></Card>
-    <Card id="adapters.firecrawl-targets" title="Firecrawl targets and credits spent" subtitle="The universities Firecrawl is used for, and the credits spent this period." data-adapters-firecrawl-targets><FirecrawlTargets onError={fail} onOpen={openRow}/></Card>
-    <Card id="adapters.next" title="What each university needs next" subtitle="Rules learnt from the first adapters: find pages first, an adapter for page data, start dates or English, or admitted as it is." data-adapters-next><AdapterEvaluation onPick={openRow} onError={fail}/></Card>
-    <Card id="adapters.fee-rules" title="Page fees against CRICOS (dry run)" subtitle="What the page-fee rules would change. Read only; nothing is applied." data-adapters-fee-rules><FeeRulesReport onError={fail}/></Card>
-    <Card id="adapters.settings" title="Fee range and award link settings" subtitle="Settings that apply to every university's fee range and hosted courses." data-adapters-settings>
-      <FeeRangeSettings d={fr} can={can} onDone={load} onError={fail}/>
-      <AwardLinkSettings can={can} onError={fail}/>
-      <p className="ad-note">Qualify thresholds (read on {share(settings.min_read_share)} of pages, agree on {share(settings.min_agree_share)}) are Firecrawl settings on <a className="cf-link" href="#models-services">Platform settings › Models &amp; services</a>.</p>
-    </Card>
-
     <section className="m-panel" data-adapters-list>
       <SectionTitle title="Adapters" subtitle="One row per university with an adapter or in the Firecrawl targets. Open a row for everything about that university. Tick rows to act on many."
         action={<Button compact className="cf-icon-btn" title="Refresh" aria-label="Refresh" onClick={load} disabled={busy}><RefreshCw size={14}/></Button>}/>
@@ -309,5 +290,25 @@ export default function AdaptersWorkspace({onError}){
         {data.as_at&&<small className="sl-sub">As at {fmtDateTime(data.as_at)}.</small>}
       </>}
     </section>
+
+    {/* v2.15.213: the university list comes first; the dry run and settings sit below it. */}
+    <Card id="adapters.how" title="How an adapter goes from built to admitting" meta={<span>Build · Qualify · Admit · Schedule</span>} data-adapters-how>
+      <ol className="tn-steps">
+        <li><strong>Build</strong> the adapter in its row (Build and test the adapter): the visual builder picks each field on a stored page, Preview tries it on stored pages, Save keeps it, Apply reads the stored pages again with it.</li>
+        <li><strong>Qualify</strong> it: a task that measures what it reads against the admission rules. It admits nothing.</li>
+        <li><strong>Admit</strong> the fields that passed: a separate task, a Platform Admin with a reason. Values entered or locked by hand are never changed.</li>
+        <li><strong>Schedule</strong>: every page read is read again on its cycle (platform default {fmtNumber(settings.read_cycle_default)} days, or the university's own). Only a changed page produces new evidence for the adapter to read.</li>
+        <li><strong>Switch off</strong> to stop it: {OFF_EFFECT}</li>
+      </ol>
+    </Card>
+    <Card id="adapters.firecrawl-runs" title="Firecrawl runs" subtitle="Read pages and Find pages for the Firecrawl targets, started as tasks." data-adapters-firecrawl-runs><FirecrawlRuns onError={fail}/></Card>
+    <Card id="adapters.firecrawl-targets" title="Firecrawl targets and credits spent" subtitle="The universities Firecrawl is used for, and the credits spent this period." data-adapters-firecrawl-targets><FirecrawlTargets onError={fail} onOpen={openRow}/></Card>
+    <Card id="adapters.next" title="What each university needs next" subtitle="Rules learnt from the first adapters: find pages first, an adapter for page data, start dates or English, or admitted as it is." data-adapters-next><AdapterEvaluation onPick={openRow} onError={fail}/></Card>
+    <Card id="adapters.fee-rules" title="Page fees against CRICOS (dry run)" subtitle="What the page-fee rules would change. Read only; nothing is applied." data-adapters-fee-rules><FeeRulesReport onError={fail}/></Card>
+    <Card id="adapters.settings" title="Fee range and award link settings" subtitle="Settings that apply to every university's fee range and hosted courses." data-adapters-settings>
+      <FeeRangeSettings d={fr} can={can} onDone={load} onError={fail}/>
+      <AwardLinkSettings can={can} onError={fail}/>
+      <p className="ad-note">Qualify thresholds (read on {share(settings.min_read_share)} of pages, agree on {share(settings.min_agree_share)}) are Firecrawl settings on <a className="cf-link" href="#models-services">Platform settings › Models &amp; services</a>.</p>
+    </Card>
   </div>
 }

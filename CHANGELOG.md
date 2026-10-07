@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.140 — 7 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.213** (operator screens cleaned up: raw JSON settings under Advanced (Platform Admin), Adapters list first, Firecrawl credits shown once on Models & services, Environment & integrations links renamed Settings, two unused ranking scripts removed).
+- No database change.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.139 — 7 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.212** (role guides aligned with server permission checks; Your role section in the Platform guide; Automations wording).
