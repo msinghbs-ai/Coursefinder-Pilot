@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.138 — 7 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.211** (Layer 2 › Adapter builder: provider, basics, central pages, recognise attributes, validate and admit, on one screen).
+- Database: migration 20261007001600 (`public.admin_adapter_builder_basics`, read only, rank 5; `admin_provider_central_page` also accepts `fee_schedule`, patched behind an md5 guard).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.137 — 6 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.210** (Coverage › Attributes opens with a per-field 80% target panel for intakes, English and fees, split by who supplied the value).

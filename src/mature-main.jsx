@@ -40,6 +40,7 @@ import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
 import{CoverageView}from'./course-coverage'
 import AdaptersWorkspace from'./AdaptersWorkspace'
+import AdapterBuilderTab from'./AdapterBuilderTab'
 import Card from'./Card'
 import LinkRefresh from'./LinkRefresh'
 import FeeSchedules from'./FeeSchedules'
@@ -235,6 +236,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
       case'layer2':
         if(tab==='scholarships')return <ScholarshipLayer layer={2} rank={rank} onError={err}/>
+        // v2.15.211 (CF-247, Platform Admin 7 Oct 18:23): Adapter builder, one simple screen to build or change an adapter.
+        if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err}/>
         // v2.15.200 (Decision 254): Adapters is Layer 2's first tab. Overview, Fetch an area and History retired, Source
         // profiles moved to Scrapers & fetchers.
         return <AdaptersWorkspace rank={rank} onError={err}/>

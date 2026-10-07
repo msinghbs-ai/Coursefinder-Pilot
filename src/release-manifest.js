@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.210'
-export const PACKAGE_VERSION='0.1.137'
+export const UI_VERSION='2.15.211'
+export const PACKAGE_VERSION='0.1.138'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'6 Oct 2026',
-  title:'Coverage against the 80% target, by field',
+  date:'7 Oct 2026',
+  title:'Adapter builder, one simple screen',
   changes:[
-    'Coverage \u203a Attributes opens with a new panel: intakes, English and fees are each measured on their own against 80% of active courses. Each bar shows who supplied the value (adapter, central page, page reader, entered by hand or another source), a line marks 80%, and the table beneath says how many more courses each field needs.',
-    'The panel follows the country, tier and university filters and is rebuilt hourly. Read only; nothing stored changed, and no existing panel was removed or reordered.'
+    'Layer 2 has a new Adapter builder tab: pick any provider (with or without an adapter), see its basics (website, courses, course pages read, adapter state), attach central pages (key dates, international fee schedule, English requirements), recognise course attributes on sample pages, check each field against the admit rule, then admit by field as a separate step.',
+    'Central pages can now also be an international fee schedule, read by the existing provider-facts job and approved under Layer 4 \u203a Attributes.',
+    'Layer 2 \u203a Adapters now opens from PIM Operator, matching what the server allows; Pipeline Operators keep Scholarships.'
   ],
   bugFixes:[]
 }
