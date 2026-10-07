@@ -438,3 +438,5 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-auto .ab-g-head{display:flex;gap:8px;align-items:center}
 .ab-auto .ab-g-body{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 0 30px}
 .ab-auto .ab-g-body .tn-list{flex-basis:100%;margin:0}
+/* v2.15.217: shown while a screen loads on demand */
+.m-page-loading{display:flex;gap:8px;align-items:center;padding:24px;color:var(--cf-muted)}

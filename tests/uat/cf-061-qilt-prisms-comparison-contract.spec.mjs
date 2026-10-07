@@ -39,7 +39,7 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(context).toContain('response_count')
   expect(context).toContain('National benchmark')
 
-  expect(shell).toContain("import ComparisonWorkspace from'./ComparisonWorkspace'")
+  expect(shell).toContain("const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))")
   expect(shell).toContain("if(tab==='compare')return <ComparisonWorkspace")
   expect(shell).toContain("navigate?.('Compare',{type,ids:data.id})")
   const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]

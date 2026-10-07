@@ -38,7 +38,7 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(component).not.toMatch(/supabase\.rpc\(['"](?:.*production.*enable|.*purge|.*delete)/i)
     expect(component).not.toMatch(/functions\.invoke\([^)]*(?:production|purge|delete)/i)
 
-    expect(shell).toContain("import PlatformMaturity from'./platform-maturity-entry'")
+    expect(shell).toContain("const PlatformMaturity=lazyPage(()=>import('./platform-maturity-entry'))")
     expect(shell).toContain('<PlatformMaturity rank={rank} onError={onError} view="capacity"/>')
     expect(shell).not.toContain("{tool==='platform'&&rank>=6&&<div className=\"m-legacy-host\"><RegulatorySettings")
     // v2.15.107: PIM configuration is the Platform settings > Data model page (role rank 5).
