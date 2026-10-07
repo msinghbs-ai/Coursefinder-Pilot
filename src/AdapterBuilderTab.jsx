@@ -46,19 +46,67 @@ function Qualify({q}){
   </tbody></table><p className="sl-sub">Admit rule: read on at least half the pages, at least 3 pages, and at least 90% agreement (or checked by hand). A pass is a measure, not a switch: admitting is the separate step below.</p></div>
 }
 
-export default function AdapterBuilderTab({rank,onError}){
-  const[pid,setPid]=useState(null),[b,setB]=useState(null),[busy,setBusy]=useState(false),[key,setKey]=useState(0)
+// v2.15.215 (Platform Admin, 7 Oct 2026 22:12): guided build. One button per step, each run by the Platform Admin under their own sign-in
+// through the existing functions and their own server checks: find pages (Firecrawl target), capture samples, the pinned OpenRouter model
+// proposes the settings, save in testing and apply, qualify, then admit only the fields ready to admit. Nothing runs on a schedule and a
+// passing check never admits by itself. Ready to admit: passes the admit rule AND agrees with held values (90%+ on 3+ courses, read on 5+ pages).
+export function readyFields(q){const f=q?.fields||{},ready=[],held={}
+  for(const k of Object.keys(FIELD)){const x=f[k];if(!x)continue
+    const why=!x.pass?(x.why||'does not pass'):Number(x.read||0)<5?'read on fewer than 5 pages':(Number(x.agree||0)<3||x.agree_share==null)?'not enough held values to check against (needs 3 agreeing courses)':Number(x.agree_share)<0.9?'agrees on under 90% of checked courses':null
+    if(why)held[k]=why;else ready.push(k)}
+  return{ready,held}}
+function GStep({n,title,state,children}){return <li className={`ab-g-step is-${state}`} data-guided-step={n}><div className="ab-g-head"><span className="ab-num">{state==='done'?'✓':n}</span><strong>{title}</strong>{state==='busy'&&<span className="m-spinner tiny"/>}</div><div className="ab-g-body">{children}</div></li>}
+function GuidedBuild({b,onChanged,onError}){
+  const[r,setR]=useState(null),[busy,setBusy]=useState('')
+  const pid=b.provider_id,read=b.pages?.read||0,can=Boolean(b.can_manage)
+  const loadDraft=async()=>{try{const{data,error}=await supabase.rpc('admin_adapter_builder',{p_action:'read',p_args:{provider_id:pid}});if(error)throw error;setR(data||{})}catch(e){onError?.(errText(e))}}
+  useEffect(()=>{loadDraft()},[pid])
+  const dr=(r?.drafts||[])[0],last=(dr?.proposals||[]).slice(-1)[0],captured=(dr?.captures||[]).some(c=>!c.error)
+  useEffect(()=>{if(!dr||!['capturing','proposing'].includes(dr.status))return;const t=setTimeout(loadDraft,5000);return()=>clearTimeout(t)},[r])
+  const run=async(key,q,fn)=>{const reason=ask(q);if(!reason)return;setBusy(key);try{await fn(reason)}catch(e){onError?.(errText(e))}finally{setBusy('')}}
+  const rpc=async(name,args)=>{const{data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
+  const a=b.adapter,{ready,held}=readyFields(b.qualify),admitted=a?.admit?(a.admit_fields||[]):[],toAdmit=ready.filter(f=>!admitted.includes(f))
+  const proposalOk=last&&last.kind!=='error'&&last.adapter
+  const savedAfter=a&&last&&a.updated_at&&new Date(a.updated_at)>=new Date(last.at)
+  const st={find:read>=3?'done':'todo',capture:dr&&dr.status==='capturing'?'busy':captured?'done':read>=3?'todo':'wait',
+    propose:dr?.status==='proposing'?'busy':proposalOk?'done':captured?'todo':'wait',save:savedAfter?'done':proposalOk?'todo':'wait',
+    qualify:savedAfter&&b.qualify?'done':savedAfter?'todo':'wait',admit:toAdmit.length===0&&admitted.length>0?'done':toAdmit.length?'todo':'wait'}
+  return <section className="ab-auto" data-guided-build>
+    <div className="ab-auto-head"><div><strong>Guided build</strong><p className="sl-sub">Six steps, one button each. The pinned model ({r?.budget?.model||'not set'}) proposes the settings; you run every step and admit only the fields that pass the checks. AI today US$ {Number(r?.budget?.used_usd||0).toFixed(3)} of {r?.budget?.limit_usd??'—'}.</p></div></div>
+    {!can&&<p className="sl-sub">Running the steps is for Platform Admins; you can follow the progress here.</p>}
+    <ol className="ab-guided">
+      <GStep n={1} title="Find course pages" state={st.find}><small className="sl-sub">{fmtNumber(read)} read of {fmtNumber(b.pages?.stored||0)} stored (3 needed).</small>
+        {can&&read<3&&<Button compact disabled={Boolean(busy)} onClick={()=>run('find',`Add ${b.name} to the Firecrawl targets so the next Find pages run looks for and reads its course pages (credits are used)?`,async reason=>{await rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:pid,included:true,reason}});onChanged?.()})}>Add to Firecrawl targets</Button>}</GStep>
+      <GStep n={2} title="Capture sample pages" state={st.capture}><small className="sl-sub">{dr?`${(dr.captures||[]).filter(c=>!c.error).length} of ${(dr.captures||[]).length} captured (${dr.status}).`:'Firecrawl captures a few course pages, about 1 credit each.'}</small>
+        {can&&st.capture!=='wait'&&<Button compact disabled={Boolean(busy)||st.capture==='busy'} onClick={()=>run('capture',`Capture sample pages of ${b.name} with Firecrawl? About 1 credit a page.`,async reason=>{await rpc('admin_adapter_builder',{p_action:'start',p_args:{provider_id:pid,reason}});await loadDraft()})}>{captured?'Capture again':'Capture samples'}</Button>}</GStep>
+      <GStep n={3} title="Model proposes the settings" state={st.propose}><small className="sl-sub">{last?(last.kind==='error'?`Last proposal failed: ${last.error}`:`${last.model} · US$ ${Number(last.cost||0).toFixed(4)} · ${last.reason||''}`):'The pinned model reads the samples and suggests where each attribute is.'}</small>
+        {can&&st.propose!=='wait'&&<Button compact disabled={Boolean(busy)||st.propose==='busy'} onClick={()=>run('propose',`Ask the pinned model to propose settings for ${b.name} from the captured samples (uses the AI allowance)?`,async reason=>{await rpc('admin_adapter_builder',{p_action:'propose',p_args:{provider_id:pid,draft_id:dr.id,marks:dr.marks||[],comments:dr.comments||'Propose settings that read international intakes (months), IELTS overall, the international annual fee and delivery from these course pages.',reason}});await loadDraft()})}>{proposalOk?'Propose again':'Ask for a proposal'}</Button>}</GStep>
+      <GStep n={4} title="Save in testing and apply" state={st.save}><small className="sl-sub">Saves the proposed settings switched on but not admitting, then reads the stored pages with them.</small>
+        {can&&st.save!=='wait'&&<Button compact disabled={Boolean(busy)} onClick={()=>run('save',`Save the proposed settings for ${b.name} (switched on, testing, nothing admitted) and apply them to its stored pages?`,async reason=>{const cur=(await rpc('admin_uni_adapter_read',{p_provider_id:pid}))?.adapter||{};const p=last.adapter||{};const adapter={...cur,...(p.json_source!=null?{json_source:p.json_source}:{}),json_paths:{...(cur.json_paths||{}),...(p.json_paths||{})},patterns:{...(cur.patterns||{}),...(p.patterns||{})},pick:{...(cur.pick||{}),...(p.pick||{})},enabled:true};delete adapter.updated_at;delete adapter.reason;await rpc('admin_uni_adapter_write',{p_action:'save',p_args:{provider_id:pid,adapter,reason}});await rpc('admin_uni_adapter_write',{p_action:'apply',p_args:{provider_id:pid,reason}});onChanged?.()})}>{savedAfter?'Save and apply again':'Save and apply'}</Button>}</GStep>
+      <GStep n={5} title="Qualify" state={st.qualify}><small className="sl-sub">Applying takes a few minutes on large sites. Refresh to measure each field against the values already held.</small>
+        {st.qualify!=='wait'&&<Button compact disabled={Boolean(busy)} onClick={()=>onChanged?.()}>Refresh the measures</Button>}
+        {b.qualify&&<ul className="tn-list" data-guided-qualify>{Object.keys(FIELD).filter(k=>b.qualify.fields?.[k]).map(k=><li key={k}><strong>{FIELD[k]}</strong> <small className="sl-sub">{ready.includes(k)?'ready to admit':`held: ${held[k]}`}{admitted.includes(k)?' · admitting':''}</small></li>)}</ul>}</GStep>
+      <GStep n={6} title="Admit the ready fields" state={st.admit}><small className="sl-sub">{toAdmit.length?`Ready: ${toAdmit.map(f=>FIELD[f]).join(', ')}.`:admitted.length?`Admitting: ${admitted.map(f=>FIELD[f]||f).join(', ')}.`:'Nothing is ready to admit yet.'}</small>
+        {can&&toAdmit.length>0&&<Button compact variant="primary" disabled={Boolean(busy)} onClick={()=>run('admit',`Admit ${toAdmit.map(f=>FIELD[f]).join(', ')} for ${b.name}? Values read from its pages are written to the catalogue; values entered by hand are never changed.`,async reason=>{await rpc('admin_uni_adapter_control',{p_action:'admit',p_args:{provider_id:pid,admit:true,fields:[...new Set([...admitted,...toAdmit])].sort(),reason}});onChanged?.()})}>Admit these</Button>}</GStep>
+    </ol>
+  </section>
+}
+
+export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
+  const[pid,setPid]=useState(initialProvider||null),[b,setB]=useState(null),[busy,setBusy]=useState(false),[key,setKey]=useState(0)
   const load=async(id=pid)=>{if(!id)return;try{const{data,error}=await supabase.rpc('admin_adapter_builder_basics',{p_action:'basics',p_args:{provider_id:id}});if(error)throw error;setB(data)}catch(e){onError?.(errText(e))}}
   useEffect(()=>{setB(null);load(pid)},[pid])
+  useEffect(()=>{if(initialProvider&&initialProvider!==pid)setPid(initialProvider)},[initialProvider])
   if(rank<5)return <Empty text="The adapter builder is for PIM Operators and Platform Admins."/>
   const find=async()=>{const reason=ask(`Add ${b.name} to the Firecrawl targets so its course pages are found and read (Firecrawl credits are used)?`);if(!reason)return
     setBusy(true);try{const{error}=await supabase.rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:b.provider_id,included:true,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const read=b?.pages?.read||0
   return <div className="m-page-stack ab-builder" data-adapter-builder-tab>
-    <p className="sl-sub">Build or change an adapter in five steps. Each step uses evidence from the provider’s own pages; nothing is admitted until the last step.</p>
+    <p className="sl-sub">Build or change an adapter with the guided build (one button per step), or adjust it by hand below. Each step uses evidence from the provider’s own pages; nothing is admitted until you admit it.</p>
     <Step n={1} title="Provider">{b?<p><strong>{b.name}</strong> <small className="sl-sub">{b.country}</small> <Button compact onClick={()=>{setPid(null);setB(null)}}>Change</Button></p>:<PickProvider onPick={setPid} onError={onError}/>}</Step>
     {pid&&!b&&<Loading label="Reading the provider…"/>}
     {b&&<>
+      <GuidedBuild b={b} onChanged={()=>{setKey(k=>k+1);load()}} onError={onError}/>
       <Step n={2} title="Basics">
         <ul className="ab-facts">
           <li><span>Website</span>{b.website?<a href={b.website} target="_blank" rel="noreferrer">{b.website}</a>:'not recorded'}</li>

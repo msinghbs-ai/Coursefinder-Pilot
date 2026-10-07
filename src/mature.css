@@ -422,3 +422,19 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-builder .ab-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
 .ab-builder .ab-add input{flex:1;min-width:220px;padding:6px 8px}
 .ab-builder .ab-facts li{font-size:14px}
+/* v2.15.215: automatic adapter build panel and the Providers-list Adapter column (tokens only) */
+.ab-builder .ab-auto{border:1px solid var(--cf-brand);border-radius:10px;padding:12px 14px;background:var(--cf-surface-2)}
+.ab-auto .ab-auto-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.ab-auto .ab-auto-head>div{flex:1 1 320px}
+.ab-auto .ab-track{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:8px 0 0}
+.ab-auto .ab-track li{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--cf-border);color:var(--cf-muted);background:var(--cf-surface)}
+.ab-auto .ab-track li.done{color:var(--cf-brand);border-color:var(--cf-brand)}
+.ab-auto .ab-track li.now{color:var(--cf-white);background:var(--cf-brand);border-color:var(--cf-brand);font-weight:700}
+.m-adapter-cell{display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.ab-auto .ab-guided{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}
+.ab-auto .ab-g-step{border:1px solid var(--cf-border);border-radius:8px;padding:8px 10px;background:var(--cf-surface)}
+.ab-auto .ab-g-step.is-wait{opacity:.6}
+.ab-auto .ab-g-step.is-done{border-color:var(--cf-brand)}
+.ab-auto .ab-g-head{display:flex;gap:8px;align-items:center}
+.ab-auto .ab-g-body{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 0 30px}
+.ab-auto .ab-g-body .tn-list{flex-basis:100%;margin:0}

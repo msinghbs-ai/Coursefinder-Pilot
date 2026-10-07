@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.142 — 7 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.215** (guided adapter build in Layer 2 › Adapter builder: six buttoned steps run by the Platform Admin (find pages, capture samples, model proposal, save in testing and apply, qualify, admit the fields ready to admit); an Adapter column on the Providers list for Platform Admins that opens the builder with the provider loaded, or Create adapter).
+- Database: `20261007001900` (builder AI allowance US$1.50 and 60 proposals a day) and `20261007001901` (`admin_adapter_autobuild` states, read by the Providers-list column). No scheduled build: each step uses the existing functions and their own checks.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.141 — 7 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.214** (retired Layer 2 screens `layer2-operations-entry.jsx` and `EnrichmentOperations.jsx` deleted; their contract checks removed or rewritten; Adapter builder opens the visual builder in step 4 and uses only shared colour tokens; a mocked browser check of the builder was added).
