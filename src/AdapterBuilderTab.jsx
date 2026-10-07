@@ -56,6 +56,29 @@ export function readyFields(q){const f=q?.fields||{},ready=[],held={}
     if(why)held[k]=why;else ready.push(k)}
   return{ready,held}}
 function GStep({n,title,state,children}){return <li className={`ab-g-step is-${state}`} data-guided-step={n}><div className="ab-g-head"><span className="ab-num">{state==='done'?'✓':n}</span><strong>{title}</strong>{state==='busy'&&<span className="m-spinner tiny"/>}</div><div className="ab-g-body">{children}</div></li>}
+// v2.15.218 (Platform Admin, 8 Oct 2026 10:31): the model for this adapter, chosen by a Platform Admin from the models enabled and qualified for
+// intake work (Models & services). One fixed model per adapter; the default is the builder setting.
+function ModelPick({r,pid,name,busy,onDone,onError}){
+  const m=r?.model,list=r?.models||[]
+  if(!m)return null
+  const change=async code=>{const reason=window.prompt(`Use ${code?list.find(x=>x.code===code)?.model:'the default model'} for ${name}'s adapter proposals?\n\nReason (kept in the log):`);if(!reason||reason.trim().length<4)return;try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'model',p_args:{provider_id:pid,profile_code:code,reason:reason.trim()}});if(error)throw error;await onDone()}catch(e){onError?.(errText(e))}}
+  return <div className="ab-model" data-adapter-model><small className="sl-sub">Model: <strong>{m.model}</strong> {m.chosen?'(chosen for this adapter)':'(default)'}</small>
+    {r.can_manage&&list.length>0&&<select aria-label="Model for this adapter" disabled={busy} value={m.chosen?m.code:''} onChange={e=>change(e.target.value)}><option value="">Default ({list.find(x=>x.code===m.code)?.model||m.model})</option>{list.map(x=><option key={x.code} value={x.code}>{x.model}</option>)}</select>}</div>
+}
+// v2.15.218: pick any of the provider's stored course pages as a sample (Platform Admin), e.g. a course whose page prints the fee
+function SamplePick({r,pid,busy,onDone,onError}){
+  const[q,setQ]=useState(''),[msg,setMsg]=useState('')
+  const pages=r?.pages||[],dr=(r?.drafts||[])[0],have=new Set((dr?.samples||[]).map(s=>s.url))
+  if(!r?.can_manage||!pages.length)return null
+  const t=q.trim().toLowerCase(),hits=t.length<2?[]:pages.filter(p=>`${p.course} ${p.code||''} ${p.url}`.toLowerCase().includes(t)).slice(0,8)
+  const add=async p=>{const reason=window.prompt(`Add ${p.course} as a sample? Firecrawl captures it (about 1 credit).\n\nReason (kept in the log):`);if(!reason||reason.trim().length<4)return;try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'add_sample',p_args:{provider_id:pid,url:p.url,reason:reason.trim()}});if(error)throw error;setMsg(`${p.course} added; it is captured in about a minute.`);setQ('');await onDone()}catch(e){onError?.(errText(e))}}
+  return <div className="ab-sample-pick" data-sample-pick>
+    {dr&&(dr.samples||[]).length>0&&<small className="sl-sub">Samples: {(dr.samples||[]).map(s=>s.course).join(' · ')}</small>}
+    <input type="search" aria-label="Add a course as a sample" placeholder={`Add a course as a sample (${pages.length} pages)`} value={q} disabled={busy} onChange={e=>setQ(e.target.value)}/>
+    {hits.length>0&&<ul className="ab-results">{hits.map(p=><li key={p.url}><button type="button" className="ab-result" disabled={busy||have.has(p.url)} onClick={()=>add(p)}><strong>{p.course}</strong> <small className="sl-sub">{p.code||''}{p.read?'':' · not read yet'}{have.has(p.url)?' · already a sample':''}</small></button></li>)}</ul>}
+    {msg&&<small className="cf-chip tone-info">{msg}</small>}
+  </div>
+}
 function GuidedBuild({b,onChanged,onError}){
   const[r,setR]=useState(null),[busy,setBusy]=useState('')
   const pid=b.provider_id,read=b.pages?.read||0,can=Boolean(b.can_manage)
@@ -72,14 +95,16 @@ function GuidedBuild({b,onChanged,onError}){
     propose:dr?.status==='proposing'?'busy':proposalOk?'done':captured?'todo':'wait',save:savedAfter?'done':proposalOk?'todo':'wait',
     qualify:savedAfter&&b.qualify?'done':savedAfter?'todo':'wait',admit:toAdmit.length===0&&admitted.length>0?'done':toAdmit.length?'todo':'wait'}
   return <section className="ab-auto" data-guided-build>
-    <div className="ab-auto-head"><div><strong>Guided build</strong><p className="sl-sub">Six steps, one button each. The pinned model ({r?.budget?.model||'not set'}) proposes the settings; you run every step and admit only the fields that pass the checks. AI today US$ {Number(r?.budget?.used_usd||0).toFixed(3)} of {r?.budget?.limit_usd??'—'}.</p></div></div>
+    <div className="ab-auto-head"><div><strong>Guided build</strong><p className="sl-sub">Six steps, one button each. The model for this adapter ({r?.model?.model||r?.budget?.model||'not set'}) proposes the settings; you run every step and admit only the fields that pass the checks. AI today US$ {Number(r?.budget?.used_usd||0).toFixed(3)} of {r?.budget?.limit_usd??'—'}.</p></div></div>
     {!can&&<p className="sl-sub">Running the steps is for Platform Admins; you can follow the progress here.</p>}
     <ol className="ab-guided">
       <GStep n={1} title="Find course pages" state={st.find}><small className="sl-sub">{fmtNumber(read)} read of {fmtNumber(b.pages?.stored||0)} stored (3 needed).</small>
         {can&&read<3&&<Button compact disabled={Boolean(busy)} onClick={()=>run('find',`Add ${b.name} to the Firecrawl targets so the next Find pages run looks for and reads its course pages (credits are used)?`,async reason=>{await rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:pid,included:true,reason}});onChanged?.()})}>Add to Firecrawl targets</Button>}</GStep>
-      <GStep n={2} title="Capture sample pages" state={st.capture}><small className="sl-sub">{dr?`${(dr.captures||[]).filter(c=>!c.error).length} of ${(dr.captures||[]).length} captured (${dr.status}).`:'Firecrawl captures a few course pages, about 1 credit each.'}</small>
+      <GStep n={2} title="Capture sample pages" state={st.capture}><small className="sl-sub">{dr?`${(dr.captures||[]).filter(c=>!c.error).length} of ${(dr.captures||[]).length} captured (${dr.status}).`:'Firecrawl captures 6 course pages spread across course types (about 1 credit each). Add a particular course with Use as sample in the course list below.'}</small>
+        <SamplePick r={r} pid={pid} busy={Boolean(busy)||st.capture==='busy'} onDone={loadDraft} onError={onError}/>
         {can&&st.capture!=='wait'&&<Button compact disabled={Boolean(busy)||st.capture==='busy'} onClick={()=>run('capture',`Capture sample pages of ${b.name} with Firecrawl? About 1 credit a page.`,async reason=>{await rpc('admin_adapter_builder',{p_action:'start',p_args:{provider_id:pid,reason}});await loadDraft()})}>{captured?'Capture again':'Capture samples'}</Button>}</GStep>
-      <GStep n={3} title="Model proposes the settings" state={st.propose}><small className="sl-sub">{last?(last.kind==='error'?`Last proposal failed: ${last.error}`:`${last.model} · US$ ${Number(last.cost||0).toFixed(4)} · ${last.reason||''}`):'The pinned model reads the samples and suggests where each attribute is.'}</small>
+      <GStep n={3} title="Model proposes the settings" state={st.propose}>
+        <ModelPick r={r} pid={pid} name={b.name} busy={Boolean(busy)} onDone={loadDraft} onError={onError}/><small className="sl-sub">{last?(last.kind==='error'?`Last proposal failed: ${last.error}`:`${last.model} · US$ ${Number(last.cost||0).toFixed(4)} · ${last.reason||''}`):'The pinned model reads the samples and suggests where each attribute is.'}</small>
         {can&&st.propose!=='wait'&&<Button compact disabled={Boolean(busy)||st.propose==='busy'} onClick={()=>run('propose',`Ask the pinned model to propose settings for ${b.name} from the captured samples (uses the AI allowance)?`,async reason=>{await rpc('admin_adapter_builder',{p_action:'propose',p_args:{provider_id:pid,draft_id:dr.id,marks:dr.marks||[],comments:dr.comments||'Propose settings that read international intakes (months), IELTS overall, the international annual fee and delivery from these course pages.',reason}});await loadDraft()})}>{proposalOk?'Propose again':'Ask for a proposal'}</Button>}</GStep>
       <GStep n={4} title="Save in testing and apply" state={st.save}><small className="sl-sub">Saves the proposed settings switched on but not admitting, then reads the stored pages with them.</small>
         {can&&st.save!=='wait'&&<Button compact disabled={Boolean(busy)} onClick={()=>run('save',`Save the proposed settings for ${b.name} (switched on, testing, nothing admitted) and apply them to its stored pages?`,async reason=>{const cur=(await rpc('admin_uni_adapter_read',{p_provider_id:pid}))?.adapter||{};const p=last.adapter||{};const adapter={...cur,...(p.json_source!=null?{json_source:p.json_source}:{}),json_paths:{...(cur.json_paths||{}),...(p.json_paths||{})},patterns:{...(cur.patterns||{}),...(p.patterns||{})},pick:{...(cur.pick||{}),...(p.pick||{})},enabled:true};delete adapter.updated_at;delete adapter.reason;await rpc('admin_uni_adapter_write',{p_action:'save',p_args:{provider_id:pid,adapter,reason}});await rpc('admin_uni_adapter_write',{p_action:'apply',p_args:{provider_id:pid,reason}});onChanged?.()})}>{savedAfter?'Save and apply again':'Save and apply'}</Button>}</GStep>

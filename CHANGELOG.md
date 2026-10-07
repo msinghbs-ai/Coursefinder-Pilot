@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.145 — 8 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.218** (adapter builder: 6 spread samples, Use as sample on any course page (up to 10), the proposal reads every sample and lists attributes not found per sample; Platform Admin model choice per adapter from qualified intake models).
+- Database: `20261008000100` (per-adapter model table and builder actions model and add_sample; 6 samples spread across course types), `20261008000200` (Use as sample by page address; samples setting 6), `20261008000300` (stored pages listed for picking). Worker coverage-sweep v0.17.15 (keeps captured pages when a sample is added; proposal reads all samples).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.144 — 7 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.217** (code split: 41 page-only screens load on demand; React, Supabase and icon libraries in separate long-cached files; first load about 0.93 MB instead of 1.71 MB (257 kB instead of 461 kB compressed); a stale screen file after a deploy reloads the page once).
