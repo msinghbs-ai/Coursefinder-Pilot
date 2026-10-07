@@ -24,8 +24,8 @@ test('migration 1750: read cycle, Adapters list and detail, per-adapter admit, a
   expect(m).toContain("'uni_adapter_switch'")
 })
 
-test('screens: Layer 2 is Adapters and Scholarships, Coverage has no Universities tab, redirects keep old links working', () => {
-  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['adapters', 'scholarships'])
+test('screens: Layer 2 is Adapters, Adapter builder and Scholarships, Coverage has no Universities tab, redirects keep old links working', () => {
+  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['adapters', 'builder', 'scholarships'])
   expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes'])
   for (const old of ['operations', 'start', 'history', 'profiles']) expect(resolveTarget('layer-2-discovery', new URLSearchParams({ tab: old }))).toMatchObject({ page: 'layer2', tab: 'adapters' })
   expect(resolveTarget('coverage', new URLSearchParams({ tab: 'universities' }))).toMatchObject({ page: 'layer2', tab: 'adapters' })

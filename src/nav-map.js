@@ -51,7 +51,7 @@ export const PAGES = {
   // scholarships. Overview, Fetch an area, History and Source profiles retired (unused for 30 days); their old addresses
   // and Coverage › Universities open Adapters.
   layer2: { label: 'Layer 2 Discovery & reading', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'University adapters: build, qualify, admit, switch on or off, and when the pages of each university are read again.', tabs: [
-    { key: 'adapters', label: 'Adapters', min: 5 },
+    { key: 'adapters', label: 'Adapters', min: 4 },
     { key: 'builder', label: 'Adapter builder', min: 5 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },

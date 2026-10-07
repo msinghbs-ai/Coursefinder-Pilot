@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.143 — 7 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.216** (Layer 2 › Adapters is visible again to Pipeline Operators, read only, as the server allows; v2.15.211 had raised it to PIM Admin by mistake. Seven contract specs that checked code from screens redesigned since late September were rewritten to the current screens, keeping their intent).
+- No database change.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.142 — 7 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.215** (guided adapter build in Layer 2 › Adapter builder: six buttoned steps run by the Platform Admin (find pages, capture samples, model proposal, save in testing and apply, qualify, admit the fields ready to admit); an Adapter column on the Providers list for Platform Admins that opens the builder with the provider loaded, or Create adapter).
