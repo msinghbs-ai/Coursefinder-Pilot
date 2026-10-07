@@ -15,7 +15,3 @@ test('migration: AU tuition list emptied, fee schedules gated, AU tuition work p
   expect(m).not.toMatch(/\bdrop\s|delete\s+from|truncate/i)
 })
 
-test('History shows the CRICOS tuition for Australia', async () => {
-  const ui = await fs.readFile('src/layer2-operations-entry.jsx', 'utf8')
-  expect(ui).toContain("c==='AU'?[...FACTS.slice(0,3),['registered_tuition','Tuition (CRICOS)']]:FACTS")
-})

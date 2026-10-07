@@ -38,7 +38,7 @@ test('one component kit and "Layer N" wording', () => {
   const kit = read('src/ui-kit.jsx')
   for (const c of ['export function StatusChip', 'export function Badge', 'export function LayerBadge', 'export function Button', 'export function Metric', 'export function Empty', 'export function FilterChip', 'export function Loading', 'export function SectionTitle', 'export function statusTone']) expect(kit).toContain(c)
   for (const f of ['src/pipeline-ops-entry.jsx', 'src/platform-maturity-entry.jsx', 'src/EvidenceWorkspace.jsx', 'src/ScheduledJobsWorkspace.jsx', 'src/m2-3-intelligence-entry.jsx', 'src/mature-main.jsx']) expect(read(f)).toMatch(/from'\.\/ui-kit'/)
-  for (const f of ['src/CourseDetailPolish.jsx', 'src/layer2-operations-entry.jsx', 'src/ScheduledJobsWorkspace.jsx', 'src/EnrichmentOperations.jsx', 'src/Layer4Intervention.jsx', 'src/course-coverage.jsx']) {
+  for (const f of ['src/CourseDetailPolish.jsx', 'src/ScheduledJobsWorkspace.jsx', 'src/Layer4Intervention.jsx', 'src/course-coverage.jsx']) {
     expect(read(f)).not.toMatch(/>L[1-4]\b|'L[1-4] |Awaiting L[1-4]|\(L[1-4]\)/)
   }
 })

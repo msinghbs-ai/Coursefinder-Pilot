@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.141 — 7 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.214** (retired Layer 2 screens `layer2-operations-entry.jsx` and `EnrichmentOperations.jsx` deleted; their contract checks removed or rewritten; Adapter builder opens the visual builder in step 4 and uses only shared colour tokens; a mocked browser check of the builder was added).
+- No database change.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.140 — 7 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.213** (operator screens cleaned up: raw JSON settings under Advanced (Platform Admin), Adapters list first, Firecrawl credits shown once on Models & services, Environment & integrations links renamed Settings, two unused ranking scripts removed).

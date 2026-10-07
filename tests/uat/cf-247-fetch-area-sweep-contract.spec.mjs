@@ -20,10 +20,6 @@ test('migration: sweep-based Fetch an area, Websites to find, dispatch wait and 
   expect(m).toContain("perform public.admin_provider_edit(p_provider_id, 'set_course_finder'")
   expect(m).toContain("v_rank < 4 then raise exception 'Pipeline Operator role or above required'")
   expect(m).not.toMatch(/\bdrop\s|delete\s+from|truncate|on delete cascade/i)
-  const ui = await fs.readFile('src/layer2-operations-entry.jsx', 'utf8')
-  expect(ui).not.toContain("invoke('layer2-sync-control'")
-  expect(ui).not.toContain("supabase.functions.invoke('layer2-sync-control'")
-  expect(ui).not.toContain("openNav('Jobs')")
   expect(PAGES.layer4.tabs.map(t => t.key)).toContain('websites')
 })
 

@@ -1,20 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.213'
-export const PACKAGE_VERSION='0.1.140'
+export const UI_VERSION='2.15.214'
+export const PACKAGE_VERSION='0.1.141'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'7 Oct 2026',
-  title:'Operator screens cleaned up',
+  title:'Retired Layer 2 screens removed',
   changes:[
-    'Raw settings text (JSON) is now under a closed Advanced (Platform Admin) section, shown only to a Platform Admin: on Scrapers & fetchers (request template, capabilities and billing), in each university\u2019s adapter settings, and in the Layer 4 review drawer\u2019s technical detail.',
-    'Layer 2 \u203a Adapters shows the university list first. The fee dry run and the fee range and award link settings are now below the list.',
-    'Firecrawl credits left are shown once, on Models & services. Layer 2 \u203a Adapters links there instead, and still shows the stop warning when the reserve is reached.',
-    'Two old ranking scripts that were no longer loaded have been removed from the code.'
+    'The old Layer 2 overview and enrichment screens, unused since v2.15.200, are removed from the code with the checks that read them. Nothing on screen changes.'
   ],
-  bugFixes:['Links and notes that pointed to Environment & integrations now say Settings, the page\u2019s current name.']
+  bugFixes:['The Layer 2 tab check now expects the Adapter builder tab added in v2.15.211.','Adapter builder: the visual builder opens straight away in step 4, and the screen uses only the shared colour tokens.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
