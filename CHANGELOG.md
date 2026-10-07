@@ -2,8 +2,8 @@
 
 ## 0.1.142 — 7 Oct 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.215** (automatic adapter build: Build automatically in Layer 2 › Adapter builder, with step-by-step progress, Stop, and Admit these for the fields ready to admit; an Adapter column on the Providers list for Platform Admins that opens the builder with the provider loaded, or Create adapter).
-- Database: migrations `20261007001900`–`20261007001905` (settings; build table and `admin_adapter_autobuild`; qualify `security.adapter_autobuild_qualify_v1`; step `security.adapter_autobuild_tick_v1`; admit `admin_adapter_autobuild_admit` (Platform Admin, reason); schedule `adapter-autobuild` every 2 minutes).
+- Prepared visible PIM Admin release candidate **v2.15.215** (guided adapter build in Layer 2 › Adapter builder: six buttoned steps run by the Platform Admin (find pages, capture samples, model proposal, save in testing and apply, qualify, admit the fields ready to admit); an Adapter column on the Providers list for Platform Admins that opens the builder with the provider loaded, or Create adapter).
+- Database: `20261007001900` (builder AI allowance US$1.50 and 60 proposals a day) and `20261007001901` (`admin_adapter_autobuild` states, read by the Providers-list column). No scheduled build: each step uses the existing functions and their own checks.
 - v2.15.79 remains the accepted recovery release.
 
 ## 0.1.141 — 7 Oct 2026

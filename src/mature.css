@@ -431,3 +431,10 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-auto .ab-track li.done{color:var(--cf-brand);border-color:var(--cf-brand)}
 .ab-auto .ab-track li.now{color:var(--cf-white);background:var(--cf-brand);border-color:var(--cf-brand);font-weight:700}
 .m-adapter-cell{display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.ab-auto .ab-guided{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}
+.ab-auto .ab-g-step{border:1px solid var(--cf-border);border-radius:8px;padding:8px 10px;background:var(--cf-surface)}
+.ab-auto .ab-g-step.is-wait{opacity:.6}
+.ab-auto .ab-g-step.is-done{border-color:var(--cf-brand)}
+.ab-auto .ab-g-head{display:flex;gap:8px;align-items:center}
+.ab-auto .ab-g-body{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:4px 0 0 30px}
+.ab-auto .ab-g-body .tn-list{flex-basis:100%;margin:0}

@@ -1,2 +1,0 @@
--- CF-247, 7 Oct 2026: automatic adapter build, part 6 of 6: run the automatic adapter build every 2 minutes.
-select cron.schedule('adapter-autobuild', '*/2 * * * *', 'select security.adapter_autobuild_tick_v1()');
