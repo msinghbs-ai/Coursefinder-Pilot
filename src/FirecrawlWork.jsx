@@ -157,7 +157,7 @@ function SupportReportBody({onError}){
 const AD_FIELDS=[['title_strip','Taken off page titles','A pattern (regular expression) removed from the page title and heading before comparing, for example ^[A-Z]{2,8}\\s+ for a course code in front.'],
   ['course_title_strip','Taken off catalogue titles','A pattern removed from our course title before comparing, for example \\s*\\(level \\d+\\)$.'],
   ['json_source','Page data script','The id of a <script> holding the page’s data as JSON, for example __NEXT_DATA__ (CourseLoop handbooks). Empty if none.']]
-export function AdapterEditor({providerId,onError}){
+export function AdapterEditor({providerId,onError,hideReview=false}){
   const[d,setD]=useState(null),[a,setA]=useState(null),[paths,setPaths]=useState('{}'),[sections,setSections]=useState('{}'),[patterns,setPatterns]=useState('{}'),[pick,setPick]=useState('{}'),[terms,setTerms]=useState('{}'),[view,setView]=useState('{}'),[reading,setReading]=useState({numeric_dates:false,upper_dates:false,academic_year:false}),[busy,setBusy]=useState(false),[err,setErr]=useState('')
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_uni_adapter_read',{p_provider_id:providerId});if(error)throw error;setD(data||{});if(!a){const x=data?.adapter||{};setA({enabled:Boolean(x.enabled),title_strip:x.title_strip||'',course_title_strip:x.course_title_strip||'',json_source:x.json_source||'',section_chars:x.section_chars||2000,notes:x.notes||''});setPaths(JSON.stringify(x.json_paths||{},null,2));setSections(JSON.stringify(x.sections||{},null,2));setPatterns(JSON.stringify(x.patterns||{},null,2));setPick(JSON.stringify(x.pick||{},null,2));setTerms(JSON.stringify(x.term_months||{},null,2));setView(JSON.stringify(x.page_view||{},null,2));setReading({numeric_dates:false,upper_dates:false,academic_year:false,...(x.reading||{})})}}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[providerId])
@@ -167,7 +167,7 @@ export function AdapterEditor({providerId,onError}){
   if(!d||!a)return <div className="tn-adapter"><Loading label="Loading the adapter…"/></div>
   const can=Boolean(d.can_manage)&&!busy,prev=(d.previews||[])[0],res=prev?.result
   return <div className="tn-adapter" data-adapter-editor={providerId}><h4 className="sl-h4">Adapter: {d.provider?.name}</h4>
-    <AdapterReview providerId={providerId} can={Boolean(d.can_manage)} onError={onError}/>
+    {!hideReview&&<AdapterReview providerId={providerId} can={Boolean(d.can_manage)} onError={onError}/>}
     <AdapterBuilder providerId={providerId} onError={onError} onUse={x=>{setA({...a,json_source:x.json_source||a.json_source||''});setPaths(JSON.stringify({...JSON.parse(paths||'{}'),...(x.json_paths||{})},null,2));setPatterns(JSON.stringify({...JSON.parse(patterns||'{}'),...(x.patterns||{})},null,2));setPick(JSON.stringify({...JSON.parse(pick||'{}'),...(x.pick||{})},null,2));const el=document.querySelector(`[data-adapter-editor="${providerId}"] [data-adapter-settings]`);if(el)el.open=true}}/>
     <details className="tn-items" data-adapter-settings><summary>Adapter settings (where this university keeps each field)</summary>
     <p className="sl-sub">How this university names and lays out its course pages. Change them, press Preview to try them on stored pages, then Save and Apply. Pages now: {Object.entries(d.pages||{}).map(([k,v])=>`${k.replace(/_/g,' ')} ${fmtNumber(v)}`).join(' · ')}</p>
