@@ -24,7 +24,8 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
       fs.readFile('src/release-currentness-entry.js','utf8'),
     ])
 
-    expect(shell).toContain("import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'")
+    expect(shell).toContain("const JobsWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'JobsWorkspace')")
+    expect(shell).toContain("const SourcesWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'SourcesWorkspace')")
     // v2.15.107: Jobs is the Scheduled jobs > Jobs tab and Sources the Layer 1 Register > Sources tab (both role rank 4).
     expect(shell).toContain(`tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>`)
     expect(shell).toContain("case'sources':return <SourcesWorkspace/>")

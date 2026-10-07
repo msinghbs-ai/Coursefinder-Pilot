@@ -8,62 +8,70 @@ import{
 }from'lucide-react'
 import{fmtDate,fmtDateTime,fmtMoney,fmtPercent,fmtShare}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
-import RegulatorySettings from'./RegulatorySettings'
-import EvidenceWorkspace from'./EvidenceWorkspace'
 import CourseDetailPolish from'./CourseDetailPolish'
 import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
-import FeeRules from'./FeeRules'
-import ModelsServices from'./ModelsServices'
 import ListEdit from'./ListEdit'
-import StatisticsDatasets from'./StatisticsDatasets'
-import ProviderOnboarding from'./layer2-provider-onboarding'
 import DashboardHome from'./Dashboard'
-import ReferenceSources from'./ReferenceSources'
-import KeyDates from'./KeyDates'
 import ContextualInsights from'./ContextualInsights'
-import ComparisonWorkspace from'./ComparisonWorkspace'
-import ProviderContactsWorkspace from'./ProviderContactsWorkspace'
 import ProviderLogo,{ProviderBrand}from'./ProviderLogo'
 import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot}from'./ui-kit'
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
-import Layer3Operations from'./Layer3Operations'
-import FlaggedValues from'./FlaggedValues'
-import WebsitesToFind from'./WebsitesToFind'
-import Automations from'./Automations'
-import SendBackToAI from'./SendBackToAI'
-import ScholarshipPublishing from'./ScholarshipPublishing'
-import PriorityQueue from'./PriorityQueue'
-import SearchCapCard from'./SearchCapCard'
-import PipelineSettings from'./PipelineSettings'
 import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
-import{CoverageView}from'./course-coverage'
-import AdaptersWorkspace from'./AdaptersWorkspace'
-import AdapterBuilderTab from'./AdapterBuilderTab'
 import Card from'./Card'
-import LinkRefresh from'./LinkRefresh'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import ScholarshipRecord from'./ScholarshipRecord'
-import ScholarshipLayer from'./ScholarshipLayer'
-import Toolsets,{LayerNotices}from'./Toolsets'
-import LiveActivity from'./LiveActivity'
-import AdminTasks from'./AdminTasks'
-import PlatformGuide from'./PlatformGuide'
+import{LayerNotices}from'./Toolsets'
 import Layer4Intervention from'./Layer4Intervention'
-import{Layer1Operations,Layer1SourceSettings}from'./layer1-operations-entry'
-import{Layer3 as Layer3Workspace,Layer4 as Layer4Workspace,Refresh as RefreshWorkspace,Onboarding as OnboardingWorkspace}from'./m2-3-intelligence-entry'
-import{Console as Layer2SourceConfig}from'./layer2-platform-entry'
-import{Console as Layer2ProviderConfig}from'./layer2-provider-entry'
-import PlatformMaturity from'./platform-maturity-entry'
-import EnvironmentMigrationWorkspace from'./EnvironmentMigrationWorkspace'
-import{AccessRolesEmbedded}from'./access-roles-entry'
-import{JobsWorkspace,SourcesWorkspace}from'./pipeline-ops-entry'
 import'./styles.css'
 import'./mature.css'
 import'./admin-pages.css'
+// v2.15.217 (code split): screens used only inside one page load on demand. If a screen's file is gone because a newer release was deployed
+// while this tab was open, the page reloads once to pick up the new release instead of showing an error.
+function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({default:m[name]})).catch(e=>{let again=false;try{again=sessionStorage.getItem('cf-chunk-reload')!==String(location.pathname+location.hash)}catch{}if(again&&/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(e?.message||e))){try{sessionStorage.setItem('cf-chunk-reload',String(location.pathname+location.hash))}catch{}location.reload();return new Promise(()=>{})}throw e}))}
+const RegulatorySettings=lazyPage(()=>import('./RegulatorySettings'))
+const EvidenceWorkspace=lazyPage(()=>import('./EvidenceWorkspace'))
+const FeeRules=lazyPage(()=>import('./FeeRules'))
+const ModelsServices=lazyPage(()=>import('./ModelsServices'))
+const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
+const ProviderOnboarding=lazyPage(()=>import('./layer2-provider-onboarding'))
+const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
+const KeyDates=lazyPage(()=>import('./KeyDates'))
+const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))
+const ProviderContactsWorkspace=lazyPage(()=>import('./ProviderContactsWorkspace'))
+const Layer3Operations=lazyPage(()=>import('./Layer3Operations'))
+const FlaggedValues=lazyPage(()=>import('./FlaggedValues'))
+const WebsitesToFind=lazyPage(()=>import('./WebsitesToFind'))
+const Automations=lazyPage(()=>import('./Automations'))
+const SendBackToAI=lazyPage(()=>import('./SendBackToAI'))
+const ScholarshipPublishing=lazyPage(()=>import('./ScholarshipPublishing'))
+const PriorityQueue=lazyPage(()=>import('./PriorityQueue'))
+const SearchCapCard=lazyPage(()=>import('./SearchCapCard'))
+const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
+const CoverageView=lazyPage(()=>import('./course-coverage'),'CoverageView')
+const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
+const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
+const LinkRefresh=lazyPage(()=>import('./LinkRefresh'))
+const ScholarshipLayer=lazyPage(()=>import('./ScholarshipLayer'))
+const LiveActivity=lazyPage(()=>import('./LiveActivity'))
+const AdminTasks=lazyPage(()=>import('./AdminTasks'))
+const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
+const Layer1Operations=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Operations')
+const Layer1SourceSettings=lazyPage(()=>import('./layer1-operations-entry'),'Layer1SourceSettings')
+const Layer4Workspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Layer4')
+const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')
+const OnboardingWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Onboarding')
+const Layer2SourceConfig=lazyPage(()=>import('./layer2-platform-entry'),'Console')
+const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Console')
+const PlatformMaturity=lazyPage(()=>import('./platform-maturity-entry'))
+const EnvironmentMigrationWorkspace=lazyPage(()=>import('./EnvironmentMigrationWorkspace'))
+const AccessRolesEmbedded=lazyPage(()=>import('./access-roles-entry'),'AccessRolesEmbedded')
+const JobsWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'JobsWorkspace')
+const SourcesWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'SourcesWorkspace')
+const Toolsets=lazyPage(()=>import('./Toolsets'))
 
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
 function CoverageAttributes({rank}){
@@ -187,7 +195,7 @@ function App(){
         actions={<>{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
       <WorkspaceErrorBoundary routeKey={`${pageKey}/${tab}?${route.params.toString()}`} onError={setError} onRecover={()=>go('dashboard')}>
-        <Page pageKey={pageKey} tab={tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/>
+        <React.Suspense fallback={<div className="m-page-loading" role="status"><span className="m-spinner"/>Loading…</div>}><Page pageKey={pageKey} tab={tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/></React.Suspense>
       </WorkspaceErrorBoundary>
     </main>
   </div>

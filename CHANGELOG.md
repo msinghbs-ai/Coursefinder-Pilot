@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.144 — 7 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.217** (code split: 41 page-only screens load on demand; React, Supabase and icon libraries in separate long-cached files; first load about 0.93 MB instead of 1.71 MB (257 kB instead of 461 kB compressed); a stale screen file after a deploy reloads the page once).
+- No database change.
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.143 — 7 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.216** (Layer 2 › Adapters is visible again to Pipeline Operators, read only, as the server allows; v2.15.211 had raised it to PIM Admin by mistake. Seven contract specs that checked code from screens redesigned since late September were rewritten to the current screens, keeping their intent).

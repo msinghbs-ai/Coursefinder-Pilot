@@ -5,7 +5,7 @@ import fs from 'node:fs'
 test('Layer 2 provider onboarding: mounted, dry-run first, three-course check required',async()=>{
   // v2.15.131: merged into Providers › Onboarding (screen review l2r-onboard).
   const entry=fs.readFileSync('src/mature-main.jsx','utf8')
-  expect(entry).toContain("import ProviderOnboarding from'./layer2-provider-onboarding'")
+  expect(entry).toContain("const ProviderOnboarding=lazyPage(()=>import('./layer2-provider-onboarding'))")
   expect(entry).toContain('<ProviderOnboarding rank={rank} openEvidence=')
   const panel=fs.readFileSync('src/layer2-provider-onboarding.jsx','utf8')
   expect(panel).toContain("rpc('layer2_provider_onboarding_queue_v1'")

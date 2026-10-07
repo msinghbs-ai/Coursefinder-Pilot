@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.216'
-export const PACKAGE_VERSION='0.1.143'
+export const UI_VERSION='2.15.217'
+export const PACKAGE_VERSION='0.1.144'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'7 Oct 2026',
-  title:'Guided adapter build; Adapters visible to Pipeline Operators',
+  title:'Faster first load',
   changes:[
-    'Providers list: Platform Admins see an Adapter column beside the provider name. Open adapter or Create adapter opens Layer 2 \u203a Adapter builder with that provider loaded.',
-    'Adapter builder: a guided build in six steps, one button each (find course pages, capture samples, the pinned model proposes settings, save in testing and apply, qualify, admit). Admit these is offered only for fields that pass the admit rule and agree with values already held; nothing runs on a schedule and a passing check never admits by itself.',
-    'Layer 2 \u203a Adapters is visible again to Pipeline Operators, read only, as the server allows.'
+    'The admin opens faster: sign-in and the dashboard load about half as much code (about 257 kB instead of 461 kB, compressed). Other screens load the first time you open them, with a short Loading\u2026 line.',
+    'Shared libraries are in their own files, so they stay cached in the browser across releases.',
+    'If a new release is deployed while the admin is open, opening a screen reloads the page once to pick up the new release, instead of showing an error.'
   ],
-  bugFixes:['v2.15.211 hid Layer 2 \u203a Adapters from Pipeline Operators by mistake; restored.','v2.15.215 showed the previous release notes; corrected.','Seven contract checks written against screens redesigned since late September now check the current screens.']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
