@@ -148,7 +148,7 @@ test('Canada register adapters: switched off, every copied reader piece is still
   expect(m).not.toContain('switched_on')
   const ref = fs.readFileSync('supabase/functions/_shared/cf247-register-ca-ref.ts', 'utf8')
   const pieces = JSON.parse(fs.readFileSync('tests/uat/cf-247-ca-ref-pieces.json', 'utf8'))
-  expect(Object.keys(pieces).length).toBe(18)
+  expect(Object.keys(pieces).length).toBe(20)
   for (const [code, p] of Object.entries(pieces)) {
     const w = fs.readFileSync(`supabase/functions/${p.worker}/index.ts`, 'utf8')
     expect(ref, code).toContain(`export function ref_${code}(`)
@@ -171,6 +171,15 @@ test('Canada raw capture: each reader stores a -raw.json bundle beside its evide
 
 test('text_items engine reads fields in dependency order (jsonb does not keep key order)', () => {
   const e = fs.readFileSync('supabase/functions/_shared/cf247-register-items.ts', 'utf8')
-  expect(e).toContain('const deps = (r: ItemRule) => [r.from, r.same_as, r.cell?.anchor]')
+  expect(e).toContain('const deps = (r: ItemRule) => [r.from, r.same_as, r.cell?.anchor')
   expect(e).toContain('for (const name of fieldOrder) {')
+})
+
+test('Canada ALIS and EPBC adapters: bundles of stored pages, references copied from the readers', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008004200_cf247_canada_alis_epbc_adapters.sql', 'utf8')
+  expect(m).toContain("'ca_alis'"); expect(m).toContain("'ca_epbc'")
+  expect(m).toContain('"bundle": {"pages": "raw_pages"')
+  expect(m).not.toContain('switched_on')
+  const ref = fs.readFileSync('supabase/functions/_shared/cf247-register-ca-ref.ts', 'utf8')
+  expect(ref).toContain('export function ref_alis('); expect(ref).toContain('export function ref_epbc(')
 })
