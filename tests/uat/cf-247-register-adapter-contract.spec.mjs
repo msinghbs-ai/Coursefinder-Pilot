@@ -137,3 +137,23 @@ test('CRICOS adapter v2: address fields and location sets; depth and facts worke
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('await referenceRecords(zipBytes, from, to, Boolean(n.spec?.sets))')
 })
+
+// CF-247 Phase 2 (8 Oct 2026): Canadian catalogue adapters (text_items); each reference is a verbatim copy of its Layer 1 reader.
+test('Canada register adapters: switched off, every copied reader piece is still in its Layer 1 worker', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008003900_cf247_canada_register_adapters.sql', 'utf8')
+  for (const c of ['ca_algonquin', 'ca_boreal', 'ca_cambrian', 'ca_conestoga', 'ca_confederation', 'ca_durham', 'ca_fanshawe_pgwp', 'ca_fleming', 'ca_georgian', 'ca_lambton', 'ca_loyalist', 'ca_mohawk', 'ca_niagara', 'ca_seneca', 'ca_sheridan', 'ca_stclair', 'ca_ircc_dli'])
+    expect(m, c).toContain(`'${c}'`)
+  expect(m).toContain('"format": "text_items"')
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toContain('switched_on')
+  const ref = fs.readFileSync('supabase/functions/_shared/cf247-register-ca-ref.ts', 'utf8')
+  const pieces = JSON.parse(fs.readFileSync('tests/uat/cf-247-ca-ref-pieces.json', 'utf8'))
+  expect(Object.keys(pieces).length).toBe(18)
+  for (const [code, p] of Object.entries(pieces)) {
+    const w = fs.readFileSync(`supabase/functions/${p.worker}/index.ts`, 'utf8')
+    expect(ref, code).toContain(`export function ref_${code}(`)
+    for (const piece of p.pieces) { expect(w.includes(piece), `${code} worker`).toBe(true); expect(ref.includes(piece), `${code} copy`).toBe(true) }
+  }
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('if (n.spec?.format === "text_items")')
+})

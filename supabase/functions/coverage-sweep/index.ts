@@ -9,6 +9,8 @@ import { adapterOutput, builderRequest, jsonLeaves, mainJsonScript, proposalAdap
 import { adapterRecords, referenceRecords } from "../_shared/cf247-register-zip.ts";
 import { htmlAdapterRecords, nzqaReferenceRecords } from "../_shared/cf247-register-html.ts";
 import { prismsReferenceRecords, qiltReferenceRecords, xlsxAdapterRecords } from "../_shared/cf247-register-xlsx.ts";
+import { itemsAdapterRecords, itemsText } from "../_shared/cf247-register-items.ts";
+import * as caRef from "../_shared/cf247-register-ca-ref.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -50,7 +52,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.17.25"; // v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.17.26"; // v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -1224,6 +1226,26 @@ Deno.serve(async (req) => {
           const last = to >= paths.length;
           await save(recs, to, last);
           return j({ ok: true, mode, run_id: n.run_id, engine: n.engine, from, files: to - from, providers: batch.length, records: recs.length, total: paths.length, final: last, worker: WORKER });
+        }
+        if (n.spec?.format === "text_items") {
+          // v0.17.26: a catalogue stored as one page or JSON file; the reference is a copy of the worker's own reader (cf247-register-ca-ref.ts)
+          const path = String(n.storage_path);
+          const { data, error } = await c.storage.from("evidence").download(path);
+          if (error || !data) throw Error(error?.message || "stored file missing");
+          const bytes = new Uint8Array(await data.arrayBuffer());
+          const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((x) => x.toString(16).padStart(2, "0")).join("");
+          if (n.zip_hash && hash !== n.zip_hash) throw Error("stored file does not match its recorded hash");
+          const text = new TextDecoder().decode(bytes), key = String(n.spec.key);
+          let recs0: { k: string; x: Record<string, string> }[];
+          if (n.engine === "adapter") recs0 = itemsAdapterRecords(n.spec, text);
+          else {
+            const fn = (caRef as any)["ref_" + String(n.code || "").replace(/^ca_/, "")];
+            if (typeof fn !== "function") throw Error(`no reference reader for ${n.code}`);
+            recs0 = (fn(text) as any[]).map((r) => { const x = { ...r }; if (key !== "provider_code") { delete x.provider_code; delete x.provider_name } return { k: String(r[key] ?? ""), x: itemsText(x) } });
+          }
+          const recs = recs0.map((r) => { const h = hashOf(r.x); return n.keep_fields ? { k: r.k, f: h, h, x: r.x } : { k: r.k, f: h, h } });
+          await save(recs, 1, true);
+          return j({ ok: true, mode, run_id: n.run_id, engine: n.engine, records: recs.length, final: true, worker: WORKER });
         }
         if (n.spec?.format === "xlsx_tables") {
           // v0.17.22: a statistics workbook (PRISMS, QILT); the whole stored workbook is read in one call
