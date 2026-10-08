@@ -4,6 +4,7 @@
 
 - Prepared visible PIM Admin release candidate **v2.15.220** (Rule 2: the provider's own course page fee with captured evidence is used over the CRICOS registered fee, whatever year it names; no review raised).
 - Database: `20261008000900` (`security.course_fee_used_v1` and `admin_fee_rules_report` replaced behind md5 guards; `security.l4_shared_hosts_v1`, `security.fee_evidence_own_site_v1`). No stored fee written.
+- Database: `20261008001000` (Rule 3: a provider page fee with no year whose evidence was captured this year is aligned to this year without review; daily at 03:27 UTC as `l4-rule-fee-year-align`; first run aligned 144 fees and closed their 144 Layer 4 items; 71 held where the course already has a different fee for this year).
 
 ## 0.1.146 — 8 Oct 2026
 
