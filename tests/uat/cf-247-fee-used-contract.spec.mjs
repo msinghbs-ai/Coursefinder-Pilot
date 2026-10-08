@@ -130,3 +130,15 @@ test('migration 1800 and worker page_codes only measure (nothing unbound or with
   expect(w).toContain('if (mode === "page_codes")')
   expect(w).toContain('/\\b\\d{6}[A-Za-z]\\b/g')
 })
+
+// Rule 6 (8 Oct 2026, Platform Admin, "Unbind and re-find, no review"): code not on the page -> unbind, block the pair, re-find.
+test('migration 1900 unbinds pages without the course code, blocks rebinding, keeps hand-chosen pages, deletes nothing', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008001900_cf247_rule6_unbind_refind.sql', 'utf8')
+  expect(m).toContain("'d9ee96006cf9444528115c81a782e151'")
+  expect(m).toContain('pipeline.course_page_blocks b where b.course_id = p_course_id and b.url = p_url')
+  expect(m).toContain("m.field in ('official_url', 'course_url')")
+  expect(m).toContain('c.found is not true')
+  expect(m).toContain('source_id is not null')
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toContain('layer4_review_items')
+})
