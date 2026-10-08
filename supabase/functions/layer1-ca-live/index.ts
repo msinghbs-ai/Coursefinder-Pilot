@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const VERSION = "layer1-ca-live-v1.1.1";
+const VERSION = "layer1-ca-live-v1.2.0";
 const IRCC_DLI_URL = "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/study-permit/prepare/designated-learning-institutions-list.html";
 const DEFAULT_BATCH = 100;
 const MAX_BATCH = 500;
@@ -32,7 +32,7 @@ async function fetchT(url: string, ms = 45000) {
     return await fetch(url, {
       signal: controller.signal,
       redirect: "follow",
-      headers: { "user-agent": "coursefinder-pilot/ca-live-1.1.1", accept: "text/html,application/xhtml+xml" },
+      headers: { "user-agent": "coursefinder-pilot/ca-live-1.2.0", accept: "text/html,application/xhtml+xml" },
     });
   } finally { clearTimeout(timer); }
 }
@@ -109,7 +109,10 @@ Deno.serve(async (req: Request) => {
   const service = createClient(url, serviceKey, { auth: { persistSession: false } });
 
   try {
-    const user = await authAdmin(req, service, url, anon);
+    // v1.2.0 (CF-247): the Layer 1 run controller may call this reader with the service key (scheduled runs);
+    // otherwise a Platform Admin session is required, as before.
+    const internal = (req.headers.get("x-cf-layer1-service-key") || "") === serviceKey && Boolean(serviceKey);
+    const user = internal ? { id: "c0ffee00-0000-4000-8000-000000000150" } : await authAdmin(req, service, url, anon);
     const body = await req.json().catch(() => ({}));
     const apply = Boolean(body.apply);
     const offset = Math.max(0, Number(body.offset ?? 0));
