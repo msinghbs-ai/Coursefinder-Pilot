@@ -192,3 +192,11 @@ test('register replay: a run stops after three calls end without saving, and the
   const e = fs.readFileSync('supabase/functions/_shared/cf247-register-zip.ts', 'utf8')
   expect(e).toContain('if (at < from || at >= to) return;')
 })
+
+test('CRICOS v2 replay reads each location set in a call of its own', () => {
+  const e = fs.readFileSync('supabase/functions/_shared/cf247-register-zip.ts', 'utf8')
+  expect(e).toContain('export const setNames = (spec: { sets?: Record<string, unknown> }) => Object.keys(spec.sets || {}).sort();')
+  expect(e).toContain('const which = ["course_locations", "locations"][from - rows.length];')
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('const last = (out0 as any).done ?? (to >= out0.total);')
+})
