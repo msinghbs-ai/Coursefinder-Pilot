@@ -1,8 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import * as XLSX from "npm:xlsx@0.18.5";
+import { xlsxAdapterRecords } from "../_shared/cf247-register-xlsx.ts";
 
-const VERSION = "prisms-au-etl-v0.2.0";
+const VERSION = "prisms-au-etl-v0.3.0"; // v0.3.0 (CF-247 Phase 2, 8 Oct 2026): reads with the au_prisms_sa4 register adapter when it is switched on.
 const SOURCE_URL = "https://www.education.gov.au/download/15221/international-student-enrolment-and-commencement-data-abs-sa4-publication/44345/document/xlsx";
 const SOURCE_PAGE = "https://www.education.gov.au/international-education-data-and-research/resources/international-student-enrolment-and-commencement-data-abs-sa4";
 const SHEET = "Data";
@@ -328,6 +329,61 @@ function parseWorkbook(bytes: Uint8Array, ctx: any) {
   };
 }
 
+// v0.3.0 (CF-247 Phase 2, 8 Oct 2026): when the PRISMS register adapter (au_prisms_sa4) is switched on, the workbook is read with its spec
+// instead of parseWorkbook. The adapter gives one record per published cell (state, SA4, remoteness, sector, field, metric, count); the
+// observations, keys and metadata are built exactly as parseWorkbook builds them. The period line and summary are kept as provenance.
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+function parseWithAdapter(spec: any, bytes: Uint8Array, ctx: any, path: string) {
+  const recs = xlsxAdapterRecords(spec, bytes, path, ctx);
+  if (!recs.length) throw new Error("the PRISMS adapter read no records");
+  const wb = XLSX.read(bytes, { type: "array", cellFormula: false, cellHTML: false, cellDates: false });
+  const head = XLSX.utils.sheet_to_json(wb.Sheets[spec.tables?.[0]?.sheet || SHEET], { header: 1, raw: true, defval: null }) as unknown[][];
+  const periodLine = text(head[1]?.[0]), reported = parseReportedSummary(text(head[4]?.[0]));
+  const end = recs[0].x.period_end, year = Number(end.slice(0, 4)), month = Number(end.slice(5, 7));
+  const period = { year, month, monthName: MONTH_NAMES[month - 1], collectionVersion: `${year}-${String(month).padStart(2, "0")}`,
+                   periodStart: recs[0].x.period_start, periodEnd: end, periodType: "ytd" };
+  const subdivisionByCode = new Map<string, any>((ctx.subdivisions || []).map((x: any) => [text(x.code), x]));
+  const areaByCode = new Map<string, any>((ctx.external_study_areas || []).map((x: any) => [text(x.external_code), x]));
+  const rowsByNumber = new Map<number, any>(), observations: any[] = [], stateCodes = new Set<string>(), sectors = new Set<string>(), sourceFields = new Set<string>();
+  const dims = new Map<string, number>();
+  let exactNumeric = 0, suppressed = 0, mapped = 0, visibleEnrolments = 0, visibleCommencements = 0;
+  for (const r of recs) {
+    const x = r.x, row = Number(r.k.match(/:row:(\d+):/)?.[1]);
+    if (!period || x.period_end !== end) throw new Error("PRISMS adapter records name more than one period");
+    const subdivision = subdivisionByCode.get(x.state), area = areaByCode.get(x.study_area);
+    if (!subdivision || !area) throw new Error(`PRISMS adapter record not mapped at worksheet row ${row}`);
+    const metricId = ctx.metric_ids?.[x.metric];
+    if (!metricId) throw new Error(`PRISMS metric missing from context: ${x.metric}`);
+    const isSup = x.suppressed === "true", value = isSup ? null : Number(x.value);
+    if (isSup) suppressed++; else { exactNumeric++; if (x.metric === "enrolments") visibleEnrolments += Number(value); else visibleCommencements += Number(value) }
+    if (area.field_of_study_id) mapped++;
+    stateCodes.add(x.state); sectors.add(x.sector); sourceFields.add(area.external_code);
+    observations.push({
+      host_country_id: ctx.country_id, provider_id: null, course_id: null, subdivision_id: subdivision.id, external_study_area_id: area.id,
+      field_of_study_id: area.field_of_study_id || null, study_level_id: null, survey_id: ctx.survey_id, audience: "international",
+      period_start: period.periodStart, period_end: period.periodEnd, period_type: period.periodType, source_geography_type: "ABS_SA4",
+      source_geography_key: `sa4:${x.state.replace(/^AU-/, "").toLowerCase()}:${slug(x.sa4)}`, source_geography_name: x.sa4, source_remoteness_area: x.remoteness,
+      source_sector_code: x.sector, source_provider_type: null, source_nationality_code: null, source_nationality_name: null,
+      source_study_area_code: area.external_code, source_study_area_name: x.broad_field, metric_id: metricId, source_observation_key: r.k,
+      metric_value: value, is_suppressed: isSup, suppression_code: x.code || null, status: "current",
+      metadata: { layer: "2A", publisher: "Department of Education", source_system: "PRISMS", source_page: SOURCE_PAGE, source_sheet: spec.tables?.[0]?.sheet || SHEET,
+        source_row: row, source_raw_value: x.raw, privacy_suppressed: isSup, source_period_line: periodLine, source_workbook_hash: null, worker_version: VERSION,
+        reader: "register adapter au_prisms_sa4", published_provider_dimension: false, published_course_dimension: false, identity_authority: false,
+        subdivision_mapping: "exact_published_state_to_existing_au_iso_subdivision",
+        canonical_field_mapping: area.field_of_study_id ? "exact_existing_canonical_label" : "source_only_unmapped" },
+    });
+    const pr = rowsByNumber.get(row) || { worksheetRow: row, state: x.state.replace(/^AU-/, ""), sa4: x.sa4, remoteness: x.remoteness, sector: null, sourceSectorCode: x.sector,
+      broadField: x.broad_field, externalStudyAreaCode: area.external_code, canonicalFieldCode: area.canonical_field_code || null };
+    pr[x.metric] = { value, suppressed: isSup, suppressionCode: x.code || null, raw: x.raw };
+    if (!rowsByNumber.has(row)) { rowsByNumber.set(row, pr); const dk = [x.state.replace(/^AU-/, ""), norm(x.sa4), norm(x.remoteness), x.sector, area.external_code].join("|"); dims.set(dk, (dims.get(dk) || 0) + 1) }
+  }
+  const parsedRows = [...rowsByNumber.values()].sort((a, b) => a.worksheetRow - b.worksheetRow);
+  if (reported?.rows && parsedRows.length !== reported.rows) throw new Error(`PRISMS row-count mismatch: workbook reports ${reported.rows}, adapter read ${parsedRows.length}`);
+  return { period, periodLine, reported, parsedRows, observations, exactNumeric, suppressed, mappedCanonicalFieldObservations: mapped,
+    stateCodes: [...stateCodes].sort(), sectors: [...sectors].sort(), sourceFields: [...sourceFields].sort(),
+    duplicateDimensionGroups: [...dims.values()].filter((n) => n > 1).length, visibleNumericTotals: { enrolments: visibleEnrolments, commencements: visibleCommencements } };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "POST required" }, 405);
 
@@ -380,7 +436,8 @@ Deno.serve(async (req: Request) => {
 
     const bytes = new Uint8Array(await response.arrayBuffer());
     const workbookHash = await sha256(bytes);
-    const parsed = parseWorkbook(bytes, ctx);
+    const reader = await rpc(client, "svc_register_adapter_reader", { p_code: "au_prisms_sa4" });
+    const parsed = reader?.spec ? parseWithAdapter(reader.spec, bytes, ctx, editionUrl) : parseWorkbook(bytes, ctx);
 
     for (const observation of parsed.observations) {
       observation.metadata.source_workbook_hash = workbookHash;
@@ -389,6 +446,7 @@ Deno.serve(async (req: Request) => {
     const base = {
       ok: true,
       workerVersion: VERSION,
+      reader: reader?.spec ? `register adapter ${reader.code} v${reader.version}` : "layer1 reader",
       mode,
       sourceUrl: editionUrl,
       sourcePage: SOURCE_PAGE,
