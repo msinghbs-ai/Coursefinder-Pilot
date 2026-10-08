@@ -66,3 +66,11 @@ test('evidence purge: guarded, re-checks every reference column, keeps policy ev
   expect(w).toContain('String(x.bucket || "adapter-captures")')
   expect(fs.readFileSync('src/RetentionScreen.jsx', 'utf8')).toContain("c.key==='evidence_unreferenced'")
 })
+
+test('evidence estimate counts each file once and only files no kept record uses (migration 1400)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008001400_cf247_evidence_estimate_distinct_files.sql', 'utf8')
+  expect(m).toContain("'7dc43cdda07ecc1835536f3156e0ea20'")
+  expect(m).toContain('f as (select distinct storage_path from c where storage_path is not null)')
+  expect(m).toContain('and not exists (select 1 from c where c.evidence_id = e.id)')
+  expect(m).not.toMatch(/delete\s+from/i)
+})
