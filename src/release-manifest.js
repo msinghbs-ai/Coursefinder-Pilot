@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.219'
-export const PACKAGE_VERSION='0.1.146'
+export const UI_VERSION='2.15.220'
+export const PACKAGE_VERSION='0.1.147'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'7 Oct 2026',
-  title:'Storage & retention',
+  date:'8 Oct 2026',
+  title:'Rule 2: course page fee wins',
   changes:[
-    'Platform settings \u203a Storage & retention (Platform Admin): what takes space in the database and file storage, the rule for each category and how much would go. Preview changes nothing; Purge asks for a reason and the category name, runs in the background in small batches and is logged.',
-    'Categories: adapter builder screenshots older than 7 days (the page HTML proposals use is kept), the Layer 2 tables retired on 2 Oct, the scheduled-job run log older than 7 days, and sitemap copies of third-party course directories. Evidence files can be audited (counted) but not purged here.',
-    'Values read from third-party course directories for colleges with no website on record are in Layer 4 review (intakes, English and course pages), each naming the directory page.'
+    'Rule 2: a course uses the fee on the provider\u2019s own course page whenever that page fee has captured evidence, whatever year the page names; the CRICOS registered fee is held only until then. No Layer 4 review is raised. Both fees stay stored; a fee entered or locked by hand keeps the earlier rule.',
+    'Layer 2 \u203a Adapters \u203a fee rules now reports the page fee used, and where CRICOS is still held (no captured evidence, or a page on a site shared by several providers).'
   ],
   bugFixes:[]
 }
