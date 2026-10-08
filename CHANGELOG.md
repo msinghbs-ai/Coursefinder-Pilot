@@ -14,6 +14,7 @@
 - `20261008002300`: schedule `register-replay` drives the replay one slice a minute and stops itself when done.
 - `20261008002400`: the job-log purge cuts off at 7 days before the run started, so it can finish (it previously kept finding newly aged records).
 - `20261008002500`: the course-directory purge selects its batch by (provider_id, url); the first run failed on a missing id column and removed nothing.
+- `20261008002600`: replay comparison converts durations and fees only when they are numbers. Phase 2 replay result: all three CRICOS archives identical under the adapter and today's Layer 1 code; the newest matches Layer 1's recorded fingerprints for all 25,540 courses.
 
 ## 0.1.147 — 8 Oct 2026
 
