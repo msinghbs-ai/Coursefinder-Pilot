@@ -84,3 +84,23 @@ One-off recovery functions that are **still executable** on live. Recommend reti
 
 ## Retired on import (29 Sep 2026)
 `ranking-qs-2027-publish-recovery` (no caller authentication) and `ranking-qs-2027-binary-recovery` (access key embedded in source) were replaced live with 410 'retired' stubs (versions 5 and 3, verify_jwt true) and the stubs are what is kept here. The original recovery code is not kept in this public repository.
+
+
+## Retired 9 Oct 2026 (CF-247 clean-up batch 1)
+
+The one-off functions below were imported here from the live project and are now retired: source removed and deleted from the live project through the deploy workflow's retired list. Their imported source stays in git history.
+
+- `cf212-qs-endpoint-verify`
+- `cf212-qs-evidence-upload`
+- `cf212-qs-page-probe`
+- `cf213-qs-meta-probe`
+- `cf231-qs2026-revalidate-once`
+- `layer4-course-resolve`
+- `ranking-qs-2027-binary-recovery`
+- `ranking-qs-2027-publish-recovery`
+- `ranking-qs-backfill-once`
+- `ranking-qs-backfill-trigger-once`
+- `ranking-qs-source-recovery`
+- `ranking-qs-static-backfill-year`
+- `ranking-qs-upload-recovery`
+- `search-vector-gate`

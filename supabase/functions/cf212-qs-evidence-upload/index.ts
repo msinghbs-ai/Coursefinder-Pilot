@@ -1,1 +1,0 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"; Deno.serve(()=>new Response(JSON.stringify({error:"retired_cf212_probe"}),{status:410,headers:{"content-type":"application/json","cache-control":"no-store"}}));
