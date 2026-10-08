@@ -13,6 +13,7 @@
 - Database: `20261008003800` (CRICOS v2 replays started), `20261008003900` (17 Canadian register adapters, format text_items, switched off: 16 Ontario college catalogues and IRCC DLI; replay runs on every stored August copy) and `20261008004000` (replay driver started). Engine `_shared/cf247-register-items.ts`; references `_shared/cf247-register-ca-ref.ts` (verbatim copies of the Layer 1 readers, checked by a contract test). Worker coverage-sweep v0.17.26.
 - Worker coverage-sweep v0.17.27: a key repeated within one replay call is saved as key#2, key#3 (the CRICOS v2 location sets repeat some locations); `20261008004000` also replays the three CRICOS archives again.
 - Canadian Layer 1 readers that kept only parsed output now also store the raw pages they fetch as a `-raw.json` evidence bundle beside their evidence (centennial, cna, fanshawe, firstparty-catalogues, mb, northern, ns-sk, on-college, sault, sk, stlawrence), so their parsing can be replayed after their next run. Nothing they parse or apply changes.
+- Worker coverage-sweep v0.17.28: text_items fields are read in dependency order (a spec stored as jsonb loses key order; the Conestoga replay read 0 records).
 
 ## 0.1.148 — 8 Oct 2026
 
