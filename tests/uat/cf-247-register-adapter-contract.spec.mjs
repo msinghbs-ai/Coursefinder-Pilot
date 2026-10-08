@@ -64,9 +64,10 @@ test('PRISMS and QILT register adapters: stored switched off, references are the
   expect(m).not.toContain('switched_on')
   const norm = (s) => s.replace(/\s+/g, '')
   const r = norm(fs.readFileSync('supabase/functions/coverage-sweep/register_xlsx.ts', 'utf8'))
-  // QILT reference: the reader lines are copied byte for byte (whitespace aside) from qilt-au-etl v0.3.0
+  // QILT reference: the reader lines are copied byte for byte (whitespace aside) from qilt-au-etl v0.3.1
   const q = fs.readFileSync('supabase/functions/qilt-au-etl/index.ts', 'utf8')
-  expect(q).toContain('const VERSION="qilt-au-etl-v0.3.0"')
+  expect(q).toContain('const VERSION="qilt-au-etl-v0.3.1"')
+  expect(q).toContain('high:cell.hi,')
   for (const start of [' gos:{', ' ses:{', ' gosl:{', ' ess:{', 'function val(', 'function extract(']) {
     const line = q.split('\n').find((x) => x.startsWith(start))
     expect(line, start).toBeTruthy()
