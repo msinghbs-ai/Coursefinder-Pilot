@@ -10,7 +10,7 @@ export const RELEASE={
   title:'Rule 2: course page fee wins',
   changes:[
     'Rule 2: a course uses the fee on the provider\u2019s own course page whenever that page fee has captured evidence, whatever year the page names; the CRICOS registered fee is held only until then. No Layer 4 review is raised. Both fees stay stored; a fee entered or locked by hand keeps the earlier rule.',
-    'Rule 3: a course page fee with no year whose evidence was captured this year is given this year, with no review (daily). Courses that already hold a different fee for this year are left for a decision.',
+    'Rule 3: a course page fee with no year whose evidence was captured this year is given this year, with no review (daily). Where a course already holds a different fee for this year, the reading with the newest evidence wins and the other is superseded (kept on record).',
     'Layer 2 \u203a Adapters \u203a fee rules now reports the page fee used, and where CRICOS is still held (no captured evidence, or a page on a site shared by several providers).'
   ],
   bugFixes:[]

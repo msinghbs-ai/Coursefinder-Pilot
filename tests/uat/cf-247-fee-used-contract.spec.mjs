@@ -79,3 +79,15 @@ test('migration 1000 applies Rule 3: aligns year-less fees captured this year, s
   expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
   expect(m).not.toMatch(/delete\s+from/i)
 })
+
+// Rule 3 conflicts (8 Oct 2026, Platform Admin, "Newest evidence wins"): the other fee is superseded, never removed.
+test('migration 1100 resolves same-year conflicts by newest evidence and is guarded', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008001100_cf247_rule3_newest_evidence_wins.sql', 'utf8')
+  expect(m).toContain("'5809297309d14a1a7ce609b6a9d55138'")
+  expect(m).toContain('yearless_newer')
+  expect(m).toContain("set status = 'superseded'")
+  expect(m).toContain('manual_locks')
+  expect(m).not.toMatch(/\b(truncate|cascade)\b/i)
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toMatch(/drop\s+(table|function)/i)
+})
