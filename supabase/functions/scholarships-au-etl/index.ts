@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
-const VERSION = "scholarships-au-etl-v0.3.0";
+const VERSION = "scholarships-au-etl-v0.3.1";
 const STUDY_SEARCH = "https://search.studyaustralia.gov.au/scholarships";
 const DFAT_AWARDS = "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships";
 const DFAT_DATES = "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships-opening-and-closing-dates";
@@ -305,6 +305,10 @@ async function buildManaaki(){
   const pages=await Promise.all(keys.map(async k=>({name:k,...await fetchHtml(MANAAKI_PAGES[k])})));
   const txt=Object.fromEntries(pages.map(p=>[p.name,htmlText(p.html)]));
   const regions=manaakiRegions(txt.countries),inst=manaakiInstitutions(pages.find((x:any)=>x.name==="institutions")!.html),windows=manaakiWindows(txt.apply);
+  // v0.3.1: record where each institution's official site lands (a renamed site redirects), so the database can match
+  // the institution to a catalogue provider by website, never by name.
+  const landing=async(u:string)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),15000);try{const r=await fetch(u,{redirect:"follow",signal:c.signal,headers:{"user-agent":"CourseFinder-Pilot/Scholarships-0.3.1"}});await r.body?.cancel();return r.url||null;}catch(_e){return null;}finally{clearTimeout(t);}};
+  for(const x of [...inst.universities,...inst.institutes_of_technology,...inst.pacific_institutions]) (x as any).final_website=await landing(x.website);
   const countries=[...new Set(regions.flatMap((r:any)=>r.countries.map((c:any)=>c.country)))];
   if(!regions.length||countries.length<5) throw new Error(`Manaaki eligible countries not found (regions=${regions.length}, countries=${countries.length})`);
   if(inst.new_zealand.length<5) throw new Error(`Manaaki approved institutions not found (${inst.new_zealand.length})`);
@@ -371,7 +375,8 @@ Deno.serve(async(req:Request)=>{
       if(mode==="dry_run") return reply(base);
       const sourceId=clean(body?.source_id);if(!sourceId) throw new Error("source_id required for the Manaaki register");
       const result=await persist(client,sourceId,built.record,built.parts,"nz-mfat-manaaki/MANAAKI-TERTIARY",`layer1/NZ/scholarships`);
-      return reply({...base,sourceId,...result});
+      const profile=await rpc(client,"svc_scholarship_register_record_profile",{p_register:"nz_mfat_manaaki"});
+      return reply({...base,sourceId,...result,profile});
     }
     if(feed==="study_australia_register"){
       if(mode==="dry_run"){const r=await readStudyRegister();return reply({ok:true,workerVersion:VERSION,mode,feed,candidateObservations:r.listings.length,totalShown:r.total,pages:r.lastPage,sourceHash:r.hash,providers:new Set(r.listings.map(l=>l.provider_ref)).size,sample:r.listings.slice(0,3)});}
@@ -392,6 +397,7 @@ Deno.serve(async(req:Request)=>{
     const built=await buildAustraliaAwards(),c=built.record.cycles[0],base={ok:true,workerVersion:VERSION,mode,feed,candidateScholarships:1,candidateObservations:1,sourceHash:await awardsHash(built.parts),sourceIdentifiers:["AAS"],cycles:1,windows:c.windows.length,scopes:c.scopes.length,criterionGroups:c.criterion_groups.length,criteria:c.criteria.length,awardTiers:c.award_tiers.length,coverage:c.coverage.length,sample:{id:"AAS",name:built.record.name,cycle:c.cycle_code,windows:c.windows.map((w:any)=>({code:w.round_code,opens:w.opens_at,closes:w.closes_at}))}};
     if(mode==="dry_run") return reply(base);
     const sourceId=clean(body?.source_id)||await prepareSource(client,feed),result=await persist(client,sourceId,built.record,built.parts,"dfat-australia-awards/AAS");
-    return reply({...base,sourceId,...result});
+    const profile=clean(body?.source_id)?await rpc(client,"svc_scholarship_register_record_profile",{p_register:"au_dfat_australia_awards"}):null;
+    return reply({...base,sourceId,...result,profile});
   }catch(e){return reply({ok:false,workerVersion:VERSION,error:e instanceof Error?e.message:String(e)},500);}
 });

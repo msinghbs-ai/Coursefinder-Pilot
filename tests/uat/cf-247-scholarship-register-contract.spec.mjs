@@ -59,7 +59,7 @@ test('Study Australia listing cards: id, name, provider, value, level, closing d
 })
 
 test('register worker: whole listing read, raw pages kept, stable hash, Layer 1 service authority', () => {
-  expect(worker).toContain('const VERSION = "scholarships-au-etl-v0.3.0";')
+  expect(worker).toContain('const VERSION = "scholarships-au-etl-v0.3.1";')
   expect(worker).toContain('if(listings.length<Math.floor(total*0.98)) throw new Error(')
   expect(worker).toContain('const listings=[...seen.values()].sort((a,b)=>a.id.localeCompare(b.id));')
   expect(worker).toContain('pages:r.pages.map(p=>({url:p.url,sha256:p.hash,html:p.html}))')
@@ -154,4 +154,24 @@ const apply = "Select your region to find the application process for your count
   expect(m).toContain("'register_code','nz_mfat_manaaki'")
   expect(m).toContain("array['nzscholarships.govt.nz']")
   expect(m).not.toMatch(/delete\s+from/i)
+})
+
+test('government awards: nationalities from the register, institutions by official website, guarded patches, nothing published', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008004900_cf247_scholarship_government_awards.sql', 'utf8')
+  // stops rather than storing a partial nationality list
+  expect(m).toContain("raise exception 'register % lists countries without a nationality code: %'")
+  // institutions matched by website (or where it redirects), never by name
+  expect(m).toContain("security.url_base_host(p.website) in (security.url_base_host(i->>'website'), security.url_base_host(i->>'final_website'))")
+  expect(m).toContain("sl.code in ('bachelor','masters','doctorate') or (sl.code in ('diploma','certificate') and c.canonical_title ~* '\\mpost ?graduate\\M')")
+  // each live function patched only if it is exactly the expected version
+  expect(m).toContain("'c855a8ed523e39470529f1def62db833'")
+  expect(m).toContain("'aa0d0f35d70d99a20ff7522bf4edb4aa'")
+  expect(m).toContain("'5fa8ee54af103bf126e96ccfcf416a5c'")
+  expect(m).toContain("coverage_type='tuition_fees' and cv.percentage=100")
+  expect(m).toContain("coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin required'")
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toMatch(/publication_status\s*=/i)
+  expect(m).toContain("'(?<!New )(?<!Equatorial )(?<!Papua New )Guinea(?!-Bissau)'")
+  expect(worker).toContain('(x as any).final_website=await landing(x.website);')
+  expect(worker).toContain('svc_scholarship_register_record_profile')
 })
