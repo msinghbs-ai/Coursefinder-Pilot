@@ -27,3 +27,29 @@ test('register adapter: spec stored switched off, replay is read only, reference
   expect(c).toContain("'a92345aef63ffb480d636f586d00d58e'")
   expect(c).toContain('then (a.fields->>\'duration_weeks\')::numeric end weeks')
 })
+
+// CF-247 Phase 2 (8 Oct 2026): NZQA, a register published as web pages, replayed from the stored Layer 1 batch files.
+test('NZQA register adapter: stored switched off, reference is the layer1-nz-live code, replay reads listed files', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008002800_cf247_phase2_nzqa_register_adapter.sql', 'utf8')
+  expect(m).toContain("'nz_nzqa'")
+  expect(m).toContain('"format": "html_pages"')
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toMatch(/update\s+catalogue\./i)
+  expect(m).not.toContain('switched_on')
+  expect(m).toContain('add column if not exists paths text[]')
+  // the reference must stay the same code as layer1-nz-live (formatting aside)
+  const norm = (s) => s.replace(/\s+/g, '').replace(/;}/g, '}').replace(/\((\w)\)=>/g, '$1=>')
+  const live = fs.readFileSync('supabase/functions/layer1-nz-live/index.ts', 'utf8')
+  expect(live).toContain('const VERSION="layer1-nz-live-v1.2.1"')
+  const l = norm(live)
+  const r = fs.readFileSync('supabase/functions/coverage-sweep/register_html.ts', 'utf8')
+  for (const f of ['const clean =', 'function mapLevel(', 'function providerNumber(', 'function providerName(', 'function providerWebsite(', 'function parseQualifications(']) {
+    const line = r.split('\n').find((x) => x.startsWith(f))
+    expect(line, f).toBeTruthy()
+    expect(l.includes(norm(line)), f).toBe(true)
+  }
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('svc_register_replay_next_v3')
+  expect(w).toContain('if (n.spec?.format === "html_pages")')
+  expect(w).toContain('n.code === "nz_nzqa" ? nzqaReferenceRecords(batch)')
+})
