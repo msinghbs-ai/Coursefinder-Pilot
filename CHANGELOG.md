@@ -9,6 +9,7 @@
 - Database: `20261008001700` (Rule 5: where the held value is the Layer 3 model's reading and the adapter's patterns read differently, the adapter reading replaces it in the 10-minute adapter-overwrite job, no review).
 - Database: `20261008001800` (Rule 6 measurement: courses bound to a page named for another course, 140 listed). Worker coverage-sweep v0.17.18 (mode page_codes reads stored pages for CRICOS-shaped codes).
 - Database: `20261008001900` (Rule 6: 71 courses whose page is named for another course and lacks their CRICOS code unbound, blocked from rebinding to that page, page values withdrawn and sent back to page finding; 15 hand-chosen pages and 54 with the code kept).
+- Phase 2: `20261008002000` (CRICOS register adapter stored, switched off; side-by-side replay of the last three register archives with today's Layer 1 code) and `20261008002100` (register files never purged as unreferenced evidence). Worker coverage-sweep v0.17.19 (mode register_replay).
 
 ## 0.1.147 — 8 Oct 2026
 

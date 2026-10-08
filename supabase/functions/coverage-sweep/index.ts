@@ -6,6 +6,7 @@ import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pa
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, viewApplies, withView } from "./adapters.ts";
 import { adapterOutput, builderRequest, jsonLeaves, mainJsonScript, proposalAdapter, textBlocks } from "./builder.ts";
+import { adapterRecords, referenceRecords } from "./register.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
@@ -47,7 +48,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.17.18"; // v0.17.18 (8 Oct 2026): mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.17.19"; // v0.17.19 (8 Oct 2026): mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -1186,6 +1187,30 @@ Deno.serve(async (req) => {
     // Admin queued; files are removed through Storage (never by deleting storage rows), up to 20 batches of 100 a call, and every batch is reported.
     // v0.17.18 (CF-247 Rule 6, 8 Oct 2026): read the stored page of each listed course and report every CRICOS-shaped code on it
     // (six digits and a letter). Read only; the database decides whether the course's own code is there.
+    // v0.17.19 (CF-247 Phase 2, 8 Oct 2026): side-by-side replay of a stored register archive. One engine per call (the
+    // register adapter, or the copy of today's Layer 1 code); records are saved for the database to compare. Read only.
+    if (mode === "register_replay") {
+      const n = await rpc("svc_register_replay_next", {});
+      if (!n?.run_id) return j({ ok: true, mode, idle: true, worker: WORKER });
+      try {
+        const { data, error } = await c.storage.from("evidence").download(String(n.storage_path));
+        if (error || !data) throw Error(error?.message || "stored archive missing");
+        const zipBytes = new Uint8Array(await data.arrayBuffer());
+        const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", zipBytes))].map((x) => x.toString(16).padStart(2, "0")).join("");
+        if (n.zip_hash && hash !== n.zip_hash) throw Error("stored archive does not match its recorded hash");
+        const recs0 = n.engine === "adapter" ? await adapterRecords(n.spec, zipBytes) : await referenceRecords(zipBytes);
+        // fields are compared by a cheap hash (FNV-1a, two 32-bit lanes); the full fields are sent only when the run keeps them
+        const fnv = (t: string) => { let a = 0x811c9dc5, b = 0x01000193 ^ 0x5bd1e995; for (let i = 0; i < t.length; i++) { const c = t.charCodeAt(i); a = Math.imul(a ^ c, 0x01000193); b = Math.imul(b ^ c, 0x5bd1e995) } return (a >>> 0).toString(16).padStart(8, "0") + (b >>> 0).toString(16).padStart(8, "0") };
+        const recs = recs0.map((r) => { const t = JSON.stringify(Object.keys(r.x).sort().map((k) => [k, r.x[k]])); return n.keep_fields ? { k: r.k, f: r.f, h: fnv(t), x: r.x } : { k: r.k, f: r.f, h: fnv(t) } });
+        for (let i = 0; i < recs.length; i += 1000)
+          await rpc("svc_register_replay_save", { p_run_id: n.run_id, p_engine: n.engine, p_rows: recs.slice(i, i + 1000), p_final: i + 1000 >= recs.length, p_error: null });
+        if (!recs.length) await rpc("svc_register_replay_save", { p_run_id: n.run_id, p_engine: n.engine, p_rows: [], p_final: true, p_error: null });
+        return j({ ok: true, mode, run_id: n.run_id, engine: n.engine, records: recs.length, worker: WORKER });
+      } catch (e) {
+        await rpc("svc_register_replay_save", { p_run_id: n.run_id, p_engine: n.engine, p_rows: [], p_final: true, p_error: String((e as Error)?.message || e).slice(0, 300) }).catch(() => null);
+        return j({ ok: false, mode, error: String((e as Error)?.message || e), worker: WORKER });
+      }
+    }
     if (mode === "page_codes") {
       let checked = 0;
       for (let b = 0; b < 10 && Date.now() - t0 < BUDGET_MS - 20000; b++) {
