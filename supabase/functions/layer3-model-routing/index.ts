@@ -10,6 +10,7 @@ import {
   tuitionRequestBody,
 } from "../_shared/cf247-model-routing.ts";
 import { AUDIT_RATE, CASCADE_VERSION, cascadeSignal, sameAnswer } from "../_shared/cf247-cascade.ts";
+import { shadowInput } from "../_shared/cf247-adapter-shadow.ts";
 
 // CF-CHG-20260915-247 Layer 3 model routing (Platform Admin direction 29 Sep 2026 18:30 IST). Nonce-only.
 //   catalogue  OpenRouter /models (candidate ids only) and /credits; recorded as observations. No model call.
@@ -24,6 +25,9 @@ import { AUDIT_RATE, CASCADE_VERSION, cascadeSignal, sameAnswer } from "../_shar
 // Decision 229 (2 Oct 2026): a profile whose prompt_profile_version is cf247-intake-validation-v1.3.0 runs the v1.3.0 intake
 // contract (request body, checks, binding); every other profile runs exactly what it was qualified on.
 const FN = "layer3-model-routing", V = ROUTING_VERSION;
+// CF-247 Phase 3 (Platform Admin 9 Oct 2026): shadow reads of the merged adapter step. Kept apart from ROUTING_VERSION,
+// which is part of every qualified binding hash and must not change.
+const SHADOW_V = "cf247-adapter-shadow-v1.0.0";
 // Decision 221 (2 Oct 2026): a cascade task (intake, English) never falls back to the single routed profile; with no
 // cascade step switched on, nothing is claimed and no model is called.
 const QUALIFICATION_CAP_USD = 8.0, RESERVE_USD = 0.03;
@@ -67,11 +71,11 @@ Deno.serve(async (req: Request) => {
     if (error || !data) throw new Error("evidence download failed: " + (error?.message || path));
     return data;
   };
-  const pageText = async (path: string) => {
+  const pageHtml = async (path: string) => {
     const data = await download(path);
-    const html = /\.gz$/i.test(path) ? await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() : await data.text();
-    return htmlToText(html);
+    return /\.gz$/i.test(path) ? await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() : await data.text();
   };
+  const pageText = async (path: string) => htmlToText(await pageHtml(path));
   const tuitionText = async (path: string, mime: string | null, profile: any) => tuitionEvidenceText(new Uint8Array(await (await download(path)).arrayBuffer()), mime, tuitionMaxChars(profile));
   // the account key: the Edge secret when set, otherwise the governed OpenRouter aggregator credential (vault)
   const orKey = async () => {
@@ -234,6 +238,50 @@ Deno.serve(async (req: Request) => {
       const pol = await creditPolicy(rpc);
       const res = pol.enforce && c.remaining < pol.floor ? await rpc("layer3_route_credit_floor_service", { p_remaining: c.remaining, p_floor: pol.floor }) : null;
       return j(200, { ok: true, mode, worker_version: V, credits: c, floor: pol.floor, enforced: pol.enforce, stopped: res });
+    }
+
+    // CF-247 Phase 3 shadow: the merged step (the adapter's model on the adapter's input, same task contract and checks)
+    // reads courses Layer 3 has finished and records its answer beside Layer 3's. Nothing is admitted. Limits (US$ and
+    // reads a day) are applied by the claim; the OpenRouter credit floor applies as for Layer 3.
+    if (mode === "shadow") {
+      const task = taskOf(body.task);
+      if (task === "tuition") throw new Error("the shadow run covers intake and english");
+      const c = await credits();
+      const pol = await creditPolicy(rpc);
+      if (pol.enforce && c.remaining < pol.floor) return j(200, { ok: true, mode, task, worker_version: SHADOW_V, claimed: 0, reason: "credit floor" });
+      const claim = await rpc("svc_adapter_shadow_claim", { p_task: task, p_limit: Math.min(Math.max(1, Number(body.limit || 3)), 10), p_worker: `${FN}:shadow:${task}` });
+      const items: any[] = claim?.items || [];
+      if (!items.length) return j(200, { ok: true, mode, task, worker_version: SHADOW_V, claimed: 0, reason: claim?.reason || null });
+      const tally: Record<string, number> = {}; let cost = 0;
+      await pool(items, Math.min(Math.max(1, Number(body.concurrency || 3)), 4), async (it) => {
+        let result: any;
+        try {
+          const profile = it.profile, model = String(profile?.model_identifier || "");
+          if (!isPinnedModel(model)) throw new Error("the adapter's model is not a pinned model");
+          const inp = shadowInput(it.adapter, await pageHtml(it.storage_path), task);
+          const text = inp.text;
+          const blockers = task === "intake" ? intakeSafetyBlockers(text) : [];
+          let r: any = { ok: true, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null }, called = false;
+          if (task === "intake" && blockers.length) r.answer = { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" };
+          else {
+            called = true;
+            const reqBody = task === "intake" ? intakeBodyFor(profile, model, text, Number(profile.max_output_tokens)) : englishRequestBody(model, text, Number(profile.max_output_tokens));
+            r = await callModel(profile, reqBody);
+          }
+          let chk: any = r.answer ? (task === "intake" ? intakeCheckFor(profile, r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+          if (called && r.returned && r.returned !== model) chk = { valid: false, errors: [...(chk.errors || []), `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
+          result = { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output,
+            latency_ms: r.latency, input_basis: inp.basis, input_chars: text.length, worker_version: SHADOW_V };
+        } catch (e) {
+          result = { worker_error: true, valid: false, errors: [String((e as Error)?.message || e).slice(0, 200)], cost_usd: 0, worker_version: SHADOW_V };
+        }
+        cost += Number(result.cost_usd || 0);
+        let status = "complete_error";
+        try { const done = await rpc("svc_adapter_shadow_complete", { p_id: it.shadow_id, p_result: pgSafe(result) }); status = done?.status || "?" }
+        catch (e) { console.error("shadow complete failed", it.shadow_id, String((e as Error)?.message || e)) }
+        tally[status] = (tally[status] || 0) + 1;
+      });
+      return j(200, { ok: true, mode, task, worker_version: SHADOW_V, claimed: items.length, tally, cost_usd: cost, ms: Date.now() - t0 });
     }
 
     if (mode === "work") {
