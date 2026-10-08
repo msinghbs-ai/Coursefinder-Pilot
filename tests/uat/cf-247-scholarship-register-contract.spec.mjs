@@ -59,7 +59,7 @@ test('Study Australia listing cards: id, name, provider, value, level, closing d
 })
 
 test('register worker: whole listing read, raw pages kept, stable hash, Layer 1 service authority', () => {
-  expect(worker).toContain('const VERSION = "scholarships-au-etl-v0.2.0";')
+  expect(worker).toContain('const VERSION = "scholarships-au-etl-v0.3.0";')
   expect(worker).toContain('if(listings.length<Math.floor(total*0.98)) throw new Error(')
   expect(worker).toContain('const listings=[...seen.values()].sort((a,b)=>a.id.localeCompare(b.id));')
   expect(worker).toContain('pages:r.pages.map(p=>({url:p.url,sha256:p.hash,html:p.html}))')
@@ -72,11 +72,11 @@ test('register worker: whole listing read, raw pages kept, stable hash, Layer 1 
 
 test('Layer 1 run controller and scheduler dispatch the scholarship registers', () => {
   const c = fs.readFileSync('supabase/functions/layer1-operations-control/index.ts', 'utf8')
-  expect(c).toContain('const VERSION="layer1-operations-control-v1.7.0";')
+  expect(c).toContain('const VERSION="layer1-operations-control-v1.7.1";')
   expect(c).toContain('if(system==="SCHOLARSHIP_REGISTER")return validateScholarshipRegister(')
   expect(c).toContain('if(system==="SCHOLARSHIP_REGISTER"){const code=String(ctx.source?.metadata?.register_code||"")')
   const s = fs.readFileSync('supabase/functions/layer1-operations-scheduled/index.ts', 'utf8')
-  expect(s).toContain('const VERSION="layer1-operations-scheduled-v1.3.0"')
+  expect(s).toContain('const VERSION="layer1-operations-scheduled-v1.3.1"')
   expect(s).toContain('if(system==="SCHOLARSHIP_REGISTER"){')
   const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
   expect(wf).toContain('[scholarships-au-etl]=false')
@@ -111,5 +111,47 @@ test('register hand-off writes each provider page candidate once per batch (md5-
   const m = fs.readFileSync('supabase/migrations/20261008004700_cf247_scholarship_register_handoff_once.sql', 'utf8')
   expect(m).toContain("<> '1de473b90e9844055ed23758d3e4a728' then")
   expect(m).toContain('select distinct on (t.provider_id, security.scholarship_url_norm(t.website_url))')
+  expect(m).not.toMatch(/delete\s+from/i)
+})
+
+
+test('New Zealand Manaaki register: regions, countries, levels, approved institutions, rounds read from the pages', () => {
+  const pick = (name) => {
+    const start = worker.indexOf(name)
+    if (start < 0) throw new Error(`missing ${name}`)
+    const line = worker.slice(start, worker.indexOf('\n', start))
+    const b = (t) => (t.match(/\{/g) || []).length - (t.match(/\}/g) || []).length
+    if (b(line) === 0) return line
+    return worker.slice(start, worker.indexOf('\n}', start) + 2)
+  }
+  const ts = [pick('const clean = '), pick('function decodeHtml('), pick('const months:'), pick('function parseDateOnly('), pick('export function splitTopLevel('),
+    pick('export function manaakiCountries('), pick('export function manaakiRegions('), pick('export function manaakiInstitutions('),
+    pick('const MONTHS='), pick('export function manaakiWindows(')].join('\n').replace(/^export /gm, '')
+  const p = new Function(`${transformSync(ts, { loader: 'ts' }).code}; return { manaakiRegions, manaakiInstitutions, manaakiWindows }`)()
+  const countries = "Select a region to find out if your country is eligible. 01 Eligible Pacific Countries Citizens from eligible countries in the Pacific have two tertiary scholarship options. Eligible scholars can choose to study at a New Zealand or Pacific tertiary education institute. Note: Cook Island scholars have their own scholarship managed by the Cook Islands Ministry of Education and funded by the New Zealand Government Note: Tokelau scholars are currently only eligible to apply for Short Term Training Scholarships Option 1: Scholarships to study in New Zealand Eligible Pacific countries: Fiji (postgraduate only), French Pacific (New Caledonia, French Polynesia, Wallis and Futuna), Kiribati, Naoero, Niue, North Pacific (Federated States of Micronesia, Palau, Marshall Islands), Papua New Guinea, Samoa, Solomon Islands, Tonga, Tuvalu, Vanuatu Levels of study available: Undergraduate Degree (3-4 years) Postgraduate Certificate (6 months) Postgraduate Diploma (1 year) Master’s Degree (1-2 years) PhD (3.5 years) Expected start dates: We aim for Pacific scholars to commence study in semester 1 the year after they submitted their scholarship application. Option 2: Scholarships to study at a Pacific university Eligible Pacific countries: Kiribati, Niue, Samoa, Solomon Islands, Tonga, Tuvalu, Vanuatu. Levels of study available: You can study these qualifications at one of two universities in Fiji: Undergraduate Degree (3-4 years) Postgraduate Certificate (6 months) Postgraduate Diploma (1 year) Master’s Degree (1-2 years) PhD (3.5 years) Expected start dates: We aim for Pacific scholars to commence study from Semester 1 the year after they submitted their application. We only accept applications from citizens from eligible countries If your country is not on this page, you can research scholarships from other New Zealand organisations NEXT: / 02 Eligible Asian Countries Cambodia, Indonesia, Lao PDR, Malaysia, Nepal, Philippines, Thailand, Timor-Leste, Viet Nam Levels of study available: Undergraduate Degree (3-4 years) (Timor-Leste only) Postgraduate Certificate (6 months) Postgraduate Diploma (1 year) Master’s Degree (1-2 years) PhD (3.5 years) Expected start dates: We aim for scholars to commence study from Semester 1, the year after they submit their application. We only accept applications from citizens from eligible countries. NEXT: If you are from an eligible country"
+const instTextUnused = "Eight available universities QS World University Rankings ranks New Zealand universities in the top 3%. New Zealand universities rank in the world's top 100 in over 30 subjects. Auckland University of Technology Lincoln University Massey University University of Auckland University of Canterbury University of Otago University of Waikato Victoria University of Wellington Two available institutes of technology New Zealand's institutes of technology are world class. They provide high-quality qualifications and training that focus on practical skills and hands-on experience. Southern Institute of Technology Unitec Institute of Technology Eligible Pacific citizens can choose to study at a Pacific university Citizens from eligible Pacific countries can also study at one of two approved Pacific universities. University of South Pacific Fiji National University Do more"
+const apply = "Select your region to find the application process for your country. Applications for Samoa Foundation open midnight 4 August 2026 and close midday 4 September 2026 Applicants for a Manaaki Scholarship are required"
+  const inst = '<p>Eight available universities</p><p>QS ranks...</p><div><ul><li><a href="https://www.aut.ac.nz/">Auckland University of Technology</a></li><li><a href="http://www.lincoln.ac.nz/">Lincoln University</a></li><li><a href="https://www.victoria.ac.nz/">Victoria University of Wellington</a></li></ul></div><p><b>Two available institutes of technology</b></p><p>world class</p><ul><li><a href="https://www.sit.ac.nz/">Southern Institute of Technology</a></li><li><a href="https://www.unitec.ac.nz/">Unitec Institute of Technology</a></li></ul><p>Citizens can also study at one of two approved Pacific universities.</p><ul><li><a href="https://www.usp.ac.fj/">University of the South Pacific</a></li><li><a href="https://www.fnu.ac.fj/">Fiji National University</a></li></ul>'
+  const regions = p.manaakiRegions(countries)
+  expect(regions.map(r => [r.region, r.destination, r.countries.length])).toEqual([
+    ['Pacific', 'Scholarships to study in New Zealand', 16],
+    ['Pacific', 'Scholarships to study at a Pacific university', 7],
+    ['Asian', 'Scholarships to study in New Zealand', 9],
+  ])
+  expect(regions[0].countries[0]).toEqual({ country: 'Fiji', group: null, note: 'postgraduate only' })
+  expect(regions[0].countries[1]).toEqual({ country: 'New Caledonia', group: 'French Pacific', note: null })
+  expect(regions[2].levels.map(l => l.level)).toEqual(['Undergraduate Degree', 'Postgraduate Certificate', 'Postgraduate Diploma', 'Master’s Degree', 'PhD'])
+  expect(regions[2].levels[0].note).toBe('Timor-Leste only')
+  const i = p.manaakiInstitutions(inst)
+  expect(i.new_zealand).toEqual(['Auckland University of Technology', 'Lincoln University', 'Victoria University of Wellington', 'Southern Institute of Technology', 'Unitec Institute of Technology'])
+  expect(i.pacific).toEqual(['University of the South Pacific', 'Fiji National University'])
+  expect(i.universities[0].website).toBe('https://www.aut.ac.nz/')
+  expect(p.manaakiWindows(apply)).toEqual([{ label: 'Samoa Foundation', opens: '2026-08-04', closes: '2026-09-04', quote: 'Applications for Samoa Foundation open midnight 4 August 2026 and close midday 4 September 2026' }])
+  // fails loudly rather than storing an empty record
+  expect(worker).toContain('if(!regions.length||countries.length<5) throw new Error(')
+  expect(worker).toContain('if(inst.new_zealand.length<5) throw new Error(')
+  const m = fs.readFileSync('supabase/migrations/20261008004800_cf247_scholarship_register_nz_manaaki.sql', 'utf8')
+  expect(m).toContain("'register_code','nz_mfat_manaaki'")
+  expect(m).toContain("array['nzscholarships.govt.nz']")
   expect(m).not.toMatch(/delete\s+from/i)
 })

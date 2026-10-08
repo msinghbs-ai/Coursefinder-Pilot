@@ -1,13 +1,24 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
-const VERSION = "scholarships-au-etl-v0.2.0";
+const VERSION = "scholarships-au-etl-v0.3.0";
 const STUDY_SEARCH = "https://search.studyaustralia.gov.au/scholarships";
 const DFAT_AWARDS = "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships";
 const DFAT_DATES = "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships-opening-and-closing-dates";
 const DFAT_HANDBOOK_PAGE = "https://www.dfat.gov.au/about-us/publications/australia-awards-scholarships-policy-handbook";
 const DFAT_HANDBOOK_PDF = "https://www.dfat.gov.au/sites/default/files/aus-awards-scholarships-policy-handbook.pdf";
 const OASIS = "https://oasis.dfat.gov.au/";
+// v0.3.0 (CF-247): New Zealand's government register, the Manaaki New Zealand Scholarships (MFAT, run by
+// Education New Zealand), read as a record. Every value comes from the pages; nothing is hard-coded.
+const MANAAKI = "https://www.nzscholarships.govt.nz";
+const MANAAKI_PAGES:Record<string,string> = {
+  tertiary: `${MANAAKI}/international-tertiary-students/`,
+  countries: `${MANAAKI}/check-eligible-countries/`,
+  criteria: `${MANAAKI}/check-eligibility-criteria/`,
+  institutions: `${MANAAKI}/research-available-courses/`,
+  apply: `${MANAAKI}/how-to-apply-for-a-scholarship/`,
+  types: `${MANAAKI}/types-of-manaaki-scholarships/`,
+};
 
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -244,24 +255,100 @@ async function studyRegisterDetailPass(client:any,sourceId:string,limit:number){
 }
 function awardsHash(parts:any[]){return sha256(new TextEncoder().encode(parts.filter((p:any)=>p.name!=="oasis").map((p:any)=>`${p.name}:${p.hash}`).join("|")));}
 
+// ---- New Zealand: Manaaki New Zealand Scholarships (tertiary) ----
+export function splitTopLevel(list:string){const out:string[]=[];let depth=0,cur="";for(const ch of list){if(ch==="(")depth++;if(ch===")")depth=Math.max(0,depth-1);if(ch===","&&depth===0){if(cur.trim())out.push(cur.trim());cur="";}else cur+=ch;}if(cur.trim())out.push(cur.trim());return out.map(x=>x.replace(/[.;]\s*$/,"").trim()).filter(Boolean);}
+export function manaakiCountries(list:string){
+  const out:{country:string,group:string|null,note:string|null}[]=[];
+  for(const item of splitTopLevel(list)){
+    const m=item.match(/^(.*?)\s*\((.*)\)$/);
+    if(m&&m[2].includes(",")) for(const c of splitTopLevel(m[2])) out.push({country:c,group:m[1].trim(),note:null});
+    else if(m) out.push({country:m[1].trim(),group:null,note:m[2].trim()});
+    else out.push({country:item,group:null,note:null});
+  }
+  return out;
+}
+export function manaakiRegions(text:string){
+  const regions:any[]=[];
+  const heads=[...text.matchAll(/\b\d{2}\s+Eligible\s+([A-Za-z ]+?)\s+Countries\b/g)];
+  for(let i=0;i<heads.length;i++){
+    const start=(heads[i].index??0)+heads[i][0].length,end=i+1<heads.length?(heads[i+1].index??text.length):text.length;
+    const block=text.slice(start,end).split(/\bNEXT:/)[0],region=heads[i][1].trim();
+    const parts=block.split(/\bOption\s+\d+:\s*/).slice(1);
+    const segs=parts.length?parts:[block];
+    for(const seg of segs){
+      const dest=parts.length?clean(seg.split(/\bEligible\b/)[0]):"Scholarships to study in New Zealand";
+      const lm=seg.match(/(?:Eligible\s+[A-Za-z ]+?countries:\s*)?([\s\S]*?)\s*Levels of study available:\s*([\s\S]*?)\s*Expected start dates:/i);
+      if(!lm) continue;
+      let list=clean(lm[1]);const tail=list.match(/Eligible\s+[A-Za-z ]+?countries:\s*([\s\S]*)$/i);if(tail)list=clean(tail[1]);
+      if(/^(Citizens|Note)/i.test(list)) continue;
+      const levels=[...lm[2].matchAll(/(PhD|[A-Z][A-Za-z’' ]+?(?:Degree|Certificate|Diploma))\s*\(([^)]*)\)(?:\s*\(([^)]*)\))?/g)].map(x=>({level:clean(x[1]),duration:clean(x[2]),note:x[3]?clean(x[3]):null}));
+      regions.push({region,destination:dest,countries:manaakiCountries(list),levels,source_text:list});
+    }
+  }
+  return regions;
+}
+export function manaakiInstitutions(html:string){
+  // the approved institutions are link lists (<ul><li><a href="official site">Name</a></li></ul>) after each heading
+  const listAfter=(re:RegExp)=>{const m=re.exec(html);if(!m)return [] as {name:string,website:string}[];const rest=html.slice(m.index);const ul=rest.match(/<ul\b[^>]*>([\s\S]*?)<\/ul>/i);if(!ul)return [];return [...ul[1].matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)].map(x=>({name:clean(decodeHtml(x[2].replace(/<[^>]+>/g," "))),website:decodeHtml(x[1])})).filter(x=>x.name);};
+  const unis=listAfter(/available universities/i),itps=listAfter(/available institutes of technology/i),pac=listAfter(/approved Pacific universities/i);
+  return {new_zealand:[...unis,...itps].map(x=>x.name),universities:unis,institutes_of_technology:itps,pacific:pac.map(x=>x.name),pacific_institutions:pac};
+}
+const MONTHS="January|February|March|April|May|June|July|August|September|October|November|December";
+export function manaakiWindows(text:string){
+  const out:any[]=[];
+  const re=new RegExp(`Applications for ([A-Z][A-Za-z ]+?) open\\s+(?:midnight|midday)?\\s*(\\d{1,2} (?:${MONTHS}) 20\\d{2}) and close\\s+(?:midnight|midday)?\\s*(\\d{1,2} (?:${MONTHS}) 20\\d{2})`,"g");
+  for(const m of text.matchAll(re)){const o=parseDateOnly(m[2]),c=parseDateOnly(m[3]);out.push({label:clean(m[1]),opens:o,closes:c,quote:clean(m[0])});}
+  return out;
+}
+async function buildManaaki(){
+  const keys=Object.keys(MANAAKI_PAGES);
+  const pages=await Promise.all(keys.map(async k=>({name:k,...await fetchHtml(MANAAKI_PAGES[k])})));
+  const txt=Object.fromEntries(pages.map(p=>[p.name,htmlText(p.html)]));
+  const regions=manaakiRegions(txt.countries),inst=manaakiInstitutions(pages.find((x:any)=>x.name==="institutions")!.html),windows=manaakiWindows(txt.apply);
+  const countries=[...new Set(regions.flatMap((r:any)=>r.countries.map((c:any)=>c.country)))];
+  if(!regions.length||countries.length<5) throw new Error(`Manaaki eligible countries not found (regions=${regions.length}, countries=${countries.length})`);
+  if(inst.new_zealand.length<5) throw new Error(`Manaaki approved institutions not found (${inst.new_zealand.length})`);
+  const fullText=(txt.types.match(/These are full tertiary scholarships[^.]*\./)||[])[0]||null;
+  if(!fullText) throw new Error("Manaaki tertiary scholarship description not found");
+  const closed=/applications? (?:for the Manaaki New Zealand Scholarship Programme )?have now closed/i.test(txt.tertiary);
+  const ageM=txt.criteria.match(/you must be (\d{2}) years old[^.]*\./i),workM=txt.criteria.match(/Postgraduate applicants must have relevant work experience[^.]*\.[^.]*\./i);
+  const militaryM=txt.criteria.match(/Whether you are currently serving in the military/i),priorM=txt.criteria.match(/Whether you have previously received a Manaaki scholarship/i);
+  const nowYear=new Date().getUTCFullYear(),cycle=windows[0]?.closes?String(Number(windows[0].closes.slice(0,4))+1):String(nowYear+1);
+  const root=`${cycle}:eligibility_all`,country=`${cycle}:country_any`;
+  const criteria:any[]=regions.map((r:any,i:number)=>({criterion_key:`countries_${r.region.toLowerCase().replace(/\W+/g,"_")}_${i+1}`,group_code:country,criterion_type:"citizenship_and_residency",operator:"in_source_list",value_json:{region:r.region,destination:r.destination,countries:r.countries,levels:r.levels},human_text:`Citizen of an eligible ${r.region} country (${r.destination}): ${r.source_text}`,is_mandatory:true,machine_evaluable:false,status:"active",confidence:"1.00"}));
+  if(ageM) criteria.push({criterion_key:"age",group_code:root,criterion_type:"minimum_age",operator:">=",value_number:Number(ageM[1]),human_text:clean(ageM[0]),is_mandatory:true,machine_evaluable:true,status:"active",confidence:"1.00"});
+  if(workM) criteria.push({criterion_key:"work_experience_postgraduate",group_code:root,criterion_type:"work_experience",operator:"source_text",human_text:clean(workM[0]),is_mandatory:true,machine_evaluable:false,status:"active",confidence:"1.00"});
+  if(militaryM) criteria.push({criterion_key:"not_military",group_code:root,criterion_type:"employment_status",operator:"source_text",human_text:"Eligibility check asks whether you are currently serving in the military.",is_mandatory:true,machine_evaluable:false,status:"active",confidence:"0.90"});
+  if(priorM) criteria.push({criterion_key:"prior_award",group_code:root,criterion_type:"prior_award_interval",operator:"source_text",human_text:"Eligibility check asks whether you have previously received a Manaaki scholarship.",is_mandatory:true,machine_evaluable:false,status:"active",confidence:"0.90"});
+  criteria.push({criterion_key:"approved_institution",group_code:root,criterion_type:"institution_admission",operator:"in_source_list",value_json:inst,human_text:`Study at an approved institution: ${inst.new_zealand.join(", ")}${inst.pacific.length?`; or for eligible Pacific citizens: ${inst.pacific.join(", ")}`:""}.`,is_mandatory:true,machine_evaluable:false,status:"active",confidence:"1.00"});
+  const record={source_record_id:"MANAAKI-TERTIARY",identifier_scheme:"mfat_manaaki_scheme",name:"Manaaki New Zealand Scholarships (tertiary)",scholarship_type:"government_scholarship",description:fullText,audience:"international",award_value_text:"Full tertiary scholarship as published by the New Zealand Government",application_required:true,application_open_date:windows[0]?.opens||null,application_close_date:windows[0]?.closes||null,academic_year:Number(cycle),source_url:MANAAKI_PAGES.tertiary,confidence:"1.00",provider_cricos:null,source_provider_id:null,source_provider_name:"Ministry of Foreign Affairs and Trade (New Zealand) / Education New Zealand",
+    cycles:[{cycle_code:cycle,academic_year:Number(cycle),intake_label:`Study commencing in ${cycle}`,valid_from:windows[0]?.opens||null,valid_to:windows[0]?.closes||null,status:closed?"closed":"active",metadata:{scheme_code:"MANAAKI-TERTIARY",country:"NZ",applications_closed_notice:closed,regions:regions.map((r:any)=>({region:r.region,destination:r.destination,countries:r.countries.length}))},
+      windows:windows.map((w:any,i:number)=>({window_key:`round_${i+1}`,round_code:null,label:`${w.label} application round`,opens_at:w.opens,closes_at:w.closes,application_method:"online",application_url:MANAAKI_PAGES.apply,status:w.closes&&w.closes<new Date().toISOString().slice(0,10)?"closed":"active",metadata:{source_quote:w.quote,timezone:"NZ"}})),
+      scopes:[],criterion_groups:[{group_code:root,label:"General eligibility",conjunction:"all",is_mandatory:true,display_order:10},{group_code:country,parent_group_code:root,label:"Eligible country and region",conjunction:"any",is_mandatory:true,display_order:20}],
+      criteria,award_tiers:[],coverage:[{coverage_key:"full_tertiary",coverage_type:"tuition_fees",percentage:100,notes:fullText}]}]};
+  validateRecord(record);
+  const hash=await sha256(new TextEncoder().encode(JSON.stringify(record)));
+  return {record,hash,parts:pages.map((x:any)=>({name:x.name,url:x.url,bytes:x.bytes,hash:x.hash,contentType:x.contentType})),summary:{regions:regions.map((r:any)=>({region:r.region,destination:r.destination,countries:r.countries.length,levels:r.levels.length})),countries:countries.length,institutions:inst.new_zealand.length,pacific_institutions:inst.pacific.length,windows,applications_closed:closed}};
+}
+
 async function prepareSource(client:any,feed:string){
   return feed==="study_australia"?rpc(client,"svc_scholarship_prepare_source",{p_source_key:"au_study_australia_scholarships",p_label:"Study Australia Scholarship Search",p_url:STUDY_SEARCH,p_source_type:"scholarship_catalogue",p_trust_rank:95,p_metadata:{publisher:"Australian Trade and Investment Commission",authority_class:"official_government_search",source_identifier_scheme:"study_australia_scholarship_id",provider_mapping:"provider_source_id_to_provider_page_cricos_to_exact_canonical_cricos"}}):rpc(client,"svc_scholarship_prepare_source",{p_source_key:"au_dfat_australia_awards",p_label:"DFAT Australia Awards Scholarships",p_url:DFAT_AWARDS,p_source_type:"government_scholarship_program",p_trust_rank:100,p_metadata:{publisher:"Department of Foreign Affairs and Trade",authority_class:"official_government_program",source_identifier_scheme:"dfat_award_scheme",handbook_version:"June 2026"}});
 }
-async function registerBundle(client:any,sourceId:string,recordPath:string,sourceUrl:string,parts:any[]){
+async function registerBundle(client:any,sourceId:string,recordPath:string,sourceUrl:string,parts:any[],base="layer2a/AU/scholarships"){
   const components:any[]=[];
   for(const p of parts){
-    const baseType=p.contentType.split(";")[0],ext=baseType.includes("pdf")?"pdf":baseType.includes("html")?"html":"bin",path=`layer2a/AU/scholarships/${recordPath}/${p.name}-${p.hash}.${ext}`;
+    const baseType=p.contentType.split(";")[0],ext=baseType.includes("pdf")?"pdf":baseType.includes("html")?"html":"bin",path=`${base}/${recordPath}/${p.name}-${p.hash}.${ext}`;
     const up=await client.storage.from("evidence").upload(path,p.bytes,{contentType:baseType,upsert:true}); if(up.error) throw up.error;
     const evidenceId=await rpc(client,"svc_scholarship_register_evidence",{p_source_id:sourceId,p_source_url:p.url,p_storage_path:path,p_content_hash:p.hash,p_mime_type:baseType,p_metadata:{component:p.name,source_record_id:recordPath,worker_version:VERSION}});await cleanupDuplicateRegisteredObject(client,String(evidenceId),path);
     components.push({name:p.name,url:p.url,sha256:p.hash,storage_path:path,evidence_id:evidenceId});
   }
-  const bytes=new TextEncoder().encode(JSON.stringify({source_record_id:recordPath,worker_version:VERSION,components})),hash=await sha256(bytes),path=`layer2a/AU/scholarships/${recordPath}/manifest-${hash}.json`;
+  const bytes=new TextEncoder().encode(JSON.stringify({source_record_id:recordPath,worker_version:VERSION,components})),hash=await sha256(bytes),path=`${base}/${recordPath}/manifest-${hash}.json`;
   const up=await client.storage.from("evidence").upload(path,bytes,{contentType:"application/json",upsert:true}); if(up.error) throw up.error;
   const evidenceId=await rpc(client,"svc_scholarship_register_evidence",{p_source_id:sourceId,p_source_url:sourceUrl,p_storage_path:path,p_content_hash:hash,p_mime_type:"application/json",p_metadata:{source_record_id:recordPath,worker_version:VERSION,component_evidence_ids:components.map(x=>x.evidence_id),components}});await cleanupDuplicateRegisteredObject(client,String(evidenceId),path);
   return {evidenceId,manifestHash:hash};
 }
-async function persist(client:any,sourceId:string,record:any,parts:any[],recordPath:string){
-  const bundle=await registerBundle(client,sourceId,recordPath,record.source_url,parts);
+async function persist(client:any,sourceId:string,record:any,parts:any[],recordPath:string,base?:string){
+  const bundle=await registerBundle(client,sourceId,recordPath,record.source_url,parts,base);
   const sr={p_source_id:sourceId,p_source_record_id:record.source_record_id,p_source_record_url:record.source_url,p_source_provider_id:record.source_provider_id,p_source_provider_cricos:record.provider_cricos,p_source_provider_name:record.source_provider_name,p_content_hash:bundle.manifestHash,p_evidence_id:bundle.evidenceId,p_payload:record,p_status:"captured",p_error_text:null};
   await rpc(client,"svc_scholarship_source_record",sr);
   const applied=await rpc(client,"svc_scholarship_apply_records",{p_source_id:sourceId,p_evidence_id:bundle.evidenceId,p_records:[record],p_mode:"apply"});
@@ -278,7 +365,14 @@ Deno.serve(async(req:Request)=>{
     if(!internalOk&&(!nonce||!(await rpc(client,"svc_pilot_consume_nonce",{p_function:"scholarships-au-etl",p_nonce:nonce})))) return reply({error:"valid one-time Pilot nonce or governed Layer 1 service authority required"},401);
     const body=await req.json().catch(()=>({})),mode=clean(body?.mode||"dry_run").toLowerCase(),feed=clean(body?.feed||"study_australia").toLowerCase();
     if(!["dry_run","apply"].includes(mode)) throw new Error("mode must be dry_run or apply");
-    if(!["study_australia","australia_awards","study_australia_register"].includes(feed)) throw new Error("feed must be study_australia, study_australia_register or australia_awards");
+    if(!["study_australia","australia_awards","study_australia_register","nz_manaaki"].includes(feed)) throw new Error("feed must be study_australia, study_australia_register, australia_awards or nz_manaaki");
+    if(feed==="nz_manaaki"){
+      const built=await buildManaaki(),base={ok:true,workerVersion:VERSION,mode,feed,candidateScholarships:1,candidateObservations:1,sourceHash:built.hash,sourceIdentifiers:["MANAAKI-TERTIARY"],...built.summary};
+      if(mode==="dry_run") return reply(base);
+      const sourceId=clean(body?.source_id);if(!sourceId) throw new Error("source_id required for the Manaaki register");
+      const result=await persist(client,sourceId,built.record,built.parts,"nz-mfat-manaaki/MANAAKI-TERTIARY",`layer1/NZ/scholarships`);
+      return reply({...base,sourceId,...result});
+    }
     if(feed==="study_australia_register"){
       if(mode==="dry_run"){const r=await readStudyRegister();return reply({ok:true,workerVersion:VERSION,mode,feed,candidateObservations:r.listings.length,totalShown:r.total,pages:r.lastPage,sourceHash:r.hash,providers:new Set(r.listings.map(l=>l.provider_ref)).size,sample:r.listings.slice(0,3)});}
       const sourceId=clean(body?.source_id)||"17a7d379-9448-41ca-bca5-bb7537ffff4b",offset=Math.max(0,Number(body?.offset||0)),batch=Math.max(1,Math.min(Number(body?.batchSize||40),60));
