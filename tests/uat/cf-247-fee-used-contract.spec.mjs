@@ -119,3 +119,14 @@ test('migration 1700 lets adapter patterns replace held Layer 3 values, guarded,
   expect(m).not.toMatch(/delete\s+from/i)
   expect(m).not.toContain('layer4_review_items(')
 })
+
+// Rule 6 (8 Oct 2026, Platform Admin): measure whether the course's own CRICOS code is on a page named for another course.
+test('migration 1800 and worker page_codes only measure (nothing unbound or withdrawn)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008001800_cf247_rule6_page_code_check.sql', 'utf8')
+  expect(m).toContain('pipeline.rule6_page_checks')
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toMatch(/update\s+pipeline\.coverage_course_pages/i)
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('if (mode === "page_codes")')
+  expect(w).toContain('/\\b\\d{6}[A-Za-z]\\b/g')
+})
