@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
-const VERSION = "scholarships-au-etl-v0.1.2";
+const VERSION = "scholarships-au-etl-v0.2.0";
 const STUDY_SEARCH = "https://search.studyaustralia.gov.au/scholarships";
 const DFAT_AWARDS = "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships";
 const DFAT_DATES = "https://www.dfat.gov.au/people-to-people/australia-awards/australia-awards-scholarships-opening-and-closing-dates";
@@ -55,7 +55,7 @@ async function sha256(bytes:Uint8Array) {
   return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 async function fetchBytes(url:string) {
-  const res=await fetch(url,{redirect:"follow",headers:{"user-agent":"CourseFinder-Pilot/Scholarships-0.1.2"}});
+  const res=await fetch(url,{redirect:"follow",headers:{"user-agent":"CourseFinder-Pilot/Scholarships-0.2.0"}});
   if(!res.ok) throw new Error(`source HTTP ${res.status}: ${url}`);
   const bytes=new Uint8Array(await res.arrayBuffer());
   return {url:res.url,bytes,hash:await sha256(bytes),contentType:res.headers.get("content-type")||"application/octet-stream"};
@@ -181,6 +181,69 @@ async function buildAustraliaAwards(){
   return {record,parts:[{name:"awards",...awards},{name:"dates",...dates},{name:"handbook-page",...handbookPage},{name:"handbook",...handbookPdf},{name:"oasis",...oasis}].map((x:any)=>({name:x.name,url:x.url,bytes:x.bytes,hash:x.hash,contentType:x.contentType}))};
 }
 
+// v0.2.0 (CF-247): Study Australia as a Layer 1 central register (index role). The whole listing is
+// read (every page, raw pages kept), counted and hashed for Layer 1 verification; detail pages are
+// then read in batches for the provider page link ("Visit website") and the provider's CRICOS code.
+// Matching and the hand-off to the provider page reader happen in the database.
+type Listing={id:string,url:string,name:string,provider_ref:string|null,provider_name:string|null,level:string|null,award:string|null,closing:string|null,nationality:string|null};
+const cardText=(s:string)=>clean(decodeHtml(s.replace(/<!--[\s\S]*?-->/g,"").replace(/<[^>]+>/g," ")));
+export function parseStudyListingPage(base:string,html:string):Listing[]{
+  const out:Listing[]=[];
+  for(const card of html.split('<div class="scholarship-list-card">').slice(1)){
+    const sm=card.match(/<h3\b[\s\S]*?<a\b[^>]*href="(\/scholarship\/[^"\/]+\/([0-9a-f]{32}))"[^>]*>([\s\S]*?)<\/a>/i);
+    if(!sm) continue;
+    const pm=card.match(/<a\b[^>]*href="\/provider\/[^"\/]+\/([0-9a-f]{32})"[^>]*aria-label="Scholarship provider ([^"]*)"/i);
+    const field=(label:string)=>{const m=card.match(new RegExp(`<p\\b[^>]*>(?:<svg[\\s\\S]*?<\\/svg>)?\\s*${label} - ([\\s\\S]*?)<\\/p>`,"i"));return m?cardText(m[1])||null:null;};
+    out.push({id:sm[2].toLowerCase(),url:absolute(base,sm[1]),name:cardText(sm[3]),provider_ref:pm?pm[1].toLowerCase():null,provider_name:pm?clean(decodeHtml(pm[2])):null,level:field("Level of study"),award:field("Award value"),closing:field("Closing date"),nationality:field("Nationality")});
+  }
+  return out;
+}
+export function studyListingTotal(html:string){const m=htmlText(html).match(/Showing ([\d,]+) scholarships?/i);return m?Number(m[1].replace(/,/g,"")):null;}
+export function studyListingLastPage(html:string){let max=1;for(const m of html.matchAll(/[?&]page=(\d+)/g))max=Math.max(max,Number(m[1]));return max;}
+export function parseVisitWebsite(html:string){const m=html.match(/<a\b[^>]*\bhref="(https?:\/\/[^"]+)"[^>]*>\s*(?:<!--\[-->)?\s*Visit website/i);return m?decodeHtml(m[1]):null;}
+async function pool<T,R>(items:T[],n:number,fn:(x:T)=>Promise<R>){const out:R[]=new Array(items.length);let i=0;await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(i<items.length){const k=i++;out[k]=await fn(items[k]);}}));return out;}
+async function fetchHtmlRetry(url:string,tries=3){let last:unknown;for(let t=0;t<tries;t++){try{return await fetchHtml(url);}catch(e){last=e;await new Promise(r=>setTimeout(r,1500*(t+1)));}}throw last;}
+async function gzip(bytes:Uint8Array){const cs=new CompressionStream("gzip");const w=cs.writable.getWriter();w.write(bytes);w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer());}
+async function readStudyRegister(){
+  const first=await fetchHtmlRetry(`${STUDY_SEARCH}?page=1`),total=studyListingTotal(first.html),last=studyListingLastPage(first.html);
+  if(!total||last<1) throw new Error("Study Australia listing total or page count missing");
+  const rest=await pool(Array.from({length:last-1},(_,k)=>k+2),4,(p)=>fetchHtmlRetry(`${STUDY_SEARCH}?page=${p}`));
+  const pages=[first,...rest],seen=new Map<string,Listing>();
+  for(const pg of pages) for(const l of parseStudyListingPage(pg.url,pg.html)) if(!seen.has(l.id)) seen.set(l.id,l);
+  const listings=[...seen.values()].sort((a,b)=>a.id.localeCompare(b.id));
+  if(listings.length<Math.floor(total*0.98)) throw new Error(`Study Australia listing read ${listings.length} of ${total} shown; pages may have shifted during the read`);
+  const hash=await sha256(new TextEncoder().encode(JSON.stringify(listings)));
+  return {pages,listings,total,lastPage:last,hash};
+}
+async function storeBundle(client:any,sourceId:string,sourceUrl:string,path:string,payload:unknown,meta:Record<string,unknown>){
+  const raw=new TextEncoder().encode(JSON.stringify(payload)),hash=await sha256(raw),gz=await gzip(raw),full=`${path}-${hash}.json.gz`;
+  const up=await client.storage.from("evidence").upload(full,gz,{contentType:"application/gzip",upsert:true});if(up.error)throw up.error;
+  const evidenceId=await rpc(client,"svc_scholarship_register_evidence",{p_source_id:sourceId,p_source_url:sourceUrl,p_storage_path:full,p_content_hash:hash,p_mime_type:"application/gzip",p_metadata:{...meta,worker_version:VERSION,uncompressed_bytes:raw.length}});
+  return {evidenceId:String(evidenceId),hash,path:full};
+}
+async function studyRegisterListingPass(client:any,sourceId:string,runId:string|null){
+  const r=await readStudyRegister();
+  const ev=await storeBundle(client,sourceId,STUDY_SEARCH,`layer1/AU/scholarships/study-australia/listing`,{source:STUDY_SEARCH,read_at:new Date().toISOString(),total_shown:r.total,pages:r.pages.map(p=>({url:p.url,sha256:p.hash,html:p.html}))},{component:"register-listing",register:"au_study_australia",listing_hash:r.hash,pages:r.pages.length,listings:r.listings.length});
+  const run=runId||crypto.randomUUID();let created=0,seen=0,last:any=null;
+  for(let i=0;i<r.listings.length;i+=300){const chunk=r.listings.slice(i,i+300),final=i+300>=r.listings.length;last=await rpc(client,"svc_scholarship_register_save",{p_register:"au_study_australia",p_run_id:run,p_evidence_id:ev.evidenceId,p_listings:chunk,p_final:final});created+=Number(last?.created||0);seen+=Number(last?.seen_again||0);}
+  return {listings:r.listings.length,totalShown:r.total,pages:r.pages.length,listingHash:r.hash,evidenceId:ev.evidenceId,created,seenAgain:seen,departed:Number(last?.departed||0),match:last?.match||null};
+}
+async function studyRegisterDetailPass(client:any,sourceId:string,limit:number){
+  const next=await rpc(client,"svc_scholarship_register_detail_next",{p_register:"au_study_australia",p_limit:limit}),items:any[]=next?.items||[];
+  if(!items.length) return {read:0,remaining:Number(next?.remaining||0),failed:0};
+  const cricosByRef=new Map<string,string|null>();for(const x of items) if(x.known_cricos) cricosByRef.set(x.provider_ref,x.known_cricos);
+  const pages:any[]=[],failures:any[]=[];
+  const rows=await pool(items,4,async(x:any)=>{try{const d=await fetchHtmlRetry(x.url);pages.push({url:d.url,sha256:d.hash,html:d.html});const website=parseVisitWebsite(d.html);const provider=parseProviderLink(d.url,d.html);let cricos:string|null=cricosByRef.get(x.provider_ref)??null;
+    if(!cricos&&provider&&!cricosByRef.has(provider.id)){try{const pp=await fetchHtmlRetry(provider.url);pages.push({url:pp.url,sha256:pp.hash,html:pp.html});cricos=parseCricos(pp.html);}catch(_e){cricos=null;}cricosByRef.set(provider.id,cricos);}else if(!cricos&&provider){cricos=cricosByRef.get(provider.id)??null;}
+    return {id:x.id,website_url:website,provider_cricos:cricos};}catch(e){const error=e instanceof Error?e.message:String(e);failures.push({id:x.id,error});return {id:x.id,website_url:null,provider_cricos:null,error};}});
+  const ok=rows.filter((r:any)=>r&&!r.error);
+  const ev=await storeBundle(client,sourceId,STUDY_SEARCH,`layer1/AU/scholarships/study-australia/detail`,{read_at:new Date().toISOString(),pages},{component:"register-detail",register:"au_study_australia",items:ok.length});
+  const saved=await rpc(client,"svc_scholarship_register_detail_save",{p_register:"au_study_australia",p_evidence_id:ev.evidenceId,p_items:rows});
+  if(!ok.length&&failures.length) throw new Error(`Study Australia detail reads failed: ${failures[0].error}`);
+  return {read:rows.length,ok:ok.length,failed:failures.length,failures:failures.slice(0,5),remaining:Number(saved?.remaining||0),match:saved?.match||null,evidenceId:ev.evidenceId};
+}
+function awardsHash(parts:any[]){return sha256(new TextEncoder().encode(parts.filter((p:any)=>p.name!=="oasis").map((p:any)=>`${p.name}:${p.hash}`).join("|")));}
+
 async function prepareSource(client:any,feed:string){
   return feed==="study_australia"?rpc(client,"svc_scholarship_prepare_source",{p_source_key:"au_study_australia_scholarships",p_label:"Study Australia Scholarship Search",p_url:STUDY_SEARCH,p_source_type:"scholarship_catalogue",p_trust_rank:95,p_metadata:{publisher:"Australian Trade and Investment Commission",authority_class:"official_government_search",source_identifier_scheme:"study_australia_scholarship_id",provider_mapping:"provider_source_id_to_provider_page_cricos_to_exact_canonical_cricos"}}):rpc(client,"svc_scholarship_prepare_source",{p_source_key:"au_dfat_australia_awards",p_label:"DFAT Australia Awards Scholarships",p_url:DFAT_AWARDS,p_source_type:"government_scholarship_program",p_trust_rank:100,p_metadata:{publisher:"Department of Foreign Affairs and Trade",authority_class:"official_government_program",source_identifier_scheme:"dfat_award_scheme",handbook_version:"June 2026"}});
 }
@@ -210,11 +273,19 @@ Deno.serve(async(req:Request)=>{
   if(req.method!=="POST") return reply({error:"POST required"},405);
   const client=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,{auth:{persistSession:false}});
   try{
+    const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,internal=clean(req.headers.get("x-cf-layer1-service-key")),internalOk=Boolean(internal)&&internal===serviceKey;
     const nonce=clean(req.headers.get("x-cf-run-nonce"));
-    if(!nonce||!(await rpc(client,"svc_pilot_consume_nonce",{p_function:"scholarships-au-etl",p_nonce:nonce}))) return reply({error:"valid one-time Pilot nonce required"},401);
+    if(!internalOk&&(!nonce||!(await rpc(client,"svc_pilot_consume_nonce",{p_function:"scholarships-au-etl",p_nonce:nonce})))) return reply({error:"valid one-time Pilot nonce or governed Layer 1 service authority required"},401);
     const body=await req.json().catch(()=>({})),mode=clean(body?.mode||"dry_run").toLowerCase(),feed=clean(body?.feed||"study_australia").toLowerCase();
     if(!["dry_run","apply"].includes(mode)) throw new Error("mode must be dry_run or apply");
-    if(!["study_australia","australia_awards"].includes(feed)) throw new Error("feed must be study_australia or australia_awards");
+    if(!["study_australia","australia_awards","study_australia_register"].includes(feed)) throw new Error("feed must be study_australia, study_australia_register or australia_awards");
+    if(feed==="study_australia_register"){
+      if(mode==="dry_run"){const r=await readStudyRegister();return reply({ok:true,workerVersion:VERSION,mode,feed,candidateObservations:r.listings.length,totalShown:r.total,pages:r.lastPage,sourceHash:r.hash,providers:new Set(r.listings.map(l=>l.provider_ref)).size,sample:r.listings.slice(0,3)});}
+      const sourceId=clean(body?.source_id)||"17a7d379-9448-41ca-bca5-bb7537ffff4b",offset=Math.max(0,Number(body?.offset||0)),batch=Math.max(1,Math.min(Number(body?.batchSize||40),60));
+      if(offset===0){const r=await studyRegisterListingPass(client,sourceId,clean(body?.runId)||null);return reply({ok:true,workerVersion:VERSION,mode,feed,phase:"listing",totalRecords:r.listings,selected:0,nextOffset:1,hasMore:true,reconciliation:{created:r.created,unchanged:r.seenAgain,updated:0,rejected:0,conflicts:0,failed:0},result:r});}
+      const d=await studyRegisterDetailPass(client,sourceId,batch);
+      return reply({ok:true,workerVersion:VERSION,mode,feed,phase:"detail",selected:d.read,nextOffset:offset+1,hasMore:d.remaining>0&&d.read>0,reconciliation:{created:0,updated:d.read,unchanged:0,rejected:0,conflicts:0,failed:d.failed},result:d});
+    }
     if(feed==="study_australia"){
       const parsed=await buildStudyAustralia(body);
       const counts=(k:string)=>parsed.reduce((n:number,x:any)=>n+x.record.cycles.reduce((m:number,c:any)=>m+(c[k]||[]).length,0),0);
@@ -224,9 +295,9 @@ Deno.serve(async(req:Request)=>{
       for(const x of parsed) results.push({id:x.record.source_record_id,...await persist(client,sourceId,x.record,x.evidenceParts,`study-australia/${x.record.source_record_id}`)});
       return reply({...base,sourceId,results});
     }
-    const built=await buildAustraliaAwards(),c=built.record.cycles[0],base={ok:true,workerVersion:VERSION,mode,feed,candidateScholarships:1,sourceIdentifiers:["AAS"],cycles:1,windows:c.windows.length,scopes:c.scopes.length,criterionGroups:c.criterion_groups.length,criteria:c.criteria.length,awardTiers:c.award_tiers.length,coverage:c.coverage.length,sample:{id:"AAS",name:built.record.name,cycle:c.cycle_code,windows:c.windows.map((w:any)=>({code:w.round_code,opens:w.opens_at,closes:w.closes_at}))}};
+    const built=await buildAustraliaAwards(),c=built.record.cycles[0],base={ok:true,workerVersion:VERSION,mode,feed,candidateScholarships:1,candidateObservations:1,sourceHash:await awardsHash(built.parts),sourceIdentifiers:["AAS"],cycles:1,windows:c.windows.length,scopes:c.scopes.length,criterionGroups:c.criterion_groups.length,criteria:c.criteria.length,awardTiers:c.award_tiers.length,coverage:c.coverage.length,sample:{id:"AAS",name:built.record.name,cycle:c.cycle_code,windows:c.windows.map((w:any)=>({code:w.round_code,opens:w.opens_at,closes:w.closes_at}))}};
     if(mode==="dry_run") return reply(base);
-    const sourceId=await prepareSource(client,feed),result=await persist(client,sourceId,built.record,built.parts,"dfat-australia-awards/AAS");
+    const sourceId=clean(body?.source_id)||await prepareSource(client,feed),result=await persist(client,sourceId,built.record,built.parts,"dfat-australia-awards/AAS");
     return reply({...base,sourceId,...result});
   }catch(e){return reply({ok:false,workerVersion:VERSION,error:e instanceof Error?e.message:String(e)},500);}
 });
