@@ -977,7 +977,7 @@ test('v0.17.13 reading options: opt-in numeric and capitalised dates, one academ
   const r2 = mod.applyAdapter({ ...F, reading: {} }, html('Duration 40 weeks Tuition $18,000'), { title: 'x', code: '012345A', country: 'AU' }, 'v').candidates
   expect(r2.fee.value).toBe(23400)
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toContain('coverage-sweep-worker-v0.17.17')
+  expect(ix).toContain('coverage-sweep-worker-v0.17.18')
   const m = read('supabase/migrations/20261006001700_cf247_adapter_reading_options.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("is distinct from 'cea75cd537f56ab3e03d93c55c1bb74e'")
