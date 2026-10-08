@@ -8,6 +8,7 @@
 - Database: `20261008003000` (PRISMS SA4 and QILT GOS, SES, GOS-L and ESS register adapters, switched off; six replay runs on the stored workbooks). Worker coverage-sweep v0.17.22 (register_replay reads statistics workbooks; references are prisms-au-etl v0.2.0 and qilt-au-etl v0.3.0).
 - Layer 1 fix: qilt-au-etl v0.3.1 stores the confidence interval upper bound (v0.3.0 read `cell.h`, always empty). Database: `20261008003100` (refills the upper bound of 3,103 existing QILT rows from the published cell kept with each row; refused unless values and lower bounds read back unchanged). Worker coverage-sweep v0.17.23 (QILT reference follows v0.3.1).
 - Database: `20261008003200` (QILT workbooks replayed again after the fix) and `20261008003300` (`admin_register_adapter_switch`, Platform Admin only, logged, switches on only after a passing replay with the spec unchanged since; `svc_register_adapter_reader`). Register engines moved to `supabase/functions/_shared/cf247-register-*.ts`. layer1-nz-live v1.3.0 and prisms-au-etl v0.3.0 read with their register adapter when it is switched on.
+- Database: `20261008003400` (NZQA and PRISMS replayed again before switch-on), `20261008003500` (a replay run is leased to one call; `svc_register_replay_release`), `20261008003600` (PRISMS pre-switch replay re-run). Worker coverage-sweep v0.17.24 (releases the lease when a call ends).
 
 ## 0.1.148 — 8 Oct 2026
 

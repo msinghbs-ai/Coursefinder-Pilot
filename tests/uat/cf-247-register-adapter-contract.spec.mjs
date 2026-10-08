@@ -102,3 +102,12 @@ test('register adapter switch: gated on a passing replay, logged, and used by th
   const h = fs.readFileSync('supabase/functions/_shared/cf247-register-html.ts', 'utf8')
   expect(h).toContain('return htmlAdapterRows(spec, batch).map((r) => ({ k: keyOf(r), x: asText(r) }));')
 })
+
+test('register replay: a run is leased to one call and released when the call ends', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008003500_cf247_replay_lease.sql', 'utf8')
+  expect(m).toContain("for update skip locked")
+  expect(m).toContain("lease_until = now() + interval '150 seconds'")
+  expect(m).toContain("'e3617cc0201ad9810879f568a909a846'")
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('} finally { await rpc("svc_register_replay_release", { p_run_id: n.run_id }).catch(() => null) }')
+})
