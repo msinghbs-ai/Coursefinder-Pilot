@@ -9,7 +9,7 @@ test('register adapter: spec stored switched off, replay is read only, reference
   expect(m).not.toMatch(/delete\s+from/i)
   expect(m).not.toMatch(/update\s+catalogue\./i)
   expect(m).toContain("'pass'")
-  const r = fs.readFileSync('supabase/functions/coverage-sweep/register.ts', 'utf8')
+  const r = fs.readFileSync('supabase/functions/_shared/cf247-register-zip.ts', 'utf8')
   // the reference must stay byte-for-byte the Layer 1 fingerprint rule
   const depth = fs.readFileSync('supabase/functions/layer1-au-depth/index.ts', 'utf8')
   expect(depth).toContain('rows.push([cc,[J(raw),inst.get(get("CRICOS Provider Code"))||"",...(cl.get(cc)||[]).sort()].join("\\u001d")]);')
@@ -40,9 +40,9 @@ test('NZQA register adapter: stored switched off, reference is the layer1-nz-liv
   // the reference must stay the same code as layer1-nz-live (formatting aside)
   const norm = (s) => s.replace(/\s+/g, '').replace(/;}/g, '}').replace(/\((\w)\)=>/g, '$1=>')
   const live = fs.readFileSync('supabase/functions/layer1-nz-live/index.ts', 'utf8')
-  expect(live).toContain('const VERSION="layer1-nz-live-v1.2.1"')
+  expect(live).toContain('const VERSION="layer1-nz-live-v1.3.0"')
   const l = norm(live)
-  const r = fs.readFileSync('supabase/functions/coverage-sweep/register_html.ts', 'utf8')
+  const r = fs.readFileSync('supabase/functions/_shared/cf247-register-html.ts', 'utf8')
   for (const f of ['const clean =', 'function mapLevel(', 'function providerNumber(', 'function providerName(', 'function providerWebsite(', 'function parseQualifications(']) {
     const line = r.split('\n').find((x) => x.startsWith(f))
     expect(line, f).toBeTruthy()
@@ -63,7 +63,7 @@ test('PRISMS and QILT register adapters: stored switched off, references are the
   expect(m).not.toMatch(/update\s+catalogue\./i)
   expect(m).not.toContain('switched_on')
   const norm = (s) => s.replace(/\s+/g, '')
-  const r = norm(fs.readFileSync('supabase/functions/coverage-sweep/register_xlsx.ts', 'utf8'))
+  const r = norm(fs.readFileSync('supabase/functions/_shared/cf247-register-xlsx.ts', 'utf8'))
   // QILT reference: the reader lines are copied byte for byte (whitespace aside) from qilt-au-etl v0.3.1
   const q = fs.readFileSync('supabase/functions/qilt-au-etl/index.ts', 'utf8')
   expect(q).toContain('const VERSION="qilt-au-etl-v0.3.1"')
@@ -75,10 +75,30 @@ test('PRISMS and QILT register adapters: stored switched off, references are the
   }
   // PRISMS reference: the same checks and row rules as prisms-au-etl v0.2.0
   const p = fs.readFileSync('supabase/functions/prisms-au-etl/index.ts', 'utf8')
-  expect(p).toContain('const VERSION = "prisms-au-etl-v0.2.0"')
+  expect(p).toContain('const VERSION = "prisms-au-etl-v0.3.0"')
   for (const s of ['/Year-to-date\\s+([A-Za-z]+)\\s+(\\d{4})/i', '/^<\\s*5$/i', 'if (!state && !sa4 && !sector && !broadField) continue;', '`prisms-sa4:${period.collectionVersion}:row:${i + 1}:${metricCode}`'])
     { expect(p, s).toContain(s); expect(r.includes(norm(s)), s).toBe(true) }
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('if (n.spec?.format === "xlsx_tables")')
   expect(w).toContain('stored workbook does not match its recorded hash')
+})
+
+// CF-247 Phase 2 (8 Oct 2026): switching a register adapter on is a logged Platform Admin step gated on a passing replay; the Layer 1
+// workers read with the adapter only when it is switched on.
+test('register adapter switch: gated on a passing replay, logged, and used by the NZQA and PRISMS workers', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008003300_cf247_register_adapter_switch.sql', 'utf8')
+  expect(m).toContain("coalesce(security.current_role_rank(), 0) < 6")
+  expect(m).toContain("did not pass")
+  expect(m).toContain("spec changed after its latest replay")
+  expect(m).toContain("'register_adapter_on'")
+  expect(m).not.toMatch(/set\s+switched_on\s*=\s*true/i)
+  const nz = fs.readFileSync('supabase/functions/layer1-nz-live/index.ts', 'utf8')
+  expect(nz).toContain('import { htmlAdapterRows } from "../_shared/cf247-register-html.ts";')
+  expect(nz).toContain('rpc(service,"svc_register_adapter_reader",{p_code:"nz_nzqa"})')
+  expect(nz).toContain('if(reader?.spec)records=htmlAdapterRows(reader.spec,acquired);else for(const p of acquired){')
+  const pr = fs.readFileSync('supabase/functions/prisms-au-etl/index.ts', 'utf8')
+  expect(pr).toContain('import { xlsxAdapterRecords } from "../_shared/cf247-register-xlsx.ts";')
+  expect(pr).toContain('reader?.spec ? parseWithAdapter(reader.spec, bytes, ctx, editionUrl) : parseWorkbook(bytes, ctx)')
+  const h = fs.readFileSync('supabase/functions/_shared/cf247-register-html.ts', 'utf8')
+  expect(h).toContain('return htmlAdapterRows(spec, batch).map((r) => ({ k: keyOf(r), x: asText(r) }));')
 })

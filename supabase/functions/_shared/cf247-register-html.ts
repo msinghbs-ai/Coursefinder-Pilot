@@ -25,8 +25,13 @@ type Rec = { k: string; x: Record<string, string> };
 const keyOf = (r: Record<string, unknown>) => `${r.provider_code ?? ""}|${r.course_code ?? ""}`;
 const asText = (r: Record<string, unknown>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v == null ? "" : String(v)]));
 
+// The records exactly as the Layer 1 worker sends them to the apply functions (null where nothing was read).
 export function htmlAdapterRecords(spec: HtmlSpec, batch: any[]): Rec[] {
-  const out: Rec[] = [], P = spec.provider, R = spec.records;
+  return htmlAdapterRows(spec, batch).map((r) => ({ k: keyOf(r), x: asText(r) }));
+}
+
+export function htmlAdapterRows(spec: HtmlSpec, batch: any[]): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [], P = spec.provider, R = spec.records;
   for (const p of batch || []) {
     const src = (name: string) => String(p?.[name] ?? "");
     const ctext = clean(src(P.code.source));
@@ -51,8 +56,9 @@ export function htmlAdapterRecords(spec: HtmlSpec, batch: any[]): Rec[] {
       const low = title.toLowerCase(), lv = (R.level_map.find(([re]) => new RegExp(re).test(low)) || [null, ""])[1];
       quals.push({ course_code: qc, course_name: title, course_level: lv, nzqf_level: level, credits, source_status: R.status_value });
     }
-    if (!quals.length) out.push({ k: keyOf(base), x: asText(base) });
-    for (const q of quals) { const r = { ...base, ...q }; out.push({ k: keyOf(r), x: asText(r) }) }
+    if (!code || !name) throw new Error(`stable provider identity missing for ${String(p?.providerId ?? "a provider")}`);
+    if (!quals.length) out.push(base);
+    for (const q of quals) out.push({ ...base, ...q });
   }
   return out;
 }

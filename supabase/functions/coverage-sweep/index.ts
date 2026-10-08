@@ -6,9 +6,9 @@ import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pa
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, viewApplies, withView } from "./adapters.ts";
 import { adapterOutput, builderRequest, jsonLeaves, mainJsonScript, proposalAdapter, textBlocks } from "./builder.ts";
-import { adapterRecords, referenceRecords } from "./register.ts";
-import { htmlAdapterRecords, nzqaReferenceRecords } from "./register_html.ts";
-import { prismsReferenceRecords, qiltReferenceRecords, xlsxAdapterRecords } from "./register_xlsx.ts";
+import { adapterRecords, referenceRecords } from "../_shared/cf247-register-zip.ts";
+import { htmlAdapterRecords, nzqaReferenceRecords } from "../_shared/cf247-register-html.ts";
+import { prismsReferenceRecords, qiltReferenceRecords, xlsxAdapterRecords } from "../_shared/cf247-register-xlsx.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts } from "./scholarship.ts";
 const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
