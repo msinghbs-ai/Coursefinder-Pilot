@@ -17,6 +17,8 @@ test('register adapter: spec stored switched off, replay is read only, reference
   expect(r).toContain('export async function adapterRecords(spec: RegisterSpec, zipBytes: Uint8Array)')
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('if (mode === "register_replay")')
+  expect(w).toContain('svc_register_replay_save_v2')
+  expect(fs.readFileSync('supabase/migrations/20261008002200_cf247_phase2_replay_slices.sql', 'utf8')).toContain('reference_pos')
   const k = fs.readFileSync('supabase/migrations/20261008002100_cf247_keep_register_files.sql', 'utf8')
   expect(k).toContain("not like 'regulatory/%'")
 })
