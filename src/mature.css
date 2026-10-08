@@ -444,3 +444,6 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-auto .ab-model{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex-basis:100%}
 .ab-auto .ab-sample-pick{display:grid;gap:6px;flex-basis:100%}
 .ab-auto .ab-sample-pick input[type=search]{max-width:520px;padding:6px 8px}
+/* v2.15.219: Storage & retention */
+.rt-screen .rt-actions{white-space:nowrap}
+.rt-screen .rt-actions .cf-btn+.cf-btn{margin-left:6px}

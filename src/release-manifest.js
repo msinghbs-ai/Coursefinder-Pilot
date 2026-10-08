@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.218'
-export const PACKAGE_VERSION='0.1.145'
+export const UI_VERSION='2.15.219'
+export const PACKAGE_VERSION='0.1.146'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'7 Oct 2026',
-  title:'More samples and a model per adapter',
+  title:'Storage & retention',
   changes:[
-    'Adapter builder: Capture samples now takes 6 course pages spread across course types (it took at most 3). Any course with a stored page can be added as a sample, up to 10: search for it in the Guided build step 2, or press Use as sample on a row of the adapter\u2019s course list.',
-    'The model reads every sample (it read only the first 2), and the proposal shows, for each sample, which attributes it could not find.',
-    'A Platform Admin can choose the model for one adapter in the Guided build step 3, from the models enabled and qualified for intake work. It stays one fixed model per adapter; the default is unchanged.'
+    'Platform settings \u203a Storage & retention (Platform Admin): what takes space in the database and file storage, the rule for each category and how much would go. Preview changes nothing; Purge asks for a reason and the category name, runs in the background in small batches and is logged.',
+    'Categories: adapter builder screenshots older than 7 days (the page HTML proposals use is kept), the Layer 2 tables retired on 2 Oct, the scheduled-job run log older than 7 days, and sitemap copies of third-party course directories. Evidence files can be audited (counted) but not purged here.',
+    'Values read from third-party course directories for colleges with no website on record are in Layer 4 review (intakes, English and course pages), each naming the directory page.'
   ],
-  bugFixes:['A long model answer is no longer cut off (worker v0.17.14, 7 Oct).']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
