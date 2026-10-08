@@ -72,6 +72,7 @@ const AccessRolesEmbedded=lazyPage(()=>import('./access-roles-entry'),'AccessRol
 const JobsWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'JobsWorkspace')
 const SourcesWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'SourcesWorkspace')
 const Toolsets=lazyPage(()=>import('./Toolsets'))
+const RetentionScreen=lazyPage(()=>import('./RetentionScreen'))
 
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
 function CoverageAttributes({rank}){
@@ -261,6 +262,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'services':return <div className="m-page-stack"><ModelsServices onError={err}/><Toolsets onError={err}/></div>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/><div className="m-legacy-host"><RegulatorySettings onError={onError} mode="reset"/></div></div>
       case'dataModel':return <Attributes onError={onError}/>
+      case'retention':return <RetentionScreen onError={onError}/>
       case'users':return <AccessRolesEmbedded actorId={actorId}/>
       case'contacts':return <ProviderContactsWorkspace rank={rank} onError={onError} navigate={navigate} initialProviderId={routeParams?.get?.('provider_id')||''}/>
       default:return <EmptyState icon={AlertTriangle} title="Page not found" text="This address does not match a page. Use the menu to continue."/>

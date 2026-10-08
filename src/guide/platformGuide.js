@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.218'
+export const GUIDE_REVIEWED_FOR = '2.15.219'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.',
@@ -67,6 +67,7 @@ export const SCREENS = {
   scrapers: { answers: 'How are pages fetched?', read: ['Fetching providers, limits and routing.'], act: ['Change limits or routing (Pipeline Operator and above).'] },
   services: { answers: 'Which AI models and page services are switched on?', read: ['Services, keys and limits, each in a card that is collapsed until opened (and stays as you leave it for the session), and whether each model passed its test.'], act: ['Switch a model on only after it passes its test (Platform Admin); anything off is offered nowhere else.'] },
   dataModel: { answers: 'Which attributes, families, groups and options exist?', read: ['The catalogue\'s attribute definitions.'], act: ['Read only. Changes are made as reviewed database changes.'] },
+  retention: { answers: 'What takes space, and what can be removed safely?', read: ['Platform Admin only. The database size, then one row per category: what it holds, the rule for what would go, the size now and how much would go, when it was measured, and the last or current run. Categories: adapter builder screenshots older than 7 days (the page HTML proposals use is kept), the Layer 2 tables retired on 2 Oct 2026 (run items stay, Layer 3 points to them), the scheduled-job run log older than 7 days, and sitemap copies of third-party course directories (addresses bound to a course stay). Evidence files can be audited (counted) but not purged here.'], act: ['Preview shows the counts and changes nothing. Purge asks for a reason and the category name typed in full; it runs in the background in small batches, can be stopped, and every run is listed under Runs. Run audit counts evidence not referenced by any value, decision or record and deletes nothing.'] },
   migration: { answers: 'What must pass before Production is switched on?', read: ['The go-live checklist.'], act: ['Platform Admin works the checklist.'] },
   users: { answers: 'Who can sign in, and what may each person do?', read: ['People, roles and expiry dates.'], act: ['Give each person the lowest role that lets them do their job; use an expiry date for contractors (Platform Admin).'] },
 }

@@ -93,6 +93,8 @@ export const PAGES = {
   services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off. Anything off is not offered anywhere else. Below: the limits each layer depends on, their notices, Firecrawl work by use case and sample runs.' },
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on.' },
   dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5, subtitle: 'Attributes, families, groups and options.' },
+  // v2.15.219 (Platform Admin, 8 Oct 2026): what takes space and purging it, Platform Admin only
+  retention: { label: 'Storage & retention', slug: 'storage-retention', icon: 'database', min: 6, subtitle: 'What takes space in the database and file storage, the rule for each category, and purging it.' },
 
   users: { label: 'Users & roles', slug: 'users-roles', icon: 'users', min: 6, subtitle: 'Who can sign in and what each person may do.' },
   contacts: { label: 'Provider contacts', slug: 'provider-contacts', icon: 'users', min: 1, subtitle: 'International recruitment contacts for each provider.' },
@@ -105,7 +107,7 @@ export const SECTIONS = [
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources'] },
-  { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'migration'] },
+  { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'retention', 'migration'] },
   { label: 'Administration', pages: ['users'] },
   { label: 'Help', pages: ['guide'] },
 ]

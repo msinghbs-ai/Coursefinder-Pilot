@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.146 — 8 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.219** (Platform settings › Storage & retention, Platform Admin only: size, rule, preview and purge per category, background batches, run log).
+- Database: `20261008000400` (values from third-party course directories to Layer 4 review: 39 intake, 13 English, 160 course-page items), `20261008000500` (retention runs, estimates, `admin_retention`), `20261008000600` (estimates and worker), `20261008000700` (schedule `retention-worker`). Worker coverage-sweep v0.17.16 (mode retention_files removes screenshots through Storage).
+- v2.15.79 remains the accepted recovery release.
+
 ## 0.1.145 — 8 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.218** (adapter builder: 6 spread samples, Use as sample on any course page (up to 10), the proposal reads every sample and lists attributes not found per sample; Platform Admin model choice per adapter from qualified intake models).
