@@ -4,7 +4,7 @@ import fs from 'node:fs'
 // Decision 155 (part 1): Layer 1 runs are advanced in the background and the card shows live truth.
 test('Layer 1 background runs: driver-safe control, live card status, readable failures',async()=>{
   const control=fs.readFileSync('supabase/functions/layer1-operations-control/index.ts','utf8')
-  expect(control).toContain('const VERSION="layer1-operations-control-v1.7.1"')
+  expect(control).toContain('const VERSION="layer1-operations-control-v1.8.0"')
   expect(control).toContain('svc_layer1_run_claim')
   expect(control).toContain('svc_pilot_consume_nonce",{p_function:FN')
   expect(control).toContain('internal callers may only continue a run')

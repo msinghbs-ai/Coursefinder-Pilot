@@ -60,6 +60,7 @@ jobs:
             [layer1-au-completeness]=false
             [layer1-operations-control]=false
             [layer1-nz-live]=true
+            [layer1-ca-live]=true
             [layer1-register-etl]=true
             [evidence-storage-dedupe]=false
             [layer1-operations-scheduled]=false

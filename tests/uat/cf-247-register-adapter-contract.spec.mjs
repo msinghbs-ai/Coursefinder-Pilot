@@ -149,8 +149,13 @@ test('Canada register adapters: switched off, every copied reader piece is still
   const ref = fs.readFileSync('supabase/functions/_shared/cf247-register-ca-ref.ts', 'utf8')
   const pieces = JSON.parse(fs.readFileSync('tests/uat/cf-247-ca-ref-pieces.json', 'utf8'))
   expect(Object.keys(pieces).length).toBe(20)
+  // Seneca: the adapter copies reader v0.1.0 (cat.senecapolytechnic.ca), which was the checked-in code. The deployed reader is v0.3.1
+  // (alphabetical list plus availability API), checked in 9 Oct 2026. The copy is checked against v0.1.0 kept in the test fixture;
+  // the adapter stays switched off and must be re-derived from v0.3.1 before any switch-on (FOLLOW-UPS).
+  const superseded = { seneca: 'layer1-ca-seneca-catalogue-v0.3.1' }
   for (const [code, p] of Object.entries(pieces)) {
-    const w = fs.readFileSync(`supabase/functions/${p.worker}/index.ts`, 'utf8')
+    const w = superseded[code] ? fs.readFileSync('tests/uat/fixtures/layer1-ca-seneca-catalogue-v0.1.0.ts.txt', 'utf8') : fs.readFileSync(`supabase/functions/${p.worker}/index.ts`, 'utf8')
+    if (superseded[code]) expect(fs.readFileSync(`supabase/functions/${p.worker}/index.ts`, 'utf8')).toContain(superseded[code])
     expect(ref, code).toContain(`export function ref_${code}(`)
     for (const piece of p.pieces) { expect(w.includes(piece), `${code} worker`).toBe(true); expect(ref.includes(piece), `${code} copy`).toBe(true) }
   }
