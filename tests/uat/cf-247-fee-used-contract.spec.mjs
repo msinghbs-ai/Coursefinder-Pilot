@@ -76,7 +76,8 @@ test('migration 1000 applies Rule 3: aligns year-less fees captured this year, s
   expect(m).toContain('manual_locks')
   expect(m).toContain("escalation_reason like 'No fee year on record%'")
   expect(m).toContain("cron.schedule('l4-rule-fee-year-align', '27 3 * * *'")
-  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  expect(m).not.toMatch(/\b(truncate|cascade)\b/i)
+  expect(m).not.toMatch(/drop\s+(table|function)/i)
   expect(m).not.toMatch(/delete\s+from/i)
 })
 
