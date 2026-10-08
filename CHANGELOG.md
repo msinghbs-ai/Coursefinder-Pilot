@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.147 — 8 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.220** (Rule 2: the provider's own course page fee with captured evidence is used over the CRICOS registered fee, whatever year it names; no review raised).
+- Database: `20261008000900` (`security.course_fee_used_v1` and `admin_fee_rules_report` replaced behind md5 guards; `security.l4_shared_hosts_v1`, `security.fee_evidence_own_site_v1`). No stored fee written.
+
 ## 0.1.146 — 8 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.219** (Platform settings › Storage & retention, Platform Admin only: size, rule, preview and purge per category, background batches, run log).

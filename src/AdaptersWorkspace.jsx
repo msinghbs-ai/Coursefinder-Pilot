@@ -197,7 +197,7 @@ function Bulk({ids,rows,settings,can,canQualify,onClear,onChanged,onError}){
 }
 
 // ---- the screen ------------------------------------------------------------------------------------------------------
-// Decision 255 (6 Oct 2026): a read-only dry run of the page-fee rules. It changes nothing; a card that is closed reads nothing.
+// Decision 255 (6 Oct 2026), Rule 2 (8 Oct 2026): a read-only measure of the page-fee rule. It changes nothing; a card that is closed reads nothing.
 function FeeRulesReport({onError}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(false)
   const run=()=>{setBusy(true);supabase.rpc('admin_fee_rules_report',{p_args:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
@@ -205,19 +205,19 @@ function FeeRulesReport({onError}){
   if(!d)return <p className="ad-note">{busy?'Measuring…':'No report yet.'}</p>
   const row=(k,v,t)=><tr key={k}><th scope="row">{k}</th><td>{fmtNumber(v)}</td><td>{t}</td></tr>
   return <div data-fee-rules-report>
-    <p className="ad-note">A dry run: nothing is written. A page's annual international fee is compared with the CRICOS registered total divided by the course's duration. "Differs" means more than {share(d.tolerance)} apart. The page would win only when it names {d.year} or later and the fee is not entered or locked by hand.</p>
+    <p className="ad-note">Rule 2 (8 Oct 2026): the CRICOS registered fee is held until the provider's own course page gives an annual international fee with captured evidence; the page fee then wins with no review, whatever year it names. A page's fee is compared here with the CRICOS registered total divided by the course's duration; "Differs" means more than {share(d.tolerance)} apart. Nothing is written: both fees stay stored and the course uses the page fee. A fee entered or locked by hand keeps the earlier rule.</p>
     <table className="m-table"><tbody>
       {row('Compared',d.compared,'Courses with a page fee and a CRICOS total')}
       {row('Agree',d.agree,'Nothing to decide')}
       {row('Differ',d.differ,'')}
-      {row('Page would win',d.would_change,`${fmtNumber(d.page_higher)} higher, ${fmtNumber(d.page_lower)} lower than CRICOS; ${fmtNumber(d.gap_over_20)} differ by more than 20%`)}
-      {row('Held back: suspected half-year fee',d.suspected_half,'The page fee is about half of CRICOS a year, most often a per-semester fee read as annual. Reviewed first; never picked up by the page rule')}
-      {row('Kept: page names an older year',d.kept_older_year,'CRICOS stays')}
-      {row('Kept: page names no year',d.kept_no_year,'CRICOS stays')}
+      {row('Page fee used',d.would_change,`${fmtNumber(d.page_higher)} higher, ${fmtNumber(d.page_lower)} lower than CRICOS; ${fmtNumber(d.gap_over_20)} differ by more than 20%`)}
+      {row('Of which: possible half-year fee',d.suspected_half,'The page fee is about half of CRICOS a year (sometimes a per-semester fee). Shown for information; the page fee is used')}
+      {row('CRICOS held: no captured evidence',d.kept_no_evidence,'The page fee has no evidence on record')}
+      {row('CRICOS held: not the provider\'s own site',d.kept_other_site,'Read from a site shared by several providers (Rule 1)')}
       {row('Protected: entered or locked by hand',d.protected_by_hand,'Never overwritten')}
     </tbody></table>
     <h4>By university (most changes first)</h4>
-    <table className="m-table"><thead><tr><th>University</th><th>Compared</th><th>Page would win</th></tr></thead><tbody>
+    <table className="m-table"><thead><tr><th>University</th><th>Compared</th><th>Page fee used</th></tr></thead><tbody>
       {(d.by_provider||[]).map(r=><tr key={r.provider_id}><td>{r.provider}</td><td>{fmtNumber(r.compared)}</td><td>{fmtNumber(r.would_change)}</td></tr>)}
     </tbody></table>
     {(d.suspected_half_sample||[]).length>0&&<div data-fee-suspected-half>

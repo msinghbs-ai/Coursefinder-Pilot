@@ -47,3 +47,23 @@ test('migration 1800 holds suspected half-year page fees out of the page-wins co
   expect(m).not.toMatch(/delete\s+from/i)
   expect(fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')).toContain('data-fee-suspected-half')
 })
+
+// Rule 2 (8 Oct 2026, Platform Admin): the provider's own course page fee with captured evidence wins over the CRICOS
+// registered fee, with no Layer 4 review and whatever year it names. Hand-locked fees keep the earlier rule.
+test('migration 0900 applies Rule 2: evidence-backed own-site page fee wins, guarded, writes nothing', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008000900_cf247_rule2_page_fee_wins.sql', 'utf8')
+  expect(m).toContain("'ae51169df5c347a5fcf5628c6f8e87dd'")
+  expect(m).toContain("'10bbafb98bb8edb77579a327499e24db'")
+  expect(m).toContain('security.fee_evidence_own_site_v1(pg.evidence_id, p_course_id)')
+  expect(m).toContain('(not v_locked and v_ev)')
+  expect(m).toContain("where rule = 'unofficial_source'")
+  expect(m).not.toContain('layer4_review_items')
+  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toMatch(/insert\s+into/i)
+  expect(m).not.toMatch(/\bupdate\s+\S+\s+set\b/i)
+  const ad = fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')
+  expect(ad).toContain('d.kept_no_evidence')
+  expect(ad).toContain('d.kept_other_site')
+  expect(ad).not.toContain('kept_older_year')
+})
