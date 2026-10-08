@@ -102,8 +102,9 @@ const UI_FIXES=[
  'QS/THE dataset pages aligned to the standard CourseFinder dataset table theme.'
 ]
 const PAGE_SIZE=50
-const rankingYearOptions=system=>system==='qs_wur'?[2026,2027,...Array.from({length:11},(_,i)=>2025-i)]:system==='the_wur'?Array.from({length:16},(_,i)=>2026-i):Array.from({length:12},(_,i)=>2026-i)
-const rankingDefaultYear=system=>rankingYearOptions(system)[0]
+// 8 Oct 2026 (Platform Admin): any edition can be uploaded, including next year's (QS names its edition a year ahead): from two years ahead back to 2010.
+const rankingYearOptions=()=>{const top=new Date().getFullYear()+2;return Array.from({length:top-2009},(_,i)=>top-i)}
+const rankingDefaultYear=system=>system==='qs_wur'?new Date().getFullYear()+1:new Date().getFullYear()
 const rankingPublisherName=system=>system==='the_wur'?'Times Higher Education':system==='arwu'?'ShanghaiRanking Consultancy':'QS Quacquarelli Symonds'
 // v2.15.121: ranking publisher addresses come from Reference sources (use "Ranking publisher", by ranking key), not code.
 let RANKING_SOURCES={}

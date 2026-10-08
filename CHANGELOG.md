@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.149 — 8 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.222** (Layer 1 schedule choice per source; ranking edition years from two years ahead back to 2010).
+- Database: `20261008002700` (`admin_layer1_schedule`, Platform Admin only, logged; no source's schedule changed).
+
 ## 0.1.148 — 8 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.221** (Storage & retention: Unreferenced evidence purge, Platform Admin only, re-checked per batch).
