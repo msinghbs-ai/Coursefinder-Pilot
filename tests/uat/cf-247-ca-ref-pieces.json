@@ -142,5 +142,29 @@
 "const t=(x:any)=>String(x??\"\").replace(/\\s+/g,\" \").trim(),dec=(s:string)=>t(s.replace(/&nbsp;/g,\" \").replace(/&amp;/g,\"&\").replace(/&quot;/g,'\"').replace(/&#39;|&apos;/g,\"'\").replace(/<[^>]*>/g,\" \"))",
 "function parse(html:string){const m=new Map<string,any>();for(const row of html.match(/<tr\\b[\\s\\S]*?<\\/tr>/gi)||[]){const cells=[...row.matchAll(/<t[dh]\\b[^>]*>([\\s\\S]*?)<\\/t[dh]>/gi)].map(x=>dec(x[1]));if(cells.length<3)continue;const dli=cells.join(\" | \").match(/\\bO\\d{10,15}\\b/)?.[0];if(!dli)continue;const q=cells.findIndex(x=>x.includes(dli)),name=q>0?t(cells[q-1]):\"\";if(!name||/DLI name|Institution/i.test(name))continue;const province=q>1?t(cells[q-2]):null,city=q>=0&&cells[q+1]?t(cells[q+1]):null,campus=q>=0&&cells[q+2]?t(cells[q+2]):null;const x=m.get(dli)||{provider_code:dli,provider_name:name,province,cities:new Set<string>(),campuses:new Set<string>()};if(city)x.cities.add(city);if(campus)x.campuses.add(campus);m.set(dli,x)}return[...m.values()].map(x=>({...x,cities:[...x.cities],campuses:[...x.campuses]})).sort((a,b)=>a.provider_code.localeCompare(b.provider_code))}"
 ]
+},
+"alis": {
+"worker": "layer1-ca-ab-alis-degrees",
+"pieces": [
+"const clean=(x:any)=>String(x??\"\").replace(/\\s+/g,\" \").trim()",
+"SCOPE=\"ca-intl-bachelor-plus-v1\"",
+"function decode(s:string){return s.replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCodePoint(parseInt(h,16))).replace(/&#([0-9]+);/g,(_,d)=>String.fromCodePoint(parseInt(d,10))).replace(/&nbsp;/gi,\" \").replace(/&amp;/gi,\"&\").replace(/&quot;/gi,'\"').replace(/&apos;/gi,\"'\").replace(/&lt;/gi,\"<\").replace(/&gt;/gi,\">\")}",
+"function strip(h:string){return clean(decode(h.replace(/<script[\\s\\S]*?<\\/script>/gi,\" \").replace(/<style[\\s\\S]*?<\\/style>/gi,\" \").replace(/<[^>]+>/g,\" \")))}",
+"function parseDetail(html:string){const text=strip(html),h1=html.match(/<h1[^>]*>([\\s\\S]*?)<\\/h1>/i)?.[1]||\"\",title=strip(h1),pt=clean(text.match(/Program Type\\s+(.+?)\\s+Credential Type\\s+/i)?.[1]||\"\"),cred=clean(text.match(/Credential Type\\s+(.+?)\\s+Length\\s+/i)?.[1]||\"\"),upd=clean(text.match(/Updated\\s+([A-Za-z]+\\s+\\d{1,2},\\s+\\d{4})\\./i)?.[1]||\"\");let level:string|null=null;if(pt.toLowerCase()===\"bachelor's\")level=\"bachelor\";else if(pt.toLowerCase()===\"master's\")level=\"masters\";else if(pt.toLowerCase()===\"doctoral\")level=\"doctorate\";return{title,programType:pt,credentialType:cred,updated:upd,studyLevel:level,eligible:cred.toLowerCase()===\"degree\"&&level!==null}}",
+"accepted=details.filter(x=>x.eligible),rows=accepted.map(x=>({provider_code:dli,provider_name:providerName,local_program_id:x.guid,course_title:x.title,issuing_authority:\"Government of Alberta ALIS\",lifecycle_status:\"active\",study_level_code:x.studyLevel,metadata:{scope:SCOPE,program_type:x.programType,credential_type:x.credentialType,profile_updated:x.updated,international_gate:\"current public Alberta/IRCC DLI designation\",current_catalogue_membership:true}}))"
+]
+},
+"epbc": {
+"worker": "layer1-ca-bc-epbc-programs",
+"pieces": [
+"const clean=(x:any)=>String(x??\"\").replace(/\\s+/g,\" \").trim()",
+"SCOPE=\"ca-intl-bachelor-plus-v1\"",
+"function lifecycle(p:any){const a=Array.isArray(p?.properties)?p.properties.find((x:any)=>String(x?.Type?.Code||\"\").toUpperCase()===\"IS_ACTIVE\"):null;return a&&String(a?.Value||\"\").toLowerCase()===\"no\"?\"inactive\":\"active\"}",
+"function level(p:any){const ts=new Set((Array.isArray(p?.credentials)?p.credentials:[]).map((z:any)=>String(z?.type||\"\")));if(ts.has(\"DoctoralDegree\"))return\"doctorate\";if(ts.has(\"FirstProfessionalDeg\"))return\"professional_degree\";if(ts.has(\"MastersDegree\"))return\"masters\";if(ts.has(\"BachelorsDegree\"))return\"bachelor\";return null}",
+"const m=html.match(/<script id=\"__NEXT_DATA__\" type=\"application\\/json\">([\\s\\S]*?)<\\/script>/i);if(!m)throw new Error(`EPBC __NEXT_DATA__ missing ${url}`);let j:any;try{j=JSON.parse(m[1])}catch{throw new Error(`EPBC __NEXT_DATA__ invalid JSON ${url}`)}const sr=j?.props?.pageProps?.searchResults;if(!sr||!Array.isArray(sr.results))throw new Error(`EPBC searchResults missing ${url}`);",
+"for(const x of s.results){const guid=String(x?.guid||\"\").toLowerCase(),recEpbc=String(x?.institution?.epbcID||\"\").toUpperCase(),title=clean(x?.title),studyLevel=level(x),credentialTypes=(Array.isArray(x?.credentials)?x.credentials:[]).map((z:any)=>clean(z?.type)).filter(Boolean),credentialDescriptions=(Array.isArray(x?.credentials)?x.credentials:[]).map((z:any)=>clean(z?.description)).filter(Boolean);if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(guid))throw new Error(`invalid EPBC programme GUID ${providerName} page ${expected}`);if(recEpbc!==epbc)throw new Error(`EPBC Provider UUID mismatch expected ${epbc} got ${recEpbc}`);if(!title)throw new Error(`EPBC programme title missing ${guid}`);programs.push({guid,title,lifecycle:lifecycle(x),slug:String(x?.slug||\"\"),credentialTypes,credentialDescriptions,studyLevel,scopeEligible:studyLevel!==null,page:expected})}",
+"const seen=new Set<string>();for(const x of programs){if(seen.has(x.guid))throw new Error(`duplicate EPBC programme GUID in batch ${x.guid}`);seen.add(x.guid)}",
+"const accepted=programs.filter(x=>x.scopeEligible&&x.lifecycle===\"active\"),rows=accepted.map(x=>({provider_code:dli,provider_name:providerName,local_program_id:x.guid,course_title:x.title,issuing_authority:\"EducationPlannerBC\",lifecycle_status:\"active\",study_level_code:x.studyLevel,metadata:{scope:SCOPE,credential_types:x.credentialTypes,credential_descriptions:x.credentialDescriptions,international_gate:\"current_ircc_dli\"}}))"
+]
 }
 }

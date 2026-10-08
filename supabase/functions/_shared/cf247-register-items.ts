@@ -5,7 +5,7 @@
 // list), how text is cleaned (an ordered list of steps), which items are skipped, how repeated keys are settled and which fields go into
 // the record. `itemsAdapterRecords` reads a stored file using only the spec. Read only.
 
-export type Tx = "trim" | "upper" | "lower" | "strip_tags" | "collapse_ws" | ["replace", string, string, string?] | ["pad", number, string];
+export type Tx = "trim" | "upper" | "lower" | "strip_tags" | "collapse_ws" | "num_entities" | ["replace", string, string, string?] | ["pad", number, string];
 export type ItemRule = {
   group?: number;                    // a group of the item pattern
   regex?: string | string[];         // first pattern that matches the item (or the `from` field); `rgroup` picks the group (default 1)
@@ -22,6 +22,9 @@ export type ItemRule = {
   same_as?: string;                  // "true" when the value equals this field's value
   cells_join?: string;               // table rows: all cells joined with this separator
   cell_match?: string;               // table rows: the first cell matching this pattern (case-insensitive)
+  json_list?: { path: string; key: string };   // the `key` of every element of the array at `path` (cleaned with `tx`, empty ones left out); a list, or one string with `join`
+  json_find?: { path: string; match: string; equals: string; value: string };   // the `value` of the first element whose `match` equals (case-insensitive)
+  object?: [string, { field?: string; const?: unknown }][];   // an object built from other fields and constants, in this key order
   tx?: Tx[];
   map?: [string, string][];          // first pattern (on the value) that matches gives the value
   else?: string;                     // value when no map pattern matches
@@ -32,7 +35,7 @@ export type ItemsSpec = {
   format: "text_items";
   pre?: [string, string, string?][];
   sets?: Record<string, { json: string; key: string; tx?: Tx[] }>;
-  items: { split?: string; regex?: string; flags?: string; json?: string; embedded_json?: { regex: string; path: string }; table_rows?: { row: string; cell: string; cell_tx?: Tx[]; min_cells: number } };
+  items: { bundle?: { pages: string; body: string; embedded_json: { regex: string; path: string } }; split?: string; regex?: string; flags?: string; json?: string; embedded_json?: { regex: string; path: string }; table_rows?: { row: string; cell: string; cell_tx?: Tx[]; min_cells: number } };
   fields: Record<string, ItemRule>;
   require?: string[];
   skip?: { field: string; regex: string; flags?: string; not?: boolean }[];
@@ -47,7 +50,8 @@ const MONTHS: Record<string, number> = { january: 0, february: 1, march: 2, apri
 function applyTx(v: string, tx: Tx[] = []) {
   for (const s of tx) {
     if (s === "trim") v = v.trim(); else if (s === "upper") v = v.toUpperCase(); else if (s === "lower") v = v.toLowerCase();
-    else if (s === "strip_tags") v = v.replace(/<[^>]+>/g, ""); else if (s === "collapse_ws") v = v.replace(/\s+/g, " ");
+    else if (s === "strip_tags") v = v.replace(/<[^>]+>/g, "");
+    else if (s === "num_entities") v = v.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#([0-9]+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10))); else if (s === "collapse_ws") v = v.replace(/\s+/g, " ");
     else if (Array.isArray(s) && s[0] === "replace") v = v.replace(new RegExp(s[1], s[3] ?? "g"), s[2]);
     else if (Array.isArray(s) && s[0] === "pad") v = v.padStart(s[1], s[2]);
   }
@@ -59,13 +63,15 @@ const str = (v: unknown) => String(v ?? "");
 export type ItemRec = { k: string; x: Record<string, unknown> };
 export function itemsAdapterRows(spec: ItemsSpec, text: string, now = new Date()): ItemRec[] {
   for (const [re, rep, fl] of spec.pre || []) text = text.replace(new RegExp(re, fl ?? "g"), rep);
-  const doc = spec.items.json || spec.sets ? (() => { try { return JSON.parse(text) } catch { return null } })() : null;
+  const doc = spec.items.json || spec.items.bundle || spec.sets ? (() => { try { return JSON.parse(text) } catch { return null } })() : null;
   const sets: Record<string, Set<string>> = {};
   for (const [name, s] of Object.entries(spec.sets || {})) sets[name] = new Set((jget(doc, s.json) || []).map((x: any) => applyTx(str(x?.[s.key]), s.tx)));
   type It = { text?: string; m?: RegExpMatchArray; obj?: any; cells?: string[] };
   let items: It[] = [];
   const I = spec.items;
-  if (I.split != null) items = text.split(I.split).slice(1).map((t) => ({ text: t }));
+  if (I.bundle) {
+    for (const pg of jget(doc, I.bundle.pages) || []) { const m = str(pg?.[I.bundle.body]).match(new RegExp(I.bundle.embedded_json.regex, "i")); if (!m) throw new Error("embedded JSON not found on a stored page"); const a = jget(JSON.parse(m[1]), I.bundle.embedded_json.path); for (const o of Array.isArray(a) ? a : []) items.push({ obj: o }) }
+  } else if (I.split != null) items = text.split(I.split).slice(1).map((t) => ({ text: t }));
   else if (I.regex) items = [...text.matchAll(new RegExp(I.regex, I.flags ?? "g"))].map((m) => ({ text: m[0], m }));
   else if (I.json) { const a = jget(doc, I.json); if (!Array.isArray(a)) throw new Error(`no list at ${I.json}`); items = a.map((o: any) => ({ obj: o })) }
   else if (I.embedded_json) { const m = text.match(new RegExp(I.embedded_json.regex)); if (!m) throw new Error("embedded JSON not found"); const a = jget(JSON.parse(m[1]), I.embedded_json.path); items = (Array.isArray(a) ? a : []).map((o: any) => ({ obj: o })) }
@@ -78,7 +84,7 @@ export function itemsAdapterRows(spec: ItemsSpec, text: string, now = new Date()
   const floor = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
   // Fields are read in dependency order (a field read `from`, compared `same_as` or anchored on another comes after it): a spec stored as
   // jsonb does not keep its key order.
-  const deps = (r: ItemRule) => [r.from, r.same_as, r.cell?.anchor].filter((d): d is string => !!d && d in spec.fields);
+  const deps = (r: ItemRule) => [r.from, r.same_as, r.cell?.anchor, ...(r.object || []).map(([, d]) => d.field)].filter((d): d is string => !!d && d in spec.fields);
   const fieldOrder: string[] = [], placed = new Set<string>(), names = Object.keys(spec.fields).sort();
   while (fieldOrder.length < names.length) {
     const next = names.find((n) => !placed.has(n) && deps(spec.fields[n]).every((d) => placed.has(d)));
@@ -88,11 +94,16 @@ export function itemsAdapterRows(spec: ItemsSpec, text: string, now = new Date()
   const out = new Map<string, Record<string, unknown>>(), order: string[] = [];
   for (const it of items) {
     const x: Record<string, unknown> = {}, omit = new Set<string>();
+    const listed = (r: ItemRule) => (Array.isArray(jget(it.obj, r.json_list!.path)) ? jget(it.obj, r.json_list!.path) : []).map((e: any) => applyTx(str(e?.[r.json_list!.key]), r.tx)).filter(Boolean);
     for (const name of fieldOrder) {
       const r = spec.fields[name];
       const src = r.from != null ? str(x[r.from]) : str(it.text);
       let v = "";
-      if (r.const != null) v = r.const;
+      if (r.object) { const o: Record<string, unknown> = {}; for (const [k, d] of r.object) o[k] = d.field != null ? x[d.field] : d.const; x[name] = o; continue }
+      if (r.json_list && r.join == null) { x[name] = listed(r); continue }
+      if (r.json_list) v = listed(r).join(r.join!);
+      else if (r.json_find) { const a = jget(it.obj, r.json_find.path), e = Array.isArray(a) ? a.find((z: any) => str(jget(z, r.json_find!.match)).toUpperCase() === r.json_find!.equals.toUpperCase()) : null; v = e ? str(jget(e, r.json_find.value)) : "" }
+      else if (r.const != null) v = r.const;
       else if (r.group != null) v = str(it.m?.[r.group]);
       else if (r.json != null) v = str(jget(it.obj, r.json));
       else if (r.json_any) { const a = jget(it.obj, r.json_any.path); v = Array.isArray(a) && a.some((e: any) => e?.[r.json_any!.key] === r.json_any!.equals) ? "true" : "" }
@@ -105,7 +116,7 @@ export function itemsAdapterRows(spec: ItemsSpec, text: string, now = new Date()
       else if (r.from != null) v = src;
       if (r.in_set) v = sets[r.in_set]?.has(v) ? "true" : "";
       if (r.same_as != null) v = v === str(x[r.same_as]) ? "true" : "";
-      v = applyTx(v, r.tx);
+      if (!r.json_list) v = applyTx(v, r.tx);
       if (r.map) { const hit = r.map.find(([re]) => new RegExp(re).test(v)); v = hit ? hit[1] : (r.else ?? v) } else if (r.else != null && !v) v = r.else;
       x[name] = r.null_if_empty && !v ? null : v;
       if (r.only_if && !str(x[r.only_if])) omit.add(name);
@@ -131,7 +142,7 @@ export function itemsAdapterRows(spec: ItemsSpec, text: string, now = new Date()
   return order.map((k) => ({ k, x: out.get(k)! }));
 }
 
-const asText = (r: Record<string, unknown>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v == null ? "" : Array.isArray(v) ? v.join("\u001f") : String(v)]));
+const asText = (r: Record<string, unknown>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v == null ? "" : Array.isArray(v) ? v.join("\u001f") : typeof v === "object" ? JSON.stringify(v) : String(v)]));
 export function itemsAdapterRecords(spec: ItemsSpec, text: string, now = new Date()) {
   return itemsAdapterRows(spec, text, now).map((r) => ({ k: r.k, x: asText(r.x) }));
 }
