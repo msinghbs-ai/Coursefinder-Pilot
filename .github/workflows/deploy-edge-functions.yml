@@ -106,6 +106,7 @@ jobs:
             [layer2-hotcourses-directory-parse]=false
             [layer2-provider-asset-promote]=false
             [layer2-provider-page-fanout]=false
+            [scholarships-au-etl]=false
             [layer2-scholarship-catalogue-enumerate]=false
             [layer2-scholarship-extract]=false
             [layer2-scholarship-extract-v2]=false
