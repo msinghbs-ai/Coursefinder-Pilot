@@ -67,3 +67,15 @@ test('migration 0900 applies Rule 2: evidence-backed own-site page fee wins, gua
   expect(ad).toContain('d.kept_other_site')
   expect(ad).not.toContain('kept_older_year')
 })
+
+// Rule 3 (8 Oct 2026, Platform Admin): a year-less page fee with evidence captured this year is aligned to this year, no review.
+test('migration 1000 applies Rule 3: aligns year-less fees captured this year, skips same-year conflicts and hand locks', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008001000_cf247_rule3_fee_year_align.sql', 'utf8')
+  expect(m).toContain('extract(year from ea.captured_at)::int = v_year')
+  expect(m).toContain('where not conflict')
+  expect(m).toContain('manual_locks')
+  expect(m).toContain("escalation_reason like 'No fee year on record%'")
+  expect(m).toContain("cron.schedule('l4-rule-fee-year-align', '27 3 * * *'")
+  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  expect(m).not.toMatch(/delete\s+from/i)
+})
