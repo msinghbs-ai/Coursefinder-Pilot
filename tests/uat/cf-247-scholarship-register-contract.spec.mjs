@@ -98,3 +98,11 @@ test('register migration: country tagged, index hands off to the page reader, no
   expect(m).toMatch(/'scholarship listings',true,false,30,30,false,/)
   expect(m).toContain("where feed in ('study_australia','australia_awards');")
 })
+
+test('register hand-off uses the candidate source "register" (md5-guarded replace)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008004600_cf247_scholarship_register_candidate_source.sql', 'utf8')
+  expect(m).toContain("<> 'ff5eb351f07c7f61df6e9bb12f9641e6' then")
+  expect(m).toContain("check (source = any (array['sitemap'::text, 'map'::text, 'search'::text, 'register'::text]))")
+  expect(m).toContain("left(t.name, 300), 'register'")
+  expect(m).not.toMatch(/delete\s+from/i)
+})
