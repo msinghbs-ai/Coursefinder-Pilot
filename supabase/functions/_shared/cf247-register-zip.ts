@@ -93,10 +93,13 @@ export async function adapterRecords(spec: RegisterSpec, zipBytes: Uint8Array, f
   }
   const act = spec.record.active, activeRe = act ? new RegExp(act.active_if_empty_or, "i") : null;
   const out: { k: string; f: string; x: Record<string, string> }[] = [], enc = new TextEncoder();
-  const recs: { key: string; text: string; x: Record<string, string>; prov: string }[] = [];
+  // v2: only the records of this slice are joined and read (the others are only counted, with their key and provider for the sets)
+  const recs: { key: string; text: string; x: Record<string, string>; prov: string }[] = [], all: { key: string; prov: string }[] = [];
   scanRows(texts[spec.record.file], (get, raw) => {
     if (act) { const v = get(act.column); if (v && !activeRe!.test(v)) return }
     const key = get(spec.record.key); if (!key) return;
+    const at = all.length; all.push({ key, prov: spec.record_provider ? get(spec.record_provider) : "" });
+    if (at < from || at >= to) return;
     const joined: Record<string, Row | Row[] | undefined> = {}, parts: string[] = [];
     for (const j of spec.joins) {
       const rows = index[j.file].get(keyOf(get, j.on.map((p) => p[0]))) || [];
@@ -120,13 +123,13 @@ export async function adapterRecords(spec: RegisterSpec, zipBytes: Uint8Array, f
     const x = evalFields(spec.fields, get, (from) => (joined[from] as Row | undefined)?.get || null);
     recs.push({ key, text: parts.join(sep.part_sep), x, prov: spec.record_provider ? get(spec.record_provider) : "" });
   });
-  for (const r of recs.slice(from, to)) out.push({ k: r.key, f: await sha(enc.encode(r.text)), x: r.x });
+  for (const r of recs) out.push({ k: r.key, f: await sha(enc.encode(r.text)), x: r.x });
   // v2: the further row sets, for every record, with the last slice (keyed "<prefix>|<key fields>")
-  if (spec.sets && to >= recs.length) {
-    const sets = adapterSets(spec, texts, recs.map((r) => ({ key: r.key, prov: r.prov })));
+  if (spec.sets && to >= all.length) {
+    const sets = adapterSets(spec, texts, all);
     for (const [name, rows] of Object.entries(sets)) for (const x of rows) out.push({ k: setKey(spec.sets[name], x), f: "set", x });
   }
-  return { total: recs.length, recs: out };
+  return { total: all.length, recs: out };
 }
 
 export const setKey = (s: SetSpec, x: Record<string, string>) => [s.prefix, ...s.key.map((k) => x[k] ?? "")].join("|");

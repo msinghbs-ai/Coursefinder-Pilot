@@ -183,3 +183,12 @@ test('Canada ALIS and EPBC adapters: bundles of stored pages, references copied 
   const ref = fs.readFileSync('supabase/functions/_shared/cf247-register-ca-ref.ts', 'utf8')
   expect(ref).toContain('export function ref_alis('); expect(ref).toContain('export function ref_epbc(')
 })
+
+test('register replay: a run stops after three calls end without saving, and the CRICOS adapter reads only its slice', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008004300_cf247_replay_attempts.sql', 'utf8')
+  expect(m).toContain("'6734bb9841dd3b9344b9c494a8685c05'")
+  expect(m).toContain('r.attempts >= 3')
+  expect(m).toContain('(lease_until is null or lease_until <= now())')
+  const e = fs.readFileSync('supabase/functions/_shared/cf247-register-zip.ts', 'utf8')
+  expect(e).toContain('if (at < from || at >= to) return;')
+})
