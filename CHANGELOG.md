@@ -15,6 +15,7 @@
 - Canadian Layer 1 readers that kept only parsed output now also store the raw pages they fetch as a `-raw.json` evidence bundle beside their evidence (centennial, cna, fanshawe, firstparty-catalogues, mb, northern, ns-sk, on-college, sault, sk, stlawrence), so their parsing can be replayed after their next run. Nothing they parse or apply changes.
 - Worker coverage-sweep v0.17.28: text_items fields are read in dependency order (a spec stored as jsonb loses key order; the Conestoga replay read 0 records).
 - Database: `20261008004100` (four Canadian replays run again after the field-order fix) and `20261008004200` (ALIS and EducationPlannerBC register adapters, switched off; replays on the newest stored bundle per school and institution). Worker coverage-sweep v0.17.29 (text_items reads bundles of stored pages, lists, lookups and nested objects).
+- Worker coverage-sweep v0.17.30: the CRICOS adapter joins and reads only the records of each replay slice (version 2 ran out of worker resources). Database: `20261008004300` (a replay run stops with an error after three calls end without saving at the same position; a leased run no longer holds up the others).
 
 ## 0.1.148 — 8 Oct 2026
 
