@@ -91,3 +91,18 @@ test('migration 1100 resolves same-year conflicts by newest evidence and is guar
   expect(m).not.toMatch(/delete\s+from/i)
   expect(m).not.toMatch(/drop\s+(table|function)/i)
 })
+
+// Rule 4 (8 Oct 2026, Platform Admin): low agreement - page wins, admitted automatically daily; never switches a field off.
+test('migration 1500 admits low-agreement fields daily, keeps Decision 220 and the hold list, never switches admission off', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008001500_cf247_rule4_low_agreement_daily.sql', 'utf8')
+  expect(m).toContain('security.adapter_qualify_one_v1(a.provider_id, 0.5, 0.9)')
+  expect(m).toContain("(x.v->>'agree_share')::numeric < 0.9")
+  expect(m).toContain("not (x.k = 'fee' and v_country = 'CA')")
+  expect(m).toContain('pipeline.l4_rule4_holds')
+  expect(m).toContain("cron.schedule('l4-rule-low-agreement', '37 3 * * *'")
+  expect(m).not.toMatch(/admit\s*=\s*false/i)
+  expect(m).not.toMatch(/delete\s+from/i)
+  const j = fs.readFileSync('supabase/migrations/20261008001600_cf247_job_layers_rules_retention.sql', 'utf8')
+  expect(j).toContain("('l4-rule-low-agreement', 4, now())")
+  expect(j).toContain('on conflict (jobname) do nothing')
+})
