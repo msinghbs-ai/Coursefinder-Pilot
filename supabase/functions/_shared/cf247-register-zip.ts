@@ -79,8 +79,20 @@ function evalFields(fields: Record<string, FieldRule>, get: (n: string) => strin
 
 type Row = { get: (n: string) => string; raw: string[] };
 // Reads the archive using only the spec: one record per active row of the record file, joined rows, fingerprint and fields.
+// v2 replays: positions past the last record each read one row set (in name order), in a call of its own, so no call reads the records
+// and the sets together. `next` and `done` say where the replay continues.
+export const setNames = (spec: { sets?: Record<string, unknown> }) => Object.keys(spec.sets || {}).sort();
 export async function adapterRecords(spec: RegisterSpec, zipBytes: Uint8Array, from = 0, to = Infinity) {
   const texts = archiveTexts(zipBytes, spec.files), sep = spec.fingerprint;
+  if (spec.sets) {
+    const act0 = spec.record.active, re0 = act0 ? new RegExp(act0.active_if_empty_or, "i") : null, all0: { key: string; prov: string }[] = [];
+    scanRows(texts[spec.record.file], (get) => { if (act0) { const v = get(act0.column); if (v && !re0!.test(v)) return } const key = get(spec.record.key); if (key) all0.push({ key, prov: spec.record_provider ? get(spec.record_provider) : "" }) });
+    if (from >= all0.length) {
+      const names = setNames(spec), name = names[from - all0.length], out0: { k: string; f: string; x: Record<string, string> }[] = [];
+      if (name) { const one = adapterSets({ ...spec, sets: { [name]: spec.sets[name] } }, texts, all0); for (const x of one[name] || []) out0.push({ k: setKey(spec.sets[name], x), f: "set", x }) }
+      return { total: all0.length, recs: out0, next: from + 1, done: from - all0.length + 1 >= names.length };
+    }
+  }
   const J = (a: string[]) => a.map((x) => clean(x)).join(sep.field_sep);
   const index: Record<string, Map<string, Row[]>> = {};
   const keyOf = (get: (n: string) => string, cols: string[]) => cols.map((c) => get(c)).join("|");
@@ -125,11 +137,7 @@ export async function adapterRecords(spec: RegisterSpec, zipBytes: Uint8Array, f
   });
   for (const r of recs) out.push({ k: r.key, f: await sha(enc.encode(r.text)), x: r.x });
   // v2: the further row sets, for every record, with the last slice (keyed "<prefix>|<key fields>")
-  if (spec.sets && to >= all.length) {
-    const sets = adapterSets(spec, texts, all);
-    for (const [name, rows] of Object.entries(sets)) for (const x of rows) out.push({ k: setKey(spec.sets[name], x), f: "set", x });
-  }
-  return { total: all.length, recs: out };
+  return { total: all.length, recs: out, next: Math.min(to, all.length), done: !spec.sets && to >= all.length };
 }
 
 export const setKey = (s: SetSpec, x: Record<string, string>) => [s.prefix, ...s.key.map((k) => x[k] ?? "")].join("|");
@@ -259,15 +267,19 @@ export async function referenceRecords(zipBytes: Uint8Array, from = 0, to = Infi
   });
   const enc = new TextEncoder(), out: { k: string; f: string; x: Record<string, string> }[] = [];
   for (const [k, t] of rows.slice(from, to)) out.push({ k, f: await sha(enc.encode(t)), x: { ...(fields.get(k) || {}), ...(extra.get(k) || {}) } });
-  // v2: layer1-au-depth v1.7.0 scanLocations and scanCourseLocations (copied, not changed) for every active course, with the last slice
-  if (withAddress && to >= rows.length) {
+  // v2: layer1-au-depth v1.7.0 scanLocations and scanCourseLocations (copied, not changed) for every active course, one set a call after
+  // the last record (course_locations, then locations), as the adapter does
+  if (withAddress && from >= rows.length) {
+    out.length = 0;
+    const which = ["course_locations", "locations"][from - rows.length];
     const active: { provider_code: string; course_code: string }[] = [];
     scanRows(dec(parts.courses.bytes), (get) => { const ex = get("Expired"); if (ex && !/^(no|false|n|0)$/i.test(ex)) return; const cc = get("CRICOS Course Code"); if (!cc) return; active.push({ provider_code: get("CRICOS Provider Code"), course_code: cc }) });
     const selectedProviders = new Set<string>(active.map((x) => x.provider_code)), selectedCodes = new Set<string>(active.map((x) => x.course_code));
     const courseProviderMap = new Map<string, string>(active.map((x) => [x.course_code, x.provider_code]));
     const T = (r: Record<string, unknown>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v == null ? "" : String(v)]));
-    for (const r of scanLocations(dec(parts.locations.bytes), selectedProviders).selected) out.push({ k: `loc|${r.provider_code}|${r.location_code}`, f: "set", x: T(r) });
-    for (const r of scanCourseLocations(dec(parts.courseLocations.bytes), selectedCodes, courseProviderMap).selected) out.push({ k: `cl|${r.provider_code}|${r.course_code}|${r.location_code}`, f: "set", x: T(r) });
+    if (which === "locations") for (const r of scanLocations(dec(parts.locations.bytes), selectedProviders).selected) out.push({ k: `loc|${r.provider_code}|${r.location_code}`, f: "set", x: T(r) });
+    if (which === "course_locations") for (const r of scanCourseLocations(dec(parts.courseLocations.bytes), selectedCodes, courseProviderMap).selected) out.push({ k: `cl|${r.provider_code}|${r.course_code}|${r.location_code}`, f: "set", x: T(r) });
+    return { total: rows.length, recs: out, next: from + 1, done: from - rows.length + 1 >= 2 };
   }
-  return { total: rows.length, recs: out };
+  return { total: rows.length, recs: out, next: Math.min(to, rows.length), done: !withAddress && to >= rows.length };
 }

@@ -16,6 +16,7 @@
 - Worker coverage-sweep v0.17.28: text_items fields are read in dependency order (a spec stored as jsonb loses key order; the Conestoga replay read 0 records).
 - Database: `20261008004100` (four Canadian replays run again after the field-order fix) and `20261008004200` (ALIS and EducationPlannerBC register adapters, switched off; replays on the newest stored bundle per school and institution). Worker coverage-sweep v0.17.29 (text_items reads bundles of stored pages, lists, lookups and nested objects).
 - Worker coverage-sweep v0.17.30: the CRICOS adapter joins and reads only the records of each replay slice (version 2 ran out of worker resources). Database: `20261008004300` (a replay run stops with an error after three calls end without saving at the same position; a leased run no longer holds up the others).
+- Worker coverage-sweep v0.17.31: CRICOS v2 replays read each location set in a call of its own after the records. Database: `20261008004400` (the 11 Aug archive replay resumes).
 
 ## 0.1.148 — 8 Oct 2026
 
