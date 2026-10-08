@@ -81,3 +81,9 @@ test('job log purge cuts off at the run start so it can finish (migration 2400)'
   expect(m).toContain("coalesce(r.started_at, now()) - interval '7 days' limit 20000")
   expect(m).toContain('anchor not found exactly once')
 })
+
+test('directory purge selects by (provider_id, url) (migration 2500)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008002500_cf247_directory_purge_key.sql', 'utf8')
+  expect(m).toContain("'1fb619423df88750fc97df5f07794bb0'")
+  expect(m).toContain('where (provider_id, url) in (')
+})
