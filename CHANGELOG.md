@@ -6,6 +6,7 @@
 - Database: `20261008001200` (file queue, skip log, category, estimate, worker handshake; applied through the connector) and `20261008001300` (run category widened; background worker purges in batches of 500; pasted in the SQL editor). Worker coverage-sweep v0.17.17 (retention_files removes files from the bucket each file names).
 - Database: `20261008001400` (Unreferenced evidence estimate counts each file once and only files no kept record uses; the first purge removed 2,280 records and 541 MB against an estimate of 1,686 MB).
 - Database: `20261008001500` (Rule 4: adapter fields with low agreement admitted daily, page wins; Canadian fees and the hold list excepted; schedule `l4-rule-low-agreement` 03:37 UTC) and `20261008001600` (new scheduled jobs listed by layer).
+- Database: `20261008001700` (Rule 5: where the held value is the Layer 3 model's reading and the adapter's patterns read differently, the adapter reading replaces it in the 10-minute adapter-overwrite job, no review).
 
 ## 0.1.147 — 8 Oct 2026
 

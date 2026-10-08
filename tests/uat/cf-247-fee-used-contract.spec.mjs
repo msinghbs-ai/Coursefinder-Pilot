@@ -106,3 +106,16 @@ test('migration 1500 admits low-agreement fields daily, keeps Decision 220 and t
   expect(j).toContain("('l4-rule-low-agreement', 4, now())")
   expect(j).toContain('on conflict (jobname) do nothing')
 })
+
+// Rule 5 (8 Oct 2026, Platform Admin, "Patterns win, no review"): the adapter's reading replaces a held Layer 3 model value.
+test('migration 1700 lets adapter patterns replace held Layer 3 values, guarded, delivery still admit-only', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008001700_cf247_rule5_patterns_win.sql', 'utf8')
+  expect(m).toContain("'055cb7b44c3b42341e2b14f43488f026'")
+  expect(m).toContain('an anchor was not found exactly once')
+  expect(m).toContain('r5_itk')
+  expect(m).toContain('r5_eng')
+  expect(m).toContain('r5_fee')
+  expect(m).toContain("'(''delivery'' = any (r.af) and r.adm)'")
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toContain('layer4_review_items(')
+})
