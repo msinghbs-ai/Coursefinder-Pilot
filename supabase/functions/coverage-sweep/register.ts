@@ -54,7 +54,7 @@ function archiveTexts(zipBytes: Uint8Array, files: Record<string, FileRule>) {
 
 type Row = { get: (n: string) => string; raw: string[] };
 // Reads the archive using only the spec: one record per active row of the record file, joined rows, fingerprint and fields.
-export async function adapterRecords(spec: RegisterSpec, zipBytes: Uint8Array) {
+export async function adapterRecords(spec: RegisterSpec, zipBytes: Uint8Array, from = 0, to = Infinity) {
   const texts = archiveTexts(zipBytes, spec.files), sep = spec.fingerprint;
   const J = (a: string[]) => a.map((x) => clean(x)).join(sep.field_sep);
   const index: Record<string, Map<string, Row[]>> = {};
@@ -105,17 +105,17 @@ export async function adapterRecords(spec: RegisterSpec, zipBytes: Uint8Array) {
     }
     recs.push({ key, text: parts.join(sep.part_sep), x });
   });
-  for (const r of recs) out.push({ k: r.key, f: await sha(enc.encode(r.text)), x: r.x });
-  return out;
+  for (const r of recs.slice(from, to)) out.push({ k: r.key, f: await sha(enc.encode(r.text)), x: r.x });
+  return { total: recs.length, recs: out };
 }
 
 // ---- reference: what Layer 1 does today (copied, not changed) --------------------------------------------------------
 function archiveEntry(zip: Record<string, Uint8Array>, kind: "i" | "c" | "l" | "cl") { const e = Object.entries(zip).find(([name]) => { const n = name.toLowerCase().replace(/[_-]+/g, " "); if (kind === "i") return /institutions.*\.csv$/.test(n); if (kind === "c") return /courses.*\.csv$/.test(n) && !/course locations/.test(n); if (kind === "l") return /locations.*\.csv$/.test(n) && !/course locations/.test(n); return /course locations.*\.csv$/.test(n) }); if (!e) throw new Error(`archive missing ${kind}`); return { name: e[0], bytes: e[1] } }
 
-export async function referenceRecords(zipBytes: Uint8Array) {
+export async function referenceRecords(zipBytes: Uint8Array, from = 0, to = Infinity) {
   const zip = unzipSync(zipBytes), parts = { institutions: archiveEntry(zip, "i"), courses: archiveEntry(zip, "c"), locations: archiveEntry(zip, "l"), courseLocations: archiveEntry(zip, "cl") };
   // layer1-au-depth v1.7.0 courseFingerprints
-  const dec = (b: Uint8Array) => new TextDecoder().decode(b), J = (a: string[]) => a.map((x) => clean(x)).join("\u001f");
+  const texts = new Map<Uint8Array, string>(), dec = (b: Uint8Array) => { let t = texts.get(b); if (t === undefined) { t = new TextDecoder().decode(b); texts.set(b, t) } return t }, J = (a: string[]) => a.map((x) => clean(x)).join("\u001f");
   const inst = new Map<string, string>(), loc = new Map<string, string>(), cl = new Map<string, string[]>(), rows: [string, string][] = [];
   scanRows(dec(parts.institutions.bytes), (get, raw) => { const pc = get("CRICOS Provider Code"); if (pc) inst.set(pc, J(raw)) });
   scanRows(dec(parts.locations.bytes), (get, raw) => { const pc = get("CRICOS Provider Code"), n = get("Location Name"); if (pc && n) loc.set(`${pc}|${n}`, J(raw)) });
@@ -139,6 +139,6 @@ export async function referenceRecords(zipBytes: Uint8Array) {
     });
   });
   const enc = new TextEncoder(), out: { k: string; f: string; x: Record<string, string> }[] = [];
-  for (const [k, t] of rows) out.push({ k, f: await sha(enc.encode(t)), x: fields.get(k) || {} });
-  return out;
+  for (const [k, t] of rows.slice(from, to)) out.push({ k, f: await sha(enc.encode(t)), x: fields.get(k) || {} });
+  return { total: rows.length, recs: out };
 }
