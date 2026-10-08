@@ -19,6 +19,7 @@
 - Worker coverage-sweep v0.17.31: CRICOS v2 replays read each location set in a call of its own after the records. Database: `20261008004400` (the 11 Aug archive replay resumes).
 - Scholarships central register (Platform Admin decisions: central register, country tagged; record for government, index for provider; AU then NZ then CA, monthly). Database: `20261008004500` (`scholarship.registers` AU, NZ, CA; `scholarship.register_listings`; Study Australia and DFAT Australia Awards registered as Layer 1 sources, source_system SCHOLARSHIP_REGISTER, no schedule switched on; the old hourly feeds for the same sources switched off; listings matched to held scholarships and unmatched provider pages handed to the provider page reader; `admin_scholarship_registers`). Workers: scholarships-au-etl v0.2.0 (whole Study Australia listing read, raw pages kept, stable count and hash; detail reads in batches for the provider page link and CRICOS), layer1-operations-control v1.7.0 and layer1-operations-scheduled v1.3.0 (verify and run the scholarship registers).
 - Fix: `20261008004600` (provider page candidates accept the source `register`; the first Study Australia detail batch had failed on the old three-value check and rolled back).
+- Fix: `20261008004700` (a provider page that several listings point at is handed to the page reader once; the second detail batch had failed and rolled back).
 
 ## 0.1.148 — 8 Oct 2026
 

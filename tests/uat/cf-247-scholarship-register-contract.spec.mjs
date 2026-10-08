@@ -106,3 +106,10 @@ test('register hand-off uses the candidate source "register" (md5-guarded replac
   expect(m).toContain("left(t.name, 300), 'register'")
   expect(m).not.toMatch(/delete\s+from/i)
 })
+
+test('register hand-off writes each provider page candidate once per batch (md5-guarded replace)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008004700_cf247_scholarship_register_handoff_once.sql', 'utf8')
+  expect(m).toContain("<> '1de473b90e9844055ed23758d3e4a728' then")
+  expect(m).toContain('select distinct on (t.provider_id, security.scholarship_url_norm(t.website_url))')
+  expect(m).not.toMatch(/delete\s+from/i)
+})
