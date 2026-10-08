@@ -16,6 +16,7 @@ function Detail({c}){
   if(c.key==='retired_layer2')return <ul className="tn-list">{Object.entries(d).map(([k,v])=><li key={k}><small className="sl-sub">{k.replace(/_/g,' ')}: {fmtNumber(v)} rows</small></li>)}</ul>
   if(c.key==='directory_urls')return <small className="sl-sub">Directory sites: {(d.hosts||[]).join(', ')||'—'}</small>
   if(c.key==='evidence_audit')return <small className="sl-sub">{d.columns?`${fmtNumber(d.columns_done)} of ${fmtNumber(d.columns)} reference columns checked · ${fmtNumber(d.references)} referenced records · ${fmtNumber(d.evidence_records)} records in all · ${mb(d.evidence_files_bytes)} of evidence files`:'Not audited yet.'}</small>
+  if(c.key==='evidence_unreferenced')return <small className="sl-sub">{d.audit_finished_at?`Based on the evidence audit finished ${fmtDateTime(d.audit_finished_at)}. Evidence created since then, or in the last 7 days, waits for the next audit.`:(d.note||'Run the evidence audit first.')}</small>
   return null
 }
 

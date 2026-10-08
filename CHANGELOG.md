@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.148 — 8 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.221** (Storage & retention: Unreferenced evidence purge, Platform Admin only, re-checked per batch).
+- Database: `20261008001200` (file queue, skip log, category, estimate, worker handshake; applied through the connector) and `20261008001300` (run category widened; background worker purges in batches of 500; pasted in the SQL editor). Worker coverage-sweep v0.17.17 (retention_files removes files from the bucket each file names).
+
 ## 0.1.147 — 8 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.220** (Rule 2: the provider's own course page fee with captured evidence is used over the CRICOS registered fee, whatever year it names; no review raised).
