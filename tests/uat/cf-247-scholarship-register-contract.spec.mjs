@@ -175,3 +175,25 @@ test('government awards: nationalities from the register, institutions by offici
   expect(worker).toContain('(x as any).final_website=await landing(x.website);')
   expect(worker).toContain('svc_scholarship_register_record_profile')
 })
+
+test('country onboarding: AU, NZ, CA only; new countries trigger a readiness alert; switch on only when ready', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008005000_cf247_scholarship_country_onboarding.sql', 'utf8')
+  expect(m).toContain("update ref.countries set scholarship_ingestion_enabled = false where scholarship_ingestion_enabled and iso_alpha2 not in ('AU','NZ','CA');")
+  expect(m).toContain("status text not null check (status in ('enabled','watch'))")
+  expect(m).toContain("('uk_fcdo_chevening','GB'")
+  expect(m).toContain("('us_fulbright_foreign_student','US'")
+  // the daily watch raises one platform issue per country and resolves it itself
+  expect(m).toContain("'scholarship_country:' || r.country_code, 'warning', 'scholarships'")
+  expect(m).toContain("check_key like 'scholarship_country:%' and not (check_key = any(v_keys))")
+  expect(m).toContain("select cron.schedule('scholarship-country-watch', '13 19 * * *', 'select security.scholarship_country_watch_v1()');")
+  // switching on is a Platform Admin step, refused until ready, and queues discovery
+  expect(m).toContain("if p_on and not r.ready then raise exception 'country % is not ready: %'")
+  expect(m).toContain('security.scholarship_discovery_refill_v1(30 + coalesce(r.universities, 0)::int)')
+  // the two hard-wired country lists become data-driven, guarded by md5
+  expect(m).toContain("'643f0224c501380348763c42cc466473'")
+  expect(m).toContain("'6c85cb74ea3b00bc45e385f6c278dc08'")
+  expect(m).toContain("$a$c.iso_alpha2 <> 'AU' and c.scholarship_ingestion_enabled$a$")
+  expect(m).toContain("from scholarship.country_onboarding o where o.country_code = t.cc and coalesce(o.domestic_terms, '') <> ''")
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toMatch(/publication_status\s*=/i)
+})
