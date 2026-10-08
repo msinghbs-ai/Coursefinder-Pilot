@@ -12,6 +12,7 @@
 - Phase 2: `20261008002000` (CRICOS register adapter stored, switched off; side-by-side replay of the last three register archives with today's Layer 1 code) and `20261008002100` (register files never purged as unreferenced evidence). Worker coverage-sweep v0.17.19 (mode register_replay).
 - `20261008002200` and worker v0.17.20: the replay reads 4,000 records a call (a whole archive in one call hit the edge resource limit).
 - `20261008002300`: schedule `register-replay` drives the replay one slice a minute and stops itself when done.
+- `20261008002400`: the job-log purge cuts off at 7 days before the run started, so it can finish (it previously kept finding newly aged records).
 
 ## 0.1.147 — 8 Oct 2026
 
