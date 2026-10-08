@@ -53,3 +53,31 @@ test('NZQA register adapter: stored switched off, reference is the layer1-nz-liv
   expect(w).toContain('if (n.spec?.format === "html_pages")')
   expect(w).toContain('n.code === "nz_nzqa" ? nzqaReferenceRecords(batch)')
 })
+
+// CF-247 Phase 2 (8 Oct 2026): PRISMS and QILT, statistics published as Excel workbooks, replayed from the stored workbooks.
+test('PRISMS and QILT register adapters: stored switched off, references are the Layer 1 readers, replay reads stored workbooks', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008003000_cf247_phase2_prisms_qilt_register_adapters.sql', 'utf8')
+  for (const code of ['au_prisms_sa4', 'au_qilt_gos', 'au_qilt_ses', 'au_qilt_gosl', 'au_qilt_ess']) expect(m).toContain(`'${code}'`)
+  expect(m).toContain('"format":"xlsx_tables"')
+  expect(m).not.toMatch(/delete\s+from/i)
+  expect(m).not.toMatch(/update\s+catalogue\./i)
+  expect(m).not.toContain('switched_on')
+  const norm = (s) => s.replace(/\s+/g, '')
+  const r = norm(fs.readFileSync('supabase/functions/coverage-sweep/register_xlsx.ts', 'utf8'))
+  // QILT reference: the reader lines are copied byte for byte (whitespace aside) from qilt-au-etl v0.3.0
+  const q = fs.readFileSync('supabase/functions/qilt-au-etl/index.ts', 'utf8')
+  expect(q).toContain('const VERSION="qilt-au-etl-v0.3.0"')
+  for (const start of [' gos:{', ' ses:{', ' gosl:{', ' ess:{', 'function val(', 'function extract(']) {
+    const line = q.split('\n').find((x) => x.startsWith(start))
+    expect(line, start).toBeTruthy()
+    expect(r.includes(norm(line).replace(/norm\(/g, 'qnorm(')), start).toBe(true)
+  }
+  // PRISMS reference: the same checks and row rules as prisms-au-etl v0.2.0
+  const p = fs.readFileSync('supabase/functions/prisms-au-etl/index.ts', 'utf8')
+  expect(p).toContain('const VERSION = "prisms-au-etl-v0.2.0"')
+  for (const s of ['/Year-to-date\\s+([A-Za-z]+)\\s+(\\d{4})/i', '/^<\\s*5$/i', 'if (!state && !sa4 && !sector && !broadField) continue;', '`prisms-sa4:${period.collectionVersion}:row:${i + 1}:${metricCode}`'])
+    { expect(p, s).toContain(s); expect(r.includes(norm(s)), s).toBe(true) }
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('if (n.spec?.format === "xlsx_tables")')
+  expect(w).toContain('stored workbook does not match its recorded hash')
+})
