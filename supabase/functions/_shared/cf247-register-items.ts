@@ -76,10 +76,20 @@ export function itemsAdapterRows(spec: ItemsSpec, text: string, now = new Date()
     }
   }
   const floor = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+  // Fields are read in dependency order (a field read `from`, compared `same_as` or anchored on another comes after it): a spec stored as
+  // jsonb does not keep its key order.
+  const deps = (r: ItemRule) => [r.from, r.same_as, r.cell?.anchor].filter((d): d is string => !!d && d in spec.fields);
+  const fieldOrder: string[] = [], placed = new Set<string>(), names = Object.keys(spec.fields).sort();
+  while (fieldOrder.length < names.length) {
+    const next = names.find((n) => !placed.has(n) && deps(spec.fields[n]).every((d) => placed.has(d)));
+    if (!next) throw new Error("field rules depend on each other in a loop");
+    fieldOrder.push(next); placed.add(next);
+  }
   const out = new Map<string, Record<string, unknown>>(), order: string[] = [];
   for (const it of items) {
     const x: Record<string, unknown> = {}, omit = new Set<string>();
-    for (const [name, r] of Object.entries(spec.fields)) {
+    for (const name of fieldOrder) {
+      const r = spec.fields[name];
       const src = r.from != null ? str(x[r.from]) : str(it.text);
       let v = "";
       if (r.const != null) v = r.const;

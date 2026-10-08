@@ -168,3 +168,9 @@ test('Canada raw capture: each reader stores a -raw.json bundle beside its evide
     expect(w, f).toContain('raw_evidence:rawEv')
   }
 })
+
+test('text_items engine reads fields in dependency order (jsonb does not keep key order)', () => {
+  const e = fs.readFileSync('supabase/functions/_shared/cf247-register-items.ts', 'utf8')
+  expect(e).toContain('const deps = (r: ItemRule) => [r.from, r.same_as, r.cell?.anchor]')
+  expect(e).toContain('for (const name of fieldOrder) {')
+})
