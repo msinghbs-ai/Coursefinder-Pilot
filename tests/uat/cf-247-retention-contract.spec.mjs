@@ -74,3 +74,10 @@ test('evidence estimate counts each file once and only files no kept record uses
   expect(m).toContain('and not exists (select 1 from c where c.evidence_id = e.id)')
   expect(m).not.toMatch(/delete\s+from/i)
 })
+
+test('job log purge cuts off at the run start so it can finish (migration 2400)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008002400_cf247_job_log_purge_cutoff.sql', 'utf8')
+  expect(m).toContain("'1c12893558eb9f633329792b2f8bebcb'")
+  expect(m).toContain("coalesce(r.started_at, now()) - interval '7 days' limit 20000")
+  expect(m).toContain('anchor not found exactly once')
+})
