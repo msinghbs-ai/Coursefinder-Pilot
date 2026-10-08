@@ -111,3 +111,29 @@ test('register replay: a run is leased to one call and released when the call en
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('} finally { await rpc("svc_register_replay_release", { p_run_id: n.run_id }).catch(() => null) }')
 })
+
+// CF-247 Phase 2 (8 Oct 2026): CRICOS adapter version 2 covers provider addresses and both location sets so the CRICOS workers can read
+// everything they apply with it once it is switched on.
+test('CRICOS adapter v2: address fields and location sets; depth and facts workers read with the adapter when switched on', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008003700_cf247_cricos_adapter_v2.sql', 'utf8')
+  expect(m).toContain("where code = 'au_cricos' and version = 1 and not switched_on")
+  expect(m).toContain('"Postal Address City", "Postal City"')
+  expect(m).toContain('"fallback": "record_provider"')
+  expect(m).toContain('"dedupe": ["provider_code", "course_code", "location_code"]')
+  const e = fs.readFileSync('supabase/functions/_shared/cf247-register-zip.ts', 'utf8')
+  for (const f of ['export function adapterSets(', 'export function adapterSelect(', 'export async function adapterFingerprints(', 'function scanLocations(text:string,wanted:Set<string>)', 'function scanCourseLocations(text:string,wanted:Set<string>,courseProviderMap:Map<string,string>)'])
+    expect(e, f).toContain(f)
+  const depth = fs.readFileSync('supabase/functions/layer1-au-depth/index.ts', 'utf8')
+  // the reference copies of the location scans are the live Layer 1 code
+  for (const f of ['function scanLocations(', 'function scanCourseLocations(']) {
+    const live = depth.split('\n').find((l) => l.startsWith(f)), copy = e.split('\n').find((l) => l.startsWith(f))
+    expect(copy, f).toBe(live)
+  }
+  expect(depth).toContain('rpc(service,"svc_register_adapter_reader",{p_code:"au_cricos"})')
+  expect(depth).toContain('reader?.spec?await adapterFingerprints(reader.spec,adapterTexts(reader.spec,reg.zipBytes)):await courseFingerprints(parts)')
+  expect(depth).toContain('const courseScan:any=ab?ab.courseScan:scanCourses(')
+  const facts = fs.readFileSync('supabase/functions/layer1-au-cricos-facts/index.ts', 'utf8')
+  expect(facts).toContain('reader?.spec?adapterFacts(reader.spec,new TextDecoder().decode(bytes),offset,batchSize,codes):scanCsv(')
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('await referenceRecords(zipBytes, from, to, Boolean(n.spec?.sets))')
+})
