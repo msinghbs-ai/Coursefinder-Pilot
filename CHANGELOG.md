@@ -13,6 +13,7 @@
 - `20261008002200` and worker v0.17.20: the replay reads 4,000 records a call (a whole archive in one call hit the edge resource limit).
 - `20261008002300`: schedule `register-replay` drives the replay one slice a minute and stops itself when done.
 - `20261008002400`: the job-log purge cuts off at 7 days before the run started, so it can finish (it previously kept finding newly aged records).
+- `20261008002500`: the course-directory purge selects its batch by (provider_id, url); the first run failed on a missing id column and removed nothing.
 
 ## 0.1.147 — 8 Oct 2026
 
