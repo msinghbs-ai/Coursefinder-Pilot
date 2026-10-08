@@ -23,4 +23,7 @@ test('register adapter: spec stored switched off, replay is read only, reference
   expect(k).toContain("not like 'regulatory/%'")
   const d = fs.readFileSync('supabase/migrations/20261008002300_cf247_phase2_replay_driver.sql', 'utf8')
   expect(d).toContain("perform cron.unschedule('register-replay')")
+  const c = fs.readFileSync('supabase/migrations/20261008002600_cf247_replay_compare_numeric.sql', 'utf8')
+  expect(c).toContain("'a92345aef63ffb480d636f586d00d58e'")
+  expect(c).toContain('then (a.fields->>\'duration_weeks\')::numeric end weeks')
 })
