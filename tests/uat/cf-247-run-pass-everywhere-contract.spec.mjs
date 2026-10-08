@@ -31,7 +31,7 @@ test('each moved function consumes a pass under its own name and is deployable b
   }
   for (const fn of ['layer2-batch-runner', 'scholarship-scope-job-execute'])
     expect(fs.readFileSync(`supabase/functions/${fn}/index.ts`, 'utf8'), fn).toContain('svc_pilot_issue_nonce')
-  expect(fs.readFileSync('supabase/functions/layer1-ca-on-college-programs/index.ts', 'utf8')).toContain('v0.3.0')
+  expect(fs.readFileSync('supabase/functions/layer1-ca-on-college-programs/index.ts', 'utf8')).toContain('v0.4.0')
 })
 
 test('migration: one allow-list, pass issuer for the service role, callers patched behind md5 guards', () => {

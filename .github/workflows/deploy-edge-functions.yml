@@ -83,6 +83,12 @@ jobs:
             [layer1-ca-algonquin-catalogue]=false
             [layer1-ca-bc-epbc-programs]=false
             [layer1-ca-cna-programs]=false
+            # CF-247 (8 Oct 2026): previously deployed by hand; verify_jwt taken from the live project
+            [layer1-ca-centennial-programs]=false
+            [layer1-ca-fanshawe-programs]=false
+            [layer1-ca-northern-programs]=false
+            [layer1-ca-sault-programs]=false
+            [layer1-ca-stlawrence-programs]=false
             [layer1-ca-conestoga-catalogue]=false
             [layer1-ca-durham-programs]=false
             [layer1-ca-fanshawe-pgwp]=false

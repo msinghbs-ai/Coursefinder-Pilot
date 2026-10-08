@@ -157,3 +157,14 @@ test('Canada register adapters: switched off, every copied reader piece is still
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('if (n.spec?.format === "text_items")')
 })
+
+// CF-247 Phase 2 (8 Oct 2026): the eleven Canadian readers that kept only their own parsed output also store the raw pages they fetched.
+test('Canada raw capture: each reader stores a -raw.json bundle beside its evidence and reports it', () => {
+  for (const f of ['centennial-programs', 'cna-programs', 'fanshawe-programs', 'firstparty-catalogues', 'mb-programs', 'northern-programs', 'ns-sk-programs', 'on-college-programs', 'sault-programs', 'sk-programs', 'stlawrence-programs']) {
+    const w = fs.readFileSync(`supabase/functions/layer1-ca-${f}/index.ts`, 'utf8')
+    expect(w, f).toContain('async function rawEvidence(')
+    expect(w, f).toContain('-raw.json')
+    expect(w, f).toContain('raw_capture:true')
+    expect(w, f).toContain('raw_evidence:rawEv')
+  }
+})
