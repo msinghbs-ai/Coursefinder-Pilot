@@ -5,6 +5,7 @@
 - Prepared visible PIM Admin release candidate **v2.15.222** (Layer 1 schedule choice per source; ranking edition years from two years ahead back to 2010).
 - Database: `20261008002700` (`admin_layer1_schedule`, Platform Admin only, logged; no source's schedule changed).
 - Database: `20261008002800` (NZQA register adapter `nz_nzqa`, switched off; replay runs may list several stored files; `svc_register_replay_next_v3`; three NZQA replay runs) and `20261008002900` (replay driver started again). Worker coverage-sweep v0.17.21 (register_replay reads registers published as web pages, three stored batch files a call; reference is the layer1-nz-live v1.2.1 code).
+- Database: `20261008003000` (PRISMS SA4 and QILT GOS, SES, GOS-L and ESS register adapters, switched off; six replay runs on the stored workbooks). Worker coverage-sweep v0.17.22 (register_replay reads statistics workbooks; references are prisms-au-etl v0.2.0 and qilt-au-etl v0.3.0).
 
 ## 0.1.148 — 8 Oct 2026
 
