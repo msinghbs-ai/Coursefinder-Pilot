@@ -2,7 +2,7 @@
 // workbooks (PRISMS SA4 enrolments and the four QILT national report tables). The spec in pipeline.register_adapters says which
 // sheet, which rows and columns, how a cell is read and what the record key is. `xlsxAdapterRecords` reads a stored workbook using
 // only the spec (and the reference lists the database already holds: states, PRISMS fields of education). The reference readers are
-// verbatim copies of what Layer 1 does today (prisms-au-etl v0.2.0 parseWorkbook; qilt-au-etl v0.3.0 RES, val and extract), so the
+// verbatim copies of what Layer 1 does today (prisms-au-etl v0.2.0 parseWorkbook; qilt-au-etl v0.3.1 RES, val and extract), so the
 // replay can compare record by record. Read only: nothing here writes observations.
 import * as XLSX from "npm:xlsx@0.18.5";
 
@@ -183,7 +183,7 @@ export function prismsReferenceRecords(bytes: Uint8Array, ctx: any): Rec[] {
   return out;
 }
 
-// ---- reference: qilt-au-etl v0.3.0 RES, norm, sourceKey, val, extract (copied, not changed) --------------------------------
+// ---- reference: qilt-au-etl v0.3.1 RES, norm, sourceKey, val, extract (copied, not changed; v0.3.1 stores the upper bound) --------------------------------
 const RES:any={
  gos:{year:2025,surveyCode:"qilt_gos",url:"https://www.qilt.edu.au/docs/default-source/default-document-library/gos_2025_national_report_tables.zip?sfvrsn=643ae941_1",label:"QILT GOS 2025 National Report Tables",sheets:[["LF_UG_UNI_1Y_INST_CI","UG",2025,2025,[2,"fte",3,"oe",4,"lf",5,"salary"]],["LF_PGC_UNI_1Y_INST_CI","PGC",2025,2025,[2,"fte",3,"oe",4,"lf",5,"salary"]],["LF_PGR_UNI_3YP_INST_CI","PGR",2023,2025,[2,"fte",3,"oe",4,"lf",5,"salary"]],["LF_UG_NUHEI_3YP_INST_CI","UG",2023,2025,[2,"fte",3,"oe",4,"lf",5,"salary"]],["LF_PGC_NUHEI_3YP_INST_CI","PGC",2023,2025,[2,"fte",3,"oe",4,"lf",5,"salary"]]]},
  ses:{year:2024,surveyCode:"qilt_ses",url:"https://www.qilt.edu.au/docs/default-source/default-document-library/ses_2024_national_report_tables.zip?sfvrsn=f1ce2f6e_1",label:"QILT SES 2024 National Report Tables",sheets:[["FOCUS_UG_UNI_1Y_INST_CI","UG",2024,2024,[2,"skills_development",3,"peer_engagement",4,"teaching_quality_engagement",5,"student_support_services",6,"learning_resources",7,"overall_educational_experience"]],["FOCUS_PGC_UNI_1Y_INST_CI","PGC",2024,2024,[2,"skills_development",3,"peer_engagement",4,"teaching_quality_engagement",5,"student_support_services",6,"learning_resources",7,"overall_educational_experience"]],["FOCUS_UG_NUHEI_1Y_INST_CI","UG",2024,2024,[2,"skills_development",3,"peer_engagement",4,"teaching_quality_engagement",5,"student_support_services",6,"learning_resources",7,"overall_educational_experience"]],["FOCUS_PGC_NUHEI_1Y_INST_CI","PGC",2024,2024,[2,"skills_development",3,"peer_engagement",4,"teaching_quality_engagement",5,"student_support_services",6,"learning_resources",7,"overall_educational_experience"]]]},
@@ -193,10 +193,10 @@ const RES:any={
 const t=(x:any)=>String(x??"").trim();
 const qnorm=(x:any)=>t(x).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[\*†‡]+$/g,"").toLowerCase().replace(/&/g," and ").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");const sourceKey=(x:string)=>"qilt-inst:"+qnorm(x);
 function val(x:any){const s=t(x).replace(/\u00a0/g," ");if(!s||/^n\/?a$/i.test(s))return null;const m=s.match(/^(-?[\d,]+(?:\.\d+)?)\s*(?:\(\s*(-?[\d,]+(?:\.\d+)?)\s*,\s*(-?[\d,]+(?:\.\d+)?)\s*\))?/);if(!m)return null;return{v:Number(m[1].replace(/,/g,"")),lo:m[2]?Number(m[2].replace(/,/g,"")):null,hi:m[3]?Number(m[3].replace(/,/g,"")):null,raw:s};}
-function extract(wb:any,cfg:any){const missing=cfg.sheets.map((x:any)=>x[0]).filter((n:string)=>!wb.Sheets[n]);if(missing.length)throw Error(`configured QILT sheets missing: ${missing.join(', ')}`);const labels=new Set<string>(),rows:any[]=[];const skip=new Set(["standard deviation","mean","median","minimum","maximum","national","all institutions","all universities","all nuheis"]);for(const spec of cfg.sheets){const[name,cohort,yf,yt,cols]=spec,ws=wb.Sheets[name],a=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:null}) as any[][];for(let r=4;r<a.length;r++){const label=t(a[r]?.[1]),nl=qnorm(label);if(!label||skip.has(nl)||/^all (universities|nuheis|institutions)$/i.test(label)||/^back to index$/i.test(label))continue;labels.add(label);for(let k=0;k<cols.length;k+=2){const cell=val(a[r]?.[cols[k]]);if(!cell)continue;rows.push({label,key:sourceKey(label),cohort,yearFrom:yf,yearTo:yt,metricCode:cols[k+1],value:cell.v,low:cell.lo,high:cell.h,sheet:name,row:r+1,raw:cell.raw});}}}return{labels:[...labels],rows};}
+function extract(wb:any,cfg:any){const missing=cfg.sheets.map((x:any)=>x[0]).filter((n:string)=>!wb.Sheets[n]);if(missing.length)throw Error(`configured QILT sheets missing: ${missing.join(', ')}`);const labels=new Set<string>(),rows:any[]=[];const skip=new Set(["standard deviation","mean","median","minimum","maximum","national","all institutions","all universities","all nuheis"]);for(const spec of cfg.sheets){const[name,cohort,yf,yt,cols]=spec,ws=wb.Sheets[name],a=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:null}) as any[][];for(let r=4;r<a.length;r++){const label=t(a[r]?.[1]),nl=qnorm(label);if(!label||skip.has(nl)||/^all (universities|nuheis|institutions)$/i.test(label)||/^back to index$/i.test(label))continue;labels.add(label);for(let k=0;k<cols.length;k+=2){const cell=val(a[r]?.[cols[k]]);if(!cell)continue;rows.push({label,key:sourceKey(label),cohort,yearFrom:yf,yearTo:yt,metricCode:cols[k+1],value:cell.v,low:cell.lo,high:cell.hi,sheet:name,row:r+1,raw:cell.raw});}}}return{labels:[...labels],rows};}
 
 // The edition is read from the stored path (layer2a/AU/qilt/<survey code>/<year>/<hash>.xlsx); sheet cohort years move with the
-// edition year exactly as qilt-au-etl v0.3.0 does for an edition found by the discovery job.
+// edition year exactly as qilt-au-etl v0.3.1 does for an edition found by the discovery job.
 export function qiltReferenceRecords(bytes: Uint8Array, path: string): Rec[] {
   const m = path.match(/\/qilt_([a-z]+)\/(\d{4})\/[0-9a-f]{64}\.xlsx$/);
   if (!m) throw new Error("stored QILT path does not name the survey and year");
