@@ -113,7 +113,7 @@ jobs:
           if git rev-parse HEAD^ >/dev/null 2>&1; then changed="$(git diff --name-only HEAD^ HEAD)"; fi
           targeted=(tests/uat/layer1-operations-deployed.spec.mjs)
           if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-|^supabase/(functions/layer2-|migrations/.*m2_4_2)|^tests/uat/layer2-)'; then
-            targeted=(tests/uat/layer2-operations-maturity-deployed.spec.mjs)
+            targeted=(tests/uat/layer2-provider-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|EvidenceWorkspace\.jsx|lib/supabase\.js)$|^supabase/migrations/.*a10_.*filter|^tests/uat/a10-paged-filters-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a10-paged-filters-deployed.spec.mjs)
@@ -136,10 +136,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_|^tests/uat/m2-5-platform-readiness-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-platform-readiness-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-operations-entry\.jsx$|^supabase/migrations/.*m2_5_layer2_run_observability|^tests/uat/m2-5-layer2-run-observability-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Intervention\.jsx|mature-main\.jsx)$|^supabase/functions/layer3-(interpret|contact-benchmark)/|^supabase/migrations/.*a16_|^tests/uat/m2-4-4-a16-cross-layer-deployed\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Intervention\.jsx|mature-main\.jsx)$|^supabase/functions/layer3-contact-benchmark/|^supabase/migrations/.*a16_|^tests/uat/m2-4-4-a16-cross-layer-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^index\.html$|^src/(mature-main\.jsx|layer1-operations-entry\.jsx|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx)$|^tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed\.spec\.mjs$)'; then
@@ -148,7 +145,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|ContextualInsights\.jsx|CourseDetailPolish\.jsx)$|^tests/uat/m2-4-4-a22-responsive-detail-blades-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-a22-responsive-detail-blades-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(layer2-operations-entry\.jsx|mature-main\.jsx)$|^supabase/functions/layer2-sync-control/|^supabase/migrations/.*a23_|^tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(layer2-operations-entry\.jsx|mature-main\.jsx)$|^supabase/migrations/.*a23_|^tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^src/(layer1-operations-entry\.jsx|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx|mature\.css)$|^tests/uat/m2-4-4-a24-unified-layer-headers-deployed\.spec\.mjs$)'; then
@@ -159,12 +156,6 @@ jobs:
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx)$|^tests/uat/(support/navigation\.mjs|m2-4-4-a26-a28-operator-ux-deployed\.spec\.mjs)$)'; then
             targeted=(tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/layer2-operations-entry\.jsx$|^supabase/migrations/.*m2_5_layer2_finalizer_fairness|^tests/uat/m2-5-layer2-finalizer-fairness-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs)
-          fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/m2-3-intelligence-entry\.jsx$|^supabase/functions/layer3-interpret/|^supabase/migrations/.*m2_5_layer3_source_pattern|^tests/uat/m2-5-layer3-source-pattern-operator-contract\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '^tests/uat/m2-5-pilot-deployment-currentness-deployed\.spec\.mjs$'; then
             targeted=(tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs)
@@ -229,7 +220,6 @@ jobs:
               tests/uat/m2-4-4-a23-layer2-background-firecrawl-deployed.spec.mjs
               tests/uat/m2-4-4-a24-unified-layer-headers-deployed.spec.mjs
               tests/uat/m2-4-4-a26-a28-operator-ux-deployed.spec.mjs
-              tests/uat/layer2-platform-deployed.spec.mjs
             )
           fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-4-a25-layer-status-candidate'; then
@@ -289,8 +279,6 @@ jobs:
             targeted=(tests/uat/cf-102-provider-logo-surfaces-deployed.spec.mjs)
           fi
           integration=(
-            tests/uat/layer2-operations-maturity-deployed.spec.mjs
-            tests/uat/layer2-platform-deployed.spec.mjs
             tests/uat/layer2-provider-deployed.spec.mjs
             tests/uat/layer1-operations-deployed.spec.mjs
             tests/uat/admin-navigation-deployed.spec.mjs
@@ -314,9 +302,6 @@ jobs:
             tests/uat/a13-filter-demo-trace-deployed.spec.mjs
             tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
             tests/uat/m2-5-platform-readiness-deployed.spec.mjs
-            tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
-            tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs
-            tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs
             tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs
             tests/uat/m2-5-evidence-lineage-contract.spec.mjs
             tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs
@@ -332,8 +317,6 @@ jobs:
             tests/uat/layer1-operations-deployed.spec.mjs
             tests/uat/data-quality-deployed.spec.mjs
             tests/uat/performance-deployed.spec.mjs
-            tests/uat/layer2-operations-maturity-deployed.spec.mjs
-            tests/uat/layer2-platform-deployed.spec.mjs
             tests/uat/layer2-provider-deployed.spec.mjs
             tests/uat/admin-navigation-deployed.spec.mjs
             tests/uat/course-detail-polish-deployed.spec.mjs
@@ -356,9 +339,6 @@ jobs:
             tests/uat/a13-filter-demo-trace-deployed.spec.mjs
             tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs
             tests/uat/m2-5-platform-readiness-deployed.spec.mjs
-            tests/uat/m2-5-layer2-run-observability-deployed.spec.mjs
-            tests/uat/m2-5-layer2-finalizer-fairness-deployed.spec.mjs
-            tests/uat/m2-5-layer3-source-pattern-operator-contract.spec.mjs
             tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs
             tests/uat/m2-5-evidence-lineage-contract.spec.mjs
             tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs

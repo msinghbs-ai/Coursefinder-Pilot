@@ -15,7 +15,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     pipeline_filters: { layers: ['L2'], statuses: ['completed', 'failed'], modes: [], countries: [], job_types: ['layer2_task'], failure_classes: [], completion_classes: [] },
     pipeline_jobs_page: { total: 1, items: [{ id: 'pj-task', job_type: 'layer2_task', domain: 'qualify_adapters', status: 'completed', layer_code: 'L2', run_mode: 'DRY_RUN', created_at: '2026-10-06T00:10:00Z', started_at: '2026-10-06T00:11:00Z', completed_at: '2026-10-06T00:12:00Z', duration_ms: 60000, attempt_count: 1, evidence_count: 0, completion_class: 'completed', failure_class: null, provider_name: null, source_label: null }] },
     pipeline_job_detail: { job: { id: 'pj-task', job_type: 'layer2_task', domain: 'qualify_adapters', status: 'completed', payload: { admin_job_id: 'job-done', kind: 'qualify_adapters', title: 'Qualify 2 adapter(s) in AU-NSW' }, result: { state: 'done', passing: 1, errors: 0 } }, run_semantics: {}, entity_impact: {}, safe_actions: {}, evidence: [] },
-    layer3_queue_status: F.layer3Queue, campuses_page: F.campusesPage, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_profiles: F.layer2Profiles, layer2_profile_detail: F.layer2ProfileDetail, layer2_acquisition_providers: F.environmentRead.layer2_providers, layer2_provider_routes: [{ id: 'rt1', provider_id: 'pv1', display_name: 'Direct HTTP', adapter_type: 'direct_http', priority: 10, enabled: true }],
+    layer3_queue_status: F.layer3Queue, campuses_page: F.campusesPage, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_acquisition_providers: F.environmentRead.layer2_providers,
   }
   const calls = []; page.l3calls = calls
   const rpc = {
@@ -119,7 +119,6 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     layer4_provider_departures_read: F.l4Departures,
     layer4_mass_operations_history: F.l4History,
     layer4_quality_findings_read: [], layer4_quality_diagnostics: [], layer4_scholarship_scope_groups: [], layer4_review_groups: [],
-    layer3_source_pattern_queue: F.layer3SourcePatterns,
     layer3_recent_interpretations: F.layer3Recent,
     admin_source_comparison: b => b.p_entity_type === 'course' ? (courseDiffers ? F.courseComparisonDiffers : F.courseComparison) : F.scholarshipComparison,
   }
@@ -138,7 +137,6 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
       return json(op in adminRead ? adminRead[op] : {})
     }
     if (u.pathname.startsWith('/rest/v1/rpc/')) { const v = rpc[u.pathname.split('/').pop()]; return json(typeof v === 'function' ? v(body) : (v ?? [])) }
-    if (u.pathname.endsWith('/functions/v1/layer2-sync-control')) return json(body.action === 'options' ? F.layer2SyncOptions : body.action === 'preview_background' ? F.layer2SyncPreview : {})
     if (u.pathname.endsWith('/functions/v1/toolset-runner')) { calls.push({ runnerKick: body }); return json({ ok: true, run_id: body.run_id }) }
     if (u.pathname.startsWith('/functions/v1/')) return json(u.pathname.endsWith('platform-environment-control') ? F.environmentRead : {})
     return json([])

@@ -142,14 +142,15 @@ test.describe('mocked browser', () => {
     await expect(row.locator('[data-adapter-history="u1"]')).toContainText('Admission changed')
   })
 
-  test('retired addresses open Adapters, and Source profiles now sit on Scrapers & fetchers', async ({ page }) => {
+  test('retired addresses open Adapters; Scrapers & fetchers shows the provider registry only (clean-up batch 2)', async ({ page }) => {
     await mockAdmin(page)
     for (const url of ['/#layer-2-discovery?tab=operations', '/#layer-2-discovery?tab=start', '/#layer-2-discovery?tab=history', '/#coverage?tab=universities', '/#administration?section=layer2-sources']) {
       await page.goto(url)
       await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
     }
     await page.goto('/#scrapers')
-    await expect(page.locator('[data-card="scrapers.source-profiles"]')).toBeVisible()
+    await expect(page.locator('.l2p-provider-list')).toBeVisible()
+    await expect(page.locator('[data-card="scrapers.source-profiles"]')).toHaveCount(0)
   })
 
   test('Adapters: opening a card does not read what is inside a closed one', async ({ page }) => {

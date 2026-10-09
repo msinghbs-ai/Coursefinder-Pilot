@@ -17,14 +17,15 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
  }finally{await finish(testInfo,runtime)}})
 
 
- test('retired Layer 2 source address lands on Adapters and Source profiles sit on Scrapers & fetchers',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test('retired Layer 2 source address lands on Adapters; Scrapers & fetchers shows the provider registry',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=layer2-sources',process.env.UAT_BASE_URL).toString())
   await expect(page.locator('[data-adapters-workspace]')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   await page.goto(new URL('/#scrapers',process.env.UAT_BASE_URL).toString())
-  const card=page.locator('[data-card="scrapers.source-profiles"]');await expect(card).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(card).toHaveAttribute('data-card-open','false') // every card is closed until opened
-  await milestoneScreenshot(page,testInfo,'a23-source-profiles-moved')
+  // Clean-up batch 2 (9 Oct 2026): Source profiles were retired; the provider registry stays.
+  await expect(page.locator('.l2p-provider-list')).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+  await expect(page.locator('[data-card="scrapers.source-profiles"]')).toHaveCount(0)
+  await milestoneScreenshot(page,testInfo,'a23-scrapers-registry')
  }finally{await finish(testInfo,runtime)}})
 
  test('background qualification self-continuation uses the service-only public bridge',async()=>{
@@ -48,24 +49,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   expect(acl).toMatch(/grant execute on function public\.layer2_qualification_continue_service\(uuid\) to service_role/i)
  })
 
- test('background production runner preserves the selected Firecrawl route and terminal partial batches do not block later waves',async()=>{
-  const runner=await fs.readFile('supabase/functions/layer2-batch-runner/index.ts','utf8')
-  const terminal=await fs.readFile('supabase/migrations/20260901092500_m2_4_4_a26_partial_batch_terminal_dispatch.sql','utf8')
-  const recovery=await fs.readFile('supabase/migrations/20260901105500_m2_4_4_a26_stale_item_recovery.sql','utf8')
-  const resume=await fs.readFile('supabase/migrations/20260901110000_m2_4_4_a26_resume_context.sql','utf8')
-  expect(runner).toContain('provider_id:priorProvider||undefined')
-  expect(runner).toContain('route_mode==="scraper_first"&&!priorProvider')
-  expect(runner).toContain('layer2_run_batch_recover_stale')
-  expect(runner).toContain('transportBoundedWave=Math.min(configuredWave,4)')
-  expect(runner).toContain('route_mode==="scraper_first"?Math.min(transportBoundedWave,2):transportBoundedWave')
-  expect(runner).toContain('layer2_run_item_resume_context')
-  expect(recovery).toContain("j.status='succeeded'")
-  expect(recovery).toContain("set status='extracting'")
-  expect(resume).toContain("and i.status='extracting'")
-  expect(terminal).toContain("v_old text := 'if exists(select 1 from pipeline.layer2_run_batches b where b.profile_id=r.profile_id and b.status in(''queued'',''running'',''partial'')) then'")
-  expect(terminal).toContain("v_new text := 'if exists(select 1 from pipeline.layer2_run_batches b where b.profile_id=r.profile_id and b.status in(''queued'',''running'')) then'")
-  expect(terminal).toContain("v_def:=replace(v_def,v_old,v_new)")
- })
+ // Clean-up batch 2 (9 Oct 2026): layer2-batch-runner was retired; its runner checks were removed.
 
  test('background finaliser completes deterministic controls and governed handoff without autonomous Layer 3 AI',async()=>{
   const finalizer=await fs.readFile('supabase/migrations/20260831115800_m2_4_4_a23_qualification_finalizer_handoff.sql','utf8')

@@ -5,7 +5,6 @@ const bootstrapPath='supabase/migrations/20260912005000_cf_093_uq_discovery_stra
 const immutablePath='supabase/migrations/20260912005948_cf_093_uq_native_program_discovery_profile.sql'
 const bootstrap=fs.readFileSync(bootstrapPath,'utf8')
 const immutable=fs.readFileSync(immutablePath,'utf8')
-const reconstruction=fs.readFileSync('.github/workflows/cf093-fresh-reconstruction.yml','utf8')
 
 test('CF-093 reconstructs the missing UQ discovery_strategy before immutable 005948',()=>{
  expect(bootstrapPath.localeCompare(immutablePath)).toBeLessThan(0)
@@ -26,16 +25,4 @@ test('CF-093 preserves applied migration 005948 rather than rewriting its identi
  expect(bootstrap).not.toContain('delete from supabase_migrations.schema_migrations')
 })
 
-test('CF-093 reconstruction fixture matches accepted scope route and run-bridge contracts and replays final immutable migrations',()=>{
- expect(reconstruction).toContain('returns table(profile_id uuid,profile_key text,provider_id uuid,provider_name text,course_id uuid,source_url text)')
- expect(reconstruction).toContain('create table pipeline.layer2_acquisition_providers(')
- expect(reconstruction).toContain('create table pipeline.layer2_profile_provider_routes(')
- expect(reconstruction).toContain("create or replace function public.layer2_provider_runtime_config(uuid) returns jsonb")
- expect(reconstruction).toContain('create or replace function security.scheduler_workflow_run_now_v1_browser_bridge(text,text,text,uuid,text,text) returns jsonb')
- expect(reconstruction).toContain('create or replace function public.scheduler_workflow_run_now_v1(text,text,text,uuid,text,text) returns jsonb')
- expect(reconstruction).toContain('create or replace function security.scheduler_workflow_run_now_v2_browser_bridge(uuid,text,text,text,uuid,text,text) returns jsonb')
- expect(reconstruction).toContain('create or replace function public.scheduler_workflow_run_now_v2(uuid,text,text,text,uuid,text,text) returns jsonb')
- expect(reconstruction).toContain('20260913015530_cf_093_scheduler_preview_set_based_terminal_optimization.sql')
- expect(reconstruction).toContain('20260913020222_cf_093_scheduler_route_gap_scope_optimization.sql')
- expect(reconstruction).toContain('20260913020646_cf_093_scheduler_run_bridge_acl_reconcile.sql')
-})
+// Clean-up batch 2 (9 Oct 2026): the fresh-reconstruction workflow was retired with the one-off run builder.

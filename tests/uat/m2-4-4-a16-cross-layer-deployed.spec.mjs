@@ -27,7 +27,7 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     const profile=await fs.readFile('supabase/migrations/20260830095100_m2_4_4_a16_contact_layer3_profile_pending_qualification.sql','utf8')
     const benchmark=await fs.readFile('supabase/migrations/20260830095255_m2_4_4_a16_contact_layer3_benchmark_contract.sql','utf8')
     const retry=await fs.readFile('supabase/migrations/20260830111112_m2_4_4_a16_contact_profile_retry_hardening.sql','utf8')
-    const interpret=await fs.readFile('supabase/functions/layer3-interpret/index.ts','utf8')
+    // Clean-up batch 2 (9 Oct 2026): layer3-interpret was retired; its checks were removed.
     const benchWorker=await fs.readFile('supabase/functions/layer3-contact-benchmark/index.ts','utf8')
     const l4ui=await fs.readFile('src/Layer4Intervention.jsx','utf8')
 
@@ -52,9 +52,6 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     expect(expansion).toContain("when 'provider_contact' then exists")
     expect(expansion).toContain("layer4_effective_entity_read('provider_contact',o.id)")
     expect(retry).toContain('retry_ceiling=2')
-    expect(interpret).toContain('international_contact')
-    expect(interpret).toContain('not present in governed Evidence')
-    expect(interpret).toContain('keepIfPresent')
     expect(benchWorker).toContain('anti-hallucination')
     expect(benchWorker).toContain('layer3-contact-benchmark-v1.2.0')
     expect(l4ui).toContain('Corrections shown instead of the source') // v2.15.130

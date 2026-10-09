@@ -19,7 +19,6 @@ import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effec
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
-import Card from'./Card'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
@@ -37,7 +36,6 @@ const EvidenceWorkspace=lazyPage(()=>import('./EvidenceWorkspace'))
 const FeeRules=lazyPage(()=>import('./FeeRules'))
 const ModelsServices=lazyPage(()=>import('./ModelsServices'))
 const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
-const ProviderOnboarding=lazyPage(()=>import('./layer2-provider-onboarding'))
 const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
 const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))
@@ -64,7 +62,6 @@ const Layer1SourceSettings=lazyPage(()=>import('./layer1-operations-entry'),'Lay
 const Layer4Workspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Layer4')
 const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')
 const OnboardingWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Onboarding')
-const Layer2SourceConfig=lazyPage(()=>import('./layer2-platform-entry'),'Console')
 const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Console')
 const PlatformMaturity=lazyPage(()=>import('./platform-maturity-entry'))
 const EnvironmentMigrationWorkspace=lazyPage(()=>import('./EnvironmentMigrationWorkspace'))
@@ -225,7 +222,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
         if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
-        if(tab==='onboarding')return <div className="m-page-stack">{/* v2.15.131: Layer 2's provider onboarding queue merged here (screen review l2r-onboard, l2r-qualify: merge/keep into Providers › Onboarding). */}<ProviderOnboarding rank={rank} openEvidence={id=>{location.hash=`#evidence${id?`?evidence_id=${encodeURIComponent(id)}`:''}`}}/><details className="cf-collapse onb-cases"><summary>Country and source onboarding cases</summary><OnboardingWorkspace rank={rank} onError={err}/></details></div>
+        // Clean-up batch 2 (9 Oct 2026): the old onboarding queue was retired; new providers are onboarded through the guided Adapter builder.
+        if(tab==='onboarding')return <div className="m-page-stack"><ProviderOnboardingNotice rank={rank} navigate={navigate}/><details className="cf-collapse onb-cases"><summary>Country and source onboarding cases</summary><OnboardingWorkspace rank={rank} onError={err}/></details></div>
         return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'scholarships':return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
@@ -258,8 +256,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'sources':return <SourcesWorkspace/>
       case'environment':return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
-      case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/>
-        <Card id="scrapers.source-profiles" title="Source profiles" subtitle="How each source is fetched and read, and which fetchers it uses (moved here from Layer 2 in v2.15.200)." data-source-profiles><Layer2SourceConfig rank={rank} embedded onOpenProviders={()=>navigate('scrapers')}/></Card>{rank>=5&&<details className="m-admin-advanced"><summary>Advanced Layer 2 workload defaults</summary><Layer2ExecutionPolicySettings/></details>}</>
+      // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
+      case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>
       case'services':return <div className="m-page-stack"><ModelsServices onError={err}/><Toolsets onError={err}/></div>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/><div className="m-legacy-host"><RegulatorySettings onError={onError} mode="reset"/></div></div>
       case'dataModel':return <Attributes onError={onError}/>
@@ -486,32 +484,13 @@ function RankingImportPanel({onError,routeParams,navigate}){
  </div>
 }
 
-function Layer2ExecutionPolicySettings(){
- const[data,setData]=useState(null),[form,setForm]=useState(null),[busy,setBusy]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(''),[saved,setSaved]=useState('')
- const invoke=async body=>{const{data:r,error:e}=await supabase.functions.invoke('layer2-sync-control',{body});if(e)throw e;if(r?.error)throw new Error(r.error);return r}
- const load=async()=>{setBusy(true);setError('');try{const r=await invoke({action:'policy'}),p=r?.policy||{};setData(r);setForm({qualification_provider_wave_size:p.qualification_provider_wave_size??50,qualification_sample_size:p.qualification_sample_size??10,qualification_retry_hours:p.qualification_retry_hours??168,qualification_finalizer_run_limit:p.qualification_finalizer_run_limit??2,qualification_pattern_provider_limit:p.qualification_pattern_provider_limit??3,production_target_wave_size:p.production_target_wave_size??500,production_max_wave_size:p.production_max_wave_size??1000,schedule_remaining:p.schedule_remaining!==false})}catch(e){setError(e.message||String(e))}finally{setBusy(false)}}
- useEffect(()=>{load()},[])
- const save=async()=>{if(!form)return;setSaving(true);setError('');setSaved('');try{const r=await invoke({action:'update_policy',patch:{...form,qualification_provider_wave_size:Number(form.qualification_provider_wave_size),qualification_sample_size:Number(form.qualification_sample_size),qualification_retry_hours:Number(form.qualification_retry_hours),qualification_finalizer_run_limit:Number(form.qualification_finalizer_run_limit),qualification_pattern_provider_limit:Number(form.qualification_pattern_provider_limit),production_target_wave_size:Number(form.production_target_wave_size),production_max_wave_size:Number(form.production_max_wave_size)}});setData(r);setSaved('Layer 2 execution policy saved. New background requests use these limits.')}catch(e){setError(e.message||String(e))}finally{setSaving(false)}}
- const b=data?.firecrawl?.budget_status||{},fc=data?.firecrawl||{}
- return <section className="m-panel"><PanelTitle icon={Activity} title="Layer 2 workload defaults" subtitle="Batch sizes, how often sites are checked and wave limits. Which fetchers a source uses is set on Layer 2 › Source profiles." action={<button className="m-secondary compact" onClick={load} disabled={busy||saving}><RefreshCw size={13}/>Refresh</button>}/>
-  {busy&&!form?<div className="m-empty-inline">Loading Layer 2 policy…</div>:form&&<><div className="m-summary-strip"><SummaryCard icon={Database} label="Firecrawl monthly limit" value={fmtNumber(b.limit_units)} tone="blue"/><SummaryCard icon={Activity} label="Used this period" value={fmtNumber(b.used_units)} tone="violet"/><SummaryCard icon={ShieldCheck} label="Safety reserve" value={fmtNumber(b.stop_at_remaining_units)} tone="amber"/><div className="m-summary-note"><strong>{fc.enabled?'Firecrawl enabled':'Firecrawl disabled'}</strong><span>{fmtNumber(fc.rate_limit_per_minute)} requests/min · concurrency {fmtNumber(fc.concurrency)} · credential {fc.credential_configured?'configured':'missing'} · quota managed in Scraper Config above.</span></div></div>
-  <div className="m-grid-2">
-   <div className="m-detail-section"><h3>Background qualification</h3><p className="m-help">Each Provider requires one seed acquisition; Course samples are identity controls, not individual scrapes.</p><div className="m-kv-list">
-    <label><span>Providers per scheduler batch</span><input aria-label="Layer 2 qualification Providers per batch" type="number" min="1" max="500" value={form.qualification_provider_wave_size} onChange={e=>setForm(x=>({...x,qualification_provider_wave_size:e.target.value}))}/></label>
-    <label><span>Identity samples per Provider</span><input aria-label="Layer 2 qualification samples per Provider" type="number" min="1" max="50" value={form.qualification_sample_size} onChange={e=>setForm(x=>({...x,qualification_sample_size:e.target.value}))}/></label>
-    <label><span>Requalification interval (hours)</span><input aria-label="Layer 2 qualification retry hours" type="number" min="1" max="2160" value={form.qualification_retry_hours} onChange={e=>setForm(x=>({...x,qualification_retry_hours:e.target.value}))}/></label>
-    <label><span>Finaliser runs per cycle</span><input aria-label="Layer 2 qualification finaliser runs per cycle" type="number" min="1" max="10" value={form.qualification_finalizer_run_limit} onChange={e=>setForm(x=>({...x,qualification_finalizer_run_limit:e.target.value}))}/></label>
-    <label><span>Pattern Providers per finaliser run</span><input aria-label="Layer 2 pattern Providers per finaliser run" type="number" min="1" max="5" value={form.qualification_pattern_provider_limit} onChange={e=>setForm(x=>({...x,qualification_pattern_provider_limit:e.target.value}))}/></label>
-   </div></div>
-   <div className="m-detail-section"><h3>Production enrichment</h3><p className="m-help">The accepted wave is automatically clamped by the current Firecrawl entitlement and reserve.</p><div className="m-kv-list">
-    <label><span>Target Courses per wave</span><input aria-label="Layer 2 production target wave" type="number" min="1" max="5000" value={form.production_target_wave_size} onChange={e=>setForm(x=>({...x,production_target_wave_size:e.target.value}))}/></label>
-    <label><span>Maximum Courses per wave</span><input aria-label="Layer 2 production maximum wave" type="number" min="1" max="5000" value={form.production_max_wave_size} onChange={e=>setForm(x=>({...x,production_max_wave_size:e.target.value}))}/></label>
-    <div className="m-kv-readonly"><span>Legacy global route mode</span><strong>{humanise(data?.policy?.route_mode||'managed')}</strong><small>Read-only here. Which fetchers a source uses is set on Layer 2 › Source profiles.</small></div>
-    <label style={{display:'flex',alignItems:'center',gap:8}}><input aria-label="Layer 2 schedule remaining waves policy" type="checkbox" checked={form.schedule_remaining} onChange={e=>setForm(x=>({...x,schedule_remaining:e.target.checked}))}/><span>Schedule remaining waves automatically</span></label>
-   </div></div>
-  </div>
-  <div style={{display:'flex',alignItems:'center',gap:10,marginTop:12}}><button className="m-primary" onClick={save} disabled={saving}>{saving?'Saving…':'Save workload defaults'}</button>{saved&&<span style={{fontSize:10,color:'var(--cf-green-700)'}}>{saved}</span>}</div></>}
-  {error&&<div className="m-alert compact" style={{marginTop:10}}><AlertTriangle size={14}/><span>{error}</span><span/></div>}
+// Providers › Onboarding (clean-up batch 2, 9 Oct 2026): the old onboarding queue is retired. New providers are onboarded
+// through the guided Adapter builder (Layer 2 › Adapter builder, PIM Admin and above).
+function ProviderOnboardingNotice({rank,navigate}){
+ const canBuild=canOpen('layer2',rank)&&allowedTabs(PAGES.layer2,rank).some(t=>t.key==='builder')
+ return <section className="m-panel" data-provider-onboarding-notice><PanelTitle icon={Plug} title="Adding a new provider" subtitle="New providers are onboarded through the guided Adapter builder."/>
+  <p className="m-help">The Adapter builder walks you through it step by step: it finds the provider's course pages, builds an adapter, and tests it on real courses before anything reaches the catalogue.</p>
+  {canBuild?<button type="button" className="m-primary" data-open-adapter-builder onClick={()=>navigate('layer2',{tab:'builder'})}>Open the Adapter builder</button>:<p className="m-help">Ask a PIM Admin to open Layer 2 › Adapter builder for you.</p>}
  </section>
 }
 

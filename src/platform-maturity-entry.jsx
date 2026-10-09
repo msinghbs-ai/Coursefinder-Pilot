@@ -2,26 +2,19 @@ import React,{useEffect,useMemo,useState}from'react'
 import{StatusChip,Metric as KitMetric,SectionTitle as KitSectionTitle,Empty}from'./ui-kit'
 import{
   Activity,AlertTriangle,Archive,Blocks,CheckCircle2,Database,HardDrive,RefreshCw,
-  Search,ServerCog,ShieldCheck,SlidersHorizontal,TestTube2,Workflow
+  Search,ServerCog,ShieldCheck,SlidersHorizontal,TestTube2
 }from'lucide-react'
 import{fmtDateTime,fmtNumber as fmtNum,fmtPercent}from'./lib/format.js'
 import{adminRead,supabase}from'./lib/supabase'
 import'./platform-maturity.css'
 
-const TABS=[
-  ['overview','Overview',ServerCog],
-  ['capacity','Capacity & integrity',HardDrive],
-  ['gates','Environment gates',ShieldCheck],
-  ['uat','UAT catalogue',TestTube2],
-  ['performance','Performance & retention',Activity],
-  ['blocks','Layer 4 blocks',Blocks],
-]
+// Clean-up batch 2 (9 Oct 2026): the unused fallback tab navigation (no view) and the Current Layer 2 wave panel were removed.
 const BLOCK_SCOPES=[['operational','Operational'],['publication','Publication'],['search','Search'],['data_quality_quarantine','Data quality quarantine']]
 const ENTITY_TYPES=[['provider','Provider'],['course','Course'],['campus','Campus'],['scholarship','Scholarship']]
 const num=v=>Number(v||0)
 const fmtNumber=v=>fmtNum(num(v))
-const fmtBytes=v=>{const n=num(v);if(!n)return'0 B';const u=['B','KB','MB','GB','TB'],i=Math.min(Math.floor(Math.log(n)/Math.log(1024)),u.length-1);return (n/1024**i).toFixed(i<2?0:2)+' '+u[i]}
 const fmtDate=v=>fmtDateTime(v)
+const fmtBytes=v=>{const n=num(v);if(!n)return'0 B';const u=['B','KB','MB','GB','TB'],i=Math.min(Math.floor(Math.log(n)/Math.log(1024)),u.length-1);return (n/1024**i).toFixed(i<2?0:2)+' '+u[i]}
 const title=v=>String(v||'').replace(/[_-]+/g,' ').replace(/\b\w/g,x=>x.toUpperCase())
 const toneFor=v=>{const x=String(v||'').toLowerCase();if(['pass','passed','pilot_uat_pass','pilot_qualified','accepted_baseline','healthy','enabled','published'].includes(x))return'success';if(['warning','designed','registered','internal','active'].includes(x))return'warning';if(['critical','error','failed','blocked','not_run','disabled'].includes(x))return'danger';return'neutral'}
 const list=v=>v?.items??v?.rows??(Array.isArray(v)?v:[])
@@ -38,7 +31,6 @@ function SectionTitle({icon=ServerCog,title,subtitle,action}){return <KitSection
 // view 'golive' = Platform settings › Go-live checklist (environment gates, UAT); view 'blocks' = Layer 4 › Blocks.
 const VIEW_TITLE={capacity:['Capacity and integrity','Database size, evidence storage, workloads and retention.'],golive:['Readiness gates and UAT','What must pass before Production is switched on.'],blocks:['Blocks','Hide a provider, course, campus or scholarship from operations, publishing or search, and undo it.']}
 export default function PlatformMaturity({rank,onError,view=''}){
-  const[tab,setTab]=useState('overview')
   const[environment,setEnvironment]=useState('pilot')
   const[data,setData]=useState({readiness:null,capacity:null,gates:null,uat:null,workloads:null,retention:null,blocks:null})
   const[busy,setBusy]=useState(true),[error,setError]=useState('')
@@ -87,22 +79,11 @@ export default function PlatformMaturity({rank,onError,view=''}){
     </>:view==='golive'?<>
       <Gates gates={data.gates} environment={environment}/>
       <Uat items={uatItems}/>
-    </>:view==='blocks'?<BlockConsole rank={rank} blocks={list(data.blocks)} reload={load}/>:<>
-    <nav className="pm-tabs" aria-label="Platform maturity sections">
-      {TABS.map(([key,label,Icon])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(key)}><Icon size={15}/><span>{label}</span></button>)}
-    </nav>
-      {tab==='overview'&&<Overview readiness={data.readiness} capacity={cap} acceptedPilot={acceptedPilot} prodOpen={prodOpen}/>}
-      {tab==='capacity'&&<Capacity capacity={cap} integrity={integrity} policy={policy} evidencePolicy={evidencePolicy}/>}
-      {tab==='gates'&&<Gates gates={data.gates} environment={environment}/>}
-      {tab==='uat'&&<Uat items={uatItems}/>}
-      {tab==='performance'&&<Performance workloads={list(data.workloads)} retention={data.retention}/>}
-      {tab==='blocks'&&<BlockConsole rank={rank} blocks={list(data.blocks)} reload={load}/>}
-    </>}
+    </>:view==='blocks'?<BlockConsole rank={rank} blocks={list(data.blocks)} reload={load}/>:null}
   </div>
 }
 
 function Overview({readiness,capacity,acceptedPilot,prodOpen}){
-  const wave=readiness?.current_layer2_wave||{}
   return <div className="pm-stack">
     <div className="pm-metric-grid">
       <Metric Icon={ShieldCheck} label="Production source capabilities" value={fmtNumber(readiness?.production_source_capabilities_enabled)} detail="Expected 0 before provisioning" tone={num(readiness?.production_source_capabilities_enabled)?'danger':'success'}/>
@@ -112,17 +93,6 @@ function Overview({readiness,capacity,acceptedPilot,prodOpen}){
       <Metric Icon={HardDrive} label="Evidence storage" value={fmtBytes(capacity?.evidence_object_bytes)} detail={fmtNumber(capacity?.evidence_object_count)+' objects · '+fmtPercent(num(capacity?.evidence_planning_capacity_pct))+' planning envelope'} tone={toneFor(capacity?.severity)}/>
       <Metric Icon={CheckCircle2} label="Accepted Pilot UAT domains" value={fmtNumber(acceptedPilot.length)} detail="Accepted at the Pilot baseline" tone="success"/>
     </div>
-
-    <section className="pm-panel"><SectionTitle icon={Workflow} title="Current Layer 2 wave" subtitle="The latest wave; this does not start new work."/>
-      {wave?.id?<div className="pm-kv-grid">
-        <div><span>Status</span><strong><Pill tone={toneFor(wave.status)}>{title(wave.status)}</Pill></strong></div>
-        <div><span>Country / scope</span><strong>{wave.country_code||'—'} · {title(wave.scope_type||'—')}</strong></div>
-        <div><span>Accepted wave</span><strong>{fmtNumber(wave.accepted_wave_size)}</strong></div>
-        <div><span>Total / dispatched</span><strong>{fmtNumber(wave.total_items)} / {fmtNumber(wave.dispatched_items)}</strong></div>
-        <div><span>Completed / failed</span><strong>{fmtNumber(wave.completed_items)} / {fmtNumber(wave.failed_items)}</strong></div>
-        <div><span>Updated</span><strong>{fmtDate(wave.updated_at)}</strong></div>
-      </div>:<Empty>No Layer 2 wave state is currently recorded.</Empty>}
-    </section>
 
     <section className="pm-panel"><SectionTitle icon={Archive} title="Governance inventory" subtitle="Counts of the main records the platform keeps."/>
       <div className="pm-inline-stats"><span><strong>{fmtNumber(readiness?.retention_policy_classes)}</strong> retention classes</span><span><strong>{fmtNumber(readiness?.performance_profiles)}</strong> workload profiles</span><span><strong>{fmtNumber(prodOpen.length)}</strong> Production UAT entries not passed</span></div>
