@@ -139,7 +139,7 @@ async function enableProviderLogoUpload(){
    logo.dataset.cfUploadBound='1';logo.classList.add('cf-logo-editable');logo.tabIndex=0;logo.title='Click to upload, replace or import Provider logo from image URL'
    const choose=()=>openLogoEditor(logo,providerId)
    logo.addEventListener('click',e=>{e.stopPropagation();choose()});logo.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose()}})
-   setUploadNote(logo,'PIM/Admin: click logo to upload or import from image URL')
+   // v2.15.225: the hint is the logo's tooltip only (no extra line under the name)
  })
 }
 function scheduleHydration(){

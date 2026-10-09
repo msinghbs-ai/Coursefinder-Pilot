@@ -448,3 +448,11 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 /* v2.15.219: Storage & retention */
 .rt-screen .rt-actions{white-space:nowrap}
 .rt-screen .rt-actions .cf-btn+.cf-btn{margin-left:6px}
+/* v2.15.225: lists fill the page width (fixed layout), cells clip or wrap inside their column, headings resize by dragging */
+.m-fit-table th{position:sticky;overflow:hidden;text-overflow:ellipsis}.m-fit-table th>button{max-width:calc(100% - 6px);overflow:hidden;text-overflow:ellipsis}
+.m-fit-table td{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.m-fit-table .m-cell-title strong,.m-fit-table .m-cell-title small,.m-fit-table .m-cell-clip{max-width:100%}
+.m-fit-table .sch-chips{display:flex;flex-wrap:wrap;gap:4px;min-width:0}.m-fit-table td .cf-chip{max-width:100%}
+.m-col-resize{position:absolute;top:0;right:0;bottom:0;width:7px;cursor:col-resize;touch-action:none;z-index:2}
+.m-col-resize::after{content:'';position:absolute;top:25%;bottom:25%;right:3px;width:1px;background:var(--cf-slate-200)}
+.m-col-resize:hover::after,.m-col-resize:active::after{top:0;bottom:0;width:2px;right:2px;background:var(--cf-indigo-400)}
