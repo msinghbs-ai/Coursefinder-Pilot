@@ -70,3 +70,20 @@ test('batch 2: Providers › Onboarding points to the Adapter builder; Refresh s
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
   expect(nav).toContain("{ key: 'builder', label: 'Adapter builder', min: 5 }")
 })
+
+test('batch 4: old database functions dropped behind md5 guards; tables and history kept; four dormant functions retired', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008005600_cf247_cleanup_batch4_old_database.sql', 'utf8')
+  expect((m.match(/^drop function /gim) || []).length).toBe(15)
+  expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
+  expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate/i)
+  expect(m).toContain("6e6f2d16653913617191a1520f26143f")
+  const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+  const retired = wf.match(/RETIRED="([^"]*)"/)[1].split(/\s+/).filter(Boolean)
+  for (const f of ['layer2-extract-v2', 'layer2-course-fact-extract-v2', 'layer2-scholarship-extract', 'layer2-scholarship-catalogue-enumerate']) {
+    expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
+    expect(retired, f).toContain(f)
+    expect(wf, f).not.toContain(`[${f}]=`)
+  }
+  for (const f of ['layer2-provider-page-fanout', 'layer2-provider-asset-promote', 'layer2-hotcourses-directory-parse', 'layer2-acquire-v2'])
+    expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(true)
+})

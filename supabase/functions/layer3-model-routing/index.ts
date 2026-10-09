@@ -27,7 +27,7 @@ import { shadowInput } from "../_shared/cf247-adapter-shadow.ts";
 const FN = "layer3-model-routing", V = ROUTING_VERSION;
 // CF-247 Phase 3 (Platform Admin 9 Oct 2026): shadow reads of the merged adapter step. Kept apart from ROUTING_VERSION,
 // which is part of every qualified binding hash and must not change.
-const SHADOW_V = "cf247-adapter-shadow-v1.1.0";  // v1.1.0: tuition (Platform Admin 9 Oct 2026)
+const SHADOW_V = "cf247-adapter-shadow-v1.2.0";  // v1.1.0: tuition; v1.2.0: one escalation step (Platform Admin 9 Oct 2026)
 // Decision 221 (2 Oct 2026): a cascade task (intake, English) never falls back to the single routed profile; with no
 // cascade step switched on, nothing is claimed and no model is called.
 const QUALIFICATION_CAP_USD = 8.0, RESERVE_USD = 0.03;
@@ -255,22 +255,25 @@ Deno.serve(async (req: Request) => {
       await pool(items, Math.min(Math.max(1, Number(body.concurrency || 3)), 4), async (it) => {
         let result: any;
         try {
-          const profile = it.profile, model = String(profile?.model_identifier || "");
-          if (!isPinnedModel(model)) throw new Error("the adapter's model is not a pinned model");
           const html = await pageHtml(it.storage_path);
           const inp = shadowInput(it.adapter, html, task);
-          // tuition: on the whole page, the evidence text exactly as Layer 3 prepares it (its own stripping and length)
-          const text = task === "tuition" && inp.basis === "page" ? tuitionEvidenceText(new TextEncoder().encode(html), it.mime_type || null, tuitionMaxChars(profile))
-            : task === "tuition" ? inp.text.slice(0, tuitionMaxChars(profile)) : inp.text;
-          if (task === "tuition") {
-            const r: any = await callModel(profile, tuitionRequestBody(profile, it.source_url || null, it.context, text));
-            let chk: any = r.answer ? checkTuition(r.answer, text, it.context, profile, r.cost) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
-            const pick = r.answer?.candidate_value ?? null;
-            const mismatch = r.returned && r.returned !== model;
-            if (mismatch) chk = { ...chk, valid: false, errors: [...(chk.errors || []), `returned_model_mismatch:${r.returned}`] };
-            result = { valid: chk.valid, status: chk.status, admitted: mismatch ? null : pick, errors: chk.errors, cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output,
-              latency_ms: r.latency, input_basis: inp.basis, input_chars: text.length, worker_version: SHADOW_V };
-          } else {
+          // one read with one profile under the task's own contract and checks
+          const readWith = async (profile: any) => {
+            const model = String(profile?.model_identifier || "");
+            if (!isPinnedModel(model)) throw new Error("the adapter's model is not a pinned model");
+            // tuition: on the whole page, the evidence text exactly as Layer 3 prepares it (its own stripping and length)
+            const text = task === "tuition" && inp.basis === "page" ? tuitionEvidenceText(new TextEncoder().encode(html), it.mime_type || null, tuitionMaxChars(profile))
+              : task === "tuition" ? inp.text.slice(0, tuitionMaxChars(profile)) : inp.text;
+            if (task === "tuition") {
+              const r: any = await callModel(profile, tuitionRequestBody(profile, it.source_url || null, it.context, text));
+              let chk: any = r.answer ? checkTuition(r.answer, text, it.context, profile, r.cost) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+              const pick = r.answer?.candidate_value ?? null;
+              const mismatch = r.returned && r.returned !== model;
+              if (mismatch) chk = { ...chk, valid: false, errors: [...(chk.errors || []), `returned_model_mismatch:${r.returned}`] };
+              const admitted = mismatch ? null : pick;
+              return { found: !!(admitted && admitted.amount != null), text, res: { valid: chk.valid, status: chk.status, admitted, errors: chk.errors, cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output,
+                latency_ms: r.latency, input_basis: inp.basis, input_chars: text.length } };
+            }
             const blockers = task === "intake" ? intakeSafetyBlockers(text) : [];
             let r: any = { ok: true, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null }, called = false;
             if (task === "intake" && blockers.length) r.answer = { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" };
@@ -281,8 +284,19 @@ Deno.serve(async (req: Request) => {
             }
             let chk: any = r.answer ? (task === "intake" ? intakeCheckFor(profile, r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
             if (called && r.returned && r.returned !== model) chk = { valid: false, errors: [...(chk.errors || []), `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
-            result = { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output,
-              latency_ms: r.latency, input_basis: inp.basis, input_chars: text.length, worker_version: SHADOW_V };
+            return { found: !!(chk.valid && chk.admitted), blocked: !called, text, res: { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output,
+              latency_ms: r.latency, input_basis: inp.basis, input_chars: text.length } };
+          };
+          const first = await readWith(it.profile);
+          result = { ...first.res, worker_version: SHADOW_V };
+          // round 3 (v1.2.0): one stronger model, once, only when the first found nothing and the page clearly shows the field
+          // (the Layer 3 cascade signal for intakes and English; supplied fee candidates for tuition). Never on a safety rule.
+          const signal = task === "tuition" ? Array.isArray(it.context?.fee_candidates) && it.context.fee_candidates.length > 0 : cascadeSignal(task as "intake" | "english", first.text);
+          if (it.escalation && !first.found && !(first as any).blocked && signal) {
+            const second = await readWith(it.escalation);
+            result = { ...second.res, cost_usd: Number(first.res.cost_usd || 0) + Number(second.res.cost_usd || 0),
+              input_tokens: Number(first.res.input_tokens || 0) + Number(second.res.input_tokens || 0), output_tokens: Number(first.res.output_tokens || 0) + Number(second.res.output_tokens || 0),
+              latency_ms: Number(first.res.latency_ms || 0) + Number(second.res.latency_ms || 0), escalated: true, first_status: first.res.status, worker_version: SHADOW_V };
           }
         } catch (e) {
           result = { worker_error: true, valid: false, errors: [String((e as Error)?.message || e).slice(0, 200)], cost_usd: 0, worker_version: SHADOW_V };
