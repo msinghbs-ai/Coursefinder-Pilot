@@ -399,7 +399,6 @@ export const api = {
     invoke(country === 'CA' ? 'layer1-ca-live' : 'layer1-register-etl', { country, apply, batchSize, offset }),
   runLayer2AStatsCan: ({ apply = false, sampleRows = 1000 } = {}) =>
     invoke('statcan-ca-psis-etl', { apply, sampleRows }),
-  resetDatabase: () => invoke('pilot-reset', { confirm: 'RESET DATABASE' }),
 
   searchCourses: async (query, limit = 50) => pageItems(await entityPage('courses_page', {
     query, limit: bounded(limit, 50), sort: 'course', direction: 'asc',

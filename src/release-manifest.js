@@ -1,18 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.227'
-export const PACKAGE_VERSION='0.1.154'
+export const UI_VERSION='2.15.228'
+export const PACKAGE_VERSION='0.1.155'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'9 Oct 2026',
-  title:'Same look on every page, stage 1',
+  title:'Reset database removed; unused background functions retired',
   changes:[
-    'Every table on every page can now be resized the same way as the catalogue lists: drag the edge of a heading, double-click to reset. Widths are remembered in this browser.',
-    'Dropdowns and input boxes share one look across the app.',
-    'Evidence: the repeated heading block is replaced by one slim line with the count and Refresh. Scheduled jobs \u203a Jobs: plain wording.',
-    'Layer 4 review: the More button matches the other buttons. Dashboard: the four tiles line up.'
+    'Settings \u203a Go-live checklist: the Reset database control is removed. A reset is now a deliberate database task, not a button.',
+    'Eight background functions that nothing had called since at least 30 Sep are retired (three single-university fact readers, the old qualification and screenshot backfill workers, an old benchmark, the completeness rebuild and the reset). Contact discovery, the model benchmarks, the course APIs and everything for Canada are kept.'
   ],
   bugFixes:[]
 }
