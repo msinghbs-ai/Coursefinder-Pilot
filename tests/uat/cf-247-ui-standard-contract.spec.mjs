@@ -89,3 +89,26 @@ test('source: shared summary kit, tokens only, one table component', () => {
   expect(main).toContain("tableLayout:'fixed'")
   expect(main).not.toContain('<ObjectSections data={data} exclude={[\'contextual_insights\',\'international_contacts\'')
 })
+
+test('v2.15.226: provider read is slim; related insights load when More is opened', async ({ page }) => {
+  const m = read('supabase/migrations/20261009006000_cf247_provider_detail_slim.sql')
+  expect(m).toContain("'4949564e124715c4b0aabc1a39ccaafb'")
+  expect(m).toContain("security.admin_provider_detail(v_id)-'courses'-'courses_page'-'evidence'-'evidence_page'-'sources'-'history'")
+  expect(m).not.toContain("'scholarship_context',security.admin_provider_scholarships")
+  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  await mockAdmin(page)
+  const calls = []
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_read', async route => {
+    let b = {}; try { b = route.request().postDataJSON() || {} } catch {}
+    if (b.p_operation === 'provider_detail') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'p1', canonical_name: 'RMIT University', country_code: 'AU' }) })
+    if (b.p_operation === 'provider_insights') { calls.push(b); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ contextual_insights: {} }) }) }
+    return route.fallback()
+  })
+  await page.goto('/#providers?id=p1')
+  await expect(page.locator('[data-provider-summary]')).toBeVisible()
+  await page.waitForTimeout(400)
+  expect(calls.length).toBe(0)
+  await page.locator('[data-provider-more] > summary').click()
+  await expect.poll(() => calls.length).toBe(1)
+  expect(calls[0].p_args).toEqual({ id: 'p1' })
+})

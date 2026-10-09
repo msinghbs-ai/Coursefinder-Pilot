@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.153 — 9 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.226** (Platform Admin: slim the provider read). Database: `20261009006000` (md5-guarded admin_read change: provider_detail no longer returns the course, evidence, source and history lists or the scholarship, ranking and logo context; new provider_insights operation for related insights; about 385 KB to 4.4 KB for RMIT). The provider panel loads related insights only when More is opened.
+
 ## 0.1.152 — 9 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.225** (Platform Admin: lists fill the page width with resizable columns; course and provider panels as coloured pills and fact cards, with unnecessary evidence, regulatory and operational text removed; same look for other record panels). Bug fix: a long nationality list no longer pushes scholarship columns off screen.
