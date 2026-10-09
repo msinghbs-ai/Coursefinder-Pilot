@@ -76,3 +76,14 @@ test('tuition: the adapter fee section is its input; the task contract and check
   expect(m).not.toMatch(/delete\s+from|drop\s+(table|function|schema)|truncate/i)
   expect(m).not.toMatch(/svc_coursefacts_apply_record|layer3_fact_admit|tuition_admit/)
 })
+
+test('round 2: stronger adapter model for the shadow run only; rounds kept apart; md5-guarded; nothing deleted', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008005500_cf247_phase3_round2_stronger_model.sql', 'utf8')
+  expect(m).toContain("set round = 2, model_profile_code = 'openrouter-intake-l3c-mimo-v2-6-pro-v1'")
+  expect(m).toContain("where p.code = coalesce(s.model_profile_code, security.adapter_builder_model_for_v1(r.provider_id)->>'code')")
+  expect(m).toContain("from t, s where t.round = s.round), '[]'::jsonb),")
+  expect(m).toContain("'earlier_rounds'")
+  expect(m).toContain("if md5(pg_get_functiondef(k::regprocedure)) <> v then raise exception")
+  expect(m).not.toMatch(/delete\s+from|drop\s+|truncate/i)
+  expect(m).not.toMatch(/uni_adapter_models|svc_coursefacts_apply_record|layer3_fact_admit/)
+})
