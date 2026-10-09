@@ -119,7 +119,7 @@ test('scholarship award tiers from the page: migration shape', () => {
 // v2.15.168 (Decisions 245, 246): nationalities on the list and the record; Zoho scholarships action; migrations shaped.
 test('scholarship nationality and Zoho scholarships action', () => {
   const main = read('src/mature-main.jsx')
-  expect(main).toContain("{key:'sch_who',label:'Who it is for',width:240,sortKey:'audience'}") // v2.15.171: nationalities shown with who it is for
+  expect(main).toContain("{key:'sch_who',label:'Who it is for',width:200,sortKey:'audience'}") // v2.15.171: nationalities shown with who it is for (v2.15.223 width)
   const el = read('src/ScholarshipEligibility.jsx')
   expect(el).toContain('data-audience')
   const z = read('supabase/functions/zoho-course-api/index.ts')

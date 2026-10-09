@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.222'
-export const PACKAGE_VERSION='0.1.149'
+export const UI_VERSION='2.15.223'
+export const PACKAGE_VERSION='0.1.150'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'8 Oct 2026',
-  title:'Layer 1 schedules and ranking years',
+  date:'9 Oct 2026',
+  title:'Scholarship list columns; old screens removed',
   changes:[
-    'Layer 1 \u203a source settings: one Schedule choice per source (daily, weekly, monthly, quarterly, yearly or manual), Platform Admin only and logged. A scheduled source is checked on that schedule and a changed file within the accepted range is loaded automatically; a manual source is checked for status only and loaded by hand.',
-    'Ranking uploads: any edition year from two years ahead back to 2010 can be chosen, so next year\u2019s QS or THE edition can be uploaded as soon as the file is available.'
+    'Scholarships list: one column each for scholarship, provider, type, who it is for, value, linked courses and closing date. Every column heading sorts the list, and the columns fit the width of the screen.',
+    'Old data-admission screens removed: Scrapers \u203a Source profiles, the one-off run builder, Layer 2 workload defaults, Layer 2 automation, dispatcher tuning, the current Layer 2 wave panel, the Layer 3 pattern-request panel and the scholarship runtime settings. Refresh schedules and the provider registry and keys stay.',
+    'Providers \u203a Onboarding: new providers are onboarded through the guided Adapter builder, with a button to open it.'
   ],
   bugFixes:[]
 }

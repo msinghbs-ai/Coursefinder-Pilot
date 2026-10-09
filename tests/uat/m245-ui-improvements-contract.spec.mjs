@@ -13,7 +13,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   ])
 
   // 7 Oct 2026: rewritten to the current screens. The version is pinned in release-manifest.js (its own contract); the scholarship
-  // list became Scholarship, Value, Who it is for, Closes (v2.15.171); RankingDatasetViewer.js was folded into mature-main.jsx.
+  // list became Scholarship, Value, Who it is for, Closes (v2.15.171), then one sortable column per fact (v2.15.223); RankingDatasetViewer.js was folded into mature-main.jsx.
 
   // Scholarship catalogue: bounded Provider filter and authoritative provider_id read.
   expect(shell).toContain("if(type==='scholarship')return <div className=\"m-filter-bar\"")
@@ -21,7 +21,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   expect(shell).toContain("if(type==='scholarship'&&filters.provider)a.provider_id=filters.provider")
   expect(shell).toContain("if(['course','scholarship'].includes(type))n.provider=''")
   expect(shell).toContain("limit:10,offset")
-  expect(shell).toContain("{key:'sch_name',label:'Scholarship',width:340,sortKey:'scholarship'},{key:'value_label',label:'Value',width:210,sortKey:'award'},{key:'sch_who',label:'Who it is for',width:240,sortKey:'audience'},{key:'application_close_date',label:'Closes',width:110,sortKey:'close'}")
+  expect(shell).toContain("{key:'sch_name',label:'Scholarship',width:260,sortKey:'scholarship'},{key:'provider_name',label:'Provider',width:190,sortKey:'provider'},{key:'scholarship_type',label:'Type',width:140,sortKey:'type'},{key:'sch_who',label:'Who it is for',width:200,sortKey:'audience'},{key:'value_label',label:'Value',width:170,sortKey:'award'},{key:'sch_courses',label:'Courses',width:100,sortKey:'courses'},{key:'application_close_date',label:'Closes',width:100,sortKey:'close'}")
   expect(shell).toContain('m-fluid-table')
   expect(shell).toContain('minWidth:`clamp(')
 
