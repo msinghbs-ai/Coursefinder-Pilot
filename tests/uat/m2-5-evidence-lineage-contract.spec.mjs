@@ -12,13 +12,11 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
   })
 
   test('classifies raw lineage separately and removes only just-uploaded duplicates',async()=>{
-    const [migration,discovery,backfill,contacts,scholarships,acquire]=await Promise.all([
+    const [migration,backfill,contacts,scholarships]=await Promise.all([
       fs.readFile('supabase/migrations/20260901195000_m2_5_evidence_lineage_classification.sql','utf8'),
-      fs.readFile('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8'),
       fs.readFile('supabase/functions/layer2-screenshot-backfill-scheduled/index.ts','utf8'),
       fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8'),
       fs.readFile('supabase/functions/scholarships-au-etl/index.ts','utf8'),
-      fs.readFile('supabase/functions/layer2-acquire-v2/index.ts','utf8'),
     ])
 
     expect(migration).toContain("'unlinked_storage_object_count_raw',v_unlinked_raw")
@@ -30,14 +28,13 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
     expect(migration).toContain("e.storage_path !~ '^[A-Za-z][A-Za-z0-9+.-]*://'")
     expect(migration).not.toMatch(/delete\s+from\s+(pipeline\.evidence_artifacts|storage\.objects)/i)
 
-    for(const source of [discovery,backfill,contacts]){
+    for(const source of [backfill,contacts]){ // discovery and acquire-v2 retired in CF-247 batch 6
       expect(source).toContain('duplicate_upload_path')
       expect(source).toContain('.storage.from(BUCKET).remove([path])')
       expect(source).toMatch(/retained===path\)return/)
       expect(source).toContain('console.warn("CF-055 duplicate')
     }
 
-    expect(discovery).toMatch(/layer2-scope-discover-scheduled-v1\.3\.\d+/)
     expect(backfill).toMatch(/layer2-screenshot-backfill-scheduled-v1\.0\.\d+/)
     expect(contacts).toMatch(/provider-contact-discover-scheduled-v1\.3\.\d+/)
 
@@ -49,7 +46,5 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
     expect(scholarships).toContain('console.warn("CF-055 duplicate Scholarship cleanup failed"')
 
     // Existing acquisition worker remains the accepted reference implementation.
-    expect(acquire).toContain('ev.content_changed===false&&path!==evidencePath')
-    expect(acquire).toContain('storage.from(BUCKET).remove([path])')
   })
 })

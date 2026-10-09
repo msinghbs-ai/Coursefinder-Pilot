@@ -84,8 +84,12 @@ test('batch 4: old database functions dropped behind md5 guards; tables and hist
     expect(retired, f).toContain(f)
     expect(wf, f).not.toContain(`[${f}]=`)
   }
-  for (const f of ['layer2-provider-page-fanout', 'layer2-provider-asset-promote', 'layer2-hotcourses-directory-parse', 'layer2-acquire-v2'])
-    expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(true)
+  // batch 6 (9 Oct 2026) retired the provider-asset and old acquisition functions too
+  for (const f of ['layer2-provider-page-fanout', 'layer2-provider-asset-promote', 'layer2-hotcourses-directory-parse', 'layer2-acquire-v2', 'layer2-scope-discover-scheduled']) {
+    expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
+    expect(retired, f).toContain(f)
+    expect(wf, f).not.toContain(`[${f}]=`)
+  }
 })
 
 test('batch 5: old scheduler-workflow, scope and scholarship-runtime chains dropped; admin_read dead branches removed', () => {
@@ -100,4 +104,17 @@ test('batch 5: old scheduler-workflow, scope and scholarship-runtime chains drop
     const t = fs.readFileSync(`src/${s}`, 'utf8')
     for (const gone of ['scheduler_workflow_run_now', 'scheduler_workflow_preview', "'scholarship_runtime_uat'", "'layer2_profiles'", "'layer2_provider_routes'"]) expect(t, `${s} ${gone}`).not.toContain(gone)
   }
+})
+
+test('batch 6: old discovery, acquisition and provider-asset chains dropped; logo upload and read kept', () => {
+  const m = fs.readFileSync('supabase/migrations/20261009006100_cf247_cleanup_batch6_old_database.sql', 'utf8')
+  expect((m.match(/^drop function /gim) || []).length).toBe(19)
+  expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
+  expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate/i)
+  expect((m.match(/delete\s+from/gi) || []).length).toBe(1)
+  expect(m).toContain('delete from pipeline.pilot_nonce_functions')
+  for (const g of ['ed266479da8efa5821124e6c667f469e', 'bfb3874c22a6ddc81cbb45ccd404c2be', 'bd8fa77a70e5917a6c90cc0244b3e432', 'fe60ebd2c8040fb74c803c72874f1c92']) expect(m).toContain(g)
+  expect(m).toContain("md5(replace(pg_get_functiondef(v_oid), E'\\r', ''))")
+  expect(m).not.toMatch(/drop function [^;]*layer2_provider_attempt_start/)
+  for (const f of ['provider-asset-upload', 'provider-asset-access']) expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(true)
 })
