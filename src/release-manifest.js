@@ -1,15 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.226'
-export const PACKAGE_VERSION='0.1.153'
+export const UI_VERSION='2.15.227'
+export const PACKAGE_VERSION='0.1.154'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'9 Oct 2026',
-  title:'Provider panel opens faster',
+  title:'Same look on every page, stage 1',
   changes:[
-    'Provider panel: the database read now returns only what the panel shows (about 4 KB instead of about 385 KB for a large university). Related insights load only when \u201cMore about this provider\u201d is opened.'
+    'Every table on every page can now be resized the same way as the catalogue lists: drag the edge of a heading, double-click to reset. Widths are remembered in this browser.',
+    'Dropdowns and input boxes share one look across the app.',
+    'Evidence: the repeated heading block is replaced by one slim line with the count and Refresh. Scheduled jobs \u203a Jobs: plain wording.',
+    'Layer 4 review: the More button matches the other buttons. Dashboard: the four tiles line up.'
   ],
   bugFixes:[]
 }

@@ -39,7 +39,7 @@ export default function Dashboard({onError}){
       <button type="button" className="db-tile" onClick={()=>go('#providers')}><Metric label="Providers" value={fmtNumber(data?.providers||0)} detail="Every status and country" icon={Building2}/></button>
       <button type="button" className="db-tile" onClick={()=>go('#courses')}><Metric label="Courses" value={fmtNumber(data?.courses||0)} detail="Every status and country" icon={GraduationCap}/></button>
       <button type="button" className="db-tile" onClick={()=>go('#scholarships')}><Metric label="Scholarships" value={fmtNumber(data?.scholarships||0)} detail="Every status" icon={Sparkles}/></button>
-      <button type="button" className="db-tile" onClick={()=>go('#layer-4-review')}><Metric label="Open reviews" value={fmtNumber(reviewCount)} icon={ClipboardCheck} tone={reviewCount?'warning':'success'}/></button>
+      <button type="button" className="db-tile" onClick={()=>go('#layer-4-review')}><Metric label="Open reviews" value={fmtNumber(reviewCount)} detail="Waiting for a person" icon={ClipboardCheck} tone={reviewCount?'warning':'success'}/></button>
     </div>
     {health&&<section className="m-panel db-health"><button type="button" className="db-health-row" onClick={()=>go('#platform-health')}>
       <StatusDot tone={tone} label={WORD[tone]}/><strong>Platform health: {WORD[tone]}</strong>

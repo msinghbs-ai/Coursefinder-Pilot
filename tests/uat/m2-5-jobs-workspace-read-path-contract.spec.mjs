@@ -37,7 +37,7 @@ test.describe('M2.5 Jobs workspace read-path source contract',()=>{
     expect(ops).toContain("adminRead('pipeline_filters')")
     expect(ops).toContain("adminRead('pipeline_jobs_page'")
     expect(ops).toContain("adminRead('pipeline_job_detail'")
-    expect(ops).toContain('Server-paged execution history')
+    expect(ops).toContain('Every job run, newest first.') // v2.15.227: plain wording
     expect(ops).toContain('<th>Created</th>')
     expect(ops).toContain('Evidence linked or referenced by this job')
     expect(ops).toContain('No generic mutation is exposed by this console.')

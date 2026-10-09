@@ -59,9 +59,10 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   const deepContext=filters.entityId||filters.providerId||filters.jobId
 
   return <div className="evidence-page">
-    <section className="m-panel evidence-hero">
-      <div><span className="evidence-private"><ShieldCheck size={14}/>Stored source pages</span><h2>Evidence, provenance & change history</h2><p>Each page or file the platform fetched, what was read from it, which records it affects and whether those values are published.</p></div>
-      <div className="evidence-hero-actions"><button className="m-secondary" onClick={()=>{setBusy(true);api.evidencePage(args).then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))}}><RefreshCw size={14}/>Refresh</button><div className="evidence-count"><strong>{fmt(total)}</strong><span>matching artifacts</span></div></div>
+    <section className="m-panel evidence-hero slim">
+      {/* v2.15.227: the page header already names the page; this strip keeps only the count and Refresh */}
+      <div className="evidence-count"><strong>{fmt(total)}</strong><span>matching saved pages and files</span></div>
+      <div className="evidence-hero-actions"><button className="m-secondary" onClick={()=>{setBusy(true);api.evidencePage(args).then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))}}><RefreshCw size={14}/>Refresh</button></div>
     </section>
 
     <section className="m-panel evidence-workbench">

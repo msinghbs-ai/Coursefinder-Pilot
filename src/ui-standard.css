@@ -1,0 +1,16 @@
+/* v2.15.227 (Platform Admin, 9 Oct 2026: "modern UI standardised through the app"): one look for plain form controls on
+   every page. Low specificity (:where) so a component's own styling still wins. */
+.m-main :where(select:not([class]),select.fv-filter,select.fv-input){min-height:34px;padding:6px 10px;border:1px solid var(--cf-slate-225);border-radius:var(--cf-radius-md);background-color:var(--cf-white);color:var(--cf-slate-700);font:inherit;font-size:var(--cf-fs-sm);font-weight:600;cursor:pointer;max-width:100%}
+.m-main :where(input:not([class]):is([type=text],[type=number],[type=search],[type=url],[type=email],[type=date],:not([type])),input.fv-input,input.fv-filter,textarea:not([class]),textarea.fv-input){min-height:34px;padding:6px 10px;border:1px solid var(--cf-slate-225);border-radius:var(--cf-radius-md);background-color:var(--cf-white);color:var(--cf-slate-800);font:inherit;font-size:var(--cf-fs-sm);max-width:100%}
+.m-main :where(select,input,textarea):focus-visible{outline:none;border-color:var(--cf-indigo-300);box-shadow:var(--cf-focus-ring)}
+.m-main :where(select,input,textarea):disabled{background-color:var(--cf-slate-50);color:var(--cf-slate-400);cursor:not-allowed}
+/* every table: heading cells hold a resize handle (see table-resize.js) */
+.m-main table[data-resized] th,.m-main table[data-resized] td{overflow:hidden;text-overflow:ellipsis}
+/* Layer 4 review: "More" matches the other buttons */
+.l4d-more summary{font-size:var(--cf-fs-xs);font-weight:750;padding:7px 11px;background:var(--cf-white);color:var(--cf-slate-700);line-height:1.2}
+/* Evidence: one slim strip with the count and Refresh (the page header names the page) */
+.evidence-hero.slim{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--cf-white)}
+.evidence-hero.slim .evidence-count{display:flex;align-items:baseline;gap:6px}.evidence-hero.slim .evidence-count strong{font-size:var(--cf-fs-xl)}.evidence-hero.slim .evidence-count span{font-size:var(--cf-fs-xs);color:var(--cf-slate-500)}
+/* dashboard tiles share one height */
+.db-tiles{align-items:stretch}.db-tile{height:100%}.db-tile>*{height:100%;box-sizing:border-box}
+.sd-actions label{display:inline-flex;align-items:center;gap:8px;font-size:var(--cf-fs-sm);color:var(--cf-slate-600)}
