@@ -123,7 +123,8 @@ end $function$;
 
 do $post$
 begin
-  if md5(pg_get_functiondef('pipeline.trg_submit_pilot_edge_execution()'::regprocedure)) <> '6e6f2d16653913617191a1520f26143f' then
+  -- line endings ignored: the SQL editor may send Windows line endings
+  if md5(replace(pg_get_functiondef('pipeline.trg_submit_pilot_edge_execution()'::regprocedure), E'\r', '')) <> '6e6f2d16653913617191a1520f26143f' then
     raise exception 'CF-247 batch 4 post-check: trigger function definition not as intended';
   end if;
 end
