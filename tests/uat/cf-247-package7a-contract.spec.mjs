@@ -25,7 +25,9 @@ test.describe('mocked browser', () => {
     await ds.getByLabel('Show Academic Ranking of World Universities on Rankings & statistics').click() // the mock re-reads the old value, so poll the save
     await expect.poll(() => page.l3calls.find(c => c.datasetWrite)?.datasetWrite?.p_dataset?.display_enabled).toBe(true)
     await page.goto('/#providers?tab=onboarding')
-    await expect(page.locator('details.onb-cases > summary')).toHaveText('Country and source onboarding cases')
+    // v2.15.224: the old onboarding cases panel is retired; the Adapter builder notice remains
+    await expect(page.locator('[data-provider-onboarding-notice]')).toBeVisible()
+    await expect(page.locator('details.onb-cases')).toHaveCount(0)
     await page.goto('/#users-roles')
     await page.locator('details.ar-roles-help > summary').click()
     await expect(page.locator('.ar-roles-help')).toContainText('Counsellor')

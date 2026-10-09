@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.223'
-export const PACKAGE_VERSION='0.1.150'
+export const UI_VERSION='2.15.224'
+export const PACKAGE_VERSION='0.1.151'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'9 Oct 2026',
-  title:'Scholarship list columns; old screens removed',
+  title:'Scholarship list pills; old onboarding cases removed',
   changes:[
-    'Scholarships list: one column each for scholarship, provider, type, who it is for, value, linked courses and closing date. Every column heading sorts the list, and the columns fit the width of the screen.',
-    'Old data-admission screens removed: Scrapers \u203a Source profiles, the one-off run builder, Layer 2 workload defaults, Layer 2 automation, dispatcher tuning, the current Layer 2 wave panel, the Layer 3 pattern-request panel and the scholarship runtime settings. Refresh schedules and the provider registry and keys stay.',
-    'Providers \u203a Onboarding: new providers are onboarded through the guided Adapter builder, with a button to open it.'
+    'Scholarships list: coloured pills for the type of scholarship, who it is for, linked courses and the closing date (green open, amber closing within 30 days, red closed). Long names and values wrap to two lines.',
+    'Providers \u203a Onboarding: the old country and source onboarding cases panel is removed (no case was ever opened); the guided Adapter builder is the way to add a provider.',
+    'Live activity: the provider reading area now describes reading with each provider\u2019s adapter.'
   ],
   bugFixes:[]
 }
