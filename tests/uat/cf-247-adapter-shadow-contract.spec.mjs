@@ -36,7 +36,7 @@ test('merged step input: a JSON path in the page data is used when it holds the 
 test('worker: shadow mode uses the Layer 3 contract and checks, records only, and leaves the routing version alone', () => {
   const w = fs.readFileSync('supabase/functions/layer3-model-routing/index.ts', 'utf8')
   expect(w).toContain('if (mode === "shadow") {')
-  expect(w).toContain('const SHADOW_V = "cf247-adapter-shadow-v1.1.0";')
+  expect(w).toContain('const SHADOW_V = "cf247-adapter-shadow-v1.2.0";')
   expect(w).toContain('checkTuition(r.answer, text, it.context, profile, r.cost)')
   expect(w).toContain('tuitionRequestBody(profile, it.source_url || null, it.context, text)')
   expect(w).toContain('rpc("svc_adapter_shadow_claim"')
@@ -86,4 +86,16 @@ test('round 2: stronger adapter model for the shadow run only; rounds kept apart
   expect(m).toContain("if md5(pg_get_functiondef(k::regprocedure)) <> v then raise exception")
   expect(m).not.toMatch(/delete\s+from|drop\s+|truncate/i)
   expect(m).not.toMatch(/uni_adapter_models|svc_coursefacts_apply_record|layer3_fact_admit/)
+})
+
+test('round 3: adapter model first, one escalation only when nothing was found and the page clearly shows the field', () => {
+  const w = fs.readFileSync('supabase/functions/layer3-model-routing/index.ts', 'utf8')
+  expect(w).toContain('if (it.escalation && !first.found && !(first as any).blocked && signal) {')
+  expect(w).toContain('const signal = task === "tuition" ? Array.isArray(it.context?.fee_candidates) && it.context.fee_candidates.length > 0 : cascadeSignal(task as "intake" | "english", first.text);')
+  const m = fs.readFileSync('supabase/migrations/20261008005700_cf247_phase3_round3_escalation.sql', 'utf8')
+  expect(m).toContain("set round = 3, model_profile_code = null, escalation_profile_code = 'openrouter-intake-l3c-mimo-v2-6-pro-v1'")
+  expect(m).toContain("'profile', v_prof, 'escalation', v_esc);")
+  expect(m).toContain("escalated = coalesce((p_result->>'escalated')::boolean, false)")
+  expect(m).toContain("if md5(pg_get_functiondef(k::regprocedure)) <> v then raise exception")
+  expect(m).not.toMatch(/delete\s+from|drop\s+|truncate/i)
 })
