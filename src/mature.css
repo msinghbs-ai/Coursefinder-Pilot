@@ -179,6 +179,7 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .sch-pill:hover{background:var(--cf-slate-50)}
 .sch-pill.on{background:var(--cf-slate-900);border-color:var(--cf-slate-900);color:var(--cf-white)}
 .sch-chips{display:flex;flex-wrap:wrap;gap:6px}
+/* v2.15.223: scholarship list cells wrap so every column fits the width of the screen */.sch-wrap{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.35}.sch-name{font-size:var(--cf-fs-sm);color:var(--cf-slate-800)}
 .sch-chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;background:var(--cf-slate-100);color:var(--cf-slate-700);font-size:var(--cf-fs-2xs);font-weight:700;white-space:nowrap}
 .sch-chip-nat{background:var(--cf-violet-50);color:var(--cf-indigo-700)}
 .sch-status{display:flex;flex-direction:column;gap:4px;align-items:flex-start}

@@ -37,12 +37,19 @@ test('browser: list shows published scholarships only — no status pills or sta
   const row = { ...F.scholarshipRow, value_label: 'A$10,000 a year', nationalities: ['VN'], status: 'held', held_reasons: ['no linked course'], mapped_course_count: 12, application_close_date: '2027-03-08' }
   await override(page, 'scholarships_page', { total: 1, items: [row], status_counts: { published: 123, ready: 268, held: 844, inactive: 25 } })
   await page.goto('/#scholarships')
-  for (const h of ['Scholarship', 'Value', 'Who it is for', 'Closes']) await expect(page.locator('thead th', { hasText: h }).first()).toBeVisible()
+  for (const h of ['Scholarship', 'Provider', 'Type', 'Who it is for', 'Value', 'Courses', 'Closes']) {
+    const th = page.locator('thead th', { hasText: h }).first()
+    await expect(th).toBeVisible()
+    await expect(th.locator('button')).toBeEnabled() // v2.15.223: every column heading sorts
+  }
   await expect(page.locator('thead th', { hasText: 'Status' })).toHaveCount(0)
   await expect(page.locator('[data-scholarship-status]')).toHaveCount(0)
   for (const l of ['Lifecycle', 'Publication']) await expect(page.locator('.m-filter-bar').getByText(l, { exact: true })).toHaveCount(0)
   await expect.poll(() => (page.readCalls || []).filter(c => c.p_operation === 'scholarships_page').map(c => c.p_args?.status)).toContain('published')
   await expect(page.locator('[data-sch-courses]').first()).toContainText('12 linked')
+  // v2.15.223: the columns fit the screen (no sideways scroll at 1280 px)
+  await page.setViewportSize({ width: 1280, height: 760 })
+  await expect.poll(() => page.locator('.m-table-wrap').first().evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1)
   await expect(page.locator('tbody')).toContainText('Vietnam')
   await expect(page.locator('tbody')).toContainText('A$10,000 a year')
 })

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.150 — 9 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.223** (Scholarships list: one sortable column per fact, fitted to the screen; release of the clean-up batch 2 screen removals and the Adapter builder link on Providers › Onboarding).
+
 ## 0.1.149 — 8 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.222** (Layer 1 schedule choice per source; ranking edition years from two years ahead back to 2010).
