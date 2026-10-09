@@ -87,3 +87,17 @@ test('batch 4: old database functions dropped behind md5 guards; tables and hist
   for (const f of ['layer2-provider-page-fanout', 'layer2-provider-asset-promote', 'layer2-hotcourses-directory-parse', 'layer2-acquire-v2'])
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(true)
 })
+
+test('batch 5: old scheduler-workflow, scope and scholarship-runtime chains dropped; admin_read dead branches removed', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008005900_cf247_cleanup_batch5_old_database.sql', 'utf8')
+  expect((m.match(/^drop function /gim) || []).length).toBe(31)
+  expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
+  expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate|delete\s+from/i)
+  expect(m).toContain("md5(replace(pg_get_functiondef(v_oid), E'\\r', ''))")
+  expect(m).toContain("4949564e124715c4b0aabc1a39ccaafb")
+  for (const keep of ['platform_health', 'jobs_runtime', 'layer2_acquisition_providers', 'layer3_queue_status', 'course_detail', 'scholarship_ai']) expect(m, keep).toContain(`'${keep}'`)
+  for (const s of fs.readdirSync('src', { recursive: true }).filter(f => /\.(jsx?|mjs)$/.test(f))) {
+    const t = fs.readFileSync(`src/${s}`, 'utf8')
+    for (const gone of ['scheduler_workflow_run_now', 'scheduler_workflow_preview', "'scholarship_runtime_uat'", "'layer2_profiles'", "'layer2_provider_routes'"]) expect(t, `${s} ${gone}`).not.toContain(gone)
+  }
+})
