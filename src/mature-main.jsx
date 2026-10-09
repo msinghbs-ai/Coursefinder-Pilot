@@ -10,6 +10,8 @@ import{fmtDate,fmtDateTime,fmtMoney,fmtPercent,fmtShare}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
 import CourseDetailPolish from'./CourseDetailPolish'
 import{ProviderSummary,PillRow,FactCards,FactCard}from'./DetailSummary'
+import{startTableResize}from'./table-resize'
+import'./ui-standard.css'
 import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
 import ListEdit from'./ListEdit'
 import DashboardHome from'./Dashboard'
@@ -153,6 +155,7 @@ function App(){
   const initialRoute=routeFromHash()
   const[route,setRoute]=useState(initialRoute),[error,setError]=useState(''),[navOpen,setNavOpen]=useState(false),[collapsed,setCollapsed]=useState(false),[health,setHealth]=useState(undefined)
   const mainRef=useRef(null)
+  useEffect(()=>startTableResize(document.body),[]) // v2.15.227: every table resizes the same way
   useEffect(()=>{
     supabase.auth.getSession().then(({data})=>{setSession(data.session??null);setBooting(false)})
     const{data}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));return()=>data.subscription.unsubscribe()

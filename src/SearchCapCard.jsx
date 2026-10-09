@@ -32,7 +32,7 @@ export default function SearchCapCard(){
       <div><dt>Searches waiting</dt><dd>{fmtNumber(Number(s.queued||0))}</dd></div>
     </dl>
     {left<200&&Number(s.queued||0)>0&&<p className="pp-caveat" data-cap-reached>The cap is reached, so {fmtNumber(Number(s.queued))} searches are waiting.</p>}
-    {s.can_change?<div className="sd-actions"><label><small>Monthly cap (credits)</small> <input aria-label="Course-page search monthly cap" type="number" min="1000" max="500000" step="1000" value={cap} onChange={e=>setCap(e.target.value)}/></label>
+    {s.can_change?<div className="sd-actions"><label><small>Monthly cap (credits)</small> <input className="fv-input" aria-label="Course-page search monthly cap" type="number" min="1000" max="500000" step="1000" value={cap} onChange={e=>setCap(e.target.value)}/></label>
       <Button compact variant="primary" onClick={save} disabled={busy||String(limit)===cap}><Save size={13}/>Save cap</Button></div>
       :<p className="sd-desc">Only a Platform Admin can change the cap.</p>}
     {saved&&<p className="sd-desc" role="status">{saved}</p>}

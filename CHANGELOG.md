@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.154 — 9 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.227** (Platform Admin: same look on every page, in stages; stage 1 — Dashboard, Layer 3, Layer 4 review, Scheduled jobs, Evidence). Every table resizes like the catalogue lists (shared helper, widths kept per page in the browser); dropdowns and inputs share one style; Evidence and Jobs lose their repeated headers; Layer 4 More button and dashboard tiles aligned.
+
 ## 0.1.153 — 9 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.226** (Platform Admin: slim the provider read). Database: `20261009006000` (md5-guarded admin_read change: provider_detail no longer returns the course, evidence, source and history lists or the scholarship, ranking and logo context; new provider_insights operation for related insights; about 385 KB to 4.4 KB for RMIT). The provider panel loads related insights only when More is opened.
