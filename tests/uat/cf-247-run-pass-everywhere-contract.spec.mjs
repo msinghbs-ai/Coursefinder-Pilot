@@ -24,7 +24,9 @@ test('no edge function accepts the old automation key', () => {
 // Clean-up batch 2 (9 Oct 2026): these moved functions were retired (source removed, on the retired list).
 const RETIRED_B2 = ['layer2-batch-runner', 'layer2-scholarship-extract-v2', 'layer2-v2-diagnostic', 'scholarship-scope-job-execute',
   // clean-up batch 4 (9 Oct 2026)
-  'layer2-extract-v2', 'layer2-course-fact-extract-v2', 'layer2-scholarship-extract', 'layer2-scholarship-catalogue-enumerate']
+  'layer2-extract-v2', 'layer2-course-fact-extract-v2', 'layer2-scholarship-extract', 'layer2-scholarship-catalogue-enumerate',
+  // clean-up batch 6 (9 Oct 2026)
+  'layer2-acquire-v2', 'layer2-hotcourses-directory-parse', 'layer2-provider-asset-promote', 'layer2-provider-page-fanout']
 
 test('each moved function consumes a pass under its own name and is deployable by CI', () => {
   const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')

@@ -121,7 +121,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(ContextualInsights\.jsx|CourseDetailPolish\.jsx)$|^supabase/migrations/.*a12_.*contextual|^tests/uat/a12-contextual-insights-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a12-contextual-insights-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature\.css|layer2-operations-entry\.jsx|layer2-operations\.css|EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^supabase/functions/(layer2-acquire-v2|layer2-scope-discover-scheduled|layer2-screenshot-backfill-scheduled|admin-evidence-access)/|^supabase/migrations/.*a13_.*(provider_attempt|screenshot)|^tests/uat/a13-filter-demo-trace-deployed\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature\.css|layer2-operations-entry\.jsx|layer2-operations\.css|EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^supabase/functions/(layer2-acquire-v2|layer2-screenshot-backfill-scheduled|admin-evidence-access)/|^supabase/migrations/.*a13_.*(provider_attempt|screenshot)|^tests/uat/a13-filter-demo-trace-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a13-filter-demo-trace-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^supabase/functions/provider-contact-|^supabase/migrations/.*a15_|^tests/uat/a15-provider-contact-intelligence-deployed\.spec\.mjs$)'; then
@@ -160,7 +160,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '^tests/uat/m2-5-pilot-deployment-currentness-deployed\.spec\.mjs$'; then
             targeted=(tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-scope-discover-scheduled|layer2-screenshot-backfill-scheduled|provider-contact-discover-scheduled|scholarships-au-etl)/|^supabase/migrations/.*m2_5_evidence_lineage|^tests/uat/m2-5-evidence-lineage-contract\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-screenshot-backfill-scheduled|provider-contact-discover-scheduled|scholarships-au-etl)/|^supabase/migrations/.*m2_5_evidence_lineage|^tests/uat/m2-5-evidence-lineage-contract\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-evidence-lineage-contract.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_universal_layer4_block|^tests/uat/m2-5-layer4-block-enforcement-contract\.spec\.mjs$)'; then
@@ -270,7 +270,7 @@ jobs:
           fi
           # CF-101 must resolve after the generic Admin/Scraper workflow-file routes so
           # H11 changes cannot be overwritten by older routing precedence.
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(layer2-provider-page-fanout|layer2-provider-asset-promote|layer2-acquire-v2)/|^supabase/migrations/.*cf_101_h11_|^tests/uat/cf-091-h11-provider-assets-deployed\.spec\.mjs$|^\.github/cf-101-h11-provider-assets-candidate$|^\.github/workflows/deployed-uat\.yml$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/^supabase/migrations/.*cf_101_h11_|^tests/uat/cf-091-h11-provider-assets-deployed\.spec\.mjs$|^\.github/cf-101-h11-provider-assets-candidate$|^\.github/workflows/deployed-uat\.yml$)'; then
             targeted=(tests/uat/cf-091-h11-provider-assets-deployed.spec.mjs)
           fi
           # CF-102 resolves last among targeted routes because it spans Admin, Course detail,
