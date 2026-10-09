@@ -99,3 +99,10 @@ test('round 3: adapter model first, one escalation only when nothing was found a
   expect(m).toContain("if md5(pg_get_functiondef(k::regprocedure)) <> v then raise exception")
   expect(m).not.toMatch(/delete\s+from|drop\s+|truncate/i)
 })
+
+test('Phase 3 closes: shadow jobs removed only after the run is switched off; the record is kept', () => {
+  const m = fs.readFileSync('supabase/migrations/20261008005800_cf247_phase3_close_shadow_jobs.sql', 'utf8')
+  expect(m).toContain("raise exception 'the shadow run is still switched on; switch it off first'")
+  for (const j of ['adapter-shadow-intake', 'adapter-shadow-english', 'adapter-shadow-tuition']) expect(m).toContain(`'${j}'`)
+  expect(m).not.toMatch(/delete\s+from|drop\s+|truncate/i)
+})
