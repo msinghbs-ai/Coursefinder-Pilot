@@ -27,9 +27,6 @@ await expect(dialog.getByRole('heading',{name:'Qualified model routes'})).toHave
   expect(provenance).toContain('prompt_hash')
   expect(provenance).toContain('layer3_execution_provenance_service')
   // Clean-up batch 2 (9 Oct 2026): layer3-interpret was retired; its checks were removed.
-  const benchmark=await fs.readFile('supabase/functions/layer3-source-pattern-benchmark/index.ts','utf8')
-  expect(benchmark).toContain('layer3-source-pattern-benchmark-v1.1.0')
-  expect(benchmark).toContain('attempt_trace')
-  expect(benchmark).toContain('retry_count')
+  // Clean-up batch 7 (9 Oct 2026): layer3-source-pattern-benchmark retired too.
  })
 })

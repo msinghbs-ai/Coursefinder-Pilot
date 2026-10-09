@@ -12,9 +12,8 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
   })
 
   test('classifies raw lineage separately and removes only just-uploaded duplicates',async()=>{
-    const [migration,backfill,contacts,scholarships]=await Promise.all([
+    const [migration,contacts,scholarships]=await Promise.all([
       fs.readFile('supabase/migrations/20260901195000_m2_5_evidence_lineage_classification.sql','utf8'),
-      fs.readFile('supabase/functions/layer2-screenshot-backfill-scheduled/index.ts','utf8'),
       fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8'),
       fs.readFile('supabase/functions/scholarships-au-etl/index.ts','utf8'),
     ])
@@ -28,14 +27,13 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
     expect(migration).toContain("e.storage_path !~ '^[A-Za-z][A-Za-z0-9+.-]*://'")
     expect(migration).not.toMatch(/delete\s+from\s+(pipeline\.evidence_artifacts|storage\.objects)/i)
 
-    for(const source of [backfill,contacts]){ // discovery and acquire-v2 retired in CF-247 batch 6
+    for(const source of [contacts]){ // discovery, acquire-v2 (batch 6) and screenshot backfill (batch 7) retired
       expect(source).toContain('duplicate_upload_path')
       expect(source).toContain('.storage.from(BUCKET).remove([path])')
       expect(source).toMatch(/retained===path\)return/)
       expect(source).toContain('console.warn("CF-055 duplicate')
     }
 
-    expect(backfill).toMatch(/layer2-screenshot-backfill-scheduled-v1\.0\.\d+/)
     expect(contacts).toMatch(/provider-contact-discover-scheduled-v1\.3\.\d+/)
 
     expect(scholarships).toContain('scholarships-au-etl-v0.3.1')

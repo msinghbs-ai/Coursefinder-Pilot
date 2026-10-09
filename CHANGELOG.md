@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.155 — 9 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.228** (Platform Admin: check usage, retire unused; remove the Reset database button and function). Clean-up batch 7: database `20261009006200` (6 functions of the old scale-qualification chain, md5-guarded, no CASCADE; 8 run-token rows) and 8 edge functions retired (coursefacts-au-qut/rmit/uq, layer2-scale-qualify-scheduled, layer2-screenshot-backfill-scheduled, layer3-source-pattern-benchmark, layer1-au-completeness, pilot-reset). The Go-live checklist no longer offers Reset database.
+
 ## 0.1.154 — 9 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.227** (Platform Admin: same look on every page, in stages; stage 1 — Dashboard, Layer 3, Layer 4 review, Scheduled jobs, Evidence). Every table resizes like the catalogue lists (shared helper, widths kept per page in the browser); dropdowns and inputs share one style; Evidence and Jobs lose their repeated headers; Layer 4 More button and dashboard tiles aligned.

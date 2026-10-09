@@ -118,3 +118,22 @@ test('batch 6: old discovery, acquisition and provider-asset chains dropped; log
   expect(m).not.toMatch(/drop function [^;]*layer2_provider_attempt_start/)
   for (const f of ['provider-asset-upload', 'provider-asset-access']) expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(true)
 })
+
+test('batch 7: unused background functions and the scale-qualification chain retired; Reset database removed; capabilities kept', () => {
+  const m = fs.readFileSync('supabase/migrations/20261009006200_cf247_cleanup_batch7_old_database.sql', 'utf8')
+  expect((m.match(/^drop function /gim) || []).length).toBe(6)
+  expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
+  expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate/i)
+  expect((m.match(/delete\s+from/gi) || []).length).toBe(1)
+  for (const g of ['7514962e364c92b93dd5c530d253ca7f', 'ea90e5f5e2cc6c941e1a071d92f683f7', 'e8cd7e428b3862ee55e5fe9f2482bf1a']) expect(m).toContain(g)
+  const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+  const retired = wf.match(/RETIRED="([^"]*)"/)[1].split(/\s+/).filter(Boolean)
+  for (const f of ['coursefacts-au-qut', 'coursefacts-au-rmit', 'coursefacts-au-uq', 'layer2-scale-qualify-scheduled', 'layer2-screenshot-backfill-scheduled', 'layer3-source-pattern-benchmark', 'layer1-au-completeness', 'pilot-reset']) {
+    expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
+    expect(retired, f).toContain(f)
+  }
+  for (const f of ['provider-contact-discover-scheduled', 'provider-contact-enrich-apollo', 'layer3-intake-benchmark', 'layer3-cf245-tuition-benchmark', 'layer3-contact-benchmark', 'zoho-course-api', 'website-course-api', 'wix-course-api'])
+    expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(true)
+  expect(fs.readFileSync('src/lib/supabase.js', 'utf8')).not.toContain('pilot-reset')
+  expect(fs.readFileSync('src/RegulatorySettings.jsx', 'utf8')).not.toContain("mode === 'reset'")
+})

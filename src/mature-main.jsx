@@ -263,7 +263,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
       case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>
       case'services':return <div className="m-page-stack"><ModelsServices onError={err}/><Toolsets onError={err}/></div>
-      case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/><div className="m-legacy-host"><RegulatorySettings onError={onError} mode="reset"/></div></div>
+      case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       case'dataModel':return <Attributes onError={onError}/>
       case'retention':return <RetentionScreen onError={onError}/>
       case'users':return <AccessRolesEmbedded actorId={actorId}/>

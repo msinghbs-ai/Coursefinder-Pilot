@@ -81,7 +81,7 @@ const COUNTRY_POLICY = {
 
 // v2.15.123: Regulatory settings is split by the screen review (merge into Layer 1, move the reset). mode 'batch' is
 // Layer 1 Register › Manual batch runs (Platform Admin): the bounded country runner, in-scope countries first; mode
-// 'reset' is the Pilot reset on Platform settings › Go-live checklist. The source registry table and the catalogue
+// 'reset' (the Pilot reset) was retired in v2.15.228 (Platform Admin, 9 Oct 2026). The source registry table and the catalogue
 // counts were copies of Layer 1 › Source settings and the Dashboard and are gone.
 export default function RegulatorySettings({ onError, mode = 'batch' }) {
   const [showAll, setShowAll] = useState(false)
@@ -223,23 +223,6 @@ export default function RegulatorySettings({ onError, mode = 'batch' }) {
   }
 
   async function approve() {
-    if (confirmMode === 'reset') {
-      if (confirmText.trim().toUpperCase() !== 'RESET DATABASE') return
-      setConfirmMode(null)
-      setConfirmText('')
-      setRunBusy(true)
-      onError('')
-      try {
-        const result = await api.resetDatabase()
-        remember({ mode: 'reset', controlKind: 'reset', catalogueStats: result, requestedCountry: country, workerVersion: result.version })
-        setOffset(0)
-        loadLatest(country)
-        load()
-      } catch (e) { onError(e.message) }
-      finally { setRunBusy(false) }
-      return
-    }
-
     const expected = `APPLY ${country}`
     if (confirmText.trim().toUpperCase() !== expected) return
     const mode = confirmMode
@@ -251,12 +234,7 @@ export default function RegulatorySettings({ onError, mode = 'batch' }) {
 
   const batchValue = Math.max(1, Math.min(Number(batchSize || policy.recommendedBatch), policy.maxBatch))
 
-  const confirmModal = () => <div className="confirm-backdrop" role="presentation" onMouseDown={()=>setConfirmMode(null)}><div className="confirm-card" role="dialog" aria-modal="true" onMouseDown={e=>e.stopPropagation()}><div className="confirm-icon"><AlertTriangle size={22}/></div><span className="kicker">{confirmMode === 'reset' ? 'Destructive UAT reset' : 'Bounded regulatory write'}</span><h3>{confirmMode === 'reset' ? 'Reset the Pilot database?' : `Apply ${country} records ${fmtNumber(pendingOffset)}–${fmtNumber((pendingOffset + batchValue - 1))}?`}</h3><p>{confirmMode === 'reset' ? 'This removes business/runtime UAT data while preserving the Layer 1 execution seed and platform configuration.' : `The request will use the ${policy.adapter} adapter, offset ${fmtNumber(pendingOffset)} and a maximum batch size of ${fmtNumber(batchValue)}. Search Projection is rebuilt after the write.`}</p><label>Type <strong>{confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`}</strong> to confirm</label><input autoFocus value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder={confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`}/><div className="confirm-actions"><button className="secondary" onClick={()=>setConfirmMode(null)}>Cancel</button><button className="danger-soft" disabled={confirmText.trim().toUpperCase() !== (confirmMode === 'reset' ? 'RESET DATABASE' : `APPLY ${country}`)} onClick={approve}><AlertTriangle size={15}/>{confirmMode === 'reset' ? 'Reset Database' : 'Apply bounded batch'}</button></div></div></div>
-
-  if (mode === 'reset') return <div className="stack">
-    <section className="panel full"><div className="panel-title"><div><span className="kicker">Pilot only</span><h3>Reset the Pilot database</h3><p>Removes all catalogue data from the Pilot so a full test run can start again. Never use it on Production. You will be asked to type RESET DATABASE.</p></div><button className="danger-soft" onClick={()=>{ setConfirmMode('reset'); setConfirmText('') }} disabled={runBusy}><RotateCcw size={15}/>Reset database</button></div></section>
-    {confirmMode && confirmModal()}
-  </div>
+  const confirmModal = () => <div className="confirm-backdrop" role="presentation" onMouseDown={()=>setConfirmMode(null)}><div className="confirm-card" role="dialog" aria-modal="true" onMouseDown={e=>e.stopPropagation()}><div className="confirm-icon"><AlertTriangle size={22}/></div><span className="kicker">Bounded regulatory write</span><h3>{`Apply ${country} records ${fmtNumber(pendingOffset)}–${fmtNumber((pendingOffset + batchValue - 1))}?`}</h3><p>{`The request will use the ${policy.adapter} adapter, offset ${fmtNumber(pendingOffset)} and a maximum batch size of ${fmtNumber(batchValue)}. Search Projection is rebuilt after the write.`}</p><label>Type <strong>{`APPLY ${country}`}</strong> to confirm</label><input autoFocus value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder={`APPLY ${country}`}/><div className="confirm-actions"><button className="secondary" onClick={()=>setConfirmMode(null)}>Cancel</button><button className="danger-soft" disabled={confirmText.trim().toUpperCase() !== (`APPLY ${country}`)} onClick={approve}><AlertTriangle size={15}/>{'Apply bounded batch'}</button></div></div></div>
 
   return <div className="stack">
     <div className="section-head">

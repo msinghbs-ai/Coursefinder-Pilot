@@ -15,11 +15,13 @@ test('Regulatory settings merged into Layer 1; its Pilot reset and the readiness
   expect([r.page, r.tab]).toEqual(['layer1', 'batch'])
   const main = read('src/mature-main.jsx')
   expect(main).toContain(`if(tab==='batch')return <div className="m-legacy-host"><RegulatorySettings onError={onError} mode="batch"/></div>`)
-  expect(main).toContain(`<PlatformMaturity rank={rank} onError={onError} view="golive"/><div className="m-legacy-host"><RegulatorySettings onError={onError} mode="reset"/></div>`)
+  // v2.15.228: Reset database retired (Platform Admin, 9 Oct 2026)
+  expect(main).not.toContain('mode="reset"')
+  expect(read('src/lib/supabase.js')).not.toContain('pilot-reset')
   const reg = read('src/RegulatorySettings.jsx')
   expect(reg).toContain("const IN_SCOPE = ['AU', 'NZ']")
   expect(reg).not.toContain('Layer 1 source registry')
-  expect(reg).toContain("if (confirmText.trim().toUpperCase() !== 'RESET DATABASE') return")
+  expect(reg).not.toContain('RESET DATABASE')
 })
 
 test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live, blocks in Layer 4', () => {

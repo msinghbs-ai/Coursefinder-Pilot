@@ -28,29 +28,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
   await milestoneScreenshot(page,testInfo,'a23-scrapers-registry')
  }finally{await finish(testInfo,runtime)}})
 
- test('background qualification self-continuation uses the service-only public bridge',async()=>{
-  const worker=await fs.readFile('supabase/functions/layer2-scale-qualify-scheduled/index.ts','utf8')
-  const bridge=await fs.readFile('supabase/migrations/20260831105700_m2_4_4_a23_qualification_continuation_bridge.sql','utf8')
-  expect(worker).toContain('layer2-scale-qualify-scheduled-v1.0.3')
-  expect(worker).toContain('layer2_qualification_continue_service')
-  expect(worker).not.toContain('prpc(svc,"svc_pilot_submit_nonce"')
-  expect(bridge).toMatch(/security invoker/i)
-  expect(bridge).toMatch(/revoke all on function public\.layer2_qualification_continue_service\(uuid\) from public,anon,authenticated/i)
-  expect(bridge).toMatch(/grant execute on function public\.layer2_qualification_continue_service\(uuid\) to service_role/i)
-  expect(bridge).toContain("q.status='running'")
-  expect(bridge).toContain("qi.status='qualifying'")
-  const acl=await fs.readFile('supabase/migrations/20260831111100_m2_4_4_a23_qualification_continuation_acl_reconcile.sql','utf8')
-  expect(acl).toMatch(/create or replace function security\.layer2_qualification_continue_impl/i)
-  expect(acl).toMatch(/security definer/i)
-  expect(acl).toMatch(/create or replace function public\.layer2_qualification_continue_service/i)
-  expect(acl).toMatch(/security invoker/i)
-  expect(acl).toMatch(/revoke all on function security\.layer2_qualification_continue_impl\(uuid\) from public,anon,authenticated/i)
-  expect(acl).toMatch(/grant execute on function security\.layer2_qualification_continue_impl\(uuid\) to service_role/i)
-  expect(acl).toMatch(/grant execute on function public\.layer2_qualification_continue_service\(uuid\) to service_role/i)
- })
-
- // Clean-up batch 2 (9 Oct 2026): layer2-batch-runner was retired; its runner checks were removed.
-
+ // Clean-up batch 7 (9 Oct 2026): layer2-scale-qualify-scheduled and its continuation bridge were retired.
  test('background finaliser completes deterministic controls and governed handoff without autonomous Layer 3 AI',async()=>{
   const finalizer=await fs.readFile('supabase/migrations/20260831115800_m2_4_4_a23_qualification_finalizer_handoff.sql','utf8')
   expect(finalizer).toContain('qualification_finalizer_run_limit')

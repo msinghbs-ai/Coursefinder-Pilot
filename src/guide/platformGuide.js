@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.227'
+export const GUIDE_REVIEWED_FOR = '2.15.228'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.',
