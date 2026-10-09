@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.224'
-export const PACKAGE_VERSION='0.1.151'
+export const UI_VERSION='2.15.225'
+export const PACKAGE_VERSION='0.1.152'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'9 Oct 2026',
-  title:'Scholarship list pills; old onboarding cases removed',
+  title:'Lists fill the page; course and provider panels as cards',
   changes:[
-    'Scholarships list: coloured pills for the type of scholarship, who it is for, linked courses and the closing date (green open, amber closing within 30 days, red closed). Long names and values wrap to two lines.',
-    'Providers \u203a Onboarding: the old country and source onboarding cases panel is removed (no case was ever opened); the guided Adapter builder is the way to add a provider.',
-    'Live activity: the provider reading area now describes reading with each provider\u2019s adapter.'
+    'Every list fills the width of the page, and each column can be resized by dragging the edge of its heading (double-click to reset). Widths are remembered in this browser.',
+    'Course and provider panels open on coloured pills (level, field, delivery, CRICOS code, publication) and cards with the main facts \u2014 tuition used, registered cost, intakes, English, campuses, courses, scholarships, contacts \u2014 that reflow from one to four columns with the width.',
+    'Values you can change are shown as cards with a short Automated or Entered by hand pill. Evidence, regulatory, operational and raw identifier lists are no longer listed in the panels; evidence still opens from the panel header, and related insights sit in a closed \u201cMore\u201d section.',
+    'Campus and other record panels use the same pills and cards.'
   ],
-  bugFixes:[]
+  bugFixes:['Scholarships list: one scholarship with a long list of nationalities stretched the \u201cWho it is for\u201d column and pushed Value, Courses and Closes off screen. Long lists now show the first two and a count.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

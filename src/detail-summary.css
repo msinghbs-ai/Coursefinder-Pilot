@@ -1,0 +1,49 @@
+/* v2.15.225: the shared detail-panel look — pills, fact cards that reflow with the width, editor rows as cards */
+.m-drawer{width:min(1040px,94vw)}
+.ds-summary{display:grid;gap:12px;margin-bottom:14px}
+.ds-pills{display:flex;flex-wrap:wrap;gap:6px}
+.ds-pills .cf-chip{font-size:var(--cf-fs-xs);padding:4px 9px}
+.ds-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ds-card{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);background:var(--cf-white);padding:11px 12px;display:grid;align-content:start;gap:5px;min-width:0;box-shadow:var(--cf-shadow-xs)}
+.ds-card.wide{grid-column:1/-1}
+.ds-card>small{font-size:var(--cf-fs-3xs);text-transform:uppercase;letter-spacing:.06em;font-weight:800;color:var(--cf-slate-450)}
+.ds-card>strong{font-size:var(--cf-fs-lg);color:var(--cf-slate-900);letter-spacing:-.01em;overflow-wrap:anywhere}
+.ds-card.tone-warning>strong{color:var(--cf-warning-ink)}
+.ds-card .ds-sub{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);line-height:1.4;overflow-wrap:anywhere}
+.ds-card-body{display:grid;gap:6px;min-width:0}
+.ds-pill-list{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.ds-muted{font-size:var(--cf-fs-xs);color:var(--cf-slate-400)}
+.ds-card .cf-link{display:inline-flex;align-items:center;gap:3px}
+.ds-card .m-secondary.compact{justify-self:start}
+.ds-more{margin-top:12px;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);background:var(--cf-white)}
+.ds-more>summary{cursor:pointer;padding:10px 12px;font-size:var(--cf-fs-sm);font-weight:750;color:var(--cf-slate-700)}
+.ds-more[open]>summary{border-bottom:1px solid var(--cf-slate-150)}
+.ds-more>div{padding:0 12px 12px}
+/* fee used, inside the Tuition card */
+.ds-card .cf-fee-used{padding:0;border:0;background:none;border-radius:0;margin:0;display:grid;gap:5px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);line-height:1.4}
+.ds-card .cf-fee-used small{font-size:var(--cf-fs-2xs)}
+/* editor rows as cards that reflow with the width */
+.re-body.re-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));align-items:start}
+.re-body.re-grid>:not(.re-row),.re-body.re-grid>.re-row.wide,.re-body.re-grid>.re-row.editing{grid-column:1/-1}
+.re-grid .re-row{background:var(--cf-white);border-radius:var(--cf-radius-lg);height:100%;align-content:start}
+.re-grid .re-row-head strong{font-size:var(--cf-fs-3xs);text-transform:uppercase;letter-spacing:.06em;color:var(--cf-slate-450)}
+.re-grid .re-value{font-size:var(--cf-fs-sm)}
+.re-auto{display:inline-flex;border-radius:var(--cf-radius-pill);padding:2px 7px;background:var(--cf-neutral-soft);color:var(--cf-neutral-ink);font-size:var(--cf-fs-3xs);font-weight:750}
+.re-lock-wrap{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.re-lock-wrap .re-lock{border-radius:var(--cf-radius-pill);padding:2px 7px;background:var(--cf-warning-soft);color:var(--cf-warning-ink);font-size:var(--cf-fs-3xs)}
+.re-panel .re-toggle.re-static small{font-size:var(--cf-fs-2xs)}
+.cf-course-workspace .cf-course-provider-brand{border:0;background:none;padding:0 0 4px;margin-bottom:6px}
+/* course links and who-can-apply: two cards beside the values */
+.re-grid .cl-panel{border:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:8px;align-items:start}
+.re-grid .cl-applicants,.re-grid .cl-links{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);padding:9px 10px;display:grid;gap:6px;background:var(--cf-white);margin:0}
+.re-grid .cl-applicants .re-value{display:block;line-height:1.5}
+.re-grid .cl-applicants .re-row-head strong,.re-grid .cl-links .re-row-head strong{font-size:var(--cf-fs-3xs);text-transform:uppercase;letter-spacing:.06em;color:var(--cf-slate-450);display:inline-flex;align-items:center;gap:4px}
+.re-grid .cl-note{display:block;margin-top:3px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);font-weight:500}
+@media(max-width:900px){.re-grid .cl-panel{grid-template-columns:1fr}}
+.m-drawer .rl-provider{margin:12px 0 0;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);background:var(--cf-white);padding:11px 12px}
+.m-drawer .rl-provider h4{font-size:var(--cf-fs-3xs);text-transform:uppercase;letter-spacing:.06em;color:var(--cf-slate-450);font-weight:800}
+.m-drawer .rl-provider .rl-grid>div{border:1px solid var(--cf-slate-150);border-radius:var(--cf-radius-md);padding:9px;background:var(--cf-slate-25)}
+.m-drawer .rl-provider .rl-grid b{font-size:var(--cf-fs-sm);color:var(--cf-slate-800)}
+.m-drawer .rl-provider table{min-width:0;font-size:var(--cf-fs-xs)}.m-drawer .rl-provider th,.m-drawer .rl-provider td{padding:5px 6px}
+.m-drawer .rl-provider .m-link-button{font-size:var(--cf-fs-xs)}
+.m-drawer .rl-provider small{font-size:var(--cf-fs-xs);color:var(--cf-slate-500)}

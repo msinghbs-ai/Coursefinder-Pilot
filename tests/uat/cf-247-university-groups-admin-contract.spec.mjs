@@ -64,7 +64,8 @@ test('admin console wires the University group filter and provider detail displa
   expect(ui).toContain("universityGroup:'University group'")
   expect(ui).toContain("{value:'go8',label:'Group of Eight'}")
   expect(ui).toContain('universityGroup:UNIVERSITY_GROUP_OPTIONS')
-  expect(ui).toContain('<small>University group</small><strong><UniversityGroups value={data.university_groups}/></strong>')
+  // v2.15.225: the provider panel shows each university group as a pill in its summary
+  expect(fs.readFileSync('src/DetailSummary.jsx','utf8')).toContain('{groups.map(g=><StatusChip key={g.code} tone="violet" label={g.name}')
   expect(ui).toContain("{key:'university_groups',label:'Group',width:110}")
   expect(ui).toContain('className="m-status status-info"')
   // University group sits next to Provider and stays visible when advanced filters are collapsed

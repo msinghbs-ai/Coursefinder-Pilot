@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.152 — 9 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.225** (Platform Admin: lists fill the page width with resizable columns; course and provider panels as coloured pills and fact cards, with unnecessary evidence, regulatory and operational text removed; same look for other record panels). Bug fix: a long nationality list no longer pushes scholarship columns off screen.
+
 ## 0.1.151 — 9 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.224** (Platform Admin: modern, readable UI with coloured pills; clean up the old system's UI). Scholarships list: status pills for type, who it is for, linked courses and closing date (open, closing within 30 days, closed), using the shared StatusChip tones; names and values wrap to two lines. Clean-up batch 3 (screens): the old onboarding cases panel removed from Providers › Onboarding (no case was ever opened; RPCs onboarding_cases_* now have no screen), two orphaned stylesheets removed (layer2-operations.css, enrichment-operations.css), Live activity wording updated. Kept after a live check: Search pass (used by adapters), Sample runs (service test tool), Refresh schedules (Layer 1).

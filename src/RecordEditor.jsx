@@ -25,13 +25,14 @@ function useRecord(read,idKey,id,onError){
 }
 
 function LockNote({lock,onRelease,can}){
-  if(!lock)return <span className="re-auto">Updated by automation</span>
-  return <span className="re-lock"><Lock size={11}/>{lock.mode==='removed'?'Removed by hand':'Entered by hand'} · automation will not change it
+  // v2.15.225: a short coloured pill; the release link stays beside it
+  if(!lock)return <span className="re-auto">Automated</span>
+  return <span className="re-lock-wrap"><span className="re-lock" title="Automation will not change this value"><Lock size={11}/>{lock.mode==='removed'?'Removed by hand':'Entered by hand'}</span>
     {can&&<button type="button" className="re-link" onClick={onRelease}><Unlock size={11}/>Let automation update this</button>}</span>
 }
 
-function Row({label,lock,can,onRelease,children,editor,editing,setEditing,onRemove,removeLabel}){
-  return <div className={`re-row${editing?' editing':''}`}>
+function Row({label,lock,can,onRelease,children,editor,editing,setEditing,onRemove,removeLabel,wide=false}){
+  return <div className={`re-row${editing?' editing':''}${wide?' wide':''}`}>
     <div className="re-row-head"><strong>{label}</strong><LockNote lock={lock} onRelease={onRelease} can={can}/></div>
     {editing?editor:<div className="re-row-body"><div className="re-value">{children}</div>{can&&<div className="re-actions">
       <Button compact onClick={()=>setEditing(true)} aria-label={`Change ${label}`}><Pencil size={13}/>Change</Button>
@@ -103,12 +104,12 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
   const ed=k=>({editing:editing===k,setEditing:x=>setEditing(x?k:'')})
   const link=(data.official_links||[])[0],tuition=(data.tuition||[])[0],manualCount=Object.keys(locks).filter(k=>k!=='course_url').length
   return <section className="m-detail-section re-panel" data-editor="course">
-    {inline?<div className="re-toggle re-static"><Pencil size={14}/><span><strong>Course values</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand; the rest come from the pipeline`:'All values come from the pipeline. Change a value here and the pipeline leaves it alone.'}</small></span></div>
+    {inline?<div className="re-toggle re-static"><Pencil size={14}/><span><strong>Course values</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All from automation'}</small></span></div>
     :<button type="button" className="re-toggle" onClick={()=>setOpen(o=>!o)} aria-expanded={open}><Pencil size={14}/><span><strong>Edit this course</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All values come from automation'}</small></span><span className="re-caret">{open?'Hide':'Show'}</span></button>}
-    {open&&<div className="re-body">
+    {open&&<div className={`re-body${inline?' re-grid':''}`}>
       {!data.can_edit&&<p className="l3v-note">You can view these values. A Curator or above can change them.</p>}
-      {data.can_edit&&<label className="re-reason"><small>Reason for the change (optional, kept in the history)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. Checked on the university website 1 Oct 2026"/></label>}
-      <Row label="Official course page" lock={locks.official_url} can={can} onRelease={()=>release('official_url')} {...ed('url')}
+      {data.can_edit&&<label className="re-reason"><small>Reason for the change (optional)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. Checked on the university website 1 Oct 2026"/></label>}
+      <Row wide label="Official course page" lock={locks.official_url} can={can} onRelease={()=>release('official_url')} {...ed('url')}
         onRemove={link?()=>act('remove_official_url',{},'Record that this course has no official page? The page search stops for this course.'):null} removeLabel="No page"
         editor={<TextEdit value={link?.url} type="url" placeholder="https://" busy={busy} onSave={v=>act('set_official_url',{url:v})} onCancel={()=>setEditing('')}/>}>
         {link?<a href={link.url} target="_blank" rel="noreferrer" className="cf-link">{link.url}</a>:locks.official_url?.mode==='removed'?'No official page':'—'}
@@ -127,7 +128,7 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
       <Row label="Tuition from the course page (international)" lock={locks.tuition} can={can} onRelease={()=>release('tuition')} {...ed('tuition')}
         onRemove={tuition?()=>act('remove_tuition',{},'Remove the current tuition for this course? Automation will not add it back.'):null}
         editor={<TuitionEdit row={tuition} currency={CURRENCY_BY_COUNTRY[country]||'AUD'} busy={busy} onSave={v=>act('set_tuition',v)} onCancel={()=>setEditing('')}/>}>
-        {tuition?`${fmtMoney(tuition.amount,tuition.currency||CURRENCY_BY_COUNTRY[country]||'AUD')} · ${BASIS[tuition.basis]||String(tuition.basis||'').replaceAll('_',' ')}${tuition.fee_year?` · ${tuition.fee_year}`:''}`:country==='AU'?<span>— <span className="l3v-code" data-tuition-note>Australia: the tuition shown to counsellors is the registered CRICOS course cost below; a fee read from the course page is recorded here beside it (Decision 242)</span></span>:'—'}
+        {tuition?`${fmtMoney(tuition.amount,tuition.currency||CURRENCY_BY_COUNTRY[country]||'AUD')} · ${BASIS[tuition.basis]||String(tuition.basis||'').replaceAll('_',' ')}${tuition.fee_year?` · ${tuition.fee_year}`:''}`:country==='AU'?<span>— <span className="l3v-code" data-tuition-note>None on the course page; the registered CRICOS cost applies</span></span>:'—'}
       </Row>
       <Row label="Title shown" lock={locks.display_title} can={can} onRelease={()=>release('display_title')} {...ed('title')}
         editor={<TextEdit value={c.display_title||c.canonical_title} busy={busy} onSave={v=>act('set_core',{field:'display_title',value:v})} onCancel={()=>setEditing('')}/>}>
@@ -141,7 +142,7 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
         editor={<TextEdit value={c.delivery_mode} placeholder="e.g. On campus" busy={busy} onSave={v=>act('set_core',{field:'delivery_mode',value:v})} onCancel={()=>setEditing('')}/>}>
         {c.delivery_mode||'—'}
       </Row>
-      <Row label="Description" lock={locks.description} can={can} onRelease={()=>release('description')} {...ed('description')}
+      <Row wide label="Description" lock={locks.description} can={can} onRelease={()=>release('description')} {...ed('description')}
         editor={<TextEdit value={c.description} multiline busy={busy} onSave={v=>act('set_core',{field:'description',value:v})} onCancel={()=>setEditing('')}/>}>
         <span className="re-desc">{c.description||'—'}</span>
       </Row>
@@ -165,16 +166,16 @@ export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=
   const act=async(action,args={},confirmText)=>{if(confirmText&&!window.confirm(confirmText))return;setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_provider_edit',{p_provider_id:providerId,p_action:action,p_args:{...args,...(reason.trim()?{reason:reason.trim()}:{})}});if(error)throw error;setData(d);setEditing('');onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const release=f=>act('release',{field:f},`Let automation update ${FIELD[f]||f} again?`)
   const ed=k=>({editing:editing===k,setEditing:x=>setEditing(x?k:'')})
-  const text=(key,label,opts={})=><Row key={key} label={label} lock={locks[key]} can={can} onRelease={()=>release(key)} {...ed(key)}
+  const text=(key,label,opts={})=><Row key={key} wide={Boolean(opts.multiline)} label={label} lock={locks[key]} can={can} onRelease={()=>release(key)} {...ed(key)}
       editor={<TextEdit value={p[key]} type={opts.type} multiline={opts.multiline} placeholder={opts.placeholder} busy={busy} onSave={v=>act('set_core',{field:key,value:v})} onCancel={()=>setEditing('')}/>}>
       {opts.link&&p[key]?<a href={p[key]} target="_blank" rel="noreferrer" className="cf-link">{p[key]}</a>:<span className={opts.multiline?'re-desc':''}>{p[key]||'—'}</span>}</Row>
   const manualCount=Object.keys(locks).length
   return <section className="m-detail-section re-panel" data-editor="provider">
-    {inline?<div className="re-toggle re-static"><Pencil size={14}/><span><strong>Provider values</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand; the rest come from the pipeline`:'All values come from the pipeline. Change a value here and the pipeline leaves it alone.'}</small></span></div>
+    {inline?<div className="re-toggle re-static"><Pencil size={14}/><span><strong>Provider values</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All from automation'}</small></span></div>
     :<button type="button" className="re-toggle" onClick={()=>setOpen(o=>!o)} aria-expanded={open}><Pencil size={14}/><span><strong>Edit this provider</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All values come from automation'}</small></span><span className="re-caret">{open?'Hide':'Show'}</span></button>}
-    {open&&<div className="re-body">
+    {open&&<div className={`re-body${inline?' re-grid':''}`}>
       {!data.can_edit&&<p className="l3v-note">You can view these values. A Curator or above can change them.</p>}
-      {data.can_edit&&<label className="re-reason"><small>Reason for the change (optional, kept in the history)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
+      {data.can_edit&&<label className="re-reason"><small>Reason for the change (optional)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
       {text('display_name','Name shown')}
       {text('website','Website',{type:'url',link:true,placeholder:'https://'})}
       {inline&&text('primary_city','City')}
