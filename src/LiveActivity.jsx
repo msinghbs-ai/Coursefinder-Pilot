@@ -17,7 +17,7 @@ const REFRESH_MS=20000
 export const AREAS=[
   ['Layer 1 register','Layer 1 · Registers','Official registers (CRICOS, NZQA) and rankings.'],
   ['Course pages','Layer 2 · Course pages','Finding and reading each course’s own page, and fee schedules.'],
-  ['Layer 2 reading','Layer 2 · Provider reading','Provider-level reading waves and their housekeeping.'],
+  ['Layer 2 reading','Layer 2 · Provider reading','Reading each provider’s pages with its adapter, and housekeeping.'],
   ['Layer 3 AI','Layer 3 · AI checks','Tested models check what rules cannot decide.'],
   ['Admission','Admission','Rules that admit checked values into the catalogue.'],
   ['Scholarships','Scholarships','Discovery, reading, savings and the publishing review.'],

@@ -21,7 +21,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   expect(shell).toContain("if(type==='scholarship'&&filters.provider)a.provider_id=filters.provider")
   expect(shell).toContain("if(['course','scholarship'].includes(type))n.provider=''")
   expect(shell).toContain("limit:10,offset")
-  expect(shell).toContain("{key:'sch_name',label:'Scholarship',width:260,sortKey:'scholarship'},{key:'provider_name',label:'Provider',width:190,sortKey:'provider'},{key:'scholarship_type',label:'Type',width:140,sortKey:'type'},{key:'sch_who',label:'Who it is for',width:200,sortKey:'audience'},{key:'value_label',label:'Value',width:170,sortKey:'award'},{key:'sch_courses',label:'Courses',width:100,sortKey:'courses'},{key:'application_close_date',label:'Closes',width:100,sortKey:'close'}")
+  expect(shell).toContain("{key:'sch_name',label:'Scholarship',width:260,sortKey:'scholarship'},{key:'provider_name',label:'Provider',width:190,sortKey:'provider'},{key:'sch_type',label:'Type',width:150,sortKey:'type'},{key:'sch_who',label:'Who it is for',width:200,sortKey:'audience'},{key:'value_label',label:'Value',width:170,sortKey:'award'},{key:'sch_courses',label:'Courses',width:100,sortKey:'courses'},{key:'sch_closes',label:'Closes',width:130,sortKey:'close'}")
   expect(shell).toContain('m-fluid-table')
   expect(shell).toContain('minWidth:`clamp(')
 

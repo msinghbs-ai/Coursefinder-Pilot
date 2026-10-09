@@ -47,6 +47,10 @@ test('browser: list shows published scholarships only — no status pills or sta
   for (const l of ['Lifecycle', 'Publication']) await expect(page.locator('.m-filter-bar').getByText(l, { exact: true })).toHaveCount(0)
   await expect.poll(() => (page.readCalls || []).filter(c => c.p_operation === 'scholarships_page').map(c => c.p_args?.status)).toContain('published')
   await expect(page.locator('[data-sch-courses]').first()).toContainText('12 linked')
+  // v2.15.224: coloured pills (shared StatusChip tones) for courses, type, who it is for and the closing date
+  await expect(page.locator('[data-sch-courses] .cf-chip.tone-success')).toHaveCount(1)
+  await expect(page.locator('tbody .cf-chip.tone-violet', { hasText: 'International students' })).toHaveCount(1)
+  await expect(page.locator('tbody td').last().locator('.cf-chip')).toHaveCount(1)
   // v2.15.223: the columns fit the screen (no sideways scroll at 1280 px)
   await page.setViewportSize({ width: 1280, height: 760 })
   await expect.poll(() => page.locator('.m-table-wrap').first().evaluate(e => e.scrollWidth - e.clientWidth)).toBeLessThanOrEqual(1)

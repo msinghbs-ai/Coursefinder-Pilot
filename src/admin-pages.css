@@ -334,7 +334,7 @@ td>.l3v-model{display:block}
 .sd-add label{display:grid;gap:2px}.sd-add small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}.sd-add .sd-wide{grid-column:1/-1}
 .sd-form-actions{grid-column:1/-1;display:flex;gap:8px;align-items:center}.sd-toggle{display:inline-flex;gap:6px;align-items:center}
 @media(max-width:760px){.sd-add{grid-template-columns:1fr}}
-.onb-ids{margin:8px 0}.onb-ids>summary{cursor:pointer;font-size:var(--cf-fs-sm);color:var(--cf-text-2)}.onb-cases .m23-stack{padding:10px}
+
 .evidence-table th:first-child,.evidence-table td:first-child,.pc-table th:first-child,.pc-table td:first-child{position:sticky;left:0;z-index:1;background:var(--cf-surface);box-shadow:1px 0 0 var(--cf-border)}
 /* Users & roles (v2.15.131). */
 .ar-embedded .ar-empty{font-size:var(--cf-fs-sm)}
