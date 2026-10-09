@@ -36,7 +36,9 @@ test('merged step input: a JSON path in the page data is used when it holds the 
 test('worker: shadow mode uses the Layer 3 contract and checks, records only, and leaves the routing version alone', () => {
   const w = fs.readFileSync('supabase/functions/layer3-model-routing/index.ts', 'utf8')
   expect(w).toContain('if (mode === "shadow") {')
-  expect(w).toContain('const SHADOW_V = "cf247-adapter-shadow-v1.0.0";')
+  expect(w).toContain('const SHADOW_V = "cf247-adapter-shadow-v1.1.0";')
+  expect(w).toContain('checkTuition(r.answer, text, it.context, profile, r.cost)')
+  expect(w).toContain('tuitionRequestBody(profile, it.source_url || null, it.context, text)')
   expect(w).toContain('rpc("svc_adapter_shadow_claim"')
   expect(w).toContain('rpc("svc_adapter_shadow_complete"')
   expect(w).toContain("if (!isPinnedModel(model)) throw new Error(\"the adapter's model is not a pinned model\");")
@@ -57,4 +59,20 @@ test('migration: limits, retire test reported only, nothing deleted, nothing adm
   expect(m).not.toMatch(/svc_coursefacts_apply_record|layer3_fact_admit/)
   expect(m).toContain("cron.schedule('adapter-shadow-intake'")
   expect(m).toContain("cron.schedule('adapter-shadow-english'")
+})
+
+test('tuition: the adapter fee section is its input; the task contract and checks come from the tuition profile', () => {
+  const html = '<html><body><p>About</p><h2>Fees</h2><p>International students: A$38,500 per year (2027).</p></body></html>'
+  const t = shadowInput({ sections: { fee: 'Fees' }, section_chars: 300 }, html, 'tuition')
+  expect(t.basis).toBe('adapter_section')
+  expect(t.text).toContain('38,500')
+  const m = fs.readFileSync('supabase/migrations/20261008005400_cf247_phase3_shadow_tuition_capacity.sql', 'utf8')
+  expect(m).toContain("if md5(pg_get_functiondef(k::regprocedure)) <> v then raise exception")
+  expect(m).toContain("check (task in ('intake','english','tuition'))")
+  expect(m).toContain("v_tp := (select to_jsonb(p) from pipeline.layer3_routed_profile(v_class) p where p.id is not null);")
+  expect(m).toContain("round((a->>'amount')::numeric) = round((b->>'amount')::numeric)")
+  expect(m).toContain('daily_reads_max = 1500')
+  expect(m).toContain("cron.schedule('adapter-shadow-tuition'")
+  expect(m).not.toMatch(/delete\s+from|drop\s+(table|function|schema)|truncate/i)
+  expect(m).not.toMatch(/svc_coursefacts_apply_record|layer3_fact_admit|tuition_admit/)
 })
