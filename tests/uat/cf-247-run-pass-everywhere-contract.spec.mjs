@@ -21,16 +21,18 @@ test('no edge function accepts the old automation key', () => {
   }
 })
 
+// Clean-up batch 2 (9 Oct 2026): these moved functions were retired (source removed, on the retired list).
+const RETIRED_B2 = ['layer2-batch-runner', 'layer2-scholarship-extract-v2', 'layer2-v2-diagnostic', 'scholarship-scope-job-execute']
+
 test('each moved function consumes a pass under its own name and is deployable by CI', () => {
   const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
-  for (const fn of MOVED) {
+  for (const fn of MOVED.filter(f => !RETIRED_B2.includes(f))) {
     const s = fs.readFileSync(`supabase/functions/${fn}/index.ts`, 'utf8')
     expect(s, fn).toMatch(new RegExp(`svc_pilot_consume_nonce["'],\\{p_function:["']${fn}["']`))
     expect(s, fn).toContain('x-cf-run-nonce')
     expect(wf, fn).toContain(`[${fn}]=false`)
   }
-  for (const fn of ['layer2-batch-runner', 'scholarship-scope-job-execute'])
-    expect(fs.readFileSync(`supabase/functions/${fn}/index.ts`, 'utf8'), fn).toContain('svc_pilot_issue_nonce')
+  for (const fn of RETIRED_B2) expect(fs.existsSync(`supabase/functions/${fn}`), fn).toBe(false)
   expect(fs.readFileSync('supabase/functions/layer1-ca-on-college-programs/index.ts', 'utf8')).toContain('v0.4.0')
 })
 

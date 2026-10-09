@@ -11,8 +11,8 @@ test('source: Melbourne time, no IST, onboarding merged, datasets component, no 
   expect(describeSchedule('17 20 * * *').text).not.toContain('IST')
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   expect(main).toContain("if(tab==='datasets')return <StatisticsDatasets rank={rank}/>")
-  expect(main).toContain('<ProviderOnboarding rank={rank} openEvidence=')
-  for (const f of ['src/platform-maturity-entry.jsx', 'src/pipeline-ops-entry.jsx', 'src/ScholarshipRuntimeWorkspace.jsx', 'src/EvidenceWorkspace.jsx'])
+  expect(main).toContain('<ProviderOnboardingNotice rank={rank} navigate={navigate}/>') // clean-up batch 2: the old queue was replaced
+  for (const f of ['src/platform-maturity-entry.jsx', 'src/pipeline-ops-entry.jsx', 'src/EvidenceWorkspace.jsx'])
     expect(fs.readFileSync(f, 'utf8')).not.toMatch(/M2\.4\.4 permanent baseline|M1-PIPELINE-OPS · |M2\.4\.5 · Scholarship PIM|Private governed evidence/)
 })
 

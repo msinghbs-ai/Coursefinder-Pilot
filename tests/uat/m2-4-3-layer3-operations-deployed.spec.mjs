@@ -26,10 +26,7 @@ await expect(dialog.getByRole('heading',{name:'Qualified model routes'})).toHave
   expect(provenance).toContain('profile_snapshot')
   expect(provenance).toContain('prompt_hash')
   expect(provenance).toContain('layer3_execution_provenance_service')
-  const interpret=await fs.readFile('supabase/functions/layer3-interpret/index.ts','utf8')
-  expect(interpret).toContain('sha256Hex')
-  expect(interpret).toContain('layer3_execution_provenance_service')
-  expect(interpret).toContain('prompt_contract_version')
+  // Clean-up batch 2 (9 Oct 2026): layer3-interpret was retired; its checks were removed.
   const benchmark=await fs.readFile('supabase/functions/layer3-source-pattern-benchmark/index.ts','utf8')
   expect(benchmark).toContain('layer3-source-pattern-benchmark-v1.1.0')
   expect(benchmark).toContain('attempt_trace')

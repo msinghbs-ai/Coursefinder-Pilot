@@ -304,20 +304,10 @@ export const layer3Queue = { by_task_class: [
   { task_class: 'provider_english_validation', status_counts: { admitted: 2999, failed: 249, layer4_required: 172, no_candidate: 2808 }, total: 6228, oldest_pending_seconds: null, last_completed_at: '2026-10-01T01:01:03Z' },
   { task_class: 'provider_intake_validation', status_counts: { admitted: 2655, failed: 281, layer4_required: 866, no_candidate: 5348, pending: 40 }, total: 9190, oldest_pending_seconds: 5400, last_completed_at: '2026-10-01T01:01:06Z' },
 ] }
-export const layer3SourcePatterns = [
-  { request_id: 'sp1', provider_name: 'Kaplan Business School', entity_id: 'p1', country_code: 'AU', status: 'queued', created_at: '2026-09-07T05:40:00Z', source_url: 'https://www.kbs.edu.au/courses', schedule_error: 'model error (provider returned 502)' },
-]
 const layer3RecentBase = Array.from({ length: 30 }, (_, i) => ({ id: 'i' + i, created_at: new Date(Date.UTC(2026, 9, 1, 1, 0) - i * 600000).toISOString(), task_class: ['provider_intake_validation', 'provider_english_validation', 'provider_current_tuition_validation'][i % 3], status: ['validated', 'no_candidate', 'escalated', 'rejected_validation'][i % 4], model_identifier: 'qwen/qwen3-30b-a3b-instruct-2507', estimated_cost_usd: 0.0002, review_state: i % 4 === 2 ? 'pending' : 'not_created', escalation_reason: i % 4 === 2 ? 'differs from value held' : null }))
 // Decision 221: a cascade claim no step has answered yet (placeholder profile hidden), and an answer from step 2
 export const layer3Recent = layer3RecentBase.map((r, i) => i === 0 ? { ...r, status: 'calling', model_identifier: null, profile_code: null, aggregator_response_model: null, model_pending: true, cascade_tier_no: null } : i === 1 ? { ...r, cascade_tier_no: 2 } : r)
 
-// Layer 2 Source profiles (v2.15.127).
-export const layer2Profiles = { total: 2, limit: 50, offset: 0, has_more: false, summary: { profiles: 2, valid: 2, healthy: 1 }, options: { countries: ['AU'], methods: ['html_scrape'], health: ['healthy', 'stale'] },
-  items: [
-    { profile_id: 'lp1', source_label: 'RMIT University courses', profile_key: 'au-rmit-courses', country_code: 'AU', acquisition_method: 'html_scrape', affected_provider_name: 'RMIT University', target_entity_type: 'course', current_version: 3, validation_status: 'valid', health: 'healthy', enabled: true, paused: false, last_success_at: '2026-09-30T22:00:00Z', last_inventory_count: 412 },
-    { profile_id: 'lp2', source_label: 'Monash University courses', profile_key: 'au-monash-courses', country_code: 'AU', acquisition_method: 'html_scrape', affected_provider_name: 'Monash University', target_entity_type: 'course', current_version: 1, validation_status: 'valid', health: 'stale', enabled: true, paused: false, last_success_at: '2026-09-20T22:00:00Z', last_inventory_count: null },
-  ] }
-export const layer2ProfileDetail = { profile: { id: 'lp1', profile_key: 'au-rmit-courses', source_label: 'RMIT University courses', country_code: 'AU', acquisition_method: 'html_scrape', target_entity_type: 'course', enabled: true, paused: false }, current_version: { id: 'v3', version_no: 3, validation_status: 'valid', configuration: { base_domain: 'www.rmit.edu.au' } }, history: [], recent_jobs: [], recent_evidence: [] }
 
 // Layer 2 tabs (v2.15.128), live-shaped from 1 Oct 2026.
 const hr = (h, o) => ({ hour_utc: `2026-09-30T${String(h).padStart(2, '0')}:00:00+00:00`, country_code: 'AU', domain: 'course_facts', items: 0, fetched: 0, fetch_failures: 0, official_urls_found: 0, intakes_found: 0, english_requirements_found: 0, provider_current_tuition_found: 0, scholarships_found: 0, facts_admitted_lower_bound: 0, unchanged: 0, rejected_or_blocked: 0, layer3_escalated: 0, layer4_referred: 0, courses_improved_lower_bound: 0, vendor_units: 0, vendor_cost_usd: 0, retries: 0, http_429: 0, http_5xx: 0, other_runtime_failures: 0, p50_response_ms: null, p95_response_ms: null, p50_extraction_ms: null, p95_extraction_ms: null, ...o })
@@ -342,8 +332,6 @@ export const layer2Overview = {
   evidence_summary: { count: 50638 }, scope_summary: { course_catalogue_total: 26103, course_queueable_total: 12 }, outcomes: {}, sources: [],
 }
 export const layer2Parents = [{ parent_run_id: 'f120fb4b-ec69-4f2c-8147-550a338c6f3d', status: 'cancelled', scope_type: 'university', country_code: 'AU', total_items: 263, processed_items: 0, resolved_l2: 0, escalated_l3: 25, blocked: 0, child_jobs: 25, evidence_count: 75, completed_items: 0, rescheduled_items: 0, failed_items: 0, recorded_failed_items: 0, scheduled_remainder: 263, updated_at: '2026-09-26T06:52:50Z' }]
-export const layer2SyncOptions = { countries: [{ code: 'AU', name: 'Australia', providers: 186, courses: 26103 }, { code: 'NZ', name: 'New Zealand', providers: 34, courses: 4210 }] }
-export const layer2SyncPreview = { university_count: 186, catalogue_count: 26103, qualified_provider_count: 41, qualification_required_count: 145, queueable_count: 12, production_accepted_wave_size: 50, execution_policy: { qualification_provider_wave_size: 5, qualification_sample_size: 3, production_target_wave_size: 50 }, firecrawl_budget: { used_units: 1124, limit_units: 100000 }, firecrawl: { usable_remaining_units: 88876, reserve_units: 10000 } }
 
 // Layer 4 review (v2.15.129).
 export const l4Desk = { summary: { waiting: 1803, oldest_days: 11, by_task: { Intakes: 866, Tuition: 712, 'English requirements': 225 } }, items: [

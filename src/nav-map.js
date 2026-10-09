@@ -89,7 +89,7 @@ export const PAGES = {
   sources: { label: 'Sources', slug: 'pipeline-sources', icon: 'database', min: 4, subtitle: 'Every source the pipeline reads, across all layers, with its health and history.' },
 
   environment: { label: 'Settings', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity, Layer 3 limits and budgets; keys for outside services below (never shown).' },
-  scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: providers, limits and routing.' },
+  scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: services, keys and limits.' },
   services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off. Anything off is not offered anywhere else. Below: the limits each layer depends on, their notices, Firecrawl work by use case and sample runs.' },
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on.' },
   dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5, subtitle: 'Attributes, families, groups and options.' },

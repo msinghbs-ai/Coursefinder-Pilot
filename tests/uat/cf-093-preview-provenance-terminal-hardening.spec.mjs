@@ -3,7 +3,6 @@ import fs from 'node:fs'
 
 const worker = fs.readFileSync('supabase/functions/layer2-scope-discover-scheduled/index.ts','utf8')
 const migration = fs.readFileSync('supabase/migrations/20260912232827_cf_093_preview_provenance_terminal_dedupe_hardening.sql','utf8')
-const acceptance = fs.readFileSync('.github/workflows/cf093-uq-corrective-acceptance.yml','utf8')
 
 test('CF-093 worker revalidates Preview binding after network acquisition before writes',()=>{
   expect(worker).toContain('layer2-scope-discover-scheduled-v1.3.10')
@@ -47,9 +46,4 @@ test('CF-093 mixed terminal profiles and cancellation replay remain fail-closed 
   expect(migration).toContain("'async_binding_cancelled_at',now()")
 })
 
-test('CF-093 consequential UQ acceptance is manual exact-head evidence',()=>{
-  expect(acceptance).toContain('workflow_dispatch:')
-  expect(acceptance).toContain("test \"$(git rev-parse HEAD)\" = \"${GITHUB_SHA}\"")
-  expect(acceptance).toContain("expect(dispatch.result?.status).toBe('scope_started')")
-  expect(acceptance).toContain("expect(dispatch.result.profiles[0]?.status).toBe('discovery_started')")
-})
+// Clean-up batch 2 (9 Oct 2026): the manual UQ acceptance workflow was retired with the one-off run builder.

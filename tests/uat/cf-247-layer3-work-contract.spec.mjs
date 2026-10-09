@@ -1,4 +1,5 @@
-// v2.15.127 Layer 3 Work queue: work by task, course-page pattern requests (run by hand, unchanged), recent results.
+// v2.15.127 Layer 3 Work queue: work by task and recent results. The course-page pattern requests panel was removed in
+// clean-up batch 2 (9 Oct 2026).
 // No paused banner that could contradict Control, no one-off manual run form, no duplicate links.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -10,15 +11,13 @@ test('source: the old workspace is no longer the Work queue, and the manual run 
   expect(ops).not.toContain('Layer3Workspace')
   const w = fs.readFileSync('src/Layer3Work.jsx', 'utf8').split('\n').filter(l => !l.startsWith('//')).join('\n')
   for (const gone of ['Run eligible interpretation', 'AI interpretation is paused', 'Open Jobs', 'Technical identifiers', 'Governed']) expect(w).not.toContain(gone)
-  expect(w).toContain("rpc('layer3_source_pattern_queue',{p_limit:50})")
-  expect(w).toContain('body:{source_pattern_request_id:requestId}')
+  expect(w).not.toContain('source_pattern_queue')
+  expect(w).not.toContain('layer3-interpret')
 })
 
 test.describe('mocked browser', () => {
-  test('work by task, pattern request run, recent results paged', async ({ page }) => {
+  test('work by task and recent results paged; no pattern request panel', async ({ page }) => {
     await mockAdmin(page)
-    let invoked = null
-    await page.route('https://example.supabase.co/functions/v1/layer3-interpret', r => { invoked = r.request().postDataJSON(); return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }) })
     await page.goto('/#layer-3-ai?tab=work')
     const w = page.locator('[data-layer3-work]')
     await expect(w.locator('[data-task="provider_intake_validation"]')).toContainText('Intakes')
@@ -26,10 +25,7 @@ test.describe('mocked browser', () => {
     await expect(w).toContainText('Oldest waiting 2 h')
     await expect(page.getByText('AI interpretation is paused')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Run eligible interpretation' })).toHaveCount(0)
-    const q = w.locator('[data-layer3-source-pattern-queue]')
-    await expect(q).toContainText('Kaplan Business School')
-    await q.getByRole('button', { name: 'Run source-pattern interpretation' }).click()
-    await expect.poll(() => invoked).toEqual({ source_pattern_request_id: 'sp1' })
+    await expect(w.locator('[data-layer3-source-pattern-queue]')).toHaveCount(0)
     await expect(w.locator('.l3w-runs tbody tr')).toHaveCount(25)
     await expect(w.locator('.l3w-runs')).toContainText('qwen3-30b-a3b-instruct-2507')
   })

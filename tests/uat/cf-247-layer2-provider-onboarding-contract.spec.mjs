@@ -1,41 +1,26 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { mockAdmin } from './support/admin-mock.mjs'
 
-// Decision 141: per-provider onboarding panel is mounted on Layer 2 and uses the governed functions.
-test('Layer 2 provider onboarding: mounted, dry-run first, three-course check required',async()=>{
-  // v2.15.131: merged into Providers › Onboarding (screen review l2r-onboard).
-  const entry=fs.readFileSync('src/mature-main.jsx','utf8')
-  expect(entry).toContain("const ProviderOnboarding=lazyPage(()=>import('./layer2-provider-onboarding'))")
-  expect(entry).toContain('<ProviderOnboarding rank={rank} openEvidence=')
-  const panel=fs.readFileSync('src/layer2-provider-onboarding.jsx','utf8')
-  expect(panel).toContain("rpc('layer2_provider_onboarding_queue_v1'")
-  expect(panel).toContain("rpc('layer2_provider_catalogue_submit_v1'")
-  expect(panel).toContain('p_dry_run:dry')
-  expect(panel).toContain('disabled={!canAct||!!busy||!checked}')
-  expect(panel).toContain('const canAct=rank>=4')
+// Clean-up batch 2 (Platform Admin, 9 Oct 2026): the old Layer 2 onboarding queue (Decision 141) and the Layer 2
+// automation settings were retired. Providers › Onboarding now explains that new providers are onboarded through the
+// guided Adapter builder and links to it.
+test('Providers › Onboarding: a plain panel pointing to the Adapter builder; the old queue is gone', () => {
+  const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
+  expect(main).not.toContain("import('./layer2-provider-onboarding')")
+  expect(main).toContain('<ProviderOnboardingNotice rank={rank} navigate={navigate}/>')
+  expect(main).toContain("onClick={()=>navigate('layer2',{tab:'builder'})}>Open the Adapter builder</button>")
+  expect(fs.existsSync('src/layer2-provider-onboarding.jsx')).toBe(false)
+  expect(fs.existsSync('src/Layer2AutomationSettings.jsx')).toBe(false)
 })
 
-// Decisions 141 and 146: Platform Admin automation controls live in Scraper Config.
-test('Layer 2 automation settings: in Scraper Config, admin-only editing, Firecrawl-bounded',async()=>{
-  const entry=fs.readFileSync('src/layer2-provider-entry.jsx','utf8')
-  expect(entry).toContain("import Layer2AutomationSettings from'./Layer2AutomationSettings'")
-  expect(entry).toContain('<Layer2AutomationSettings onError={setError}/>')
-  const card=fs.readFileSync('src/Layer2AutomationSettings.jsx','utf8')
-  expect(card).toContain("rpc('layer2_auto_discovery_settings_read_v1'")
-  expect(card).toContain("rpc('layer2_auto_discovery_settings_save_v1'")
-  expect(card).toContain('const edit=data.can_edit,max=Number(data.firecrawl_concurrency||1)')
-  expect(card).toContain('max={max}')
-  expect(card).toContain("disabled={busy||reason.trim().length<8}")
+test.describe('mocked browser', () => {
+  test('Onboarding opens the Adapter builder', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#providers?tab=onboarding')
+    const panel = page.locator('[data-provider-onboarding-notice]')
+    await expect(panel).toContainText('New providers are onboarded through the guided Adapter builder')
+    await panel.getByRole('button', { name: 'Open the Adapter builder' }).click()
+    await expect(page).toHaveURL(/tab=builder/)
+  })
 })
-
-// Decisions 146 and 147: candidates from stored evidence, with the evidence one click away.
-test('Layer 2 onboarding shows evidence-ranked candidates and automatic status',async()=>{
-  const entry=fs.readFileSync('src/mature-main.jsx','utf8')
-  expect(entry).toContain('<ProviderOnboarding rank={rank} openEvidence=')
-  const panel=fs.readFileSync('src/layer2-provider-onboarding.jsx','utf8')
-  expect(panel).toContain('Candidates found in stored evidence')
-  expect(panel).toContain('openEvidence(c.evidence_id)')
-  expect(panel).toContain("['needs_person','Needs a person']")
-  expect(panel).toContain("r.last_submission.origin==='automatic'")
-})
-
