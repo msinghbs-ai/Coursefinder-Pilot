@@ -21,7 +21,7 @@ const COUNTRY_POLICY = {
     identity: 'CRICOS Provider Code + CRICOS Course Code',
     recommendedBatch: 2500,
     maxBatch: 5000,
-    note: 'Full authoritative depth. Each bounded course slice also reconciles the matching provider campuses and course↔campus relationships.',
+    note: 'Each batch also adds each provider’s campuses and which courses run at each campus.',
   },
   GB: {
     label: 'United Kingdom',
@@ -247,13 +247,13 @@ export default function RegulatorySettings({ onError, mode = 'batch' }) {
 
     <section className="panel full ingestion-control">
       <div className="panel-title control-title">
-        <div><span className="kicker">Country runner</span><h3>Layer 1 bounded ingestion</h3><p>Select one country. The Edge Function routes the request to that country's programmed adapter and returns the next bounded offset.</p></div>
+        <div><span className="kicker">Run by hand</span><h3>Load a country's register in batches</h3><p>Pick a country, check a batch, then save it. Each batch tells you where the next one starts.</p></div>
         <span className="control-badge"><ShieldCheck size={15}/>Platform Admin</span>
       </div>
 
       <div className="grid-two" style={{alignItems:'stretch'}}>
         <div className="panel" style={{margin:0}}>
-          <div className="panel-title"><div><span className="kicker">Execution scope</span><h3>{policy.label}</h3></div></div>
+          <div className="panel-title"><div><span className="kicker">Country</span><h3>{policy.label}</h3></div></div>
           <div className="fact-list">
             <label className="fact-row"><span>Country</span><select value={country} onChange={e=>setCountry(e.target.value)} disabled={runBusy || statsCanBusy} style={{minWidth:220}}>{configuredCountries.length ? configuredCountries.map(code=><option key={code} value={code}>{COUNTRY_POLICY[code]?.label || code} · {code}</option>) : Object.keys(COUNTRY_POLICY).map(code=><option key={code} value={code}>{COUNTRY_POLICY[code].label} · {code}</option>)}</select></label>
             <Fact label="Adapter" value={policy.adapter}/>
@@ -265,7 +265,7 @@ export default function RegulatorySettings({ onError, mode = 'batch' }) {
         </div>
 
         <div className="panel" style={{margin:0}}>
-          <div className="panel-title"><div><span className="kicker">Bounded policy</span><h3>Batch control</h3></div></div>
+          <div className="panel-title"><div><span className="kicker">Batch</span><h3>Size and starting point</h3></div></div>
           <div className="fact-list">
             <label className="fact-row"><span>Batch size</span><input type="number" min="1" max={policy.maxBatch} step="100" value={batchSize} onChange={e=>setBatchSize(Math.max(1, Math.min(Number(e.target.value || 1), policy.maxBatch)))} disabled={runBusy} style={{width:130}}/></label>
             <label className="fact-row"><span>Offset</span><input type="number" min="0" step={Math.max(1,batchValue)} value={offset} onChange={e=>setOffset(Math.max(0, Number(e.target.value || 0)))} disabled={runBusy} style={{width:130}}/></label>
@@ -279,9 +279,9 @@ export default function RegulatorySettings({ onError, mode = 'batch' }) {
 
       <div className="control-steps" style={{marginTop:18}}>
         <ControlStep number="1" title="Validate batch" text={`Fetch and parse ${policy.label} using ${policy.adapter}. Offset ${fmtNumber(offset)}, up to ${fmtNumber(batchValue)} records. No catalogue writes.`} status={runResult?.controlKind === 'dry-run' ? 'done' : 'ready'}><button className="secondary" onClick={()=>execute({apply:false,targetOffset:offset,kind:'dry-run'})} disabled={runBusy || statsCanBusy}><Play size={15}/>{runBusy ? 'Running…' : 'Validate batch'}</button></ControlStep>
-        <ControlStep number="2" title="Apply bounded batch" text="Write only this bounded slice through the country adapter, then rebuild Search Projection and return the next offset." status={runResult?.mode === 'apply' ? 'done' : 'guarded'}><button className="danger-soft" onClick={()=>requestApply(offset,'apply-batch')} disabled={runBusy || statsCanBusy}><AlertTriangle size={15}/>Apply {country} batch</button></ControlStep>
-        <ControlStep number="3" title="Continue" text="Advance to the exact next offset returned by the adapter. This keeps production ingestion deterministic and restartable." status={hasMore ? 'ready' : runResult ? 'done' : 'waiting'}><button className="secondary" onClick={()=>requestApply(nextOffset,'next-batch')} disabled={runBusy || statsCanBusy || !hasMore}><StepForward size={15}/>Run next batch</button></ControlStep>
-        <ControlStep number="4" title="Idempotency check" text="Re-run the same bounded offset. Expected result: zero duplicate identities or depth relationships." status={runResult?.mode === 'apply' ? 'ready' : 'waiting'}><button className="secondary" onClick={()=>requestApply(currentOffset,'idempotency-rerun')} disabled={runBusy || statsCanBusy || runResult?.mode !== 'apply'}><Repeat2 size={15}/>Re-run current batch</button></ControlStep>
+        <ControlStep number="2" title="Save batch" text="Saves only this batch to the catalogue, refreshes search and shows where the next batch starts." status={runResult?.mode === 'apply' ? 'done' : 'guarded'}><button className="danger-soft" onClick={()=>requestApply(offset,'apply-batch')} disabled={runBusy || statsCanBusy}><AlertTriangle size={15}/>Apply {country} batch</button></ControlStep>
+        <ControlStep number="3" title="Continue" text="Runs the next batch from where the last one ended, so a stopped load can be picked up again." status={hasMore ? 'ready' : runResult ? 'done' : 'waiting'}><button className="secondary" onClick={()=>requestApply(nextOffset,'next-batch')} disabled={runBusy || statsCanBusy || !hasMore}><StepForward size={15}/>Run next batch</button></ControlStep>
+        <ControlStep number="4" title="Repeat check" text="Runs the same batch again. Nothing new should be added; this confirms there are no duplicates." status={runResult?.mode === 'apply' ? 'ready' : 'waiting'}><button className="secondary" onClick={()=>requestApply(currentOffset,'idempotency-rerun')} disabled={runBusy || statsCanBusy || runResult?.mode !== 'apply'}><Repeat2 size={15}/>Re-run current batch</button></ControlStep>
       </div>
     </section>
 

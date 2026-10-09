@@ -14,3 +14,13 @@
 /* dashboard tiles share one height */
 .db-tiles{align-items:stretch}.db-tile{height:100%}.db-tile>*{height:100%;box-sizing:border-box}
 .sd-actions label{display:inline-flex;align-items:center;gap:8px;font-size:var(--cf-fs-sm);color:var(--cf-slate-600)}
+/* v2.15.229 stage 2: selects inside boxed filters keep their box; labels in filter bars are small captions */
+.m-main .ops-select select,.m-main .l1v2-filter select{min-height:0;padding:0;border:0;box-shadow:none}
+.m-main .l1v2-filter select{font-size:var(--cf-fs-sm)}
+.m-main .cc-where label>span,.m-main .cc-provider>span{font-size:var(--cf-fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--cf-slate-450)}
+.ops-workspace-head.slim{padding:10px 14px;align-items:center}.ops-workspace-head.slim p{margin:0;font-size:var(--cf-fs-sm);color:var(--cf-slate-500)}.ops-workspace-head.slim .ops-result-count strong{font-size:var(--cf-fs-xl)}
+
+.ad-row-name{font-size:var(--cf-fs-sm)}.ad-row-name strong{font-size:var(--cf-fs-md)}
+.tn-check{font-size:var(--cf-fs-sm)}
+.m-main .control-step .danger-soft,.m-main .control-steps .danger-soft{font-size:var(--cf-fs-sm);padding:7px 12px;border-radius:var(--cf-radius-md);width:100%}
+.ops-source-grid>.cf-empty,.ops-source-grid>[class*=empty]{grid-column:1/-1}
