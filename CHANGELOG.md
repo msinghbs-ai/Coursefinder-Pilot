@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.156 — 9 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.229** (UI stage 2: Layer 1 register, Layer 2, Coverage, Sources, Platform health). Boxed filter selects keep their box under the standard control style (fixes the Sources/Jobs overflow from v2.15.227); Sources and Jobs headers slimmed; plain wording on Layer 1 manual batch runs and alerts; adapter names and tick labels sized consistently.
+
 ## 0.1.155 — 9 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.228** (Platform Admin: check usage, retire unused; remove the Reset database button and function). Clean-up batch 7: database `20261009006200` (6 functions of the old scale-qualification chain, md5-guarded, no CASCADE; 8 run-token rows) and 8 edge functions retired (coursefacts-au-qut/rmit/uq, layer2-scale-qualify-scheduled, layer2-screenshot-backfill-scheduled, layer3-source-pattern-benchmark, layer1-au-completeness, pilot-reset). The Go-live checklist no longer offers Reset database.
