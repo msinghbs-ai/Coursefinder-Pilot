@@ -27,7 +27,7 @@ import { shadowInput } from "../_shared/cf247-adapter-shadow.ts";
 const FN = "layer3-model-routing", V = ROUTING_VERSION;
 // CF-247 Phase 3 (Platform Admin 9 Oct 2026): shadow reads of the merged adapter step. Kept apart from ROUTING_VERSION,
 // which is part of every qualified binding hash and must not change.
-const SHADOW_V = "cf247-adapter-shadow-v1.0.0";
+const SHADOW_V = "cf247-adapter-shadow-v1.1.0";  // v1.1.0: tuition (Platform Admin 9 Oct 2026)
 // Decision 221 (2 Oct 2026): a cascade task (intake, English) never falls back to the single routed profile; with no
 // cascade step switched on, nothing is claimed and no model is called.
 const QUALIFICATION_CAP_USD = 8.0, RESERVE_USD = 0.03;
@@ -245,7 +245,6 @@ Deno.serve(async (req: Request) => {
     // reads a day) are applied by the claim; the OpenRouter credit floor applies as for Layer 3.
     if (mode === "shadow") {
       const task = taskOf(body.task);
-      if (task === "tuition") throw new Error("the shadow run covers intake and english");
       const c = await credits();
       const pol = await creditPolicy(rpc);
       if (pol.enforce && c.remaining < pol.floor) return j(200, { ok: true, mode, task, worker_version: SHADOW_V, claimed: 0, reason: "credit floor" });
@@ -258,20 +257,33 @@ Deno.serve(async (req: Request) => {
         try {
           const profile = it.profile, model = String(profile?.model_identifier || "");
           if (!isPinnedModel(model)) throw new Error("the adapter's model is not a pinned model");
-          const inp = shadowInput(it.adapter, await pageHtml(it.storage_path), task);
-          const text = inp.text;
-          const blockers = task === "intake" ? intakeSafetyBlockers(text) : [];
-          let r: any = { ok: true, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null }, called = false;
-          if (task === "intake" && blockers.length) r.answer = { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" };
-          else {
-            called = true;
-            const reqBody = task === "intake" ? intakeBodyFor(profile, model, text, Number(profile.max_output_tokens)) : englishRequestBody(model, text, Number(profile.max_output_tokens));
-            r = await callModel(profile, reqBody);
+          const html = await pageHtml(it.storage_path);
+          const inp = shadowInput(it.adapter, html, task);
+          // tuition: on the whole page, the evidence text exactly as Layer 3 prepares it (its own stripping and length)
+          const text = task === "tuition" && inp.basis === "page" ? tuitionEvidenceText(new TextEncoder().encode(html), it.mime_type || null, tuitionMaxChars(profile))
+            : task === "tuition" ? inp.text.slice(0, tuitionMaxChars(profile)) : inp.text;
+          if (task === "tuition") {
+            const r: any = await callModel(profile, tuitionRequestBody(profile, it.source_url || null, it.context, text));
+            let chk: any = r.answer ? checkTuition(r.answer, text, it.context, profile, r.cost) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+            const pick = r.answer?.candidate_value ?? null;
+            const mismatch = r.returned && r.returned !== model;
+            if (mismatch) chk = { ...chk, valid: false, errors: [...(chk.errors || []), `returned_model_mismatch:${r.returned}`] };
+            result = { valid: chk.valid, status: chk.status, admitted: mismatch ? null : pick, errors: chk.errors, cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output,
+              latency_ms: r.latency, input_basis: inp.basis, input_chars: text.length, worker_version: SHADOW_V };
+          } else {
+            const blockers = task === "intake" ? intakeSafetyBlockers(text) : [];
+            let r: any = { ok: true, returned: null, cost: 0, input: 0, output: 0, latency: 0, error: null, answer: null }, called = false;
+            if (task === "intake" && blockers.length) r.answer = { status: "not_stated", months: [], quotes: blockers.map((b) => b.quote), rationale: "deterministic safety rule" };
+            else {
+              called = true;
+              const reqBody = task === "intake" ? intakeBodyFor(profile, model, text, Number(profile.max_output_tokens)) : englishRequestBody(model, text, Number(profile.max_output_tokens));
+              r = await callModel(profile, reqBody);
+            }
+            let chk: any = r.answer ? (task === "intake" ? intakeCheckFor(profile, r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
+            if (called && r.returned && r.returned !== model) chk = { valid: false, errors: [...(chk.errors || []), `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
+            result = { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output,
+              latency_ms: r.latency, input_basis: inp.basis, input_chars: text.length, worker_version: SHADOW_V };
           }
-          let chk: any = r.answer ? (task === "intake" ? intakeCheckFor(profile, r.answer, text, blockers) : checkEnglish(r.answer, text)) : { valid: false, errors: [r.error || "no_answer"], status: null, admitted: null };
-          if (called && r.returned && r.returned !== model) chk = { valid: false, errors: [...(chk.errors || []), `returned_model_mismatch:${r.returned}`], status: null, admitted: null };
-          result = { valid: chk.valid, status: chk.status, admitted: chk.admitted, errors: chk.errors, cost_usd: r.cost, input_tokens: r.input, output_tokens: r.output,
-            latency_ms: r.latency, input_basis: inp.basis, input_chars: text.length, worker_version: SHADOW_V };
         } catch (e) {
           result = { worker_error: true, valid: false, errors: [String((e as Error)?.message || e).slice(0, 200)], cost_usd: 0, worker_version: SHADOW_V };
         }

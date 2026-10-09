@@ -3,8 +3,8 @@
 import { htmlToText } from "../coverage-sweep/extract.ts";
 import { jsonAt, jsonText, pageJson, sectionText } from "../coverage-sweep/adapters.ts";
 
-export function shadowInput(a: any, html: string, task: "intake" | "english"): { basis: string; text: string } {
-  const field = task === "intake" ? "intakes" : "english";
+export function shadowInput(a: any, html: string, task: "intake" | "english" | "tuition"): { basis: string; text: string } {
+  const field = task === "intake" ? "intakes" : task === "tuition" ? "fee" : "english";
   const full = htmlToText(html);
   const path = a?.json_paths?.[field];
   if (path) { const data = pageJson(html, a?.json_source); const t = data ? jsonText(jsonAt(data, path)) : ""; if (t && t.trim().length >= 3) return { basis: "adapter_json", text: t } }
