@@ -156,7 +156,7 @@ test('firecrawl use cases: migrations shaped, md5-guarded, nothing admitted, set
   expect(m).toContain("k.field = 'official_url'")
   expect(m).toContain("raise exception 'Platform Admin required'")
   const w = read('supabase/functions/coverage-sweep/index.ts')
-  expect(w).toContain('if (!isTarget(providerId)) return false;')
+  expect(w).toContain('if (!anyProvider && !isTarget(providerId)) return false;')
   expect(w).toContain('await rpc("svc_fc_call_log", { p: { ...log, outcome } })')
   for (const k of ['run_batch_per_call', 'run_concurrency', 'read_proxy', 'find_min_title_match']) expect(w).toContain(`s.${k}`)
   const f = read('supabase/functions/coverage-sweep/firecrawl.ts')

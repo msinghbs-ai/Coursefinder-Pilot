@@ -78,8 +78,11 @@ function Settings({settings,can,write}){
   return <section className="m-panel" data-sl-settings><SectionTitle title="Settings" subtitle="Values the jobs read each time they run. A Platform Admin can change them, with a reason."/>
     <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Setting</th><th>Value</th><th>Allowed</th><th>Last change</th></tr></thead><tbody>
       {settings.map(s=>{const v=vals[s.key]??String(s.value);return <tr key={s.key} data-sl-setting={s.key}><td><strong>{s.label}</strong><small className="sl-sub">{s.help}</small></td>
-        <td><span className="sl-val"><input aria-label={s.label} inputMode="numeric" value={v} disabled={!can} onChange={e=>setVals(x=>({...x,[s.key]:e.target.value}))}/><small>{s.unit}</small>{can&&String(v)!==String(s.value)&&<Button compact variant="primary" onClick={()=>write('setting',{key:s.key,value:v},`Change "${s.label}" from ${s.value} to ${v}?`)}>Save</Button>}</span></td>
-        <td>{fmtNumber(s.min)} to {fmtNumber(s.max)}</td><td><small>{s.reason||'—'}{s.updated_at?` · ${fmtDateTime(s.updated_at)}`:''}</small></td></tr>})}
+        <td>{s.unit==='on/off'
+          // v2.15.242: on/off settings are a switch (saved straight away, with a reason)
+          ?<span className="sl-val"><label className="sl-switch"><input type="checkbox" role="switch" aria-label={s.label} data-sl-switch={s.key} checked={Number(s.value)>=1} disabled={!can} onChange={e=>{const nv=e.target.checked?1:0;write('setting',{key:s.key,value:nv},`Turn "${s.label}" ${nv?'on':'off'}?`)}}/><span>{Number(s.value)>=1?'On':'Off'}</span></label></span>
+          :<span className="sl-val"><input aria-label={s.label} inputMode="numeric" value={v} disabled={!can} onChange={e=>setVals(x=>({...x,[s.key]:e.target.value}))}/><small>{s.unit}</small>{can&&String(v)!==String(s.value)&&<Button compact variant="primary" onClick={()=>write('setting',{key:s.key,value:v},`Change "${s.label}" from ${s.value} to ${v}?`)}>Save</Button>}</span>}</td>
+        <td>{s.unit==='on/off'?'On or off':`${fmtNumber(s.min)} to ${fmtNumber(s.max)}`}</td><td><small>{s.reason||'—'}{s.updated_at?` · ${fmtDateTime(s.updated_at)}`:''}</small></td></tr>})}
     </tbody></table></div></section>
 }
 
@@ -120,11 +123,11 @@ function Layer1({d,can,write}){
 
 function Counts({title,obj,labels}){const e=Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]);return <div className="sl-counts"><small>{title}</small>{e.length?<ul>{e.map(([k,v])=><li key={k}><span>{labels[k]||human(k)}</span><b>{fmtNumber(v)}</b></li>)}</ul>:<span className="sl-sub">None yet</span>}</div>}
 
-const PURPOSE={sch_map:'Mapping university sites',sch_search:'Searching for a page',sch_scrape:'Reading pages that refuse a direct read'}
+const PURPOSE={sch_map:'Mapping university sites',sch_search:'Searching for a page',sch_scrape:'Reading scholarship and listing pages'}
 function Credits({fc}){
   const cap=Number(fc.cap||0),used=Number(fc.used||0),reserve=Number(fc.reserve||0),left=Math.max(0,cap-used),pct=cap?Math.min(100,Math.round(used/cap*100)):100
   const state=left<=0?'All used: scholarship work no longer uses Firecrawl.':left<=reserve?`Below the reserve: new pages that refuse a direct read are not retried; the ${fmtNumber(left)} left are kept for re-reading held scholarships' pages.`:'Within the cap.'
-  return <section className="m-panel" data-sl-credits><SectionTitle title="Firecrawl credits for scholarships" subtitle="Firecrawl is used only when a university site refuses a direct read, and to map and search sites. The cap and the reserve are the settings below."/>
+  return <section className="m-panel" data-sl-credits><SectionTitle title="Firecrawl credits for scholarships" subtitle="Firecrawl reads scholarship and listing pages while 'Read scholarship pages through the scraper' is on (otherwise only pages that refuse a direct read), and maps and searches sites. When the cap is used up, pages are read directly. The cap and the reserve are the settings below."/>
     <div className="sl-credit"><div className="sl-credit-bar" role="img" aria-label={`${fmtNumber(used)} of ${fmtNumber(cap)} credits used`}><span style={{width:`${pct}%`}}/>{cap>0&&<i style={{left:`${Math.max(0,Math.min(100,(cap-reserve)/cap*100))}%`}} title="Reserve starts here"/>}</div>
       <div className="sl-credit-figs"><span><b>{fmtNumber(used)}</b> used</span><span><b>{fmtNumber(left)}</b> left of <b>{fmtNumber(cap)}</b></span><span>Reserve <b>{fmtNumber(reserve)}</b></span></div>
       <p className={`sl-status ${left<=reserve?'sl-off':''}`} data-sl-credit-state>{state}</p>
