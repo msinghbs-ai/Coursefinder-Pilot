@@ -24,3 +24,14 @@
 .tn-check{font-size:var(--cf-fs-sm)}
 .m-main .control-step .danger-soft,.m-main .control-steps .danger-soft{font-size:var(--cf-fs-sm);padding:7px 12px;border-radius:var(--cf-radius-md);width:100%}
 .ops-source-grid>.cf-empty,.ops-source-grid>[class*=empty]{grid-column:1/-1}
+/* v2.15.230 stage 3: settings rows, Go-live and capacity headers use the standard text sizes */
+.ps-row-text strong{font-size:var(--cf-fs-sm);color:var(--cf-slate-800)}.ps-row-text small{font-size:var(--cf-fs-xs);line-height:1.45}
+.ps-value{font-size:var(--cf-fs-sm)}
+.env-panel h3{font-size:var(--cf-fs-md)}.env-help{font-size:var(--cf-fs-xs)!important}
+.env-setting strong,.env-manifest-row strong{font-size:var(--cf-fs-sm)}.env-setting small,.env-manifest-row small,.env-manifest-row em{font-size:var(--cf-fs-xs)}
+.env-warn{font-size:var(--cf-fs-xs)}
+.pm-shell[data-view]:not([data-view="all"]) .pm-hero{padding:12px 16px;border-radius:var(--cf-radius-xl);align-items:center}
+.pm-shell[data-view]:not([data-view="all"]) .pm-hero-copy h2{font-size:var(--cf-fs-lg);margin:0 0 2px}
+.pm-shell[data-view]:not([data-view="all"]) .pm-hero-copy p{font-size:var(--cf-fs-sm)}
+.pm-env-control>span{font-size:var(--cf-fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--cf-slate-450)}
+.pm-boundary-banner strong{font-size:var(--cf-fs-sm)!important}.pm-boundary-banner span{font-size:var(--cf-fs-xs)}

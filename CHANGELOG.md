@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.157 — 10 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.230** (UI stage 3: Rankings, Reference data, Settings, Models and services, Go-live checklist, remaining admin pages). Settings rows, Go-live and Capacity headers and the environment panels use the standard text sizes. The look-and-feel rollout across the app is complete.
+
 ## 0.1.156 — 9 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.229** (UI stage 2: Layer 1 register, Layer 2, Coverage, Sources, Platform health). Boxed filter selects keep their box under the standard control style (fixes the Sources/Jobs overflow from v2.15.227); Sources and Jobs headers slimmed; plain wording on Layer 1 manual batch runs and alerts; adapter names and tick labels sized consistently.
