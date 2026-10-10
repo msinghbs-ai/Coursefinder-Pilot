@@ -35,3 +35,15 @@
 .pm-shell[data-view]:not([data-view="all"]) .pm-hero-copy p{font-size:var(--cf-fs-sm)}
 .pm-env-control>span{font-size:var(--cf-fs-2xs);font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--cf-slate-450)}
 .pm-boundary-banner strong{font-size:var(--cf-fs-sm)!important}.pm-boundary-banner span{font-size:var(--cf-fs-xs)}
+
+/* v2.15.236 (Feature 4): Published switch in the provider list; unpublished rows greyed out */
+.m-main :where(.m-publish){display:inline-flex;align-items:center;gap:8px}
+.m-main :where(.m-switch){position:relative;width:34px;height:20px;border-radius:999px;border:0;padding:0;background:var(--cf-slate-300);cursor:pointer;flex:none;transition:background .15s}
+.m-main :where(.m-switch.on){background:var(--cf-green-600)}
+.m-main :where(.m-switch i){position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--cf-white);box-shadow:0 0 0 1px var(--cf-slate-300);transition:left .15s}
+.m-main :where(.m-switch.on i){left:16px}
+.m-main :where(.m-switch:disabled){cursor:not-allowed;opacity:.6}
+.m-main :where(.m-switch:focus-visible){outline:2px solid var(--cf-indigo-500);outline-offset:2px}
+.m-main :where(.m-publish small){color:var(--cf-slate-600)}
+.m-main :where(tr.m-row-muted td){color:var(--cf-slate-400)}
+.m-main :where(tr.m-row-muted td:not(:has(.m-publish))){opacity:.6}

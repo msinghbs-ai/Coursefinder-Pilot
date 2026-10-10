@@ -1,18 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.235'
-export const PACKAGE_VERSION='0.1.162'
+export const UI_VERSION='2.15.236'
+export const PACKAGE_VERSION='0.1.163'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'10 Oct 2026',
-  title:'Better provider phone and email; CRICOS contact read directly',
+  title:'Published switch for providers',
   changes:[
-    'The CRICOS contact job reads each provider\u2019s CRICOS page directly by its provider code, without a Firecrawl search; Firecrawl is used only when the direct read does not show the contact.'
+    'Providers \u203a list: a Published switch on each row. Every active provider is published by default. PIM Operators and above can switch it off or on from the list; no reason is asked and each change is logged.',
+    'An unpublished provider is greyed out in the list and is not served to Wix, Zoho or the website, together with its courses, campuses and scholarships. Switching it back on serves it again after the next search rebuild (a few minutes).',
+    'An archived provider is never served and cannot be published until it is restored.'
   ],
   bugFixes:[
-    'Provider email: the first runs picked mailboxes such as media@, security@ and feedback@. These are now skipped, the main contact page is read first, and values the job wrote earlier are corrected on the next read (values entered by hand are kept).'
+    'Publication was not enforced: every provider was marked unpublished yet all of them were served to Wix, Zoho and the website.'
   ]
 }
 

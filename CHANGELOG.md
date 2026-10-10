@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.163 — 10 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.236** (Platform Admin bug list of 10 Oct 2026, R4 part 1: Feature 4, Published switch). Database: `20261010006800` (md5-guarded): security.provider_hidden_v1 joins the Layer 4 search-block views; every active provider published and new providers published by default; admin_provider_publish; course index build, Wix/website providers, single course, scholarships, rankings and Zoho scholarships gated. Provider list: Published switch, unpublished rows greyed.
+
 ## 0.1.162 — 10 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.235** (contact quality after the first R3 runs). Worker coverage-sweep v0.17.34: contact_page skips media/security/feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code (no search). Database: `20261010006700` (md5-guarded): earlier automated values are replaced on re-read; checks re-queued; schedules back on.
