@@ -1,8 +1,9 @@
 # Edge function drift check (read-only). CF-247 production readiness, phase 1 (10 Oct 2026).
 # Downloads the live source of the named edge functions and compares it with this branch.
-# Nothing is deployed or changed. The comparison is printed, and the full difference is
-# written to the log as one base64 line (marker DRIFT-PATCH-B64) so it can be applied
-# byte-for-byte to git without hand copying. Leave "functions" empty to check every
+# Nothing is deployed or changed in the project. The comparison is printed, and the
+# downloaded live source is committed to a snapshot branch (edge-live-snapshot/<run id>)
+# so it can be compared with, and copied into, git byte-for-byte without hand copying.
+# The snapshot branch is never merged; delete it once used. Leave "functions" empty to check every
 # function folder in the repository.
 # Uses the same secret and project-ref safety check as "Deploy edge functions".
 name: Edge drift check
@@ -20,7 +21,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
@@ -60,6 +61,13 @@ jobs:
           git diff --stat -- supabase/functions | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           if [ -s "$RUNNER_TEMP/failed.txt" ]; then echo "Download failed: $(paste -sd, "$RUNNER_TEMP/failed.txt")" | tee -a "$GITHUB_STEP_SUMMARY"; fi
-          git diff --binary -- supabase/functions > "$RUNNER_TEMP/drift.patch"
-          echo "Patch md5: $(md5sum < "$RUNNER_TEMP/drift.patch" | cut -d' ' -f1), bytes: $(wc -c < "$RUNNER_TEMP/drift.patch")" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "DRIFT-PATCH-B64 $(gzip -9n < "$RUNNER_TEMP/drift.patch" | base64 -w0)"
+      - name: Commit live source to a snapshot branch
+        run: |
+          branch="edge-live-snapshot/${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b "$branch"
+          git add -A supabase/functions
+          git commit -q --allow-empty -m "Live edge function source snapshot (run ${{ github.run_id }}; functions: ${{ inputs.functions || 'all' }})"
+          git push -q origin "$branch"
+          echo "Snapshot branch: $branch" | tee -a "$GITHUB_STEP_SUMMARY"
