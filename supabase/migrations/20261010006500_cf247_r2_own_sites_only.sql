@@ -9,6 +9,7 @@
 --     requirements and official links read from them withdrawn (locked values skipped); those courses re-queued for their own page;
 --     an own site found by the search becomes the provider's website when none is recorded; search documents rebuilt.
 -- Live definitions are md5-checked before and after. Nothing is dropped or deleted.
+
 do $guard$
 declare v_expected jsonb := jsonb_build_object('security.refused_host(text)', 'aa5234b75a902340aeac72c1f041f175', 'public.svc_coverage_site_record(uuid,text,jsonb)', '153b3bd42d3c751deb5d37231feec9b8', 'public.svc_site_hint_next(integer)', 'b1cae71d7fa98cf35c42b73ec2846730', 'public.admin_provider_edit(uuid,text,jsonb)', '21b1ff3858ad64d52e4ff36bcce85e23', 'public.admin_course_edit(uuid,text,jsonb)', '14a90dea54f2e42c7a3f3341b070871d', 'public.admin_provider_edit_read(uuid)', 'b616552481613710ccb923e84880cf16');
   v_sig text;
@@ -433,28 +434,50 @@ begin
 end $function$;
 
 -- 4. Existing data (Feature 1, Feature 3, Fix 1). Nothing is deleted; values entered by hand (manual locks) are never touched.
+--    Set-based: the third-party list is read once into a temporary table (a per-row function call over every evidence row was too slow).
+create temp table _r2_dom on commit drop as
+select l.domain d, l.domain like '%.%' dotted from pipeline.important_links l
+ where l.enabled and l.retired_at is null and l.domain is not null and 'not_provider_site' = any(l.uses)
+   and l.authority_category in ('third_party_directory', 'general_web', 'ranking_publisher');
+
 -- 4a. Course finder addresses on a third-party site are cleared and go back to the website search (status no_website, searched never).
 update pipeline.coverage_provider_discovery d
    set website = null, status = 'no_website', site_source = null, site_searched_at = null, leased_until = null,
        last_error = 'third-party course finder removed (v2.15.233)', updated_at = now()
- where security.third_party_host_v1(d.website) and coalesce(d.site_source, '') <> 'manual'
+ where d.website is not null and coalesce(d.site_source, '') <> 'manual'
+   and exists (select 1 from _r2_dom x, (select security.site_host_v1(d.website) h) y
+                where case when x.dotted then y.h = x.d or y.h like '%.' || x.d else y.h ~ ('(^|\.)' || x.d) end)
    and not exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = d.provider_id and l.field = 'course_finder');
 
 -- 4b. Course pages on a third-party site are refused (the refused-host guard sets them to mismatch / refused_host).
-update pipeline.coverage_course_pages g set status = g.status where g.status in ('bound', 'ambiguous') and security.third_party_host_v1(g.url);
+update pipeline.coverage_course_pages g set status = g.status
+ where g.status in ('bound', 'ambiguous')
+   and exists (select 1 from _r2_dom x, (select security.site_host_v1(g.url) h) y
+                where case when x.dotted then y.h = x.d or y.h like '%.' || x.d else y.h ~ ('(^|\.)' || x.d) end);
 
 -- 4c. Facts read from third-party pages are withdrawn and their official-page links made inactive. Locked values are skipped by the guard.
-create temp table _r2_ev on commit drop as select a.id from pipeline.evidence_artifacts a where security.third_party_host_v1(a.source_url);
+create temp table _r2_ev on commit drop as
+select a.id from pipeline.evidence_artifacts a
+ where a.id in (select evidence_id from catalogue.course_intakes where status = 'active'
+                union select evidence_id from catalogue.course_english_requirements where status = 'active'
+                union select evidence_id from catalogue.course_links where status = 'active')
+   and exists (select 1 from _r2_dom x, (select security.site_host_v1(a.source_url) h) y
+                where case when x.dotted then y.h = x.d or y.h like '%.' || x.d else y.h ~ ('(^|\.)' || x.d) end);
 update catalogue.course_intakes x set status = 'withdrawn' where x.status = 'active' and x.evidence_id in (select id from _r2_ev);
 update catalogue.course_english_requirements x set status = 'withdrawn' where x.status = 'active' and x.evidence_id in (select id from _r2_ev);
-update catalogue.course_links x set status = 'inactive', is_primary = false, updated_at = now()
- where x.status = 'active' and (x.evidence_id in (select id from _r2_ev) or (x.link_type = 'official_course' and security.third_party_host_v1(x.url)));
+update catalogue.course_links k set status = 'inactive', is_primary = false, updated_at = now()
+ where k.status = 'active'
+   and (k.evidence_id in (select id from _r2_ev)
+        or (k.link_type = 'official_course' and exists (select 1 from _r2_dom x, (select security.site_host_v1(k.url) h) y
+                                                         where case when x.dotted then y.h = x.d or y.h like '%.' || x.d else y.h ~ ('(^|\.)' || x.d) end)));
 
 -- 4d. Those courses look for their page again on the provider's own site, where the provider has one.
 insert into pipeline.course_link_search(course_id, provider_id, stage, state, queued_at)
 select g.course_id, g.provider_id, 'title', 'queued', now()
   from pipeline.coverage_course_pages g join catalogue.courses c on c.id = g.course_id and c.lifecycle_status = 'active'
- where g.read_status = 'refused_host' and security.third_party_host_v1(g.url)
+ where g.read_status = 'refused_host'
+   and exists (select 1 from _r2_dom x, (select security.site_host_v1(g.url) h) y
+                where case when x.dotted then y.h = x.d or y.h like '%.' || x.d else y.h ~ ('(^|\.)' || x.d) end)
    and exists (select 1 from pipeline.course_link_recipes r where r.provider_id = g.provider_id and r.active)
 on conflict (course_id) do update set state = 'queued', queued_at = now(), bound_url = null, done_at = null
  where pipeline.course_link_search.state <> 'queued';
@@ -463,8 +486,8 @@ on conflict (course_id) do update set state = 'queued', queued_at = now(), bound
 --     website when none is recorded. Automated (not locked); a website entered by hand is never replaced.
 update catalogue.providers p set website = substring(btrim(d.website) from '^(https?://[^/?#]+)'), updated_at = now()
   from pipeline.coverage_provider_discovery d
- where d.provider_id = p.id and p.website is null and d.website is not null
-   and d.website ~* '^https?://' and security.provider_site_verdict_v1(p.id, d.website) = 'own'
+ where d.provider_id = p.id and p.website is null and d.website ~* '^https?://'
+   and security.provider_site_verdict_v1(p.id, d.website) = 'own'
    and not exists (select 1 from pipeline.manual_locks l where l.entity = 'provider' and l.entity_id = p.id and l.field = 'website');
 
 -- 4f. Search documents are rebuilt so withdrawn facts leave the consumer APIs.
