@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.166 — 11 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.239** (scholarship completeness, S1, S2 and S4; Platform Admin decisions of 11 Oct 2026). Database: `20261011007100` (scholarship APIs published only) and `20261011007200` (course links when the page names no restriction or an unmatched faculty; editions held; hourly auto-publish; values read again), applied by the new Database apply migration workflow. Worker coverage-sweep v0.17.36 (scholarship reader v0.6.3: academic-result percentages ignored; whole-sentence value text).
+
 ## 0.1.165 — 11 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.238** (Platform Admin bug list of 10 Oct 2026, R5: Features 5, 6 and 7; decision "New 'archived' status"). Database: `20261010007000` (md5-guarded): pipeline.provider_archives; archive and restore clean-up workflow with a checklist (status archived, unpublished, adapter and course link search off, waiting reviews superseded; restored exactly); Layer 1 departures archive and restore providers automatically; admin_archive_read; course archive by hand rebuilds search; non-active courses blocked from consumer APIs. Providers › Archived screen; lists show active records by default.

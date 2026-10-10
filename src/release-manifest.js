@@ -1,23 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.238'
-export const PACKAGE_VERSION='0.1.165'
+export const UI_VERSION='2.15.239'
+export const PACKAGE_VERSION='0.1.166'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'11 Oct 2026',
-  title:'Archived status, clean-up workflow and the Archived review screen',
+  title:'Scholarships: published only, course links, editions and automatic publishing',
   changes:[
-    'Providers \u203a Archived: archived providers and courses that are not active, each with why (left the register, archived by hand, closed or merged, outside the import scope, suspended) and when, with Restore (PIM Operator and above).',
-    'Archiving a provider by hand shows a checklist first: courses, campuses and scholarships hidden; adapter and course link search switched off; waiting Layer 4 reviews closed as superseded; background work stopped. A reason is chosen from a short list. Restore switches back on exactly what was switched off.',
-    'Layer 1: a provider whose registered courses have all left the register is archived automatically, and restored automatically when one of its courses comes back. The ten providers already waiting at the departure review are archived now (among them UniSA and the University of Adelaide, merged into Adelaide University).',
-    'The Providers and Courses lists show active records unless another Status is chosen.'
+    'Wix, the website and Zoho receive published scholarships only, whatever the caller asks for.',
+    'A scholarship page that names no study level, field or course links to all of the provider\u2019s courses open to international students, marked as such; a faculty the reader cannot match no longer stops the links.',
+    'One scholarship, one record: semester or year editions and register copies are held as \u201canother edition\u201d, and the provider\u2019s own current record is the one listed.',
+    'Scholarships that pass every check are published automatically every hour as a batch named \u201cauto-publish\u201d, for review (setting auto_publish).'
   ],
   bugFixes:[
-    'A course archived or restored by hand now leaves or returns to search straight away (the search rebuild was not asked for).',
-    'A course that is not active is never served by Wix, Zoho or the website, even when asked for by its id.',
-    'Providers whose courses had all left the register stayed published with no courses until someone reviewed them.'
+    'The website scholarship APIs returned every active record, published or not, unless the caller asked for published only; the Zoho lookup and search also returned unpublished and inactive ones.',
+    'A percentage that is an academic result (\u201cCWA of 95%\u201d) made the award value ambiguous (Curtin\u2019s John Curtin Global Excellence Scholarship, 40% off tuition).',
+    'The value text shown with a scholarship started mid-word.'
   ]
 }
 
