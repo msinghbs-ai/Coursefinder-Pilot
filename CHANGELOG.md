@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.161 — 10 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.234** (Platform Admin bug list of 10 Oct 2026, R3: Fix 2; decisions "Both, kept separate", "Fill automatically", CRICOS contacts "All at once"). Database: `20261010006600` (md5-guarded; additive): pipeline.provider_contact_points and provider_contact_checks; worker functions; provider read returns the contact source and, for PIM Operators and above, the internal regulatory contact; schedules provider-contact-page and cricos-peo. Worker coverage-sweep v0.17.33: modes contact_page and cricos_peo.
+
 ## 0.1.160 — 10 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.233** (Platform Admin bug list of 10 Oct 2026, R2: Fix 1, Feature 1, Feature 3; Hotcourses kept for logos only). Database: `20261010006500` (md5-guarded; no drops or deletes): twelve course directories join the third-party list; security.third_party_host_v1 and provider_site_verdict_v1; third-party sites refused as website, course finder or course page; directory site hints retired; third-party course finders cleared, their pages refused and facts read from them withdrawn; own sites found by the search copied to Website. Worker coverage-sweep v0.17.32: an AU site needs the CRICOS code on its home page, or on a deeper page of an address that fits the name.

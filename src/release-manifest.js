@@ -1,22 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.233'
-export const PACKAGE_VERSION='0.1.160'
+export const UI_VERSION='2.15.234'
+export const PACKAGE_VERSION='0.1.161'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'10 Oct 2026',
-  title:'Only the provider\u2019s own website or the regulator',
+  title:'Provider phone and email from its own website; CRICOS contact kept internal',
   changes:[
-    'A provider\u2019s website, course finder address and course pages come only from its own website, the regulator, or a value entered by hand. Course directories (such as ACIR, HigherStudy, OneUEdu, Study Melbourne course search and Find the Courses) are on the third-party list in Reference data and are never used. Hotcourses stays for logos only.',
-    'Provider panel: the Website and Course finder address show whose they are: provider\u2019s own site, regulator, third-party (not used), or not confirmed.',
-    'Course finder addresses that pointed at a course directory are cleared and the website search looks for the provider\u2019s own site again. It now accepts a site only when the CRICOS code is on its home page, or on a deeper page of an address that fits the provider\u2019s name.',
-    'Intakes, English requirements and official course links read from course directories are withdrawn (values entered by hand are kept). Those courses look for their page on the provider\u2019s own site again.',
-    'Where the search had already found the provider\u2019s own site and no website was recorded, it becomes the provider\u2019s website.'
+    'A new job reads each provider\u2019s own home and contact pages for its public phone and email and fills them when empty. Only an email on the provider\u2019s own domain is used, and a value entered by hand is never replaced. The provider panel shows the page they came from.',
+    'A second job reads the Principal Executive Officer from the CRICOS website for every Australian provider with courses. It is shown in the provider panel to PIM Operators and above as an internal contact and is never published or sent to Wix, Zoho or the website.',
+    'Both jobs are in Automations (Course pages), where they can be paused or changed.'
   ],
   bugFixes:[
-    'Provider website not found (for example Britts College): the search had accepted a course directory page because it showed the CRICOS code, and sites it found were never copied to the Website.'
+    'Provider phone and email were never filled: the CRICOS register download has no contact columns, and nothing read the provider\u2019s own site for them.'
   ]
 }
 
