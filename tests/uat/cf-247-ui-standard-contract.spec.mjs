@@ -112,3 +112,41 @@ test('v2.15.226: provider read is slim; related insights load when More is opene
   await expect.poll(() => calls.length).toBe(1)
   expect(calls[0].p_args).toEqual({ id: 'p1' })
 })
+
+test('v2.15.231: course read is slim; course insights load when More is opened', async ({ page }) => {
+  const m = read('supabase/migrations/20261010006300_cf247_course_detail_slim.sql')
+  expect(m).toContain("'c4e339a7a8fc58307804b796cdb5cfd6'")
+  expect(m).toContain("if p_operation='course_insights' then")
+  expect(m).not.toContain("jsonb_build_object('ranking_context',security.admin_course_rankings")
+  expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
+  await mockAdmin(page)
+  const calls = []
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_read', async route => {
+    let b = {}; try { b = route.request().postDataJSON() || {} } catch {}
+    if (b.p_operation === 'course_insights') { calls.push(b); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ contextual_insights: {} }) }) }
+    return route.fallback()
+  })
+  await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')
+  await expect(page.locator('[data-course-summary]')).toBeVisible()
+  await page.waitForTimeout(400)
+  expect(calls.length).toBe(0)
+  await page.locator('[data-course-more] > summary').click()
+  await expect.poll(() => calls.length).toBe(1)
+})
+
+test('v2.15.231: Logos tab is a simple list — with a logo, no logo — and no candidate pipeline counts', async ({ page }) => {
+  await mockAdmin(page)
+  await page.route('https://example.supabase.co/rest/v1/rpc/admin_read', async route => {
+    let b = {}; try { b = route.request().postDataJSON() || {} } catch {}
+    if (b.p_operation === 'provider_asset_summary') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ expected: 10, approved: 7, discovered: 9, acquired: 8, blocked: 1, missing: 2 }) })
+    if (b.p_operation === 'provider_asset_coverage') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ total: 2, items: [{ provider_id: 'p1', provider_name: 'RMIT University', country_code: 'AU', coverage_state: 'approved', primary_mime_type: 'image/png' }, { provider_id: 'p2', provider_name: 'Example College', country_code: 'AU', coverage_state: 'missing' }] }) })
+    return route.fallback()
+  })
+  await page.goto('/#providers?tab=assets')
+  const l = page.locator('[data-logo-list]')
+  await expect(l).toContainText('With a logo')
+  await expect(l).toContainText('70% of providers')
+  await expect(l.locator('[data-logo-row="yes"] .cf-chip')).toHaveText('Has logo')
+  await expect(l.locator('[data-logo-row="no"] .cf-chip')).toHaveText('No logo')
+  for (const t of ['Discovered', 'Acquired', 'Blocked', 'Coverage matrix']) await expect(l.getByText(t, { exact: true })).toHaveCount(0)
+})

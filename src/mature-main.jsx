@@ -17,7 +17,7 @@ import ListEdit from'./ListEdit'
 import DashboardHome from'./Dashboard'
 import ContextualInsights from'./ContextualInsights'
 import ProviderLogo,{ProviderBrand}from'./ProviderLogo'
-import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot}from'./ui-kit'
+import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import SourceComparison from'./SourceComparison'
@@ -347,28 +347,29 @@ function RankingDatasetPanel({system,year,navigate,onError}){
 }
 
 
+// v2.15.231 (Platform Admin, 10 Oct 2026: "Simple logo list"): which providers have a logo and which do not. The old
+// logo-finding pipeline (discovered, acquired, approved, blocked) was retired in clean-up batch 6; a logo is added or
+// replaced by clicking the logo in the provider's panel.
 function ProviderAssetsWorkspace({onError,navigate}){
  const[summary,setSummary]=useState(null),[data,setData]=useState(null),[country,setCountry]=useState('AU'),[state,setState]=useState(''),[query,setQuery]=useState(''),[offset,setOffset]=useState(0),[busy,setBusy]=useState(false)
  const debounced=useDebounce(query,260)
  const countries=[{value:'AU',label:'Australia'},{value:'NZ',label:'New Zealand'},{value:'CA',label:'Canada'},{value:'',label:'All countries'}]
- const states=[{value:'',label:'All states'},{value:'blocked',label:'Blocked'},{value:'needs_review',label:'Needs review'},{value:'missing',label:'Missing'},{value:'approved',label:'Approved'}]
+ const states=[{value:'',label:'All providers'},{value:'approved',label:'With a logo'},{value:'missing',label:'No logo'}]
  function load(){setBusy(true);return Promise.all([api.providerAssetSummary({countryCode:country,query:debounced}),api.providerAssetCoverage({limit:50,offset,countryCode:country,query:debounced,state})]).then(([s,p])=>{setSummary(s);setData(p)}).catch(e=>onError?.(e.message)).finally(()=>setBusy(false))}
  useEffect(()=>{load()},[country,state,debounced,offset])
  useEffect(()=>setOffset(0),[country,state,debounced])
- const rows=data?.items||[],total=Number(data?.total||0)
- return <div className="m-page-stack">
+ const rows=data?.items||[],total=Number(data?.total||0),all=Number(summary?.expected||0),withLogo=Number(summary?.approved||0)
+ return <div className="m-page-stack" data-logo-list>
+  <div className="cf-metric-grid">
+   <Metric label="Providers" value={busy?'…':fmtNumber(all)} detail="Active, in the selected country" icon={Building2}/>
+   <Metric label="With a logo" value={busy?'…':fmtNumber(withLogo)} detail={all?`${Math.round(withLogo/all*100)}% of providers`:'—'} icon={CheckCircle2} tone="success"/>
+   <Metric label="No logo" value={busy?'…':fmtNumber(Math.max(0,all-withLogo))} detail="Add one from the provider's panel" icon={AlertTriangle} tone={all-withLogo>0?'warning':'success'}/>
+  </div>
   <section className="m-panel">
-   <PanelTitle icon={Building2} title="Provider Assets" subtitle="How many providers have a logo. The provider's own website is preferred; finding a logo never creates or merges a provider."/>
-   <div className="m-stats-grid">
-    {[['Expected',summary?.expected],['Discovered',summary?.discovered],['Acquired',summary?.acquired],['Approved',summary?.approved],['Blocked',summary?.blocked],['Missing',summary?.missing]].map(([label,value])=><article className="m-stats-card" key={label}><span>{label}</span><strong>{busy?'…':fmtNumber(value||0)}</strong><small>{label==='Approved'?'Managed primary logos':label==='Blocked'?'Accepted candidate not promoted':label==='Missing'?'No logo candidate yet':'Current filtered scope'}</small></article>)}
-   </div>
-   <p className="m-help" style={{marginTop:12}}>{summary?.scope_basis||'Counted against the active providers in the selected country.'}</p>
-  </section>
-  <section className="m-panel">
-   <div className="m-workspace-head"><div><h2>Coverage matrix</h2><p>Prioritises blocked and review cases before missing coverage. Approved assets retain source URL, Evidence, hash and verification time.</p></div><button className="m-secondary compact" onClick={load}><RefreshCw size={14}/>Refresh</button></div>
-   <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search Provider or stable key…"/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label></div>
-   <div className="m-filter-bar"><FilterSelect label="Country" value={country} onChange={v=>setCountry(v)} options={countries}/><FilterSelect label="Coverage state" value={state} onChange={v=>setState(v)} options={states}/></div>
-   <div className="dense-table-wrap"><table className="dense-table"><thead><tr><th><span>Provider</span></th><th><span>Country</span></th><th><span>State</span></th><th><span>Candidates</span></th><th><span>Evidence-backed</span></th><th><span>Primary asset</span></th><th><span>Verified</span></th><th><span>Actions</span></th></tr></thead><tbody>{rows.length?rows.map(r=><tr key={r.provider_id}><td className="primary-cell">{r.provider_name}<small style={{display:'block',color:'var(--cf-slate-400)'}}>{r.stable_key}</small></td><td>{r.country_code}</td><td><Status value={r.coverage_state}/></td><td>{r.candidate_count}</td><td>{r.evidence_candidate_count}</td><td>{r.primary_mime_type||'—'}</td><td>{r.primary_verified_at?fmtDate(r.primary_verified_at):'—'}</td><td><button className="m-secondary compact" onClick={()=>navigate?.('Providers',{id:r.provider_id})}>Open Provider</button>{r.primary_evidence_id&&<EvidenceButton id={r.primary_evidence_id} navigate={navigate}/>}</td></tr>):<tr><td colSpan="8"><EmptyInline text={busy?'Loading Provider asset coverage…':'No matching Providers.'}/></td></tr>}</tbody></table></div>
+   <div className="m-workspace-head"><div><h2>Logos</h2><p>Open a provider and click its logo to add or replace it.</p></div><button className="m-secondary compact" onClick={load}><RefreshCw size={14}/>Refresh</button></div>
+   <div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search provider…"/>{query&&<button onClick={()=>setQuery('')}><X size={14}/></button>}</label></div>
+   <div className="m-filter-bar"><FilterSelect label="Country" value={country} onChange={v=>setCountry(v)} options={countries}/><FilterSelect label="Logo" value={state} onChange={v=>setState(v)} options={states}/></div>
+   <div className="dense-table-wrap"><table className="dense-table"><thead><tr><th><span>Provider</span></th><th><span>Country</span></th><th><span>Logo</span></th><th><span>Checked</span></th><th><span>Open</span></th></tr></thead><tbody>{rows.length?rows.map(r=>{const has=r.coverage_state==='approved'&&Boolean(r.primary_mime_type);return <tr key={r.provider_id} data-logo-row={has?'yes':'no'}><td className="primary-cell"><ProviderBrand providerId={r.provider_id} name={r.provider_name} size={28}/></td><td>{r.country_code}</td><td><StatusChip tone={has?'success':'warning'} label={has?'Has logo':'No logo'}/></td><td>{r.primary_verified_at?fmtDate(r.primary_verified_at):'—'}</td><td><button className="m-secondary compact" onClick={()=>navigate?.('Providers',{id:r.provider_id})}>Open provider</button></td></tr>}):<tr><td colSpan="5"><EmptyInline text={busy?'Loading…':'No matching providers.'}/></td></tr>}</tbody></table></div>
    <Pager offset={offset} limit={50} total={total} onOffset={setOffset}/>
   </section>
  </div>

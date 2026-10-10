@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.158 — 10 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.231** (Platform Admin: load course insights on More; simple logo list). Database: `20261010006300` (md5-guarded admin_read change, applied through the connector: course_detail no longer returns related insights, ranking context, taxonomy or state summaries; new course_insights operation; about 85 KB to 21.5 KB). Providers › Logos & assets is a simple has-logo / no-logo list.
+
 ## 0.1.157 — 10 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.230** (UI stage 3: Rankings, Reference data, Settings, Models and services, Go-live checklist, remaining admin pages). Settings rows, Go-live and Capacity headers and the environment panels use the standard text sizes. The look-and-feel rollout across the app is complete.
