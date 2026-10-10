@@ -90,6 +90,14 @@ function amountCurrency(prefix: string, suffix: string | undefined, home: string
   for (const [code, re] of Object.entries(CUR_HOME)) if (re.test(prefix)) return code;
   return home;
 }
+// v0.6.3 (11 Oct 2026, Curtin): a percentage that is an academic result ("a Course-Weighted Average (CWA) of 95%", "WAM of 70%",
+// "ATAR 90%") is an entry condition, not the award, so it never makes the award value ambiguous.
+const SCORE_BEFORE = /\b(?:cwa|wam|atar|gpa|average|score|scores|grade|grades|result|results|mark|marks|percentile|band|equivalent|achieved|achieve|minimum of|at least)\b[^.%]{0,45}$/i;
+const SCORE_AFTER = /^\s*(?:or (?:above|higher|equivalent|more)|\b(?:cwa|wam|atar|gpa|average|or equivalent)\b)/i;
+function isScorePct(t: string, at: number, len: number) {
+  return SCORE_BEFORE.test(t.slice(Math.max(0, at - 60), at)) || SCORE_AFTER.test(t.slice(at + len, at + len + 30));
+}
+const pctsIn = (t: string) => [...t.matchAll(/(\d{1,3})\s?%/g)].filter((m) => !isScorePct(t, m.index || 0, m[0].length)).map((m) => Number(m[1]));
 export function scholarshipValue(body: string, name = "", currency = "AUD") {
   const home = String(currency || "AUD").toUpperCase();
   const t = body.slice(0, 6000);
@@ -97,7 +105,7 @@ export function scholarshipValue(body: string, name = "", currency = "AUD") {
   if (nameAmt.length === 1 && nameAmt[0] >= 500 && new RegExp(`\\$\\s?${nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?")}(?![\\d,])`).test(t))
     return { type: "fixed_amount", amount: nameAmt[0], currency: home, basis: "scholarship_name", context: ctx(t, new RegExp(nameAmt[0].toLocaleString("en-AU").replace(/,/g, ",?"))) };
   // v0.4.2: full tuition only when no other percentage is stated (HonduFuturo: full tuition for PhD, 20% for coursework)
-  const otherPct = [...t.matchAll(/(\d{1,3})\s?%/g)].map((m) => Number(m[1])).filter((v) => v >= 5 && v < 100);
+  const otherPct = pctsIn(t).filter((v) => v >= 5 && v < 100);
   if (fullTuitionStated(t))
     return otherPct.length ? { type: "ambiguous", percentages: [...new Set([...otherPct, 100])].sort((a, b) => a - b), amounts: [] as number[] }
       : { type: "percentage", percentage: 100, applies_to: "tuition_fee", context: ctx(t, /full[- ]?(?:tuition|fee)|100\s?%/i) };
@@ -118,7 +126,7 @@ export function scholarshipValue(body: string, name = "", currency = "AUD") {
     const v = Number(m[1].replace(/,/g, "")); if (v >= 500 && v <= 200000) amt.add(v);
   }
   // any other percentage in the scholarship text (tiers by region, level or result) makes a single value unsafe
-  const allPct = new Set<number>([...t.matchAll(/(\d{1,3})\s?%/g)].map((m) => Number(m[1])).filter((v) => v >= 5 && v <= 100))
+  const allPct = new Set<number>(pctsIn(t).filter((v) => v >= 5 && v <= 100))
   if (foreign) return { type: "ambiguous", foreign_currency: true, percentages: [...pct], amounts: [...amt] };
   if (upTo) return { type: "ambiguous", up_to: true, percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
   if (pct.size === 1 && allPct.size > 1) return { type: "ambiguous", percentages: [...allPct].sort((a, b) => a - b), amounts: [...amt] };
@@ -141,7 +149,15 @@ export function scholarshipDeadline(body: string) {
   return list.length === 1 ? { date: list[0], context: ctx(t, re) } : list.length ? { dates: list, ambiguous: true } : null;
 }
 
-function ctx(t: string, re: RegExp) { const m = t.match(new RegExp(re.source, re.flags.replace("g", ""))); if (!m) return null; const at = m.index || 0; return clean(t.slice(Math.max(0, at - 120), at + 160)) }
+// v0.6.3: the value's context starts at the beginning of its sentence and ends at the end of it, so the text shown with a value
+// is a whole sentence ("Eligible students will receive 20% off the tuition fee ..."), not a fragment cut mid-word
+function ctx(t: string, re: RegExp) {
+  const m = t.match(new RegExp(re.source, re.flags.replace("g", ""))); if (!m) return null; const at = m.index || 0;
+  const before = t.slice(Math.max(0, at - 200), at), cut = Math.max(before.lastIndexOf(". "), before.lastIndexOf("\n"), before.lastIndexOf(": "));
+  const start = cut >= 0 ? at - before.length + cut + 2 : Math.max(0, at - 120);
+  const after = t.slice(at, at + 260), endAt = after.search(/\.(?:\s|$)|\n/);
+  return clean(t.slice(start, at + (endAt >= 0 ? endAt + 1 : 160)));
+}
 
 export function scholarshipFacts(html: string, titleText: string, name: string, currency = "AUD") {
   const body = mainText(html);
