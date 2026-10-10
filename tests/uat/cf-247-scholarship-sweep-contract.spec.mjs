@@ -46,10 +46,10 @@ test('Decision 139 international check: domestic-only provider pages are not pub
   expect(scholarshipFacts(dom, 'Arts Equity Travel Grant', 'Arts Equity Travel Grant').international).toBe(false)
   const intl = '<main>' + 'v '.repeat(800) + '<p>Open to international students commencing an undergraduate degree.</p></main>'
   expect(scholarshipFacts(intl, 'Merit Award', 'Merit Award').international).toBe(true)
-  const sql = fs.readFileSync('supabase/migrations/20260929184000_cf247_d139_international_page_check.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20260929184000_cf247_d139_international_page_check.sql', 'utf8')
   expect(sql).toContain('provider page limits it to citizens and residents')
   expect(sql).toContain('provider page does not mention international students')
-  expect(fs.readFileSync('supabase/migrations/20260929180000_cf247_scholarship_sweep.sql', 'utf8')).not.toContain("cron.schedule('scholarship-publish-batch'")
+  expect(fs.readFileSync('supabase/migrations-archive/20260929180000_cf247_scholarship_sweep.sql', 'utf8')).not.toContain("cron.schedule('scholarship-publish-batch'")
 })
 
 test('v0.4.0 scholarship discovery: names, page matching and the reader name check', async () => {
@@ -103,7 +103,7 @@ test('v0.4.0 new scholarships: single named page, international, currently offer
 })
 
 test('v0.4.0 governance: nothing published, guarded replacements, cron list', async () => {
-  const sql = fs.readFileSync('supabase/migrations/20260929200000_cf247_scholarship_discovery.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20260929200000_cf247_scholarship_discovery.sql', 'utf8')
   expect(sql).toContain("'active','unpublished'")
   expect(sql).not.toMatch(/publication_status\s*=\s*'published'/)
   expect(sql).not.toContain('scholarship_publish_batch_v1(')
@@ -169,7 +169,7 @@ test('v0.4.6 step-2 hand-check: foreign currency, maximum amounts, eligibility s
 })
 
 test('Decision 139 publication holds: hand-check holds are reported and skipped by the batch', async () => {
-  const sql = fs.readFileSync('supabase/migrations/20260929214000_cf247_d139_publication_holds.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20260929214000_cf247_d139_publication_holds.sql', 'utf8')
   expect(sql).toContain('pipeline.scholarship_publication_holds')
   expect(sql).toContain("'held after hand-check'")
   expect(sql).toContain('01d14b534fdda592ca99cd9ee18e5a68')

@@ -13,7 +13,7 @@ test.describe('M2.5 universal Layer 4 block enforcement contract',()=>{
 
   test('enforces independent block scopes at owning server boundaries',async()=>{
     const sql=await fs.readFile(
-      'supabase/migrations/20260901211500_m2_5_universal_layer4_block_enforcement.sql',
+      'supabase/migrations-archive/20260901211500_m2_5_universal_layer4_block_enforcement.sql',
       'utf8'
     )
 

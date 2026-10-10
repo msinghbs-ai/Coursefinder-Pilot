@@ -6,7 +6,7 @@ import path from 'node:path'
 import { test, expect } from '@playwright/test'
 
 test('Decision 226: quote failures sent back to Layer 3; tuition retry respects the regulator gate', async () => {
-  const m = await fs.readFile('supabase/migrations/20261002182700_cf247_quote_failures_rerun.sql', 'utf8')
+  const m = await fs.readFile('supabase/migrations-archive/20261002182700_cf247_quote_failures_rerun.sql', 'utf8')
   expect(m).toContain("l.field_code in ('course_intake', 'course_english')")
   expect(m).toContain("like 'The AI quoted text that is not on the saved page%'")
   expect(m).toContain("status = 'superseded'")
@@ -16,19 +16,19 @@ test('Decision 226: quote failures sent back to Layer 3; tuition retry respects 
 })
 
 test('Decision 227: English policy and calendar documents are read, parsed into proposals, applied only after approval', async () => {
-  const read = await fs.readFile('supabase/migrations/20261002182800_cf247_read_english_calendar_sources.sql', 'utf8')
+  const read = await fs.readFile('supabase/migrations-archive/20261002182800_cf247_read_english_calendar_sources.sql', 'utf8')
   expect(read).toContain("or f.kind in ('english_policy', 'intake_calendar'))")
   expect(read).toContain('08626bd03d652647b2fc8c49b08c8ac2')
-  const prop = await fs.readFile('supabase/migrations/20261002183000_cf247_provider_policy_proposals.sql', 'utf8')
+  const prop = await fs.readFile('supabase/migrations-archive/20261002183000_cf247_provider_policy_proposals.sql', 'utf8')
   expect(prop).toContain('create table if not exists pipeline.provider_policy_proposals')
   expect(prop).toContain("status in ('proposed', 'no_values', 'approved', 'rejected', 'superseded')")
-  const plan = await fs.readFile('supabase/migrations/20261002183100_cf247_english_policy_defaults.sql', 'utf8')
+  const plan = await fs.readFile('supabase/migrations-archive/20261002183100_cf247_english_policy_defaults.sql', 'utf8')
   for (const s of ["'held|research degree'", "'held|double degree'", "'held|named in the policy (it may have its own requirement)'", "'held|level not covered by the policy default'",
     "when q.any_row then 'other_value'", "when q.locked then 'set_by_hand'", "when q.in_review then 'in_review'", "when q.in_l3 or q.page_waiting then 'waiting'",
     "where outcome = 'write' loop", "if x.status <> 'approved' then raise exception 'proposal is not approved'", 'security.current_role_rank() < 6', "cron.schedule('provider-english-defaults'"]) expect(plan).toContain(s)
   // a course with any English row is never written (hand-entered and course-page values are kept)
   expect(plan).toContain('exists (select 1 from catalogue.course_english_requirements r where r.course_id = co.id) any_row')
-  const gate = await fs.readFile('supabase/migrations/20261002183200_cf247_english_policy_agreement_gate.sql', 'utf8')
+  const gate = await fs.readFile('supabase/migrations-archive/20261002183200_cf247_english_policy_agreement_gate.sql', 'utf8')
   expect(gate).toContain('if v_ag + v_df >= 10 and v_df > v_ag then')
   expect(gate).toContain('bff1631490ab3348960e8564b8909eba')
   for (const m of [read, prop, plan, gate]) expect(m).not.toMatch(/\bdrop\s|delete\s+from|truncate|on delete cascade/i)

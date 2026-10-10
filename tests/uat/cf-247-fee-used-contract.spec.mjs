@@ -3,8 +3,8 @@ import fs from 'node:fs'
 
 // Decision 255 (6 Oct 2026): a read-only dry run and a "fee used" label. Neither changes a stored fee.
 test('fee rules: dry-run report and fee-used label are read only, guarded and rule-shaped', () => {
-  const dry = fs.readFileSync('supabase/migrations/20261006001760_cf247_fee_rules_dry_run.sql', 'utf8')
-  const used = fs.readFileSync('supabase/migrations/20261006001770_cf247_fee_used_label.sql', 'utf8')
+  const dry = fs.readFileSync('supabase/migrations-archive/20261006001760_cf247_fee_rules_dry_run.sql', 'utf8')
+  const used = fs.readFileSync('supabase/migrations-archive/20261006001770_cf247_fee_used_label.sql', 'utf8')
   for (const m of [dry, used]) {
     expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
     expect(m).not.toMatch(/delete\s+from/i)
@@ -21,7 +21,7 @@ test('fee rules: dry-run report and fee-used label are read only, guarded and ru
   expect(ui).toContain('<FeeUsed u={f.fee_used}/>')
   const ad = fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')
   expect(ad).toContain("supabase.rpc('admin_fee_rules_report'")
-  const api = fs.readFileSync('supabase/migrations/20261006001780_cf247_fee_used_in_course_apis.sql', 'utf8')
+  const api = fs.readFileSync('supabase/migrations-archive/20261006001780_cf247_fee_used_in_course_apis.sql', 'utf8')
   expect(api).toContain("md5(s) is distinct from r.guard")
   expect(api).toContain('c2e7944d91b06058e7bd7a456540f3c2')
   expect(api).toContain('f82cdc9284081a9b73977cb32b3107f7')
@@ -31,7 +31,7 @@ test('fee rules: dry-run report and fee-used label are read only, guarded and ru
 })
 
 test('migration 1790 divides CRICOS by the course length only when it is a year or more', () => {
-  const m = fs.readFileSync('supabase/migrations/20261006001790_cf247_fee_under_one_year.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261006001790_cf247_fee_under_one_year.sql', 'utf8')
   expect(m).toContain('greatest(case c.duration_unit')
   expect(m).toContain('round(cr.amount / greatest(v_yrs, 1), 0)')
   expect(m).not.toMatch(/\b(drop|truncate|cascade)\b/i)
@@ -39,7 +39,7 @@ test('migration 1790 divides CRICOS by the course length only when it is a year 
 })
 
 test('migration 1800 holds suspected half-year page fees out of the page-wins count and is guarded', () => {
-  const m = fs.readFileSync('supabase/migrations/20261006001800_cf247_fee_suspected_half.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261006001800_cf247_fee_suspected_half.sql', 'utf8')
   expect(m).toContain('d7233b6b8ea2a5f3687c1e9d238cf322')
   expect(m).toContain("abs(pa / ann - 0.5) < 0.03")
   expect(m).toContain("'suspected_half'")
@@ -51,7 +51,7 @@ test('migration 1800 holds suspected half-year page fees out of the page-wins co
 // Rule 2 (8 Oct 2026, Platform Admin): the provider's own course page fee with captured evidence wins over the CRICOS
 // registered fee, with no Layer 4 review and whatever year it names. Hand-locked fees keep the earlier rule.
 test('migration 0900 applies Rule 2: evidence-backed own-site page fee wins, guarded, writes nothing', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008000900_cf247_rule2_page_fee_wins.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008000900_cf247_rule2_page_fee_wins.sql', 'utf8')
   expect(m).toContain("'ae51169df5c347a5fcf5628c6f8e87dd'")
   expect(m).toContain("'10bbafb98bb8edb77579a327499e24db'")
   expect(m).toContain('security.fee_evidence_own_site_v1(pg.evidence_id, p_course_id)')
@@ -70,7 +70,7 @@ test('migration 0900 applies Rule 2: evidence-backed own-site page fee wins, gua
 
 // Rule 3 (8 Oct 2026, Platform Admin): a year-less page fee with evidence captured this year is aligned to this year, no review.
 test('migration 1000 applies Rule 3: aligns year-less fees captured this year, skips same-year conflicts and hand locks', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008001000_cf247_rule3_fee_year_align.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008001000_cf247_rule3_fee_year_align.sql', 'utf8')
   expect(m).toContain('extract(year from ea.captured_at)::int = v_year')
   expect(m).toContain('where not conflict')
   expect(m).toContain('manual_locks')
@@ -83,7 +83,7 @@ test('migration 1000 applies Rule 3: aligns year-less fees captured this year, s
 
 // Rule 3 conflicts (8 Oct 2026, Platform Admin, "Newest evidence wins"): the other fee is superseded, never removed.
 test('migration 1100 resolves same-year conflicts by newest evidence and is guarded', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008001100_cf247_rule3_newest_evidence_wins.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008001100_cf247_rule3_newest_evidence_wins.sql', 'utf8')
   expect(m).toContain("'5809297309d14a1a7ce609b6a9d55138'")
   expect(m).toContain('yearless_newer')
   expect(m).toContain("set status = 'superseded'")
@@ -95,7 +95,7 @@ test('migration 1100 resolves same-year conflicts by newest evidence and is guar
 
 // Rule 4 (8 Oct 2026, Platform Admin): low agreement - page wins, admitted automatically daily; never switches a field off.
 test('migration 1500 admits low-agreement fields daily, keeps Decision 220 and the hold list, never switches admission off', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008001500_cf247_rule4_low_agreement_daily.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008001500_cf247_rule4_low_agreement_daily.sql', 'utf8')
   expect(m).toContain('security.adapter_qualify_one_v1(a.provider_id, 0.5, 0.9)')
   expect(m).toContain("(x.v->>'agree_share')::numeric < 0.9")
   expect(m).toContain("not (x.k = 'fee' and v_country = 'CA')")
@@ -103,14 +103,14 @@ test('migration 1500 admits low-agreement fields daily, keeps Decision 220 and t
   expect(m).toContain("cron.schedule('l4-rule-low-agreement', '37 3 * * *'")
   expect(m).not.toMatch(/admit\s*=\s*false/i)
   expect(m).not.toMatch(/delete\s+from/i)
-  const j = fs.readFileSync('supabase/migrations/20261008001600_cf247_job_layers_rules_retention.sql', 'utf8')
+  const j = fs.readFileSync('supabase/migrations-archive/20261008001600_cf247_job_layers_rules_retention.sql', 'utf8')
   expect(j).toContain("('l4-rule-low-agreement', 4, now())")
   expect(j).toContain('on conflict (jobname) do nothing')
 })
 
 // Rule 5 (8 Oct 2026, Platform Admin, "Patterns win, no review"): the adapter's reading replaces a held Layer 3 model value.
 test('migration 1700 lets adapter patterns replace held Layer 3 values, guarded, delivery still admit-only', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008001700_cf247_rule5_patterns_win.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008001700_cf247_rule5_patterns_win.sql', 'utf8')
   expect(m).toContain("'055cb7b44c3b42341e2b14f43488f026'")
   expect(m).toContain('an anchor was not found exactly once')
   expect(m).toContain('r5_itk')
@@ -123,7 +123,7 @@ test('migration 1700 lets adapter patterns replace held Layer 3 values, guarded,
 
 // Rule 6 (8 Oct 2026, Platform Admin): measure whether the course's own CRICOS code is on a page named for another course.
 test('migration 1800 and worker page_codes only measure (nothing unbound or withdrawn)', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008001800_cf247_rule6_page_code_check.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008001800_cf247_rule6_page_code_check.sql', 'utf8')
   expect(m).toContain('pipeline.rule6_page_checks')
   expect(m).not.toMatch(/delete\s+from/i)
   expect(m).not.toMatch(/update\s+pipeline\.coverage_course_pages/i)
@@ -134,7 +134,7 @@ test('migration 1800 and worker page_codes only measure (nothing unbound or with
 
 // Rule 6 (8 Oct 2026, Platform Admin, "Unbind and re-find, no review"): code not on the page -> unbind, block the pair, re-find.
 test('migration 1900 unbinds pages without the course code, blocks rebinding, keeps hand-chosen pages, deletes nothing', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008001900_cf247_rule6_unbind_refind.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008001900_cf247_rule6_unbind_refind.sql', 'utf8')
   expect(m).toContain("'d9ee96006cf9444528115c81a782e151'")
   expect(m).toContain('pipeline.course_page_blocks b where b.course_id = p_course_id and b.url = p_url')
   expect(m).toContain("m.field in ('official_url', 'course_url')")

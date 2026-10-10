@@ -83,7 +83,7 @@ test('Layer 1 run controller and scheduler dispatch the scholarship registers', 
 })
 
 test('register migration: country tagged, index hands off to the page reader, nothing deleted, no schedule switched on', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008004500_cf247_scholarship_central_register.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008004500_cf247_scholarship_central_register.sql', 'utf8')
   expect(m).toContain("role text not null check (role in ('record','index'))")
   expect(m).toContain("country_code char(2) not null")
   expect(m).toContain("('au_study_australia','AU',")
@@ -100,7 +100,7 @@ test('register migration: country tagged, index hands off to the page reader, no
 })
 
 test('register hand-off uses the candidate source "register" (md5-guarded replace)', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008004600_cf247_scholarship_register_candidate_source.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008004600_cf247_scholarship_register_candidate_source.sql', 'utf8')
   expect(m).toContain("<> 'ff5eb351f07c7f61df6e9bb12f9641e6' then")
   expect(m).toContain("check (source = any (array['sitemap'::text, 'map'::text, 'search'::text, 'register'::text]))")
   expect(m).toContain("left(t.name, 300), 'register'")
@@ -108,7 +108,7 @@ test('register hand-off uses the candidate source "register" (md5-guarded replac
 })
 
 test('register hand-off writes each provider page candidate once per batch (md5-guarded replace)', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008004700_cf247_scholarship_register_handoff_once.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008004700_cf247_scholarship_register_handoff_once.sql', 'utf8')
   expect(m).toContain("<> '1de473b90e9844055ed23758d3e4a728' then")
   expect(m).toContain('select distinct on (t.provider_id, security.scholarship_url_norm(t.website_url))')
   expect(m).not.toMatch(/delete\s+from/i)
@@ -150,14 +150,14 @@ const apply = "Select your region to find the application process for your count
   // fails loudly rather than storing an empty record
   expect(worker).toContain('if(!regions.length||countries.length<5) throw new Error(')
   expect(worker).toContain('if(inst.new_zealand.length<5) throw new Error(')
-  const m = fs.readFileSync('supabase/migrations/20261008004800_cf247_scholarship_register_nz_manaaki.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008004800_cf247_scholarship_register_nz_manaaki.sql', 'utf8')
   expect(m).toContain("'register_code','nz_mfat_manaaki'")
   expect(m).toContain("array['nzscholarships.govt.nz']")
   expect(m).not.toMatch(/delete\s+from/i)
 })
 
 test('government awards: nationalities from the register, institutions by official website, guarded patches, nothing published', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008004900_cf247_scholarship_government_awards.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008004900_cf247_scholarship_government_awards.sql', 'utf8')
   // stops rather than storing a partial nationality list
   expect(m).toContain("raise exception 'register % lists countries without a nationality code: %'")
   // institutions matched by website (or where it redirects), never by name
@@ -177,7 +177,7 @@ test('government awards: nationalities from the register, institutions by offici
 })
 
 test('country onboarding: AU, NZ, CA only; new countries trigger a readiness alert; switch on only when ready', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008005000_cf247_scholarship_country_onboarding.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005000_cf247_scholarship_country_onboarding.sql', 'utf8')
   expect(m).toContain("update ref.countries set scholarship_ingestion_enabled = false where scholarship_ingestion_enabled and iso_alpha2 not in ('AU','NZ','CA');")
   expect(m).toContain("status text not null check (status in ('enabled','watch'))")
   expect(m).toContain("('uk_fcdo_chevening','GB'")
@@ -199,7 +199,7 @@ test('country onboarding: AU, NZ, CA only; new countries trigger a readiness ale
 })
 
 test('Canada Layer 1 phase A: readers named per source, no schedule switched on, nothing deleted', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008005100_cf247_canada_layer1_readers.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005100_cf247_canada_layer1_readers.sql', 'utf8')
   expect(m).toContain("if n <> 26 then raise exception")
   expect(m).toContain("'source_system','CA_READER'")
   expect(m).toContain('{"function":"layer1-ca-live","auth":"service_key","paging":"offset","batch":200}')

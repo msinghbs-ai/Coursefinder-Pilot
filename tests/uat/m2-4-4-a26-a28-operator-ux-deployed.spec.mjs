@@ -33,7 +33,7 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
 
 
   test('A26 child progress refreshes the owning batch heartbeat',async()=>{
-    const sql=await fs.readFile('supabase/migrations/20260901101500_m2_4_4_a26_child_heartbeat.sql','utf8')
+    const sql=await fs.readFile('supabase/migrations-archive/20260901101500_m2_4_4_a26_child_heartbeat.sql','utf8')
     expect(sql).toContain('set heartbeat_at=now(),updated_at=now()')
     expect(sql).toContain("where id=v_batch and status in('queued','running')")
   })

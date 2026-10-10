@@ -60,9 +60,9 @@ test.describe('A15 Provider international contact intelligence @deployed',()=>{
   })
 
   test('A15 data boundary keeps contact tables private and licensed search non-revealing',async()=>{
-    const schema=await fs.readFile('supabase/migrations/20260829003000_a15_provider_contact_intelligence.sql','utf8')
-    const bridge=await fs.readFile('supabase/migrations/20260829005500_a15_provider_contact_service_bridge.sql','utf8')
-    const signals=await fs.readFile('supabase/migrations/20260829009000_a15_contact_change_signal_semantics.sql','utf8')
+    const schema=await fs.readFile('supabase/migrations-archive/20260829003000_a15_provider_contact_intelligence.sql','utf8')
+    const bridge=await fs.readFile('supabase/migrations-archive/20260829005500_a15_provider_contact_service_bridge.sql','utf8')
+    const signals=await fs.readFile('supabase/migrations-archive/20260829009000_a15_contact_change_signal_semantics.sql','utf8')
     const scraper=await fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8')
     const apollo=await fs.readFile('supabase/functions/provider-contact-enrich-apollo/index.ts','utf8')
 

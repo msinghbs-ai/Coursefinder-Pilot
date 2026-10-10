@@ -3,7 +3,7 @@ import fs from 'node:fs'
 
 // Decision 162 step 1: course attribute badges come from stored records, not presence guesses.
 test('Field states read stored provenance and only await layers that really have work',()=>{
-  const m=fs.readFileSync('supabase/migrations/20260928160000_d162_course_field_states_provenance.sql','utf8')
+  const m=fs.readFileSync('supabase/migrations-archive/20260928160000_d162_course_field_states_provenance.sql','utf8')
   expect(m).toContain("if md5(pg_get_functiondef('security.admin_course_field_states(uuid)'::regprocedure))<>'d063f16247b06302895bde812fb8f6dd'")
   expect(m).toContain("where w.entity_id=c.id and w.status='admitted' and w.evidence_id=v_fee.evidence_id")   // Layer 3 from the admitted work item
   expect(m).toContain("elsif 'international_fee'=any(v_domains) then")                                         // awaiting L2 only with a qualified source
@@ -17,8 +17,8 @@ test('Field states read stored provenance and only await layers that really have
 })
 
 test('Fee schedules never leave courses waiting and are named in the badge tooltip',()=>{
-  const a=fs.readFileSync('supabase/migrations/20260928174000_d162_badges_schedule_scope.sql','utf8')
+  const a=fs.readFileSync('supabase/migrations-archive/20260928174000_d162_badges_schedule_scope.sql','utf8')
   expect(a).toContain("s.source_type=''provider_fee_schedule''")
-  const b=fs.readFileSync('supabase/migrations/20260928174100_d162_badges_schedule_resolved_by.sql','utf8')
+  const b=fs.readFileSync('supabase/migrations-archive/20260928174100_d162_badges_schedule_resolved_by.sql','utf8')
   expect(b).toContain("''Layer 2 provider fee schedule''")
 })

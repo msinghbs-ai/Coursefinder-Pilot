@@ -17,7 +17,7 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
       fs.readFile('src/platform-maturity-entry.jsx','utf8'),
       fs.readFile('src/platform-maturity.css','utf8'),
       fs.readFile('src/mature-main.jsx','utf8'),
-      fs.readFile('supabase/migrations/20260901220500_m2_5_platform_maturity_admin_read_surface.sql','utf8'),
+      fs.readFile('supabase/migrations-archive/20260901220500_m2_5_platform_maturity_admin_read_surface.sql','utf8'),
       fs.readFile('src/pim-version-entry.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('tests/uat/release-notes-deployed.spec.mjs','utf8'),

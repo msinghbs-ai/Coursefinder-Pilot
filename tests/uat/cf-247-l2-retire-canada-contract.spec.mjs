@@ -5,7 +5,7 @@ import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-const MIG = 'supabase/migrations/20261002181800_cf247_layer2_retire_canada_admission.sql'
+const MIG = 'supabase/migrations-archive/20261002181800_cf247_layer2_retire_canada_admission.sql'
 
 test.describe('static contract', () => {
   test('migration pauses the old jobs, adds the Canadian rule and queue, behind md5 guards', async () => {

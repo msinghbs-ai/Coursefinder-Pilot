@@ -6,7 +6,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 import { errorReading, errorSteps } from '../../src/lib/workerErrors.js'
 import { PAGES } from '../../src/nav-map.js'
 
-const MIG = 'supabase/migrations/20261002182000_cf247_fetch_area_sweep_websites.sql'
+const MIG = 'supabase/migrations-archive/20261002182000_cf247_fetch_area_sweep_websites.sql'
 
 test('migration: sweep-based Fetch an area, Websites to find, dispatch wait and faster hand-off, behind md5 guards', async () => {
   const m = await fs.readFile(MIG, 'utf8')

@@ -9,7 +9,7 @@ import { openAdapter, openCard } from './support/cards.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('migration 1750: read cycle, Adapters list and detail, per-adapter admit, all behind md5 guards, nothing destructive', () => {
-  const m = read('supabase/migrations/20261006001750_cf247_adapters_lifecycle.sql')
+  const m = read('supabase/migrations-archive/20261006001750_cf247_adapters_lifecycle.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'cascade']) expect(m.toLowerCase().replace(/--[^\n]*/g, '')).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+(\w+\s+)?set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   for (const lit of m.replace(/--[^\n]*/g, '').replace(/\$s\$[\s\S]*?\$s\$/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')

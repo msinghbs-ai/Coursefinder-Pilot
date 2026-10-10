@@ -3,7 +3,7 @@ import fs from 'node:fs'
 
 // CF-247 Phase 2 (8 Oct 2026): CRICOS as the first register adapter, replayed side by side with today's Layer 1 code.
 test('register adapter: spec stored switched off, replay is read only, reference is a copy of Layer 1', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008002000_cf247_phase2_cricos_register_adapter.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008002000_cf247_phase2_cricos_register_adapter.sql', 'utf8')
   expect(m).toContain("switched_on boolean not null default false")
   expect(m).toContain("'au_cricos'")
   expect(m).not.toMatch(/delete\s+from/i)
@@ -18,19 +18,19 @@ test('register adapter: spec stored switched off, replay is read only, reference
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('if (mode === "register_replay")')
   expect(w).toContain('svc_register_replay_save_v2')
-  expect(fs.readFileSync('supabase/migrations/20261008002200_cf247_phase2_replay_slices.sql', 'utf8')).toContain('reference_pos')
-  const k = fs.readFileSync('supabase/migrations/20261008002100_cf247_keep_register_files.sql', 'utf8')
+  expect(fs.readFileSync('supabase/migrations-archive/20261008002200_cf247_phase2_replay_slices.sql', 'utf8')).toContain('reference_pos')
+  const k = fs.readFileSync('supabase/migrations-archive/20261008002100_cf247_keep_register_files.sql', 'utf8')
   expect(k).toContain("not like 'regulatory/%'")
-  const d = fs.readFileSync('supabase/migrations/20261008002300_cf247_phase2_replay_driver.sql', 'utf8')
+  const d = fs.readFileSync('supabase/migrations-archive/20261008002300_cf247_phase2_replay_driver.sql', 'utf8')
   expect(d).toContain("perform cron.unschedule('register-replay')")
-  const c = fs.readFileSync('supabase/migrations/20261008002600_cf247_replay_compare_numeric.sql', 'utf8')
+  const c = fs.readFileSync('supabase/migrations-archive/20261008002600_cf247_replay_compare_numeric.sql', 'utf8')
   expect(c).toContain("'a92345aef63ffb480d636f586d00d58e'")
   expect(c).toContain('then (a.fields->>\'duration_weeks\')::numeric end weeks')
 })
 
 // CF-247 Phase 2 (8 Oct 2026): NZQA, a register published as web pages, replayed from the stored Layer 1 batch files.
 test('NZQA register adapter: stored switched off, reference is the layer1-nz-live code, replay reads listed files', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008002800_cf247_phase2_nzqa_register_adapter.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008002800_cf247_phase2_nzqa_register_adapter.sql', 'utf8')
   expect(m).toContain("'nz_nzqa'")
   expect(m).toContain('"format": "html_pages"')
   expect(m).not.toMatch(/delete\s+from/i)
@@ -56,7 +56,7 @@ test('NZQA register adapter: stored switched off, reference is the layer1-nz-liv
 
 // CF-247 Phase 2 (8 Oct 2026): PRISMS and QILT, statistics published as Excel workbooks, replayed from the stored workbooks.
 test('PRISMS and QILT register adapters: stored switched off, references are the Layer 1 readers, replay reads stored workbooks', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008003000_cf247_phase2_prisms_qilt_register_adapters.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008003000_cf247_phase2_prisms_qilt_register_adapters.sql', 'utf8')
   for (const code of ['au_prisms_sa4', 'au_qilt_gos', 'au_qilt_ses', 'au_qilt_gosl', 'au_qilt_ess']) expect(m).toContain(`'${code}'`)
   expect(m).toContain('"format":"xlsx_tables"')
   expect(m).not.toMatch(/delete\s+from/i)
@@ -86,7 +86,7 @@ test('PRISMS and QILT register adapters: stored switched off, references are the
 // CF-247 Phase 2 (8 Oct 2026): switching a register adapter on is a logged Platform Admin step gated on a passing replay; the Layer 1
 // workers read with the adapter only when it is switched on.
 test('register adapter switch: gated on a passing replay, logged, and used by the NZQA and PRISMS workers', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008003300_cf247_register_adapter_switch.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008003300_cf247_register_adapter_switch.sql', 'utf8')
   expect(m).toContain("coalesce(security.current_role_rank(), 0) < 6")
   expect(m).toContain("did not pass")
   expect(m).toContain("spec changed after its latest replay")
@@ -104,7 +104,7 @@ test('register adapter switch: gated on a passing replay, logged, and used by th
 })
 
 test('register replay: a run is leased to one call and released when the call ends', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008003500_cf247_replay_lease.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008003500_cf247_replay_lease.sql', 'utf8')
   expect(m).toContain("for update skip locked")
   expect(m).toContain("lease_until = now() + interval '150 seconds'")
   expect(m).toContain("'e3617cc0201ad9810879f568a909a846'")
@@ -115,7 +115,7 @@ test('register replay: a run is leased to one call and released when the call en
 // CF-247 Phase 2 (8 Oct 2026): CRICOS adapter version 2 covers provider addresses and both location sets so the CRICOS workers can read
 // everything they apply with it once it is switched on.
 test('CRICOS adapter v2: address fields and location sets; depth and facts workers read with the adapter when switched on', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008003700_cf247_cricos_adapter_v2.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008003700_cf247_cricos_adapter_v2.sql', 'utf8')
   expect(m).toContain("where code = 'au_cricos' and version = 1 and not switched_on")
   expect(m).toContain('"Postal Address City", "Postal City"')
   expect(m).toContain('"fallback": "record_provider"')
@@ -140,7 +140,7 @@ test('CRICOS adapter v2: address fields and location sets; depth and facts worke
 
 // CF-247 Phase 2 (8 Oct 2026): Canadian catalogue adapters (text_items); each reference is a verbatim copy of its Layer 1 reader.
 test('Canada register adapters: switched off, every copied reader piece is still in its Layer 1 worker', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008003900_cf247_canada_register_adapters.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008003900_cf247_canada_register_adapters.sql', 'utf8')
   for (const c of ['ca_algonquin', 'ca_boreal', 'ca_cambrian', 'ca_conestoga', 'ca_confederation', 'ca_durham', 'ca_fanshawe_pgwp', 'ca_fleming', 'ca_georgian', 'ca_lambton', 'ca_loyalist', 'ca_mohawk', 'ca_niagara', 'ca_seneca', 'ca_sheridan', 'ca_stclair', 'ca_ircc_dli'])
     expect(m, c).toContain(`'${c}'`)
   expect(m).toContain('"format": "text_items"')
@@ -181,7 +181,7 @@ test('text_items engine reads fields in dependency order (jsonb does not keep ke
 })
 
 test('Canada ALIS and EPBC adapters: bundles of stored pages, references copied from the readers', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008004200_cf247_canada_alis_epbc_adapters.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008004200_cf247_canada_alis_epbc_adapters.sql', 'utf8')
   expect(m).toContain("'ca_alis'"); expect(m).toContain("'ca_epbc'")
   expect(m).toContain('"bundle": {"pages": "raw_pages"')
   expect(m).not.toContain('switched_on')
@@ -190,7 +190,7 @@ test('Canada ALIS and EPBC adapters: bundles of stored pages, references copied 
 })
 
 test('register replay: a run stops after three calls end without saving, and the CRICOS adapter reads only its slice', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008004300_cf247_replay_attempts.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008004300_cf247_replay_attempts.sql', 'utf8')
   expect(m).toContain("'6734bb9841dd3b9344b9c494a8685c05'")
   expect(m).toContain('r.attempts >= 3')
   expect(m).toContain('(lease_until is null or lease_until <= now())')

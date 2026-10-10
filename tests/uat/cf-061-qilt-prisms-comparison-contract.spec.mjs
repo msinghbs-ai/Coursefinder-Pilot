@@ -12,7 +12,7 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
    fs.readFile('src/ContextualInsights.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8'),
-   Promise.all([fs.readFile('supabase/migrations/20260901133212_cf_061_contextual_compare_qilt_prisms.sql','utf8'),fs.readFile('supabase/migrations/20260901134059_cf_061_contextual_compare_provider_city_fix.sql','utf8'),fs.readFile('supabase/migrations/20260901134137_cf_061_contextual_insights_study_area_code_fix.sql','utf8')]).then(xs=>xs.join('\n')),
+   Promise.all([fs.readFile('supabase/migrations-archive/20260901133212_cf_061_contextual_compare_qilt_prisms.sql','utf8'),fs.readFile('supabase/migrations-archive/20260901134059_cf_061_contextual_compare_provider_city_fix.sql','utf8'),fs.readFile('supabase/migrations-archive/20260901134137_cf_061_contextual_insights_study_area_code_fix.sql','utf8')]).then(xs=>xs.join('\n')),
    fs.readFile('src/pim-version-entry.js','utf8'),
    fs.readFile('index.html','utf8'),
    fs.readFile('src/release-manifest.js','utf8'),

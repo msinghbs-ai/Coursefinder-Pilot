@@ -8,7 +8,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('database: the list drives the checks that used fixed site patterns; changes are role-checked, reasoned and logged', () => {
-  const m = read('supabase/migrations/20261001110000_cf247_reference_sources.sql')
+  const m = read('supabase/migrations-archive/20261001110000_cf247_reference_sources.sql')
   for (const use of ['reference', 'data_source', 'not_provider_site', 'not_course_page', 'scholarship_placeholder', 'logo_directory', 'ranking_publisher']) expect(m).toContain(`'${use}'`)
   expect(m).toContain("$s$security.reference_url_has_use(v_url, 'not_course_page')$s$")
   expect(m).toContain("$s$not security.reference_url_has_use(s.url, 'not_provider_site')$s$")
@@ -18,7 +18,7 @@ test('database: the list drives the checks that used fixed site patterns; change
   expect(m).toContain("insert into pipeline.admin_control_events(area, action, target, detail, actor)")
   expect(m).toContain('grant execute on function public.svc_reference_domains(text) to service_role;')
   expect(m).toContain('revoke all on function public.svc_reference_domains(text) from public, anon, authenticated;')
-  const d = read('supabase/migrations/20261001112000_cf247_key_dates_edit.sql')
+  const d = read('supabase/migrations-archive/20261001112000_cf247_key_dates_edit.sql')
   expect(d).toContain("if auth.uid() is null or security.current_role_rank() < 3 then raise exception 'Curator role or above required'")
   expect(d).toContain("'a vague date needs the wording from the source'")
 })

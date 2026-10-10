@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test'
 import fs from 'node:fs/promises'
 
 test('CF-247 handoff derivation is explicit, evidence-backed, single-attempt and benchmark gated',async()=>{
-  const sql=await fs.readFile('supabase/migrations/20260915144000_cf_247_layer3_handoff_derivation.sql','utf8')
+  const sql=await fs.readFile('supabase/migrations-archive/20260915144000_cf_247_layer3_handoff_derivation.sql','utf8')
   for(const token of [
     'layer3_enqueue_eligible_layer2_service',
     "provider_current_tuition_validation",

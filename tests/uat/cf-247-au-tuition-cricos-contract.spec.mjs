@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 
 test('migration: AU tuition list emptied, fee schedules gated, AU tuition work parked and reviews closed', async () => {
-  const m = await fs.readFile('supabase/migrations/20261002182600_cf247_au_tuition_from_cricos.sql', 'utf8')
+  const m = await fs.readFile('supabase/migrations-archive/20261002182600_cf247_au_tuition_from_cricos.sql', 'utf8')
   expect(m).toContain("jsonb_build_object('tuition', '[]'::jsonb)")
   expect(m).toContain("k.iso_alpha2 = 'AU'")
   expect(m).toContain('create or replace function security.tuition_chase_enabled')

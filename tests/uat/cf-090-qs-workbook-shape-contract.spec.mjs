@@ -29,7 +29,7 @@ test('CF-090 QS workbook retains full indicator/category detail through ingest w
 })
 
 test('CF-090 byte-identical re-upload repairs only recoverable missing inline Evidence and serializes recovery',()=>{
-  const migration=read('supabase/migrations/20260910162500_cf_qs_duplicate_upload_restores_missing_evidence.sql')
+  const migration=read('supabase/migrations-archive/20260910162500_cf_qs_duplicate_upload_restores_missing_evidence.sql')
   expect(migration).toContain("v_existing.status <> 'rejected'")
   expect(migration).toContain('v_existing.evidence_artifact_id is not null')
   expect(migration).toContain('pipeline.evidence_artifacts ea')

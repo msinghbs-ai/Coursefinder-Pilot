@@ -9,7 +9,7 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
    fs.readFile('index.html','utf8'),
    fs.readFile('src/nav-map.js','utf8'),
    fs.readFile('src/evidence-acquisition-provenance-entry.js','utf8'),
-   fs.readFile('supabase/migrations/20260904060000_cf_142_evidence_acquisition_provenance.sql','utf8'),
+   fs.readFile('supabase/migrations-archive/20260904060000_cf_142_evidence_acquisition_provenance.sql','utf8'),
   ])
   // v2.15.107: the fixed Layer 1 > 2 > 3 > 4 order is declared once in nav-map.js (Data pipeline section);
   // the page script that reordered menu buttons (layer2-navigation-restore.js) is gone and nothing injects menu entries.

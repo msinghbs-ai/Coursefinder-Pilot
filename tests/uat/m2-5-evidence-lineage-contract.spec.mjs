@@ -13,7 +13,7 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
 
   test('classifies raw lineage separately and removes only just-uploaded duplicates',async()=>{
     const [migration,contacts,scholarships]=await Promise.all([
-      fs.readFile('supabase/migrations/20260901195000_m2_5_evidence_lineage_classification.sql','utf8'),
+      fs.readFile('supabase/migrations-archive/20260901195000_m2_5_evidence_lineage_classification.sql','utf8'),
       fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8'),
       fs.readFile('supabase/functions/scholarships-au-etl/index.ts','utf8'),
     ])

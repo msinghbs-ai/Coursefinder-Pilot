@@ -17,10 +17,10 @@ test('matcher: one pinned model; a choice must be one of the prepared candidates
   const idx = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('export const AI_MATCH_MODEL = "qwen/qwen3-30b-a3b-instruct-2507";')
   expect(idx).toContain('if (d?.model && d.model !== AI_MATCH_MODEL) throw Error(`returned model ${d.model}`);')
-  const m = await fs.readFile('supabase/migrations/20261002184400_cf247_ai_link_matcher.sql', 'utf8')
+  const m = await fs.readFile('supabase/migrations-archive/20261002184400_cf247_ai_link_matcher.sql', 'utf8')
   expect(m).toContain("chosen address is not one of the candidates")
   expect(m).toContain("coalesce(pipeline.coverage_course_pages.basis, '') <> 'manual'")
-  const k = await fs.readFile('supabase/migrations/20261002185100_cf247_ai_match_key_limit.sql', 'utf8')
+  const k = await fs.readFile('supabase/migrations-archive/20261002185100_cf247_ai_match_key_limit.sql', 'utf8')
   expect(k).toContain("p_error ~ '^HTTP (401|402|403|429)\\M'")
 })
 
@@ -51,16 +51,16 @@ test('page identity is qualification only and directory pages are hints only', a
   expect(idx).toContain('if (mode === "id_qualify")')
   expect(idx).not.toMatch(/mode === "id_check"|mode === "ai_identity"/) // no live mode yet
   for (const f of ['20261002184900_cf247_page_identity_holdout.sql', '20261002185000_cf247_page_identity_holdout_h2.sql', '20261002185200_cf247_directory_match.sql'])
-    expect(await fs.readFile(`supabase/migrations/${f}`, 'utf8')).not.toMatch(/coverage_course_pages\s+set|insert into catalogue\.|update catalogue\./i)
-  const d = await fs.readFile('supabase/migrations/20261002184800_cf247_directory_capture.sql', 'utf8')
+    expect(await fs.readFile(`supabase/migrations-archive/${f}`, 'utf8')).not.toMatch(/coverage_course_pages\s+set|insert into catalogue\.|update catalogue\./i)
+  const d = await fs.readFile('supabase/migrations-archive/20261002184800_cf247_directory_capture.sql', 'utf8')
   expect(d).toContain('nothing from them is admitted')
   expect(idx).toContain('const DIRECTORY_HOSTS: Record<string, string> = { hotcourses: "www.hotcoursesabroad.com", univcc: "univ.cc" };')
 })
 
 test('22:26 decisions: AU English by exact title too; robots.txt per RFC 9309; Firecrawl only when direct reading fails', async () => {
-  const m = await fs.readFile('supabase/migrations/20261002185600_cf247_au_english_exact_title.sql', 'utf8')
+  const m = await fs.readFile('supabase/migrations-archive/20261002185600_cf247_au_english_exact_title.sql', 'utf8')
   expect(m).toContain(`jsonb_build_object('english', '["cricos_code", "exact_title"]'::jsonb)`)
-  const f = await fs.readFile('supabase/migrations/20261002185700_cf247_english_policy_flag_step.sql', 'utf8')
+  const f = await fs.readFile('supabase/migrations-archive/20261002185700_cf247_english_policy_flag_step.sql', 'utf8')
   expect(f).not.toMatch(/status = 'approved', decided_by/) // the flag step approves nothing
   const idx = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('else if (direct && (direct.status === 404 || direct.status === 410)) robotsState = "none";')

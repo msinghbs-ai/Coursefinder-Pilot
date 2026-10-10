@@ -21,11 +21,11 @@ test('calendar by hand: folded into the calendars list, set through the Decision
   const main = read('src/mature-main.jsx')
   expect(main).toContain('<ProviderPolicies country={country}/>')
   expect(main).not.toContain('CalendarByHand')
-  const a1 = read('supabase/migrations/20261003001510_cf247_calendar_intakes_on_a1.sql')
+  const a1 = read('supabase/migrations-archive/20261003001510_cf247_calendar_intakes_on_a1.sql')
   expect(a1).toContain("update pipeline.layer4_review_items set status = 'superseded', decided_at = now(), escalation_reason = v_reason where id = r.review_id and status = 'pending';")
-  const a2 = read('supabase/migrations/20261003001500_cf247_calendar_intakes_on_a2.sql')
+  const a2 = read('supabase/migrations-archive/20261003001500_cf247_calendar_intakes_on_a2.sql')
   expect(a2).toContain("if auth.uid() is null or security.current_role_rank() < 6 then raise exception 'Platform Admin role required'")
-  const b = read('supabase/migrations/20261003001520_cf247_calendar_intakes_on_b.sql')
+  const b = read('supabase/migrations-archive/20261003001520_cf247_calendar_intakes_on_b.sql')
   expect(b).toContain("select cron.schedule('provider-calendar-intakes', '7-59/10 * * * *'")
   for (const m of [a1, a2, b]) for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
@@ -49,7 +49,7 @@ test('calendar rows: internal and external links', () => {
   const pp = read('src/ProviderPolicies.jsx')
   expect(pp).toContain('href={`#providers?id=${x.provider_id}`} className="cf-link" data-provider-link')
   expect(pp).toContain('className="cf-link">Calendar page ↗</a>')
-  const m = read('supabase/migrations/20261003001700_cf247_calendar_byhand_wins.sql')
+  const m = read('supabase/migrations-archive/20261003001700_cf247_calendar_byhand_wins.sql')
   expect(m).toContain("order by e->>'period', (x.style = 'by_hand') desc nulls last, x.decided_at desc nulls last")
   expect(m).toContain("when q.missing > 0 and not (q.byhand and q.mon is not null) then 'period_unknown'")
 })
@@ -94,7 +94,7 @@ test('provider drawer inline, scholarship audience filter, tuition field named',
   expect(main).toContain(`<FilterSelect label="Audience" value={filters.audience||''}`)
   expect(main).toContain("if(type==='scholarship'&&filters.audience)a.audience=filters.audience;")
   expect(main).toContain('className="m-cell-clip"')
-  const m = read('supabase/migrations/20261003001900_cf247_scholarships_page_audience.sql')
+  const m = read('supabase/migrations-archive/20261003001900_cf247_scholarships_page_audience.sql')
   expect(m).toContain("and (nullif(p_args->>'audience','') is null or s.audience::text=p_args->>'audience')")
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
@@ -103,7 +103,7 @@ test('provider drawer inline, scholarship audience filter, tuition field named',
 test('scholarship audience from wording: labels and migration shape', () => {
   const main = read('src/mature-main.jsx')
   expect(main).toContain("international_and_domestic:'International and domestic',not_stated:'Not stated on the page'")
-  const m = read('supabase/migrations/20261003002000_cf247_scholarship_audience_from_wording.sql')
+  const m = read('supabase/migrations-archive/20261003002000_cf247_scholarship_audience_from_wording.sql')
   expect(m).toContain("check (audience in ('international','domestic','international_and_domestic','not_stated'))")
   expect(m).toContain("and not exists (select 1 from pipeline.manual_locks k where k.entity = 'scholarship' and k.entity_id = s.id and k.field = 'audience');")
   expect(m).toContain("select cron.schedule('scholarship-audience', '41 * * * *'")
@@ -112,7 +112,7 @@ test('scholarship audience from wording: labels and migration shape', () => {
 
 // Decision 245: several values stated on a page become award tiers with the page as evidence; the value text is the range.
 test('scholarship award tiers from the page: migration shape', () => {
-  const m = read('supabase/migrations/20261003002100_cf247_scholarship_award_tiers_from_page.sql')
+  const m = read('supabase/migrations-archive/20261003002100_cf247_scholarship_award_tiers_from_page.sql')
   expect(m).toContain("and not exists (select 1 from pipeline.manual_locks k where k.entity = 'scholarship' and k.entity_id = s.id and k.field in ('award', 'award_value')))")
   expect(m).toContain("or exists (select 1 from scholarship.award_tiers t where t.scholarship_id=s.id and t.tier_code like 'page_tier_%')")
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
@@ -128,10 +128,10 @@ test('scholarship nationality and Zoho scholarships action', () => {
   expect(z).toContain('action === "scholarships"')
   expect(z).toContain('svc.rpc("zoho_edge_scholarships_v1", { p_course: course })')
   for (const f of ['20261003002200_cf247_scholarship_nationality_from_wording', '20261003002300_cf247_scholarship_selection_fields_and_zoho', '20261003002400_cf247_scholarship_reads_nationalities']) {
-    const m = read(`supabase/migrations/${f}.sql`)
+    const m = read(`supabase/migrations-archive/${f}.sql`)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   }
-  const n = read('supabase/migrations/20261003002200_cf247_scholarship_nationality_from_wording.sql')
+  const n = read('supabase/migrations-archive/20261003002200_cf247_scholarship_nationality_from_wording.sql')
   expect(n).toContain("where x.code <> 'AU' and not (x.code = 'NZ' and t.study_country = 'AU')")
 })
 
@@ -145,8 +145,8 @@ test('scholarship operations: Layer 4 publishing, course search, migrations shap
   expect(main).toContain("if(type==='scholarship'&&filters.course)a.course=filters.course;")
   expect(main).toContain('data-course-filter')
   for (const f of ['20261003002500_cf247_scholarship_saving_estimate_and_course_attribute', '20261003002600_cf247_scholarship_course_attribute_sync', '20261003002700_cf247_scholarship_value_label', '20261003002800_cf247_scholarships_page_course_search']) {
-    const m = read(`supabase/migrations/${f}.sql`)
+    const m = read(`supabase/migrations-archive/${f}.sql`)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   }
-  expect(read('supabase/migrations/20261003002600_cf247_scholarship_course_attribute_sync.sql')).toContain("select cron.schedule('scholarship-course-attribute', '*/15 * * * *'")
+  expect(read('supabase/migrations-archive/20261003002600_cf247_scholarship_course_attribute_sync.sql')).toContain("select cron.schedule('scholarship-course-attribute', '*/15 * * * *'")
 })

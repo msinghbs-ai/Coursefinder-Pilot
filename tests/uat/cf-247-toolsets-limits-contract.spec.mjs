@@ -13,21 +13,21 @@ test('migrations shaped: observe mode guarded by md5, notices from logs, sample 
     '20261004000740_cf247_toolset_trial_write', '20261004000750_cf247_trial_close_probe', '20261004000760_cf247_trial_release_leases', '20261004000770_cf247_trial_run_status',
     '20261004000780_cf247_trial_record', '20261004000790_cf247_trial_next', '20261004000800_cf247_trial_results_read', '20261004000900_cf247_toolset_keys_plans_sample_runs']
   for (const f of ['20261004000600_cf247_toolset_limits_and_notices', ...samples]) {
-    const m = read(`supabase/migrations/${f}.sql`)
+    const m = read(`supabase/migrations-archive/${f}.sql`)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     expect(m).not.toMatch(/insert into catalogue\.|update catalogue\.|admitted_value/)
   }
-  const a = read('supabase/migrations/20261004000600_cf247_toolset_limits_and_notices.sql')
+  const a = read('supabase/migrations-archive/20261004000600_cf247_toolset_limits_and_notices.sql')
   for (const h of ['15fcf19b03b42539a912dd0ee1501bf7', 'c081a641b616aa3cc2859730468ff56a', 'ae1a34a92116682c5477cf22bf38f7bb']) expect(a).toContain(`is distinct from '${h}'`)
   expect(a).toContain("('openrouter', 'OpenRouter (AI models)', 'ai', '{3}', null, 'observe',")
   expect(a).toContain("select coalesce((select t.enforcement is distinct from 'observe' from pipeline.platform_toolsets t where t.key = p_toolset), true)")
   expect(a).toContain("raise exception 'Platform Admin required'")
-  const b = samples.map(f => read(`supabase/migrations/${f}.sql`)).join('\n')
+  const b = samples.map(f => read(`supabase/migrations-archive/${f}.sql`)).join('\n')
   expect(b).toContain("pg.read_status in ('needs_render', 'blocked')")
   expect(b).not.toMatch(/read_status in \([^)]*robots_disallowed/)
   expect(b).toMatch(/'serper', 'Serper \(web search, trial\)'[\s\S]*?, false, 'Platform Operations'/)
   // Decision 252 amended (14:26): no trial wording; keys carry plan limits set in the UI; renamed, not recreated
-  const k = read('supabase/migrations/20261004000900_cf247_toolset_keys_plans_sample_runs.sql')
+  const k = read('supabase/migrations-archive/20261004000900_cf247_toolset_keys_plans_sample_runs.sql')
   expect(k).toContain('alter table pipeline.toolset_trial_runs rename to toolset_sample_runs;')
   for (const key of ['plan_name', 'plan_credits', 'plan_renews_monthly', 'plan_counted_from', 'plan_reserve', 'plan_max_concurrency']) expect(k).toContain(`('serper', '${key}'`)
   expect(k).toContain("display_name = 'Serper (web search)'")
@@ -118,7 +118,7 @@ test('browser: Models & services — OpenRouter observe only, key and plan limit
 
 // Decision 252 steps 1 and 2 (v2.15.179): search pass into the identity check; addresses repaired from stored results
 test('search pass: migration shaped, worker binds found pages only for a pass, never replaces a confirmed page', () => {
-  const m = read('supabase/migrations/20261004001100_cf247_search_pass_and_link_repair.sql')
+  const m = read('supabase/migrations-archive/20261004001100_cf247_search_pass_and_link_repair.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const h of ['12c2663ee54572ddde516881d2d5aa76', '17cbb1540acdcdd9f01cd9a73e7ac79b', 'eaac20b00a5b42d145ba5604ac084577']) expect(m).toContain(`is distinct from '${h}'`)
   expect(m).toContain("if v_pg.course_id is not null and v_pg.status = 'bound' and (v_pg.read_status = 'read' or v_pg.identity_basis is not null) then return 'already_confirmed'")
@@ -145,7 +145,7 @@ test('browser: search pass panel — start with a reason, pages sent to the iden
 // Decision 253 (v2.15.180): Firecrawl only, by use case, for target universities; every run call logged for support
 test('firecrawl use cases: migrations shaped, md5-guarded, nothing admitted, settings drive every option', () => {
   const files = ['20261004001200_cf247_firecrawl_use_cases', '20261004001210_cf247_firecrawl_targets_type_fix', '20261004001220_cf247_firecrawl_course_like_pages']
-  const m = files.map(f => read(`supabase/migrations/${f}.sql`)).join('\n')
+  const m = files.map(f => read(`supabase/migrations-archive/${f}.sql`)).join('\n')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).not.toMatch(/insert into catalogue\.|update catalogue\./)
   for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
@@ -213,7 +213,7 @@ test('browser: Firecrawl work — credits and report on Models & services, runs 
 
 test('university adapters: migrations shaped, worker uses adapters, nothing admitted without the country rule', async () => {
   const files = ['20261004001230_cf247_firecrawl_target_cache', '20261004001240_cf247_university_adapters', '20261004001250_cf247_adapters_in_reader']
-  const m = files.map(f => read(`supabase/migrations/${f}.sql`)).join('\n')
+  const m = files.map(f => read(`supabase/migrations-archive/${f}.sql`)).join('\n')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).not.toMatch(/insert into catalogue\.|update catalogue\.|coverage_admission_countries set/)
   for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
@@ -257,7 +257,7 @@ test('browser: university adapter — preview on stored pages, save and apply wi
 
 // Decision 253 amended (Platform Admin 17:19): admit from adapters after testing, per adapter; refuse archived and test sites
 test('adapter admission and refused hosts: per-adapter switch gates admission, hand-entered values untouched, logged', () => {
-  const m = read('supabase/migrations/20261004001260_cf247_adapter_admission_and_refused_hosts.sql')
+  const m = read('supabase/migrations-archive/20261004001260_cf247_adapter_admission_and_refused_hosts.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
   for (const line of m.split('\n')) if (/^\s*update\s+\S+\s+(\w+\s+)?set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
@@ -287,7 +287,7 @@ test('browser: adapter — test what it would admit, switch admission on with a 
 })
 
 test('firecrawl panel reads kept figures (fast), adapters listed on their own', () => {
-  const m = read('supabase/migrations/20261004001270_cf247_firecrawl_panel_fast.sql')
+  const m = read('supabase/migrations-archive/20261004001270_cf247_firecrawl_panel_fast.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
   const read_ = m.slice(m.indexOf('create or replace function public.admin_firecrawl_read'))
@@ -299,7 +299,7 @@ test('firecrawl panel reads kept figures (fast), adapters listed on their own', 
 
 // Platform Admin 21:50 (Flinders): text patterns, extra fields, intakes admitted from the adapter's own reading only
 test('adapter patterns: migration shaped, intakes and adapter English need the admit switch, patterns read the international block', async () => {
-  const m = read('supabase/migrations/20261004001280_cf247_adapter_patterns_and_intakes.sql')
+  const m = read('supabase/migrations-archive/20261004001280_cf247_adapter_patterns_and_intakes.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const lit of m.replace(/--[^\n]*/g, '').replace(/\$s\$[\s\S]*?\$s\$/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
@@ -345,12 +345,12 @@ test('browser: adapter — patterns saved, readings on CRICOS-confirmed pages sh
 // Flinders apply (4 Oct 2026): unsafe "any text" patterns refused, Apply stays inside an edge call's processor time
 test('adapter safety: overlapping patterns refused, apply reads within the processor-time limit and carries on', () => {
   for (const f of ['20261004001290_cf247_adapter_pattern_safety', '20261004001300_cf247_adapter_apply_continue']) {
-    const m = read(`supabase/migrations/${f}.sql`)
+    const m = read(`supabase/migrations-archive/${f}.sql`)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
   }
-  expect(read('supabase/migrations/20261004001290_cf247_adapter_pattern_safety.sql')).toContain("is distinct from '55c5749c2ca4994a4549d99dad63b56e'")
-  expect(read('supabase/migrations/20261004001290_cf247_adapter_pattern_safety.sql')).toContain("position('.|\\s' in p) > 0")
+  expect(read('supabase/migrations-archive/20261004001290_cf247_adapter_pattern_safety.sql')).toContain("is distinct from '55c5749c2ca4994a4549d99dad63b56e'")
+  expect(read('supabase/migrations-archive/20261004001290_cf247_adapter_pattern_safety.sql')).toContain("position('.|\\s' in p) > 0")
   const w = read('supabase/functions/coverage-sweep/index.ts')
   expect(w).toContain('const ADAPTER_CPU_MS = 900')
   expect(w).toContain('rpc("svc_adapter_apply_continue", { p_provider_id: String(body.provider_id || ""), p_after: after })')
@@ -375,17 +375,17 @@ test('adapter patterns: Flinders layouts (comma and ampersand start dates, found
 // except those entered by hand, better pages found, every target university evaluated for its next step
 test('adapter overwrite, better pages and evaluation: migrations shaped, hand-entered values kept', () => {
   for (const f of ['20261004001310_cf247_adapter_overwrite_and_better_pages', '20261004001320_cf247_adapter_evaluation']) {
-    const m = read(`supabase/migrations/${f}.sql`)
+    const m = read(`supabase/migrations-archive/${f}.sql`)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   }
-  const m = read('supabase/migrations/20261004001310_cf247_adapter_overwrite_and_better_pages.sql')
+  const m = read('supabase/migrations-archive/20261004001310_cf247_adapter_overwrite_and_better_pages.sql')
   expect(m).toContain("is distinct from '151e73570a4ce33435647073a8047d4b'")
   expect(m).toContain("k.field in ('intakes', 'intake')")
   expect(m).toContain("and source_id is not null and intake_label <> all (v_itk)")
   expect(m).toContain("join pipeline.uni_adapters u on u.provider_id = pg.provider_id and u.enabled and u.admit")
   expect(m).toContain("k.field = 'official_url') then return 'entered_by_hand'")
-  expect(read('supabase/migrations/20261004001320_cf247_adapter_evaluation.sql')).toContain("'eval_field_share'")
+  expect(read('supabase/migrations-archive/20261004001320_cf247_adapter_evaluation.sql')).toContain("'eval_field_share'")
 })
 
 test('browser: what each university needs next is a collapsed card on Layer 2 › Adapters; Set up adapter opens that row with its builder', async ({ page }) => {
@@ -401,7 +401,7 @@ test('browser: what each university needs next is a collapsed card on Layer 2 �
 })
 
 test('better page refused by the identity check is undone: earlier page bound again, logged, hand-entered links kept', () => {
-  const m = read('supabase/migrations/20261004001330_cf247_better_page_revert.sql')
+  const m = read('supabase/migrations-archive/20261004001330_cf247_better_page_revert.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("where pg.basis = 'firecrawl_upgrade' and pg.read_status = 'identity_mismatch'")
@@ -411,7 +411,7 @@ test('better page refused by the identity check is undone: earlier page bound ag
 
 // Platform Admin 23:41: fees admitted from an admitting adapter, the visual builder with a pinned model and a daily AI allowance
 test('adapter fees and builder: migration shaped, hand-entered fees kept, model pinned by setting, daily allowance enforced', async () => {
-  const m = read('supabase/migrations/20261004001340_cf247_adapter_fees_and_builder.sql')
+  const m = read('supabase/migrations-archive/20261004001340_cf247_adapter_fees_and_builder.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("is distinct from 'd6bc6366ca49095f401718a423ef4f77'")
@@ -462,7 +462,7 @@ test('browser: visual adapter builder — samples with blocks and page data, mar
 })
 
 test('adapter {code} anchor: a page covering several courses is read per course, fee compared within the same year', async () => {
-  const m = read('supabase/migrations/20261004001350_cf247_adapter_fee_same_year_and_code_anchor.sql')
+  const m = read('supabase/migrations-archive/20261004001350_cf247_adapter_fee_same_year_and_code_anchor.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("is distinct from '081db7a6cae9e5df0c237a8f0c978d3d'")
   expect(m).toContain('coalesce(f.fee_year, 0) = coalesce(v_fy, 0)')
@@ -479,7 +479,7 @@ test('adapter {code} anchor: a page covering several courses is read per course,
 })
 
 test('adapter fee with no year on the page takes the year held (or this year), so it is written once', () => {
-  const m = read('supabase/migrations/20261004001360_cf247_adapter_fee_year_default.sql')
+  const m = read('supabase/migrations-archive/20261004001360_cf247_adapter_fee_year_default.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("is distinct from '52b52638ef96a485d2866dfc53ed7854'")
   expect(m).toContain('extract(year from now())::int')
@@ -487,7 +487,7 @@ test('adapter fee with no year on the page takes the year held (or this year), s
 
 // Wave 1 (5 Oct): stale adapter readings taken out, Firecrawl-refused pages sent back once, page-data list filter
 test('wave 1 fixes: stale adapter readings cleared, pages sent back once, page-data fee by type', async () => {
-  const m = read('supabase/migrations/20261005001370_cf247_wave1_fixes.sql')
+  const m = read('supabase/migrations-archive/20261005001370_cf247_wave1_fixes.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("is distinct from '9385154b9d476d484c7e13e5c84c6f74'")
@@ -506,7 +506,7 @@ test('wave 1 fixes: stale adapter readings cleared, pages sent back once, page-d
 })
 
 test('term months: migration shaped, worker maps term names to the published months, editor has the field', async ({ page }) => {
-  const m = read('supabase/migrations/20261005001380_cf247_adapter_term_months.sql')
+  const m = read('supabase/migrations-archive/20261005001380_cf247_adapter_term_months.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("is distinct from 'd052e28f18c9b9481912fb65f490b20d'")
   expect(m).toContain("coalesce(u.json_source, '') <> ''")
@@ -526,7 +526,7 @@ test('term months: migration shaped, worker maps term names to the published mon
 })
 
 test('adapter measures: read-only wave report function, operators and admins only', () => {
-  const m = read('supabase/migrations/20261005001390_cf247_adapter_measures.sql')
+  const m = read('supabase/migrations-archive/20261005001390_cf247_adapter_measures.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade', 'update ', 'insert into']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("'intakes_agree'")
   expect(m).toContain('grant execute on function public.admin_adapter_measures(uuid[]) to authenticated')
@@ -535,19 +535,19 @@ test('adapter measures: read-only wave report function, operators and admins onl
 // Platform Admin 5 Oct 05:50 "switch on the admissions": admission by field, course exclusions
 test('admission by field: migrations shaped, overwrite and coverage admission honour fields and exclusions', () => {
   for (const f of ['20261005001400_cf247_admit_by_field_and_exclusions', '20261005001410_cf247_exclusions_in_coverage_admission']) {
-    const m = read(`supabase/migrations/${f}.sql`)
+    const m = read(`supabase/migrations-archive/${f}.sql`)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     for (const lit of m.replace(/--[^\n]*/g, '').replace(/\$s\$[\s\S]*?\$s\$/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
     for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
     for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   }
-  const m = read('supabase/migrations/20261005001400_cf247_admit_by_field_and_exclusions.sql')
+  const m = read('supabase/migrations-archive/20261005001400_cf247_admit_by_field_and_exclusions.sql')
   expect(m).toContain("is distinct from '7b1e9a975b86b1bcd5fd1fd1799f9bee'")
   expect(m).toContain("is distinct from 'c3661b790649c1511f40032350f5bfbb'")
   expect(m).toContain("and 'fee' = any (r.af) and not security.uni_adapter_excluded(r.course_id, 'fee')")
   expect(m).toContain("(case p_attr when 'tuition' then 'fee' else p_attr end) = any (u.admit_fields)")
   expect(m).toContain("if security.uni_adapter_excluded(p_course_id, 'intakes') then p_candidates := p_candidates - 'intakes'")
-  expect(read('supabase/migrations/20261005001410_cf247_exclusions_in_coverage_admission.sql')).toContain("if r.props ? 'intakes' and not security.uni_adapter_excluded(r.course_id, 'intakes') then")
+  expect(read('supabase/migrations-archive/20261005001410_cf247_exclusions_in_coverage_admission.sql')).toContain("if r.props ? 'intakes' and not security.uni_adapter_excluded(r.course_id, 'intakes') then")
 })
 
 test('browser: adapter — admit by field, exclude a course reading, stop excluding', async ({ page }) => {
@@ -569,7 +569,7 @@ test('browser: adapter — admit by field, exclude a course reading, stop exclud
 
 // Platform Admin 5 Oct 07:36: a fee with no year on the page takes the current year
 test('adapter fee year: no year on the page means the current year', () => {
-  const m = read('supabase/migrations/20261005001420_cf247_adapter_fee_year_current.sql')
+  const m = read('supabase/migrations-archive/20261005001420_cf247_adapter_fee_year_current.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
   expect(m).toContain("is distinct from '401a5d1960463594de1b711d39d3446c'")
@@ -579,15 +579,15 @@ test('adapter fee year: no year on the page means the current year', () => {
 // Platform Admin 5 Oct 07:36: central rule attached to universities, Coverage › Universities tab
 test('central pages and universities view: migrations shaped', () => {
   for (const f of ['20261005001430_cf247_central_pages_and_universities_view', '20261005001440_cf247_central_page_url_check', '20261005001450_cf247_central_page_marked_attached']) {
-    const m = read(`supabase/migrations/${f}.sql`)
+    const m = read(`supabase/migrations-archive/${f}.sql`)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     for (const lit of m.replace(/--[^\n]*/g, '').replace(/\$s\$[\s\S]*?\$s\$/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
     for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   }
-  const m = read('supabase/migrations/20261005001430_cf247_central_pages_and_universities_view.sql')
+  const m = read('supabase/migrations-archive/20261005001430_cf247_central_pages_and_universities_view.sql')
   expect(m).toContain("when e.source_requirement_key like 'policy:%' then 'central'")
   // 1440 replaced the address check, whose repeat count (above 255) the database refuses
-  expect(read('supabase/migrations/20261005001440_cf247_central_page_url_check.sql')).toContain("or length(v_url) not between 12 and 500 then$s$")
+  expect(read('supabase/migrations-archive/20261005001440_cf247_central_page_url_check.sql')).toContain("or length(v_url) not between 12 and 500 then$s$")
   expect(m).toContain("found_via, status)\n    values (v_pid, v_kind, v_url")
 })
 
@@ -631,7 +631,7 @@ test('browser: Layer 2 › Adapters — pills, open a university, its courses, a
 
 // Platform Admin 5 Oct 07:36: a central English rule written out from the attached page is a proposal, approved in Layer 4
 test('central English rule: written out as a proposal, never approved by the function', () => {
-  const m = read('supabase/migrations/20261005001460_cf247_central_english_rule_by_hand.sql')
+  const m = read('supabase/migrations-archive/20261005001460_cf247_central_english_rule_by_hand.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const lit of m.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(lit[0]).not.toContain(';')
   expect(m).toContain("v_prop->>'style', v_prop, 'proposed', left(v_note, 500))")
@@ -641,7 +641,7 @@ test('central English rule: written out as a proposal, never approved by the fun
 
 // 5 Oct: a parser re-read of an attached page no longer supersedes a central rule written out from it
 test('written-out central rules survive a parser re-read', () => {
-  const m = read('supabase/migrations/20261005001470_cf247_keep_written_out_rules.sql')
+  const m = read('supabase/migrations-archive/20261005001470_cf247_keep_written_out_rules.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
@@ -652,7 +652,7 @@ test('written-out central rules survive a parser re-read', () => {
 
 // 5 Oct (wave 9): a text-only adapter's apply no longer re-reads needs_render pages, and stale test-only fields are cleared
 test('adapter apply: no Firecrawl re-read for text-only adapters, stale adapter_extra cleared', () => {
-  const m = read('supabase/migrations/20261005001480_cf247_adapter_requeue_and_stale_extra.sql')
+  const m = read('supabase/migrations-archive/20261005001480_cf247_adapter_requeue_and_stale_extra.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
@@ -665,24 +665,24 @@ test('adapter apply: no Firecrawl re-read for text-only adapters, stale adapter_
 // 5 Oct (Platform Admin 11:48): delivery admitted from the international view; scholarships follow admitted fees
 test('delivery: own admitted field, delivery exclusions, wording rules, hourly scholarship alignment', () => {
   for (const f of ['20261005001490_cf247_adapter_delivery_mode.sql', '20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql', '20261005001510_cf247_international_view_and_credit_fees.sql', '20261005001520_cf247_international_view_pages_named.sql', '20261005001530_cf247_view_reads_and_course_page_rates.sql', '20261005001540_cf247_exit_awards_and_fee_from_total.sql', '20261005001550_cf247_location_requirement_exclusion_withdraw.sql', '20261005001560_cf247_delivery_from_location_other_requirements.sql']) {
-    const m = read('supabase/migrations/' + f)
+    const m = read('supabase/migrations-archive/' + f)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     for (const lit of m.matchAll(/\$s\$([\s\S]*?)\$s\$/g)) expect(lit[1]).not.toContain(';')
     for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
     for (const rep of m.matchAll(/\{(\d+),(\d+)\}/g)) expect(Number(rep[2])).toBeLessThanOrEqual(255)
   }
-  const d = read('supabase/migrations/20261005001490_cf247_adapter_delivery_mode.sql')
+  const d = read('supabase/migrations-archive/20261005001490_cf247_adapter_delivery_mode.sql')
   expect(d).toContain("is distinct from 'b0bb638575bff44987fd9888fba8c8de'")
   expect(d).toContain("'delivery' = any (r.af) and not security.uni_adapter_excluded(r.course_id, 'delivery')")
   expect(d).toContain("k.field in ('delivery_mode', 'delivery')")
-  const w = read('supabase/migrations/20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql')
+  const w = read('supabase/migrations-archive/20261005001500_cf247_delivery_wording_and_scholarship_alignment.sql')
   expect(w).toContain("cron.schedule('scholarship-fee-alignment'")
   expect(w).toContain('\\(includes blended\\)')
 })
 
 // 5 Oct (Platform Admin 12:12, 13:02, 13:25): international view of the course page, fees per credit
 test('international view (page_view) and per-credit fees: guarded, hand values kept, formula recorded', () => {
-  const m = read('supabase/migrations/20261005001510_cf247_international_view_and_credit_fees.sql')
+  const m = read('supabase/migrations-archive/20261005001510_cf247_international_view_and_credit_fees.sql')
   expect(m).toContain("is distinct from '576a1545bdfe9abd23bf6e1e94324425'")
   expect(m).toContain("elsif p_action = 'read_view' then")
   expect(m).toContain("k.field in ('tuition', 'fee', 'fees')")
@@ -694,19 +694,19 @@ test('international view (page_view) and per-credit fees: guarded, hand values k
   const ix = read('supabase/functions/coverage-sweep/index.ts')
   expect(ix).toMatch(/coverage-sweep-worker-v0\.17\.(1[1-9]|[2-9]\d)/) // v0.17.11 or later (the version string moves on)
   expect(ix).toContain('it.rendered_before !== true')
-  const r = read('supabase/migrations/20261005001530_cf247_view_reads_and_course_page_rates.sql')
+  const r = read('supabase/migrations-archive/20261005001530_cf247_view_reads_and_course_page_rates.sql')
   expect(r).toContain("is distinct from '9bfcb79ff8da7eb53be7432278a2da37'")
   expect(r).toContain("if v_only not in ('all', 'view', 'outside')")
   expect(ix).toContain('|| adHit?.identity || (it.manual === true ? "manual" : null)')
   expect(ix).toContain('const viewRender = viewApplies(it.url, pv) && !searchCandidate')
-  const v = read('supabase/migrations/20261005001520_cf247_international_view_pages_named.sql')
+  const v = read('supabase/migrations-archive/20261005001520_cf247_international_view_pages_named.sql')
   expect(v).toContain("read_attempts = 0")
   expect(v).toContain("is distinct from 'dcc121c91b17840fe9d999786e217e9d'")
 })
 
 // 5 Oct (Platform Admin 15:22, 15:34): exit awards take the course's per-year fee; annual fee from a whole-course fee
 test('exit awards and fee from a whole-course total: hand values kept, formula recorded, admitted by its own switch', () => {
-  const m = read('supabase/migrations/20261005001540_cf247_exit_awards_and_fee_from_total.sql')
+  const m = read('supabase/migrations-archive/20261005001540_cf247_exit_awards_and_fee_from_total.sql')
   expect(m).toContain("'exit_awards' = any (u.admit_fields)")
   expect(m).toContain("k.field in ('tuition', 'fee', 'fees')")
   expect(m).toContain("security.uni_adapter_excluded(r.child_course_id, 'intakes')")
@@ -719,7 +719,7 @@ test('exit awards and fee from a whole-course total: hand values kept, formula r
 
 // 5 Oct 16:49: delivery from the location when no delivery is printed; durations as printed in terms
 test('delivery from location and course years from months, weeks, semesters or trimesters', () => {
-  const m = read('supabase/migrations/20261005001560_cf247_delivery_from_location_other_requirements.sql')
+  const m = read('supabase/migrations-archive/20261005001560_cf247_delivery_from_location_other_requirements.sql')
   expect(m).toContain("is distinct from '05bea27129ff05552aac9a7b1f203310'")
   expect(m).toContain('security.delivery_mode_from_location(coalesce(')
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
@@ -729,7 +729,7 @@ test('delivery from location and course years from months, weeks, semesters or t
 
 // 5 Oct 17:04/18:04: indicative whole-course fee range per university — current first, CRICOS fallback, award only, published per university
 test('whole-course fee range: guarded, hand values kept, published only by its own switch, settings from the screen', () => {
-  const m = read('supabase/migrations/20261005001570_cf247_provider_whole_course_fee_range.sql')
+  const m = read('supabase/migrations-archive/20261005001570_cf247_provider_whole_course_fee_range.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("when x.c_amt is not null and x.c_basis = 'total_indicative' then 'current_total'")
@@ -779,7 +779,7 @@ test('browser: Layer 2 › Adapters — whole-course fee range, publish and sett
 
 // 5 Oct 19:18: award links (exit and nested awards) and host pages across every university
 test('award links and host pages: single-degree parent, register check gates the fee, host pages admitted by their own switch', () => {
-  const m = read('supabase/migrations/20261005001580_cf247_award_links_and_host_pages.sql')
+  const m = read('supabase/migrations-archive/20261005001580_cf247_award_links_and_host_pages.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("is distinct from 'c54ca541ba097d40f1d108ad933d00d9'")
@@ -827,7 +827,7 @@ test('browser: Layer 2 › Adapters — hosted courses panel, register check sho
 
 // 5 Oct 19:18 follow-up: year-aware register check with tolerances as settings, hand links honoured, no-fee fix
 test('award link settings: tolerances from the screen, register lag allowed, hand links applied whatever the check', () => {
-  const m = read('supabase/migrations/20261005001590_cf247_award_link_settings_year_aware_check.sql')
+  const m = read('supabase/migrations-archive/20261005001590_cf247_award_link_settings_year_aware_check.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("is distinct from 'b7bbbaf995aa59b844b5cc3a67934b5c'")
@@ -835,7 +835,7 @@ test('award link settings: tolerances from the screen, register lag allowed, han
   expect(m).toContain("if r.register_check = 'fail' and r.set_by <> 'hand' then v_skipped := v_skipped + 1; continue; end if;")
   expect(m).toContain("case when a.an is not null and (a.fy is null or c.ry is null or a.fy <= c.ry) then st.sy else st.lg end below_ok")
   expect(m).toContain("when d.diff >= -d.below_ok and d.diff <= d.sy then")
-  const f = read('supabase/migrations/20261005001600_cf247_award_apply_no_fee_admitted_fix.sql')
+  const f = read('supabase/migrations-archive/20261005001600_cf247_award_apply_no_fee_admitted_fix.sql')
   expect(f).toContain("is distinct from 'da94c52172aef30ec5a62a2e87bea5f4'")
   expect(f).toContain("replace(v_pair[1], '{sc}', chr(59))")
 })
@@ -861,7 +861,7 @@ test('worker v0.17.10: annual from a whole-course total for courses of a quarter
 
 // 5 Oct 20:37: central English rules unblocked, pages bound by hand admitted, online courses located Online
 test('central English rules: one rule without evidence never stops the others; hand-bound pages admitted', () => {
-  const m = read('supabase/migrations/20261005001610_cf247_central_english_unblocked_hand_pages_admitted.sql')
+  const m = read('supabase/migrations-archive/20261005001610_cf247_central_english_unblocked_hand_pages_admitted.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("is distinct from 'b1d29a3dffbb41d62260b6b170acc578'")
@@ -877,7 +877,7 @@ test('central English rules: one rule without evidence never stops the others; h
 
 // 5 Oct 21:04: read pages again for one university or for the ones ticked, preview first, reason kept
 test('university re-read: preview counts, Platform Admin queues with a reason, logged', () => {
-  const m = read('supabase/migrations/20261005001620_cf247_university_reread_pages.sql')
+  const m = read('supabase/migrations-archive/20261005001620_cf247_university_reread_pages.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("if p_action = 'preview' then")
@@ -911,7 +911,7 @@ test('browser: Layer 2 › Adapters — tick universities, preview and read page
 
 // 5 Oct 21:20: the bulk re-read stopped at the 8-second screen limit, now recorded and sent in the background
 test('university re-read in the background: request recorded, ten universities a minute, progress kept', () => {
-  const m = read('supabase/migrations/20261005001630_cf247_university_reread_in_background.sql')
+  const m = read('supabase/migrations-archive/20261005001630_cf247_university_reread_in_background.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   for (const line of m.split('\n')) if (/\bupdate\s+\S+\s+set\b/i.test(line)) expect(line).toMatch(/\bwhere\b/i)
   expect(m).toContain("is distinct from '6da92b56224f240999c12696dbcc9dd6'")
@@ -925,16 +925,16 @@ test('night run fixes: wks as weeks, years not rounded before dividing, classroo
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
   expect(ad).toContain('|weeks?|wks?|semesters?|')
   expect(ad).toContain('/^(week|wk)/.test(u) ? n / 52')
-  const m = read('supabase/migrations/20261005001650_cf247_delivery_wording_classroom_onsite_home.sql')
+  const m = read('supabase/migrations-archive/20261005001650_cf247_delivery_wording_classroom_onsite_home.sql')
   expect(m).toContain("is distinct from '77aa100f89d2130e4ad4793c2cd48d69'")
   expect(m).toContain("'(study(ing)? from home|\\mfrom home\\M)'")
 })
 
 // Night run wave 2: the queue snapshot, and adapter apply reading pages bound by hand (their address unchanged)
 test('night run: queue snapshot read-only, apply reads hand-bound pages', () => {
-  const q = read('supabase/migrations/20261005001640_cf247_night_run_queue.sql')
+  const q = read('supabase/migrations-archive/20261005001640_cf247_night_run_queue.sql')
   expect(q).toContain("revoke all on table pipeline.night_run_queue from anon, authenticated")
-  const m = read('supabase/migrations/20261005001660_cf247_adapter_apply_hand_bound_pages.sql')
+  const m = read('supabase/migrations-archive/20261005001660_cf247_adapter_apply_hand_bound_pages.sql')
   expect(m).toContain("is distinct from 'f32ab786207ca970b3aed9ea08658eb5'")
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
 })
@@ -978,7 +978,7 @@ test('v0.17.13 reading options: opt-in numeric and capitalised dates, one academ
   expect(r2.fee.value).toBe(23400)
   const ix = read('supabase/functions/coverage-sweep/index.ts')
   expect(ix).toContain('coverage-sweep-worker-v0.17.31')
-  const m = read('supabase/migrations/20261006001700_cf247_adapter_reading_options.sql')
+  const m = read('supabase/migrations-archive/20261006001700_cf247_adapter_reading_options.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("is distinct from 'cea75cd537f56ab3e03d93c55c1bb74e'")
   expect(m).toContain("is distinct from 'dec2b629c166cd897d26990e4983c8e0'")
@@ -990,7 +990,7 @@ test('v0.17.13 reading options: opt-in numeric and capitalised dates, one academ
 
 // Platform Admin 6 Oct 06:59 and 10:56 (Decision 254, job system Phase A): Task manager, Qualify adapters, Admit the passing fields
 test('job system Phase A: migration shaped, dispatcher guarded, admission stays a separate step', () => {
-  const m = read('supabase/migrations/20261006001720_cf247_admin_jobs_task_manager.sql')
+  const m = read('supabase/migrations-archive/20261006001720_cf247_admin_jobs_task_manager.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("kind in ('qualify_adapters', 'admit_qualified')")
   expect(m).toContain("state in ('queued', 'running', 'paused', 'done', 'failed', 'cancelled')")
@@ -1002,7 +1002,7 @@ test('job system Phase A: migration shaped, dispatcher guarded, admission stays 
   expect(m).toContain("cron.schedule('admin-jobs', '* * * * *'")
   expect(m).toContain("security.firecrawl_setting('qualify_agree_share')") // thresholds from settings, not the page
   expect(m).not.toMatch(/update pipeline\.uni_adapters set/) // the job never writes an adapter itself
-  const d = read('supabase/migrations/20261006001710_cf247_adapters_read_inactive_courses.sql')
+  const d = read('supabase/migrations-archive/20261006001710_cf247_adapters_read_inactive_courses.sql')
   expect(d).toContain("lifecycle_status in ('active', 'inactive')")
   expect(d).not.toMatch(/'security\.adapter_overwrite_v1\(/) // admission unchanged: that function is not patched
   const nav = read('src/nav-map.js')
@@ -1064,7 +1064,7 @@ test('browser: Jobs tab — a finished task opens to its per-provider result and
 })
 
 test('job system A2 and B: history rows, live-only read, scope; the old operations console is retired', () => {
-  const m = read('supabase/migrations/20261006001730_cf247_admin_jobs_history_and_scope.sql')
+  const m = read('supabase/migrations-archive/20261006001730_cf247_admin_jobs_history_and_scope.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("is distinct from 'b55b349bac07080f711386f8e0b34433'")
   expect(m).toContain("is distinct from '7a72c695a1ade7244ddf9313536e0f11'")
@@ -1096,7 +1096,7 @@ test('browser: Task manager — an Operator sees tasks but cannot admit', async 
 
 
 test('job system Phase C: watcher tasks, the kind constraint widened under the 13:55 exception, old progress panels retired', () => {
-  const m = read('supabase/migrations/20261006001740_cf247_admin_jobs_phase_c_watch_tasks.sql')
+  const m = read('supabase/migrations-archive/20261006001740_cf247_admin_jobs_phase_c_watch_tasks.sql')
   // the one allowed removal, and nothing else destructive
   expect(m.toLowerCase().split('drop').length - 1).toBe(1)
   expect(m).toContain('alter table pipeline.admin_jobs drop constraint admin_jobs_kind_check')

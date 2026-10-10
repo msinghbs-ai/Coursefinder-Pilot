@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test'
 import fs from 'node:fs/promises'
 
 test('CF-247 durable Layer 3 work queue is service-owned, idempotent, bounded and recoverable',async()=>{
-  const sql=await fs.readFile('supabase/migrations/20260915113000_cf_247_layer3_work_queue_foundation.sql','utf8')
+  const sql=await fs.readFile('supabase/migrations-archive/20260915113000_cf_247_layer3_work_queue_foundation.sql','utf8')
   for(const token of [
     'pipeline.layer3_work_items',
     'unique(layer2_run_item_id,evidence_id,task_class,policy_version)',

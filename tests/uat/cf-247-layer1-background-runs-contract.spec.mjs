@@ -29,7 +29,7 @@ test('Layer 1 background runs: driver-safe control, live card status, readable f
   expect(card).toContain('source_label:`${rankingFamilyLabel(current)}${current.edition_year?` ${current.edition_year}`:\'\'}`')
   const flow=fs.readFileSync('.github/workflows/deploy-edge-functions.yml','utf8')
   for(const f of ['[layer1-operations-control]=false','[layer1-nz-live]=true','[layer1-register-etl]=true'])expect(flow).toContain(f)
-  const mig=fs.readFileSync('supabase/migrations/20260927030000_layer1_background_run_driver.sql','utf8')
+  const mig=fs.readFileSync('supabase/migrations-archive/20260927030000_layer1_background_run_driver.sql','utf8')
   expect(mig).toContain("cron.schedule('layer1-run-driver'")
 })
 
@@ -58,5 +58,5 @@ test('Layer 1 change-based apply, departures and automatic ingestion are wired e
   expect(card).toContain('Automatic ingestion')
   const flow=fs.readFileSync('.github/workflows/deploy-edge-functions.yml','utf8')
   for(const f of ['[layer1-au-cricos-facts]=false','[evidence-storage-dedupe]=false'])expect(flow).toContain(f)
-  for(const m of ['20260928010000_layer1_change_based_apply.sql','20260928020000_layer1_departures_automatic.sql','20260928030000_evidence_storage_dedupe.sql','20260928040000_layer1_auto_ingest.sql'])expect(fs.existsSync(`supabase/migrations/${m}`)).toBe(true)
+  for(const m of ['20260928010000_layer1_change_based_apply.sql','20260928020000_layer1_departures_automatic.sql','20260928030000_evidence_storage_dedupe.sql','20260928040000_layer1_auto_ingest.sql'])expect(fs.existsSync(`supabase/migrations-archive/${m}`)).toBe(true)
 })

@@ -24,7 +24,7 @@ test('cascade escalation signal and audit comparison', async () => {
 })
 
 test('ladder migration enforces the tier rule and keeps admission guarded', async () => {
-  const sql = fs.readFileSync('supabase/migrations/20260930021000_cf247_l3_cascade_ladder_activate.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20260930021000_cf247_l3_cascade_ladder_activate.sql', 'utf8')
   expect(sql).toContain("v_ok::numeric/v_n<0.80 or v_wrong>0")
   expect(sql).toContain('cfb6b617dafeba2ac8ba1301e3c6ec96')
   expect(sql).toContain('layer3_fact_complete_ladder_service')
@@ -34,7 +34,7 @@ test('ladder migration enforces the tier rule and keeps admission guarded', asyn
   expect(fn).toContain('not_stated_with_signal')
   expect(fn).toContain('audit_disagreement')
   expect(fn).toContain('layer3_fact_release_service')
-  expect(fs.readFileSync('supabase/migrations/20260930023000_cf247_l3_key_limit_pause_cleanup.sql', 'utf8')).toContain('budgets:openrouter_refusing')
-  expect(fs.readFileSync('supabase/migrations/20260930024000_cf247_l3_release_on_refusal.sql', 'utf8')).toContain('layer3_fact_release_service')
+  expect(fs.readFileSync('supabase/migrations-archive/20260930023000_cf247_l3_key_limit_pause_cleanup.sql', 'utf8')).toContain('budgets:openrouter_refusing')
+  expect(fs.readFileSync('supabase/migrations-archive/20260930024000_cf247_l3_release_on_refusal.sql', 'utf8')).toContain('layer3_fact_release_service')
   expect(fs.readFileSync('supabase/functions/_shared/cf247-model-routing.ts', 'utf8')).toContain('export const ROUTING_VERSION = "cf247-l3-model-routing-v1.0.0"')
 })

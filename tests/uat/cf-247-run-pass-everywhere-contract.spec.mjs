@@ -41,7 +41,7 @@ test('each moved function consumes a pass under its own name and is deployable b
 })
 
 test('migration: one allow-list, pass issuer for the service role, callers patched behind md5 guards', () => {
-  const m = fs.readFileSync('supabase/migrations/20261002181200_cf247_run_passes_everywhere.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261002181200_cf247_run_passes_everywhere.sql', 'utf8')
   expect(m).toContain('create table if not exists pipeline.pilot_nonce_functions')
   expect(m).toContain('grant execute on function public.svc_pilot_issue_nonce(text) to service_role;')
   expect(m).toContain('revoke all on function public.svc_pilot_issue_nonce(text) from public, anon, authenticated;')

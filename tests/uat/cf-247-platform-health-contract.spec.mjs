@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test'
 
 // CF-247 platform health (Platform Admin direction, 29 Sep 2026): the platform reports its own errors and issues.
 // Source contract only: the migration was applied live and verified by md5(prosrc) against these files.
-const MIGRATION='supabase/migrations/20260929235000_cf247_platform_health.sql'
-const STAGGER='supabase/migrations/20260929235100_cf247_platform_health_probe_stagger.sql'
+const MIGRATION='supabase/migrations-archive/20260929235000_cf247_platform_health.sql'
+const STAGGER='supabase/migrations-archive/20260929235100_cf247_platform_health_probe_stagger.sql'
 const CONTRACT="{generated_at, overall:'ok'|'warning'|'critical', counts:{critical,warning,info}, issues:[{id,check_key,severity,area,title,detail,first_seen,last_seen,occurrences,acknowledged_at}], checks:[{key,area,label,status:'ok'|'warning'|'critical'|'skipped',detail,checked_at}], history:[{day,critical,warning}]}"
 
 test.describe('CF-247 platform health contract',()=>{
@@ -55,7 +55,7 @@ test.describe('CF-247 platform health contract',()=>{
     expect(sql).toContain("(p_force or not v_slow_used) and security.platform_health_due_v1('consumer_snapshot',p_force)")
     expect(stagger).toContain("'6f2ddb7ca454745251c8c4d94375d290'")
     expect(stagger).toContain("(p_force or not ('consumer_snapshot'=any(v_ok)))")
-    const due=await fs.readFile('supabase/migrations/20260929235200_cf247_platform_health_due_tolerance.sql','utf8')
+    const due=await fs.readFile('supabase/migrations-archive/20260929235200_cf247_platform_health_due_tolerance.sql','utf8')
     expect(due).toContain("'1bb34684b80dc8b8993fa8bdca3f4272'")
     expect(due).toContain("least(interval '3 minutes', make_interval(mins=>c.cadence_minutes)*0.3)")
   })
@@ -69,7 +69,7 @@ test.describe('CF-247 platform health contract',()=>{
 
 test('health budget check aligned with Layer 3 route guards and credit floor', async () => {
   const fs = await import('node:fs')
-  const sql = fs.readFileSync('supabase/migrations/20260930010000_cf247_health_openrouter_budget_align.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations-archive/20260930010000_cf247_health_openrouter_budget_align.sql', 'utf8')
   expect(sql).toContain('ba7d0e94c18314afc6e3d8bf5f7becce')
   expect(sql).toContain('US$14 combined daily ceiling')
   expect(sql).toContain("budgets:openrouter_credit")

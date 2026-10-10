@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('database: guarded replacement returns tuition, intakes, English and the active tests', () => {
-  const m = fs.readFileSync('supabase/migrations/20261001140000_cf247_list_edit_course_facts.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261001140000_cf247_list_edit_course_facts.sql', 'utf8')
   expect(m).toContain("if v is distinct from 'dca6b9564c88f13482ba11ed56a54952' then")
   for (const k of ["'tuition'", "'intakes'", "'english'", "'english_tests'", "'start_date', i.start_date", "'components', e.component_scores"]) expect(m).toContain(k)
   expect(m).toContain('grant execute on function public.admin_catalogue_edit_rows(text, uuid[]) to authenticated;')

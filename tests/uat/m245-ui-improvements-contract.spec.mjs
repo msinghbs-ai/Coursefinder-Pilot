@@ -9,7 +9,7 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8') /* 7 Oct 2026: RankingDatasetViewer.js was folded into mature-main.jsx */,
    fs.readFile('src/lib/supabase.js','utf8'),
-   fs.readFile('supabase/migrations/20260907064251_m245_ui_read_contract_reconciliation.sql','utf8'),
+   fs.readFile('supabase/migrations-archive/20260907064251_m245_ui_read_contract_reconciliation.sql','utf8'),
   ])
 
   // 7 Oct 2026: rewritten to the current screens. The version is pinned in release-manifest.js (its own contract); the scholarship

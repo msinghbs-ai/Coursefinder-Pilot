@@ -16,7 +16,7 @@ test('worker: provider_facts searches, reads as evidence, parses fee rows; budge
 })
 
 test('database: sources, queue for top 150, fee rows kept (never deleted), no catalogue writes', () => {
-  const m = read('supabase/migrations/20261001178000_cf247_provider_fact_sources.sql')
+  const m = read('supabase/migrations-archive/20261001178000_cf247_provider_fact_sources.sql')
   expect(m).toContain('group by c.provider_id order by count(*) desc limit 150')
   expect(m).toContain("update pipeline.provider_fee_rows set current = false where source_id = p_id and current;")
   expect(m.toLowerCase()).not.toContain('delete from')
@@ -68,7 +68,7 @@ test('linked documents: own-site fee PDFs only, newest first; refund policies an
 })
 
 test('database: fee proposals need a Platform Admin; only courses without a current fee are written', () => {
-  const m = read('supabase/migrations/20261001179200_cf247_provider_fee_proposals.sql')
+  const m = read('supabase/migrations-archive/20261001179200_cf247_provider_fee_proposals.sql')
   expect(m).toContain("if auth.uid() is null or security.current_role_rank() < 6 then raise exception 'Platform Admin role required'")
   expect(m).toContain("for x in select * from security.provider_fee_proposal_rows(p_source_id) where outcome = 'new' loop")
   expect(m).toContain("when cur.amount is not null then 'differs'")
@@ -116,10 +116,10 @@ test.describe('browser: fee schedules panel', () => {
 })
 
 test('database: provider facts scheduled; Firecrawl guard follows the balance Firecrawl reports', () => {
-  const s = read('supabase/migrations/20261001179400_cf247_provider_facts_schedule.sql')
+  const s = read('supabase/migrations-archive/20261001179400_cf247_provider_facts_schedule.sql')
   expect(s).toContain(`select cron.schedule('provider-facts', '*/10 * * * *',`)
   expect(s).toContain('"mode":"provider_facts","search_limit":12,"read_limit":8')
-  const b = read('supabase/migrations/20261001179500_cf247_firecrawl_observed_balance.sql')
+  const b = read('supabase/migrations-archive/20261001179500_cf247_firecrawl_observed_balance.sql')
   expect(b).toContain("if v is distinct from '5f76be10ad2334c9f550421e0c2fb611' then raise exception")
   expect(b).toContain("v_remaining:=least(v_remaining, coalesce((select greatest(o.remaining_units")
   expect(b).toContain("o.observed_at>now()-interval ''2 hours''")

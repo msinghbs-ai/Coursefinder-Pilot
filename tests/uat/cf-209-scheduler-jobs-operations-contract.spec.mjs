@@ -19,7 +19,7 @@ test('CF-209 Scheduling remains a bounded governed read surface',async()=>{
 })
 
 test('CF-209 Layer 2 scheduler dispatch and recovery are bounded and non-destructive',async()=>{
- const sql=await read('supabase/migrations/20260827224000_m2_4_2_layer2_refresh_housekeeping.sql')
+ const sql=await read('supabase/migrations-archive/20260827224000_m2_4_2_layer2_refresh_housekeeping.sql')
  for(const token of[
   'layer2_refresh_scheduler_tick_impl',
   "r.status='queued'",

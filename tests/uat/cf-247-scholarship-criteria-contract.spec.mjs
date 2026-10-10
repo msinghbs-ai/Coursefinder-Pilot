@@ -51,7 +51,7 @@ test('reader: award scope from the benefit wording only', async () => {
 })
 
 test('database: criteria rows marked by the sweep, other sources untouched; old candidates kept as superseded', () => {
-  const m = read('supabase/migrations/20261002180300_cf247_scholarship_criteria_and_scope.sql')
+  const m = read('supabase/migrations-archive/20261002180300_cf247_scholarship_criteria_and_scope.sql')
   expect(m).toContain("check (status = any (array['needs_review','accepted','rejected','superseded']))")
   expect(m).toContain("update scholarship.course_mapping_candidates set status = 'superseded'")
   expect(m).toContain("status=case when scholarship.course_mapping_candidates.status='superseded' then 'superseded' else 'needs_review' end;")

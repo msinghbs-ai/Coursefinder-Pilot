@@ -13,7 +13,7 @@ test('nav: a Scholarships tab on Layers 1, 2 and 3', () => {
 })
 
 test('migration 20261004000300 shaped: settings read by the jobs, roles, reference sites, Platform Admin writes', () => {
-  const m = read('supabase/migrations/20261004000300_cf247_scholarship_layer_settings.sql')
+  const m = read('supabase/migrations-archive/20261004000300_cf247_scholarship_layer_settings.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("security.scholarship_setting('discover_limit',6)")
   expect(m).toContain("security.scholarship_setting('read_limit',20)")
@@ -74,7 +74,7 @@ test('Firecrawl cap and reserve: Layer 2 settings the worker reads; none left in
   expect(idx).not.toContain('SCH_FC_CAP')
   expect(idx).not.toMatch(/schLeft > \d/)
   expect(idx).toContain('await rpc("svc_scholarship_fc_budget", {})')
-  const m = read('supabase/migrations/20261004000400_cf247_scholarship_firecrawl_cap_setting.sql')
+  const m = read('supabase/migrations-archive/20261004000400_cf247_scholarship_firecrawl_cap_setting.sql')
   expect(m).toContain("('firecrawl_cap', 2,")
   expect(m).toContain("('firecrawl_reserve', 2,")
   await mockAdmin(page)

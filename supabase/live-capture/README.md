@@ -42,3 +42,30 @@ defaults. Without the preamble, rebuild run 38028086660 let anon run 640 functio
 10 tables that the Pilot does not expose, and gave authenticated functions the Pilot keeps to
 service_role. The preamble removes the defaults while objects are created; the closing
 `ALTER DEFAULT PRIVILEGES` lines of `schema.sql` put the Pilot's defaults back.
+
+`baseline/apply-postscript.sql` runs immediately after `schema.sql`. The Supabase CLI dump leaves
+out the grant lines of functions whose arguments use an extension type (pgvector's
+`extensions.vector`), so three functions (`api.query_embedding_cache_put`, `api.vector_candidates`,
+`search.course_candidates_v1`) kept EXECUTE for PUBLIC on the rebuild (run 38028894493). The
+postscript restores the Pilot's service_role-only grants.
+
+### Proven (10 Oct 2026)
+
+Rebuild run 38028894493 into `coursefinder-baseline-test`, with the postscript then applied to that
+project, compared with the Pilot by `baseline/permission-fingerprint.sql`:
+
+| Kind | Objects | Result |
+|---|---|---|
+| Functions (definitions, by normalised dump) | 1,257 | identical |
+| Tables, views, sequences (structure, RLS, grants) | 458 | identical |
+| Function grants | 1,257 | identical |
+| Policies | 3 in application schemas | identical |
+| Schema grants | 17 | identical in effect (`private` stored as default vs explicit owner-only) |
+
+Only difference: Supabase's own `rls_auto_enable` event trigger, present on every new project.
+
+## Old migration files
+
+The 1,053 files that built the Pilot one change at a time are in `supabase/migrations-archive/`
+(Platform Admin decision "Move to archive folder"). They are history only and are never replayed.
+New projects start from `baseline/`; new changes go in `supabase/migrations/` as before.

@@ -51,8 +51,8 @@ test.describe('CF-092 Scheduled Tasks configuration contract',()=>{
   })
 
   test('scheduler migrations persist audit, concurrency and invoker-only public contracts',()=>{
-    const base=read('supabase/migrations/20260910202500_cf_092_scheduler_governed_actions.sql')
-    const hardening=read('supabase/migrations/20260910214500_cf_092_scheduler_acceptance_hardening.sql')
+    const base=read('supabase/migrations-archive/20260910202500_cf_092_scheduler_governed_actions.sql')
+    const hardening=read('supabase/migrations-archive/20260910214500_cf_092_scheduler_acceptance_hardening.sql')
     expect(base).toContain('pipeline.refresh_policy_action_events')
     expect(base).toContain("action in ('edit_schedule','run_on_demand')")
     expect(base).toContain('actor_id uuid not null')

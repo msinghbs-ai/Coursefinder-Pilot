@@ -47,12 +47,12 @@ test('NZ fees are read in NZD; amounts in other currencies are left out', async 
 })
 
 test('migrations: NZ rule, country-aware tuition hand-off, title search without the level, NZ queue', () => {
-  const m = fs.readFileSync('supabase/migrations/20261002181300_cf247_nz_pages_search_tuition.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261002181300_cf247_nz_pages_search_tuition.sql', 'utf8')
   for (const g of ['e8fce44b38f378aa79a88b05b5b6a6cb','2ec830f93d4dbd42193df2f1da1a3be6','4bba0336ee8c63c54398d502f40b5c8f','3ba55afcac79599090d3fbe6bde13eee','b7c9abd5921dcd27b0d97d751ad21386']) expect(m).toContain(g)
   expect(m).toContain(`'tuition',      '["cricos_code","nzqa_code"]'::jsonb`)
   expect(m).toContain(`security.coverage_identity_allowed(p.provider_id, p.identity_basis, 'tuition')`)
   expect(m).toContain(`v_target:=v_target||jsonb_build_object('currency_code',v_cur);`)
-  const d = fs.readFileSync('supabase/migrations/20261002181400_cf247_nz_reread_and_search.sql', 'utf8')
+  const d = fs.readFileSync('supabase/migrations-archive/20261002181400_cf247_nz_reread_and_search.sql', 'utf8')
   expect(d).toContain(`select c.id, c.provider_id, 'title', 'queued', now()`)
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   // Decision 220: the reader's currency now comes from currencyFor (NZ → NZD, CA → CAD, otherwise AUD).
@@ -81,7 +81,7 @@ test('platform guide explains NZ page rules and fee schedule scope', () => {
 })
 
 test('rejected NZ pages flow into the title search each minute (non-CRICOS courses only)', () => {
-  const m = fs.readFileSync('supabase/migrations/20261002181500_cf247_nz_mismatch_to_search.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261002181500_cf247_nz_mismatch_to_search.sql', 'utf8')
   expect(m).toContain("if md5(s) is distinct from '7895c1193a3cae89d5c5bb4c0319c62a' then raise exception")
   expect(m).toContain("and coalesce(c.course_code, '') !~ '^[0-9]{6}[0-9A-Z]$'")
   expect(m).toContain("and not exists (select 1 from pipeline.manual_locks k where k.entity = 'course' and k.entity_id = p.course_id and k.field = 'official_url')")

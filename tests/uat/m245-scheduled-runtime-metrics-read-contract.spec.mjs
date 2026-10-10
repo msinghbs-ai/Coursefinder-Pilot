@@ -1,12 +1,12 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 
-const migration='supabase/migrations/20260913102500_cf_093_scheduled_runtime_metrics_read.sql'
+const migration='supabase/migrations-archive/20260913102500_cf_093_scheduled_runtime_metrics_read.sql'
 // CF-247 cleanup: the admin_read dispatch line for 'jobs_runtime' was moved
 // out of the metrics-read migration (it carried a stale, superseded full
 // copy of admin_read — see that file's own comment) and now lives only in
 // the migration that already owns admin_read's live dispatch wiring.
-const dispatchMigration='supabase/migrations/20260914210000_cf_093_admin_dispatcher_tuning_metrics.sql'
+const dispatchMigration='supabase/migrations-archive/20260914210000_cf_093_admin_dispatcher_tuning_metrics.sql'
 const ui='src/ScheduledRuntimeHealth.jsx'
 
 test('Scheduled Tasks runtime metrics read is rank-4, derived and secret-free',()=>{

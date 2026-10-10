@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('database: the list read is role-checked, capped and granted; saves reuse the guarded per-field edits', () => {
-  const m = fs.readFileSync('supabase/migrations/20260930180000_cf247_list_edit_rows.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20260930180000_cf247_list_edit_rows.sql', 'utf8')
   expect(m).toContain("if auth.uid() is null or v_rank < 3 then raise exception 'assigned CourseFinder role required'")
   expect(m).toContain("raise exception 'at most 100 rows at a time'")
   expect(m).toContain('revoke all on function public.admin_catalogue_edit_rows(text, uuid[]) from public, anon;')

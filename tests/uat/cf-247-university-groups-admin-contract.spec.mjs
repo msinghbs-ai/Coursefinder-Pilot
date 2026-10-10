@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
 const read = (f) => fs.readFileSync(f, 'utf8')
-const mig = () => read('supabase/migrations/20260929171000_cf247_admin_university_group_filter.sql')
+const mig = () => read('supabase/migrations-archive/20260929171000_cf247_admin_university_group_filter.sql')
 
 test('admin university group migration is checksum-guarded and anchor-checked', () => {
   const s = mig()

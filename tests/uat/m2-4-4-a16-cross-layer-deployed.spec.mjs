@@ -22,11 +22,11 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
   })
 
   test('A16 database and worker contracts remain non-destructive, append-only and evidence-bound',async()=>{
-    const foundation=await fs.readFile('supabase/migrations/20260830094500_m2_4_4_a16_layer4_overlay_contact_dispositions.sql','utf8')
-    const completion=await fs.readFile('supabase/migrations/20260830094727_m2_4_4_a16_contact_disposition_completion.sql','utf8')
-    const profile=await fs.readFile('supabase/migrations/20260830095100_m2_4_4_a16_contact_layer3_profile_pending_qualification.sql','utf8')
-    const benchmark=await fs.readFile('supabase/migrations/20260830095255_m2_4_4_a16_contact_layer3_benchmark_contract.sql','utf8')
-    const retry=await fs.readFile('supabase/migrations/20260830111112_m2_4_4_a16_contact_profile_retry_hardening.sql','utf8')
+    const foundation=await fs.readFile('supabase/migrations-archive/20260830094500_m2_4_4_a16_layer4_overlay_contact_dispositions.sql','utf8')
+    const completion=await fs.readFile('supabase/migrations-archive/20260830094727_m2_4_4_a16_contact_disposition_completion.sql','utf8')
+    const profile=await fs.readFile('supabase/migrations-archive/20260830095100_m2_4_4_a16_contact_layer3_profile_pending_qualification.sql','utf8')
+    const benchmark=await fs.readFile('supabase/migrations-archive/20260830095255_m2_4_4_a16_contact_layer3_benchmark_contract.sql','utf8')
+    const retry=await fs.readFile('supabase/migrations-archive/20260830111112_m2_4_4_a16_contact_profile_retry_hardening.sql','utf8')
     // Clean-up batch 2 (9 Oct 2026): layer3-interpret was retired; its checks were removed.
     const benchWorker=await fs.readFile('supabase/functions/layer3-contact-benchmark/index.ts','utf8')
     const l4ui=await fs.readFile('src/Layer4Intervention.jsx','utf8')
@@ -45,7 +45,7 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     expect(profile).toContain('pending_contact_specific_qualification')
     expect(benchmark).toContain('layer3-contact-benchmark')
     expect(benchmark).toContain('contact-specific quality gate')
-    const expansion=await fs.readFile('supabase/migrations/20260830111812_m2_4_4_a16_scholarship_contact_layer4_expansion.sql','utf8')
+    const expansion=await fs.readFile('supabase/migrations-archive/20260830111812_m2_4_4_a16_scholarship_contact_layer4_expansion.sql','utf8')
     expect(expansion).toContain("('scholarship','name'")
     expect(expansion).toContain("('provider_contact','full_name'")
     expect(expansion).toContain("when 'scholarship' then exists")
@@ -56,7 +56,7 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     expect(benchWorker).toContain('layer3-contact-benchmark-v1.2.0')
     expect(l4ui).toContain('Corrections shown instead of the source') // v2.15.130
     // Publishing wording left this component when publishing moved to Layer 4 > Scholarship publishing (Decision 249, v2.15.169).
-    const rpcBoundary=await fs.readFile('supabase/migrations/20260830112408_m2_4_4_a16_rpc_security_invoker_boundary.sql','utf8')
+    const rpcBoundary=await fs.readFile('supabase/migrations-archive/20260830112408_m2_4_4_a16_rpc_security_invoker_boundary.sql','utf8')
     expect(rpcBoundary).toContain('create schema if not exists l4_api')
     expect(rpcBoundary).toContain('security invoker')
     expect(rpcBoundary).toContain('revoke all on schema l4_api from public,anon,authenticated')

@@ -9,7 +9,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 test('Scheduled jobs has a Priority queue tab; database changes are guarded and admin-only', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs', 'tasks']) // v2.15.197: Task manager
   expect(PAGES.jobs.tabs.find(t => t.key === 'priority').min).toBe(3)
-  const m = read('supabase/migrations/20260930100000_cf247_priority_queue.sql')
+  const m = read('supabase/migrations-archive/20260930100000_cf247_priority_queue.sql')
   expect(m).toContain("'c2df6a98e847cc625f9567bc8ed49876'")
   expect(m).toContain("'e6d35639281928c42a50e791545bed84'")
   expect(m).toContain("'2311d33b952f004a9a82c55da489de72'")

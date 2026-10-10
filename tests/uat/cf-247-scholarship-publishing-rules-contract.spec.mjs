@@ -7,7 +7,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('database: publishing check, admin confirmation, maximum values, per-year savings, all guarded', () => {
-  const m = read('supabase/migrations/20261002180400_cf247_scholarship_publishing_rules.sql')
+  const m = read('supabase/migrations-archive/20261002180400_cf247_scholarship_publishing_rules.sql')
   expect(m).toContain("then 'eligibility lists domestic students only' end,")
   expect(m).toContain("and coalesce(cr.value_json->>'by','')<>'scholarship_sweep' and 'international'=any(cr.value_codes))")
   expect(m).toContain("elsif p_action='confirm_international' then")

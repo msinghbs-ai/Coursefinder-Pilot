@@ -5,7 +5,7 @@ import fs from 'node:fs'
 const read=p=>fs.readFileSync(p,'utf8')
 
 test('Register departures: CRICOS plan finish and NZQA seen tracking, same hold and audit',async()=>{
-  const m=read('supabase/migrations/20260928090200_layer1_seen_tracking_departures_and_reverify.sql')
+  const m=read('supabase/migrations-archive/20260928090200_layer1_seen_tracking_departures_and_reverify.sql')
   expect(m).toContain('create or replace function security.layer1_seen_departures_v1(')
   expect(m).toContain("v_limit:=greatest(50, ceil(v_total*0.02)::int);")
   expect(m).toContain('pr.checked_at>=v_since')                       // only providers read in this run
@@ -18,10 +18,10 @@ test('Register departures: CRICOS plan finish and NZQA seen tracking, same hold 
 })
 
 test('Run summary counts active records; provider departures reviewed in Layer 4',async()=>{
-  const f=read('supabase/migrations/20260928090000_layer1_finalize_counts_active.sql')
+  const f=read('supabase/migrations-archive/20260928090000_layer1_finalize_counts_active.sql')
   expect(f).toContain("lower(scheme)='cricos' and status='active'")
   expect(f).toContain("'retired', jsonb_build_object(")
-  const d=read('supabase/migrations/20260928090100_layer4_provider_departures_review.sql')
+  const d=read('supabase/migrations-archive/20260928090100_layer4_provider_departures_review.sql')
   expect(d).toContain("if p_decision not in ('closed','merged','reviewed')")
   expect(d).toContain("security.current_role_rank()<6")
   expect(d).toContain("'merged_into'")
@@ -31,14 +31,14 @@ test('Run summary counts active records; provider departures reviewed in Layer 4
 })
 
 test('Scheduled verification covers every Layer 1 source kind',async()=>{
-  const s=read('supabase/migrations/20260928090300_layer1_scheduler_global_sources.sql')
+  const s=read('supabase/migrations-archive/20260928090300_layer1_scheduler_global_sources.sql')
   expect(s).toContain("coalesce(c.iso_alpha2::text,''GLOBAL'')")
   const w=read('supabase/functions/layer1-operations-scheduled/index.ts')
   expect(w).toContain('async function invokeStatWorker(')
   expect(w).toContain('function qiltSurvey(')
   expect(w).toContain('if(system==="QS"||system==="THE")')
   expect(w).toContain('svc_ranking_applied_import_for_source')
-  const q=read('supabase/migrations/20260928050000_layer1_run_queue_global_country.sql')
+  const q=read('supabase/migrations-archive/20260928050000_layer1_run_queue_global_country.sql')
   expect(q).toContain("v_country:=coalesce(v_country,''GLOBAL'');")
 })
 
@@ -49,12 +49,12 @@ test('Rankings: validated uploads applied internally; THE files checked against 
   const e=read('supabase/functions/ranking-layer1-etl/index.ts')
   expect(e).toContain('if(systemCode==="the_wur"&&/^Year\\s+\\d{4}\\s*[\\r\\n]/i.test(text))')
   expect(e).toContain('THE file year ${declaredYear} does not match selected edition ${expectedYear}')
-  expect(read('supabase/migrations/20260928091000_r5_qs_2025_edition_restore.sql')).toContain('v_region<1500 or v_au<30')
-  expect(read('supabase/migrations/20260928091100_r5_the_2015_withdrawn.sql')).toContain('v_same<>v_n15')
+  expect(read('supabase/migrations-archive/20260928091000_r5_qs_2025_edition_restore.sql')).toContain('v_region<1500 or v_au<30')
+  expect(read('supabase/migrations-archive/20260928091100_r5_the_2015_withdrawn.sql')).toContain('v_same<>v_n15')
 })
 
 test('Statistics editions: discovery from stable pages, checked before a person applies',async()=>{
-  const m=read('supabase/migrations/20260928092000_d134_statistics_edition_discovery.sql')
+  const m=read('supabase/migrations-archive/20260928092000_d134_statistics_edition_discovery.sql')
   expect(m).toContain('create table if not exists pipeline.statistics_edition_rules(')
   expect(m).toContain("'https://www.qilt.edu.au/surveys/graduate-outcomes-survey-(gos)'")
   const d=read('supabase/functions/statistics-edition-discovery/index.ts')
@@ -72,13 +72,13 @@ test('Statistics editions: discovery from stable pages, checked before a person 
 })
 
 test('Identity is country-scoped (Decision 149)',async()=>{
-  const m=read('supabase/migrations/20260928080000_d149_country_scoped_identifiers.sql')
+  const m=read('supabase/migrations-archive/20260928080000_d149_country_scoped_identifiers.sql')
   expect(m).toContain('create trigger trg_mirror_course_registration_identifier')
   expect(m).toContain('create trigger trg_mirror_provider_registration_identifier')
 })
 
 test('QILT apply accepts only providers in the verified mapping or its recorded equivalent set',async()=>{
-  const m=read('supabase/migrations/20260928110000_qilt_apply_accepts_verified_equivalent_providers.sql')
+  const m=read('supabase/migrations-archive/20260928110000_qilt_apply_accepts_verified_equivalent_providers.sql')
   expect(m).toContain("if md5(v_def)<>'51f88dce77bfa10894659e6362be0836' then")
   expect(m).toContain("m.status=''verified'' and (m.provider_id=(r->>''provider_id'')::uuid or (coalesce((m.metadata->>''statistical_equivalence_fanout'')::boolean,false)")
   expect(m).toContain("m.metadata->''equivalent_provider_ids''")

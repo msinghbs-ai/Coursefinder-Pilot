@@ -30,7 +30,7 @@ test.describe('A23 quota-aware Layer 2 background execution @deployed',()=>{
 
  // Clean-up batch 7 (9 Oct 2026): layer2-scale-qualify-scheduled and its continuation bridge were retired.
  test('background finaliser completes deterministic controls and governed handoff without autonomous Layer 3 AI',async()=>{
-  const finalizer=await fs.readFile('supabase/migrations/20260831115800_m2_4_4_a23_qualification_finalizer_handoff.sql','utf8')
+  const finalizer=await fs.readFile('supabase/migrations-archive/20260831115800_m2_4_4_a23_qualification_finalizer_handoff.sql','utf8')
   expect(finalizer).toContain('qualification_finalizer_run_limit')
   expect(finalizer).toContain('qualification_pattern_provider_limit')
   expect(finalizer).toMatch(/create or replace function security\.layer2_qualification_finalizer_tick_impl/i)
