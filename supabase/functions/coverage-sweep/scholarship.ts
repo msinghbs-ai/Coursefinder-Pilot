@@ -561,6 +561,15 @@ export function scholarshipListing(html: string, baseUrl: string, hosts: string[
       add(a[2], u.href);
     } catch { /* skip */ }
   }
-  for (const t of h.matchAll(/<h[2-4]\b[^>]*>([\s\S]{0,300}?)<\/h[2-4]>/gi)) { if (!/<a\b/i.test(t[1])) add(t[1], null) }
+  // v0.6.6: a heading with no link takes the first link on the provider's sites in the text under it ("Find out more")
+  for (const t of h.matchAll(/<h[2-4]\b[^>]*>([\s\S]{0,300}?)<\/h[2-4]>/gi)) {
+    if (/<a\b/i.test(t[1])) continue;
+    const after = h.slice((t.index || 0) + t[0].length, (t.index || 0) + t[0].length + 1500).split(/<h[1-4]\b/i)[0];
+    let url: string | null = null;
+    for (const a of after.matchAll(/<a\b[^>]*href\s*=\s*["']([^"'#][^"']*)["']/gi)) {
+      try { const u = new URL(a[1].replace(/&amp;/g, "&"), baseUrl); if (/^https?:$/.test(u.protocol) && hostOk(u) && !/\.(pdf|docx?)(?:[?#]|$)/i.test(u.pathname)) { url = u.href; break } } catch { /* skip */ }
+    }
+    add(t[1], url);
+  }
   return [...items.values()].slice(0, 80);
 }
