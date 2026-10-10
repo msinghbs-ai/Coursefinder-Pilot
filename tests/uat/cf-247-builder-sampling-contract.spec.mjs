@@ -3,7 +3,7 @@ import fs from 'node:fs'
 
 // v2.15.218 (Platform Admin, 8 Oct 2026 10:31): more samples, any course as a sample, a model per adapter (Platform Admin).
 test('sampling and model: server rules and worker', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008000100_cf247_builder_sampling_and_model.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008000100_cf247_builder_sampling_and_model.sql', 'utf8')
   expect(m).toContain("'0f879e1197ab38ea980286adeb69c7a8'") // guarded against the live definition
   expect(m).toContain("if v_rank < 6 then raise exception 'Platform Admin required'")
   expect(m).toContain("'provider_intake_validation' = any(m.allowed_task_classes)") // only qualified intake models

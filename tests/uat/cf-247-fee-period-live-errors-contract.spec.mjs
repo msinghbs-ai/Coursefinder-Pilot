@@ -6,7 +6,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 import { errorReading } from '../../src/lib/workerErrors.js'
 
 test('migration: period check rules, job, request log, acks, md5 guards', () => {
-  const m = fs.readFileSync('supabase/migrations/20261002181600_cf247_fee_period_settle_live_errors.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261002181600_cf247_fee_period_settle_live_errors.sql', 'utf8')
   for (const g of ['812983b8ec7ea2faaf2eff3f197c6f05', '7967f53602b31a5dedc0a2dbf062bcc4', 'd5f848a2e817aa70e4c3189891d7e7d4', '2dd337996dfc2ca35aa42e058dfee5da', '9a8705ecbc8162af37b3bad6b3ccf8aa']) expect(m).toContain(g)
   expect(m).toContain("if r.q ~* other then v_left := v_left + 1; continue; end if;")
   expect(m).toContain("\\m(first|1st)[- ]year\\M")

@@ -3,9 +3,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('M2.5 platform readiness foundation @deployed',()=>{
   test('environment separation, capacity, retention, workload and Layer 4 blocking contracts remain governed',async()=>{
-    const foundation=await fs.readFile('supabase/migrations/20260901162500_m2_5_platform_operations_maturity_foundation.sql','utf8')
-    const capacity=await fs.readFile('supabase/migrations/20260901164000_m2_5_capacity_integrity_alert_classification.sql','utf8')
-    const gates=await fs.readFile('supabase/migrations/20260901165500_m2_5_environment_gate_reconcile_layer4_blocking.sql','utf8')
+    const foundation=await fs.readFile('supabase/migrations-archive/20260901162500_m2_5_platform_operations_maturity_foundation.sql','utf8')
+    const capacity=await fs.readFile('supabase/migrations-archive/20260901164000_m2_5_capacity_integrity_alert_classification.sql','utf8')
+    const gates=await fs.readFile('supabase/migrations-archive/20260901165500_m2_5_environment_gate_reconcile_layer4_blocking.sql','utf8')
 
     expect(foundation).toContain('pipeline.environment_source_gates')
     expect(foundation).toContain("'seed_only','source_identified','source_qualified','pilot_ingestion'")

@@ -13,7 +13,7 @@ test('Fee schedule worker is deterministic and bounded to registered schedules o
 })
 
 test('Apply binds within the provider, never overwrites a same-year value, and keeps one current tuition',()=>{
-  const m=fs.readFileSync('supabase/migrations/20260928172000_d162_fee_schedule_sources_and_apply.sql','utf8')
+  const m=fs.readFileSync('supabase/migrations-archive/20260928172000_d162_fee_schedule_sources_and_apply.sql','utf8')
   expect(m).toContain("c.provider_id=v_provider and c.lifecycle_status='active'")
   expect(m).toContain("'listed twice with different fees'")
   expect(m).toContain("'same fee year, different amount (Layer 4)'")

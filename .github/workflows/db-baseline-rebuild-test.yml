@@ -56,7 +56,7 @@ jobs:
           work="$RUNNER_TEMP/rebuild"; mkdir -p "$work/supabase/migrations"
           printf 'project_id = "coursefinder-baseline-test"\n' > "$work/supabase/config.toml"
           cp supabase/live-capture/baseline/roles-apply.sql "$work/supabase/migrations/20261010000000_baseline_roles.sql"
-          cat supabase/live-capture/baseline/apply-preamble.sql supabase/live-capture/baseline/schema.sql > "$work/supabase/migrations/20261010000001_baseline_schema.sql"
+          cat supabase/live-capture/baseline/apply-preamble.sql supabase/live-capture/baseline/schema.sql supabase/live-capture/baseline/apply-postscript.sql > "$work/supabase/migrations/20261010000001_baseline_schema.sql"
           cd "$work"
           supabase link --project-ref "$REF" 2>&1 | tee "$RUNNER_TEMP/push.log"
           if [ "$RESET" = "true" ]; then

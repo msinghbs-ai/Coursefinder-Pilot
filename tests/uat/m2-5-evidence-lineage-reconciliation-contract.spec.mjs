@@ -13,7 +13,7 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
 
   test('preserves raw lineage, reconciles 5+2 history and hardens contact concurrency',async()=>{
     const[migration,worker,platform,shell,versionEntry,index,releaseTest,manifest,current]=await Promise.all([
-      fs.readFile('supabase/migrations/20260901224000_m2_5_evidence_lineage_reconciliation_contact_claim.sql','utf8'),
+      fs.readFile('supabase/migrations-archive/20260901224000_m2_5_evidence_lineage_reconciliation_contact_claim.sql','utf8'),
       fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8'),
       fs.readFile('src/platform-maturity-entry.jsx','utf8'),
       fs.readFile('src/mature-main.jsx','utf8'),

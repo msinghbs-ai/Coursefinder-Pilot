@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-const m = (f) => fs.readFileSync(`supabase/migrations/${f}`, 'utf8')
+const m = (f) => fs.readFileSync(`supabase/migrations-archive/${f}`, 'utf8')
 
 test('consumer API update for the website developer: names, regional class, English summary, place names', () => {
   const a = m('20260929160000_cf247_api_provider_names_regional_class.sql')

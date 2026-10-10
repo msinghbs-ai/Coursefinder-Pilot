@@ -59,7 +59,7 @@ test('no screen draws its own shell; one layout in the kit', () => {
 })
 
 test('new reads: guarded, read-only, granted to signed-in users only', () => {
-  const m = read('supabase/migrations/20260930000000_cf247_admin_ui_reads.sql')
+  const m = read('supabase/migrations-archive/20260930000000_cf247_admin_ui_reads.sql')
   expect(m).toContain("raise exception 'cf247_admin_ui_reads: a function with one of these names already exists")
   expect(m).not.toMatch(/create or replace function/i)
   expect(m).not.toMatch(/\b(insert|update|delete)\s+(into|from)?\s*(pipeline|catalogue|scholarship)\./i)

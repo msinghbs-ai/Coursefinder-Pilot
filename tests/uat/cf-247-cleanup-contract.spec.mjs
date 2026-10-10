@@ -19,7 +19,7 @@ test('batch 1: retired functions have no source, are on the retired list and are
 })
 
 test('batch 1: old cron jobs removed only while switched off; functions and history kept', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008005200_cf247_cleanup_batch1_old_cron_jobs.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005200_cf247_cleanup_batch1_old_cron_jobs.sql', 'utf8')
   expect(m).toContain("if exists (select 1 from cron.job where jobname = j and active) then")
   expect(m).toContain('perform cron.unschedule(j);')
   expect(m).not.toMatch(/delete\s+from|drop\s+(table|function|schema)|truncate/i)
@@ -72,7 +72,7 @@ test('batch 2: Providers › Onboarding points to the Adapter builder; Refresh s
 })
 
 test('batch 4: old database functions dropped behind md5 guards; tables and history kept; four dormant functions retired', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008005600_cf247_cleanup_batch4_old_database.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005600_cf247_cleanup_batch4_old_database.sql', 'utf8')
   expect((m.match(/^drop function /gim) || []).length).toBe(15)
   expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
   expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate/i)
@@ -93,7 +93,7 @@ test('batch 4: old database functions dropped behind md5 guards; tables and hist
 })
 
 test('batch 5: old scheduler-workflow, scope and scholarship-runtime chains dropped; admin_read dead branches removed', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008005900_cf247_cleanup_batch5_old_database.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005900_cf247_cleanup_batch5_old_database.sql', 'utf8')
   expect((m.match(/^drop function /gim) || []).length).toBe(31)
   expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
   expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate|delete\s+from/i)
@@ -107,7 +107,7 @@ test('batch 5: old scheduler-workflow, scope and scholarship-runtime chains drop
 })
 
 test('batch 6: old discovery, acquisition and provider-asset chains dropped; logo upload and read kept', () => {
-  const m = fs.readFileSync('supabase/migrations/20261009006100_cf247_cleanup_batch6_old_database.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261009006100_cf247_cleanup_batch6_old_database.sql', 'utf8')
   expect((m.match(/^drop function /gim) || []).length).toBe(19)
   expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
   expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate/i)
@@ -120,7 +120,7 @@ test('batch 6: old discovery, acquisition and provider-asset chains dropped; log
 })
 
 test('batch 7: unused background functions and the scale-qualification chain retired; Reset database removed; capabilities kept', () => {
-  const m = fs.readFileSync('supabase/migrations/20261009006200_cf247_cleanup_batch7_old_database.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261009006200_cf247_cleanup_batch7_old_database.sql', 'utf8')
   expect((m.match(/^drop function /gim) || []).length).toBe(6)
   expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
   expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate/i)

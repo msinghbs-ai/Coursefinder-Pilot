@@ -126,7 +126,7 @@ test('Edge function: nonce-only, returned model must equal the pinned id, US$8 q
 })
 
 test('migrations: checksum-guarded replacements, nothing activated before the activation migration, no consumer or scholarship objects', () => {
-  const dir = 'supabase/migrations'
+  const dir = 'supabase/migrations-archive'
   const files = fs.readdirSync(dir).filter((f) => /^2026092923[0-4]\d{3}_cf247_l3_/.test(f)).sort()
   expect(files.length).toBeGreaterThanOrEqual(6)
   for (const f of files) {
@@ -159,7 +159,7 @@ test('migrations: checksum-guarded replacements, nothing activated before the ac
 })
 
 test('holdout gold sets: frozen before any model run, disjoint from earlier intake sets, 15+ providers, excerpts for stated cases', () => {
-  const gold = read('supabase/migrations/20260929233000_cf247_l3_holdout_gold.sql')
+  const gold = read('supabase/migrations-archive/20260929233000_cf247_l3_holdout_gold.sql')
   const rows = [...gold.matchAll(/\(\$x\$(l3r-[a-z]+-h1)\$x\$,\$x\$([a-z_]+)\$x\$,\$x\$([a-z0-9-]+)\$x\$,'([0-9a-f-]{36})','([0-9a-f-]{36})','([0-9a-f]{64})',\$x\$(\{.*?\})\$x\$,(null|\$x\$[\s\S]*?\$x\$),/g)]
   expect(rows.length).toBe(120)
   const bySet = (s) => rows.filter((r) => r[1] === s)
@@ -170,7 +170,7 @@ test('holdout gold sets: frozen before any model run, disjoint from earlier inta
     const g = JSON.parse(r[7])
     if (['months', 'stated', 'admit'].includes(g.status)) expect(r[8]).not.toBe('null')
   }
-  const freeze = read('supabase/migrations/20260929233500_cf247_l3_holdout_freeze.sql')
+  const freeze = read('supabase/migrations-archive/20260929233500_cf247_l3_holdout_freeze.sql')
   expect(freeze).toContain("a model has already run on a holdout set; freezing now would not be before any model run")
   expect(gold).toContain('intake holdout overlaps an earlier intake gold set')
 })

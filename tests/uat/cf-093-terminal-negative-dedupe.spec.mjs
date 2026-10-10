@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { test, expect } from '@playwright/test'
 
-const freshness = readFileSync('supabase/migrations/20260912031356_cf_093_scheduler_terminal_negative_freshness_dedupe.sql','utf8')
-const sameAttempt = readFileSync('supabase/migrations/20260912031504_cf_093_scheduler_terminal_negative_same_attempt_fix.sql','utf8')
-const bindingIsolation = readFileSync('supabase/migrations/20260912031648_cf_093_scheduler_preview_context_binding_isolation.sql','utf8')
-const exactScope = readFileSync('supabase/migrations/20260912031736_cf_093_scheduler_terminal_negative_exact_scope_accounting.sql','utf8')
-const completionDedupe = readFileSync('supabase/migrations/20260912035500_cf_093_scheduler_completion_anchored_dedupe.sql','utf8')
+const freshness = readFileSync('supabase/migrations-archive/20260912031356_cf_093_scheduler_terminal_negative_freshness_dedupe.sql','utf8')
+const sameAttempt = readFileSync('supabase/migrations-archive/20260912031504_cf_093_scheduler_terminal_negative_same_attempt_fix.sql','utf8')
+const bindingIsolation = readFileSync('supabase/migrations-archive/20260912031648_cf_093_scheduler_preview_context_binding_isolation.sql','utf8')
+const exactScope = readFileSync('supabase/migrations-archive/20260912031736_cf_093_scheduler_terminal_negative_exact_scope_accounting.sql','utf8')
+const completionDedupe = readFileSync('supabase/migrations-archive/20260912035500_cf_093_scheduler_completion_anchored_dedupe.sql','utf8')
 
 test('CF-093 fresh terminal negatives remain governed and non-queueable', () => {
   expect(freshness).toContain("freshness_sla_hours")

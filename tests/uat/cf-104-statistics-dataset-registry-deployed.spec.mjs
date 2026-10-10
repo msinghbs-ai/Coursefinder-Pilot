@@ -6,7 +6,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 test.describe('CF-104 Statistics dataset registry @targeted',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-104-statistics-dataset-registry',change_control:'CF-CHG-20260904-104'})})
  test('source keeps operational imports out and registry is extensible',async()=>{
-  const x=fs.readFileSync('src/StatisticsDatasetEnhancer.js','utf8'),m=fs.readFileSync('supabase/migrations/20260904104000_cf_104_statistics_dataset_registry.sql','utf8')
+  const x=fs.readFileSync('src/StatisticsDatasetEnhancer.js','utf8'),m=fs.readFileSync('supabase/migrations-archive/20260904104000_cf_104_statistics_dataset_registry.sql','utf8')
   expect(x).toContain('statistics_dataset_registry_read');expect(x).toContain('Statistics dataset registry');expect(x).toContain('Manage imports');
   expect(x).toContain("filter(x=>/manage imports/i.test(x.textContent)).forEach(x=>x.remove())")
   expect(m).toContain("'arwu','Academic Ranking of World Universities'");expect(m).toContain("'diversity_index','University Diversity Index'")

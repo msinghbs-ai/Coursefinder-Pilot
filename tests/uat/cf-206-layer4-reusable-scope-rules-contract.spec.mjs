@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const ui=fs.readFileSync('src/layer4-scope-rules-entry.jsx','utf8')
-const migration=fs.readFileSync('supabase/migrations/20260905032600_cf_206_layer4_reusable_scope_rules.sql','utf8')
-const state=fs.readFileSync('supabase/migrations/20260905033100_cf_206_layer4_scope_rule_state_control.sql','utf8')
+const migration=fs.readFileSync('supabase/migrations-archive/20260905032600_cf_206_layer4_reusable_scope_rules.sql','utf8')
+const state=fs.readFileSync('supabase/migrations-archive/20260905033100_cf_206_layer4_scope_rule_state_control.sql','utf8')
 const index=fs.readFileSync('index.html','utf8')
 const release=fs.readFileSync('src/release-currentness-entry.js','utf8')
 const logo=fs.readFileSync('src/ProviderLogo.jsx','utf8')

@@ -1,8 +1,8 @@
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 
-const bootstrapPath='supabase/migrations/20260912005000_cf_093_uq_discovery_strategy_reconstruction_bootstrap.sql'
-const immutablePath='supabase/migrations/20260912005948_cf_093_uq_native_program_discovery_profile.sql'
+const bootstrapPath='supabase/migrations-archive/20260912005000_cf_093_uq_discovery_strategy_reconstruction_bootstrap.sql'
+const immutablePath='supabase/migrations-archive/20260912005948_cf_093_uq_native_program_discovery_profile.sql'
 const bootstrap=fs.readFileSync(bootstrapPath,'utf8')
 const immutable=fs.readFileSync(immutablePath,'utf8')
 

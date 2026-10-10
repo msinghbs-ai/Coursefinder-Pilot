@@ -6,7 +6,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('database: guard triggers on every fact table, courses and providers; guarded edits; role checks; grants', () => {
-  const m = read('supabase/migrations/20260930120000_cf247_crud_manual_first.sql')
+  const m = read('supabase/migrations-archive/20260930120000_cf247_crud_manual_first.sql')
   for (const t of ['course_links', 'course_intakes', 'course_english_requirements', 'course_fees'])
     expect(m).toContain(`create trigger manual_lock_guard before insert or update or delete on catalogue.${t} for each row execute function security.manual_fact_guard();`)
   for (const t of ['courses', 'providers'])

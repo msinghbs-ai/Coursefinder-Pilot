@@ -49,7 +49,7 @@ test('worker: shadow mode uses the Layer 3 contract and checks, records only, an
 })
 
 test('migration: limits, retire test reported only, nothing deleted, nothing admitted', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008005300_cf247_phase3_adapter_shadow.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005300_cf247_phase3_adapter_shadow.sql', 'utf8')
   expect(m).toContain('daily_usd_max numeric not null default 15')
   expect(m).toContain('daily_reads_max int not null default 1000')
   expect(m).toContain('retire_match numeric not null default 0.95')
@@ -66,7 +66,7 @@ test('tuition: the adapter fee section is its input; the task contract and check
   const t = shadowInput({ sections: { fee: 'Fees' }, section_chars: 300 }, html, 'tuition')
   expect(t.basis).toBe('adapter_section')
   expect(t.text).toContain('38,500')
-  const m = fs.readFileSync('supabase/migrations/20261008005400_cf247_phase3_shadow_tuition_capacity.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005400_cf247_phase3_shadow_tuition_capacity.sql', 'utf8')
   expect(m).toContain("if md5(pg_get_functiondef(k::regprocedure)) <> v then raise exception")
   expect(m).toContain("check (task in ('intake','english','tuition'))")
   expect(m).toContain("v_tp := (select to_jsonb(p) from pipeline.layer3_routed_profile(v_class) p where p.id is not null);")
@@ -78,7 +78,7 @@ test('tuition: the adapter fee section is its input; the task contract and check
 })
 
 test('round 2: stronger adapter model for the shadow run only; rounds kept apart; md5-guarded; nothing deleted', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008005500_cf247_phase3_round2_stronger_model.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005500_cf247_phase3_round2_stronger_model.sql', 'utf8')
   expect(m).toContain("set round = 2, model_profile_code = 'openrouter-intake-l3c-mimo-v2-6-pro-v1'")
   expect(m).toContain("where p.code = coalesce(s.model_profile_code, security.adapter_builder_model_for_v1(r.provider_id)->>'code')")
   expect(m).toContain("from t, s where t.round = s.round), '[]'::jsonb),")
@@ -92,7 +92,7 @@ test('round 3: adapter model first, one escalation only when nothing was found a
   const w = fs.readFileSync('supabase/functions/layer3-model-routing/index.ts', 'utf8')
   expect(w).toContain('if (it.escalation && !first.found && !(first as any).blocked && signal) {')
   expect(w).toContain('const signal = task === "tuition" ? Array.isArray(it.context?.fee_candidates) && it.context.fee_candidates.length > 0 : cascadeSignal(task as "intake" | "english", first.text);')
-  const m = fs.readFileSync('supabase/migrations/20261008005700_cf247_phase3_round3_escalation.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005700_cf247_phase3_round3_escalation.sql', 'utf8')
   expect(m).toContain("set round = 3, model_profile_code = null, escalation_profile_code = 'openrouter-intake-l3c-mimo-v2-6-pro-v1'")
   expect(m).toContain("'profile', v_prof, 'escalation', v_esc);")
   expect(m).toContain("escalated = coalesce((p_result->>'escalated')::boolean, false)")
@@ -101,7 +101,7 @@ test('round 3: adapter model first, one escalation only when nothing was found a
 })
 
 test('Phase 3 closes: shadow jobs removed only after the run is switched off; the record is kept', () => {
-  const m = fs.readFileSync('supabase/migrations/20261008005800_cf247_phase3_close_shadow_jobs.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261008005800_cf247_phase3_close_shadow_jobs.sql', 'utf8')
   expect(m).toContain("raise exception 'the shadow run is still switched on; switch it off first'")
   for (const j of ['adapter-shadow-intake', 'adapter-shadow-english', 'adapter-shadow-tuition']) expect(m).toContain(`'${j}'`)
   expect(m).not.toMatch(/delete\s+from|drop\s+|truncate/i)

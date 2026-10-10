@@ -12,7 +12,7 @@ test('Course links tab retired; the decisions made earlier keep governing the sw
   expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1]])
   expect(resolveTarget('scholarships', new URLSearchParams('tab=links'))).toMatchObject({ page: 'scholarships', tab: 'list' })
   expect(fs.existsSync('src/ScholarshipLinks.jsx')).toBe(false)
-  const m = read('supabase/migrations/20260930130000_cf247_scholarship_course_links.sql')
+  const m = read('supabase/migrations-archive/20260930130000_cf247_scholarship_course_links.sql')
   expect(m).toContain("security.current_role_rank() < 4 then raise exception 'Pipeline Operator role or above required'")
   expect(m).toContain("check (decision in ('all','filter','none'))")
   expect(m).toContain("insert into pipeline.layer4_mass_operations")
@@ -20,11 +20,11 @@ test('Course links tab retired; the decisions made earlier keep governing the sw
     expect(m).toContain(`revoke all on function public.${f} from public, anon;`)
     expect(m).toContain(`grant execute on function public.${f} to authenticated;`)
   }
-  const w = read('supabase/migrations/20260930133000_cf247_scholarship_decision_wins.sql')
+  const w = read('supabase/migrations-archive/20260930133000_cf247_scholarship_decision_wins.sql')
   expect(w).toContain("'714ab7f0d99c5657cd083a8bbb5f3403'")
   expect(w).toContain('create trigger scholarship_decision_guard before insert or update on scholarship.course_mappings')
-  expect(read('supabase/migrations/20260930131000_cf247_scholarship_suggest_fix.sql')).toContain("'47fc4f2ab27d7a2d3c7f466e029b55b1'")
-  expect(read('supabase/migrations/20260930132000_cf247_scholarship_suggest_title.sql')).toContain("'8585e3c95f386a721c9a33c19adad04e'")
+  expect(read('supabase/migrations-archive/20260930131000_cf247_scholarship_suggest_fix.sql')).toContain("'47fc4f2ab27d7a2d3c7f466e029b55b1'")
+  expect(read('supabase/migrations-archive/20260930132000_cf247_scholarship_suggest_title.sql')).toContain("'8585e3c95f386a721c9a33c19adad04e'")
 })
 
 test.describe('mocked browser', () => {

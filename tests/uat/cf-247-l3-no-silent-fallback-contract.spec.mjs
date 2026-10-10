@@ -19,7 +19,7 @@ test('worker: no claim without a switched-on step; ladder mode never reaches the
 })
 
 test('migration: placeholder profile hidden for unanswered cascade claims, behind an md5 guard', async () => {
-  const m = await fs.readFile('supabase/migrations/20261002181900_cf247_l3_recent_results_cascade_label.sql', 'utf8')
+  const m = await fs.readFile('supabase/migrations-archive/20261002181900_cf247_l3_recent_results_cascade_label.sql', 'utf8')
   expect(m).toContain("'9b752374045543ecd2d6c544f6f56bdf'")
   expect(m).toContain("b.route_mode='ladder'")
   expect(m).toContain('i.cascade_tier_no is null and i.aggregator_response_model is null as v')

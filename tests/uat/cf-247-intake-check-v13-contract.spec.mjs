@@ -20,7 +20,7 @@ test('v1.2.0 contract file untouched; router dispatches by prompt_profile_versio
   expect(r).toContain('intakeCheckFor(tp, r.answer, text, blockers)')
   expect(r).toContain('intakeCheckFor(profile, r.answer, text, blockers)')
   expect(r).toContain('contractVersionFor(task, profile)')
-  const m = await fs.readFile('supabase/migrations/20261002183800_cf247_intake_check_v13_profiles.sql', 'utf8')
+  const m = await fs.readFile('supabase/migrations-archive/20261002183800_cf247_intake_check_v13_profiles.sql', 'utf8')
   expect(m).toContain("'cf247-intake-validation-v1.3.0'")
   expect(m).toContain('true, true,') // enabled, paused
 })

@@ -71,7 +71,7 @@ test.describe('A10 paged filters and tablet focus @deployed',()=>{
   }finally{await finish(testInfo,runtime)}})
 
   test('A10 server contracts are mirrored and large legacy bundles stay empty',async()=>{
-    const sql=await fs.readFile('supabase/migrations/20260827232500_a10_platform_paged_filter_options.sql','utf8')
+    const sql=await fs.readFile('supabase/migrations-archive/20260827232500_a10_platform_paged_filter_options.sql','utf8')
     expect(sql).toContain('admin_filter_option_page')
     expect(sql).toContain("v_limit integer:=least(greatest(coalesce(nullif(p_args->>'limit','')::integer,10),1),10)")
     expect(sql).toContain("'sources','[]'::jsonb")

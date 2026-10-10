@@ -3,7 +3,7 @@ import fs from 'node:fs'
 
 // CF-247 complete coverage: every active Australian course has one state per attribute, rebuilt hourly and kept daily.
 test('coverage model, schedule and governed read', () => {
-  const m = fs.readFileSync('supabase/migrations/20260929100000_cf247_course_coverage_statistics.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20260929100000_cf247_course_coverage_statistics.sql', 'utf8')
   for (const s of ["'admitted'", "'in_review'", "'awaiting_l3'", "'not_on_page'", "'blocked'", "'page_found'", "'site_known'", "'no_website'", "'missing_l1'"]) expect(m).toContain(s)
   for (const a of ["'official_url'", "'provider_tuition'", "'english'", "'intakes'", "'registered_tuition'", "'duration'", "'campus'"]) expect(m).toContain(a)
   expect(m).toContain("cron.schedule('course-coverage-build','47 * * * *'")

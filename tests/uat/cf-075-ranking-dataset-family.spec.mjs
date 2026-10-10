@@ -8,7 +8,7 @@ test.describe('CF-075 compact multi-year ranking datasets',()=>{
    fs.readFile('src/mature-main.jsx','utf8'),
    fs.readFile('src/ComparisonWorkspace.jsx','utf8'),
    fs.readFile('supabase/functions/ranking-layer1-etl/index.ts','utf8'),
-   fs.readFile('supabase/migrations/20260902064800_cf_075_ranking_dataset_family_metadata.sql','utf8'),
+   fs.readFile('supabase/migrations-archive/20260902064800_cf_075_ranking_dataset_family_metadata.sql','utf8'),
   ])
   expect(layer1).toContain('collapseRankingFamilies')
   expect(layer1).toContain('ranking_supported_years')

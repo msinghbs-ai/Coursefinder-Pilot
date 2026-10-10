@@ -19,11 +19,11 @@ async function override(page, op, data) {
 
 test('migrations shaped: status, record read, hand edits for audience and nationalities, publishing failing list', () => {
   for (const f of ['20261003003000_cf247_scholarships_page_status', '20261003003100_cf247_scholarship_screens_to_mockup']) {
-    const m = read(`supabase/migrations/${f}.sql`)
+    const m = read(`supabase/migrations-archive/${f}.sql`)
     for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
     expect(m).not.toMatch(/set\s+publication_status\s*=\s*'published'/)
   }
-  const m = read('supabase/migrations/20261003003100_cf247_scholarship_screens_to_mockup.sql')
+  const m = read('supabase/migrations-archive/20261003003100_cf247_scholarship_screens_to_mockup.sql')
   expect(m).toContain("k.field in ('award_amount', 'award_percentage', 'award_value_type', 'award_value_text')")
   expect(m).toContain("perform security.manual_lock_set('scholarship', p_scholarship_id, 'audience', 'value');")
   expect(m).toContain("perform security.manual_lock_set('scholarship', p_scholarship_id, 'nationalities', 'value');")
@@ -132,7 +132,7 @@ test('reader v0.6.0: amounts in the provider country currency; NZ and Canadian d
   expect(internationalEligibility('Students holding a valid study permit are eligible.').explicit).toBe(true)
 })
 test('migration 20261004000100 shaped: currency, universities, discovery, Layer 1 sources', () => {
-  const m = read('supabase/migrations/20261004000100_cf247_scholarships_nz_ca.sql')
+  const m = read('supabase/migrations-archive/20261004000100_cf247_scholarships_nz_ca.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain('create or replace function scholarship.provider_currency(p_provider_id uuid)')
   expect(m).toContain('create or replace function security.scholarship_university(p_provider_id uuid)')

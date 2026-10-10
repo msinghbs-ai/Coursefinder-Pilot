@@ -7,7 +7,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('database: patterns cancelled (kept), fee schedules waiting first, coverage by country with md5 guards', () => {
-  const m = read('supabase/migrations/20261002180500_cf247_coverage_countries_fee_review_patterns.sql')
+  const m = read('supabase/migrations-archive/20261002180500_cf247_coverage_countries_fee_review_patterns.sql')
   expect(m).toContain("set status = 'cancelled', schedule_error = 'retired (Decision 213)")
   expect(m).toContain("order by (f.decision is null) desc, f.read_at desc")
   expect(m).toContain('create table if not exists pipeline.course_coverage_daily_by_country')

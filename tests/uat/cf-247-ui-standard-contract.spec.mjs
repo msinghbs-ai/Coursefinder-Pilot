@@ -91,7 +91,7 @@ test('source: shared summary kit, tokens only, one table component', () => {
 })
 
 test('v2.15.226: provider read is slim; related insights load when More is opened', async ({ page }) => {
-  const m = read('supabase/migrations/20261009006000_cf247_provider_detail_slim.sql')
+  const m = read('supabase/migrations-archive/20261009006000_cf247_provider_detail_slim.sql')
   expect(m).toContain("'4949564e124715c4b0aabc1a39ccaafb'")
   expect(m).toContain("security.admin_provider_detail(v_id)-'courses'-'courses_page'-'evidence'-'evidence_page'-'sources'-'history'")
   expect(m).not.toContain("'scholarship_context',security.admin_provider_scholarships")
@@ -114,7 +114,7 @@ test('v2.15.226: provider read is slim; related insights load when More is opene
 })
 
 test('v2.15.231: course read is slim; course insights load when More is opened', async ({ page }) => {
-  const m = read('supabase/migrations/20261010006300_cf247_course_detail_slim.sql')
+  const m = read('supabase/migrations-archive/20261010006300_cf247_course_detail_slim.sql')
   expect(m).toContain("'c4e339a7a8fc58307804b796cdb5cfd6'")
   expect(m).toContain("if p_operation='course_insights' then")
   expect(m).not.toContain("jsonb_build_object('ranking_context',security.admin_course_rankings")

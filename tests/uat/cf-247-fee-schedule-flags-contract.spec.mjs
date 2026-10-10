@@ -6,7 +6,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('database: same fee or a per-year fee within 15% settles the flag; approval runs it; hand locks left alone', () => {
-  const m = read('supabase/migrations/20261001180200_cf247_fee_schedule_settles_flags.sql')
+  const m = read('supabase/migrations-archive/20261001180200_cf247_fee_schedule_settles_flags.sql')
   expect(m).toContain("if r.amount = r.sched_amount then")
   expect(m).toContain("elsif r.amount > 0 and r.sched_amount / r.amount between 0.85 and 1.15 then")
   expect(m).toContain("where s.decision = 'approved' and fr.current and fr.basis = 'annual'")

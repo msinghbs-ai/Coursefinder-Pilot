@@ -27,8 +27,8 @@ const validatorSource = readFileSync(new URL("../supabase/functions/_shared/cf24
 const benchmarkSource = readFileSync(new URL("../supabase/functions/layer3-cf245-tuition-benchmark/index.ts", import.meta.url), "utf8");
 const interpreterSource = readFileSync(new URL("../supabase/functions/layer3-work-interpret/index.ts", import.meta.url), "utf8");
 const bindingHelperSource = readFileSync(new URL("../supabase/functions/_shared/cf247-tuition-benchmark-binding.ts", import.meta.url), "utf8");
-const recorderMigration = readFileSync(new URL("../supabase/migrations/20260921171328_cf247_tuition_benchmark_record_binding_baseline.sql", import.meta.url), "utf8");
-const interpretationReservationMigration = readFileSync(new URL("../supabase/migrations/20260922010000_cf247_interpretation_reservation_expose_quality_benchmark.sql", import.meta.url), "utf8");
+const recorderMigration = readFileSync(new URL("../supabase/migrations-archive/20260921171328_cf247_tuition_benchmark_record_binding_baseline.sql", import.meta.url), "utf8");
+const interpretationReservationMigration = readFileSync(new URL("../supabase/migrations-archive/20260922010000_cf247_interpretation_reservation_expose_quality_benchmark.sql", import.meta.url), "utf8");
 const sha256 = (source: string) => createHash("sha256").update(source).digest("hex");
 assert.deepEqual(CF247_TUITION_BINDING_SOURCE_MANIFEST, {
   benchmark_prompt_sha256: sha256(extractPromptBuildSource(benchmarkSource, CF247_BENCHMARK_PROMPT_BUILD_ANCHOR)),

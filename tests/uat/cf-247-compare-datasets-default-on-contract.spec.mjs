@@ -13,7 +13,7 @@ test('Compare datasets are on by default and only switched off by the user',()=>
 })
 
 test('Course mode PRISMS falls back to the state of the course, like the university view',()=>{
-  const m=fs.readFileSync('supabase/migrations/20260928120000_compare_course_prisms_state_fallback.sql','utf8')
+  const m=fs.readFileSync('supabase/migrations-archive/20260928120000_compare_course_prisms_state_fallback.sql','utf8')
   expect(m).toContain("if md5(v_def)<>'4ddb5b136f74fdd746809b675b8b93d8' then")
   expect(m).toContain("''regional_context''::text granularity")
   expect(m).toContain('select cp.subdivision_id from catalogue.campuses cp where cp.provider_id=v_provider')

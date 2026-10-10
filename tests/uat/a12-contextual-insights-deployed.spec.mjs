@@ -55,7 +55,7 @@ test.describe('A12 contextual insights on catalogue detail blades @deployed',()=
  }finally{await finish(testInfo,runtime)}})
 
  test('A12 source contract remains bounded and role checked',async()=>{
-  const sql=await fs.readFile('supabase/migrations/20260827235930_a12_contextual_insight_projection.sql','utf8')
+  const sql=await fs.readFile('supabase/migrations-archive/20260827235930_a12_contextual_insight_projection.sql','utf8')
   expect(sql).toContain('security.current_role_rank()')
   expect(sql).toContain("limit 12")
   expect(sql).toContain("limit 10")

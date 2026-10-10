@@ -9,7 +9,7 @@ test('no screen, API helper or edge function refers to Parse.bot; the URL import
   const files = [...walk('src'), ...walk('supabase/functions')].filter(f => /\.(jsx?|tsx?|css)$/.test(f) && !f.endsWith('pim-version-entry.js') && !f.endsWith('release-manifest.js'))
   for (const f of files) expect(fs.readFileSync(f, 'utf8'), f).not.toMatch(/parse\.?bot/i)
   for (const fn of ['ranking-publisher-url-import', 'ranking-qs-url-import', 'ranking-the-url-import']) expect(fs.existsSync(`supabase/functions/${fn}`)).toBe(false)
-  const m = fs.readFileSync('supabase/migrations/20260930170000_cf247_remove_parsebot.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20260930170000_cf247_remove_parsebot.sql', 'utf8')
   expect(m).toContain("raise exception 'Parse.bot has fetch history; refusing to delete it'")
   expect(m).toContain('delete from pipeline.layer2_profile_provider_routes where acquisition_provider_id = v_id;')
   expect(m).toContain("<> 'f86a250be8b9ef8e4a3372bf6d563f88'")

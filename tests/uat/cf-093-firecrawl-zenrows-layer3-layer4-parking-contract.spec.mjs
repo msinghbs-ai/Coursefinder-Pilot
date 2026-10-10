@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 
-const sql=fs.readFileSync('supabase/migrations/20260913113000_cf_093_firecrawl_zenrows_exhaustion_parking.sql','utf8')
+const sql=fs.readFileSync('supabase/migrations-archive/20260913113000_cf_093_firecrawl_zenrows_exhaustion_parking.sql','utf8')
 
 test('CF-093 uses Firecrawl/ZenRows and parks only unresolved bounded exhaustion into Layer 3/Layer 4',()=>{
   expect(sql).toContain("p.provider_key in ('firecrawl','zenrows')")

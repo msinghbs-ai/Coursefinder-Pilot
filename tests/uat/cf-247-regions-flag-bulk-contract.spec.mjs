@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('migration: NZ regions (ISO 3166-2:NZ), town mapping only where no region is held, bulk flag decisions', () => {
-  const m = fs.readFileSync('supabase/migrations/20261002181700_cf247_nz_regions_flag_bulk.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261002181700_cf247_nz_regions_flag_bulk.sql', 'utf8')
   for (const c of ['NZ-AUK', 'NZ-BOP', 'NZ-CAN', 'NZ-GIS', 'NZ-HKB', 'NZ-MWT', 'NZ-MBH', 'NZ-NSN', 'NZ-NTL', 'NZ-OTA', 'NZ-STL', 'NZ-TKI', 'NZ-TAS', 'NZ-WKO', 'NZ-WGN', 'NZ-WTC', 'NZ-CIT']) expect(m).toContain(`'${c}'`)
   expect(m).toContain("and k.iso_alpha2 = 'NZ' and p.subdivision_id is null")
   expect(m).not.toContain("('frankton',")

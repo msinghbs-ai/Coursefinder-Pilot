@@ -5,7 +5,7 @@ import{readFile}from'node:fs/promises'
 const read=p=>readFile(new URL(`../../${p}`,import.meta.url),'utf8')
 
 test('CF-211 H5 source-backed candidates cannot directly write canonical or publish',async()=>{
- const sql=await read('supabase/migrations/20260905073000_cf_211_h5_h6_candidate_publication_controls.sql')
+ const sql=await read('supabase/migrations-archive/20260905073000_cf_211_h5_h6_candidate_publication_controls.sql')
  assert.match(sql,/pipeline\.pim_source_candidates/)
  assert.match(sql,/PIM Operator role required/)
  assert.match(sql,/source URL or Evidence required/)
@@ -37,7 +37,7 @@ test('CF-211 H5 is exposed from the existing canonical Layer 4 detail surface',a
 })
 
 test('CF-211 public browser RPCs are invoker wrappers over private implementations',async()=>{
- const sql=await read('supabase/migrations/20260905074000_cf_211_h5_h6_private_impl_wrappers.sql')
+ const sql=await read('supabase/migrations-archive/20260905074000_cf_211_h5_h6_private_impl_wrappers.sql')
  assert.match(sql,/create schema if not exists pim_api/)
  assert.match(sql,/set schema pim_api/)
  assert.match(sql,/set schema l4_api/)
@@ -47,13 +47,13 @@ test('CF-211 public browser RPCs are invoker wrappers over private implementatio
 })
 
 test('CF-211 H5 Evidence FK has a covering review index',async()=>{
- const sql=await read('supabase/migrations/20260905075000_cf_211_h5_candidate_evidence_index.sql')
+ const sql=await read('supabase/migrations-archive/20260905075000_cf_211_h5_candidate_evidence_index.sql')
  assert.match(sql,/pim_source_candidates_evidence_idx/)
  assert.match(sql,/pim_source_candidates\(evidence_id\)/)
 })
 
 test('CF-211 H6 publication requires preview token and remains non-cutover',async()=>{
- const sql=await read('supabase/migrations/20260905073000_cf_211_h5_h6_candidate_publication_controls.sql')
+ const sql=await read('supabase/migrations-archive/20260905073000_cf_211_h5_h6_candidate_publication_controls.sql')
  assert.match(sql,/publication_control_preview/)
  assert.match(sql,/publication_control_execute/)
  assert.match(sql,/preview confirmation token mismatch/)

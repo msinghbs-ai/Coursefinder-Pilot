@@ -44,7 +44,7 @@ test('one component kit and "Layer N" wording', () => {
 })
 
 test('R12: Course coverage reports completeness states and the completeness score', () => {
-  const m = read('supabase/migrations/20260929190000_cf247_coverage_completeness_states.sql')
+  const m = read('supabase/migrations-archive/20260929190000_cf247_coverage_completeness_states.sql')
   expect(m).toContain("md5(prosrc) from pg_proc where oid='security.admin_course_coverage_read(text,jsonb)'::regprocedure)<>'a624cf66621a749cdd395cf530466927'")
   for (const s of ["'present'", "'source_null'", "'not_applicable'", "'zero'", "'suppressed'", "'not_yet_enriched'", "'stale'", "'ambiguous'", "'rejected'"]) expect(m).toContain(s)
   expect(m).toContain("'completeness_states'")

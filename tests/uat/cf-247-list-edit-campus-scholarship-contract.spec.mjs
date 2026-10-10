@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('database: locks extended, guard on both tables, role-checked edits logged, list read guarded', () => {
-  const m = fs.readFileSync('supabase/migrations/20261001150000_cf247_campus_scholarship_edit.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261001150000_cf247_campus_scholarship_edit.sql', 'utf8')
   expect(m).toContain("if v is distinct from '116a2708a1d1c91465a8c0a22fcfeafa' then")
   expect(m).toContain("check (entity in ('course','provider','campus','scholarship'))")
   expect(m).toContain("create trigger manual_lock_guard before update on catalogue.campuses for each row execute function security.manual_column_guard('campus');")

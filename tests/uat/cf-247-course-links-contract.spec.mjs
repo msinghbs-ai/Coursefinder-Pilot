@@ -8,7 +8,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 const COURSE = '0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5'
 
 test('database: link types, manual lock per link type, applicants, guarded edits, grants', () => {
-  const m = read('supabase/migrations/20261001170000_cf247_course_links_and_applicants.sql')
+  const m = read('supabase/migrations-archive/20261001170000_cf247_course_links_and_applicants.sql')
   for (const t of ['official_course', 'handbook', 'international_page', 'application', 'admission_centre', 'regulator_listing']) expect(m).toContain(`('${t}',`)
   expect(m).toContain("then 'official_url' else 'link:' || (r->>'link_type') end")
   expect(m).toContain("'8c7fe38930baf6eb8e666ccdabf472bb'")
@@ -22,13 +22,13 @@ test('database: link types, manual lock per link type, applicants, guarded edits
     expect(m).toContain(`revoke all on function public.${f} from public, anon;`)
     expect(m).toContain(`grant execute on function public.${f} to authenticated;`)
   }
-  const o = read('supabase/migrations/20261001171000_cf247_link_counts_official_only.sql')
+  const o = read('supabase/migrations-archive/20261001171000_cf247_link_counts_official_only.sql')
   expect(o).toContain("if added <> refs then raise exception")
   expect(o).toContain("array['search','refresh_course_documents_v2','be471e0af75dc59c275ef7ec1e772b1b']")
 })
 
 test('database: link refresh by country and provider; portals; never changes hand-set or reviewed links', () => {
-  const m = read('supabase/migrations/20261001172000_cf247_link_refresh_and_portals.sql')
+  const m = read('supabase/migrations-archive/20261001172000_cf247_link_refresh_and_portals.sql')
   expect(m).toContain('constraint link_refresh_policies_scope_key unique nulls not distinct (country_id, provider_id, link_type)')
   expect(m).toContain("order by (r.provider_id is not null) desc, (r.country_id is not null) desc")
   expect(m).toContain("and l.source_id is distinct from v_manual and l.source_id is distinct from v_l4")
@@ -38,13 +38,13 @@ test('database: link refresh by country and provider; portals; never changes han
 })
 
 test('database: admission rules per country; NZ in NZD only; AU exact title for links and intakes only', () => {
-  const m = read('supabase/migrations/20261001173000_cf247_country_admission_rules.sql')
+  const m = read('supabase/migrations-archive/20261001173000_cf247_country_admission_rules.sql')
   expect(m).toContain(`('AU', 'AUD', '{"official_url":["cricos_code","exact_title"],"intakes":["cricos_code","exact_title"],"english":["cricos_code"],"tuition":["cricos_code"]}'`)
   expect(m).toContain(`('NZ', 'NZD', '{"official_url":["cricos_code","exact_title"],"intakes":["cricos_code","exact_title"],"english":["cricos_code","exact_title"],"tuition":[]}'`)
   expect(m).toContain("if v_cur is distinct from c.currency_code then raise exception 'fee currency % does not match the country currency %'")
   expect(m).toContain("raise exception '%.%: anchor not found exactly once: %'")
   for (const h of ['2a55770ca342b56d9eb9c797dc12194b', 'c268e676e04011b4e981225cdf6dc018', '995ced9d6892b1512c5e168aafe2cbe3', '58751c63f6d4b573c1fd6697c93c019e', 'd767d484948e4fd03f8cc52fd3e64d88']) expect(m).toContain(`'${h}'`)
-  const f = read('supabase/migrations/20261001163000_cf247_tuition_handoff_au_only.sql')
+  const f = read('supabase/migrations-archive/20261001163000_cf247_tuition_handoff_au_only.sql')
   expect(f).toContain("join ref.countries k on k.id=pr.country_id and k.iso_alpha2='AU'")
 })
 
@@ -116,7 +116,7 @@ test('worker: course-link search runs in coverage-sweep, bounded and budgeted; t
   expect(w).toContain('await pool(items, Math.min(Number(body.concurrency || 6), 10), async (it) => {')
   expect(w).toContain('if (!(await useFc("course_link_search", it.provider_id, it.query)))')
   expect(w).toContain('const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1;') // v0.13.0 counts a JSON-format scrape at 5 credits
-  const m = read('supabase/migrations/20261001175000_cf247_link_search_in_worker.sql')
+  const m = read('supabase/migrations-archive/20261001175000_cf247_link_search_in_worker.sql')
   expect(m).toContain("if p_error in ('time budget', 'credit budget') then")
   expect(m).toContain("'ab94cc87e67ecf30cb35fac0c977161f'")
   expect(m).toContain("grant execute on function public.svc_course_link_search_next(int) to service_role;")

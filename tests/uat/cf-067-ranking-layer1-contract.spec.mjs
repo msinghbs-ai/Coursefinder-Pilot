@@ -12,11 +12,11 @@ test.describe('CF-067 QS THE Layer 1 ranking ingestion contract',()=>{
    fs.readFile('src/pim-version-entry.js','utf8'),
    fs.readFile('supabase/functions/layer1-operations-control/index.ts','utf8'),
    fs.readFile('supabase/functions/ranking-layer1-etl/index.ts','utf8'),
-   fs.readFile('supabase/migrations/20260902004533_cf_067_ranking_layer1_ingest_service_contract.sql','utf8'),
-   fs.readFile('supabase/migrations/20260902004608_cf_067_register_qs_the_layer1_sources.sql','utf8'),
-   fs.readFile('supabase/migrations/20260902004626_cf_067_layer1_global_source_projection.sql','utf8'),
-   fs.readFile('supabase/migrations/20260902004804_cf_067_layer1_ranking_source_metadata_projection.sql','utf8'),
-   fs.readFile('supabase/migrations/20260902011100_cf_068_qs_xhr_layer1_adapter_support.sql','utf8'),
+   fs.readFile('supabase/migrations-archive/20260902004533_cf_067_ranking_layer1_ingest_service_contract.sql','utf8'),
+   fs.readFile('supabase/migrations-archive/20260902004608_cf_067_register_qs_the_layer1_sources.sql','utf8'),
+   fs.readFile('supabase/migrations-archive/20260902004626_cf_067_layer1_global_source_projection.sql','utf8'),
+   fs.readFile('supabase/migrations-archive/20260902004804_cf_067_layer1_ranking_source_metadata_projection.sql','utf8'),
+   fs.readFile('supabase/migrations-archive/20260902011100_cf_068_qs_xhr_layer1_adapter_support.sql','utf8'),
   ])
 
   // 7 Oct 2026: rewritten to the current Layer 1 screen (the upload is the uploadRanking handler; version pins moved to release-manifest.js)

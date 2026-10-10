@@ -3,9 +3,9 @@ import fs from 'node:fs'
 
 // v2.15.215 (Platform Admin, 7 Oct 2026 20:28 and 22:12): guided adapter build with buttoned steps, and the Providers-list Adapter column.
 test('guided build: no schedule, existing functions per step, admit only ready fields', () => {
-  const fn = fs.readFileSync('supabase/migrations/20261007001901_cf247_adapter_autobuild_functions.sql', 'utf8')
+  const fn = fs.readFileSync('supabase/migrations-archive/20261007001901_cf247_adapter_autobuild_functions.sql', 'utf8')
   expect(fn).toContain("coalesce(v_rank, 0) < 5")
-  for (const f of ['20261007001902', '20261007001903', '20261007001904', '20261007001905']) expect(fs.readdirSync('supabase/migrations').some(x => x.startsWith(f))).toBe(false)
+  for (const f of ['20261007001902', '20261007001903', '20261007001904', '20261007001905']) expect(fs.readdirSync('supabase/migrations-archive').some(x => x.startsWith(f))).toBe(false)
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   expect(main).toContain("const adapterCol=type==='provider'&&!completenessMode&&Number(rank)>=6")
   expect(main).toContain("navigate?.('layer2',{tab:'builder',provider:r.id})")

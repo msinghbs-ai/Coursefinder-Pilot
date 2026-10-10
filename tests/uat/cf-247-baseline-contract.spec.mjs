@@ -1,7 +1,7 @@
 // CF-247 production readiness phase 4 (10 Oct 2026): the live schema baseline is held in git and the
 // rebuild test can never target the Pilot.
 import { test, expect } from '@playwright/test'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 
 const dir = 'supabase/live-capture/baseline'
@@ -34,6 +34,24 @@ test('rebuild applies the default-privileges preamble before the schema', () => 
   // the closing defaults in schema.sql restore the Pilot's defaults
   const schema = readFileSync(`${dir}/schema.sql`, 'utf8')
   expect(schema).toContain('ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";')
+})
+
+test('rebuild applies the extension-type grant postscript after the schema', () => {
+  const post = readFileSync(`${dir}/apply-postscript.sql`, 'utf8')
+  for (const f of ['"api"."query_embedding_cache_put"', '"api"."vector_candidates"', '"search"."course_candidates_v1"']) {
+    expect(post).toContain(`REVOKE ALL ON FUNCTION ${f}`)
+    expect(post).toContain(`GRANT ALL ON FUNCTION ${f}`)
+  }
+  expect(readFileSync('.github/workflows/db-baseline-rebuild-test.yml', 'utf8')).toContain('schema.sql supabase/live-capture/baseline/apply-postscript.sql >')
+})
+
+test('old migrations are archived and the migrations folder starts empty', () => {
+  const archived = readdirSync('supabase/migrations-archive').filter((f) => f.endsWith('.sql'))
+  expect(archived.length).toBe(1053)
+  expect(archived).toContain('20261010006300_cf247_course_detail_slim.sql')
+  const current = readdirSync('supabase/migrations')
+  expect(current.filter((f) => f.endsWith('.sql') && f < '20261011')).toEqual([])
+  expect(current).toContain('README.md')
 })
 
 test('rebuild test refuses the Pilot and any project not named coursefinder-baseline-test', () => {

@@ -19,7 +19,7 @@ test('Settings page: one page by pipeline step, backed by the read/write pair, l
   expect(ps).not.toContain("'budgets.firecrawl_monthly_limit'") // shown, changed on the Layer 2 provider record for now
   expect(ps).not.toContain('prompt_system') // prompts are shown by version and hash only
   expect(ps).not.toMatch(/toLocale|Intl\./)
-  const m = read('supabase/migrations/20261003001230_cf247_pipeline_settings_write_body.sql')
+  const m = read('supabase/migrations-archive/20261003001230_cf247_pipeline_settings_write_body.sql')
   expect(m).toContain("if auth.uid() is null or security.current_role_rank() < 6 then raise exception 'Platform Admin role required'")
   expect(m).not.toMatch(/updated_at = now\(\);\s*$/m) // every update carries a where clause
   expect(m).toContain("values ('settings', 'change', p_key, jsonb_build_object('value', p_value, 'before', v_before #> string_to_array(p_key, '.')), auth.uid())")

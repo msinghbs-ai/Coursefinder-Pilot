@@ -36,7 +36,7 @@ test('schedules read in plain words, times in Melbourne time (v2.15.131)', () =>
 })
 
 test('controls are guarded, logged and admin-only', () => {
-  const m = read('supabase/migrations/20260930050000_cf247_ui_control_sweep.sql')
+  const m = read('supabase/migrations-archive/20260930050000_cf247_ui_control_sweep.sql')
   for (const f of ['admin_automations_read', 'admin_automation_control', 'admin_requeue_read', 'admin_requeue', 'admin_scholarship_publishing_read', 'admin_scholarship_publishing']) {
     expect(m).toContain(`revoke all on function public.${f}(`)
   }
@@ -47,12 +47,12 @@ test('controls are guarded, logged and admin-only', () => {
   expect(m).toContain("insert into pipeline.admin_control_events")
   expect((m.match(/insert into pipeline\.automation_catalogue/g) || []).length).toBe(1)
   expect((m.match(/^ \('/gm) || []).length).toBe(58)
-  const f1 = read('supabase/migrations/20260930051000_cf247_ui_control_sweep_reason_groups.sql')
-  const f2 = read('supabase/migrations/20260930052000_cf247_ui_control_sweep_failed_counts.sql')
+  const f1 = read('supabase/migrations-archive/20260930051000_cf247_ui_control_sweep_reason_groups.sql')
+  const f2 = read('supabase/migrations-archive/20260930052000_cf247_ui_control_sweep_failed_counts.sql')
   expect(f1).toContain("'3eb0b56824f911f29298e5755e179adc'")
   expect(f2).toContain("'efd0bf3fb2468382aa45d0f194bed300'")
   expect(f2).toContain("not like 'released:%'")
-  const pin = read('supabase/migrations/20260930061000_cf247_l3_pinned_model_from_layer4.sql')
+  const pin = read('supabase/migrations-archive/20260930061000_cf247_l3_pinned_model_from_layer4.sql')
   expect(pin).toContain("'8e8733c8f2318d2614e1d77ad4b88400'")
   expect(pin).toContain("'f4f00fc0e7b957e9bd3d4b42c3fbb96d'")
   expect(pin).toContain('(t.active or t.profile_id=v_pin)')

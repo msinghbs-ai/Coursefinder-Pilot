@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('database: the waiting list is read-only, role-filtered and never fails as a whole', () => {
-  const m = fs.readFileSync('supabase/migrations/20261001130000_cf247_dashboard_waiting.sql', 'utf8')
+  const m = fs.readFileSync('supabase/migrations-archive/20261001130000_cf247_dashboard_waiting.sql', 'utf8')
   expect(m).toContain("where (r->>'min')::int <= v_rank")
   expect((m.match(/exception when others then null; end;/g) || []).length).toBe(9)
   expect(m).toContain('revoke all on function public.admin_waiting_read() from public, anon;')
