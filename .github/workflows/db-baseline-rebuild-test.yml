@@ -49,7 +49,7 @@ jobs:
           (cd supabase/live-capture/baseline && md5sum -c MD5SUMS)
           work="$RUNNER_TEMP/rebuild"; mkdir -p "$work/supabase/migrations"
           printf 'project_id = "coursefinder-baseline-test"\n' > "$work/supabase/config.toml"
-          cp supabase/live-capture/baseline/roles.sql "$work/supabase/migrations/20261010000000_baseline_roles.sql"
+          cp supabase/live-capture/baseline/roles-apply.sql "$work/supabase/migrations/20261010000000_baseline_roles.sql"
           cp supabase/live-capture/baseline/schema.sql "$work/supabase/migrations/20261010000001_baseline_schema.sql"
           cd "$work"
           supabase link --project-ref "$REF" 2>&1 | tee "$RUNNER_TEMP/push.log"
