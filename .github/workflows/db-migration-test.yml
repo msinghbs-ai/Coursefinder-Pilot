@@ -1,0 +1,44 @@
+# Database migration test. CF-247 (10 Oct 2026): run new migration files against the throwaway project
+# coursefinder-baseline-test (built from the baseline) before they are applied to the Pilot, so syntax, guards and
+# post-checks are proven first. Each file is sent whole, in order, through the Management API.
+# Safety: the target must NOT be the Pilot (repository variable SUPABASE_PROJECT_REF) and must be named exactly
+# "coursefinder-baseline-test". Results are reported as annotations.
+name: Database migration test
+on:
+  workflow_dispatch:
+    inputs:
+      test_project_ref:
+        description: "Ref of the throwaway project named coursefinder-baseline-test"
+        required: true
+      files:
+        description: "Comma-separated migration files under supabase/migrations, applied in this order"
+        required: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ inputs.test_project_ref }}
+      FILES: ${{ inputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm the target is the throwaway test project
+        run: |
+          if ! [[ "$REF" =~ ^[a-z]{20}$ ]]; then echo "::error::Refused: not a project ref"; exit 1; fi
+          if [ "$REF" = "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Refused: that is the Pilot project"; exit 1; fi
+          name=$(curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" | jq -r '.name // "unknown"')
+          if [ "$name" != "coursefinder-baseline-test" ]; then echo "::error::Refused: project is named '$name'"; exit 1; fi
+      - name: Apply the files in order
+        run: |
+          IFS=',' read -ra LIST <<< "$FILES"
+          for raw in "${LIST[@]}"; do
+            f="$(echo "$raw" | xargs)"
+            if ! [[ "$f" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]] || [ ! -f "supabase/migrations/$f" ]; then echo "::error::Refused file: $f"; exit 1; fi
+            jq -n --rawfile q "supabase/migrations/$f" '{query:$q}' > q.json
+            code=$(curl -sS -o r.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query")
+            msg=$(head -c 600 r.json | tr -d '\n')
+            if [ "$code" -ge 200 ] && [ "$code" -lt 300 ]; then echo "::notice::$f applied (HTTP $code; md5 $(md5sum < "supabase/migrations/$f" | cut -c1-8))"
+            else echo "::error::$f failed (HTTP $code): $msg"; exit 1; fi
+          done
