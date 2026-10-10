@@ -54,7 +54,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.3"; // v0.6.3 (11 Oct 2026): academi
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.17.39"; // v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.17.42"; // v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -263,9 +263,9 @@ Deno.serve(async (req) => {
     const isTarget = (providerId: string | null) => !targetOnly || (!!providerId && targetIds.has(providerId));
     // v0.15.1: switched-on university adapters, by provider (pipeline.uni_adapters, set in the UI)
     const adapters: Record<string, any> = ["read", "fc_run"].includes(mode) ? (await rpc("svc_uni_adapters", {}).catch(() => null)) || {} : {};
-    const useFc = async (purpose: string, providerId: string | null, url: string) => {
+    const useFc = async (purpose: string, providerId: string | null, url: string, anyProvider = false) => {
       if (!fc?.secret || fcRemaining < 1) return false;
-      if (!isTarget(providerId)) return false;
+      if (!anyProvider && !isTarget(providerId)) return false;
       const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1; if (fcRemaining < units) return false; // v0.13.0: a JSON-format scrape costs 5 credits
       if (purpose.startsWith("sch_")) { if (schLeft < units) return false; schLeft -= units }
       fcRemaining -= units; await rpc("svc_coverage_usage", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true;
@@ -284,6 +284,27 @@ Deno.serve(async (req) => {
         status = html && mainText(html).length >= 300 ? "read" : html ? "too_thin" : http === 404 || http === 410 ? "gone" : [401, 403, 406, 429].includes(http) ? "blocked" : r.ok ? "not_html" : "fetch_failed";
       } catch { status = "fetch_failed" }
       return { status, http, html, finalUrl };
+    };
+    // v0.17.40: scholarship reads go through the scraper first while the setting read_via_scraper is on (any provider, within
+    // the scholarship credit cap). robots.txt is still respected. A direct read is the fallback when the scraper cannot be used
+    // or returns nothing.
+    const schScraper = !!schBudget && Number(schBudget.scraper ?? 1) >= 1;
+    const readSch = async (url: string, providerId: string | null) => {
+      if (schScraper) {
+        let u: URL | null = null; try { u = new URL(url) } catch { return { status: "fetch_failed", http: null as number | null, html: "", finalUrl: url, via: null as string | null } }
+        if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) return { status: "robots_disallowed", http: null as number | null, html: "", finalUrl: url, via: null as string | null };
+        if (await useFc("sch_scrape", providerId, url, true)) {
+          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+          const d = r ? await r.json().catch(() => ({})) : {};
+          const code = Number(d?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
+          const html = r?.ok && code !== null && code < 400 ? pageHtml(d) : "";
+          const finalUrl = String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || url);
+          if (html && mainText(html).length >= 300) return { status: "read", http: code, html, finalUrl, via: "firecrawl" as string | null };
+          if (code === 404 || code === 410) return { status: "gone", http: code, html: "", finalUrl, via: "firecrawl" as string | null };
+        }
+      }
+      const pg = await readDirect(url);
+      return { ...pg, via: pg.html ? "direct" as string | null : null };
     };
 
     if (mode === "discover") {
@@ -806,9 +827,21 @@ Deno.serve(async (req) => {
     if (mode === "scholarship_read") {
       const items: { scholarship_id: string; url: string; name: string; provider_id: string; currency?: string; url_source?: string; names?: string[] }[] = await rpc("svc_scholarship_read_next", { p_limit: Math.min(Number(body.limit || 20), 40) });
       const tally: Record<string, number> = {}; const applied: unknown[] = [];
+      // v0.17.42: pages are read six at a time but recorded at most two at a time (each record rebuilds course links and takes
+      // 1-2 seconds; six at once pushed some past the database's 8-second limit)
+      let recSlots = 2; const recWait: (() => void)[] = [];
+      const recLock = async () => { if (recSlots > 0) { recSlots--; return } await new Promise<void>((ok) => recWait.push(ok)) };
+      const recUnlock = () => { const n = recWait.shift(); if (n) n(); else recSlots++ };
       await pool(items, 6, async (it) => {
+        // v0.17.40: an item not started in time stays leased and is picked again after the lease (10 minutes)
+        if (Date.now() - t0 > BUDGET_MS - 30000) { tally.deferred = (tally.deferred || 0) + 1; return }
         let status = "fetch_failed", http: number | null = null, via: string | null = null, html = "", finalUrl = it.url;
-        try {
+        if (schScraper) {
+          const pg = await readSch(it.url, it.provider_id);
+          status = pg.status === "read" ? "read" : pg.status; http = pg.http; via = pg.via; finalUrl = pg.finalUrl || it.url;
+          html = pg.status === "read" || pg.status === "too_thin" ? pg.html : "";
+          if (!["read", "too_thin", "gone", "blocked", "robots_disallowed"].includes(status)) status = "fetch_failed";
+        } else try {
           const u = new URL(it.url);
           if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) status = "robots_disallowed";
           else {
@@ -847,11 +880,19 @@ Deno.serve(async (req) => {
           const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
           if (up.error) { path = null; sha = null }
         }
-        const res = await rpc("svc_scholarship_read_record", { p_scholarship_id: it.scholarship_id, p_read_status: status, p_http_status: http, p_fetched_via: via, p_final_url: finalUrl, p_storage_path: path, p_sha256: sha, p_facts: facts });
+        // v0.17.41: a record that hits the database time limit is tried once more; if it fails again the page stays leased and
+        // is read again after the lease, and the rest of the run carries on (one slow record no longer fails the whole call)
+        const recArgs = { p_scholarship_id: it.scholarship_id, p_read_status: status, p_http_status: http, p_fetched_via: via, p_final_url: finalUrl, p_storage_path: path, p_sha256: sha, p_facts: facts };
+        let res: any = null;
+        await recLock();
+        try {
+          try { res = await rpc("svc_scholarship_read_record", recArgs) }
+          catch { await new Promise((ok) => setTimeout(ok, 1500)); try { res = await rpc("svc_scholarship_read_record", recArgs) } catch { tally.record_failed = (tally.record_failed || 0) + 1; return } }
+        } finally { recUnlock() }
         if (res?.changes?.length) applied.push({ scholarship_id: it.scholarship_id, changes: res.changes });
         tally[status] = (tally[status] || 0) + 1;
       });
-      return j({ ok: true, mode, items: items.length, tally, applied, firecrawlRemainingAboveReserve: fcRemaining, scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
+      return j({ ok: true, mode, items: items.length, tally, applied, readVia: schScraper ? "scraper" : "direct", firecrawlRemainingAboveReserve: fcRemaining, scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
     }
     // 1 Oct 2026 (Decision 204): course-link search runs here, a bounded number at a time, instead of through the
     // database's outbound queue (pg_net), which sends in rounds of 200 and waits for the slowest call. Each result is
@@ -1081,12 +1122,12 @@ Deno.serve(async (req) => {
       const rows: { id: number; provider_id: string; url: string; hosts: string[] }[] = await rpc("svc_scholarship_listing_next", { p_limit: Math.min(Number(body.limit || 6), 20) });
       const out: unknown[] = [];
       await pool(rows, 3, async (r) => {
-        const pg = await readDirect(r.url);
+        const pg = await readSch(r.url, r.provider_id);
         const items = pg.status === "read" ? scholarshipListing(pg.html, pg.finalUrl || r.url, r.hosts || []) : [];
         await rpc("svc_scholarship_listing_record", { p_id: r.id, p_status: pg.status === "read" ? "read" : "failed", p_http_status: pg.http, p_items: items, p_error: pg.status === "read" ? null : pg.status });
         out.push({ id: r.id, status: pg.status, items: items.length });
       });
-      return j({ ok: true, mode, pages: out, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
+      return j({ ok: true, mode, pages: out, readVia: schScraper ? "scraper" : "direct", scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
     }
     if (mode === "scholarship_reextract") {
       const rows: { scholarship_id: string; storage_path: string }[] = await rpc("svc_scholarship_reextract_next", { p_limit: Math.min(Number(body.limit || 100), 300), p_version: SCH_VERSION });
@@ -1122,7 +1163,7 @@ Deno.serve(async (req) => {
             admission: admissionCheck(html, r.url, host), facts: scholarshipFacts(html, titleOf(html) + " " + h1Of(html), r.name || ""), text: text.slice(0, chars) });
         } catch (e) { out.push({ ...r, error: e instanceof Error ? e.message : String(e) }) }
       });
-      return j({ ok: true, mode, pages: out, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
+      return j({ ok: true, mode, pages: out, readVia: schScraper ? "scraper" : "direct", scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
     // v0.10.0 (2 Oct 2026, map-first link matcher): for a course with no verified page, one pinned model picks the
     // course's own page from the 25 closest addresses in its university's stored site map, or none. The choice must be

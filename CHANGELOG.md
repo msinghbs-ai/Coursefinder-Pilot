@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.169 — 11 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.242** (scholarships read through the scraper, S7; Platform Admin request 11 Oct 2026). Scholarship pages and provider listing pages are read through Firecrawl first (rendered page), for every provider, within the scholarship credit cap; a direct read is the fallback. New Layer 2 setting "Read scholarship pages through the scraper" (on/off switch on Scholarships › Coverage › Settings and jobs). Database: `20261011008200` (setting; svc_scholarship_fc_budget passes it to the worker; credit cap 6,000 to 12,000; every active scholarship page and listing page queued to be read again), applied by the Database apply migration workflow. Worker coverage-sweep v0.17.42 (records at most two at a time; a slow record is retried once and no longer fails the run). On/off scholarship settings show as switches.
+
 ## 0.1.168 — 11 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.241** (rename to StudySearch, S6; customer request 11 Oct 2026). App text, mark, titles and guide renamed. Database: `20261011007700` (82 functions: the word CourseFinder in messages and labels becomes StudySearch; md5-guarded), applied by the Database apply migration workflow. Repositories, web address, Wix/Zoho contract names, saved screen settings and reader user agents unchanged until production.
