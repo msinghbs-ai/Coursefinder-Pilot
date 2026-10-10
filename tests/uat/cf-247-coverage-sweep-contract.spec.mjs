@@ -88,7 +88,8 @@ test('worker and database contract: nothing written to the catalogue, budget gua
   expect(w).not.toContain('svc_coursefacts_apply_record')
   expect(w).toContain('robotsAllows(')
   expect(w).toContain('status = "needs_render"')
-  expect(w).toContain('const ok = codeRe.test(htmlToText(html));')
+  expect(w).toContain('const found = codeRe.test(htmlToText(html));')
+  expect(w).toContain('const ok = found && (home || fits) && !SKIP.test(finalHost);')
   expect(w).toContain('const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1;') // v0.13.0 counts a JSON-format scrape at 5 credits
   expect(w).toContain('(it.status === "bound" || it.priority === true) && (http === null')
   const m = fs.readFileSync('supabase/migrations-archive/20260929120000_cf247_coverage_sweep.sql', 'utf8')
