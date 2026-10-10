@@ -1,0 +1,64 @@
+# Database function snapshot (read-only). CF-247 production readiness, phase 1 (10 Oct 2026).
+# Reads the live definitions of database functions whose name matches a pattern and commits
+# them to a snapshot branch (db-function-snapshot/<run id>), one file per function, with a
+# manifest of md5 values, so live-only functions can be copied into git byte-for-byte.
+# Only a SELECT runs; nothing in the project changes. The snapshot branch is never merged.
+# Uses the same secret and project-ref safety check as "Deploy edge functions".
+name: Database function snapshot
+on:
+  workflow_dispatch:
+    inputs:
+      name_pattern:
+        description: "Postgres regular expression for function names, e.g. ^website_v2_"
+        required: true
+      project_ref:
+        description: "Type the target project ref to confirm"
+        required: true
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PATTERN: ${{ inputs.name_pattern }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm target project
+        run: |
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ "${{ inputs.project_ref }}" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
+          if ! [[ "$PATTERN" =~ ^[][A-Za-z0-9_^$|().*+?-]+$ ]]; then echo "Refused pattern"; exit 1; fi
+      - name: Read live definitions
+        run: |
+          pat="${PATTERN//\'/\'\'}"
+          sql="select n.nspname as schema, p.proname as name, pg_get_function_identity_arguments(p.oid) as args, replace(pg_get_functiondef(p.oid), E'\r', '') as def, md5(replace(pg_get_functiondef(p.oid), E'\r', '')) as md5 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where p.prokind = 'f' and n.nspname not in ('pg_catalog','information_schema') and p.proname ~ '$pat' order by 1, 2, 3"
+          jq -n --arg q "$sql" '{query:$q, read_only:true}' > "$RUNNER_TEMP/q.json"
+          code=$(curl -sS -o "$RUNNER_TEMP/rows.json" -w '%{http_code}' -X POST "https://api.supabase.com/v1/projects/${{ inputs.project_ref }}/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @"$RUNNER_TEMP/q.json")
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "Query failed ($code)"; head -c 500 "$RUNNER_TEMP/rows.json"; exit 1; fi
+          echo "Functions read: $(jq length "$RUNNER_TEMP/rows.json")" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Commit to a snapshot branch
+        run: |
+          out=supabase/live-capture/functions
+          rm -rf "$out"; mkdir -p "$out"
+          printf 'schema\tname\targs\tmd5\tfile\n' > "$out/MANIFEST.tsv"
+          n=$(jq length "$RUNNER_TEMP/rows.json")
+          for i in $(seq 0 $((n - 1))); do
+            schema=$(jq -r ".[$i].schema" "$RUNNER_TEMP/rows.json"); name=$(jq -r ".[$i].name" "$RUNNER_TEMP/rows.json")
+            args=$(jq -r ".[$i].args" "$RUNNER_TEMP/rows.json"); md5=$(jq -r ".[$i].md5" "$RUNNER_TEMP/rows.json")
+            file="$schema.$name.$(printf '%s' "$args" | md5sum | cut -c1-8).sql"
+            jq -j ".[$i].def" "$RUNNER_TEMP/rows.json" > "$out/$file"
+            got=$(md5sum < "$out/$file" | cut -d' ' -f1)
+            if [ "$got" != "$md5" ]; then echo "md5 mismatch for $file ($got vs $md5)"; exit 1; fi
+            printf '%s\t%s\t%s\t%s\t%s\n' "$schema" "$name" "$args" "$md5" "$file" >> "$out/MANIFEST.tsv"
+          done
+          branch="db-function-snapshot/${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b "$branch"
+          git add -A "$out"
+          git commit -q -m "Live database function snapshot (run ${{ github.run_id }}; pattern $PATTERN)"
+          git push -q origin "$branch"
+          echo "Snapshot branch: $branch" | tee -a "$GITHUB_STEP_SUMMARY"
