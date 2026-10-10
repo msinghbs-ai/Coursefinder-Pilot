@@ -5,7 +5,7 @@ import fs from 'node:fs'
 
 test('worker reads scholarship and listing pages through the scraper first, direct as fallback', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.17.41"')
+  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.17.42"')
   expect(w).toContain('const schScraper = !!schBudget && Number(schBudget.scraper ?? 1) >= 1;')
   expect(w).toContain('await useFc("sch_scrape", providerId, url, true)') // any provider, within the scholarship cap
   expect(w).toContain('formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500')
