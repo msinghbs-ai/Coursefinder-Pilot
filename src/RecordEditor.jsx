@@ -24,6 +24,9 @@ function useRecord(read,idKey,id,onError){
   return[data,setData,busy,setBusy,load]
 }
 
+// v2.15.233 (Feature 1): whose an address is. Only the provider's own site, the regulator or a value entered by hand is used.
+const SITE_VERDICT={own:['Provider\u2019s own site','tone-success'],regulator:['Regulator','tone-info'],third_party:['Third-party site: not used','tone-danger'],unconfirmed:['Not confirmed as the provider\u2019s own','tone-warning']}
+function SiteVerdict({v}){const x=SITE_VERDICT[v];return x?<small className={`cf-chip ${x[1]}`} data-site-verdict={v}>{x[0]}</small>:null}
 function LockNote({lock,onRelease,can}){
   // v2.15.225: a short coloured pill; the release link stays beside it
   if(!lock)return <span className="re-auto">Automated</span>
@@ -168,7 +171,7 @@ export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=
   const ed=k=>({editing:editing===k,setEditing:x=>setEditing(x?k:'')})
   const text=(key,label,opts={})=><Row key={key} wide={Boolean(opts.multiline)} label={label} lock={locks[key]} can={can} onRelease={()=>release(key)} {...ed(key)}
       editor={<TextEdit value={p[key]} type={opts.type} multiline={opts.multiline} placeholder={opts.placeholder} busy={busy} onSave={v=>act('set_core',{field:key,value:v})} onCancel={()=>setEditing('')}/>}>
-      {opts.link&&p[key]?<a href={p[key]} target="_blank" rel="noreferrer" className="cf-link">{p[key]}</a>:<span className={opts.multiline?'re-desc':''}>{p[key]||'—'}</span>}</Row>
+      {opts.link&&p[key]?<><a href={p[key]} target="_blank" rel="noreferrer" className="cf-link">{p[key]}</a>{opts.extra}</>:<span className={opts.multiline?'re-desc':''}>{p[key]||'—'}</span>}</Row>
   const manualCount=Object.keys(locks).length
   return <section className="m-detail-section re-panel" data-editor="provider">
     {inline?<div className="re-toggle re-static"><Pencil size={14}/><span><strong>Provider values</strong><small>{manualCount?`${manualCount} value${manualCount===1?'':'s'} entered by hand`:'All from automation'}</small></span></div>
@@ -177,12 +180,12 @@ export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=
       {!data.can_edit&&<p className="l3v-note">You can view these values. A Curator or above can change them.</p>}
       {data.can_edit&&<label className="re-reason"><small>Reason for the change (optional)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
       {text('display_name','Name shown')}
-      {text('website','Website',{type:'url',link:true,placeholder:'https://'})}
+      {text('website','Website',{type:'url',link:true,placeholder:'https://',extra:<> <SiteVerdict v={p.website_verdict}/></>})}
       {inline&&text('primary_city','City')}
       <ProviderApplicants providerId={providerId} onChanged={onChanged} onError={onError}/>
       <Row label="Course finder address" lock={locks.course_finder} can={can} onRelease={()=>release('course_finder')} {...ed('finder')}
         editor={<TextEdit value={cf?.address} type="url" placeholder="https://… the page or site that lists the courses" busy={busy} onSave={v=>act('set_course_finder',{url:v},'Use this address to find course pages? The provider goes back into page discovery.')} onCancel={()=>setEditing('')}/>}>
-        {cf?.address?<><a href={cf.address} target="_blank" rel="noreferrer" className="cf-link">{cf.address}</a><span className="l3v-code">{[cf.status,cf.pages_found!=null&&`${fmtNumber(cf.pages_found)} course pages found`,cf.mapped_at&&`last looked ${fmtDateTime(cf.mapped_at)}`].filter(Boolean).join(' · ')}</span></>:'—'}
+        {cf?.address?<><a href={cf.address} target="_blank" rel="noreferrer" className="cf-link">{cf.address}</a> <SiteVerdict v={cf.verdict}/><span className="l3v-code">{[cf.status,cf.pages_found!=null&&`${fmtNumber(cf.pages_found)} course pages found`,cf.mapped_at&&`last looked ${fmtDateTime(cf.mapped_at)}`].filter(Boolean).join(' · ')}</span></>:<span className="l3v-code">{cf?.status==='no_website'?'Not found yet: the website search is looking for the provider\u2019s own site':'—'}</span>}
       </Row>
       {inline&&text('description','Description',{multiline:true})}
       {facts}
