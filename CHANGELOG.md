@@ -2,7 +2,7 @@
 
 ## 0.1.169 — 11 Oct 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.242** (scholarships read through the scraper, S7; Platform Admin request 11 Oct 2026). Scholarship pages and provider listing pages are read through Firecrawl first (rendered page), for every provider, within the scholarship credit cap; a direct read is the fallback. New Layer 2 setting "Read scholarship pages through the scraper" (on/off switch on Scholarships › Coverage › Settings and jobs). Database: `20261011008200` (setting; svc_scholarship_fc_budget passes it to the worker; credit cap 6,000 to 12,000; every active scholarship page and listing page queued to be read again), applied by the Database apply migration workflow. Worker coverage-sweep v0.17.40. On/off scholarship settings show as switches.
+- Prepared visible PIM Admin release candidate **v2.15.242** (scholarships read through the scraper, S7; Platform Admin request 11 Oct 2026). Scholarship pages and provider listing pages are read through Firecrawl first (rendered page), for every provider, within the scholarship credit cap; a direct read is the fallback. New Layer 2 setting "Read scholarship pages through the scraper" (on/off switch on Scholarships › Coverage › Settings and jobs). Database: `20261011008200` (setting; svc_scholarship_fc_budget passes it to the worker; credit cap 6,000 to 12,000; every active scholarship page and listing page queued to be read again), applied by the Database apply migration workflow. Worker coverage-sweep v0.17.41 (a slow record is retried once and no longer fails the run). On/off scholarship settings show as switches.
 
 ## 0.1.168 — 11 Oct 2026
 
