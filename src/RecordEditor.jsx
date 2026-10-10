@@ -161,6 +161,24 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
 // the provider's values with their Change buttons as soon as the drawer opens, grouped by priority — identity (name,
 // website, city, course finder, applicants, description), then the read-only facts passed in `facts`, then contact
 // details — so the page reads header › provider values › contacts › rankings. The fold stays for older callers.
+export const ARCHIVE_SOURCE={layer1_departure:'Left the register',manual:'Archived by hand',departure_review:'Closed or merged (departure review)'}
+export const ARCHIVE_REASONS=['Closed or no longer operating','Merged into another provider','No longer enrols international students','Duplicate record','Other']
+// v2.15.238 (R5, Feature 7): archiving a provider by hand shows what will happen first (courses, campuses and scholarships hidden; adapter,
+// course link search and waiting reviews switched off; background work stops), then asks for one of a few reasons. No typing needed.
+export function ArchiveChecklist({providerId,busy:outerBusy,onDone,onError}){
+  const[open,setOpen]=useState(false),[prev,setPrev]=useState(null),[reason,setReason]=useState(ARCHIVE_REASONS[0]),[busy,setBusy]=useState(false)
+  const load=async()=>{setOpen(true);setPrev(null);try{const{data,error}=await supabase.rpc('admin_provider_archive',{p_provider_id:providerId,p_preview:true});if(error)throw error;setPrev(data)}catch(e){onError?.(errText(e));setOpen(false)}}
+  const go=async()=>{setBusy(true);try{const{error}=await supabase.rpc('admin_provider_archive',{p_provider_id:providerId,p_reason:reason,p_preview:false});if(error)throw error;const{data,error:e2}=await supabase.rpc('admin_provider_edit_read',{p_provider_id:providerId});if(e2)throw e2;setOpen(false);onDone?.(data)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!open)return <Button compact variant="danger" onClick={load} disabled={outerBusy}><Archive size={13}/>Archive provider…</Button>
+  return <div className="re-archive" data-archive-checklist role="group" aria-label="Archive this provider">
+    <strong>Archive {prev?.name||'this provider'}?</strong>
+    {!prev?<Loading label="Checking what archiving changes…"/>:<ul>{(prev.items||[]).map(i=><li key={i.key} data-archive-item={i.key}>{i.count!=null&&<b>{fmtNumber(i.count)}</b>} {i.effect}</li>)}</ul>}
+    <label>Reason <select className="fv-input" value={reason} onChange={e=>setReason(e.target.value)} aria-label="Reason for archiving">{ARCHIVE_REASONS.map(r=><option key={r}>{r}</option>)}</select></label>
+    <div className="re-archive-actions"><Button compact variant="danger" onClick={go} disabled={busy||!prev}><Archive size={13}/>{busy?'Archiving…':'Archive provider'}</Button><Button compact onClick={()=>setOpen(false)} disabled={busy}><X size={13}/>Cancel</Button></div>
+    <small className="l3v-code">It can be restored from Providers › Archived; restoring switches back on what was switched off.</small>
+  </div>
+}
+
 export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=null}){
   const[data,setData,busy,setBusy]=useRecord('admin_provider_edit_read','p_provider_id',providerId,onError)
   const[open,setOpen]=useState(inline),[editing,setEditing]=useState(''),[reason,setReason]=useState('')
@@ -204,9 +222,11 @@ export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=
           <span className="l3v-code">{[data.regulatory_contact.phone,data.regulatory_contact.email].filter(Boolean).join(' · ')}{data.regulatory_contact.url?<> · <a href={data.regulatory_contact.url} target="_blank" rel="noreferrer" className="cf-link">CRICOS page</a></>:null}{data.regulatory_contact.at?` · read ${fmtDateTime(data.regulatory_contact.at)}`:''}</span></>
           :<span className="l3v-code">{!data.regulatory_check?'Not read yet: the CRICOS contact job reads every provider in turn.':data.regulatory_check.outcome==='leased'?'Being read now.':data.regulatory_check.outcome==='budget'?'Waiting: Firecrawl is at its reserve.':`Not found on the CRICOS website (${fmtDateTime(data.regulatory_check.at)}).`}</span>}</div></div></div>}
       {!inline&&text('description','Description',{multiline:true})}
-      {data.can_manage&&<div className="re-manage"><span>Provider status: <StatusChip value={p.lifecycle_status} tone={p.lifecycle_status==='active'?'success':'warning'} label={p.lifecycle_status==='active'?'Active':'Archived'}/></span>
-        {p.lifecycle_status==='active'?<Button compact variant="danger" onClick={()=>act('archive',{},'Archive this provider? Its courses stay as they are. You can restore it later.')} disabled={busy}><Archive size={13}/>Archive provider</Button>
-          :<Button compact onClick={()=>act('restore')} disabled={busy}><RotateCcw size={13}/>Restore provider</Button>}</div>}
+      {/* v2.15.238 (R5, Features 6 and 7): archive goes through a checklist that says what happens; restore switches back on what it switched off */}
+      {data.can_manage&&<div className="re-manage"><span>Provider status: <StatusChip value={p.lifecycle_status} tone={p.lifecycle_status==='active'?'success':'warning'} label={p.lifecycle_status==='active'?'Active':'Archived'}/>
+          {data.archive&&<small className="l3v-code" data-archive-why> {ARCHIVE_SOURCE[data.archive.source]||'Archived'}: {data.archive.reason} · {fmtDateTime(data.archive.at)}</small>}</span>
+        {p.lifecycle_status==='active'?<ArchiveChecklist providerId={providerId} busy={busy} onDone={d=>{setData(d);onChanged?.()}} onError={onError}/>
+          :<Button compact onClick={async()=>{setBusy(true);try{const{error}=await supabase.rpc('admin_provider_restore',{p_provider_id:providerId});if(error)throw error;const{data:d,error:e2}=await supabase.rpc('admin_provider_edit_read',{p_provider_id:providerId});if(e2)throw e2;setData(d);onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}} disabled={busy}><RotateCcw size={13}/>Restore provider</Button>}</div>}
       <HistoryList rows={data.history}/>
     </div>}
   </section>

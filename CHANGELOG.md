@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.165 — 11 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.238** (Platform Admin bug list of 10 Oct 2026, R5: Features 5, 6 and 7; decision "New 'archived' status"). Database: `20261010007000` (md5-guarded): pipeline.provider_archives; archive and restore clean-up workflow with a checklist (status archived, unpublished, adapter and course link search off, waiting reviews superseded; restored exactly); Layer 1 departures archive and restore providers automatically; admin_archive_read; course archive by hand rebuilds search; non-active courses blocked from consumer APIs. Providers › Archived screen; lists show active records by default.
+
 ## 0.1.164 — 10 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.237** (Platform Admin bug list of 10 Oct 2026, R4 part 2: Feature 4, pause work). Database: `20261010006900` (md5-guarded): 20 automatic pickers skip providers in security.provider_hidden_v1 (unpublished or not active); hand-started admin work is not blocked; wrong public contact emails cleared and re-read. Worker coverage-sweep v0.17.35: contact emails must be on the provider's own domain (registrable name) and library, vet hospital, ethics, philanthropy, partnership, facilities and research mailboxes are skipped.

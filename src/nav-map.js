@@ -17,6 +17,8 @@ export const PAGES = {
     { key: 'campuses', label: 'Campuses', min: 1 },
     { key: 'assets', label: 'Logos & assets', min: 4 },
     { key: 'onboarding', label: 'Onboarding', min: 3 },
+    // v2.15.238 (R5, Feature 6): archived providers and courses that are not active, with why, and Restore
+    { key: 'archived', label: 'Archived', min: 3 },
   ] },
   scholarships: { label: 'Scholarships', slug: 'scholarships', icon: 'scholarship', subtitle: 'Scholarships, where each value came from, and what is published.', tabs: [
     { key: 'list', label: 'Scholarships', min: 1 },

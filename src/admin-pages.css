@@ -162,6 +162,17 @@ td>.l3v-model{display:block}
 .re-year{width:120px}.re-score{width:150px}.re-amount{width:180px}.re-text{width:100%;resize:vertical}
 .re-foot{display:flex;gap:6px}
 .re-manage{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-top:4px;font-size:var(--cf-fs-sm)}
+/* v2.15.238 (R5): archive checklist and the Archived review screen */
+.re-archive{display:grid;gap:8px;width:100%;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);background:var(--cf-slate-50);padding:10px}
+.re-archive ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:var(--cf-fs-xs);color:var(--cf-slate-700)}
+.re-archive label{display:grid;gap:4px;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.re-archive-actions{display:flex;gap:6px;flex-wrap:wrap}
+.ar-review{display:grid;gap:12px}
+.ar-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.ar-tabs button{border:1px solid var(--cf-slate-200);background:var(--cf-white);border-radius:var(--cf-radius-pill);padding:5px 10px;font-size:var(--cf-fs-xs);color:var(--cf-slate-700);cursor:pointer}
+.ar-tabs button.active{background:var(--cf-indigo-50);border-color:var(--cf-indigo-200);color:var(--cf-indigo-700);font-weight:700}
+.ar-why{font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+.ar-pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
 .re-history summary{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(--cf-slate-600);font-size:var(--cf-fs-xs);font-weight:800}
 .re-history ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px}.re-history li{display:grid;grid-template-columns:130px 1fr;gap:2px 8px;font-size:var(--cf-fs-xs)}.re-history li small{grid-column:2;color:var(--cf-slate-500)}
 .re-modal-backdrop{position:fixed;inset:0;background:color-mix(in srgb,var(--cf-slate-900) 45%,transparent);display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:80;overflow:auto}
