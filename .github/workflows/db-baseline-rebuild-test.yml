@@ -27,8 +27,9 @@ jobs:
         run: |
           if ! [[ "$REF" =~ ^[a-z]{20}$ ]]; then echo "::error::Refused: not a project ref"; exit 1; fi
           if [ "$REF" = "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Refused: that is the Pilot project"; exit 1; fi
-          name=$(curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" | jq -r '.name // "unknown"' || echo "lookup failed")
-          echo "::notice::Project name: $name"
+          code=$(curl -sS -o p.json -w '%{http_code}' -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" || echo 000)
+          name=$(jq -r '.name // "unknown"' p.json 2>/dev/null || echo unknown)
+          echo "::notice::Project lookup HTTP $code; name: $name; body: $(jq -c 'if type=="object" then {name,status,region,message,error} else . end' p.json 2>/dev/null | head -c 300)"
           if [ "$name" != "coursefinder-baseline-test" ]; then echo "::error::Refused: project is named '$name'"; exit 1; fi
           q="select count(*)::int as n from pg_tables where schemaname not in ('pg_catalog','information_schema','auth','storage','realtime','vault','extensions','supabase_migrations','net','cron','graphql','pgsodium','supabase_functions','_realtime')"
           jq -n --arg q "$q" '{query:$q, read_only:true}' > q.json
