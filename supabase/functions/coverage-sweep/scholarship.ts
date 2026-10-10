@@ -526,3 +526,36 @@ export function admissionCheck(html: string, finalUrl: string, providerHost: str
   if (name && /\b(award|grant)s?\b/i.test(name) && !/scholarship|bursary|fee/i.test(name) && !/(tuition|scholarship|stipend|bursary)/i.test(text.slice(0, 6000))) reasons.push("not_a_scholarship");
   return { admit: reasons.length === 0, name, reasons, international_explicit: intl.explicit, offered: off.ok, detail_page: !reasons.includes("listing_page") && !!name, listing_links: listingLinks(html, finalUrl) };
 }
+
+// ---------------------------------------------------------------------------------------------------------------
+// v0.6.4 (CF-247 v2.15.240, 11 Oct 2026): a provider's scholarship LISTING page (Curtin's "International scholarships" lists 7).
+// Kept: links and headings in the page's main content whose words name one scholarship (scholarship, bursary, award, grant, fee
+// reduction ...). Left out: navigation, header, footer and side panels; general links ("Scholarships", "Find a scholarship", "How
+// to apply", "Terms and conditions"); links to other sites. Each item is { name, url } (url null for a heading with no link).
+const ITEM_WORDS = /\b(scholarships?|bursar(?:y|ies)|awards?|grants?|fellowships?|fee (?:reduction|remission|waiver|discount)|tuition (?:discount|reduction|waiver))\b/i;
+const NOT_ITEM = /^(?:(?:international|domestic|research|postgraduate|undergraduate|current|future|all|other|more|our|find|search|browse|view|explore|see)\s+)*(?:scholarships?|awards?|grants?)(?:\s+(?:and|&)\s+(?:awards?|prizes?|grants?|bursaries))?$|\b(how to|apply(?:ing)? for|terms|conditions|faq|frequently|contact|alert|subscribe|newsletter|more about|eligibility criteria|application process|search|find a|browse|sponsor|donat|give to|policy|policies|guidelines|news|events?)\b/i;
+export function scholarshipListing(html: string, baseUrl: string, hosts: string[] = []) {
+  let h = html;
+  const m = h.match(/<main[\s\S]*?<\/main>/i);
+  if (m && m[0].length > 1500) h = m[0];
+  h = h.replace(/<(nav|header|footer|aside|script|style|noscript)\b[\s\S]*?<\/\1>/gi, " ");
+  const base = (() => { try { return new URL(baseUrl) } catch { return null } })();
+  const okHosts = new Set([base?.hostname.replace(/^www\./, "") || "", ...hosts.map((x) => String(x || "").toLowerCase().replace(/^www\./, ""))].filter(Boolean));
+  const hostOk = (u: URL) => { const x = u.hostname.toLowerCase().replace(/^www\./, ""); for (const o of okHosts) if (x === o || x.endsWith("." + o) || o.endsWith("." + x)) return true; return false };
+  const items = new Map<string, { name: string; url: string | null }>();
+  const add = (raw: string, url: string | null) => {
+    const name = clean(htmlToText(raw)).replace(/\s*(?:›|»|→|>)\s*$/, "").replace(/^(?:read more about|learn more about|more about)\s+/i, "").trim();
+    if (name.length < 8 || name.length > 140 || !ITEM_WORDS.test(name) || NOT_ITEM.test(name)) return;
+    const key = name.toLowerCase();
+    if (!items.has(key) || (!items.get(key)!.url && url)) items.set(key, { name, url });
+  };
+  for (const a of h.matchAll(/<a\b[^>]*href\s*=\s*["']([^"'#][^"']*)["'][^>]*>([\s\S]{0,400}?)<\/a>/gi)) {
+    try {
+      const u = new URL(a[1].replace(/&amp;/g, "&"), baseUrl);
+      if (!/^https?:$/.test(u.protocol) || !hostOk(u)) continue;
+      add(a[2], u.href);
+    } catch { /* skip */ }
+  }
+  for (const t of h.matchAll(/<h[2-4]\b[^>]*>([\s\S]{0,300}?)<\/h[2-4]>/gi)) { if (!/<a\b/i.test(t[1])) add(t[1], null) }
+  return [...items.values()].slice(0, 80);
+}

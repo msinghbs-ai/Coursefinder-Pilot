@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.167 — 11 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.240** (scholarship coverage check, S3; bulk restore, S5). Database: `20261011007300` (listing pages, coverage checks, watch list of 27, coverage read/provider/write RPCs, scholarship-listing job and settings, bulk restore), applied by the Database apply migration workflow. Worker coverage-sweep v0.17.37 (mode scholarship_listing). Scholarships › Coverage screen; Providers › Archived bulk restore; scholarship settings and jobs without reason prompts.
+
 ## 0.1.166 — 11 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.239** (scholarship completeness, S1, S2 and S4; Platform Admin decisions of 11 Oct 2026). Database: `20261011007100` (scholarship APIs published only) and `20261011007200` (course links when the page names no restriction or an unmatched faculty; editions held; hourly auto-publish; values read again), applied by the new Database apply migration workflow. Worker coverage-sweep v0.17.36 (scholarship reader v0.6.3: academic-result percentages ignored; whole-sentence value text).

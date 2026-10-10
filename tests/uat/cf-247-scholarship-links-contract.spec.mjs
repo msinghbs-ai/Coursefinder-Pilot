@@ -9,7 +9,7 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('Course links tab retired; the decisions made earlier keep governing the sweep', () => {
-  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1]])
+  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['coverage', 3]]) // v2.15.240: Coverage added
   expect(resolveTarget('scholarships', new URLSearchParams('tab=links'))).toMatchObject({ page: 'scholarships', tab: 'list' })
   expect(fs.existsSync('src/ScholarshipLinks.jsx')).toBe(false)
   const m = read('supabase/migrations-archive/20260930130000_cf247_scholarship_course_links.sql')

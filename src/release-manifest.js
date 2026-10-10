@@ -1,24 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.239'
-export const PACKAGE_VERSION='0.1.166'
+export const UI_VERSION='2.15.240'
+export const PACKAGE_VERSION='0.1.167'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'11 Oct 2026',
-  title:'Scholarships: published only, course links, editions and automatic publishing',
+  title:'Scholarship coverage check and bulk restore',
   changes:[
-    'Wix, the website and Zoho receive published scholarships only, whatever the caller asks for.',
-    'A scholarship page that names no study level, field or course links to all of the provider\u2019s courses open to international students, marked as such; a faculty the reader cannot match no longer stops the links.',
-    'One scholarship, one record: semester or year editions and register copies are held as \u201canother edition\u201d, and the provider\u2019s own current record is the one listed.',
-    'Scholarships that pass every check are published automatically every hour as a batch named \u201cauto-publish\u201d, for review (setting auto_publish).'
+    'Scholarships \u203a Coverage: each provider measured against its own scholarship listing page \u2014 listed, found, published, missing, our other records and Study Australia records \u2014 with a watch list (the 27 providers checked first) and sign-off.',
+    'Opening a provider shows each listed scholarship beside our record: value, linked courses (or \u201call courses\u201d), why it is not published, and Publish, Hold, Withdraw, Release and International actions. Listing pages are found automatically, suggested, or added by hand.',
+    'Scholarships published automatically in the last three days are listed for review at the top of Coverage, each with Hold.',
+    'Settings and jobs for scholarships are on the Coverage screen; changes no longer ask for a reason.',
+    'Providers \u203a Archived: tick several providers or courses and restore them together.'
   ],
-  bugFixes:[
-    'The website scholarship APIs returned every active record, published or not, unless the caller asked for published only; the Zoho lookup and search also returned unpublished and inactive ones.',
-    'A percentage that is an academic result (\u201cCWA of 95%\u201d) made the award value ambiguous (Curtin\u2019s John Curtin Global Excellence Scholarship, 40% off tuition).',
-    'The value text shown with a scholarship started mid-word.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

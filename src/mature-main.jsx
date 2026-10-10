@@ -14,6 +14,7 @@ import{startTableResize}from'./table-resize'
 import'./ui-standard.css'
 import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
 import ArchivedReview from'./ArchivedReview'
+import ScholarshipCoverage from'./ScholarshipCoverage'
 import ListEdit from'./ListEdit'
 import DashboardHome from'./Dashboard'
 import ContextualInsights from'./ContextualInsights'
@@ -231,7 +232,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='archived')return <ArchivedReview onError={onError} navigate={navigate}/>
         if(tab==='onboarding')return <div className="m-page-stack"><ProviderOnboardingNotice rank={rank} navigate={navigate}/></div>
         return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
-      case'scholarships':return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
+      case'scholarships':if(tab==='coverage')return <ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
         if(tab==='compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
         if(tab==='qilt')return <Qilt onError={onError}/>

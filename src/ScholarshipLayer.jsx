@@ -37,9 +37,10 @@ export function scheduleText(s){
   if(/^\d+$/.test(mi)&&/^\d+$/.test(h)&&dom==='*'&&mon==='*'){const m=utcClockToMelbourne(h,mi),t=`${m.time} Melbourne time`;if(dow==='*')return `Daily at ${t}`;const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];return `${days[(Number(dow)+m.dayShift)%7]||'Weekly'}s at ${t}`}
   return s
 }
-const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
+// v2.15.240 (Platform Admin, 11 Oct 2026: full control in the UI, simple): no reason prompt; each change is logged with who and when
+const ask=t=>`Changed on screen: ${t}`.slice(0,300)
 
-export default function ScholarshipLayer({layer,rank=3,onError,compact=false}){
+export default function ScholarshipLayer({layer,rank=3,onError,compact=false,only=''}){
   const[d,setD]=useState(null),[failed,setFailed]=useState(''),[busy,setBusy]=useState(false),[country,setCountry]=useState('AU')
   const load=async()=>{setFailed('');try{const{data,error}=await supabase.rpc('admin_scholarship_layer_read',{p_layer:layer});if(error)throw error;setD(data||{})}catch(e){setFailed(errText(e))}}
   useEffect(()=>{setD(null);load()},[layer])
@@ -50,6 +51,7 @@ export default function ScholarshipLayer({layer,rank=3,onError,compact=false}){
   const jobs=<Jobs jobs={d.jobs||[]} can={can} write={write}/>
   const settings=(d.settings||[]).length>0&&<Settings settings={d.settings} can={can} write={write}/>
   if(compact)return <div className="sl-wrap" data-scholarship-layer={layer}>{jobs}</div>
+  if(only==='controls')return <div className="sl-wrap" data-scholarship-layer={layer} data-sl-controls>{settings}{jobs}</div>
   return <div className="m-page-stack sl-wrap" data-scholarship-layer={layer}>
     {!d.can_manage&&<p className="l3v-note">You can view this. Only a Platform Admin can change it.</p>}
     {layer===1&&<Layer1 d={d} can={can} write={write}/>}

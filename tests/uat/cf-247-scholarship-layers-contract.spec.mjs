@@ -40,7 +40,7 @@ test('browser: Layer 1 Scholarships — countries, sources by use, add a source'
   await add.getByLabel('Country').selectOption('NZ')
   await add.getByLabel('Used as').selectOption('reference')
   await add.getByRole('button', { name: 'Register' }).click()
-  await expect.poll(() => page.l3calls.find(x => x.p_action === 'source_add')?.p_args).toMatchObject({ country: 'NZ', role: 'reference', reason: 'Checked with the Platform Admin' })
+  await expect.poll(() => page.l3calls.find(x => x.p_action === 'source_add')?.p_args).toMatchObject({ country: 'NZ', role: 'reference', reason: expect.stringMatching(/^Changed on screen: Register/) }) // v2.15.240: no reason prompt
 })
 
 test('browser: Layer 2 Scholarships — outcomes by country, settings change and job pause', async ({ page }) => {
