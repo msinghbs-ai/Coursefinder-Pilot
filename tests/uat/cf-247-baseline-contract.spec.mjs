@@ -16,6 +16,15 @@ test('baseline files match their recorded md5', () => {
   expect((schema.match(/^CREATE TABLE/gm) || []).length).toBe(400)
 })
 
+test('roles-apply.sql is the captured roles.sql minus only the Supabase-managed parameter grant', () => {
+  const grant = 'GRANT SET ON PARAMETER "log_min_messages" TO "supabase_realtime_admin";'
+  const raw = readFileSync(`${dir}/roles.sql`, 'utf8').split('\n')
+  const apply = readFileSync(`${dir}/roles-apply.sql`, 'utf8').split('\n')
+  expect(raw.filter((l) => l !== grant)).toEqual(apply)
+  expect(raw.length - apply.length).toBe(1)
+  expect(readFileSync('.github/workflows/db-baseline-rebuild-test.yml', 'utf8')).toContain('baseline/roles-apply.sql')
+})
+
 test('rebuild test refuses the Pilot and any project not named coursefinder-baseline-test', () => {
   const wf = readFileSync('.github/workflows/db-baseline-rebuild-test.yml', 'utf8')
   expect(wf).toContain("Refused: that is the Pilot project")

@@ -28,3 +28,9 @@ test" workflow, which builds an empty project named `coursefinder-baseline-test`
 compares the result with the Pilot. Not in the baseline (handled separately before Production):
 row data, including reference and configuration tables; the 94 `cron.job` schedules; storage
 buckets; edge function secrets; Auth settings.
+
+`baseline/roles-apply.sql` is `roles.sql` without one line,
+`GRANT SET ON PARAMETER "log_min_messages" TO "supabase_realtime_admin";`. That grant is
+managed by Supabase itself and a project owner cannot issue it (rebuild run 38027911726 stopped
+on it with "permission denied for parameter log_min_messages"). The role timeouts (anon 3s,
+authenticated 8s, authenticator 8s) are kept. `roles.sql` stays exactly as captured.
