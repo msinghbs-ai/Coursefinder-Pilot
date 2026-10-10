@@ -534,6 +534,8 @@ export function admissionCheck(html: string, finalUrl: string, providerHost: str
 // to apply", "Terms and conditions"); links to other sites. Each item is { name, url } (url null for a heading with no link).
 const ITEM_WORDS = /\b(scholarships?|bursar(?:y|ies)|awards?|grants?|fellowships?|fee (?:reduction|remission|waiver|discount)|tuition (?:discount|reduction|waiver))\b/i;
 const NOT_ITEM = /^(?:(?:international|domestic|research|postgraduate|undergraduate|current|future|all|other|more|our|find|search|browse|view|explore|see)\s+)*(?:scholarships?|awards?|grants?)(?:\s+(?:and|&)\s+(?:awards?|prizes?|grants?|bursaries))?$|\b(how to|apply(?:ing)? for|terms|conditions|faq|frequently|contact|alert|subscribe|newsletter|more about|eligibility criteria|application process|search|find a|browse|sponsor|donat|give to|policy|policies|guidelines|news|events?)\b/i;
+// v0.6.5 (first listing reads, 11 Oct 2026): questions, calls to action and page furniture are not scholarships
+const NOT_ITEM2 = /[?]|^(?:are you|looking|download|discover|meet|guide|explore|learn|read|view|check|see|why|what|who|how|get|start|our|your|scholarships? (?:for|in|at|and|guide)\b|international scholarships? (?:for|in|at)\b)|\b(brochure|guide|recipients?|stories|testimonials?|more scholarships|other scholarships|related scholarships|all scholarships|scholarship (?:search|finder|portal|calendar|dates|recipients))\b/i;
 export function scholarshipListing(html: string, baseUrl: string, hosts: string[] = []) {
   let h = html;
   const m = h.match(/<main[\s\S]*?<\/main>/i);
@@ -545,7 +547,10 @@ export function scholarshipListing(html: string, baseUrl: string, hosts: string[
   const items = new Map<string, { name: string; url: string | null }>();
   const add = (raw: string, url: string | null) => {
     const name = clean(htmlToText(raw)).replace(/\s*(?:›|»|→|>)\s*$/, "").replace(/^(?:read more about|learn more about|more about)\s+/i, "").trim();
-    if (name.length < 8 || name.length > 140 || !ITEM_WORDS.test(name) || NOT_ITEM.test(name)) return;
+    if (name.length < 8 || name.length > 140 || !ITEM_WORDS.test(name) || NOT_ITEM.test(name) || NOT_ITEM2.test(name)) return;
+    if (url && /\.(pdf|docx?|xlsx?)(?:[?#]|$)/i.test(url)) return;
+    // v0.6.5: a heading with no link must read as a name (most words capitalised), not a sentence
+    if (!url) { const w = name.split(/\s+/).filter((x) => /^[A-Za-z]/.test(x) && x.length > 3); if (w.length && w.filter((x) => /^[A-Z]/.test(x)).length / w.length < 0.6) return }
     const key = name.toLowerCase();
     if (!items.has(key) || (!items.get(key)!.url && url)) items.set(key, { name, url });
   };
