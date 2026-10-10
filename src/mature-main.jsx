@@ -637,7 +637,7 @@ function UniversityGroups({value,short=false}){const list=Array.isArray(value)?v
 function Score({value}){const n=Math.max(0,Math.min(100,Number(value)||0));return <span className="m-score"><span><i style={{width:`${n}%`}}/></span><b>{fmtPercent(n)}</b></span>}
 function PublishSwitch({on,busy,can,archived,onToggle}){
   const label=archived?'Archived':on?'Published':'Unpublished'
-  return <span className="m-publish" data-publish={on?'on':'off'}><button type="button" role="switch" aria-checked={on} aria-label={`Published: ${label}`} className={`m-switch${on?' on':''}`} disabled={!can||busy} title={archived?'Restore the provider to publish it':can?(on?'Switch off to hide this provider from Wix, Zoho and the website':'Switch on to publish this provider'):'PIM Operators and above can change this'} onClick={e=>{e.stopPropagation();onToggle()}}><i/></button><small>{busy?'Saving…':label}</small></span>
+  return <span className="m-publish" data-publish={on?'on':'off'}><button type="button" role="switch" aria-checked={on} aria-label={`Published: ${label}`} className={`m-switch${on?' on':''}`} disabled={!can||busy} title={archived?'Restore the provider to publish it':can?(on?'Switch off to hide this provider from Wix, Zoho and the website and pause its background work':'Unpublished: hidden and its background work is paused. Switch on to publish this provider'):'PIM Operators and above can change this'} onClick={e=>{e.stopPropagation();onToggle()}}><i/></button><small>{busy?'Saving…':label}</small></span>
 }
 function Bool({value}){return <span className={`m-bool ${value?'yes':'no'}`}>{value?'Yes':'No'}</span>}
 function Status({value}){const s=String(value??'unknown').toLowerCase();return <StatusChip value={s} label={humanise(s)}/>}

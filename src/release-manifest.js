@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.236'
-export const PACKAGE_VERSION='0.1.163'
+export const UI_VERSION='2.15.237'
+export const PACKAGE_VERSION='0.1.164'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'10 Oct 2026',
-  title:'Published switch for providers',
+  title:'Unpublished providers: background work paused',
   changes:[
-    'Providers \u203a list: a Published switch on each row. Every active provider is published by default. PIM Operators and above can switch it off or on from the list; no reason is asked and each change is logged.',
-    'An unpublished provider is greyed out in the list and is not served to Wix, Zoho or the website, together with its courses, campuses and scholarships. Switching it back on serves it again after the next search rebuild (a few minutes).',
-    'An archived provider is never served and cannot be published until it is restored.'
+    'An unpublished or archived provider no longer has background work picked up: site and page finding, page reads and re-reads, AI matching, course link search, adapter overwrite, provider facts, scholarships, and public and CRICOS contact reads. Work already running finishes, and everything resumes when the provider is published again.',
+    'Work a Platform Admin starts by hand (adapter builder, a Firecrawl run, edits) still runs for an unpublished provider, so its record can be fixed before it is published again.',
+    'Providers \u203a list: the Published switch says that switching off also pauses the provider\u2019s background work.'
   ],
   bugFixes:[
-    'Publication was not enforced: every provider was marked unpublished yet all of them were served to Wix, Zoho and the website.'
+    'Public contact email: an address on another service (a library help service such as vu.libanswers.com) or a non-enquiry mailbox (library, vet hospital, ethics, philanthropy, partnerships, facilities, research) is no longer taken as the provider\u2019s email. The wrong emails already saved were cleared and those providers are read again.'
   ]
 }
 

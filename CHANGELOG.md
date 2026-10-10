@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.164 — 10 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.237** (Platform Admin bug list of 10 Oct 2026, R4 part 2: Feature 4, pause work). Database: `20261010006900` (md5-guarded): 20 automatic pickers skip providers in security.provider_hidden_v1 (unpublished or not active); hand-started admin work is not blocked; wrong public contact emails cleared and re-read. Worker coverage-sweep v0.17.35: contact emails must be on the provider's own domain (registrable name) and library, vet hospital, ethics, philanthropy, partnership, facilities and research mailboxes are skipped.
+
 ## 0.1.163 — 10 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.236** (Platform Admin bug list of 10 Oct 2026, R4 part 1: Feature 4, Published switch). Database: `20261010006800` (md5-guarded): security.provider_hidden_v1 joins the Layer 4 search-block views; every active provider published and new providers published by default; admin_provider_publish; course index build, Wix/website providers, single course, scholarships, rankings and Zoho scholarships gated. Provider list: Published switch, unpublished rows greyed.
