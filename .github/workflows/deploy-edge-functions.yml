@@ -99,6 +99,8 @@ jobs:
             [layer1-ca-qc-university-programs]=false
             [layer1-ca-sk-programs]=false
             [scholarships-au-etl]=false
+            # CF-247 production readiness (10 Oct 2026): previously deployed by hand; verify_jwt taken from the live project
+            [ranking-publisher-import]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
