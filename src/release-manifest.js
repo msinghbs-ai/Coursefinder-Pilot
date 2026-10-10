@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.229'
-export const PACKAGE_VERSION='0.1.156'
+export const UI_VERSION='2.15.230'
+export const PACKAGE_VERSION='0.1.157'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'9 Oct 2026',
-  title:'Same look on every page, stage 2',
+  title:'Same look on every page, stage 3',
   changes:[
-    'Layer 1 register, Layer 2, Coverage, Sources and Platform health use the shared look: filter boxes keep their shape, filter captions are small labels, and adapter names and tick boxes are sized like the rest of the app.',
-    'Sources and Jobs: the repeated title block is now one slim line with the description and the count.',
-    'Layer 1 \u203a Manual batch runs: plain wording (Run by hand, Save batch, Continue, Repeat check) and a normal-sized Save button.'
+    'Settings: each setting is shown at the standard size (the labels were heading-sized).',
+    'Go-live checklist and Platform health \u203a Capacity: the section header is compact because the page header already names the page; the production notice uses normal text.',
+    'Rankings, Reference data, Models and services, Data model, Scrapers and the provider pages already followed the shared look; tables on them resize like everywhere else.'
   ],
-  bugFixes:['Sources and Jobs: the filter dropdowns overflowed their boxes after v2.15.227.']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
