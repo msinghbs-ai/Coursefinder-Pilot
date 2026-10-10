@@ -58,7 +58,7 @@ test.describe('mocked browser', () => {
     await expect.poll(() => calls.filter(c => c.name === 'admin_uni_adapter_control').length).toBe(1)
     const admit = calls.find(c => c.name === 'admin_uni_adapter_control')
     expect(admit.p_action).toBe('admit')
-    expect(admit.p_args).toEqual({ provider_id: 'p-new', admit: true, fields: ['intakes'], reason: 'Checked the measures' })
+    expect(admit.p_args).toEqual({ provider_id: 'p-new', admit: true, fields: ['intakes'], reason: expect.stringMatching(/^Adapter builder: Admit /) })
     if (process.env.AUTOBUILD_SHOT) await page.screenshot({ path: process.env.AUTOBUILD_SHOT, fullPage: true })
   })
 

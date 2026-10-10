@@ -45,12 +45,12 @@ test('rebuild applies the extension-type grant postscript after the schema', () 
   expect(readFileSync('.github/workflows/db-baseline-rebuild-test.yml', 'utf8')).toContain('schema.sql supabase/live-capture/baseline/apply-postscript.sql >')
 })
 
-test('old migrations are archived and the migrations folder starts empty', () => {
+test('old migrations are archived and the migrations folder holds only changes after the baseline', () => {
   const archived = readdirSync('supabase/migrations-archive').filter((f) => f.endsWith('.sql'))
   expect(archived.length).toBe(1053)
   expect(archived).toContain('20261010006300_cf247_course_detail_slim.sql')
   const current = readdirSync('supabase/migrations')
-  expect(current.filter((f) => f.endsWith('.sql') && f < '20261011')).toEqual([])
+  expect(current.filter((f) => f.endsWith('.sql') && f <= '20261010006300')).toEqual([]) // only changes after the baseline
   expect(current).toContain('README.md')
 })
 

@@ -9,7 +9,9 @@ import{Button,Empty,Loading,fmtNumber}from'./ui-kit'
 import{AdapterEditor,AdapterReview}from'./FirecrawlWork'
 
 const errText=e=>e?.message||String(e)
-const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
+// v2.15.232 (Platform Admin, 10 Oct 2026, Fix 5): no reason prompt. Each step writes a standard log line instead (the servers keep
+// requiring one). Steps that spend Firecrawl credits or the AI allowance still ask a plain yes/no first.
+const ask=(t,{confirm=false}={})=>{if(confirm&&!window.confirm(t))return null;return `Adapter builder: ${String(t).split('\n')[0].replace(/\?$/,'').slice(0,200)}`}
 const KIND={intake_calendar:'Key dates (intakes)',fee_schedule:'International fee schedule',english_policy:'English requirements'}
 const FIELD={intakes:'Intakes',english:'English (IELTS)',fee:'Fees',delivery:'Delivery'}
 const pct=v=>v==null?'—':`${Math.round(Number(v)*100)}%`
@@ -26,7 +28,7 @@ function PickProvider({onPick,onError}){
 
 function CentralPages({b,onDone,onError}){
   const[kind,setKind]=useState('intake_calendar'),[url,setUrl]=useState(''),[busy,setBusy]=useState(false)
-  const add=async(k,u)=>{const reason=ask(`Attach this ${KIND[k].toLowerCase()} page for ${b.name}?\n${u}\nIt is read through Firecrawl within about 10 minutes and its proposal waits for approval (Layer 4 › Attributes).`);if(!reason)return
+  const add=async(k,u)=>{const reason=ask(`Attach the ${KIND[k].toLowerCase()} page ${u} for ${b.name}`);if(!reason)return
     setBusy(true);try{const{error}=await supabase.rpc('admin_provider_central_page',{p_action:'add',p_args:{provider_id:b.provider_id,kind:k,url:u,reason}});if(error)throw error;setUrl('');onDone()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const have=b.central||[],sug=b.suggested||[]
   return <div className="ab-central">
@@ -61,7 +63,7 @@ function GStep({n,title,state,children}){return <li className={`ab-g-step is-${s
 function ModelPick({r,pid,name,busy,onDone,onError}){
   const m=r?.model,list=r?.models||[]
   if(!m)return null
-  const change=async code=>{const reason=window.prompt(`Use ${code?list.find(x=>x.code===code)?.model:'the default model'} for ${name}'s adapter proposals?\n\nReason (kept in the log):`);if(!reason||reason.trim().length<4)return;try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'model',p_args:{provider_id:pid,profile_code:code,reason:reason.trim()}});if(error)throw error;await onDone()}catch(e){onError?.(errText(e))}}
+  const change=async code=>{const reason=ask(`Use ${code?list.find(x=>x.code===code)?.model:'the default model'} for ${name}'s adapter proposals`);try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'model',p_args:{provider_id:pid,profile_code:code,reason}});if(error)throw error;await onDone()}catch(e){onError?.(errText(e))}}
   return <div className="ab-model" data-adapter-model><small className="sl-sub">Model: <strong>{m.model}</strong> {m.chosen?'(chosen for this adapter)':'(default)'}</small>
     {r.can_manage&&list.length>0&&<select aria-label="Model for this adapter" disabled={busy} value={m.chosen?m.code:''} onChange={e=>change(e.target.value)}><option value="">Default ({list.find(x=>x.code===m.code)?.model||m.model})</option>{list.map(x=><option key={x.code} value={x.code}>{x.model}</option>)}</select>}</div>
 }
@@ -71,12 +73,50 @@ function SamplePick({r,pid,busy,onDone,onError}){
   const pages=r?.pages||[],dr=(r?.drafts||[])[0],have=new Set((dr?.samples||[]).map(s=>s.url))
   if(!r?.can_manage||!pages.length)return null
   const t=q.trim().toLowerCase(),hits=t.length<2?[]:pages.filter(p=>`${p.course} ${p.code||''} ${p.url}`.toLowerCase().includes(t)).slice(0,8)
-  const add=async p=>{const reason=window.prompt(`Add ${p.course} as a sample? Firecrawl captures it (about 1 credit).\n\nReason (kept in the log):`);if(!reason||reason.trim().length<4)return;try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'add_sample',p_args:{provider_id:pid,url:p.url,reason:reason.trim()}});if(error)throw error;setMsg(`${p.course} added; it is captured in about a minute.`);setQ('');await onDone()}catch(e){onError?.(errText(e))}}
+  const add=async p=>{const reason=ask(`Add ${p.course} as a sample (Firecrawl, about 1 credit)`);try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'add_sample',p_args:{provider_id:pid,url:p.url,reason}});if(error)throw error;setMsg(`${p.course} added; it is captured in about a minute.`);setQ('');await onDone()}catch(e){onError?.(errText(e))}}
   return <div className="ab-sample-pick" data-sample-pick>
     {dr&&(dr.samples||[]).length>0&&<small className="sl-sub">Samples: {(dr.samples||[]).map(s=>s.course).join(' · ')}</small>}
     <input type="search" aria-label="Add a course as a sample" placeholder={`Add a course as a sample (${pages.length} pages)`} value={q} disabled={busy} onChange={e=>setQ(e.target.value)}/>
     {hits.length>0&&<ul className="ab-results">{hits.map(p=><li key={p.url}><button type="button" className="ab-result" disabled={busy||have.has(p.url)} onClick={()=>add(p)}><strong>{p.course}</strong> <small className="sl-sub">{p.code||''}{p.read?'':' · not read yet'}{have.has(p.url)?' · already a sample':''}</small></button></li>)}</ul>}
     {msg&&<small className="cf-chip tone-info">{msg}</small>}
+  </div>
+}
+// v2.15.232 (Fix 4): step 1 says what happens. With no website on record there is no domain to search, so it asks for the provider's
+// own website (saved as entered by hand; course pages on it are then searched for every course). With a website it marks the
+// provider as a Firecrawl target and starts page finding for this provider only.
+function FindPages({b,onChanged,onError}){
+  const[url,setUrl]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false)
+  const go=async fn=>{setBusy(true);setMsg('');try{await fn()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!b.website)return <div className="ab-find" data-find-pages="no-website">
+    <small className="sl-sub">No website is recorded for {b.name}, so there is nowhere to look for its course pages. Enter the provider's own website (not a course directory).</small>
+    <div className="ab-add"><input aria-label="Provider's own website" type="url" placeholder="https://www.provider.edu.au" value={url} disabled={busy} onChange={e=>setUrl(e.target.value)}/>
+      <Button compact disabled={busy||!/^https?:\/\/\S+\.\S+$/.test(url.trim())} onClick={()=>go(async()=>{const{error}=await supabase.rpc('admin_provider_website_set',{p_provider_id:b.provider_id,p_url:url.trim()});if(error)throw error;setMsg('Website saved (entered by hand). Course pages on it are now searched for each course; refresh in a few minutes.');setUrl('');onChanged?.()})}>Save website and look for course pages</Button></div>
+    {msg&&<small className="cf-chip tone-info" role="status">{msg}</small>}</div>
+  return <div className="ab-find" data-find-pages="website">
+    <Button compact disabled={busy} onClick={()=>go(async()=>{if(!window.confirm(`Look for ${b.name}'s course pages on ${b.website} with Firecrawl now? Credits are used.`))return
+      const reason=`Adapter builder: find course pages for ${b.name}`
+      const{data:t,error:e1}=await supabase.rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:b.provider_id,included:true,reason}});if(e1)throw e1
+      if(!t?.domain){setMsg('Added as a Firecrawl target, but no domain could be worked out from the website. Check the website address.');return}
+      const{data:r,error:e2}=await supabase.rpc('admin_firecrawl_write',{p_action:'start',p_args:{use_case:'find_page',provider_id:b.provider_id,reason}});if(e2)throw e2
+      setMsg(r?.items?`Page finding started on ${t.domain}: ${fmtNumber(r.items)} courses to look for (up to ${fmtNumber(r.credits_cap)} credits). Refresh in a few minutes.`:`Nothing left to look for on ${t.domain}: every active course already has a page or a search result.`);onChanged?.()})}>Find course pages now</Button>
+    {msg&&<small className="cf-chip tone-info" role="status">{msg}</small>}</div>
+}
+// v2.15.232 (Feature 2): a course page entered by hand. It must be on the provider's own website; it becomes the course's official page
+// (entered by hand) and is captured as a sample.
+function ManualPage({r,pid,busy,onDone,onError}){
+  const[q,setQ]=useState(''),[cid,setCid]=useState(''),[url,setUrl]=useState(''),[msg,setMsg]=useState(''),[saving,setSaving]=useState(false)
+  if(!r?.can_manage)return null
+  const courses=r.courses||[],t=q.trim().toLowerCase(),hits=t.length<2?[]:courses.filter(c=>`${c.course} ${c.code||''}`.toLowerCase().includes(t)).slice(0,8),picked=courses.find(c=>c.id===cid)
+  const save=async()=>{setSaving(true);setMsg('');try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'add_page',p_args:{provider_id:pid,course_id:cid,url:url.trim(),reason:`Adapter builder: course page entered by hand for ${picked?.course}`}});if(error)throw error;setMsg(`${picked?.course}: page saved as its official page and added as a sample; it is captured in about a minute.`);setQ('');setCid('');setUrl('');await onDone()}catch(e){onError?.(errText(e))}finally{setSaving(false)}}
+  return <div className="ab-manual-page" data-manual-page>
+    <small className="sl-sub">Or enter a course page by hand{r.website?` (on ${r.website})`:''}:</small>
+    {!r.website?<small className="sl-sub">Record the provider's own website in step 1 first.</small>:<>
+      {picked?<p className="sl-sub"><strong>{picked.course}</strong>{picked.code?` · ${picked.code}`:''} <Button compact onClick={()=>setCid('')}>Change course</Button></p>
+        :<><input type="search" aria-label="Course for the page" placeholder={`Find the course (${courses.length} active)`} value={q} disabled={busy||saving} onChange={e=>setQ(e.target.value)}/>
+          {hits.length>0&&<ul className="ab-results">{hits.map(c=><li key={c.id}><button type="button" className="ab-result" onClick={()=>{setCid(c.id);setQ('')}}><strong>{c.course}</strong> <small className="sl-sub">{c.code||''}</small></button></li>)}</ul>}</>}
+      <div className="ab-add"><input aria-label="Course page address" type="url" placeholder="https://… the course's own page" value={url} disabled={busy||saving} onChange={e=>setUrl(e.target.value)}/>
+        <Button compact disabled={busy||saving||!cid||!/^https?:\/\/\S+\.\S+$/.test(url.trim())} onClick={save}>Capture this page</Button></div></>}
+    {msg&&<small className="cf-chip tone-info" role="status">{msg}</small>}
   </div>
 }
 function GuidedBuild({b,onChanged,onError}){
@@ -86,7 +126,7 @@ function GuidedBuild({b,onChanged,onError}){
   useEffect(()=>{loadDraft()},[pid])
   const dr=(r?.drafts||[])[0],last=(dr?.proposals||[]).slice(-1)[0],captured=(dr?.captures||[]).some(c=>!c.error)
   useEffect(()=>{if(!dr||!['capturing','proposing'].includes(dr.status))return;const t=setTimeout(loadDraft,5000);return()=>clearTimeout(t)},[r])
-  const run=async(key,q,fn)=>{const reason=ask(q);if(!reason)return;setBusy(key);try{await fn(reason)}catch(e){onError?.(errText(e))}finally{setBusy('')}}
+  const run=async(key,q,fn)=>{const reason=ask(q,{confirm:['capture','propose'].includes(key)});if(!reason)return;setBusy(key);try{await fn(reason)}catch(e){onError?.(errText(e))}finally{setBusy('')}}
   const rpc=async(name,args)=>{const{data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
   const a=b.adapter,{ready,held}=readyFields(b.qualify),admitted=a?.admit?(a.admit_fields||[]):[],toAdmit=ready.filter(f=>!admitted.includes(f))
   const proposalOk=last&&last.kind!=='error'&&last.adapter
@@ -99,9 +139,10 @@ function GuidedBuild({b,onChanged,onError}){
     {!can&&<p className="sl-sub">Running the steps is for Platform Admins; you can follow the progress here.</p>}
     <ol className="ab-guided">
       <GStep n={1} title="Find course pages" state={st.find}><small className="sl-sub">{fmtNumber(read)} read of {fmtNumber(b.pages?.stored||0)} stored (3 needed).</small>
-        {can&&read<3&&<Button compact disabled={Boolean(busy)} onClick={()=>run('find',`Add ${b.name} to the Firecrawl targets so the next Find pages run looks for and reads its course pages (credits are used)?`,async reason=>{await rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:pid,included:true,reason}});onChanged?.()})}>Add to Firecrawl targets</Button>}</GStep>
+        {can&&read<3&&<FindPages b={b} onChanged={onChanged} onError={onError}/>}</GStep>
       <GStep n={2} title="Capture sample pages" state={st.capture}><small className="sl-sub">{dr?`${(dr.captures||[]).filter(c=>!c.error).length} of ${(dr.captures||[]).length} captured (${dr.status}).`:'Firecrawl captures 6 course pages spread across course types (about 1 credit each). Add a particular course with Use as sample in the course list below.'}</small>
         <SamplePick r={r} pid={pid} busy={Boolean(busy)||st.capture==='busy'} onDone={loadDraft} onError={onError}/>
+        <ManualPage r={r} pid={pid} busy={Boolean(busy)||st.capture==='busy'} onDone={async()=>{await loadDraft();onChanged?.()}} onError={onError}/>
         {can&&st.capture!=='wait'&&<Button compact disabled={Boolean(busy)||st.capture==='busy'} onClick={()=>run('capture',`Capture sample pages of ${b.name} with Firecrawl? About 1 credit a page.`,async reason=>{await rpc('admin_adapter_builder',{p_action:'start',p_args:{provider_id:pid,reason}});await loadDraft()})}>{captured?'Capture again':'Capture samples'}</Button>}</GStep>
       <GStep n={3} title="Model proposes the settings" state={st.propose}>
         <ModelPick r={r} pid={pid} name={b.name} busy={Boolean(busy)} onDone={loadDraft} onError={onError}/><small className="sl-sub">{last?(last.kind==='error'?`Last proposal failed: ${last.error}`:`${last.model} · US$ ${Number(last.cost||0).toFixed(4)} · ${last.reason||''}`):'The pinned model reads the samples and suggests where each attribute is.'}</small>
@@ -123,8 +164,6 @@ export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
   useEffect(()=>{setB(null);load(pid)},[pid])
   useEffect(()=>{if(initialProvider&&initialProvider!==pid)setPid(initialProvider)},[initialProvider])
   if(rank<5)return <Empty text="The adapter builder is for PIM Admins and Platform Admins."/>
-  const find=async()=>{const reason=ask(`Add ${b.name} to the Firecrawl targets so its course pages are found and read (Firecrawl credits are used)?`);if(!reason)return
-    setBusy(true);try{const{error}=await supabase.rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:b.provider_id,included:true,reason}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const read=b?.pages?.read||0
   return <div className="m-page-stack ab-builder" data-adapter-builder-tab>
     <p className="sl-sub">Build or change an adapter with the guided build (one button per step), or adjust it by hand below. Each step uses evidence from the provider’s own pages; nothing is admitted until you admit it.</p>
@@ -139,8 +178,7 @@ export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
           <li><span>Course pages</span>{fmtNumber(read)} read of {fmtNumber(b.pages?.stored||0)} stored{b.pages?.needs_render?` · ${fmtNumber(b.pages.needs_render)} need a browser`:''}</li>
           <li><span>Adapter</span>{stateLabel(b.adapter)}</li>
         </ul>
-        {read<3&&<p className="cf-chip tone-warning">Fewer than 3 course pages are read, so there is nothing to build from yet.</p>}
-        {read<3&&b.can_manage&&<Button compact disabled={busy} onClick={find}>Find course pages with Firecrawl</Button>}
+        {read<3&&<p className="cf-chip tone-warning">Fewer than 3 course pages are read, so there is nothing to build from yet. Use step 1 of the guided build, or add a course page by hand in step 2.</p>}
       </Step>
       <Step n={3} title="Central pages" hint="Key dates, the international fee schedule and English requirements cover every course at once. Attached pages are read and wait for approval in Layer 4 › Attributes.">
         <CentralPages b={b} onDone={()=>load()} onError={onError}/>

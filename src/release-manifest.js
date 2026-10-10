@@ -1,18 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.231'
-export const PACKAGE_VERSION='0.1.158'
+export const UI_VERSION='2.15.232'
+export const PACKAGE_VERSION='0.1.159'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'9 Oct 2026',
-  title:'Course panel opens faster; simple logo list',
+  date:'10 Oct 2026',
+  title:'Adapter builder says what happens; course finder address entered by hand stays',
   changes:[
-    'Course panel: the database read returns only what the panel shows (about 21 KB instead of about 85 KB). Related insights load only when \u201cMore about this course\u201d is opened.',
-    'Providers \u203a Logos & assets: a simple list of which providers have a logo and which do not, with the share that has one. Open a provider and click its logo to add or replace it. The old logo-finding counts (discovered, acquired, approved, blocked) are removed.'
+    'Adapter builder \u203a Find course pages: with no website on record it asks for the provider\u2019s own website and starts looking for course pages on it. With a website, \u201cFind course pages now\u201d starts page finding for this provider only and says how many courses it is looking for.',
+    'Adapter builder \u203a Capture sample pages: a course page can be entered by hand. Pick the course and paste its page on the provider\u2019s own website; it becomes the course\u2019s official page (entered by hand) and is captured as a sample.',
+    'Adapter builder: no step asks for a reason any more. A standard line is kept in the log. Steps that use Firecrawl credits or the AI allowance still ask a plain yes/no.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Provider \u203a Course finder address: a value changed by hand now shows \u201cEntered by hand\u201d and automation no longer replaces it. \u201cLet automation update this\u201d hands it back.',
+    'Adapter builder: \u201cAdd to Firecrawl targets\u201d appeared to do nothing. It only saved a setting, and a provider with no website was skipped silently. Replaced by the steps above.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

@@ -180,7 +180,7 @@ export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=
       {text('website','Website',{type:'url',link:true,placeholder:'https://'})}
       {inline&&text('primary_city','City')}
       <ProviderApplicants providerId={providerId} onChanged={onChanged} onError={onError}/>
-      <Row label="Course finder address" lock={null} can={can} {...ed('finder')}
+      <Row label="Course finder address" lock={locks.course_finder} can={can} onRelease={()=>release('course_finder')} {...ed('finder')}
         editor={<TextEdit value={cf?.address} type="url" placeholder="https://… the page or site that lists the courses" busy={busy} onSave={v=>act('set_course_finder',{url:v},'Use this address to find course pages? The provider goes back into page discovery.')} onCancel={()=>setEditing('')}/>}>
         {cf?.address?<><a href={cf.address} target="_blank" rel="noreferrer" className="cf-link">{cf.address}</a><span className="l3v-code">{[cf.status,cf.pages_found!=null&&`${fmtNumber(cf.pages_found)} course pages found`,cf.mapped_at&&`last looked ${fmtDateTime(cf.mapped_at)}`].filter(Boolean).join(' · ')}</span></>:'—'}
       </Row>
