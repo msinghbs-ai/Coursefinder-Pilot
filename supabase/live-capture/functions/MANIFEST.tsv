@@ -1,23 +1,2 @@
 schema	name	args	md5	file
-api	website_v2_annual	p_opts jsonb, p_reg numeric, p_weeks numeric	aef357b3580f56e1247399d477f60057	api.website_v2_annual.803e5d03.sql
-api	website_v2_course_item	p_course_id uuid, p_cities text[], p_postcodes text[]	a05b163b1bba1835f04c22ab3a3b6cbe	api.website_v2_course_item.037b8601.sql
-api	website_v2_fee_basis	p_basis text	2f04a962ee2f3b7ca1242d93adc79e78	api.website_v2_fee_basis.df021674.sql
-api	website_v2_has_fee	p_opts jsonb, p_reg numeric	0a36af660fde5d71bfc5f6ba1cc78e67	api.website_v2_has_fee.a398eac3.sql
-api	website_v2_label_month	p_label text	4263b5ad2369e87c99674f9159d672f8	api.website_v2_label_month.6f0284c8.sql
-api	website_v2_latest_fee	p_opts jsonb	88426eef9726828adeb84736efd10495	api.website_v2_latest_fee.31ee8cee.sql
-api	website_v2_provider_campuses	p_provider_id uuid	57115d3b8ddbc40729ec04078ee15d41	api.website_v2_provider_campuses.fb155042.sql
-api	website_v2_provider_logo	p_provider_id uuid	37fe1dcdc16e99938f0981fd28ea7d9a	api.website_v2_provider_logo.fb155042.sql
-api	website_v2_ranking_summary	p_provider_id uuid	5e5b2d19e70cb571c39d40858cdb38f1	api.website_v2_ranking_summary.fb155042.sql
-api	website_v2_scholarship_item	p_id uuid	f30e2ba8bb604d2de77a9229774e9fad	api.website_v2_scholarship_item.05eb73e0.sql
-api	website_v2_tuition	p_doc search.course_documents	174d6629d0fb39412973a5edddca7e04	api.website_v2_tuition.58692a86.sql
-api	website_v2_weeks	p_value numeric, p_unit text	d4f37bd3dac041dfe8b4d5ca44afe334	api.website_v2_weeks.21fbd9c1.sql
-public	website_edge_course_search_v3_1	p_query text, p_country_codes text[], p_provider_ids text[], p_subdivision_codes text[], p_study_level_codes text[], p_primary_field_codes text[], p_delivery_modes text[], p_has_scholarship boolean, p_has_intake boolean, p_has_english boolean, p_has_provider_current_tuition boolean, p_has_regulatory_tuition boolean, p_has_link boolean, p_intake_years integer[], p_intake_labels text[], p_english_test_codes text[], p_min_provider_annual_tuition numeric, p_max_provider_annual_tuition numeric, p_min_regulatory_total_tuition numeric, p_max_regulatory_total_tuition numeric, p_publication_statuses text[], p_changed_since timestamp with time zone, p_limit integer, p_offset integer	cdff0833edc5668decfe22e414948a36	public.website_edge_course_search_v3_1.a9f5e765.sql
-public	website_v2_course	p_identifier text	a22d40c8274d118c6d67a8df91a2a81a	public.website_v2_course.7166ddd9.sql
-public	website_v2_course_search	p_filters jsonb, p_page integer, p_page_size integer, p_sort text	9df1297f579b0e142d1cc2db7e023629	public.website_v2_course_search.ad2d5df4.sql
-public	website_v2_provider	p_provider_id text	70ccdc9b871611f20983ccb807c600c0	public.website_v2_provider.f174c864.sql
-public	website_v2_provider_rankings	p_provider_id uuid	4b50d415c1e69cf3bab7c81d6d2b8060	public.website_v2_provider_rankings.fb155042.sql
-public	website_v2_providers	p_filters jsonb, p_page integer, p_page_size integer, p_sort text	780d080dfc113df3e2e38d8db7cdb672	public.website_v2_providers.ad2d5df4.sql
-public	website_v2_rankings	p_filters jsonb, p_page integer, p_page_size integer	2cfa72d4b45491e936dfdbad7bb08cb0	public.website_v2_rankings.073e2f32.sql
-public	website_v2_reference		0204f4336ec28dff7e6bd6af6a5fd701	public.website_v2_reference.d41d8cd9.sql
-public	website_v2_scholarship	p_scholarship_id text	d948c919da1d2f37e36fa36e29600821	public.website_v2_scholarship.3132ed34.sql
-public	website_v2_scholarships	p_filters jsonb, p_page integer, p_page_size integer	48c2240a8b99521cba8c3f86fa5682d4	public.website_v2_scholarships.073e2f32.sql
+public	admin_course_edit	p_course_id uuid, p_action text, p_args jsonb	a8acab9d6f56a5ccca9dafa435318f05	public.admin_course_edit.c72db54f.sql
