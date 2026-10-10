@@ -1,4 +1,4 @@
-// CourseFinder shared UI kit (UI-2, B2 UI uniformity).
+// StudySearch shared UI kit (UI-2, B2 UI uniformity).
 // One home for building blocks used across screens: status chips, badges, buttons, metrics,
 // empty states, filter chips, loading rows, section titles and the pager. Look and feel come
 // from ui-kit.css and tokens.css; numbers and dates from lib/format.js.

@@ -60,7 +60,7 @@ export default function ProviderPolicies({country='',provider=null}={}){
   // parsed document is closed, so what the course pages get is always what the Platform Admin saw.
   const[months,setMonths]=useState({})
   // v2.15.166 (Platform Admin, 3 Oct 2026 13:50): "Start months by hand" is folded into this list. A university whose
-  // course pages name study periods but whose calendar page gave no months (or has none in CourseFinder) is a row of the
+  // course pages name study periods but whose calendar page gave no months (or has none in StudySearch) is a row of the
   // same shape — Intake 1, Intake 2, the periods its pages name — with the calendar page address to fill in; Approve saves
   // the months by hand (admin_provider_calendar_set) and the job answers its waiting reviews. One list, one shape.
   const[byHand,setByHand]=useState(null),[urls,setUrls]=useState({})
@@ -148,9 +148,9 @@ export default function ProviderPolicies({country='',provider=null}={}){
       {bulk&&<th aria-label="Choose"/>}<th>University</th>{english?<th>What the policy says</th>:<><th>Intake 1</th><th>Intake 2</th><th>Raw value captured</th></>}{english&&<><th>Course pages</th><th>Will be added</th></>}<th>Decision</th></tr></thead>
       <tbody>{list.map(x=>{const ag=agreement(x.plan);return <React.Fragment key={x.id}><tr data-policy={x.id}>
         {bulk&&<td>{x.status==='proposed'&&!x.byhand&&<input type="checkbox" aria-label={`Choose ${x.provider}`} checked={sel.has(x.id)} onChange={()=>toggle(x.id)} disabled={busy}/>}</td>}
-        <td>{english?<button type="button" className="cf-link fs-open" onClick={()=>setOpen(open===x.id?null:x.id)} aria-expanded={open===x.id}>{x.provider}</button>:<a href={`#providers?id=${x.provider_id}`} className="cf-link" data-provider-link title="Open the university in CourseFinder">{x.provider}</a>}
+        <td>{english?<button type="button" className="cf-link fs-open" onClick={()=>setOpen(open===x.id?null:x.id)} aria-expanded={open===x.id}>{x.provider}</button>:<a href={`#providers?id=${x.provider_id}`} className="cf-link" data-provider-link title="Open the university in StudySearch">{x.provider}</a>}
           <a href={x.url} target="_blank" rel="noreferrer" className="cf-link" aria-label="Open the document"><ExternalLink size={12}/></a>
-          {!english&&<div className="sd-desc">{x.url&&<><a href={x.url} target="_blank" rel="noreferrer" className="cf-link">Calendar page ↗</a> · </>}<a href={`#providers?id=${x.provider_id}`} className="cf-link">University in CourseFinder</a></div>}
+          {!english&&<div className="sd-desc">{x.url&&<><a href={x.url} target="_blank" rel="noreferrer" className="cf-link">Calendar page ↗</a> · </>}<a href={`#providers?id=${x.provider_id}`} className="cf-link">University in StudySearch</a></div>}
           {x.byhand&&<div className="sd-desc" data-byhand>{fmtNumber(x.reviews)} intake reviews waiting · no months found on its calendar page{x.sample?` · pages say "${String(x.sample).slice(0,80)}"`:''}
             {can&&<input className="fv-input" type="url" placeholder="Calendar page address https://" value={urls[x.provider_id]??x.url} onChange={e=>setUrls(u=>({...u,[x.provider_id]:e.target.value}))} aria-label={`${x.provider} calendar page`} disabled={busy}/>}</div>}
           {english&&<button type="button" className="m-link-button fs-review" onClick={()=>setOpen(open===x.id?null:x.id)}>{open===x.id?'Hide courses':'Review courses'}</button>}</td>

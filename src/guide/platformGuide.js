@@ -1,4 +1,4 @@
-// Platform guide (Decision 209): how operators and Platform Admins run CourseFinder, shown in the app under
+// Platform guide (Decision 209): how operators and Platform Admins run StudySearch, shown in the app under
 // Help › Platform guide. This file is the single source of the guide's words.
 //
 // KEEP IT CURRENT. Every release must review this guide:
@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.240'
+export const GUIDE_REVIEWED_FOR = '2.15.241'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.',

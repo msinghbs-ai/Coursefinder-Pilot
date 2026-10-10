@@ -33,7 +33,7 @@ export default function PlatformGuide({rank=1,navigate}){
   const OpenBtn=({page,tab,label})=>canOpen(page,rank)?<button type="button" className="m-secondary compact pg-open" onClick={()=>go(page,tab)}>{label||'Open'}<ArrowRight size={12}/></button>:null
   return <div className="m-page-stack pg" data-platform-guide>
     <section className="m-panel">
-      <p className="pg-lead">How operators and Platform Admins run CourseFinder day to day: what each screen tells you, which numbers matter, and what to do when something turns amber or red.</p>
+      <p className="pg-lead">How operators and Platform Admins run StudySearch day to day: what each screen tells you, which numbers matter, and what to do when something turns amber or red.</p>
       <p className="pg-meta" data-guide-version>Reviewed for v{GUIDE_REVIEWED_FOR}{GUIDE_REVIEWED_FOR!==UI_VERSION?` · this app is v${UI_VERSION}`:''}</p>
       <nav className="pg-toc" aria-label="Guide contents">{PARTS.map(([id,label,Icon])=><a key={id} href={`#platform-guide`} onClick={e=>{e.preventDefault();document.getElementById('pg-'+id)?.scrollIntoView({behavior:'smooth',block:'start'})}}><Icon size={14}/>{label}</a>)}</nav>
     </section>

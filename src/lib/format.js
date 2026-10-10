@@ -1,4 +1,4 @@
-// CourseFinder shared formatters (B2 UI uniformity): one en-AU format for every screen.
+// StudySearch shared formatters (B2 UI uniformity): one en-AU format for every screen.
 //   Dates        29 Sep 2026
 //   Date + time  29 Sep 2026, 2:37 pm
 //   Numbers      25,978 (en-AU grouping)

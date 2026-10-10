@@ -1,4 +1,4 @@
-/* CourseFinder design tokens (B2 UI uniformity, v2.15.106).
+/* StudySearch design tokens (B2 UI uniformity, v2.15.106).
    The one colour, type, spacing, radius and shadow system for the admin console.
    Every stylesheet reads these custom properties; no stylesheet defines its own colour literals.
    The console has no dark mode, so there is one (light) set. Older per-screen token names

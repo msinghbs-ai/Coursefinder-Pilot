@@ -100,7 +100,7 @@ const UI_FIXES=[
  'Independent QILT, PRISMS, QS and THE year/edition controls in Provider Compare.',
  'Frozen Provider/university identity headers across comparison statistics and rankings.',
  'Standard Statistics & Rankings breadcrumbs with dedicated QILT, PRISMS, QS and THE dataset subpages.',
- 'QS/THE dataset pages aligned to the standard CourseFinder dataset table theme.'
+ 'QS/THE dataset pages aligned to the standard StudySearch dataset table theme.'
 ]
 const PAGE_SIZE=50
 // 8 Oct 2026 (Platform Admin): any edition can be uploaded, including next year's (QS names its edition a year ahead): from two years ahead back to 2010.
@@ -147,7 +147,7 @@ function AppBreadcrumbs({pageKey,tab,routeParams,navigate}){
 class WorkspaceErrorBoundary extends React.Component{
   constructor(props){super(props);this.state={error:null}}
   static getDerivedStateFromError(error){return{error}}
-  componentDidCatch(error,info){console.error('CourseFinder workspace render failed',error,info);this.props.onError?.(`Workspace render failed: ${error?.message||String(error)}`)}
+  componentDidCatch(error,info){console.error('StudySearch workspace render failed',error,info);this.props.onError?.(`Workspace render failed: ${error?.message||String(error)}`)}
   componentDidUpdate(prev){if(prev.routeKey!==this.props.routeKey&&this.state.error)this.setState({error:null})}
   render(){if(!this.state.error)return this.props.children;return <section className="m-workspace-error m-panel" role="alert"><PanelTitle icon={AlertTriangle} title="Workspace could not render" subtitle="The Administration shell remains available. Navigate to another section or retry this workspace."/><div className="m-alert compact"><AlertTriangle size={15}/><span>{this.state.error?.message||'Unexpected workspace render error'}</span></div><button className="m-primary" onClick={this.props.onRecover}>Return to Dashboard</button></section>}
 }
@@ -172,7 +172,7 @@ function App(){
     const next=hrefFor(r.page,r.tab,Object.fromEntries(r.params))
     setRoute(r);if(location.hash!==next)location.hash=next;setNavOpen(false);requestAnimationFrame(()=>{if(mainRef.current)mainRef.current.scrollTop=0})
   }
-  if(booting)return <div className="m-boot"><div className="m-loader"/><span>Loading Coursefinder Admin…</span></div>
+  if(booting)return <div className="m-boot"><div className="m-loader"/><span>Loading StudySearch Admin…</span></div>
   if(!session)return <Login onError={setError} error={error}/>
   const pageKey=route.page,page=PAGES[pageKey]||PAGES.dashboard,tab=effectiveTab(pageKey,route.tab,rank)
   const tone=health===undefined?'unknown':healthTone(health?.overall)
@@ -180,7 +180,7 @@ function App(){
   return <div className={`m-shell ${collapsed?'is-collapsed':''}`}>
     <aside className={`m-sidebar ${navOpen?'is-open':''}`}>
       <div className="m-brand-row">
-        <button className="m-brand" onClick={()=>go('dashboard')} aria-label="Dashboard"><span className="m-brand-mark">CF</span><span className="m-brand-copy"><strong>Coursefinder</strong><small>PIM Admin v{UI_VERSION}</small></span></button>
+        <button className="m-brand" onClick={()=>go('dashboard')} aria-label="Dashboard"><span className="m-brand-mark">SS</span><span className="m-brand-copy"><strong>StudySearch</strong><small>PIM Admin v{UI_VERSION}</small></span></button>
         <button className="m-sidebar-collapse" onClick={()=>setCollapsed(x=>!x)} title={collapsed?'Expand navigation':'Collapse navigation'}>{collapsed?<PanelLeftOpen size={17}/>:<PanelLeftClose size={17}/>}</button>
       </div>
       <div className="m-nav-scroll"><nav className="m-nav" aria-label="Main menu">{SECTIONS.map(section=>{const allowed=section.pages.filter(k=>canOpen(k,rank));if(!allowed.length)return null;return <div className={`m-nav-group${section.label?'':' is-plain'}`} key={section.label||'home'}>{section.label&&<div className="m-nav-label">{section.label}</div>}{allowed.map(k=>{const p=PAGES[k],Icon=ICONS[p.icon]||Settings2;return <button key={k} title={collapsed?p.label:undefined} aria-current={pageKey===k?'page':undefined} className={`m-nav-item ${pageKey===k?'active':''}`} onClick={()=>go(k)}><Icon size={17}/><span>{p.label}</span>{k==='health'&&<StatusDot tone={tone} label={healthLabel}/>}</button>})}</div>})}</nav></div>
@@ -205,7 +205,7 @@ function App(){
   </div>
 }
 
-function Login({error,onError}){const[email,setEmail]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false);async function submit(e){e.preventDefault();setBusy(true);onError('');const{error:x}=await supabase.auth.signInWithPassword({email,password});if(x)onError(x.message);setBusy(false)}return <div className="m-login"><form className="m-login-card" onSubmit={submit}><div className="m-login-brand"><span className="m-brand-mark large">CF</span><div><strong>Coursefinder Admin</strong><small>Governed operational workspace</small></div></div><div className="m-login-copy"><h1>Sign in</h1><p>Authorised staff access only. Canonical catalogue, provenance and pipeline operations.</p></div>{error&&<div className="m-alert compact"><AlertTriangle size={15}/><span>{error}</span></div>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="m-primary" disabled={busy}>{busy?'Signing in…':'Sign in'}</button><small className="m-login-version">PIM Admin v{UI_VERSION}</small></form></div>}
+function Login({error,onError}){const[email,setEmail]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false);async function submit(e){e.preventDefault();setBusy(true);onError('');const{error:x}=await supabase.auth.signInWithPassword({email,password});if(x)onError(x.message);setBusy(false)}return <div className="m-login"><form className="m-login-card" onSubmit={submit}><div className="m-login-brand"><span className="m-brand-mark large">SS</span><div><strong>StudySearch Admin</strong><small>Governed operational workspace</small></div></div><div className="m-login-copy"><h1>Sign in</h1><p>Authorised staff access only. Canonical catalogue, provenance and pipeline operations.</p></div>{error&&<div className="m-alert compact"><AlertTriangle size={15}/><span>{error}</span></div>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="m-primary" disabled={busy}>{busy?'Signing in…':'Sign in'}</button><small className="m-login-version">PIM Admin v{UI_VERSION}</small></form></div>}
 
 // Every page renders inside the shell through PageLayout: optional tabs, then content. No page draws its own shell.
 function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
@@ -380,7 +380,7 @@ function ProviderAssetsWorkspace({onError,navigate}){
 
 function RankingImportPanel({onError,routeParams,navigate}){
  const requested=routeParams?.get?.('system'),presetSystem=['qs_wur','the_wur','arwu'].includes(requested)?requested:'qs_wur',presetYear=routeParams?.get?.('year')||String(rankingDefaultYear(presetSystem))
- const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for CourseFinder ingestion.',revisionNote:'',mode:'file'})
+ const makeForm=(system=presetSystem,year=presetYear)=>({systemCode:system,editionYear:String(year),publisherName:rankingPublisherName(system),sourceUrl:rankingSourceUrl(system),methodologyUrl:'',licensingNote:'Authorised publisher Evidence obtained for StudySearch ingestion.',revisionNote:'',mode:'file'})
  const[form,setForm]=useState(makeForm()),[files,setFiles]=useState([]),[busy,setBusy]=useState(false),[saved,setSaved]=useState(''),[imports,setImports]=useState([]),[detected,setDetected]=useState(null),[advanced,setAdvanced]=useState(false),[processingId,setProcessingId]=useState(''),[lastParsedKey,setLastParsedKey]=useState(''),[overwriteKey,setOverwriteKey]=useState(''),[historySystem,setHistorySystem]=useState('all')
  useEffect(()=>{let live=true;loadRankingSources().then(()=>{if(live)setForm(x=>x.sourceUrl?x:{...x,sourceUrl:rankingSourceUrl(x.systemCode)})});return()=>{live=false}},[])
  const sameEditionImports=imports.filter(x=>x.system_code===form.systemCode&&String(x.edition_year)===String(form.editionYear))

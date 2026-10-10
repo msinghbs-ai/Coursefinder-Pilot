@@ -21,7 +21,7 @@ export const OUTCOME={read_course_page:'Read: the course page',read_other_page:'
 const label=o=>OUTCOME[o]||(o?.startsWith('found_not_bound_')?`Found, not used (${o.slice(16).replace(/_/g,' ')})`:o)
 
 // The support report as Markdown, ready to paste into a ticket to Firecrawl support. Dates stay as ISO text.
-export function reportMarkdown(r,org='CourseFinder'){
+export function reportMarkdown(r,org='StudySearch'){
   if(!r)return''
   const t=r.totals||{},a=r.account||{},L=[]
   L.push(`# Firecrawl usage report — ${org}`,'',`Calls since ${r.since} (report made ${r.generated_at}).`,'')

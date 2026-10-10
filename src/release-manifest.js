@@ -1,19 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.240'
-export const PACKAGE_VERSION='0.1.167'
+export const UI_VERSION='2.15.241'
+export const PACKAGE_VERSION='0.1.168'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'11 Oct 2026',
-  title:'Scholarship coverage check and bulk restore',
+  title:'StudySearch',
   changes:[
-    'Scholarships \u203a Coverage: each provider measured against its own scholarship listing page \u2014 listed, found, published, missing, our other records and Study Australia records \u2014 with a watch list (the 27 providers checked first) and sign-off.',
-    'Opening a provider shows each listed scholarship beside our record: value, linked courses (or \u201call courses\u201d), why it is not published, and Publish, Hold, Withdraw, Release and International actions. Listing pages are found automatically, suggested, or added by hand.',
-    'Scholarships published automatically in the last three days are listed for review at the top of Coverage, each with Hold.',
-    'Settings and jobs for scholarships are on the Coverage screen; changes no longer ask for a reason.',
-    'Providers \u203a Archived: tick several providers or courses and restore them together.'
+    'The platform is renamed StudySearch: the app name and mark (SS), the sign-in screen, the browser tab, Access Admin, the Platform guide and the release notes page.',
+    'Messages and labels from the database that said CourseFinder now say StudySearch (for example \u201cStudySearch role required\u201d).',
+    'Unchanged until production: the web address, the repositories, the Wix and Zoho contract names, saved screen settings, and the name our page readers give university websites.'
   ],
   bugFixes:[]
 }

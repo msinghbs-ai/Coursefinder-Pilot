@@ -50,8 +50,8 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
   expect(manifest).toMatch(/version:(UI_VERSION|'2\.15\.\d+')/) // the manifest drives the pill; the shell constant is only a fallback
   expect(current).toContain("from'./release-manifest.js'")
-  expect(index).toContain('<title>Coursefinder PIM Admin</title>')
-  expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)
+  expect(index).toContain('<title>StudySearch PIM Admin</title>')
+  expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)
 
   expect(migration).toContain('security.admin_contextual_insights_v2')
   expect(migration).toContain('security.admin_contextual_compare')
