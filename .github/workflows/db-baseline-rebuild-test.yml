@@ -1,0 +1,73 @@
+# Database baseline rebuild test. CF-247 production readiness, phase 4 (10 Oct 2026;
+# Platform Admin decision "Dump + test project").
+# Builds an EMPTY throwaway Supabase project from the baseline held in git
+# (supabase/live-capture/baseline: roles.sql, then schema.sql), dumps the result, and commits
+# that dump to a never-merged branch db-baseline-rebuild/<run id> so it can be compared with
+# the Pilot dump.
+# Safety: the target must NOT be the Pilot (repository variable SUPABASE_PROJECT_REF), must be
+# named exactly "coursefinder-baseline-test", and must have no tables in public yet.
+name: Database baseline rebuild test
+on:
+  workflow_dispatch:
+    inputs:
+      test_project_ref:
+        description: "Ref of the throwaway project named coursefinder-baseline-test"
+        required: true
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ inputs.test_project_ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm the target is the throwaway test project
+        run: |
+          if ! [[ "$REF" =~ ^[a-z]{20}$ ]]; then echo "Refused: not a project ref"; exit 1; fi
+          if [ "$REF" = "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Refused: that is the Pilot project"; exit 1; fi
+          name=$(curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" | jq -r .name)
+          if [ "$name" != "coursefinder-baseline-test" ]; then echo "Refused: project is named '$name'"; exit 1; fi
+          jq -n '{query:"select count(*)::int as n from pg_tables where schemaname not in ('pg_catalog','information_schema','auth','storage','realtime','vault','extensions','supabase_migrations','net','cron','graphql','pgsodium','supabase_functions','_realtime')", read_only:true}' > q.json
+          n=$(curl -sS -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query" | jq -r '.[0].n')
+          if [ "$n" != "0" ]; then echo "Refused: the test project is not empty ($n tables)"; exit 1; fi
+          echo "Target confirmed: $REF (coursefinder-baseline-test, empty)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Rebuild from the baseline
+        id: rebuild
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          (cd supabase/live-capture/baseline && md5sum -c MD5SUMS)
+          work="$RUNNER_TEMP/rebuild"; mkdir -p "$work/supabase/migrations"
+          printf 'project_id = "coursefinder-baseline-test"\n' > "$work/supabase/config.toml"
+          cp supabase/live-capture/baseline/roles.sql "$work/supabase/migrations/20261010000000_baseline_roles.sql"
+          cp supabase/live-capture/baseline/schema.sql "$work/supabase/migrations/20261010000001_baseline_schema.sql"
+          cd "$work"
+          supabase link --project-ref "$REF" 2>&1 | tee "$RUNNER_TEMP/push.log"
+          supabase db push --linked --include-all --yes 2>&1 | tail -c 200000 | tee -a "$RUNNER_TEMP/push.log"
+      - name: Dump the rebuilt project
+        if: ${{ !cancelled() && steps.rebuild.outcome != 'skipped' }}
+        run: |
+          out=supabase/live-capture/baseline-rebuild; mkdir -p "$out"
+          cp "$RUNNER_TEMP/push.log" "$out/push.log" 2>/dev/null || echo "no push log" > "$out/push.log"
+          echo "Rebuild step: ${{ steps.rebuild.outcome }}" | tee -a "$GITHUB_STEP_SUMMARY" "$out/push.log"
+          if [ "${{ steps.rebuild.outcome }}" = "success" ]; then
+            (cd "$RUNNER_TEMP/rebuild" && supabase db dump --linked -f "$GITHUB_WORKSPACE/$out/schema.sql")
+            (cd "$out" && md5sum schema.sql > MD5SUMS)
+          fi
+          if [ ! -f "$out/schema.sql" ]; then r="rebuild failed (see push.log)"
+          elif cmp -s "$out/schema.sql" supabase/live-capture/baseline/schema.sql; then r="identical to the Pilot dump"; else r="differs from the Pilot dump ($(diff supabase/live-capture/baseline/schema.sql "$out/schema.sql" | grep -c '^[<>]') changed lines)"; fi
+          echo "Rebuilt schema $r" | tee -a "$GITHUB_STEP_SUMMARY"
+          branch="db-baseline-rebuild/${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b "$branch"
+          git add -A "$out"
+          git commit -q -m "Baseline rebuild dump (run ${{ github.run_id }}; $r)"
+          git push -q origin "$branch"
+          echo "Snapshot branch: $branch" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.rebuild.outcome }}" != "success" ]; then exit 1; fi
