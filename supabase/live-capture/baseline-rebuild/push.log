@@ -1,0 +1,7 @@
+Finished supabase link.
+Initialising login role...
+Do you want to reset the remote database? [y/N] y
+Resetting remote database...
+ERROR: out of shared memory (SQLSTATE 53200)
+Try rerunning the command with --debug to troubleshoot the error.
+Rebuild step: failure
