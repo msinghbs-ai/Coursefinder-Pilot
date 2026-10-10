@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.168 — 11 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.241** (rename to StudySearch, S6; customer request 11 Oct 2026). App text, mark, titles and guide renamed. Database: `20261011007700` (82 functions: the word CourseFinder in messages and labels becomes StudySearch; md5-guarded), applied by the Database apply migration workflow. Repositories, web address, Wix/Zoho contract names, saved screen settings and reader user agents unchanged until production.
+
 ## 0.1.167 — 11 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.240** (scholarship coverage check, S3; bulk restore, S5). Database: `20261011007300` (listing pages, coverage checks, watch list of 27, coverage read/provider/write RPCs, scholarship-listing job and settings, bulk restore), applied by the Database apply migration workflow. Worker coverage-sweep v0.17.37 (mode scholarship_listing). Scholarships › Coverage screen; Providers › Archived bulk restore; scholarship settings and jobs without reason prompts.

@@ -27,7 +27,7 @@ const EXPLAIN={
   'eligibility lists domestic students only':['The eligibility section names Australian citizens or residents only.','A Platform Admin can record that international students can apply, with a note (Show › Domestic only).'],
   'provider page limits it to citizens and residents':['The page restricts it to citizens and permanent residents.','Stays held unless the page says otherwise.'],
   'no provider page':['No page of the provider’s own was found for it.','A Curator adds the page address in the scholarship record; the reader then reads it.'],
-  'no linked course':['It applies to no course in CourseFinder yet.','Links come from the study levels, fields and courses its page names (Layer 2). It stays held until the page names them; the page is read again at least every 30 days.'],
+  'no linked course':['It applies to no course in StudySearch yet.','Links come from the study levels, fields and courses its page names (Layer 2). It stays held until the page names them; the page is read again at least every 30 days.'],
   'held after hand-check':['A person held it after checking.','Release it here (Show › Held after a hand check) when it is fixed.'],
   'provider page does not mention international students':['The page never mentions international students.','A Curator decides from the page and sets who it is for in the scholarship record.'],
   'course link broader than the scholarship':['It is linked to more courses than its page names.','The links are rebuilt from the page when it is read again; it stays held until they match.'],

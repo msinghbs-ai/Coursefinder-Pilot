@@ -1,4 +1,4 @@
-// CourseFinder admin menu (v2.15.107): one place for every page, its tabs, who may open it,
+// StudySearch admin menu (v2.15.107): one place for every page, its tabs, who may open it,
 // and where old addresses now lead. The shell (mature-main.jsx) draws the menu, the page
 // header and the tabs from this map; nothing else adds or reorders menu entries.
 //

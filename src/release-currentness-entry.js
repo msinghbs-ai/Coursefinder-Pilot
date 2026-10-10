@@ -16,7 +16,7 @@ function completeHistory(list){
   if(missing.length&&current)current.insertAdjacentHTML('afterend',missing.map(noteHtml).join(''))
 }
 function reconcile(){
-  document.title=`Coursefinder PIM Admin v${VERSION}`
+  document.title=`StudySearch PIM Admin v${VERSION}`
   document.querySelectorAll('.m-brand-copy small,.m-login-version').forEach(el=>{if(/PIM Admin v2\.15\.\d+/.test(el.textContent||''))el.textContent=`PIM Admin v${VERSION}`})
   document.querySelectorAll('.m-release-pill').forEach(el=>{const label=el.querySelector('.m-release-version-label');if(label)label.textContent=`v${VERSION}`;else el.textContent=`v${VERSION}`;el.setAttribute('aria-label',`Open release notes for PIM Admin v${VERSION}`)})
   const list=document.querySelector('.m-release-notes-list')

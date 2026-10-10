@@ -41,8 +41,8 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
     expect(manifest).toContain('version:UI_VERSION') // 7 Oct 2026: the manifest is the single version authority
     expect(current).toContain("from'./release-manifest.js'")
-    expect(index).toContain('<title>Coursefinder PIM Admin</title>')
-    expect(index).not.toMatch(/Coursefinder PIM Admin v2\.15\.\d+/)
+    expect(index).toContain('<title>StudySearch PIM Admin</title>')
+    expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)
     expect(versionEntry).toContain('Layer 1 source configuration UI restoration')
     const output=execFileSync('npm',['run','build'],{cwd:process.cwd(),env:process.env,encoding:'utf8',timeout:60000,stdio:['ignore','pipe','pipe']})
     expect(output).toContain('built in')

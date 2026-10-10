@@ -23,5 +23,5 @@ test('CF-150 preserves Provider logo management and release currentness',()=>{
  expect(src).toContain('coursefinder:provider-logo-refresh')
  expect(src).toContain('rank<5')
  // 7 Oct 2026: version pins moved to release-manifest.js (its own contract); the page title carries no version.
- expect(index).toContain('<title>Coursefinder PIM Admin</title>')
+ expect(index).toContain('<title>StudySearch PIM Admin</title>')
 })
