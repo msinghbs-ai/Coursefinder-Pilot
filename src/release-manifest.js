@@ -1,20 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.234'
-export const PACKAGE_VERSION='0.1.161'
+export const UI_VERSION='2.15.235'
+export const PACKAGE_VERSION='0.1.162'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'10 Oct 2026',
-  title:'Provider phone and email from its own website; CRICOS contact kept internal',
+  title:'Better provider phone and email; CRICOS contact read directly',
   changes:[
-    'A new job reads each provider\u2019s own home and contact pages for its public phone and email and fills them when empty. Only an email on the provider\u2019s own domain is used, and a value entered by hand is never replaced. The provider panel shows the page they came from.',
-    'A second job reads the Principal Executive Officer from the CRICOS website for every Australian provider with courses. It is shown in the provider panel to PIM Operators and above as an internal contact and is never published or sent to Wix, Zoho or the website.',
-    'Both jobs are in Automations (Course pages), where they can be paused or changed.'
+    'The CRICOS contact job reads each provider\u2019s CRICOS page directly by its provider code, without a Firecrawl search; Firecrawl is used only when the direct read does not show the contact.'
   ],
   bugFixes:[
-    'Provider phone and email were never filled: the CRICOS register download has no contact columns, and nothing read the provider\u2019s own site for them.'
+    'Provider email: the first runs picked mailboxes such as media@, security@ and feedback@. These are now skipped, the main contact page is read first, and values the job wrote earlier are corrected on the next read (values entered by hand are kept).'
   ]
 }
 
