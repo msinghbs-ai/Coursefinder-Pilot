@@ -1,0 +1,57 @@
+# Apply one database migration file to the Pilot (CF-247, 11 Oct 2026; Platform Admin decision "yes, apply overnight": changes go in
+# through this workflow with the same md5 checks before and after; anything that drops or deletes is pasted by the Platform Admin).
+# The file and its history row are applied in ONE transaction through the Supabase Management API, exactly as a paste in the SQL
+# editor would. The file's own md5 guard blocks stop it (and roll everything back) if a live function differs from what it replaces.
+# Safety:
+#  - the typed project ref must match the repository variable SUPABASE_PROJECT_REF (never the demo project);
+#  - only a file under supabase/migrations named <14 digits>_<name>.sql, taken from the given branch or commit;
+#  - refused if its version is already in the migration history;
+#  - refused if any top-level statement drops, deletes or truncates (those are pasted by the Platform Admin);
+#  - after applying, the history row's md5 is read back and must equal the file's.
+name: Database apply migration
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "Migration file name under supabase/migrations (e.g. 20261011007100_cf247_s1_x.sql)"
+        required: true
+      git_ref:
+        description: "Branch or commit holding the file"
+        required: true
+      project_ref:
+        description: "Type the target project ref to confirm"
+        required: true
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      FILE: ${{ inputs.file }}
+      REF: ${{ inputs.project_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+      - name: Confirm target and file
+        run: |
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ] || [ "$REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          if ! [[ "$FILE" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]] || [ ! -f "supabase/migrations/$FILE" ]; then echo "::error::Refused file: $FILE"; exit 1; fi
+          if grep -nEi '^(drop|delete|truncate)\b|^alter table .* drop ' "supabase/migrations/$FILE"; then echo "::error::Refused: the file drops, deletes or truncates at top level; the Platform Admin pastes those"; exit 1; fi
+          if grep -q '\$mig\$' "supabase/migrations/$FILE"; then echo "::error::Refused: the file contains the history quote marker"; exit 1; fi
+      - name: Apply in one transaction with its history row
+        run: |
+          f="supabase/migrations/$FILE"; ver="${FILE:0:14}"; name="${FILE:15}"; name="${name%.sql}"
+          q() { jq -n --arg q "$1" '{query:$q}' > q.json; curl -sS -o r.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query"; }
+          code=$(q "select count(*)::int as n from supabase_migrations.schema_migrations where version='$ver'")
+          n=$(jq -r '.[0].n // "error"' r.json); if [ "$code" -ge 300 ] || [ "$n" != "0" ]; then echo "::error::Refused: version $ver already recorded or history unreadable ($code $(head -c 200 r.json))"; exit 1; fi
+          { printf 'begin;\n'; cat "$f"; printf '\n\ninsert into supabase_migrations.schema_migrations(version, name, statements) values (%s, %s, array[$mig$' "'$ver'" "'$name'"; cat "$f"; printf '$mig$]);\ncommit;\n'; } > apply.sql
+          jq -n --rawfile q apply.sql '{query:$q}' > q.json
+          code=$(curl -sS -o r.json -w '%{http_code}' -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query")
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "::error::$FILE failed (HTTP $code): $(head -c 800 r.json | tr -d '\n')"; exit 1; fi
+          want=$(md5sum < "$f" | cut -c1-32)
+          q "select md5(replace(statements[1],E'\r','')) as m from supabase_migrations.schema_migrations where version='$ver'" > /dev/null
+          got=$(jq -r '.[0].m // "none"' r.json)
+          if [ "$got" != "$want" ]; then echo "::error::History md5 $got does not match the file $want"; exit 1; fi
+          echo "::notice::$FILE applied; history md5 ${want:0:8} matches the file" | tee -a "$GITHUB_STEP_SUMMARY"
