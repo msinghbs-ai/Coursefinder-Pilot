@@ -54,7 +54,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.2"; // v0.6.2: Firecrawl cap and res
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.17.32"; // v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.17.33"; // v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -637,6 +637,83 @@ Deno.serve(async (req) => {
         } catch (e) { failed++; if (errors.length < 3) errors.push(e instanceof Error ? e.message : String(e)) }
       });
       return j({ ok: true, mode, rows: rows.length, done, failed, errors, ms: Date.now() - t0, workerVersion: VERSION });
+    }
+    // v0.17.33 (10 Oct 2026, Platform Admin Fix 2, decision "Both, kept separate"): the provider's public phone and email from its own
+    // website (home page and contact page, direct reads, robots.txt respected, no Firecrawl). Only an email on the provider's own
+    // domain is taken; the database never replaces a value entered by hand.
+    if (mode === "contact_page") {
+      const provs: { provider_id: string; name: string; website: string; country: string }[] = await rpc("svc_provider_contact_next", { p_limit: Math.min(Number(body.limit || 8), 20) });
+      const out: unknown[] = [];
+      await pool(provs, 4, async (p) => {
+        let site: URL; try { site = new URL(/^https?:/i.test(p.website) ? p.website : "https://" + p.website) } catch { await rpc("svc_provider_contact_record", { p_provider_id: p.provider_id, p_phone: null, p_email: null, p_url: null, p_evidence: { error: "bad website" } }); return }
+        const pages: { url: string; status: string; http: number | null }[] = [];
+        const home = await readDirect(site.origin + "/"); pages.push({ url: site.origin + "/", status: home.status, http: home.http });
+        const htmls: { url: string; html: string }[] = home.html ? [{ url: home.finalUrl, html: home.html }] : [];
+        const base = home.finalUrl || site.origin + "/";
+        const siteHost = (() => { try { return new URL(base).hostname.toLowerCase().replace(/^www\./, "") } catch { return site.hostname.toLowerCase().replace(/^www\./, "") } })();
+        const contactLinks: string[] = [];
+        for (const m of (home.html || "").matchAll(/<a\b[^>]*href\s*=\s*["']([^"'#]+)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) {
+          const text = m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          if (!/contact|enquir/i.test(m[1] + " " + text)) continue;
+          try { const u = new URL(m[1], base); const h = u.hostname.toLowerCase().replace(/^www\./, ""); if (/^https?:$/.test(u.protocol) && (h === siteHost || h.endsWith("." + siteHost)) && !contactLinks.includes(u.href)) contactLinks.push(u.href) } catch { /* skip */ }
+          if (contactLinks.length >= 2) break;
+        }
+        for (const cu of contactLinks) { const r = await readDirect(cu); pages.push({ url: cu, status: r.status, http: r.http }); if (r.html) htmls.push({ url: r.finalUrl, html: r.html }) }
+        const label = siteHost.split(".")[0];
+        const ownEmail = (e: string) => { const d = e.split("@")[1]?.toLowerCase() || ""; return d === siteHost || d.endsWith("." + siteHost) || siteHost.endsWith("." + d) || d.split(".")[0] === label };
+        const emails = new Map<string, number>(), phones = new Map<string, number>();
+        const PREF = /^(info|enquir|admission|international|study|contact|reception|admin|office|hello|courses)/i;
+        for (const { html } of htmls) {
+          for (const m of html.matchAll(/mailto:([^"'?\s>]+)/gi)) { const e = decodeURIComponent(m[1]).trim().toLowerCase(); if (/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(e) && ownEmail(e) && !/no-?reply/.test(e)) emails.set(e, (emails.get(e) || 0) + 3 + (PREF.test(e) ? 5 : 0)) }
+          const text = htmlToText(html);
+          for (const m of text.matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) { const e = m[0].toLowerCase(); if (!/\.(png|jpe?g|gif|svg|webp)$/.test(e) && ownEmail(e) && !/no-?reply/.test(e)) emails.set(e, (emails.get(e) || 0) + 1 + (PREF.test(e) ? 5 : 0)) }
+          for (const m of html.matchAll(/href\s*=\s*["']tel:([^"']+)["']/gi)) { const d = decodeURIComponent(m[1]).replace(/[^\d+]/g, ""); if (d.replace(/\D/g, "").length >= 8) phones.set(d, (phones.get(d) || 0) + 3) }
+          for (const m of text.matchAll(/(?:phone|tel|call|ph)[^0-9+]{0,12}((?:\+?6[14]|\(0\d\)|0\d|1[38]00)[\d\s()-]{6,14}\d)/gi)) { const d = m[1].replace(/[^\d+]/g, ""); if (d.replace(/\D/g, "").length >= 8) phones.set(d, (phones.get(d) || 0) + 1) }
+        }
+        const best = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+        const email = best(emails), phone = best(phones);
+        await rpc("svc_provider_contact_record", { p_provider_id: p.provider_id, p_phone: phone, p_email: email, p_url: contactLinks[0] || base,
+          p_evidence: { pages, emails: Object.fromEntries(emails), phones: Object.fromEntries(phones), worker: WORKER } });
+        out.push({ provider_id: p.provider_id, phone, email });
+      });
+      return j({ ok: true, mode, providers: out, ms: Date.now() - t0, workerVersion: VERSION });
+    }
+    // v0.17.33 (Fix 2): the Principal Executive Officer from the CRICOS website, held as an internal regulatory contact (never published).
+    // Platform Admin decision "All at once" (10 Oct 2026): Firecrawl is used for every AU provider with a CRICOS code, inside the budget
+    // reserve but outside the target-university rule. The page must show the provider's CRICOS code.
+    if (mode === "cricos_peo") {
+      const provs: { provider_id: string; name: string; cricos: string }[] = await rpc("svc_cricos_peo_next", { p_limit: Math.min(Number(body.limit || 4), 8) });
+      const out: unknown[] = [];
+      const spend = async (units: number, purpose: string, providerId: string, url: string) => { if (!fc?.secret || fcRemaining < units) return false; fcRemaining -= units; await rpc("svc_coverage_usage", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }); return true };
+      const field = (t: string, label: string) => (t.match(new RegExp(label + "\\s*:?[\\s|]*([^\\n|]{0,120}?)\\s*(?:\\n|\\||Title\\s*:|Phone Number\\s*:|Facsimile Number\\s*:|Email Address\\s*:|$)", "i"))?.[1] || "").replace(/[*_\\]/g, "").trim() || null;
+      await pool(provs, 2, async (p) => {
+        const code = String(p.cricos || "").toUpperCase(), tried: unknown[] = [];
+        let found: Record<string, string | null> | null = null, pageUrl: string | null = null;
+        if (!(await spend(2, "peo_search", p.provider_id, code))) { out.push({ provider_id: p.provider_id, status: "budget" }); await rpc("svc_cricos_peo_record", { p_provider_id: p.provider_id, p_outcome: "budget", p_name: null, p_title: null, p_phone: null, p_email: null, p_url: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return }
+        try {
+          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `site:cricos.education.gov.au "${code}"`, limit: 5, country: "AU" }), signal: AbortSignal.timeout(45000) });
+          const d = await r.json().catch(() => ({}));
+          const urls = searchResults(d).map((x) => x.url).filter((u: string) => /^https:\/\/cricos\.education\.gov\.au\/(Institution|Course)\//i.test(u));
+          urls.sort((a: string, b: string) => Number(/Institution/i.test(b)) - Number(/Institution/i.test(a)));
+          for (const u of urls.slice(0, 2)) {
+            let md = "";
+            const dr = await fetch(u, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(20000) }).catch(() => null);
+            const raw = dr && dr.ok ? await dr.text() : "";
+            if (/Principal Executive Officer/i.test(raw)) md = htmlToText(raw).replace(/\s{2,}/g, "\n");
+            else if (await spend(1, "peo_scrape", p.provider_id, u)) {
+              const s = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: u, formats: ["markdown"], onlyMainContent: false, timeout: 40000 }), signal: AbortSignal.timeout(55000) });
+              const sd = await s.json().catch(() => ({})); md = String(sd?.data?.markdown || "");
+            }
+            const hasCode = new RegExp("(^|[^0-9A-Z])" + code + "([^0-9A-Z]|$)", "i").test(md) || new RegExp(code, "i").test(raw);
+            const i = md.search(/Principal Executive Officer/i);
+            tried.push({ url: u, direct: !!raw, has_code: hasCode, peo: i >= 0 });
+            if (i >= 0 && hasCode) { const t = md.slice(i, i + 800); found = { name: field(t, "Name"), title: field(t, "Title"), phone: field(t, "Phone Number"), email: (t.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/) || [null])[0] }; pageUrl = u; break }
+          }
+        } catch (e) { tried.push({ error: e instanceof Error ? e.message : String(e) }) }
+        await rpc("svc_cricos_peo_record", { p_provider_id: p.provider_id, p_outcome: found ? "found" : "not_found", p_name: found?.name ?? null, p_title: found?.title ?? null, p_phone: found?.phone ?? null, p_email: found?.email ?? null, p_url: pageUrl, p_evidence: { code, tried, worker: WORKER } });
+        out.push({ provider_id: p.provider_id, status: found ? "found" : "not_found" });
+      });
+      return j({ ok: true, mode, providers: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
     if (mode === "find_site") {
       const provs: { provider_id: string; name: string; trading: string | null; cricos: string; country?: string; dli?: string }[] = await rpc("svc_coverage_site_next", { p_limit: Math.min(Number(body.limit || 5), 10) });

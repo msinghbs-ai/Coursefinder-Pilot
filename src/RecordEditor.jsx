@@ -195,6 +195,14 @@ export function ProviderEditor({providerId,onChanged,onError,inline=false,facts=
       {text('address_line1','Address')}
       {!inline&&text('primary_city','City')}
       {text('postcode','Postcode')}
+      {/* v2.15.234 (Fix 2): public phone and email come from the provider's own site; the regulator's contact is internal only */}
+      {data.public_contact&&<p className="sl-sub" data-public-contact>Phone and email found on the provider’s own site{data.public_contact.url?<> (<a href={data.public_contact.url} target="_blank" rel="noreferrer" className="cf-link">page</a>)</>:''}{data.public_contact.at?` · ${fmtDateTime(data.public_contact.at)}`:''}. A value entered by hand is never replaced.</p>}
+      {data.can_manage&&<div className="re-row wide" data-regulatory-contact>
+        <div className="re-row-head"><strong>Regulatory contact (CRICOS)</strong><small className="cf-chip tone-warning">Internal only · never published</small></div>
+        <div className="re-row-body"><div className="re-value">{data.regulatory_contact?<>
+          <span>{[data.regulatory_contact.name,data.regulatory_contact.title].filter(Boolean).join(' · ')||'—'}</span>
+          <span className="l3v-code">{[data.regulatory_contact.phone,data.regulatory_contact.email].filter(Boolean).join(' · ')}{data.regulatory_contact.url?<> · <a href={data.regulatory_contact.url} target="_blank" rel="noreferrer" className="cf-link">CRICOS page</a></>:null}{data.regulatory_contact.at?` · read ${fmtDateTime(data.regulatory_contact.at)}`:''}</span></>
+          :<span className="l3v-code">{!data.regulatory_check?'Not read yet: the CRICOS contact job reads every provider in turn.':data.regulatory_check.outcome==='leased'?'Being read now.':data.regulatory_check.outcome==='budget'?'Waiting: Firecrawl is at its reserve.':`Not found on the CRICOS website (${fmtDateTime(data.regulatory_check.at)}).`}</span>}</div></div></div>}
       {!inline&&text('description','Description',{multiline:true})}
       {data.can_manage&&<div className="re-manage"><span>Provider status: <StatusChip value={p.lifecycle_status} tone={p.lifecycle_status==='active'?'success':'warning'} label={p.lifecycle_status==='active'?'Active':'Archived'}/></span>
         {p.lifecycle_status==='active'?<Button compact variant="danger" onClick={()=>act('archive',{},'Archive this provider? Its courses stay as they are. You can restore it later.')} disabled={busy}><Archive size={13}/>Archive provider</Button>
