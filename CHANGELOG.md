@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.162 — 10 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.235** (contact quality after the first R3 runs). Worker coverage-sweep v0.17.34: contact_page skips media/security/feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code (no search). Database: `20261010006700` (md5-guarded): earlier automated values are replaced on re-read; checks re-queued; schedules back on.
+
 ## 0.1.161 — 10 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.234** (Platform Admin bug list of 10 Oct 2026, R3: Fix 2; decisions "Both, kept separate", "Fill automatically", CRICOS contacts "All at once"). Database: `20261010006600` (md5-guarded; additive): pipeline.provider_contact_points and provider_contact_checks; worker functions; provider read returns the contact source and, for PIM Operators and above, the internal regulatory contact; schedules provider-contact-page and cricos-peo. Worker coverage-sweep v0.17.33: modes contact_page and cricos_peo.
