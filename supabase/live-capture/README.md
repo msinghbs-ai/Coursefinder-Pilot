@@ -34,3 +34,11 @@ buckets; edge function secrets; Auth settings.
 managed by Supabase itself and a project owner cannot issue it (rebuild run 38027911726 stopped
 on it with "permission denied for parameter log_min_messages"). The role timeouts (anon 3s,
 authenticated 8s, authenticator 8s) are kept. `roles.sql` stays exactly as captured.
+
+`baseline/apply-preamble.sql` runs immediately before `schema.sql` on a new project. A new
+Supabase project grants anon, authenticated and service_role everything on new objects in
+`public` (default privileges); a schema dump writes each object's grants but never revokes those
+defaults. Without the preamble, rebuild run 38028086660 let anon run 640 functions and read
+10 tables that the Pilot does not expose, and gave authenticated functions the Pilot keeps to
+service_role. The preamble removes the defaults while objects are created; the closing
+`ALTER DEFAULT PRIVILEGES` lines of `schema.sql` put the Pilot's defaults back.

@@ -13,6 +13,10 @@ on:
       test_project_ref:
         description: "Ref of the throwaway project named coursefinder-baseline-test"
         required: true
+      reset_existing:
+        description: "Wipe the test project first (only coursefinder-baseline-test; never the Pilot)"
+        type: boolean
+        default: false
 jobs:
   rebuild:
     runs-on: ubuntu-latest
@@ -21,6 +25,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       REF: ${{ inputs.test_project_ref }}
+      RESET: ${{ inputs.reset_existing }}
     steps:
       - uses: actions/checkout@v4
       - name: Confirm the target is the throwaway test project
@@ -36,7 +41,8 @@ jobs:
           curl -sS -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query" > n.json || true
           n=$(jq -r 'if type=="array" then (.[0].n|tostring) else "error" end' n.json 2>/dev/null || echo error)
           echo "::notice::Application tables: $n ($(head -c 200 n.json | tr -d '\n'))"
-          if [ "$n" != "0" ]; then echo "::error::Refused: the test project is not empty ($n tables)"; exit 1; fi
+          if [ "$n" = "error" ]; then echo "::error::Refused: could not count tables"; exit 1; fi
+          if [ "$n" != "0" ] && [ "$RESET" != "true" ]; then echo "::error::Refused: the test project is not empty ($n tables)"; exit 1; fi
           echo "Target confirmed: $REF (coursefinder-baseline-test, empty)" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: supabase/setup-cli@v1
         with:
@@ -50,10 +56,14 @@ jobs:
           work="$RUNNER_TEMP/rebuild"; mkdir -p "$work/supabase/migrations"
           printf 'project_id = "coursefinder-baseline-test"\n' > "$work/supabase/config.toml"
           cp supabase/live-capture/baseline/roles-apply.sql "$work/supabase/migrations/20261010000000_baseline_roles.sql"
-          cp supabase/live-capture/baseline/schema.sql "$work/supabase/migrations/20261010000001_baseline_schema.sql"
+          cat supabase/live-capture/baseline/apply-preamble.sql supabase/live-capture/baseline/schema.sql > "$work/supabase/migrations/20261010000001_baseline_schema.sql"
           cd "$work"
           supabase link --project-ref "$REF" 2>&1 | tee "$RUNNER_TEMP/push.log"
-          supabase db push --linked --include-all --yes 2>&1 | tail -c 200000 | tee -a "$RUNNER_TEMP/push.log"
+          if [ "$RESET" = "true" ]; then
+            supabase db reset --linked --yes 2>&1 | tail -c 200000 | tee -a "$RUNNER_TEMP/push.log"
+          else
+            supabase db push --linked --include-all --yes 2>&1 | tail -c 200000 | tee -a "$RUNNER_TEMP/push.log"
+          fi
       - name: Dump the rebuilt project
         if: ${{ !cancelled() && steps.rebuild.outcome != 'skipped' }}
         run: |
