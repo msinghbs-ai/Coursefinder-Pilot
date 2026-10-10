@@ -25,6 +25,17 @@ test('roles-apply.sql is the captured roles.sql minus only the Supabase-managed 
   expect(readFileSync('.github/workflows/db-baseline-rebuild-test.yml', 'utf8')).toContain('baseline/roles-apply.sql')
 })
 
+test('rebuild applies the default-privileges preamble before the schema', () => {
+  const pre = readFileSync(`${dir}/apply-preamble.sql`, 'utf8')
+  for (const kind of ['FUNCTIONS', 'TABLES', 'SEQUENCES'])
+    expect(pre).toContain(`ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" REVOKE ALL ON ${kind} FROM "anon", "authenticated", "service_role";`)
+  const wf = readFileSync('.github/workflows/db-baseline-rebuild-test.yml', 'utf8')
+  expect(wf).toContain('cat supabase/live-capture/baseline/apply-preamble.sql supabase/live-capture/baseline/schema.sql')
+  // the closing defaults in schema.sql restore the Pilot's defaults
+  const schema = readFileSync(`${dir}/schema.sql`, 'utf8')
+  expect(schema).toContain('ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";')
+})
+
 test('rebuild test refuses the Pilot and any project not named coursefinder-baseline-test', () => {
   const wf = readFileSync('.github/workflows/db-baseline-rebuild-test.yml', 'utf8')
   expect(wf).toContain("Refused: that is the Pilot project")
