@@ -25,13 +25,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Confirm the target is the throwaway test project
         run: |
-          if ! [[ "$REF" =~ ^[a-z]{20}$ ]]; then echo "Refused: not a project ref"; exit 1; fi
-          if [ "$REF" = "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Refused: that is the Pilot project"; exit 1; fi
-          name=$(curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" | jq -r .name)
-          if [ "$name" != "coursefinder-baseline-test" ]; then echo "Refused: project is named '$name'"; exit 1; fi
-          jq -n '{query:"select count(*)::int as n from pg_tables where schemaname not in ('pg_catalog','information_schema','auth','storage','realtime','vault','extensions','supabase_migrations','net','cron','graphql','pgsodium','supabase_functions','_realtime')", read_only:true}' > q.json
-          n=$(curl -sS -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query" | jq -r '.[0].n')
-          if [ "$n" != "0" ]; then echo "Refused: the test project is not empty ($n tables)"; exit 1; fi
+          if ! [[ "$REF" =~ ^[a-z]{20}$ ]]; then echo "::error::Refused: not a project ref"; exit 1; fi
+          if [ "$REF" = "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Refused: that is the Pilot project"; exit 1; fi
+          name=$(curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$REF" | jq -r '.name // "unknown"' || echo "lookup failed")
+          echo "::notice::Project name: $name"
+          if [ "$name" != "coursefinder-baseline-test" ]; then echo "::error::Refused: project is named '$name'"; exit 1; fi
+          q="select count(*)::int as n from pg_tables where schemaname not in ('pg_catalog','information_schema','auth','storage','realtime','vault','extensions','supabase_migrations','net','cron','graphql','pgsodium','supabase_functions','_realtime')"
+          jq -n --arg q "$q" '{query:$q, read_only:true}' > q.json
+          curl -sS -X POST -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @q.json "https://api.supabase.com/v1/projects/$REF/database/query" > n.json || true
+          n=$(jq -r 'if type=="array" then (.[0].n|tostring) else "error" end' n.json 2>/dev/null || echo error)
+          echo "::notice::Application tables: $n ($(head -c 200 n.json | tr -d '\n'))"
+          if [ "$n" != "0" ]; then echo "::error::Refused: the test project is not empty ($n tables)"; exit 1; fi
           echo "Target confirmed: $REF (coursefinder-baseline-test, empty)" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: supabase/setup-cli@v1
         with:

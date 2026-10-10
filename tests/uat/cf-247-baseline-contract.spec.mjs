@@ -18,7 +18,7 @@ test('baseline files match their recorded md5', () => {
 
 test('rebuild test refuses the Pilot and any project not named coursefinder-baseline-test', () => {
   const wf = readFileSync('.github/workflows/db-baseline-rebuild-test.yml', 'utf8')
-  expect(wf).toContain('Refused: that is the Pilot project')
+  expect(wf).toContain("Refused: that is the Pilot project")
   expect(wf).toContain('if [ "$name" != "coursefinder-baseline-test" ]')
   expect(wf).toContain('Refused: the test project is not empty')
 })
