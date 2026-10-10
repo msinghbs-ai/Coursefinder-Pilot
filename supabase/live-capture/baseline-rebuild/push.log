@@ -1,0 +1,13 @@
+Finished supabase link.
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ • 20261010000000_baseline_roles.sql
+ • 20261010000001_baseline_schema.sql
+ [Y/n] y
+Applying migration 20261010000000_baseline_roles.sql...
+ERROR: permission denied for parameter log_min_messages (SQLSTATE 42501)
+At statement: 6
+GRANT SET ON PARAMETER "log_min_messages" TO "supabase_realtime_admin"
+Try rerunning the command with --debug to troubleshoot the error.
+Rebuild step: failure
