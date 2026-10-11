@@ -8,7 +8,7 @@
 import React,{useEffect,useMemo,useState}from'react'
 import{AlarmClock,Pause,Play,RefreshCw,Save,Zap}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
+import{Badge,Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{EVERY,describeSchedule}from'./automation-schedule'
 
 
@@ -68,7 +68,7 @@ function JobRow({j,rank,busy,act}){
   useEffect(()=>setBatch(j.batch==null?'':String(j.batch)),[j.batch])
   const allowed=rank>=Number(j.control_rank||6),can=allowed&&!busy,last=j.last,st=STATUS[last?.status]||['neutral',last?.status||'—']
   return <tr className={j.active?'':'l3c-off'} data-job={j.job}>
-    <td><strong>{j.label}</strong><span className="au-desc">{j.description}</span><span className="l3v-code">{j.job}</span></td>
+    <td><strong>{j.label}</strong><span className="au-desc">{j.description}</span><span className="l3v-code">{j.job}</span>{j.catalogued===false&&<Badge tone="warning" data-uncatalogued-job>Not catalogued: no label or owner</Badge>}</td>
     <td>{s.text}{j.batch!=null&&<span className="l3v-code">{fmtNumber(j.batch)} per run</span>}</td>
     <td>{last?<><StatusChip value={last.status} tone={st[0]} label={st[1]}/><span className="l3v-code">{fmtDateTime(last.at)}{last.seconds!=null&&` · ${last.seconds}s`}</span>{last.message&&<span className="au-error" title={last.message}>{plainError(last.message)}</span>}</>:'Not run yet'}</td>
     <td className="num">{fmtNumber(j.runs_24h||0)} runs<span className={`l3v-code ${Number(j.failed_24h)>0?'l3v-bad':''}`}>{fmtNumber(j.failed_24h||0)} failed</span></td>

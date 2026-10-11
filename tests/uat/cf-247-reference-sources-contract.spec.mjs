@@ -35,23 +35,30 @@ test('no fixed third-party site patterns remain in the coverage sweep or the ran
 })
 
 test.describe('mocked browser', () => {
-  test('change uses (with reason), rename in place, check a site, and the placeholder count is shown', async ({ page }) => {
+  // v2.15.246 (Fix 7): a list with expandable rows; the filters line up with the columns; an opened row has the same fields as Add site
+  test('expandable rows: change uses (with reason), rename, check a site, and the placeholder count is shown', async ({ page }) => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept('Logos only from now on'))
     await page.goto('/#reference-data?tab=links')
     const t = page.locator('[data-reference-sources]')
-    await expect(t.locator('tbody tr')).toHaveCount(3)
-    await expect(t.locator('[data-site="Study Australia Scholarship Search"]')).toContainText('111 scholarships sourced only here')
-    await t.getByRole('button', { name: 'Change uses of Hotcourses Abroad' }).click()
-    await page.getByRole('dialog', { name: 'Uses of Hotcourses Abroad' }).getByLabel('Never a course page').uncheck()
-    await page.getByRole('dialog', { name: 'Uses of Hotcourses Abroad' }).getByRole('button', { name: 'Save' }).click()
+    await expect(t.locator('[data-site]')).toHaveCount(3)
+    await expect(t.locator('.xl-head')).toContainText('Site')
+    const filters = await t.locator('.xl-filters .xl-field > small').allTextContents()
+    expect(filters.slice(0, 4)).toEqual(['Site', 'Uses', 'Category', 'Country'])
+    await t.getByRole('button', { name: 'Open Study Australia Scholarship Search' }).click()
+    await expect(t).toContainText('111 scholarships sourced only here')
+    await t.getByRole('button', { name: 'Open Hotcourses Abroad' }).click()
+    const hc = t.locator('[data-site-form="r1"]')
+    await hc.getByLabel('Never a course page').uncheck()
+    await hc.getByRole('button', { name: 'Save changes' }).click()
     await expect.poll(() => page.l3calls.find(c => c.refSave?.p_fields?.uses)?.refSave).toEqual({ p_id: 'r1', p_fields: { uses: ['logo_directory', 'not_provider_site'] }, p_reason: 'Logos only from now on' })
-    await t.getByRole('button', { name: 'Edit Name of QS World University Rankings' }).click()
-    await t.getByLabel('Name of QS World University Rankings').fill('QS World University Rankings (QS)')
-    await t.getByLabel('Name of QS World University Rankings').press('Enter')
-    await expect.poll(() => page.l3calls.find(c => c.refSave?.p_fields?.name)?.refSave).toEqual({ p_id: 'r3', p_fields: { name: 'QS World University Rankings (QS)' }, p_reason: null })
-    await t.getByRole('button', { name: 'Check Hotcourses Abroad now' }).click()
+    await t.getByRole('button', { name: 'Check now' }).click()
     await expect.poll(() => page.l3calls.find(c => c.refAction)?.refAction).toEqual({ p_id: 'r1', p_action: 'check', p_reason: null })
+    await t.getByRole('button', { name: 'Open QS World University Rankings' }).click()
+    const qs = t.locator('[data-site-form="r3"]')
+    await qs.getByLabel('Name').fill('QS World University Rankings (QS)')
+    await qs.getByRole('button', { name: 'Save changes' }).click()
+    await expect.poll(() => page.l3calls.find(c => c.refSave?.p_fields?.name)?.refSave).toEqual({ p_id: 'r3', p_fields: { name: 'QS World University Rankings (QS)' }, p_reason: null })
   })
 
   test('key dates: list first, edit a title in place, cancel a date, add one from the short form', async ({ page }) => {

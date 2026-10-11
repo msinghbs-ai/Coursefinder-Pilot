@@ -15,6 +15,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     pipeline_filters: { layers: ['L2'], statuses: ['completed', 'failed'], modes: [], countries: [], job_types: ['layer2_task'], failure_classes: [], completion_classes: [] },
     pipeline_jobs_page: { total: 1, items: [{ id: 'pj-task', job_type: 'layer2_task', domain: 'qualify_adapters', status: 'completed', layer_code: 'L2', run_mode: 'DRY_RUN', created_at: '2026-10-06T00:10:00Z', started_at: '2026-10-06T00:11:00Z', completed_at: '2026-10-06T00:12:00Z', duration_ms: 60000, attempt_count: 1, evidence_count: 0, completion_class: 'completed', failure_class: null, provider_name: null, source_label: null }] },
     pipeline_job_detail: { job: { id: 'pj-task', job_type: 'layer2_task', domain: 'qualify_adapters', status: 'completed', payload: { admin_job_id: 'job-done', kind: 'qualify_adapters', title: 'Qualify 2 adapter(s) in AU-NSW' }, result: { state: 'done', passing: 1, errors: 0 } }, run_semantics: {}, entity_impact: {}, safe_actions: {}, evidence: [] },
+    layer1_operations: F.layer1Operations,
     layer3_queue_status: F.layer3Queue, campuses_page: F.campusesPage, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_acquisition_providers: F.environmentRead.layer2_providers,
   }
   const calls = []; page.l3calls = calls
@@ -22,6 +23,10 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     // Decision 222: Fetch an area on the course-page sweep; Websites to find
     admin_coverage_fetch_area: b => { calls.push({ fetchArea: b }); return b.p_action === 'options' ? F.fetchAreaOptions : b.p_action === 'scope_page' ? F.fetchAreaScope : b.p_action === 'start' ? { ...F.fetchAreaPreview, first_in_sweep: true, started: F.fetchAreaStarted } : F.fetchAreaPreview },
     admin_provider_websites: F.providerWebsites,
+    // v2.15.246 (Feature 2): Layer 1 › Sources
+    admin_layer1_add_source: b => { calls.push({ l1Add: b.p_args }); return { ok: true, source_id: 'l1-new', label: b.p_args.label } },
+    layer1_admin_command: b => { calls.push({ l1Command: b }); return { ok: true } },
+    layer1_statistics_candidates_read: [],
     admin_provider_website_set: b => { calls.push({ websiteSet: b }); return { ...F.providerWebsites, total: F.providerWebsites.total - 1, items: F.providerWebsites.items.filter(i => i.provider_id !== b.p_provider_id) } },
     admin_layer3_operations: F.layer3Operations,
     admin_layer3_control_read: F.layer3Control,

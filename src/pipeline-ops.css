@@ -17,3 +17,6 @@
 
 /* Package 5 (J4): without empty count columns the table fits the panel */
 .ops-table.ops-table-compact{min-width:1000px}
+/* v2.15.246 (Fix 1): register run detail: evidence links and the batch table */
+.ops-evidence-list a{border:1px solid var(--ops-line);border-radius:var(--cf-radius-md);background:var(--cf-white);padding:7px 8px;display:flex;justify-content:space-between;gap:8px;align-items:center;color:var(--cf-slate-700);text-decoration:none}.ops-evidence-list a:hover{background:var(--cf-slate-50);border-color:var(--cf-indigo-200)}.ops-evidence-list a span{overflow-wrap:anywhere}
+.ops-table[data-run-batches]{min-width:0}.ops-table[data-run-batches] tbody tr{cursor:default}
