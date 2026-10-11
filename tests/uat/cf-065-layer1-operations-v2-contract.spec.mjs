@@ -29,10 +29,13 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(layer1).toContain('Source & authority')
     expect(layer1).toContain('Cadence & guardrails')
     expect(layer1).not.toContain('Advanced source configuration')
-    // 7 Oct 2026: the old shell menu became nav-map tabs; Runs stay Operator (rank 4), Source settings stay Platform Admin (rank 6).
-    expect(nav).toContain("{ key: 'operations', label: 'Runs', min: 4 }")
-    expect(nav).toContain("{ key: 'settings', label: 'Source settings', min: 6 }")
-    expect(shell).toContain("if(tab==='settings')return <Layer1SourceSettings/>")
+    // v2.15.246 (bugs 11/10-3, Feature 2): Runs and Source settings are one Sources list (Operator opens it, rank 4; editing the
+    // settings in a row stays Platform Admin, rank 6). The old cards remain exported for the legacy pop-up only.
+    expect(nav).toContain("{ key: 'operations', label: 'Sources', min: 4 }")
+    expect(nav).not.toContain("label: 'Source settings'")
+    expect(shell).toContain("return <Layer1Sources/>")
+    expect(layer1).toContain('export function Layer1Sources()')
+    expect(layer1).toContain('const set=k=>e=>setForm(f=>({...f,[k]:e.target.value})),canEdit=rank>=6')
     const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
     const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]

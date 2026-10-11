@@ -659,7 +659,22 @@ export const adminJobs = (id, args = {}) => ({
   countries: [{ code: 'AU', name: 'Australia', adapters: 700 }, { code: 'CA', name: 'Canada', adapters: 27 }, { code: 'NZ', name: 'New Zealand', adapters: 60 }],
   states: [{ code: 'AU-NSW', name: 'New South Wales', country: 'AU', adapters: 200 }, { code: 'AU-VIC', name: 'Victoria', country: 'AU', adapters: 180 }, { code: 'CA-BC', name: 'British Columbia', country: 'CA', adapters: 10 }],
   can_admit: true,
+  // v2.15.246 (Fix 3): the live board, always present
+  running_now: { at: '2026-10-11T05:00:00Z', window_minutes: 15, scheduled: [], worker_calls: [], credits_last_hour: { scrape: 40 }, credits_15m: { scrape: 12 },
+    recent_jobs: [{ job: 'course-link-reverse', label: 'Match known course pages by CRICOS code', area: 'Course pages', runs: 15, failed: 1, avg_seconds: 18.8, max_seconds: 38.1, last_at: '2026-10-11T04:50:00Z', active: true, schedule: '* * * * *', control_rank: 5, catalogued: true }],
+    recent_calls: [{ function: 'layer3-model-routing', mode: 'work', calls: 30, failed: 0, on_their_way: 0 }],
+    ai_15m: { 'Layer 3 checks': { calls: 12, usd: 0.0054 } },
+    queues: [{ job: 'course-link-search', label: 'Courses waiting for a course page search', waiting: 2884 }, { job: 'admin-jobs', label: 'Tasks waiting or running', waiting: 0 }],
+    uncatalogued: ['mystery-job'] },
 })
+
+// v2.15.246 (Feature 2): Layer 1 › Sources (admin_read layer1_operations), one healthy register and one failing check
+export const layer1Operations = { sources: [
+  { source_id: 'l1-nzqa', source_label: 'NZQA Education Organisations', authority_name: 'NZQA', country_code: 'NZ', country_name: 'New Zealand', dataset_class: 'regulatory', source_health: 'healthy', verification_status: 'passed', verification_message: 'Providers=415', paused: false, auto_ingest: true, verification_cadence_days: 1, ingestion_cadence_days: 1, schedule_enabled: true, schedule_next_due_at: '2099-01-01T00:00:00Z', last_expected_count: 415, evidence_count: 30, expected_format: 'web pages', source_url: 'https://www.nzqa.govt.nz/', authority_domains: ['nzqa.govt.nz'], variance_warn_percent: 5, variance_block_percent: 20, source_status: 'active',
+    latest_run: { id: 'run-1', status: 'completed', mode: 'apply', started_at: '2026-10-10T15:35:00Z', completed_at: '2026-10-10T15:38:00Z', created_count: 0, updated_count: 0, unchanged_count: 6474 } },
+  { source_id: 'l1-centennial', source_label: 'Centennial College Program Catalogue API', authority_name: 'Centennial College', country_code: 'CA', country_name: 'Canada', dataset_class: 'regulatory', source_health: 'unhealthy', verification_status: 'failed', verification_message: 'Centennial expected 195 unique source codes got 200', paused: false, auto_ingest: true, verification_cadence_days: 7, ingestion_cadence_days: 7, schedule_enabled: true, last_expected_count: 195, evidence_count: 2, source_url: 'https://www.centennialcollege.ca/', authority_domains: ['centennialcollege.ca'], variance_warn_percent: 5, variance_block_percent: 20, source_status: 'active', latest_run: null },
+  { source_id: 'l1-dfat', source_label: 'Australia Awards (DFAT)', authority_name: 'DFAT', country_code: 'AU', country_name: 'Australia', dataset_class: 'regulatory', source_health: 'paused', verification_status: 'passed', paused: true, auto_ingest: false, source_status: 'retired', latest_run: null },
+] }
 
 // v2.15.200 (Decision 254): Layer 2 › Adapters (public.admin_adapters list and detail)
 export const adaptersList = { as_at: '2026-10-06T05:00:00Z', can_manage: true, can_qualify: true,

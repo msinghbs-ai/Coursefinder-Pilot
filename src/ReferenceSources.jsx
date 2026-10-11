@@ -88,7 +88,7 @@ function SiteBody({x,uses,cats,can,manage,busy,useLabel,onSave,onCheck,onRetire}
   return <>
     {x.purpose&&<p className="xl-note">{x.purpose}</p>}
     <div className="xl-facts">{x.scholarships!=null&&<Pill tone="warning">{fmtNumber(x.scholarships)} scholarships sourced only here</Pill>}{x.ref_key&&<Pill tone="info">Ranking publisher: {x.ref_key}</Pill>}<a className="cf-link" href={x.url} target="_blank" rel="noreferrer"><ExternalLink size={12}/> Open {x.url}</a></div>
-    {(can||manage)&&!x.retired?<SiteForm key={x.id} item={x} uses={uses} cats={cats} can={can} manage={manage} onSave={f=>{const behaviour=['domain','uses','category','country'].some(k=>JSON.stringify(f[k])!==JSON.stringify(x[k]));return onSave(f,behaviour)}}/>
+    {(can||manage)&&!x.retired?<SiteForm key={x.id} item={x} uses={uses} cats={cats} can={can} manage={manage} onSave={f=>{const behaviour=['domain','uses','category','country'].some(k=>k in f&&JSON.stringify(f[k])!==JSON.stringify(x[k]));return onSave(f,behaviour)}}/>
       :<p className="xl-note">{(x.uses||[]).map(u=>useLabel[u]||u).join(', ')}</p>}
     <div className="xl-actions">{can&&!x.retired&&<Button compact onClick={onCheck} disabled={busy||x.checking}><RefreshCw size={13}/>Check now</Button>}{manage&&<Button compact onClick={onRetire} disabled={busy}>{x.retired?'Restore':'Retire'}</Button>}</div>
   </>
@@ -111,31 +111,4 @@ function SiteForm({item,uses,cats,onSave,onCancel,can=true,manage=true}){
     <fieldset className="sl-choice"><legend>Uses</legend>{uses.map(u=><label key={u.key} title={u.help}><input type="checkbox" disabled={!manage} checked={f.uses.includes(u.key)} onChange={()=>set('uses',f.uses.includes(u.key)?f.uses.filter(x=>x!==u.key):[...f.uses,u.key])}/>{u.label}</label>)}</fieldset>
     <div className="l3c-actions">{onCancel&&<Button compact onClick={onCancel}>Cancel</Button>}<Button compact variant="primary" disabled={!ok||(item&&!Object.keys(changed).length)} onClick={()=>onSave(item?changed:f)}>{item?<><Check size={13}/>Save changes</>:<><Plus size={13}/>Add site</>}</Button></div>
   </div>
-}
-
-function Uses({item,uses,label,can,onSave}){
-  const[open,setOpen]=useState(false),[sel,setSel]=useState(item.uses||[]),ref=useRef(null)
-  useEffect(()=>{if(!open)setSel(item.uses||[])},[open,JSON.stringify(item.uses)])
-  useEffect(()=>{if(!open)return;const h=e=>{if(ref.current&&!ref.current.contains(e.target))setOpen(false)};document.addEventListener('mousedown',h);return()=>document.removeEventListener('mousedown',h)},[open])
-  const chips=<span className="rs-uses">{(item.uses||[]).map(u=><span key={u} className="cf-chip tone-violet">{label[u]||u}</span>)}</span>
-  if(!can)return chips
-  return <span className="rs-uses-edit" ref={ref}>
-    <button type="button" className="le-btn rs-uses-btn" aria-label={`Change uses of ${item.name}`} onClick={()=>setOpen(o=>!o)}>{chips}</button>
-    {open&&<div className="rs-pop" role="dialog" aria-label={`Uses of ${item.name}`}>
-      {uses.map(u=><label key={u.key}><input type="checkbox" checked={sel.includes(u.key)} onChange={()=>setSel(s=>s.includes(u.key)?s.filter(x=>x!==u.key):[...s,u.key])}/>{u.label}</label>)}
-      <div className="rs-pop-actions"><Button compact onClick={()=>setOpen(false)}>Cancel</Button><Button compact variant="primary" disabled={!sel.length} onClick={async()=>{if(await onSave(sel))setOpen(false)}}><Check size={13}/>Save</Button></div>
-    </div>}
-  </span>
-}
-
-function Cell({value,can,label,onSave,strong,muted,mono,link,placeholder}){
-  const[edit,setEdit]=useState(false),[draft,setDraft]=useState(value),ref=useRef(null)
-  useEffect(()=>{if(!edit)setDraft(value)},[value,edit])
-  useEffect(()=>{if(edit)ref.current?.focus()},[edit])
-  const cls=['rs-cell',strong&&'rs-strong',muted&&'rs-muted',mono&&'rs-mono'].filter(Boolean).join(' ')
-  const commit=async()=>{const v=String(draft).trim();if(v===String(value||'')){setEdit(false);return}if(await onSave(v))setEdit(false)}
-  if(edit)return <input ref={ref} className="fv-input le-input" aria-label={label} value={draft} onChange={e=>setDraft(e.target.value)} onBlur={commit} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();commit()}if(e.key==='Escape')setEdit(false)}}/>
-  const text=value||<span className="le-empty">{placeholder||'—'}</span>
-  return <span className={cls}>{can?<button type="button" className="le-btn" aria-label={`Edit ${label}`} onClick={()=>setEdit(true)}>{text}</button>:<span>{text}</span>}
-    {link&&value&&<a className="cf-link" href={value} target="_blank" rel="noreferrer" aria-label={`Open ${value}`}><ExternalLink size={12}/></a>}</span>
 }
