@@ -5,8 +5,10 @@ const ui = { timeout: DETERMINISTIC_UI_TIMEOUT }
 
 export async function openLayer1(page) {
   await clickPrimaryNav(page, 'Layer 1 — Operations')
-  const workspace = page.locator('.l1v2-page .l1v2-shell')
+  // v2.15.246 (bugs 11/10-3, Feature 2): Layer 1 › Sources is one list with expandable rows
+  const workspace = page.locator('[data-l1-sources]')
   await expect(workspace).toBeVisible(ui)
+  await expect(workspace.locator('[data-l1-source]').first()).toBeVisible(ui)
   // Decision 133: the screen title is the page title (the embedded panel no longer repeats it).
   await expect(page.getByRole('heading', { name: 'Layer 1 Register' }).first()).toBeVisible(ui)
   return workspace

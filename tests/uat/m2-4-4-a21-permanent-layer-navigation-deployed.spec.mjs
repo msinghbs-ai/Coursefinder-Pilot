@@ -1,3 +1,4 @@
+// v2.15.246: Layer 1 › Sources list.
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
@@ -26,7 +27,7 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
     await loginAsUatUser(page)
     await clickPrimaryNav(page,'Layer 1 — Operations')
     await expect(page.getByRole('heading',{name:'Layer 1 Register'}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.locator('.l1v2-page')).toBeVisible()
+    await expect(page.locator('[data-l1-sources]')).toBeVisible() // v2.15.246: one Sources list
     await expect(page.locator('.l1v2-backdrop')).toHaveCount(0)
     await expect(page.getByRole('button',{name:/Refresh/i}).first()).toBeVisible()
     await milestoneScreenshot(page,testInfo,'a21-layer1-embedded')
