@@ -249,7 +249,7 @@ update pipeline.automation_catalogue c set batch_editable = true
   from cron.job j where j.jobname = c.jobname and not c.batch_editable and security.automation_batch(j.command) is not null;
 
 do $post$
-declare v_expected jsonb := '{"security.admin_automations_read_v1()": "e4564f611f4bcc79cd26991d42bf4500", "security.admin_running_now_v1()": "479c3c04e7712c38d8b4fd96536f4ed1", "security.layer1_auto_ingest_tick_v1()": "21f3251500f1824fcff82713d15339ce", "security.admin_pipeline_ops_read(text,jsonb)": "b5d89ce1e5b3b7c3de2398d5ef27289d"}'::jsonb;
+declare v_expected jsonb := '{"security.admin_automations_read_v1()": "e4564f611f4bcc79cd26991d42bf4500", "security.admin_running_now_v1()": "420627ee07ef97a4dd34f6687b0c90a5", "security.layer1_auto_ingest_tick_v1()": "21f3251500f1824fcff82713d15339ce", "security.admin_pipeline_ops_read(text,jsonb)": "b5d89ce1e5b3b7c3de2398d5ef27289d"}'::jsonb;
   v_sig text;
 begin
   for v_sig in select jsonb_object_keys(v_expected) loop
