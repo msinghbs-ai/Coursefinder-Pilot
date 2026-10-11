@@ -10,7 +10,7 @@ const m85 = fs.readFileSync('supabase/migrations/20261011008500_cf247_scholarshi
 
 test('scraper only: no direct read, no fallback, robots.txt not consulted for scholarship pages; a page waits for the scraper', () => {
   expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(18\.2|19\.\d+)"/) // v0.19.0 keeps the scraper-only scholarship reading
-  expect(worker).toContain('const SCH_VERSION = "scholarship-sweep-v0.7.2"')
+  expect(worker).toContain('const SCH_VERSION = "scholarship-sweep-v0.7.3"')
   const fn = worker.slice(worker.indexOf('const readSch = async'), worker.indexOf('const readSch = async') + 1600)
   expect(fn).toContain('if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");')
   expect(fn).not.toContain('readDirect(')

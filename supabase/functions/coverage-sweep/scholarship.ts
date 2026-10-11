@@ -122,7 +122,11 @@ export function scholarshipValue(body: string, name = "", currency = "AUD") {
     if (amountCurrency(m[0], m[2], home) !== home || /\b(?:USD|US\$)\s*$/i.test(t.slice(Math.max(0, at - 8), at))) { foreign = true; continue }
     if (/up to\s*(?:a|au)?\s*$/i.test(t.slice(Math.max(0, at - 12), at))) upTo = true;
     if (!/(scholarship|award|valued?|worth|stipend|bursary|grant|per year|per annum|each year|one-off|one off|once-off)/.test(around)) continue;
-    if (/(accommodation|application fee|cost of|visa|oshc|health cover)/.test(around) || (!stipend && /living/.test(around))) continue;
+    // v0.7.3 (VU STEM Accommodation): an amount the student pays (a deposit, bond, fee or charge) is never the award; an amount
+    // the award is "valued at" or "worth" counts even when it is accommodation
+    const before = t.slice(Math.max(0, at - 70), at).toLowerCase(), valuedAt = /(valued at|worth|value of|to the value of)\s*(?:over|up to|approximately|about)?\s*(?:a|au)?\s*$/.test(before);
+    if (/(deposit|bond|security|payable|must pay|required to pay|pay a|charge|levy|fee of|fees? (?:is|are)|application fee|admin(?:istration)? fee)/.test(before.slice(-60))) continue;
+    if (!valuedAt && (/(accommodation|application fee|cost of|visa|oshc|health cover)/.test(around) || (!stipend && /living/.test(around)))) continue;
     const v = Number(m[1].replace(/,/g, "")); if (v >= 500 && v <= 200000) amt.add(v);
   }
   // any other percentage in the scholarship text (tiers by region, level or result) makes a single value unsafe
@@ -244,6 +248,12 @@ export function namedCourses(html: string, body: string) {
   const titles = new Map<string, string>(), exTitles = new Map<string, string>();
   const sec = html.match(/<(h[1-6]|strong|b|p)[^>]*>[^<]{0,80}\b(?:eligible|applicable|participating|qualifying|available for(?: the following)?)\s+(?:courses?|programs?|programmes?|degrees?)[^<]{0,60}<\/\1>([\s\S]{0,6000}?)(?=<h[1-4]\b|$)/i);
   if (sec) for (const li of sec[2].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)) { const x = clean(htmlToText(li[1])); if (x.length >= 4 && x.length <= 140) titles.set(x, "Listed under: " + clean(htmlToText(sec[0].slice(0, 200)))) }
+  // v0.7.3 (VU STEM Accommodation): a list introduced in running text, "meet the entry requirements for one of the following
+  // STEM-related course:" followed by the courses as list items
+  for (const lst of html.matchAll(/(?:one of the following|the following|these)\b[^<]{0,80}?\b(?:courses?|programs?|programmes?|degrees?)\b[^<]{0,40}:?\s*(?:<\/[a-z0-9]+>\s*|<(?:p|div|span)[^>]*>\s*)*<(?:ul|ol)[^>]*>([\s\S]{0,12000}?)<\/(?:ul|ol)>/gi)) {
+    const intro = clean(htmlToText(lst[0].slice(0, 200)));
+    for (const li of lst[1].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)) { const x = clean(htmlToText(li[1])); if (x.length >= 4 && x.length <= 140 && /\b(?:bachelor|master|diploma|certificate|graduate|doctor|associate degree|honours|phd)\b/i.test(x)) titles.set(x, "Listed under: " + intro) }
+  }
   const at = body.search(/\b(?:eligib|who can apply|to be eligible|you must)/i);
   const elig = at >= 0 ? body.slice(at, at + 2500) : body.slice(0, 2500);
   for (const m of elig.matchAll(TITLE_RE)) {
@@ -253,6 +263,8 @@ export function namedCourses(html: string, body: string) {
   }
   // list items under an "eligible courses" heading that follow "excluding" are exclusions too
   if (sec) { const secText = clean(htmlToText(sec[2])); for (const [x] of titles) { const i = secText.indexOf(x); if (i >= 0 && excludedAt(secText, i)) { exTitles.set(x, titles.get(x)!); titles.delete(x) } } }
+  // v0.7.3: a run of several listed course names read as one title is not a course
+  for (const [x] of [...titles]) if ([...titles.keys()].filter((y) => y !== x && x.includes(y)).length >= 2) titles.delete(x)
   return { codes: [...codes].map(([code, text]) => ({ code, text })).slice(0, 60), titles: [...titles].map(([title, text]) => ({ title, text })).slice(0, 80),
     excluded: [...[...excluded].map(([code, text]) => ({ code, text })), ...[...exTitles].map(([title, text]) => ({ title, text }))].slice(0, 80) };
 }
@@ -602,9 +614,16 @@ export function internationalEligibility(text: string) {
   const explicit = /(\binternational (?:students?|applicants?|candidates?|undergraduate|postgraduate|school leavers?|high school)|open to international|onshore (?:and|or) offshore|offshore students|student visa|study permit|overseas students?|full[- ]fee[- ]paying international)/i.test(t);
   return { explicit: explicit && !excluded, excluded };
 }
+export const NOT_OFFERED_RE = /(no longer (?:be )?(?:offered|available|accepting)|(?:has been|is|was) discontinued|closed permanently|permanently closed|not (?:being )?offered in 20\d\d|this scholarship (?:is|has) (?:now )?closed|will not be offered)/gi;
+export const PLACES_LAST_RE = /\b(?:after|once|when|until|while|if)\b[^.]{0,80}\b(?:places?|spots?|quotas?|scholarships?|funds?|allocations?)\b[^.]{0,40}\b(?:filled|reached|allocated|awarded|exhausted|run out|taken|last)\b|\bwhile (?:places|stocks|funds) last\b|\bplaces are limited\b/i;
 export function currentlyOffered(text: string, today = new Date()) {
   const t = text.slice(0, 15000);
-  if (/(no longer (?:be )?(?:offered|available|accepting)|(?:has been|is|was) discontinued|closed permanently|permanently closed|not (?:being )?offered in 20\d\d|this scholarship (?:is|has) (?:now )?closed|will not be offered)/i.test(t)) return { ok: false, reason: "not_offered" };
+  // v0.7.3 (Platform Admin bugs 11/10-6, VU STEM Accommodation): a "while places last" condition ("Scholarships will no longer be
+  // available after all places are filled") is not an ended scholarship; only a sentence without such a condition counts
+  for (const m of t.matchAll(NOT_OFFERED_RE)) {
+    const s = sentenceAt(t, m.index || 0);
+    if (!PLACES_LAST_RE.test(s)) return { ok: false, reason: "not_offered", proof: s };
+  }
   const years = [...t.matchAll(/\b(20[1-3]\d)\b/g)].map((m) => Number(m[1])).filter((y) => y >= 2019 && y <= 2035);
   if (years.length && Math.max(...years) < today.getUTCFullYear()) return { ok: false, reason: "past_year_only" };
   return { ok: true, reason: null };
