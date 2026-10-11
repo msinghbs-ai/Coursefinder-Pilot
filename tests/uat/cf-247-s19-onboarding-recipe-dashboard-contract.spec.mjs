@@ -24,6 +24,13 @@ test('migration: Dashboard waiting rows', () => {
   expect(w).not.toContain('tab=publishing')
 })
 
+test('migration 10600: a proposal with no answer after 30 minutes is asked again, twice at most', () => {
+  const s = fs.readFileSync('supabase/migrations/20261012010600_cf247_onboarding_proposal_stall_retry.sql', 'utf8')
+  expect(s).toContain("or (d.status = 'proposing' and v_age > interval '30 minutes')) and o.attempts < 2 then")
+  expect(s).toContain('live % differs from the definition this change replaces')
+  expect(s).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+})
+
 test('Providers › Onboarding explains the recipe_off stop', () => {
   const ui = fs.readFileSync('src/ProviderOnboarding.jsx', 'utf8')
   expect(ui).toContain("recipe_off:['Course-page search switched off'")
