@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-11T09:15:01.166Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-scholarships.png",
+      "route": "scholarships",
+      "action": null,
+      "clicked": true,
+      "heading": "Scholarships",
+      "settle_ms": 3415,
+      "height": 3288,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scholarships",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-scholarships-coverage.png",
+      "route": "scholarships",
+      "action": "Coverage",
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 4045,
+      "height": 1973,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
