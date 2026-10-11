@@ -274,7 +274,7 @@ test('browser: adapter — test what it would admit, switch admission on with a 
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Checked 10 pages against the handbook'))
   const row = await openAdapter(page, 'u1', ['build']) // v2.15.200: Layer 2 › Adapters
-  await expect(row.locator('.ad-row-head')).toContainText('Admitting') // the fixture row on the Adapters list
+  await expect(row.locator('.adp-row-head')).toContainText('Admitting') // the fixture row on the Adapters list
   const r = page.locator('[data-adapter-review="u1"]')
   await expect(r.locator('[data-adapter-confirmed]')).toContainText('121373J')
   await expect(r.locator('[data-adapter-admit]')).toContainText('Not admitting yet')
@@ -441,7 +441,7 @@ test('adapter fees and builder: migration shaped, hand-entered fees kept, model 
   expect(req.model).toBe('qwen/qwen3-30b-a3b-instruct-2507')
   expect(req.provider).toEqual({ require_parameters: true })
   expect(req.max_tokens).toBe(4000) // v0.17.14: 1500 cut a long answer off mid-string
-  expect(w).toContain('finish_reason === "length"')
+  expect(w).toContain('else if (finish === "length")') // v0.19.0: a cut-off answer is asked again once with a larger limit
 })
 
 test('browser: visual adapter builder — samples with blocks and page data, marks, proposal output, use fills the settings', async ({ page }) => {
@@ -597,7 +597,7 @@ test('browser: Layer 2 › Adapters — pills, open a university, its courses, a
   // v2.15.200: Coverage › Universities is retired into the Adapters rows
   const row = await openAdapter(page, 'u1', ['courses', 'central'])
   const w = page.locator('[data-adapters-workspace]')
-  await expect(row.locator('.ad-row-head')).toContainText('Admitting')
+  await expect(row.locator('.adp-row-head')).toContainText('Admitting')
   await expect(row.locator('[data-adapter-coverage]')).toContainText('excluded 2')
   await expect(row.locator('[data-adapter-coverage]')).toContainText('Approved')
   await expect(row.locator('[data-adapter-coverage]')).toContainText('central 150')
@@ -755,7 +755,7 @@ test('browser: Layer 2 › Adapters — whole-course fee range, publish and sett
   await expect(nz).toContainText('NZ$24,561–NZ$203,048')
   await expect(nz).toContainText('Published')
   await expect(nz).toContainText('few courses')
-  await nzRow.locator('.ad-row-head .ad-row-name').click()
+  await nzRow.locator('.adp-row-head .adp-row-name').click()
   const row = await openAdapter(page, 'u1', ['fees'])
   const cell = row.locator('[data-fee-range-cell="u1"]')
   await expect(cell).toContainText('A$13,500–A$290,400')

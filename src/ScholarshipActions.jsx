@@ -5,7 +5,7 @@
 // scraper, attaches courses by the evidence rules and finishes on its own. Progress and Cancel are on the button and in
 // Scheduled jobs › Task manager. Shown to Operators and above (the job system's own rule); hidden for everyone else.
 import React,{useEffect,useState}from'react'
-import{Search,RefreshCw,Sparkles}from'lucide-react'
+import{Search,RefreshCw,Sparkles,Globe}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import JobButton from'./JobButton'
 
@@ -43,6 +43,17 @@ export function ScholarshipReadAction({scholarshipId,name}){
   return <Wrap>
     <JobButton kind="scholarship_reread" scope={scholarshipId} args={{scholarship_ids:[scholarshipId]}} icon={RefreshCw} label="Read again now" variant=""
       question={`Read "${name||'this scholarship'}" again now through the scraper?`}/>
+  </Wrap>
+}
+
+// v2.15.245 (Platform Admin bugs 11/10-2, Feature 2): a provider entered by hand, or from a country with no register, is filled in from its
+// own website: the website is searched for and verified when none is recorded, then its contacts are read and its central pages found.
+export function ProviderFillAction({providerId,name,website}){
+  const can=useCanRunTasks()
+  if(!can||!providerId)return null
+  return <Wrap note={website?'Reads its public contacts and looks for its central pages (key dates, international fees, English requirements) with Firecrawl. Progress is also in Task manager.':'No website is recorded: it is searched for and verified first, then contacts and central pages follow. Progress is also in Task manager.'}>
+    <JobButton kind="provider_fill" scope={providerId} args={{provider_id:providerId}} icon={Globe} variant="" label={website?'Fill in from website again':'Fill in from website'}
+      question={`Fill in ${name||'this provider'} from its website?${website?'':' Its website is searched for and verified first (about 2 Firecrawl credits).'}`}/>
   </Wrap>
 }
 

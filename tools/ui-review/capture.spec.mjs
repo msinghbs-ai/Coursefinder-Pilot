@@ -48,6 +48,9 @@ function masks(page) {
 test('capture screens for UI review', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
   track(page)
+  const consoleErrors = []
+  page.on('console', m => { if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 400)) })
+  page.on('pageerror', e => consoleErrors.push('pageerror: ' + String(e.message).slice(0, 400)))
   await loginAsUatUser(page)
   const captured = new Set()
   const manifest = []
@@ -57,6 +60,13 @@ test('capture screens for UI review', async ({ page }) => {
     const shots = [...(captured.has(route) ? [] : [{ label: 'main', click: null }]), ...clicks.map(c => ({ label: c, click: c }))]
     captured.add(route)
     await page.goto('/#' + route)
+    // Diagnostics (CF-247): route "layer-2-discovery~AU~any" sets the Adapters filters the Platform Admin used
+    if (process.env.ADAPTER_FILTERS && route === 'layer-2-discovery') {
+      await page.locator('[data-adapters-tally]').waitFor({ timeout: 60_000 }).catch(() => {})
+      await page.getByRole('combobox', { name: 'Adapters country' }).selectOption('AU').catch(() => {})
+      await page.getByRole('combobox', { name: 'Provider kind' }).selectOption('any').catch(() => {})
+      await page.waitForTimeout(3000)
+    }
     for (const s of shots) {
       let clicked = true
       if (s.click) {
@@ -70,7 +80,9 @@ test('capture screens for UI review', async ({ page }) => {
       await page.screenshot({ path: path.join(OUT, file), fullPage: true, mask: masks(page), maskColor: '#9ca3af' })
       const title = await page.locator('h1').first().textContent({ timeout: 2000 }).catch(() => '')
       const size = page.viewportSize()
-      manifest.push({ file, route, action: s.click, clicked, heading: (title || '').trim(), settle_ms: settleMs, height: size.height, url: page.url() })
+      // Diagnostics (CF-247, 11 Oct 2026): console errors and, on Layer 2 › Adapters, what the list actually drew
+      const diag = await page.evaluate(() => { const w = document.querySelector('[data-adapters-workspace]'); if (!w) return null; return { rows: w.querySelectorAll('[data-adapter-row]').length, tally: w.querySelector('[data-adapters-tally]')?.textContent || null, list_html: (w.querySelector('.ad-list')?.outerHTML || 'no .ad-list').slice(0, 600), alerts: [...w.querySelectorAll('.dq-alert')].map(a => a.textContent.slice(0, 300)) } }).catch(e => ({ error: String(e) }))
+      manifest.push({ file, route, action: s.click, clicked, heading: (title || '').trim(), settle_ms: settleMs, height: size.height, url: page.url(), diag, console_errors: consoleErrors.splice(0) })
       await page.setViewportSize({ width: 1440, height: 1000 })
     }
   }

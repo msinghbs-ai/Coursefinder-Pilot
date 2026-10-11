@@ -31,7 +31,7 @@ test.describe('static contract', () => {
     const ex = await fs.readFile('supabase/functions/coverage-sweep/extract.ts', 'utf8')
     expect(ix).toMatch(/coverage-sweep-worker-v0\.(?:9\.[2-9]|1\d\.\d+)/) // v0.9.2 or later
     expect(ix).toContain('findCanadianSite')
-    expect(ix).toContain('if (!host.endsWith(".ca")')
+    expect(ix).toContain('const tldOk = (host: string, cc: string) => cc === "CA" ? host.endsWith(".ca")') // v0.19.0: the same search by name for every country, a .ca host for Canada
     expect(ix).toContain('no CRICOS provider code to check a site against')
     expect(ix).toContain('fee(text, currencyFor(it.country))')
     expect(ix).toContain('["NZ", "CA"].includes(it.country)')

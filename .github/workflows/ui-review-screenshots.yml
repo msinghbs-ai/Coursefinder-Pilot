@@ -14,6 +14,9 @@ on:
       base_url:
         description: "Site address (defaults to the pilot)"
         required: false
+      adapter_filters:
+        description: "Diagnostics: set Layer 2 Adapters filters to Australia and any provider (1 = yes)"
+        required: false
 permissions:
   contents: write
 jobs:
@@ -24,6 +27,7 @@ jobs:
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
       SCREENS: ${{ inputs.screens }}
+      ADAPTER_FILTERS: ${{ inputs.adapter_filters }}
       OUT_DIR: ui-review-out
     steps:
       - uses: actions/checkout@v4

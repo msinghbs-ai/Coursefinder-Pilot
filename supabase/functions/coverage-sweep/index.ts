@@ -7,6 +7,7 @@ import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, viewApplies, withView } from "./adapters.ts";
+import { CENTRAL_SEARCH, centralCandidates, weakKinds } from "./central.ts";
 import { adapterOutput, builderRequest, jsonLeaves, mainJsonScript, proposalAdapter, textBlocks } from "./builder.ts";
 import { adapterRecords, referenceRecords } from "../_shared/cf247-register-zip.ts";
 import { htmlAdapterRecords, nzqaReferenceRecords } from "../_shared/cf247-register-html.ts";
@@ -54,7 +55,7 @@ const SCH_VERSION = "scholarship-sweep-v0.7.2"; // v0.7.2 (11 Oct 2026): course 
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.18.2"; // v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.19.0"; // v0.19.0 (11 Oct 2026, Platform Admin bugs 11/10-2): find_site searches every provider without a website (not only Firecrawl targets), by name for New Zealand, Australia without a CRICOS code and any other country; mode central_find (Firecrawl map, key dates, international fees and English requirements suggested); an adapter proposal cut off at its length limit is asked again once with a larger limit, and tokens are recorded. v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -744,6 +745,35 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, providers: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
+    // v0.19.0 (11 Oct 2026, Platform Admin Feature 4): central pages found by Firecrawl. One map of the provider's own site
+    // (about 1 credit); fixed rules pick the likeliest key-dates, international-fee and English-requirements pages, kept as
+    // suggestions for a person to attach (pipeline.provider_central_search).
+    if (mode === "central_find") {
+      const provs: { provider_id: string; name: string; website: string }[] = await rpc("svc_central_find_next", { p_limit: Math.min(Number(body.limit || 4), 10) });
+      const out: unknown[] = [];
+      await pool(provs, 2, async (p) => {
+        let site: URL; try { site = new URL(/^https?:/i.test(p.website) ? p.website : "https://" + p.website) } catch { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: "the website address cannot be read", worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "bad_website" }); return }
+        if (!(await useFc("central_map", p.provider_id, site.origin, true))) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: null, p_evidence: { note: "Firecrawl budget reserve reached", worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "budget" }); return }
+        try {
+          const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: 5000, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok || d?.success === false) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: `map ${r.status}`, worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "map_failed" }); return }
+          const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title }).filter((x: any) => typeof x.url === "string");
+          let found = centralCandidates(links, site.hostname); const searched: string[] = [];
+          // a targeted map (about 1 credit) for each kind the whole-site map found no strong page of
+          for (const kind of weakKinds(found)) {
+            if (!(await useFc("central_map", p.provider_id, site.origin, true))) break;
+            const q = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: CENTRAL_SEARCH[kind], limit: 200, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+            const qd = q ? await q.json().catch(() => ({})) : {}; searched.push(`${kind}:${q?.status ?? "error"}`);
+            for (const x of (qd.links || qd.data?.links || [])) { const l = typeof x === "string" ? { url: x } : { url: x?.url, title: x?.title }; if (typeof l.url === "string") links.push(l) }
+          }
+          if (searched.length) found = centralCandidates(links, site.hostname);
+          await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: found, p_evidence: { site: site.origin, addresses: links.length, searched, worker: WORKER } });
+          out.push({ provider_id: p.provider_id, status: "done", addresses: links.length, found: found.length });
+        } catch (e) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: e instanceof Error ? e.message : String(e), worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "error" }) }
+      });
+      return j({ ok: true, mode, providers: out, ms: Date.now() - t0, workerVersion: WORKER });
+    }
     if (mode === "find_site") {
       const provs: { provider_id: string; name: string; trading: string | null; cricos: string; country?: string; dli?: string }[] = await rpc("svc_coverage_site_next", { p_limit: Math.min(Number(body.limit || 5), 10) });
       const out: unknown[] = [];
@@ -754,40 +784,45 @@ Deno.serve(async (req) => {
       const SKIP = { test: (host: string) => { const h = host.toLowerCase(); return skipDomains.some((d) => d.includes(".") ? (h === d || h.endsWith("." + d)) : new RegExp("(^|\\.)" + d.replace(/[^a-z0-9-]/g, "")).test(h)); } };
       // Decision 220: a Canadian provider's site, found by name. Accepted only on a .ca host (not a directory or
       // register) whose home page names the provider or prints its IRCC DLI number.
-      const findCanadianSite = async (p: { provider_id: string; name: string; dli?: string }) => {
+      // v0.19.0 (11 Oct 2026, Platform Admin "search every provider without a website"): the same search by name for every
+      // country without a register code to check against (New Zealand on a .nz host, Australia without a CRICOS code on a
+      // .au host, any other country on any host that is not a directory or register), for every provider, not only targets.
+      const tldOk = (host: string, cc: string) => cc === "CA" ? host.endsWith(".ca") : cc === "NZ" ? host.endsWith(".nz") : cc === "AU" ? host.endsWith(".au") : true;
+      const findCanadianSite = async (p: { provider_id: string; name: string; dli?: string }, cc = "CA") => {
         const query = `${p.name} official website`;
-        if (!(await useFc("search", p.provider_id, p.name))) { await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return { provider_id: p.provider_id, status: "budget" } }
+        if (!(await useFc("search", p.provider_id, p.name, true))) { await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return { provider_id: p.provider_id, status: "budget" } }
         let accepted: string | null = null, basis: string | null = null; const tried: unknown[] = [];
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query, limit: 8, country: "CA" }), signal: AbortSignal.timeout(45000) });
+          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query, limit: 8, ...(/^[A-Z]{2}$/.test(cc) ? { country: cc } : {}) }), signal: AbortSignal.timeout(45000) });
           const d = await r.json().catch(() => ({}));
           const results = (d?.data?.web || d?.data || []).map((x: any) => ({ url: x.url })).filter((x: any) => typeof x.url === "string");
           const seenHosts = new Set<string>();
           for (const res of results) {
             let u: URL; try { u = new URL(res.url) } catch { continue }
             const host = u.hostname.toLowerCase();
-            if (!host.endsWith(".ca") || SKIP.test(host) || seenHosts.has(host)) { tried.push({ page: res.url, skipped: true }); continue }
+            if (!tldOk(host, cc) || SKIP.test(host) || seenHosts.has(host)) { tried.push({ page: res.url, skipped: true }); continue }
             seenHosts.add(host);
             try {
               const h = await fetch(u.origin + "/", { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) });
               const html = h.ok ? await h.text() : "";
               let finalHost = host; try { finalHost = new URL(h.url || u.origin).hostname.toLowerCase() } catch { /* keep */ }
-              const b = finalHost.endsWith(".ca") ? siteNameMatch(html, htmlToText(html), p.name, p.dli || "", finalHost) : null;
+              const b = tldOk(finalHost, cc) && !SKIP.test(finalHost) ? siteNameMatch(html, htmlToText(html), p.name, p.dli || "", finalHost) : null;
               tried.push({ page: u.origin + "/", http: h.status, basis: b });
               if (b) { accepted = new URL(h.url || u.origin).origin; basis = b; break }
             } catch { tried.push({ page: u.origin + "/", error: true }) }
             if (seenHosts.size >= 4) break;
           }
         } catch (e) { tried.push({ error: e instanceof Error ? e.message : String(e) }) }
-        await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: accepted, p_evidence: { query, country: "CA", tried, accepted, basis, worker: WORKER } });
+        await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: accepted, p_evidence: { query, country: cc, tried, accepted, basis, worker: WORKER } });
         return { provider_id: p.provider_id, status: accepted ? "found" : "not_found", website: accepted, basis };
       };
       await pool(provs, 3, async (p) => {
-        if ((p.country || "AU") === "CA") { out.push(await findCanadianSite(p)); return }
+        const cc = String(p.country || "AU").toUpperCase();
         const code = String(p.cricos || "").toUpperCase();
+        if (cc !== "AU" || code.length < 5) { out.push(await findCanadianSite(p, cc)); return }
         if (code.length < 5) { await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "no CRICOS provider code to check a site against", worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "no_code" }); return }
         const codeRe = new RegExp("(^|[^0-9A-Z])" + code.split("").join("\\s?") + "([^0-9A-Z]|$)", "i");
-        if (!(await useFc("search", p.provider_id, p.name))) { out.push({ provider_id: p.provider_id, status: "budget" }); await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return }
+        if (!(await useFc("search", p.provider_id, p.name, true))) { out.push({ provider_id: p.provider_id, status: "budget" }); await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return }
         let accepted: string | null = null; const tried: unknown[] = [];
         try {
           const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `${p.name} CRICOS ${code}`, limit: 8, country: "AU" }), signal: AbortSignal.timeout(45000) });
@@ -1242,24 +1277,35 @@ Deno.serve(async (req) => {
         key = typeof data === "string" ? data : "";
       }
       if (!key) { await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "error", p_data: { error: "OpenRouter credential unavailable" }, p_cost: 0, p_model: model }); return j({ ok: false, error: "no credential" }, 503) }
-      let ans: any = null, cost = 0, err: string | null = null;
-      try {
-        const r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(builderRequest(model, dr)), signal: AbortSignal.timeout(90000) });
-        const out = await r.json().catch(() => null);
-        cost = Number(out?.usage?.cost || 0);
-        if (out?.model && !String(out.model).startsWith(model)) err = `answered by ${out.model}, not the pinned model`;
-        else if (!r.ok) err = out?.error?.message || `HTTP ${r.status}`;
-        else if (out?.choices?.[0]?.finish_reason === "length") err = "the model's answer was too long and was cut off. Ask for a proposal again; if it repeats, add a comment naming the fields you need";
-        else { try { ans = JSON.parse(String(out?.choices?.[0]?.message?.content || "null")) } catch { err = "the model's answer was not complete JSON. Ask for a proposal again" } }
-      } catch (e) { err = e instanceof Error ? e.message : String(e) }
-      if (!ans) { await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "error", p_data: { error: err || "no answer" }, p_cost: cost, p_model: model }); return j({ ok: false, error: err }) }
+      // v0.19.0 (11 Oct 2026, Platform Admin Fix 4): an answer cut off at the length limit is asked again once, automatically, with a
+      // larger limit (4,000 then 8,000 tokens); the tokens and cost of every attempt are recorded, so nothing is spent unseen.
+      let ans: any = null, cost = 0, err: string | null = null; const attempts: { max_tokens: number; finish: string | null; prompt_tokens: number | null; completion_tokens: number | null; cost: number }[] = [];
+      for (const maxTokens of [4000, 8000]) {
+        err = null;
+        try {
+          const req: any = builderRequest(model, dr); req.max_tokens = maxTokens;
+          const r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(req), signal: AbortSignal.timeout(maxTokens > 4000 ? 150000 : 90000) });
+          const out = await r.json().catch(() => null);
+          const c = Number(out?.usage?.cost || 0); cost += c;
+          const finish = out?.choices?.[0]?.finish_reason ?? null;
+          attempts.push({ max_tokens: maxTokens, finish, prompt_tokens: out?.usage?.prompt_tokens ?? null, completion_tokens: out?.usage?.completion_tokens ?? null, cost: c });
+          if (out?.model && !String(out.model).startsWith(model)) err = `answered by ${out.model}, not the pinned model`;
+          else if (!r.ok) err = out?.error?.message || `HTTP ${r.status}`;
+          else if (finish === "length") { err = `the model's answer was too long and was cut off at ${maxTokens.toLocaleString("en-AU")} tokens`; continue }
+          else { try { ans = JSON.parse(String(out?.choices?.[0]?.message?.content || "null")) } catch { err = "the model's answer was not complete JSON" } }
+        } catch (e) { err = e instanceof Error ? e.message : String(e) }
+        break;
+      }
+      if (!ans && err && /cut off/.test(err)) err += " twice (asked again automatically with a larger limit). Name the fields you need in a comment, or use fewer samples, and ask again";
+      else if (!ans && err) err += ". Ask for a proposal again";
+      if (!ans) { await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "error", p_data: { error: err || "no answer", attempts, worker: WORKER }, p_cost: cost, p_model: model }); return j({ ok: false, error: err }) }
       const { adapter, dropped } = proposalAdapter(ans);
       const output: any[] = [];
       for (const cp of (dr.captures || []).filter((x: any) => x.html_path)) {
         try { const html = await storedHtml(cp.html_path); output.push({ course: cp.course, code: cp.code, url: cp.url, ...adapterOutput(adapter, html, { title: cp.course, code: cp.code || "", country: dr.country }) }) }
         catch (e) { output.push({ course: cp.course, url: cp.url, error: e instanceof Error ? e.message : String(e) }) }
       }
-      await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "proposal", p_data: { reason: String(ans.reason || "").slice(0, 600), adapter, dropped, output, worker: WORKER }, p_cost: cost, p_model: model });
+      await rpc("svc_adapter_draft_record", { p_draft_id: dr.id, p_kind: "proposal", p_data: { reason: String(ans.reason || "").slice(0, 600), adapter, dropped, output, attempts, worker: WORKER }, p_cost: cost, p_model: model });
       return j({ ok: true, mode, cost, dropped: dropped.length, worker: WORKER });
     }
     // v0.17.16 (CF-247, 8 Oct 2026): Storage & retention. Removes adapter builder screenshots older than 7 days for a purge run a Platform
@@ -1602,7 +1648,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
