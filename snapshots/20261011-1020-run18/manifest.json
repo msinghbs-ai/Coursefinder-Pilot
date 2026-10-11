@@ -1,0 +1,18 @@
+{
+  "captured_at": "2026-10-11T10:20:26.787Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-scheduled-jobs?tab=jobs.png",
+      "route": "scheduled-jobs?tab=jobs",
+      "action": null,
+      "clicked": true,
+      "heading": "Scheduled jobs",
+      "settle_ms": 9278,
+      "height": 3115,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scheduled-jobs?tab=jobs",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
