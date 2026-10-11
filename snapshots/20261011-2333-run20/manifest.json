@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-11T23:33:26.083Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-providers?tab=onboarding.png",
+      "route": "providers?tab=onboarding",
+      "action": null,
+      "clicked": true,
+      "heading": "Providers",
+      "settle_ms": 9338,
+      "height": 13106,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#providers?tab=onboarding",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-layer-4-review.png",
+      "route": "layer-4-review",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 4 Review",
+      "settle_ms": 7084,
+      "height": 14000,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-4-review",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
