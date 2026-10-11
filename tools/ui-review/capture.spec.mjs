@@ -60,6 +60,13 @@ test('capture screens for UI review', async ({ page }) => {
     const shots = [...(captured.has(route) ? [] : [{ label: 'main', click: null }]), ...clicks.map(c => ({ label: c, click: c }))]
     captured.add(route)
     await page.goto('/#' + route)
+    // Diagnostics (CF-247): route "layer-2-discovery~AU~any" sets the Adapters filters the Platform Admin used
+    if (process.env.ADAPTER_FILTERS && route === 'layer-2-discovery') {
+      await page.locator('[data-adapters-tally]').waitFor({ timeout: 60_000 }).catch(() => {})
+      await page.getByRole('combobox', { name: 'Adapters country' }).selectOption('AU').catch(() => {})
+      await page.getByRole('combobox', { name: 'Provider kind' }).selectOption('any').catch(() => {})
+      await page.waitForTimeout(3000)
+    }
     for (const s of shots) {
       let clicked = true
       if (s.click) {
