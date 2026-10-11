@@ -1,0 +1,18 @@
+{
+  "captured_at": "2026-10-11T11:44:30.809Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-scholarships?tab=extraction.png",
+      "route": "scholarships?tab=extraction",
+      "action": null,
+      "clicked": true,
+      "heading": "Scholarships",
+      "settle_ms": 3448,
+      "height": 5530,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scholarships?tab=extraction",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
