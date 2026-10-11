@@ -1,0 +1,23 @@
+{
+  "captured_at": "2026-10-11T02:43:52.916Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery.png",
+      "route": "layer-2-discovery",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2 Discovery & reading",
+      "settle_ms": 1,
+      "height": 4170,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery",
+      "diag": {
+        "rows": 50,
+        "tally": "830 shown of 975 · admitting 655 · testing 144 · switched off 1 · no adapter 30",
+        "list_html": "<div class=\"ad-list\"><article class=\"ad-row\" data-adapter-row=\"f0c0f1dc-e628-4bb7-9943-727f32b26d50\"><div class=\"ad-row-head\"><input type=\"checkbox\" aria-label=\"Tick AAPoly, AMI Education\" style=\"\"><button type=\"button\" class=\"ad-row-name\" aria-expanded=\"false\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-right cf-card-chev\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"></path></svg><span><strong>AAPoly, AMI Education</strong><small c",
+        "alerts": []
+      },
+      "console_errors": []
+    }
+  ]
+}
