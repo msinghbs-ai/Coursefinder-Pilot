@@ -41,10 +41,6 @@ jobs:
         run: npx playwright test --list
       - name: Targeted static contracts (CF-245, CF-085)
         run: npx playwright test tests/uat/cf-245-observed-replay-contract.spec.mjs tests/uat/cf-085-firecrawl-scraper-config-contract.spec.mjs --project=chromium-desktop
-      - name: CF-247 tuition validation contract
-        run: npm run test:cf247-tuition-validation-contract
-      - name: CF-247 tuition benchmark binding contract
-        run: npm run test:cf247-tuition-benchmark-binding-contract
       - name: Restore Playwright browser cache
         id: playwright-cache
         uses: actions/cache@v4

@@ -132,8 +132,11 @@ test('batch 7: unused background functions and the scale-qualification chain ret
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
     expect(retired, f).toContain(f)
   }
-  for (const f of ['provider-contact-discover-scheduled', 'provider-contact-enrich-apollo', 'layer3-intake-benchmark', 'layer3-cf245-tuition-benchmark', 'layer3-contact-benchmark', 'zoho-course-api', 'website-course-api', 'wix-course-api'])
+  // v2.15.252 (Platform Admin, 12 Oct 2026): the Layer 3 benchmarks were removed with Layer 3 (not on the RETIRED list;
+  // the deployed copies are deleted separately by the Platform Admin).
+  for (const f of ['provider-contact-discover-scheduled', 'provider-contact-enrich-apollo', 'zoho-course-api', 'website-course-api', 'wix-course-api'])
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(true)
+  for (const f of ['layer3-intake-benchmark', 'layer3-cf245-tuition-benchmark', 'layer3-contact-benchmark']) expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
   expect(fs.readFileSync('src/lib/supabase.js', 'utf8')).not.toContain('pilot-reset')
   expect(fs.readFileSync('src/RegulatorySettings.jsx', 'utf8')).not.toContain("mode === 'reset'")
 })

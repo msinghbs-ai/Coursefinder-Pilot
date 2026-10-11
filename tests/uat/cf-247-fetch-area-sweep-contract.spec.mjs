@@ -24,9 +24,10 @@ test('migration: sweep-based Fetch an area, Websites to find, dispatch wait and 
 })
 
 test('worker errors: each reading says what to do', () => {
+  // v2.15.252 (Platform Admin, 12 Oct 2026): layer3-work-dispatch retired; its time-out reads like any other worker's.
   const dispatch = { function: 'layer3-work-dispatch', timed_out: true, status: null, message: 'Timeout of 120000 ms reached', count: 4 }
-  expect(errorReading(dispatch)).toContain('carries on')
-  expect(errorSteps(dispatch)).toMatch(/^Nothing to do/)
+  expect(errorReading(dispatch)).toContain('did not reply in time')
+  expect(errorSteps(dispatch)).toContain('keeps timing out')
   const boot = { function: 'coverage-sweep', status: 503, message: '{"code":"BOOT_ERROR","message":"Function failed to start"}', count: 1 }
   expect(errorReading(boot)).toContain('could not start')
   expect(errorSteps(boot)).toMatch(/^Nothing to do if it happened once/)

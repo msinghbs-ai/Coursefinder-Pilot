@@ -10,7 +10,7 @@ test.describe('Layer screens show one title @deployed',()=>{
   test('each Layer screen has one visible page title and a slim, light Layer header',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     // v2.15.200: the Layer pages are drawn by the single menu map; each shows its title once as the page h1.
-    for(const [navLabel,title] of [['Layer 1 — Operations','Layer 1 Register'],['Layer 2 — Enrichment','Layer 2 Discovery & reading'],['Layer 3 — AI Interpretation','Layer 3 AI validation'],['Layer 4 — Human Resolution','Layer 4 Review']]){
+    for(const [navLabel,title] of [['Layer 1 — Operations','Layer 1 Register'],['Layer 2 — Enrichment','Layer 2 Discovery & reading'],['Layer 4 — Human Resolution','Layer 4 Review']]){
       await clickPrimaryNav(page,navLabel)
       await expect(page.getByRole('heading',{name:title,exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
       const visibleTitles=await page.evaluate(t=>[...document.querySelectorAll('h1')].filter(h=>h.offsetParent!==null&&h.textContent.trim()===t).length,title)

@@ -17,8 +17,8 @@ function Flow(){
     {box(24,64,220,'Sources','Registers, university sites,','fee documents, portals')}
     {box(270,64,220,'Layer 1 · Register','Official provider and course','lists (CRICOS, NZQA)')}
     {box(516,64,220,'Layer 2 · Find and read','Finds pages and fee schedules;','keeps every page as evidence')}
-    {box(24,200,220,'Layer 3 · AI validation','Tested, pinned models check','what rules cannot decide')}
-    {box(270,200,220,'Layer 4 · Review','A person decides where the AI','and the records disagree')}
+    {box(24,200,220,'Adapter rules','Each university’s adapter','admits intakes, English, fees')}
+    {box(270,200,220,'Layer 4 · Review','A person decides what rules','and records cannot settle')}
     {box(516,200,220,'Published catalogue','Values set by hand are never','overwritten by automation',true)}
     <text x="636" y="172" className="pg-line">clear values</text><text x="347" y="160" textAnchor="middle" className="pg-line">unclear values</text>
     <rect x="24" y="292" width="712" height="52" rx="8" className="pg-gate"/>

@@ -1,4 +1,4 @@
-/* v2.15.107 pages: Platform health, Layer 3 AI validation, sources side by side, services overview.
+/* v2.15.107 pages: Platform health, sources side by side, services overview.
    Built only from tokens.css and the shared kit classes. */
 
 /* Platform health */
@@ -34,42 +34,15 @@
 .ph-history-table{margin-top:10px}
 .ph-missing{display:grid;gap:10px;justify-items:start}
 
-/* Layer 3 AI validation */
+/* Shared small styles first made for Layer 3 (v2.15.107); Layer 3 retired in v2.15.252, these are used elsewhere. */
 .l3v-note{margin:0;color:var(--cf-muted);font-size:var(--cf-fs-sm);line-height:1.5}
-.l3v-model{font-family:var(--cf-font-mono);font-size:var(--cf-fs-xs);color:var(--cf-text-2);overflow-wrap:anywhere}
 .l3v-code{display:block;font-size:var(--cf-fs-2xs);color:var(--cf-muted);overflow-wrap:anywhere}
-.l3v-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--cf-space-3)}
-.l3v-card{display:grid;gap:6px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-lg);padding:12px;background:var(--cf-surface);min-width:0}
-.l3v-card header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.l3v-card header strong{font-size:var(--cf-fs-md);color:var(--cf-text);overflow-wrap:anywhere}
-.l3v-card dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 10px;margin:0;font-size:var(--cf-fs-xs)}
-.l3v-card dt{color:var(--cf-muted)}
-.l3v-card dd{margin:0;color:var(--cf-text-2);overflow-wrap:anywhere}
-.l3v-card.is-retired{opacity:.8;background:var(--cf-surface-2)}
-.l3v-retired>summary{cursor:pointer;font-weight:750;font-size:var(--cf-fs-base);color:var(--cf-text-2);padding:6px 0}
-.l3v-bar{display:block;height:6px;border-radius:var(--cf-radius-pill);background:var(--cf-surface-3);overflow:hidden;min-width:60px}
-.l3v-bar>i{display:block;height:100%;background:var(--cf-seq-2)}
-.l3v-bar.over>i{background:var(--cf-red-600)}
-.l3v-filter{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:var(--cf-fs-xs);color:var(--cf-muted)}
-.l3v-filter select{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;background:var(--cf-surface);font:inherit;font-size:var(--cf-fs-xs)}
-.l3v-good{color:var(--cf-success)}
 .l3v-bad{color:var(--cf-danger);font-weight:800}
 
-/* Layer 3 control */
+/* Row actions and event lists (first made for Layer 3 control) */
 .l3c-actions{display:flex;gap:var(--cf-space-2);align-items:center;flex-wrap:wrap}
-.l3c-task{display:grid;gap:var(--cf-space-3)}
-.l3c-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--cf-space-3)}
-.l3c-facts>div,.l3c-limit{display:grid;gap:2px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-lg);padding:10px 12px;background:var(--cf-surface)}
-.l3c-facts small,.l3c-add small{color:var(--cf-muted);font-size:var(--cf-fs-2xs);text-transform:uppercase;letter-spacing:.04em}
-.l3c-facts strong{font-size:var(--cf-fs-lg);color:var(--cf-text)}
-.l3c-facts span{font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
-.l3c-limit{grid-template-columns:minmax(0,1fr) auto;align-items:end}
-.l3c-limit label,.l3c-add label{display:grid;gap:4px}
-.l3c-limit input,.l3c-add select{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;background:var(--cf-surface);font:inherit;font-size:var(--cf-fs-sm);min-width:0}
 .l3c-row-actions{display:flex;gap:4px;flex-wrap:wrap}
 .cf-table tr.l3c-off td{opacity:.55}
-.l3c-add{display:flex;gap:var(--cf-space-2);align-items:end;flex-wrap:wrap}
-.l3c-add select{max-width:100%}
 .l3c-events{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .l3c-events li{display:grid;grid-template-columns:150px 220px minmax(0,1fr);gap:8px;font-size:var(--cf-fs-xs);color:var(--cf-text-2)}
 .l3c-events li small{color:var(--cf-muted);overflow-wrap:anywhere}
@@ -104,14 +77,10 @@
 .cf-muted-text{color:var(--cf-muted);font-style:italic}
 .sc-panel h3{display:flex;align-items:center;gap:6px}
 .sc-panel .cf-kv-table th small{display:block;margin-top:3px;font-weight:600;color:var(--cf-warning-ink);font-size:var(--cf-fs-2xs)}
-.l3v-card header>div{min-width:0}
-.l3v-card header>div>strong,.l3v-card header .l3v-model{display:block}
-.l3v-card header .cf-chip{flex:0 0 auto;overflow:visible}
-td>.l3v-model{display:block}
 .sc-panel .cf-kv-table tbody th{text-transform:none;letter-spacing:0;font-size:var(--cf-fs-sm)}
 .sc-diff-tag{display:block;width:fit-content;margin:4px 0 0;text-transform:none;letter-spacing:0}
 .sc-diff-tag.is-one-sided{background:var(--cf-surface-3);color:var(--cf-text-2)}
-/* v2.15.110 control sweep: Automations, Send back to AI, Scholarship publishing */
+/* v2.15.110 control sweep: Automations, Scholarship publishing */
 .au-search{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;background:var(--cf-surface);font:inherit;font-size:var(--cf-fs-sm);min-width:180px}
 .au-desc{display:block;font-size:var(--cf-fs-xs);color:var(--cf-text-2);margin-top:2px;max-width:420px}
 .au-error{display:block;font-size:var(--cf-fs-xs);color:var(--cf-danger);margin-top:2px;overflow-wrap:anywhere;max-width:320px}
@@ -277,19 +246,6 @@ td>.l3v-model{display:block}
 .fr-quote mark{background:color-mix(in srgb,var(--cf-warning) 28%,transparent);color:var(--cf-text);padding:0 2px;border-radius:2px}
 .fv-table .l3c-row-actions{flex-wrap:nowrap}
 .fv-bulk{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0}.fv-pick{width:36px;text-align:center}.fv-pick-all{display:inline-flex;align-items:center;gap:6px;font-size:var(--cf-fs-sm)}
-.sb-model{width:280px;max-width:100%}
-.sb-reason{max-width:520px}
-/* Layer 3 Control (v2.15.126): over-limit shown plainly; same column widths for every task. */
-.l3c-over strong{color:var(--cf-danger)}.l3c-over b{color:var(--cf-danger)}
-.l3c-more{display:block;font-size:var(--cf-fs-xs);margin-top:4px}
-.l3c-tiers{table-layout:fixed;width:100%}
-.l3c-tiers th:nth-child(1){width:56px}.l3c-tiers th:nth-child(2){width:22%}
-.l3c-tiers th:last-child{width:250px}.l3c-tiers .l3c-row-actions{flex-wrap:nowrap}.l3c-tiers th:nth-child(4){width:120px}.l3c-tiers th{white-space:normal}
-/* Layer 3 Work queue (v2.15.127). */
-.l3w-tasks td:first-child{white-space:nowrap}
-.l3w-sub{display:block;color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
-.l3w-err{display:block;color:var(--cf-danger);font-size:var(--cf-fs-xs);max-width:420px;overflow-wrap:anywhere}
-.l3w-runs td{white-space:nowrap}
 /* Layer 2 Source profiles (v2.15.127): compact list; fetchers per source in the detail panel. */
 .l2-filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(140px,1fr));gap:8px;margin:0 0 10px}
 .l2-filters select{border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);padding:6px 8px;font:inherit;font-size:var(--cf-fs-sm);background:var(--cf-surface)}

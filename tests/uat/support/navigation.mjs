@@ -60,14 +60,18 @@ export async function openLayer2Trials(page) {
   throw new Error('Layer 2 acquisition trials are not a canonical A23 operator route; use background enrichment and governed Evidence instead.')
 }
 
-export async function openLayer3(page) {
-  await clickPrimaryNav(page, 'Layer 3 — AI Interpretation')
-  // v2.15.107: the Layer 3 operations workspace is the Work queue tab of the Layer 3 AI validation page.
-  await page.locator('.cf-page-tabs [role="tab"]').filter({ hasText: 'Work queue' }).first().click(ui)
-  // v2.15.127: the Work queue is Layer3Work.jsx.
-  const workspace = page.locator('[data-layer3-work]').first()
-  await expect(workspace.getByRole('heading', { name: 'Work by task' })).toBeVisible(ui)
-  return workspace
+// v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. Its old address opens Layer 2 › Adapters;
+// this helper opens the old address and checks where it lands (the Layer 3 menu item no longer exists).
+export async function openRetiredLayer3(page, address = '/#layer-3-ai') {
+  await page.goto(address)
+  await expect(page).toHaveURL(/#layer-2-discovery$/, ui)
+  await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2 Discovery & reading', ui)
+  await expect(page.locator('.m-nav').getByRole('button', { name: 'Layer 3 AI validation', exact: true })).toHaveCount(0)
+  return page.locator('main').first()
+}
+
+export async function openLayer3() {
+  throw new Error('Layer 3 AI validation was retired in v2.15.252; use openRetiredLayer3 to check that its old address opens Layer 2 › Adapters.')
 }
 
 export async function openLayer4(page) {

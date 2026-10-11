@@ -1,5 +1,5 @@
 // Dashboard (v2.15.125): "Today" — what is waiting for a person first, then the few counts that matter, platform health in
-// one strip, the four layers as small tiles, and recent activity. Screen review 1 Oct 2026 (Dashboard: waiting list,
+// one strip, the layers as small tiles, and recent activity. v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 tile removed (Layer 3 retired). Screen review 1 Oct 2026 (Dashboard: waiting list,
 // one health strip, fewer tiles, plain headings, security note linked to Platform health).
 // Reads: public.admin_waiting_read() (migration 20261001130000_cf247_dashboard_waiting), admin_read 'dashboard',
 // 'layer_status_summary' and 'platform_health'.
@@ -49,7 +49,6 @@ export default function Dashboard({onError}){
       <div className="db-layers">
         <button type="button" onClick={()=>go('#layer-1-register')}><small>Layer 1 · Registers</small><strong>{fmtNumber(layers.layer1?.active_sources||0)}</strong><span>sources running</span></button>
         <button type="button" onClick={()=>go('#layer-2-discovery')}><small>Layer 2 · Pages</small><strong>{fmtNumber(layers.layer2?.processed_24h||0)}</strong><span>pages read in 24 hours</span></button>
-        <button type="button" onClick={()=>go('#layer-3-ai')}><small>Layer 3 · AI</small><strong>{fmtNumber(layers.layer3?.interpretations_24h||0)}</strong><span>pages checked by AI in 24 hours</span></button>
         <button type="button" onClick={()=>go('#layer-4-review')}><small>Layer 4 · Review</small><strong>{fmtNumber(reviewCount)}</strong><span>waiting for a decision</span></button>
       </div></section>}
     {(data?.recent_activity||[]).length>0&&<section className="m-panel"><SectionTitle icon={History} title="Recent activity"/>

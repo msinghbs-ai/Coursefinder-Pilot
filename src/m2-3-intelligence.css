@@ -74,7 +74,6 @@
 .l4t-table{width:100%;border-collapse:collapse;font-size:var(--cf-fs-base);display:block;overflow-x:auto}.l4t-table th,.l4t-table td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--cf-slate-150);white-space:nowrap}.l4t-table th{color:var(--cf-slate-500);font-weight:600}
 
 /* v2.15.90 */
-.l4d-chip.return_layer3{background:var(--cf-sky-100);color:var(--cf-sky-800)}
 
 /* Package 5 (T1) */
 .m23-paused-note{margin:0 0 12px;padding:10px 14px;border:1px solid var(--cf-amber-300);background:var(--cf-amber-50);color:var(--cf-amber-900);border-radius:var(--cf-radius-lg);font-size:var(--cf-fs-lg)}

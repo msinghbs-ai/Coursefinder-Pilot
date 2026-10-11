@@ -1,8 +1,8 @@
 // Decision 215 (v2.15.142): plain-English reading of an error reply a worker sent back (Live activity).
 // Decision 222 (v2.15.149): each reading also says what to do (errorSteps), and names the cases that need nothing.
+// v2.15.252 (Platform Admin, 12 Oct 2026): the readings for the Layer 3 work dispatcher are removed with Layer 3.
 export function errorReading(e){
-  const m=String(e?.message||''),st=e?.status,fn=String(e?.function||'')
-  if((e?.timed_out||st==null)&&fn==='layer3-work-dispatch')return'The caller stopped waiting before the AI tuition check finished. The check itself carries on and records its answer, so nothing was lost.'
+  const m=String(e?.message||''),st=e?.status
   if(e?.timed_out||st==null)return'The worker did not reply in time. Usually a slow page or a busy service; it is tried again on the next run.'
   if(/BOOT_ERROR|failed to start/i.test(m))return'The worker could not start. This happens for a minute while a new version of it is being released.'
   if(/statement timeout|canceling statement/i.test(m))return'The database took too long to choose the next batch of work, so this run did nothing. The next run tries again.'
@@ -17,8 +17,7 @@ export function errorReading(e){
 }
 // What a person should do about it, in order. "Nothing" is said plainly when nothing is needed.
 export function errorSteps(e){
-  const m=String(e?.message||''),st=e?.status,fn=String(e?.function||''),many=Number(e?.count||0)>3
-  if((e?.timed_out||st==null)&&fn==='layer3-work-dispatch')return'Nothing to do. The caller now waits 5 minutes, so this should stop. If it still appears, check that Layer 3 › Control › Tuition "Last 24 hours" keeps growing, then mark it as seen.'
+  const m=String(e?.message||''),st=e?.status,many=Number(e?.count||0)>3
   if(/BOOT_ERROR|failed to start/i.test(m))return many?'It has happened several times, so it is not just a release. Open Scheduled jobs, switch this job off and tell the Platform Admin that the worker needs redeploying.':'Nothing to do if it happened once during a release. Mark it as seen; if it comes back, tell the Platform Admin.'
   if(/statement timeout|canceling statement/i.test(m))return many?'It keeps happening: tell the Platform Admin which job it is; the query needs speeding up. Work is not lost meanwhile.':'Nothing to do if it is rare. Mark it as seen.'
   if(/invalid_pilot_automation_key|automation_key/i.test(m))return'Tell the Platform Admin which job it is.'

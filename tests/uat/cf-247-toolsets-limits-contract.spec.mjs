@@ -35,12 +35,8 @@ test('migrations shaped: observe mode guarded by md5, notices from logs, sample 
   for (const m of k.replace(/--[^\n]*/g, '').matchAll(/'(?:[^']|'')*'/g)) expect(m[0]).not.toContain(';')
 })
 
-test('routing worker: the credit floor comes from the register, not a constant', () => {
-  const w = read('supabase/functions/layer3-model-routing/index.ts')
-  expect(w).not.toContain('CREDIT_FLOOR_USD')
-  expect(w).toContain('rpc("svc_layer3_credit_policy", {})')
-  expect(w).toContain('pol.enforce && c.remaining < pol.floor')
-})
+// v2.15.252 (Platform Admin, 12 Oct 2026): the Layer 3 routing worker (layer3-model-routing) was deleted with Layer 3,
+// so its credit-floor check was removed.
 
 test('sample-run worker: classifiers, plan limits respected, no constants for limits, no trial wording', async () => {
   const t = read('supabase/functions/toolset-runner/index.ts')
@@ -72,8 +68,10 @@ test('browser: notices on the layer page, acknowledged with a reason', async ({ 
   await expect(strip.locator('.tn-seen summary')).toHaveText('1 acknowledged')
   await strip.locator('[data-notice="scheduled_jobs:2:timeout:scholarship-nationality"]').getByRole('button', { name: 'Acknowledge' }).click()
   await expect.poll(() => page.l3calls.find(c => c.toolsets === 'ack')?.args).toMatchObject({ notice_key: 'scheduled_jobs:2:timeout:scholarship-nationality', reason: 'Seen; reviewing the batch size' })
+  // v2.15.252: Layer 3 retired; its old address opens Layer 2 › Adapters, which shows the Layer 2 notices.
   await page.goto('/#layer-3-ai')
-  await expect(page.locator('[data-layer-notices="3"]')).toContainText('the key\'s own spending limit')
+  await expect(page.locator('[data-layer-notices="2"]')).toBeVisible()
+  await expect(page.locator('[data-layer-notices="3"]')).toHaveCount(0)
 })
 
 test('browser: Models & services — OpenRouter observe only, key and plan limits, settings by section, sample runs started and continued', async ({ page }) => {

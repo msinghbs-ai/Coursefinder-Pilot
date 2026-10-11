@@ -1,9 +1,9 @@
 // Models & services (v2.15.118): one admin page with an on/off switch for every AI model and every external page-fetching
 // service. Platform Admin, 1 Oct 2026: "Model or external should have toggle button to enable /disable. Disable should
 // grey out or not available in operation but only in admin menu."
-// Anything switched off stays listed here, greyed; operation screens (Layer 3 Control, Send back to AI, Layer 2 routing)
-// only offer what is switched on. Switching a model off also switches off its cascade steps; switching it back on does
-// not put it back into a cascade (that stays a Layer 3 Control decision). Retired models are listed separately.
+// Anything switched off stays listed here, greyed; operation screens only offer what is switched on. Switching a model
+// off also switches off its cascade steps; switching it back on does not put it back into a cascade. Retired models are
+// listed separately. v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 Control and the AI send-back tab retired.
 // Read: public.admin_services_read(); write: public.admin_services_control(kind, id, enabled, reason)
 // (migration 20260930160000_cf247_models_services_toggles).
 // v2.15.200 (Decision 254, Platform Admin 6 Oct): each panel is a collapsed card, remembered for the browser session.
@@ -30,7 +30,7 @@ export default function ModelsServices({onError}){
   const flip=async(kind,x,on)=>{
     const name=kind==='model'?x.model:x.name
     const active=(x.steps||[]).filter(s=>s.active)
-    const msg=on?`Switch on ${name}?${kind==='model'?' It will be offered again in Layer 3 Control, but is not added back to any cascade.':''}`
+    const msg=on?`Switch on ${name}?${kind==='model'?' It will be offered again, but is not added back to any cascade.':''}`
       :kind==='model'?`Switch off ${name}?${active.length?` It is used in ${active.length} active cascade step${active.length===1?'':'s'} (${active.map(s=>`${humanLabel(s.task)} step ${s.step}`).join(', ')}); ${active.length===1?'that step':'those steps'} will be switched off too.`:''} It will not be offered in any operation screen.`
       :`Switch off ${name}?${x.routes?` ${fmtNumber(x.routes)} source routes use it; pages will be fetched by the next service on each route.`:''}`
     const reason=window.prompt(`${msg}\n\nReason (optional, kept in the change log):`,'')
@@ -42,7 +42,7 @@ export default function ModelsServices({onError}){
   }
   const modelRow=m=><tr key={m.id} className={m.enabled?'':'ms-off'} data-model={m.code}>
     <td><strong>{m.model}</strong><span className="l3v-code">{m.provider}</span></td>
-    <td>{(m.tasks||[]).length?(m.tasks||[]).map(t=><a key={t} className="cf-link ms-task" href="#layer-3-ai">{humanLabel(t)}</a>):'—'}</td>
+    <td>{(m.tasks||[]).length?(m.tasks||[]).map(t=><span key={t} className="ms-task">{humanLabel(t)}</span>):'—'}</td>
     <td>{(m.steps||[]).length?(m.steps||[]).map(s=><StatusChip key={s.task+s.step} value={s.active?'active':'off'} tone={s.active?'success':'neutral'} label={`${humanLabel(s.task)} · step ${s.step}`}/>):<span className="l3v-code">Not in a cascade</span>}</td>
     <td className="num">{fmtNumber(m.calls_7d||0)}<span className="l3v-code">{usd(m.cost_7d_usd)}</span></td>
     <td>{m.qualified?<StatusChip value="passed" tone="success" label="Passed"/>:<span className="l3v-code">Not tested</span>}</td>
@@ -71,7 +71,7 @@ export default function ModelsServices({onError}){
       </tbody></table></div>
       <p className="l3v-note">Keys are on <a href="#environment">Settings</a>. Address, limits and routing are on <a href="#scrapers">Scrapers &amp; fetchers</a>.</p>
     </Card>
-    <Card id="services.ai-models" icon={BrainCircuit} title="AI models" subtitle="Models Layer 3 can use to read course and scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps; add it to a cascade in Layer 3 › Control."
+    <Card id="services.ai-models" icon={BrainCircuit} title="AI models" subtitle="Models the platform can use to read scholarship pages. This is the only place to switch a model on or off. A model can be switched on only after it has passed its test. Switching it off also switches off its cascade steps."
       meta={<span>{live.filter(m=>m.enabled).length} of {live.length} on{retired.length?` · ${retired.length} retired`:''}</span>}>
       {live.length?<div className="cf-table-wrap"><table className="cf-table ms-table">{head}<tbody>{live.map(modelRow)}</tbody></table></div>:<Empty text="No models."/>}
       {retired.length>0&&<details className="ms-retired"><summary>Retired models ({retired.length}) — failed their tests and cannot be switched on</summary>

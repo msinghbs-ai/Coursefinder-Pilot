@@ -29,7 +29,7 @@ export function Layer4({onError,rank=0}){
  useEffect(()=>{if(view==='team')rpc('layer4_team_forecast_v1',{p_days:teamDays}).then(setTeam).catch(onError)},[view,teamDays])
  const loadBatches=async()=>{try{setBatches(await rpc('layer4_review_batches_v1')||{groups:[]})}catch(e){onError(e)}}
  useEffect(()=>{if(view==='batches')loadBatches()},[view])
- const openPreview=g=>{const ids=(g.item_ids||[]).slice(0,100);const act=['reject','approve','return_layer3'].includes(g.action)?(g.action==='approve'&&!g.can_approve?'':g.action):'';setBatchMsg('');setPreview({group:g,picked:new Set(ids),action:act,reason:act?`Batch: ${g.text}`:'',confirm:''})}
+ const openPreview=g=>{const ids=(g.item_ids||[]).slice(0,100);const act=['reject','approve'].includes(g.action)?(g.action==='approve'&&!g.can_approve?'':g.action):'';setBatchMsg('');setPreview({group:g,picked:new Set(ids),action:act,reason:act?`Batch: ${g.text}`:'',confirm:''})}
  const applyBatch=async()=>{const ids=[...preview.picked];try{const r=await rpc('layer4_batch_decide_v1',{p_item_ids:ids,p_action:preview.action,p_reason:preview.reason,p_confirmation:preview.confirm,p_batch_label:`${preview.group.task} · ${preview.group.text}`});setBatchMsg(`Done: ${r?.decided||ids.length} item(s) decided (${human(preview.action)}).`);setPreview(null);await loadBatches();await load()}catch(e){onError(e)}}
  const load=async(keepId=null)=>{setBusy(true);try{const r=await rpc('layer4_review_desk_v1',{p_status:status||'',p_limit:250});const next=r||{items:[],summary:{}};setData(next);const items=(next.items||[]).filter(i=>!task||i.task===task);const keep=keepId&&items.find(i=>i.id===keepId);setSelectedId(keep?keep.id:(items[0]?.id||null))}catch(e){onError(e)}finally{setBusy(false)}}
  useEffect(()=>{load()},[status])
@@ -84,12 +84,11 @@ export function Layer4({onError,rank=0}){
    const allowed=r.can_approve===false?main.filter(([a])=>a==='reject'||(a==='edit_and_approve'&&editOnly)):main
    const ordered=(s==='approve'?[main[1],main[0],main[2]]:main).filter(x=>allowed.includes(x))
    return <div className="l4d-actions">
-     {s==='return_layer3'&&<button className="l4d-primary" onClick={()=>decide(r,'return_layer3','Send back to AI check (Layer 3)')}>Send back for AI check</button>}
-     {ordered.map(([a,l],i)=><button key={a} className={(s===a||(editOnly&&a==='edit_and_approve'))&&s!=='return_layer3'?'l4d-primary':''} onClick={()=>a==='edit_and_approve'&&hasForm(r)?openEdit(r):decide(r,a,l)}>{l}</button>)}
+     {/* v2.15.252 (Platform Admin, 12 Oct 2026): the send-back-to-AI-check decision retired with Layer 3. */}
+     {ordered.map(([a,l],i)=><button key={a} className={(s===a||(editOnly&&a==='edit_and_approve'))?'l4d-primary':''} onClick={()=>a==='edit_and_approve'&&hasForm(r)?openEdit(r):decide(r,a,l)}>{l}</button>)}
      <details className="l4d-more"><summary>More</summary><div>
        <button onClick={()=>decide(r,'request_more_evidence','Ask for more evidence')}>Ask for more evidence</button>
        <button onClick={()=>decide(r,'return_layer2','Send back to enrichment (Layer 2)')}>Send back to enrichment (Layer 2)</button>
-       <button onClick={()=>decide(r,'return_layer3','Send back to AI check (Layer 3)')}>Send back to AI check (Layer 3)</button>
      </div></details>
    </div>
  }
@@ -101,7 +100,7 @@ export function Layer4({onError,rank=0}){
    if(!current||current.status!=='pending'||claimInfo)return;if(k==='r')decide(current,'reject','Reject');else if(k==='a'&&current.can_approve!==false)decide(current,'approve','Approve');else if(k==='e'&&hasForm(current))openEdit(current)}
    addEventListener('keydown',h);return()=>removeEventListener('keydown',h)},[view,selectedId,current,claimInfo,note])
  const title=r=>r?.entity?.title||r?.entity?.provider||r?.task
- const chip=a=>a==='reject'?'Suggest reject':a==='approve'?'Suggest approve':a==='return_layer3'?'Suggest send back':'Check'
+ const chip=a=>a==='reject'?'Suggest reject':a==='approve'?'Suggest approve':'Check'
  return <div className="m23-stack">
    <LayerWorkspaceHeader layer="4" eyebrow="Layer 4 · governed human resolution" title="Layer 4 — Human Resolution" subtitle="Decide the items automation could not settle. Each decision is recorded with its reason and can be reversed." onRefresh={()=>load(selectedId)} busy={busy}/>
    {/* v2.15.129: four even tiles in the compact style. */}
@@ -144,7 +143,7 @@ export function Layer4({onError,rank=0}){
          <header><h3>{preview.group.count} {preview.group.task.toLowerCase()} item(s)</h3><p>{preview.group.text}</p>{preview.group.count>100&&<p className="l4b-note">Showing the oldest 100. Decide these, then preview again for the rest.</p>}</header>
          <ol className="l4b-items">{(preview.group.samples||[]).filter(x=>(preview.group.item_ids||[]).slice(0,100).includes(x.id)).map(x=><li key={x.id}><label><input type="checkbox" checked={preview.picked.has(x.id)} onChange={e=>{const n=new Set(preview.picked);e.target.checked?n.add(x.id):n.delete(x.id);setPreview({...preview,picked:n,confirm:''})}}/><span><strong>{x.title}</strong>{x.code&&<small> · {x.code}</small>}<br/><small>{[x.provider,x.ai_suggested].filter(Boolean).join(' · ')}</small>{x.quote&&<em>“{x.quote}”</em>}</span></label></li>)}</ol>
          <div className="l4b-form">
-           <label>Decision<select value={preview.action} onChange={e=>setPreview({...preview,action:e.target.value,confirm:''})}><option value="">Choose…</option><option value="reject">Reject</option>{preview.group.can_approve&&<option value="approve">Approve</option>}<option value="request_more_evidence">Ask for more evidence</option><option value="return_layer2">Send back to enrichment (Layer 2)</option><option value="return_layer3">Send back to AI check (Layer 3)</option></select></label>
+           <label>Decision<select value={preview.action} onChange={e=>setPreview({...preview,action:e.target.value,confirm:''})}><option value="">Choose…</option><option value="reject">Reject</option>{preview.group.can_approve&&<option value="approve">Approve</option>}<option value="request_more_evidence">Ask for more evidence</option><option value="return_layer2">Send back to enrichment (Layer 2)</option></select></label>
            <label>Reason saved with every item<input value={preview.reason} onChange={e=>setPreview({...preview,reason:e.target.value})}/></label>
            {preview.action&&<label>Type <b>{preview.action.toUpperCase()} {preview.picked.size}</b> to confirm<input value={preview.confirm} onChange={e=>setPreview({...preview,confirm:e.target.value})}/></label>}
          </div>

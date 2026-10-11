@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
-import { openLayer1, openLayer2, openLayer2Tab, openLayer3, openLayer4, openLayer2Advanced } from './support/navigation.mjs'
+import { openLayer1, openLayer2, openLayer2Tab, openRetiredLayer3, openLayer4, openLayer2Advanced } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
@@ -16,7 +16,7 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
     for(const label of ['Dashboard','Courses','Scholarships','Coverage & completeness','Layer 4 Review','Evidence','Provider contacts']){
       await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     }
-    for(const obsolete of ['Review Queue','Layer 1 — Regulatory','Layer 1 — Authority','Layer 1 — Operations','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 4 — Human Resolution','Completeness','Jobs & Schedules','Evidence & Provenance','Jobs & Runs','Scholarship Selection','Guides & Runbooks','Layer 2 Operations','Refresh & Scheduling']){
+    for(const obsolete of ['Review Queue','Layer 1 — Regulatory','Layer 1 — Authority','Layer 1 — Operations','Layer 2 — Enrichment','Layer 3 — AI Interpretation','Layer 3 AI validation','Layer 4 — Human Resolution','Completeness','Jobs & Schedules','Evidence & Provenance','Jobs & Runs','Scholarship Selection','Guides & Runbooks','Layer 2 Operations','Refresh & Scheduling']){
       await expect(nav.getByRole('button',{name:obsolete,exact:true})).toHaveCount(0)
     }
     const order=await nav.locator('button').evaluateAll(nodes=>nodes.map(n=>n.textContent?.trim()))
@@ -36,15 +36,15 @@ test.describe('CourseFinder canonical Administration and Operations navigation @
   }finally{await finish(testInfo,runtime)}})
 
 
-  test('Layer 3 and Layer 4 are separate permanent routes',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired; its old address opens Layer 2 › Adapters.
+  test('old Layer 3 address opens Layer 2 › Adapters; Layer 4 is its own route',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    let ws=await openLayer3(page)
-    await expect(ws.getByRole('heading',{name:'Work by task',exact:true})).toBeVisible()
-    await expect(ws.getByRole('heading',{name:'Layer 4 status',exact:true})).toHaveCount(0)
-    ws=await openLayer4(page)
+    await openRetiredLayer3(page)
+    await expect(page.getByRole('heading',{name:'Work by task',exact:true})).toHaveCount(0)
+    const ws=await openLayer4(page)
     await expect(ws.getByRole('heading',{name:'Layer 4 status',exact:true})).toBeVisible()
-    await expect(ws.getByRole('heading',{name:'Work by task',exact:true})).toHaveCount(0)
-    await milestoneScreenshot(page,testInfo,'layers3-4-separate-routes')
+    await expect(page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Send back to AI'})).toHaveCount(0)
+    await milestoneScreenshot(page,testInfo,'layer3-retired-layer4-route')
   }finally{await finish(testInfo,runtime)}})
 
   test('Source profiles are on Scrapers & fetchers, closed until opened, and changes are versioned',async({page},testInfo)=>{const runtime=observeRuntime(page);try{

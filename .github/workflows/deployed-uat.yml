@@ -127,16 +127,13 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^supabase/functions/provider-contact-|^supabase/migrations/.*a15_|^tests/uat/a15-provider-contact-intelligence-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/m2-3-intelligence-entry\.jsx$|^supabase/functions/layer3-|^supabase/migrations/.*m2_4_3_|^tests/uat/m2-4-3-layer3-operations-deployed\.spec\.mjs$)'; then
-            targeted=(tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs)
-          fi
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_4_4_|^tests/uat/m2-4-4-cross-layer-operations-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_|^tests/uat/m2-5-platform-readiness-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-platform-readiness-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Intervention\.jsx|mature-main\.jsx)$|^supabase/functions/layer3-contact-benchmark/|^supabase/migrations/.*a16_|^tests/uat/m2-4-4-a16-cross-layer-deployed\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(Layer4Intervention\.jsx|mature-main\.jsx)$|^supabase/migrations/.*a16_|^tests/uat/m2-4-4-a16-cross-layer-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^index\.html$|^src/(mature-main\.jsx|layer1-operations-entry\.jsx|layer2-operations-entry\.jsx|m2-3-intelligence-entry\.jsx)$|^tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed\.spec\.mjs$)'; then
@@ -286,7 +283,6 @@ jobs:
             tests/uat/performance-deployed.spec.mjs
             tests/uat/screen-state-persistence-deployed.spec.mjs
             tests/uat/m2-3-intelligence-deployed.spec.mjs
-            tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs
             tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs
             tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
             tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs
@@ -322,8 +318,6 @@ jobs:
             tests/uat/course-detail-polish-deployed.spec.mjs
             tests/uat/screen-state-persistence-deployed.spec.mjs
             tests/uat/m2-3-intelligence-deployed.spec.mjs
-            tests/uat/layer3-provider-credential-deployed.spec.mjs
-            tests/uat/m2-4-3-layer3-operations-deployed.spec.mjs
             tests/uat/m2-4-4-cross-layer-operations-deployed.spec.mjs
             tests/uat/m2-4-4-a16-cross-layer-deployed.spec.mjs
             tests/uat/m2-4-4-a21-permanent-layer-navigation-deployed.spec.mjs
