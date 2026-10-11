@@ -7,6 +7,11 @@
 // v2.15.200 (Platform Admin 6 Oct 15:25 "Task manager doesn't seems to be the right place for the adapter qualification"):
 // the Task manager starts nothing. It lists the tasks waiting, running or paused, with pause, resume and cancel. Tasks
 // are started where the work is (Layer 2 › Adapters for Qualify and Admit, and every other JobButton).
+// v2.15.244 (CF-247, Platform Admin 11 Oct 2026: "All background jobs using resources at any given time should be visible under
+// task manager, with the controls planned. Any future feature or request follow the same guidelines"): task kinds come from the
+// registry (pipeline.admin_job_kinds); "Running now" lists the scheduled jobs running this moment (pause or resume the schedule,
+// run now), the worker calls on their way (shown, never killed) and the credits used this hour. On-demand scholarship tasks
+// (Find scholarships now, Check scholarships for a course, Read a scholarship again) show what they found and attached.
 import React,{useEffect,useRef,useState}from'react'
 import{ListChecks,Play,Pause,Square,RefreshCw,CheckCircle2,XCircle,AlertTriangle}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -17,7 +22,11 @@ const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return 
 const FIELDS=['intakes','fee','english','delivery']
 const FIELD_LABEL={intakes:'Intakes',fee:'Fee',english:'English',delivery:'Delivery'}
 const STATE_TONE={queued:'neutral',running:'info',paused:'warning',done:'success',failed:'danger',cancelled:'neutral'}
-const KIND_LABEL={qualify_adapters:'Qualify adapters',admit_qualified:'Admit passing fields',reread_pages:'Read pages again',firecrawl_run:'Firecrawl run',adapter_apply:'Apply an adapter',central_page_read:'Read a central page'}
+export const KIND_LABEL={qualify_adapters:'Qualify adapters',admit_qualified:'Admit passing fields',reread_pages:'Read pages again',firecrawl_run:'Firecrawl run',adapter_apply:'Apply an adapter',central_page_read:'Read a central page',scholarship_provider_scan:'Find scholarships now',scholarship_course_check:'Check scholarships for a course',scholarship_reread:'Read a scholarship again'}
+const SCH_KINDS=new Set(['scholarship_provider_scan','scholarship_course_check','scholarship_reread'])
+const ago=s=>{const n=Number(s||0);return n<60?`${n} s`:n<3600?`${Math.floor(n/60)} min ${n%60} s`:`${Math.floor(n/3600)} h ${Math.floor(n%3600/60)} min`}
+const MODE={scholarship_read:'Reading scholarship pages',scholarship_discover:'Finding scholarship pages',scholarship_listing:'Reading listing pages',read:'Reading course pages',link_search:'Searching for course pages'}
+const PURPOSE={sch_scrape:'Scholarship pages (scraper)',sch_map:'Scholarship site maps',fc_read:'Course pages (Firecrawl run)',fc_search:'Searches (Firecrawl run)',scrape:'Course pages (scraper)',course_link_search:'Course-link search'}
 const pct=p=>{const t=Number(p?.total||0),d=Number(p?.done||0);return t?Math.round(d/t*100):0}
 
 export function Progress({progress,state}){const v=pct(progress);return <div className="tm-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={v} aria-label={`${v}% done`}><span style={{width:`${v}%`}} className={`tm-progress-${state||'queued'}`}/></div>}
@@ -39,22 +48,54 @@ export function TaskResult({job,onAdmit}){
         <td>{(q.admitted||[]).join(', ')||'—'}</td>
       </tr>)}
     </tbody></table></div>}
+    {SCH_KINDS.has(job.kind)&&<SchResult r={job.result||{}} kind={job.kind}/>}
     <details className="tn-items" data-task-events><summary>What this task did ({(job.events||[]).length})</summary>
       <ul className="tm-events">{(job.events||[]).map((e,i)=><li key={i}><small className="sl-sub">{fmtDateTime(e.at)}</small> {e.note}</li>)}</ul>
     </details>
   </>
 }
 
+// What an on-demand scholarship task found and attached (11 Oct 2026)
+function SchResult({r,kind}){
+  return <div className="tm-sch" data-task-sch>
+    <p><b>{r.phase_detail||'—'}</b> · {fmtNumber(r.done||0)} of {fmtNumber(r.total||0)} scholarship page(s) read · {fmtNumber(r.new_scholarships||0)} new scholarship(s) · course links changed on {fmtNumber(r.links_changed||0)} · {fmtNumber(r.credits||0)} credit(s){Number(r.candidates_waiting)>0?` · ${fmtNumber(r.candidates_waiting)} candidate page(s) waiting`:''}</p>
+    {kind==='scholarship_course_check'&&<p>This course now has <b>{fmtNumber(r.linked_now||0)}</b> scholarship(s).{(r.added||[]).length>0&&<> Added: {(r.added||[]).map(x=><a key={x.id} href={`#scholarships?id=${x.id}`}>{x.name}</a>).reduce((a,b)=>[a,', ',b])}.</>}{(r.removed||[]).length>0&&<> No longer linked: {(r.removed||[]).map(x=>x.name).join(', ')}.</>}</p>}
+  </div>
+}
+
+// Everything using resources right now (11 Oct 2026): scheduled jobs running, worker calls on their way, credits this hour
+function RunningNow({now,kinds,busy,control}){
+  if(!now)return null
+  const sched=now.scheduled||[],calls=now.worker_calls||[],cred=Object.entries(now.credits_last_hour||{})
+  return <section className="m-panel" data-running-now>
+    <SectionTitle icon={RefreshCw} title="Running now" subtitle="Everything using the database, the workers or the scraper at this moment. Scheduled jobs can be paused (the run in progress finishes), resumed or run once now; worker calls are shown and finish on their own."/>
+    <div className="cf-table-wrap"><table className="cf-table tm-table"><thead><tr><th>Scheduled job</th><th>Area</th><th>Running for</th><th>Schedule</th><th>Actions</th></tr></thead><tbody>
+      {sched.length===0&&<EmptyRow colSpan={5} text="No scheduled job is running this moment."/>}
+      {sched.map((j,i)=><tr key={`${j.job}-${i}`} data-running-job={j.job}><td><strong>{j.label}</strong><br/><small className="sl-sub">{j.job}</small></td><td>{j.area}</td><td>{ago(j.seconds)}</td>
+        <td>{j.active?<Badge tone="success">On</Badge>:<Badge tone="warning">Paused</Badge>}</td>
+        <td className="tm-actions">{j.active?<Button compact disabled={busy} onClick={()=>control(j.job,'pause',`Pause the schedule of "${j.label}"? The run in progress finishes; no new runs start until you resume it.`)}><Pause size={13}/> Pause</Button>
+          :<Button compact disabled={busy} onClick={()=>control(j.job,'resume',`Resume the schedule of "${j.label}"?`)}><Play size={13}/> Resume</Button>}
+          <Button compact disabled={busy} onClick={()=>control(j.job,'run_now',`Run "${j.label}" once more now, in addition to its schedule?`)}>Run now</Button></td></tr>)}
+    </tbody></table></div>
+    <div className="tm-now-grid">
+      <div data-running-calls><small className="sl-sub">Worker calls on their way</small>{calls.length?<ul className="tm-now-list">{calls.map((c,i)=><li key={i}><span>{MODE[c.mode]||c.mode||c.function}</span><b>{fmtNumber(c.calls)}</b><small>{c.function} · oldest {ago(c.seconds)}</small></li>)}</ul>:<p className="sl-sub">None</p>}</div>
+      <div data-running-credits><small className="sl-sub">Credits used in the last hour</small>{cred.length?<ul className="tm-now-list">{cred.map(([k,v])=><li key={k}><span>{PURPOSE[k]||k}</span><b>{fmtNumber(v)}</b></li>)}</ul>:<p className="sl-sub">None</p>}</div>
+    </div>
+  </section>
+}
+
 export default function AdminTasks({rank=0,onError}){
   const[d,setD]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[open,setOpen]=useState(()=>{try{return new URLSearchParams(window.location.hash.split('?')[1]||'').get('job')||''}catch{return ''}})
   const timer=useRef(null)
-  const load=async(id=open)=>{try{const{data,error}=await supabase.rpc('admin_jobs',{p_action:'read',p_args:id?{id}:{}});if(error)throw error;setD(data||{});setErr('')}catch(e){setErr(errText(e));onError?.(errText(e))}}
+  const load=async(id=open)=>{try{const{data,error}=await supabase.rpc('admin_jobs',{p_action:'read',p_args:id?{id,running:true}:{running:true}});if(error)throw error;setD(data||{});setErr('')}catch(e){setErr(errText(e));onError?.(errText(e))}}
   useEffect(()=>{load(open)},[open])
   const live=Boolean((d?.jobs||[]).some(j=>['queued','running'].includes(j.state)))
   useEffect(()=>{clearInterval(timer.current);timer.current=setInterval(()=>{if(document.visibilityState==='visible')load(open)},live?5000:30000);return()=>clearInterval(timer.current)},[live,open])
   const act=async(action,args,q)=>{const reason=ask(q);if(!reason)return;setBusy(true);try{const{data,error}=await supabase.rpc('admin_jobs',{p_action:action,p_args:{...args,reason}});if(error)throw error;if(action==='start'&&data?.id)setOpen(data.id);await load(action==='start'&&data?.id?data.id:open)}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   if(!d)return <div className="m-panel"><Loading label="Loading the task manager…"/></div>
-  const job=d.job,canAdmit=Boolean(d.can_admit)
+  const job=d.job,canAdmit=Boolean(d.can_admit),kinds=d.kinds||{}
+  const label=k=>kinds[k]?.label||KIND_LABEL[k]||k
+  const control=async(jobname,action,q)=>{if(!window.confirm(q))return;setBusy(true);try{const{error}=await supabase.rpc('admin_automation_control',{p_job:jobname,p_action:action,p_args:{}});if(error)throw error;await load(open)}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   const startAdmit=j=>act('start',{kind:'admit_qualified',args:{qualification_job_id:j.id}},`Admit the passing fields of every adapter measured by "${j.title}"? Fields already admitted stay. Values entered by hand are never changed.`)
   return <div className="m-page-stack" data-task-manager>
     {err&&<div className="m-alert compact" role="alert"><AlertTriangle size={15}/><span>{err}</span><button type="button" aria-label="Dismiss" onClick={()=>setErr('')}>×</button></div>}
@@ -63,22 +104,23 @@ export default function AdminTasks({rank=0,onError}){
       <div className="cf-table-wrap"><table className="cf-table tm-table"><thead><tr><th>Task</th><th>State</th><th>Progress</th><th>Result</th><th>Started by</th><th>When</th><th>Actions</th></tr></thead><tbody>
         {(d.jobs||[]).length===0&&<EmptyRow colSpan={7} text="No task is running or waiting."/>}
         {(d.jobs||[]).map(j=><tr key={j.id} data-task-row={j.id} className={open===j.id?'tm-open':''}>
-          <td><button type="button" className="tm-link" onClick={()=>setOpen(open===j.id?'':j.id)}>{j.title}</button><br/><small className="sl-sub">{KIND_LABEL[j.kind]||j.kind}</small></td>
+          <td><button type="button" className="tm-link" onClick={()=>setOpen(open===j.id?'':j.id)}>{j.title}</button><br/><small className="sl-sub">{label(j.kind)}</small></td>
           <td><Badge tone={STATE_TONE[j.state]||'neutral'}>{j.state}</Badge>{j.cancel_requested&&j.state==='running'&&<small className="sl-sub"> cancelling…</small>}{j.pause_requested&&j.state==='running'&&<small className="sl-sub"> pausing…</small>}</td>
           <td className="tm-progress-cell"><Progress progress={j.progress} state={j.state}/><small className="sl-sub">{fmtNumber(j.progress?.done||0)} of {fmtNumber(j.progress?.total||0)}</small></td>
-          <td>{j.kind==='qualify_adapters'?<>{fmtNumber(j.result?.passing||0)} with a passing field</>:<>{fmtNumber(j.result?.passing||0)} admitted</>}{Number(j.result?.errors||0)>0&&<>, <span className="tm-err">{fmtNumber(j.result.errors)} error(s)</span></>}{j.error&&<><br/><span className="tm-err">{j.error}</span></>}</td>
+          <td>{SCH_KINDS.has(j.kind)?<>{j.result?.phase_detail||'Starting'}{j.result?.new_scholarships?` · ${fmtNumber(j.result.new_scholarships)} new`:''}{j.result?.credits!=null?` · ${fmtNumber(j.result.credits)} credit(s)`:''}</>:j.kind==='qualify_adapters'?<>{fmtNumber(j.result?.passing||0)} with a passing field</>:<>{fmtNumber(j.result?.passing||0)} admitted</>}{Number(j.result?.errors||0)>0&&<>, <span className="tm-err">{fmtNumber(j.result.errors)} error(s)</span></>}{j.error&&<><br/><span className="tm-err">{j.error}</span></>}</td>
           <td>{j.requested_by_name}</td>
           <td>{fmtDateTime(j.finished_at||j.started_at||j.created_at)}</td>
           <td className="tm-actions">
-            {['queued','running'].includes(j.state)&&<Button compact disabled={busy||j.pause_requested} onClick={()=>act('pause',{id:j.id},`Pause "${j.title}" at the next provider?`)}><Pause size={13}/> Pause</Button>}
+            {['queued','running'].includes(j.state)&&(kinds[j.kind]?kinds[j.kind].can_pause:!SCH_KINDS.has(j.kind))&&<Button compact disabled={busy||j.pause_requested} onClick={()=>act('pause',{id:j.id},`Pause "${j.title}" at the next provider?`)}><Pause size={13}/> Pause</Button>}
             {j.state==='paused'&&<Button compact disabled={busy} onClick={()=>act('resume',{id:j.id},`Resume "${j.title}"?`)}><Play size={13}/> Resume</Button>}
             {['queued','running','paused'].includes(j.state)&&<Button compact disabled={busy||j.cancel_requested} onClick={()=>act('cancel',{id:j.id},`Cancel "${j.title}"? Work done so far is kept.`)}><Square size={13}/> Cancel</Button>}
           </td>
         </tr>)}
       </tbody></table></div>
     </section>
+    <RunningNow now={d.running_now} kinds={kinds} busy={busy} control={control}/>
     {job&&<section className="m-panel" data-task-detail={job.id}>
-      <SectionTitle icon={ListChecks} title={job.title} subtitle={`${KIND_LABEL[job.kind]||job.kind} · ${job.state} · started by ${job.requested_by_name||''} · reason: ${job.reason}`} action={<Button compact onClick={()=>setOpen('')}>Close</Button>}/>
+      <SectionTitle icon={ListChecks} title={job.title} subtitle={`${label(job.kind)} · ${job.state} · started by ${job.requested_by_name||''} · reason: ${job.reason}`} action={<Button compact onClick={()=>setOpen('')}>Close</Button>}/>
       <TaskResult job={job} onAdmit={job.kind==='qualify_adapters'&&job.state==='done'&&canAdmit?()=>startAdmit(job):null}/>
     </section>}
   </div>
