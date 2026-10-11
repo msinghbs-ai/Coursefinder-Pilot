@@ -27,7 +27,7 @@ import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import ScholarshipRecord from'./ScholarshipRecord'
-import{ProviderScholarshipAction,CourseScholarshipAction}from'./ScholarshipActions'
+import{ProviderScholarshipAction,CourseScholarshipAction,ProviderFillAction}from'./ScholarshipActions'
 import{LayerNotices}from'./Toolsets'
 import Layer4Intervention from'./Layer4Intervention'
 import'./styles.css'
@@ -658,7 +658,7 @@ function DetailBody({type,data,navigate,onError,onChanged}){if(!data)return <Emp
     // v2.15.225 (Platform Admin, 9 Oct 2026: "remove unnecessary text and fields … consolidated view"): pills and fact
     // cards (courses, scholarships, contacts, campuses, website) › provider values as cards with Change › rankings; related
     // insights in one closed fold. The raw identifier, evidence, registration, source and history lists are not shown.
-    return <div className="m-drawer-body"><ProviderSummary data={data} navigate={navigate}/><ProviderScholarshipAction providerId={data.id} name={data.display_name||data.canonical_name}/>{data.id&&<ProviderEditor inline providerId={data.id} onChanged={onChanged} onError={onError}/>}{data.id&&<ProviderRankings providerId={data.id} navigate={navigate}/>}<ProviderMore data={data} type={type} navigate={navigate}/></div>}
+    return <div className="m-drawer-body"><ProviderSummary data={data} navigate={navigate}/><ProviderFillAction providerId={data.id} name={data.display_name||data.canonical_name} website={data.website}/><ProviderScholarshipAction providerId={data.id} name={data.display_name||data.canonical_name}/>{data.id&&<ProviderEditor inline providerId={data.id} onChanged={onChanged} onError={onError}/>}{data.id&&<ProviderRankings providerId={data.id} navigate={navigate}/>}<ProviderMore data={data} type={type} navigate={navigate}/></div>}
   // v2.15.171 (mockup, 3 Oct 2026 23:30): the scholarship drawer is the record panel only — one row per fact with its source
   if(type==='scholarship'&&data.id)return <div className="m-drawer-body"><ScholarshipRecord id={data.id} onError={onError} onChanged={onChanged}/><Layer4Intervention type={type} data={data}/></div> // v2.15.243: no Study Australia comparison (Platform Admin, 11 Oct 2026: country-neutral)
   // v2.15.225: every other record uses the same look — status pills, then fact cards; lists sit in the closed "More" fold

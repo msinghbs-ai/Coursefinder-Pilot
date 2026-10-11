@@ -21,7 +21,7 @@ const RULES: Record<CentralKind, { strong: RegExp; weak?: RegExp; why: string }>
     why: "English requirements",
   },
 };
-const NOISE = /\/(news|events?|blog|stories|media|staff|people|profiles?|search|login|signin|tags?|category|careers?|jobs|research|alumni|giving|donate|library|shop|cart|wp-admin|feed)(\/|$)|\.(jpe?g|png|gif|svg|zip|docx?|xlsx?|pptx?)$|[?&](page|s|q)=/;
+const NOISE = /\/(news|events?|blog|stories|media|staff|people|profiles?|search|login|signin|tags?|category|careers?|jobs|research|alumni|giving|donate|library|shop|cart|wp-admin|feed|residence|housing|accommodation|insurance|medical|parking|workshops?|pubs|publications)(\/|$)|refund|extension|request[-_ ]?form|meals?|events[-_ ]?calendar|\.(jpe?g|png|gif|svg|zip|docx?|xlsx?|pptx?)$|[?&](page|s|q)=/;
 const INTERNATIONAL = /international|overseas|\bintl\b/;
 
 function hostOk(u: URL, siteHost: string): boolean {
@@ -42,7 +42,11 @@ export function centralCandidates(links: { url: string; title?: string | null }[
     const depth = path.split("/").filter(Boolean).length;
     for (const kind of Object.keys(RULES) as CentralKind[]) {
       const r = RULES[kind];
+      // an English language course (General English, ELICOS, IELTS preparation) is not the English requirements page
+      if (kind === "english_policy" && /\/(courses?|programs?)\/|general[-_ ]?english|elicos|tesol|ielts[-_ ]?prep|english[-_ ]?(course|class|learning)/.test(path)) continue;
       let score = r.strong.test(path) ? 6 : r.strong.test(title) ? 4 : (r.weak && (r.weak.test(path) || r.weak.test(title))) ? 1.5 : 0;
+      // a top-level fees or tuition page (slc.edu.au/fees, provider.edu.au/tuition-fees) is the fee schedule of a small provider
+      if (kind === "fee_schedule" && depth <= 2 && /^\/(fees?|tuition)([-_][a-z-]+)?(\/|$)/.test(path)) score = Math.max(score, 4.5);
       if (!score) continue;
       if (kind !== "intake_calendar" && INTERNATIONAL.test(path + " " + title)) score += 2;
       if (/\.pdf$/.test(path)) score += kind === "fee_schedule" ? 1 : -0.5;
@@ -50,5 +54,12 @@ export function centralCandidates(links: { url: string; title?: string | null }[
       best[kind].push({ kind, url: l.url, title: l.title ?? null, score: Math.round(score * 10) / 10, why: r.why });
     }
   }
-  return (Object.keys(best) as CentralKind[]).flatMap((k) => best[k].sort((a, b) => b.score - a.score || a.url.length - b.url.length).slice(0, perKind));
+  // weak matches (a word in passing) are not suggested
+  return (Object.keys(best) as CentralKind[]).flatMap((k) => best[k].filter((c) => c.score >= 3).sort((a, b) => b.score - a.score || a.url.length - b.url.length).slice(0, perKind));
+}
+
+// What to ask a targeted map for when the whole-site map found no strong page of a kind (large sites list only part of themselves).
+export const CENTRAL_SEARCH: Record<CentralKind, string> = { intake_calendar: "key dates academic calendar", fee_schedule: "international student tuition fees", english_policy: "english language requirements" };
+export function weakKinds(found: CentralCandidate[]): CentralKind[] {
+  return (Object.keys(RULES) as CentralKind[]).filter((k) => !found.some((c) => c.kind === k && c.score >= 5));
 }

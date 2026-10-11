@@ -36,7 +36,7 @@ test.describe('mocked browser', () => {
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_adapter_builder', async r => { const b = r.request().postDataJSON() || {}; calls.push(b); return r.fulfill({ json: b.p_action === 'read' ? read : { ok: true } }) })
     page.on('dialog', d => d.accept('Trial sampling'))
     await page.goto('/#layer-2-discovery?tab=builder&provider=p-nd')
-    const g = page.locator('[data-guided-build]')
+    const g = page.locator('[data-adapter-builder-tab]') // v2.15.245: the builder is one numbered page
     await g.getByLabel('Model for this adapter').selectOption('h')
     await expect.poll(() => calls.find(c => c.p_action === 'model')?.p_args).toEqual({ provider_id: 'p-nd', profile_code: 'h', reason: expect.stringMatching(/^Adapter builder: /) })
     await g.getByLabel('Add a course as a sample').fill('3d art')

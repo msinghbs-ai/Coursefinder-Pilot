@@ -7,7 +7,7 @@ import { calendarStarts, englishPolicy, POLICY_PARSER } from "./policy.ts";
 import { PAGE_ID_CONTRACT, pageIdChecks, pageIdInput, pageIdRequest } from "./pageid.ts";
 import { callRecord, pageHtml, readOutcome, scrapeBody, searchBody, searchCandidates, searchResults } from "./firecrawl.ts";
 import { applyAdapter, inspectPage, jsonAt, jsonFind, jsonShape, pageJson, viewApplies, withView } from "./adapters.ts";
-import { centralCandidates } from "./central.ts";
+import { CENTRAL_SEARCH, centralCandidates, weakKinds } from "./central.ts";
 import { adapterOutput, builderRequest, jsonLeaves, mainJsonScript, proposalAdapter, textBlocks } from "./builder.ts";
 import { adapterRecords, referenceRecords } from "../_shared/cf247-register-zip.ts";
 import { htmlAdapterRecords, nzqaReferenceRecords } from "../_shared/cf247-register-html.ts";
@@ -759,8 +759,16 @@ Deno.serve(async (req) => {
           const d = await r.json().catch(() => ({}));
           if (!r.ok || d?.success === false) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: `map ${r.status}`, worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "map_failed" }); return }
           const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title }).filter((x: any) => typeof x.url === "string");
-          const found = centralCandidates(links, site.hostname);
-          await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: found, p_evidence: { site: site.origin, addresses: links.length, worker: WORKER } });
+          let found = centralCandidates(links, site.hostname); const searched: string[] = [];
+          // a targeted map (about 1 credit) for each kind the whole-site map found no strong page of
+          for (const kind of weakKinds(found)) {
+            if (!(await useFc("central_map", p.provider_id, site.origin, true))) break;
+            const q = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: CENTRAL_SEARCH[kind], limit: 200, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+            const qd = q ? await q.json().catch(() => ({})) : {}; searched.push(`${kind}:${q?.status ?? "error"}`);
+            for (const x of (qd.links || qd.data?.links || [])) { const l = typeof x === "string" ? { url: x } : { url: x?.url, title: x?.title }; if (typeof l.url === "string") links.push(l) }
+          }
+          if (searched.length) found = centralCandidates(links, site.hostname);
+          await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: found, p_evidence: { site: site.origin, addresses: links.length, searched, worker: WORKER } });
           out.push({ provider_id: p.provider_id, status: "done", addresses: links.length, found: found.length });
         } catch (e) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: e instanceof Error ? e.message : String(e), worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "error" }) }
       });

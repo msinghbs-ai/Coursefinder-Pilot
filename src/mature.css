@@ -489,3 +489,22 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .tm-sch p{margin:0}
 .sa-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}
 .sa-actions .sl-sub{flex:1 1 220px}
+/* v2.15.245 (Platform Admin bugs 11/10-2, Fix 2 and Fix 6): Adapter builder numbered 1.x / 2.x / 3.x / 4 with readable result text */
+.ab-builder .ab-step{display:flex;flex-direction:column;gap:10px}
+.ab-builder .ab-step>h3{margin:0;display:flex;align-items:center;gap:8px;font-size:var(--cf-fs-xl)}
+.ab-builder .ab-text{font-size:var(--cf-fs-lg);line-height:1.5;color:var(--cf-text);margin:0}
+.ab-builder .ab-muted{font-size:var(--cf-fs-base);color:var(--cf-muted)}
+.ab-builder .ab-error{color:var(--cf-danger)}
+.ab-builder .ab-sub{border:1px solid var(--cf-border);border-radius:8px;padding:10px 12px;background:var(--cf-surface-2)}
+.ab-builder .ab-sub.is-done{border-color:var(--cf-border)}
+.ab-builder .ab-sub-head{display:flex;align-items:center;gap:8px;font-size:var(--cf-fs-lg);margin-bottom:6px}
+.ab-builder .ab-sub-head .ab-num{width:auto;min-width:28px;padding:0 6px;border-radius:11px}
+.ab-builder .ab-sub-body{display:flex;flex-direction:column;gap:8px}
+.ab-builder .ab-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ab-builder .ab-courses .cf-chip{margin-right:6px}
+.ab-builder .ab-course-table{max-height:420px;overflow:auto}
+.ab-builder .ab-course-table td{font-size:var(--cf-fs-base);vertical-align:top}
+.ab-builder .ab-hand>summary{cursor:pointer;display:flex;align-items:center;gap:8px;font-size:var(--cf-fs-xl)}
+.ab-builder .ab-hand[open]>summary{margin-bottom:10px}
+.ab-builder .ab-facts li{font-size:var(--cf-fs-lg)}
+.ab-builder .ab-facts span{font-size:var(--cf-fs-base)}

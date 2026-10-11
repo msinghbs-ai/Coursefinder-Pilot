@@ -36,8 +36,8 @@ test.describe('mocked browser', () => {
     await expect(page.getByRole('tab', { name: 'Adapter builder' })).toHaveAttribute('aria-selected', 'true')
     await page.getByLabel('Find a provider').fill('western')
     await page.getByRole('button', { name: /The University of Western Australia/ }).click()
-    await expect(page.locator('[data-builder-step="2"]')).toContainText('285 read of 324 stored')
-    await expect(page.locator('[data-builder-step="3"]')).toContainText('International fee schedule')
+    await expect(page.locator('[data-builder-step="2.1"]')).toContainText('285 read of 324 stored') // v2.15.245 numbering
+    await expect(page.locator('[data-builder-step="1.3"]')).toContainText('International fee schedule')
     await expect(page.locator('[data-builder-qualify]')).toContainText('Passes')
     if (process.env.BUILDER_SHOT) await page.screenshot({ path: process.env.BUILDER_SHOT, fullPage: true })
   })

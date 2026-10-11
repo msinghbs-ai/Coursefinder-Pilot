@@ -31,7 +31,7 @@ test('UI: no reason prompts in the builder; course finder row shows its lock', (
 })
 
 test.describe('mocked browser', () => {
-  const base = { provider_id: 'p-bc', name: 'Britts College Pty Ltd', country: 'AU', courses: 27, pages: { stored: 0, read: 0 }, adapter: null, qualify: null, central: [], suggested: [], can_manage: true }
+  const base = { provider_id: 'p-bc', name: 'Britts College Pty Ltd', country: 'AU', courses: 27, pages: { stored: 0, read: 0 }, adapter: null, qualify: null, central: [], suggested: [], can_manage: true, course_list: [{ course_id: 'c1', title: 'Advanced Diploma of Business', code: '112357', state: 'no_page' }] }
   async function open(page, basics, builder = {}) {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page)
@@ -43,28 +43,30 @@ test.describe('mocked browser', () => {
     return calls
   }
 
-  test('no website: step 1 asks for the provider website instead of a silent Firecrawl target; no reason prompt', async ({ page }) => {
+  // v2.15.245: the website is step 1.1 (searched automatically, Fill in from website, or entered by hand)
+  test('no website: step 1.1 asks for the provider website instead of a silent Firecrawl target; no reason prompt', async ({ page }) => {
     let prompted = false
     page.on('dialog', d => { prompted = true; d.dismiss() })
     const calls = await open(page, { ...base, website: null })
-    const step = page.locator('[data-guided-step="1"]')
-    await expect(step).toContainText('No website is recorded for Britts College Pty Ltd')
+    const step = page.locator('[data-builder-step="1.1"]')
+    await expect(step).toContainText('No website is recorded yet')
+    await expect(step.getByRole('button', { name: 'Fill in from website' })).toBeVisible()
     await step.getByLabel("Provider's own website").fill('https://www.brittscollege.edu.au')
-    await step.getByRole('button', { name: 'Save website and look for course pages' }).click()
+    await step.getByRole('button', { name: 'Save website (entered by hand)' }).click()
     await expect(step.getByRole('status')).toContainText('Website saved (entered by hand)')
     expect(calls.find(c => c.fn === 'admin_provider_website_set')).toEqual({ fn: 'admin_provider_website_set', p_provider_id: 'p-bc', p_url: 'https://www.brittscollege.edu.au' })
     expect(prompted).toBe(false)
   })
 
-  test('with a website: Find course pages now targets and starts a run for this provider only, and says so', async ({ page }) => {
-    page.on('dialog', d => d.accept())
-    const calls = await open(page, { ...base, website: 'https://www.brittscollege.edu.au' })
-    const step = page.locator('[data-guided-step="1"]')
-    await step.getByRole('button', { name: 'Find course pages now' }).click()
-    await expect(step.getByRole('status')).toContainText('Page finding started on brittscollege.edu.au: 27 courses')
-    const fc = calls.filter(c => c.fn === 'admin_firecrawl_write')
-    expect(fc[0].p_args).toEqual({ provider_id: 'p-bc', included: true, reason: 'Adapter builder: find course pages for Britts College Pty Ltd' })
-    expect(fc[1].p_args).toEqual({ use_case: 'find_page', provider_id: 'p-bc', reason: 'Adapter builder: find course pages for Britts College Pty Ltd' })
+  // v2.15.245 (Feature 1): step 2.1 lists every course and its page; the missing ones are searched with Firecrawl as a task
+  test('with a website: step 2.1 lists the courses and starts a Find course pages task for this provider', async ({ page }) => {
+    page.on('dialog', d => d.accept('Find the missing pages'))
+    await open(page, { ...base, website: 'https://www.brittscollege.edu.au' })
+    const step = page.locator('[data-builder-step="2.1"]')
+    await expect(step.locator('[data-course-list]')).toContainText('Advanced Diploma of Business')
+    await expect(step.locator('[data-course-list]')).toContainText('No page yet')
+    await step.getByRole('button', { name: /Find every missing page with Firecrawl \(1\)/ }).click()
+    await expect.poll(() => (page.l3calls || []).find(c => c.jobs === 'start')?.args).toMatchObject({ kind: 'course_page_find', args: { provider_id: 'p-bc', scope: 'p-bc' } })
   })
 
   test('a course page entered by hand is captured as a sample', async ({ page }) => {

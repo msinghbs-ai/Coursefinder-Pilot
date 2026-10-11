@@ -441,7 +441,7 @@ test('adapter fees and builder: migration shaped, hand-entered fees kept, model 
   expect(req.model).toBe('qwen/qwen3-30b-a3b-instruct-2507')
   expect(req.provider).toEqual({ require_parameters: true })
   expect(req.max_tokens).toBe(4000) // v0.17.14: 1500 cut a long answer off mid-string
-  expect(w).toContain('finish_reason === "length"')
+  expect(w).toContain('else if (finish === "length")') // v0.19.0: a cut-off answer is asked again once with a larger limit
 })
 
 test('browser: visual adapter builder — samples with blocks and page data, marks, proposal output, use fills the settings', async ({ page }) => {
