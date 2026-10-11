@@ -6,7 +6,7 @@
 import React,{useEffect,useState}from'react'
 import{Search,Globe,FileSearch}from'lucide-react'
 import{supabase}from'./lib/supabase'
-import{Button,Empty,Loading,fmtNumber}from'./ui-kit'
+import{Button,Empty,Loading,fmtNumber,fmtDate,fmtDateTime}from'./ui-kit'
 import JobButton from'./JobButton'
 import{AdapterEditor,AdapterReview}from'./FirecrawlWork'
 
@@ -48,7 +48,7 @@ function ContactsStep({b}){
   return <ul className="ab-facts" data-contacts-step>
     <li><span>Public phone</span>{c.phone||'not found yet'}</li>
     <li><span>Public email</span>{c.email||'not found yet'}</li>
-    <li><span>Last read from the site</span>{c.checked_at&&c.outcome!=='requested'?new Date(c.checked_at).toLocaleString('en-AU',{dateStyle:'medium',timeStyle:'short'}):'not yet'}{c.outcome&&!['leased','requested'].includes(c.outcome)?` · ${c.outcome.replace(/_/g,' ')}`:''}</li>
+    <li><span>Last read from the site</span>{c.checked_at&&c.outcome!=='requested'?fmtDateTime(c.checked_at):'not yet'}{c.outcome&&!['leased','requested'].includes(c.outcome)?` · ${c.outcome.replace(/_/g,' ')}`:''}</li>
   </ul>
 }
 const PAGE_STATE={read:['Read','tone-success'],stored:['Stored, not read yet','tone-info'],searching:['Searching','tone-info'],not_found:['Not found on the site','tone-warning'],no_page:['No page yet','tone-neutral']}
@@ -93,7 +93,7 @@ function CentralPages({b,onDone,onError}){
   const have=b.central||[],sug=b.suggested||[],cs=b.central_search
   return <div className="ab-central">
     {have.length>0?<ul className="tn-list">{have.slice(0,8).map((c,i)=><li key={i}><strong>{KIND[c.kind]||c.kind}</strong> <small className="sl-sub">{c.status}{c.decision?` · ${c.decision}`:''} · <a href={c.url} target="_blank" rel="noreferrer">{c.url}</a></small></li>)}</ul>:<p className="sl-sub">No central page attached yet.</p>}
-    {cs&&<p className="ab-text" data-central-search>{cs.state==='done'?`Searched with Firecrawl ${cs.searched_at?new Date(cs.searched_at).toLocaleDateString('en-AU',{dateStyle:'medium'}):''}: ${fmtNumber(cs.found)} likely page(s) among ${fmtNumber(cs.addresses||0)} addresses on the site.`:cs.state==='failed'?`The Firecrawl search failed${cs.error?` (${cs.error})`:''}.`:cs.state==='leased'?'Searching the site with Firecrawl now…':'Waiting its turn in the Firecrawl search of the site.'}</p>}
+    {cs&&<p className="ab-text" data-central-search>{cs.state==='done'?`Searched with Firecrawl ${cs.searched_at?fmtDate(cs.searched_at):''}: ${fmtNumber(cs.found)} likely page(s) among ${fmtNumber(cs.addresses||0)} addresses on the site.`:cs.state==='failed'?`The Firecrawl search failed${cs.error?` (${cs.error})`:''}.`:cs.state==='leased'?'Searching the site with Firecrawl now…':'Waiting its turn in the Firecrawl search of the site.'}</p>}
     {b.can_manage&&sug.length>0&&<><p className="ab-text">Suggested (attach the right one):</p><ul className="tn-list">{sug.map((s,i)=><li key={i}><Button compact disabled={busy} onClick={()=>add(s.kind,s.url)}>Attach</Button> <strong>{KIND[s.kind]}</strong> <span className="ab-muted">{s.source==='map'?'found by Firecrawl':'from stored links'} · <a href={s.url} target="_blank" rel="noreferrer">{s.url}</a></span></li>)}</ul></>}
     {b.can_manage&&<div className="ab-add"><select aria-label="Central page kind" value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(KIND).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
       <input aria-label="Central page address" placeholder="https://…" value={url} onChange={e=>setUrl(e.target.value)}/><Button compact disabled={busy||!/^https?:\/\/\S{8,}$/.test(url.trim())} onClick={()=>add(kind,url.trim())}>Attach</Button></div>}
