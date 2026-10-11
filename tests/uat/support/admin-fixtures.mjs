@@ -736,3 +736,11 @@ export const scholarshipAi = {
     { id: 32, url: 'https://www.jcu.edu.au/jcu-prizes/award', provider: 'James Cook University', expected: { is_scholarship: false }, label_source: 'Platform Admin', active: true, answers: { 'qwen3-30b': { answer: { is_scholarship: false }, checks: {}, verdict: 'not_scholarship' } } }],
   recent: [{ id: 501, at: '2026-10-11T11:30:00Z', url: 'https://www.vu.edu.au/stem-accommodation-scholarship', provider: 'Victoria University', model_code: 'qwen3-30b', run_kind: 'test', verdict: 'scholarship', answer: sxAnswer, checks: { name: true, audience: true, offered: true, value: true, courses_found: ['Bachelor of Engineering (Honours)'], courses_not_found: [] }, applied: null, evidence_id: 'ev-sx' }],
 }
+// v2.15.250: model chain and Layer 4 › AI could not decide
+export const scholarshipAiReviews = {
+  can_decide: true, ai_admission: true, chain: ['qwen3-30b', 'gpt-4.1-mini'], pending: 1, layer4_course_pending: 324,
+  reroutes: { 'adapter:course_intake': 625, 'adapter:course_english': 65, 'adapter:provider_current_tuition_validation': 14, 'scholarship_ai:scope_resolution': 6 },
+  reviews: [{ id: 77, url: 'https://www.acu.edu.au/scholarships/flourishing-lives', provider: 'Australian Catholic University', reason: 'who it is for is not proven by a quote on the page', status: 'pending', created_at: '2026-10-11T13:00:00Z',
+    answers: [{ id: 901, model_code: 'qwen3-30b', verdict: 'scholarship', answer: { is_scholarship: true, single_scholarship: true, name: 'Flourishing Lives Scholarship', audience: 'international', audience_quote: 'for students from overseas', value: { kind: 'percentage', percentage: 20, quote: '20% off tuition' } }, checks: { name: true, audience: false, value: true } },
+              { id: 902, model_code: 'gpt-4.1-mini', verdict: 'scholarship', answer: { is_scholarship: true, single_scholarship: true, name: 'Flourishing Lives Scholarship', audience: 'both', audience_quote: 'open to all commencing students', value: { kind: 'percentage', percentage: 20, quote: '20% off tuition' } }, checks: { name: true, audience: false, value: true }, evidence_id: 'ev-acu' }] }],
+}

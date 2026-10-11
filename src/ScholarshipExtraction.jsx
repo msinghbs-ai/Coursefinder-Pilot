@@ -38,7 +38,7 @@ export default function ScholarshipExtraction({onError}){
   const waiting=d?.queue?.waiting||0
   useEffect(()=>{if(!waiting)return;const t=setInterval(()=>{if(document.visibilityState==='visible')load()},15000);return()=>clearInterval(t)},[waiting])
   if(!d)return <div className="m-page-stack"><section className="m-panel">{busy?<Loading label="Loading extraction…"/>:<p>Could not load.</p>}</section></div>
-  const can=d.can_manage,models=d.models||[],scores=d.scores||{},runs=d.qualify_runs||[],active=models.find(m=>m.status==='active')
+  const can=d.can_manage,models=d.models||[],scores=d.scores||{},runs=d.qualify_runs||[],active=models.find(m=>m.status==='active'),chain=(d.chain||[]).map(c=>models.find(m=>m.code===c)).filter(Boolean)
   const lastRun=code=>runs.find(r=>r.model_code===code&&String(r.prompt_version)===String(d.prompt_version))
   return <div className="m-page-stack sx" data-scholarship-extraction>
     <section className="m-panel">
@@ -46,7 +46,7 @@ export default function ScholarshipExtraction({onError}){
         <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>Refresh</Button></div>
       <div className="sc-tiles">
         <div data-sx-admission><small>AI admission</small><strong>{d.ai_admission?'On':'Off'}</strong><span>{d.ai_admission?'AI answers decide which pages are admitted':'Rules decide; AI answers are recorded only'}</span></div>
-        <div><small>Active model</small><strong>{active?active.label:'None'}</strong><span>{active?`since ${fmtDateTime(active.activated_at)}`:'qualify a model, then make it active'}</span></div>
+        <div data-sx-chain><small>Models, in order</small><strong>{chain.length?chain.map(m=>m.label.split(' ').slice(0,2).join(' ')).join(' → '):'None'}</strong><span>{chain.length?`then Layer 4 › AI could not decide (${fmtNumber(d.reviews_pending||0)} waiting)`:'qualify models, then set the order'}</span></div>
         <div><small>Pages waiting</small><strong>{fmtNumber(waiting)}</strong><span>{fmtNumber(d.queue?.done_today||0)} read today</span></div>
         <div><small>AI cost today</small><strong>US${Number(d.cost_today||0).toFixed(2)}</strong><span>instructions v{d.prompt_version||1}</span></div>
       </div>
@@ -55,6 +55,8 @@ export default function ScholarshipExtraction({onError}){
           ?<ReasonAction label="Switch AI admission off" testid="admission-off" onDo={r=>act('set_admission',{on:false,reason:r},'AI admission is off. Rules decide again.')}/>
           :<ReasonAction label="Switch AI admission on" variant="primary" disabled={!active} testid="admission-on" onDo={r=>act('set_admission',{on:true,reason:r},'AI admission is on. New and re-read pages are decided by the AI answer.')}/>}
         <ReasonAction label="Re-check the watch list with AI" disabled={!active} testid="backfill" onDo={r=>act('backfill',{scope:'watch',reason:r},'Queued. Progress is in Scheduled jobs › Task manager.')}/>
+        <ReasonAction label="Re-read parked scholarships with AI" disabled={!active} testid="reroute" onDo={r=>act('reroute_parked',{reason:r},'Queued: active scholarships not published, and held ones, are read again by the AI. A hold a person made stays. Progress is in Scheduled jobs › Task manager.')}/>
+        <a className="cf-link" href="#layer-4-review?tab=aireview" data-sx-reviews-link>AI could not decide: {fmtNumber(d.reviews_pending||0)}</a>
         {!active&&<small className="sc-sub">Both need an active model.</small>}
       </div>}
       {msg&&<p role="status" className="sc-note" data-sx-note>{msg}</p>}
@@ -63,12 +65,13 @@ export default function ScholarshipExtraction({onError}){
 
     <section className="m-panel" data-sx-models>
       <h3>Models</h3>
-      <p className="sc-sub">Each model is qualified on the sample below with the current instructions. Qualifying never makes a model active; that is a separate step.</p>
+      <p className="sc-sub">Each model is qualified on the sample below with the current instructions. Qualifying never makes a model active; that is a separate step. The first model reads every page; the next reads it again only when the first one's reply fails or a fact it states is not proven on the page; a page no model can settle goes to Layer 4.</p>
+      {can&&<ChainEditor models={models} chain={d.chain||[]} qualified={code=>{const r=lastRun(code);return r&&r.state==='done'}} act={act}/>}
       <div className="cf-table-wrap"><table className="cf-table">
         <thead><tr><th>Model</th><th>Status</th><th className="num" title="Scholarship or not, as expected">Scholarship right</th><th className="num">International right</th><th className="num">Offered right</th><th className="num" title="Answers whose quotes failed the page check">Proofs failed</th><th className="num">Failed</th><th className="num">Cost a page</th><th>Last qualification</th>{can&&<th/>}</tr></thead>
         <tbody>{models.map(m=>{const s=scores[m.code]||{},run=lastRun(m.code);return <tr key={m.code} data-sx-model={m.code}>
           <td><strong>{m.label}</strong><small className="sc-sub"> {m.model_identifier}</small></td>
-          <td><StatusChip value={m.status} tone={m.status==='active'?'success':m.status==='retired'?'neutral':'info'} label={m.status==='active'?'Active':m.status==='retired'?'Retired':'Candidate'}/></td>
+          <td>{(d.chain||[]).includes(m.code)?<StatusChip value="active" tone="success" label={(d.chain||[]).indexOf(m.code)===0?'Reads first':`Reads ${['','second','third'][(d.chain||[]).indexOf(m.code)]}`}/>:<StatusChip value={m.status} tone={m.status==='retired'?'neutral':'info'} label={m.status==='retired'?'Retired':'Candidate'}/>}</td>
           <td className="num">{s.pages?`${fmtNumber(s.scholarship_right)} / ${fmtNumber(s.pages)} (${pct(s.scholarship_right,s.pages)})`:'—'}</td>
           <td className="num">{s.international_checked?`${fmtNumber(s.international_right)} / ${fmtNumber(s.international_checked)}`:'—'}</td>
           <td className="num">{s.offered_checked?`${fmtNumber(s.offered_right)} / ${fmtNumber(s.offered_checked)}`:'—'}</td>
@@ -86,6 +89,20 @@ export default function ScholarshipExtraction({onError}){
     <Instructions d={d} can={can} act={act}/>
     <TestPage d={d} can={can} act={act} models={models}/>
     <Recent rows={d.recent||[]}/>
+  </div>
+}
+
+// v2.15.250: the order the models read in (each qualified with the current instructions)
+function ChainEditor({models,chain,qualified,act}){
+  const usable=models.filter(m=>m.status!=='retired'),[first,setFirst]=useState(chain[0]||''),[then,setThen]=useState(chain[1]||'')
+  useEffect(()=>{setFirst(chain[0]||'');setThen(chain[1]||'')},[chain.join(',')])
+  const order=[first,then].filter(Boolean),ok=order.length>0&&new Set(order).size===order.length&&order.every(qualified),same=order.join(',')===chain.join(',')
+  return <div className="sx-row" data-sx-chain-editor>
+    <label>Reads first <select value={first} onChange={e=>setFirst(e.target.value)} aria-label="Model that reads first"><option value="">Choose</option>{usable.map(m=><option key={m.code} value={m.code}>{m.label}</option>)}</select></label>
+    <label>Then <select value={then} onChange={e=>setThen(e.target.value)} aria-label="Model that reads next"><option value="">No second model</option>{usable.filter(m=>m.code!==first).map(m=><option key={m.code} value={m.code}>{m.label}</option>)}</select></label>
+    <span className="sc-sub">then Layer 4</span>
+    <ReasonAction label="Set the order" testid="set-chain" disabled={!ok||same} onDo={r=>act('set_chain',{models:order,reason:r},'Order set. AI admission is unchanged.')}/>
+    {order.length>0&&!order.every(qualified)&&<small className="sc-sub">Qualify each model with the current instructions first.</small>}
   </div>
 }
 

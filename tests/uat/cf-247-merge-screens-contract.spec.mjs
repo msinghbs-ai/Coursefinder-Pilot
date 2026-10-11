@@ -30,7 +30,7 @@ test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live, 
   expect(PAGES.health.tabs.find(t => t.key === 'readiness').label).toBe('Capacity')
   expect(PAGES.layer4.tabs.find(t => t.key === 'blocks')).toEqual({ key: 'blocks', label: 'Blocks', min: 5 })
   const main = read('src/mature-main.jsx')
-  expect(main).toContain(`case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>`)
+  expect(main).toContain(`case'layer4':return tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>`) // v2.15.250: AI could not decide
   const pm = read('src/platform-maturity-entry.jsx')
   expect(pm).toContain("view==='capacity'?<>")
   expect(pm).toContain("view==='golive'?<>")

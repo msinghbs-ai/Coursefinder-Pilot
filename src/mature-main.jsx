@@ -16,6 +16,7 @@ import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
 import ArchivedReview from'./ArchivedReview'
 import ScholarshipCoverage from'./ScholarshipCoverage'
 import ScholarshipExtraction from'./ScholarshipExtraction'
+import ScholarshipAiReview from'./ScholarshipAiReview'
 import ListEdit from'./ListEdit'
 import DashboardHome from'./Dashboard'
 import ContextualInsights from'./ContextualInsights'
@@ -254,7 +255,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         // profiles moved to Scrapers & fetchers.
         return <AdaptersWorkspace rank={rank} onError={err}/>
       case'layer3':return <Layer3Operations tab={tab==='scholarships'?'routing':tab} rank={rank} onError={onError}/> // v2.15.243: Layer 3 › Scholarships (AI runs on the retired candidate table) removed
-      case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:tab==='attributes'?<Layer4Attributes/>:tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>
+      case'layer4':return tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:tab==='attributes'?<Layer4Attributes/>:tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='priority'?<div className="m-page-stack"><SearchCapCard/><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
