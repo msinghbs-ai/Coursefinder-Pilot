@@ -149,6 +149,96 @@ export function scholarshipDeadline(body: string) {
   return list.length === 1 ? { date: list[0], context: ctx(t, re) } : list.length ? { dates: list, ambiguous: true } : null;
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------
+// v0.7.0 (CF-247, Platform Admin 11 Oct 2026): application dates and study start, each with the sentence it came from.
+// Country-neutral: day-month-year, month-day-year, ISO dates and "Month YYYY"; a numeric d/m/y date is read only when it
+// cannot be confused with m/d/y (day above 12) or is in ISO form.
+const MON = "(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\\.?";
+const monthNo = (m: string) => { const k = m.toLowerCase().replace(/\.$/, "").slice(0, 3); return ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].indexOf(k) + 1 };
+const iso = (y: number, m: number, d: number) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+type DateHit = { date?: string; month?: string; precision: "day" | "month"; at: number };
+function datesIn(t: string): DateHit[] {
+  const out: DateHit[] = [];
+  const res: [RegExp, (m: RegExpMatchArray) => DateHit | null][] = [
+    [new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?${MON},?\\s+(20\\d\\d)\\b`, "gi"), (m) => { const d = Number(m[1]), mo = monthNo(m[2]); return d >= 1 && d <= 31 && mo ? { date: iso(Number(m[3]), mo, d), precision: "day", at: m.index || 0 } : null }],
+    [new RegExp(`\\b${MON}\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(20\\d\\d)\\b`, "gi"), (m) => { const d = Number(m[2]), mo = monthNo(m[1]); return d >= 1 && d <= 31 && mo ? { date: iso(Number(m[3]), mo, d), precision: "day", at: m.index || 0 } : null }],
+    [/\b(20\d\d)-(\d{2})-(\d{2})\b/g, (m) => ({ date: iso(Number(m[1]), Number(m[2]), Number(m[3])), precision: "day", at: m.index || 0 })],
+    [/\b(\d{1,2})[\/.](\d{1,2})[\/.](20\d\d)\b/g, (m) => { const a = Number(m[1]), b = Number(m[2]); return a > 12 && b <= 12 ? { date: iso(Number(m[3]), b, a), precision: "day", at: m.index || 0 } : null }],
+    [new RegExp(`\\b${MON}\\s+(20\\d\\d)\\b`, "gi"), (m) => { const mo = monthNo(m[1]); return mo ? { month: `${m[2]}-${String(mo).padStart(2, "0")}`, precision: "month", at: m.index || 0 } : null }],
+  ];
+  for (const [re, f] of res) for (const m of t.matchAll(re)) { const h = f(m); if (h && !out.some((o) => Math.abs(o.at - h.at) < 4 || (o.precision === "day" && h.precision === "month" && h.at > o.at && h.at < o.at + 14))) out.push(h) }
+  return out.sort((a, b) => a.at - b.at);
+}
+const sentenceAt = (t: string, at: number) => {
+  const before = t.slice(Math.max(0, at - 220), at), dot = before.lastIndexOf(". "), nl = before.lastIndexOf("\n");
+  const cut = dot > nl ? dot + 2 : nl >= 0 ? nl + 1 : -1;
+  const start = cut >= 0 ? at - before.length + cut : Math.max(0, at - 140);
+  const after = t.slice(at, at + 240), endAt = after.search(/\.(?:\s|$)|\n/);
+  return clean(t.slice(start, at + (endAt >= 0 ? endAt + 1 : 180)));
+};
+// A date belongs to "open" or "close" when the cue is in the same sentence, before it and within 90 characters.
+const OPEN_CUE = /\b(?:applications?\s+(?:will\s+)?(?:open|opens|opening)|opening date|open(?:s)?\s+(?:on|from)|apply from|applications? (?:are|will be) accepted from|available from)\b/i;
+const CLOSE_CUE = /\b(?:clos(?:e|es|ing)(?:\s+date)?|deadline|due(?:\s+date)?|apply by|applications? (?:due|must be (?:received|submitted) by)|submit(?:ted)? by|until)\b/i;
+export function scholarshipDates(body: string, today = new Date()) {
+  const t = body.slice(0, 12000);
+  const open: unknown[] = [], close: unknown[] = [];
+  for (const h of datesIn(t)) {
+    const lead = t.slice(Math.max(0, h.at - 90), h.at);
+    const cutAt = Math.max(lead.lastIndexOf(". "), lead.lastIndexOf("\n")), near = cutAt >= 0 ? lead.slice(cutAt + 1) : lead;
+    const o = OPEN_CUE.test(near), c = CLOSE_CUE.test(near);
+    const lo = o ? near.search(OPEN_CUE) : -1, lc = c ? near.search(CLOSE_CUE) : -1;
+    const kind = o && c ? (lo > lc ? "open" : "close") : o ? "open" : c ? "close" : null;
+    if (!kind) continue;
+    const hit = { ...(h.date ? { date: h.date } : { month: h.month }), precision: h.precision, text: sentenceAt(t, h.at) };
+    (kind === "open" ? open : close).push(hit);
+  }
+  const uniq = (l: any[]) => l.filter((x, i) => l.findIndex((y) => (y.date || y.month) === (x.date || x.month)) === i);
+  const o = uniq(open), c = uniq(close);
+  const todayIso = today.toISOString().slice(0, 10);
+  const key = (x: any) => x.date || `${x.month}-28`;
+  // several closing dates are rounds: the next one to come is the closing date, all are kept
+  const nextClose = c.length ? (c.find((x: any) => key(x) >= todayIso) || c[c.length - 1]) : null;
+  const nextOpen = o.length ? (o.filter((x: any) => !nextClose || key(x) <= key(nextClose)).pop() || o[0]) : null;
+  return { open: nextOpen, close: nextClose, close_rounds: c.length > 1 ? c : undefined, open_all: o.length > 1 ? o : undefined };
+}
+// Study start: the intake or commencement the scholarship is for ("commencing in Semester 1, 2027", "for the February 2027 intake",
+// "Trimester 2 2026", "students starting study in 2027").
+export function studyStart(body: string) {
+  const t = body.slice(0, 12000);
+  const res: RegExp[] = [
+    new RegExp(`\\b(?:commenc\\w*|start(?:ing|s)?|beginning|enrol(?:l)?ing|intake)\\b[^.\\n]{0,40}?\\b((?:semester|trimester|term|study period|session)\\s*\\d,?\\s*(?:of\\s+)?20\\d\\d|${MON}\\s+20\\d\\d|20\\d\\d)\\b`, "i"),
+    new RegExp(`\\b((?:semester|trimester|term|study period)\\s*\\d,?\\s*20\\d\\d|${MON}\\s+20\\d\\d)\\s+(?:intake|commencement|entry)\\b`, "i"),
+  ];
+  for (const re of res) {
+    const m = t.match(re); if (!m) continue;
+    const label = clean(m[1]).replace(/\s+/g, " ").replace(/^./, (x) => x.toUpperCase());
+    const y = Number((label.match(/20\d\d/) || [])[0] || 0);
+    const mm = label.match(new RegExp(`^${MON}`, "i"));
+    return { label, year: y || undefined, date: mm ? iso(y, monthNo(mm[1]), 1) : undefined, text: sentenceAt(t, m.index || 0) };
+  }
+  return null;
+}
+
+// v0.7.0: courses the page names. Course codes in CRICOS form (6 digits and a letter) and course titles listed under an
+// "eligible courses / programs / degrees" heading or named in the eligibility text. The database matches them to the
+// provider's own courses; anything it cannot match is shown and not linked.
+const TITLE_RE = /\b((?:Bachelor|Master|Graduate (?:Certificate|Diploma)|Postgraduate (?:Certificate|Diploma)|Advanced Diploma|Associate Degree|Diploma|Doctor|Juris Doctor)(?:'s)?(?: of| in)? [A-Z][A-Za-z&,()'\- ]{2,90}?)(?=\s*(?:[.;:\n|]|\(|,\s+(?:and|or)\b|\s(?:and|or|at|is|are|for|with|students?|program(?:me)?s?|courses?|degrees?)\b|$))/g;
+export function namedCourses(html: string, body: string) {
+  const codes = new Map<string, string>();
+  for (const m of body.matchAll(/\b(\d{6}[A-Z])\b/g)) if (!codes.has(m[1])) codes.set(m[1], sentenceAt(body, m.index || 0));
+  const titles = new Map<string, string>();
+  const sec = html.match(/<(h[1-6]|strong|b|p)[^>]*>[^<]{0,80}\b(?:eligible|applicable|participating|qualifying|available for(?: the following)?)\s+(?:courses?|programs?|programmes?|degrees?)[^<]{0,60}<\/\1>([\s\S]{0,6000}?)(?=<h[1-4]\b|$)/i);
+  if (sec) for (const li of sec[2].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)) { const x = clean(htmlToText(li[1])); if (x.length >= 4 && x.length <= 140) titles.set(x, "Listed under: " + clean(htmlToText(sec[0].slice(0, 200)))) }
+  const at = body.search(/\b(?:eligib|who can apply|to be eligible|you must)/i);
+  const elig = at >= 0 ? body.slice(at, at + 2500) : body.slice(0, 2500);
+  for (const m of elig.matchAll(TITLE_RE)) { const x = clean(m[1]); if (!titles.has(x) && x.split(" ").length <= 14) titles.set(x, sentenceAt(elig, m.index || 0)) }
+  return { codes: [...codes].map(([code, text]) => ({ code, text })).slice(0, 60), titles: [...titles].map(([title, text]) => ({ title, text })).slice(0, 80) };
+}
+// Proof for the levels and fields: the sentence the level words were read from (or the scholarship's name)
+function proofFor(t: string, re: RegExp) { const m = t.match(re); return m ? sentenceAt(t, m.index || 0) : null }
+const LEVEL_WORDS = /\b(?:undergraduate|bachelor|postgraduate|master(?:'s|s)?|graduate (?:certificate|diploma)|phd|doctor of philosophy|doctoral|higher degree by research|research degree|foundation|pathway|elicos)\b/i;
+
 // v0.6.3: the value's context starts at the beginning of its sentence and ends at the end of it, so the text shown with a value
 // is a whole sentence ("Eligible students will receive 20% off the tuition fee ..."), not a fragment cut mid-word
 function ctx(t: string, re: RegExp) {
@@ -170,9 +260,15 @@ export function scholarshipFacts(html: string, titleText: string, name: string, 
   return {
     levels: fromElig.length ? fromElig : scholarshipLevels(titleText + " " + name, body),
     levels_from: fromElig.length ? "eligibility" : "page",
-    ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped } })(),
+    levels_text: (() => { const nm = titleText + " " + name; if (LEVEL_WORDS.test(nm)) return "Scholarship name: " + clean(name || titleText); return proofFor(eligibility || body.slice(0, 3000), LEVEL_WORDS) })(),
+    ...(() => { const n = scholarshipFields(name); const fac = scholarshipFaculties(body); return { fields: n.length ? n : fac.fields, faculties: fac.faculties, field_unmapped: !n.length && fac.unmapped,
+      fields_text: n.length ? "Scholarship name: " + clean(name) : fac.fields.length ? proofFor(body.slice(0, 5000), /\b(?:Faculty|School|College) of [A-Z]/) : null } })(),
     value: scholarshipValue(body, name, currency),
     deadline: scholarshipDeadline(body),
+    // v0.7.0: application open and close (with rounds) and study start, each with its sentence; courses the page names
+    dates: scholarshipDates(body),
+    study_start: studyStart(body),
+    named_courses: namedCourses(html, body),
     international: /\binternational\b/i.test(titleText + " " + body.slice(0, 4000)),
     eligibility_excerpt: (() => { const at = body.search(/eligib/i); return at >= 0 ? clean(body.slice(at, at + 900)) : null })(),
     criteria: scholarshipCriteria(body),
