@@ -19,7 +19,7 @@ export async function openAdapter(page, id, blocks = []) {
   await page.goto('/#layer-2-discovery')
   await page.locator('[data-adapters-list] select[aria-label="Provider kind"]').selectOption('any')
   const row = page.locator(`[data-adapter-row="${id}"]`)
-  await row.locator('.ad-row-head .ad-row-name').click()
-  for (const b of blocks) await row.locator(`[data-ad-block="${b}"] > .ad-row-name`).click()
+  await row.locator('.adp-row-head .adp-row-name').click()
+  for (const b of blocks) await row.locator(`[data-ad-block="${b}"] > .adp-row-name`).click()
   return row
 }

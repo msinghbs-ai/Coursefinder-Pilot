@@ -41,14 +41,14 @@ const ON_EFFECT='Switched on, the adapter is applied to every page of this unive
 // (the same for every university), and its content is read only while it is open.
 function Block({id,title,meta,children,...rest}){
   const[open,setOpen]=useCardOpen(`adapters.block.${id}`)
-  return <section className={`ad-block${open?' is-open':''}`} data-ad-block={id} {...rest}>
-    <button type="button" className="ad-row-name" aria-expanded={open} onClick={()=>setOpen(!open)}><ChevronRight size={14} className="cf-card-chev" style={{transform:open?'rotate(90deg)':undefined}} aria-hidden/><strong>{title}</strong>{meta&&<small className="sl-sub">{meta}</small>}</button>
+  return <section className={`adp-block${open?' is-open':''}`} data-ad-block={id} {...rest}>
+    <button type="button" className="adp-row-name" aria-expanded={open} onClick={()=>setOpen(!open)}><ChevronRight size={14} className="cf-card-chev" style={{transform:open?'rotate(90deg)':undefined}} aria-hidden/><strong>{title}</strong>{meta&&<small className="sl-sub">{meta}</small>}</button>
     {open&&<div className="cf-card-body">{children}</div>}
   </section>
 }
 
 function AdapterPill({a}){const[l,t]=a?(ADAPTER[a.state]||[a.state,'neutral']):['No adapter','neutral'];return <Pill tone={t}>{l}</Pill>}
-function Fields({list,tone='success'}){return (list||[]).length?<span className="ad-chips">{list.map(f=><Pill key={f} tone={tone}>{FIELD[f]||f}</Pill>)}</span>:null}
+function Fields({list,tone='success'}){return (list||[]).length?<span className="adp-chips">{list.map(f=><Pill key={f} tone={tone}>{FIELD[f]||f}</Pill>)}</span>:null}
 
 // ---- one university, open --------------------------------------------------------------------------------------------
 function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,onError,rangeOf}){
@@ -69,21 +69,21 @@ function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,on
     setBusy(true);try{const{error}=await supabase.rpc('admin_firecrawl_write',{p_action:'target',p_args:{provider_id:pid,included:inc,reason}});if(error)throw error;refresh()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const u=d?{...d,provider_id:pid,name:row.name}:null
   const last=d?.qualifications?.[0]
-  return <article className={`ad-row${open?' is-open':''}`} data-adapter-row={pid}>
-    <div className="ad-row-head">
+  return <article className={`adp-row${open?' is-open':''}`} data-adapter-row={pid}>
+    <div className="adp-row-head">
       <input type="checkbox" aria-label={`Tick ${row.name}`} checked={picked} onChange={()=>onPick(pid)}/>
-      <button type="button" className="ad-row-name" aria-expanded={open} onClick={()=>onOpen(open?null:pid)}>
+      <button type="button" className="adp-row-name" aria-expanded={open} onClick={()=>onOpen(open?null:pid)}>
         <ChevronRight size={15} className="cf-card-chev" style={{transform:open?'rotate(90deg)':undefined}} aria-hidden/>
         <span><strong>{row.name}</strong><small className="sl-sub">{[row.country,row.state].filter(Boolean).join(' · ')}{row.university?'':' · not a university'}</small></span></button>
-      <span className="ad-chips"><AdapterPill a={a}/>{a?.state==='admitting'&&<Fields list={a.fields}/>}</span>
-      <span className="ad-chips ad-hide-sm" title="Fields that passed in the latest Qualify">{q?(passing.length?<><small className="sl-sub">Passed:</small><Fields list={passing} tone="info"/></>:<small className="sl-sub">Qualify: nothing passed</small>):<small className="sl-sub">Not qualified yet</small>}{q&&<small className="sl-sub">{fmtDate(q.at)}</small>}</span>
-      <span className="ad-hide-sm"><small className="sl-sub">{fmtNumber(row.pages_read)} of {fmtNumber(row.pages)} pages read{row.next_read?` · next read ${fmtDate(row.next_read)}`:''}</small>
+      <span className="adp-chips"><AdapterPill a={a}/>{a?.state==='admitting'&&<Fields list={a.fields}/>}</span>
+      <span className="adp-chips adp-hide-sm" title="Fields that passed in the latest Qualify">{q?(passing.length?<><small className="sl-sub">Passed:</small><Fields list={passing} tone="info"/></>:<small className="sl-sub">Qualify: nothing passed</small>):<small className="sl-sub">Not qualified yet</small>}{q&&<small className="sl-sub">{fmtDate(q.at)}</small>}</span>
+      <span className="adp-hide-sm"><small className="sl-sub">{fmtNumber(row.pages_read)} of {fmtNumber(row.pages)} pages read{row.next_read?` · next read ${fmtDate(row.next_read)}`:''}</small>
         {row.target&&<Pill tone={row.target.included?'info':'neutral'}>{row.target.included?'Firecrawl target':'Not a Firecrawl target'}</Pill>}</span>
       <Button compact onClick={()=>onOpen(open?null:pid)} aria-label={`${open?'Close':'Open'} ${row.name}`}>{open?'Close':'Open'}</Button>
     </div>
-    {open&&<div className="ad-row-body" data-adapter-detail={pid}>
+    {open&&<div className="adp-row-body" data-adapter-detail={pid}>
       {!d?<Loading label={`Loading ${row.name}…`}/>:<>
-      <div className="ad-grid" data-adapter-coverage>
+      <div className="adp-grid" data-adapter-coverage>
         <div><small className="sl-sub">Intakes</small><Coverage part={d.intakes} courses={d.courses}/></div>
         <div><small className="sl-sub">English</small><Coverage part={d.english} courses={d.courses}/></div>
         <div><small className="sl-sub">Fees</small><Coverage part={d.fee} courses={d.courses}/></div>
@@ -93,24 +93,24 @@ function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,on
       </div>
 
       <Block id="switch" title="Switch, Qualify and Admit" meta={a?`${(ADAPTER[a.state]||[a.state])[0]}${a.state==='admitting'?`: ${(a.fields||[]).map(f=>FIELD[f]||f).join(', ')}`:''}`:'No adapter yet: build one below'} data-adapter-lifecycle={pid}>
-        {!a?<p className="ad-note">This university has no adapter. Build one under <strong>Build and test the adapter</strong>, save it switched on, then Qualify it here.</p>:<>
-          <div className="ad-actions">
+        {!a?<p className="adp-note">This university has no adapter. Build one under <strong>Build and test the adapter</strong>, save it switched on, then Qualify it here.</p>:<>
+          <div className="adp-actions">
             <AdapterPill a={a}/>
             {can&&(a.state==='off'?<Button compact variant="primary" disabled={busy} onClick={()=>switchOn(true)} data-adapter-switch="on"><Power size={13}/> Switch on</Button>
               :<Button compact disabled={busy} onClick={()=>switchOn(false)} data-adapter-switch="off"><Power size={13}/> Switch off</Button>)}
           </div>
-          <p className="ad-note" data-adapter-consequence>{a.state==='off'?OFF_EFFECT:ON_EFFECT}</p>
+          <p className="adp-note" data-adapter-consequence>{a.state==='off'?OFF_EFFECT:ON_EFFECT}</p>
           <h4 className="sl-h4">1. Qualify (measures only, admits nothing)</h4>
-          <p className="ad-note">A field passes when the adapter reads it on at least {share(settings.min_read_share)} of the pages read and agrees with the catalogue on at least {share(settings.min_agree_share)} of the values both hold (settings on Models &amp; services › Firecrawl).</p>
+          <p className="adp-note">A field passes when the adapter reads it on at least {share(settings.min_read_share)} of the pages read and agrees with the catalogue on at least {share(settings.min_agree_share)} of the values both hold (settings on Models &amp; services › Firecrawl).</p>
           <JobButton kind="qualify_adapters" scope={pid} args={{provider_ids:[pid],adapter_state:'any'}} label="Qualify this adapter" disabled={!canQualify||a.state==='off'}
             question={`Qualify the adapter for ${row.name}? It measures what the adapter reads on the stored pages against the admission rules. Nothing is admitted.`} onFinished={refresh}/>
           {a.state==='off'&&<small className="sl-sub">Switch the adapter on to Qualify it.</small>}
           {last?<div className="cf-table-wrap"><table className="cf-table tm-table" data-adapter-qualify><thead><tr><th>Field</th><th>Result</th><th className="num">Read on</th><th className="num">Agrees</th><th>Why</th></tr></thead><tbody>
-            {QFIELDS.map(f=>{const x=(last.fields||{})[f];if(!x)return null;return <tr key={f}><td>{FIELD[f]||f}</td><td><span className={`ad-field ${x.pass?'ad-pass':'ad-fail'}`}>{x.pass?<CheckCircle2 size={13}/>:<XCircle size={13}/>}{x.pass?'Passes':'Does not pass'}</span></td>
+            {QFIELDS.map(f=>{const x=(last.fields||{})[f];if(!x)return null;return <tr key={f}><td>{FIELD[f]||f}</td><td><span className={`adp-field ${x.pass?'adp-pass':'adp-fail'}`}>{x.pass?<CheckCircle2 size={13}/>:<XCircle size={13}/>}{x.pass?'Passes':'Does not pass'}</span></td>
               <td className="num">{fmtNumber(x.read)} ({share(x.read_share)})</td><td className="num">{x.agree_share==null?'—':share(x.agree_share)}</td><td><small className="sl-sub">{x.why}</small></td></tr>})}
-          </tbody></table><small className="sl-sub">Latest Qualify {fmtDateTime(last.at)} · {fmtNumber(last.pages_read)} pages read · {last.title}</small></div>:<p className="ad-note">Not qualified yet.</p>}
+          </tbody></table><small className="sl-sub">Latest Qualify {fmtDateTime(last.at)} · {fmtNumber(last.pages_read)} pages read · {last.title}</small></div>:<p className="adp-note">Not qualified yet.</p>}
           <h4 className="sl-h4">2. Admit (the deliberate step)</h4>
-          <p className="ad-note">Admits only the fields that passed in the latest Qualify{passing.length?` (${passing.map(f=>FIELD[f]||f).join(', ')})`:''}. Fields already admitted stay. Values entered or locked by hand are never changed.</p>
+          <p className="adp-note">Admits only the fields that passed in the latest Qualify{passing.length?` (${passing.map(f=>FIELD[f]||f).join(', ')})`:''}. Fields already admitted stay. Values entered or locked by hand are never changed.</p>
           <JobButton kind="admit_qualified" scope={pid} args={{provider_ids:[pid]}} label="Admit the passing fields" disabled={!can||a.state==='off'||!passing.some(f=>!(a.fields||[]).includes(f))}
             question={`Admit ${passing.filter(f=>!(a.fields||[]).includes(f)).map(f=>FIELD[f]||f).join(', ')} from the adapter for ${row.name}? Values entered or locked by hand are never changed.`} onFinished={refresh}/>
           {!can&&<small className="sl-sub">A Platform Admin admits.</small>}
@@ -123,22 +123,22 @@ function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,on
       </Block>
 
       <Block id="schedule" title="Read schedule" meta={`Every ${d.schedule?.read_cycle_days??settings.read_cycle_default} days${d.schedule?.read_cycle_days?'':' (default)'}${d.schedule?.next_read?` · next ${fmtDate(d.schedule.next_read)}`:''}`} data-adapter-schedule={pid}>
-        <p className="ad-note">Each course page that has been read is read again on its cycle. A page whose content (hash) has not changed keeps its evidence. A changed page is stored as new evidence and the adapter, when switched on, reads it. Pages a plain read cannot open go to Firecrawl only if the university is a Firecrawl target.</p>
-        <div className="ad-grid">
+        <p className="adp-note">Each course page that has been read is read again on its cycle. A page whose content (hash) has not changed keeps its evidence. A changed page is stored as new evidence and the adapter, when switched on, reads it. Pages a plain read cannot open go to Firecrawl only if the university is a Firecrawl target.</p>
+        <div className="adp-grid">
           <div><small className="sl-sub">Read cycle</small><strong>{d.schedule?.read_cycle_days??settings.read_cycle_default} days</strong>{!d.schedule?.read_cycle_days&&<small className="sl-sub"> platform default</small>}</div>
           <div><small className="sl-sub">Next read</small><strong>{fmtDateTime(d.schedule?.next_read)}</strong></div>
           <div><small className="sl-sub">Last read</small><strong>{fmtDateTime(d.schedule?.last_read)}</strong></div>
           <div><small className="sl-sub">Due within 7 / 30 days</small><strong>{fmtNumber(d.schedule?.due_7_days)} / {fmtNumber(d.schedule?.due_30_days)}</strong></div>
         </div>
-        <p className="ad-note">Pages by state: {Object.entries(d.schedule?.by_status||{}).map(([k,n])=>`${k.replace(/_/g,' ')} ${fmtNumber(n)}`).join(' · ')||'none'}</p>
-        {can&&a&&<div className="ad-actions"><Button compact disabled={busy} onClick={setCycle}><CalendarClock size={13}/> Set the read cycle</Button></div>}
+        <p className="adp-note">Pages by state: {Object.entries(d.schedule?.by_status||{}).map(([k,n])=>`${k.replace(/_/g,' ')} ${fmtNumber(n)}`).join(' · ')||'none'}</p>
+        {can&&a&&<div className="adp-actions"><Button compact disabled={busy} onClick={setCycle}><CalendarClock size={13}/> Set the read cycle</Button></div>}
         <RereadPanel ids={[pid]} names={[row.name]} can={can} onDone={refresh} onError={onError}/>
       </Block>
 
       <Block id="central" title="Central pages (English, key dates)" meta={`${fmtNumber((d.central_pages||[]).length)} attached`}>
         {can&&<AttachPage u={u} onDone={refresh} onError={onError}/>}
-        {(d.central_pages||[]).length>0?<ul className="tn-list uc-pages">{d.central_pages.map((p,i)=><li key={i}><Pill tone={p.status==='read'||p.status==='parsed'?'success':p.status==='found'?'warning':'neutral'}>{p.kind==='english_policy'?'English':'Key dates'} · {String(p.status).replace(/_/g,' ')}</Pill> <a className="cf-link" href={p.url} target="_blank" rel="noreferrer">{p.url}</a>{p.read_at&&<small className="sl-sub"> read {fmtDateTime(p.read_at)}</small>}{p.evidence_id&&<a className="cf-link" href={`#evidence?evidence_id=${encodeURIComponent(p.evidence_id)}`}> evidence</a>}</li>)}</ul>:<p className="ad-note">No central page attached.</p>}
-        <p className="ad-note">A central page is read through Firecrawl and parsed into a proposal. Approve it in <a className="cf-link" href="#layer-4-review?tab=attributes">Layer 4 Review › Attributes</a>. The central rule fills courses whose own page gives no value.</p>
+        {(d.central_pages||[]).length>0?<ul className="tn-list uc-pages">{d.central_pages.map((p,i)=><li key={i}><Pill tone={p.status==='read'||p.status==='parsed'?'success':p.status==='found'?'warning':'neutral'}>{p.kind==='english_policy'?'English':'Key dates'} · {String(p.status).replace(/_/g,' ')}</Pill> <a className="cf-link" href={p.url} target="_blank" rel="noreferrer">{p.url}</a>{p.read_at&&<small className="sl-sub"> read {fmtDateTime(p.read_at)}</small>}{p.evidence_id&&<a className="cf-link" href={`#evidence?evidence_id=${encodeURIComponent(p.evidence_id)}`}> evidence</a>}</li>)}</ul>:<p className="adp-note">No central page attached.</p>}
+        <p className="adp-note">A central page is read through Firecrawl and parsed into a proposal. Approve it in <a className="cf-link" href="#layer-4-review?tab=attributes">Layer 4 Review › Attributes</a>. The central rule fills courses whose own page gives no value.</p>
       </Block>
 
       <Block id="fees" title="Fee range and rules" meta="Indicative whole-course fees">
@@ -150,16 +150,16 @@ function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,on
       </Block>
 
       <Block id="firecrawl" title="Firecrawl target" meta={row.target?(row.target.included?'In the targets':'Out of the targets'):'Not in the target list'}>
-        <p className="ad-note">{row.target?.included?'Firecrawl may be used for this university: pages that refuse a plain read, and searching its site for missing course pages.':'Firecrawl is not used for this university. Its pages are read plainly where they can be.'}{row.target?.override_reason?` Set by hand: ${row.target.override_reason}.`:row.target?.rule_match?' Matched by the targets rule.':''}</p>
+        <p className="adp-note">{row.target?.included?'Firecrawl may be used for this university: pages that refuse a plain read, and searching its site for missing course pages.':'Firecrawl is not used for this university. Its pages are read plainly where they can be.'}{row.target?.override_reason?` Set by hand: ${row.target.override_reason}.`:row.target?.rule_match?' Matched by the targets rule.':''}</p>
         {can&&<Button compact disabled={busy} onClick={()=>target(!row.target?.included)}>{row.target?.included?'Take out of the targets':'Add to the targets'}</Button>}
       </Block>
 
       <Block id="history" title="History" meta={`${fmtNumber((d.tasks||[]).length)} tasks · ${fmtNumber((d.log||[]).length)} changes`} data-adapter-history={pid}>
         {(d.tasks||[]).length>0?<div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th>State</th><th>When</th></tr></thead><tbody>
           {d.tasks.map(j=><tr key={j.id}><td>{j.title}<small className="sl-sub">{KIND_LABEL[j.kind]||j.kind}</small></td><td><Pill tone={STATE_TONE[j.state]||'neutral'}>{j.state}</Pill></td><td>{fmtDateTime(j.finished_at||j.created_at)}</td></tr>)}
-        </tbody></table></div>:<p className="ad-note">No tasks yet.</p>}
+        </tbody></table></div>:<p className="adp-note">No tasks yet.</p>}
         {(d.log||[]).length>0&&<ul className="tm-events">{d.log.map((e,i)=><li key={i}><small className="sl-sub">{fmtDateTime(e.at)}{e.by?` · ${e.by}`:''}</small> {ACTION_LABEL[e.action]||e.action.replace(/_/g,' ')}{e.detail?.on!=null?` ${e.detail.on?'on':'off'}`:''}{e.detail?.days!==undefined?` ${e.detail.days??'default'}`:''}{e.detail?.fields?`: ${(e.detail.fields||[]).join(', ')}`:''}{e.detail?.reason?` · ${e.detail.reason}`:''}</li>)}</ul>}
-        <p className="ad-note">Every task, with its full result, is also under <a className="cf-link" href="#scheduled-jobs?tab=jobs">Scheduled jobs › Jobs</a>. Running tasks are in the Task manager.</p>
+        <p className="adp-note">Every task, with its full result, is also under <a className="cf-link" href="#scheduled-jobs?tab=jobs">Scheduled jobs › Jobs</a>. Running tasks are in the Task manager.</p>
       </Block>
 
       <Block id="courses" title="Courses" meta={`${fmtNumber(d.courses)} courses · ${fmtNumber(d.pages_read)} pages read`}>
@@ -181,7 +181,7 @@ function Bulk({ids,rows,settings,can,canQualify,onClear,onChanged,onError}){
   const cycle=()=>{const v=window.prompt(`Read the pages of the ${fmtNumber(withAdapter.length)} ticked universities with an adapter again every how many days? ${settings.read_cycle_min} to ${settings.read_cycle_max}. Leave empty for the platform default (${settings.read_cycle_default} days).`,'')
     if(v===null)return;const days=v.trim()===''?null:Number(v);if(days!==null&&!(Number.isInteger(days)&&days>=settings.read_cycle_min&&days<=settings.read_cycle_max)){onError?.(`The read cycle is ${settings.read_cycle_min} to ${settings.read_cycle_max} days, or empty for the default.`);return}
     call('set_cycle',{provider_ids:withAdapter,days},`Set the read cycle of ${fmtNumber(withAdapter.length)} universities to ${days??`the default (${settings.read_cycle_default})`} days?`)}
-  return <div className="ad-bulk" data-adapters-bulk>
+  return <div className="adp-bulk" data-adapters-bulk>
     <strong>{fmtNumber(ids.length)} ticked</strong><small className="sl-sub">{fmtNumber(withAdapter.length)} with an adapter · {fmtNumber(on.length)} switched on · {fmtNumber(passing.length)} with a passing field not yet admitted</small>
     <JobButton kind="qualify_adapters" scope="adapters" args={{provider_ids:on,adapter_state:'any'}} label={`Qualify ${fmtNumber(on.length)}`} disabled={!canQualify||on.length===0}
       question={`Qualify the ${fmtNumber(on.length)} ticked adapters that are switched on? It measures only. Nothing is admitted.`} onFinished={onChanged}/>
@@ -202,10 +202,10 @@ function FeeRulesReport({onError}){
   const[d,setD]=useState(null),[busy,setBusy]=useState(false)
   const run=()=>{setBusy(true);supabase.rpc('admin_fee_rules_report',{p_args:{}}).then(({data,error})=>{if(error)throw error;setD(data)}).catch(e=>onError?.(errText(e))).finally(()=>setBusy(false))}
   useEffect(()=>{run()},[])
-  if(!d)return <p className="ad-note">{busy?'Measuring…':'No report yet.'}</p>
+  if(!d)return <p className="adp-note">{busy?'Measuring…':'No report yet.'}</p>
   const row=(k,v,t)=><tr key={k}><th scope="row">{k}</th><td>{fmtNumber(v)}</td><td>{t}</td></tr>
   return <div data-fee-rules-report>
-    <p className="ad-note">Rule 2 (8 Oct 2026): the CRICOS registered fee is held until the provider's own course page gives an annual international fee with captured evidence; the page fee then wins with no review, whatever year it names. A page's fee is compared here with the CRICOS registered total divided by the course's duration; "Differs" means more than {share(d.tolerance)} apart. Nothing is written: both fees stay stored and the course uses the page fee. A fee entered or locked by hand keeps the earlier rule.</p>
+    <p className="adp-note">Rule 2 (8 Oct 2026): the CRICOS registered fee is held until the provider's own course page gives an annual international fee with captured evidence; the page fee then wins with no review, whatever year it names. A page's fee is compared here with the CRICOS registered total divided by the course's duration; "Differs" means more than {share(d.tolerance)} apart. Nothing is written: both fees stay stored and the course uses the page fee. A fee entered or locked by hand keeps the earlier rule.</p>
     <table className="m-table"><tbody>
       {row('Compared',d.compared,'Courses with a page fee and a CRICOS total')}
       {row('Agree',d.agree,'Nothing to decide')}
@@ -268,7 +268,7 @@ export default function AdaptersWorkspace({onError}){
       <SectionTitle title="Adapters" subtitle="One row per university with an adapter or in the Firecrawl targets. Open a row for everything about that university. Tick rows to act on many."
         action={<Button compact className="cf-icon-btn" title="Refresh" aria-label="Refresh" onClick={load} disabled={busy}><RefreshCw size={14}/></Button>}/>
       {err&&<div className="dq-alert"><span>{err}</span></div>}
-      <div className="ad-filters" role="group" aria-label="Filter adapters">
+      <div className="adp-filters" role="group" aria-label="Filter adapters">
         <label><span>Country</span><select aria-label="Adapters country" value={f.country} onChange={e=>set('country',e.target.value)}><option value="">All</option>{countries.map(c=><option key={c} value={c}>{COUNTRY[c]||c}</option>)}</select></label>
         <label><span>State or province</span><select aria-label="Adapters state" value={f.state} onChange={e=>set('state',e.target.value)}><option value="">All</option>{states.map(s=><option key={s} value={s}>{s}</option>)}</select></label>
         <label><span>Provider kind</span><select aria-label="Provider kind" value={f.kind} onChange={e=>set('kind',e.target.value)}><option value="university">Universities</option><option value="any">Any provider</option></select></label>
@@ -279,14 +279,14 @@ export default function AdaptersWorkspace({onError}){
         <Button compact onClick={()=>setF(FILTERS)}>Reset</Button>
       </div>
       {!data?<Loading label="Loading adapters…"/>:<>
-        <p className="ad-note" data-adapters-tally>{fmtNumber(rows.length)} shown of {fmtNumber(all.length)} · admitting {fmtNumber(tally.admitting)} · testing {fmtNumber(tally.testing)} · switched off {fmtNumber(tally.off)} · no adapter {fmtNumber(tally.none)}</p>
+        <p className="adp-note" data-adapters-tally>{fmtNumber(rows.length)} shown of {fmtNumber(all.length)} · admitting {fmtNumber(tally.admitting)} · testing {fmtNumber(tally.testing)} · switched off {fmtNumber(tally.off)} · no adapter {fmtNumber(tally.none)}</p>
         <label className="tn-check"><input type="checkbox" checked={allTicked} onChange={tickAll} aria-label="Tick every row shown"/> Tick every row shown ({fmtNumber(rows.length)})</label>
         {picked.length>0&&<Bulk ids={picked} rows={pickedRows} settings={settings} can={can} canQualify={canQualify} onClear={()=>setPicked([])} onChanged={load} onError={fail}/>}
-        <div className="ad-list">
+        <div className="adp-list">
           {rows.slice(0,shown).map(r=><Row key={r.provider_id} row={r} settings={settings} can={can} canQualify={canQualify} picked={picked.includes(r.provider_id)} onPick={pick} open={open===r.provider_id} onOpen={setOpen} onChanged={load} onError={fail} rangeOf={rangeOf}/>)}
           {rows.length===0&&<Empty text="No university matches these filters."/>}
         </div>
-        {rows.length>shown&&<div className="ad-more"><Button compact onClick={()=>setShown(shown+PAGE*2)}>Show {fmtNumber(Math.min(PAGE*2,rows.length-shown))} more ({fmtNumber(rows.length-shown)} left)</Button></div>}
+        {rows.length>shown&&<div className="adp-more"><Button compact onClick={()=>setShown(shown+PAGE*2)}>Show {fmtNumber(Math.min(PAGE*2,rows.length-shown))} more ({fmtNumber(rows.length-shown)} left)</Button></div>}
         {data.as_at&&<small className="sl-sub">As at {fmtDateTime(data.as_at)}.</small>}
       </>}
     </section>
@@ -308,7 +308,7 @@ export default function AdaptersWorkspace({onError}){
     <Card id="adapters.settings" title="Fee range and award link settings" subtitle="Settings that apply to every university's fee range and hosted courses." data-adapters-settings>
       <FeeRangeSettings d={fr} can={can} onDone={load} onError={fail}/>
       <AwardLinkSettings can={can} onError={fail}/>
-      <p className="ad-note">Qualify thresholds (read on {share(settings.min_read_share)} of pages, agree on {share(settings.min_agree_share)}) are Firecrawl settings on <a className="cf-link" href="#models-services">Platform settings › Models &amp; services</a>.</p>
+      <p className="adp-note">Qualify thresholds (read on {share(settings.min_read_share)} of pages, agree on {share(settings.min_agree_share)}) are Firecrawl settings on <a className="cf-link" href="#models-services">Platform settings › Models &amp; services</a>.</p>
     </Card>
   </div>
 }
