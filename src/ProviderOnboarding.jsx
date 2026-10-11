@@ -21,6 +21,7 @@ export const STOP={no_website:['No website','Enter the website in the Adapter bu
   too_few_pages:['Too few course pages','Find or add course pages in the Adapter builder (2.1), then Retry.'],
   capture_failed:['Sample pages not captured','Check the site opens and Firecrawl credits remain (Models & services), then Retry.'],
   proposal_failed:['AI proposal failed','Check the OpenRouter credit and the adapter AI allowance, then Retry; or build the adapter by hand in the Adapter builder.'],
+  recipe_off:['Course-page search switched off','A person switched off the course-page search for this website. Check the website in the Adapter builder (1.1); a different website replaces the search. Then Retry.'],
   adapter_off:['Adapter switched off','Someone switched this adapter off. Switch it on in Layer 2 › Adapters if that was a mistake, then Retry.'],
   error:['Unexpected error','Read the note, then Retry. If it stops again, open the Adapter builder.']}
 const FIELD={intakes:'Intakes',english:'English',fee:'Fee',delivery:'Delivery'}
