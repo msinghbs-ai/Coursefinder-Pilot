@@ -15,6 +15,7 @@
 import React,{useEffect,useRef,useState}from'react'
 import{ListChecks,Play,Pause,Square,RefreshCw,CheckCircle2,XCircle,AlertTriangle}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import{ScholarshipJourney}from'./ScholarshipJourney'
 import{Button,Badge,Loading,SectionTitle,EmptyRow,fmtDateTime,fmtNumber}from'./ui-kit'
 
 const errText=e=>e?.message||String(e)
@@ -48,7 +49,7 @@ export function TaskResult({job,onAdmit}){
         <td>{(q.admitted||[]).join(', ')||'—'}</td>
       </tr>)}
     </tbody></table></div>}
-    {SCH_KINDS.has(job.kind)&&<SchResult r={job.result||{}} kind={job.kind}/>}
+    {SCH_KINDS.has(job.kind)&&<><SchResult r={job.result||{}} kind={job.kind}/><ScholarshipJourney jobId={job.id}/></>}
     <details className="tn-items" data-task-events><summary>What this task did ({(job.events||[]).length})</summary>
       <ul className="tm-events">{(job.events||[]).map((e,i)=><li key={i}><small className="sl-sub">{fmtDateTime(e.at)}</small> {e.note}</li>)}</ul>
     </details>

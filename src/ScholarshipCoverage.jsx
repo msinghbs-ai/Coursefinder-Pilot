@@ -11,6 +11,7 @@ import{CheckCircle2,ExternalLink,Eye,EyeOff,Plus,RefreshCw,Search,ShieldCheck,X}
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import ScholarshipLayer from'./ScholarshipLayer'
+import{ProviderRuns}from'./ScholarshipJourney'
 import{ProviderScholarshipAction,startProviderScans,useCanRunTasks}from'./ScholarshipActions'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
@@ -68,6 +69,7 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
     {open&&<ProviderCoverage providerId={open} rank={rank} onClose={()=>setOpen(null)} onError={onError} onChanged={load}/>}
     <details className="m-panel sc-controls" data-scholarship-controls><summary>Settings and jobs</summary>
       <p className="sc-sub">Every scholarship job and setting: switch a job on or off, change how many it handles per run. Platform Admin.</p>
+      <SkipRules onError={onError}/>
       <ScholarshipLayer layer={2} rank={rank} onError={onError} only="controls"/>
       <ScholarshipLayer layer={4} rank={rank} onError={onError} only="controls"/>
     </details>
@@ -110,6 +112,7 @@ function ProviderCoverage({providerId,rank,onClose,onError,onChanged}){
         <Button compact onClick={onClose} aria-label="Close provider"><X size={14}/></Button>
       </div></div>
     <ProviderScholarshipAction providerId={providerId} name={r.name}/>
+    <ProviderRuns providerId={providerId}/>
 
     <div className="sc-pages" data-listing-pages>
       {real.map(p=><div key={p.id} className="sc-page"><a href={p.url} target="_blank" rel="noreferrer" className="cf-link">{host(p.url)}{new URL(p.url).pathname} <ExternalLink size={11}/></a>
@@ -141,4 +144,27 @@ function Records({title,rows,listed=false,can,act,onError,reload}){
         {(s.reasons||[]).some(r=>/international/.test(r))&&listed&&<Button compact onClick={()=>act('confirm_international',{scholarship_id:s.id})} title="Listed on the provider's international scholarships page">International</Button>}
         {s.held?<Button compact onClick={()=>act('release',{scholarship_id:s.id})}>Release</Button>:<HoldButton id={s.id} onError={onError} onDone={reload} compactLabel={s.status==='published'?'Withdraw':'Hold'}/>}
       </>}</td></tr>})}</tbody></table></div></div>
+}
+
+// v2.15.248 (Platform Admin bugs 11/10-5, Fix 3): pages that are never scholarships (short courses, research papers, help pages)
+// are skipped before they are read, by these address rules. A rule never skips an address that mentions a scholarship, bursary,
+// stipend or grant. Platform Admins add rules or switch them off, with a reason; each skipped page shows the rule in its task.
+function SkipRules({onError}){
+  const[d,setD]=useState(null),[busy,setBusy]=useState(false),[pat,setPat]=useState(''),[label,setLabel]=useState('')
+  const call=async(action,args)=>{setBusy(true);try{const{data,error}=await supabase.rpc('admin_scholarship_skip_rules',{p_action:action,p_args:args||{}});if(error)throw error;setD(data);return true}catch(e){onError?.(errText(e));return false}finally{setBusy(false)}}
+  useEffect(()=>{call('read')},[])
+  if(!d)return null
+  const can=Boolean(d.can_manage)&&!busy
+  const ask=q=>{const r=window.prompt(`${q}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
+  return <div className="sc-records" data-skip-rules><h3>Pages skipped before reading</h3>
+    <p className="sc-sub">Addresses matching a rule are not read (no credit is spent). A rule never skips an address that mentions a scholarship, bursary, stipend or grant.</p>
+    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Rule</th><th>Address pattern</th><th className="num">Pages skipped</th><th>On</th></tr></thead><tbody>
+      {(d.rules||[]).map(r=><tr key={r.id} data-skip-rule={r.id}><td>{r.label}</td><td><code>{r.pattern}</code></td><td className="num">{fmtNumber(r.skipped)}</td>
+        <td><input type="checkbox" aria-label={`Rule ${r.label} ${r.pattern} on`} checked={r.active} disabled={!can} onChange={()=>{const why=ask(`${r.active?'Switch off':'Switch on'} the rule "${r.label}"?`);if(why)call('set_active',{id:r.id,active:!r.active,reason:why})}}/></td></tr>)}
+    </tbody></table></div>
+    {can&&<form className="sc-add" onSubmit={async e=>{e.preventDefault();const why=ask(`Skip pages whose address matches ${pat}?`);if(why&&await call('add',{pattern:pat.trim(),label:label.trim(),reason:why})){setPat('');setLabel('')}}}>
+      <input className="fv-input" value={label} onChange={e=>setLabel(e.target.value)} placeholder="What these pages are (e.g. Course page)" aria-label="Rule name"/>
+      <input className="fv-input" value={pat} onChange={e=>setPat(e.target.value)} placeholder="Address pattern, e.g. /study/course/" aria-label="Address pattern"/>
+      <Button compact type="submit" disabled={pat.trim().length<3}><Plus size={14}/>Add rule</Button></form>}
+  </div>
 }

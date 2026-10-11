@@ -550,3 +550,20 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .xl-add{border:1px solid var(--cf-indigo-200);border-radius:10px;padding:12px 14px;margin-bottom:12px;background:var(--cf-indigo-25)}.xl-add h3{margin:0 0 2px}
 .xl-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.xl-summary button{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--cf-border);border-radius:10px;background:var(--cf-surface);cursor:pointer;font:inherit}.xl-summary button.is-on{border-color:var(--cf-indigo-400);box-shadow:0 0 0 2px var(--cf-indigo-100)}.xl-summary b{font-size:var(--cf-fs-lg)}
 @media(max-width:900px){.xl-head{display:none}.xl-line{grid-template-columns:28px 1fr!important}.xl-cell{grid-column:2}.xl-cell-label{display:inline;color:var(--cf-muted);font-size:var(--cf-fs-sm);margin-right:4px}.xl-body{padding-left:14px}}
+/* v2.15.248 (bugs 11/10-5, Feature 1): the journey of a scholarship task, per university */
+.sj{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.sj-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center;font-size:var(--cf-fs-base)}
+.sj-pills{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+.sj-body{display:flex;flex-direction:column;gap:12px}
+.sj-sentence{margin:0;font-size:var(--cf-fs-lg);line-height:1.5;color:var(--cf-text)}
+.sj-stages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.sj-stage{display:flex;gap:8px;padding:8px 10px;border:1px solid var(--cf-border);border-radius:10px;background:var(--cf-surface);font-size:var(--cf-fs-base)}
+.sj-stage.tone-success{border-color:var(--cf-green-200)}.sj-stage.tone-warning{border-color:var(--cf-amber-200)}.sj-stage.tone-info{border-color:var(--cf-indigo-200)}
+.sj-num{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--cf-slate-100);font-weight:700;font-size:var(--cf-fs-sm)}
+.sj-stage b{display:block;margin-bottom:2px}.sj-reasons{display:block;margin-top:4px;color:var(--cf-text-2);font-size:var(--cf-fs-sm)}
+.sj-pub h4,.sj-items h4,.sj-runs h3{margin:0 0 6px}.sj-pub ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:var(--cf-fs-base)}
+.sj-items-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.sj-table td{vertical-align:top;font-size:var(--cf-fs-base)}.sj-page b{display:block}.sj-page a{display:inline-flex;gap:3px;align-items:center;font-size:var(--cf-fs-sm);word-break:break-all}
+.sj-runs{margin:12px 0;display:flex;flex-direction:column;gap:6px}.sj-runs ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.sj-runs li{border:1px solid var(--cf-border);border-radius:10px;padding:8px 10px;background:var(--cf-surface)}
+.sj-run-toggle{border:0;background:none;padding:0;cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:inherit;text-align:left}
