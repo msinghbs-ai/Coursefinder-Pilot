@@ -201,7 +201,7 @@ test('browser: Firecrawl work — credits and report on Models & services, runs 
   // find_page has a running task in the fixture, so its button shows the task (see the JobButton test below)
   // Phase C (Decision 254): a run is a task started from the same button, watched by the Task manager, closed into Jobs
   await w.getByRole('button', { name: 'Read pages (1,102 waiting)' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'firecrawl_run')?.args).toMatchObject({ kind: 'firecrawl_run', args: { use_case: 'read_page', scope: 'read_page' }, reason: 'Decision 253 run' })
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'firecrawl_run')?.args).toMatchObject({ kind: 'firecrawl_run', args: { use_case: 'read_page', scope: 'read_page' }, from: expect.any(String) }) // v2.15.247: a start asks only to confirm; no reason is sent
   await expect(w.locator('[data-firecrawl-runs]')).toHaveCount(0)
   await expect(w.locator('[data-firecrawl-runs-note]')).toContainText('Scheduled jobs › Task manager')
   await openCard(page, 'adapters.firecrawl-targets')
@@ -626,7 +626,7 @@ test('browser: Layer 2 › Adapters — pills, open a university, its courses, a
   await attach.getByRole('textbox', { name: 'Central page address' }).fill('https://www.example.edu.au/key-dates')
   await attach.getByRole('combobox', { name: 'Central page kind' }).selectOption('intake_calendar')
   await attach.getByRole('button', { name: 'Attach page' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'central_page_read')?.args).toMatchObject({ args: { provider_id: 'u1', kind: 'intake_calendar', url: 'https://www.example.edu.au/key-dates', action: 'add', scope: 'u1' }, reason: 'Central English page from the wave run' })
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'central_page_read')?.args).toMatchObject({ args: { provider_id: 'u1', kind: 'intake_calendar', url: 'https://www.example.edu.au/key-dates', action: 'add', scope: 'u1' }, from: expect.any(String) }) // v2.15.247: a start asks only to confirm; no reason is sent
 })
 
 // Platform Admin 5 Oct 07:36: a central English rule written out from the attached page is a proposal, approved in Layer 4
@@ -904,7 +904,7 @@ test('browser: Layer 2 › Adapters — tick universities, preview and read page
   await panel.getByRole('button', { name: 'All course pages' }).click()
   await expect.poll(() => page.l3calls.filter(c => c.reread === 'preview').at(-1)?.args?.which).toBe('all')
   await panel.getByRole('button', { name: 'Read again now' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'reread_pages')?.args).toMatchObject({ args: { provider_ids: ['u1', 'u2'], which: 'all', central: true, scope: 'universities' }, reason: 'Pages changed since the last read' })
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'reread_pages')?.args).toMatchObject({ args: { provider_ids: ['u1', 'u2'], which: 'all', central: true, scope: 'universities' }, from: expect.any(String) }) // v2.15.247: a start asks only to confirm; no reason is sent
   // the panel's own request list is retired: progress lives on the button (from the task row) and in the Task manager
   await expect(panel.locator('[data-reread-progress]')).toHaveCount(0)
 })
@@ -1041,7 +1041,7 @@ test('browser: Layer 2 › Adapters — Qualify and Admit start as tasks, one ad
   await expect(life.locator('[data-adapter-qualify]')).toContainText('Passes')
   await expect(life.locator('[data-adapter-consequence]')).toContainText('admitted only for the fields admitted below')
   await life.getByRole('button', { name: 'Qualify this adapter' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'qualify_adapters')?.args).toMatchObject({ kind: 'qualify_adapters', args: { provider_ids: ['u3'], scope: 'u3' }, reason: 'Phase A check from the browser test' })
+  await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'qualify_adapters')?.args).toMatchObject({ kind: 'qualify_adapters', args: { provider_ids: ['u3'], scope: 'u3' }, from: expect.any(String) }) // v2.15.247: a start asks only to confirm; no reason is sent
   await life.getByRole('button', { name: 'Admit the passing fields' }).click()
   await expect.poll(() => page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'admit_qualified')?.args).toMatchObject({ kind: 'admit_qualified', args: { provider_ids: ['u3'], scope: 'u3' } })
   expect(page.l3calls.find(c => c.jobs === 'start' && c.args.kind === 'admit_qualified').args.args.qualification_job_id).toBeUndefined() // each adapter's own latest Qualify
