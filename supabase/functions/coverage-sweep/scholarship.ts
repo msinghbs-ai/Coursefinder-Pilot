@@ -231,7 +231,7 @@ export function studyStart(body: string) {
 // v0.7.0: courses the page names. Course codes in CRICOS form (6 digits and a letter) and course titles listed under an
 // "eligible courses / programs / degrees" heading or named in the eligibility text. The database matches them to the
 // provider's own courses; anything it cannot match is shown and not linked.
-const TITLE_RE = /\b((?:Bachelor|Master|Graduate (?:Certificate|Diploma)|Postgraduate (?:Certificate|Diploma)|Advanced Diploma|Associate Degree|Diploma|Doctor|Juris Doctor)(?:'s)?(?: of| in)? [A-Z][A-Za-z&'\- ]{1,90}?(?:\s*\([A-Za-z&,'\- ]{2,60}\))?)(?=\s*(?:[.;:,\n|]|\s(?:and|or|at|is|are|for|with|students?|program(?:me)?s?|courses?|degrees?)\b|$))/g;
+const TITLE_RE = /\b((?:Bachelor|Master|Graduate (?:Certificate|Diploma)|Postgraduate (?:Certificate|Diploma)|Advanced Diploma|Associate Degree|Diploma|Doctor|Juris Doctor)(?:'s)?(?: of| in)? [A-Z][A-Za-z&'\- ]{1,90}?(?:\s*\([A-Za-z&,'\- ]{2,60}\))?)(?=\s*(?:[.;:,\n|•⦁·▪●‚]|\s(?:and|or|at|is|are|for|with|students?|program(?:me)?s?|courses?|degrees?|you|must|who|an|a|the|You|Must|Who|An|A|The)\b|$))/g;
 // a course named after "excluding", "except", "other than", "not available for" in the same sentence is an exclusion
 const EXCLUDE_CUE = /\b(?:excluding|excludes|except(?: for)?|other than|not (?:available|eligible|open|applicable) (?:for|to)|does not apply to|ineligible)\b/i;
 function excludedAt(t: string, at: number) {

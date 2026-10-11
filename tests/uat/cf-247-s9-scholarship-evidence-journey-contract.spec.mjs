@@ -9,8 +9,8 @@ const m84 = fs.readFileSync('supabase/migrations/20261011008400_cf247_scholarshi
 const m85 = fs.readFileSync('supabase/migrations/20261011008500_cf247_scholarship_course_exclusions.sql', 'utf8')
 
 test('scraper only: no direct read, no fallback, robots.txt not consulted for scholarship pages; a page waits for the scraper', () => {
-  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v0.18.1"')
-  expect(worker).toContain('const SCH_VERSION = "scholarship-sweep-v0.7.1"')
+  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v0.18.2"')
+  expect(worker).toContain('const SCH_VERSION = "scholarship-sweep-v0.7.2"')
   const fn = worker.slice(worker.indexOf('const readSch = async'), worker.indexOf('const readSch = async') + 1600)
   expect(fn).toContain('if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");')
   expect(fn).not.toContain('readDirect(')
@@ -59,4 +59,13 @@ test('record shows the dates and the Evidence & extraction journey (mocked)', as
   for (const s of ["{k:'open',label:'Applications open'", "{k:'close',label:'Applications close'", "{k:'start',label:'Study start'", '<EvidenceJourney d={d}/>',
     "step('read','2. Read through the scraper'", "step('saved','3. Saved copy'", "step('facts','5. What was read from the page'", "step('applied','6. What it changed'",
     "data-sr-proof", "Excluded by the page:"]) expect(ui).toContain(s)
+})
+
+test('course titles: bullets end a title; long titles match by containment (migration 8800)', () => {
+  const m88 = fs.readFileSync('supabase/migrations/20261011008800_cf247_scholarship_course_title_match.sql', 'utf8')
+  expect(m88).toContain('create or replace function security.scholarship_course_title_match_v1(p_named text, p_canonical text, p_display text)')
+  expect(m88).toContain("security.scholarship_course_title_match_v1(x->>'title', c.canonical_title, c.display_title)")
+  expect(m88).toContain('"security.scholarship_sweep_apply_v1(uuid)": "a5431127dd4c5c85ac33b5e92dcbcb02"')
+  expect(m88).not.toMatch(/^(drop|delete|truncate)\b/im)
+  expect(reader).toContain('[.;:,\\n|•⦁·▪●‚]')
 })
