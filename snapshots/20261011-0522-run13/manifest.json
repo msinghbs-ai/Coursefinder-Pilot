@@ -1,0 +1,54 @@
+{
+  "captured_at": "2026-10-11T05:22:41.151Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-1-register.png",
+      "route": "layer-1-register",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 1 Register",
+      "settle_ms": 4165,
+      "height": 2676,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-1-register",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-scheduled-jobs?tab=tasks.png",
+      "route": "scheduled-jobs?tab=tasks",
+      "action": null,
+      "clicked": true,
+      "heading": "Scheduled jobs",
+      "settle_ms": 0,
+      "height": 1082,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scheduled-jobs?tab=tasks",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-reference-data?tab=links.png",
+      "route": "reference-data?tab=links",
+      "action": null,
+      "clicked": true,
+      "heading": "Reference data",
+      "settle_ms": 3271,
+      "height": 4422,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#reference-data?tab=links",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "04-scheduled-jobs?tab=jobs.png",
+      "route": "scheduled-jobs?tab=jobs",
+      "action": null,
+      "clicked": true,
+      "heading": "Scheduled jobs",
+      "settle_ms": 1,
+      "height": 1082,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scheduled-jobs?tab=jobs",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
