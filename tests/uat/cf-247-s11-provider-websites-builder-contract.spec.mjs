@@ -65,3 +65,10 @@ test('Builder: numbered 1.1 to 3.4 and 4, course list, Fill in from website, cap
   expect(read('src/mature.css')).toContain('.ab-builder .ab-text{font-size:var(--cf-fs-lg)')
   expect(read('src/ScholarshipActions.jsx')).toContain('export function ProviderFillAction')
 })
+
+test('v0.19.1: a home page behind a gatekeeper is checked through the scraper when a website is verified', () => {
+  const w = read('supabase/functions/coverage-sweep/index.ts')
+  expect(w).toContain('const viaScraper = async (providerId: string, url: string, cc: string)')
+  expect(w).toContain('if (!html || [401, 403, 429, 503].includes(h.status)) { const sc = await viaScraper(p.provider_id, u.origin + "/", cc);')
+  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.19.1"')
+})
