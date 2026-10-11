@@ -348,7 +348,7 @@ export function Layer1Sources(){
  const counts=useMemo(()=>{const c={};for(const s of all.filter(x=>!isRetired(x)))c[healthOf(s)]=(c[healthOf(s)]||0)+1;return c},[all])
  if(rank>0&&rank<4)return <div className="xl-empty">Your role cannot open Layer 1.</div>
  const columns=[
-  {key:'source',label:'Source',width:'minmax(220px,2.4fr)',render:s=><span className="xl-title"><b>{s.source_label}</b><small>{s.authority_name||'—'}</small></span>},
+  {key:'source',label:'Source',width:'minmax(220px,2.4fr)',render:s=>{const sub=s.authority_name&&s.authority_name.trim().toLowerCase()!==String(s.source_label||'').trim().toLowerCase()?s.authority_name:(s.source_url?String(s.source_url).replace(/^https?:\/\/(www\.)?/,'').replace(/\/.*$/,''):'');return <span className="xl-title"><b>{s.source_label}</b>{sub&&<small>{sub}</small>}</span>}},
   {key:'country',label:'Country',width:'minmax(70px,.6fr)',render:s=><Pill title={s.country_name}>{s.country_code||'—'}</Pill>},
   {key:'type',label:'Type',width:'minmax(90px,.8fr)',render:s=><Pill tone={sourceClass(s)==='statistics'?'violet':'info'}>{isRankingSource(s)?'Ranking':TYPE_LABEL[sourceClass(s)]||human(sourceClass(s))}</Pill>},
   {key:'health',label:'Health',width:'minmax(120px,1fr)',render:s=>{const h=isRetired(s)?'retired':healthOf(s);return <Pill tone={HEALTH_TONE[h]||'neutral'} title={healthReason(s)||undefined}>{h==='retired'?'Retired':HEALTH_LABEL[h]||human(h)}</Pill>}},
