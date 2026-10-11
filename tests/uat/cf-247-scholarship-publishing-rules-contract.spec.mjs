@@ -2,7 +2,6 @@
 // provider's annual international tuition fee.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = p => fs.readFileSync(p, 'utf8')
 
@@ -22,13 +21,4 @@ test('database: publishing check, admin confirmation, maximum values, per-year s
   expect(m).not.toMatch(/set\s+publication_status\s*=\s*'published'/)
 })
 
-test('browser: Domestic only list; a Platform Admin confirms international students with a note', async ({ page }) => {
-  await mockAdmin(page)
-  page.on('dialog', d => d.type() === 'prompt' ? d.accept('Page lists international students under Residency') : d.accept())
-  await page.goto('/#layer-4-review?tab=publishing')
-  await page.getByLabel('Show').selectOption('domestic_only')
-  await expect(page.locator('[data-domestic-words]')).toContainText('Australian citizen')
-  await expect(page.locator('[data-domestic-words]')).toContainText('taken off at the next daily review')
-  await page.getByRole('button', { name: 'International students can apply to Women in STEM Scholarship' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.p_action === 'confirm_international')?.p_args).toEqual({ id: 'd1', note: 'Page lists international students under Residency' })
-})
+// v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Scholarship publishing retired; its Domestic only browser check went with it.

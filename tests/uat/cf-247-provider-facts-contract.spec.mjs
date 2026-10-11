@@ -85,7 +85,9 @@ test.describe('browser: fee schedules panel', () => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page)
     page.on('dialog', d => d.accept())
-    await page.goto('/#layer-4-review?tab=attributes')
+    // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
+    await page.goto('/#providers?tab=onboarding')
+    await page.locator('[data-onboarding-approvals] > summary').click()
     const fs = page.locator('[data-fee-schedules]')
     await expect(fs).toContainText('Waiting for approval')
     await expect(fs.getByLabel('Show schedules')).toHaveValue('waiting') // v2.15.158: opens on what is waiting
@@ -100,7 +102,9 @@ test.describe('browser: fee schedules panel', () => {
   test('Pipeline Operator sees the panel but cannot decide; viewer does not see it', async ({ page }) => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page, { rank: 4 })
-    await page.goto('/#layer-4-review?tab=attributes')
+    // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
+    await page.goto('/#providers?tab=onboarding')
+    await page.locator('[data-onboarding-approvals] > summary').click()
     const fs = page.locator('[data-fee-schedules]')
     await expect(fs.locator('[data-doc="fs1"]')).toContainText('Waiting for a Platform Admin')
     await expect(fs.getByRole('button', { name: 'Approve' })).toHaveCount(0)

@@ -26,11 +26,12 @@ export const AREAS=[
   ['Platform upkeep','Platform upkeep','Health checks, credit balances and clean-up.'],
 ]
 const NEEDS=[
-  ['fee_schedules','Fee schedules to approve','coverage','attributes'],
-  ['scholarships_ready','Scholarships ready to publish','layer4','publishing'],
-  ['scholarships_domestic','Domestic-only scholarships to check','layer4','publishing'],
+  // v2.15.253 (Platform Admin, 12 Oct 2026): central pages are approved on Providers › Onboarding (and the Adapter builder), scholarships are
+  // published from Scholarships › Coverage; Layer 4 Flagged values retired (its open flags were closed).
+  ['fee_schedules','Fee schedules to approve','providers','onboarding'],
+  ['scholarships_ready','Scholarships ready to publish','scholarships','coverage'],
+  ['scholarships_domestic','Domestic-only scholarships to check','scholarships','coverage'],
   ['layer4_reviews','Layer 4 reviews','layer4',null],
-  ['flagged_values','Flagged values','layer4','flags'],
   ['ranking_links','Ranking links to review','rankings','datasets'],
 ]
 const HIDE_KEYS=new Set(['ok','mode','worker','workerVersion','worker_version','scholarshipExtractor','phase','task'])

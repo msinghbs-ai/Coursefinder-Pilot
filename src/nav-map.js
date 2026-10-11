@@ -27,7 +27,7 @@ export const PAGES = {
     // v2.15.249 (Platform Admin bugs 11/10-6): AI reads each stored scholarship page; models, qualification, instructions, answers
     { key: 'extraction', label: 'Extraction', min: 3 },
     // v2.15.174 (Platform Admin, 4 Oct 2026 01:57): Course links retired — links come from each scholarship's page (Layer 2)
-    // v2.15.169 (Decision 249): Publishing moved to Layer 4 Review — publishing is a person's decision
+    // v2.15.169 (Decision 249): Publishing moved to Layer 4 Review; v2.15.253: that tab retired, publishing is on Coverage
   ] },
   rankings: { label: 'Rankings & statistics', slug: 'statistics-rankings', icon: 'chart', subtitle: 'QILT, PRISMS, QS and THE data, and side-by-side comparison.', tabs: [
     { key: 'overview', label: 'Overview', min: 1 },
@@ -67,15 +67,11 @@ export const PAGES = {
     { key: 'review', label: 'Review queue', min: 3 },
     // v2.15.250 (Platform Admin, 11 Oct 2026: "Qwen 3 then GPT-4.1 mini then to Layer 4"): scholarship pages no model could settle
     { key: 'aireview', label: 'AI could not decide', min: 3 },
-    { key: 'flags', label: 'Flagged values', min: 3 },
     { key: 'websites', label: 'Websites to find', min: 3 },
     // v2.15.252: the AI send-back tab retired with Layer 3; the old address opens the Review queue.
-    { key: 'rules', label: 'Fee rules', min: 3 },
-    // v2.15.157 (Platform Admin, 3 Oct 2026 02:00): fee schedules, English policies and academic calendars moved here from Coverage › Attributes
-    { key: 'attributes', label: 'Attributes', min: 4 },
-    // v2.15.169 (Decision 249): scholarship publishing is a decision a person makes, so it sits with the other decisions
-    { key: 'publishing', label: 'Scholarship publishing', min: 3 },
-    { key: 'blocks', label: 'Blocks', min: 5 },
+    // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired.
+    // Central pages (fee schedules, English policies, calendars) are approved in Layer 2 › Adapter builder (1.3) and on
+    // Providers › Onboarding; scholarships are published from Scholarships › Coverage. Old addresses redirect (see resolveTarget).
   ] },
 
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database.', tabs: [
@@ -224,8 +220,13 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.legacyL3) return { page: 'layer2', tab: 'adapters', params: p }
   // v2.15.252: the Layer 4 AI send-back tab retired with Layer 3; the old address opens the Review queue.
   if (hit.page === 'layer4' && tab === 'sendback') return { page: 'layer4', tab: 'review', params: p }
-  // v2.15.169 (Decision 249): Scholarships › Publishing is Layer 4 Review › Scholarship publishing.
-  if (hit.page === 'scholarships' && tab === 'publishing') return { page: 'layer4', tab: 'publishing', params: p }
+  // v2.15.253 (Platform Admin, 12 Oct 2026): retired Layer 4 tabs. Flagged values, Fee rules and Blocks open the Review queue;
+  // Attributes (central page approvals) opens Providers › Onboarding; Scholarship publishing opens Scholarships › Coverage.
+  if (hit.page === 'layer4' && ['flags', 'rules', 'blocks'].includes(tab)) return { page: 'layer4', tab: 'review', params: p }
+  if (hit.page === 'layer4' && tab === 'attributes') return { page: 'providers', tab: 'onboarding', params: p }
+  if (hit.page === 'layer4' && tab === 'publishing') return { page: 'scholarships', tab: 'coverage', params: p }
+  // v2.15.169 (Decision 249) moved Scholarships › Publishing to Layer 4; v2.15.253 retired that tab, so it opens Scholarships › Coverage.
+  if (hit.page === 'scholarships' && tab === 'publishing') return { page: 'scholarships', tab: 'coverage', params: p }
   // v2.15.174: Scholarships › Course links retired; the old address opens the list
   if (hit.page === 'scholarships' && tab === 'links') return { page: 'scholarships', tab: 'list', params: p }
   return { page: hit.page, tab, params: p }

@@ -25,8 +25,7 @@ import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRe
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import{DomainReadiness}from'./data-quality-entry'
-import FeeSchedules from'./FeeSchedules'
-import ProviderPolicies from'./ProviderPolicies'
+import CreditBanner from'./CreditBanner'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
 import ScholarshipRecord from'./ScholarshipRecord'
 import{ProviderScholarshipAction,CourseScholarshipAction,ProviderFillAction}from'./ScholarshipActions'
@@ -39,17 +38,15 @@ import'./admin-pages.css'
 // while this tab was open, the page reloads once to pick up the new release instead of showing an error.
 function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({default:m[name]})).catch(e=>{let again=false;try{again=sessionStorage.getItem('cf-chunk-reload')!==String(location.pathname+location.hash)}catch{}if(again&&/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(e?.message||e))){try{sessionStorage.setItem('cf-chunk-reload',String(location.pathname+location.hash))}catch{}location.reload();return new Promise(()=>{})}throw e}))}
 const EvidenceWorkspace=lazyPage(()=>import('./EvidenceWorkspace'))
-const FeeRules=lazyPage(()=>import('./FeeRules'))
 const ModelsServices=lazyPage(()=>import('./ModelsServices'))
 const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
 const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
 const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))
 const ProviderContactsWorkspace=lazyPage(()=>import('./ProviderContactsWorkspace'))
-const FlaggedValues=lazyPage(()=>import('./FlaggedValues'))
 const WebsitesToFind=lazyPage(()=>import('./WebsitesToFind'))
 const Automations=lazyPage(()=>import('./Automations'))
-const ScholarshipPublishing=lazyPage(()=>import('./ScholarshipPublishing'))
+const ProviderOnboarding=lazyPage(()=>import('./ProviderOnboarding'))
 const PriorityQueue=lazyPage(()=>import('./PriorityQueue'))
 const SearchCapCard=lazyPage(()=>import('./SearchCapCard'))
 const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
@@ -76,22 +73,11 @@ const RetentionScreen=lazyPage(()=>import('./RetentionScreen'))
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
 function CoverageAttributes({rank}){
   const[scope,setScope]=useState({country:'',provider:null})
-  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-4-review?tab=attributes">Layer 4 Review › Attributes</a>.</p>}</div>
+  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#providers?tab=onboarding">Providers › Onboarding</a>.</p>}</div>
 }
 
-// v2.15.157 (Platform Admin, 3 Oct 2026 02:00: "Move english and fees from coverage attributes to layer 4 as the attributes
-// tab"): university-level documents a person approves (fee schedules, English policies, academic calendars) sit with the
-// other Layer 4 decisions. The country filter narrows both panels, as the Coverage filter did.
-const ATTR_COUNTRIES=[['','All countries'],['AU','Australia'],['NZ','New Zealand'],['CA','Canada']]
-function Layer4Attributes(){
-  const[country,setCountry]=useState('')
-  return <div className="m-page-stack">
-    <section className="m-panel" data-attributes-scope><div className="fs-bar"><label><small>Country</small><select className="fv-filter" aria-label="Attributes country" value={country} onChange={e=>setCountry(e.target.value)}>{ATTR_COUNTRIES.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label></div>
-      <p className="sd-desc">University documents a person approves: fee schedules, English language policies and academic calendars. Approval fills only courses with no value and none entered by hand.</p></section>
-    <FeeSchedules country={country}/>
-    <ProviderPolicies country={country}/>
-  </div>
-}
+// v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Attributes retired. Fee schedules, English policies and academic calendars are
+// approved in Layer 2 › Adapter builder (1.3) for one university, or across universities on Providers › Onboarding.
 
 const UI_VERSION='2.15.78'
 const UI_FIXES=[
@@ -195,6 +181,8 @@ function App(){
         breadcrumbs={<AppBreadcrumbs pageKey={pageKey} tab={tab} routeParams={route.params} navigate={go}/>}
         title={page.title} subtitle={page.subtitle}
         actions={<>{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
+      {/* v2.15.253 (Platform Admin, 12 Oct 2026): credit and limit notices on every page (Curator and above) */}
+      <CreditBanner rank={rank} canOpenServices={canOpen('services',rank)}/>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
       <WorkspaceErrorBoundary routeKey={`${pageKey}/${tab}?${route.params.toString()}`} onError={setError} onRecover={()=>go('dashboard')}>
         <React.Suspense fallback={<div className="m-page-loading" role="status"><span className="m-spinner"/>Loading…</div>}><Page pageKey={pageKey} tab={tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/></React.Suspense>
@@ -225,10 +213,10 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
         if(tab==='assets')return <ProviderAssetsWorkspace onError={onError} navigate={navigate}/>
-        // Clean-up batch 2 (9 Oct 2026): the old onboarding queue was retired; new providers are onboarded through the guided Adapter builder.
         // v2.15.224: the old country and source onboarding cases panel is retired (no case was ever opened)
         if(tab==='archived')return <ArchivedReview onError={onError} navigate={navigate}/>
-        if(tab==='onboarding')return <div className="m-page-stack"><ProviderOnboardingNotice rank={rank} navigate={navigate}/></div>
+        // v2.15.253 (Platform Admin, 12 Oct 2026): universities are onboarded automatically up to Ready to admit; admitting stays a person's step.
+        if(tab==='onboarding')return <ProviderOnboarding rank={rank} actorId={actorId} onError={err}/>
         return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'scholarships':if(tab==='coverage')return <ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>;if(tab==='extraction')return <ScholarshipExtraction onError={onError}/>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
@@ -253,7 +241,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         // profiles moved to Scrapers & fetchers.
         return <AdaptersWorkspace rank={rank} onError={err}/>
       // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and Layer 4 AI send-back tab retired; adapters admit the values.
-      case'layer4':return tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:tab==='attributes'?<Layer4Attributes/>:tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>
+      // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired (old addresses redirect in nav-map.js).
+      case'layer4':return tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='priority'?<div className="m-page-stack"><SearchCapCard/><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
@@ -486,16 +475,6 @@ function RankingImportPanel({onError,routeParams,navigate}){
    <div className="m-ranking-import-list">{imports.filter(x=>historySystem==='all'||x.system_code===historySystem).length?imports.filter(x=>historySystem==='all'||x.system_code===historySystem).map(x=>{const validating=processingId===x.id,validated=['validated','parsed','reconciled'].includes(x.status),available=['applied','needs_review'].includes(x.status),count=x.validation_summary?.candidate_observations??x.parse_summary?.rows??x.parse_summary?.candidate_observations,job=x.latest_job;return <article key={x.id} className="m-ranking-import-row"><div className="m-ranking-import-identity"><strong>{String(x.system_code||'').toUpperCase()+' '+x.edition_year}</strong><span>{x.original_filename}</span>{Array.isArray(x.detected_scope)&&x.detected_scope.length?<small>Country scope: {x.detected_scope.join(', ')}{Number(x.logical_revision_count||0)>1?' · '+x.logical_revision_count+' source revisions':''}</small>:null}{count!=null&&<small>{fmtNumber(count)} parsed observations</small>}{job&&<small>Latest Job: {humanise(job.job_type)} · {humanise(job.status)}{Number(x.job_count||0)>1?' · '+x.job_count+' jobs':''}</small>}</div><div className="m-ranking-import-state"><b className={'status '+x.status}>{humanise(x.status)}</b><small>{(x.updated_at||x.uploaded_at)?'Updated '+fmtDateTime(x.updated_at||x.uploaded_at):'—'}</small></div><div className="m-ranking-import-row-actions">{x.status==='uploaded'&&<button disabled={validating} onClick={()=>processImport(x.id,'validate')}>{validating?'Parsing…':'Parse & validate'}</button>}{validated&&<button className="primary" disabled={validating} onClick={()=>processImport(x.id,'apply')}>{validating?'Applying…':'Apply edition'}</button>}{available&&<button disabled={validating} onClick={()=>x.status==='needs_review'?processImport(x.id,'validate'):navigate?.('Statistics & Rankings')}>{x.status==='needs_review'?(validating?'Processing…':'Process & apply'):'View module'}</button>}<button className="m-link-button" disabled={processingId===x.id} onClick={async()=>{try{const{data,error}=await supabase.functions.invoke('ranking-evidence-export',{body:{system_code:x.system_code,edition_year:Number(x.edition_year),import_id:x.id}});if(error)throw error;if(!data?.signed_url)throw new Error('Exportable XLSX Evidence not found');const a=document.createElement('a');a.href=data.signed_url;a.download=data.filename||'';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}catch(e){setSaved(`Export failed: ${e.message||String(e)}`)}}}>Export XLSX</button><button className="m-secondary compact" onClick={()=>navigate?.('Jobs')}>Jobs{Number(x.job_count||0)>0?' ('+x.job_count+')':''}</button></div></article>}):<EmptyState icon={FileCheck2} title="No ranking imports for this publisher" text="Change the publisher filter, or add the ranking on Reference data › Reference sources."/>}</div>
   </section>
  </div>
-}
-
-// Providers › Onboarding (clean-up batch 2, 9 Oct 2026): the old onboarding queue is retired. New providers are onboarded
-// through the guided Adapter builder (Layer 2 › Adapter builder, PIM Admin and above).
-function ProviderOnboardingNotice({rank,navigate}){
- const canBuild=canOpen('layer2',rank)&&allowedTabs(PAGES.layer2,rank).some(t=>t.key==='builder')
- return <section className="m-panel" data-provider-onboarding-notice><PanelTitle icon={Plug} title="Adding a new provider" subtitle="New providers are onboarded through the guided Adapter builder."/>
-  <p className="m-help">The Adapter builder walks you through it step by step: it finds the provider's course pages, builds an adapter, and tests it on real courses before anything reaches the catalogue.</p>
-  {canBuild?<button type="button" className="m-primary" data-open-adapter-builder onClick={()=>navigate('layer2',{tab:'builder'})}>Open the Adapter builder</button>:<p className="m-help">Ask a PIM Admin to open Layer 2 › Adapter builder for you.</p>}
- </section>
 }
 
 function ScholarshipWorkspace({rank,onError,navigate,initialId}){return <div className="m-page-stack"><Catalogue type="scholarship" onError={onError} navigate={navigate} initialId={initialId} rank={rank}/></div>}

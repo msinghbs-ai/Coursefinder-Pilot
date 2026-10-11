@@ -1,16 +1,15 @@
-import React,{useEffect,useMemo,useState}from'react'
+import React,{useEffect,useState}from'react'
 import{StatusChip,Metric as KitMetric,SectionTitle as KitSectionTitle,Empty}from'./ui-kit'
 import{
-  Activity,AlertTriangle,Archive,Blocks,CheckCircle2,Database,HardDrive,RefreshCw,
-  Search,ServerCog,ShieldCheck,SlidersHorizontal,TestTube2
+  Activity,AlertTriangle,Archive,CheckCircle2,Database,HardDrive,RefreshCw,
+  ServerCog,ShieldCheck,SlidersHorizontal,TestTube2
 }from'lucide-react'
 import{fmtDateTime,fmtNumber as fmtNum,fmtPercent}from'./lib/format.js'
 import{adminRead,supabase}from'./lib/supabase'
 import'./platform-maturity.css'
 
 // Clean-up batch 2 (9 Oct 2026): the unused fallback tab navigation (no view) and the Current Layer 2 wave panel were removed.
-const BLOCK_SCOPES=[['operational','Operational'],['publication','Publication'],['search','Search'],['data_quality_quarantine','Data quality quarantine']]
-const ENTITY_TYPES=[['provider','Provider'],['course','Course'],['campus','Campus'],['scholarship','Scholarship']]
+// v2.15.253 (Platform Admin, 12 Oct 2026): view 'blocks' (Layer 4 › Blocks) retired with its tab; blocks already recorded stay enforced by the server.
 const num=v=>Number(v||0)
 const fmtNumber=v=>fmtNum(num(v))
 const fmtDate=v=>fmtDateTime(v)
@@ -18,8 +17,6 @@ const fmtBytes=v=>{const n=num(v);if(!n)return'0 B';const u=['B','KB','MB','GB',
 const title=v=>String(v||'').replace(/[_-]+/g,' ').replace(/\b\w/g,x=>x.toUpperCase())
 const toneFor=v=>{const x=String(v||'').toLowerCase();if(['pass','passed','pilot_uat_pass','pilot_qualified','accepted_baseline','healthy','enabled','published'].includes(x))return'success';if(['warning','designed','registered','internal','active'].includes(x))return'warning';if(['critical','error','failed','blocked','not_run','disabled'].includes(x))return'danger';return'neutral'}
 const list=v=>v?.items??v?.rows??(Array.isArray(v)?v:[])
-const itemId=x=>x?.id||x?.entity_id||x?.provider_id||x?.course_id||x?.campus_id||x?.scholarship_id||''
-const itemLabel=x=>x?.display_name||x?.canonical_name||x?.display_title||x?.canonical_title||x?.name||x?.title||x?.entity_name||x?.stable_key||itemId(x)
 
 function Pill({children,tone='neutral'}){return <StatusChip tone={tone} label={children}/>}
 function Metric({label,value,detail,tone='neutral',Icon=Database}){return <KitMetric icon={Icon} label={label} value={value} detail={detail} tone={tone}/>}
@@ -28,25 +25,24 @@ function SectionTitle({icon=ServerCog,title,subtitle,action}){return <KitSection
 
 // v2.15.123 (screen review: no tabs inside tabs; readiness gates and UAT belong with the go-live checklist; Layer 4 blocks
 // belong in Layer 4): view 'capacity' = Platform health › Capacity (overview, capacity, performance as sections);
-// view 'golive' = Platform settings › Go-live checklist (environment gates, UAT); view 'blocks' = Layer 4 › Blocks.
-const VIEW_TITLE={capacity:['Capacity and integrity','Database size, evidence storage, workloads and retention.'],golive:['Readiness gates and UAT','What must pass before Production is switched on.'],blocks:['Blocks','Hide a provider, course, campus or scholarship from operations, publishing or search, and undo it.']}
+// view 'golive' = Platform settings › Go-live checklist (environment gates, UAT).
+const VIEW_TITLE={capacity:['Capacity and integrity','Database size, evidence storage, workloads and retention.'],golive:['Readiness gates and UAT','What must pass before Production is switched on.']}
 export default function PlatformMaturity({rank,onError,view=''}){
   const[environment,setEnvironment]=useState('pilot')
-  const[data,setData]=useState({readiness:null,capacity:null,gates:null,uat:null,workloads:null,retention:null,blocks:null})
+  const[data,setData]=useState({readiness:null,capacity:null,gates:null,uat:null,workloads:null,retention:null})
   const[busy,setBusy]=useState(true),[error,setError]=useState('')
   const load=async()=>{
     setBusy(true);setError('')
     try{
-      const[readiness,capacity,gates,uat,workloads,retention,blocks]=await Promise.all([
+      const[readiness,capacity,gates,uat,workloads,retention]=await Promise.all([
         adminRead('platform_readiness'),
         adminRead('platform_capacity',{environment}),
         adminRead('platform_environment_gates',{environment}),
         adminRead('platform_uat_catalogue',{limit:100,offset:0}),
         adminRead('platform_workloads'),
         adminRead('platform_retention',{environment}),
-        adminRead('platform_active_blocks',{limit:100,offset:0}),
       ])
-      setData({readiness,capacity,gates,uat,workloads,retention,blocks})
+      setData({readiness,capacity,gates,uat,workloads,retention})
     }catch(e){const msg=e?.message||String(e);setError(msg);onError?.(msg)}finally{setBusy(false)}
   }
   useEffect(()=>{load()},[environment])
@@ -57,18 +53,18 @@ export default function PlatformMaturity({rank,onError,view=''}){
   const cap=data.capacity||{},integrity=cap.integrity_classification||{},policy=cap.platform_capacity_policy||{},evidencePolicy=cap.evidence_capacity_policy||{}
   const productionEnabled=num(data.readiness?.production_source_capabilities_enabled)+num(data.readiness?.production_scrapers_enabled)+num(data.readiness?.production_ai_profiles_enabled)
 
-  const[vt,vs]=VIEW_TITLE[view]||['Platform operations & readiness','Environment gates, capacity, UAT, retention, workload budgets and reversible Layer 4 blocking.']
+  const[vt,vs]=VIEW_TITLE[view]||['Platform operations & readiness','Environment gates, capacity, UAT, retention, and workload budgets.']
   return <div className="pm-shell" data-platform-maturity="true" data-view={view||'all'}>
     <section className="pm-hero">
       <div className="pm-hero-copy"><h2>{vt}</h2><p>{vs}</p></div>
-      <div className="pm-hero-actions">{view!=='blocks'&&<label className="pm-env-control"><span>View environment</span><select value={environment} onChange={e=>setEnvironment(e.target.value)}><option value="pilot">Pilot</option><option value="production">Production</option></select></label>}<button className="pm-button secondary" onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button></div>
+      <div className="pm-hero-actions"><label className="pm-env-control"><span>View environment</span><select value={environment} onChange={e=>setEnvironment(e.target.value)}><option value="pilot">Pilot</option><option value="production">Production</option></select></label><button className="pm-button secondary" onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button></div>
     </section>
 
-    {view!=='blocks'&&<section className="pm-boundary-banner">
+    <section className="pm-boundary-banner">
       <ShieldCheck size={18}/>
       <div><strong>Production boundary remains closed</strong><span>No Production project is provisioned. This view is read-only; it cannot enable Production sources, scrapers, AI profiles, PITR or destructive purge.</span></div>
       <Pill tone={productionEnabled?'danger':'success'}>{productionEnabled?'Unexpected Production enablement':'0 Production enablement expected'}</Pill>
-    </section>}
+    </section>
 
     {error&&<div className="pm-alert"><AlertTriangle size={16}/><span>{error}</span></div>}
 
@@ -79,7 +75,7 @@ export default function PlatformMaturity({rank,onError,view=''}){
     </>:view==='golive'?<>
       <Gates gates={data.gates} environment={environment}/>
       <Uat items={uatItems}/>
-    </>:view==='blocks'?<BlockConsole rank={rank} blocks={list(data.blocks)} reload={load}/>:null}
+    </>:null}
   </div>
 }
 
@@ -161,80 +157,5 @@ function Performance({workloads,retention}){
   return <div className="pm-stack">
     <section className="pm-panel"><SectionTitle icon={Activity} title="Workload profiles" subtitle="Serving, ingestion and concurrency are measured separately under unchanged hard budgets."/><div className="pm-table-wrap"><table className="pm-table"><thead><tr><th>Profile</th><th>Workload</th><th>Traffic shape</th><th>RPC</th><th>Management payload</th><th>Filter payload</th><th>Sizing role</th></tr></thead><tbody>{workloads.map(x=><tr key={x.profile_key}><td><strong>{title(x.profile_key)}</strong></td><td>{title(x.workload_class)}</td><td><div className="pm-pill-row">{x.serving_traffic&&<Pill tone="success">Serving</Pill>}{x.background_ingestion&&<Pill tone="warning">Ingestion</Pill>}{x.concurrent_admin_uat&&<Pill tone="neutral">Admin/UAT</Pill>}</div></td><td>{fmtNumber(x.rpc_detail_budget_ms)} ms</td><td>{fmtBytes(x.management_payload_budget_bytes)}</td><td>{fmtBytes(x.filter_payload_budget_bytes)}</td><td>{title(x.sizing_role)}<small>{x.notes}</small></td></tr>)}</tbody></table></div></section>
     <section className="pm-panel"><SectionTitle icon={Archive} title="Retention policy" subtitle="Dry-run first. No destructive purge action exists in this workspace."/><div className="pm-inline-stats"><span><strong>{fmtNumber(dry.terminal_job_candidates_older_than_90d)}</strong> terminal jobs older than 90d</span><span><strong>{fmtNumber(dry.immutable_policy_classes)}</strong> immutable classes</span><span><strong>0</strong> Evidence delete candidates</span><span><strong>{dry.delete_performed?'Unexpected':'No'}</strong> deletion performed</span></div><div className="pm-table-wrap"><table className="pm-table"><thead><tr><th>Class</th><th>Object scope</th><th>Immutable</th><th>Purge allowed</th><th>Retention</th><th>Bound</th><th>Safeguards</th></tr></thead><tbody>{classes.map(x=><tr key={x.class_key}><td><strong>{title(x.class_key)}</strong></td><td>{x.object_scope}</td><td><Pill tone={x.immutable?'success':'neutral'}>{x.immutable?'Yes':'No'}</Pill></td><td><Pill tone={x.purge_allowed?'warning':'success'}>{x.purge_allowed?'Policy allows':'No'}</Pill></td><td>{x.default_retention_days?x.default_retention_days+' days':'Retain'}</td><td>{x.bounded_delete_limit?fmtNumber(x.bounded_delete_limit):'—'}</td><td>{x.dry_run_required?'Dry-run · ':''}{x.post_delete_integrity_required?'integrity check':''}<small>{x.notes}</small></td></tr>)}</tbody></table></div></section>
-  </div>
-}
-
-function BlockConsole({rank,blocks,reload}){
-  const[entityType,setEntityType]=useState('provider'),[query,setQuery]=useState(''),[results,setResults]=useState([]),[selected,setSelected]=useState(null)
-  const[scope,setScope]=useState('operational'),[reason,setReason]=useState(''),[comment,setComment]=useState(''),[expires,setExpires]=useState(''),[review,setReview]=useState('')
-  const[state,setState]=useState(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('')
-  const current=useMemo(()=>state?.states?.find(x=>x.scope===scope),[state,scope])
-
-  const searchTargets=async()=>{
-    setBusy(true);setMessage('')
-    try{
-      const operation={provider:'providers_page',course:'courses_page',campus:'campuses_page',scholarship:'scholarships_page'}[entityType]
-      const r=await adminRead(operation,{query:query||null,limit:10,offset:0,sort:'updated',direction:'desc'})
-      setResults(list(r))
-    }catch(e){setMessage(e?.message||String(e))}finally{setBusy(false)}
-  }
-  useEffect(()=>{setResults([]);setSelected(null);setState(null)},[entityType])
-
-  const choose=async x=>{
-    setSelected(x);setState(null);setMessage('')
-    try{
-      const{data,error}=await supabase.rpc('layer4_block_state',{p_entity_type:entityType,p_entity_id:itemId(x),p_block_scope:null})
-      if(error)throw error
-      setState(data)
-    }catch(e){setMessage(e?.message||String(e))}
-  }
-
-  const decide=async eventType=>{
-    if(!selected||!reason.trim())return setMessage('Select an entity and enter a reason code.')
-    setBusy(true);setMessage('')
-    try{
-      const{error}=await supabase.rpc('layer4_block_decide',{
-        p_entity_type:entityType,p_entity_id:itemId(selected),p_block_scope:scope,p_event_type:eventType,
-        p_reason_code:reason.trim(),p_comment:comment.trim()||null,
-        p_expires_at:expires?new Date(expires).toISOString():null,
-        p_review_at:review?new Date(review).toISOString():null,
-        p_approval_context:{surface:'m2.5-platform-admin',change_control:'CF-CHG-20260901-058'},
-      })
-      if(error)throw error
-      setMessage((eventType==='block'?'Block':'Unblock')+' recorded. No canonical data was deleted or rewritten.')
-      setReason('');setComment('');setExpires('');setReview('')
-      const{data:next,error:nextError}=await supabase.rpc('layer4_block_state',{p_entity_type:entityType,p_entity_id:itemId(selected),p_block_scope:null})
-      if(nextError)throw nextError
-      setState(next)
-      await reload()
-    }catch(e){setMessage(e?.message||String(e))}finally{setBusy(false)}
-  }
-
-  return <div className="pm-stack">
-    <section className="pm-panel"><SectionTitle icon={Blocks} title="Reversible Layer 4 block control" subtitle="Independent operational, publication, Search and quarantine state. Blocking is never deletion."/>
-      <div className="pm-block-layout">
-        <div className="pm-block-picker">
-          <label><span>Entity type</span><select value={entityType} onChange={e=>setEntityType(e.target.value)}>{ENTITY_TYPES.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
-          <label className="pm-search-field"><span>Find target</span><div><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={'Search '+entityType+'s'} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();searchTargets()}}}/><button className="pm-button secondary" onClick={searchTargets} disabled={busy}><Search size={14}/>Search</button></div></label>
-          <div className="pm-target-results">{results.length?results.map(x=><button key={itemId(x)} className={selected&&itemId(selected)===itemId(x)?'selected':''} onClick={()=>choose(x)}><strong>{itemLabel(x)}</strong><small>{x.stable_key||x.course_code||x.country_code||itemId(x)}</small></button>):<Empty>Search the catalogue.</Empty>}</div>
-        </div>
-
-        <div className="pm-block-form">
-          <div className="pm-selected-target"><span>Selected target</span><strong>{selected?itemLabel(selected):'None selected'}</strong>{selected&&<small>{itemId(selected)}</small>}</div>
-          <label><span>Block scope</span><select value={scope} onChange={e=>setScope(e.target.value)}>{BLOCK_SCOPES.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
-          <div className="pm-current-state"><span>Current state</span>{current?<Pill tone={current.blocked?'danger':'success'}>{current.blocked?'Blocked':'Unblocked'}</Pill>:<Pill>Never decided</Pill>}</div>
-          <label><span>Reason code *</span><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="e.g. DATA_QUALITY_REVIEW"/></label>
-          <label><span>Comment</span><textarea value={comment} onChange={e=>setComment(e.target.value)} rows="3" placeholder="Decision context or Evidence reference"/></label>
-          <div className="pm-two-col compact"><label><span>Review at</span><input type="datetime-local" value={review} onChange={e=>setReview(e.target.value)}/></label><label><span>Expires at</span><input type="datetime-local" value={expires} onChange={e=>setExpires(e.target.value)}/></label></div>
-          {message&&<div className="pm-inline-message">{message}</div>}
-          <div className="pm-action-row"><button className="pm-button danger" onClick={()=>decide('block')} disabled={busy||rank<5||!selected}><Blocks size={14}/>Block scope</button><button className="pm-button secondary" onClick={()=>decide('unblock')} disabled={busy||rank<5||!selected}><CheckCircle2 size={14}/>Unblock scope</button></div>
-          <p className="pm-note">Server enforcement from CF-057 remains authoritative. Provider blocks can inherit to child Courses/Campuses/Provider-owned Scholarships depending on scope.</p>
-        </div>
-      </div>
-    </section>
-
-    <section className="pm-panel"><SectionTitle icon={Blocks} title="Active blocks" subtitle={blocks.length+' currently effective block decision(s)'}/>
-      {!blocks.length?<Empty>No active Layer 4 blocks.</Empty>:<div className="pm-table-wrap"><table className="pm-table"><thead><tr><th>Entity</th><th>Scope</th><th>Reason</th><th>Review</th><th>Expiry</th><th>Created</th></tr></thead><tbody>{blocks.map(x=><tr key={x.decision_id}><td><strong>{x.entity_name}</strong><small>{title(x.entity_type)+(x.provider_name&&x.entity_type!=='provider'?' · '+x.provider_name:'')}</small></td><td><Pill tone="danger">{title(x.scope)}</Pill></td><td>{x.reason_code}<small>{x.comment}</small></td><td>{fmtDate(x.review_at)}</td><td>{fmtDate(x.expires_at)}</td><td>{fmtDate(x.created_at)}</td></tr>)}</tbody></table></div>}
-    </section>
   </div>
 }

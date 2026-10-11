@@ -19,7 +19,8 @@ test('calendar by hand: folded into the calendars list, set through the Decision
   expect(pp).not.toContain('CalendarByHand')
   expect(pp).not.toMatch(/toLocale|Intl\./)
   const main = read('src/mature-main.jsx')
-  expect(main).toContain('<ProviderPolicies country={country}/>')
+  // v2.15.253: the calendars list is rendered by Providers › Onboarding (Approvals waiting) and the Adapter builder (1.3)
+  expect(read('src/ProviderOnboarding.jsx')).toContain('<ProviderPolicies country={country}/>')
   expect(main).not.toContain('CalendarByHand')
   const a1 = read('supabase/migrations-archive/20261003001510_cf247_calendar_intakes_on_a1.sql')
   expect(a1).toContain("update pipeline.layer4_review_items set status = 'superseded', decided_at = now(), escalation_reason = v_reason where id = r.review_id and status = 'pending';")
@@ -60,7 +61,9 @@ test.describe('browser: calendars list with a by-hand row', () => {
     await mockAdmin(page)
     const calls = page.l3calls
     page.on('dialog', (d) => d.accept())
-    await page.goto('/#layer-4-review?tab=attributes')
+    // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
+    await page.goto('/#providers?tab=onboarding')
+    await page.locator('[data-onboarding-approvals] > summary').click()
     const pp = page.locator('[data-provider-policies]')
     await pp.getByRole('button', { name: 'Academic calendars' }).click()
     const row = pp.locator('tr[data-policy="byhand:pv-byhand"]')
@@ -136,11 +139,12 @@ test('scholarship nationality and Zoho scholarships action', () => {
 })
 
 // v2.15.169 (Decisions 247–249): saving estimate, course attribute sync, clean value label, Publishing in Layer 4, course search.
-test('scholarship operations: Layer 4 publishing, course search, migrations shaped', async () => {
+test('scholarship operations: publishing address, course search, migrations shaped', async () => {
   const { PAGES, resolveTarget } = await import('../../src/nav-map.js')
-  expect(PAGES.layer4.tabs.map(t => t.key)).toContain('publishing')
+  // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Scholarship publishing retired; the old addresses open Scholarships › Coverage
+  expect(PAGES.layer4.tabs.map(t => t.key)).not.toContain('publishing')
   expect(PAGES.scholarships.tabs.map(t => t.key)).not.toContain('publishing')
-  expect(resolveTarget('scholarships', new URLSearchParams('tab=publishing'))).toMatchObject({ page: 'layer4', tab: 'publishing' })
+  expect(resolveTarget('scholarships', new URLSearchParams('tab=publishing'))).toMatchObject({ page: 'scholarships', tab: 'coverage' })
   const main = read('src/mature-main.jsx')
   expect(main).toContain("if(type==='scholarship'&&filters.course)a.course=filters.course;")
   expect(main).toContain('data-course-filter')

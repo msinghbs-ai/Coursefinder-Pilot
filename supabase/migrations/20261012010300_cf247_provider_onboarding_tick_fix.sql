@@ -1,0 +1,38 @@
+-- CF-247 v2.15.253 hotfix (12 Oct 2026, 10:00): the onboarding tick failed every minute ("record o is not assigned yet"): the alias o in
+-- its first statement clashed with the loop variable o. The alias is renamed; nothing else changes. Nothing is dropped or deleted.
+do $g$ begin
+  if position('update pipeline.provider_onboarding o set' in (select prosrc from pg_proc where oid = 'security.provider_onboarding_tick_v1()'::regprocedure)) = 0 then
+    raise exception 'live security.provider_onboarding_tick_v1 is not the version this fix replaces';
+  end if;
+end $g$;
+
+create or replace function security.provider_onboarding_tick_v1()
+returns jsonb language plpgsql security definer set search_path to '' as $f$
+declare s pipeline.provider_onboarding_settings%rowtype; o record; v_active int; v_n int := 0; v_err int := 0; v_started int := 0;
+begin
+  select * into s from pipeline.provider_onboarding_settings where id = 1;
+  if not coalesce(s.enabled, false) then return jsonb_build_object('skipped', 'onboarding is switched off'); end if;
+  -- a missing website was entered: carry on
+  update pipeline.provider_onboarding ob set status = 'website', stop_reason = null, step_started_at = now(), job_id = null, note = 'Website entered; carrying on.', updated_at = now()
+    from catalogue.providers pv where pv.id = ob.provider_id and ob.status = 'stopped' and ob.stop_reason = 'no_website' and nullif(pv.website, '') is not null;
+  select count(*) into v_active from pipeline.provider_onboarding where status in ('website', 'course_pages', 'capturing', 'proposing', 'applying', 'qualifying', 'scholarships');
+  for o in select id from pipeline.provider_onboarding where status = 'queued' order by priority desc, created_at limit greatest(coalesce(s.max_active, 0) - v_active, 0) loop
+    update pipeline.provider_onboarding set status = 'website', started_at = now(), step_started_at = now(), note = 'Starting.', updated_at = now() where id = o.id;
+    v_started := v_started + 1;
+  end loop;
+  for o in select ob.id, coalesce(ob.requested_by, s.run_as) run_as from pipeline.provider_onboarding ob
+            where ob.status in ('website', 'course_pages', 'capturing', 'proposing', 'applying', 'qualifying', 'scholarships', 'waiting_admit')
+               or (ob.status = 'waiting_courses' and ob.updated_at < now() - interval '1 hour')
+            order by ob.updated_at limit 120 loop
+    begin
+      perform set_config('request.jwt.claims', jsonb_build_object('sub', o.run_as::text, 'role', 'authenticated')::text, true);
+      perform security.provider_onboarding_step_v1(o.id);
+      v_n := v_n + 1;
+    exception when others then
+      update pipeline.provider_onboarding set status = 'stopped', stop_reason = 'error', note = left('Stopped: ' || sqlerrm, 500), updated_at = now() where id = o.id;
+      v_err := v_err + 1;
+    end;
+    perform set_config('request.jwt.claims', '', true);
+  end loop;
+  return jsonb_build_object('started', v_started, 'advanced', v_n, 'stopped_by_error', v_err);
+end $f$;

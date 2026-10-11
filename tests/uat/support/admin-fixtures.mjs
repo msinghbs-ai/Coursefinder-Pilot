@@ -744,3 +744,22 @@ export const scholarshipAiReviews = {
     answers: [{ id: 901, model_code: 'qwen3-30b', verdict: 'scholarship', answer: { is_scholarship: true, single_scholarship: true, name: 'Flourishing Lives Scholarship', audience: 'international', audience_quote: 'for students from overseas', value: { kind: 'percentage', percentage: 20, quote: '20% off tuition' } }, checks: { name: true, audience: false, value: true } },
               { id: 902, model_code: 'gpt-4.1-mini', verdict: 'scholarship', answer: { is_scholarship: true, single_scholarship: true, name: 'Flourishing Lives Scholarship', audience: 'both', audience_quote: 'open to all commencing students', value: { kind: 'percentage', percentage: 20, quote: '20% off tuition' } }, checks: { name: true, audience: false, value: true }, evidence_id: 'ev-acu' }] }],
 }
+// v2.15.253 (Platform Admin, 12 Oct 2026): Providers › Onboarding (shape of public.admin_provider_onboarding('read'))
+export const providerOnboarding = {
+  can_manage: true,
+  settings: { enabled: true, auto_start_new: true, max_active: 30, run_as: '00000000-0000-4000-8000-000000000006', changed_by: null, changed_at: '2026-10-12T09:35:00Z', reason: 'Platform Admin, 12 Oct 2026: onboard as soon as possible' },
+  counts: { queued: 1100, website: 4, course_pages: 9, capturing: 6, proposing: 3, applying: 2, qualifying: 3, scholarships: 3, waiting_admit: 1, stopped: 2, done: 0 },
+  stops: { no_website: 1, proposal_failed: 1 },
+  without_adapter: 1153, approvals_waiting: 7,
+  rows: [
+    { id: 'ob-1', provider_id: 'pv-ob-1', name: 'Southern Cross University', country: 'AU', website: 'https://www.scu.edu.au', status: 'qualifying', stop_reason: null, note: 'Qualifying each field against the admit rule.', source: 'backfill', job_id: null, ready: null, held: null, central_pages: [], scholarships: null, courses: 212, pages_read: 180, started_at: '2026-10-12T09:40:00Z', step_started_at: '2026-10-12T10:05:00Z', updated_at: '2026-10-12T10:05:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
+    { id: 'ob-2', provider_id: 'pv-ob-2', name: 'Kaplan Business School', country: 'AU', website: null, status: 'stopped', stop_reason: 'no_website', note: 'No website could be found and verified. Enter it in the Adapter builder (1.1).', source: 'backfill', job_id: null, ready: null, held: null, central_pages: [], scholarships: null, courses: 14, pages_read: 0, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T09:36:00Z', updated_at: '2026-10-12T09:50:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
+    { id: 'ob-3', provider_id: 'pv-ob-3', name: 'Charles Sturt University', country: 'AU', website: 'https://study.csu.edu.au', status: 'waiting_admit', stop_reason: null, note: 'Ready to admit: intakes, english. A Platform Admin admits on Layer 2 › Adapters.', source: 'backfill', job_id: null, ready: ['intakes', 'english'], held: { fee: 'agrees on under 90% of checked courses' }, central_pages: [{ kind: 'fee_schedule', url: 'https://study.csu.edu.au/fees.pdf' }], scholarships: 4, courses: 390, pages_read: 377, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T10:00:00Z', updated_at: '2026-10-12T10:01:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
+    { id: 'ob-4', provider_id: 'pv-ob-4', name: 'Torrens University Australia', country: 'AU', website: 'https://www.torrens.edu.au', status: 'stopped', stop_reason: 'proposal_failed', note: 'The model\'s proposal failed twice: the reply was cut off.', source: 'backfill', job_id: null, ready: null, held: null, central_pages: [], scholarships: null, courses: 120, pages_read: 6, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T09:58:00Z', updated_at: '2026-10-12T09:59:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
+  ],
+}
+// v2.15.253: the credit and limit banner (shape of public.admin_credit_notices())
+export const creditNoticesCritical = [
+  { level: 'critical', tool: 'Firecrawl', text: 'Firecrawl credits: 180 left, below the reserve of 500; searches and page reads wait.' },
+  { level: 'warning', tool: 'OpenRouter', text: 'OpenRouter credit: US$4.10 left, near the floor.' },
+]

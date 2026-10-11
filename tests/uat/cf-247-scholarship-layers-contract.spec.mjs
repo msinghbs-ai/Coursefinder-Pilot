@@ -56,12 +56,13 @@ test('browser: Layer 2 Scholarships — outcomes by country, settings change and
   await expect.poll(() => page.l3calls.find(x => x.p_action === 'job')?.p_args).toMatchObject({ jobname: 'scholarship-discover', active: false })
 })
 
-test('browser: Layer 3 has no scholarship AI screen; Layer 4 jobs under publishing', async ({ page }) => {
+// v2.15.253: Layer 4 › Scholarship publishing (which showed the Layer 4 scholarship jobs) retired; its address opens Scholarships › Coverage.
+test('browser: Layer 3 has no scholarship AI screen; the old publishing address opens Scholarships › Coverage', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#layer-3-ai?tab=scholarships')
   await expect(page.locator('[data-sl-ai-state]')).toHaveCount(0)
   await page.goto('/#layer-4-review?tab=publishing')
-  await expect(page.locator('[data-scholarship-layer="4"] [data-sl-job="scholarship-publication-review"]')).toContainText(/Daily at \d{1,2}:17 ?[ap]m Melbourne time/)
+  await expect(page).toHaveURL(/#scholarships\?tab=coverage$/)
 })
 
 test('Firecrawl cap and reserve: Layer 2 settings the worker reads; none left in the code', async ({ page }) => {
