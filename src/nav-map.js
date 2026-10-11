@@ -39,10 +39,10 @@ export const PAGES = {
     { key: 'courses', label: 'Courses', min: 1 },
     { key: 'attributes', label: 'Attributes', min: 1 },
   ] },
-  layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', subtitle: 'Official registers such as CRICOS: runs, sources and their settings.', tabs: [
-    { key: 'operations', label: 'Runs', min: 4 },
-    { key: 'settings', label: 'Source settings', min: 6 },
-    { key: 'batch', label: 'Manual batch runs', min: 6 },
+  // v2.15.246 (Platform Admin bugs 11/10-3, Feature 2): Runs and Source settings are one Sources list (expandable rows, settings
+  // edited in place, + Add source); Manual batch runs is retired (each source has Run now, recorded as one job).
+  layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', subtitle: 'Official registers such as CRICOS: each source, its health, schedule and settings.', tabs: [
+    { key: 'operations', label: 'Sources', min: 4 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
   // v2.15.112 (Platform Admin, 30 Sep 2026): reference data that is not a register run moved out of Layer 1.
@@ -133,8 +133,8 @@ export const LEGACY = {
   'student-flow-prisms': { page: 'rankings', tab: 'prisms' },
   'layer-1-operations': { page: 'layer1', tab: 'operations' },
   'layer-1-regulatory': { page: 'layer1', tab: 'operations' },
-  // v2.15.123: Regulatory settings merged into Layer 1 (Manual batch runs); its Pilot reset moved to the Go-live checklist.
-  'regulatory-settings': { page: 'layer1', tab: 'batch' },
+  // v2.15.123: Regulatory settings merged into Layer 1 (Manual batch runs); v2.15.246: that tab is retired, so it opens Sources.
+  'regulatory-settings': { page: 'layer1', tab: 'operations' },
   'layer-1-authority': { page: 'layer1', tab: 'operations' },
   'sources': { page: 'sources' },
   'onboarding': { page: 'providers', tab: 'onboarding' },
@@ -161,7 +161,7 @@ export const LEGACY = {
 export const LEGACY_ADMIN_SECTIONS = {
   'overview': { page: 'scrapers' },
   'sources-imports': { page: 'reference', tab: 'imports' },
-  'layer1-sources': { page: 'layer1', tab: 'settings' },
+  'layer1-sources': { page: 'layer1', tab: 'operations' },
   'layer2-providers': { page: 'scrapers' },
   'provider-assets': { page: 'providers', tab: 'assets' },
   'layer2-sources': { page: 'layer2', tab: 'adapters' },
@@ -210,6 +210,8 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'coverage' && tab === 'universities') return { page: 'layer2', tab: 'adapters', params: p }
   if (hit.page === 'layer2' && ['operations', 'start', 'history', 'profiles'].includes(tab)) return { page: 'layer2', tab: 'adapters', params: p }
   if (hit.page === 'layer1' && tab === 'sources') return { page: 'sources', tab: '', params: p }
+  // v2.15.246: Source settings and Manual batch runs are part of Layer 1 › Sources.
+  if (hit.page === 'layer1' && ['settings', 'batch'].includes(tab)) return { page: 'layer1', tab: 'operations', params: p }
   // v2.15.122: the Layer 3 Models list is Platform settings › Models & services.
   if (hit.page === 'layer3' && tab === 'models') return { page: 'services', tab: '', params: p }
   // v2.15.169 (Decision 249): Scholarships › Publishing is Layer 4 Review › Scholarship publishing.

@@ -36,7 +36,6 @@ import'./admin-pages.css'
 // v2.15.217 (code split): screens used only inside one page load on demand. If a screen's file is gone because a newer release was deployed
 // while this tab was open, the page reloads once to pick up the new release instead of showing an error.
 function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({default:m[name]})).catch(e=>{let again=false;try{again=sessionStorage.getItem('cf-chunk-reload')!==String(location.pathname+location.hash)}catch{}if(again&&/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(e?.message||e))){try{sessionStorage.setItem('cf-chunk-reload',String(location.pathname+location.hash))}catch{}location.reload();return new Promise(()=>{})}throw e}))}
-const RegulatorySettings=lazyPage(()=>import('./RegulatorySettings'))
 const EvidenceWorkspace=lazyPage(()=>import('./EvidenceWorkspace'))
 const FeeRules=lazyPage(()=>import('./FeeRules'))
 const ModelsServices=lazyPage(()=>import('./ModelsServices'))
@@ -62,8 +61,7 @@ const ScholarshipLayer=lazyPage(()=>import('./ScholarshipLayer'))
 const LiveActivity=lazyPage(()=>import('./LiveActivity'))
 const AdminTasks=lazyPage(()=>import('./AdminTasks'))
 const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
-const Layer1Operations=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Operations')
-const Layer1SourceSettings=lazyPage(()=>import('./layer1-operations-entry'),'Layer1SourceSettings')
+const Layer1Sources=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Sources')
 const Layer4Workspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Layer4')
 const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')
 const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Console')
@@ -242,9 +240,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       case'layer1':
         if(tab==='scholarships')return <ScholarshipLayer layer={1} rank={rank} onError={err}/>
-        if(tab==='settings')return <Layer1SourceSettings/>
-        if(tab==='batch')return <div className="m-legacy-host"><RegulatorySettings onError={onError} mode="batch"/></div>
-        return <Layer1Operations embedded/>
+        return <Layer1Sources/>
       case'reference':
         if(tab==='dates')return <div className="m-page-stack"><KeyDates onError={err}/></div>
         if(tab==='links')return <div className="m-page-stack"><ReferenceSources onError={err}/></div>

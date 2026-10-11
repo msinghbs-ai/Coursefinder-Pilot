@@ -4,6 +4,7 @@ import{createRoot}from'react-dom/client'
 import{Activity,AlertTriangle,BarChart3,BookOpen,Building2,CalendarClock,CheckCircle2,ChevronDown,Clock3,Database,ExternalLink,FileCheck2,Globe2,GraduationCap,MoreVertical,Pause,Play,RefreshCw,RotateCcw,Settings2,ShieldCheck,X}from'lucide-react'
 import{api,supabase}from'./lib/supabase'
 import{fmtNumber,fmtDateTime,fmtTime,fmtPercent}from'./lib/format.js'
+import{ExpandList,Pill,XlToolbar,XlField}from'./ExpandList'
 
 const ROOT_ID='layer1-operations-root'
 const fmt=v=>v?fmtDateTime(v):'—'
@@ -235,6 +236,140 @@ export function Layer1Operations({embedded=false}){
   <section className="l1v2-alerts"><h2>Operational alerts</h2><div className={counts.attention?'attention':'ok'}>{counts.attention?<AlertTriangle/>:<CheckCircle2/>}<div><b>{counts.attention?`${counts.attention} source${counts.attention===1?'':'s'} require attention.`:`No critical blockers. ${counts.running} source${counts.running===1?'':'s'} currently running.`}</b><span>{counts.attention?'Open the affected dataset details before the next run.':'Nothing in Layer 1 needs action.'}</span></div></div></section>
  </main>}</section>
  <style>{STYLES}</style></div>
+}
+
+// v2.15.246 (Platform Admin bugs 11/10-3, Feature 2): Layer 1 › Sources. One plain list of every register, statistics file and
+// ranking, replacing the Runs cards, the Source settings cards and Manual batch runs. Each row shows pills (country, type,
+// health, last run, schedule); opening a row shows the facts, the live run, what is wrong when it is unhealthy, and the same
+// settings that were on Source settings, editable in place. "+ Add source" records a new register (paused until it has a reader).
+const TYPE_LABEL={regulatory:'Register',statistics:'Statistics'}
+const HEALTH_TONE={healthy:'success',running:'info',due:'violet',paused:'neutral',attention:'danger'}
+const HEALTH_LABEL={healthy:'Healthy',running:'Running',due:'Due',paused:'Paused',attention:'Needs attention'}
+const RUN_TONE={completed:'success',no_change:'success',running:'info',queued:'info',failed:'danger',blocked:'danger'}
+const SCHEDULE_LABEL={daily:'Daily',weekly:'Weekly',monthly:'Monthly',quarterly:'Quarterly',yearly:'Yearly',manual:'Manual',custom:'Custom'}
+const isRetired=s=>String(s.source_status||'').toLowerCase()==='retired'
+const healthReason=s=>{const h=healthOf(s);if(h!=='attention')return'';const r=s.latest_run;if(r&&['failed','blocked'].includes(String(r.status).toLowerCase()))return r.error_text||'The last run stopped.';if(String(s.verification_status).toLowerCase()==='failed'||String(s.source_health).toLowerCase()==='unhealthy')return s.verification_message||s.last_error||'The last check failed.';if(!s.last_success_at&&!r)return'Never run.';return s.verification_message||s.last_error||human(s.source_health)}
+const settingsForm=s=>({source_url:s.source_url||'',authority_name:s.authority_name||'',authority_domains:(s.authority_domains||[]).join(', '),expected_format:s.expected_format||'',schedule:scheduleOf(s),verification_cadence_days:s.verification_cadence_days||1,ingestion_cadence_days:s.ingestion_cadence_days||7,variance_warn_percent:s.variance_warn_percent??5,variance_block_percent:s.variance_block_percent??20,min_expected_records:s.min_expected_records??'',max_expected_records:s.max_expected_records??'',reason:''})
+
+function SourceRowBody({source,rank,onRefresh,candidates}){
+ const[busy,setBusy]=useState(''),[error,setError]=useState(''),[saved,setSaved]=useState(''),[form,setForm]=useState(()=>settingsForm(source))
+ useEffect(()=>setForm(settingsForm(source)),[source.source_id,source.updated_at])
+ const act=async(name,fn,done)=>{setBusy(name);setError('');setSaved('');try{await fn();await onRefresh();if(done)setSaved(done)}catch(e){setError(errorText(e)||String(e))}finally{setBusy('')}}
+ const r=source.latest_run||null,active=['queued','running'].includes(String(r?.status||'').toLowerCase()),isRanking=isRankingSource(source),reason=healthReason(source)
+ const runNow=()=>{const warning=source.variance_decision==='warn';if(warning&&!window.confirm(`${source.source_label} has a record-count warning. Confirm you reviewed it and want to run it.`))return;act('run',()=>control({action:'run',source_id:source.source_id,mode:'apply',reason:'Layer 1 › Sources: Run now',acknowledge_warning:warning,idempotency_key:`run:${source.source_id}:apply:${Date.now()}`}),'Run started. Progress shows here and in Scheduled jobs › Jobs.')}
+ const validate=()=>act('validate',()=>control({action:'validate',source_id:source.source_id}),'Checked.')
+ const pause=()=>{const why=window.prompt(`${source.paused?'Resume':'Pause'} ${source.source_label}?\n\nReason (kept in the log):`);if(!why||why.trim().length<4)return;act('pause',()=>command('set_pause',{source_id:source.source_id,paused:!source.paused,reason:why.trim()}),source.paused?'Resumed.':'Paused.')}
+ const retry=()=>act('retry',()=>control({action:'run',source_id:source.source_id,mode:r?.mode||'apply',offset:r?.resume_cursor||0,retry_of_run_id:r?.id,idempotency_key:`retry:${r?.id}:${Date.now()}`,reason:'Layer 1 › Sources: resume'}),'Resumed.')
+ const recover=()=>act('recover',()=>command('recover_stuck',{source_id:source.source_id,run_id:r?.id,reason:'Layer 1 › Sources: recover a stalled run'}),'Recovered.')
+ const save=()=>{if(form.reason.trim().length<4){setError('Enter a reason for the change (kept in the log).');return}
+  act('save',async()=>{
+   await command('save_source',{source_id:source.source_id,source_url:form.source_url,authority_name:form.authority_name,authority_domains:form.authority_domains.split(',').map(x=>x.trim()).filter(Boolean),expected_format:form.expected_format,expected_count_kind:source.expected_count_kind||'records',active:true,paused:source.paused,verification_cadence_days:Number(form.verification_cadence_days),ingestion_cadence_days:Number(form.ingestion_cadence_days),variance_warn_percent:Number(form.variance_warn_percent),variance_block_percent:Number(form.variance_block_percent),min_expected_records:form.min_expected_records===''?null:Number(form.min_expected_records),max_expected_records:form.max_expected_records===''?null:Number(form.max_expected_records),reason:form.reason.trim()})
+   if(form.schedule!=='custom'&&form.schedule!==scheduleOf(source)){const{error:e}=await supabase.rpc('admin_layer1_schedule',{p_source_id:source.source_id,p_schedule:form.schedule,p_reason:form.reason.trim()});if(e)throw e}
+  },'Saved. The next run uses these settings.')}
+ const set=k=>e=>setForm(f=>({...f,[k]:e.target.value})),canEdit=rank>=6
+ const jobsHref=`#scheduled-jobs?tab=jobs&q=${encodeURIComponent(source.source_label||'')}`
+ return <div data-l1-source-body={source.source_id}>
+  {reason&&<div className="xl-note tone-danger" role="alert" data-l1-health-reason><AlertTriangle size={14}/><span><b>Why it needs attention:</b> {reason}</span></div>}
+  <div className="xl-facts">
+   <Pill tone="info" title="Records in the last accepted file">{n(source.last_expected_count??r?.expected_count)} {human(source.expected_count_kind||'records').toLowerCase()}</Pill>
+   <Pill title="Stored source files">{n(source.evidence_count)} evidence</Pill>
+   {source.expected_format&&<Pill title="File format">{source.expected_format}</Pill>}
+   <Pill tone={source.variance_decision==='warn'?'warning':source.variance_decision==='block'?'danger':'neutral'} title="Change in record count against the last accepted file">Change {pct(source.variance_percent)}</Pill>
+   <Pill title="Last checked">Checked {fmt(source.last_verified_at)}</Pill>
+   <Pill title="Last loaded">Loaded {fmt(source.last_success_at)}</Pill>
+   {(source.edition_key||source.edition_year)&&<Pill tone="violet">Edition {source.edition_key||source.edition_year}</Pill>}
+   {source.source_url&&<a className="xl-link" href={source.source_url} target="_blank" rel="noreferrer">Open source <ExternalLink size={12}/></a>}
+   <a className="xl-link" href={jobsHref}>Jobs for this source</a>
+   {source.latest_evidence_at&&<a className="xl-link" href="#evidence">Evidence</a>}
+  </div>
+  <NewEditions source={source} candidates={candidates} rank={rank} onRefresh={onRefresh}/>
+  <RunStatus source={source} rank={rank} busy={busy} onRetry={retry} onRefresh={onRefresh}/>
+  {error&&<div className="xl-note tone-danger" role="alert">{error}</div>}{saved&&<div className="xl-note tone-success" role="status"><CheckCircle2 size={14}/>{saved}</div>}
+  <div className="xl-actions-row">
+   {rank>=6&&!active&&<button className="primary" onClick={runNow} disabled={!!busy||source.paused}><Play size={14}/>{busy==='run'?'Starting…':'Run now'}</button>}
+   {active&&<a className="button" href={jobsHref}><Activity size={14}/>View run</a>}
+   {rank>=4&&<button onClick={validate} disabled={!!busy}><ShieldCheck size={14}/>{busy==='validate'?'Checking…':'Check source'}</button>}
+   {rank>=6&&<button onClick={pause} disabled={!!busy}>{source.paused?<Play size={14}/>:<Pause size={14}/>}{source.paused?'Resume':'Pause'}</button>}
+   {r?.stuck&&r?.status==='running'&&rank>=6&&<button onClick={recover} disabled={!!busy}><AlertTriangle size={14}/>Recover stalled run</button>}
+   {isRanking&&rank>=4&&<a className="button" href={`#reference-data?tab=imports&system=${rankingCode(source)}&year=${encodeURIComponent(source.edition_year||'')}`}><FileCheck2 size={14}/>Upload edition</a>}
+  </div>
+  {canEdit?<div className="xl-form" data-l1-source-form>
+   <XlField label="Source address" wide><input value={form.source_url} onChange={set('source_url')}/></XlField>
+   <XlField label="Authority"><input value={form.authority_name} onChange={set('authority_name')}/></XlField>
+   <XlField label="Authority domains (comma separated)"><input value={form.authority_domains} onChange={set('authority_domains')}/></XlField>
+   <XlField label="File format"><input value={form.expected_format} onChange={set('expected_format')}/></XlField>
+   <XlField label="Schedule"><select value={form.schedule} onChange={set('schedule')}>{form.schedule==='custom'&&<option value="custom">Every {source.verification_cadence_days||'—'} days</option>}{Object.entries(SCHEDULE_LABEL).filter(([k])=>k!=='custom').map(([k,l])=><option key={k} value={k}>{k==='manual'?'Manual (run or upload by hand)':l}</option>)}</select></XlField>
+   <XlField label="Check every (days)"><input type="number" min="1" value={form.verification_cadence_days} onChange={set('verification_cadence_days')}/></XlField>
+   <XlField label="Load every (days)"><input type="number" min="1" value={form.ingestion_cadence_days} onChange={set('ingestion_cadence_days')}/></XlField>
+   <XlField label="Warn when records change by (%)"><input type="number" min="0" max="100" value={form.variance_warn_percent} onChange={set('variance_warn_percent')}/></XlField>
+   <XlField label="Stop when records change by (%)"><input type="number" min="0" max="100" value={form.variance_block_percent} onChange={set('variance_block_percent')}/></XlField>
+   <XlField label="Fewest records expected"><input type="number" min="0" value={form.min_expected_records} onChange={set('min_expected_records')}/></XlField>
+   <XlField label="Most records expected"><input type="number" min="0" value={form.max_expected_records} onChange={set('max_expected_records')}/></XlField>
+   <XlField label="Reason for the change (kept in the log)" wide><input value={form.reason} onChange={set('reason')} placeholder="For example: the authority moved the file"/></XlField>
+   <div className="xl-form-foot"><small>A changed file within these limits is loaded automatically on the schedule. Nothing already accepted is deleted.</small><button className="primary" onClick={save} disabled={!!busy}><Database size={14}/>{busy==='save'?'Saving…':'Save changes'}</button></div>
+  </div>:<p className="xl-muted">Settings can be changed by a Platform Admin.</p>}
+  <EditionHistory source={source}/>
+ </div>
+}
+
+function AddLayer1Source({countries,onDone,onCancel}){
+ const[f,setF]=useState({country_code:'',label:'',url:'',authority_name:'',ingestion_cadence_days:30,dataset_class:'register',expected_format:'',notes:'',reason:''}),[busy,setBusy]=useState(false),[error,setError]=useState('')
+ const set=k=>e=>setF(x=>({...x,[k]:e.target.value}))
+ const save=async()=>{setBusy(true);setError('');try{const{data,error:e}=await supabase.rpc('admin_layer1_add_source',{p_args:{...f,country_code:f.country_code.trim().toUpperCase(),ingestion_cadence_days:Number(f.ingestion_cadence_days)}});if(e)throw e;onDone(data)}catch(e){setError(errorText(e))}finally{setBusy(false)}}
+ return <section className="xl-add" data-l1-add-source aria-label="Add a source">
+  <h3>Add a source</h3><p className="xl-muted">The new source is saved paused. It runs once a reader is assigned to it.</p>
+  <div className="xl-form">
+   <XlField label="Country code (for example AU, NZ, CA)"><input list="l1-country-codes" value={f.country_code} onChange={set('country_code')} maxLength={2}/><datalist id="l1-country-codes">{countries.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}</datalist></XlField>
+   <XlField label="Type"><select value={f.dataset_class} onChange={set('dataset_class')}><option value="register">Register</option><option value="statistics">Statistics</option></select></XlField>
+   <XlField label="Name" wide><input value={f.label} onChange={set('label')} placeholder="For example: NZQA Education Organisations"/></XlField>
+   <XlField label="Source address (https)" wide><input value={f.url} onChange={set('url')} placeholder="https://"/></XlField>
+   <XlField label="Authority that publishes it"><input value={f.authority_name} onChange={set('authority_name')}/></XlField>
+   <XlField label="Load every (days)"><input type="number" min="1" max="365" value={f.ingestion_cadence_days} onChange={set('ingestion_cadence_days')}/></XlField>
+   <XlField label="File format"><input value={f.expected_format} onChange={set('expected_format')} placeholder="For example: CSV, web pages"/></XlField>
+   <XlField label="Notes"><input value={f.notes} onChange={set('notes')}/></XlField>
+   <XlField label="Reason (kept in the log)" wide><input value={f.reason} onChange={set('reason')}/></XlField>
+   {error&&<div className="xl-note tone-danger" role="alert">{error}</div>}
+   <div className="xl-form-foot"><button onClick={onCancel} disabled={busy}>Cancel</button><button className="primary" onClick={save} disabled={busy}>{busy?'Adding…':'Add source'}</button></div>
+  </div>
+ </section>
+}
+
+export function Layer1Sources(){
+ const[context,setContext]=useState(null),[data,setData]=useState({sources:[]}),[candidates,setCandidates]=useState([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[adding,setAdding]=useState(false),[notice,setNotice]=useState('')
+ const[q,setQ]=useState(''),[country,setCountry]=useState(''),[type,setType]=useState(''),[health,setHealth]=useState(''),[showRetired,setShowRetired]=useState(false),[open,setOpen]=useState(null)
+ const load=async()=>{setBusy(true);setError('');try{const[c,d,k]=await Promise.all([api.context(),readLayer1(),supabase.rpc('layer1_statistics_candidates_read').then(r=>r.error?[]:(r.data||[])).catch(()=>[])]);setContext(c||null);setData(d||{sources:[]});setCandidates(Array.isArray(k)?k:[])}catch(e){setError(errorText(e)||String(e))}finally{setBusy(false)}}
+ useEffect(()=>{load()},[])
+ const rows=data?.sources||[]
+ useEffect(()=>{if(!rows.some(s=>['queued','running'].includes(String(s.latest_run?.status||'').toLowerCase())))return;const t=setInterval(load,5000);return()=>clearInterval(t)},[rows.map(s=>s.latest_run?.status).join('|')])
+ const rank=Number(context?.role_rank||0)
+ const countries=useMemo(()=>[...new Map(rows.map(x=>[x.country_code,{value:x.country_code,label:x.country_name||x.country_code}])).values()].sort((a,b)=>a.label.localeCompare(b.label)),[rows])
+ const all=useMemo(()=>collapseRankingFamilies(rows),[rows])
+ const list=useMemo(()=>{const t=q.trim().toLowerCase();return all.filter(s=>(showRetired||!isRetired(s))&&(!country||s.country_code===country)&&(!type||sourceClass(s)===type)&&(!health||healthOf(s)===health)&&(!t||`${s.source_label} ${s.authority_name} ${s.source_url}`.toLowerCase().includes(t))).sort((a,b)=>HEALTH_ORDER.indexOf(healthOf(a))-HEALTH_ORDER.indexOf(healthOf(b))||String(a.country_code).localeCompare(String(b.country_code))||String(a.source_label).localeCompare(String(b.source_label)))},[all,q,country,type,health,showRetired])
+ const counts=useMemo(()=>{const c={};for(const s of all.filter(x=>!isRetired(x)))c[healthOf(s)]=(c[healthOf(s)]||0)+1;return c},[all])
+ if(rank>0&&rank<4)return <div className="xl-empty">Your role cannot open Layer 1.</div>
+ const columns=[
+  {key:'source',label:'Source',width:'minmax(220px,2.4fr)',render:s=><span className="xl-title"><b>{s.source_label}</b><small>{s.authority_name||'—'}</small></span>},
+  {key:'country',label:'Country',width:'minmax(70px,.6fr)',render:s=><Pill title={s.country_name}>{s.country_code||'—'}</Pill>},
+  {key:'type',label:'Type',width:'minmax(90px,.8fr)',render:s=><Pill tone={sourceClass(s)==='statistics'?'violet':'info'}>{isRankingSource(s)?'Ranking':TYPE_LABEL[sourceClass(s)]||human(sourceClass(s))}</Pill>},
+  {key:'health',label:'Health',width:'minmax(120px,1fr)',render:s=>{const h=isRetired(s)?'retired':healthOf(s);return <Pill tone={HEALTH_TONE[h]||'neutral'} title={healthReason(s)||undefined}>{h==='retired'?'Retired':HEALTH_LABEL[h]||human(h)}</Pill>}},
+  {key:'run',label:'Last run',width:'minmax(150px,1.2fr)',render:s=>{const r=s.latest_run;return r?<span className="xl-stack"><Pill tone={RUN_TONE[String(r.status).toLowerCase()]||'neutral'}>{human(r.status==='no_change'?'unchanged':r.status)}</Pill><small>{fmt(r.completed_at||r.started_at||s.last_success_at)}</small></span>:<span className="xl-stack"><Pill>Not run</Pill>{s.last_success_at&&<small>{fmt(s.last_success_at)}</small>}</span>}},
+  {key:'schedule',label:'Schedule',width:'minmax(140px,1.1fr)',render:s=><span className="xl-stack"><Pill tone={scheduleOf(s)==='manual'?'neutral':'info'}>{scheduleOf(s)==='custom'?`Every ${s.verification_cadence_days} days`:SCHEDULE_LABEL[scheduleOf(s)]}</Pill><small>{s.paused?'Paused':`Next ${fmt(s.schedule_next_due_at||s.next_ingestion_at)}`}</small></span>},
+ ]
+ const rowsOut=list.map(s=>({...s,__label:s.source_label,__muted:isRetired(s)||s.paused}))
+ return <section className="xl-page" data-l1-sources>
+  <div className="xl-summary">{['attention','running','due','paused','healthy'].map(h=><button key={h} className={health===h?'is-on':''} onClick={()=>setHealth(health===h?'':h)}><Pill tone={HEALTH_TONE[h]}>{HEALTH_LABEL[h]}</Pill><b>{n(counts[h]||0)}</b></button>)}</div>
+  <XlToolbar actions={<><button onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Refreshing…':'Refresh'}</button>{rank>=6&&<button className="primary" onClick={()=>setAdding(x=>!x)} data-l1-add><span aria-hidden>+</span> Add source</button>}</>}>
+   <XlField label="Source"><input type="search" value={q} onChange={e=>setQ(e.target.value)} placeholder="Name, authority or address"/></XlField>
+   <XlField label="Country"><select value={country} onChange={e=>setCountry(e.target.value)}><option value="">All</option>{countries.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}</select></XlField>
+   <XlField label="Type"><select value={type} onChange={e=>setType(e.target.value)}><option value="">All</option><option value="regulatory">Register</option><option value="statistics">Statistics</option></select></XlField>
+   <XlField label="Health"><select value={health} onChange={e=>setHealth(e.target.value)}><option value="">All</option>{Object.entries(HEALTH_LABEL).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></XlField>
+   <label className="xl-check"><input type="checkbox" checked={showRetired} onChange={e=>setShowRetired(e.target.checked)}/>Show retired</label>
+  </XlToolbar>
+  {error&&<div className="xl-note tone-danger" role="alert">{error}</div>}{notice&&<div className="xl-note tone-success" role="status">{notice}</div>}
+  {adding&&<AddLayer1Source countries={countries} onCancel={()=>setAdding(false)} onDone={async d=>{setAdding(false);setNotice(`${d?.label||'Source'} added, paused until a reader is assigned.`);await load();if(d?.source_id)setOpen(d.source_id)}}/>}
+  {busy&&!rows.length?<div className="xl-empty">Loading sources…</div>:<ExpandList columns={columns} rows={rowsOut} rowKey={s=>s.source_id} openKey={open} onOpen={setOpen} dataAttr="data-l1-source" renderBody={s=><SourceRowBody source={s} rank={rank} onRefresh={load} candidates={candidates}/>}/>}
+  <p className="xl-muted">{n(list.length)} of {n(all.filter(x=>showRetired||!isRetired(x)).length)} sources. Each runs on its own schedule and is rerun only when it is due and its file has changed.</p>
+ </section>
 }
 
 const STYLES=`
