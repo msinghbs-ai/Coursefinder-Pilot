@@ -28,7 +28,7 @@ test('migration: models, instructions, sample, queue, answers; pinned models; ac
 
 test('worker v0.20.1: the model is pinned, answers are strict JSON, and every fact is proven by a quote on the page', () => {
   const w = read('supabase/functions/coverage-sweep/index.ts')
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.20.1"')
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.20\.[1-9]"/)
   expect(w).toContain('if (mode === "scholarship_ai") {')
   expect(w).toContain('provider: { require_parameters: true }')
   expect(w).toContain('json_schema: { name: "scholarship_page", strict: true')

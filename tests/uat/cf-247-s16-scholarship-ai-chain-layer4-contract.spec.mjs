@@ -71,3 +71,11 @@ test('mocked browser: Layer 4 › AI could not decide shows both answers; admitt
   const call = page.l3calls.find(c => c.scholarshipAi?.p_action === 'review_decide')
   expect(call.scholarshipAi.p_args).toMatchObject({ review_id: 77, decision: 'admit', extraction_id: 901 })
 })
+
+test('worker v0.20.2: an audience quote must itself name international (or domestic) students', () => {
+  const w = read('supabase/functions/coverage-sweep/index.ts')
+  expect(w).toContain('const INTL_WORDS = /\\b(international|overseas|offshore|student visa|subclass 500|non[- ]?residents?|foreign)\\b/i;')
+  expect(w).toContain('["international", "both"].includes(a?.audience) ? INTL_WORDS.test(String(a?.audience_quote || ""))')
+  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.20.2"')
+})
+
