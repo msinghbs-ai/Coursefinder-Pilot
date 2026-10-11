@@ -120,22 +120,7 @@ test.describe('mocked browser', () => {
     await expect(page.getByRole('tab', { name: 'Control' })).toHaveCount(0)
   })
 
-  test('Layer 4 flagged values: tuition recorded as per year can be confirmed, edited or removed', async ({ page }) => {
-    await mockAdmin(page)
-    page.on('dialog', d => d.accept())
-    await page.goto('/#layer-4-review?tab=flags')
-    await expect(page.getByRole('tab', { name: 'Flagged values' })).toHaveAttribute('aria-selected', 'true')
-    await expect(page.locator('tbody tr')).toHaveCount(2)
-    await expect(page.getByText('estimated 1st year indicative fee AUD $54,750')).toBeVisible()
-    await page.getByRole('button', { name: 'Confirm per year' }).first().click()
-    await expect.poll(() => page.l3calls.map(c => c.p_action)).toContain('confirm')
-    await page.getByRole('button', { name: 'Edit fee' }).first().click()
-    await page.getByLabel('Fee amount').fill('40000')
-    await page.getByLabel('Fee period').selectOption('total_indicative')
-    await page.getByRole('button', { name: 'Save' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.p_action === 'correct')?.p_args).toEqual({ amount: 40000, basis: 'total_indicative' })
-  })
-
+  // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Flagged values retired; its old address opens the Review queue (cf-247-s18-onboarding-contract).
   test('scholarship detail opens on the record with no government comparison; course detail on its values', async ({ page }) => {
     await mockAdmin(page, { courseDiffers: true })
     await page.goto('/#scholarships?id=5f92fc8c-ad2b-5182-a3b7-2e9bba5b3d99')

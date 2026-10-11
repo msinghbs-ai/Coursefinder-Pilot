@@ -84,16 +84,7 @@ test('browser: record drawer — rows with their source, change who it is for, h
   await expect.poll(() => page.l3calls.find(c => c.p_action === 'set_nationalities')?.p_args?.value).toEqual(['VN', 'IN'])
 })
 
-test('browser: publishing — four tiles and the reasons with what they mean', async ({ page }) => {
-  await mockAdmin(page)
-  await page.goto('/#layer-4-review?tab=publishing')
-  await expect(page.getByText('Published but now failing a check').first()).toBeVisible()
-  const why = page.locator('[data-publishing-reasons]')
-  await why.locator('[data-reason="no linked course"]').click()
-  await expect(why.locator('[data-reason-detail]')).toContainText('It applies to no course in StudySearch yet.')
-  await expect(why.locator('[data-reason-detail] a')).toHaveCount(0) // v2.15.174: Course links retired; links come from the page
-})
-
+// v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Scholarship publishing retired; its tiles-and-reasons browser check went with it.
 test('browser: course drawer — published scholarship cards with saving and estimate', async ({ page }) => {
   await mockAdmin(page)
   const items = [

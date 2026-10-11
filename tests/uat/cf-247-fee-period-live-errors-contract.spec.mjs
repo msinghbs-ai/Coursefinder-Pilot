@@ -38,6 +38,6 @@ test('browser: worker errors show the job and can be marked as seen', async ({ p
 test('platform guide explains Layer 4, the period check and Mark as seen', () => {
   const g = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
   expect(g).toContain('Layer 4 is where decisions that need a person wait')
-  expect(g).toContain('automatic period check')
+  expect(g).toContain('Retired on 12 Oct 2026 (v2.15.253): Flagged values') // the period check's flagged values were closed with the tab
   expect(g).toContain('Mark as seen (Pipeline Operator and above)')
 })

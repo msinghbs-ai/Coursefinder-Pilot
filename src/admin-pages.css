@@ -534,3 +534,37 @@
 .sx .sx-answer q{display:block;color:var(--cf-slate-600);font-style:italic}
 .sx [data-sx-chain-editor] label{display:inline-flex;gap:6px;align-items:center;font-size:var(--cf-fs-xs)}
 
+
+/* v2.15.253 (Platform Admin, 12 Oct 2026): credit and limit banner on every page (CreditBanner.jsx) */
+.cf-credit-banner{display:flex;align-items:center;gap:8px;min-width:0;padding:5px 10px;margin:0 0 12px;border:1px solid var(--cf-amber-200);border-radius:var(--cf-radius-md);font-size:var(--cf-fs-xs);line-height:1.4}
+.cf-credit-banner.tone-warning{background:var(--cf-warning-soft);color:var(--cf-warning-ink);border-color:var(--cf-amber-200)}
+.cf-credit-banner.tone-danger{background:var(--cf-danger-soft);color:var(--cf-danger-ink);border-color:var(--cf-red-200)}
+.cf-credit-banner>svg{flex:0 0 auto}
+.cf-credit-track{flex:1 1 auto;min-width:0;overflow:hidden}
+.cf-credit-items{display:inline-flex;white-space:nowrap}
+.cf-credit-copy{display:inline-flex}
+.cf-credit-notice{padding-right:28px}
+.cf-credit-notice.is-critical strong{color:var(--cf-danger)}
+.cf-credit-banner.is-scrolling .cf-credit-items{animation:cf-credit-scroll var(--cf-credit-seconds,30s) linear infinite}
+.cf-credit-track:hover .cf-credit-items,.cf-credit-track:focus-within .cf-credit-items{animation-play-state:paused}
+@keyframes cf-credit-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.cf-credit-link{flex:0 0 auto;color:inherit;font-weight:700;text-decoration:underline}
+.cf-credit-close{flex:0 0 auto;border:0;background:transparent;color:inherit;cursor:pointer;display:grid;place-items:center;padding:2px;border-radius:var(--cf-radius-sm)}
+@media (prefers-reduced-motion:reduce){.cf-credit-banner .cf-credit-items{animation:none;white-space:normal;display:flex;flex-wrap:wrap;row-gap:2px}.cf-credit-copy{display:none}}
+
+/* v2.15.253: Providers › Onboarding (ProviderOnboarding.jsx) */
+.po .po-lead{margin:0}
+.po .po-tile{min-width:0}.po .po-tile>*{height:100%;box-sizing:border-box}
+.po .db-tile.is-on .cf-metric{border-color:var(--cf-indigo-600)}
+.po .po-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.po .po-search{min-width:220px;padding:6px 10px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);font:inherit;font-size:var(--cf-fs-xs)}
+.po .po-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.po .po-reason{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.po .po-reason input{min-width:240px;padding:6px 10px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);font:inherit;font-size:var(--cf-fs-xs)}
+.po .po-sub{display:block;margin-top:2px}
+.po .po-note{max-width:360px}
+.po .po-fields{display:flex;flex-wrap:wrap;gap:4px;max-width:260px}.po .po-held{display:block;width:100%;color:var(--cf-slate-600)}
+.po .po-settings,.po .po-approvals{font-size:var(--cf-fs-sm)}
+.po .po-settings summary,.po .po-approvals summary{cursor:pointer;font-weight:700;font-size:var(--cf-fs-md);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.po .po-settings-body{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.po .po-max input{width:80px;margin-left:6px;padding:4px 8px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);font:inherit}

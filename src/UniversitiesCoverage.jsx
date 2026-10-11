@@ -2,7 +2,7 @@
 // One row per target university: adapter state and admitted fields, exclusions, central English rule and calendar,
 // and how many courses hold intakes, English and fees, with where each value came from. Open a university to see its
 // courses in a table (5 Oct 15:36: with location, delivery and entry requirement). A Platform Admin can attach a central English or key-dates page (read through Firecrawl, then
-// approved in Layer 4 Review › Attributes).
+// approved in Layer 2 › Adapter builder (1.3) or on Providers › Onboarding since v2.15.253).
 // 5 Oct 17:04/18:04: indicative whole-course fees for each university (lowest and highest, in the country's currency).
 // Current fees first (printed whole-course total, else annual fee x full-time years), the CRICOS registered total as
 // the fallback, award courses only. Worked out every hour (public.admin_provider_fee_range). A Platform Admin
@@ -64,7 +64,7 @@ export function AttachPage({u,onDone,onError}){
     <select className="fv-filter" aria-label="Central page kind" value={kind} onChange={e=>setKind(e.target.value)}><option value="english_policy">Central English requirements</option><option value="intake_calendar">Key dates (term months)</option></select>
     <input className="au-search" type="url" aria-label="Central page address" placeholder="https://…" value={url} onChange={e=>setUrl(e.target.value)}/>
     <JobButton kind="central_page_read" scope={u.provider_id} args={{provider_id:u.provider_id,kind,url:url.trim(),action:'add'}} label="Attach page" disabled={!/^https?:\/\/\S+$/.test(url.trim())} variant={undefined}
-      question={`Attach this ${kind==='english_policy'?'central English requirements':'key-dates'} page to ${u.name}? It is read through Firecrawl (evidence kept) and parsed into a proposal for approval in Layer 4 Review › Attributes.`}
+      question={`Attach this ${kind==='english_policy'?'central English requirements':'key-dates'} page to ${u.name}? It is read through Firecrawl (evidence kept) and parsed into a proposal for approval in the Adapter builder (1.3).`}
       onStarted={()=>{setUrl('');onDone?.()}}/></div>
 }
 

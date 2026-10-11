@@ -1,7 +1,6 @@
 // Decision 219: New Zealand regions and a country-named state filter; bulk decisions on flagged values.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { mockAdmin } from './support/admin-mock.mjs'
 
 test('migration: NZ regions (ISO 3166-2:NZ), town mapping only where no region is held, bulk flag decisions', () => {
   const m = fs.readFileSync('supabase/migrations-archive/20261002181700_cf247_nz_regions_flag_bulk.sql', 'utf8')
@@ -20,25 +19,9 @@ test('the state filter is named the way each country names its divisions', () =>
   expect(s).not.toContain('label="State / Region"')
 })
 
-test('browser: flagged values can be ticked and decided together', async ({ page }) => {
-  await mockAdmin(page)
-  await page.goto('/#layer-4-review?tab=flags')
-  const bar = page.locator('[data-flag-bulk]')
-  await expect(bar).toContainText('Select all 2 shown')
-  await expect(bar.getByRole('button', { name: 'Confirm selected per year' })).toBeDisabled()
-  await page.locator('[data-flag-row="f1"] input[type="checkbox"]').check()
-  await expect(bar).toContainText('1 selected')
-  page.once('dialog', d => d.accept())
-  await bar.getByRole('button', { name: 'Mark selected as whole course' }).click()
-  await expect.poll(() => page.l3calls.filter(c => c.flagBulk).map(c => c.flagBulk)).toEqual([{ p_flag_ids: ['f1'], p_action: 'whole_course', p_args: {} }])
-  await expect(page.getByRole('status')).toContainText('1 marked as whole course')
-  await expect(page.locator('[data-flag-row="f1"]')).toHaveCount(0)
-  await bar.getByLabel('Select every value shown').check()
-  await expect(bar).toContainText('1 selected')
-})
-
-test('platform guide covers regions and bulk flagged values', () => {
+// v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Flagged values retired (open flags closed); its bulk browser check went with it.
+test('platform guide covers regions; Flagged values is retired', () => {
   const g = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
   expect(g).toContain('province or territory (Canada) or region (New Zealand)')
-  expect(g).toContain('Flagged values in bulk')
+  expect(g).not.toContain('Flagged values in bulk')
 })

@@ -1,7 +1,7 @@
 // Layer 2 › Adapter builder (v2.15.211, CF-247, Platform Admin 7 Oct 2026 18:23). One simple screen to build or change an adapter:
 // pick a provider (with or without an adapter), see its basics from evidence already held, recognise course attributes on sample
 // pages (Firecrawl capture, marks, model proposal), check them against the admit rule, then save and admit. Central pages (key dates,
-// fee schedule, English) are attached here and read by the provider-facts job into the existing approval queues.
+// fee schedule, English) are attached here, read by the provider-facts job and (v2.15.253) approved here in step 1.3.
 // Reads: admin_adapter_builder_basics (rank 5). Writes go through the existing functions, each with its own server-side rank check.
 import React,{useEffect,useState}from'react'
 import{Search,Globe,FileSearch}from'lucide-react'
@@ -9,6 +9,8 @@ import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,fmtNumber,fmtDate,fmtDateTime}from'./ui-kit'
 import JobButton from'./JobButton'
 import{AdapterEditor,AdapterReview}from'./FirecrawlWork'
+import FeeSchedules from'./FeeSchedules'
+import ProviderPolicies from'./ProviderPolicies'
 
 const errText=e=>e?.message||String(e)
 // v2.15.232 (Platform Admin, 10 Oct 2026, Fix 5): no reason prompt. Each step writes a standard log line instead (the servers keep
@@ -98,6 +100,14 @@ function CentralPages({b,onDone,onError}){
     {b.can_manage&&<div className="ab-add"><select aria-label="Central page kind" value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(KIND).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
       <input aria-label="Central page address" placeholder="https://…" value={url} onChange={e=>setUrl(e.target.value)}/><Button compact disabled={busy||!/^https?:\/\/\S{8,}$/.test(url.trim())} onClick={()=>add(kind,url.trim())}>Attach</Button></div>}
   </div>
+}
+
+// v2.15.253: this university's fee schedules, English policies and academic calendars waiting for approval (Approve or Reject). The same
+// lists, unfiltered, are on Providers › Onboarding › Approvals waiting.
+function CentralApprovals({b}){
+  const provider={id:b.provider_id,name:b.name}
+  return <div className="ab-approvals" data-builder-approvals><p className="ab-text"><strong>Waiting for approval</strong> <span className="ab-muted">Approval fills only courses with no value and none entered by hand.</span></p>
+    <FeeSchedules provider={provider}/><ProviderPolicies provider={provider}/></div>
 }
 
 function Qualify({q}){
@@ -226,7 +236,9 @@ export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
       {b&&<>
         <SubStep n="1.1" title="Website" state={b.website?'done':'todo'}><WebsiteStep b={b} onChanged={()=>load()} onError={onError}/></SubStep>
         <SubStep n="1.2" title="Contacts" state={b.contacts?.phone&&b.contacts?.email?'done':'todo'}><ContactsStep b={b}/><p className="ab-muted">Read from the provider's own site by Fill in from website (1.1) and the contact job. The Principal Executive Officer comes from the register (CRICOS) where there is one.</p></SubStep>
-        <SubStep n="1.3" title="Central pages" state={(b.central||[]).length?'done':'todo'}><p className="ab-text">Key dates, the international fee schedule and English requirements cover every course at once. Attached pages are read and wait for approval in Layer 4 › Attributes.</p><CentralPages b={b} onDone={()=>load()} onError={onError}/></SubStep>
+        {/* v2.15.253 (Platform Admin, 12 Oct 2026): central pages are approved here (Layer 4 › Attributes retired); across universities on Providers › Onboarding */}
+        <SubStep n="1.3" title="Central pages" state={(b.central||[]).length?'done':'todo'}><p className="ab-text">Key dates, the international fee schedule and English requirements cover every course at once. Attached pages are read and wait for approval below.</p><CentralPages b={b} onDone={()=>load()} onError={onError}/>
+          <CentralApprovals b={b}/></SubStep>
       </>}
     </Step>
     {pid&&!b&&<Loading label="Reading the provider…"/>}

@@ -2,7 +2,7 @@
 // Only for the local dev server (VITE_SUPABASE_URL=https://example.supabase.co); nothing reaches a real backend.
 import * as F from './admin-fixtures.mjs'
 
-export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false } = {}) {
+export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [] } = {}) {
   const context = { ...F.context, role_rank: rank, role: rank >= 6 ? 'platform_admin' : 'viewer' }
   const session = { access_token: 'mock-token', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 360000, expires_at: Math.floor(Date.now() / 1000) + 360000, user: { id: context.user_id, email: 'admin@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } }
   const adminRead = {
@@ -76,6 +76,9 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_provider_fee_range: b => { calls.push({ feeRange: b.p_action, args: b.p_args }); return b.p_action === 'read' ? (b.p_args?.provider_id ? F.feeRangeOne : F.feeRanges) : { ok: true } },
     admin_provider_central_page: b => { calls.push({ centralPage: b.p_action, args: b.p_args }); return { ok: true, source_id: 's1' } },
     admin_adapter_evaluation: F.adapterEvaluation,
+    // v2.15.253: Providers › Onboarding and the credit banner (empty unless a test passes creditNotices)
+    admin_provider_onboarding: b => { calls.push({ onboarding: b.p_action, args: b.p_args }); const d = { ...F.providerOnboarding, can_manage: rank >= 6 }; const st = b.p_args?.status, q = (b.p_args?.q || '').toLowerCase(); return { ...d, rows: d.rows.filter(r => (!st || r.status === st || (st === 'active' && !['queued', 'stopped', 'waiting_admit', 'waiting_courses', 'done', 'cancelled'].includes(r.status))) && (!q || r.name.toLowerCase().includes(q))) } },
+    admin_credit_notices: () => creditNotices,
     admin_adapter_builder: b => { calls.push({ builder: b.p_action, args: b.p_args }); return F.adapterBuilder },
     admin_uni_adapter_control: b => { calls.push({ adapterControl: b.p_action, args: b.p_args }); return { ok: true, id: 2 } },
     admin_uni_adapter_write: b => { calls.push({ adapter: b.p_action, args: b.p_args }); return { ok: true, preview_id: 'pv2', pages_read_again: 66 } },

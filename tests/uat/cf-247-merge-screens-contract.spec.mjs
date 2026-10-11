@@ -26,15 +26,16 @@ test('Regulatory settings merged into Layer 1; its Pilot reset and the readiness
   expect(reg).not.toContain('RESET DATABASE')
 })
 
-test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live, blocks in Layer 4', () => {
+test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live; Layer 4 › Blocks retired (v2.15.253)', () => {
   expect(PAGES.health.tabs.find(t => t.key === 'readiness').label).toBe('Capacity')
-  expect(PAGES.layer4.tabs.find(t => t.key === 'blocks')).toEqual({ key: 'blocks', label: 'Blocks', min: 5 })
+  expect(PAGES.layer4.tabs.find(t => t.key === 'blocks')).toBeUndefined()
   const main = read('src/mature-main.jsx')
-  expect(main).toContain(`case'layer4':return tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>`) // v2.15.250: AI could not decide
+  expect(main).toContain(`case'layer4':return tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>`)
+  expect(main).not.toContain('view="blocks"')
   const pm = read('src/platform-maturity-entry.jsx')
   expect(pm).toContain("view==='capacity'?<>")
   expect(pm).toContain("view==='golive'?<>")
-  expect(pm).toContain("view==='blocks'?<BlockConsole")
+  expect(pm).not.toContain('BlockConsole')
 })
 
 test('v2.15.124: Readiness by area is part of Attributes; the cross-layer Sources list is under Operations', () => {

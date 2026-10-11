@@ -138,7 +138,7 @@ function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,on
       <Block id="central" title="Central pages (English, key dates)" meta={`${fmtNumber((d.central_pages||[]).length)} attached`}>
         {can&&<AttachPage u={u} onDone={refresh} onError={onError}/>}
         {(d.central_pages||[]).length>0?<ul className="tn-list uc-pages">{d.central_pages.map((p,i)=><li key={i}><Pill tone={p.status==='read'||p.status==='parsed'?'success':p.status==='found'?'warning':'neutral'}>{p.kind==='english_policy'?'English':'Key dates'} · {String(p.status).replace(/_/g,' ')}</Pill> <a className="cf-link" href={p.url} target="_blank" rel="noreferrer">{p.url}</a>{p.read_at&&<small className="sl-sub"> read {fmtDateTime(p.read_at)}</small>}{p.evidence_id&&<a className="cf-link" href={`#evidence?evidence_id=${encodeURIComponent(p.evidence_id)}`}> evidence</a>}</li>)}</ul>:<p className="adp-note">No central page attached.</p>}
-        <p className="adp-note">A central page is read through Firecrawl and parsed into a proposal. Approve it in <a className="cf-link" href="#layer-4-review?tab=attributes">Layer 4 Review › Attributes</a>. The central rule fills courses whose own page gives no value.</p>
+        <p className="adp-note">A central page is read through Firecrawl and parsed into a proposal. Approve it in the <a className="cf-link" href="#layer-2-discovery?tab=builder">Adapter builder</a> (1.3), or across universities on <a className="cf-link" href="#providers?tab=onboarding">Providers › Onboarding</a>. The central rule fills courses whose own page gives no value.</p>
       </Block>
 
       <Block id="fees" title="Fee range and rules" meta="Indicative whole-course fees">

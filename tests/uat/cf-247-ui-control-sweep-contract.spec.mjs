@@ -11,13 +11,14 @@ const read = p => fs.readFileSync(p, 'utf8')
 
 test('menu: Automations and Publishing tabs; old links still land', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs', 'tasks']) // v2.15.197: Task manager
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'aireview', 'flags', 'websites', 'rules', 'attributes', 'publishing', 'blocks']) // Decision 222: Websites to find; v2.15.157: Attributes
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'aireview', 'websites']) // Decision 222: Websites to find; v2.15.253: Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired
   // v2.15.252 (Platform Admin, 12 Oct 2026): Send back to AI retired with Layer 3; the old address opens the Review queue.
   expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'sendback' }))).toMatchObject({ page: 'layer4', tab: 'review' })
   expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['coverage', 3], ['extraction', 3]]) // v2.15.240: Coverage; v2.15.174: Course links retired; Publishing is Layer 4
   expect(PAGES.scholarships.min).toBe(1)
   expect(resolveTarget('jobs').params?.get?.('tab') ?? 'jobs').toBe('jobs')
-  expect(hrefFor('layer4', 'publishing')).toBe('#layer-4-review?tab=publishing')
+  expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'publishing' }))).toMatchObject({ page: 'scholarships', tab: 'coverage' })
+  expect(hrefFor('scholarships', 'coverage')).toBe('#scholarships?tab=coverage')
 })
 
 test('schedules read in plain words, times in Melbourne time (v2.15.131)', () => {
@@ -98,25 +99,7 @@ test.describe('mocked browser', () => {
     await expect(page.locator('.sb-field')).toHaveCount(0)
   })
 
-  test('Scholarship publishing: ready list, publish batch with approval, hold, release', async ({ page }) => {
-    await mockAdmin(page)
-    page.on('dialog', d => d.type() === 'prompt' ? d.accept('Value is for domestic students') : d.accept())
-    await page.goto('/#layer-4-review?tab=publishing')
-    await expect(page.getByRole('tab', { name: 'Publishing' })).toHaveAttribute('aria-selected', 'true')
-    await expect(page.getByText('Doherty Supplementary Scholarship')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'No award value on the page' })).toBeVisible() // v2.15.171: reasons are a list
-    const publish = page.getByRole('button', { name: 'Publish 2' })
-    await expect(publish).toBeDisabled()
-    await page.getByLabel('Approval note').fill('Approved by Platform Admin, 30 Sep')
-    await publish.click()
-    await expect.poll(() => page.l3calls.find(c => c.p_action === 'publish_batch')?.p_args).toEqual({ approval: 'Approved by Platform Admin, 30 Sep', expected: 2 })
-    await page.getByRole('button', { name: 'Hold Doherty Supplementary Scholarship' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.p_action === 'hold')?.p_args).toEqual({ id: 'e1', reason: 'Value is for domestic students' })
-    await page.getByLabel('Show').selectOption('held')
-    await page.getByRole('button', { name: 'Release Held Scholarship' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.p_action === 'release')?.p_args).toEqual({ id: 'h1' })
-  })
-
+  // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Scholarship publishing retired; publishing is on Scholarships › Coverage.
   test('Scholarships list opens directly on the list; tabs are Scholarships and Coverage (v2.15.240)', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#scholarships')

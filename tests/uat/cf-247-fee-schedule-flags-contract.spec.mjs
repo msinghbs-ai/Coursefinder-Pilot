@@ -1,7 +1,6 @@
 // Decision 210: an approved fee schedule settles flagged fees it answers; the rest show the schedule's fee.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { mockAdmin } from './support/admin-mock.mjs'
 
 const read = p => fs.readFileSync(p, 'utf8')
 
@@ -17,12 +16,4 @@ test('database: same fee or a per-year fee within 15% settles the flag; approval
   expect(m.toLowerCase()).not.toContain('delete from')
 })
 
-test('browser: the schedule fee is shown beside a flagged fee and can be used', async ({ page }) => {
-  await mockAdmin(page)
-  page.on('dialog', d => d.accept())
-  await page.goto('/#layer-4-review?tab=flags')
-  const row = page.locator('tr', { has: page.locator('[data-schedule-fee]') })
-  await expect(row.locator('[data-schedule-fee]')).toContainText('a year (2027)')
-  await row.getByRole('button', { name: 'Use schedule fee' }).click()
-  await expect.poll(() => page.l3calls.find(c => c.p_action === 'correct')).toMatchObject({ p_flag_id: 'f2', p_action: 'correct', p_args: { amount: 34900, basis: 'annual' } })
-})
+// v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Flagged values retired (open flags closed); the browser check of its schedule fee went with it.

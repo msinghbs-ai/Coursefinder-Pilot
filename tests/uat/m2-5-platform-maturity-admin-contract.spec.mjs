@@ -28,10 +28,11 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(component).toContain('data-platform-maturity="true"')
     for(const op of[
       'platform_readiness','platform_capacity','platform_environment_gates',
-      'platform_uat_catalogue','platform_workloads','platform_retention','platform_active_blocks',
+      'platform_uat_catalogue','platform_workloads','platform_retention',
     ]) expect(component).toContain("adminRead('"+op+"'")
-    expect(component).toContain("supabase.rpc('layer4_block_decide'")
-    expect(component).toContain("supabase.rpc('layer4_block_state'")
+    // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Blocks retired; recorded blocks stay enforced by the server functions
+    expect(component).not.toContain("adminRead('platform_active_blocks'")
+    expect(component).not.toContain("supabase.rpc('layer4_block_decide'")
     expect(component).toContain('(not the hosting limit)')
     expect(component).toContain('No destructive purge action exists in this workspace.')
     expect(component).toContain('Production boundary remains closed')

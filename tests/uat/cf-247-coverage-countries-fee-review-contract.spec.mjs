@@ -21,7 +21,9 @@ test('database: patterns cancelled (kept), fee schedules waiting first, coverage
 test('browser: fee schedules - select all waiting, approve selected; a schedule with nothing to add can be closed', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept())
-  await page.goto('/#layer-4-review?tab=attributes')
+  // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
+  await page.goto('/#providers?tab=onboarding')
+  await page.locator('[data-onboarding-approvals] > summary').click()
   const fsx = page.locator('[data-fee-schedules]')
   await expect(fsx.locator('[data-doc="fs1"]')).toBeVisible()
   await fsx.getByLabel('Select every waiting schedule').check()
