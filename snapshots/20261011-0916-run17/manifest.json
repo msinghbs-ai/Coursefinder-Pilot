@@ -1,0 +1,18 @@
+{
+  "captured_at": "2026-10-11T09:16:08.086Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-scholarships?tab=coverage.png",
+      "route": "scholarships?tab=coverage",
+      "action": null,
+      "clicked": true,
+      "heading": "Scholarships",
+      "settle_ms": 7708,
+      "height": 1639,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scholarships?tab=coverage",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
