@@ -42,6 +42,10 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_scholarship_publishing_read: F.scholarshipPublishing,
     admin_scholarship_record_read: F.scholarshipRecord,
     admin_scholarship_layer_read: b => F.scholarshipLayer(b.p_layer),
+    // v2.15.247 (bugs 11/10-4): Scholarships › Coverage with two providers of one name
+    admin_scholarship_coverage_read: { scope: 'watch', total: 2, can_manage: true, can_watch: true, auto_publish: { on: false, recent: [] }, totals: { watch: 2, with_listing: 2, suggested: 0, checked: 0, active: 10, published: 4 },
+      rows: [{ provider_id: 'vu-1', name: 'Victoria University', code: '00124K', watch: true, state: 'to_check', listing_pages: 1, listed: 11, found: 2, missing: 9, extra: 1, records_published: 1 },
+             { provider_id: 'vu-2', name: 'Victoria University', code: '02475D', watch: true, state: 'to_check', listing_pages: 1, listed: 11, found: 2, missing: 9, extra: 1, records_published: 1 }] },
     admin_scholarship_layer_write: b => { calls.push({ p_action: b.p_action, p_args: b.p_args }); return { ok: true } },
     // Decision 252: toolsets, keys and plan limits, notices and sample runs
     admin_toolsets_read: F.toolsets,

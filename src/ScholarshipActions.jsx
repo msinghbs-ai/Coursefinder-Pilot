@@ -59,9 +59,9 @@ export function ProviderFillAction({providerId,name,website}){
 
 // Scholarships › Coverage: several providers at once (one task)
 export async function startProviderScans(providerIds,count){
-  const reason=window.prompt(`Find scholarships now for ${count} provider(s)? Every page is read through the scraper (about one credit a page).\n\nReason (kept in the log):`)
-  if(!reason||reason.trim().length<4)return null
-  const{data,error}=await supabase.rpc('admin_jobs',{p_action:'start',p_args:{kind:'scholarship_provider_scan',args:{provider_ids:providerIds},reason:reason.trim()}})
+  // v2.15.247 (bugs 11/10-4): confirm only, no reason; the log records "Started from Scholarships › Coverage"
+  if(!window.confirm(`Find scholarships now for ${count} provider(s)? Every page is read through the scraper (about one credit a page).`))return null
+  const{data,error}=await supabase.rpc('admin_jobs',{p_action:'start',p_args:{kind:'scholarship_provider_scan',args:{provider_ids:providerIds},from:'Scholarships › Coverage'}})
   if(error)throw error
   return data
 }

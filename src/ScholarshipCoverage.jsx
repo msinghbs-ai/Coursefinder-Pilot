@@ -23,7 +23,11 @@ const host=u=>{try{return new URL(u).hostname.replace(/^www\./,'')}catch{return 
 export default function ScholarshipCoverage({rank=3,onError,navigate}){
   const[scope,setScope]=useState('watch'),[query,setQuery]=useState(''),[q,setQ]=useState(''),[data,setData]=useState(null),[busy,setBusy]=useState(false),[open,setOpen]=useState(null)
   // v2.15.244: tick providers and find their scholarships now (one task, Operators and above)
-  const canRun=useCanRunTasks(),[picked,setPicked]=useState(new Set()),[starting,setStarting]=useState(false),[note,setNote]=useState('')
+  const canRun=useCanRunTasks(),[picked,setPicked]=useState(new Set()),[starting,setStarting]=useState(false),[note,setNote]=useState(''),[fail,setFail]=useState('')
+  // v2.15.247 (bugs 11/10-4): providers in a Find scholarships task waiting or running show "Finding…" until it finishes
+  const[finding,setFinding]=useState(new Set())
+  const readFinding=async()=>{try{const{data:d,error}=await supabase.rpc('admin_jobs',{p_action:'read',p_args:{}});if(error)throw error;const ids=new Set();for(const j of d?.jobs||[])if(j.kind==='scholarship_provider_scan')for(const id of (j.args?.providers||j.args?.provider_ids||[]))ids.add(String(id));setFinding(prev=>{if(prev.size&&!ids.size)load();return ids})}catch{}}
+  useEffect(()=>{if(!canRun)return;readFinding();const t=setInterval(()=>{if(document.visibilityState==='visible')readFinding()},finding.size?8000:30000);return()=>clearInterval(t)},[canRun,finding.size])
   useEffect(()=>{const t=setTimeout(()=>setQ(query.trim()),280);return()=>clearTimeout(t)},[query])
   const load=async()=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_scholarship_coverage_read',{p_scope:scope,p_query:q||null,p_limit:300,p_offset:0});if(error)throw error;setData(d)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   useEffect(()=>{load()},[scope,q])
@@ -46,18 +50,19 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
         </div>
         <label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search provider" aria-label="Search provider"/></label>
       </div>
-      {canRun&&<div className="ar-bulk" data-cov-bulk><span>{picked.size?`${fmtNumber(picked.size)} selected`:'Tick providers to find their scholarships now'}</span>{picked.size>0&&<><Button compact variant="primary" disabled={starting||picked.size>50} onClick={async()=>{setStarting(true);setNote('');try{const r=await startProviderScans([...picked],picked.size);if(r){setNote(`Started "${r.title}". Progress is in Scheduled jobs › Task manager.`);setPicked(new Set())}}catch(e){onError?.(e.message||String(e))}finally{setStarting(false)}}}>{starting?'Starting…':`Find scholarships now (${fmtNumber(picked.size)})`}</Button><Button compact onClick={()=>setPicked(new Set())}>Clear</Button>{picked.size>50&&<small className="sc-sub">At most 50 in one task</small>}</>}</div>}
-      {note&&<p role="status" className="sc-note" data-cov-note>{note} <a href="#jobs?tab=tasks">Open Task manager</a></p>}
+      {canRun&&<div className="ar-bulk" data-cov-bulk><span>{picked.size?`${fmtNumber(picked.size)} selected`:'Tick providers to find their scholarships now'}</span>{picked.size>0&&<><Button compact variant="primary" disabled={starting||picked.size>50} onClick={async()=>{setStarting(true);setNote('');setFail('');try{const r=await startProviderScans([...picked],picked.size);if(r){setNote(`Started "${r.title}". The providers show Finding… until it finishes; progress is also in Scheduled jobs › Task manager.`);setPicked(new Set());await readFinding()}}catch(e){setFail(e.message||String(e))}finally{setStarting(false)}}}>{starting?'Starting…':`Find scholarships now (${fmtNumber(picked.size)})`}</Button><Button compact onClick={()=>setPicked(new Set())}>Clear</Button>{picked.size>50&&<small className="sc-sub">At most 50 in one task</small>}</>}</div>}
+      {note&&<p role="status" className="sc-note" data-cov-note>{note} <a href="#scheduled-jobs?tab=tasks">Open Task manager</a></p>}
+      {fail&&<p role="alert" className="sc-note sc-bad" data-cov-fail>Could not start: {fail}</p>}
       {busy&&!data?<Loading label="Loading coverage…"/>:<div className="cf-table-wrap"><table className="cf-table sc-table">
         <thead><tr>{canRun&&<th className="ar-check"><input type="checkbox" aria-label="Select all providers shown" checked={rows.length>0&&rows.every(r=>picked.has(r.provider_id))} onChange={e=>setPicked(e.target.checked?new Set(rows.map(r=>r.provider_id)):new Set())}/></th>}<th>Provider</th><th className="num" title="Scholarships named on the provider's listing page">Listed</th><th className="num" title="Listed scholarships we hold a record for">Found</th><th className="num">Published</th><th className="num" title="Listed with no record of ours">Missing</th><th className="num" title="Our records the listing page does not name">Other records</th><th>State</th></tr></thead>
         <tbody>{rows.length===0?<tr><td colSpan={8}>{busy?'Loading…':'No providers match.'}</td></tr>:rows.map(r=>{const[sl,st]=STATE[r.state]||[r.state,'neutral'];return <tr key={r.provider_id} data-cov-row={r.provider_id} className={open===r.provider_id?'is-selected':''} onClick={()=>setOpen(r.provider_id)} style={{cursor:'pointer'}}>
           {canRun&&<td className="ar-check" onClick={e=>e.stopPropagation()}><input type="checkbox" aria-label={`Select ${r.name}`} checked={picked.has(r.provider_id)} onChange={()=>setPicked(x=>{const n=new Set(x);n.has(r.provider_id)?n.delete(r.provider_id):n.add(r.provider_id);return n})}/></td>}
-          <td><strong>{r.name}</strong>{r.watch&&<span className="sc-dot" title="On the watch list"/>}</td>
+          <td><strong>{r.name}</strong>{r.watch&&<span className="sc-dot" title="On the watch list"/>}{r.code&&<small className="sc-sub" data-cov-code> CRICOS {r.code}</small>}</td>
           <td className="num">{r.listing_pages?fmtNumber(r.listed):'—'}</td><td className="num">{r.listing_pages?fmtNumber(r.found):'—'}</td>
           <td className="num">{fmtNumber(r.records_published)}</td>
           <td className="num">{r.listing_pages&&r.missing?<b className="sc-bad">{fmtNumber(r.missing)}</b>:r.listing_pages?'0':'—'}</td>
           <td className="num">{fmtNumber(r.extra)}</td>
-          <td><StatusChip value={r.state} tone={st} label={sl}/>{r.suggested_pages&&!r.listing_pages?<small className="sc-sub"> suggestion</small>:null}</td></tr>})}</tbody>
+          <td>{finding.has(String(r.provider_id))?<StatusChip value="running" tone="info" label="Finding…"/>:<StatusChip value={r.state} tone={st} label={sl}/>}{r.suggested_pages&&!r.listing_pages?<small className="sc-sub"> suggestion</small>:null}</td></tr>})}</tbody>
       </table></div>}
     </section>
     {open&&<ProviderCoverage providerId={open} rank={rank} onClose={()=>setOpen(null)} onError={onError} onChanged={load}/>}

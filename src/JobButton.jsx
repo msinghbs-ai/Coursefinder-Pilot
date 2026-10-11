@@ -1,6 +1,6 @@
 // CF-247 Decision 254, job system Phase B (Platform Admin 6 Oct 06:59: "mature the pressing button across ui to have same
 // experience. That once pressed it updates progress, status updates even when page is refresh and admin action cancellation
-// power"). One button for every long-running admin action. Pressing it asks for a reason and starts a task
+// power"). One button for every long-running admin action. Pressing it asks to confirm (v2.15.247: no reason) and starts a task
 // (public.admin_jobs 'start'); from then on the button shows the task's progress read from the database every few seconds,
 // so a refreshed page finds the same task again by its kind and scope, and offers Cancel. When the task finishes the button
 // says so for a moment and goes back to its label. The task's full result is under Scheduled jobs › Jobs.
@@ -11,6 +11,9 @@ import{Button}from'./ui-kit'
 
 const errText=e=>e?.message||String(e)
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
+// v2.15.247 (Platform Admin bugs 11/10-4, 11 Oct 2026: "it ask for reason which is not required and nothing happened afterwards"):
+// starting a task asks only to confirm; the log records the screen it was started from. Cancel still asks for a reason.
+export function whereFrom(){try{const h=document.querySelector('main h1')?.textContent?.trim(),t=document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim();return [h,t].filter(Boolean).join(' › ')||'the app'}catch{return 'the app'}}
 const pct=p=>{const t=Number(p?.total||0),d=Number(p?.done||0);return t?Math.round(d/t*100):0}
 
 export function useTask({kind,scope}){
@@ -28,7 +31,7 @@ export default function JobButton({kind,args,scope,label,question,disabled=false
   const[busy,setBusy]=useState(false),[note,setNote]=useState(''),[fail,setFail]=useState('')
   const wasLive=useRef(false)
   useEffect(()=>{if(task){wasLive.current=true}else if(wasLive.current){wasLive.current=false;setNote('Finished. The result is under Scheduled jobs › Jobs.');onFinished?.();const t=setTimeout(()=>setNote(''),12000);return()=>clearTimeout(t)}},[task])
-  const start=async()=>{const reason=ask(question||`Start "${label}"?`);if(!reason)return;setBusy(true);setFail('');try{const{data,error}=await supabase.rpc('admin_jobs',{p_action:'start',p_args:{kind,args:{...(args||{}),scope:scope||undefined},reason}});if(error)throw error;onStarted?.(data?.id);await read()}catch(e){setFail(errText(e))}finally{setBusy(false)}}
+  const start=async()=>{if(!window.confirm(question||`Start "${label}"?`))return;setBusy(true);setFail('');setNote('');try{const{data,error}=await supabase.rpc('admin_jobs',{p_action:'start',p_args:{kind,args:{...(args||{}),scope:scope||undefined},from:whereFrom()}});if(error)throw error;setNote(`Started "${data?.title||label}". Progress shows here and in Scheduled jobs › Task manager.`);onStarted?.(data?.id);await read()}catch(e){setFail(errText(e))}finally{setBusy(false)}}
   const cancel=async()=>{if(!task)return;const reason=ask(`Cancel "${task.title}"? Work done so far is kept.`);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_jobs',{p_action:'cancel',p_args:{id:task.id,reason}});if(error)throw error;await read()}catch(e){setFail(errText(e))}finally{setBusy(false)}}
   if(task){const v=pct(task.progress);return <span className={`jb jb-live ${className}`} data-job-button={kind} data-job-state={task.state}>
     <span className="jb-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={v} aria-label={`${task.title}: ${v}% done`}><span style={{width:`${v}%`}}/></span>
