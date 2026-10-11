@@ -20,7 +20,7 @@ test('worker: listing pages read for the scholarships they name', () => {
   expect(s).toContain('export function scholarshipListing(html: string, baseUrl: string, hosts: string[] = [])')
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toContain('if (mode === "scholarship_listing") {')
-  expect(ix).toMatch(/coverage-sweep-worker-v0\.17\.(3[7-9]|[4-9][0-9])/)
+  expect(ix).toMatch(/coverage-sweep-worker-v0\.(?:17\.(3[7-9]|[4-9][0-9])|1[8-9]\.\d+)/)
 })
 
 test.describe('mocked browser', () => {

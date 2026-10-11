@@ -114,7 +114,7 @@ test('v0.4.0 governance: nothing published, guarded replacements, cron list', as
   const idx = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(idx).toContain('await rpc("svc_scholarship_fc_budget", {})') // v0.6.2 (Decision 251): the cap is a Layer 2 setting
   expect(idx).toContain('"name_mismatch"')
-  expect(idx).toMatch(/scholarship-sweep-v0\.[456]\.\d/)
+  expect(idx).toMatch(/scholarship-sweep-v0\.[4-9]\.\d/)
 })
 
 test('v0.4.2 hand-check fixes: tiers with full tuition, excluded levels, earlier study', async () => {

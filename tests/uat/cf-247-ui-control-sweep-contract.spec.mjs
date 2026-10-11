@@ -142,10 +142,11 @@ test.describe('mocked browser', () => {
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'release')?.p_args).toEqual({ id: 'h1' })
   })
 
-  test('Scholarships list opens directly, with no tabs (v2.15.174)', async ({ page }) => {
+  test('Scholarships list opens directly on the list; tabs are Scholarships and Coverage (v2.15.240)', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#scholarships')
-    await expect(page.getByRole('tab')).toHaveCount(0)
+    await expect(page.locator('[data-sch-count]')).toBeVisible()
+    await expect(page.getByRole('tab')).toHaveText(['Scholarships', 'Coverage'])
     await expect(page.locator('[data-sch-count]')).toBeVisible()
   })
 })

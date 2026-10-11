@@ -67,7 +67,7 @@ test('new reads: guarded, read-only, granted to signed-in users only', () => {
   expect(m).toContain("revoke all on function public.admin_source_comparison(text,uuid) from public, anon;")
   expect(m).toContain("(to_jsonb(pr)->>'retired_at') is not null")
   expect(read('src/Layer3Operations.jsx')).toContain("supabase.rpc('admin_layer3_control_read'")
-  expect(read('src/SourceComparison.jsx')).toContain("supabase.rpc('admin_source_comparison'")
+  expect(fs.existsSync('src/SourceComparison.jsx')).toBe(false) // v2.15.243: Study Australia comparison retired (country-neutral)
 })
 
 test.describe('mocked browser', () => {
@@ -146,16 +146,12 @@ test.describe('mocked browser', () => {
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'correct')?.p_args).toEqual({ amount: 40000, basis: 'total_indicative' })
   })
 
-  test('scholarship and course detail show both sources and highlight differences', async ({ page }) => {
+  test('scholarship detail opens on the record with no government comparison; course detail on its values', async ({ page }) => {
     await mockAdmin(page, { courseDiffers: true })
     await page.goto('/#scholarships?id=5f92fc8c-ad2b-5182-a3b7-2e9bba5b3d99')
-    // v2.15.171 (mockup): the scholarship drawer opens on the record; the government comparison is folded beneath it.
+    // v2.15.243 (Platform Admin, 11 Oct 2026): the Study Australia comparison is retired; the record has the Evidence & extraction journey
     await expect(page.locator('[data-scholarship-record]')).toBeVisible()
-    await page.locator('[data-sr-compare] summary').click()
-    const s = page.locator('[data-source-comparison="scholarship"]')
-    await expect(s.locator('thead th', { hasText: 'Government (Study Australia)' })).toBeVisible()
-    await expect(s.locator('tr[data-compare-state="differs"]')).toHaveCount(2)
-    await expect(s.locator('tr[data-compare-state="same"]')).toHaveCount(1)
+    await expect(page.locator('[data-sr-compare]')).toHaveCount(0)
     // v2.15.159 (Platform Admin, 3 Oct 2026): the course drawer no longer carries the comparison strip; it opens on the
     // course's values with their Change buttons. The strip stays on the scholarship drawer.
     await page.goto('/#courses?id=0b1fb6d4-c02f-47c7-98d0-9f0d57240fd5')

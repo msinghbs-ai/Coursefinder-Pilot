@@ -50,7 +50,7 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
           <td className="num">{r.listing_pages?fmtNumber(r.listed):'—'}</td><td className="num">{r.listing_pages?fmtNumber(r.found):'—'}</td>
           <td className="num">{fmtNumber(r.records_published)}</td>
           <td className="num">{r.listing_pages&&r.missing?<b className="sc-bad">{fmtNumber(r.missing)}</b>:r.listing_pages?'0':'—'}</td>
-          <td className="num">{fmtNumber(r.extra)}{r.study_australia?<small className="sc-sub"> · {fmtNumber(r.study_australia)} Study Australia</small>:null}</td>
+          <td className="num">{fmtNumber(r.extra)}</td>
           <td><StatusChip value={r.state} tone={st} label={sl}/>{r.suggested_pages&&!r.listing_pages?<small className="sc-sub"> suggestion</small>:null}</td></tr>})}</tbody>
       </table></div>}
     </section>
@@ -120,7 +120,7 @@ function Records({title,rows,listed=false,can,act,onError,reload}){
     <thead><tr>{listed&&<th>On its page</th>}<th>Our record</th><th>Value</th><th>Courses</th><th>Why not published</th><th></th></tr></thead>
     <tbody>{rows.map((x,i)=>{const s=x.record,[pl,pt]=s?PUB[s.status]||[s.status,'neutral']:['Missing','danger'];return <tr key={(s?.id||'')+i} data-cov-record={s?.id||'missing'}>
       {listed&&<td>{x.url?<a href={x.url} target="_blank" rel="noreferrer" className="cf-link">{x.name}</a>:x.name}</td>}
-      <td>{s?<><StatusChip value={s.status} tone={pt} label={pl}/> <span className="sc-name">{s.name}</span>{s.study_australia&&<small className="sc-sub"> · Study Australia</small>}</>:<StatusChip value="missing" tone="danger" label="Not found"/>}</td>
+      <td>{s?<><StatusChip value={s.status} tone={pt} label={pl}/> <span className="sc-name">{s.name}</span></>:<StatusChip value="missing" tone="danger" label="Not found"/>}</td>
       <td>{s?value(s):'—'}</td>
       <td>{s?<>{fmtNumber(s.courses)}{s.all_courses?<small className="sc-sub"> · all courses (page names no restriction)</small>:(s.levels||[]).length?<small className="sc-sub"> · {(s.levels||[]).join(', ')}</small>:null}</>:'—'}</td>
       <td className="sc-why">{s?(s.status==='published'?'—':(s.reasons||[]).length?(s.reasons||[]).join('; '):'Passes every check'):'No record of ours yet; read the page again or add it by hand'}</td>
