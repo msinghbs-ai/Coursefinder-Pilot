@@ -3,10 +3,10 @@ import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, 
 import { openLayer1 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
-async function chooseCountry(dialog,country){
-  const select=dialog.locator('.l1v2-filter').filter({hasText:'Country'}).locator('select')
-  await select.selectOption(country)
-}
+// v2.15.246 (bugs 11/10-3, Feature 2): Layer 1 › Sources is one list; filters line up with the columns; a row opens in place
+async function chooseCountry(dialog,country){await dialog.locator('.xl-field').filter({hasText:'Country'}).locator('select').selectOption(country)}
+async function chooseType(dialog,type){await dialog.locator('.xl-field').filter({hasText:'Type'}).locator('select').selectOption(type)}
+async function openRow(dialog,row){const id=await row.getAttribute('data-l1-source');if(!(await row.locator('.xl-body').count()))await row.locator('.xl-chev').click();const body=dialog.locator(`[data-l1-source-body="${id}"]`);await expect(body).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});return body}
 
 async function validateSource(page,dialog,predicate,label){
   const readResponsePromise=page.waitForResponse(response=>{
@@ -31,12 +31,10 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   test('AU and NZ expose the production-shaped operator journey',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page)
     await expect(page.getByRole('heading',{name:'Layer 1 Register'}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(dialog.locator('.l1v2-summary.healthy')).toContainText('Healthy')
-    await expect(dialog.locator('.l1v2-summary.running')).toContainText('Running')
-    await expect(dialog.locator('.l1v2-summary.attention')).toContainText('Attention')
-    await expect(dialog.locator('.l1v2-summary.due')).toContainText('Due')
-    for(const country of ['AU','NZ']){await chooseCountry(dialog,country);const card=dialog.locator(`article.l1v2-card[data-country="${country}"]`).first();await expect(card).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(card.getByRole('button',{name:'Details'})).toBeVisible();await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Reconciliation');await expect(card).toContainText('Evidence & provenance');await expect(card).toContainText('Schedule');await expect(card).toContainText('Source health')}
-    await expect(dialog.getByText('Advanced source configuration')).toHaveCount(0)
+    const summary=dialog.locator('.xl-summary');for(const label of ['Needs attention','Running','Due','Paused','Healthy'])await expect(summary).toContainText(label)
+    await expect(dialog.locator('.xl-head')).toContainText('Source');await expect(dialog.locator('.xl-head')).toContainText('Health');await expect(dialog.locator('.xl-head')).toContainText('Schedule')
+    for(const country of ['AU','NZ']){await chooseCountry(dialog,country);const row=dialog.locator('[data-l1-source]').filter({hasNotText:/scholarship/i}).first();await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(row.locator('[data-col="country"]')).toContainText(country);const body=await openRow(dialog,row);await expect(body).toContainText('evidence');await expect(body).toContainText('Checked');await expect(body.getByRole('button',{name:'Check source'})).toBeVisible()}
+    await expect(page.getByRole('tab',{name:'Manual batch runs'})).toHaveCount(0)
     await expect(dialog.getByText(/reset database/i)).toHaveCount(0);await expect(dialog.getByText(/parser qualification/i)).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'m2-4-1-layer1-operations')
   }finally{await finish(testInfo,runtime)}})
@@ -45,39 +43,34 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     await loginAsUatUser(page)
     await page.goto(new URL('/#administration?section=layer1-sources',process.env.UAT_BASE_URL).toString())
     await expect(page.locator('.m-release-pill')).toContainText(/^v2\.15\.\d+$/)
-    // v2.15.107: the old Administration > Layer 1 sources address now opens Layer 1 Register; the Source settings tab
-    // stays Platform Admin only (rank 6), so the UAT operator lands on an allowed tab without the configuration shell.
+    // v2.15.246: the old address opens Layer 1 › Sources; editing a source's settings stays Platform Admin only (rank 6), so the
+    // UAT operator (rank 4) opens a row and sees its facts and Check source but no settings form.
     const page1=page.locator('main h1').filter({hasText:/^Layer 1 Register$/});await expect(page1).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
     await expect(page.getByRole('tab',{name:'Source settings'})).toHaveCount(0)
-    await expect(page.getByRole('tab',{name:'Layer 1 sources'})).toHaveCount(0)
-    await expect(page.locator('.l1s-shell')).toHaveCount(0)
+    const dialog=page.locator('[data-l1-sources]');const row=dialog.locator('[data-l1-source]').first();await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    const body=await openRow(dialog,row);await expect(body).toContainText('Settings can be changed by a Platform Admin.');await expect(dialog.locator('[data-l1-source-form]')).toHaveCount(0)
+    await expect(dialog.getByRole('button',{name:'Add source'})).toHaveCount(0)
     await milestoneScreenshot(page,testInfo,'cf-067-layer1-source-settings-role-boundary')
   }finally{await finish(testInfo,runtime)}})
 
   test('authorised Layer 1 operator performs real NZQA authority and count validation',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'NZ');const nz=dialog.locator('article.l1v2-card[data-country="NZ"]').filter({hasNotText:/scholarship/i}).first(),result=await validateSource(page,dialog,s=>s.country_code==='NZ'&&s.source_type!=='government_scholarship_program'/* CF-247: NZ scholarship register added to Layer 1 on 8 Oct 2026 */,'NZQA')
+    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'NZ');const result=await validateSource(page,dialog,s=>s.country_code==='NZ'&&s.source_type!=='government_scholarship_program'&&/NZQA/i.test(s.source_label||''),'NZQA')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toMatch(/^layer1-operations-control-v1\./)
-    await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'NZ');await expect(nz).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(nz).toContainText(String(result.validation.discovered.providers),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
+    await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'NZ');const nz=dialog.locator('[data-l1-source]').filter({hasText:'NZQA'}).first();await expect(nz).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});const body=await openRow(dialog,nz);await expect(body).toContainText(Number(result.validation.discovered.providers).toLocaleString('en-AU'),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
   test('authorised Layer 1 operator performs real CRICOS authority, shape and active-count validation',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');const au=dialog.locator('article.l1v2-card[data-country="AU"]').filter({hasNotText:/scholarship/i}).first(),result=await validateSource(page,dialog,s=>s.country_code==='AU'&&s.source_type!=='government_scholarship_program'&&!/QILT|PRISMS/i.test(s.source_label||''),'CRICOS')
+    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');const result=await validateSource(page,dialog,s=>s.country_code==='AU'&&s.source_type!=='government_scholarship_program'&&/CRICOS/i.test(s.source_label||''),'CRICOS')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('AU');expect(result?.validation?.discovered?.active).toBeGreaterThan(25000);expect(result?.validation?.discovered?.total).toBeGreaterThanOrEqual(result.validation.discovered.active);expect(result?.validation?.count_basis).toContain('active CRICOS course rows');expect(result?.validation?.worker_version).toMatch(/^layer1-operations-control-v1\./)
-    await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'AU');await expect(au).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await expect(au).toContainText(Number(result.validation.discovered.active).toLocaleString(),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-au-source-validated')
+    await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'AU');const au=dialog.locator('[data-l1-source]').filter({hasText:'CRICOS'}).first();await expect(au).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});const body=await openRow(dialog,au);await expect(body).toContainText(Number(result.validation.discovered.active).toLocaleString('en-AU'),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-au-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
   test('AU Statistics filter exposes QILT and PRISMS as governed runnable sources',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
-    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU')
-    const datasetSelect=dialog.locator('.l1v2-filter').filter({hasText:'Dataset'}).locator('select');await datasetSelect.selectOption('statistics')
-    // Decision 134: QILT is one card with a tab per survey; PRISMS is its own card.
-    const cards=dialog.locator('article.l1v2-card[data-country="AU"]');await expect(cards).toHaveCount(2,{timeout:DETERMINISTIC_UI_TIMEOUT})
-    const openDetails=async(card,edition)=>{await expect(card.getByText('statistics',{exact:true})).toBeVisible();await expect(card).toContainText(edition);await card.getByRole('button',{name:'Details'}).click();await expect(card).toContainText('Edition history & comparison retention');await expect(card).toContainText('retained rather than overwritten');await expect(card.getByRole('button',{name:'Open Compare'})).toBeVisible()}
-    const family=dialog.locator('[data-cf-qilt-family]');await expect(family).toHaveCount(1);const tabs=family.getByRole('tab');await expect(tabs).toHaveCount(4)
-    for(const [survey,edition] of [['Graduate Outcomes Survey',/current 2025/],['Student Experience Survey',/current 202[45]/],['Graduate Outcomes Survey – Longitudinal',/current 2025/],['Employer Satisfaction Survey',/current 2025/]]){
-      await tabs.filter({hasText:new RegExp('^'+survey.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?!\\s*–)')}).click()
-      const card=family.locator('article.l1v2-card');await expect(card.getByRole('heading',{name:`QILT (Quality Indicators for Learning and Teaching) · ${survey}`,exact:true})).toBeVisible();await openDetails(card,edition)
-    }
-    const prismsCard=cards.filter({has:page.getByRole('heading',{name:'PRISMS International Student Flow',exact:true})});await expect(prismsCard).toBeVisible();await openDetails(prismsCard,/current 2025-12/)
+    await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');await chooseType(dialog,'statistics')
+    // v2.15.246: each QILT survey and PRISMS is its own row in the one Sources list
+    const rows=dialog.locator('[data-l1-source]');await expect(rows).toHaveCount(5,{timeout:DETERMINISTIC_UI_TIMEOUT})
+    for(const row of await rows.all())await expect(row.locator('[data-col="type"]')).toContainText('Statistics')
+    for(const name of ['QILT GOS 2025','PRISMS']){const row=rows.filter({hasText:name}).first();const body=await openRow(dialog,row);await expect(body).toContainText('Edition history & comparison retention');await expect(body).toContainText('retained rather than overwritten');await expect(body.getByRole('button',{name:'Open Compare'})).toBeVisible()}
     const qilt=await validateSource(page,dialog,s=>/QILT GOS 2025 National Report Tables/i.test(s.source_label||''),'QILT GOS');expect(qilt?.ok).toBe(true);expect(qilt?.validation?.source_system).toBe('QILT');expect(qilt?.validation?.discovered?.candidate_observations).toBeGreaterThan(100)
     const prisms=await validateSource(page,dialog,s=>/PRISMS/i.test(s.source_label||''),'PRISMS');expect(prisms?.ok).toBe(true);expect(prisms?.validation?.source_system).toBe('PRISMS');expect(prisms?.validation?.discovered?.candidate_observations).toBeGreaterThan(1000)
     await milestoneScreenshot(page,testInfo,'cf-066-layer1-statistics-sources')

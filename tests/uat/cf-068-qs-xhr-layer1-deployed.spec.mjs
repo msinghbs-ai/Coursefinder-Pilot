@@ -19,8 +19,9 @@ test.describe('CF-068 QS direct XHR Layer 1 acquisition @deployed',()=>{
 
  test('QS 2026 validates 1501 publisher rows from retained direct XHR JSON',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const dialog=await openLayer1(page)
-  const country=dialog.locator('.l1v2-filter').filter({hasText:'Country'}).locator('select');await country.selectOption('GLOBAL')
-  const dataset=dialog.locator('.l1v2-filter').filter({hasText:'Dataset'}).locator('select');await dataset.selectOption('statistics')
+  // v2.15.246: Layer 1 › Sources list (filters Country and Type; a row opens in place)
+  const country=dialog.locator('.xl-field').filter({hasText:'Country'}).locator('select');await country.selectOption('GLOBAL')
+  const dataset=dialog.locator('.xl-field').filter({hasText:'Type'}).locator('select');await dataset.selectOption('statistics')
   await expect(dialog.getByText('QS World University Rankings 2026',{exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
   const read=await layer1Read(page,dialog),source=(read.data?.sources||[]).find(s=>s.source_system==='QS'&&Number(s.edition_year)===2026)
   expect(source?.acquisition_mode).toBe('publisher_static_xhr_json_with_manual_fallback')
@@ -32,7 +33,8 @@ test.describe('CF-068 QS direct XHR Layer 1 acquisition @deployed',()=>{
   expect(result.body?.validation?.discovered?.evidence_artifact_id).toBeTruthy()
   const preview=result.body?.validation?.discovered?.reconciliation_preview;console.log('CF071_RECONCILIATION_PREVIEW',JSON.stringify(preview));expect(preview?.country_code).toBe('AU');expect(preview?.country_rows).toBe(36);expect(preview?.system_code).toBe('qs_wur');expect(preview?.mapped_unique).toBe(36);expect(preview?.alias_unique).toBe(14);expect(preview?.exact_unique).toBe(21);expect(preview?.equivalent_fanout).toBe(1);expect(preview?.exact_ambiguous).toBe(0);expect(preview?.unmatched).toBe(0)
   await dialog.getByRole('button',{name:'Refresh'}).click();await country.selectOption('GLOBAL');await dataset.selectOption('statistics')
-  await expect(dialog.locator('article.l1v2-card').filter({hasText:'QS World University Rankings 2026'})).toContainText('1,501')
+  const qs=dialog.locator('[data-l1-source]').filter({hasText:'QS World University Rankings 2026'}).first();await qs.locator('.xl-chev').click()
+  await expect(qs.locator('.xl-body')).toContainText('1,501')
   await milestoneScreenshot(page,testInfo,'cf-068-qs-2026-xhr-validated')
  }finally{await finish(testInfo,runtime)}})
 
