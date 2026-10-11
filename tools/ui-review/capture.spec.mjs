@@ -22,8 +22,12 @@ function track(page) {
 async function settle(page) {
   const t0 = Date.now()
   await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {})
-  while (Date.now() - t0 < 30_000) {
-    if (inflight === 0 && Date.now() - lastRequestAt > 2000) break
+  // 11 Oct 2026: a tab clicked just before this starts its read a moment later, so wait at least 1.5 s, and keep waiting while
+  // the screen still says it is loading (a capture of "Loading…" is not a capture of the screen).
+  await page.waitForTimeout(1500)
+  while (Date.now() - t0 < 45_000) {
+    const loading = await page.evaluate(() => /Loading|Reading what is running/.test(document.querySelector('main')?.innerText || '') || Boolean(document.querySelector('main .cf-skeleton-line, main [aria-busy="true"]'))).catch(() => false)
+    if (!loading && inflight === 0 && Date.now() - lastRequestAt > 2000) break
     await page.waitForTimeout(250)
   }
   return Date.now() - t0
