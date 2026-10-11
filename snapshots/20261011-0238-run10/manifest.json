@@ -1,0 +1,23 @@
+{
+  "captured_at": "2026-10-11T02:38:53.878Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery.png",
+      "route": "layer-2-discovery",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2 Discovery & reading",
+      "settle_ms": 4785,
+      "height": 4902,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery",
+      "diag": {
+        "rows": 50,
+        "tally": "79 shown of 975 · admitting 67 · testing 6 · switched off 0 · no adapter 6",
+        "list_html": "<div class=\"ad-list\"><article class=\"ad-row\" data-adapter-row=\"de2201a1-69ee-40ff-b6aa-0e54e535e6c0\"><div class=\"ad-row-head\"><input type=\"checkbox\" aria-label=\"Tick Adelaide University\" style=\"\"><button type=\"button\" class=\"ad-row-name\" aria-expanded=\"false\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-chevron-right cf-card-chev\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"></path></svg><span><strong>Adelaide University</strong><small class",
+        "alerts": []
+      },
+      "console_errors": []
+    }
+  ]
+}
