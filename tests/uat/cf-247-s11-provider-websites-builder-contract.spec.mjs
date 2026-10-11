@@ -70,5 +70,5 @@ test('v0.19.1: a home page behind a gatekeeper is checked through the scraper wh
   const w = read('supabase/functions/coverage-sweep/index.ts')
   expect(w).toContain('const viaScraper = async (providerId: string, url: string, cc: string)')
   expect(w).toContain('if (!html || [401, 403, 429, 503].includes(h.status)) { const sc = await viaScraper(p.provider_id, u.origin + "/", cc);')
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.19.1"')
+  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.19.2"')
 })

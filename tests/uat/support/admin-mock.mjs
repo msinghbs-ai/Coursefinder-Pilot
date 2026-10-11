@@ -13,7 +13,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     courses_page: F.coursesPage, course_detail: F.courseDetail, scholarships_page: F.scholarshipsPage, scholarship_detail: F.scholarshipDetail,
     // Decision 254 (job system A2): a finished admin task in the Jobs history, opened to its result
     pipeline_filters: { layers: ['L2'], statuses: ['completed', 'failed'], modes: [], countries: [], job_types: ['layer2_task'], failure_classes: [], completion_classes: [] },
-    pipeline_jobs_page: { total: 1, items: [{ id: 'pj-task', job_type: 'layer2_task', domain: 'qualify_adapters', status: 'completed', layer_code: 'L2', run_mode: 'DRY_RUN', created_at: '2026-10-06T00:10:00Z', started_at: '2026-10-06T00:11:00Z', completed_at: '2026-10-06T00:12:00Z', duration_ms: 60000, attempt_count: 1, evidence_count: 0, completion_class: 'completed', failure_class: null, provider_name: null, source_label: null }] },
+    pipeline_jobs_page: { total: 1, items: [{ id: 'pj-task', job_type: 'layer2_task', task_title: 'Qualify 2 adapter(s) in AU-NSW', task_note: '1 with a passing field', task_providers: ['University of Technology Sydney', 'University of New England'], domain: 'qualify_adapters', status: 'completed', layer_code: 'L2', run_mode: 'DRY_RUN', created_at: '2026-10-06T00:10:00Z', started_at: '2026-10-06T00:11:00Z', completed_at: '2026-10-06T00:12:00Z', duration_ms: 60000, attempt_count: 1, evidence_count: 0, completion_class: 'completed', failure_class: null, provider_name: null, source_label: null }] },
     pipeline_job_detail: { job: { id: 'pj-task', job_type: 'layer2_task', domain: 'qualify_adapters', status: 'completed', payload: { admin_job_id: 'job-done', kind: 'qualify_adapters', title: 'Qualify 2 adapter(s) in AU-NSW' }, result: { state: 'done', passing: 1, errors: 0 } }, run_semantics: {}, entity_impact: {}, safe_actions: {}, evidence: [] },
     layer1_operations: F.layer1Operations,
     layer3_queue_status: F.layer3Queue, campuses_page: F.campusesPage, enrichment_operations: F.enrichmentOps, layer2_ops_overview: F.layer2Overview, layer2_parent_runs: F.layer2Parents, layer2_ops_alerts: [], layer2_acquisition_providers: F.environmentRead.layer2_providers,
@@ -42,6 +42,11 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_scholarship_publishing_read: F.scholarshipPublishing,
     admin_scholarship_record_read: F.scholarshipRecord,
     admin_scholarship_layer_read: b => F.scholarshipLayer(b.p_layer),
+    // v2.15.248 (bugs 11/10-5): journey, a university's runs, skip rules
+    admin_scholarship_job_journey: () => F.scholarshipJourney,
+    admin_scholarship_provider_runs: () => [{ ...F.scholarshipJourney, providers: [F.scholarshipJourney.providers[0]] }],
+    admin_scholarship_skip_rules: b => { calls.push({ skipRules: b }); return F.skipRules },
+    admin_scholarship_coverage_provider: { row: { name: 'Charles Darwin University', listed: 0, found: 0, published: 0, missing: 0, watch: true }, can_manage: true, listing_pages: [], listed: [], extra: [] },
     // v2.15.247 (bugs 11/10-4): Scholarships › Coverage with two providers of one name
     admin_scholarship_coverage_read: { scope: 'watch', total: 2, can_manage: true, can_watch: true, auto_publish: { on: false, recent: [] }, totals: { watch: 2, with_listing: 2, suggested: 0, checked: 0, active: 10, published: 4 },
       rows: [{ provider_id: 'vu-1', name: 'Victoria University', code: '00124K', watch: true, state: 'to_check', listing_pages: 1, listed: 11, found: 2, missing: 9, extra: 1, records_published: 1 },

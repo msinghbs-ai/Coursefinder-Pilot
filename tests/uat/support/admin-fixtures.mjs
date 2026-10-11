@@ -702,3 +702,24 @@ export function adapterDetail(id) {
     tasks: [{ id: 'job-done', kind: 'qualify_adapters', state: 'done', title: 'Qualify 124 adapter(s) in AU', created_at: '2026-10-06T01:00:00Z', finished_at: '2026-10-06T02:00:00Z' }],
     log: [{ at: '2026-10-05T07:00:00Z', area: 'toolsets', action: 'uni_adapter_admit', detail: { fields: ['english', 'fee', 'intakes'], reason: 'night run' }, by: 'admin@example.org' }] }
 }
+
+// v2.15.248 (bugs 11/10-5): the journey of a Find scholarships task (public.admin_scholarship_job_journey)
+export const scholarshipJourney = { job: { id: 'job-sch', kind: 'scholarship_provider_scan', title: 'Find scholarships now: 2 providers', state: 'done', reason: 'Started from Scholarships › Coverage', requested_by: 'admin@example.test', created_at: '2026-10-11T09:31:42Z', started_at: '2026-10-11T09:32:00Z', finished_at: '2026-10-11T09:36:00Z', credits: 43 },
+  auto_publish: true, next_publish_at: '2026-10-11T10:29:00Z', eta_minutes: null, left: 0,
+  providers: [
+    { provider_id: 'cdu', name: 'Charles Darwin University', code: '00300K',
+      found: { candidates: 2, by: { 'site search': 2 }, site_map: { outcome: 'mapped', method: 'map_search(4795)', note: ['128 page(s) kept of 4795 address(es)'] }, listing: null },
+      read: { candidates: 2, known_pages: 1, credits: 19 }, decided: { became: 0, refused: 1, too_thin: 0, skipped: 1, waiting: 0, already_held: 0, not_read: 0 },
+      reasons: [{ reason: 'For domestic students only', n: 1 }, { reason: 'Skipped: Course page', n: 1 }], records: { new: 0, updated: 0, unchanged: 1 },
+      publish: { published: 0, next_publish: [], blocked: [{ id: 'aas', name: 'Australia Award Scholarships', held: false, missing: ['not for international students'], status: 'withdrawn' }], failing: [] },
+      items: [
+        { kind: 'candidate', url: 'https://www.cdu.edu.au/study/redirect/scholarship-finder', title: 'Scholarship Finder', found_via: 'site search', outcome: 'refused', reasons: ['For domestic students only'], evidence_id: 'ev-1', stored: true, at: '2026-10-11T09:33:00Z' },
+        { kind: 'candidate', url: 'https://www.cdu.edu.au/study/course/zscv020', title: 'ZSCV020 Microsoft Excel Intermediate', found_via: 'site search', outcome: 'skipped', reasons: ['Skipped: Course page'], stored: false, at: '2026-10-11T09:33:00Z' },
+        { kind: 'page', url: 'https://www.cdu.edu.au/aas', title: 'Australia Award Scholarships', found_via: 'known scholarship page', outcome: 'unchanged', reasons: [], evidence_id: 'ev-2', stored: true, scholarship_id: 'aas', at: '2026-10-11T09:34:00Z' }] },
+    { provider_id: 'acu', name: 'Australian Catholic University', code: '00004G',
+      found: { candidates: 1, by: { 'site map': 1 }, site_map: { outcome: 'mapped', method: 'map_search(61)', note: ['60 page(s) kept of 61 address(es)'] }, listing: null },
+      read: { candidates: 1, known_pages: 0, credits: 10 }, decided: { became: 1, refused: 0, too_thin: 0, skipped: 0, waiting: 0, already_held: 0, not_read: 0 },
+      reasons: [], records: { new: 1, updated: 0, unchanged: 0 },
+      publish: { published: 0, next_publish: [{ id: 'acu-new', name: 'ACU International Excellence Scholarship' }], blocked: [], failing: [] },
+      items: [{ kind: 'candidate', url: 'https://www.acu.edu.au/excellence', title: 'ACU International Excellence Scholarship', found_via: 'site map', outcome: 'became_scholarship', reasons: [], evidence_id: 'ev-3', stored: true, scholarship_id: 'acu-new', at: '2026-10-11T09:35:00Z' }] }] }
+export const skipRules = { can_manage: true, rules: [{ id: 1, pattern: '/study/courses?/', label: 'Course page', active: true, skipped: 27 }] }

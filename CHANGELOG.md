@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.175 — 11 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.248** (Platform Admin bugs 11/10-5, S14). The 4-university Find scholarships now run (Bond, ACU, CDU, EIT) finished with no new scholarship and no way to see why. Feature 2: every site map, listing page, new page and known scholarship page a task finds or reads is recorded with the task (pipeline.admin_job_items). Feature 1: the task and each university's Coverage panel show the journey per university (found, read, decided with plain-English reasons, records, published or what blocks it, next automatic publish time, time left while running), with links to each page's stored copy and each scholarship. Fix 1: Jobs rows name the task and its universities. Fix 2: every candidate page read keeps a stored copy registered as evidence (worker v0.19.2). Fix 3: pages that are never scholarships are skipped by address rules (9 rules; none matches a page held or admitted; 120 earlier refusals would have been skipped). Fix 4: a page that lists scholarships is suggested as the listing page. Fix 5: a scholarship published automatically that now fails a check is held at the next hourly publish. Migration 20261011010200.
+
 ## 0.1.174 — 11 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.247** (Platform Admin bugs 11/10-4, S13). Fix 1: Find scholarships now on Scholarships › Coverage never started: it asked for a reason and returned silently when the reason was short; starting any task now asks only to confirm and the log records the screen it came from (Admit the passing fields, pause and cancel still need a reason). Fix 2: every outcome is shown next to the button (started, already running, or the error), and providers in a running Find scholarships task show Finding… until it finishes. Fix 3: Coverage shows each provider's CRICOS code, so Victoria University (00124K and 02475D) can be told apart. Migration 20261011010100.
