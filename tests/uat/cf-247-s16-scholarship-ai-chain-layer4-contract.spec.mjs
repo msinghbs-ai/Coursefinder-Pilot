@@ -79,3 +79,11 @@ test('worker v0.20.2: an audience quote must itself name international (or domes
   expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.20.2"')
 })
 
+test('confirm admissions: an admission by the first model is confirmed by the next while the setting is on (default on), switchable on Extraction', () => {
+  const s = read('supabase/migrations/20261011010700_cf247_scholarship_ai_confirm_admissions.sql')
+  expect(s).toContain('add column if not exists confirm_admissions boolean not null default true')
+  expect(s).toContain("v_why := 'a second model confirms each admission';")
+  expect(s).toContain("and security.scholarship_ai_next_model_v1(q.model_code) is not null then")
+  expect(read('src/ScholarshipExtraction.jsx')).toContain("act('set_confirm',{on:false,reason:r}")
+})
+

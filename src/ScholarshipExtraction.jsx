@@ -55,6 +55,9 @@ export default function ScholarshipExtraction({onError}){
           ?<ReasonAction label="Switch AI admission off" testid="admission-off" onDo={r=>act('set_admission',{on:false,reason:r},'AI admission is off. Rules decide again.')}/>
           :<ReasonAction label="Switch AI admission on" variant="primary" disabled={!active} testid="admission-on" onDo={r=>act('set_admission',{on:true,reason:r},'AI admission is on. New and re-read pages are decided by the AI answer.')}/>}
         <ReasonAction label="Re-check the watch list with AI" disabled={!active} testid="backfill" onDo={r=>act('backfill',{scope:'watch',reason:r},'Queued. Progress is in Scheduled jobs › Task manager.')}/>
+        {d.settings?.confirm_admissions!==false
+          ?<ReasonAction label="Second model confirms admissions: On" testid="confirm-off" confirm="Switch off" onDo={r=>act('set_confirm',{on:false,reason:r},'The first model now admits on its own answer.')}/>
+          :<ReasonAction label="Second model confirms admissions: Off" testid="confirm-on" confirm="Switch on" onDo={r=>act('set_confirm',{on:true,reason:r},'Each admission by the first model is now confirmed by the next model.')}/>}
         <ReasonAction label="Re-read parked scholarships with AI" disabled={!active} testid="reroute" onDo={r=>act('reroute_parked',{reason:r},'Queued: active scholarships not published, and held ones, are read again by the AI. A hold a person made stays. Progress is in Scheduled jobs › Task manager.')}/>
         <a className="cf-link" href="#layer-4-review?tab=aireview" data-sx-reviews-link>AI could not decide: {fmtNumber(d.reviews_pending||0)}</a>
         {!active&&<small className="sc-sub">Both need an active model.</small>}
