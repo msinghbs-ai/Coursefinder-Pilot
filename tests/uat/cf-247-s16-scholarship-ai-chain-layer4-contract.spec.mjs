@@ -71,3 +71,19 @@ test('mocked browser: Layer 4 › AI could not decide shows both answers; admitt
   const call = page.l3calls.find(c => c.scholarshipAi?.p_action === 'review_decide')
   expect(call.scholarshipAi.p_args).toMatchObject({ review_id: 77, decision: 'admit', extraction_id: 901 })
 })
+
+test('worker v0.20.2: an audience quote must itself name international (or domestic) students', () => {
+  const w = read('supabase/functions/coverage-sweep/index.ts')
+  expect(w).toContain('const INTL_WORDS = /\\b(international|overseas|offshore|student visa|subclass 500|non[- ]?residents?|foreign)\\b/i;')
+  expect(w).toContain('["international", "both"].includes(a?.audience) ? INTL_WORDS.test(String(a?.audience_quote || ""))')
+  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.20.2"')
+})
+
+test('confirm admissions: an admission by the first model is confirmed by the next while the setting is on (default on), switchable on Extraction', () => {
+  const s = read('supabase/migrations/20261011010700_cf247_scholarship_ai_confirm_admissions.sql')
+  expect(s).toContain('add column if not exists confirm_admissions boolean not null default true')
+  expect(s).toContain("v_why := 'a second model confirms each admission';")
+  expect(s).toContain("and security.scholarship_ai_next_model_v1(q.model_code) is not null then")
+  expect(read('src/ScholarshipExtraction.jsx')).toContain("act('set_confirm',{on:false,reason:r}")
+})
+
