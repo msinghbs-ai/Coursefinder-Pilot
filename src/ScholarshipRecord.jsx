@@ -14,6 +14,7 @@ import{ExternalLink,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,EmptyInline,Loading,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
 import{criterionLabel}from'./ScholarshipEligibility'
+import{ScholarshipReadAction}from'./ScholarshipActions'
 
 const AUD={international:'International students',domestic:'Domestic students only',international_and_domestic:'International and domestic students',not_stated:'Not stated on the page'}
 const DURATION={one_off:'One-off payment',first_year:'First year only',annual:'Paid each year',annual_program_duration:'Each year, for the length of the course',program_duration:'For the length of the course',per_semester:'Paid each semester'}
@@ -63,6 +64,7 @@ export default function ScholarshipRecord({id,onError,onChanged}){
     <header className="sr-head">
       <div className="sr-meta"><span>{d.provider||'—'}</span>{d.page&&<a href={d.page} target="_blank" rel="noreferrer">Provider page <ExternalLink size={11}/></a>}</div>
       {!d.can_edit&&<p className="sr-reasons">You can view this scholarship. Curators and above can change it.</p>}
+      {d.evidence&&<ScholarshipReadAction scholarshipId={id} name={d.name}/>}
     </header>
     {rows.map(r=>{const locked=r.locked??Boolean(r.lock&&locks[r.lock]),open=editing===r.k,Ed=r.editor
       return <div className="sr-row" key={r.k} data-sr-row={r.k}>

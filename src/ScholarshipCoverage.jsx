@@ -11,6 +11,7 @@ import{CheckCircle2,ExternalLink,Eye,EyeOff,Plus,RefreshCw,Search,ShieldCheck,X}
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import ScholarshipLayer from'./ScholarshipLayer'
+import{ProviderScholarshipAction,startProviderScans,useCanRunTasks}from'./ScholarshipActions'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const STATE={no_listing:['No listing page','neutral'],waiting:['Reading','info'],to_check:['To check','warning'],changed:['Changed since check','warning'],checked:['Checked','success']}
@@ -21,6 +22,8 @@ const host=u=>{try{return new URL(u).hostname.replace(/^www\./,'')}catch{return 
 
 export default function ScholarshipCoverage({rank=3,onError,navigate}){
   const[scope,setScope]=useState('watch'),[query,setQuery]=useState(''),[q,setQ]=useState(''),[data,setData]=useState(null),[busy,setBusy]=useState(false),[open,setOpen]=useState(null)
+  // v2.15.244: tick providers and find their scholarships now (one task, Operators and above)
+  const canRun=useCanRunTasks(),[picked,setPicked]=useState(new Set()),[starting,setStarting]=useState(false),[note,setNote]=useState('')
   useEffect(()=>{const t=setTimeout(()=>setQ(query.trim()),280);return()=>clearTimeout(t)},[query])
   const load=async()=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_scholarship_coverage_read',{p_scope:scope,p_query:q||null,p_limit:300,p_offset:0});if(error)throw error;setData(d)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   useEffect(()=>{load()},[scope,q])
@@ -43,9 +46,12 @@ export default function ScholarshipCoverage({rank=3,onError,navigate}){
         </div>
         <label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search provider" aria-label="Search provider"/></label>
       </div>
+      {canRun&&<div className="ar-bulk" data-cov-bulk><span>{picked.size?`${fmtNumber(picked.size)} selected`:'Tick providers to find their scholarships now'}</span>{picked.size>0&&<><Button compact variant="primary" disabled={starting||picked.size>50} onClick={async()=>{setStarting(true);setNote('');try{const r=await startProviderScans([...picked],picked.size);if(r){setNote(`Started "${r.title}". Progress is in Scheduled jobs › Task manager.`);setPicked(new Set())}}catch(e){onError?.(e.message||String(e))}finally{setStarting(false)}}}>{starting?'Starting…':`Find scholarships now (${fmtNumber(picked.size)})`}</Button><Button compact onClick={()=>setPicked(new Set())}>Clear</Button>{picked.size>50&&<small className="sc-sub">At most 50 in one task</small>}</>}</div>}
+      {note&&<p role="status" className="sc-note" data-cov-note>{note} <a href="#jobs?tab=tasks">Open Task manager</a></p>}
       {busy&&!data?<Loading label="Loading coverage…"/>:<div className="cf-table-wrap"><table className="cf-table sc-table">
-        <thead><tr><th>Provider</th><th className="num" title="Scholarships named on the provider's listing page">Listed</th><th className="num" title="Listed scholarships we hold a record for">Found</th><th className="num">Published</th><th className="num" title="Listed with no record of ours">Missing</th><th className="num" title="Our records the listing page does not name">Other records</th><th>State</th></tr></thead>
-        <tbody>{rows.length===0?<tr><td colSpan={7}>{busy?'Loading…':'No providers match.'}</td></tr>:rows.map(r=>{const[sl,st]=STATE[r.state]||[r.state,'neutral'];return <tr key={r.provider_id} data-cov-row={r.provider_id} className={open===r.provider_id?'is-selected':''} onClick={()=>setOpen(r.provider_id)} style={{cursor:'pointer'}}>
+        <thead><tr>{canRun&&<th className="ar-check"><input type="checkbox" aria-label="Select all providers shown" checked={rows.length>0&&rows.every(r=>picked.has(r.provider_id))} onChange={e=>setPicked(e.target.checked?new Set(rows.map(r=>r.provider_id)):new Set())}/></th>}<th>Provider</th><th className="num" title="Scholarships named on the provider's listing page">Listed</th><th className="num" title="Listed scholarships we hold a record for">Found</th><th className="num">Published</th><th className="num" title="Listed with no record of ours">Missing</th><th className="num" title="Our records the listing page does not name">Other records</th><th>State</th></tr></thead>
+        <tbody>{rows.length===0?<tr><td colSpan={8}>{busy?'Loading…':'No providers match.'}</td></tr>:rows.map(r=>{const[sl,st]=STATE[r.state]||[r.state,'neutral'];return <tr key={r.provider_id} data-cov-row={r.provider_id} className={open===r.provider_id?'is-selected':''} onClick={()=>setOpen(r.provider_id)} style={{cursor:'pointer'}}>
+          {canRun&&<td className="ar-check" onClick={e=>e.stopPropagation()}><input type="checkbox" aria-label={`Select ${r.name}`} checked={picked.has(r.provider_id)} onChange={()=>setPicked(x=>{const n=new Set(x);n.has(r.provider_id)?n.delete(r.provider_id):n.add(r.provider_id);return n})}/></td>}
           <td><strong>{r.name}</strong>{r.watch&&<span className="sc-dot" title="On the watch list"/>}</td>
           <td className="num">{r.listing_pages?fmtNumber(r.listed):'—'}</td><td className="num">{r.listing_pages?fmtNumber(r.found):'—'}</td>
           <td className="num">{fmtNumber(r.records_published)}</td>
@@ -94,10 +100,11 @@ function ProviderCoverage({providerId,rank,onClose,onError,onChanged}){
     <div className="m-workspace-head"><div><h2>{r.name}</h2><p>{real.length?`${fmtNumber(r.listed)} listed on its page · ${fmtNumber(r.found)} found · ${fmtNumber(r.published)} of those published · ${fmtNumber(r.missing)} missing`:'No listing page yet: add the page that lists its scholarships for international students.'}{r.checked_at?` · Signed off ${fmtDateTime(r.checked_at)}${r.checked_by?` by ${r.checked_by}`:''}`:''}</p></div>
       <div className="sc-actions">
         {canWatch&&<Button compact onClick={()=>act(r.watch?'unwatch':'watch',{})}>{r.watch?<><EyeOff size={14}/>Remove from watch list</>:<><Eye size={14}/>Watch</>}</Button>}
-        {can&&real.length>0&&<Button compact onClick={()=>act('read_now',{})}><RefreshCw size={14}/>Read again now</Button>}
+        {can&&real.length>0&&<Button compact onClick={()=>act('read_now',{})}><RefreshCw size={14}/>Read listing page again</Button>}
         {can&&real.length>0&&<Button compact variant="primary" onClick={()=>act('sign_off',{})}><CheckCircle2 size={14}/>Sign off</Button>}
         <Button compact onClick={onClose} aria-label="Close provider"><X size={14}/></Button>
       </div></div>
+    <ProviderScholarshipAction providerId={providerId} name={r.name}/>
 
     <div className="sc-pages" data-listing-pages>
       {real.map(p=><div key={p.id} className="sc-page"><a href={p.url} target="_blank" rel="noreferrer" className="cf-link">{host(p.url)}{new URL(p.url).pathname} <ExternalLink size={11}/></a>

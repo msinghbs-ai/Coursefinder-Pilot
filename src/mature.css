@@ -480,3 +480,12 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .sr-facts dd{margin:0;display:flex;flex-direction:column;gap:2px}
 .sr-facts q{font-style:italic;color:var(--cf-slate-600);font-size:var(--cf-fs-xs);quotes:"“" "”"}
 @media (max-width:560px){.sr-facts{grid-template-columns:1fr}.sr-facts dt{margin-top:4px}}
+/* v2.15.244 (CF-247): Task manager — running now and on-demand scholarship results */
+.tm-now-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:12px}
+.tm-now-list{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.tm-now-list li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:var(--cf-fs-sm)}
+.tm-now-list li small{grid-column:1/-1;color:var(--cf-slate-600);font-size:var(--cf-fs-xs)}
+.tm-sch{display:flex;flex-direction:column;gap:6px;font-size:var(--cf-fs-sm);margin:8px 0}
+.tm-sch p{margin:0}
+.sa-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0}
+.sa-actions .sl-sub{flex:1 1 220px}
