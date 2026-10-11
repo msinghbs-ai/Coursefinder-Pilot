@@ -14,7 +14,7 @@ import { prismsReferenceRecords, qiltReferenceRecords, xlsxAdapterRecords } from
 import { itemsAdapterRecords, itemsText } from "../_shared/cf247-register-items.ts";
 import * as caRef from "../_shared/cf247-register-ca-ref.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts, scholarshipListing } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.6.3"; // v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
+const SCH_VERSION = "scholarship-sweep-v0.7.2"; // v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
 // Student") includes international students.
 // v0.5.3: "Overseas students are eligible to apply" includes international students.
@@ -54,7 +54,7 @@ const SCH_VERSION = "scholarship-sweep-v0.6.3"; // v0.6.3 (11 Oct 2026): academi
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.17.42"; // v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.18.2"; // v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -285,26 +285,22 @@ Deno.serve(async (req) => {
       } catch { status = "fetch_failed" }
       return { status, http, html, finalUrl };
     };
-    // v0.17.40: scholarship reads go through the scraper first while the setting read_via_scraper is on (any provider, within
-    // the scholarship credit cap). robots.txt is still respected. A direct read is the fallback when the scraper cannot be used
-    // or returns nothing.
-    const schScraper = !!schBudget && Number(schBudget.scraper ?? 1) >= 1;
+    // v0.18.0 (Platform Admin, 11 Oct 2026): every scholarship page is read through the scraper only. University sites are treated
+    // as gatekept: no direct read, no fallback, and robots.txt is not consulted for scholarship pages (Platform Admin decision).
+    // When the scraper cannot be used (credit cap, Firecrawl unavailable) the page waits and is tried again later.
     const readSch = async (url: string, providerId: string | null) => {
-      if (schScraper) {
-        let u: URL | null = null; try { u = new URL(url) } catch { return { status: "fetch_failed", http: null as number | null, html: "", finalUrl: url, via: null as string | null } }
-        if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) return { status: "robots_disallowed", http: null as number | null, html: "", finalUrl: url, via: null as string | null };
-        if (await useFc("sch_scrape", providerId, url, true)) {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
-          const d = r ? await r.json().catch(() => ({})) : {};
-          const code = Number(d?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
-          const html = r?.ok && code !== null && code < 400 ? pageHtml(d) : "";
-          const finalUrl = String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || url);
-          if (html && mainText(html).length >= 300) return { status: "read", http: code, html, finalUrl, via: "firecrawl" as string | null };
-          if (code === 404 || code === 410) return { status: "gone", http: code, html: "", finalUrl, via: "firecrawl" as string | null };
-        }
-      }
-      const pg = await readDirect(url);
-      return { ...pg, via: pg.html ? "direct" as string | null : null };
+      const none = (status: string, http: number | null = null) => ({ status, http, html: "", finalUrl: url, via: null as string | null });
+      try { new URL(url) } catch { return none("fetch_failed") }
+      if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");
+      const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+      const d = r ? await r.json().catch(() => ({})) : {};
+      const code = Number(d?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
+      const html = r?.ok && code !== null && code < 400 ? pageHtml(d) : "";
+      const finalUrl = String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || url);
+      if (html) return { status: mainText(html).length >= 300 ? "read" : "too_thin", http: code, html, finalUrl, via: "firecrawl" as string | null };
+      if (code === 404 || code === 410) return { ...none("gone", code), finalUrl };
+      if (code && [401, 403, 406, 429].includes(code)) return { ...none("blocked", code), finalUrl };
+      return none("scrape_failed", code);
     };
 
     if (mode === "discover") {
@@ -835,33 +831,9 @@ Deno.serve(async (req) => {
       await pool(items, 6, async (it) => {
         // v0.17.40: an item not started in time stays leased and is picked again after the lease (10 minutes)
         if (Date.now() - t0 > BUDGET_MS - 30000) { tally.deferred = (tally.deferred || 0) + 1; return }
-        let status = "fetch_failed", http: number | null = null, via: string | null = null, html = "", finalUrl = it.url;
-        if (schScraper) {
-          const pg = await readSch(it.url, it.provider_id);
-          status = pg.status === "read" ? "read" : pg.status; http = pg.http; via = pg.via; finalUrl = pg.finalUrl || it.url;
-          html = pg.status === "read" || pg.status === "too_thin" ? pg.html : "";
-          if (!["read", "too_thin", "gone", "blocked", "robots_disallowed"].includes(status)) status = "fetch_failed";
-        } else try {
-          const u = new URL(it.url);
-          if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) status = "robots_disallowed";
-          else {
-            try {
-              const r = await fetch(u, { headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(20000) });
-              http = r.status; finalUrl = r.url || it.url;
-              if (r.ok && /html/i.test(r.headers.get("content-type") || "html")) { html = await r.text(); via = "direct" }
-            } catch { http = null }
-            const thin = html && mainText(html).length < 800;
-            if ((!html || thin) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("sch_scrape", it.provider_id, it.url)) {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
-              const d = await r.json().catch(() => ({}));
-              if (r.ok && d?.data?.html) { html = d.data.html; via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
-            }
-            if (html && mainText(html).length >= 300) status = "read";
-            else if (html) status = "too_thin";
-            else if (http === 404 || http === 410) status = "gone";
-            else if (http && [401, 403, 406, 429].includes(http)) status = "blocked";
-          }
-        } catch { status = "fetch_failed" }
+        const pg = await readSch(it.url, it.provider_id);
+        let status = pg.status, http: number | null = pg.http, via: string | null = pg.via, finalUrl = pg.finalUrl || it.url;
+        const html = pg.status === "read" ? pg.html : "";
         let path: string | null = null, sha: string | null = null, facts: unknown = null;
         // v0.4.0: the page must name the scholarship before anything from it is used
         const hd = status === "read" ? pageHeadings(html) : null;
@@ -892,7 +864,7 @@ Deno.serve(async (req) => {
         if (res?.changes?.length) applied.push({ scholarship_id: it.scholarship_id, changes: res.changes });
         tally[status] = (tally[status] || 0) + 1;
       });
-      return j({ ok: true, mode, items: items.length, tally, applied, readVia: schScraper ? "scraper" : "direct", firecrawlRemainingAboveReserve: fcRemaining, scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
+      return j({ ok: true, mode, items: items.length, tally, applied, readVia: "scraper", firecrawlRemainingAboveReserve: fcRemaining, scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
     }
     // 1 Oct 2026 (Decision 204): course-link search runs here, a bounded number at a time, instead of through the
     // database's outbound queue (pg_net), which sends in rounds of 200 and waits for the slowest call. Each result is
@@ -1011,19 +983,11 @@ Deno.serve(async (req) => {
           let site: URL;
           try { site = new URL(/^https?:/i.test(p.website) ? p.website : "https://" + p.website) } catch { await rpc("svc_scholarship_discover_record", { p_provider_id: p.provider_id, p_status: "failed", p_site_origin: null, p_method: "none", p_url_count: 0, p_candidates: [], p_matches: [], p_error: "invalid website" }); return }
           try {
-            try { const r = await fetch(site, { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) }); if (r.url) site = new URL(r.url); await r.body?.cancel() } catch { /* keep */ }
+            // v0.18.0: the site is mapped through the scraper only (its site maps included); no direct fetch of the site or its sitemaps
             const found = new Map<string, { url: string; title?: string; source: string }>();
             const methods: string[] = []; let total = 0;
-            const origins = [site.origin, `https://scholarships.${baseHost(site.hostname)}`, ...(p.hosts || []).map((h) => `https://www.${baseHost(h)}`)].filter((o, i, a) => a.indexOf(o) === i);
-            for (const o of origins) {
-              if (Date.now() > deadline - 20000) break;
-              const sm = await siteMapUrls(o, Math.min(deadline - 15000, Date.now() + (o === site.origin ? 40000 : 12000)), scholarshipPri).catch(() => ({ urls: [] as string[], files: 0 }));
-              if (sm.urls.length) methods.push(`sitemap${o === site.origin ? "" : ":" + new URL(o).hostname}(${sm.files})`);
-              total += sm.urls.length;
-              for (const u of sm.urls) if (keepScholarshipUrl(u, [site.hostname, ...(p.hosts || [])])) found.set(normUrl(u), { url: u, source: "sitemap" });
-            }
-            if (!found.size) {
-              if (await useFc("sch_map", p.provider_id, site.origin)) {
+            {
+              if (await useFc("sch_map", p.provider_id, site.origin, true)) {
                 const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: "scholarship", limit: 5000, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
                 const d = await r.json().catch(() => ({}));
                 if (!r.ok || d?.success === false) methods.push(`map:${r.status}`);
@@ -1035,11 +999,7 @@ Deno.serve(async (req) => {
               } else methods.push("map:budget");
             }
             const cands = [...found.values()].slice(0, 6000);
-            const prov = providerTokens(p.names || []);
-            const matches = (p.held || []).map((h) => ({ h, m: matchScholarshipPage(h.name, cands, prov) })).filter((x) => x.m);
-            // one page for two held scholarships is not a strong match for either
-            const byUrl = new Map<string, number>(); for (const x of matches) byUrl.set(normUrl(x.m!.url), (byUrl.get(normUrl(x.m!.url)) || 0) + 1);
-            const pm = matches.filter((x) => byUrl.get(normUrl(x.m!.url)) === 1).map((x) => ({ scholarship_id: x.h.scholarship_id, url: x.m!.url, basis: x.m!.basis }));
+            const pm: unknown[] = []; // v0.18.0: no matching of register (Study Australia) records; scholarships come from provider pages only
             const rec = await rpc("svc_scholarship_discover_record", { p_provider_id: p.provider_id, p_status: cands.length ? "mapped" : "empty", p_site_origin: site.origin, p_method: methods.join("+") || "none", p_url_count: total, p_candidates: cands, p_matches: pm, p_error: null });
             done.push({ provider_id: p.provider_id, methods, total, kept: rec?.kept, held: (p.held || []).length, matched: rec?.matched });
           } catch (e) {
@@ -1049,50 +1009,17 @@ Deno.serve(async (req) => {
         });
         out.discover = done;
       }
-      if ((phase === "all" || phase === "search") && Date.now() < deadline - 45000) {
-        const items: { scholarship_id: string; name: string; provider_id: string; site: string; hosts?: string[]; names: string[] }[] = await rpc("svc_scholarship_search_next", { p_limit: Math.min(Number(body.search_limit || 4), 20) });
-        const done: unknown[] = [];
-        await pool(items, 4, async (it) => {
-          let host = ""; try { host = (it.hosts || [])[0] || new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
-          const hosts = [host, it.site, ...(it.hosts || [])].filter(Boolean).map((h) => { try { return new URL(/^https?:/i.test(h) ? h : "https://" + h).hostname } catch { return h } });
-          const q = `"${it.name.replace(/"/g, "")}" site:${baseHost(host)}`;
-          if (!host || !(await useFc("sch_search", it.provider_id, q))) { await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: "budget", p_results: [], p_match: {} }); done.push({ scholarship_id: it.scholarship_id, status: "budget" }); return }
-          try {
-            const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: q, limit: 5 }), signal: AbortSignal.timeout(45000) });
-            const d = await r.json().catch(() => ({}));
-            const res = (d?.data?.web || (Array.isArray(d?.data) ? d.data : [])).map((x: any) => ({ url: String(x.url || ""), title: String(x.title || "") })).filter((x: any) => /^https?:/i.test(x.url));
-            const prov = providerTokens(it.names || []);
-            const kept = res.map((x: any) => { let ok = false; try { const u = new URL(x.url); ok = onSite(u.hostname, hosts) && !/\.(pdf|docx?|xlsx?)(\?|$)|\/news|\/events?\//i.test(u.pathname) } catch { /* */ } return { ...x, kept: ok } });
-            const pool2 = kept.filter((x: any) => x.kept);
-            // v0.4.3: only scholarship addresses or scholarship titles (a research-project page can carry the same name)
-            const schPool = pool2.filter((x: any) => keepScholarshipUrl(x.url, hosts) || /scholarship|bursary|award|grant|prize|stipend/i.test(x.title || ""));
-            let m: { url: string; basis: string } | null = matchScholarshipPage(it.name, schPool, prov);
-            if (!m) { const byTitle = schPool.filter((x: any) => nameOnPage(it.name, [x.title], prov).ok && keepScholarshipUrl(x.url, hosts)); if (byTitle.length === 1) m = { url: byTitle[0].url, basis: "search_title" } }
-            const rec = await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: r.ok ? (m ? "matched" : "no_match") : `http_${r.status}`, p_results: kept, p_match: m || {} });
-            done.push({ scholarship_id: it.scholarship_id, results: res.length, match: m, matched: rec?.matched ?? false });
-          } catch (e) {
-            await rpc("svc_scholarship_search_record", { p_scholarship_id: it.scholarship_id, p_query: q, p_status: "failed", p_results: [], p_match: {} });
-            done.push({ scholarship_id: it.scholarship_id, status: "failed", error: e instanceof Error ? e.message : String(e) });
-          }
-        });
-        out.search = done;
-      }
+      // v0.18.0: the web search for register (Study Australia) records without a provider page is retired
       if ((phase === "all" || phase === "candidates") && Date.now() < deadline - 30000) {
         const items: { candidate_id: number; url: string; provider_id: string; site: string; currency?: string; hosts?: string[] }[] = await rpc("svc_scholarship_candidate_next", { p_limit: Math.min(Number(body.read_limit || 30), 60) });
         const tally: Record<string, number> = {}; const admitted: unknown[] = [];
         await pool(items, 6, async (it) => {
           if (Date.now() > deadline) { await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_final_url: null, p_storage_path: null, p_sha256: null, p_facts: null }); return }
-          const pg = await readDirect(it.url);
-          let via = pg.status === "read" ? "direct" : null;
-          // many university sites refuse direct reads (403); Firecrawl then, inside the scholarship cap, keeping a
-          // the reserve (Layer 2 setting) is kept for step 1 (provider pages of held scholarships)
-          if (["blocked", "fetch_failed", "too_thin"].includes(pg.status) && schLeft > schReserve && await useFc("sch_scrape", it.provider_id, it.url)) {
-            try {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: it.url, formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
-              const d = await r.json().catch(() => ({}));
-              if (r.ok && d?.data?.html && mainText(d.data.html).length >= 300) { pg.html = d.data.html; pg.status = "read"; pg.http = d.data?.metadata?.statusCode ?? 200; pg.finalUrl = d.data?.metadata?.sourceURL || it.url; via = "firecrawl" }
-            } catch { /* keep the direct result */ }
-          }
+          // v0.18.0: candidates are read through the scraper only (Platform Admin, 11 Oct 2026)
+          const pg = await readSch(it.url, it.provider_id);
+          const via = pg.via;
+          // no scraper credit or service right now: back to the queue unchanged, tried again next run
+          if (pg.status === "waiting_scraper") { await rpc("svc_scholarship_candidate_record", { p_candidate_id: it.candidate_id, p_read_status: "deferred", p_http_status: null, p_fetched_via: null, p_final_url: null, p_storage_path: null, p_sha256: null, p_facts: null }); tally.waiting_scraper = (tally.waiting_scraper || 0) + 1; return }
           let facts: Record<string, unknown> | null = null, path: string | null = null, sha: string | null = null;
           if (pg.status === "read") {
             let host = ""; try { host = new URL(/^https?:/i.test(it.site) ? it.site : "https://" + it.site).hostname } catch { /* */ }
@@ -1127,7 +1054,7 @@ Deno.serve(async (req) => {
         await rpc("svc_scholarship_listing_record", { p_id: r.id, p_status: pg.status === "read" ? "read" : "failed", p_http_status: pg.http, p_items: items, p_error: pg.status === "read" ? null : pg.status });
         out.push({ id: r.id, status: pg.status, items: items.length });
       });
-      return j({ ok: true, mode, pages: out, readVia: schScraper ? "scraper" : "direct", scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
+      return j({ ok: true, mode, pages: out, readVia: "scraper", scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER, scholarshipExtractor: SCH_VERSION });
     }
     if (mode === "scholarship_reextract") {
       const rows: { scholarship_id: string; storage_path: string }[] = await rpc("svc_scholarship_reextract_next", { p_limit: Math.min(Number(body.limit || 100), 300), p_version: SCH_VERSION });
@@ -1153,7 +1080,7 @@ Deno.serve(async (req) => {
       await pool(rows, 4, async (r) => {
         try {
           let html = "";
-          if (r.live) { const pg = await readDirect(r.url); html = pg.html; r.status = pg.status; r.url = pg.finalUrl }
+          if (r.live) { const pg = await readSch(r.url, null); html = pg.html; r.status = pg.status; r.url = pg.finalUrl }
           else if (r.storage_path) { const { data, error } = await c.storage.from("evidence").download(r.storage_path); if (error || !data) throw Error(error?.message || "missing"); html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() }
           if (!html) { out.push({ ...r, error: "no page" }); return }
           const hd = pageHeadings(html), text = mainText(html);
@@ -1163,7 +1090,7 @@ Deno.serve(async (req) => {
             admission: admissionCheck(html, r.url, host), facts: scholarshipFacts(html, titleOf(html) + " " + h1Of(html), r.name || ""), text: text.slice(0, chars) });
         } catch (e) { out.push({ ...r, error: e instanceof Error ? e.message : String(e) }) }
       });
-      return j({ ok: true, mode, pages: out, readVia: schScraper ? "scraper" : "direct", scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
+      return j({ ok: true, mode, pages: out, readVia: "scraper", scholarshipFirecrawlLeft: schLeft, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
     // v0.10.0 (2 Oct 2026, map-first link matcher): for a course with no verified page, one pinned model picks the
     // course's own page from the 25 closest addresses in its university's stored site map, or none. The choice must be

@@ -22,7 +22,6 @@ import ProviderLogo,{ProviderBrand}from'./ProviderLogo'
 import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
-import SourceComparison from'./SourceComparison'
 import{DomainReadiness}from'./data-quality-entry'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
@@ -256,7 +255,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         // v2.15.200 (Decision 254): Adapters is Layer 2's first tab. Overview, Fetch an area and History retired, Source
         // profiles moved to Scrapers & fetchers.
         return <AdaptersWorkspace rank={rank} onError={err}/>
-      case'layer3':return tab==='scholarships'?<ScholarshipLayer layer={3} rank={rank} onError={err}/>:<Layer3Operations tab={tab} rank={rank} onError={onError}/>
+      case'layer3':return <Layer3Operations tab={tab==='scholarships'?'routing':tab} rank={rank} onError={onError}/> // v2.15.243: Layer 3 › Scholarships (AI runs on the retired candidate table) removed
       case'layer4':return tab==='blocks'?<div className="m-page-stack"><PlatformMaturity rank={rank} onError={onError} view="blocks"/></div>:tab==='flags'?<FlaggedValues onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:tab==='sendback'?<div className="m-page-stack"><SendBackToAI onError={err}/></div>:tab==='rules'?<div className="m-page-stack"><FeeRules onError={err}/></div>:tab==='attributes'?<Layer4Attributes/>:tab==='publishing'?<div className="m-page-stack"><ScholarshipPublishing onError={err}/></div>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='priority'?<div className="m-page-stack"><SearchCapCard/><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
@@ -660,7 +659,7 @@ function DetailBody({type,data,navigate,onError,onChanged}){if(!data)return <Emp
     // insights in one closed fold. The raw identifier, evidence, registration, source and history lists are not shown.
     return <div className="m-drawer-body"><ProviderSummary data={data} navigate={navigate}/>{data.id&&<ProviderEditor inline providerId={data.id} onChanged={onChanged} onError={onError}/>}{data.id&&<ProviderRankings providerId={data.id} navigate={navigate}/>}<ProviderMore data={data} type={type} navigate={navigate}/></div>}
   // v2.15.171 (mockup, 3 Oct 2026 23:30): the scholarship drawer is the record panel only — one row per fact with its source
-  if(type==='scholarship'&&data.id)return <div className="m-drawer-body"><ScholarshipRecord id={data.id} onError={onError} onChanged={onChanged}/><details className="sr-compare" data-sr-compare><summary>Compare with the government source (Study Australia)</summary><SourceComparison type="scholarship" id={data.id} navigate={navigate}/></details><Layer4Intervention type={type} data={data}/></div>
+  if(type==='scholarship'&&data.id)return <div className="m-drawer-body"><ScholarshipRecord id={data.id} onError={onError} onChanged={onChanged}/><Layer4Intervention type={type} data={data}/></div> // v2.15.243: no Study Australia comparison (Platform Admin, 11 Oct 2026: country-neutral)
   // v2.15.225: every other record uses the same look — status pills, then fact cards; lists sit in the closed "More" fold
   const hidden=k=>k==='id'||k==='stable_key'||k.endsWith('_id')||k.includes('hash')||k.endsWith('_status')||k==='status'
   const facts=scalars.filter(([k,v])=>!hidden(k)&&v!=null&&v!=='')

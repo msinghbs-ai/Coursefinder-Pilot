@@ -29,7 +29,7 @@ test('worker: an academic-result percentage is not the award value; value text i
   const s = fs.readFileSync('supabase/functions/coverage-sweep/scholarship.ts', 'utf8')
   expect(s).toContain('const pctsIn = (t: string) =>')
   expect(s).toContain('const otherPct = pctsIn(t).filter((v) => v >= 5 && v < 100);')
-  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toContain('const SCH_VERSION = "scholarship-sweep-v0.6.3";')
+  expect(fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')).toMatch(/const SCH_VERSION = "scholarship-sweep-v0\.(?:6\.[3-9]|[7-9]\.\d+)";/)
 })
 
 test('workflow: database migrations applied with the md5 guard, no top-level drops, history checked', () => {

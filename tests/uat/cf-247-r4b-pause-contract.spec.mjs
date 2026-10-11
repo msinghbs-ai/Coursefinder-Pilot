@@ -24,7 +24,7 @@ test('server: every automatic picker skips hidden providers, md5-guarded, nothin
 
 test('worker: contact email must be on the provider\'s own domain; library and similar mailboxes skipped', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toMatch(/coverage-sweep-worker-v0\.17\.(3[5-9]|[4-9][0-9])/)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(?:17\.(3[5-9]|[4-9][0-9])|1[8-9]\.\d+)/)
   expect(w).toContain('(SUF.test(d) && regLabel(d) === regLabel(siteHost))')
   expect(w).not.toContain('d.split(".")[0] === label')
   expect(w).toContain('const NEG2 = /(librar|vethosp|veterinar|hospital|clinic|ethics|philanthrop|partnership|helpdesk|facilit|research)/i;')

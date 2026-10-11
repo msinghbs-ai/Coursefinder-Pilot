@@ -30,7 +30,7 @@ test('server: governed third-party list, verdict helper, refusals and data clean
 
 test('worker: an AU site needs the CRICOS code on its home page, or a deeper page on an address that fits the name', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toMatch(/coverage-sweep-worker-v0\.17\.(3[2-9]|[4-9][0-9])/)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(?:17\.(3[2-9]|[4-9][0-9])|1[8-9]\.\d+)/)
   expect(w).toContain('const ok = found && (home || fits) && !SKIP.test(finalHost);')
   expect(fs.readFileSync('supabase/functions/coverage-sweep/extract.ts', 'utf8')).toContain('const siteNorm = (s: string) =>') // shared file unchanged
 })

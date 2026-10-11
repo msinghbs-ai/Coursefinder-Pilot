@@ -692,7 +692,7 @@ test('international view (page_view) and per-credit fees: guarded, hand values k
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
   expect(ad).toContain('export function withView(')
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toMatch(/coverage-sweep-worker-v0\.17\.(1[1-9]|[2-9]\d)/) // v0.17.11 or later (the version string moves on)
+  expect(ix).toMatch(/coverage-sweep-worker-v0\.(?:17\.(1[1-9]|[2-9]\d)|1[8-9]\.\d+)/) // v0.17.11 or later (the version string moves on)
   expect(ix).toContain('it.rendered_before !== true')
   const r = read('supabase/migrations-archive/20261005001530_cf247_view_reads_and_course_page_rates.sql')
   expect(r).toContain("is distinct from '9bfcb79ff8da7eb53be7432278a2da37'")
@@ -977,7 +977,7 @@ test('v0.17.13 reading options: opt-in numeric and capitalised dates, one academ
   const r2 = mod.applyAdapter({ ...F, reading: {} }, html('Duration 40 weeks Tuition $18,000'), { title: 'x', code: '012345A', country: 'AU' }, 'v').candidates
   expect(r2.fee.value).toBe(23400)
   const ix = read('supabase/functions/coverage-sweep/index.ts')
-  expect(ix).toMatch(/coverage-sweep-worker-v0\.17\.(3[5-9]|[4-9][0-9])/)
+  expect(ix).toMatch(/coverage-sweep-worker-v0\.(?:17\.(3[5-9]|[4-9][0-9])|1[8-9]\.\d+)/)
   const m = read('supabase/migrations-archive/20261006001700_cf247_adapter_reading_options.sql')
   for (const word of ['drop', 'delete from', 'truncate', 'on delete cascade']) expect(m.toLowerCase()).not.toContain(word)
   expect(m).toContain("is distinct from 'cea75cd537f56ab3e03d93c55c1bb74e'")

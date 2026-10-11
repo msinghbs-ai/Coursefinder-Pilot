@@ -160,7 +160,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '^tests/uat/m2-5-pilot-deployment-currentness-deployed\.spec\.mjs$'; then
             targeted=(tests/uat/m2-5-pilot-deployment-currentness-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(provider-contact-discover-scheduled|scholarships-au-etl)/|^supabase/migrations/.*m2_5_evidence_lineage|^tests/uat/m2-5-evidence-lineage-contract\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/(provider-contact-discover-scheduled)/|^supabase/migrations/.*m2_5_evidence_lineage|^tests/uat/m2-5-evidence-lineage-contract\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-evidence-lineage-contract.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_universal_layer4_block|^tests/uat/m2-5-layer4-block-enforcement-contract\.spec\.mjs$)'; then

@@ -3,16 +3,13 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
-test('worker reads scholarship and listing pages through the scraper first, direct as fallback', () => {
+// v2.15.243 (S9): the direct-read fallback and the switch's effect were removed (scraper only); see cf-247-s9.
+test('worker reads scholarship and listing pages through the scraper (rendered page, any provider, within the cap)', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.17.42"')
-  expect(w).toContain('const schScraper = !!schBudget && Number(schBudget.scraper ?? 1) >= 1;')
-  expect(w).toContain('await useFc("sch_scrape", providerId, url, true)') // any provider, within the scholarship cap
+  expect(w).toContain('await useFc("sch_scrape", providerId, url, true)')
   expect(w).toContain('formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500')
-  expect(w).toContain('const pg = await readDirect(url);') // fallback
-  expect(w).toContain('const pg = await readSch(r.url, r.provider_id);') // listing pages
-  expect(w).toContain('const pg = await readSch(it.url, it.provider_id);') // scholarship pages
-  expect(w).toContain('if (!robotsAllows(await robotsFor(u), u.pathname + u.search)) return { status: "robots_disallowed"')
+  expect(w).toContain('const pg = await readSch(r.url, r.provider_id);')
+  expect(w).toContain('const pg = await readSch(it.url, it.provider_id);')
 })
 
 test('setting, budget and immediate re-read; md5-guarded; nothing dropped', () => {
@@ -30,6 +27,6 @@ test('on/off settings are a switch in the UI', () => {
   const ui = fs.readFileSync('src/ScholarshipLayer.jsx', 'utf8')
   expect(ui).toContain("s.unit==='on/off'")
   expect(ui).toContain('role="switch"')
-  expect(ui).toContain("sch_scrape:'Reading scholarship and listing pages'")
+  expect(ui).toContain("sch_scrape:'Reading scholarship, listing and candidate pages'")
   expect(fs.readFileSync('src/mature.css', 'utf8')).toContain('.sl-switch input:checked{background:var(--cf-indigo-600)}')
 })

@@ -22,7 +22,7 @@ test('server: contact tables, service-only worker functions, fill only empty val
 
 test('worker: own-domain email only; CRICOS page must show the provider code', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toMatch(/coverage-sweep-worker-v0\.17\.(3[3-9]|[4-9][0-9])/)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(?:17\.(3[3-9]|[4-9][0-9])|1[8-9]\.\d+)/)
   expect(w).toContain('if (mode === "contact_page") {')
   expect(w).toContain('if (mode === "cricos_peo") {')
   expect(w).toContain('ownEmail(e)')
@@ -39,7 +39,7 @@ test('UI: contact source note and the internal regulatory contact for PIM Operat
 // v2.15.235: contact quality after the first runs
 test('contact quality: no media/security/feedback mailboxes, main contact page first, CRICOS page by code, earlier automated values replaced', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toMatch(/coverage-sweep-worker-v0\.17\.(3[4-9]|[4-9][0-9])/)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(?:17\.(3[4-9]|[4-9][0-9])|1[8-9]\.\d+)/)
   expect(w).toContain('const NEG = /^(media|press|news|security|privacy|feedback')
   expect(w).toContain('https://cricos.education.gov.au/Institution/InstitutionDetails.aspx?ProviderCode=${code}')
   expect(w).not.toContain('peo_search')

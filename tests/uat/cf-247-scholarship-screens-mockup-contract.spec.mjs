@@ -141,7 +141,7 @@ test('migration 20261004000100 shaped: currency, universities, discovery, Layer 
   expect(m).toContain('pipeline.coverage_provider_discovery')
   expect(m).not.toMatch(/set\s+publication_status\s*=\s*'published'/)
   const idx = read('supabase/functions/coverage-sweep/index.ts')
-  expect(idx).toMatch(/scholarship-sweep-v0\.6\.\d/)
+  expect(idx).toMatch(/scholarship-sweep-v0\.[4-9]\.\d/)
   expect(idx).toContain('scholarshipFacts(pg.html, titleOf(pg.html) + " " + h1Of(pg.html), adm.name || "", it.currency || "AUD")')
 })
 

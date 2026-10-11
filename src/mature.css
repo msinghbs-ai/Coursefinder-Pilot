@@ -463,3 +463,20 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .m-col-resize{position:absolute;top:0;right:0;bottom:0;width:7px;cursor:col-resize;touch-action:none;z-index:2}
 .m-col-resize::after{content:'';position:absolute;top:25%;bottom:25%;right:3px;width:1px;background:var(--cf-slate-200)}
 .m-col-resize:hover::after,.m-col-resize:active::after{top:0;bottom:0;width:2px;right:2px;background:var(--cf-indigo-400)}
+/* v2.15.243 (CF-247): scholarship record, Evidence & extraction journey and course-link proofs */
+.sr-proof{color:var(--cf-slate-600);font-size:var(--cf-fs-xs);line-height:1.4;overflow-wrap:anywhere}
+.sr-journey{border-top:1px solid var(--cf-slate-200);padding-top:12px;margin-top:4px}
+.sr-journey>summary{cursor:pointer;font-weight:700;font-size:var(--cf-fs-sm);color:var(--cf-slate-900)}
+.sr-steps{list-style:none;margin:10px 0 0;padding:0 0 0 14px;display:flex;flex-direction:column;gap:12px;border-left:2px solid var(--cf-slate-200)}
+.sr-step{position:relative;display:flex;flex-direction:column;gap:3px;font-size:var(--cf-fs-sm)}
+.sr-step::before{content:"";position:absolute;left:-20px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--cf-slate-300);border:2px solid var(--cf-white)}
+.sr-step.ok::before{background:var(--cf-green-600)}
+.sr-step.warn::before{background:var(--cf-amber-500)}
+.sr-step>b{font-size:var(--cf-fs-xs);text-transform:uppercase;letter-spacing:.04em;color:var(--cf-slate-600)}
+.sr-step>div{display:flex;flex-direction:column;gap:2px;overflow-wrap:anywhere}
+.sr-step small{color:var(--cf-slate-600);font-size:var(--cf-fs-xs)}
+.sr-facts{display:grid;grid-template-columns:minmax(110px,max-content) 1fr;gap:6px 12px;margin:2px 0 0}
+.sr-facts dt{color:var(--cf-slate-600);font-size:var(--cf-fs-xs)}
+.sr-facts dd{margin:0;display:flex;flex-direction:column;gap:2px}
+.sr-facts q{font-style:italic;color:var(--cf-slate-600);font-size:var(--cf-fs-xs);quotes:"“" "”"}
+@media (max-width:560px){.sr-facts{grid-template-columns:1fr}.sr-facts dt{margin-top:4px}}

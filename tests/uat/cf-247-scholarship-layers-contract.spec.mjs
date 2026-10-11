@@ -8,8 +8,10 @@ import { PAGES } from '../../src/nav-map.js'
 
 const read = p => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8')
 
-test('nav: a Scholarships tab on Layers 1, 2 and 3', () => {
-  for (const l of ['layer1', 'layer2', 'layer3']) expect(PAGES[l].tabs.map(t => t.key)).toContain('scholarships')
+// v2.15.243 (Platform Admin, 11 Oct 2026): Layer 3 › Scholarships (AI runs on the retired candidate table) removed
+test('nav: a Scholarships tab on Layers 1 and 2; none on Layer 3', () => {
+  for (const l of ['layer1', 'layer2']) expect(PAGES[l].tabs.map(t => t.key)).toContain('scholarships')
+  expect(PAGES.layer3.tabs.map(t => t.key)).not.toContain('scholarships')
 })
 
 test('migration 20261004000300 shaped: settings read by the jobs, roles, reference sites, Platform Admin writes', () => {
@@ -25,22 +27,15 @@ test('migration 20261004000300 shaped: settings read by the jobs, roles, referen
   expect(m).not.toMatch(/set\s+publication_status/)
 })
 
-test('browser: Layer 1 Scholarships — countries, sources by use, add a source', async ({ page }) => {
+// v2.15.243 (Platform Admin, 11 Oct 2026): scholarships come only from providers' own pages; the national register and
+// reference sources (Study Australia and others) are no longer listed or added on Layer 1
+test('browser: Layer 1 Scholarships — countries only, no register sources', async ({ page }) => {
   await mockAdmin(page)
-  page.on('dialog', d => d.accept('Checked with the Platform Admin'))
   await page.goto('/#layer-1-register?tab=scholarships')
   const c = page.locator('[data-sl-countries]')
   await expect(c.locator('[data-sl-country="NZ"]')).toContainText('NZD')
-  const src = page.locator('[data-sl-sources]')
-  await expect(src.locator('[data-sl-source="Study Australia Scholarship Search"]')).toContainText('Every 7 days')
-  await expect(src.locator('[data-sl-source="IEFA"]')).toContainText('Not read automatically')
-  const add = page.locator('[data-sl-add]')
-  await add.getByLabel('Name').fill('Study with New Zealand scholarships')
-  await add.getByLabel('Address').fill('https://www.studywithnewzealand.govt.nz/en/study-options/scholarships')
-  await add.getByLabel('Country').selectOption('NZ')
-  await add.getByLabel('Used as').selectOption('reference')
-  await add.getByRole('button', { name: 'Register' }).click()
-  await expect.poll(() => page.l3calls.find(x => x.p_action === 'source_add')?.p_args).toMatchObject({ country: 'NZ', role: 'reference', reason: expect.stringMatching(/^Changed on screen: Register/) }) // v2.15.240: no reason prompt
+  await expect(page.locator('[data-sl-sources]')).toHaveCount(0)
+  await expect(page.locator('[data-sl-add]')).toHaveCount(0)
 })
 
 test('browser: Layer 2 Scholarships — outcomes by country, settings change and job pause', async ({ page }) => {
@@ -60,11 +55,10 @@ test('browser: Layer 2 Scholarships — outcomes by country, settings change and
   await expect.poll(() => page.l3calls.find(x => x.p_action === 'job')?.p_args).toMatchObject({ jobname: 'scholarship-discover', active: false })
 })
 
-test('browser: Layer 3 Scholarships — AI off until a model passes; Layer 4 jobs under publishing', async ({ page }) => {
+test('browser: Layer 3 has no scholarship AI screen; Layer 4 jobs under publishing', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#layer-3-ai?tab=scholarships')
-  await expect(page.locator('[data-sl-ai-state]')).toContainText('no model has passed its benchmark yet')
-  await expect(page.locator('[data-sl-ai-country="AU"]')).toContainText('Off')
+  await expect(page.locator('[data-sl-ai-state]')).toHaveCount(0)
   await page.goto('/#layer-4-review?tab=publishing')
   await expect(page.locator('[data-scholarship-layer="4"] [data-sl-job="scholarship-publication-review"]')).toContainText(/Daily at \d{1,2}:17 ?[ap]m Melbourne time/)
 })
@@ -81,5 +75,5 @@ test('Firecrawl cap and reserve: Layer 2 settings the worker reads; none left in
   await page.goto('/#layer-2-discovery?tab=scholarships')
   const c = page.locator('[data-sl-credits]')
   await expect(c).toContainText('304 left of 3,000')
-  await expect(c.locator('[data-sl-credit-state]')).toContainText('Below the reserve')
+  await expect(c.locator('[data-sl-credit-state]')).toContainText('Close to the cap') // v2.15.243: scraper only, pages wait at the cap
 })

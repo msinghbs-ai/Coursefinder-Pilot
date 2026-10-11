@@ -12,10 +12,10 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
   })
 
   test('classifies raw lineage separately and removes only just-uploaded duplicates',async()=>{
-    const [migration,contacts,scholarships]=await Promise.all([
+    // 11 Oct 2026: scholarships-au-etl (national scholarship registers) retired; its source is no longer in the repository
+    const [migration,contacts]=await Promise.all([
       fs.readFile('supabase/migrations-archive/20260901195000_m2_5_evidence_lineage_classification.sql','utf8'),
       fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8'),
-      fs.readFile('supabase/functions/scholarships-au-etl/index.ts','utf8'),
     ])
 
     expect(migration).toContain("'unlinked_storage_object_count_raw',v_unlinked_raw")
@@ -36,12 +36,6 @@ test.describe('M2.5 Evidence lineage classification and duplicate prevention con
 
     expect(contacts).toMatch(/provider-contact-discover-scheduled-v1\.3\.\d+/)
 
-    expect(scholarships).toContain('scholarships-au-etl-v0.3.1')
-    expect(scholarships).toContain('cleanupDuplicateRegisteredObject')
-    expect(scholarships).toContain('.select("storage_path").eq("id",evidenceId).single()')
-    expect(scholarships).toContain('if(error||!data?.storage_path||data.storage_path===path)return')
-    expect(scholarships).toContain('.storage.from("evidence").remove([path])')
-    expect(scholarships).toContain('console.warn("CF-055 duplicate Scholarship cleanup failed"')
 
     // Existing acquisition worker remains the accepted reference implementation.
   })
