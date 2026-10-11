@@ -361,5 +361,12 @@ export function domainFitsName(host: string, normName: string) {
   const sig = words.filter((w) => !["of", "and", "the", "at", "for", "in"].includes(w))
   const initials = sig.map((w) => w[0]).join(""), allInitials = words.map((w) => w[0]).join("")
   if (label === initials || label === allInitials || label === initials + "u") return true
-  return words.some((w) => w.length >= 4 && !GENERIC.has(w) && label.includes(w))
+  if (!words.some((w) => w.length >= 4 && !GENERIC.has(w) && label.includes(w))) return false
+  // v0.19.0 (11 Oct 2026): the address must not carry another distinctive name. Once the provider's own words, their initials and
+  // generic words are taken out, at most 3 letters may be left (conestogac.on.ca passes; guelphhumber.ca is not Humber College's).
+  let rest = label
+  for (const w of [...words].sort((x, y) => y.length - x.length)) if (w.length >= 3) rest = rest.split(w).join("")
+  for (const g of ["college", "university", "institute", "school", "academy", "polytechnic", "poly", "tech", "uni", "edu", "inst", "online", "international", "intl", "global"]) rest = rest.split(g).join("")
+  rest = rest.replace(initials, "")
+  return rest.length <= 3
 }
