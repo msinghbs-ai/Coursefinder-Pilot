@@ -60,11 +60,11 @@ Then, for a scholarship, extract each fact with a short exact quote copied from 
 Answer only with the JSON object in the required format.', true, 'v1 (11 Oct 2026, Platform Admin bugs 11/10-6): AI reads every scholarship page; quotes prove each fact'
  where not exists (select 1 from pipeline.scholarship_ai_prompts);
 
-create table if not exists pipeline.scholarship_ai_settings (
+create table if not exists pipeline.scholarship_ai_extract_settings (
   id int primary key default 1 check (id = 1), ai_admission boolean not null default false, backfill_providers_per_night int not null default 25,
   pages_per_call int not null default 8, calls_at_once int not null default 3, changed_by uuid, changed_at timestamptz, reason text);
-alter table pipeline.scholarship_ai_settings enable row level security;
-insert into pipeline.scholarship_ai_settings(id) values (1) on conflict (id) do nothing;
+alter table pipeline.scholarship_ai_extract_settings enable row level security;
+insert into pipeline.scholarship_ai_extract_settings(id) values (1) on conflict (id) do nothing;
 
 create table if not exists pipeline.scholarship_ai_sample (
   id serial primary key, url text not null, candidate_id bigint, scholarship_id uuid, provider_id uuid, expected jsonb not null,
@@ -101,7 +101,7 @@ create or replace function security.scholarship_ai_active_v1()
 returns table(model_code text, model_identifier text, prompt_version int, ai_admission boolean)
 language sql stable security definer set search_path to '' as $f$
   select m.code, m.model_identifier, (select p.version from pipeline.scholarship_ai_prompts p where p.active order by p.version desc limit 1), s.ai_admission
-    from pipeline.scholarship_ai_settings s left join pipeline.scholarship_ai_models m on m.status = 'active' where s.id = 1
+    from pipeline.scholarship_ai_extract_settings s left join pipeline.scholarship_ai_models m on m.status = 'active' where s.id = 1
 $f$;
 
 -- Queue AI reading for providers: refused or unread candidate pages, and known scholarship pages
@@ -137,7 +137,7 @@ create or replace function security.scholarship_ai_fire_v1()
 returns integer language plpgsql security definer set search_path to '' as $f$
 declare v_open int; v_max int; v_due int; v_sent int := 0;
 begin
-  select calls_at_once into v_max from pipeline.scholarship_ai_settings where id = 1;
+  select calls_at_once into v_max from pipeline.scholarship_ai_extract_settings where id = 1;
   select count(*) into v_due from pipeline.scholarship_ai_queue q where (q.state = 'queued' and q.next_try_at <= now()) or (q.state = 'leased' and q.leased_until < now());
   if v_due = 0 then return 0; end if;
   select count(*) into v_open from pipeline.edge_request_log l where l.function_name = 'coverage-sweep' and l.mode = 'scholarship_ai' and l.created_at > now() - interval '3 minutes'
@@ -287,7 +287,7 @@ begin
   returning id into v_id;
   update pipeline.scholarship_ai_queue set state = case when p_error is null or attempts >= 3 then 'done' else 'queued' end, done_at = case when p_error is null or attempts >= 3 then now() end,
          leased_until = null, next_try_at = now() + interval '10 minutes', extraction_id = v_id where id = q.id;
-  select ai_admission into v_on from pipeline.scholarship_ai_settings where id = 1;
+  select ai_admission into v_on from pipeline.scholarship_ai_extract_settings where id = 1;
   if p_error is null and v_on and q.run_kind in ('admit', 'reread') then r := security.scholarship_ai_apply_v1(v_id); end if;
   return jsonb_build_object('ok', true, 'extraction', v_id, 'applied', r);
 end $f$;
@@ -333,7 +333,7 @@ begin
       update pipeline.scholarship_ai_prompts set active = false where active;
       insert into pipeline.scholarship_ai_prompts(text, active, reason, created_by) values (p_args->>'text', true, v_reason, auth.uid());
       -- new instructions: the active model must be qualified again before it admits anything
-      if a.ai_admission then update pipeline.scholarship_ai_settings set ai_admission = false, changed_by = auth.uid(), changed_at = now(), reason = 'instructions changed: qualify again before switching on' where id = 1; end if;
+      if a.ai_admission then update pipeline.scholarship_ai_extract_settings set ai_admission = false, changed_by = auth.uid(), changed_at = now(), reason = 'instructions changed: qualify again before switching on' where id = 1; end if;
     elsif p_action = 'label' then
       if v_rank < 6 then raise exception 'Platform Admin required'; end if;
       if p_args ? 'sample_id' then
@@ -362,7 +362,7 @@ begin
       update pipeline.scholarship_ai_models set status = 'active', activated_at = now(), activated_by = auth.uid(), reason = v_reason where code = p_args->>'model_code';
     elsif p_action = 'set_admission' then
       if coalesce((p_args->>'on')::boolean, false) and a.model_code is null then raise exception 'make a qualified model active first'; end if;
-      update pipeline.scholarship_ai_settings set ai_admission = coalesce((p_args->>'on')::boolean, false), changed_by = auth.uid(), changed_at = now(), reason = v_reason where id = 1;
+      update pipeline.scholarship_ai_extract_settings set ai_admission = coalesce((p_args->>'on')::boolean, false), changed_by = auth.uid(), changed_at = now(), reason = v_reason where id = 1;
     elsif p_action = 'backfill' then
       if a.model_code is null then raise exception 'make a qualified model active first'; end if;
       v_ids := case when p_args->>'scope' = 'watch' then array(select w.provider_id from pipeline.scholarship_watch w where w.active)
@@ -387,7 +387,7 @@ begin
   end if;
   return jsonb_build_object(
     'can_manage', v_rank >= 6, 'ai_admission', a.ai_admission, 'active_model', a.model_code, 'prompt_version', a.prompt_version,
-    'settings', (select to_jsonb(s) - 'id' from pipeline.scholarship_ai_settings s where s.id = 1),
+    'settings', (select to_jsonb(s) - 'id' from pipeline.scholarship_ai_extract_settings s where s.id = 1),
     'models', (select jsonb_agg(to_jsonb(m) - 'activated_by' order by m.sort) from pipeline.scholarship_ai_models m),
     'prompts', (select jsonb_agg(jsonb_build_object('version', p.version, 'active', p.active, 'reason', p.reason, 'at', p.created_at, 'text', case when p.active then p.text end) order by p.version desc) from pipeline.scholarship_ai_prompts p),
     'scores', security.scholarship_ai_scores_v1(a.prompt_version),
@@ -414,7 +414,7 @@ declare a record; v_ids uuid[]; v_n int; v_per int;
 begin
   select * into a from security.scholarship_ai_active_v1();
   if not coalesce(a.ai_admission, false) or a.model_code is null then return jsonb_build_object('skipped', 'AI admission is off'); end if;
-  select backfill_providers_per_night into v_per from pipeline.scholarship_ai_settings where id = 1;
+  select backfill_providers_per_night into v_per from pipeline.scholarship_ai_extract_settings where id = 1;
   v_ids := array(select c.provider_id from pipeline.scholarship_page_candidates c
                   where c.admit_status = 'rejected' and c.source <> 'register'
                     and not exists (select 1 from pipeline.scholarship_ai_extractions e where e.candidate_id = c.id and e.model_code = a.model_code and e.prompt_version = a.prompt_version)
@@ -670,7 +670,7 @@ CREATE OR REPLACE FUNCTION public.svc_scholarship_read_record(p_scholarship_id u
  SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'scholarship', 'pipeline', 'security'
 AS $function$
-declare v_ev uuid; v_src uuid; v_pid uuid; v_url text; r jsonb; v_ai boolean := coalesce((select s.ai_admission from pipeline.scholarship_ai_settings s where s.id=1),false) and exists (select 1 from pipeline.scholarship_ai_models m where m.status='active');
+declare v_ev uuid; v_src uuid; v_pid uuid; v_url text; r jsonb; v_ai boolean := coalesce((select s.ai_admission from pipeline.scholarship_ai_extract_settings s where s.id=1),false) and exists (select 1 from pipeline.scholarship_ai_models m where m.status='active');
 begin
   if current_user<>'postgres' and coalesce(auth.role(),'')<>'service_role' then raise exception 'service_role required'; end if;
   select s.provider_id, p.url into v_pid, v_url from scholarship.scholarships s join pipeline.scholarship_pages p on p.scholarship_id=s.id where s.id=p_scholarship_id;
@@ -726,7 +726,7 @@ CREATE OR REPLACE FUNCTION public.svc_scholarship_candidate_record(p_candidate_i
  SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'pipeline', 'security'
 AS $function$
-declare r jsonb; c pipeline.scholarship_page_candidates%rowtype; v_ev uuid; v_ai boolean := coalesce((select s.ai_admission from pipeline.scholarship_ai_settings s where s.id=1),false) and exists (select 1 from pipeline.scholarship_ai_models m where m.status='active');
+declare r jsonb; c pipeline.scholarship_page_candidates%rowtype; v_ev uuid; v_ai boolean := coalesce((select s.ai_admission from pipeline.scholarship_ai_extract_settings s where s.id=1),false) and exists (select 1 from pipeline.scholarship_ai_models m where m.status='active');
 begin
   if current_user<>'postgres' and coalesce(auth.role(),'')<>'service_role' then raise exception 'service_role required'; end if;
   if p_read_status='deferred' then -- out of time in this run: back to the queue unchanged
@@ -850,7 +850,7 @@ begin
        and (c.read_status is null or c.read_status in ('blocked', 'fetch_failed', 'too_thin', 'not_html', 'robots_disallowed', 'scrape_failed', 'waiting_scraper', 'deferred'));
     get diagnostics v_cands = row_count;
     -- v2.15.249 (bugs 11/10-6): with AI admission on, refused pages of the chosen providers are read again by the AI
-    if exists (select 1 from pipeline.scholarship_ai_settings s where s.id = 1 and s.ai_admission) then v_cands := v_cands + security.scholarship_ai_enqueue_v1('admit', v_prov, null, false); end if;
+    if exists (select 1 from pipeline.scholarship_ai_extract_settings s where s.id = 1 and s.ai_admission) then v_cands := v_cands + security.scholarship_ai_enqueue_v1('admit', v_prov, null, false); end if;
   end if;
   update pipeline.scholarship_pages p set requested_at = now(), next_read_at = now(), attempts = 0, leased_until = null
     from scholarship.scholarships s
@@ -1133,7 +1133,7 @@ select coalesce(c.final_url, c.url), c.id, c.provider_id, jsonb_build_object('is
 on conflict (url) do nothing;
 
 do $post$
-declare v_expected jsonb := '{"security.admin_job_slice_v1(uuid,integer)": "07273bfdec334c015ac67c27ffaf72ac", "security.admin_job_watch_v1(uuid)": "33f0a68bffa354b09fc6d3576b088846", "public.svc_scholarship_read_record(uuid,text,integer,text,text,text,text,jsonb)": "11538dcba17d0c66943194ba9b490589", "public.svc_scholarship_candidate_record(bigint,text,integer,text,text,text,text,jsonb)": "f26d5fd830b74d21dd172a65715fe139", "security.scholarship_audience_read_v1()": "0251fe1ac6594affc3166631516010e9", "security.scholarship_task_prepare_v1(text,jsonb)": "afef1848cfb8fde120b2b07a5d44cc97", "security.scholarship_listing_match_v1(uuid)": "2725ab7c6bde402d50083dbe9fbec90a", "public.admin_jobs(text,jsonb)": "e5c8f8447e33aacc176abc3a72a38e8a"}'::jsonb;
+declare v_expected jsonb := '{"security.admin_job_slice_v1(uuid,integer)": "07273bfdec334c015ac67c27ffaf72ac", "security.admin_job_watch_v1(uuid)": "33f0a68bffa354b09fc6d3576b088846", "public.svc_scholarship_read_record(uuid,text,integer,text,text,text,text,jsonb)": "a3a99cb0a27e4014ab6c8af19e5abb0f", "public.svc_scholarship_candidate_record(bigint,text,integer,text,text,text,text,jsonb)": "4f685ff54a3806408e75c4eb71ef260f", "security.scholarship_audience_read_v1()": "0251fe1ac6594affc3166631516010e9", "security.scholarship_task_prepare_v1(text,jsonb)": "2eef56d21f36a593fe20ed23e76094e1", "security.scholarship_listing_match_v1(uuid)": "2725ab7c6bde402d50083dbe9fbec90a", "public.admin_jobs(text,jsonb)": "e5c8f8447e33aacc176abc3a72a38e8a"}'::jsonb;
   v_sig text;
 begin
   for v_sig in select jsonb_object_keys(v_expected) loop
