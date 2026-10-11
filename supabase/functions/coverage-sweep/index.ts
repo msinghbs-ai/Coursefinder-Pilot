@@ -15,7 +15,7 @@ import { prismsReferenceRecords, qiltReferenceRecords, xlsxAdapterRecords } from
 import { itemsAdapterRecords, itemsText } from "../_shared/cf247-register-items.ts";
 import * as caRef from "../_shared/cf247-register-ca-ref.ts";
 import { admissionCheck, awardScope, baseHost, keepScholarshipUrl, onSite, mainText, matchScholarshipPage, nameOnPage, normUrl, pageHeadings, providerTokens, scholarshipCriteria, scholarshipFacts, scholarshipListing } from "./scholarship.ts";
-const SCH_VERSION = "scholarship-sweep-v0.7.2"; // v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
+const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform Admin bugs 11/10-6): a "while places last" condition is not an ended scholarship; an amount the student pays (deposit, bond, fee) is never the award and a "valued at" amount counts; courses listed after "one of the following courses" are read. v0.7.2 (11 Oct 2026): course titles end at bullets (•, ⦁) and at the next capitalised word or sentence. v0.7.1 (11 Oct 2026): courses named after "excluding" are exclusions; course titles keep their bracketed specialisation; numeric dates read in the provider country's day/month order; date proofs start at their label. v0.7.0 (11 Oct 2026): application open and close dates (with rounds), study start, courses the page names, and the sentence behind each level and field. v0.6.3 (11 Oct 2026): academic-result percentages (CWA, WAM, ATAR) are not award values; the value text is a whole sentence. v0.6.2: Firecrawl cap and reserve read from Layer 2 settings; v0.6.1: // v0.6.1: numeric character references in titles decoded; // v0.6.0 (Decision 250): amounts in the provider country's currency; NZ and Canadian domestic wording
 // v0.5.4 (2 Oct 2026, Decision 212 check): a listed value ("Residency Australian Citizen, New Zealand Citizen, International
 // Student") includes international students.
 // v0.5.3: "Overseas students are eligible to apply" includes international students.
@@ -55,7 +55,7 @@ const SCH_VERSION = "scholarship-sweep-v0.7.2"; // v0.7.2 (11 Oct 2026): course 
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.19.2"; // v0.19.2 (11 Oct 2026, Platform Admin bugs 11/10-5): every scholarship candidate page read keeps a stored copy, refused and too-thin pages too. v0.19.1 (11 Oct 2026): a provider home page that refuses a direct read is checked through the scraper when its website is verified. v0.19.0 (11 Oct 2026, Platform Admin bugs 11/10-2): find_site searches every provider without a website (not only Firecrawl targets), by name for New Zealand, Australia without a CRICOS code and any other country; mode central_find (Firecrawl map, key dates, international fees and English requirements suggested); an adapter proposal cut off at its length limit is asked again once with a larger limit, and tokens are recorded. v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.20.1"; // v0.20.1 (11 Oct 2026): the AI value check uses only the numbers of the answer's value kind; an empty or cut-off answer is named. v0.20.0 (11 Oct 2026, Platform Admin bugs 11/10-6): mode scholarship_ai reads each queued scholarship page with a pinned AI model and checks every quote against the page. v0.19.3 (11 Oct 2026): extractor v0.7.3. v0.19.2 (11 Oct 2026, Platform Admin bugs 11/10-5): every scholarship candidate page read keeps a stored copy, refused and too-thin pages too. v0.19.1 (11 Oct 2026): a provider home page that refuses a direct read is checked through the scraper when its website is verified. v0.19.0 (11 Oct 2026, Platform Admin bugs 11/10-2): find_site searches every provider without a website (not only Firecrawl targets), by name for New Zealand, Australia without a CRICOS code and any other country; mode central_find (Firecrawl map, key dates, international fees and English requirements suggested); an adapter proposal cut off at its length limit is asked again once with a larger limit, and tokens are recorded. v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -123,6 +123,55 @@ export function aiMatchRequest(it: { title: string; code: string | null; level: 
       properties: { reason: { type: "string" }, choice: { type: "integer", minimum: 0, maximum: it.candidates.length } } } } },
     messages: [{ role: "system", content: AI_MATCH_SYSTEM },
       { role: "user", content: `Course: ${it.title}\nLevel: ${it.level || "not given"}\nCode: ${it.code || "none"}\nProvider: ${it.provider}\nCandidates:\n${list}` }],
+  };
+}
+// v0.20.0 (bugs 11/10-6): the scholarship page answer. Every field is required (strict); a fact the page does not state is "not_stated".
+const SCH_AI_LEVELS = ["undergraduate", "postgraduate_coursework", "postgraduate_research", "vet", "english", "pathway"];
+const numOrNull = { type: ["number", "null"] }, strOrNull = { type: ["string", "null"] };
+export function scholarshipAiRequest(model: string, prompt: string, p: { provider: string; url: string; title: string; h1: string; text: string }) {
+  return {
+    model, temperature: 0, max_tokens: 3000, usage: { include: true }, provider: { require_parameters: true },
+    response_format: { type: "json_schema", json_schema: { name: "scholarship_page", strict: true, schema: { type: "object", additionalProperties: false,
+      required: ["is_scholarship", "single_scholarship", "not_scholarship_reason", "name", "name_quote", "audience", "audience_quote", "offered", "offered_quote", "value", "levels", "levels_quote", "courses", "open_date", "close_date", "dates_quote"],
+      properties: {
+        is_scholarship: { type: "boolean" }, single_scholarship: { type: "boolean" }, not_scholarship_reason: strOrNull,
+        name: strOrNull, name_quote: { type: "string" },
+        audience: { type: "string", enum: ["international", "both", "domestic", "not_stated"] }, audience_quote: { type: "string" },
+        offered: { type: "string", enum: ["yes", "no", "not_stated"] }, offered_quote: { type: "string" },
+        value: { type: "object", additionalProperties: false, required: ["kind", "percentage", "amount", "currency", "tiers", "quote"], properties: {
+          kind: { type: "string", enum: ["percentage", "fixed_amount", "tiers", "full_tuition", "non_monetary", "not_stated"] }, percentage: numOrNull, amount: numOrNull, currency: strOrNull,
+          tiers: { type: "array", items: { type: "object", additionalProperties: false, required: ["label", "percentage", "amount"], properties: { label: { type: "string" }, percentage: numOrNull, amount: numOrNull } } },
+          quote: { type: "string" } } },
+        levels: { type: "array", items: { type: "string", enum: SCH_AI_LEVELS } }, levels_quote: { type: "string" },
+        courses: { type: "array", items: { type: "string" } },
+        open_date: strOrNull, close_date: strOrNull, dates_quote: { type: "string" } } } } },
+    messages: [{ role: "system", content: prompt },
+      { role: "user", content: `University: ${p.provider || "unknown"}\nPage address: ${p.url}\nPage title: ${p.title}\nMain heading: ${p.h1}\n\nPage text:\n${p.text}` }],
+  };
+}
+// Each quote must be on the page (letters and digits compared, case and spacing ignored; "..." may join parts of one quote)
+const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
+export function checkScholarshipAnswer(a: any, page: string) {
+  const P = flat(page);
+  const on = (q: string) => { const parts = String(q || "").split(/\s*(?:\.\.\.|…)\s*/).map(flat).filter((x) => x.length >= 6); return parts.length > 0 && parts.every((x) => P.includes(x)) };
+  // only the numbers the value's kind uses are checked (a model may also fill fields the kind does not use; they are not applied):
+  // a percentage or an amount must be in the value quote; each tier's number must be somewhere on the page
+  const isNum = (x: any) => typeof x === "number" && isFinite(x), digits = (n: number) => [String(n).replace(/\.0+$/, ""), String(Math.round(n))];
+  const inText = (n: number, t: string) => digits(n).some((d) => t.includes(d));
+  const v = a?.value || {}, vq = flat(v.quote);
+  const valueOk = on(v.quote) && (v.kind === "percentage" ? isNum(v.percentage) && inText(v.percentage, vq)
+    : v.kind === "fixed_amount" ? isNum(v.amount) && inText(v.amount, vq)
+    : v.kind === "tiers" ? ((v.tiers || []) as any[]).length > 0 && ((v.tiers || []) as any[]).every((t) => [t?.percentage, t?.amount].some(isNum) && [t?.percentage, t?.amount].filter(isNum).every((n: number) => inText(n, P)))
+    : false);
+  return {
+    name: !!a?.name && (P.includes(flat(a.name)) || on(a.name_quote)),
+    audience: a?.audience !== "not_stated" && on(a?.audience_quote),
+    offered: a?.offered !== "not_stated" && on(a?.offered_quote),
+    value: v.kind === "full_tuition" ? on(v.quote) : valueOk,
+    levels: (a?.levels || []).length > 0 && on(a?.levels_quote),
+    courses_found: ((a?.courses || []) as string[]).filter((x) => flat(x).length >= 6 && P.includes(flat(x))).slice(0, 80),
+    courses_not_found: ((a?.courses || []) as string[]).filter((x) => !(flat(x).length >= 6 && P.includes(flat(x)))).slice(0, 40),
+    dates: !!(a?.open_date || a?.close_date) && on(a?.dates_quote),
   };
 }
 const BUDGET_MS = 110_000;
@@ -1122,6 +1171,65 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, rows: rows.length, done, failed, changes, ms: Date.now() - t0, workerVersion: VERSION, scholarshipExtractor: SCH_VERSION });
     }
+    const storedHtml = async (path: string) => { const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "missing"); return await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() };
+    // v0.20.0 (Platform Admin bugs 11/10-6, 11 Oct 2026: "scholarship to be read by code using Firecrawl but then use AI to extract
+    // attributes"): each queued scholarship page (stored copy, or read now through the scraper and kept) is sent to the model and
+    // instructions it was queued with. Every fact must quote the page; the quotes are checked here, and an unproven fact counts as not
+    // stated. The database records the answer and, only while AI admission is on, applies it under the usual publish checks.
+    if (mode === "scholarship_ai") {
+      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
+      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
+      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", workerVersion: VERSION }, 503);
+      const items: any[] = await rpc("svc_scholarship_ai_next", { p_limit: Math.min(Number(body.limit || 8), 12) });
+      const tally: Record<string, number> = {}; let cost = 0;
+      await pool(items, 4, async (it) => {
+        const t1 = Date.now();
+        const rec = (x: Record<string, unknown>) => rpc("svc_scholarship_ai_record", { p_queue_id: it.queue_id, p_answer: null, p_checks: null, p_verdict: null, p_cost: 0, p_tokens_in: null, p_tokens_out: null, p_seconds: (Date.now() - t1) / 1000, p_error: null, p_storage_path: null, p_sha256: null, p_final_url: null, p_rule_facts: null, p_retry: false, ...x });
+        if (Date.now() - t0 > BUDGET_MS - 25000) { await rec({ p_retry: true }); tally.later = (tally.later || 0) + 1; return }
+        let html = "", finalUrl = it.url, path: string | null = null, sha: string | null = null, ruleFacts: Record<string, unknown> | null = null;
+        try {
+          if (it.storage_path) html = await storedHtml(it.storage_path);
+          else {
+            const pg = await readSch(it.url, it.provider_id || null);
+            if (pg.status === "waiting_scraper") { await rec({ p_retry: true }); tally.waiting_scraper = (tally.waiting_scraper || 0) + 1; return }
+            html = pg.html || ""; finalUrl = pg.finalUrl || it.url;
+            if (html) {
+              const gz = await gzip(html); sha = await sha256(new TextEncoder().encode(html));
+              path = `layer2/AU/scholarships/${it.provider_id || "none"}/ai/${it.queue_id}/${sha}.html.gz`;
+              const up = await c.storage.from("evidence").upload(path, gz, { contentType: "application/gzip", upsert: true });
+              if (up.error) { path = null; sha = null }
+            }
+            if (it.candidate_id) {
+              let facts: Record<string, unknown> | null = null;
+              if (pg.status === "read") { let host = ""; try { host = new URL(finalUrl).hostname } catch { /* */ } const adm = admissionCheck(html, finalUrl, [host]);
+                facts = { ...scholarshipFacts(html, titleOf(html) + " " + h1Of(html), adm.name || "", it.currency || "AUD"), page_title: titleOf(html).slice(0, 200), h1: h1Of(html).slice(0, 200), final_url: finalUrl, extractor: SCH_VERSION, admission: adm } }
+              ruleFacts = { read_status: pg.status, facts };
+            }
+          }
+          if (!html) { await rec({ p_error: "the page could not be read", p_final_url: finalUrl }); tally.unread = (tally.unread || 0) + 1; return }
+          const title = titleOf(html).slice(0, 300), h1 = h1Of(html).slice(0, 300), text = mainText(html).slice(0, 14000);
+          const r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+            body: JSON.stringify(scholarshipAiRequest(it.model, it.prompt, { provider: it.provider || "", url: finalUrl, title, h1, text })), signal: AbortSignal.timeout(60000) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`);
+          if (d?.model && !String(d.model).startsWith(it.model)) throw Error(`returned model ${d.model}, not ${it.model}`);
+          const c1 = Number(d?.usage?.cost || 0); cost += c1;
+          const ch = d?.choices?.[0], content = String(ch?.message?.content || "");
+          if (!content.trim()) throw Error(`the model returned no answer${ch?.finish_reason ? ` (${ch.finish_reason})` : ""}`);
+          if (ch?.finish_reason === "length") throw Error("the answer was cut off at its length limit");
+          const a = JSON.parse(content);
+          const checks = checkScholarshipAnswer(a, `${title} ${h1} ${text}`);
+          const verdict = !a.is_scholarship ? "not_scholarship" : !a.single_scholarship ? "listing" : !checks.name ? "unproven" : "scholarship";
+          await rec({ p_answer: a, p_checks: checks, p_verdict: verdict, p_cost: c1, p_tokens_in: d?.usage?.prompt_tokens ?? null, p_tokens_out: d?.usage?.completion_tokens ?? null,
+                      p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
+          tally[verdict] = (tally[verdict] || 0) + 1;
+        } catch (e) {
+          await rec({ p_error: (e instanceof Error ? e.message : String(e)).slice(0, 400), p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
+          tally.error = (tally.error || 0) + 1;
+        }
+      });
+      return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
     if (mode === "scholarship_inspect") {
       const chars = Math.min(Number(body.chars || 2500), 8000);
       const paths = await rpc("svc_scholarship_inspect_paths", { p_scholarship_ids: body.scholarship_ids || [], p_candidate_ids: body.candidate_ids || [] });
@@ -1186,7 +1294,6 @@ Deno.serve(async (req) => {
     // v0.14.1: read chosen pages with chosen Firecrawl options (Platform Admin test of read settings and university
     // adapters). Nothing is recorded on a course: only the call log and this reply.
     // v0.15.0 (Decision 253): university adapters, tried and applied on stored pages (no Firecrawl credits).
-    const storedHtml = async (path: string) => { const { data, error } = await c.storage.from("evidence").download(path); if (error || !data) throw Error(error?.message || "missing"); return await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text() };
     if (mode === "adapter_preview") {
       const n = await rpc("svc_adapter_preview_next", { p_preview_id: String(body.preview_id || "") });
       if (!n) return j({ error: "unknown preview", worker: WORKER }, 404);
@@ -1663,7 +1770,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing, scholarship_ai", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }

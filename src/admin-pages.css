@@ -549,3 +549,22 @@ td>.l3v-model{display:block}
 
 .ar-bulk{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
 .ar-check{width:32px}
+/* v2.15.249 Scholarships › Extraction */
+.sx .sx-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 8px}
+.sx .sx-reason{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sx .sx-reason input,.sx .sx-url{min-width:240px;padding:6px 10px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);font:inherit;font-size:var(--cf-fs-xs)}
+.sx .sx-url{flex:1 1 320px}
+.sx select{padding:6px 8px;border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);font:inherit;font-size:var(--cf-fs-xs)}
+.sx .sx-actions{white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap}
+.sx .sx-prompt{width:100%;font-family:var(--cf-font-mono,monospace);font-size:var(--cf-fs-xs);border:1px solid var(--cf-slate-300);border-radius:var(--cf-radius-md);padding:10px;box-sizing:border-box}
+.sx .sx-versions{font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);margin:8px 0 0;padding-left:18px}
+.sx .sx-proofs{display:inline-flex;gap:4px;flex-wrap:wrap}
+.sx .sx-proof{display:inline-flex;gap:3px;align-items:center;font-size:var(--cf-fs-2xs);padding:1px 6px;border-radius:999px;border:1px solid var(--cf-slate-200)}
+.sx .sx-proof.ok{color:var(--cf-green-700,var(--cf-slate-900))}
+.sx .sx-proof.no{color:var(--cf-slate-500)}
+.sx .sx-detail dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:4px 0;font-size:var(--cf-fs-xs)}
+.sx .sx-detail dt{color:var(--cf-slate-500);font-weight:700}
+.sx .sx-detail q{display:block;color:var(--cf-slate-600);font-style:italic;margin-top:2px}
+.sx tr.is-muted td{opacity:.55}
+.sx h3{margin:0 0 4px}
+

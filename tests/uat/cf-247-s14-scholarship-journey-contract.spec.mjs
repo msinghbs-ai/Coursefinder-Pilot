@@ -24,7 +24,7 @@ test('migration: item record, journey, evidence, skip rules, listing suggestions
 test('worker v0.19.2 keeps a copy of every candidate page read, refused and too-thin pages too', () => {
   const w = read('supabase/functions/coverage-sweep/index.ts')
   expect(w).toContain('if (pg.html && (pg.status === "read" || pg.status === "too_thin")) {')
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.19.2"')
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(19\.[2-9]|2\d\.\d+)"/) // v0.19.2 or later
 })
 
 test('mocked browser: a university\'s Coverage panel tells the journey of its last run, with reasons and stored copies', async ({ page }) => {
