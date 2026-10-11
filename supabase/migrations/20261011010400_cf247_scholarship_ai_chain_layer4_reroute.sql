@@ -1,0 +1,506 @@
+-- CF-247 v2.15.250 (Platform Admin bugs 11/10-6, follow-up 11 Oct 2026): "Qwen 3 then GPT-4.1 mini then to Layer 4. Layer 4 review the
+-- current parked items: reroute to adapters or the new scholarship mechanism." Decisions: GPT takes over when Qwen's reply fails or a
+-- fact it states is not proven on the page; parked course items at universities whose adapter admits that field are closed and the
+-- course read again by the adapter; parked scholarships are read again by the AI (holds a person made stay); AI admission is switched
+-- on only after this ships.
+-- 1. Model chain: pipeline.scholarship_ai_extract_settings.chain (ordered model codes, each qualified on the current instructions).
+-- 2. Cascade in svc_scholarship_ai_record: an unsettled answer goes to the next model on the same stored copy; after the last model
+--    it opens a Layer 4 review (pipeline.scholarship_ai_reviews) while AI admission is on. A person's decision on a page copy is
+--    kept as an exception and applied again when the same copy comes back.
+-- 3. Layer 4 parked course items (intakes, English, fees) at universities whose adapter admits that field are closed as superseded
+--    and the course page is read again (pipeline.layer4_reroutes keeps each one); new ones are rerouted as they arrive (trigger).
+-- 4. Parked scholarships (active and not published, or held) are queued for an AI re-read; a hold a person made stays; an automatic
+--    hold is released when the AI re-read passes every check.
+-- Nothing is dropped or deleted.
+do $guard$
+declare v_expected jsonb := '{"security.scholarship_ai_active_v1()": "fbe3573131e669b784e4c987b2bcecdb", "public.svc_scholarship_ai_next(integer)": "7fcb6138cae1b44846819add8ade7964", "public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)": "c580a8d371d99de1cd908bb3c6b04877", "security.scholarship_ai_apply_v1(bigint)": "7abd7d393cd88f2fa0d27fb2bac5472e", "public.admin_scholarship_ai(text,jsonb)": "976044ebfe879924a77b0c359573296b"}'::jsonb;
+  v_sig text;
+begin
+  for v_sig in select jsonb_object_keys(v_expected) loop
+    if md5(replace(pg_get_functiondef(v_sig::regprocedure), E'\r', '')) <> v_expected->>v_sig then
+      raise exception 'live % differs from the definition this change replaces', v_sig;
+    end if;
+  end loop;
+end $guard$;
+
+-- ===== 1. Model chain, queue steps, reviews, reroutes =====
+alter table pipeline.scholarship_ai_extract_settings add column if not exists chain text[] not null default '{}';
+alter table pipeline.scholarship_ai_queue add column if not exists step int not null default 1;
+alter table pipeline.scholarship_ai_queue add column if not exists storage_path text;
+alter table pipeline.scholarship_ai_queue add column if not exists root_id bigint;
+create index if not exists scholarship_ai_queue_root_idx on pipeline.scholarship_ai_queue (root_id);
+-- a person's Layer 4 decision is recorded as an answer of its own, so every applied answer has the same audit trail
+insert into pipeline.scholarship_ai_models(code, label, model_identifier, price_note, status, sort)
+values ('person', 'Person (Layer 4 decision)', 'person', 'a person''s decision in Layer 4 › AI could not decide', 'retired', 999)
+on conflict (code) do nothing;
+
+create table if not exists pipeline.scholarship_ai_reviews (
+  id bigserial primary key, candidate_id bigint, scholarship_id uuid, provider_id uuid, url text not null, storage_path text,
+  extraction_ids bigint[] not null default '{}', reason text not null,
+  status text not null default 'pending' check (status in ('pending', 'admitted', 'refused', 'superseded')),
+  decided_by uuid, decided_at timestamptz, note text, decision jsonb, created_at timestamptz not null default now());
+create index if not exists scholarship_ai_reviews_pending_idx on pipeline.scholarship_ai_reviews (status, created_at);
+create index if not exists scholarship_ai_reviews_url_idx on pipeline.scholarship_ai_reviews (url, storage_path);
+alter table pipeline.scholarship_ai_reviews enable row level security;
+
+create table if not exists pipeline.layer4_reroutes (
+  id bigserial primary key, item_id uuid not null, entity_type text not null, entity_id uuid not null, field_code text not null,
+  route text not null check (route in ('adapter', 'scholarship_ai')), note text, at timestamptz not null default now());
+create index if not exists layer4_reroutes_at_idx on pipeline.layer4_reroutes (at desc);
+alter table pipeline.layer4_reroutes enable row level security;
+
+-- the chain starts from the model already active, if any
+update pipeline.scholarship_ai_extract_settings s set chain = array[m.code] from pipeline.scholarship_ai_models m where s.id = 1 and m.status = 'active' and cardinality(s.chain) = 0;
+
+-- The model after this one in the chain (null at the end)
+create or replace function security.scholarship_ai_next_model_v1(p_code text)
+returns text language sql stable security definer set search_path to '' as $f$
+  select s.chain[array_position(s.chain, p_code) + 1] from pipeline.scholarship_ai_extract_settings s where s.id = 1 and array_position(s.chain, p_code) is not null
+$f$;
+
+-- Is an answer settled? Unsettled: no reply, the name not proven, or a fact the model states whose quote is not on the page
+create or replace function security.scholarship_ai_unsettled_v1(p_answer jsonb, p_checks jsonb, p_verdict text, p_error text)
+returns text language sql immutable set search_path to '' as $f$
+  select case
+    when p_error is not null then 'the model''s reply failed: ' || left(p_error, 120)
+    when p_verdict = 'unproven' then 'the scholarship''s name is not on the page'
+    when p_verdict = 'scholarship' and coalesce(p_answer->>'audience', 'not_stated') <> 'not_stated' and not coalesce((p_checks->>'audience')::boolean, false) then 'who it is for is not proven by a quote on the page'
+    when p_verdict = 'scholarship' and coalesce(p_answer->'value'->>'kind', 'not_stated') not in ('not_stated', 'non_monetary') and not coalesce((p_checks->>'value')::boolean, false) then 'the value is not proven by a quote on the page'
+    when p_verdict = 'scholarship' and p_answer->>'offered' = 'no' and not coalesce((p_checks->>'offered')::boolean, false) then '"no longer offered" is not proven by a quote on the page'
+  end
+$f$;
+
+-- Apply a person's decision to a page: admit (as a person-confirmed answer, through the usual admission and publish checks) or refuse
+create or replace function security.scholarship_ai_review_apply_v1(p_review bigint, p_decision text, p_extraction bigint, p_note text, p_by uuid)
+returns jsonb language plpgsql security definer set search_path to '' as $f$
+declare v pipeline.scholarship_ai_reviews%rowtype; e pipeline.scholarship_ai_extractions%rowtype; v_ans jsonb; v_chk jsonb; v_id bigint; r jsonb; v_pv int;
+begin
+  select * into v from pipeline.scholarship_ai_reviews where id = p_review for update;
+  if v.id is null then raise exception 'no such review'; end if;
+  if p_decision = 'admit' then
+    select * into e from pipeline.scholarship_ai_extractions where id = coalesce(p_extraction,
+      (select x.id from pipeline.scholarship_ai_extractions x where x.id = any (v.extraction_ids) and x.answer is not null order by coalesce((x.answer->>'is_scholarship')::boolean, false) desc, x.at desc limit 1));
+    if e.id is null or e.answer is null then raise exception 'no model answer to admit; read the page again first'; end if;
+    v_ans := e.answer || jsonb_build_object('is_scholarship', true, 'single_scholarship', true,
+               'audience', case when e.answer->>'audience' in ('international', 'both') then e.answer->>'audience' else 'international' end,
+               'audience_quote', case when e.answer->>'audience' in ('international', 'both') then e.answer->>'audience_quote' else 'Confirmed by a person in Layer 4' end,
+               'offered', 'yes', 'name', coalesce(nullif(e.answer->>'name', ''), 'Scholarship'));
+    v_chk := coalesce(e.checks, '{}'::jsonb) || jsonb_build_object('name', true, 'audience', true, 'offered', true, 'value', coalesce(e.answer->'value'->>'kind', 'not_stated') not in ('not_stated', 'non_monetary'),
+               'levels', jsonb_array_length(coalesce(e.answer->'levels', '[]'::jsonb)) > 0, 'dates', coalesce((e.checks->>'dates')::boolean, false), 'by_person', true);
+    select p.version into v_pv from pipeline.scholarship_ai_prompts p where p.active order by p.version desc limit 1;
+    insert into pipeline.scholarship_ai_extractions(queue_id, model_code, model_identifier, prompt_version, run_kind, candidate_id, scholarship_id, provider_id, url, storage_path, content_hash, evidence_id, answer, checks, verdict, cost_usd, error)
+    values (e.queue_id, 'person', 'person', coalesce(v_pv, e.prompt_version), 'review', v.candidate_id, v.scholarship_id, v.provider_id, v.url, coalesce(v.storage_path, e.storage_path), e.content_hash, e.evidence_id, v_ans, v_chk, 'scholarship', 0, null)
+    returning id into v_id;
+    r := security.scholarship_ai_apply_v1(v_id);
+  elsif p_decision = 'refuse' then
+    if v.candidate_id is not null then
+      update pipeline.scholarship_page_candidates set admit_status = 'rejected', admit_reasons = array['refused_by_person'] where id = v.candidate_id and admitted_scholarship_id is null;
+      insert into pipeline.scholarship_admission_log(candidate_id, provider_id, action, detail) values (v.candidate_id, v.provider_id, 'rejected', jsonb_build_object('by', 'person', 'review', v.id, 'note', p_note));
+    end if;
+    if v.scholarship_id is not null then
+      insert into pipeline.scholarship_publication_holds(scholarship_id, reason, held_by, held_at)
+      values (v.scholarship_id, 'Refused in Layer 4 › AI could not decide: ' || coalesce(p_note, ''), 'admin', now())
+      on conflict (scholarship_id) do update set reason = excluded.reason, held_by = 'admin', held_at = now(), released_at = null, release_note = null;
+    end if;
+    r := jsonb_build_object('refused', true);
+  else raise exception 'decide admit or refuse';
+  end if;
+  update pipeline.scholarship_ai_reviews set status = case when p_decision = 'admit' then 'admitted' else 'refused' end, decided_by = p_by, decided_at = now(), note = p_note,
+         decision = jsonb_build_object('decision', p_decision, 'extraction', coalesce(v_id, p_extraction), 'applied', r) where id = v.id;
+  return coalesce(r, '{}'::jsonb) || jsonb_build_object('review', v.id, 'decision', p_decision);
+end $f$;
+revoke all on function security.scholarship_ai_review_apply_v1(bigint, text, bigint, text, uuid) from public, anon, authenticated;
+
+-- After the last model: open a Layer 4 review, unless a person already decided this same page copy (the exception is applied again)
+create or replace function security.scholarship_ai_review_open_v1(p_extraction bigint, p_reason text)
+returns jsonb language plpgsql security definer set search_path to '' as $f$
+declare e pipeline.scholarship_ai_extractions%rowtype; v_root bigint; v_ids bigint[]; v_prev pipeline.scholarship_ai_reviews%rowtype; v_new bigint;
+begin
+  select * into e from pipeline.scholarship_ai_extractions where id = p_extraction;
+  if e.id is null then return null; end if;
+  select coalesce(q.root_id, q.id) into v_root from pipeline.scholarship_ai_queue q where q.id = e.queue_id;
+  v_ids := array(select x.id from pipeline.scholarship_ai_extractions x join pipeline.scholarship_ai_queue q on q.id = x.queue_id where coalesce(q.root_id, q.id) = v_root order by x.id);
+  select * into v_prev from pipeline.scholarship_ai_reviews r
+   where r.status in ('admitted', 'refused') and r.url = e.url and coalesce(r.storage_path, '') = coalesce(e.storage_path, '') order by r.decided_at desc limit 1;
+  if v_prev.id is not null then
+    insert into pipeline.scholarship_ai_reviews(candidate_id, scholarship_id, provider_id, url, storage_path, extraction_ids, reason, status, decided_at, note, decision)
+    values (e.candidate_id, e.scholarship_id, e.provider_id, e.url, e.storage_path, v_ids, p_reason, 'pending', null, null, null) returning id into v_new;
+    return security.scholarship_ai_review_apply_v1(v_new, case v_prev.status when 'admitted' then 'admit' else 'refuse' end, null,
+             'Same page copy as review ' || v_prev.id || ' (decided ' || to_char(v_prev.decided_at at time zone 'Australia/Melbourne', 'DD Mon YYYY') || '): ' || coalesce(v_prev.note, ''), v_prev.decided_by)
+           || jsonb_build_object('exception_from', v_prev.id);
+  end if;
+  update pipeline.scholarship_ai_reviews set extraction_ids = v_ids, reason = p_reason, storage_path = e.storage_path
+   where status = 'pending' and ((e.candidate_id is not null and candidate_id = e.candidate_id) or (e.scholarship_id is not null and scholarship_id = e.scholarship_id))
+  returning id into v_new;
+  if v_new is null then
+    insert into pipeline.scholarship_ai_reviews(candidate_id, scholarship_id, provider_id, url, storage_path, extraction_ids, reason)
+    values (e.candidate_id, e.scholarship_id, e.provider_id, e.url, e.storage_path, v_ids, p_reason) returning id into v_new;
+  end if;
+  return jsonb_build_object('review', v_new, 'reason', p_reason);
+end $f$;
+revoke all on function security.scholarship_ai_review_open_v1(bigint, text) from public, anon, authenticated;
+
+-- ===== 3. Layer 4 parked course items -> the university adapter =====
+-- The adapter field a Layer 4 course item is about (null: no adapter field, the item stays with a person)
+create or replace function security.layer4_adapter_field_v1(p_field_code text)
+returns text language sql immutable set search_path to '' as $f$
+  select case p_field_code when 'course_intake' then 'intakes' when 'course_english' then 'english' when 'provider_current_tuition_validation' then 'fee' end
+$f$;
+
+-- Can the course's university adapter settle this field? If so (and p_apply), its page is read again now
+create or replace function security.layer4_reroute_course_v1(p_course uuid, p_field_code text, p_apply boolean)
+returns boolean language plpgsql security definer set search_path to '' as $f$
+declare v_f text := security.layer4_adapter_field_v1(p_field_code); v_ok boolean;
+begin
+  if v_f is null then return false; end if;
+  select true into v_ok from catalogue.courses c join pipeline.uni_adapters a on a.provider_id = c.provider_id
+   where c.id = p_course and a.enabled and coalesce(a.admit, false) and (a.admit_fields is null or v_f = any (a.admit_fields))
+     and exists (select 1 from pipeline.coverage_course_pages pg where pg.course_id = c.id and pg.status in ('bound', 'ambiguous'));
+  if not coalesce(v_ok, false) then return false; end if;
+  if p_apply then
+    update pipeline.coverage_course_pages set next_read_at = now(), leased_until = null, read_attempts = 0 where course_id = p_course and status in ('bound', 'ambiguous');
+  end if;
+  return true;
+end $f$;
+revoke all on function security.layer4_reroute_course_v1(uuid, text, boolean) from public, anon, authenticated;
+
+-- New parked course items the adapter can settle are rerouted as they arrive (every Layer 3 producer)
+create or replace function security.layer4_reroute_trg_v1()
+returns trigger language plpgsql security definer set search_path to '' as $f$
+begin
+  if new.entity_type = 'course' and new.status = 'pending' and security.layer4_reroute_course_v1(new.entity_id, new.field_code, true) then
+    new.status := 'superseded'; new.decided_at := now();
+    new.change_control_ref := coalesce(new.change_control_ref || '; ', '') || 'CF-247 v2.15.250: rerouted to the university adapter';
+    insert into pipeline.layer4_reroutes(item_id, entity_type, entity_id, field_code, route, note) values (new.id, 'course', new.entity_id, new.field_code, 'adapter', 'on arrival');
+  end if;
+  return new;
+end $f$;
+create or replace trigger layer4_review_items_reroute before insert on pipeline.layer4_review_items for each row execute function security.layer4_reroute_trg_v1();
+
+-- The parked items already waiting
+create or replace function security.layer4_reroute_parked_courses_v1()
+returns jsonb language plpgsql security definer set search_path to '' as $f$
+declare v_n int;
+begin
+  with x as (
+    select r.id, r.entity_id, r.field_code from pipeline.layer4_review_items r
+     where r.status = 'pending' and r.entity_type = 'course' and security.layer4_reroute_course_v1(r.entity_id, r.field_code, true)),
+  ins as (insert into pipeline.layer4_reroutes(item_id, entity_type, entity_id, field_code, route, note) select x.id, 'course', x.entity_id, x.field_code, 'adapter', 'parked item' from x returning item_id)
+  update pipeline.layer4_review_items r set status = 'superseded', decided_at = now(),
+         change_control_ref = coalesce(r.change_control_ref || '; ', '') || 'CF-247 v2.15.250: rerouted to the university adapter'
+    from ins where r.id = ins.item_id;
+  get diagnostics v_n = row_count;
+  return jsonb_build_object('rerouted', v_n);
+end $f$;
+revoke all on function security.layer4_reroute_parked_courses_v1() from public, anon, authenticated;
+
+-- ===== 4. Parked scholarships -> the AI reader =====
+create or replace function security.scholarship_ai_reroute_parked_v1(p_job uuid)
+returns jsonb language plpgsql security definer set search_path to '' as $f$
+declare a record; v_n int; v_s int;
+begin
+  select * into a from security.scholarship_ai_active_v1();
+  if a.model_code is null then raise exception 'set the model chain first'; end if;
+  insert into pipeline.scholarship_ai_queue(model_code, prompt_version, run_kind, job_id, scholarship_id, provider_id, url)
+  select a.model_code, a.prompt_version, 'reread', p_job, s.id, s.provider_id, coalesce(sp.final_url, sp.url)
+    from scholarship.scholarships s join pipeline.scholarship_pages sp on sp.scholarship_id = s.id
+   where s.lifecycle_status = 'active'
+     and (s.publication_status is distinct from 'published' or exists (select 1 from pipeline.scholarship_publication_holds h where h.scholarship_id = s.id and h.released_at is null))
+     and not exists (select 1 from pipeline.scholarship_ai_queue q where q.scholarship_id = s.id and q.state in ('queued', 'leased'));
+  get diagnostics v_n = row_count;
+  with x as (
+    update pipeline.layer4_review_items r set status = 'superseded', decided_at = now(),
+           change_control_ref = coalesce(r.change_control_ref || '; ', '') || 'CF-247 v2.15.250: rerouted to the scholarship AI reader'
+     where r.status = 'pending' and r.entity_type = 'scholarship' returning r.id, r.entity_id, r.field_code)
+  insert into pipeline.layer4_reroutes(item_id, entity_type, entity_id, field_code, route, note) select x.id, 'scholarship', x.entity_id, x.field_code, 'scholarship_ai', 'parked item' from x;
+  get diagnostics v_s = row_count;
+  perform security.scholarship_ai_fire_v1();
+  return jsonb_build_object('queued', v_n, 'layer4_items', v_s);
+end $f$;
+revoke all on function security.scholarship_ai_reroute_parked_v1(uuid) from public, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION security.scholarship_ai_active_v1()
+ RETURNS TABLE(model_code text, model_identifier text, prompt_version integer, ai_admission boolean)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select m.code, m.model_identifier, (select p.version from pipeline.scholarship_ai_prompts p where p.active order by p.version desc limit 1), s.ai_admission
+    -- v2.15.250: the first model in the chain reads first
+    from pipeline.scholarship_ai_extract_settings s left join pipeline.scholarship_ai_models m on m.code = coalesce(s.chain[1], (select m2.code from pipeline.scholarship_ai_models m2 where m2.status = 'active' limit 1)) where s.id = 1
+$function$;
+
+CREATE OR REPLACE FUNCTION public.svc_scholarship_ai_next(p_limit integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'pipeline', 'security'
+AS $function$
+declare v jsonb;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  with pick as (
+    select q.id from pipeline.scholarship_ai_queue q
+     where ((q.state = 'queued' and q.next_try_at <= now()) or (q.state = 'leased' and q.leased_until < now())) and q.attempts < 3
+     order by (q.run_kind = 'test') desc, (q.run_kind = 'qualify') desc, q.id
+     limit greatest(1, least(coalesce(p_limit, 8), 20)) for update skip locked),
+  upd as (update pipeline.scholarship_ai_queue q set state = 'leased', leased_until = now() + interval '4 minutes', attempts = q.attempts + 1 from pick where q.id = pick.id returning q.*)
+  select coalesce(jsonb_agg(jsonb_build_object('queue_id', u.id, 'model_code', u.model_code, 'model', m.model_identifier, 'prompt_version', u.prompt_version,
+           'prompt', (select p.text from pipeline.scholarship_ai_prompts p where p.version = u.prompt_version), 'run_kind', u.run_kind, 'url', u.url,
+           'candidate_id', u.candidate_id, 'scholarship_id', u.scholarship_id, 'provider_id', u.provider_id,
+           'provider', (select coalesce(pr.display_name, pr.canonical_name) from catalogue.providers pr where pr.id = u.provider_id),
+           'currency', case when u.provider_id is not null then scholarship.provider_currency(u.provider_id) else 'AUD' end,
+           'storage_path', coalesce(u.storage_path, (select c.storage_path from pipeline.scholarship_page_candidates c where c.id = u.candidate_id),
+                                    (select e.storage_path from pipeline.scholarship_pages sp join pipeline.evidence_artifacts e on e.id = sp.evidence_id where sp.scholarship_id = u.scholarship_id),
+                                    (select e.storage_path from scholarship.scholarships s join pipeline.evidence_artifacts e on e.id = s.evidence_id where s.id = u.scholarship_id)))), '[]'::jsonb)
+    into v from upd u join pipeline.scholarship_ai_models m on m.code = u.model_code;
+  return v;
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.svc_scholarship_ai_record(p_queue_id bigint, p_answer jsonb, p_checks jsonb, p_verdict text, p_cost numeric, p_tokens_in integer, p_tokens_out integer, p_seconds numeric, p_error text, p_storage_path text, p_sha256 text, p_final_url text, p_rule_facts jsonb, p_retry boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'pipeline', 'security'
+AS $function$
+declare q pipeline.scholarship_ai_queue%rowtype; v_id bigint; v_ev uuid; v_on boolean; r jsonb; v_why text; v_next text;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  select * into q from pipeline.scholarship_ai_queue where id = p_queue_id for update;
+  if q.id is null then return jsonb_build_object('ok', false, 'reason', 'no queue item'); end if;
+  if p_retry then
+    update pipeline.scholarship_ai_queue set state = 'queued', leased_until = null, attempts = greatest(attempts - 1, 0), next_try_at = now() + interval '30 minutes' where id = q.id;
+    return jsonb_build_object('ok', true, 'retry', true);
+  end if;
+  -- a candidate page read live for the first time: its copy and read are recorded on the candidate, as the scheduled reader does
+  if q.candidate_id is not null and p_storage_path is not null then
+    update pipeline.scholarship_page_candidates set storage_path = p_storage_path, content_hash = p_sha256, final_url = coalesce(p_final_url, final_url), read_at = now(),
+           read_status = coalesce(nullif(p_rule_facts->>'read_status', ''), 'read'), next_read_at = now() + interval '90 days', leased_until = null,
+           facts = case when p_rule_facts ? 'facts' then p_rule_facts->'facts' else facts end
+     where id = q.candidate_id;
+  end if;
+  if p_storage_path is not null then
+    insert into pipeline.evidence_artifacts(source_id, evidence_type, source_url, storage_path, content_hash, mime_type, metadata, capture_version, evidence_group_key)
+    values (security.coverage_sweep_source(q.provider_id), 'scholarship_ai_page', coalesce(p_final_url, q.url), p_storage_path, p_sha256, 'application/gzip',
+            jsonb_build_object('queue_id', q.id, 'candidate_id', q.candidate_id, 'scholarship_id', q.scholarship_id, 'model', q.model_code, 'worker', 'coverage-sweep scholarship_ai'), 1, 'scholarship_ai:' || q.id)
+    returning id into v_ev;
+    if q.candidate_id is not null then update pipeline.scholarship_page_candidates set evidence_id = coalesce(evidence_id, v_ev) where id = q.candidate_id; end if;
+  end if;
+  insert into pipeline.scholarship_ai_extractions(queue_id, model_code, model_identifier, prompt_version, run_kind, job_id, sample_id, candidate_id, scholarship_id, provider_id, url,
+         storage_path, content_hash, evidence_id, answer, checks, verdict, cost_usd, tokens_in, tokens_out, seconds, error)
+  values (q.id, q.model_code, (select m.model_identifier from pipeline.scholarship_ai_models m where m.code = q.model_code), q.prompt_version, q.run_kind, q.job_id, q.sample_id, q.candidate_id, q.scholarship_id, q.provider_id,
+          coalesce(p_final_url, q.url), coalesce(p_storage_path, (select c.storage_path from pipeline.scholarship_page_candidates c where c.id = q.candidate_id)), p_sha256,
+          coalesce(v_ev, (select c.evidence_id from pipeline.scholarship_page_candidates c where c.id = q.candidate_id), (select sp.evidence_id from pipeline.scholarship_pages sp where sp.scholarship_id = q.scholarship_id)),
+          p_answer, p_checks, p_verdict, p_cost, p_tokens_in, p_tokens_out, p_seconds, p_error)
+  returning id into v_id;
+  -- v2.15.250 (bugs 11/10-6 follow-up): an unsettled answer (failed reply, name not proven, or a stated fact not proven by its quote)
+  -- goes to the next model in the chain, on the same stored copy; after the last model it goes to Layer 4 while AI admission is on
+  v_why := case when q.run_kind in ('admit', 'reread') then security.scholarship_ai_unsettled_v1(p_answer, p_checks, p_verdict, p_error) end;
+  v_next := case when v_why is not null then security.scholarship_ai_next_model_v1(q.model_code) end;
+  if v_next is not null then
+    update pipeline.scholarship_ai_queue set state = 'done', done_at = now(), leased_until = null, extraction_id = v_id where id = q.id;
+    insert into pipeline.scholarship_ai_queue(model_code, prompt_version, run_kind, job_id, sample_id, candidate_id, scholarship_id, provider_id, url, step, storage_path, root_id)
+    values (v_next, q.prompt_version, q.run_kind, q.job_id, q.sample_id, q.candidate_id, q.scholarship_id, q.provider_id, coalesce(p_final_url, q.url), q.step + 1,
+            coalesce(p_storage_path, q.storage_path), coalesce(q.root_id, q.id));
+    return jsonb_build_object('ok', true, 'extraction', v_id, 'escalated_to', v_next, 'why', v_why);
+  end if;
+  update pipeline.scholarship_ai_queue set state = case when p_error is null or attempts >= 3 then 'done' else 'queued' end, done_at = case when p_error is null or attempts >= 3 then now() end,
+         leased_until = null, next_try_at = now() + interval '10 minutes', extraction_id = v_id where id = q.id;
+  select ai_admission into v_on from pipeline.scholarship_ai_extract_settings where id = 1;
+  if v_on and v_why is not null and (p_error is null or q.attempts >= 3) then r := security.scholarship_ai_review_open_v1(v_id, v_why);
+  elsif p_error is null and v_on and q.run_kind in ('admit', 'reread') then r := security.scholarship_ai_apply_v1(v_id); end if;
+  return jsonb_build_object('ok', true, 'extraction', v_id, 'applied', r);
+end $function$;
+
+CREATE OR REPLACE FUNCTION security.scholarship_ai_apply_v1(p_extraction bigint)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare e pipeline.scholarship_ai_extractions%rowtype; v_facts jsonb; v_rule jsonb; r jsonb; v_sid uuid; v_aud text;
+begin
+  select * into e from pipeline.scholarship_ai_extractions where id = p_extraction;
+  if e.id is null or e.error is not null or e.answer is null then return jsonb_build_object('applied', false, 'reason', 'no answer'); end if;
+  v_aud := case e.answer->>'audience' when 'international' then 'international' when 'both' then 'international_and_domestic' when 'domestic' then 'domestic' else null end;
+  if e.candidate_id is not null then
+    select c.facts into v_rule from pipeline.scholarship_page_candidates c where c.id = e.candidate_id;
+    v_facts := security.scholarship_ai_facts_v1(e.answer, e.checks, coalesce(v_rule->'rules', v_rule), e.model_code || ' / instructions v' || e.prompt_version) || jsonb_build_object('rules', coalesce(v_rule->'rules', v_rule));
+    update pipeline.scholarship_page_candidates set facts = v_facts, admit_status = null, admit_reasons = null, read_status = 'read' where id = e.candidate_id and admitted_scholarship_id is null;
+    if coalesce((v_facts->'admission'->>'admit')::boolean, false) then
+      r := security.scholarship_admit_from_provider_page_v1(e.candidate_id);
+      v_sid := (r->>'scholarship_id')::uuid;
+      if coalesce((r->>'admitted')::boolean, false) and v_aud is not null then update scholarship.scholarships set audience = v_aud, updated_at = now() where id = v_sid; end if;
+    else
+      update pipeline.scholarship_page_candidates set admit_status = 'rejected', admit_reasons = array(select jsonb_array_elements_text(v_facts->'admission'->'reasons')) where id = e.candidate_id;
+      insert into pipeline.scholarship_admission_log(candidate_id, provider_id, action, detail) values (e.candidate_id, e.provider_id, 'rejected', jsonb_build_object('by', 'ai', 'extraction', e.id, 'reasons', v_facts->'admission'->'reasons'));
+      r := jsonb_build_object('admitted', false, 'reasons', v_facts->'admission'->'reasons');
+    end if;
+  elsif e.scholarship_id is not null then
+    select sp.facts into v_rule from pipeline.scholarship_pages sp where sp.scholarship_id = e.scholarship_id;
+    v_facts := security.scholarship_ai_facts_v1(e.answer, e.checks, coalesce(v_rule->'rules', v_rule), e.model_code || ' / instructions v' || e.prompt_version) || jsonb_build_object('rules', coalesce(v_rule->'rules', v_rule));
+    update pipeline.scholarship_pages set facts = v_facts, read_status = 'read', evidence_id = coalesce(e.evidence_id, evidence_id) where scholarship_id = e.scholarship_id;
+    if not coalesce((v_facts->'admission'->>'admit')::boolean, false) and exists (select 1 from pipeline.scholarship_pages where scholarship_id = e.scholarship_id and url_source = 'admitted') then
+      r := security.scholarship_admission_withdraw_v1(e.scholarship_id, jsonb_build_object('reasons', v_facts->'admission'->'reasons', 'extractor', v_facts->>'extractor', 'by', 'ai'));
+    else
+      r := security.scholarship_sweep_apply_v1(e.scholarship_id);
+      if v_aud is not null then update scholarship.scholarships set audience = v_aud, updated_at = now() where id = e.scholarship_id and audience is distinct from v_aud; end if;
+      -- v2.15.250: an automatic hold is released when this answer passes every publish check; a hold a person made stays
+      if exists (select 1 from pipeline.scholarship_publication_holds h where h.scholarship_id = e.scholarship_id and h.released_at is null and h.held_by = 'auto')
+         and exists (select 1 from security.scholarship_publishability_for_v1(array[e.scholarship_id]) p where not exists (select 1 from unnest(p.missing) x where x ilike '%held%' is not true)) then
+        update pipeline.scholarship_publication_holds set released_at = now(), release_note = 'AI re-read passes every publish check (v2.15.250)' where scholarship_id = e.scholarship_id;
+        r := coalesce(r, '{}'::jsonb) || jsonb_build_object('auto_hold_released', true);
+      end if;
+    end if;
+  end if;
+  update pipeline.scholarship_ai_extractions set applied = coalesce(r, '{}'::jsonb) || jsonb_build_object('at', now()) where id = e.id;
+  return r;
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.admin_scholarship_ai(p_action text DEFAULT 'read'::text, p_args jsonb DEFAULT '{}'::jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_rank int := security.current_role_rank(); v_reason text := btrim(coalesce(p_args->>'reason', '')); a record; v_pv int; v_job uuid; v_n int; v_ids uuid[]; v_chain text[]; v_r jsonb;
+begin
+  if auth.uid() is null or v_rank < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;
+  select * into a from security.scholarship_ai_active_v1();
+  -- v2.15.250: Layer 4 › AI could not decide (Curators and above): pages neither model could settle, with every answer
+  if p_action = 'reviews' then
+    return jsonb_build_object('can_decide', true, 'ai_admission', a.ai_admission, 'chain', (select s.chain from pipeline.scholarship_ai_extract_settings s where s.id = 1),
+      'pending', (select count(*) from pipeline.scholarship_ai_reviews r where r.status = 'pending'),
+      'reviews', (select coalesce(jsonb_agg(z.x order by z.at desc), '[]'::jsonb) from (
+          select r.created_at at, jsonb_build_object('id', r.id, 'url', r.url, 'reason', r.reason, 'status', r.status, 'created_at', r.created_at, 'decided_at', r.decided_at, 'note', r.note,
+                 'provider', (select coalesce(pr.display_name, pr.canonical_name) from catalogue.providers pr where pr.id = r.provider_id), 'candidate_id', r.candidate_id, 'scholarship_id', r.scholarship_id,
+                 'scholarship', (select s.name from scholarship.scholarships s where s.id = r.scholarship_id), 'decision', r.decision,
+                 'answers', (select coalesce(jsonb_agg(jsonb_build_object('id', e.id, 'model_code', e.model_code, 'answer', e.answer, 'checks', e.checks, 'verdict', e.verdict, 'error', e.error, 'evidence_id', e.evidence_id) order by e.id), '[]'::jsonb)
+                               from pipeline.scholarship_ai_extractions e where e.id = any (r.extraction_ids))) x
+            from pipeline.scholarship_ai_reviews r
+           where case when p_args->>'status' = 'decided' then r.status in ('admitted', 'refused') else r.status = 'pending' end
+           order by r.created_at desc limit 200) z),
+      'reroutes', (select coalesce(jsonb_object_agg(t.k, t.n), '{}'::jsonb) from (select x.route || ':' || x.field_code k, count(*) n from pipeline.layer4_reroutes x group by 1) t),
+      'layer4_course_pending', (select count(*) from pipeline.layer4_review_items i where i.status = 'pending' and i.entity_type = 'course'));
+  end if;
+  if p_action <> 'read' then
+    if v_rank < 6 and p_action <> 'review_decide' then raise exception 'Platform Admin required' using errcode = '42501'; end if;
+    if p_action not in ('label', 'test', 'review_decide') and length(v_reason) < 4 then raise exception 'give a reason (kept in the log)'; end if;
+    if p_action = 'set_prompt' then
+      if length(btrim(coalesce(p_args->>'text', ''))) < 200 then raise exception 'the instructions are too short'; end if;
+      update pipeline.scholarship_ai_prompts set active = false where active;
+      insert into pipeline.scholarship_ai_prompts(text, active, reason, created_by) values (p_args->>'text', true, v_reason, auth.uid());
+      -- new instructions: the active model must be qualified again before it admits anything
+      if a.ai_admission then update pipeline.scholarship_ai_extract_settings set ai_admission = false, changed_by = auth.uid(), changed_at = now(), reason = 'instructions changed: qualify again before switching on' where id = 1; end if;
+    elsif p_action = 'label' then
+      if v_rank < 6 then raise exception 'Platform Admin required'; end if;
+      if p_args ? 'sample_id' then
+        update pipeline.scholarship_ai_sample set expected = coalesce(p_args->'expected', expected), active = coalesce((p_args->>'active')::boolean, active), note = coalesce(p_args->>'note', note), label_source = 'Platform Admin ' || to_char(now() at time zone 'Australia/Melbourne', 'DD Mon YYYY HH24:MI') where id = (p_args->>'sample_id')::int;
+      else
+        insert into pipeline.scholarship_ai_sample(url, provider_id, expected, label_source, note, added_by)
+        values (btrim(p_args->>'url'), nullif(p_args->>'provider_id', '')::uuid, coalesce(p_args->'expected', '{}'::jsonb), 'Platform Admin ' || to_char(now() at time zone 'Australia/Melbourne', 'DD Mon YYYY HH24:MI'), p_args->>'note', auth.uid())
+        on conflict (url) do update set expected = excluded.expected, active = true, note = excluded.note, label_source = excluded.label_source;
+      end if;
+    elsif p_action = 'qualify' then
+      if not exists (select 1 from pipeline.scholarship_ai_models m where m.code = p_args->>'model_code' and m.status <> 'retired') then raise exception 'choose a model'; end if;
+      v_pv := coalesce(a.prompt_version, 1);
+      insert into pipeline.admin_jobs(kind, lane, title, args, progress, requested_by, reason, scope)
+      values ('scholarship_ai_qualify', 'scholarship_ai:qualify:' || (p_args->>'model_code'), 'Qualify the scholarship AI: ' || (select m.label from pipeline.scholarship_ai_models m where m.code = p_args->>'model_code') || ' (instructions v' || v_pv || ')',
+              jsonb_build_object('model_code', p_args->>'model_code', 'prompt_version', v_pv), jsonb_build_object('done', 0, 'total', (select count(*) from pipeline.scholarship_ai_sample where active)), auth.uid(), v_reason, p_args->>'model_code')
+      returning id into v_job;
+      insert into pipeline.scholarship_ai_queue(model_code, prompt_version, run_kind, job_id, sample_id, candidate_id, scholarship_id, provider_id, url)
+      select p_args->>'model_code', v_pv, 'qualify', v_job, s.id, s.candidate_id, s.scholarship_id, s.provider_id, s.url from pipeline.scholarship_ai_sample s where s.active;
+      insert into pipeline.admin_job_events(job_id, note, detail) values (v_job, 'queued by ' || coalesce((select u.email from auth.users u where u.id = auth.uid()), ''), jsonb_build_object('reason', v_reason));
+      perform security.scholarship_ai_fire_v1();
+    elsif p_action = 'activate' then
+      if not exists (select 1 from pipeline.admin_jobs j where j.kind = 'scholarship_ai_qualify' and j.state = 'done' and j.args->>'model_code' = p_args->>'model_code' and (j.args->>'prompt_version')::int = a.prompt_version) then
+        raise exception 'qualify this model with the current instructions first';
+      end if;
+      update pipeline.scholarship_ai_models set status = 'candidate' where status = 'active';
+      update pipeline.scholarship_ai_models set status = 'active', activated_at = now(), activated_by = auth.uid(), reason = v_reason where code = p_args->>'model_code';
+      update pipeline.scholarship_ai_extract_settings set chain = array[p_args->>'model_code'] where id = 1;
+    elsif p_action = 'set_admission' then
+      if coalesce((p_args->>'on')::boolean, false) and a.model_code is null then raise exception 'make a qualified model active first'; end if;
+      update pipeline.scholarship_ai_extract_settings set ai_admission = coalesce((p_args->>'on')::boolean, false), changed_by = auth.uid(), changed_at = now(), reason = v_reason where id = 1;
+    elsif p_action = 'backfill' then
+      if a.model_code is null then raise exception 'make a qualified model active first'; end if;
+      v_ids := case when p_args->>'scope' = 'watch' then array(select w.provider_id from pipeline.scholarship_watch w where w.active)
+                    else array(select x::uuid from jsonb_array_elements_text(coalesce(p_args->'provider_ids', '[]'::jsonb)) x) end;
+      if coalesce(cardinality(v_ids), 0) = 0 then raise exception 'choose universities'; end if;
+      insert into pipeline.admin_jobs(kind, lane, title, args, progress, requested_by, reason, scope)
+      values ('scholarship_ai_backfill', 'scholarship_ai:backfill', 'Re-check scholarship pages with AI: ' || case when p_args->>'scope' = 'watch' then 'watch list (' || cardinality(v_ids) || ')' else cardinality(v_ids) || ' universities' end,
+              jsonb_build_object('providers', to_jsonb(v_ids), 'model_code', a.model_code, 'prompt_version', a.prompt_version), jsonb_build_object('done', 0, 'total', 0), auth.uid(), v_reason, 'backfill:' || md5(array_to_string(v_ids, ',')))
+      returning id into v_job;
+      v_n := security.scholarship_ai_enqueue_v1('admit', v_ids, v_job, true);
+      update pipeline.admin_jobs set progress = jsonb_build_object('done', 0, 'total', v_n) where id = v_job;
+      insert into pipeline.admin_job_events(job_id, note, detail) values (v_job, 'queued by ' || coalesce((select u.email from auth.users u where u.id = auth.uid()), '') || ': ' || v_n || ' page(s)', jsonb_build_object('reason', v_reason));
+    elsif p_action = 'test' then
+      if a.model_code is null and coalesce(p_args->>'model_code', '') = '' then raise exception 'choose a model'; end if;
+      insert into pipeline.scholarship_ai_queue(model_code, prompt_version, run_kind, url, provider_id)
+      values (coalesce(nullif(p_args->>'model_code', ''), a.model_code), coalesce(a.prompt_version, 1), 'test', btrim(p_args->>'url'), nullif(p_args->>'provider_id', '')::uuid);
+      perform security.scholarship_ai_fire_v1();
+    -- v2.15.250: the models read in this order; each must be qualified with the current instructions
+    elsif p_action = 'set_chain' then
+      v_chain := array(select jsonb_array_elements_text(coalesce(p_args->'models', '[]'::jsonb)));
+      if cardinality(v_chain) = 0 or cardinality(v_chain) > 3 then raise exception 'choose one to three models, in order'; end if;
+      if (select count(distinct x) from unnest(v_chain) x) <> cardinality(v_chain) or 'person' = any (v_chain) then raise exception 'each model can be in the chain once'; end if;
+      if exists (select 1 from unnest(v_chain) x where not exists (select 1 from pipeline.admin_jobs j where j.kind = 'scholarship_ai_qualify' and j.state = 'done' and j.args->>'model_code' = x and (j.args->>'prompt_version')::int = a.prompt_version)) then
+        raise exception 'qualify every model in the chain with the current instructions first';
+      end if;
+      update pipeline.scholarship_ai_models set status = 'candidate' where status = 'active';
+      update pipeline.scholarship_ai_models set status = 'active', activated_at = now(), activated_by = auth.uid(), reason = v_reason where code = v_chain[1];
+      update pipeline.scholarship_ai_extract_settings set chain = v_chain, changed_by = auth.uid(), changed_at = now(), reason = v_reason where id = 1;
+    -- v2.15.250: scholarships parked as not published or held are read again by the AI (Layer 4 scholarship items are rerouted)
+    elsif p_action = 'reroute_parked' then
+      if a.model_code is null then raise exception 'set the model chain first'; end if;
+      insert into pipeline.admin_jobs(kind, lane, title, args, progress, requested_by, reason, scope)
+      values ('scholarship_ai_backfill', 'scholarship_ai:backfill', 'Re-read parked scholarships with AI', jsonb_build_object('parked', true, 'model_code', a.model_code, 'prompt_version', a.prompt_version),
+              jsonb_build_object('done', 0, 'total', 0), auth.uid(), v_reason, 'parked:' || to_char(now(), 'YYYYMMDDHH24MISS'))
+      returning id into v_job;
+      v_r := security.scholarship_ai_reroute_parked_v1(v_job);
+      update pipeline.admin_jobs set progress = jsonb_build_object('done', 0, 'total', (v_r->>'queued')::int) where id = v_job;
+      insert into pipeline.admin_job_events(job_id, note, detail) values (v_job, 'queued by ' || coalesce((select u.email from auth.users u where u.id = auth.uid()), '') || ': ' || (v_r->>'queued') || ' parked scholarship page(s); '
+             || (v_r->>'layer4_items') || ' Layer 4 scholarship item(s) rerouted', v_r || jsonb_build_object('reason', v_reason));
+    -- v2.15.250: a person decides a page neither model could settle (Curators and above); the decision is kept as an exception
+    elsif p_action = 'review_decide' then
+      if p_args->>'decision' = 'refuse' and length(v_reason) < 4 then raise exception 'give a reason for refusing (kept in the log)'; end if;
+      v_r := security.scholarship_ai_review_apply_v1((p_args->>'review_id')::bigint, p_args->>'decision', nullif(p_args->>'extraction_id', '')::bigint, nullif(v_reason, ''), auth.uid());
+    else raise exception 'unknown action';
+    end if;
+    insert into pipeline.admin_control_events(area, action, target, detail, actor) values ('scholarship_ai', p_action, coalesce(p_args->>'model_code', p_args->>'sample_id', p_args->>'url', ''), p_args - 'text', auth.uid());
+    select * into a from security.scholarship_ai_active_v1();
+  end if;
+  return jsonb_build_object(
+    'can_manage', v_rank >= 6, 'ai_admission', a.ai_admission, 'active_model', a.model_code, 'prompt_version', a.prompt_version,
+    'chain', (select s.chain from pipeline.scholarship_ai_extract_settings s where s.id = 1), 'reviews_pending', (select count(*) from pipeline.scholarship_ai_reviews r where r.status = 'pending'), 'applied', v_r,
+    'settings', (select to_jsonb(s) - 'id' from pipeline.scholarship_ai_extract_settings s where s.id = 1),
+    'models', (select jsonb_agg(to_jsonb(m) - 'activated_by' order by m.sort) from pipeline.scholarship_ai_models m where m.code <> 'person'),
+    'prompts', (select jsonb_agg(jsonb_build_object('version', p.version, 'active', p.active, 'reason', p.reason, 'at', p.created_at, 'text', case when p.active then p.text end) order by p.version desc) from pipeline.scholarship_ai_prompts p),
+    'scores', security.scholarship_ai_scores_v1(a.prompt_version),
+    'qualify_runs', (select coalesce(jsonb_agg(jsonb_build_object('id', j.id, 'model_code', j.args->>'model_code', 'prompt_version', j.args->>'prompt_version', 'state', j.state, 'progress', j.progress, 'at', j.created_at, 'finished_at', j.finished_at) order by j.created_at desc), '[]'::jsonb)
+                      from (select * from pipeline.admin_jobs j where j.kind = 'scholarship_ai_qualify' order by j.created_at desc limit 10) j),
+    'sample', (select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'url', s.url, 'expected', s.expected, 'label_source', s.label_source, 'note', s.note, 'active', s.active,
+                 'provider', (select coalesce(pr.display_name, pr.canonical_name) from catalogue.providers pr where pr.id = s.provider_id),
+                 'answers', (select coalesce(jsonb_object_agg(e.model_code, jsonb_build_object('answer', e.answer, 'checks', e.checks, 'verdict', e.verdict, 'error', e.error, 'evidence_id', e.evidence_id, 'cost', e.cost_usd)), '{}'::jsonb)
+                               from (select distinct on (e.model_code) e.* from pipeline.scholarship_ai_extractions e where e.sample_id = s.id and e.prompt_version = a.prompt_version order by e.model_code, e.at desc) e))
+                 order by s.id), '[]'::jsonb) from pipeline.scholarship_ai_sample s),
+    'queue', (select jsonb_build_object('waiting', count(*) filter (where q.state in ('queued', 'leased')), 'done_today', count(*) filter (where q.state = 'done' and q.done_at > date_trunc('day', now()))) from pipeline.scholarship_ai_queue q),
+    'cost_today', (select round(coalesce(sum(e.cost_usd), 0), 4) from pipeline.scholarship_ai_extractions e where e.at > date_trunc('day', now())),
+    'recent', (select coalesce(jsonb_agg(jsonb_build_object('id', e.id, 'at', e.at, 'url', e.url, 'model_code', e.model_code, 'run_kind', e.run_kind, 'verdict', e.verdict, 'error', e.error, 'answer', e.answer, 'checks', e.checks,
+                 'applied', e.applied, 'evidence_id', e.evidence_id, 'cost', e.cost_usd, 'provider', (select coalesce(pr.display_name, pr.canonical_name) from catalogue.providers pr where pr.id = e.provider_id)) order by e.at desc), '[]'::jsonb)
+               from (select * from pipeline.scholarship_ai_extractions e where e.sample_id is null order by e.at desc limit 40) e));
+end $function$;
+
+-- ===== Layer 4 parked course items the university adapter can settle: closed and read again now =====
+select security.layer4_reroute_parked_courses_v1();
+
+do $post$
+declare v_expected jsonb := '{"security.scholarship_ai_active_v1()": "74a1d5993a35b209ffbaa177ee6eec13", "public.svc_scholarship_ai_next(integer)": "14f9d6eef2f54d79c62c70d9e332dbce", "public.svc_scholarship_ai_record(bigint,jsonb,jsonb,text,numeric,integer,integer,numeric,text,text,text,text,jsonb,boolean)": "1eb90e4fba6107ba28927e7cac07aad2", "security.scholarship_ai_apply_v1(bigint)": "b62c7711a98e3d1705120d6e4af7f581", "public.admin_scholarship_ai(text,jsonb)": "11df1635703b6be6e9dd20bef2bebcd6"}'::jsonb;
+  v_sig text;
+begin
+  for v_sig in select jsonb_object_keys(v_expected) loop
+    if md5(replace(pg_get_functiondef(v_sig::regprocedure), E'\r', '')) <> v_expected->>v_sig then
+      raise exception '20261011010400 post-check: % not as intended', v_sig;
+    end if;
+  end loop;
+end $post$;

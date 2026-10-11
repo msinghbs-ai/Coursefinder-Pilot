@@ -67,6 +67,8 @@ export const PAGES = {
   ] },
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
     { key: 'review', label: 'Review queue', min: 3 },
+    // v2.15.250 (Platform Admin, 11 Oct 2026: "Qwen 3 then GPT-4.1 mini then to Layer 4"): scholarship pages no model could settle
+    { key: 'aireview', label: 'AI could not decide', min: 3 },
     { key: 'flags', label: 'Flagged values', min: 3 },
     { key: 'websites', label: 'Websites to find', min: 3 },
     { key: 'sendback', label: 'Send back to AI', min: 3 },
