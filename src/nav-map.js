@@ -24,6 +24,8 @@ export const PAGES = {
     { key: 'list', label: 'Scholarships', min: 1 },
     // v2.15.240 (Platform Admin, 11 Oct 2026): each provider measured against its own scholarship listing page
     { key: 'coverage', label: 'Coverage', min: 3 },
+    // v2.15.249 (Platform Admin bugs 11/10-6): AI reads each stored scholarship page; models, qualification, instructions, answers
+    { key: 'extraction', label: 'Extraction', min: 3 },
     // v2.15.174 (Platform Admin, 4 Oct 2026 01:57): Course links retired — links come from each scholarship's page (Layer 2)
     // v2.15.169 (Decision 249): Publishing moved to Layer 4 Review — publishing is a person's decision
   ] },
