@@ -508,3 +508,29 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-builder .ab-hand[open]>summary{margin-bottom:10px}
 .ab-builder .ab-facts li{font-size:var(--cf-fs-lg)}
 .ab-builder .ab-facts span{font-size:var(--cf-fs-base)}
+/* v2.15.246 (Feature 2, Fix 7): shared expandable source list (Layer 1 › Sources, Reference sources) */
+.xl-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:space-between;margin:4px 0 12px}
+.xl-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.xl-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.xl-field{display:flex;flex-direction:column;gap:4px;font-size:var(--cf-fs-base)}
+.xl-field>small{color:var(--cf-muted);font-size:var(--cf-fs-sm);text-transform:uppercase;letter-spacing:.04em}
+.xl-field input,.xl-field select,.xl-field textarea{min-width:150px;padding:7px 9px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);font:inherit;background:var(--cf-surface)}
+.xl-field.wide{flex:1 1 320px}.xl-field.wide input,.xl-field.wide textarea{width:100%}
+.xl{display:flex;flex-direction:column;gap:6px}
+.xl-head{display:grid;gap:12px;padding:0 12px 4px;font-size:var(--cf-fs-sm);color:var(--cf-muted);text-transform:uppercase;letter-spacing:.05em}
+.xl-row{border:1px solid var(--cf-border);border-radius:10px;background:var(--cf-surface)}
+.xl-row.is-open{border-color:var(--cf-indigo-200)}.xl-row.is-muted{opacity:.65}
+.xl-line{display:grid;gap:12px;align-items:center;padding:10px 12px;cursor:pointer}
+.xl-chev{border:0;background:none;padding:0;cursor:pointer;color:var(--cf-muted);display:flex}
+.xl-cell{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;font-size:var(--cf-fs-base)}
+.xl-cell strong{font-size:var(--cf-fs-lg)}.xl-cell .xl-sub{display:block;width:100%;color:var(--cf-muted);font-size:var(--cf-fs-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xl-cell-label{display:none}.xl-end{justify-content:flex-end;text-align:right}
+.xl-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:var(--cf-fs-sm);font-weight:600;background:var(--cf-slate-100);color:var(--cf-slate-700);white-space:nowrap}
+.xl-pill.tone-success{background:var(--cf-green-50);color:var(--cf-green-750)}.xl-pill.tone-warning{background:var(--cf-amber-50);color:var(--cf-amber-800)}
+.xl-pill.tone-danger{background:var(--cf-rose-50);color:var(--cf-rose-800)}.xl-pill.tone-info{background:var(--cf-indigo-50);color:var(--cf-indigo-700)}.xl-pill.tone-violet{background:var(--cf-violet-50);color:var(--cf-violet-700)}
+.xl-body{border-top:1px solid var(--cf-border);padding:12px 14px 14px 52px;display:flex;flex-direction:column;gap:12px;background:var(--cf-surface-2);border-radius:0 0 10px 10px}
+.xl-facts{display:flex;flex-wrap:wrap;gap:6px}
+.xl-form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.xl-note{font-size:var(--cf-fs-base);color:var(--cf-text-2);margin:0}
+.xl-empty{color:var(--cf-muted);padding:12px}
+@media(max-width:900px){.xl-head{display:none}.xl-line{grid-template-columns:28px 1fr!important}.xl-cell{grid-column:2}.xl-cell-label{display:inline;color:var(--cf-muted);font-size:var(--cf-fs-sm);margin-right:4px}.xl-body{padding-left:14px}}
