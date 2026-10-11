@@ -1,0 +1,80 @@
+{
+  "captured_at": "2026-10-11T04:17:20.803Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-scheduled-tasks.png",
+      "route": "scheduled-tasks",
+      "action": null,
+      "clicked": true,
+      "heading": "Scheduled jobs",
+      "settle_ms": 11038,
+      "height": 5660,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scheduled-jobs",
+      "diag": null,
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ]
+    },
+    {
+      "file": "02-scheduled-tasks-task-manager.png",
+      "route": "scheduled-tasks",
+      "action": "Task manager",
+      "clicked": true,
+      "heading": "Scheduled jobs",
+      "settle_ms": 1,
+      "height": 1082,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scheduled-jobs?tab=tasks",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-layer-1-register.png",
+      "route": "layer-1-register",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 1 Register",
+      "settle_ms": 4274,
+      "height": 1471,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-1-register",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "04-layer-1-register-source-settings.png",
+      "route": "layer-1-register",
+      "action": "Source settings",
+      "clicked": false,
+      "heading": "Layer 1 Register",
+      "settle_ms": 1,
+      "height": 1471,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-1-register",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "05-reference-data.png",
+      "route": "reference-data",
+      "action": null,
+      "clicked": true,
+      "heading": "Reference data",
+      "settle_ms": 1,
+      "height": 1082,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#reference-data",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "06-reference-data-reference-sources.png",
+      "route": "reference-data",
+      "action": "Reference sources",
+      "clicked": true,
+      "heading": "Reference data",
+      "settle_ms": 3018,
+      "height": 5419,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#reference-data?tab=links",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
