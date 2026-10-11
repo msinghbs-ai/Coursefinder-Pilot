@@ -139,7 +139,7 @@ async function inViewport(locator,page){
 const TABBED_NAV={
   'Jobs':['Scheduled jobs','Jobs'],'Scheduled Tasks':['Scheduled jobs',''],'Jobs & Schedules':['Scheduled jobs',''],
   'Layer 1 — Operations':['Layer 1 Register','Sources'],'Layer 2 — Enrichment':['Layer 2 Discovery & reading','Adapters'],
-  'Layer 3 — AI Interpretation':['Layer 3 AI validation',''],'Layer 4 — Human Resolution':['Layer 4 Review',''],
+  'Layer 3 — AI Interpretation':['Layer 2 Discovery & reading','Adapters'],'Layer 4 — Human Resolution':['Layer 4 Review',''],
   'Completeness':['Coverage & completeness',''],'Statistics & Rankings':['Rankings & statistics',''],'Compare':['Rankings & statistics','Compare'],
   'Campuses':['Providers','Campuses'],'Provider Contacts':['Provider contacts',''],'Important Dates':['Layer 1 Register','Key dates'],
   'Important Links':['Reference data','Reference sources'],'Administration':['Scrapers & fetchers',''],

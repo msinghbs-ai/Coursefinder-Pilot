@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.179 — 12 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.252** (Platform Admin, 12 Oct 2026 08:15): "Stop Layer 3 from working on intakes, English and fees and clean up UI and scripts", as asked when university adapters merged Layers 2 and 3. Layer 3 AI validation is retired everywhere: its 10 scheduled jobs are paused (migration 20261012010100; deletion by a paste file), the Layer 3 menu (Control, Work queue), Layer 4 › Send back to AI, the "Send back to AI check" review decision, the Dashboard Layer 3 tile and the Layer 3 settings are removed, and old Layer 3 addresses open Layer 2 › Adapters. The Layer 3 edge functions (model routing, work dispatch, work interpret and three benchmarks) and their shared helpers are removed from the repo; layer3-provider-control stays (it keeps the OpenRouter key the scholarship AI uses). 442 pending Layer 4 items for intakes, English and fees were closed (the university needs an adapter for that field). In the 24 hours before, 93% of Layer 3 intake and English work was for universities whose adapter already admits the field.
+
 ## 0.1.178 — 11 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.251** (11 Oct 2026, 23:50). In its first 30 minutes with AI admission on, Qwen3 30B admitted 6 scholarships on audience quotes that were on the page but did not say who the scholarship is for ("open to both full-time and part-time students"; a permanent humanitarian visa read as international); AI admission was paused and the 6 held (2 withdrawn). Worker v0.20.2: the audience quote must itself name international (or domestic) students. Migration 20261011010500: refusal reasons were not recorded while AI admission was on (text array append). Migration 20261011010600: pages read while paused are queued again. Migration 20261011010700 and Scholarships › Extraction: "Second model confirms admissions" (on by default) has the next model confirm each admission by the first.

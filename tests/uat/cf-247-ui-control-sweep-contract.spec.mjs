@@ -1,18 +1,19 @@
-// v2.15.110 UI control sweep: every scheduled automation, moving review items back to the AI, and scholarship
-// publishing are operated from the admin UI. Source checks plus a mocked browser run against the local dev server.
+// v2.15.110 UI control sweep: every scheduled automation and scholarship publishing are operated from the admin UI
+// (moving review items back to the AI retired with Layer 3 in v2.15.252). Source checks plus a mocked browser run against the local dev server.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { PAGES, resolveTarget, hrefFor } from '../../src/nav-map.js'
 import { describeSchedule } from '../../src/automation-schedule.js'
 import { utcClockToMelbourne } from '../../src/lib/format.js'
 import { mockAdmin } from './support/admin-mock.mjs'
-import * as F from './support/admin-fixtures.mjs'
 
 const read = p => fs.readFileSync(p, 'utf8')
 
-test('menu: Automations, Send back to AI and Publishing tabs; old links still land', () => {
+test('menu: Automations and Publishing tabs; old links still land', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs', 'tasks']) // v2.15.197: Task manager
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'aireview', 'flags', 'websites', 'sendback', 'rules', 'attributes', 'publishing', 'blocks']) // Decision 222: Websites to find; v2.15.157: Attributes
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'aireview', 'flags', 'websites', 'rules', 'attributes', 'publishing', 'blocks']) // Decision 222: Websites to find; v2.15.157: Attributes
+  // v2.15.252 (Platform Admin, 12 Oct 2026): Send back to AI retired with Layer 3; the old address opens the Review queue.
+  expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'sendback' }))).toMatchObject({ page: 'layer4', tab: 'review' })
   expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['coverage', 3], ['extraction', 3]]) // v2.15.240: Coverage; v2.15.174: Course links retired; Publishing is Layer 4
   expect(PAGES.scholarships.min).toBe(1)
   expect(resolveTarget('jobs').params?.get?.('tab') ?? 'jobs').toBe('jobs')
@@ -56,8 +57,7 @@ test('controls are guarded, logged and admin-only', () => {
   expect(pin).toContain("'8e8733c8f2318d2614e1d77ad4b88400'")
   expect(pin).toContain("'f4f00fc0e7b957e9bd3d4b42c3fbb96d'")
   expect(pin).toContain('(t.active or t.profile_id=v_pin)')
-  const w = read('supabase/functions/layer3-model-routing/index.ts')
-  expect(w).toContain('const its: any[] = pin ? [pin] : tiers;')
+  // v2.15.252: layer3-model-routing was deleted with Layer 3, so its pinned-model check was removed.
 })
 
 test.describe('mocked browser', () => {
@@ -89,38 +89,13 @@ test.describe('mocked browser', () => {
     await expect(page.locator('.au-table tbody tr')).toHaveCount(1)
   })
 
-  test('Send back to AI: groups by reason, send a group or a whole field back, retry failed', async ({ page }) => {
+  // v2.15.252 (Platform Admin, 12 Oct 2026): Send back to AI and the Layer 3 task cards retired with Layer 3.
+  test('old Send back to AI address opens the Layer 4 Review queue', async ({ page }) => {
     await mockAdmin(page)
-    page.on('dialog', d => d.accept())
     await page.goto('/#layer-4-review?tab=sendback')
-    await expect(page.getByRole('tab', { name: 'Send back to AI' })).toHaveAttribute('aria-selected', 'true')
-    const tuition = page.locator('.sb-field[data-field="provider_current_tuition_validation"]')
-    await expect(tuition.locator('tbody tr')).toHaveCount(2)
-    await expect(tuition).toContainText("doesn't clearly show a fee as an annual tuition fee")
-    await tuition.locator('tbody tr').nth(1).getByRole('button', { name: 'Send 23 back' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.p_action === 'send_back')?.p_args?.reason).toContain('different period')
-    await page.locator('.sb-field[data-field="course_intake"]').getByRole('button', { name: 'Send all 12 back' }).click()
-    await expect.poll(() => page.l3calls.filter(c => c.p_action === 'send_back').map(c => c.p_args)).toContainEqual({ field: 'course_intake' })
-    await expect(page.getByRole('status')).toContainText('12 items moved')
-    const intake = page.locator('.sb-field[data-field="course_intake"]')
-    await expect(intake.getByLabel('Model for Intakes').locator('option')).toHaveCount(4)
-    await expect(intake.getByLabel('Model for Intakes')).toContainText('anthropic/claude-sonnet-4.6 (only when sent from here)')
-    await intake.getByLabel('Model for Intakes').selectOption('openrouter-intake-l3r-claude-sonnet-4-6-v1')
-    await intake.getByRole('button', { name: 'Send 12 back' }).click()
-    await expect.poll(() => page.l3calls.filter(c => c.p_action === 'send_back').map(c => c.p_args)).toContainEqual({ field: 'course_intake', reason: F.requeue.groups[2].reason, profile: 'openrouter-intake-l3r-claude-sonnet-4-6-v1' })
-    // v2.15.126: failed Layer 3 work is retried from Layer 3 › Control.
-    await expect(page.locator('[data-failed-work]')).toHaveCount(0)
-    await page.goto('/#layer-3-ai')
-    await page.locator('[data-failed-work]').getByRole('row', { name: /Tuition/ }).getByRole('button', { name: 'Retry' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.p_action === 'retry_failed')?.p_args).toEqual({ task: 'provider_current_tuition_validation' })
-  })
-
-  test('Layer 3 task card sends its review items back to the AI', async ({ page }) => {
-    await mockAdmin(page)
-    page.on('dialog', d => d.accept())
-    await page.goto('/#layer-3-ai')
-    await page.locator('.l3c-task', { hasText: 'Intakes' }).getByRole('button', { name: 'Send these back to the AI' }).click()
-    await expect.poll(() => page.l3calls.find(c => c.p_action === 'send_back')?.p_args).toEqual({ field: 'course_intake' })
+    await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('tab', { name: 'Send back to AI' })).toHaveCount(0)
+    await expect(page.locator('.sb-field')).toHaveCount(0)
   })
 
   test('Scholarship publishing: ready list, publish batch with approval, hold, release', async ({ page }) => {

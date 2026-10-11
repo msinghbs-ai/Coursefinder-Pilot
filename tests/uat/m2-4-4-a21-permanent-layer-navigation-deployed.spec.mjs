@@ -6,11 +6,13 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 test.describe('A21 permanent Layer navigation @deployed',()=>{
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-4-4-a21-permanent-layer-navigation',change_control:'CF-CHG-20260830-048'})})
 
-  test('canonical Operations navigation owns all four Layer workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired; three Layer workspaces remain.
+  test('canonical Operations navigation owns the Layer workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const nav=page.locator('.m-nav')
-    for(const label of ['Layer 1 Register','Layer 2 Discovery & reading','Layer 3 AI validation','Layer 4 Review'])
+    for(const label of ['Layer 1 Register','Layer 2 Discovery & reading','Layer 4 Review'])
       await expect(nav.getByRole('button',{name:label,exact:true})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(nav.getByRole('button',{name:'Layer 3 AI validation',exact:true})).toHaveCount(0)
     await expect(page.locator('.l1o-backdrop')).toHaveCount(0)
     await expect(page.locator('.l2o-launcher')).toHaveCount(0)
     await expect(page.locator('.m23-launcher')).toHaveCount(0)
@@ -49,18 +51,17 @@ test.describe('A21 permanent Layer navigation @deployed',()=>{
   }finally{await finish(testInfo,runtime)}})
 
 
-  test('Layer 3 and Layer 4 are separate permanent routes',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  // v2.15.252: the old Layer 3 address opens Layer 2 › Adapters; Layer 4 stays its own route.
+  test('old Layer 3 address opens Layer 2; Layer 4 is a separate permanent route',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    const nav=page.locator('.m-nav')
-    await clickPrimaryNav(page,'Layer 3 — AI Interpretation')
-    await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Work queue'}).first().click({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.getByRole('heading',{name:'Work by task'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.getByRole('heading',{name:'Layer 4 status'})).toHaveCount(0)
+    await page.goto('/#layer-3-ai')
+    await expect(page).toHaveURL(/#layer-2-discovery$/,{timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('heading',{name:'Layer 2 Discovery & reading',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
+    await expect(page.getByRole('heading',{name:'Work by task'})).toHaveCount(0)
     await clickPrimaryNav(page,'Layer 4 — Human Resolution')
     await expect(page.getByRole('heading',{name:'Layer 4 status'})).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-    await expect(page.getByRole('heading',{name:'Work by task'})).toHaveCount(0)
     await expect(page.locator('.m23-shell[role="dialog"]')).toHaveCount(0)
-    await milestoneScreenshot(page,testInfo,'a21-layer3-layer4-separated')
+    await milestoneScreenshot(page,testInfo,'a21-layer3-retired-layer4-route')
   }finally{await finish(testInfo,runtime)}})
   test('saved Course filters restore without opening or flashing popovers',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)

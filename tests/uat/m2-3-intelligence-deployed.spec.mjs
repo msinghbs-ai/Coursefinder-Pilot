@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment, clickPrimaryNav } from './support/runtime-evidence.mjs'
-import { openLayer3, openLayer4 } from './support/navigation.mjs'
+import { openRetiredLayer3, openLayer4 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
@@ -11,10 +11,10 @@ const NO_SECRETS=/sb_secret_|service_role|SUPABASE_SERVICE_ROLE_KEY/i
 async function openTab(page,menu,tab){await clickPrimaryNav(page,menu);const t=page.locator('.cf-page-tabs [role="tab"]').filter({hasText:tab}).first();await expect(t).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});await t.click();await expect(t).toHaveAttribute('aria-selected','true')}
 
  // v2.15.107 to v2.15.200: the M2.3 screens moved into the single menu map; these checks follow the screens to where they now live.
- test('Layer 3 work queue and Control tab load without exposing credentials',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
-  await loginAsUatUser(page);const ws=await openLayer3(page);await expect(ws.getByRole('heading',{name:'Work by task'})).toBeVisible()
-  await page.locator('.cf-page-tabs [role="tab"]').filter({hasText:'Control'}).first().click();await expect(page.locator('main').first()).not.toBeEmpty()
-  expect(await page.locator('body').innerText()).not.toMatch(NO_SECRETS);await milestoneScreenshot(page,testInfo,'m2-3-layer3-canonical')
+ // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired; its old addresses open Layer 2 › Adapters.
+ test('old Layer 3 addresses open Layer 2 › Adapters without exposing credentials',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  await loginAsUatUser(page);await openRetiredLayer3(page);await openRetiredLayer3(page,'/#layer-3-ai?tab=work');await expect(page.locator('main').first()).not.toBeEmpty()
+  expect(await page.locator('body').innerText()).not.toMatch(NO_SECRETS);await milestoneScreenshot(page,testInfo,'m2-3-layer3-retired')
  }finally{await finish(testInfo,runtime)}})
 
  test('Layer 4 review and Scheduled jobs are separate workspaces',async({page},testInfo)=>{const runtime=observeRuntime(page);try{

@@ -9,9 +9,10 @@ import { PAGES } from '../../src/nav-map.js'
 const read = p => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8')
 
 // v2.15.243 (Platform Admin, 11 Oct 2026): Layer 3 › Scholarships (AI runs on the retired candidate table) removed
-test('nav: a Scholarships tab on Layers 1 and 2; none on Layer 3', () => {
+// v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired altogether
+test('nav: a Scholarships tab on Layers 1 and 2; no Layer 3 page', () => {
   for (const l of ['layer1', 'layer2']) expect(PAGES[l].tabs.map(t => t.key)).toContain('scholarships')
-  expect(PAGES.layer3.tabs.map(t => t.key)).not.toContain('scholarships')
+  expect(PAGES.layer3).toBeUndefined()
 })
 
 test('migration 20261004000300 shaped: settings read by the jobs, roles, reference sites, Platform Admin writes', () => {

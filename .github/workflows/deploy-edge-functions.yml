@@ -6,8 +6,8 @@
 #  - the target project must be typed and must match the repository variable
 #    SUPABASE_PROJECT_REF (so the unrelated demo project can never be targeted by mistake);
 #  - retired functions (delete_functions) can be deleted only from a fixed list, once their source is removed;
-#  - the Layer 3 binding contracts run first, so qualified code cannot deploy with a stale
-#    manifest.
+#  - v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired; its functions and binding contracts were removed from
+#    this list (deleting the deployed copies is done separately by the Platform Admin).
 # One-off setup: repository secret SUPABASE_ACCESS_TOKEN and variable SUPABASE_PROJECT_REF.
 name: Deploy edge functions
 on:
@@ -35,22 +35,12 @@ jobs:
           if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
           if [ "${{ inputs.project_ref }}" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
           if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-      - name: Layer 3 binding contracts
-        run: |
-          deno test -A --no-check tests/cf247-tuition-validation-contract.test.ts
-          deno test -A --no-check tests/cf247-tuition-benchmark-binding-contract.test.ts
       - uses: supabase/setup-cli@v1
         with:
           version: latest
       - name: Deploy
         run: |
           declare -A VERIFY_JWT=(
-            [layer3-work-interpret]=false
-            [layer3-cf245-tuition-benchmark]=false
-            [layer3-work-dispatch]=false
             [wix-course-api]=false
             [website-course-api]=false
             [zoho-course-api]=false
@@ -71,8 +61,6 @@ jobs:
             [statistics-edition-discovery]=false
             [fee-schedule-etl]=false
             [coverage-sweep]=false
-            [layer3-intake-benchmark]=false
-            [layer3-model-routing]=false
             [layer2-provider-control]=true
             # Decision 252: Serper and ScrapingBee sample runs (Platform Admin, user JWT)
             [toolset-runner]=false

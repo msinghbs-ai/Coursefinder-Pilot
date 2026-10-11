@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
-import { openLayer2, openLayer2Tab, openLayer3 } from './support/navigation.mjs'
+import { openLayer2, openLayer2Tab, openRetiredLayer3 } from './support/navigation.mjs'
 
 async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,runtime);assertNoServerErrors(runtime)}
 
@@ -38,13 +38,10 @@ test.describe('M2.4.4 A26-A28 operator UX @deployed',()=>{
     expect(sql).toContain("where id=v_batch and status in('queued','running')")
   })
 
-  test('Layer 3 exposes concise current operations and governed Evidence summary without profile mutation controls',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired; its old address opens Layer 2 › Adapters.
+  test('old Layer 3 address opens Layer 2 › Adapters; no Layer 3 work screen',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
-    const ws=await openLayer3(page)
-    // The Layer 3 Work tab shows four counts, work by task and recent results; run, pause and limits are on the Control tab.
-    await expect(ws.getByRole('heading',{name:'Work by task',exact:true})).toBeVisible()
-    for(const label of ['Waiting to run','Settled by AI','Sent to a person','Failed'])await expect(ws.getByText(label,{exact:true}).first()).toBeVisible()
-    await expect(ws.getByText(/Run, pause and limits are on the Control tab/i).first()).toBeVisible()
-    await expect(ws.getByRole('button',{name:'Pause',exact:true})).toHaveCount(0)
+    await openRetiredLayer3(page)
+    await expect(page.getByRole('heading',{name:'Work by task',exact:true})).toHaveCount(0)
   }finally{await finish(testInfo,runtime)}})
 })

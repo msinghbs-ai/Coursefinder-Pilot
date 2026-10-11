@@ -61,17 +61,15 @@ export const PAGES = {
     { key: 'builder', label: 'Adapter builder', min: 5 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
-  layer3: { label: 'Layer 3 AI validation', slug: 'layer-3-ai', icon: 'ai', subtitle: 'Run or pause each task, set its daily limit and choose the model cascade.', tabs: [
-    { key: 'routing', label: 'Control', min: 3 },
-    { key: 'work', label: 'Work queue', min: 3 },
-  ] },
+  // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. University adapters (Layer 2) admit intakes,
+  // English requirements and fees, so the AI check is no longer needed; its old addresses open Layer 2 › Adapters.
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
     { key: 'review', label: 'Review queue', min: 3 },
     // v2.15.250 (Platform Admin, 11 Oct 2026: "Qwen 3 then GPT-4.1 mini then to Layer 4"): scholarship pages no model could settle
     { key: 'aireview', label: 'AI could not decide', min: 3 },
     { key: 'flags', label: 'Flagged values', min: 3 },
     { key: 'websites', label: 'Websites to find', min: 3 },
-    { key: 'sendback', label: 'Send back to AI', min: 3 },
+    // v2.15.252: the AI send-back tab retired with Layer 3; the old address opens the Review queue.
     { key: 'rules', label: 'Fee rules', min: 3 },
     // v2.15.157 (Platform Admin, 3 Oct 2026 02:00): fee schedules, English policies and academic calendars moved here from Coverage › Attributes
     { key: 'attributes', label: 'Attributes', min: 4 },
@@ -95,7 +93,7 @@ export const PAGES = {
   // v2.15.124 (screen review): the cross-layer source list moved out of Layer 1 to Operations.
   sources: { label: 'Sources', slug: 'pipeline-sources', icon: 'database', min: 4, subtitle: 'Every source the pipeline reads, across all layers, with its health and history.' },
 
-  environment: { label: 'Settings', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity, Layer 3 limits and budgets; keys for outside services below (never shown).' },
+  environment: { label: 'Settings', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity and budgets; keys for outside services below (never shown).' },
   scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: services, keys and limits.' },
   services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off. Anything off is not offered anywhere else. Below: the limits each layer depends on, their notices, Firecrawl work by use case and sample runs.' },
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on.' },
@@ -112,7 +110,7 @@ export const PAGES = {
 export const SECTIONS = [
   { label: '', pages: ['dashboard', 'activity'] },
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
-  { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4'] },
+  { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources'] },
   { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'retention', 'migration'] },
   { label: 'Administration', pages: ['users'] },
@@ -146,7 +144,10 @@ export const LEGACY = {
   'important-links': { page: 'reference', tab: 'links' },
   'layer-2-enrichment': { page: 'layer2', tab: 'adapters' },
   'layer-2-operations': { page: 'layer2', tab: 'adapters' },
-  'layer-3-ai-interpretation': { page: 'layer3' },
+  // v2.15.252: Layer 3 retired; every old Layer 3 address opens Layer 2 › Adapters (see resolveTarget).
+  'layer-3-ai-interpretation': { page: 'layer2', tab: 'adapters', legacyL3: true },
+  'layer-3-ai': { page: 'layer2', tab: 'adapters', legacyL3: true },
+  'layer-3-ai-validation': { page: 'layer2', tab: 'adapters', legacyL3: true },
   'layer-4-human-resolution': { page: 'layer4' },
   'review-queue': { page: 'layer4' },
   'jobs-schedules': { page: 'jobs' },
@@ -195,6 +196,7 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   const raw = String(target || '')
   let hit = null
   if (PAGES[raw]) hit = { page: raw }
+  else if (raw === 'layer3') hit = { page: 'layer2', tab: 'adapters', legacyL3: true }
   else {
     const s = slugify(raw)
     if (s === 'administration' && p.get('section')) { hit = LEGACY_ADMIN_SECTIONS[p.get('section')] || LEGACY.administration; p.delete('section') }
@@ -216,8 +218,12 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'layer1' && tab === 'sources') return { page: 'sources', tab: '', params: p }
   // v2.15.246: Source settings and Manual batch runs are part of Layer 1 › Sources.
   if (hit.page === 'layer1' && ['settings', 'batch'].includes(tab)) return { page: 'layer1', tab: 'operations', params: p }
-  // v2.15.122: the Layer 3 Models list is Platform settings › Models & services.
-  if (hit.page === 'layer3' && tab === 'models') return { page: 'services', tab: '', params: p }
+  // v2.15.122: the Layer 3 Models list is Platform settings › Models & services (still true after Layer 3 retired).
+  // v2.15.252 (Platform Admin, 12 Oct 2026): every other Layer 3 address (Control, Work queue, ...) opens Layer 2 › Adapters.
+  if (hit.legacyL3 && tab === 'models') return { page: 'services', tab: '', params: p }
+  if (hit.legacyL3) return { page: 'layer2', tab: 'adapters', params: p }
+  // v2.15.252: the Layer 4 AI send-back tab retired with Layer 3; the old address opens the Review queue.
+  if (hit.page === 'layer4' && tab === 'sendback') return { page: 'layer4', tab: 'review', params: p }
   // v2.15.169 (Decision 249): Scholarships › Publishing is Layer 4 Review › Scholarship publishing.
   if (hit.page === 'scholarships' && tab === 'publishing') return { page: 'layer4', tab: 'publishing', params: p }
   // v2.15.174: Scholarships › Course links retired; the old address opens the list

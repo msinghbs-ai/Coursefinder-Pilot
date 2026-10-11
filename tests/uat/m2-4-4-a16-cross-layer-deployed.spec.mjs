@@ -28,7 +28,7 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     const benchmark=await fs.readFile('supabase/migrations-archive/20260830095255_m2_4_4_a16_contact_layer3_benchmark_contract.sql','utf8')
     const retry=await fs.readFile('supabase/migrations-archive/20260830111112_m2_4_4_a16_contact_profile_retry_hardening.sql','utf8')
     // Clean-up batch 2 (9 Oct 2026): layer3-interpret was retired; its checks were removed.
-    const benchWorker=await fs.readFile('supabase/functions/layer3-contact-benchmark/index.ts','utf8')
+    // v2.15.252 (Platform Admin, 12 Oct 2026): layer3-contact-benchmark was deleted with Layer 3; its worker checks were removed.
     const l4ui=await fs.readFile('src/Layer4Intervention.jsx','utf8')
 
     expect(foundation).toContain('layer4_field_registry')
@@ -52,8 +52,6 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
     expect(expansion).toContain("when 'provider_contact' then exists")
     expect(expansion).toContain("layer4_effective_entity_read('provider_contact',o.id)")
     expect(retry).toContain('retry_ceiling=2')
-    expect(benchWorker).toContain('anti-hallucination')
-    expect(benchWorker).toContain('layer3-contact-benchmark-v1.2.0')
     expect(l4ui).toContain('Corrections shown instead of the source') // v2.15.130
     // Publishing wording left this component when publishing moved to Layer 4 > Scholarship publishing (Decision 249, v2.15.169).
     const rpcBoundary=await fs.readFile('supabase/migrations-archive/20260830112408_m2_4_4_a16_rpc_security_invoker_boundary.sql','utf8')

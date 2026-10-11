@@ -13,7 +13,8 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
   ])
   // v2.15.107: the fixed Layer 1 > 2 > 3 > 4 order is declared once in nav-map.js (Data pipeline section);
   // the page script that reordered menu buttons (layer2-navigation-restore.js) is gone and nothing injects menu entries.
-  expect(nav).toContain("pages: ['coverage', 'layer1', 'layer2', 'layer3', 'layer4']")
+  // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired, so the order is Layer 1 > 2 > 4.
+  expect(nav).toContain("pages: ['coverage', 'layer1', 'layer2', 'layer4']")
   expect(index).not.toContain('layer2-navigation-restore')
   expect(evidence).toContain('Acquisition provenance')
   // 'Derived from stored Evidence' wording was removed from the provenance panel; 'Acquisition provenance' (above) remains the check.

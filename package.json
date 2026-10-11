@@ -1,7 +1,7 @@
 {
   "name": "coursefinder-pilot",
   "private": true,
-  "version": "0.1.178",
+  "version": "0.1.179",
   "type": "module",
   "scripts": {
     "release:verify": "node scripts/verify-release-contract.mjs",
@@ -16,9 +16,7 @@
     "test:uat:smoke": "playwright test tests/uat/smoke.spec.mjs --project=chromium-desktop",
     "test:uat:deployed": "playwright test tests/uat/data-quality-deployed.spec.mjs --project=chromium-desktop",
     "test:uat:deployed:mobile": "playwright test tests/uat/data-quality-deployed.spec.mjs --project=chromium-mobile",
-    "test:uat:report": "playwright show-report playwright-report",
-    "test:cf247-tuition-validation-contract": "node tests/cf247-tuition-validation-contract.test.ts",
-    "test:cf247-tuition-benchmark-binding-contract": "node tests/cf247-tuition-benchmark-binding-contract.test.ts"
+    "test:uat:report": "playwright show-report playwright-report"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

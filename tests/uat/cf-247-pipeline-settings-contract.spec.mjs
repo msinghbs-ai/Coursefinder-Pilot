@@ -14,8 +14,11 @@ test('Settings page: one page by pipeline step, backed by the read/write pair, l
   expect(ps).toContain("supabase.rpc('admin_pipeline_settings_read')")
   expect(ps).toContain("supabase.rpc('admin_pipeline_settings_write',{p_key:key,p_value:value})")
   for (const key of ['course_pages.matcher_prepare_universities', 'course_pages.matcher_items_per_minute', 'course_pages.search_monthly_credit_cap', 'reading.read_batch_per_30s',
-    'layer3.requests_per_day', 'layer3.daily_usd_max', 'layer3.credit_floor_usd', 'identity.attribute'])
+    'identity.attribute'])
     expect(ps).toContain(`'${key}'`)
+  // v2.15.252 (Platform Admin, 12 Oct 2026): the Layer 3 section (requests a day, route run, spend guards, credit floor) is removed.
+  expect(ps).not.toContain('data-settings-section="layer3"')
+  for (const key of ['layer3.requests_per_day', 'layer3.route_limit', 'layer3.route_concurrency', 'layer3.daily_usd_max', 'layer3.credit_floor_usd']) expect(ps).not.toContain(`'${key}'`)
   expect(ps).not.toContain("'budgets.firecrawl_monthly_limit'") // shown, changed on the Layer 2 provider record for now
   expect(ps).not.toContain('prompt_system') // prompts are shown by version and hash only
   expect(ps).not.toMatch(/toLocale|Intl\./)

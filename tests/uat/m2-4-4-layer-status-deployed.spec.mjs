@@ -17,9 +17,11 @@ test.describe('M2.4.4 Dashboard Layer status @deployed',()=>{
       await expect(page.getByRole('heading',{name:'Dashboard',exact:true}).first()).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
       const panel=page.locator('.m-panel').filter({has:page.getByRole('heading',{name:'Layers',exact:true})}).first()
       await expect(panel).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-      for(const label of ['Layer 1 · Registers','Layer 2 · Pages','Layer 3 · AI','Layer 4 · Review']){
+      // v2.15.252 (Platform Admin, 12 Oct 2026): the Layer 3 tile was removed (Layer 3 retired).
+      for(const label of ['Layer 1 · Registers','Layer 2 · Pages','Layer 4 · Review']){
         await expect(panel.getByText(label,{exact:true})).toBeVisible()
       }
+      await expect(panel.getByText('Layer 3 · AI',{exact:true})).toHaveCount(0)
       await expect(page.getByText(/unsupported admin read operation: layer_status_summary/i)).toHaveCount(0)
     }finally{
       await finish(testInfo,runtime)
