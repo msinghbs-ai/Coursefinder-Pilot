@@ -201,7 +201,7 @@ begin
                                          order by case it.kind when 'site_map' then 0 when 'listing' then 1 when 'candidate' then 2 else 3 end,
                                                   case it.outcome when 'became_scholarship' then 0 when 'new_record' then 0 when 'updated' then 1 when 'refused' then 2 when 'too_thin' then 3 when 'skipped' then 4 else 5 end, it.url), '[]'::jsonb)
                     from it where it.provider_id = pr.id))
-      order by pr.name), '[]'::jsonb))
+      order by pr.name) from prov pr), '[]'::jsonb))
   into v_out;
   return v_out;
 end $f$;
