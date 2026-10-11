@@ -1,0 +1,13 @@
+CREATE OR REPLACE FUNCTION l4_api.layer4_scholarship_scope_preview(p_scholarship_id uuid, p_candidate_reason text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'security', 'pipeline', 'scholarship', 'catalogue', 'auth'
+AS $function$
+declare v_actor uuid:=auth.uid();v_rank int;v_count int;v_evidence int;v_mismatch int;v_mapped int;v_sample jsonb;v_name text;v_provider text;
+begin
+ if v_actor is null then raise exception 'authentication required' using errcode='42501'; end if; v_rank:=security.current_role_rank();if v_rank<3 then raise exception 'curator role required' using errcode='42501';end if;
+ select count(*),count(cmc.evidence_id),count(*) filter(where c.provider_id is distinct from s.provider_id),count(*) filter(where exists(select 1 from scholarship.course_mappings m where m.scholarship_id=cmc.scholarship_id and m.course_id=cmc.course_id)),max(s.name),max(p.canonical_name) into v_count,v_evidence,v_mismatch,v_mapped,v_name,v_provider from scholarship.course_mapping_candidates cmc join scholarship.scholarships s on s.id=cmc.scholarship_id join catalogue.providers p on p.id=s.provider_id join catalogue.courses c on c.id=cmc.course_id where cmc.status='needs_review' and cmc.scholarship_id=p_scholarship_id and cmc.candidate_reason=p_candidate_reason;
+ select coalesce(jsonb_agg(x),'[]'::jsonb) into v_sample from(select jsonb_build_object('course_id',c.id,'course_title',c.canonical_title,'course_code',c.course_code,'has_evidence',cmc.evidence_id is not null,'already_mapped',exists(select 1 from scholarship.course_mappings m where m.scholarship_id=cmc.scholarship_id and m.course_id=cmc.course_id),'provider_match',c.provider_id=s.provider_id)x from scholarship.course_mapping_candidates cmc join scholarship.scholarships s on s.id=cmc.scholarship_id join catalogue.courses c on c.id=cmc.course_id where cmc.status='needs_review' and cmc.scholarship_id=p_scholarship_id and cmc.candidate_reason=p_candidate_reason order by c.canonical_title limit 20)q;
+ return jsonb_build_object('ok',true,'scholarship_id',p_scholarship_id,'scholarship_name',v_name,'provider_name',v_provider,'candidate_reason',p_candidate_reason,'candidate_count',v_count,'evidence_count',v_evidence,'missing_evidence_count',v_count-v_evidence,'provider_mismatch_count',v_mismatch,'already_mapped_count',v_mapped,'semantic_warning',lower(coalesce(p_candidate_reason,'')) ~ '(exclusion|exact|requires governed review|country|eligib|no[_ ]explicit|scope)','structural_ready',(v_count>0 and v_evidence=v_count and v_mismatch=0),'accept_confirmation','ACCEPT '||v_count,'reject_confirmation','REJECT '||v_count,'sample',v_sample,'publication_changed',false);
+end $function$

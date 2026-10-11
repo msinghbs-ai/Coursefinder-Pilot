@@ -7,7 +7,9 @@ AS $function$
 declare v_id uuid; v jsonb;
 begin
   if nullif(btrim(coalesce(p_scholarship_id,'')),'') is null then raise exception 'INVALID_INPUT: scholarship_id required' using errcode='22023'; end if;
-  select s.id into v_id from scholarship.scholarships s where s.stable_key = btrim(p_scholarship_id) limit 1;
+  select s.id into v_id from scholarship.scholarships s where s.stable_key = btrim(p_scholarship_id)
+     and s.lifecycle_status = 'active' and s.publication_status = 'published'  -- v2.15.239 (S1): published scholarships only, always
+     and not exists (select 1 from security.layer4_search_blocked_scholarships b where b.scholarship_id = s.id) limit 1;  -- v2.15.236
   if v_id is null then return jsonb_build_object('contract_version','website-search-v2','error',jsonb_build_object('code','NOT_FOUND')); end if;
   v := api.website_v2_scholarship_item(v_id);
   v := v || jsonb_build_object(

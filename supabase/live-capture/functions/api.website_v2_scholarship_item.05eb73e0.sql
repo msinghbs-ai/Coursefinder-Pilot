@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION api.website_v2_scholarship_item(p_id uuid)
  STABLE
  SET search_path TO 'pg_catalog', 'scholarship', 'catalogue', 'search', 'ref', 'security', 'api'
 AS $function$
-  with s as (select * from scholarship.scholarships where id = p_id),
+  with s as (select * from scholarship.scholarships where id = p_id and lifecycle_status = 'active' and publication_status = 'published'),  -- v2.15.239 (S1): published scholarships only, always
   p as (select pr.* from catalogue.providers pr join s on s.provider_id = pr.id),
   cr as (select c.* from scholarship.criteria c join s on c.scholarship_id = s.id where coalesce(c.status,'active') not in ('rejected','superseded','withdrawn')),
   st as (select case when bool_or('international' = any(value_codes)) and bool_or('domestic' = any(value_codes)) then 'both'
