@@ -14,6 +14,7 @@
 // v2.15.259 (Platform Admin, 12 Oct 2026 17:43: "Auto-admit everything that passes"): Admit can be automatic (a setting, switched with a reason):
 // exactly the fields that passed the admit rule are admitted, then the later stages run by themselves. A pilot group (60 AU / 25 NZ / 15 CA)
 // is measured hourly against its completeness when picked (Pilot panel; admin_provider_onboarding('pilot')).
+// v2.15.260 (Platform Admin, 12 Oct 2026 20:00, "keep moving to the next wave"): Too few course pages and AI allowance used carry on by themselves.
 import React,{useEffect,useRef,useState}from'react'
 import{ClipboardCheck,Clock3,ExternalLink,Hourglass,ListChecks,OctagonAlert,RefreshCw,Settings2,Sparkles,Workflow,CheckCircle2,Building2,UserRoundCheck,ChevronDown,ChevronRight}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -41,7 +42,8 @@ export const JOURNEY=[
 const STAGE_INDEX=Object.fromEntries(JOURNEY.map(([k],i)=>[k,i]))
 // What each stop means and what a person does about it (plain words; the backend note says what happened to this university)
 export const STOP={no_website:['No website','Enter the website in the Adapter builder (1.1). Onboarding carries on by itself once a website is recorded, or press Retry.'],
-  too_few_pages:['Too few course pages','Find or add course pages in the Adapter builder (2.1), then Retry.'],
+  too_few_pages:['Too few course pages','The next university has started. This one carries on by itself once enough of its pages are read (v2.15.260); or add course pages in the Adapter builder (2.1), then Retry.'],
+  ai_allowance:['AI allowance used','The adapter AI allowance for today is used (Adapter builder settings). The next university has started; this one carries on by itself when the allowance renews at midnight, Melbourne time.'],
   capture_failed:['Sample pages not captured','Check the site opens and Firecrawl credits remain (Models & services), then Retry.'],
   proposal_failed:['AI proposal failed','Check the OpenRouter credit and the adapter AI allowance, then Retry; or build the adapter by hand in the Adapter builder.'],
   recipe_off:['Course-page search switched off','A person switched off the course-page search for this website. Check the website in the Adapter builder (1.1); a different website replaces the search. Then Retry.'],
