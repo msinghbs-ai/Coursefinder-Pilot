@@ -77,7 +77,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_provider_central_page: b => { calls.push({ centralPage: b.p_action, args: b.p_args }); return { ok: true, source_id: 's1' } },
     admin_adapter_evaluation: F.adapterEvaluation,
     // v2.15.253: Providers › Onboarding and the credit banner (empty unless a test passes creditNotices)
-    admin_provider_onboarding: b => { calls.push({ onboarding: b.p_action, args: b.p_args }); const d = { ...F.providerOnboarding, can_manage: rank >= 6 }; const st = b.p_args?.status, q = (b.p_args?.q || '').toLowerCase(); return { ...d, rows: d.rows.filter(r => (!st || r.status === st || (st === 'active' && !['queued', 'stopped', 'waiting_admit', 'waiting_courses', 'done', 'cancelled'].includes(r.status))) && (!q || r.name.toLowerCase().includes(q))) } },
+    admin_provider_onboarding: b => { calls.push({ onboarding: b.p_action, args: b.p_args }); if (b.p_action === 'journey') return F.providerOnboardingJourney; const d = { ...F.providerOnboarding, can_manage: rank >= 6 }; const st = b.p_args?.status, q = (b.p_args?.q || '').toLowerCase(); return { ...d, rows: d.rows.filter(r => (!st || r.status === st || (st === 'active' && !['queued', 'stopped', 'waiting_admit', 'waiting_courses', 'done', 'cancelled'].includes(r.status))) && (!q || r.name.toLowerCase().includes(q))) } },
     admin_credit_notices: () => creditNotices,
     admin_adapter_builder: b => { calls.push({ builder: b.p_action, args: b.p_args }); return F.adapterBuilder },
     admin_uni_adapter_control: b => { calls.push({ adapterControl: b.p_action, args: b.p_args }); return { ok: true, id: 2 } },

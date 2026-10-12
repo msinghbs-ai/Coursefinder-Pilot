@@ -3,8 +3,11 @@
 // qualify → attach central pages → find scholarships → stop at Ready to admit. Admitting stays a person's step on Layer 2 › Adapters; nothing here
 // admits. Reads: admin_provider_onboarding('read') (Curator and above). Start, stop, retry and settings: the same function (Platform Admin, with a reason).
 // Central pages waiting for approval (fee schedules, English policies, academic calendars) can be approved across universities at the bottom.
+// v2.15.255: when no field passes, the AI proposes again (an old adapter included; 6 then 10 sample pages); nothing ready after that is
+// "Needs a person" (stopped, nothing_ready), not Ready to admit. Each row opens its journey: steps, tasks, AI drafts, qualification and
+// the scholarships found with their state (admin_provider_onboarding('journey')). New scholarships are counted live.
 import React,{useEffect,useRef,useState}from'react'
-import{ClipboardCheck,Clock3,ExternalLink,Hourglass,ListChecks,OctagonAlert,RefreshCw,Settings2,Sparkles,Workflow,CheckCircle2,Building2}from'lucide-react'
+import{ClipboardCheck,Clock3,ExternalLink,Hourglass,ListChecks,OctagonAlert,RefreshCw,Settings2,Sparkles,Workflow,CheckCircle2,Building2,UserRoundCheck,ChevronDown,ChevronRight}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,Metric,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{hrefFor}from'./nav-map'
@@ -23,11 +26,14 @@ export const STOP={no_website:['No website','Enter the website in the Adapter bu
   proposal_failed:['AI proposal failed','Check the OpenRouter credit and the adapter AI allowance, then Retry; or build the adapter by hand in the Adapter builder.'],
   recipe_off:['Course-page search switched off','A person switched off the course-page search for this website. Check the website in the Adapter builder (1.1); a different website replaces the search. Then Retry.'],
   adapter_off:['Adapter switched off','Someone switched this adapter off. Switch it on in Layer 2 › Adapters if that was a mistake, then Retry.'],
+  nothing_ready:['Needs a person','Nothing passed after the AI attempts. Open the Adapter builder: mark the values on the sample pages, or approve its central pages (1.3); then Retry. Admitting by hand also finishes onboarding.'],
   error:['Unexpected error','Read the note, then Retry. If it stops again, open the Adapter builder.']}
 const FIELD={intakes:'Intakes',english:'English',fee:'Fee',delivery:'Delivery'}
 const SOURCE={manual:'started by a person',new_provider:'new university',backfill:'without an adapter'}
-const FILTERS=[['','All'],['active','In progress'],['stopped','Stopped'],['waiting_admit','Ready to admit'],['waiting_courses','Waiting for courses'],['queued','Queued'],['done','Done']]
+const FILTERS=[['','All'],['active','In progress'],['stopped','Stopped'],['needs_person','Needs a person'],['waiting_admit','Ready to admit'],['waiting_courses','Waiting for courses'],['queued','Queued'],['done','Done']]
 const ORDER=s=>s==='stopped'?0:s==='waiting_admit'?1:2
+const needsPerson=r=>r.status==='stopped'&&r.stop_reason==='nothing_ready'
+const stepOf=r=>needsPerson(r)?['Needs a person','warning']:(STEP[r.status]||[r.status,'neutral'])
 const builderHref=id=>hrefFor('layer2','builder',id?{provider:id}:{})
 
 // A Platform Admin action that asks for a reason in place (same pattern as Scholarships › Extraction)
@@ -78,9 +84,60 @@ function Fields({r}){
     {held.map(([f,why])=><small key={f} className="po-held" data-held={f}><strong>{FIELD[f]||f}:</strong> {String(why)}</small>)}</div>
 }
 
+// New scholarships, counted live: found since onboarding started, published, and pages still with the AI
+export function Scholarships({r}){
+  const s=r.scholarships_live
+  if(!s)return r.scholarships==null?<span className="sd-desc">—</span>:<span>{fmtNumber(r.scholarships)}</span>
+  if(!s.searched&&!Number(s.found))return <span className="sd-desc" data-sch-live="not-yet">Not searched yet</span>
+  return <div className="po-sch" data-sch-live>
+    <strong>{fmtNumber(s.found||0)} found</strong>
+    {Number(s.published)>0&&<small className="sd-desc po-sub">{fmtNumber(s.published)} published</small>}
+    {Number(s.waiting_ai)>0&&<small className="sd-desc po-sub" data-sch-waiting>{fmtNumber(s.waiting_ai)} page{Number(s.waiting_ai)===1?'':'s'} with the AI</small>}
+  </div>
+}
+
+const TASK={course_page_find:'Course-page search',provider_fill:'Fill in from website',scholarship_provider_scan:'Scholarship search'}
+const PUB={published:['Published','success'],unpublished:['Not published','neutral'],withdrawn:['Withdrawn','warning'],held:['Held','warning']}
+const VERDICT={scholarship:'scholarship',not_scholarship:'not a scholarship',listing:'listing page',unproven:'not proven',failed:'failed'}
+const money=n=>n==null?'':`US$${Number(n).toFixed(4)}`
+// One university's journey: every step change, the tasks it ran, the AI drafts, the qualification and the scholarships found
+export function Journey({id}){
+  const[j,setJ]=useState(null),[fail,setFail]=useState('')
+  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_provider_onboarding',{p_action:'journey',p_args:{id}});if(error)throw error;setJ(data||{})}catch(e){setFail(errText(e))}}
+  useEffect(()=>{load()},[id])
+  if(fail)return <p className="fr-error" role="alert">{fail}</p>
+  if(!j)return <Loading label="Loading the journey…"/>
+  const items=[
+    ...(j.events||[]).map(e=>({at:e.at,kind:'step',label:needsPerson(e)?'Needs a person':(STEP[e.status]?.[0]||e.status),text:e.note})),
+    ...(j.tasks||[]).map(t=>({at:t.created_at,kind:'task',label:TASK[t.kind]||t.title||t.kind,text:`${t.state}${t.finished_at?` · finished ${fmtDateTime(t.finished_at)}`:''}${t.note?` · ${t.note}`:''}`})),
+    ...(j.drafts||[]).map(d=>({at:d.created_at,kind:'ai',label:'AI draft',text:`${fmtNumber(d.samples||0)} sample pages · ${d.status}${d.proposals?` · ${fmtNumber(d.proposals)} proposal${d.proposals===1?'':'s'}`:''}${d.model?` · ${d.model}`:''}${d.cost_usd!=null?` · ${money(d.cost_usd)}`:''}`}))
+  ].sort((a,b)=>String(a.at||'').localeCompare(String(b.at||'')))
+  const fields=Object.entries(j.qualify?.fields||{}),sch=j.scholarships||[],ai=Object.entries(j.ai_read||{})
+  return <div className="po-journey" data-onboarding-journey={id}>
+    <div className="po-j-col">
+      <h4>Journey</h4>
+      <p className="sd-desc">AI attempts in this onboarding: {fmtNumber(j.ai_attempts||0)} of 2.</p>
+      {!items.length?<p className="sd-desc">Nothing recorded yet.</p>:<ol className="po-timeline">{items.map((x,i)=><li key={i} className={`po-t-${x.kind}`} data-journey-item={x.kind}>
+        <time>{fmtDateTime(x.at)}</time><strong>{x.label}</strong>{x.text&&<span>{x.text}</span>}</li>)}</ol>}
+    </div>
+    <div className="po-j-col">
+      <h4>Qualification</h4>
+      {!fields.length?<p className="sd-desc">Not qualified yet.</p>:<table className="cf-table po-q" data-journey-qualify><thead><tr><th>Field</th><th>Read on</th><th>Agrees</th><th>Result</th></tr></thead>
+        <tbody>{fields.map(([f,x])=><tr key={f}><td>{FIELD[f]||f}</td><td>{Math.round(Number(x.read_share||0)*100)}%</td><td>{x.agree_share==null?'—':`${Math.round(Number(x.agree_share)*100)}%`}</td>
+          <td>{x.pass?<StatusChip value="pass" tone="success" label="Passes"/>:<small className="sd-desc">{x.why}</small>}</td></tr>)}</tbody></table>}
+      <h4>Scholarships</h4>
+      <p className="sd-desc" data-journey-ai>{j.scholarship_search?`Search: ${j.scholarship_search.note||'done'}.`:'Not searched yet.'}{Number(j.ai_waiting)>0?` ${fmtNumber(j.ai_waiting)} page${Number(j.ai_waiting)===1?'':'s'} waiting for the AI.`:''}{ai.length?` AI read so far: ${ai.map(([k,n])=>`${fmtNumber(n)} ${VERDICT[k]||k}`).join(', ')}.`:''}</p>
+      {sch.length>0&&<ul className="po-sch-list" data-journey-scholarships>{sch.map(s=>{const[l,t]=PUB[s.publication_status]||[s.publication_status||'—','neutral']
+        return <li key={s.id}><StatusChip value={s.publication_status} tone={t} label={l}/> {s.url?<a className="cf-link" href={s.url} target="_blank" rel="noreferrer">{s.name}</a>:s.name}</li>})}</ul>}
+    </div>
+  </div>
+}
+
 export default function ProviderOnboarding({rank=0,actorId='',onError}){
   const[d,setD]=useState(null),[status,setStatus]=useState(''),[q,setQ]=useState(''),[query,setQuery]=useState(''),[sel,setSel]=useState(()=>new Set()),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[fail,setFail]=useState('')
-  const args=useRef({});args.current={...(status?{status}:{}),...(query?{q:query}:{})}
+  const args=useRef({});args.current={...(status?{status:status==='needs_person'?'stopped':status}:{}),...(query?{q:query}:{})}
+  const[open,setOpen]=useState(()=>new Set())
+  const flip=id=>setOpen(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n})
   const shape=x=>x&&!Array.isArray(x)&&typeof x==='object'?x:{rows:[],counts:{},stops:{}}
   const load=async()=>{setBusy(true);try{const{data,error}=await supabase.rpc('admin_provider_onboarding',{p_action:'read',p_args:args.current});if(error)throw error;setD(shape(data))}catch(e){setFail(errText(e));onError?.(errText(e))}finally{setBusy(false)}}
   const act=async(action,a,done)=>{setFail('');setMsg('');try{const{data,error}=await supabase.rpc('admin_provider_onboarding',{p_action:action,p_args:a});if(error)throw error;setSel(new Set());if(done)setMsg(done);await load()}catch(e){setFail(errText(e));throw e}}
@@ -91,11 +148,11 @@ export default function ProviderOnboarding({rank=0,actorId='',onError}){
   useEffect(()=>{if(!active)return;const t=setInterval(load,30000);return()=>clearInterval(t)},[active,status,query])
   if(!d)return fail?<p className="fr-error" role="alert">{fail}</p>:<Loading label="Loading onboarding…"/>
   const can=Boolean(d.can_manage)
-  const rows=[...(d.rows||[])].sort((a,b)=>ORDER(a.status)-ORDER(b.status)||String(b.updated_at||'').localeCompare(String(a.updated_at||'')))
+  const rows=[...(d.rows||[])].filter(r=>status==='needs_person'?needsPerson(r):status==='stopped'?!needsPerson(r):true).sort((a,b)=>ORDER(a.status)-ORDER(b.status)||String(b.updated_at||'').localeCompare(String(a.updated_at||'')))
   const picked=rows.filter(r=>sel.has(r.id)),stoppedPicked=picked.filter(r=>r.status==='stopped'),stoppable=picked.filter(r=>!['done','cancelled'].includes(r.status))
   const toggle=id=>setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n})
   const tickable=rows.filter(r=>!['done','cancelled'].includes(r.status)),allPicked=tickable.length>0&&tickable.every(r=>sel.has(r.id))
-  const stops=Object.entries(d.stops||{}).filter(([,n])=>Number(n))
+  const stops=Object.entries(d.stops||{}).filter(([k,n])=>Number(n)&&k!=='nothing_ready'),needs=Number(d.stops?.nothing_ready||0),stoppedN=Math.max(Number(counts.stopped||0)-needs,0)
   // a tile with a filter shows those rows when pressed (pressed again: all rows)
   const tile=(key,label,value,detail,icon,tone,filter)=>{const m=<Metric label={label} value={fmtNumber(value||0)} detail={detail} icon={icon} tone={tone}/>
     return filter===undefined?<div key={key} className="po-tile" data-onboarding-tile={key}>{m}</div>
@@ -105,7 +162,8 @@ export default function ProviderOnboarding({rank=0,actorId='',onError}){
     <div className="cf-metric-grid po-tiles">
       {tile('queued','Waiting (queued)',counts.queued,d.settings?.enabled===false?'Onboarding is switched off':`Up to ${fmtNumber(d.settings?.max_active||0)} run at once`,Clock3,'neutral','queued')}
       {tile('active','In progress',active,'Website to scholarships',Workflow,'info','active')}
-      {tile('stopped','Stopped',counts.stopped,stops.length?stops.map(([k,n])=>`${STOP[k]?.[0]||k}: ${fmtNumber(n)}`).join(' · '):'Nothing stopped',OctagonAlert,Number(counts.stopped)?'danger':'success','stopped')}
+      {tile('stopped','Stopped',stoppedN,stops.length?stops.map(([k,n])=>`${STOP[k]?.[0]||k}: ${fmtNumber(n)}`).join(' · '):'Nothing stopped',OctagonAlert,stoppedN?'danger':'success','stopped')}
+      {tile('needs_person','Needs a person',needs,'Nothing passed after 2 AI attempts',UserRoundCheck,needs?'warning':'neutral','needs_person')}
       {tile('waiting_admit','Ready to admit',counts.waiting_admit,'A person admits on Layer 2 › Adapters',ListChecks,Number(counts.waiting_admit)?'warning':'neutral','waiting_admit')}
       {tile('done','Done',counts.done,'Admitted',CheckCircle2,'success','done')}
       {tile('without','Still without an adapter',d.without_adapter,'Active universities with courses',Building2,'neutral')}
@@ -131,19 +189,21 @@ export default function ProviderOnboarding({rank=0,actorId='',onError}){
       <div className="cf-table-wrap"><table className="cf-table po-table" data-onboarding-rows><thead><tr>
         {can&&<th>{tickable.length>0&&<input type="checkbox" aria-label="Tick every row shown" checked={allPicked} onChange={()=>setSel(allPicked?new Set():new Set(tickable.map(r=>r.id)))}/>}</th>}
         <th>University</th><th>Country</th><th>Step</th><th>Note</th><th>Pages read / courses</th><th>Fields</th><th>New scholarships</th><th>Updated</th></tr></thead>
-        <tbody>{rows.map(r=>{const[l,t]=STEP[r.status]||[r.status,'neutral'],stop=r.status==='stopped'?STOP[r.stop_reason]:null
-          return <tr key={r.id} data-onboarding-row={r.id} data-status={r.status}>
+        <tbody>{rows.map(r=>{const[l,t]=stepOf(r),stop=r.status==='stopped'?STOP[r.stop_reason]:null,isOpen=open.has(r.id)
+          return <React.Fragment key={r.id}><tr data-onboarding-row={r.id} data-status={r.status}>
             {can&&<td>{!['done','cancelled'].includes(r.status)&&<input type="checkbox" aria-label={`Tick ${r.name}`} checked={sel.has(r.id)} onChange={()=>toggle(r.id)}/>}</td>}
             <td><a className="cf-link" href={builderHref(r.provider_id)} title="Open in the Adapter builder" data-onboarding-builder>{r.name}</a>{r.website&&<a href={r.website} target="_blank" rel="noreferrer" className="cf-link" aria-label={`Open ${r.name}'s website`}> <ExternalLink size={12}/></a>}
-              {r.source&&<small className="sd-desc po-sub">{SOURCE[r.source]||r.source}</small>}</td>
+              {r.source&&<small className="sd-desc po-sub">{SOURCE[r.source]||r.source}</small>}
+              {r.status!=='queued'&&<button type="button" className="po-j-toggle" aria-expanded={isOpen} onClick={()=>flip(r.id)} data-onboarding-journey-toggle={r.id}>{isOpen?<ChevronDown size={13}/>:<ChevronRight size={13}/>}Journey</button>}</td>
             <td>{r.country||'—'}</td>
             <td><StatusChip value={r.status} tone={t} label={l}/>{stop&&<small className="sd-desc po-sub" data-stop-reason={r.stop_reason}>{stop[0]}</small>}</td>
             <td className="po-note">{r.note||'—'}{stop&&<small className="sd-desc po-sub" data-stop-help>What to do: {stop[1]}</small>}</td>
             <td>{fmtNumber(r.pages_read||0)} / {fmtNumber(r.courses||0)}</td>
             <td><Fields r={r}/></td>
-            <td>{r.scholarships==null?'—':fmtNumber(r.scholarships)}</td>
+            <td><Scholarships r={r}/></td>
             <td>{fmtDateTime(r.updated_at)}</td>
-          </tr>})}</tbody></table></div>}
+          </tr>
+          {isOpen&&<tr className="po-journey-row"><td colSpan={can?9:8}><Journey id={r.id}/></td></tr>}</React.Fragment>})}</tbody></table></div>}
       {rows.length>=200&&<small className="sd-desc">The first {fmtNumber(rows.length)} are shown; use the filter or search to narrow.</small>}
     </section>
 
