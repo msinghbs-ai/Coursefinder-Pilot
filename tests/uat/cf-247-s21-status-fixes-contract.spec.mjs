@@ -13,3 +13,20 @@ test('11100: one refresh at a time; onboarding waits for found pages up to 6 hou
   expect(a).toContain('live % differs from the definition this change replaces')
   expect(outside(a)).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
+
+const b = fs.readFileSync('supabase/migrations/20261012011200_cf247_scholarship_ai_rules_third_model.sql', 'utf8')
+const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+
+test('11200 + worker v0.20.3: proven value stands; nationality proves international; GPT-4.1 qualified, never switched on; waiting pages read again', () => {
+  expect(b).toContain("p_answer := jsonb_set(p_answer, '{value}', v_prev.val) || jsonb_build_object('value_from', v_prev.model_code);")
+  expect(b).toContain("'country', case when u.provider_id is not null then security.coverage_country(u.provider_id) end")
+  expect(b).toContain("values ('gpt-4.1', 'openai/gpt-4.1', 'GPT-4.1', 'candidate', 30,")
+  expect(b).toContain("elsif p_action = 'reviews_reread' then")
+  // qualifying never adds it to the order or activates it
+  expect(b.slice(b.lastIndexOf('$function$;'))).not.toMatch(/set_chain|activate|set_admission/)
+  expect(b).toContain('live % differs from the definition this change replaces')
+  expect(outside(b)).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.20\.3"/)
+  expect(w).toContain('|| foreignNamed(a?.audience_quote, home))')
+  expect(w).toContain('const checks = checkScholarshipAnswer(a, `${title} ${h1} ${text}`, it.country || null);')
+})
