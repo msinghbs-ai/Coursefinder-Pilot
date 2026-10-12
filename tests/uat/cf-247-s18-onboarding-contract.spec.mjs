@@ -162,7 +162,7 @@ test.describe('mocked browser', () => {
     await expect(b).toHaveClass(/tone-danger/)
     await expect(b.locator('[data-credit-notice="critical"]')).toContainText('Firecrawl: Firecrawl credits: 180 left')
     await expect(b.locator('[data-credit-notice="warning"]')).toContainText('OpenRouter:')
-    await expect(b.getByRole('link', { name: 'Models & services' })).toHaveAttribute('href', '#models-services')
+    await expect(b.getByRole('link', { name: 'Models & services' })).toHaveAttribute('href', '#models-services?tab=limits')
     await b.getByRole('button', { name: /Hide the credit notices/ }).click()
     await expect(page.locator('[data-credit-banner]')).toHaveCount(0)
     await page.goto('/#providers') // stays hidden for the rest of the session
