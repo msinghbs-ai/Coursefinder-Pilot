@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.261'
+export const SOP_REVIEWED_FOR = '2.15.262'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,12 +44,13 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.4', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.5', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
       { when: 'Start of day (about 20 minutes)', steps: [
         step({ do: 'Read the credit and limit bar under the page title, if one shows. Red means a toolset has stopped: fix it first.', page: 'services', why: 'Firecrawl, OpenRouter, the adapter AI allowance and the scholarship scraper cap stop work when used up.', done: 'No red bar.' }),
+        step({ do: 'Models & services › Firecrawl credits by university: read Today (each purpose against its share and the billed total), then tick Flagged only. For Search stopped, check the website on the Adapter builder (1.1) and press Search again with a reason; for Mostly wrong pages or No pages, note the university for its adapter or website.', page: 'services', why: 'Firecrawl may bill 15,000 credits a day; credits spent without correct pages are waste.', done: 'No university is flagged without a note, and no share was used up before the afternoon.' }),
         step({ do: 'Platform health › Health checks: clear every Critical; read each Warning and fix it or note why it can wait.', page: 'health', tab: 'checks', why: 'The checks run every 10 minutes over jobs, queues, budgets and the database.', done: 'No Critical open.' }),
         step({ do: 'Scheduled jobs › Automations: "Failed in the last 24 hours". Open each failed job and read its last error (Platform guide › Signal → action).', page: 'jobs', tab: 'automations', why: 'A job failing every run means its stage has stopped.', done: 'Every repeated failure is fixed, paused with a note, or raised with the platform engineer.' }),
         step({ do: 'Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link.', page: 'dashboard', why: 'One list of everything waiting for a person.', done: 'You know today\'s queue.' }),
@@ -96,10 +97,11 @@ export const SOPS = [
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages (scholarships are found only after admitting and enriching); OpenRouter balance, daily guards and credit floor on Models & services (Observe); 100 universities at once.' },
       { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit automatically (platform-wide, switched on 12 Oct 2026): the daily step becomes a spot-check of automatic admits, undone on Layer 2 › Adapters when wrong; the onboarding pilot (60 AU / 25 NZ / 15 CA) is followed on its Pilot panel.' },
       { version: '1.3', date: '12 Oct 2026', release: '2.15.260', change: 'Found course pages are read through Firecrawl; "Too few course pages" and "AI allowance used" carry on by themselves, so Retry is needed only for other stops.' },
-      { version: '1.4', date: '12 Oct 2026', release: '2.15.261', change: 'Found course pages are read directly first and through Firecrawl (basic proxy) only when blocked or needing a browser; watch the Firecrawl credits used per hour on the credit bar and Models & services.' }],
+      { version: '1.4', date: '12 Oct 2026', release: '2.15.261', change: 'Found course pages are read directly first and through Firecrawl (basic proxy) only when blocked or needing a browser; watch the Firecrawl credits used per hour on the credit bar and Models & services.' },
+      { version: '1.5', date: '12 Oct 2026', release: '2.15.262', change: 'Firecrawl daily budget (15,000 a day, shared by purpose) and per-university caps; new start-of-day step to read Firecrawl credits by university and resume stopped searches; top 50 Australian providers by CRICOS courses onboarded first.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.4', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.5', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Live activity, failed jobs and live errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -147,7 +149,8 @@ export const SOPS = [
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages; scholarships are found only after a university is admitted and its courses enriched.' },
       { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit is automatic for the fields that pass; universities move on to enriching and scholarships by themselves. Tell the Platform Admin about any admitted value that looks wrong.' },
       { version: '1.3', date: '12 Oct 2026', release: '2.15.260', change: 'Too few course pages and AI allowance used carry on by themselves; work stopped rows with other reasons.' },
-      { version: '1.4', date: '12 Oct 2026', release: '2.15.261', change: 'Found course pages are read directly first; Firecrawl only when blocked or needing a browser.' }],
+      { version: '1.4', date: '12 Oct 2026', release: '2.15.261', change: 'Found course pages are read directly first; Firecrawl only when blocked or needing a browser.' },
+      { version: '1.5', date: '12 Oct 2026', release: '2.15.262', change: 'Firecrawl work now keeps to a daily budget; a purpose that used its share waits until midnight (not a fault).' }],
   },
 ]
 

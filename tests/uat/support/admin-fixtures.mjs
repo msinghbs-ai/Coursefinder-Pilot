@@ -795,3 +795,16 @@ export const creditNoticesCritical = [
 ]
 
 providerOnboarding.pilot_latest.data = onboardingPilotReport
+
+// v2.15.262: Firecrawl credits by university and today's budget
+export const firecrawlCredits = { generated_at: '2026-10-12T11:00:00Z', hours: 24, can_manage: true,
+  budget: { on: true, day_start: '2026-10-11T13:00:00Z', total: 15000, billed_today: 12400, used_today: 11800,
+    groups: [{ group: 'course_search', label: 'Finding course pages', share: 6000, used: 5100, refused: 0 }, { group: 'reads', label: 'Reading pages', share: 3000, used: 3000, refused: 42 },
+             { group: 'scholarships', label: 'Scholarships', share: 3500, used: 2400, refused: 3 }, { group: 'central', label: 'Central pages', share: 1500, used: 1100, refused: 0 },
+             { group: 'other', label: 'Other', share: 1000, used: 200, refused: 0 }] },
+  totals: { units: 37695, course_search: 12318, reads: 4832, scholarships: 12159, central: 4603, other: 3784, fc_ok: 558, fc_wrong: 1079, direct_ok: 1232, universities: 230, flagged: 3, stopped: 1 },
+  universities: [
+    { provider_id: 'u-syd', name: 'The University of Sydney', country: 'AU', units: 1288, course_search: 20, reads: 15, scholarships: 1245, central: 8, other: 0, fc_ok: 7, fc_wrong: 4, direct_ok: 30, correct: 37, per_correct: 0.9, flag: 'scholarships_high', stopped: false },
+    { provider_id: 'u-gbc', name: 'George Brown College', country: 'CA', units: 1084, course_search: 428, reads: 570, scholarships: 0, central: 86, other: 0, fc_ok: 77, fc_wrong: 123, direct_ok: 0, correct: 77, per_correct: 12.9, flag: 'mostly_wrong', stopped: false },
+    { provider_id: 'u-hum', name: 'Humber College', country: 'CA', units: 560, course_search: 552, reads: 0, scholarships: 0, central: 8, other: 0, fc_ok: 0, fc_wrong: 0, direct_ok: 0, correct: 0, per_correct: null, flag: 'search_stopped', stopped: true, stopped_searches: 276 },
+    { provider_id: 'u-con', name: 'Conestoga College', country: 'CA', units: 681, course_search: 630, reads: 0, scholarships: 0, central: 51, other: 0, fc_ok: 0, fc_wrong: 0, direct_ok: 269, correct: 269, per_correct: 2.3, flag: null, stopped: false }] }

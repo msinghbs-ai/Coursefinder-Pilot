@@ -15,6 +15,7 @@ import{RefreshCw,BellRing,Check}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import FirecrawlWork from'./FirecrawlWork'
+import FirecrawlCredits from'./FirecrawlCredits'
 import Card from'./Card'
 
 const errText=e=>e?.message||String(e)
@@ -71,13 +72,13 @@ export default function Toolsets({onError}){
       {!d.can_manage&&<p className="l3v-note">You can view this. Only a Platform Admin can change it.</p>}
       <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </Card>
-    {(d.toolsets||[]).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<FirecrawlWork onError={onError}/>}</React.Fragment>)}
+    {(d.toolsets||[]).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
     <SearchPass can={Boolean(d.can_manage)} onError={onError}/>
     <SampleRuns toolsets={d.toolsets||[]} can={Boolean(d.can_manage)} onError={onError}/>
   </div>
 }
 
-const SECTION_ORDER=['Key and plan limits','How the service is used','Daily guards','Target universities','Read pages','Find pages','Runs','Search pass','Sample runs','Notices']
+const SECTION_ORDER=['Key and plan limits','How the service is used','Daily guards','Target universities','Read pages','Find pages','Runs','Daily budget','Search pass','Sample runs','Notices']
 function Toolset({t,d,can,write}){
   const or=t.key==='openrouter'?d.openrouter||{}:null
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
