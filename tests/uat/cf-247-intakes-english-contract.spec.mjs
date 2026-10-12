@@ -137,7 +137,7 @@ test.describe('browser: English policies panel', () => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page)
     await page.goto('/#coverage?tab=attributes')
-    await expect(page.locator('[data-attributes-moved]')).toContainText('Layer 2 › Adapter builder (1.3) for one university, or across universities on Providers › Onboarding')
+    await expect(page.locator('[data-attributes-moved]')).toContainText('Layer 2 › Adapter builder (1.3) for one university, or across universities on Layer 2 › Onboarding') // v2.15.258
     await expect(page.locator('[data-provider-policies]')).toHaveCount(0)
     await expect(page.locator('[data-fee-schedules]')).toHaveCount(0)
     // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting

@@ -32,5 +32,5 @@ test('browser: needs-a-person tiles, states by layer, next run and filter', asyn
   await expect(la.locator('[data-job="scholarship-read"]')).toHaveCount(0)
   await expect(la.locator('[data-job="evidence-link-index"]')).toHaveCount(1)
   await la.locator('[data-need="fee_schedules"]').click()
-  await expect(page).toHaveURL(/#providers\?tab=onboarding/) // v2.15.253: central page approvals moved to Providers › Onboarding
+  await expect(page).toHaveURL(/#layer-2-discovery\?tab=onboarding/) // v2.15.253: central page approvals on Onboarding; v2.15.258: Onboarding is on Layer 2
 })
