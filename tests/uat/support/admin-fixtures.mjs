@@ -753,6 +753,7 @@ export const providerOnboarding = {
   without_adapter: 1153, approvals_waiting: 7,
   // v2.15.258: universities not yet in onboarding, the pace, and rows by journey stage
   not_queued: 0, pace: { finished_last_hour: 20, finished_last_6_hours: 120 },
+  pilot_latest: { at: '2026-10-12T07:07:00Z', data: null }, // filled below (onboardingPilotReport)
   stages: { provider_in: 1100, prepare: 14, create_adapter: 15, admit: 4, enrich: 2, scholarship_adapter: 1, admit_scholarships: 0, done: 0 },
   rows: [
     { id: 'ob-1', stage: 'create_adapter', in_register: true, provider_id: 'pv-ob-1', name: 'Southern Cross University', country: 'AU', website: 'https://www.scu.edu.au', status: 'qualifying', stop_reason: null, note: 'Qualifying each field against the admit rule.', source: 'backfill', job_id: null, ready: null, held: null, central_pages: [], scholarships: null, courses: 212, pages_read: 180, started_at: '2026-10-12T09:40:00Z', step_started_at: '2026-10-12T10:05:00Z', updated_at: '2026-10-12T10:05:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
@@ -763,6 +764,14 @@ export const providerOnboarding = {
     { id: 'ob-6', stage: 'admit', provider_id: 'pv-ob-6', name: 'Durham College', country: 'CA', website: 'https://durhamcollege.ca', status: 'stopped', stop_reason: 'approve_central', note: 'The AI read its central pages; approve or reject them in the Adapter builder (1.3) or Providers › Onboarding › Approvals waiting.', source: 'backfill', job_id: null, ready: [], held: { english: 'not read by the adapter' }, central_pages: [], scholarships: 0, scholarships_live: { found: 0, published: 0, waiting_ai: 0, searched: true }, ai_attempts: 2, courses: 158, pages_read: 40, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T13:30:00Z', updated_at: '2026-10-12T13:31:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
   ],
 }
+// v2.15.259: the onboarding pilot by country (shape of security.onboarding_pilot_report_v1)
+export const onboardingPilotReport = { cohort: 'pilot-2026-10-12', picked_at: '2026-10-12T07:05:00Z', auto_admit: true, ai_cost_usd: 0.4211, countries: [
+  { country: 'AU', universities: 60, provider_in: 0, prepare: 20, create_adapter: 18, admit: 2, enrich: 12, scholarship_adapter: 3, admit_scholarships: 0, done: 0, needs_person: 5, stopped: 0, auto_admitted: 15,
+    courses_before: 4000, courses: 4000, intakes_before: 1200, intakes: 2000, english_before: 1600, english: 2400, fee_before: 800, fee: 1600, delivery_before: 400, delivery: 1000, published_before: 30, published: 34, scholarships_before: 40, scholarships: 52 },
+  { country: 'NZ', universities: 25, provider_in: 0, prepare: 10, create_adapter: 8, admit: 0, enrich: 4, scholarship_adapter: 0, admit_scholarships: 0, done: 0, needs_person: 3, stopped: 0, auto_admitted: 4,
+    courses_before: 1000, courses: 1000, intakes_before: 100, intakes: 300, english_before: 200, english: 300, fee_before: 100, fee: 200, delivery_before: 0, delivery: 100, published_before: 2, published: 2, scholarships_before: 3, scholarships: 3 },
+  { country: 'CA', universities: 15, provider_in: 7, prepare: 2, create_adapter: 2, admit: 0, enrich: 0, scholarship_adapter: 0, admit_scholarships: 0, done: 0, needs_person: 4, stopped: 0, auto_admitted: 0,
+    courses_before: 900, courses: 900, intakes_before: 90, intakes: 90, english_before: 90, english: 90, fee_before: 0, fee: 0, delivery_before: 0, delivery: 0, published_before: 0, published: 0, scholarships_before: 0, scholarships: 0 }] }
 // v2.15.255: admin_provider_onboarding('journey') for Charles Sturt University (ob-3)
 export const providerOnboardingJourney = {
   id: 'ob-3', status: 'waiting_admit', stage: 'admit', stop_reason: null, started_at: '2026-10-12T09:36:00Z', ai_attempts: 1,
@@ -784,3 +793,5 @@ export const creditNoticesCritical = [
   { level: 'critical', tool: 'Firecrawl', text: 'Firecrawl credits: 180 left, below the reserve of 500; searches and page reads wait.' },
   { level: 'warning', tool: 'OpenRouter', text: 'OpenRouter credit: US$4.10 left, near the floor.' },
 ]
+
+providerOnboarding.pilot_latest.data = onboardingPilotReport

@@ -2,7 +2,7 @@
 // Only for the local dev server (VITE_SUPABASE_URL=https://example.supabase.co); nothing reaches a real backend.
 import * as F from './admin-fixtures.mjs'
 
-export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [] } = {}) {
+export async function mockAdmin(page, { rank = 6, healthMissing = false, courseDiffers = false, creditNotices = [], onboardingAuto = false } = {}) {
   const context = { ...F.context, role_rank: rank, role: rank >= 6 ? 'platform_admin' : 'viewer' }
   const session = { access_token: 'mock-token', refresh_token: 'mock-refresh', token_type: 'bearer', expires_in: 360000, expires_at: Math.floor(Date.now() / 1000) + 360000, user: { id: context.user_id, email: 'admin@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {} } }
   const adminRead = {
@@ -77,7 +77,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_provider_central_page: b => { calls.push({ centralPage: b.p_action, args: b.p_args }); return { ok: true, source_id: 's1' } },
     admin_adapter_evaluation: F.adapterEvaluation,
     // v2.15.253: Providers › Onboarding and the credit banner (empty unless a test passes creditNotices)
-    admin_provider_onboarding: b => { calls.push({ onboarding: b.p_action, args: b.p_args }); if (b.p_action === 'journey') return F.providerOnboardingJourney; const d = { ...F.providerOnboarding, can_manage: rank >= 6 }; const st = b.p_args?.status, sg = b.p_args?.stage, q = (b.p_args?.q || '').toLowerCase(); return { ...d, rows: d.rows.filter(r => (!sg || r.stage === sg) && (!st || r.status === st || (st === 'active' && !['queued', 'stopped', 'waiting_admit', 'waiting_courses', 'done', 'cancelled'].includes(r.status))) && (!q || r.name.toLowerCase().includes(q))) } },
+    admin_provider_onboarding: b => { calls.push({ onboarding: b.p_action, args: b.p_args }); if (b.p_action === 'journey') return F.providerOnboardingJourney; if (b.p_action === 'pilot') return { cohort: 'pilot-2026-10-12', report: { ...F.onboardingPilotReport, at: '2026-10-12T08:00:00Z' }, snapshots: [] }; const d = { ...F.providerOnboarding, can_manage: rank >= 6, ...(onboardingAuto ? { settings: { ...F.providerOnboarding.settings, auto_admit: true, auto_admit_at: '2026-10-12T07:10:00Z', auto_admit_reason: 'Platform Admin, 12 Oct 2026 17:43: "Auto-admit everything that passes"' } } : {}) }; const st = b.p_args?.status, sg = b.p_args?.stage, q = (b.p_args?.q || '').toLowerCase(); return { ...d, rows: d.rows.filter(r => (!sg || r.stage === sg) && (!st || r.status === st || (st === 'active' && !['queued', 'stopped', 'waiting_admit', 'waiting_courses', 'done', 'cancelled'].includes(r.status))) && (!q || r.name.toLowerCase().includes(q))) } },
     admin_credit_notices: () => creditNotices,
     admin_adapter_builder: b => { calls.push({ builder: b.p_action, args: b.p_args }); return F.adapterBuilder },
     admin_uni_adapter_control: b => { calls.push({ adapterControl: b.p_action, args: b.p_args }); return { ok: true, id: 2 } },

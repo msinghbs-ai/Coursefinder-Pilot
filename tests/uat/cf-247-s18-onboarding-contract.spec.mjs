@@ -67,7 +67,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     await page.goto('/#providers?tab=onboarding')
     const ob = page.locator('[data-provider-onboarding]')
-    await expect(ob).toContainText("Admitting stays a person's step on Layer 2 › Adapters")
+    await expect(ob).toContainText("Admitting is a person's step on Layer 2 › Adapters")
     await expect(ob.locator('[data-onboarding-tile="queued"]')).toContainText('1,100')
     await expect(ob.locator('[data-onboarding-tile="active"]')).toContainText('30')
     await expect(ob.locator('[data-onboarding-tile="stopped"]')).toContainText('No website: 1')
