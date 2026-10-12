@@ -11,6 +11,9 @@
 // 5 Enrich courses (the admitted adapter writes its values) → 6 Scholarship adapter (the scholarship search starts only now) →
 // 7 Admit scholarships (the AI reads and checks; held pages go to a person) → Done. Each row shows its stage on a stepper; the stage tiles
 // filter the list. "Onboard universities not yet queued" adds only those not already in onboarding; the pace and an estimate are shown.
+// v2.15.259 (Platform Admin, 12 Oct 2026 17:43: "Auto-admit everything that passes"): Admit can be automatic (a setting, switched with a reason):
+// exactly the fields that passed the admit rule are admitted, then the later stages run by themselves. A pilot group (60 AU / 25 NZ / 15 CA)
+// is measured hourly against its completeness when picked (Pilot panel; admin_provider_onboarding('pilot')).
 import React,{useEffect,useRef,useState}from'react'
 import{ClipboardCheck,Clock3,ExternalLink,Hourglass,ListChecks,OctagonAlert,RefreshCw,Settings2,Sparkles,Workflow,CheckCircle2,Building2,UserRoundCheck,ChevronDown,ChevronRight}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -74,14 +77,15 @@ function ReasonAction({label,confirm='Confirm',variant,disabled,onDo,placeholder
 
 function Settings({s,actorId,act}){
   const[f,setF]=useState(null)
-  const cur={enabled:Boolean(s?.enabled),auto_start_new:Boolean(s?.auto_start_new),max_active:Number(s?.max_active??0)}
+  const cur={enabled:Boolean(s?.enabled),auto_start_new:Boolean(s?.auto_start_new),auto_admit:Boolean(s?.auto_admit),max_active:Number(s?.max_active??0)}
   const v=f||{...cur,run_as_me:false}
   const set=(k,x)=>setF({...v,[k]:x})
   const changed=Object.fromEntries(Object.entries(v).filter(([k,x])=>k==='run_as_me'?x:x!==cur[k]))
   const okMax=Number.isInteger(v.max_active)&&v.max_active>=0&&v.max_active<=200
-  return <details className="m-panel po-settings" data-onboarding-settings><summary><Settings2 size={15}/> Onboarding settings <small className="sd-desc">{cur.enabled?`On · ${fmtNumber(cur.max_active)} at once`:'Off'}{cur.auto_start_new?' · new universities start by themselves':''}</small></summary>
+  return <details className="m-panel po-settings" data-onboarding-settings><summary><Settings2 size={15}/> Onboarding settings <small className="sd-desc">{cur.enabled?`On · ${fmtNumber(cur.max_active)} at once`:'Off'}{cur.auto_start_new?' · new universities start by themselves':''}{cur.auto_admit?' · Admit automatic':''}</small></summary>
     <div className="po-settings-body">
       <label className="tn-check"><input type="checkbox" checked={v.enabled} onChange={e=>set('enabled',e.target.checked)}/> Onboarding is switched on</label>
+      <label className="tn-check" data-onboarding-auto-admit-setting><input type="checkbox" checked={v.auto_admit} onChange={e=>set('auto_admit',e.target.checked)}/> Admit automatically (stage 4): only the fields that pass the admit rule; undo for one university on Layer 2 › Adapters</label>
       <label className="tn-check"><input type="checkbox" checked={v.auto_start_new} onChange={e=>set('auto_start_new',e.target.checked)}/> Start new universities by themselves when they are added</label>
       <label className="po-max">How many at once <input type="number" min="0" max="200" value={Number.isNaN(v.max_active)?'':v.max_active} onChange={e=>set('max_active',e.target.value===''?NaN:Number(e.target.value))} aria-label="How many at once"/> <small className="sd-desc">0 to 200; 0 pauses new starts</small></label>
       <label className="tn-check"><input type="checkbox" checked={v.run_as_me} onChange={e=>set('run_as_me',e.target.checked)}/> Run the steps under my sign-in{s?.run_as?(String(s.run_as)===String(actorId)?' (already mine)':' (now another Platform Admin)'):''}</label>
@@ -144,7 +148,7 @@ export function Journey({id}){
     <div className="po-j-col">
       <h4>Journey</h4>
       {j.stage&&<div className="po-j-stage" data-journey-stage={j.stage}><Stepper stage={j.stage} status={j.status}/><span>{j.stage==='done'?'Done':`Stage ${STAGE_INDEX[j.stage]+1} of ${JOURNEY.length}: ${JOURNEY[STAGE_INDEX[j.stage]]?.[1]||j.stage}`}</span></div>}
-      <p className="sd-desc">AI attempts in this onboarding: {fmtNumber(j.ai_attempts||0)} of 2.{j.admitted_at?` Admitted ${fmtDateTime(j.admitted_at)}.`:''}</p>
+      <p className="sd-desc">AI attempts in this onboarding: {fmtNumber(j.ai_attempts||0)} of 2.{j.admitted_at?` Admitted ${fmtDateTime(j.admitted_at)}${j.auto_admitted?` automatically (${(j.auto_admitted.fields||[]).map(f=>FIELD[f]||f).join(', ')})`:''}.`:''}</p>
       {!items.length?<p className="sd-desc">Nothing recorded yet.</p>:<ol className="po-timeline">{items.map((x,i)=><li key={i} className={`po-t-${x.kind}`} data-journey-item={x.kind}>
         <time>{fmtDateTime(x.at)}</time><strong>{x.label}</strong>{x.text&&<span>{x.text}</span>}</li>)}</ol>}
     </div>
@@ -164,22 +168,50 @@ export function Journey({id}){
   </div>
 }
 
+// v2.15.259: the pilot group by country — stages reached, completeness when picked and now, scholarships, AI cost (hourly snapshot; Refresh reads it live)
+const PCT=(n,c)=>Number(c)?`${Math.round(Number(n||0)*100/Number(c))}%`:'—'
+const FILL=[['intakes','Intakes'],['english','English'],['fee','Fee'],['delivery','Delivery']]
+export function Pilot({latest,on,onToggle}){
+  const[live,setLive]=useState(null),[busy,setBusy]=useState(false),[fail,setFail]=useState('')
+  const r=live?.report||latest?.data||{},at=live?.report?.at||latest?.at,rows=r.countries||[]
+  const sum=k=>rows.reduce((n,x)=>n+Number(x[k]||0),0)
+  const total=rows.length>1?{country:'All',...Object.fromEntries(Object.keys(rows[0]||{}).filter(k=>k!=='country').map(k=>[k,sum(k)]))}:null
+  const refresh=async()=>{setBusy(true);setFail('');try{const{data,error}=await supabase.rpc('admin_provider_onboarding',{p_action:'pilot',p_args:{}});if(error)throw error;setLive(data||null)}catch(e){setFail(errText(e))}finally{setBusy(false)}}
+  const Row=({x,strong})=><tr data-pilot-country={x.country} className={strong?'po-pilot-total':''}>
+    <td><strong>{x.country}</strong></td><td className="num">{fmtNumber(x.universities)}</td>
+    <td className="num">{fmtNumber(Number(x.provider_in||0)+Number(x.prepare||0)+Number(x.create_adapter||0))}</td><td className="num">{fmtNumber(x.admit)}</td><td className="num">{fmtNumber(x.enrich)}</td>
+    <td className="num">{fmtNumber(Number(x.scholarship_adapter||0)+Number(x.admit_scholarships||0))}</td><td className="num">{fmtNumber(x.done)}</td><td className="num">{fmtNumber(x.needs_person)} / {fmtNumber(x.stopped)}</td><td className="num">{fmtNumber(x.auto_admitted)}</td>
+    {FILL.map(([k])=><td key={k} className="num" data-pilot-fill={k}>{PCT(x[`${k}_before`],x.courses_before)} → <strong>{PCT(x[k],x.courses)}</strong></td>)}
+    <td className="num">{fmtNumber(x.published_before)} → <strong>{fmtNumber(x.published)}</strong></td></tr>
+  return <section className="m-panel po-pilot" data-onboarding-pilot>
+    <div className="fs-bar"><h3>Pilot: {fmtNumber(sum('universities'))} universities ({rows.map(x=>`${fmtNumber(x.universities)} ${x.country}`).join(' · ')})</h3>
+      <Button compact variant={on?'primary':undefined} aria-pressed={on} onClick={onToggle} data-pilot-filter>{on?'Showing pilot only':'Show pilot only'}</Button>
+      <Button compact onClick={refresh} disabled={busy} data-pilot-refresh><RefreshCw size={14}/>{busy?'Reading…':'Refresh now'}</Button></div>
+    <p className="sd-desc">Picked {fmtDateTime(r.picked_at)} · {live?'read now':'hourly snapshot'} {fmtDateTime(at)} · AI cost since picked US${Number(r.ai_cost_usd||0).toFixed(2)} · completeness is the share of active courses with each value, when picked → now.</p>
+    {fail&&<p className="fr-error" role="alert">{fail}</p>}
+    <div className="cf-table-wrap"><table className="cf-table po-pilot-table"><thead><tr><th>Country</th><th className="num">Universities</th><th className="num">Stages 1–3</th><th className="num">Admit</th><th className="num">Enrich</th><th className="num">Scholarships</th><th className="num">Done</th><th className="num">Needs a person / stopped</th><th className="num">Auto-admitted</th>
+      {FILL.map(([k,l])=><th key={k} className="num">{l}</th>)}<th className="num">Scholarships published</th></tr></thead>
+      <tbody>{rows.map(x=><Row key={x.country} x={x}/>)}{total&&<Row x={total} strong/>}</tbody></table></div>
+  </section>
+}
+
 export default function ProviderOnboarding({rank=0,actorId='',onError}){
   const[d,setD]=useState(null),[status,setStatus]=useState(''),[q,setQ]=useState(''),[query,setQuery]=useState(''),[sel,setSel]=useState(()=>new Set()),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[fail,setFail]=useState('')
-  const[stage,setStage]=useState('')
-  const args=useRef({});args.current={...(status?{status:status==='needs_person'?'stopped':status}:{}),...(stage?{stage}:{}),...(query?{q:query}:{})}
+  const[stage,setStage]=useState(''),[pilot,setPilot]=useState(false)
+  const args=useRef({});args.current={...(status?{status:status==='needs_person'?'stopped':status}:{}),...(stage?{stage}:{}),...(pilot?{pilot:true}:{}),...(query?{q:query}:{})}
   const[open,setOpen]=useState(()=>new Set())
   const flip=id=>setOpen(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n})
   const shape=x=>x&&!Array.isArray(x)&&typeof x==='object'?x:{rows:[],counts:{},stops:{}}
   const load=async()=>{setBusy(true);try{const{data,error}=await supabase.rpc('admin_provider_onboarding',{p_action:'read',p_args:args.current});if(error)throw error;setD(shape(data))}catch(e){setFail(errText(e));onError?.(errText(e))}finally{setBusy(false)}}
   const act=async(action,a,done)=>{setFail('');setMsg('');try{const{data,error}=await supabase.rpc('admin_provider_onboarding',{p_action:action,p_args:a});if(error)throw error;setSel(new Set());if(done)setMsg(done);await load()}catch(e){setFail(errText(e));throw e}}
   useEffect(()=>{const t=setTimeout(()=>setQuery(q.trim()),350);return()=>clearTimeout(t)},[q])
-  useEffect(()=>{setSel(new Set());load()},[status,stage,query])
+  useEffect(()=>{setSel(new Set());load()},[status,stage,pilot,query])
   const counts=d?.counts||{},active=IN_PROGRESS.reduce((n,k)=>n+Number(counts[k]||0),0)
   // refresh every 30 seconds while anything is in progress
   useEffect(()=>{if(!active)return;const t=setInterval(load,30000);return()=>clearInterval(t)},[active,status,stage,query])
   if(!d)return fail?<p className="fr-error" role="alert">{fail}</p>:<Loading label="Loading onboarding…"/>
   const can=Boolean(d.can_manage)
+  const auto=Boolean(d.settings?.auto_admit)
   const rows=[...(d.rows||[])].filter(r=>status==='needs_person'?needsPerson(r):status==='stopped'?!needsPerson(r):true).sort((a,b)=>ORDER(a.status)-ORDER(b.status)||String(b.updated_at||'').localeCompare(String(a.updated_at||'')))
   const picked=rows.filter(r=>sel.has(r.id)),stoppedPicked=picked.filter(r=>r.status==='stopped'),stoppable=picked.filter(r=>!['done','cancelled'].includes(r.status))
   const toggle=id=>setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n})
@@ -190,11 +222,13 @@ export default function ProviderOnboarding({rank=0,actorId='',onError}){
     return filter===undefined?<div key={key} className="po-tile" data-onboarding-tile={key}>{m}</div>
       :<button type="button" key={key} className={`db-tile po-tile${status===filter?' is-on':''}`} data-onboarding-tile={key} onClick={()=>{setStage('');setStatus(status===filter?'':filter)}} aria-pressed={status===filter}>{m}</button>}
   return <div className="m-page-stack po" data-provider-onboarding>
-    <p className="sd-desc po-lead">Universities without an admitting adapter are onboarded automatically in seven stages. Admitting stays a person's step on <a className="cf-link" href={hrefFor('layer2','adapters')}>Layer 2 › Adapters</a>; once admitted, its courses are enriched and only then are its scholarships found and checked.</p>
+    <p className="sd-desc po-lead">Universities without an admitting adapter are onboarded automatically in seven stages. {auto?<>Admit is <strong>automatic</strong>: the fields that pass the admit rule are admitted by themselves (undo for one university on <a className="cf-link" href={hrefFor('layer2','adapters')}>Layer 2 › Adapters</a>)</>:<>Admitting is a person's step on <a className="cf-link" href={hrefFor('layer2','adapters')}>Layer 2 › Adapters</a></>}; once admitted, its courses are enriched and only then are its scholarships found and checked.</p>
+    {auto&&<p className="sd-desc po-auto" data-onboarding-auto-admit>Admit automatically has been on since {fmtDateTime(d.settings?.auto_admit_at)}{d.settings?.auto_admit_reason?`: ${d.settings.auto_admit_reason}`:''}. Universities where nothing passed still need a person.</p>}
+    {d.pilot_latest&&<Pilot latest={d.pilot_latest} on={pilot} onToggle={()=>{setStage('');setStatus('');setPilot(!pilot)}}/>}
     <section className="m-panel po-stages" data-onboarding-stages aria-label="Journey stages">
       <ol className="po-stage-strip">{[...JOURNEY,['done','Done','Every stage finished.']].map(([k,l,what],i)=>{const n=Number(d.stages?.[k]||0)
         return <li key={k}><button type="button" className={`po-stage${stage===k?' is-on':''}`} aria-pressed={stage===k} onClick={()=>{setStatus('');setStage(stage===k?'':k)}} data-onboarding-stage={k} title={what}>
-          <small>{k==='done'?'':`${i+1}. `}{l}</small><strong>{fmtNumber(n)}</strong></button></li>})}</ol>
+          <small>{k==='done'?'':`${i+1}. `}{l}{k==='admit'&&auto?' (automatic)':''}</small><strong>{fmtNumber(n)}</strong></button></li>})}</ol>
       <p className="sd-desc" data-onboarding-pace>{d.pace?`Pace: ${fmtNumber(d.pace.finished_last_hour||0)} universities finished a stage in the last hour (${fmtNumber(d.pace.finished_last_6_hours||0)} in 6 hours), up to ${fmtNumber(d.settings?.max_active||0)} at once. `:''}{estimate(counts.queued,d.pace)}{stage?<> Showing stage: <strong>{JOURNEY.find(x=>x[0]===stage)?.[1]||'Done'}</strong>. <button type="button" className="cf-link po-clear" onClick={()=>setStage('')}>Show all</button></>:''}</p>
     </section>
     <div className="cf-metric-grid po-tiles">
@@ -239,7 +273,7 @@ export default function ProviderOnboarding({rank=0,actorId='',onError}){
             <td>{r.stage&&<Stepper stage={r.stage} status={r.status}/>}<StatusChip value={r.status} tone={t} label={l}/>{stop&&<small className="sd-desc po-sub" data-stop-reason={r.stop_reason}>{stop[0]}</small>}</td>
             <td className="po-note">{r.note||'—'}{stop&&<small className="sd-desc po-sub" data-stop-help>What to do: {stop[1]}</small>}</td>
             <td>{fmtNumber(r.pages_read||0)} / {fmtNumber(r.courses||0)}</td>
-            <td><Fields r={r}/></td>
+            <td><Fields r={r}/>{r.auto_admitted&&<small className="sd-desc po-sub" data-auto-admitted>Admitted automatically: {(r.auto_admitted.fields||[]).map(f=>FIELD[f]||f).join(', ')}</small>}</td>
             <td><Scholarships r={r}/></td>
             <td>{fmtDateTime(r.updated_at)}</td>
           </tr>

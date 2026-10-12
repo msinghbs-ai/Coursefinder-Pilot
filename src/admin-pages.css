@@ -603,3 +603,8 @@
 .po .po-stepper li.is-stopped{background:var(--cf-surface-2);box-shadow:0 0 0 2px var(--cf-red-600)}
 .po .po-j-stage{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:var(--cf-fs-xs)}
 .po .po-j-stage .po-stepper{margin:0}
+/* v2.15.259: automatic Admit note and the pilot panel */
+.po .po-auto{padding:8px 12px;border-left:3px solid var(--cf-indigo-600);background:var(--cf-indigo-50);border-radius:var(--cf-radius-md)}
+.po .po-pilot h3{margin:0;font-size:var(--cf-fs-sm);flex:1}
+.po .po-pilot-table{font-size:var(--cf-fs-xs)}
+.po .po-pilot-total td{border-top:2px solid var(--cf-slate-300)}
