@@ -1,0 +1,18 @@
+{
+  "captured_at": "2026-10-12T04:59:02.358Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-platform-guide?tab=operator-sop.png",
+      "route": "platform-guide?tab=operator-sop",
+      "action": null,
+      "clicked": true,
+      "heading": "Guides",
+      "settle_ms": 3792,
+      "height": 2936,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#platform-guide?tab=operator-sop",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
