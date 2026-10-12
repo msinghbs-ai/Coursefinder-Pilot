@@ -21,12 +21,17 @@ export default function ScholarshipAiReview({onError}){
   const load=async()=>{setBusy(true);try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:'reviews',p_args:{status}});if(error)throw error;setD(data)}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   useEffect(()=>{load()},[status])
   const decide=async(review,decision,extraction,reason)=>{setFail('');setMsg('');try{const{error}=await supabase.rpc('admin_scholarship_ai',{p_action:'review_decide',p_args:{review_id:review.id,decision,extraction_id:extraction||null,reason:reason||''}});if(error)throw error;setMsg(decision==='admit'?'Admitted. It goes through the publish checks at the next hourly publish.':'Refused. The same page copy will be refused again without asking.');await load()}catch(e){setFail(errText(e))}}
+  // v2.15.256: read every waiting page again from the first model in the order (Platform Admin, with a reason; stored copy, no scraper credit)
+  const[again,setAgain]=useState(false),[why,setWhy]=useState('')
+  const reread=async()=>{setFail('');setMsg('');try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:'reviews_reread',p_args:{reason:why.trim()}});if(error)throw error;setMsg(`${fmtNumber(data?.applied?.queued||0)} page(s) will be read again from the first model; each stays here only if no model settles it.`);setAgain(false);setWhy('');await load()}catch(e){setFail(errText(e))}}
   const rr=d?.reroutes||{},rows=d?.reviews||[]
   const rerouted=Object.entries(rr).filter(([k])=>k.startsWith('adapter:')).reduce((a,[,n])=>a+Number(n),0),toAi=Object.entries(rr).filter(([k])=>k.startsWith('scholarship_ai:')).reduce((a,[,n])=>a+Number(n),0)
   return <div className="m-page-stack sx" data-ai-review>
     <section className="m-panel">
       <div className="m-workspace-head"><div><h2>AI could not decide</h2><p>Scholarship pages that no model in the chain could settle: a reply failed, the name was not on the page, or a fact was not proven by a quote. Admit or refuse each one; the decision is kept for the same page copy.</p></div>
-        <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>Refresh</Button></div>
+        <span className="sx-row">{again?<span className="sx-reason"><input value={why} onChange={e=>setWhy(e.target.value)} placeholder="Reason (kept in the log)" aria-label="Reason: read the waiting pages again" autoFocus/><Button compact variant="primary" disabled={why.trim().length<4} onClick={reread} data-ai-review-reread-confirm>Read again</Button><Button compact onClick={()=>{setAgain(false);setWhy('')}}>Cancel</Button></span>
+          :<Button compact disabled={!Number(d?.pending)} onClick={()=>setAgain(true)} data-ai-review-reread>Read the waiting pages again</Button>}
+        <Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>Refresh</Button></span></div>
       <div className="sc-tiles">
         <div><small>Waiting for a person</small><strong>{fmtNumber(d?.pending||0)}</strong><span>{d?.ai_admission?'AI admission is on':'AI admission is off: nothing new arrives'}</span></div>
         <div><small>Models, in order</small><strong>{(d?.chain||[]).join(' → ')||'None'}</strong><span>then this list</span></div>

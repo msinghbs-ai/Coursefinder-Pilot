@@ -75,7 +75,7 @@ test.describe('mocked browser', () => {
     await expect(ob.locator('[data-onboarding-tile="without"]')).toContainText('1,153')
     await expect(ob.locator('[data-onboarding-tile="approvals"]')).toHaveAttribute('href', '#layer-2-discovery?tab=builder')
     const rows = ob.locator('[data-onboarding-row]')
-    await expect(rows).toHaveCount(5)
+    await expect(rows).toHaveCount(6)
     await expect(rows.first()).toHaveAttribute('data-status', 'stopped') // stopped rows first
     const stopped = ob.locator('[data-onboarding-row="ob-2"]')
     await expect(stopped).toContainText('Stopped')
@@ -118,7 +118,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page, { rank: 3 })
     await page.goto('/#providers?tab=onboarding')
     const ob = page.locator('[data-provider-onboarding]')
-    await expect(ob.locator('[data-onboarding-row]')).toHaveCount(5)
+    await expect(ob.locator('[data-onboarding-row]')).toHaveCount(6)
     await expect(ob.locator('[data-onboarding-actions]')).toHaveCount(0)
     await expect(ob.locator('[data-onboarding-settings]')).toHaveCount(0)
   })

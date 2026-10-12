@@ -55,7 +55,7 @@ const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform
 //   mode read:     direct fetch (robots.txt respected); Firecrawl scrape only when the site refuses or the page is
 //                  script-only, inside the budget guard; identity = CRICOS course code on the page or exact title.
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
-const WORKER = "coverage-sweep-worker-v0.20.2"; // v0.20.2 (11 Oct 2026): an audience quote must itself name international (or domestic) students. v0.20.1 (11 Oct 2026): the AI value check uses only the numbers of the answer's value kind; an empty or cut-off answer is named. v0.20.0 (11 Oct 2026, Platform Admin bugs 11/10-6): mode scholarship_ai reads each queued scholarship page with a pinned AI model and checks every quote against the page. v0.19.3 (11 Oct 2026): extractor v0.7.3. v0.19.2 (11 Oct 2026, Platform Admin bugs 11/10-5): every scholarship candidate page read keeps a stored copy, refused and too-thin pages too. v0.19.1 (11 Oct 2026): a provider home page that refuses a direct read is checked through the scraper when its website is verified. v0.19.0 (11 Oct 2026, Platform Admin bugs 11/10-2): find_site searches every provider without a website (not only Firecrawl targets), by name for New Zealand, Australia without a CRICOS code and any other country; mode central_find (Firecrawl map, key dates, international fees and English requirements suggested); an adapter proposal cut off at its length limit is asked again once with a larger limit, and tokens are recorded. v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.21.0"; // v0.21.0 (12 Oct 2026, Platform Admin status review, fix 3): mode central_ai reads a university's stored English language policy or academic calendar page with a pinned model; every score and month must be in a quote that is on the page; the result is recorded as a proposal a person approves (never applied here). v0.20.3 (12 Oct 2026, Platform Admin status review): an audience quote that names another country or region ("students from Papua New Guinea", "citizens of the People's Republic of China") or says "not a domestic student" proves international; the university's own country (and Australia/New Zealand for each other) does not. v0.20.2 (11 Oct 2026): an audience quote must itself name international (or domestic) students. v0.20.1 (11 Oct 2026): the AI value check uses only the numbers of the answer's value kind; an empty or cut-off answer is named. v0.20.0 (11 Oct 2026, Platform Admin bugs 11/10-6): mode scholarship_ai reads each queued scholarship page with a pinned AI model and checks every quote against the page. v0.19.3 (11 Oct 2026): extractor v0.7.3. v0.19.2 (11 Oct 2026, Platform Admin bugs 11/10-5): every scholarship candidate page read keeps a stored copy, refused and too-thin pages too. v0.19.1 (11 Oct 2026): a provider home page that refuses a direct read is checked through the scraper when its website is verified. v0.19.0 (11 Oct 2026, Platform Admin bugs 11/10-2): find_site searches every provider without a website (not only Firecrawl targets), by name for New Zealand, Australia without a CRICOS code and any other country; mode central_find (Firecrawl map, key dates, international fees and English requirements suggested); an adapter proposal cut off at its length limit is asked again once with a larger limit, and tokens are recorded. v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -149,11 +149,38 @@ export function scholarshipAiRequest(model: string, prompt: string, p: { provide
       { role: "user", content: `University: ${p.provider || "unknown"}\nPage address: ${p.url}\nPage title: ${p.title}\nMain heading: ${p.h1}\n\nPage text:\n${p.text}` }],
   };
 }
-const INTL_WORDS = /\b(international|overseas|offshore|student visa|subclass 500|non[- ]?residents?|foreign)\b/i;
+const INTL_WORDS = /\b(international|overseas|offshore|student visa|subclass 500|non[- ]?residents?|foreign|non[- ]?domestic|not (?:be )?an? domestic student)\b/i;
 const DOM_WORDS = /\b(domestic|citizens?|citizenship|permanent residen\w*|aboriginal|torres strait|humanitarian)\b/i;
+// v0.20.3: countries and regions whose naming in an audience quote proves the scholarship is for students from outside the university's
+// country. The university's own country, and Australia and New Zealand for each other (trans-Tasman students count as domestic in places), do not.
+const COUNTRY_NAMES: Record<string, string> = { AF: "Afghanistan", AL: "Albania", DZ: "Algeria", AR: "Argentina", AM: "Armenia", AU: "Australia", AT: "Austria", AZ: "Azerbaijan",
+  BH: "Bahrain", BD: "Bangladesh", BY: "Belarus", BE: "Belgium", BT: "Bhutan", BO: "Bolivia", BA: "Bosnia", BW: "Botswana", BR: "Brazil", BN: "Brunei", BG: "Bulgaria",
+  KH: "Cambodia", CM: "Cameroon", CA: "Canada", CL: "Chile", CN: "China", CO: "Colombia", CK: "Cook Islands", CR: "Costa Rica", HR: "Croatia", CU: "Cuba", CY: "Cyprus",
+  CZ: "Czech", DK: "Denmark", DO: "Dominican Republic", EC: "Ecuador", EG: "Egypt", SV: "El Salvador", EE: "Estonia", ET: "Ethiopia", FJ: "Fiji", FI: "Finland",
+  FR: "France", DE: "Germany", GH: "Ghana", GR: "Greece", GT: "Guatemala", HK: "Hong Kong", HU: "Hungary", IS: "Iceland", IN: "India", ID: "Indonesia", IR: "Iran",
+  IQ: "Iraq", IE: "Ireland", IL: "Israel", IT: "Italy", JM: "Jamaica", JP: "Japan", JO: "Jordan", KZ: "Kazakhstan", KE: "Kenya", KI: "Kiribati", KR: "Korea", KW: "Kuwait",
+  KG: "Kyrgyz", LA: "Laos", LV: "Latvia", LB: "Lebanon", LT: "Lithuania", LU: "Luxembourg", MO: "Macau", MY: "Malaysia", MV: "Maldives", MT: "Malta", MH: "Marshall Islands",
+  MU: "Mauritius", MX: "Mexico", FM: "Micronesia", MN: "Mongolia", ME: "Montenegro", MA: "Morocco", MZ: "Mozambique", MM: "Myanmar", NA: "Namibia", NR: "Nauru", NP: "Nepal",
+  NL: "Netherlands", NZ: "New Zealand", NG: "Nigeria", NU: "Niue", NO: "Norway", OM: "Oman", PK: "Pakistan", PW: "Palau", PS: "Palestine", PA: "Panama", PG: "Papua New Guinea",
+  PY: "Paraguay", PE: "Peru", PH: "Philippines", PL: "Poland", PT: "Portugal", QA: "Qatar", RO: "Romania", RU: "Russia", RW: "Rwanda", WS: "Samoa", SA: "Saudi Arabia",
+  SN: "Senegal", RS: "Serbia", SG: "Singapore", SK: "Slovakia", SI: "Slovenia", SB: "Solomon Islands", ZA: "South Africa", ES: "Spain", LK: "Sri Lanka", SD: "Sudan",
+  SE: "Sweden", CH: "Switzerland", SY: "Syria", TW: "Taiwan", TJ: "Tajikistan", TZ: "Tanzania", TH: "Thailand", TL: "Timor-Leste", TO: "Tonga", TT: "Trinidad",
+  TN: "Tunisia", TR: "Turkey", TV: "Tuvalu", UG: "Uganda", UA: "Ukraine", AE: "United Arab Emirates", GB: "United Kingdom", US: "United States", UY: "Uruguay", UZ: "Uzbekistan",
+  VU: "Vanuatu", VE: "Venezuela", VN: "Vietnam", YE: "Yemen", ZM: "Zambia", ZW: "Zimbabwe" };
+const COUNTRY_ALIASES: Record<string, string[]> = { CN: ["People's Republic of China", "PRC", "Chinese"], VN: ["Viet Nam", "Vietnamese"], IN: ["Indian national", "Indian citizen"],
+  ID: ["Indonesian"], PG: ["PNG"], KR: ["Korean"], JP: ["Japanese"], MY: ["Malaysian"], TH: ["Thai"], PH: ["Filipino"], NP: ["Nepalese", "Nepali"], LK: ["Sri Lankan"],
+  BD: ["Bangladeshi"], PK: ["Pakistani"], TL: ["East Timor"], GB: ["UK", "British"], US: ["USA", "American"], CA: ["Canadian"], AU: ["Australian"], NZ: ["New Zealander", "Aotearoa"] };
+const REGIONS = ["Africa", "African", "Latin America", "South America", "Southeast Asia", "South-East Asia", "South Asia", "Middle East", "Pacific Island", "Pacific nation", "ASEAN", "Europe", "European Union", "Caribbean"];
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export function foreignNamed(quote: string, home: string | null) {
+  const h = String(home || "").toUpperCase(), excluded = new Set([h, ...(h === "AU" ? ["NZ"] : h === "NZ" ? ["AU"] : [])]);
+  if (!h) return false;
+  const words = [...Object.entries(COUNTRY_NAMES).filter(([k]) => !excluded.has(k)).flatMap(([k, n]) => [n, ...(COUNTRY_ALIASES[k] || [])]), ...REGIONS];
+  return new RegExp(`(^|[^A-Za-z])(${words.map(esc).join("|")})([^A-Za-z]|$)`).test(String(quote || "").replace(/[\u2018\u2019]/g, "'"));
+}
 // Each quote must be on the page (letters and digits compared, case and spacing ignored; "..." may join parts of one quote)
 const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "");
-export function checkScholarshipAnswer(a: any, page: string) {
+export function checkScholarshipAnswer(a: any, page: string, home: string | null = null) {
   const P = flat(page);
   const on = (q: string) => { const parts = String(q || "").split(/\s*(?:\.\.\.|…)\s*/).map(flat).filter((x) => x.length >= 6); return parts.length > 0 && parts.every((x) => P.includes(x)) };
   // only the numbers the value's kind uses are checked (a model may also fill fields the kind does not use; they are not applied):
@@ -170,7 +197,7 @@ export function checkScholarshipAnswer(a: any, page: string) {
     // v0.20.2 (11 Oct 2026): the quote must itself say who it is for (a quote that is only on the page proved nothing: "open to both
     // full-time and part-time students" was read as international and domestic); international or both needs international wording,
     // domestic needs domestic wording
-    audience: a?.audience !== "not_stated" && on(a?.audience_quote) && (["international", "both"].includes(a?.audience) ? INTL_WORDS.test(String(a?.audience_quote || ""))
+    audience: a?.audience !== "not_stated" && on(a?.audience_quote) && (["international", "both"].includes(a?.audience) ? (INTL_WORDS.test(String(a?.audience_quote || "")) || foreignNamed(a?.audience_quote, home))
       : a?.audience === "domestic" ? DOM_WORDS.test(String(a?.audience_quote || "")) : false),
     offered: a?.offered !== "not_stated" && on(a?.offered_quote),
     value: v.kind === "full_tuition" ? on(v.quote) : valueOk,
@@ -179,6 +206,48 @@ export function checkScholarshipAnswer(a: any, page: string) {
     courses_not_found: ((a?.courses || []) as string[]).filter((x) => !(flat(x).length >= 6 && P.includes(flat(x)))).slice(0, 40),
     dates: !!(a?.open_date || a?.close_date) && on(a?.dates_quote),
   };
+}
+// v0.21.0 (12 Oct 2026, fix 3): a university's central page (English language policy or academic calendar) read with a pinned model when
+// the rule parser found nothing. The answer has the rule parser's shape so the same approval applies; nothing is applied here.
+const CENTRAL_AI_PROMPT: Record<string, string> = {
+  english_policy: "You read one university web page about English language requirements for admission. Report the default IELTS Academic requirement for international applicants to undergraduate coursework and to postgraduate coursework courses, as stated on the page. Give the overall score and, if stated, the minimum score in each band. For each, copy one exact sentence or table row from the page that contains the scores (quote). Use null for a level the page does not state, and never infer a score from another test or another page. If the page gives scores only by course or faculty, set by_course to true and leave the levels null.",
+  intake_calendar: "You read one university web page with academic dates. Report the month each study period (Semester 1, Semester 2, Trimester 1, Term 3 and similar) starts, with the year if stated, and copy the exact row or sentence from the page that gives that start date (quote). Leave out exams, census dates, holidays and end dates. Return an empty list if the page gives no start dates.",
+};
+export function centralAiRequest(model: string, kind: string, p: { provider: string; url: string; text: string }) {
+  const lvl = { type: ["object", "null"], additionalProperties: false, required: ["ielts_overall", "ielts_min_band", "quote"],
+    properties: { ielts_overall: { type: ["number", "null"] }, ielts_min_band: { type: ["number", "null"] }, quote: { type: "string" } } };
+  const schema = kind === "english_policy"
+    ? { type: "object", additionalProperties: false, required: ["undergraduate", "postgraduate", "by_course"], properties: { undergraduate: lvl, postgraduate: lvl, by_course: { type: "boolean" } } }
+    : { type: "object", additionalProperties: false, required: ["periods"], properties: { periods: { type: "array", items: { type: "object", additionalProperties: false, required: ["period", "month", "year", "quote"],
+        properties: { period: { type: "string" }, month: { type: "integer" }, year: { type: ["integer", "null"] }, quote: { type: "string" } } } } } };
+  return { model, temperature: 0, max_tokens: 1500, provider: { require_parameters: true },
+    response_format: { type: "json_schema", json_schema: { name: kind, strict: true, schema } },
+    messages: [{ role: "system", content: CENTRAL_AI_PROMPT[kind] }, { role: "user", content: `University: ${p.provider}\nPage address: ${p.url}\n\nPage text:\n${p.text}` }] };
+}
+const MONTHS_RE = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+// the answer, in the rule parser's shape, keeping only what its quote proves
+export function centralAiParsed(kind: string, a: any, page: string, parser: string) {
+  const P = flat(page), on = (q: string) => flat(q).length >= 6 && P.includes(flat(q));
+  const has = (n: number, q: string) => [String(n), String(n).replace(/\.0$/, ""), n.toFixed(1)].some((d) => String(q || "").includes(d));
+  if (kind === "english_policy") {
+    const out: Record<string, unknown[]> = {}, dropped: string[] = [];
+    for (const lv of ["undergraduate", "postgraduate"]) {
+      const x = a?.[lv]; if (!x || typeof x.ielts_overall !== "number") continue;
+      if (!on(x.quote) || !has(x.ielts_overall, x.quote)) { dropped.push(lv); continue }
+      const band = typeof x.ielts_min_band === "number" && has(x.ielts_min_band, x.quote) ? x.ielts_min_band : null;
+      out[lv] = [{ test_code: "IELTS", overall_score: x.ielts_overall, component_scores: band == null ? {} : { reading: band, writing: band, speaking: band, listening: band }, quote: String(x.quote).slice(0, 400) }];
+    }
+    const style = Object.keys(out).length ? "level_default" : a?.by_course ? "course_specific" : "none";
+    return { parser, style, defaults: out, exceptions: [], named: [], caveats: ["read_by_ai", ...(dropped.length ? ["unproven_" + dropped.join("_")] : [])], signals: a?.by_course ? ["course_specific"] : [], conflicts: [] };
+  }
+  const found: Record<string, { months: Set<number>; years: Set<number>; quotes: string[] }> = {};
+  for (const x of (a?.periods || []) as any[]) {
+    const m = Number(x?.month); if (!(m >= 1 && m <= 12) || !on(x?.quote) || !String(x.quote).toLowerCase().includes(MONTHS_RE[m - 1])) continue;
+    const key = String(x.period || "").toLowerCase().replace(/\s+/g, " ").trim().slice(0, 40); if (!key) continue;
+    const f = found[key] ||= { months: new Set(), years: new Set(), quotes: [] };
+    f.months.add(m); if (Number.isInteger(x.year)) f.years.add(x.year); if (f.quotes.length < 3) f.quotes.push(String(x.quote).slice(0, 300));
+  }
+  return { parser, periods: Object.entries(found).map(([period, f]) => ({ period, months: [...f.months].sort((p, q) => p - q), years: [...f.years].sort(), quotes: f.quotes })) };
 }
 const BUDGET_MS = 110_000;
 const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "content-type": "application/json" } });
@@ -1224,7 +1293,7 @@ Deno.serve(async (req) => {
           if (!content.trim()) throw Error(`the model returned no answer${ch?.finish_reason ? ` (${ch.finish_reason})` : ""}`);
           if (ch?.finish_reason === "length") throw Error("the answer was cut off at its length limit");
           const a = JSON.parse(content);
-          const checks = checkScholarshipAnswer(a, `${title} ${h1} ${text}`);
+          const checks = checkScholarshipAnswer(a, `${title} ${h1} ${text}`, it.country || null);
           const verdict = !a.is_scholarship ? "not_scholarship" : !a.single_scholarship ? "listing" : !checks.name ? "unproven" : "scholarship";
           await rec({ p_answer: a, p_checks: checks, p_verdict: verdict, p_cost: c1, p_tokens_in: d?.usage?.prompt_tokens ?? null, p_tokens_out: d?.usage?.completion_tokens ?? null,
                       p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
@@ -1233,6 +1302,34 @@ Deno.serve(async (req) => {
           await rec({ p_error: (e instanceof Error ? e.message : String(e)).slice(0, 400), p_storage_path: path, p_sha256: sha, p_final_url: finalUrl, p_rule_facts: ruleFacts });
           tally.error = (tally.error || 0) + 1;
         }
+      });
+      return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
+    }
+    // v0.21.0 (fix 3): central pages read with a pinned model; recorded as proposals for a person to approve
+    if (mode === "central_ai") {
+      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
+      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
+      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", workerVersion: VERSION }, 503);
+      const items: any[] = await rpc("svc_central_ai_next", { p_limit: Math.min(Number(body.limit || 6), 10) });
+      const tally: Record<string, number> = {}; let cost = 0;
+      await pool(items, 3, async (it) => {
+        const rec = (x: Record<string, unknown>) => rpc("svc_central_ai_record", { p_queue_id: it.queue_id, p_parsed: null, p_cost: 0, p_error: null, ...x });
+        if (Date.now() - t0 > BUDGET_MS - 25000) { await rec({ p_error: "time budget" }); return }
+        try {
+          const md = await storedHtml(it.storage_path);
+          const text = md.slice(0, 24000);
+          const r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+            body: JSON.stringify(centralAiRequest(it.model, it.kind, { provider: it.provider || "", url: it.url, text })), signal: AbortSignal.timeout(60000) });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 200)}`);
+          if (d?.model && !String(d.model).startsWith(it.model)) throw Error(`returned model ${d.model}, not ${it.model}`);
+          const c1 = Number(d?.usage?.cost || 0); cost += c1;
+          const content = String(d?.choices?.[0]?.message?.content || "");
+          if (!content.trim()) throw Error("the model returned no answer");
+          const parsed = centralAiParsed(it.kind, JSON.parse(content), text, `ai:${it.model_code}`);
+          const res = await rec({ p_parsed: parsed, p_cost: c1 });
+          tally[String(res?.status || "recorded")] = (tally[String(res?.status || "recorded")] || 0) + 1;
+        } catch (e) { await rec({ p_error: (e instanceof Error ? e.message : String(e)).slice(0, 400) }); tally.error = (tally.error || 0) + 1 }
       });
       return j({ ok: true, mode, items: items.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
     }
@@ -1776,7 +1873,7 @@ Deno.serve(async (req) => {
       });
       return j({ ok: true, mode, items: items.length, tally, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION });
     }
-    return j({ ok: false, error: "supported modes: discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing, scholarship_ai", workerVersion: VERSION }, 422);
+    return j({ ok: false, error: "supported modes: discover, read, central_find, ai_match, reidentify, directory_capture, id_qualify, openrouter_key, reference_capture, site_hint_verify, find_site, reextract, tuition_handoff, link_search, provider_facts, provider_facts_inspect, provider_facts_parse, scholarship_read, scholarship_discover, scholarship_reextract, scholarship_inspect, scholarship_listing, scholarship_ai, central_ai", workerVersion: VERSION }, 422);
   } catch (e) {
     return j({ ok: false, error: e instanceof Error ? e.message : String(e), workerVersion: VERSION }, 500);
   }
