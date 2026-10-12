@@ -1,0 +1,49 @@
+{
+  "captured_at": "2026-10-12T06:33:23.694Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery.png",
+      "route": "layer-2-discovery",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2 Discovery & reading",
+      "settle_ms": 7186,
+      "height": 4794,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery",
+      "diag": {
+        "rows": 50,
+        "tally": "79 shown of 1,067 · admitting 67 · testing 11 · switched off 0 · no adapter 1",
+        "list_html": "no .ad-list",
+        "alerts": []
+      },
+      "console_errors": []
+    },
+    {
+      "file": "02-layer-2-discovery-onboarding.png",
+      "route": "layer-2-discovery",
+      "action": "Onboarding",
+      "clicked": true,
+      "heading": "Layer 2 Discovery & reading",
+      "settle_ms": 3308,
+      "height": 14000,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=onboarding",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-models-services.png",
+      "route": "models-services",
+      "action": null,
+      "clicked": true,
+      "heading": "Models & services",
+      "settle_ms": 4800,
+      "height": 1187,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#models-services",
+      "diag": null,
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    }
+  ]
+}
