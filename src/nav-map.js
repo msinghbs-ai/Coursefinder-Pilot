@@ -16,7 +16,7 @@ export const PAGES = {
     { key: 'providers', label: 'Providers', min: 1 },
     { key: 'campuses', label: 'Campuses', min: 1 },
     { key: 'assets', label: 'Logos & assets', min: 4 },
-    { key: 'onboarding', label: 'Onboarding', min: 3 },
+    // v2.15.258 (Platform Admin bug 12/10-01): Onboarding moved to Layer 2 › Onboarding; the old address redirects (resolveTarget)
     // v2.15.238 (R5, Feature 6): archived providers and courses that are not active, with why, and Restore
     { key: 'archived', label: 'Archived', min: 3 },
   ] },
@@ -59,6 +59,9 @@ export const PAGES = {
   layer2: { label: 'Layer 2 Discovery & reading', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'University adapters: build, qualify, admit, switch on or off, and when the pages of each university are read again.', tabs: [
     { key: 'adapters', label: 'Adapters', min: 4 },
     { key: 'builder', label: 'Adapter builder', min: 5 },
+    // v2.15.258 (Platform Admin bug 12/10-01): the onboarding journey, from Providers › Onboarding: provider in, prepare, create adapter,
+    // admit, enrich courses, scholarship adapter, admit scholarships
+    { key: 'onboarding', label: 'Onboarding', min: 3 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. University adapters (Layer 2) admit intakes,
@@ -71,7 +74,7 @@ export const PAGES = {
     // v2.15.252: the AI send-back tab retired with Layer 3; the old address opens the Review queue.
     // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired.
     // Central pages (fee schedules, English policies, calendars) are approved in Layer 2 › Adapter builder (1.3) and on
-    // Providers › Onboarding; scholarships are published from Scholarships › Coverage. Old addresses redirect (see resolveTarget).
+    // Layer 2 › Onboarding; scholarships are published from Scholarships › Coverage. Old addresses redirect (see resolveTarget).
   ] },
 
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database.', tabs: [
@@ -140,7 +143,7 @@ export const LEGACY = {
   'regulatory-settings': { page: 'layer1', tab: 'operations' },
   'layer-1-authority': { page: 'layer1', tab: 'operations' },
   'sources': { page: 'sources' },
-  'onboarding': { page: 'providers', tab: 'onboarding' },
+  'onboarding': { page: 'layer2', tab: 'onboarding' },
   'important-dates': { page: 'reference', tab: 'dates' },
   'important-links': { page: 'reference', tab: 'links' },
   'layer-2-enrichment': { page: 'layer2', tab: 'adapters' },
@@ -171,7 +174,7 @@ export const LEGACY_ADMIN_SECTIONS = {
   'layer2-providers': { page: 'scrapers' },
   'provider-assets': { page: 'providers', tab: 'assets' },
   'layer2-sources': { page: 'layer2', tab: 'adapters' },
-  'onboarding': { page: 'providers', tab: 'onboarding' },
+  'onboarding': { page: 'layer2', tab: 'onboarding' },
   'pim': { page: 'dataModel' },
   'users-roles': { page: 'users' },
   'environment-migration': { page: 'environment' },
@@ -179,7 +182,7 @@ export const LEGACY_ADMIN_SECTIONS = {
   'statistics-datasets': { page: 'rankings', tab: 'datasets' },
 }
 
-const MOVED_L1 = { imports: { page: 'reference', tab: 'imports' }, dates: { page: 'reference', tab: 'dates' }, links: { page: 'reference', tab: 'links' }, onboarding: { page: 'providers', tab: 'onboarding' } }
+const MOVED_L1 = { imports: { page: 'reference', tab: 'imports' }, dates: { page: 'reference', tab: 'dates' }, links: { page: 'reference', tab: 'links' }, onboarding: { page: 'layer2', tab: 'onboarding' } }
 
 const BY_SLUG = Object.fromEntries(Object.values(PAGES).map(p => [p.slug, p.key]))
 const BY_LABEL = Object.fromEntries(Object.values(PAGES).map(p => [slugify(p.label), p.key]))
@@ -226,9 +229,11 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   // v2.15.252: the Layer 4 AI send-back tab retired with Layer 3; the old address opens the Review queue.
   if (hit.page === 'layer4' && tab === 'sendback') return { page: 'layer4', tab: 'review', params: p }
   // v2.15.253 (Platform Admin, 12 Oct 2026): retired Layer 4 tabs. Flagged values, Fee rules and Blocks open the Review queue;
-  // Attributes (central page approvals) opens Providers › Onboarding; Scholarship publishing opens Scholarships › Coverage.
+  // Attributes (central page approvals) opens Layer 2 › Onboarding (v2.15.258); Scholarship publishing opens Scholarships › Coverage.
   if (hit.page === 'layer4' && ['flags', 'rules', 'blocks'].includes(tab)) return { page: 'layer4', tab: 'review', params: p }
-  if (hit.page === 'layer4' && tab === 'attributes') return { page: 'providers', tab: 'onboarding', params: p }
+  if (hit.page === 'layer4' && tab === 'attributes') return { page: 'layer2', tab: 'onboarding', params: p }
+  // v2.15.258 (bug 12/10-01): Providers › Onboarding moved to Layer 2 › Onboarding
+  if (hit.page === 'providers' && tab === 'onboarding') return { page: 'layer2', tab: 'onboarding', params: p }
   if (hit.page === 'layer4' && tab === 'publishing') return { page: 'scholarships', tab: 'coverage', params: p }
   // v2.15.169 (Decision 249) moved Scholarships › Publishing to Layer 4; v2.15.253 retired that tab, so it opens Scholarships › Coverage.
   if (hit.page === 'scholarships' && tab === 'publishing') return { page: 'scholarships', tab: 'coverage', params: p }

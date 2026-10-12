@@ -77,7 +77,7 @@ export default function Toolsets({onError}){
   </div>
 }
 
-const SECTION_ORDER=['Key and plan limits','How the service is used','Target universities','Read pages','Find pages','Runs','Search pass','Sample runs','Notices']
+const SECTION_ORDER=['Key and plan limits','How the service is used','Daily guards','Target universities','Read pages','Find pages','Runs','Search pass','Sample runs','Notices']
 function Toolset({t,d,can,write}){
   const or=t.key==='openrouter'?d.openrouter||{}:null
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
@@ -124,14 +124,18 @@ function Settings({title,t,rows,can,write}){
     </tbody></table></div></div>
 }
 
+// v2.15.258 (bug 12/10-01): the AI uses that run now (Layer 3 retired), spend today against each daily guard, and the credit floor.
+// Guards and the floor are edited in "Daily guards" below; the mode (Observe only / Stop at limits) is the switch above.
 function OpenRouter({or}){
-  const b=or.balance||{}
+  const b=or.balance||{},floor=Number(or.credit_floor_usd||0),low=b.remaining_usd!=null&&Number(b.remaining_usd)<floor
   return <div className="tn-or" data-openrouter>
-    <p><strong>Balance {money(b.remaining_usd)}</strong> of {money(b.total_credits)} bought · read {fmtDateTime(b.observed_at)}</p>
-    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Task</th><th className="num">Spent today (UTC)</th><th className="num">Daily guard</th><th className="num">Credit floor</th></tr></thead><tbody>
-      {(or.guards||[]).map(g=><tr key={g.task_class} data-or-guard={g.task_class}><td>{g.task_class.replace(/_/g,' ')}</td><td className="num">{money(g.spent_today)}</td><td className="num">{money(g.daily_usd_max)}</td><td className="num">{money(g.credit_floor_usd)}</td></tr>)}
+    <p><strong>Balance {money(b.remaining_usd)}</strong> of {money(b.total_credits)} bought · read {b.observed_at?fmtDateTime(b.observed_at):'never'} (every 15 minutes) · credit floor {money(floor)}{low&&<span className="cf-chip tone-danger"> Below the floor</span>}</p>
+    <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>AI use</th><th className="num">Calls today (UTC)</th><th className="num">Spent today</th><th className="num">Daily guard</th><th>State</th></tr></thead><tbody>
+      {(or.uses||[]).map(g=>{const over=Number(g.guard)>0&&Number(g.spent_today)>=Number(g.guard)
+        return <tr key={g.use} data-or-use={g.use}><td>{g.label}</td><td className="num">{fmtNumber(g.calls||0)}</td><td className="num">{money(g.spent_today)}</td><td className="num">{money(g.guard)}</td>
+          <td>{g.allowed===false?<span className="cf-chip tone-danger">Stopped (stop at limits)</span>:over?<span className="cf-chip tone-warning">Past its guard (observed)</span>:<span className="cf-chip tone-success">Running</span>}</td></tr>})}
     </tbody></table></div>
-    <small className="sl-sub">The guards and the floor are changed on Settings. Spend by day (last 14 days): {(or.spend_by_day||[]).map(x=>`${x.day} ${money(x.usd)} (${fmtNumber(x.calls)} calls)`).join(' · ')||'none'}</small>
+    <small className="sl-sub">Change the guards and the floor under Daily guards below. Spend by day (UTC, last 14 days): {(or.spend_by_day||[]).map(x=>`${x.day} ${money(x.usd)} (${fmtNumber(x.calls)} calls)`).join(' · ')||'none'}</small>
   </div>
 }
 

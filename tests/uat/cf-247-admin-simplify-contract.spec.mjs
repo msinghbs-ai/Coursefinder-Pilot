@@ -16,11 +16,11 @@ test('menu map: five plain sections, every page reachable, old addresses and nam
   expect(new Set(inMenu).size).toBe(inMenu.length)
   expect(Object.keys(PAGES).sort()).toEqual([...inMenu].sort())
   // Every old menu entry, hidden route and alias.
-  const old = { 'dashboard': 'dashboard', 'providers': 'providers', 'courses': 'courses', 'campuses': 'providers', 'scholarships': 'scholarships', 'provider-contacts': 'contacts', 'layer-1-operations': 'layer1', 'layer-2-enrichment': 'layer2', 'layer-3-ai-interpretation': 'layer2', 'layer-4-human-resolution': 'layer4', 'jobs-schedules': 'jobs', 'evidence': 'evidence', 'completeness': 'coverage', 'data-quality-readiness': 'coverage', 'course-coverage': 'coverage', 'statistics-rankings': 'rankings', 'compare': 'rankings', 'administration': 'scrapers', 'outcomes-qilt': 'rankings', 'student-flow-prisms': 'rankings', 'sources': 'sources', 'attributes': 'dataModel', 'settings': 'health', 'onboarding': 'providers', 'jobs': 'jobs', 'scheduled-tasks': 'jobs', 'important-links': 'reference', 'important-dates': 'reference', 'review-queue': 'layer4', 'refresh-scheduling': 'jobs', 'layer-1-regulatory': 'layer1', 'layer-1-authority': 'layer1', 'layer-2-operations': 'layer2', 'layer-3-ai': 'layer2', 'layer-4-review': 'layer4', 'users-roles': 'users' }
+  const old = { 'dashboard': 'dashboard', 'providers': 'providers', 'courses': 'courses', 'campuses': 'providers', 'scholarships': 'scholarships', 'provider-contacts': 'contacts', 'layer-1-operations': 'layer1', 'layer-2-enrichment': 'layer2', 'layer-3-ai-interpretation': 'layer2', 'layer-4-human-resolution': 'layer4', 'jobs-schedules': 'jobs', 'evidence': 'evidence', 'completeness': 'coverage', 'data-quality-readiness': 'coverage', 'course-coverage': 'coverage', 'statistics-rankings': 'rankings', 'compare': 'rankings', 'administration': 'scrapers', 'outcomes-qilt': 'rankings', 'student-flow-prisms': 'rankings', 'sources': 'sources', 'attributes': 'dataModel', 'settings': 'health', 'onboarding': 'layer2', 'jobs': 'jobs', 'scheduled-tasks': 'jobs', 'important-links': 'reference', 'important-dates': 'reference', 'review-queue': 'layer4', 'refresh-scheduling': 'jobs', 'layer-1-regulatory': 'layer1', 'layer-1-authority': 'layer1', 'layer-2-operations': 'layer2', 'layer-3-ai': 'layer2', 'layer-4-review': 'layer4', 'users-roles': 'users' }
   for (const [slug, page] of Object.entries(old)) expect(resolveTarget(slug).page, slug).toBe(page)
   // Old menu labels passed to navigate().
   for (const [label, page] of [['Layer 4 — Human Resolution', 'layer4'], ['Statistics & Rankings', 'rankings'], ['Outcomes (QILT)', 'rankings'], ['Provider Contacts', 'contacts'], ['Jobs', 'jobs'], ['Compare', 'rankings'], ['Evidence', 'evidence']]) expect(resolveTarget(label).page, label).toBe(page)
-  for (const [section, page] of Object.entries({ 'sources-imports': 'reference', 'layer1-sources': 'layer1', 'layer2-providers': 'scrapers', 'provider-assets': 'providers', 'layer2-sources': 'layer2', 'onboarding': 'providers', 'pim': 'dataModel', 'users-roles': 'users', 'environment-migration': 'environment', 'platform': 'health', 'statistics-datasets': 'rankings' })) {
+  for (const [section, page] of Object.entries({ 'sources-imports': 'reference', 'layer1-sources': 'layer1', 'layer2-providers': 'scrapers', 'provider-assets': 'providers', 'layer2-sources': 'layer2', 'onboarding': 'layer2', 'pim': 'dataModel', 'users-roles': 'users', 'environment-migration': 'environment', 'platform': 'health', 'statistics-datasets': 'rankings' })) {
     const r = resolveTarget('administration', new URLSearchParams({ section, system: 'the_wur' }))
     expect(r.page, section).toBe(page)
     expect(r.params.get('section')).toBeNull()
@@ -44,8 +44,8 @@ test('role gates are unchanged from the screens they came from', () => {
   expect(canOpen('layer1', 3)).toBe(false)
   expect(canOpen('reference', 3)).toBe(true)
   expect(effectiveTab('reference', 'imports', 3)).toBe('dates')
-  expect(PAGES.providers.tabs.find(t => t.key === 'onboarding').min).toBe(3)
-  for (const tab of ['imports', 'dates', 'links', 'onboarding']) expect(resolveTarget('layer-1-register', new URLSearchParams({ tab })).page).toBe(tab === 'onboarding' ? 'providers' : 'reference')
+  expect(PAGES.layer2.tabs.find(t => t.key === 'onboarding').min).toBe(3) // v2.15.258: Onboarding moved to Layer 2, same role gate
+  for (const tab of ['imports', 'dates', 'links', 'onboarding']) expect(resolveTarget('layer-1-register', new URLSearchParams({ tab })).page).toBe(tab === 'onboarding' ? 'layer2' : 'reference')
 })
 
 test('no screen draws its own shell; one layout in the kit', () => {

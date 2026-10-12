@@ -30,7 +30,7 @@ test('every SOP step opens a real screen and tab; each SOP has its sections and 
     expect(s.watch.length).toBeGreaterThan(2)
     expect(s.changes.some((c) => c.version === s.version)).toBe(true)
   }
-  expect(AUTOMATION.length).toBe(7)
+  expect(AUTOMATION.length).toBe(8) // v2.15.258: the seven journey stages, then delivery
 })
 
 test('the versioned documents equal what src/guide/sops.js generates (run node scripts/export-sops.mjs)', () => {
@@ -46,8 +46,8 @@ test.describe('mocked browser', () => {
     await expect(s.locator('[data-sop-automation]')).toContainText('Where a person decides')
     await expect(s.locator('[data-sop-step]').first()).toBeVisible()
     await expect(s.locator('[data-sop-interventions]')).toContainText('Ready to admit')
-    await s.getByRole('button', { name: 'Providers › Onboarding' }).first().click()
-    await expect(page).toHaveURL(/#providers\?tab=onboarding/)
+    await s.getByRole('button', { name: 'Layer 2 Discovery & reading › Onboarding' }).first().click()
+    await expect(page).toHaveURL(/#layer-2-discovery\?tab=onboarding/)
   })
 
   test('a Curator sees both SOP tabs; the Operator SOP names who does each step', async ({ page }) => {

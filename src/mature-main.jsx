@@ -74,7 +74,7 @@ const RetentionScreen=lazyPage(()=>import('./RetentionScreen'))
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
 function CoverageAttributes({rank}){
   const[scope,setScope]=useState({country:'',provider:null})
-  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#providers?tab=onboarding">Providers › Onboarding</a>.</p>}</div>
+  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#layer-2-discovery?tab=onboarding">Layer 2 › Onboarding</a>.</p>}</div>
 }
 
 // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Attributes retired. Fee schedules, English policies and academic calendars are
@@ -236,6 +236,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
       case'layer2':
         if(tab==='scholarships')return <ScholarshipLayer layer={2} rank={rank} onError={err}/>
+        // v2.15.258 (bug 12/10-01): the onboarding journey lives on Layer 2 (old Providers › Onboarding addresses redirect here)
+        if(tab==='onboarding')return <ProviderOnboarding rank={rank} actorId={actorId} onError={err}/>
         // v2.15.211 (CF-247, Platform Admin 7 Oct 18:23): Adapter builder, one simple screen to build or change an adapter.
         if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
         // v2.15.200 (Decision 254): Adapters is Layer 2's first tab. Overview, Fetch an area and History retired, Source
