@@ -1,0 +1,160 @@
+// Guides › Platform Admin SOP and Operator SOP (v2.15.257, Platform Admin 12 Oct 2026: "SOPs for Platform Admin and operators to manage
+// the platform, as separate guides: their daily tasks, how the platform automates, what to pay attention to and where a person needs to
+// intervene; kept up to date with every iteration of the UI and the data admission mechanism; under Guides in the UI and as versioned docs").
+//
+// One source for both: the app renders these objects (src/Sops.jsx) and scripts/export-sops.mjs writes the same words to docs/sops/*.md,
+// which are copied to the admin repo (coursefinder-admin docs/sops/) as the versioned documents. Contract tests: SOP_REVIEWED_FOR equals the
+// UI version (every release reviews the SOPs), every step opens a real screen, and docs/sops/*.md equal what this file generates.
+// When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
+// to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
+
+export const SOP_REVIEWED_FOR = '2.15.257'
+
+// The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
+export const AUTOMATION = [
+  { stage: '1. Register', runs: 'Layer 1 refreshes the official provider and course registers (CRICOS, NZQA, Canadian lists) on their schedule; new providers start onboarding by themselves.',
+    jobs: 'Register refresh scheduler (hourly), Register run driver, Register auto-ingest', person: 'Nothing day to day. A Platform Admin adds a country or a new register.' },
+  { stage: '2. Website and course pages', runs: 'Each provider\'s website is found and verified, its site mapped, and each course\'s own page found (CRICOS code, then title) and read as evidence. Onboarding moves each university without an admitting adapter through these steps every minute.',
+    jobs: 'Onboard universities, Find provider websites, Discover course pages, Search for course pages, Read course pages, Match pages to courses', person: 'A website the finder could not verify (Layer 4 › Websites to find); a wrong website; course pages added by hand when none can be found.' },
+  { stage: '3. University adapter', runs: 'The AI proposes an adapter from sample pages (twice more if nothing passes); it is saved in testing, applied to every stored page and qualified field by field. A passing field is ready to admit; nothing is admitted by the test.',
+    jobs: 'Onboard universities, Task manager tasks', person: 'A Platform Admin admits the ready fields on Layer 2 › Adapters. Universities where nothing passes show "Needs a person".' },
+  { stage: '4. Central pages', runs: 'Fee schedules, English language policies and academic calendars are found and read; the rule parser, and for English policies and calendars a pinned AI model (GPT-4.1 mini, every value quoted), turn them into proposals.',
+    jobs: 'Find and read fee schedules, English policies and calendars; Find central pages; Read central pages with AI', person: 'A Platform Admin approves or rejects each proposal (Adapter builder 1.3, or Providers › Onboarding › Approvals waiting). Nothing is written before approval.' },
+  { stage: '5. Admission', runs: 'Admitted adapters and approved rules write values to courses every 10 minutes: intakes, English, fees, delivery. A value entered by hand is never overwritten. Values that sources disagree on, or that only an unofficial source gives, go to review.',
+    jobs: 'Adapter values replace older ones, Admit intakes from course pages, Apply approved English policies, Apply provider fee profiles, Review rules (nightly)', person: 'Curators decide the Layer 4 Review queue, oldest first.' },
+  { stage: '6. Scholarships', runs: 'Scholarship pages are found on each university\'s site, read through the scraper and read by pinned AI models in order (Qwen3 30B, then GPT-4.1 mini); every fact must be quoted from the page. Passing scholarships are published every hour; a nightly review withdraws any that stop passing.',
+    jobs: 'Discover scholarships, Read scholarship pages with AI, Publish scholarships automatically (hourly), Nightly publication review', person: 'Curators decide pages no model could settle (Layer 4 › AI could not decide); a Platform Admin spot-checks the automatic publishing and holds anything wrong.' },
+  { stage: '7. Delivery', runs: 'Search, the website API, Wix and Zoho are refreshed for every changed course and scholarship.',
+    jobs: 'Refresh search for changed courses, Course scholarship attribute, Rebuild API reference data', person: 'Nothing, unless a delivery job fails.' },
+]
+
+export const RULES = [
+  'A value entered by hand is never overwritten by automation. Release it on the record to let automation update it again.',
+  'A passing test never switches anything on. Admitting an adapter, approving a central page, activating an AI model or adding it to the order is a separate step a person takes, with a reason.',
+  'AI models are pinned and qualified for each task; nothing routes to an untested model. An AI answer counts only where its quote is on the stored page.',
+  'Every background job is a scheduled job in the automation catalogue or a task in Task manager, with its controls. Something running that you cannot see there is a fault: report it.',
+  'Work oldest first, give a reason for every decision, and never decide from memory: open the stored page or document.',
+]
+
+const step = (o) => o
+
+export const SOPS = [
+  {
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.0', audience: 'Platform Admin (role rank 6)',
+    purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
+    owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
+    schedule: [
+      { when: 'Start of day (about 20 minutes)', steps: [
+        step({ do: 'Read the credit and limit bar under the page title, if one shows. Red means a toolset has stopped: fix it first.', page: 'services', why: 'Firecrawl, OpenRouter, the adapter AI allowance and the scholarship scraper cap stop work when used up.', done: 'No red bar.' }),
+        step({ do: 'Platform health › Health checks: clear every Critical; read each Warning and fix it or note why it can wait.', page: 'health', tab: 'checks', why: 'The checks run every 10 minutes over jobs, queues, budgets and the database.', done: 'No Critical open.' }),
+        step({ do: 'Scheduled jobs › Automations: "Failed in the last 24 hours". Open each failed job and read its last error (Platform guide › Signal → action).', page: 'jobs', tab: 'automations', why: 'A job failing every run means its stage has stopped.', done: 'Every repeated failure is fixed, paused with a note, or raised with the platform engineer.' }),
+        step({ do: 'Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link.', page: 'dashboard', why: 'One list of everything waiting for a person.', done: 'You know today\'s queue.' }),
+      ] },
+      { when: 'Morning: decisions only you can make', steps: [
+        step({ do: 'Providers › Onboarding › Ready to admit: open each university\'s journey, check the fields marked Passes, then admit those fields on Layer 2 › Adapters.', page: 'providers', tab: 'onboarding', why: 'Onboarding stops at Ready to admit; nothing is admitted without you.', done: 'Ready to admit is empty or each remaining row has a note why it waits.' }),
+        step({ do: 'Providers › Onboarding › Approvals waiting (or Adapter builder 1.3 for one university): for each fee schedule, English policy and calendar, open the document, compare three or four values, then approve or reject with a reason. Proposals marked ai:gpt-4.1-mini were read by the AI; check each quoted value against the page.', page: 'providers', tab: 'onboarding', why: 'Approval writes values to every course of that university that has none.', done: 'Approvals waiting falls; rejected ones carry a reason.' }),
+        step({ do: 'Providers › Onboarding › Stopped: read each row\'s reason and What to do, fix it, tick the rows and choose Retry selected.', page: 'providers', tab: 'onboarding', why: 'A stopped university gets no adapter until someone acts.', done: 'Only rows that truly need outside help remain stopped.' }),
+        step({ do: 'Scholarships › Coverage: open three or four scholarships from the latest automatic publishing; compare the value and who it is for with the page; Hold anything wrong, with a reason.', page: 'scholarships', tab: 'coverage', why: 'Publishing is automatic every hour; your spot-check is the control on it.', done: 'Spot-check recorded; holds explained.' }),
+      ] },
+      { when: 'Afternoon', steps: [
+        step({ do: 'Layer 4 › AI could not decide: if the waiting count is large after a rule or model change, use Read the waiting pages again (with a reason) before people work through it.', page: 'layer4', tab: 'aireview', why: 'Pages are re-read on their stored copy without scraper credit.', done: 'Only pages no model can settle wait for Curators.' }),
+        step({ do: 'Scheduled jobs › Task manager: anything you started is finished or still moving.', page: 'jobs', tab: 'tasks', why: 'Every background task shows here with its controls.', done: 'No task stuck for hours.' }),
+      ] },
+    ],
+    weekly: [
+      step({ do: 'Models & services: Firecrawl balance against the month, OpenRouter credit, adapter AI allowance (proposals and US$ a day). Top up or adjust before the bar turns amber.', page: 'services' }),
+      step({ do: 'Scholarships › Extraction: cost today, the model order, and any model waiting to be qualified or added. A model joins the order only after it qualifies, and only when you add it.', page: 'scholarships', tab: 'extraction' }),
+      step({ do: 'Coverage & completeness: intakes, English, tuition and course links should rise week on week; a flat field means a stage is stuck.', page: 'coverage' }),
+      step({ do: 'Users & roles: lowest role that does the job; expiry dates for contractors.', page: 'users' }),
+      step({ do: 'Providers › Onboarding: Waiting (queued), Ready to admit and Done. Adjust "How many at once" in Onboarding settings if credits run low or the queue is slow.', page: 'providers', tab: 'onboarding' }),
+    ],
+    interventions: [
+      { trigger: 'Ready to admit', action: 'Check the passing fields in the journey and admit them on Layer 2 › Adapters.', where: 'Providers › Onboarding; Layer 2 › Adapters' },
+      { trigger: 'Approve central pages / Approvals waiting', action: 'Open the document, check values against it, approve or reject with a reason.', where: 'Adapter builder 1.3; Providers › Onboarding › Approvals waiting' },
+      { trigger: 'Needs a person (nothing passed after the AI attempts)', action: 'Open the Adapter builder: mark the values on the sample pages, add a better course page, or approve the central pages; then Retry. Admitting by hand also finishes onboarding.', where: 'Layer 2 › Adapter builder' },
+      { trigger: 'Credit or limit bar (amber or red)', action: 'Top up the account named, or raise the allowance in Models & services; then check the stopped work resumes.', where: 'Models & services' },
+      { trigger: 'A new AI model or new AI instructions', action: 'Qualify on the sample, compare scores, then make active or add to the order as a separate step with a reason. A new instructions version switches AI admission off until the models are qualified again.', where: 'Scholarships › Extraction' },
+      { trigger: 'A wrong website for a provider', action: 'Enter the official website in the Adapter builder (1.1); a different website replaces the course-page search. Then Retry onboarding.', where: 'Layer 2 › Adapter builder' },
+      { trigger: 'A paste file from a change (anything that drops or deletes)', action: 'Read it, run it in the Supabase SQL editor for project fxcwkweaxjtknorudmwp, check the expected counts it states.', where: 'Supabase SQL editor' },
+    ],
+    watch: [
+      'The credit and limit bar on every page.',
+      'Universities stopped or needing a person on Providers › Onboarding, and how long they have waited.',
+      'Approvals waiting: a growing list means universities get no values from their central pages.',
+      'AI could not decide: a sudden rise after a rule or model change.',
+      'The same automation failing three or more runs in a row.',
+      'Scholarships withdrawn by the nightly review: a jump means a rule changed or a site moved its pages.',
+    ],
+    escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
+    changes: [{ version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily, weekly and as-needed duties; automation and where a person decides; what to watch; escalation.' }],
+  },
+  {
+    id: 'operator-sop', title: 'Operator SOP', version: '1.0', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
+    owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Live activity, failed jobs and live errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
+    schedule: [
+      { when: 'Start of day (about 15 minutes)', steps: [
+        step({ role: 'Pipeline Operator', do: 'Live activity: each layer should show Running or Working. Note anything Stuck or Failing and any Workers sending back errors; acknowledge errors you have dealt with.', page: 'activity', why: 'The fastest view of a stopped stage.', done: 'Nothing Stuck without a note.' }),
+        step({ role: 'Curator', do: 'Dashboard › Waiting for you: review items, scholarships to link, onboarding stopped or needing a person, reference sites not reachable, key dates coming up.', page: 'dashboard', why: 'Today\'s queue for people.', done: 'You know what to work first.' }),
+        step({ role: 'Pipeline Operator', do: 'Scheduled jobs › Automations: "Failed in the last 24 hours". Read each last error; act from Platform guide › Signal → action (for example lower "per run" by a third when a run hit the time limit).', page: 'jobs', tab: 'automations', why: 'A failing job stops its stage.', done: 'Each failure fixed, or raised with the Platform Admin.' }),
+      ] },
+      { when: 'Morning: review queues', steps: [
+        step({ role: 'Curator', do: 'Layer 4 Review › Review queue: oldest first. Open the stored page or document, then approve, correct or reject with a reason.', page: 'layer4', tab: 'review', why: 'These are values automation would not decide: sources disagree, only an unofficial source, a fee year that does not match.', done: 'The count falls day on day.' }),
+        step({ role: 'Curator', do: 'Layer 4 › AI could not decide: for each page compare every model\'s answer and quote with the stored copy; Admit the right answer, or Refuse with a reason. Your decision is kept for that page copy.', page: 'layer4', tab: 'aireview', why: 'Scholarship pages no model could prove; admitted answers still pass the hourly publishing checks.', done: 'Oldest items cleared first.' }),
+        step({ role: 'Curator', do: 'Layer 4 › Websites to find: enter the official website for each university listed and Save.', page: 'layer4', tab: 'websites', why: 'Onboarding cannot start without a website; it carries on by itself once one is saved.', done: 'List shorter; nothing guessed.' }),
+      ] },
+      { when: 'Afternoon: follow-up', steps: [
+        step({ role: 'Pipeline Operator', do: 'Providers › Onboarding › Stopped: read each reason. Fix what you can (website, course pages) and tell the Platform Admin which rows need Retry, approvals or admitting.', page: 'providers', tab: 'onboarding', why: 'Onboarding stops for a person; it never guesses.', done: 'Each stopped row has an owner.' }),
+        step({ role: 'Pipeline Operator', do: 'Scholarships to link to courses (Dashboard › Scholarships to link opens the list): on each scholarship, decide the suggested course links from the evidence.', page: 'scholarships', tab: 'list', why: 'A scholarship shows on a course only when linked.', done: 'Links decided.' }),
+        step({ role: 'PIM Admin', do: 'Scheduled jobs › Priority queue and Automations: move stuck work; pace or pause what is behind or failing, with a reason.', page: 'jobs', tab: 'priority', why: 'Pacing keeps work inside credits and time limits.', done: 'Nothing waits for hours without a reason.' }),
+        step({ role: 'Curator', do: 'Reference data › Key dates and Reference sources: dates coming up and sites not reachable.', page: 'reference', tab: 'dates', why: 'Key dates and sources feed the website.', done: 'Current.' }),
+      ] },
+    ],
+    weekly: [
+      step({ role: 'Pipeline Operator', do: 'Coverage & completeness: course links, English, intakes and tuition counts; a field flat for a day means its job is stuck or out of budget.', page: 'coverage' }),
+      step({ role: 'Curator', do: 'Rankings & statistics: ranked universities not linked in a country we hold; link from the suggestions or mark "Not this one".', page: 'rankings' }),
+      step({ role: 'PIM Admin', do: 'Layer 2 › Adapter builder: for universities needing a person, test the adapter on sample pages and mark values, so the Platform Admin can admit.', page: 'layer2', tab: 'builder' }),
+      step({ role: 'Pipeline Operator', do: 'Layer 1 Register › Sources: the latest register runs completed.', page: 'layer1', tab: 'operations' }),
+    ],
+    interventions: [
+      { trigger: 'Layer 4 Review item', action: 'Decide from the stored evidence, with a reason; correct the value if the page shows another.', where: 'Layer 4 › Review queue' },
+      { trigger: 'Scholarship page in AI could not decide', action: 'Admit the right answer or Refuse with a reason; never admit a scholarship that does not say it is open to international students.', where: 'Layer 4 › AI could not decide' },
+      { trigger: 'Website to find', action: 'Search the official site, confirm the university\'s name on its home page, enter and save it.', where: 'Layer 4 › Websites to find' },
+      { trigger: 'Automation failing three runs in a row', action: 'Pause it with a note and raise it with the Platform Admin (Pipeline Operator and above).', where: 'Scheduled jobs › Automations' },
+      { trigger: 'A value on a record is wrong', action: 'Correct it on the record: it is kept as entered by hand and automation will not overwrite it until released.', where: 'Courses or Providers record' },
+      { trigger: 'Onboarding stopped: no website, too few course pages', action: 'Enter the website, or add course pages in the Adapter builder (2.1); onboarding carries on or the Platform Admin retries.', where: 'Providers › Onboarding; Layer 2 › Adapter builder' },
+    ],
+    watch: [
+      'Live activity: Stuck, Failing or a worker repeating the same error.',
+      'Layer 4 waiting counts rising two days running: reviewers are behind.',
+      'A coverage count flat for a day.',
+      'Reference sites not reachable and key dates coming up.',
+      'Values marked as estimates (savings from CRICOS cost): quote them to students as estimates.',
+    ],
+    escalate: ['Tell the Platform Admin about anything needing approval, admitting, budgets, models, keys, users, or a fault that repeats after your fix. Write what you saw, where, and when.'],
+    changes: [{ version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation.' }],
+  },
+]
+
+// The same words as a versioned Markdown document (docs/sops/<id>.md; copied to the admin repo)
+export function sopMarkdown(s, pageLabel = (p, t) => [p, t].filter(Boolean).join(' › ')) {
+  const L = []
+  const cell = (x) => String(x ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ')
+  const where = (x) => x.page ? ` _(${pageLabel(x.page, x.tab)})_` : ''
+  L.push(`# StudySearch – ${s.title}`, '', `**Version:** ${s.version} (reviewed for platform release v${SOP_REVIEWED_FOR})  `, `**Audience:** ${s.audience}  `,
+    '**Change control:** CF-247  ', '**Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › ' + s.title + '.', '', '---', '',
+    '## 1. Purpose', '', s.purpose, '', '## 2. What you own', '', ...s.owns.map((o) => `- ${o}`), '',
+    '## 3. How the platform automates, and where a person decides', '', '| Stage | Runs by itself | Scheduled jobs | Where a person decides |', '|---|---|---|---|',
+    ...AUTOMATION.map((a) => `| ${cell(a.stage)} | ${cell(a.runs)} | ${cell(a.jobs)} | ${cell(a.person)} |`), '',
+    '## 4. Rules that never change', '', ...RULES.map((r, i) => `${i + 1}. ${r}`), '', '## 5. Daily routine', '')
+  for (const b of s.schedule) {
+    L.push(`### ${b.when}`, '', '| # | Who | Do | Why | Done when |', '|---|---|---|---|---|')
+    b.steps.forEach((x, i) => L.push(`| ${i + 1} | ${cell(x.role || 'Platform Admin')} | ${cell(x.do)}${cell(where(x))} | ${cell(x.why)} | ${cell(x.done)} |`))
+    L.push('')
+  }
+  L.push('## 6. Weekly', '', ...s.weekly.map((x) => `- ${x.role ? `**${x.role}:** ` : ''}${x.do}${where(x)}`), '',
+    '## 7. Where a person intervenes', '', '| When you see | Do | Where |', '|---|---|---|', ...s.interventions.map((x) => `| ${cell(x.trigger)} | ${cell(x.action)} | ${cell(x.where)} |`), '',
+    '## 8. What to pay attention to', '', ...s.watch.map((w) => `- ${w}`), '', '## 9. Escalation', '', ...s.escalate.map((e) => `- ${e}`), '',
+    '## 10. Version history', '', '| Version | Date | Release | Change |', '|---|---|---|---|', ...s.changes.map((c) => `| ${c.version} | ${c.date} | v${c.release} | ${cell(c.change)} |`), '')
+  return L.join('\n')
+}

@@ -15,8 +15,10 @@ test('every menu page has a guide entry, and the guide is in the menu', () => {
   expect(missing).toEqual([])
   const stale = Object.keys(SCREENS).filter(k => !PAGES[k])
   expect(stale).toEqual([])
-  expect(SECTIONS.find(s => s.label === 'Help')?.pages).toEqual(['guide'])
-  expect(PAGES.guide).toMatchObject({ label: 'Platform guide', slug: 'platform-guide', min: 1 })
+  // v2.15.257: the Help menu became Guides (Platform guide, Platform Admin SOP, Operator SOP)
+  expect(SECTIONS.find(s => s.label === 'Guides')?.pages).toEqual(['guide'])
+  expect(PAGES.guide).toMatchObject({ label: 'Guides', slug: 'platform-guide' })
+  expect(PAGES.guide.tabs.find(t => t.key === 'guide')).toMatchObject({ label: 'Platform guide', min: 1 })
   for (const s of Object.values(SCREENS)) { expect(s.answers).toBeTruthy(); expect(s.read.length).toBeGreaterThan(0); expect(s.act.length).toBeGreaterThan(0) }
 })
 

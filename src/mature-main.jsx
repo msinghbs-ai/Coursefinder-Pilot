@@ -58,6 +58,7 @@ const ScholarshipLayer=lazyPage(()=>import('./ScholarshipLayer'))
 const LiveActivity=lazyPage(()=>import('./LiveActivity'))
 const AdminTasks=lazyPage(()=>import('./AdminTasks'))
 const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
+const Sop=lazyPage(()=>import('./Sops'))
 const Layer1Sources=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Sources')
 const Layer4Workspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Layer4')
 const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')
@@ -207,7 +208,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
   function pageBody(){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
-      case'guide':return <PlatformGuide rank={rank} navigate={navigate}/>
+      case'guide':return tab==='admin-sop'||tab==='operator-sop'?<Sop key={tab} id={tab} rank={rank} navigate={navigate}/>:<PlatformGuide rank={rank} navigate={navigate}/>
       case'activity':return <LiveActivity navigate={navigate} rank={rank}/>
       case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'providers':

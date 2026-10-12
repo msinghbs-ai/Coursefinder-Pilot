@@ -100,7 +100,12 @@ export const PAGES = {
   users: { label: 'Users & roles', slug: 'users-roles', icon: 'users', min: 6, subtitle: 'Who can sign in and what each person may do.' },
   contacts: { label: 'Provider contacts', slug: 'provider-contacts', icon: 'users', min: 1, subtitle: 'International recruitment contacts for each provider.' },
   // v2.15.136 (Decision 209): the operator and Platform Admin walkthrough, reviewed every release.
-  guide: { label: 'Platform guide', slug: 'platform-guide', icon: 'guide', min: 1, subtitle: 'How to run the platform: the screens, what the numbers mean and what to do.' },
+  // v2.15.257 (Platform Admin, 12 Oct 2026): Guides: the Platform guide and the two SOPs (Platform Admin, Operator), versioned
+  guide: { label: 'Guides', slug: 'platform-guide', icon: 'guide', subtitle: 'How to run the platform: the Platform guide, and the standard operating procedures for Platform Admins and operators.', tabs: [
+    { key: 'guide', label: 'Platform guide', min: 1 },
+    { key: 'admin-sop', label: 'Platform Admin SOP', min: 3 },
+    { key: 'operator-sop', label: 'Operator SOP', min: 3 },
+  ] },
 }
 
 export const SECTIONS = [
@@ -110,7 +115,7 @@ export const SECTIONS = [
   { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources'] },
   { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'retention', 'migration'] },
   { label: 'Administration', pages: ['users'] },
-  { label: 'Help', pages: ['guide'] },
+  { label: 'Guides', pages: ['guide'] },
 ]
 
 for (const [key, p] of Object.entries(PAGES)) { p.key = key; if (p.tabs) p.min = Math.min(...p.tabs.map(t => t.min)); p.title = p.title || p.label }
