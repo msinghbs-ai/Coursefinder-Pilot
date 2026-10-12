@@ -91,7 +91,7 @@ test('worker and database contract: nothing written to the catalogue, budget gua
   expect(w).toContain('const found = codeRe.test(htmlToText(html));')
   expect(w).toContain('const ok = found && (home || fits) && !SKIP.test(finalHost);')
   expect(w).toContain('const units = /search$/.test(purpose) ? 2 : /^fcx_/.test(purpose) ? 5 : 1;') // v0.13.0 counts a JSON-format scrape at 5 credits
-  expect(w).toContain('(it.status === "bound" || it.priority === true) && (http === null')
+  expect(w).toContain('(it.status === "bound" || it.priority === true || searchFound) && (http === null') // v2.15.261: found pages also fall back to Firecrawl when blocked or needing a browser
   const m = fs.readFileSync('supabase/migrations-archive/20260929120000_cf247_coverage_sweep.sql', 'utf8')
   expect(m).toContain('v_used:=v_used+coalesce((select sum(u.units) from pipeline.coverage_vendor_usage u')
   expect(m).toContain("case when by_code or (sc>=0.8 and sc-nxt>=0.1) then 'bound' else 'ambiguous' end")
