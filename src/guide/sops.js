@@ -8,14 +8,14 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.259'
+export const SOP_REVIEWED_FOR = '2.15.260'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
   // v2.15.258 (Platform Admin bug 12/10-01): the stages follow the onboarding journey shown on Layer 2 › Onboarding (stages 1 to 7), then delivery
   { stage: '1. Provider in', runs: 'A university enters the platform from a Layer 1 register (CRICOS, NZQA, Canadian lists, refreshed on their schedule), another database import, or our own search. Every active university with courses and no admitting adapter is queued for onboarding; new ones start by themselves.',
     jobs: 'Register refresh scheduler (hourly), Register run driver, Register auto-ingest, Onboard universities', person: 'Nothing day to day. A Platform Admin adds a country or a new register, and can queue universities not yet in onboarding (Layer 2 › Onboarding).' },
-  { stage: '2. Prepare', runs: 'Each university\'s website is found and verified, its contacts and central pages found, its site mapped, and each course\'s own page found (CRICOS code, then title) and read as evidence. Up to 100 universities are worked at once, every minute.',
+  { stage: '2. Prepare', runs: 'Each university\'s website is found and verified, its contacts and central pages found, its site mapped, and each course\'s own page found by Firecrawl search (CRICOS code, then title) and read through Firecrawl as evidence (since v2.15.260 a found page is not read by a direct request). Up to 100 universities are worked at once, every minute. A university whose pages cannot be found moves aside after an hour without a page read, so the next one starts, and carries on by itself when its pages are read.',
     jobs: 'Onboard universities, Find provider websites, Discover course pages, Search for course pages, Read course pages, Match pages to courses', person: 'A website the finder could not verify (Layer 4 › Websites to find); a wrong website; course pages added by hand when none can be found.' },
   { stage: '3. Create adapter', runs: 'The pinned AI proposes the adapter from sample pages (twice more if nothing passes); it is saved in testing, applied to every stored page and qualified field by field. Central pages are suggested; when nothing passes, the AI reads the university\'s English policy and calendar pages for a person to approve. Nothing is admitted by the test.',
     jobs: 'Onboard universities, Task manager tasks, Read central pages with AI', person: 'Universities where nothing passes show "Needs a person" on Layer 2 › Onboarding.' },
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.2', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.3', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -94,10 +94,11 @@ export const SOPS = [
     escalate: ['A job that fails the same way after a fix, a worker refusing work ("invalid key", "nonce"), or data written where it should not be: pause the job, note what you saw, raise it with the platform engineer with the change-control reference (CF-247).'],
     changes: [{ version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily, weekly and as-needed duties; automation and where a person decides; what to watch; escalation.' },
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages (scholarships are found only after admitting and enriching); OpenRouter balance, daily guards and credit floor on Models & services (Observe); 100 universities at once.' },
-      { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit automatically (platform-wide, switched on 12 Oct 2026): the daily step becomes a spot-check of automatic admits, undone on Layer 2 › Adapters when wrong; the onboarding pilot (60 AU / 25 NZ / 15 CA) is followed on its Pilot panel.' }],
+      { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit automatically (platform-wide, switched on 12 Oct 2026): the daily step becomes a spot-check of automatic admits, undone on Layer 2 › Adapters when wrong; the onboarding pilot (60 AU / 25 NZ / 15 CA) is followed on its Pilot panel.' },
+      { version: '1.3', date: '12 Oct 2026', release: '2.15.260', change: 'Found course pages are read through Firecrawl; "Too few course pages" and "AI allowance used" carry on by themselves, so Retry is needed only for other stops.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.2', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.3', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Live activity, failed jobs and live errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -143,7 +144,8 @@ export const SOPS = [
     escalate: ['Tell the Platform Admin about anything needing approval, admitting, budgets, models, keys, users, or a fault that repeats after your fix. Write what you saw, where, and when.'],
     changes: [{ version: '1.0', date: '12 Oct 2026', release: '2.15.257', change: 'First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation.' },
       { version: '1.1', date: '12 Oct 2026', release: '2.15.258', change: 'Onboarding moved to Layer 2 › Onboarding with seven journey stages; scholarships are found only after a university is admitted and its courses enriched.' },
-      { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit is automatic for the fields that pass; universities move on to enriching and scholarships by themselves. Tell the Platform Admin about any admitted value that looks wrong.' }],
+      { version: '1.2', date: '12 Oct 2026', release: '2.15.259', change: 'Admit is automatic for the fields that pass; universities move on to enriching and scholarships by themselves. Tell the Platform Admin about any admitted value that looks wrong.' },
+      { version: '1.3', date: '12 Oct 2026', release: '2.15.260', change: 'Too few course pages and AI allowance used carry on by themselves; work stopped rows with other reasons.' }],
   },
 ]
 
