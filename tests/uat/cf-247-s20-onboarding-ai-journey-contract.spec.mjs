@@ -33,6 +33,13 @@ test('migration: journey events, journey read, live scholarship counts, the 35 s
   expect(sql).toContain("where status = 'waiting_admit' and jsonb_array_length(coalesce(result->'ready', '[]'::jsonb)) = 0;")
 })
 
+test('migration 10800: the course-page search picks only Firecrawl target universities while target-only is on', () => {
+  const s = fs.readFileSync('supabase/migrations/20261012010800_cf247_link_search_targets_only.sql', 'utf8')
+  expect(s).toContain("exists (select 1 from pipeline.firecrawl_target_cache tc where tc.provider_id = s.provider_id and tc.included)")
+  expect(s).toContain('live % differs from the definition this change replaces')
+  expect(s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION'))).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+})
+
 test.describe('mocked browser', () => {
   test('Needs a person has its own tile and filter, separate from Stopped', async ({ page }) => {
     await mockAdmin(page)
