@@ -8,13 +8,21 @@ const sql = fs.readFileSync('supabase/migrations/20261012011700_cf247_course_pag
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 const outside = s => s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION')) + s.slice(s.lastIndexOf('$function$;'))
 
-test('worker v0.21.2: a page the search found is read through Firecrawl first (rendered), direct only when Firecrawl cannot be used', () => {
-  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v0.21.2"')
+test('worker v0.21.3: a found page is read directly first, Firecrawl only when blocked or needing a browser; basic proxy', () => {
+  // v2.15.261 (Platform Admin, 12 Oct 2026 21:21) replaced the v0.21.2 Firecrawl-first read of found pages
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.21\.\d+"/)
   expect(worker).toContain('const searchFound = ["title_search", "cricos_search", "firecrawl_search", "serper_search"].includes(it.basis || "");')
-  const i = worker.indexOf('else if (searchFound && await useFc("scrape", it.provider_id, it.url)) {')
-  expect(i).toBeGreaterThan(0)
-  // the Firecrawl branch comes before the direct request
-  expect(i).toBeLessThan(worker.indexOf('const r = await fetch(u, { headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(20000) });\n              http = r.status; finalUrl = r.url || it.url;'))
+  expect(worker).not.toContain('else if (searchFound && await useFc("scrape", it.provider_id, it.url)) {')
+  expect(worker).toContain('if ((!searchCandidate || searchFound) && !(adDirect?.json_found && adDirect.identity) && (!html || thin) && (it.status === "bound" || it.priority === true || searchFound)')
+  const scrapes = worker.match(/fetch\("https:\/\/api\.firecrawl\.dev\/v2\/scrape", \{ method: "POST", headers: fcHeaders, body: JSON\.stringify\(\{ [^}]*/g) || []
+  for (const s of scrapes) expect(s).toContain('proxy: "basic"')
+})
+
+test('11800: basic proxy setting, second reader paused (not removed)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261012011800_cf247_firecrawl_fallback_basic_proxy.sql', 'utf8')
+  expect(m).toContain("set value = '\"basic\"'::jsonb")
+  expect(m).toContain("cron.alter_job(j.jobid, active := false)")
+  expect(m).not.toMatch(/cron\.unschedule|^\s*(drop|delete|truncate)\b/im)
 })
 
 test('11700: reads more, re-reads the found pages that failed, keeps moving; nothing dropped', () => {
