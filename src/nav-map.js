@@ -94,7 +94,12 @@ export const PAGES = {
 
   environment: { label: 'Settings', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity and budgets; keys for outside services below (never shown).' },
   scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: services, keys and limits.' },
-  services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off. Anything off is not offered anywhere else. Below: the limits each layer depends on, their notices, Firecrawl work by use case and sample runs.' },
+  // v2.15.264 (Platform Admin, 13 Oct 2026 00:09): three tabs; the AI configuration Layer 3 used to hold is back as AI & OpenRouter.
+  services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off; configure the AI that runs now and OpenRouter; and the limits each layer depends on.', tabs: [
+    { key: 'services', label: 'Services', min: 4 },
+    { key: 'ai', label: 'AI & OpenRouter', min: 4 },
+    { key: 'limits', label: 'Toolsets & limits', min: 4 },
+  ] },
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on.' },
   dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5, subtitle: 'Attributes, families, groups and options.' },
   // v2.15.219 (Platform Admin, 8 Oct 2026): what takes space and purging it, Platform Admin only

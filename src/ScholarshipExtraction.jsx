@@ -66,7 +66,22 @@ export default function ScholarshipExtraction({onError}){
       {fail&&<p role="alert" className="sc-note sc-bad" data-sx-fail>{fail}</p>}
     </section>
 
-    <section className="m-panel" data-sx-models>
+    <ModelsSection d={d} act={act}/>
+
+    <Sample d={d} can={can} act={act}/>
+    <Instructions d={d} can={can} act={act}/>
+    <TestPage d={d} can={can} act={act} models={models}/>
+    <Recent rows={d.recent||[]}/>
+  </div>
+}
+
+// v2.15.264 (Platform Admin, 13 Oct 2026): the scholarship AI models (order, qualify, make active) are also shown and edited on
+// Models & services › AI & OpenRouter; both places use this section and the same admin_scholarship_ai actions.
+export function ModelsSection({d,act}){
+  const can=d.can_manage,models=d.models||[],scores=d.scores||{},runs=d.qualify_runs||[]
+  const lastRun=code=>runs.find(r=>r.model_code===code&&String(r.prompt_version)===String(d.prompt_version))
+  return <>
+  <section className="m-panel" data-sx-models>
       <h3>Models</h3>
       <p className="sc-sub">Each model is qualified on the sample below with the current instructions. Qualifying never makes a model active; that is a separate step. The first model reads every page; the next reads it again only when the first one's reply fails or a fact it states is not proven on the page; a page no model can settle goes to Layer 4.</p>
       {can&&<ChainEditor models={models} chain={d.chain||[]} qualified={code=>{const r=lastRun(code);return r&&r.state==='done'}} act={act}/>}
@@ -87,11 +102,21 @@ export default function ScholarshipExtraction({onError}){
         </tr>})}</tbody>
       </table></div>
     </section>
+  </>
+}
 
-    <Sample d={d} can={can} act={act}/>
-    <Instructions d={d} can={can} act={act}/>
-    <TestPage d={d} can={can} act={act} models={models}/>
-    <Recent rows={d.recent||[]}/>
+// Self-loading for Models & services › AI & OpenRouter (v2.15.264)
+export function ScholarshipAiModels({onError}){
+  const[d,setD]=useState(null),[msg,setMsg]=useState(''),[fail,setFail]=useState('')
+  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:'read',p_args:{}});if(error)throw error;setD(data)}catch(e){onError?.(errText(e))}}
+  const act=async(action,args,done)=>{setFail('');setMsg('');try{const{data,error}=await supabase.rpc('admin_scholarship_ai',{p_action:action,p_args:args});if(error)throw error;setD(data);if(done)setMsg(done)}catch(e){setFail(errText(e));throw e}}
+  useEffect(()=>{load()},[])
+  if(!d)return <Loading label="Loading scholarship models…"/>
+  return <div className="sx" data-ai-scholarship-models>
+    <p className="sc-sub">AI admission is {d.ai_admission?'on':'off'}; sample pages, instructions and page results are on <a className="cf-link" href="#scholarships?tab=extraction">Scholarships › Extraction</a>.</p>
+    <ModelsSection d={d} act={act}/>
+    {msg&&<p role="status" className="sc-note" data-sx-note>{msg}</p>}
+    {fail&&<p role="alert" className="sc-note sc-bad" data-sx-fail>{fail}</p>}
   </div>
 }
 

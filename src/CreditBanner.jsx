@@ -26,7 +26,7 @@ export default function CreditBanner({rank=0,canOpenServices=false}){
   return <div className={`cf-credit-banner tone-${level==='critical'?'danger':'warning'}${scroll?' is-scrolling':''}`} role="status" data-credit-banner={level}>
     <AlertTriangle size={14} aria-hidden="true"/>
     <div className="cf-credit-track" ref={track}><div className="cf-credit-items" ref={items} style={scroll?{'--cf-credit-seconds':`${Math.max(20,Math.round(key.length/6))}s`}:undefined}>{list('')}{scroll&&<span className="cf-credit-copy" aria-hidden="true">{list('copy')}</span>}</div></div>
-    {canOpenServices&&<a className="cf-credit-link" href="#models-services">Models &amp; services</a>}
+    {canOpenServices&&<a className="cf-credit-link" href="#models-services?tab=limits">Models &amp; services</a>}
     <button type="button" className="cf-credit-close" aria-label="Hide the credit notices until the page is reloaded" title="Hide until the page is reloaded" onClick={()=>{dismissedThisSession=true;setHidden(true)}}><X size={14}/></button>
   </div>
 }

@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.6 (reviewed for platform release v2.15.263)  
+**Version:** 1.7 (reviewed for platform release v2.15.264)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -72,7 +72,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 
 ## 6. Weekly
 
-- Models & services: Firecrawl balance against the month; OpenRouter balance (read every 15 minutes), the spend by day and each AI use against its daily guard; the adapter AI allowance (proposals and US$ a day). Top up or adjust a guard before the balance reaches the credit floor. _(Models & services)_
+- Models & services › AI & OpenRouter: OpenRouter balance (read every 15 minutes) and each AI use against its daily guard (change a guard there); Models & services › Toolsets & limits: Firecrawl balance against the month and the spend by day; the adapter AI allowance (proposals and US$ a day). Top up or adjust a guard before the balance reaches the credit floor. _(Models & services)_
 - Scholarships › Extraction: cost today, the model order, and any model waiting to be qualified or added. A model joins the order only after it qualifies, and only when you add it. _(Scholarships › Extraction)_
 - Coverage & completeness: intakes, English, tuition and course links should rise week on week; a flat field means a stage is stuck. _(Coverage & completeness)_
 - Users & roles: lowest role that does the job; expiry dates for contractors. _(Users & roles)_
@@ -116,3 +116,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.4 | 12 Oct 2026 | v2.15.261 | Found course pages are read directly first and through Firecrawl (basic proxy) only when blocked or needing a browser; watch the Firecrawl credits used per hour on the credit bar and Models & services. |
 | 1.5 | 12 Oct 2026 | v2.15.262 | Firecrawl daily budget (15,000 a day, shared by purpose) and per-university caps; new start-of-day step to read Firecrawl credits by university and resume stopped searches; top 50 Australian providers by CRICOS courses onboarded first. |
 | 1.6 | 12 Oct 2026 | v2.15.263 | Firecrawl reads only course pages found by their CRICOS code, listed on the university's own site or entered by a person; a page found by a title search that needs a browser waits for its next candidate or a page entered by hand. |
+| 1.7 | 13 Oct 2026 | v2.15.264 | Models & services in three tabs; AI & OpenRouter holds the OpenRouter key, mode, floor, each AI use's model and daily guard, the central pages model, the scholarship AI models and the model profiles (the settings Layer 3 used to hold). |

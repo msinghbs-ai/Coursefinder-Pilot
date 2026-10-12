@@ -63,7 +63,7 @@ export function FirecrawlRuns({onError}){
   if(!d)return <Waiting failed={failed} load={load} what="Firecrawl work"/>
   const can=Boolean(d.can_manage)&&!busy
   // v2.15.213: the credits left are shown once, on Platform settings › Models & services; only the stop warning stays here.
-  return <div data-firecrawl-work><p className="sl-sub" data-firecrawl-credits-link>Firecrawl credits: see <a className="cf-link" href="#models-services">Models &amp; services</a></p>{d.plan?.budget?.allowed===false&&<span className="cf-chip tone-danger">At the reserve — Firecrawl work has stopped</span>}
+  return <div data-firecrawl-work><p className="sl-sub" data-firecrawl-credits-link>Firecrawl credits: see <a className="cf-link" href="#models-services?tab=limits">Models &amp; services</a></p>{d.plan?.budget?.allowed===false&&<span className="cf-chip tone-danger">At the reserve — Firecrawl work has stopped</span>}
     <div className="tn-starts" data-firecrawl-starts>{Object.keys(USE_CASE).map(u=><div key={u} className="tn-start">
       <JobButton kind="firecrawl_run" scope={u} args={{use_case:u}} label={`${USE_CASE[u]} (${fmtNumber(d.backlog?.[u])} waiting)`} disabled={!can||!(d.backlog?.[u]>0)}
         question={`Start a Firecrawl run: ${USE_CASE[u]}? ${fmtNumber(d.backlog?.[u])} waiting. ${USE_HELP[u]} It stops at the run's credit allowance (a setting). Pause stops the run and Resume continues it, from Scheduled jobs › Task manager.`} onStarted={load} onFinished={load}/>

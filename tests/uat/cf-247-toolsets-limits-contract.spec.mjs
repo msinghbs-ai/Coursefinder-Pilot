@@ -77,7 +77,7 @@ test('browser: notices on the layer page, acknowledged with a reason', async ({ 
 test('browser: Models & services — OpenRouter observe only, key and plan limits, settings by section, sample runs started and continued', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Decision 252 sample'))
-  await page.goto('/#models-services')
+  await page.goto('/#models-services?tab=limits')
   await openCards(page) // v2.15.200: cards start collapsed
   const or = page.locator('[data-toolset="openrouter"]')
   await expect(or.locator('[data-toolset-mode="openrouter"]')).toContainText('Observe only')
@@ -131,7 +131,7 @@ test('search pass: migration shaped, worker binds found pages only for a pass, n
 test('browser: search pass panel — start with a reason, pages sent to the identity check, repairs listed', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Decision 252 step 1'))
-  await page.goto('/#models-services')
+  await page.goto('/#models-services?tab=limits')
   await openCards(page)
   const p = page.locator('[data-search-pass]')
   await expect(p.locator('[data-pass-links] [data-pass-state="verified"]')).toContainText('64')
@@ -181,7 +181,7 @@ test('firecrawl helpers: request bodies from settings, search candidates on the 
 test('browser: Firecrawl work — credits and report on Models & services, runs and targets on Layer 2 › Adapters', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.type() === 'prompt' && d.message().startsWith('Add credits') ? d.accept('500') : d.accept('Decision 253 run'))
-  await page.goto('/#models-services')
+  await page.goto('/#models-services?tab=limits')
   await openCards(page)
   for (const sec of ['Target universities', 'Read pages', 'Find pages', 'Runs']) await expect(page.locator(`[data-toolset-section="firecrawl:${sec}"]`)).toBeVisible()
   await expect(page.locator('[data-firecrawl-credits] [data-firecrawl-plan]')).toContainText('490,846 of 500,000 credits left')

@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.6 (reviewed for platform release v2.15.263)  
+**Version:** 1.7 (reviewed for platform release v2.15.264)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -108,3 +108,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.4 | 12 Oct 2026 | v2.15.261 | Found course pages are read directly first; Firecrawl only when blocked or needing a browser. |
 | 1.5 | 12 Oct 2026 | v2.15.262 | Firecrawl work now keeps to a daily budget; a purpose that used its share waits until midnight (not a fault). |
 | 1.6 | 12 Oct 2026 | v2.15.263 | A course page found by a title search is read directly only; if it needs a browser, enter the right page by hand (Adapter builder 2.1) and Firecrawl may read it. |
+| 1.7 | 13 Oct 2026 | v2.15.264 | Models & services has three tabs: Services, AI & OpenRouter, Toolsets & limits (notices and Firecrawl credits are on Toolsets & limits). |
