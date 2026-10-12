@@ -3,6 +3,8 @@
 // settings in the Daily budget section of the Firecrawl card above) and, for the chosen window, each university's credits by purpose
 // against the course pages produced (correct and wrong), credits per correct page and a waste flag. A university whose course-page
 // search stopped (no correct page after the set number of searches) can be resumed by a Platform Admin with a reason.
+// v2.15.265 (Platform Admin, 13 Oct 2026: "Refusals per university"): today's refused spends by university and reason, with its search
+// order tier and whether its course search is held for an adapter check (Search again releases the hold).
 // Reads: admin_firecrawl_credits(hours). Writes: admin_firecrawl_search_resume(provider, reason).
 import React,{useEffect,useState}from'react'
 import{RefreshCw}from'lucide-react'
@@ -15,6 +17,9 @@ const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return 
 export const FLAG={search_stopped:['Search stopped','danger'],no_pages:['No pages from 100+ credits','danger'],mostly_wrong:['Mostly wrong pages','warning'],scholarships_high:['High scholarship use','warning']}
 const WINDOWS=[[1,'Last hour'],[24,'Last 24 hours'],[168,'Last 7 days']]
 const pct=(a,b)=>b>0?Math.round(100*a/b):0
+export const TIER=['Top 50','Australia, 30+ courses','Overseas','Small provider']
+export const REASON={directory_site:'directory site',not_eligible:'fewer than 30 courses',university_cap:'scholarship cap',not_due:'central pages not due',search_stopped:'search stopped',share:'daily share used',day_total:'day’s total used'}
+const reasonText=r=>Object.entries(r||{}).sort((a,b)=>b[1]-a[1]).map(([k,n])=>{const[g,why]=k.split(':');return`${REASON[why]||why} (${g.replace('_',' ')}) ${fmtNumber(n)}`}).join(', ')
 
 export default function FirecrawlCredits({onError}){
   const[hours,setHours]=useState(24),[d,setD]=useState(null),[busy,setBusy]=useState(false),[only,setOnly]=useState(false)
@@ -50,6 +55,13 @@ export default function FirecrawlCredits({onError}){
           <td className="num">{u.per_correct==null?'—':u.per_correct}</td>
           <td>{u.flag?<span className={`cf-chip tone-${FLAG[u.flag]?.[1]||'warning'}`}>{FLAG[u.flag]?.[0]||u.flag}</span>:''}</td>
           <td>{u.stopped&&d.can_manage&&<Button compact disabled={busy} onClick={()=>resume(u)}>Search again</Button>}</td></tr>)}
+      </tbody></table></div>}
+      <h4 className="sl-h4">Refused today, by university</h4>
+      {(d.refused_by_uni||[]).length===0?<Empty text="Nothing refused today."/>:
+      <div className="cf-table-wrap"><table className="cf-table" data-fc-refused><thead><tr><th>University</th><th>Country</th><th>Search order</th><th className="num">Refused</th><th>Why</th><th></th></tr></thead><tbody>
+        {d.refused_by_uni.map(u=><tr key={u.provider_id} data-fc-refused-uni={u.provider_id}>
+          <td>{u.name||u.provider_id}</td><td>{u.country||'—'}</td><td>{TIER[u.tier]||'—'}</td><td className="num">{fmtNumber(u.n)}</td><td>{reasonText(u.reasons)}</td>
+          <td>{u.held?<>{' '}<span className="cf-chip tone-warning">Search held</span>{d.can_manage&&<Button compact disabled={busy} onClick={()=>resume(u)}>Search again</Button>}</>:''}</td></tr>)}
       </tbody></table></div>}
     </>}
   </Card>

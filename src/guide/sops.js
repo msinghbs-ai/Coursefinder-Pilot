@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.264'
+export const SOP_REVIEWED_FOR = '2.15.265'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,13 +44,14 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.7', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.8', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
       { when: 'Start of day (about 20 minutes)', steps: [
         step({ do: 'Read the credit and limit bar under the page title, if one shows. Red means a toolset has stopped: fix it first.', page: 'services', why: 'Firecrawl, OpenRouter, the adapter AI allowance and the scholarship scraper cap stop work when used up.', done: 'No red bar.' }),
         step({ do: 'Models & services › Firecrawl credits by university: read Today (each purpose against its share and the billed total), then tick Flagged only. For Search stopped, check the website on the Adapter builder (1.1) and press Search again with a reason; for Mostly wrong pages or No pages, note the university for its adapter or website.', page: 'services', why: 'Firecrawl may bill 15,000 credits a day; credits spent without correct pages are waste.', done: 'No university is flagged without a note, and no share was used up before the afternoon.' }),
+        step({ do: 'Same card, Refused today, by university: a university held by the scholarship cap, or with Search held (an adapter check, for example Victoria University and Adelaide University), needs its adapter or website checked; then press Search again with a reason. Directory site and fewer than 30 courses are the platform keeping credits off waste, not faults.', page: 'services', why: 'Refusals show where credits would have gone; a held top-50 university is lost coverage.', done: 'No top-50 university is held without a note.' }),
         step({ do: 'Platform health › Health checks: clear every Critical; read each Warning and fix it or note why it can wait.', page: 'health', tab: 'checks', why: 'The checks run every 10 minutes over jobs, queues, budgets and the database.', done: 'No Critical open.' }),
         step({ do: 'Scheduled jobs › Automations: "Failed in the last 24 hours". Open each failed job and read its last error (Platform guide › Signal → action).', page: 'jobs', tab: 'automations', why: 'A job failing every run means its stage has stopped.', done: 'Every repeated failure is fixed, paused with a note, or raised with the platform engineer.' }),
         step({ do: 'Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link.', page: 'dashboard', why: 'One list of everything waiting for a person.', done: 'You know today\'s queue.' }),
@@ -100,10 +101,11 @@ export const SOPS = [
       { version: '1.4', date: '12 Oct 2026', release: '2.15.261', change: 'Found course pages are read directly first and through Firecrawl (basic proxy) only when blocked or needing a browser; watch the Firecrawl credits used per hour on the credit bar and Models & services.' },
       { version: '1.5', date: '12 Oct 2026', release: '2.15.262', change: 'Firecrawl daily budget (15,000 a day, shared by purpose) and per-university caps; new start-of-day step to read Firecrawl credits by university and resume stopped searches; top 50 Australian providers by CRICOS courses onboarded first.' },
       { version: '1.6', date: '12 Oct 2026', release: '2.15.263', change: 'Firecrawl reads only course pages found by their CRICOS code, listed on the university\'s own site or entered by a person; a page found by a title search that needs a browser waits for its next candidate or a page entered by hand.' },
-      { version: '1.7', date: '13 Oct 2026', release: '2.15.264', change: 'Models & services in three tabs; AI & OpenRouter holds the OpenRouter key, mode, floor, each AI use\'s model and daily guard, the central pages model, the scholarship AI models and the model profiles (the settings Layer 3 used to hold).' }],
+      { version: '1.7', date: '13 Oct 2026', release: '2.15.264', change: 'Models & services in three tabs; AI & OpenRouter holds the OpenRouter key, mode, floor, each AI use\'s model and daily guard, the central pages model, the scholarship AI models and the model profiles (the settings Layer 3 used to hold).' },
+      { version: '1.8', date: '13 Oct 2026', release: '2.15.265', change: 'Firecrawl is never spent on directory sites; search order is top 50, Australian providers with 30+ courses, overseas, then small providers; scholarships are searched for Australian providers with 30+ courses (and overseas universities); the scholarship cap counts from when a university joined onboarding. New start-of-day check: Refused today, by university, and universities whose search is held for an adapter check. Websites are found on training.gov.au and TEQSA first.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.7', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.8', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Live activity, failed jobs and live errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -154,7 +156,8 @@ export const SOPS = [
       { version: '1.4', date: '12 Oct 2026', release: '2.15.261', change: 'Found course pages are read directly first; Firecrawl only when blocked or needing a browser.' },
       { version: '1.5', date: '12 Oct 2026', release: '2.15.262', change: 'Firecrawl work now keeps to a daily budget; a purpose that used its share waits until midnight (not a fault).' },
       { version: '1.6', date: '12 Oct 2026', release: '2.15.263', change: 'A course page found by a title search is read directly only; if it needs a browser, enter the right page by hand (Adapter builder 2.1) and Firecrawl may read it.' },
-      { version: '1.7', date: '13 Oct 2026', release: '2.15.264', change: 'Models & services has three tabs: Services, AI & OpenRouter, Toolsets & limits (notices and Firecrawl credits are on Toolsets & limits).' }],
+      { version: '1.7', date: '13 Oct 2026', release: '2.15.264', change: 'Models & services has three tabs: Services, AI & OpenRouter, Toolsets & limits (notices and Firecrawl credits are on Toolsets & limits).' },
+      { version: '1.8', date: '13 Oct 2026', release: '2.15.265', change: 'A university refused for "directory site", "fewer than 30 courses" or "scholarship cap" is expected, not a fault; Toolsets & limits › Firecrawl credits by university lists today\'s refusals by university.' }],
   },
 ]
 
