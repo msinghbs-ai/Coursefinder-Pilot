@@ -300,7 +300,7 @@ begin
                     'allowed', security.ai_use_allowed_v1(g.use))), '[]'::jsonb) from security.ai_spend_today_v1() g),
       'spend_by_day', (select coalesce(jsonb_agg(jsonb_build_object('day', d.day, 'usd', d.usd, 'calls', d.calls) order by d.day), '[]'::jsonb)
                        from (select r.day, round(sum(r.usd), 4) usd, sum(r.calls) calls from (
-                               select (x.at at time zone 'UTC')::date day, sum(x.cost_usd) usd, count(*) calls from pipeline.scholarship_ai_extractions x where x.at > now() - interval '14 days' group by 1
+                               select (x.at at time zone 'UTC')::date as day, sum(x.cost_usd) usd, count(*) calls from pipeline.scholarship_ai_extractions x where x.at > now() - interval '14 days' group by 1
                                union all select (x.created_at at time zone 'UTC')::date, sum(x.cost_usd), count(*) from pipeline.uni_adapter_drafts x where x.created_at > now() - interval '14 days' and coalesce(x.cost_usd, 0) > 0 group by 1
                                union all select (x.created_at at time zone 'UTC')::date, sum(x.cost_usd), count(*) from pipeline.central_ai_queue x where x.created_at > now() - interval '14 days' and coalesce(x.cost_usd, 0) > 0 group by 1
                                union all select (coalesce(x.decided_at, x.created_at) at time zone 'UTC')::date, sum(x.cost_usd), count(*) from pipeline.coverage_ai_match x where x.created_at > now() - interval '14 days' and coalesce(x.cost_usd, 0) > 0 group by 1) r
@@ -413,7 +413,7 @@ end $function$;
 update pipeline.provider_onboarding_settings set max_active = 100, changed_at = now(), reason = 'Platform Admin 12 Oct 2026 16:17: 100 universities at once' where id = 1;
 
 do $post$
-declare v_expected jsonb := '{"security.platform_notices_v1()": "e2d636a28c72efbe828eee385da67f00", "security.scholarship_ai_fire_v1()": "0a432552546d2031d1dcacbed71dc4bf", "security.central_ai_fire_v1()": "0a6dba98be083e4e5a91c613c2a8fd22", "public.admin_toolsets_read()": "97cf23f22fc4d1a6f8e38dc7bc6bec65", "public.admin_provider_onboarding(text, jsonb)": "19e2f3bb5d42ebaeb48a4a0126c4f1d7"}'::jsonb;
+declare v_expected jsonb := '{"security.platform_notices_v1()": "e2d636a28c72efbe828eee385da67f00", "security.scholarship_ai_fire_v1()": "0a432552546d2031d1dcacbed71dc4bf", "security.central_ai_fire_v1()": "0a6dba98be083e4e5a91c613c2a8fd22", "public.admin_toolsets_read()": "75ed6d4d7150010164f985689a326fc4", "public.admin_provider_onboarding(text, jsonb)": "19e2f3bb5d42ebaeb48a4a0126c4f1d7"}'::jsonb;
   v_sig text;
 begin
   for v_sig in select jsonb_object_keys(v_expected) loop
