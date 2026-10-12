@@ -1,0 +1,18 @@
+{
+  "captured_at": "2026-10-12T01:11:45.643Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-providers?tab=onboarding.png",
+      "route": "providers?tab=onboarding",
+      "action": null,
+      "clicked": true,
+      "heading": "Providers",
+      "settle_ms": 5697,
+      "height": 14000,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#providers?tab=onboarding",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
