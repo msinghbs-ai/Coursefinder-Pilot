@@ -28,7 +28,7 @@ export const AREAS=[
 const NEEDS=[
   // v2.15.253 (Platform Admin, 12 Oct 2026): central pages are approved on Providers › Onboarding (and the Adapter builder), scholarships are
   // published from Scholarships › Coverage; Layer 4 Flagged values retired (its open flags were closed).
-  ['fee_schedules','Fee schedules to approve','providers','onboarding'],
+  ['fee_schedules','Fee schedules to approve','layer2','onboarding'],
   ['scholarships_ready','Scholarships ready to publish','scholarships','coverage'],
   ['scholarships_domestic','Domestic-only scholarships to check','scholarships','coverage'],
   ['layer4_reviews','Layer 4 reviews','layer4',null],

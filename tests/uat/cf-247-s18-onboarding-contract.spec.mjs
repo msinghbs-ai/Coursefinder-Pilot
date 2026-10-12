@@ -57,7 +57,7 @@ test('source: Onboarding component, builder approvals, Layer 4 retirements, bann
 
 test('old Layer 4 addresses lead to where the work now happens', () => {
   for (const t of ['flags', 'rules', 'blocks']) expect(resolveTarget('layer-4-review', new URLSearchParams(`tab=${t}`))).toMatchObject({ page: 'layer4', tab: 'review' })
-  expect(resolveTarget('layer-4-review', new URLSearchParams('tab=attributes'))).toMatchObject({ page: 'providers', tab: 'onboarding' })
+  expect(resolveTarget('layer-4-review', new URLSearchParams('tab=attributes'))).toMatchObject({ page: 'layer2', tab: 'onboarding' }) // v2.15.258
   expect(resolveTarget('layer-4-review', new URLSearchParams('tab=publishing'))).toMatchObject({ page: 'scholarships', tab: 'coverage' })
   expect(resolveTarget('scholarships', new URLSearchParams('tab=publishing'))).toMatchObject({ page: 'scholarships', tab: 'coverage' })
 })
@@ -130,7 +130,7 @@ test.describe('mocked browser', () => {
     await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByRole('tab', { name: 'Flagged values' })).toHaveCount(0)
     await page.goto('/#layer-4-review?tab=attributes')
-    await expect(page).toHaveURL(/#providers\?tab=onboarding$/)
+    await expect(page).toHaveURL(/#layer-2-discovery\?tab=onboarding$/) // v2.15.258: Onboarding is on Layer 2
     await expect(page.locator('[data-provider-onboarding]')).toBeVisible()
     await page.goto('/#layer-4-review?tab=publishing')
     await expect(page).toHaveURL(/#scholarships\?tab=coverage$/)

@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.0 (reviewed for platform release v2.15.257)  
+**Version:** 1.1 (reviewed for platform release v2.15.258)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -21,21 +21,23 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | Stage | Runs by itself | Scheduled jobs | Where a person decides |
 |---|---|---|---|
-| 1. Register | Layer 1 refreshes the official provider and course registers (CRICOS, NZQA, Canadian lists) on their schedule; new providers start onboarding by themselves. | Register refresh scheduler (hourly), Register run driver, Register auto-ingest | Nothing day to day. A Platform Admin adds a country or a new register. |
-| 2. Website and course pages | Each provider's website is found and verified, its site mapped, and each course's own page found (CRICOS code, then title) and read as evidence. Onboarding moves each university without an admitting adapter through these steps every minute. | Onboard universities, Find provider websites, Discover course pages, Search for course pages, Read course pages, Match pages to courses | A website the finder could not verify (Layer 4 › Websites to find); a wrong website; course pages added by hand when none can be found. |
-| 3. University adapter | The AI proposes an adapter from sample pages (twice more if nothing passes); it is saved in testing, applied to every stored page and qualified field by field. A passing field is ready to admit; nothing is admitted by the test. | Onboard universities, Task manager tasks | A Platform Admin admits the ready fields on Layer 2 › Adapters. Universities where nothing passes show "Needs a person". |
-| 4. Central pages | Fee schedules, English language policies and academic calendars are found and read; the rule parser, and for English policies and calendars a pinned AI model (GPT-4.1 mini, every value quoted), turn them into proposals. | Find and read fee schedules, English policies and calendars; Find central pages; Read central pages with AI | A Platform Admin approves or rejects each proposal (Adapter builder 1.3, or Providers › Onboarding › Approvals waiting). Nothing is written before approval. |
-| 5. Admission | Admitted adapters and approved rules write values to courses every 10 minutes: intakes, English, fees, delivery. A value entered by hand is never overwritten. Values that sources disagree on, or that only an unofficial source gives, go to review. | Adapter values replace older ones, Admit intakes from course pages, Apply approved English policies, Apply provider fee profiles, Review rules (nightly) | Curators decide the Layer 4 Review queue, oldest first. |
-| 6. Scholarships | Scholarship pages are found on each university's site, read through the scraper and read by pinned AI models in order (Qwen3 30B, then GPT-4.1 mini); every fact must be quoted from the page. Passing scholarships are published every hour; a nightly review withdraws any that stop passing. | Discover scholarships, Read scholarship pages with AI, Publish scholarships automatically (hourly), Nightly publication review | Curators decide pages no model could settle (Layer 4 › AI could not decide); a Platform Admin spot-checks the automatic publishing and holds anything wrong. |
-| 7. Delivery | Search, the website API, Wix and Zoho are refreshed for every changed course and scholarship. | Refresh search for changed courses, Course scholarship attribute, Rebuild API reference data | Nothing, unless a delivery job fails. |
+| 1. Provider in | A university enters the platform from a Layer 1 register (CRICOS, NZQA, Canadian lists, refreshed on their schedule), another database import, or our own search. Every active university with courses and no admitting adapter is queued for onboarding; new ones start by themselves. | Register refresh scheduler (hourly), Register run driver, Register auto-ingest, Onboard universities | Nothing day to day. A Platform Admin adds a country or a new register, and can queue universities not yet in onboarding (Layer 2 › Onboarding). |
+| 2. Prepare | Each university's website is found and verified, its contacts and central pages found, its site mapped, and each course's own page found (CRICOS code, then title) and read as evidence. Up to 100 universities are worked at once, every minute. | Onboard universities, Find provider websites, Discover course pages, Search for course pages, Read course pages, Match pages to courses | A website the finder could not verify (Layer 4 › Websites to find); a wrong website; course pages added by hand when none can be found. |
+| 3. Create adapter | The pinned AI proposes the adapter from sample pages (twice more if nothing passes); it is saved in testing, applied to every stored page and qualified field by field. Central pages are suggested; when nothing passes, the AI reads the university's English policy and calendar pages for a person to approve. Nothing is admitted by the test. | Onboard universities, Task manager tasks, Read central pages with AI | Universities where nothing passes show "Needs a person" on Layer 2 › Onboarding. |
+| 4. Admit | Onboarding waits. Fee schedules, English policies and academic calendars are turned into proposals (rule parser, and for policies and calendars a pinned AI model quoting every value). Nothing is written before a person decides. | Find and read fee schedules, English policies and calendars; Find central pages | A Platform Admin admits the passing fields on Layer 2 › Adapters, and approves or rejects central pages (Adapter builder 1.3, or Layer 2 › Onboarding › Approvals waiting). |
+| 5. Enrich courses | Once admitted, the adapter is applied to the stored pages and writes its values to the courses (intakes, English, fees, delivery), with approved central pages filling courses that have none; admitted adapters and approved rules keep writing every 10 minutes. A value entered by hand is never overwritten. Values sources disagree on go to review. | Adapter values replace older ones, Admit intakes from course pages, Apply approved English policies, Apply provider fee profiles, Review rules (nightly) | Curators decide the Layer 4 Review queue, oldest first. |
+| 6. Scholarship adapter | Only after its courses are enriched is the university's scholarship search started: its site mapped, scholarship pages screened and read through the scraper. | Onboard universities (Scholarship search task), Discover scholarships | Nothing day to day. |
+| 7. Admit scholarships | Pinned AI models read each scholarship page in order (Qwen3 30B, then GPT-4.1 mini); every fact must be quoted from the page. Passing scholarships are published every hour; a nightly review withdraws any that stop passing. Onboarding is Done when no page waits for the AI or a person (or after 7 days). | Read scholarship pages with AI, Publish scholarships automatically (hourly), Nightly publication review | Curators decide pages no model could settle (Layer 4 › AI could not decide); a Platform Admin spot-checks the automatic publishing and holds anything wrong. |
+| Delivery | Search, the website API, Wix and Zoho are refreshed for every changed course and scholarship. | Refresh search for changed courses, Course scholarship attribute, Rebuild API reference data | Nothing, unless a delivery job fails. |
 
 ## 4. Rules that never change
 
 1. A value entered by hand is never overwritten by automation. Release it on the record to let automation update it again.
 2. A passing test never switches anything on. Admitting an adapter, approving a central page, activating an AI model or adding it to the order is a separate step a person takes, with a reason.
 3. AI models are pinned and qualified for each task; nothing routes to an untested model. An AI answer counts only where its quote is on the stored page.
-4. Every background job is a scheduled job in the automation catalogue or a task in Task manager, with its controls. Something running that you cannot see there is a fault: report it.
-5. Work oldest first, give a reason for every decision, and never decide from memory: open the stored page or document.
+4. AI spending is watched, not capped, while OpenRouter limits are set to Observe: Models & services › OpenRouter shows the balance, today's spend for each AI use against its daily guard and the credit floor, and a notice appears when one is passed. Nothing stops until a Platform Admin switches the limits to stop.
+5. Every background job is a scheduled job in the automation catalogue or a task in Task manager, with its controls. Something running that you cannot see there is a fault: report it.
+6. Work oldest first, give a reason for every decision, and never decide from memory: open the stored page or document.
 
 ## 5. Daily routine
 
@@ -59,7 +61,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | # | Who | Do | Why | Done when |
 |---|---|---|---|---|
-| 1 | Pipeline Operator | Providers › Onboarding › Stopped: read each reason. Fix what you can (website, course pages) and tell the Platform Admin which rows need Retry, approvals or admitting. _(Providers › Onboarding)_ | Onboarding stops for a person; it never guesses. | Each stopped row has an owner. |
+| 1 | Pipeline Operator | Layer 2 › Onboarding › Stopped: read each reason. Fix what you can (website, course pages) and tell the Platform Admin which rows need Retry, approvals or admitting. Rows at Enrich courses or Admit scholarships move on by themselves. _(Layer 2 Discovery & reading › Onboarding)_ | Onboarding stops for a person; it never guesses. | Each stopped row has an owner. |
 | 2 | Pipeline Operator | Scholarships to link to courses (Dashboard › Scholarships to link opens the list): on each scholarship, decide the suggested course links from the evidence. _(Scholarships › Scholarships)_ | A scholarship shows on a course only when linked. | Links decided. |
 | 3 | PIM Admin | Scheduled jobs › Priority queue and Automations: move stuck work; pace or pause what is behind or failing, with a reason. _(Scheduled jobs › Priority queue)_ | Pacing keeps work inside credits and time limits. | Nothing waits for hours without a reason. |
 | 4 | Curator | Reference data › Key dates and Reference sources: dates coming up and sites not reachable. _(Reference data › Key dates)_ | Key dates and sources feed the website. | Current. |
@@ -80,7 +82,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | Website to find | Search the official site, confirm the university's name on its home page, enter and save it. | Layer 4 › Websites to find |
 | Automation failing three runs in a row | Pause it with a note and raise it with the Platform Admin (Pipeline Operator and above). | Scheduled jobs › Automations |
 | A value on a record is wrong | Correct it on the record: it is kept as entered by hand and automation will not overwrite it until released. | Courses or Providers record |
-| Onboarding stopped: no website, too few course pages | Enter the website, or add course pages in the Adapter builder (2.1); onboarding carries on or the Platform Admin retries. | Providers › Onboarding; Layer 2 › Adapter builder |
+| Onboarding stopped: no website, too few course pages | Enter the website, or add course pages in the Adapter builder (2.1); onboarding carries on or the Platform Admin retries. | Layer 2 › Onboarding; Layer 2 › Adapter builder |
 
 ## 8. What to pay attention to
 
@@ -99,3 +101,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | Version | Date | Release | Change |
 |---|---|---|---|
 | 1.0 | 12 Oct 2026 | v2.15.257 | First issue: daily routine by role, review queues, follow-up, weekly checks, interventions and escalation. |
+| 1.1 | 12 Oct 2026 | v2.15.258 | Onboarding moved to Layer 2 › Onboarding with seven journey stages; scholarships are found only after a university is admitted and its courses enriched. |
