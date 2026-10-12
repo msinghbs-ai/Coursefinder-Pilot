@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.190 — 12 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.263** (Platform Admin, 12 Oct 2026 23:54: "Yes, use Firecrawl for pages found by CRICOS code or listed by the uni"). Worker coverage-sweep v0.21.5: a course page is read through Firecrawl only when found by its CRICOS code (cricos_search, cricos_code, cricos_code_on_page), listed on the university's own site (title_match, cms_path_public) or entered by a person (manual); pages found by a title or web search are read directly only. Evidence: Firecrawl read the right page for 1,436 of 1,440 CRICOS-code finds and 1,286 of 1,475 listed pages, against 989 of 2,053 title-search and 469 of 1,941 Firecrawl-search finds. No database change. SOPs 1.6.
+
 ## 0.1.189 — 12 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.262** (Platform Admin, 12 Oct 2026 21:47: "Report Firecrawl credit used per uni and pages produced, that will give us how much waste is happening, and tweak it along"; 22:22: "Give me the top 50 unis with maximum courses in Australia and try our mechanism over them"). Firecrawl daily budget of 15,000 credits (Melbourne day), shared by purpose (finding course pages 6,000, reading 3,000, scholarships 3,500, central pages 1,500, other 1,000), every worker spend checked and recorded by `svc_fc_spend`; per-university caps (scholarships 150 credits in 30 days, central pages again after 30 days, course-page search stopped after 30 searches without a correct page, resumed with Search again); Firecrawl credits by university on Models & services › Firecrawl (credits by purpose, correct and wrong pages, credits per correct page, waste flags); notices at 80%. Worker coverage-sweep v0.21.4. Cohort `au-top-2026-10-12`: the 50 Australian providers with the most CRICOS courses onboarded first, largest first; small pilot members not yet started held. Migrations `20261012011900`, `20261012012000`. SOPs 1.5.

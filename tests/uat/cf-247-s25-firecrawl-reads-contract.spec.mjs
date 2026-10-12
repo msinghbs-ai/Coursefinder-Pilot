@@ -13,7 +13,7 @@ test('worker v0.21.3: a found page is read directly first, Firecrawl only when b
   expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.21\.\d+"/)
   expect(worker).toContain('const searchFound = ["title_search", "cricos_search", "firecrawl_search", "serper_search"].includes(it.basis || "");')
   expect(worker).not.toContain('else if (searchFound && await useFc("scrape", it.provider_id, it.url)) {')
-  expect(worker).toContain('if ((!searchCandidate || searchFound) && !(adDirect?.json_found && adDirect.identity) && (!html || thin) && (it.status === "bound" || it.priority === true || searchFound)')
+  expect(worker).toContain('(!searchCandidate || searchFound) && !(adDirect?.json_found && adDirect.identity) && (!html || thin) && (it.status === "bound" || it.priority === true || searchFound)')
   const scrapes = worker.match(/fetch\("https:\/\/api\.firecrawl\.dev\/v2\/scrape", \{ method: "POST", headers: fcHeaders, body: JSON\.stringify\(\{ [^}]*/g) || []
   for (const s of scrapes) expect(s).toContain('proxy: "basic"')
 })
