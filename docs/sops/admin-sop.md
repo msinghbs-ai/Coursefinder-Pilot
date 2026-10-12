@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.5 (reviewed for platform release v2.15.262)  
+**Version:** 1.6 (reviewed for platform release v2.15.263)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -115,3 +115,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.3 | 12 Oct 2026 | v2.15.260 | Found course pages are read through Firecrawl; "Too few course pages" and "AI allowance used" carry on by themselves, so Retry is needed only for other stops. |
 | 1.4 | 12 Oct 2026 | v2.15.261 | Found course pages are read directly first and through Firecrawl (basic proxy) only when blocked or needing a browser; watch the Firecrawl credits used per hour on the credit bar and Models & services. |
 | 1.5 | 12 Oct 2026 | v2.15.262 | Firecrawl daily budget (15,000 a day, shared by purpose) and per-university caps; new start-of-day step to read Firecrawl credits by university and resume stopped searches; top 50 Australian providers by CRICOS courses onboarded first. |
+| 1.6 | 12 Oct 2026 | v2.15.263 | Firecrawl reads only course pages found by their CRICOS code, listed on the university's own site or entered by a person; a page found by a title search that needs a browser waits for its next candidate or a page entered by hand. |
