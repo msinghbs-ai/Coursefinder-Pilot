@@ -1002,6 +1002,7 @@ Deno.serve(async (req) => {
           for (const l of links) { let u: URL; try { u = new URL(l) } catch { continue } const h = u.hostname.toLowerCase().replace(/^www\./, ""); if (!/^https?:$/.test(u.protocol) || NOT_OWN.test(h) || SKIP.test(h) || hosts.includes(h)) continue; hosts.push(h) }
           tried.push({ register: reg.key, page: regPage, about, listed: hosts.slice(0, 5) });
           if (!about) continue;
+          let soleOk: string | null = null;
           for (const h of hosts.slice(0, 3)) {
             const origin = "https://" + h + "/";
             try {
@@ -1013,8 +1014,12 @@ Deno.serve(async (req) => {
               const codeOn = codeRe.test(htmlToText(html)), fits = domainFitsName(fh, siteNorm(p.name)) || (p.trading ? domainFitsName(fh, siteNorm(p.trading)) : false);
               tried.push({ register: reg.key, site: origin, http: res.status, code_on_home: codeOn, name_fits: fits });
               if (codeOn || fits) return { accepted: new URL(finalUrl).origin, basis: `register_${reg.key}_${codeOn ? "code" : "name"}`, register: reg.key, rto, tried, budget: false };
+              if (hosts.length === 1 && html.length > 500 && !SKIP.test(fh)) soleOk = new URL(finalUrl).origin;
             } catch { tried.push({ register: reg.key, site: origin, error: true }) }
           }
+          // v0.21.6: the register's page is about this provider (its CRICOS code or name on it) and lists exactly one website, which answers:
+          // the register is the official record, so its one listed website is accepted (ANE College: training.gov.au lists ane.edu.au)
+          if (soleOk) return { accepted: soleOk, basis: `register_${reg.key}_listed`, register: reg.key, rto, tried, budget: false };
         }
         return { accepted: null, basis: null, register: null, rto, tried, budget: false };
       };

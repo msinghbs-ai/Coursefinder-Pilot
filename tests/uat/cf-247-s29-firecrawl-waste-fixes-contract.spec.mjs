@@ -48,6 +48,8 @@ test('worker v0.21.6: official registers first, website accepted only with the C
   expect(worker).toContain('{ key: "teqsa", site: "teqsa.gov.au"')
   expect(worker).toContain('if (codeOn || fits) return { accepted: new URL(finalUrl).origin, basis: `register_${reg.key}_${codeOn ? "code" : "name"}`')
   expect(worker).toContain('if (!about) continue;')
+  // the register lists exactly one website, which answers: accepted as listed
+  expect(worker).toContain('if (soleOk) return { accepted: soleOk, basis: `register_${reg.key}_listed`')
   // registers are looked up before the CRICOS-code web search
   expect(worker.indexOf('const regFind = await registerSite(p, code, codeRe);')).toBeLessThan(worker.indexOf('query: `${p.name} CRICOS ${code}`, limit: 8'))
 })
