@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.7 (reviewed for platform release v2.15.264)  
+**Version:** 1.8 (reviewed for platform release v2.15.265)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -50,9 +50,10 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 |---|---|---|---|---|
 | 1 | Platform Admin | Read the credit and limit bar under the page title, if one shows. Red means a toolset has stopped: fix it first. _(Models & services)_ | Firecrawl, OpenRouter, the adapter AI allowance and the scholarship scraper cap stop work when used up. | No red bar. |
 | 2 | Platform Admin | Models & services › Firecrawl credits by university: read Today (each purpose against its share and the billed total), then tick Flagged only. For Search stopped, check the website on the Adapter builder (1.1) and press Search again with a reason; for Mostly wrong pages or No pages, note the university for its adapter or website. _(Models & services)_ | Firecrawl may bill 15,000 credits a day; credits spent without correct pages are waste. | No university is flagged without a note, and no share was used up before the afternoon. |
-| 3 | Platform Admin | Platform health › Health checks: clear every Critical; read each Warning and fix it or note why it can wait. _(Platform health › Health checks)_ | The checks run every 10 minutes over jobs, queues, budgets and the database. | No Critical open. |
-| 4 | Platform Admin | Scheduled jobs › Automations: "Failed in the last 24 hours". Open each failed job and read its last error (Platform guide › Signal → action). _(Scheduled jobs › Automations)_ | A job failing every run means its stage has stopped. | Every repeated failure is fixed, paused with a note, or raised with the platform engineer. |
-| 5 | Platform Admin | Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link. _(Dashboard)_ | One list of everything waiting for a person. | You know today's queue. |
+| 3 | Platform Admin | Same card, Refused today, by university: a university held by the scholarship cap, or with Search held (an adapter check, for example Victoria University and Adelaide University), needs its adapter or website checked; then press Search again with a reason. Directory site and fewer than 30 courses are the platform keeping credits off waste, not faults. _(Models & services)_ | Refusals show where credits would have gone; a held top-50 university is lost coverage. | No top-50 university is held without a note. |
+| 4 | Platform Admin | Platform health › Health checks: clear every Critical; read each Warning and fix it or note why it can wait. _(Platform health › Health checks)_ | The checks run every 10 minutes over jobs, queues, budgets and the database. | No Critical open. |
+| 5 | Platform Admin | Scheduled jobs › Automations: "Failed in the last 24 hours". Open each failed job and read its last error (Platform guide › Signal → action). _(Scheduled jobs › Automations)_ | A job failing every run means its stage has stopped. | Every repeated failure is fixed, paused with a note, or raised with the platform engineer. |
+| 6 | Platform Admin | Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link. _(Dashboard)_ | One list of everything waiting for a person. | You know today's queue. |
 
 ### Morning: decisions only you can make
 
@@ -117,3 +118,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.5 | 12 Oct 2026 | v2.15.262 | Firecrawl daily budget (15,000 a day, shared by purpose) and per-university caps; new start-of-day step to read Firecrawl credits by university and resume stopped searches; top 50 Australian providers by CRICOS courses onboarded first. |
 | 1.6 | 12 Oct 2026 | v2.15.263 | Firecrawl reads only course pages found by their CRICOS code, listed on the university's own site or entered by a person; a page found by a title search that needs a browser waits for its next candidate or a page entered by hand. |
 | 1.7 | 13 Oct 2026 | v2.15.264 | Models & services in three tabs; AI & OpenRouter holds the OpenRouter key, mode, floor, each AI use's model and daily guard, the central pages model, the scholarship AI models and the model profiles (the settings Layer 3 used to hold). |
+| 1.8 | 13 Oct 2026 | v2.15.265 | Firecrawl is never spent on directory sites; search order is top 50, Australian providers with 30+ courses, overseas, then small providers; scholarships are searched for Australian providers with 30+ courses (and overseas universities); the scholarship cap counts from when a university joined onboarding. New start-of-day check: Refused today, by university, and universities whose search is held for an adapter check. Websites are found on training.gov.au and TEQSA first. |

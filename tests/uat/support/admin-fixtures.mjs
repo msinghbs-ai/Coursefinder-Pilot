@@ -798,6 +798,8 @@ providerOnboarding.pilot_latest.data = onboardingPilotReport
 
 // v2.15.262: Firecrawl credits by university and today's budget
 export const firecrawlCredits = { generated_at: '2026-10-12T11:00:00Z', hours: 24, can_manage: true,
+  refused_by_uni: [{ provider_id: 'u-vu', name: 'Victoria University', country: 'AU', tier: 0, n: 12, reasons: { 'course_search:search_stopped': 12 }, held: true },
+    { provider_id: 'u-sch', name: 'Sydney Catholic Schools', country: 'AU', tier: 3, n: 40, reasons: { 'scholarships:not_eligible': 30, 'scholarships:directory_site': 10 }, held: false }],
   budget: { on: true, day_start: '2026-10-11T13:00:00Z', total: 15000, billed_today: 12400, used_today: 11800,
     groups: [{ group: 'course_search', label: 'Finding course pages', share: 6000, used: 5100, refused: 0 }, { group: 'reads', label: 'Reading pages', share: 3000, used: 3000, refused: 42 },
              { group: 'scholarships', label: 'Scholarships', share: 3500, used: 2400, refused: 3 }, { group: 'central', label: 'Central pages', share: 1500, used: 1100, refused: 0 },

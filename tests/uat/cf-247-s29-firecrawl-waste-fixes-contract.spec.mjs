@@ -53,3 +53,23 @@ test('worker v0.21.6: official registers first, website accepted only with the C
   // registers are looked up before the CRICOS-code web search
   expect(worker.indexOf('const regFind = await registerSite(p, code, codeRe);')).toBeLessThan(worker.indexOf('query: `${p.name} CRICOS ${code}`, limit: 8'))
 })
+
+test.describe('mocked browser', () => {
+  test('Credits by university lists today’s refusals by university, reason and search order; a held search can be released', async ({ page }) => {
+    const { mockAdmin } = await import('./support/admin-mock.mjs')
+    page.on('dialog', d => d.accept('Adapter checked: vu.edu.au course pages'))
+    await mockAdmin(page)
+    await page.goto('/#models-services?tab=limits')
+    const card = page.locator('[data-fc-by-uni]')
+    await card.locator('.cf-card-toggle').first().click()
+    const sch = card.locator('[data-fc-refused-uni="u-sch"]')
+    await expect(sch).toContainText('Small provider')
+    await expect(sch).toContainText('fewer than 30 courses (scholarships) 30')
+    await expect(sch).toContainText('directory site (scholarships) 10')
+    const vu = card.locator('[data-fc-refused-uni="u-vu"]')
+    await expect(vu).toContainText('Top 50')
+    await expect(vu).toContainText('Search held')
+    await vu.getByRole('button', { name: 'Search again' }).click()
+    await expect.poll(() => page.l3calls.find(c => c.fcResume)).toEqual({ fcResume: 'u-vu', reason: 'Adapter checked: vu.edu.au course pages' })
+  })
+})
