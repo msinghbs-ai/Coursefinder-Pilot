@@ -92,7 +92,7 @@ test.describe('mocked browser', () => {
 
   test('Models & services › OpenRouter: each AI use against its daily guard, and the credit floor', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#models-services')
+    await page.goto('/#models-services?tab=limits')
     await openCards(page) // cards start collapsed
     const or = page.locator('[data-openrouter]')
     await expect(or).toContainText('credit floor US$5')

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.191 — 13 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.264** (Platform Admin, 13 Oct 2026 00:09: "Layer 3 has removed the configuration of OpenAI and access to toolsets and limits; restore them as a tab in Models & services"). Models & services in three tabs: Services, **AI & OpenRouter** (`AiConfig.jsx`: OpenRouter balance, mode, credit floor and key with set and verify; each AI use with its model, daily guard, spend and calls today; central pages model and switch; adapter proposal model; scholarship AI models with order, Qualify and Make active, shared with Scholarships › Extraction; model profiles with prompt version and hash; recent AI changes) and **Toolsets & limits**. Migration `20261013012100` (`admin_ai_config_read`, `admin_ai_config`). Guide and SOPs 1.7.
+
 ## 0.1.190 — 12 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.263** (Platform Admin, 12 Oct 2026 23:54: "Yes, use Firecrawl for pages found by CRICOS code or listed by the uni"). Worker coverage-sweep v0.21.5: a course page is read through Firecrawl only when found by its CRICOS code (cricos_search, cricos_code, cricos_code_on_page), listed on the university's own site (title_match, cms_path_public) or entered by a person (manual); pages found by a title or web search are read directly only. Evidence: Firecrawl read the right page for 1,436 of 1,440 CRICOS-code finds and 1,286 of 1,475 listed pages, against 989 of 2,053 title-search and 469 of 1,941 Firecrawl-search finds. No database change. SOPs 1.6.

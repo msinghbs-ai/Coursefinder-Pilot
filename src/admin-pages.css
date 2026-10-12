@@ -611,3 +611,13 @@
 /* v2.15.262: Firecrawl credits by university */
 .fcc-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
 .fcc-only{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}
+/* v2.15.264: Models & services › AI & OpenRouter */
+.ai-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:4px 0 12px}
+.ai-grid>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--cf-border,#e2e8f0);border-radius:8px}
+.ai-grid small{color:var(--cf-muted,#64748b)}
+.ai-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.ai-row input{max-width:9rem}
+.ai-row input.tn-wide{max-width:22rem}
+.ai-inline{display:inline-flex;gap:6px;align-items:center}
+.ai-key{margin-top:10px}
+.ai-events{margin:0;padding-left:18px}

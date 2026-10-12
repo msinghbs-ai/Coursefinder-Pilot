@@ -38,7 +38,7 @@ test.describe('mocked browser', () => {
     const prompts = []
     page.on('dialog', d => { prompts.push(d.message()); d.accept('Website checked: humber.ca') })
     await mockAdmin(page)
-    await page.goto('/#models-services')
+    await page.goto('/#models-services?tab=limits')
     const card = page.locator('[data-fc-by-uni]')
     await expect(card).toBeVisible()
     await card.locator('.cf-card-toggle').first().click()

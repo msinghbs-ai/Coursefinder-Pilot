@@ -808,3 +808,16 @@ export const firecrawlCredits = { generated_at: '2026-10-12T11:00:00Z', hours: 2
     { provider_id: 'u-gbc', name: 'George Brown College', country: 'CA', units: 1084, course_search: 428, reads: 570, scholarships: 0, central: 86, other: 0, fc_ok: 77, fc_wrong: 123, direct_ok: 0, correct: 77, per_correct: 12.9, flag: 'mostly_wrong', stopped: false },
     { provider_id: 'u-hum', name: 'Humber College', country: 'CA', units: 560, course_search: 552, reads: 0, scholarships: 0, central: 8, other: 0, fc_ok: 0, fc_wrong: 0, direct_ok: 0, correct: 0, per_correct: null, flag: 'search_stopped', stopped: true, stopped_searches: 276 },
     { provider_id: 'u-con', name: 'Conestoga College', country: 'CA', units: 681, course_search: 630, reads: 0, scholarships: 0, central: 51, other: 0, fc_ok: 0, fc_wrong: 0, direct_ok: 269, correct: 269, per_correct: 2.3, flag: null, stopped: false }] }
+
+// v2.15.264: Models & services › AI & OpenRouter
+export const aiConfig = { can_manage: true, generated_at: '2026-10-13T00:10:00Z',
+  openrouter: { mode: 'observe', credit_floor_usd: 5, low_balance_warn_usd: 10, balance: { remaining_usd: 29.25, total_credits: 125, observed_at: '2026-10-12T13:01:44Z' },
+    key: { secret: 'OPENROUTER_API_KEY', shared_by_profiles: 55, profile_id: 'p-qwen', profile_code: 'openrouter-intake-l3c-qwen3-30b-a3b-2507-v1' } },
+  uses: [
+    { use: 'scholarship_ai', label: 'Read scholarship pages with AI', calls: 7025, spent_today: 3.72, guard: 20, allowed: true, models: [{ code: 'qwen3-30b', label: 'Qwen3 30B', model: 'qwen/qwen3-30b-a3b-instruct-2507', status: 'active' }] },
+    { use: 'adapter_builder', label: 'Adapter proposals', calls: 331, spent_today: 0.23, guard: 5, allowed: true, models: [{ model: 'qwen/qwen3-30b-a3b-instruct-2507', profile: 'openrouter-intake-l3c-qwen3-30b-a3b-2507-v1' }] },
+    { use: 'central_ai', label: 'Central pages with AI', calls: 69, spent_today: 0.08, guard: 5, allowed: true, models: [{ code: 'gpt-4.1-mini', model: 'openai/gpt-4.1-mini', enabled: true, reason: 'pinned', changed_at: '2026-10-12T03:36:25Z' }] },
+    { use: 'course_match', label: 'AI course-page matching', calls: 636, spent_today: 0.06, guard: 5, allowed: true, models: [{ model: 'qwen/qwen3-30b-a3b-instruct-2507', fixed: 'worker' }] }],
+  central_choices: [{ code: 'gpt-4.1', label: 'GPT-4.1', model: 'openai/gpt-4.1', status: 'candidate' }, { code: 'gpt-4.1-mini', label: 'GPT-4.1 mini', model: 'openai/gpt-4.1-mini', status: 'candidate' }],
+  profiles: [{ id: 'p-qwen', code: 'openrouter-intake-l3c-qwen3-30b-a3b-2507-v1', model: 'qwen/qwen3-30b-a3b-instruct-2507', enabled: true, paused: false, prompt_version: 'v1.2.0', prompt_chars: 181, prompt_hash: '0ef16b1996e1', tasks: ['provider_intake_validation'], requests_per_day: 40000, used_now: true }],
+  events: [{ at: '2026-10-12T07:00:00Z', area: 'toolsets', action: 'enforcement', target: 'openrouter', reason: 'v2.15.258' }] }

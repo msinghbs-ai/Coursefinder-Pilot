@@ -39,6 +39,7 @@ import'./admin-pages.css'
 function lazyPage(load,name='default'){return React.lazy(()=>load().then(m=>({default:m[name]})).catch(e=>{let again=false;try{again=sessionStorage.getItem('cf-chunk-reload')!==String(location.pathname+location.hash)}catch{}if(again&&/dynamically imported module|Importing a module script failed|Failed to fetch/i.test(String(e?.message||e))){try{sessionStorage.setItem('cf-chunk-reload',String(location.pathname+location.hash))}catch{}location.reload();return new Promise(()=>{})}throw e}))}
 const EvidenceWorkspace=lazyPage(()=>import('./EvidenceWorkspace'))
 const ModelsServices=lazyPage(()=>import('./ModelsServices'))
+const AiConfig=lazyPage(()=>import('./AiConfig'))
 const StatisticsDatasets=lazyPage(()=>import('./StatisticsDatasets'))
 const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
@@ -253,7 +254,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'environment':return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
       // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
       case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>
-      case'services':return <div className="m-page-stack"><ModelsServices onError={err}/><Toolsets onError={err}/></div>
+      // v2.15.264: Models & services in three tabs (Services · AI & OpenRouter · Toolsets & limits)
+      case'services':return tab==='ai'?<AiConfig onError={err}/>:tab==='limits'?<Toolsets onError={err}/>:<div className="m-page-stack"><ModelsServices onError={err}/></div>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       case'dataModel':return <Attributes onError={onError}/>
       case'retention':return <RetentionScreen onError={onError}/>
