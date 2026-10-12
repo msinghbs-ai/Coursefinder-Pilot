@@ -748,15 +748,32 @@ export const scholarshipAiReviews = {
 export const providerOnboarding = {
   can_manage: true,
   settings: { enabled: true, auto_start_new: true, max_active: 30, run_as: '00000000-0000-4000-8000-000000000006', changed_by: null, changed_at: '2026-10-12T09:35:00Z', reason: 'Platform Admin, 12 Oct 2026: onboard as soon as possible' },
-  counts: { queued: 1100, website: 4, course_pages: 9, capturing: 6, proposing: 3, applying: 2, qualifying: 3, scholarships: 3, waiting_admit: 1, stopped: 2, done: 0 },
-  stops: { no_website: 1, proposal_failed: 1 },
+  counts: { queued: 1100, website: 4, course_pages: 9, capturing: 6, proposing: 3, applying: 2, qualifying: 3, scholarships: 3, waiting_admit: 1, stopped: 3, done: 0 },
+  stops: { no_website: 1, proposal_failed: 1, nothing_ready: 1 },
   without_adapter: 1153, approvals_waiting: 7,
   rows: [
     { id: 'ob-1', provider_id: 'pv-ob-1', name: 'Southern Cross University', country: 'AU', website: 'https://www.scu.edu.au', status: 'qualifying', stop_reason: null, note: 'Qualifying each field against the admit rule.', source: 'backfill', job_id: null, ready: null, held: null, central_pages: [], scholarships: null, courses: 212, pages_read: 180, started_at: '2026-10-12T09:40:00Z', step_started_at: '2026-10-12T10:05:00Z', updated_at: '2026-10-12T10:05:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
     { id: 'ob-2', provider_id: 'pv-ob-2', name: 'Kaplan Business School', country: 'AU', website: null, status: 'stopped', stop_reason: 'no_website', note: 'No website could be found and verified. Enter it in the Adapter builder (1.1).', source: 'backfill', job_id: null, ready: null, held: null, central_pages: [], scholarships: null, courses: 14, pages_read: 0, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T09:36:00Z', updated_at: '2026-10-12T09:50:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
-    { id: 'ob-3', provider_id: 'pv-ob-3', name: 'Charles Sturt University', country: 'AU', website: 'https://study.csu.edu.au', status: 'waiting_admit', stop_reason: null, note: 'Ready to admit: intakes, english. A Platform Admin admits on Layer 2 › Adapters.', source: 'backfill', job_id: null, ready: ['intakes', 'english'], held: { fee: 'agrees on under 90% of checked courses' }, central_pages: [{ kind: 'fee_schedule', url: 'https://study.csu.edu.au/fees.pdf' }], scholarships: 4, courses: 390, pages_read: 377, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T10:00:00Z', updated_at: '2026-10-12T10:01:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
+    { id: 'ob-3', provider_id: 'pv-ob-3', name: 'Charles Sturt University', country: 'AU', website: 'https://study.csu.edu.au', status: 'waiting_admit', stop_reason: null, note: 'Ready to admit: intakes, english. A Platform Admin admits on Layer 2 › Adapters.', source: 'backfill', job_id: null, ready: ['intakes', 'english'], held: { fee: 'agrees on under 90% of checked courses' }, central_pages: [{ kind: 'fee_schedule', url: 'https://study.csu.edu.au/fees.pdf' }], scholarships: 4, scholarships_live: { found: 6, published: 2, waiting_ai: 12, searched: true }, ai_attempts: 1, courses: 390, pages_read: 377, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T10:00:00Z', updated_at: '2026-10-12T10:01:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
     { id: 'ob-4', provider_id: 'pv-ob-4', name: 'Torrens University Australia', country: 'AU', website: 'https://www.torrens.edu.au', status: 'stopped', stop_reason: 'proposal_failed', note: 'The model\'s proposal failed twice: the reply was cut off.', source: 'backfill', job_id: null, ready: null, held: null, central_pages: [], scholarships: null, courses: 120, pages_read: 6, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T09:58:00Z', updated_at: '2026-10-12T09:59:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
+    { id: 'ob-5', provider_id: 'pv-ob-5', name: 'Sunraysia Institute of TAFE', country: 'AU', website: 'https://www.sunitafe.edu.au', status: 'stopped', stop_reason: 'nothing_ready', note: 'Nothing is ready to admit after 2 AI attempt(s): fee: read on 1 of 22 pages, under the share needed.', source: 'backfill', job_id: null, ready: [], held: { fee: 'read on 1 of 22 pages, under the share needed' }, central_pages: [], scholarships: 0, scholarships_live: { found: 0, published: 0, waiting_ai: 0, searched: true }, ai_attempts: 2, courses: 25, pages_read: 22, started_at: '2026-10-12T09:36:00Z', step_started_at: '2026-10-12T11:30:00Z', updated_at: '2026-10-12T11:30:00Z', finished_at: null, created_at: '2026-10-12T09:35:00Z' },
   ],
+}
+// v2.15.255: admin_provider_onboarding('journey') for Charles Sturt University (ob-3)
+export const providerOnboardingJourney = {
+  id: 'ob-3', status: 'waiting_admit', stop_reason: null, started_at: '2026-10-12T09:36:00Z', ai_attempts: 1,
+  qualify: { fields: { intakes: { pass: true, read_share: 0.92, agree_share: 0.97, why: 'passes' }, fee: { pass: false, read_share: 0.81, agree_share: 0.7, why: 'agrees on under 90% of checked courses' } } },
+  ready: ['intakes'], held: { fee: 'agrees on under 90% of checked courses' }, central_pages: [],
+  scholarship_search: { note: '14 new page(s) checked', candidates_found: 14 },
+  events: [
+    { at: '2026-10-12T09:36:00Z', status: 'website', note: 'Starting.' },
+    { at: '2026-10-12T09:50:00Z', status: 'scholarships', note: 'Qualified; finding scholarships.' },
+    { at: '2026-10-12T10:01:00Z', status: 'waiting_admit', note: 'Ready to admit: intakes.' },
+  ],
+  tasks: [{ id: 't1', kind: 'scholarship_provider_scan', title: 'Find scholarships', state: 'done', created_at: '2026-10-12T09:51:00Z', finished_at: '2026-10-12T09:58:00Z', note: '14 new page(s) checked' }],
+  drafts: [{ id: 'd1', status: 'proposed', created_at: '2026-10-12T09:40:00Z', samples: 6, proposals: 1, model: 'qwen/qwen3-30b-a3b-instruct-2507', cost_usd: 0.0006 }],
+  scholarships: [{ id: 's1', name: 'Global Excellence Scholarship', publication_status: 'published', lifecycle_status: 'active', created_at: '2026-10-12T10:20:00Z', url: 'https://study.csu.edu.au/global' }],
+  ai_waiting: 12, ai_read: { scholarship: 6, not_scholarship: 8 },
 }
 // v2.15.253: the credit and limit banner (shape of public.admin_credit_notices())
 export const creditNoticesCritical = [
