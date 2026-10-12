@@ -40,6 +40,12 @@ test('migration 10800: the course-page search picks only Firecrawl target univer
   expect(s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION'))).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
 
+test('migration 11000: the Needs a person note is short (reasons stay in Fields)', () => {
+  const s = fs.readFileSync('supabase/migrations/20261012011000_cf247_onboarding_needs_person_note.sql', 'utf8')
+  expect(s).toContain("Nothing passed after %s AI attempt(s); the Fields column shows why for each field.")
+  expect(s).toContain('live % differs from the definition this change replaces')
+})
+
 test.describe('mocked browser', () => {
   test('Needs a person has its own tile and filter, separate from Stopped', async ({ page }) => {
     await mockAdmin(page)
