@@ -608,3 +608,6 @@
 .po .po-pilot h3{margin:0;font-size:var(--cf-fs-sm);flex:1}
 .po .po-pilot-table{font-size:var(--cf-fs-xs)}
 .po .po-pilot-total td{border-top:2px solid var(--cf-slate-300)}
+/* v2.15.262: Firecrawl credits by university */
+.fcc-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}
+.fcc-only{display:inline-flex;gap:6px;align-items:center;font-size:.9rem}

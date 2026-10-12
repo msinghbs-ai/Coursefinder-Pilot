@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.4 (reviewed for platform release v2.15.261)  
+**Version:** 1.5 (reviewed for platform release v2.15.262)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -49,9 +49,10 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | # | Who | Do | Why | Done when |
 |---|---|---|---|---|
 | 1 | Platform Admin | Read the credit and limit bar under the page title, if one shows. Red means a toolset has stopped: fix it first. _(Models & services)_ | Firecrawl, OpenRouter, the adapter AI allowance and the scholarship scraper cap stop work when used up. | No red bar. |
-| 2 | Platform Admin | Platform health › Health checks: clear every Critical; read each Warning and fix it or note why it can wait. _(Platform health › Health checks)_ | The checks run every 10 minutes over jobs, queues, budgets and the database. | No Critical open. |
-| 3 | Platform Admin | Scheduled jobs › Automations: "Failed in the last 24 hours". Open each failed job and read its last error (Platform guide › Signal → action). _(Scheduled jobs › Automations)_ | A job failing every run means its stage has stopped. | Every repeated failure is fixed, paused with a note, or raised with the platform engineer. |
-| 4 | Platform Admin | Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link. _(Dashboard)_ | One list of everything waiting for a person. | You know today's queue. |
+| 2 | Platform Admin | Models & services › Firecrawl credits by university: read Today (each purpose against its share and the billed total), then tick Flagged only. For Search stopped, check the website on the Adapter builder (1.1) and press Search again with a reason; for Mostly wrong pages or No pages, note the university for its adapter or website. _(Models & services)_ | Firecrawl may bill 15,000 credits a day; credits spent without correct pages are waste. | No university is flagged without a note, and no share was used up before the afternoon. |
+| 3 | Platform Admin | Platform health › Health checks: clear every Critical; read each Warning and fix it or note why it can wait. _(Platform health › Health checks)_ | The checks run every 10 minutes over jobs, queues, budgets and the database. | No Critical open. |
+| 4 | Platform Admin | Scheduled jobs › Automations: "Failed in the last 24 hours". Open each failed job and read its last error (Platform guide › Signal → action). _(Scheduled jobs › Automations)_ | A job failing every run means its stage has stopped. | Every repeated failure is fixed, paused with a note, or raised with the platform engineer. |
+| 5 | Platform Admin | Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link. _(Dashboard)_ | One list of everything waiting for a person. | You know today's queue. |
 
 ### Morning: decisions only you can make
 
@@ -113,3 +114,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.2 | 12 Oct 2026 | v2.15.259 | Admit automatically (platform-wide, switched on 12 Oct 2026): the daily step becomes a spot-check of automatic admits, undone on Layer 2 › Adapters when wrong; the onboarding pilot (60 AU / 25 NZ / 15 CA) is followed on its Pilot panel. |
 | 1.3 | 12 Oct 2026 | v2.15.260 | Found course pages are read through Firecrawl; "Too few course pages" and "AI allowance used" carry on by themselves, so Retry is needed only for other stops. |
 | 1.4 | 12 Oct 2026 | v2.15.261 | Found course pages are read directly first and through Firecrawl (basic proxy) only when blocked or needing a browser; watch the Firecrawl credits used per hour on the credit bar and Models & services. |
+| 1.5 | 12 Oct 2026 | v2.15.262 | Firecrawl daily budget (15,000 a day, shared by purpose) and per-university caps; new start-of-day step to read Firecrawl credits by university and resume stopped searches; top 50 Australian providers by CRICOS courses onboarded first. |

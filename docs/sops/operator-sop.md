@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.4 (reviewed for platform release v2.15.261)  
+**Version:** 1.5 (reviewed for platform release v2.15.262)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -106,3 +106,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.2 | 12 Oct 2026 | v2.15.259 | Admit is automatic for the fields that pass; universities move on to enriching and scholarships by themselves. Tell the Platform Admin about any admitted value that looks wrong. |
 | 1.3 | 12 Oct 2026 | v2.15.260 | Too few course pages and AI allowance used carry on by themselves; work stopped rows with other reasons. |
 | 1.4 | 12 Oct 2026 | v2.15.261 | Found course pages are read directly first; Firecrawl only when blocked or needing a browser. |
+| 1.5 | 12 Oct 2026 | v2.15.262 | Firecrawl work now keeps to a daily budget; a purpose that used its share waits until midnight (not a fault). |
