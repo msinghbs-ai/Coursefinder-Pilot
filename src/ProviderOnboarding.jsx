@@ -26,14 +26,15 @@ export const STOP={no_website:['No website','Enter the website in the Adapter bu
   proposal_failed:['AI proposal failed','Check the OpenRouter credit and the adapter AI allowance, then Retry; or build the adapter by hand in the Adapter builder.'],
   recipe_off:['Course-page search switched off','A person switched off the course-page search for this website. Check the website in the Adapter builder (1.1); a different website replaces the search. Then Retry.'],
   adapter_off:['Adapter switched off','Someone switched this adapter off. Switch it on in Layer 2 › Adapters if that was a mistake, then Retry.'],
+  approve_central:['Approve central pages','The AI read its English language policy or academic calendar. Approve or reject each in the Adapter builder (1.3) or under Approvals waiting below; approved values fill courses that have none. Onboarding finishes once they are decided.'],
   nothing_ready:['Needs a person','Nothing passed after the AI attempts. Open the Adapter builder: mark the values on the sample pages, or approve its central pages (1.3); then Retry. Admitting by hand also finishes onboarding.'],
   error:['Unexpected error','Read the note, then Retry. If it stops again, open the Adapter builder.']}
 const FIELD={intakes:'Intakes',english:'English',fee:'Fee',delivery:'Delivery'}
 const SOURCE={manual:'started by a person',new_provider:'new university',backfill:'without an adapter'}
 const FILTERS=[['','All'],['active','In progress'],['stopped','Stopped'],['needs_person','Needs a person'],['waiting_admit','Ready to admit'],['waiting_courses','Waiting for courses'],['queued','Queued'],['done','Done']]
 const ORDER=s=>s==='stopped'?0:s==='waiting_admit'?1:2
-const needsPerson=r=>r.status==='stopped'&&r.stop_reason==='nothing_ready'
-const stepOf=r=>needsPerson(r)?['Needs a person','warning']:(STEP[r.status]||[r.status,'neutral'])
+const needsPerson=r=>r.status==='stopped'&&['nothing_ready','approve_central'].includes(r.stop_reason)
+const stepOf=r=>needsPerson(r)?[r.stop_reason==='approve_central'?'Approve central pages':'Needs a person','warning']:(STEP[r.status]||[r.status,'neutral'])
 const builderHref=id=>hrefFor('layer2','builder',id?{provider:id}:{})
 
 // A Platform Admin action that asks for a reason in place (same pattern as Scholarships › Extraction)
@@ -152,7 +153,7 @@ export default function ProviderOnboarding({rank=0,actorId='',onError}){
   const picked=rows.filter(r=>sel.has(r.id)),stoppedPicked=picked.filter(r=>r.status==='stopped'),stoppable=picked.filter(r=>!['done','cancelled'].includes(r.status))
   const toggle=id=>setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n})
   const tickable=rows.filter(r=>!['done','cancelled'].includes(r.status)),allPicked=tickable.length>0&&tickable.every(r=>sel.has(r.id))
-  const stops=Object.entries(d.stops||{}).filter(([k,n])=>Number(n)&&k!=='nothing_ready'),needs=Number(d.stops?.nothing_ready||0),stoppedN=Math.max(Number(counts.stopped||0)-needs,0)
+  const central=Number(d.stops?.approve_central||0),stops=Object.entries(d.stops||{}).filter(([k,n])=>Number(n)&&!['nothing_ready','approve_central'].includes(k)),needs=Number(d.stops?.nothing_ready||0)+central,stoppedN=Math.max(Number(counts.stopped||0)-needs,0)
   // a tile with a filter shows those rows when pressed (pressed again: all rows)
   const tile=(key,label,value,detail,icon,tone,filter)=>{const m=<Metric label={label} value={fmtNumber(value||0)} detail={detail} icon={icon} tone={tone}/>
     return filter===undefined?<div key={key} className="po-tile" data-onboarding-tile={key}>{m}</div>
@@ -163,7 +164,7 @@ export default function ProviderOnboarding({rank=0,actorId='',onError}){
       {tile('queued','Waiting (queued)',counts.queued,d.settings?.enabled===false?'Onboarding is switched off':`Up to ${fmtNumber(d.settings?.max_active||0)} run at once`,Clock3,'neutral','queued')}
       {tile('active','In progress',active,'Website to scholarships',Workflow,'info','active')}
       {tile('stopped','Stopped',stoppedN,stops.length?stops.map(([k,n])=>`${STOP[k]?.[0]||k}: ${fmtNumber(n)}`).join(' · '):'Nothing stopped',OctagonAlert,stoppedN?'danger':'success','stopped')}
-      {tile('needs_person','Needs a person',needs,'Nothing passed after 2 AI attempts',UserRoundCheck,needs?'warning':'neutral','needs_person')}
+      {tile('needs_person','Needs a person',needs,central?`${fmtNumber(central)} with central pages to approve`:'Nothing passed after 2 AI attempts',UserRoundCheck,needs?'warning':'neutral','needs_person')}
       {tile('waiting_admit','Ready to admit',counts.waiting_admit,'A person admits on Layer 2 › Adapters',ListChecks,Number(counts.waiting_admit)?'warning':'neutral','waiting_admit')}
       {tile('done','Done',counts.done,'Admitted',CheckCircle2,'success','done')}
       {tile('without','Still without an adapter',d.without_adapter,'Active universities with courses',Building2,'neutral')}
