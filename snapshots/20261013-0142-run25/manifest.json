@@ -1,0 +1,66 @@
+{
+  "captured_at": "2026-10-13T01:42:29.569Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-coverage?tab=progress.png",
+      "route": "coverage?tab=progress",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 7581,
+      "height": 2002,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=progress",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-coverage?tab=progress&view=journeys.png",
+      "route": "coverage?tab=progress&view=journeys",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 4305,
+      "height": 14000,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=progress&view=journeys",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-coverage?tab=progress&view=running.png",
+      "route": "coverage?tab=progress&view=running",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 4295,
+      "height": 1306,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=progress&view=running",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "04-coverage?tab=progress&view=levers.png",
+      "route": "coverage?tab=progress&view=levers",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 2768,
+      "height": 1804,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=progress&view=levers",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "05-dashboard.png",
+      "route": "dashboard",
+      "action": null,
+      "clicked": true,
+      "heading": "Dashboard",
+      "settle_ms": 3027,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#dashboard",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
