@@ -1,0 +1,32 @@
+{
+  "captured_at": "2026-10-13T05:36:32.369Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery?tab=onboarding.png",
+      "route": "layer-2-discovery?tab=onboarding",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2 Discovery & reading",
+      "settle_ms": 4788,
+      "height": 14000,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=onboarding",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-models-services?tab=limits&card=services.toolsets&at=services.toolsets.png",
+      "route": "models-services?tab=limits&card=services.toolsets&at=services.toolsets",
+      "action": null,
+      "clicked": true,
+      "heading": "Models & services",
+      "settle_ms": 5050,
+      "height": 1736,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#models-services?tab=limits&card=services.toolsets&at=services.toolsets",
+      "diag": null,
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    }
+  ]
+}
