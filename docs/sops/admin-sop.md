@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.9 (reviewed for platform release v2.15.266)  
+**Version:** 1.10 (reviewed for platform release v2.15.267)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -121,3 +121,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.7 | 13 Oct 2026 | v2.15.264 | Models & services in three tabs; AI & OpenRouter holds the OpenRouter key, mode, floor, each AI use's model and daily guard, the central pages model, the scholarship AI models and the model profiles (the settings Layer 3 used to hold). |
 | 1.8 | 13 Oct 2026 | v2.15.265 | Firecrawl is never spent on directory sites; search order is top 50, Australian providers with 30+ courses, overseas, then small providers; scholarships are searched for Australian providers with 30+ courses (and overseas universities); the scholarship cap counts from when a university joined onboarding. New start-of-day check: Refused today, by university, and universities whose search is held for an adapter check. Websites are found on training.gov.au and TEQSA first. |
 | 1.9 | 13 Oct 2026 | v2.15.266 | New first step: Coverage & completeness › Progress › Overview (Needs attention, the pilot and the top 50 hour by hour). The Pilot panel on Layer 2 › Onboarding, Live activity, the Dashboard health strip, Layers and Recent activity, and Task manager › Running now are retired; Progress replaces them. |
+| 1.10 | 13 Oct 2026 | v2.15.267 | Progress › Journeys: filter by what holds a university up (needs a person, course pages, scholarship credits, search stopped, AI reading) or tick Only held up; the Next step button opens the university's steps and its run-on-demand actions (Find scholarships now, read the scholarship pages with AI again, read course pages again, Qualify adapter, Retry, Search again). |

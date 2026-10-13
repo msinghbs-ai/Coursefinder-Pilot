@@ -14,8 +14,8 @@ import{AlertTriangle,ChevronDown,ChevronRight,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{hrefFor}from'./nav-map'
 import{Button,Empty,Loading,StatusChip,fmtDateTime,fmtNumber,fmtTime}from'./ui-kit'
-import{JOURNEY,Journey,ReasonAction,STOP,Stepper}from'./ProviderOnboarding'
-import{startProviderScans}from'./ScholarshipActions'
+import{JOURNEY,ReasonAction,STOP}from'./ProviderOnboarding'
+import JobButton from'./JobButton'
 import{errorReading,errorSteps}from'./lib/workerErrors.js'
 
 const errText=e=>e?.message||String(e)
@@ -100,68 +100,129 @@ function Overview({group,setGroup,onError}){
   </div>
 }
 
+// v2.15.267 (Platform Admin, 13 Oct 2026 14:23: "progress mock-up and actual implementation for Journey is very different"): laid out as
+// the approved mock-up — a filter panel (group, country, held up by, only held up, find), rows sorted by courses with the adapter
+// journey as seven stage pills, fields filled, the scholarship journey, what holds it up and a next-step button, and a selected-journey
+// panel with its steps and the run-on-demand actions for that university.
+const STAGE_NAME=Object.fromEntries(STAGES)
+const STAGE_KEYS=JOURNEY.map(([k])=>k)
+export function StagePills({stage,held}){
+  const at=stage==='done'?STAGE_KEYS.length:STAGE_KEYS.indexOf(stage)
+  return <span className="pg-pills" role="img" aria-label={`Stage ${Math.min(at+1,7)} of 7: ${STAGE_NAME[stage]||stage}`} data-stage={stage}>
+    {STAGE_KEYS.map((k,i)=><span key={k} title={STAGE_NAME[k]} className={i<at?'is-done':i===at?(held?'is-held':'is-now'):''}/>)}
+    <small>{STAGE_NAME[stage]||stage}</small></span>
+}
+const HELD_FILTER=[['','Anything'],['person','Needs a person'],['pages','Waiting for course pages'],['cap','Scholarship credits used'],['search','Search stopped or held'],['ai','AI reading pages']]
+const NEXT_BTN=r=>{const h=r.held_by;if(h==='nothing_ready')return'Open builder';if(h==='approve_central')return'Approve pages';if(['too_few_pages','recipe_off'].includes(h))return'Add pages';if(h==='no_website')return'Add website';if(['search_held','search_stopped'].includes(h))return'Search again';if(h==='scholarship_cap')return'Waits for credits';if(r.stage==='done')return'Done';if(Number(r.waiting_ai)>0)return'Watch';return'Open journey'}
+const fieldsText=n=>{const c=Number(n?.courses||0);if(!c)return'no courses yet';const parts=[['intakes','intakes'],['english','English'],['fee','fee'],['delivery','delivery']].map(([k,l])=>`${pctText(n[k],c)} ${l}`);return parts.join(' · ')}
+const schText=r=>{const n=r.facts||{},f=Number(n.scholarships||0),p=Number(n.scholarships_published||0),w=Number(r.waiting_ai||0)
+  if(!f&&!w)return r.sch_searched?'Searched · none found':'Not searched yet'
+  return `Found ${fmtNumber(f)}${w?` · AI ${fmtNumber(w)} waiting`:''} · published ${fmtNumber(p)}`}
+function heldChip(r){
+  if(r.held_by){const h=heldText(r.held_by);return <StatusChip tone={['nothing_ready','approve_central','search_held','scholarship_cap'].includes(r.held_by)?'warning':'neutral'} label={h[0]}/>}
+  if(Number(r.waiting_ai)>0)return <StatusChip tone="info" label="AI reading pages"/>
+  return <StatusChip tone="success" label="Nothing"/>
+}
+const GROUP_LABEL={top:'Top 50',pilot:'Pilot','':'Onboarding'}
+
+function SelectedJourney({id,onClose,onChanged}){
+  const[j,setJ]=useState(null),[fail,setFail]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false)
+  const load=async()=>{try{setJ(await read('journey',{onboarding_id:id}))}catch(e){setFail(errText(e))}}
+  useEffect(()=>{setJ(null);load()},[id])
+  if(fail)return <section className="m-panel pg-selected"><p className="fr-error" role="alert">{fail}</p></section>
+  if(!j)return <section className="m-panel pg-selected"><Loading label="Reading the journey…"/></section>
+  const n=j.facts||{},pid=j.provider_id
+  const run=async(fn,done)=>{setBusy(true);setFail('');setMsg('');try{await fn();setMsg(done);onChanged?.()}catch(e){setFail(errText(e))}finally{setBusy(false)}}
+  const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
+  const searchAgain=()=>{const r=ask(`Search course pages again for ${j.name}? Check its website and adapter first.`);if(r)run(async()=>{const{error}=await supabase.rpc('admin_firecrawl_search_resume',{p_provider_id:pid,p_reason:r});if(error)throw error},'Search starts again on the next run.')}
+  const aiAgain=()=>{const r=ask(`Read ${j.name}'s refused and known scholarship pages again with the active AI model?`);if(r)run(async()=>{const{error}=await supabase.rpc('admin_scholarship_ai',{p_action:'backfill',p_args:{provider_ids:[pid],reason:r}});if(error)throw error},'Started; progress is in Scheduled jobs › Task manager.')}
+  return <section className="m-panel pg-selected" data-progress-selected={j.onboarding_id}>
+    <div className="pg-sel-main">
+      <div className="pg-bar"><h3 className="pg-sel-title">{j.name}</h3><span className="pg-spacer"/><Button compact onClick={onClose}>Close</Button></div>
+      <p className="sd-desc">{[GROUP_LABEL[j.grp||''],j.country,`${fmtNumber(n.courses||0)} courses`,STAGE_NAME[j.stage]||j.stage,j.auto_admitted?'admitted automatically':null].filter(Boolean).join(' · ')}</p>
+      <StagePills stage={j.stage} held={j.status==='stopped'}/>
+      <ol className="pg-steps" data-progress-steps>{(j.steps||[]).map((s,i)=><li key={i}><strong>{STAGE_NAME[s.stage]||s.stage}</strong> <small className="sl-sub">{fmtDateTime(s.from)}{s.to&&s.to!==s.from?` – ${fmtDateTime(s.to)}`:''}</small>{s.note&&<div className="sd-desc">{s.note}</div>}</li>)}
+        <li><strong>Now</strong> <small className="sl-sub">{fieldsText(n)}</small><div className="sd-desc">Scholarships: {schText({facts:n,waiting_ai:j.waiting_ai,sch_searched:Boolean(j.sch_status)})}.{j.status==='stopped'&&j.stop_reason?` Stopped: ${heldText(j.stop_reason)[0]}. ${heldText(j.stop_reason)[1]}`:''}</div></li></ol>
+    </div>
+    <div className="pg-sel-actions" data-progress-actions>
+      <h4 className="sl-h4">Run on demand for this university</h4>
+      {j.can_run&&<JobButton kind="scholarship_provider_scan" scope={pid} args={{provider_ids:[pid]}} label="Find scholarships now (map, screen, read; uses scholarship credits)" variant={undefined} compact={false}/>}
+      {j.can_manage&&<Button disabled={busy} onClick={aiAgain} data-progress-ai-again>Read the scholarship pages with AI again</Button>}
+      {j.can_run&&<JobButton kind="reread_pages" scope={pid} args={{provider_ids:[pid],which:'not_confirmed',central:true}} label="Read course pages again" variant={undefined} compact={false}/>}
+      {j.can_run&&<JobButton kind="qualify_adapters" scope={pid} args={{provider_ids:[pid],adapter_state:'any'}} label="Qualify adapter" variant={undefined} compact={false}/>}
+      {j.can_manage&&j.status==='stopped'&&<ReasonAction label="Retry onboarding from the step that stopped" testid="progress-retry" onDo={r=>run(async()=>{const{error}=await supabase.rpc('admin_provider_onboarding',{p_action:'retry',p_args:{ids:[j.onboarding_id],reason:r}});if(error)throw error},'Retrying from the step that stopped.')}/>}
+      {j.can_manage&&<Button disabled={busy} onClick={searchAgain} data-progress-search-again>Search again for course pages</Button>}
+      <small className="pg-links"><a className="cf-link" href={hrefFor('layer2','adapters',{provider:pid})}>Open adapter</a> · <a className="cf-link" href={hrefFor('layer2','builder',{provider:pid})}>Open in Adapter builder</a> · <a className="cf-link" href={hrefFor('scholarships','coverage')}>Open scholarships</a></small>
+      {msg&&<p role="status" className="sd-desc">{msg}</p>}{fail&&<p role="alert" className="fr-error">{fail}</p>}
+    </div>
+  </section>
+}
+
 function Journeys({group,setGroup,params,onError}){
-  const[f,setF]=useState({stage:params.get('stage')||'',held:params.get('held')||'',country:'',q:''}),[q,setQ]=useState('')
-  const[d,setD]=useState(null),[sel,setSel]=useState(params.get('id')||''),[busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[fail,setFail]=useState('')
-  const stop=params.get('stop')||''
+  const[f,setF]=useState({stage:params.get('stage')||'',held:params.get('held')||'',stop:params.get('stop')||'',country:'',q:''}),[q,setQ]=useState('')
+  const[d,setD]=useState(null),[sel,setSel]=useState(params.get('id')||'')
   const load=async()=>{try{setD(await read('journeys',{group,...f}))}catch(e){onError?.(errText(e))}}
   useEffect(()=>{const t=setTimeout(()=>setF(x=>({...x,q:q.trim()})),350);return()=>clearTimeout(t)},[q])
   useEffect(()=>{load()},[group,f])
-  const rows=(d?.rows||[]).filter(r=>!stop||r.stop_reason===stop)
-  const s=rows.find(r=>r.onboarding_id===sel)||(sel?{onboarding_id:sel,name:'Selected university',provider_id:null,status:null,held_by:null}:null)
-  const run=async(fn,done)=>{setBusy(true);setFail('');setMsg('');try{await fn();setMsg(done);await load()}catch(e){setFail(errText(e))}finally{setBusy(false)}}
-  const resume=r=>{const reason=window.prompt(`Search course pages again for ${r.name}? Check its website and adapter first.\n\nReason (kept in the log):`);if(!reason||reason.trim().length<4)return
-    run(async()=>{const{error}=await supabase.rpc('admin_firecrawl_search_resume',{p_provider_id:r.provider_id,p_reason:reason.trim()});if(error)throw error},'Search starts again on the next run.')}
+  const rows=d?.rows||[]
+  const pick=id=>{setSel(sel===id?'':id);try{window.scrollTo({top:0,behavior:'smooth'})}catch{}}
   return <div className="m-page-stack" data-progress-journeys>
-    <div className="pg-bar">
-      <GroupPicker group={group} onPick={g=>{setSel('');setGroup(g)}}/>
-      <select aria-label="Stage" value={f.stage} onChange={e=>setF({...f,stage:e.target.value})} data-progress-filter="stage"><option value="">Every stage</option>{STAGES.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
-      <select aria-label="Held up" value={f.held} onChange={e=>setF({...f,held:e.target.value})} data-progress-filter="held"><option value="">Any</option><option value="person">Needs a person</option><option value="stopped">Stopped</option></select>
-      <select aria-label="Country" value={f.country} onChange={e=>setF({...f,country:e.target.value})}><option value="">All countries</option><option value="AU">Australia</option><option value="NZ">New Zealand</option><option value="CA">Canada</option></select>
-      <input type="search" className="po-search" aria-label="Find a university" placeholder="Find a university" value={q} onChange={e=>setQ(e.target.value)}/>
+    <section className="m-panel pg-filters" aria-label="Filters">
+      <label>Group <select aria-label="Group" value={group} onChange={e=>{setSel('');setGroup(e.target.value)}} data-progress-filter="group">{GROUPS.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
+      <label>Country <select aria-label="Country" value={f.country} onChange={e=>setF({...f,country:e.target.value})}><option value="">All</option><option value="AU">AU</option><option value="NZ">NZ</option><option value="CA">CA</option></select></label>
+      <label>Stage <select aria-label="Stage" value={f.stage} onChange={e=>setF({...f,stage:e.target.value})} data-progress-filter="stage"><option value="">Every stage</option>{STAGES.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
+      <label>Held up by <select aria-label="Held up by" value={f.held==='any'?'':f.held} onChange={e=>setF({...f,held:e.target.value,stop:''})} data-progress-filter="held">{HELD_FILTER.map(([k,l])=><option key={k} value={k}>{l}</option>)}</select></label>
+      <label><input type="checkbox" checked={f.held==='any'} onChange={e=>setF({...f,held:e.target.checked?'any':'',stop:''})} data-progress-only-held/> Only held up</label>
+      <label className="pg-find">Find <input type="search" aria-label="Find a university" placeholder="University name" value={q} onChange={e=>setQ(e.target.value)}/></label>
+      <span className="sd-desc" data-progress-count>{d?`${fmtNumber(d.total??rows.length)} universities · sorted by courses${Number(d.total)>rows.length?` · first ${fmtNumber(rows.length)} shown`:''}`:''}</span>
       <Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button>
-    </div>
-    {stop&&<p className="sd-desc">Showing stopped for: <strong>{heldText(stop)[0]}</strong>. <a className="cf-link" href={hrefFor('coverage','progress',{view:'journeys',group})}>Show all</a></p>}
-    {s&&<section className="m-panel pg-selected" data-progress-selected={s.onboarding_id}>
-      <div className="pg-bar"><h3 className="sl-h4">{s.name}</h3><span className="pg-spacer"/><Button compact onClick={()=>setSel('')}>Close</Button></div>
-      <Journey id={s.onboarding_id}/>
-      <div className="sd-actions" data-progress-actions>
-        {d?.can_manage&&s.status==='stopped'&&<ReasonAction label="Retry onboarding" testid="progress-retry" onDo={r=>run(async()=>{const{error}=await supabase.rpc('admin_provider_onboarding',{p_action:'retry',p_args:{ids:[s.onboarding_id],reason:r}});if(error)throw error},'Retrying from the step that stopped.')}/>}
-        {d?.can_manage&&['search_held','search_stopped'].includes(s.held_by)&&<Button compact disabled={busy} onClick={()=>resume(s)} data-progress-search-again>Search again</Button>}
-        {d?.can_run&&s.provider_id&&<Button compact disabled={busy} onClick={()=>run(async()=>{const r=await startProviderScans([s.provider_id],1);if(!r)throw new Error('Not started')},'Scholarship search started; progress is in Scheduled jobs › Task manager.')} data-progress-find-scholarships>Find scholarships now</Button>}
-        {s.provider_id&&<a className="cf-link" href={hrefFor('layer2','onboarding',{q:s.name})}>Open on Layer 2 › Onboarding</a>}
-        <a className="cf-link" href={hrefFor('scholarships','coverage')}>Scholarships › Coverage</a>
-      </div>
-      {msg&&<p role="status" className="sd-desc">{msg}</p>}{fail&&<p role="alert" className="fr-error">{fail}</p>}
-    </section>}
+    </section>
+    {f.stop&&<p className="sd-desc">Showing stopped for: <strong>{heldText(f.stop)[0]}</strong>. <button type="button" className="cf-link" onClick={()=>setF({...f,stop:'',held:''})}>Show all</button></p>}
+    {sel&&<SelectedJourney key={sel} id={sel} onClose={()=>setSel('')} onChanged={load}/>}
     {!d?<Loading label="Reading journeys…"/>:rows.length===0?<Empty text="No university matches."/>:
-    <div className="cf-table-wrap"><table className="cf-table pg-journeys"><thead><tr><th>University</th><th>Journey</th><th className="num">Intakes</th><th className="num">English</th><th className="num">Fee</th><th className="num">Delivery</th><th className="num">Scholarships</th><th>Held up by</th><th>Next step</th></tr></thead><tbody>
-      {rows.map(r=>{const n=r.facts||{},h=heldText(r.held_by)
-        return <tr key={r.onboarding_id} className={sel===r.onboarding_id?'is-selected':''} data-progress-row={r.provider_id}>
-          <td><button type="button" className="tm-link" onClick={()=>setSel(sel===r.onboarding_id?'':r.onboarding_id)} aria-expanded={sel===r.onboarding_id}>{r.name}</button><br/><small className="sl-sub">{r.country}{r.grp?` · ${r.grp==='top'?'Top 50':'Pilot'}`:''} · {fmtNumber(n.courses)} courses</small></td>
-          <td><Stepper stage={r.stage} status={r.status}/></td>
-          {['intakes','english','fee','delivery'].map(k=><td key={k} className="num">{pctText(n[k],n.courses)}</td>)}
-          <td className="num" data-progress-sch>{fmtNumber(n.scholarships_published)} / {fmtNumber(n.scholarships)}{Number(r.waiting_ai)>0?<small className="sl-sub"> · {fmtNumber(r.waiting_ai)} with AI</small>:''}</td>
-          <td>{h?<StatusChip tone={['nothing_ready','approve_central','search_held'].includes(r.held_by)?'warning':'neutral'} label={h[0]}/>:''}</td>
-          <td><small>{h?.[1]||NEXT[r.stage]||''}</small></td></tr>})}
+    <div className="cf-table-wrap"><table className="cf-table pg-journeys"><thead><tr><th>University</th><th className="num">Courses</th><th>Adapter journey (stages 1–7)</th><th>Fields filled</th><th>Scholarship journey</th><th>Held up by</th><th>Next step</th></tr></thead><tbody>
+      {rows.map(r=><tr key={r.onboarding_id} className={sel===r.onboarding_id?'is-selected':''} data-progress-row={r.provider_id}>
+        <td><button type="button" className="tm-link" onClick={()=>pick(r.onboarding_id)} aria-expanded={sel===r.onboarding_id}>{r.name}</button><br/><small className="sl-sub">{r.country} · {GROUP_LABEL[r.grp||'']}</small></td>
+        <td className="num">{fmtNumber(r.facts?.courses||0)}</td>
+        <td><StagePills stage={r.stage} held={Boolean(r.held_by)}/></td>
+        <td><small>{fieldsText(r.facts)}</small></td>
+        <td data-progress-sch><small>{schText(r)}</small></td>
+        <td>{heldChip(r)}</td>
+        <td><Button compact onClick={()=>pick(r.onboarding_id)} title={heldText(r.held_by)?.[1]||NEXT[r.stage]||''} data-progress-next>{NEXT_BTN(r)}</Button></td></tr>)}
     </tbody></table></div>}
-    <small className="sd-desc">Scholarships: published / found. Fields: share of the university's courses (hourly). Up to 200 rows; use the filters to narrow.</small>
   </div>
 }
 
-function JobUnis({job}){
+function JobUnis({job,stage}){
   const[d,setD]=useState(null),[fail,setFail]=useState('')
-  useEffect(()=>{read('running_unis',{job}).then(setD).catch(e=>setFail(errText(e)))},[job])
+  useEffect(()=>{read('running_unis',{job,stage}).then(setD).catch(e=>setFail(errText(e)))},[job])
   if(fail)return <p className="fr-error" role="alert">{fail}</p>
   if(!d)return <Loading compact label="Reading universities…"/>
   const u=d.unis||[]
-  if(!u.length)return <Empty text="Not working on a particular university in the last hour."/>
-  return <table className="cf-table pg-unis" data-progress-unis={job}><thead><tr><th>University</th><th>Where it is</th><th>What this job did for it</th><th/></tr></thead><tbody>
+  if(!u.length)return <Empty text="This job works on the platform as a whole, not on particular universities."/>
+  return <>{d.fallback&&<p className="sd-desc" data-progress-unis-fallback>Nothing for a particular university in the last hour. The universities now at this stage of the journey ({stage}):</p>}<table className="cf-table pg-unis" data-progress-unis={job}><thead><tr><th>University</th><th>Where it is</th><th>What this job did for it</th><th/></tr></thead><tbody>
     {u.map(x=><tr key={x.provider_id} data-progress-uni={x.provider_id}><td><strong>{x.name}</strong><br/><small className="sl-sub">{x.country}</small></td>
-      <td>{x.stage?<Stepper stage={x.stage}/>:'Not in onboarding'}</td><td>{x.what}</td>
+      <td>{x.stage?<StagePills stage={x.stage}/>:'Not in onboarding'}</td><td>{x.what}</td>
       <td>{x.onboarding_id&&<a className="cf-link" href={hrefFor('coverage','progress',{view:'journeys',id:x.onboarding_id,group:'all'})} data-progress-open-journey>Open journey →</a>}</td></tr>)}
-  </tbody></table>
+  </tbody></table></>
 }
+
+// v2.15.267: schedules in words, and the last result as what happened and when
+export function cronText(c){const s=String(c||'').trim();let m
+  if(/^\d+ seconds?$/.test(s))return `every ${s}`
+  if(s==='* * * * *')return'every minute'
+  if((m=s.match(/^(?:\d+-\d+)?\*?\/(\d+) \* \* \* \*$/)))return `every ${m[1]} min`
+  if((m=s.match(/^(\d+) \* \* \* \*$/)))return `hourly at :${m[1].padStart(2,'0')}`
+  if((m=s.match(/^(\d+) \*\/(\d+) \* \* \*$/)))return `every ${m[2]} hours at :${m[1].padStart(2,'0')}`
+  if((m=s.match(/^(\d+) (\d+) \* \* \*$/)))return `daily at ${m[2].padStart(2,'0')}:${m[1].padStart(2,'0')} UTC`
+  return s}
+function lastText(j){const l=j.last||{},w=j.worker?.result
+  if(j.running)return'running now'
+  const when=l.end||l.start?` · ${fmtTime(l.end||l.start)}`:''
+  if(l.status==='failed')return `failed${when}: ${l.message||''}`
+  if(w&&typeof w==='object'){const nums=Object.entries(w).filter(([k,v])=>typeof v==='number'&&!['ms'].includes(k)).slice(0,3).map(([k,v])=>`${humanKey(k)} ${fmtNumber(v)}`);if(nums.length)return nums.join(', ')+when}
+  return `${l.status||'—'}${when}`}
+const humanKey=k=>String(k).replace(/_/g,' ')
 
 function Running({rank,onError}){
   const[d,setD]=useState(null),[only,setOnly]=useState(true),[open,setOpen]=useState(''),[busy,setBusy]=useState(false)
@@ -187,13 +248,13 @@ function Running({rank,onError}){
         return <React.Fragment key={j.job}><tr data-progress-job={j.job} className={isOpen?'is-selected':''}>
           <td><small>{j.stage}</small></td>
           <td><button type="button" className="tm-link" aria-expanded={isOpen} onClick={()=>setOpen(isOpen?'':j.job)} data-progress-job-toggle={j.job}>{isOpen?<ChevronDown size={13}/>:<ChevronRight size={13}/>} {j.label||j.job}</button><br/><small className="sl-sub">{j.job}</small></td>
-          <td><small>{j.schedule}</small></td><td><StatusChip tone={t} label={l}/></td>
+          <td><small title={j.schedule}>{cronText(j.schedule)}</small></td><td><StatusChip tone={t} label={l}/></td>
           <td className="num">{fmtNumber(j.runs_24h)}{Number(j.failed_24h)>0&&<small className="sl-sub"> · {fmtNumber(j.failed_24h)} failed</small>}</td>
-          <td><small>{j.worker?.summary||j.last?.message||j.last?.status||'—'}{j.last?.end?` · ${fmtTime(j.last.end)}`:''}</small></td>
+          <td><small>{lastText(j)}</small></td>
           {d.can_manage&&<td className="tm-actions">{j.active?<Button compact disabled={busy} onClick={()=>control(j.job,'pause',`Pause the schedule of "${j.label||j.job}"? The run in progress finishes.`)}>Pause</Button>:<Button compact disabled={busy} onClick={()=>control(j.job,'resume',`Resume the schedule of "${j.label||j.job}"?`)}>Resume</Button>}
             <Button compact disabled={busy} onClick={()=>control(j.job,'run_now',`Run "${j.label||j.job}" once more now?`)}>Run now</Button></td>}
         </tr>
-        {isOpen&&<tr className="pg-expand"><td colSpan={d.can_manage?7:6}>{j.description&&<p className="sd-desc">{j.description}</p>}<JobUnis job={j.job}/></td></tr>}</React.Fragment>})}
+        {isOpen&&<tr className="pg-expand"><td colSpan={d.can_manage?7:6}>{j.description&&<p className="sd-desc">{j.description}</p>}<JobUnis job={j.job} stage={j.stage}/></td></tr>}</React.Fragment>})}
     </tbody></table></div>
     {(d.worker_errors||[]).length>0&&<section className="m-panel" data-worker-errors>
       <h3 className="sl-h4">Workers sending back errors</h3>
