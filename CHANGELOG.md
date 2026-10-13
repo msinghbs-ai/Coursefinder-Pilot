@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.199 — 14 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.272** (Platform Admin, 14 Oct 2026 10:14: "Proceed", after the settings control audit correction v1.2).
+  - The "automatic publication" flag (`pipeline.publication_control_settings`, off since 5 Sep 2026) switched nothing on: the Layer 4 publish preview only printed it in its confirmation. The preview stops reading it and the confirmation no longer prints it (migration 20261014013400). Publication is still decided by each record's Published switch and the Layer 4 decision.
+  - Paste file `PASTE-20261014-retire-unused-settings-tables-v2.sql` retires that table, `pipeline.scholarship_runtime_settings` and its uncalled write function, after copying their rows into `pipeline.admin_control_events`. It replaces the withdrawn 13 Oct paste file.
+
 ## 0.1.198 — 14 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.271**. The Platform Admin asked on 14 Oct 2026 at 08:33 for Canadian course codes ("fill the real program code and if missing generate the studysearch code ... meaningful with uni/campus/Degree based, applicable to upcoming countries") and "skip scholarship search for any provider whose website is a directory site ... visible flag in provider ... which we can toggle to enable".
