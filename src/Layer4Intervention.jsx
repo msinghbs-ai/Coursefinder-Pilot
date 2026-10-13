@@ -60,7 +60,7 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
   try{
    const{data:preview,error:previewError}=await supabase.rpc('publication_control_preview',{p_entity_type:type,p_entity_ids:[data.id],p_target_scope:pubScope,p_action:action})
    if(previewError)throw previewError
-   const label=`${human(action)} 1 ${human(type)} for ${human(pubScope)}?\n\nAutomatic publication: ${preview?.auto_publication_enabled?'ENABLED':'DISABLED'}\nThis records the governed publication decision only; consumer cutover remains separately controlled.`
+   const label=`${human(action)} 1 ${human(type)} for ${human(pubScope)}?\n\nThis records the governed publication decision only; consumer cutover remains separately controlled.`
    if(!window.confirm(label))return
    const{error}=await supabase.rpc('publication_control_execute',{p_entity_type:type,p_entity_ids:[data.id],p_target_scope:pubScope,p_action:action,p_confirmation_token:preview.confirmation_token,p_reason_code:reason,p_comment:comment})
    if(error)throw error
