@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.196 — 13 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.269**. The Platform Admin asked on 13 Oct 2026 at 21:43: "Bring all controls to UI and make sure in future it's not getting hard coded. All controls need to be reflected and control in UI. Use current recommended settings and choices." This follows the settings control audit v1.0.
+  - **Settings register.** There is one settings register: toolset `pipeline`, in the same table, write path and log as Toolsets & limits. It holds 60 settings, each with a range, a unit and what uses it: 33 job sizes, 19 re-read and retry times, and 8 onboarding rules.
+  - **Jobs.** All 31 scheduled jobs that had a number written into them now read their size from the register (migration 20261013012900). The Automations batch box and the Pipeline settings rows now change the setting instead of rewriting the job.
+  - **Timing rules.** Fourteen functions read their re-read and retry times and their onboarding rules from the register. Each default is today's value, so nothing changed on the day; scholarship pages keep 90 days, as recommended.
+  - **Worker.** Worker v0.21.7 reads the Firecrawl proxy (now used by every Firecrawl read), the site map sizes and the search result counts from Toolsets › Firecrawl (10 new settings, including the search-stop window).
+  - **Policy tables.** Capacity, evidence storage, retention and provider fee rule policies can be changed on Pipeline settings, with a reason.
+  - **Removed.** The leftover Layer 3 items are gone from Pipeline settings.
+  - **Guards.** `security.controls_check_v1()` lists any running job with a number written into it; it shows on Pipeline settings and raises a Toolsets notice. Test S32 fails any later migration that writes a number into a job or a business rule into a function, unless the line is marked `-- fixed:` as technical. `CLAUDE.md` records the rule.
+  - SOPs 1.12.
+
 ## 0.1.195 — 13 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.268** (Platform Admin, 13 Oct 2026 14:56, with a screenshot of Layer 2 › Onboarding: "these notification are asking for cant be fixed and if followed the link its doesnt open the specific card to adjust the values if required"; chose all four). Every notice now says plainly whether a person needs to act (Action needed, Action outside StudySearch, Optional) or not (Nothing to do), with the one thing to do. Its Go to button opens the exact card or setting and scrolls to it (Daily budget settings, Credits by university, Websites to find, the scholarship credits, the course-page search budget, Daily guards, Jobs). Held and stopped course searches list their universities with Search again, and providers with no official website have a website box, inside the notice. Information-only notices (a daily share used up, providers sharing a website, a one-off job failure, an AI guard passed) stay on Toolsets and limits; the layer page links to them. Course-page search stopped now counts only universities stopped after searching (27), not the 2 held for an adapter check, which have their own notice. Migration 20261013012800 (platform_notices_v1, read only). SOPs 1.11.

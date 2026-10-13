@@ -15,7 +15,8 @@ test('worker v0.21.3: a found page is read directly first, Firecrawl only when b
   expect(worker).not.toContain('else if (searchFound && await useFc("scrape", it.provider_id, it.url)) {')
   expect(worker).toContain('(!searchCandidate || searchFound) && !(adDirect?.json_found && adDirect.identity) && (!html || thin) && (it.status === "bound" || it.priority === true || searchFound)')
   const scrapes = worker.match(/fetch\("https:\/\/api\.firecrawl\.dev\/v2\/scrape", \{ method: "POST", headers: fcHeaders, body: JSON\.stringify\(\{ [^}]*/g) || []
-  for (const s of scrapes) expect(s).toContain('proxy: "basic"')
+  // v2.15.269: the proxy is a setting (Toolsets › Firecrawl › Proxy for every Firecrawl read, today "basic")
+  for (const s of scrapes) expect(s).toContain('proxy: FC_PROXY')
 })
 
 test('11800: basic proxy setting, second reader paused (not removed)', () => {

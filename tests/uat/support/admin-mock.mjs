@@ -58,6 +58,10 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_toolsets_read: F.toolsets,
     admin_platform_notices_read: b => F.platformNotices(b.p_layer),
     admin_toolsets_write: b => { calls.push({ toolsets: b.p_action, args: b.p_args }); return { ok: true } },
+    // v2.15.269: settings register and policy tables (Pipeline settings)
+    admin_settings_register_read: () => F.settingsRegister,
+    admin_policy_tables_read: () => F.policyTables,
+    admin_policy_tables_write: b => { calls.push({ policy: b }); return F.policyTables },
     admin_toolset_samples_read: b => F.toolsetSamples(b.p_run_id),
     admin_search_pass_read: F.searchPass,
     // Decision 253: Firecrawl work

@@ -1,3 +1,5 @@
+// v2.15.269 (CF-247, Platform Admin 13 Oct 2026 21:43: "Bring all controls to UI"): every job size, re-read and retry time, onboarding rule
+// and policy table is on this page (SettingsRegister.jsx); the matcher, search and read sizes moved there from sections 2 and 3.
 // Settings (v2.15.160, Decision 238; Platform Admin 3 Oct 2026 09:26: "All these hardcoded values … need to be reflected
 // in UI; UI needs to provide complete control"). One page, a section per pipeline step. Every number a Platform Admin
 // has asked to change by migration this week is here: matcher and search throughput, page reading,
@@ -11,6 +13,7 @@ import{Save,Sliders}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,SectionTitle,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
+import SettingsRegister from'./SettingsRegister'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const ATTRS=[['official_url','Official page'],['english','English'],['intakes','Intakes'],['tuition','Tuition']]
@@ -42,17 +45,12 @@ export default function PipelineSettings({onError}){
 
     <section className="m-panel" data-settings-section="course_pages">
       <SectionTitle icon={Sliders} title="2 · Find the course page" subtitle={`Queued now: ${fmtNumber(Number(cp.queued?.matcher_ready||0))} for the AI matcher, ${fmtNumber(Number(cp.queued?.matcher_never_offered||0))} courses never offered, ${fmtNumber(Number(cp.queued?.searches_queued||0))} searches waiting. Priority countries: ${(cp.priority_countries||[]).join(', ')||'none'}.`}/>
-      <NumberRow label="Universities prepared for the matcher, per run (every 2 minutes)" help="Each run offers this many universities' site maps to the AI link matcher. 4 a run was the throttle found on 3 Oct." value={cp.matcher_prepare_universities} min={1} max={500} can={can} busy={busy} onSave={v=>write('course_pages.matcher_prepare_universities',v,'universities per matcher run')}/>
-      <NumberRow label="Courses prepared per run" value={cp.matcher_prepare_courses} min={1} max={5000} can={can} busy={busy} onSave={v=>write('course_pages.matcher_prepare_courses',v,'courses per matcher run')}/>
-      <NumberRow label="Matcher items a minute" help="Pages the AI link matcher judges each minute (about US$0.25 an hour at 90)." value={cp.matcher_items_per_minute} min={1} max={200} can={can} busy={busy} onSave={v=>write('course_pages.matcher_items_per_minute',v,'matcher items a minute')}/>
-      <NumberRow label="Matcher concurrency" value={cp.matcher_concurrency} min={1} max={24} can={can} busy={busy} onSave={v=>write('course_pages.matcher_concurrency',v,'matcher concurrency')}/>
-      <NumberRow label="Course-page searches a minute" help="Firecrawl searches (2 credits each) for courses whose site map has no page." value={cp.search_per_minute} min={1} max={120} can={can} busy={busy} onSave={v=>write('course_pages.search_per_minute',v,'searches a minute')}/>
       <NumberRow label="Course-page search cap, credits a month" help="Searches wait when the cap would be passed; they resume when it is raised or the month ends." value={cp.search_monthly_credit_cap} min={1000} max={500000} step={1000} unit="credits" can={can} busy={busy} confirm="Set the course-page search cap to {v} credits a month?" onSave={v=>write('course_pages.search_monthly_credit_cap',v,'search cap')}/>
     </section>
 
+    {/* v2.15.269: job sizes (matcher, searches, reads) are in the settings register below, with every other job */}
     <section className="m-panel" data-settings-section="reading">
       <SectionTitle icon={Sliders} title="3 · Read the page" subtitle={`${fmtNumber(Number(rd.pages_waiting||0))} bound pages waiting to be read. Direct fetch first (free); a blocked or script-drawn page is read once through Firecrawl (1 credit). robots.txt is respected.`}/>
-      <NumberRow label="Pages read per batch (every 30 seconds)" value={rd.read_batch_per_30s} min={10} max={200} can={can} busy={busy} onSave={v=>write('reading.read_batch_per_30s',v,'read batch')}/>
     </section>
 
     <section className="m-panel" data-settings-section="identity">
@@ -70,6 +68,8 @@ export default function PipelineSettings({onError}){
       <NumberRow label="Firecrawl safety reserve" help="The pipeline stops when this many credits are left, so the account never runs dry. Changed on Scrapers & fetchers › Firecrawl." value={bg.firecrawl_stop_at_remaining} min={0} max={100000} unit="credits" can={false} busy={busy} onSave={()=>{}}/>
       {bg.firecrawl_by_purpose&&<p className="ps-note">By purpose: {Object.entries(bg.firecrawl_by_purpose).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${fmtNumber(Number(v))}`).join(' · ')}</p>}
     </section>
+
+    <SettingsRegister onError={onError}/>
 
     <section className="m-panel" data-settings-section="changes">
       <SectionTitle icon={Sliders} title="Recent changes" subtitle="Every change made here, on Automations or by a recorded migration."/>

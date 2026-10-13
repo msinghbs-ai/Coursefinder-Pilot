@@ -43,7 +43,7 @@ test('Victoria University and Adelaide University held for an adapter check, sho
 })
 
 test('worker v0.21.6: official registers first, website accepted only with the CRICOS code or a name-fitting address', () => {
-  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v0.21.6";')
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.21\.(6|7)";/) // v0.21.7 (v2.15.269) reads Firecrawl settings
   expect(worker).toContain('{ key: "training_gov_au", site: "training.gov.au"')
   expect(worker).toContain('{ key: "teqsa", site: "teqsa.gov.au"')
   expect(worker).toContain('if (codeOn || fits) return { accepted: new URL(finalUrl).origin, basis: `register_${reg.key}_${codeOn ? "code" : "name"}`')
@@ -51,7 +51,7 @@ test('worker v0.21.6: official registers first, website accepted only with the C
   // the register lists exactly one website, which answers: accepted as listed
   expect(worker).toContain('if (soleOk) return { accepted: soleOk, basis: `register_${reg.key}_listed`')
   // registers are looked up before the CRICOS-code web search
-  expect(worker.indexOf('const regFind = await registerSite(p, code, codeRe);')).toBeLessThan(worker.indexOf('query: `${p.name} CRICOS ${code}`, limit: 8'))
+  expect(worker.indexOf('const regFind = await registerSite(p, code, codeRe);')).toBeLessThan(worker.indexOf('query: `${p.name} CRICOS ${code}`, limit:'))
 })
 
 test.describe('mocked browser', () => {
