@@ -1,0 +1,32 @@
+{
+  "captured_at": "2026-10-13T11:12:17.939Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-environment.png",
+      "route": "environment",
+      "action": null,
+      "clicked": true,
+      "heading": "Settings",
+      "settle_ms": 3609,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#environment",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-models-services?tab=limits&card=services.toolset.firecrawl&at=firecrawl:Find%20pages.png",
+      "route": "models-services?tab=limits&card=services.toolset.firecrawl&at=firecrawl:Find%20pages",
+      "action": null,
+      "clicked": true,
+      "heading": "Models & services",
+      "settle_ms": 5566,
+      "height": 3783,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#models-services?tab=limits&card=services.toolset.firecrawl&at=firecrawl%3AFind+pages",
+      "diag": null,
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    }
+  ]
+}
