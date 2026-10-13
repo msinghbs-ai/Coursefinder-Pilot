@@ -1,0 +1,42 @@
+{
+  "captured_at": "2026-10-13T23:15:37.096Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-providers.png",
+      "route": "providers",
+      "action": null,
+      "clicked": true,
+      "heading": "Providers",
+      "settle_ms": 5452,
+      "height": 3141,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#providers",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-providers-country.png",
+      "route": "providers",
+      "action": "Country",
+      "clicked": true,
+      "heading": "Providers",
+      "settle_ms": 1508,
+      "height": 3141,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#providers",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-providers-canada.png",
+      "route": "providers",
+      "action": "Canada",
+      "clicked": true,
+      "heading": "Providers",
+      "settle_ms": 4795,
+      "height": 3172,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#providers",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
