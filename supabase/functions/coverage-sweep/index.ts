@@ -57,7 +57,7 @@ const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
 // v0.21.5: the page bases Firecrawl may read (found by CRICOS code, listed on the university's own site, or entered by a person)
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "title_match", "cms_path_public", "manual", "firecrawl_upgrade"];
-const WORKER = "coverage-sweep-worker-v0.21.6"; // v0.21.6 (13 Oct 2026, Platform Admin: "learn and establish how best to find the uni official website ... use training.gov.au or ASQA, CRICOS/RTO code, flag the exceptions"): find_site looks an Australian provider up on the official registers first (training.gov.au, then the TEQSA National Register) and accepts the website the register lists only when its home page shows the provider's CRICOS code or its address fits the provider's name; then the CRICOS-code search as before; the RTO code found is kept in the evidence. v0.21.5 (12 Oct 2026, Platform Admin 23:54: "use Firecrawl for pages found by CRICOS code or listed by the uni"): a course page is read through Firecrawl only when it was found by its CRICOS code (cricos_search, cricos_code, cricos_code_on_page), is listed on the university's own site (title_match, cms_path_public), or was entered by a person (manual); pages found by a title or web search (title_search, firecrawl_search, serper_search, ai_match and the rest) are read directly only (Firecrawl read 99.7% correct pages for CRICOS-code finds and 87% for listed pages, but 48% for title searches and 24% for Firecrawl searches). v0.21.4 (12 Oct 2026, Platform Admin 21:47, Firecrawl daily budget of 15,000): every Firecrawl spend goes through svc_fc_spend, which keeps to the day's share by purpose and the day's billed total and to the per-university caps (scholarships 150 credits in 30 days, central pages again after 30 days, course search stopped after 30 searches with no correct page); a refused spend is not made. Firecrawl runs and adapter sample pages stop when their share is used. v0.21.3 (12 Oct 2026, Platform Admin 21:21, Firecrawl credits): a found course page is read directly first and through Firecrawl only when the direct read is blocked or needs a browser; every Firecrawl scrape uses the basic proxy (no automatic stealth retry). v0.21.2 (12 Oct 2026, Platform Admin 20:00: "use the mechanism that has been successful with Firecrawl in finding course pages, not direct HTTP"): a course page the search found (Firecrawl search) is read through Firecrawl too, rendered, the same scraper that found it; a direct read only when the scraper cannot be used. v0.21.1 (12 Oct 2026, bug 12/10-01): mode openrouter_balance reads the OpenRouter balance (credits) for the AI limits, now that the Layer 3 route guard that read it is retired. v0.21.0 (12 Oct 2026, Platform Admin status review, fix 3): mode central_ai reads a university's stored English language policy or academic calendar page with a pinned model; every score and month must be in a quote that is on the page; the result is recorded as a proposal a person approves (never applied here). v0.20.3 (12 Oct 2026, Platform Admin status review): an audience quote that names another country or region ("students from Papua New Guinea", "citizens of the People's Republic of China") or says "not a domestic student" proves international; the university's own country (and Australia/New Zealand for each other) does not. v0.20.2 (11 Oct 2026): an audience quote must itself name international (or domestic) students. v0.20.1 (11 Oct 2026): the AI value check uses only the numbers of the answer's value kind; an empty or cut-off answer is named. v0.20.0 (11 Oct 2026, Platform Admin bugs 11/10-6): mode scholarship_ai reads each queued scholarship page with a pinned AI model and checks every quote against the page. v0.19.3 (11 Oct 2026): extractor v0.7.3. v0.19.2 (11 Oct 2026, Platform Admin bugs 11/10-5): every scholarship candidate page read keeps a stored copy, refused and too-thin pages too. v0.19.1 (11 Oct 2026): a provider home page that refuses a direct read is checked through the scraper when its website is verified. v0.19.0 (11 Oct 2026, Platform Admin bugs 11/10-2): find_site searches every provider without a website (not only Firecrawl targets), by name for New Zealand, Australia without a CRICOS code and any other country; mode central_find (Firecrawl map, key dates, international fees and English requirements suggested); an adapter proposal cut off at its length limit is asked again once with a larger limit, and tokens are recorded. v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.21.7"; // v0.21.7 (13 Oct 2026, CF-247 v2.15.269): Firecrawl proxy, site map sizes and search result counts read from settings (svc_worker_settings_v1); was v0.21.6 (official registers first for websites)
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -378,6 +378,13 @@ Deno.serve(async (req) => {
     const fc = await rpc("svc_coverage_firecrawl", {});
     let fcRemaining = fc?.budget_status?.allowed === false ? 0 : Math.max(0, Number(fc?.budget_status?.remaining_units ?? 0) - Number(fc?.budget_status?.stop_at_remaining_units ?? 0));
     const fcHeaders = { authorization: `Bearer ${fc?.secret}`, "content-type": "application/json" };
+    // v0.21.7 (CF-247 v2.15.269, Platform Admin 13 Oct 2026: "Bring all controls to UI ... in future it's not getting hard coded"): the proxy, site
+    // map sizes and search result counts are settings (Toolsets & limits › Firecrawl), read once per call. The second argument is only used if the
+    // setting cannot be read.
+    const ws: Record<string, unknown> = (await rpc("svc_worker_settings_v1", {}).catch(() => ({}))) || {};
+    const wsNum = (k: string, d: number) => { const n = Number(ws[k]); return Number.isFinite(n) && n > 0 ? n : d; };
+    const wsProxy = String(ws.read_proxy ?? "basic").toLowerCase();
+    const FC_PROXY = ["basic", "auto", "stealth", "enhanced"].includes(wsProxy) ? wsProxy : "basic";
     // v0.6.2 (Decision 251): scholarship work (purposes sch_*) stays inside its own cap; the cap and the reserve kept for
     // re-reading held scholarships' pages are Layer 2 settings read each run. If they cannot be read, nothing is spent.
     const schBudget = mode.startsWith("scholarship") ? await rpc("svc_scholarship_fc_budget", {}).catch(() => null) : null;
@@ -422,7 +429,7 @@ Deno.serve(async (req) => {
       const none = (status: string, http: number | null = null) => ({ status, http, html: "", finalUrl: url, via: null as string | null });
       try { new URL(url) } catch { return none("fetch_failed") }
       if (!(await useFc("sch_scrape", providerId, url, true))) return none("waiting_scraper");
-      const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+      const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, timeout: 30000 }), signal: AbortSignal.timeout(45000) }).catch(() => null);
       const d = r ? await r.json().catch(() => ({})) : {};
       const code = Number(d?.data?.metadata?.statusCode ?? (r?.ok ? 200 : r?.status ?? 0)) || null;
       const html = r?.ok && code !== null && code < 400 ? pageHtml(d) : "";
@@ -453,7 +460,7 @@ Deno.serve(async (req) => {
           for (const search of [null, "course"]) {
             if (found.size >= target) break;
             if (!(await useFc("map", p.provider_id, site.origin))) { methods.push("map:budget"); break }
-            const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: 30000, sitemap: "include", includeSubdomains: true, ...(search ? { search } : {}) }), signal: AbortSignal.timeout(60000) });
+            const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: wsNum("map_limit_course_site", 30000), sitemap: "include", includeSubdomains: true, ...(search ? { search } : {}) }), signal: AbortSignal.timeout(60000) });
             const d = await r.json().catch(() => ({}));
             if (!r.ok || d?.success === false) { methods.push(`map:${r.status}`); break }
             const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title });
@@ -494,7 +501,7 @@ Deno.serve(async (req) => {
       else if (direct?.ok) robotsState = "no_rules";
       else if (direct && (direct.status === 404 || direct.status === 410)) robotsState = "none";
       else if (await useFc("directory_scrape", null, `https://${host}/robots.txt`)) {
-        const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: `https://${host}/robots.txt`, formats: ["rawHtml"] }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+        const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: `https://${host}/robots.txt`, formats: ["rawHtml"] }), signal: AbortSignal.timeout(45000) }).catch(() => null);
         const d = r ? await r.json().catch(() => ({})) : {};
         const raw = String(d?.data?.rawHtml || "");
         const sc = Number(d?.data?.metadata?.statusCode || 0);
@@ -508,7 +515,7 @@ Deno.serve(async (req) => {
         if (robotsTxt && !robotsAllows(robotsTxt, url.pathname + url.search)) { out.push({ url: u, status: "robots_disallowed" }); return }
         if (!(await useFc("directory_scrape", null, u))) { out.push({ url: u, status: "credit_budget" }); return }
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: u, formats: ["html", "links"], onlyMainContent: false, ...(body.wait_ms ? { waitFor: Math.min(Number(body.wait_ms), 8000) } : {}) }), signal: AbortSignal.timeout(90000) });
+          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: u, formats: ["html", "links"], onlyMainContent: false, ...(body.wait_ms ? { waitFor: Math.min(Number(body.wait_ms), 8000) } : {}) }), signal: AbortSignal.timeout(90000) });
           const d = await r.json().catch(() => ({}));
           const html = String(d?.data?.html || "");
           if (!r.ok || !html) { out.push({ url: u, status: "failed", http: r.status, error: String(d?.error || "").slice(0, 160) }); return }
@@ -619,7 +626,7 @@ Deno.serve(async (req) => {
         let answer: any = null, outcome = "error", quoteIn: boolean | null = null, http: number | null = null, err: string | null = null, c1 = 0;
         try {
           if (!(await useFc("fcx_qualify", null, k.url))) throw Error("credit budget");
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: k.url, formats: ["markdown", { type: "json", schema, prompt }], onlyMainContent: false }), signal: AbortSignal.timeout(90000) });
+          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: k.url, formats: ["markdown", { type: "json", schema, prompt }], onlyMainContent: false }), signal: AbortSignal.timeout(90000) });
           http = r.status; const d = await r.json().catch(() => ({}));
           if (!r.ok || !d?.data) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || "").slice(0, 160)}`);
           c1 = Number(d?.data?.metadata?.creditsUsed || 5); credits += c1;
@@ -716,7 +723,7 @@ Deno.serve(async (req) => {
             // v0.10.2: a home page that refuses our direct request, or does not prove itself as fetched (often a page
             // drawn by script), is read once through Firecrawl (rendered). robots.txt is respected; the same rule decides.
             if (!done && !accepted && robotsAllows(await robotsFor(new URL(u.origin)), "/") && await useFc("site_hint", it.provider_id, u.origin + "/")) {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: u.origin + "/", formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: u.origin + "/", formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
               const d = r ? await r.json().catch(() => ({})) : {};
               const fh = String(d?.data?.html || "");
               if (fh) { html = fh; finalUrl = String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || finalUrl); ev = { ...ev, via_firecrawl: true, final: finalUrl, http_firecrawl: d?.data?.metadata?.statusCode ?? null }; check(html, finalUrl) }
@@ -871,7 +878,7 @@ Deno.serve(async (req) => {
             const raw = dr && dr.ok ? await dr.text() : "";
             if (/Principal Executive Officer/i.test(raw)) md = htmlToText(raw).replace(/\s{2,}/g, "\n");
             else if (await spend(1, "peo_scrape", p.provider_id, u)) {
-              const sc = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: u, formats: ["markdown"], onlyMainContent: false, timeout: 40000 }), signal: AbortSignal.timeout(55000) });
+              const sc = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: u, formats: ["markdown"], onlyMainContent: false, timeout: 40000 }), signal: AbortSignal.timeout(55000) });
               const sd = await sc.json().catch(() => ({})); md = String(sd?.data?.markdown || "");
             } else { tried.push({ url: u, budget: true }); break }
             const hasCode = new RegExp("(^|[^0-9A-Z])" + code + "([^0-9A-Z]|$)", "i").test(md) || new RegExp(code, "i").test(raw);
@@ -895,7 +902,7 @@ Deno.serve(async (req) => {
         let site: URL; try { site = new URL(/^https?:/i.test(p.website) ? p.website : "https://" + p.website) } catch { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: "the website address cannot be read", worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "bad_website" }); return }
         if (!(await useFc("central_map", p.provider_id, site.origin, true))) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: null, p_evidence: { note: "Firecrawl budget reserve reached", worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "budget" }); return }
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: 5000, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
+          const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, limit: wsNum("map_limit_central", 5000), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
           const d = await r.json().catch(() => ({}));
           if (!r.ok || d?.success === false) { await rpc("svc_central_find_record", { p_provider_id: p.provider_id, p_found: [], p_evidence: { error: `map ${r.status}`, worker: WORKER } }); out.push({ provider_id: p.provider_id, status: "map_failed" }); return }
           const links = (d.links || d.data?.links || []).map((x: any) => typeof x === "string" ? { url: x } : { url: x.url, title: x.title }).filter((x: any) => typeof x.url === "string");
@@ -903,7 +910,7 @@ Deno.serve(async (req) => {
           // a targeted map (about 1 credit) for each kind the whole-site map found no strong page of
           for (const kind of weakKinds(found)) {
             if (!(await useFc("central_map", p.provider_id, site.origin, true))) break;
-            const q = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: CENTRAL_SEARCH[kind], limit: 200, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(45000) }).catch(() => null);
+            const q = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: CENTRAL_SEARCH[kind], limit: wsNum("map_limit_central_search", 200), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(45000) }).catch(() => null);
             const qd = q ? await q.json().catch(() => ({})) : {}; searched.push(`${kind}:${q?.status ?? "error"}`);
             for (const x of (qd.links || qd.data?.links || [])) { const l = typeof x === "string" ? { url: x } : { url: x?.url, title: x?.title }; if (typeof l.url === "string") links.push(l) }
           }
@@ -932,7 +939,7 @@ Deno.serve(async (req) => {
       const viaScraper = async (providerId: string, url: string, cc: string): Promise<{ html: string; finalUrl: string } | null> => {
         if (!(await useFc("site_verify", providerId, url, true))) return null;
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, ...(/^[A-Z]{2}$/.test(cc) ? { location: { country: cc } } : {}) }), signal: AbortSignal.timeout(60000) });
+          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url, formats: ["rawHtml"], onlyMainContent: false, waitFor: 1500, ...(/^[A-Z]{2}$/.test(cc) ? { location: { country: cc } } : {}) }), signal: AbortSignal.timeout(60000) });
           const d = await r.json().catch(() => ({}));
           const html = String(d?.data?.rawHtml || d?.data?.html || "");
           return html ? { html, finalUrl: String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || url) } : null;
@@ -944,7 +951,7 @@ Deno.serve(async (req) => {
         if (!(await useFc("search", p.provider_id, p.name, true))) { await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return { provider_id: p.provider_id, status: "budget" } }
         let accepted: string | null = null, basis: string | null = null; const tried: unknown[] = [];
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query, limit: 8, ...(/^[A-Z]{2}$/.test(cc) ? { country: cc } : {}) }), signal: AbortSignal.timeout(45000) });
+          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query, limit: wsNum("search_results_website", 8), ...(/^[A-Z]{2}$/.test(cc) ? { country: cc } : {}) }), signal: AbortSignal.timeout(45000) });
           const d = await r.json().catch(() => ({}));
           const results = (d?.data?.web || d?.data || []).map((x: any) => ({ url: x.url })).filter((x: any) => typeof x.url === "string");
           const seenHosts = new Set<string>();
@@ -980,7 +987,7 @@ Deno.serve(async (req) => {
           if (!(await useFc("search", p.provider_id, `"${p.name}" site:${reg.site}`, true))) return { accepted: null, basis: null, register: null, rto, tried, budget: true };
           let regPage: string | null = null;
           try {
-            const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `"${p.name}" site:${reg.site}`, limit: 5, country: "AU" }), signal: AbortSignal.timeout(45000) });
+            const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `"${p.name}" site:${reg.site}`, limit: wsNum("search_results_register", 5), country: "AU" }), signal: AbortSignal.timeout(45000) });
             const d = await r.json().catch(() => ({}));
             const urls: string[] = (d?.data?.web || d?.data || []).map((x: any) => String(x?.url || "")).filter(Boolean);
             regPage = urls.find((u) => reg.page.test(u)) || null;
@@ -992,7 +999,7 @@ Deno.serve(async (req) => {
           if (!(await useFc("site_verify", p.provider_id, regPage, true))) return { accepted: null, basis: null, register: reg.key, rto, tried, budget: true };
           let links: string[] = [], text = "";
           try {
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: regPage, formats: ["links", "markdown"], onlyMainContent: true, waitFor: 2500, location: { country: "AU" } }), signal: AbortSignal.timeout(60000) });
+            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: regPage, formats: ["links", "markdown"], onlyMainContent: true, waitFor: 2500, location: { country: "AU" } }), signal: AbortSignal.timeout(60000) });
             const d = await r.json().catch(() => ({}));
             links = (d?.data?.links || []).map(String); text = String(d?.data?.markdown || "");
           } catch (e) { tried.push({ register: reg.key, page: regPage, error: e instanceof Error ? e.message : String(e) }); continue }
@@ -1044,7 +1051,7 @@ Deno.serve(async (req) => {
         if (!(await useFc("search", p.provider_id, p.name, true))) { out.push({ provider_id: p.provider_id, status: "budget" }); await rpc("svc_coverage_site_record", { p_provider_id: p.provider_id, p_website: null, p_evidence: { note: "Firecrawl budget reserve reached" } }); return }
         let accepted: string | null = null; const tried: unknown[] = [...regFind.tried];
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `${p.name} CRICOS ${code}`, limit: 8, country: "AU" }), signal: AbortSignal.timeout(45000) });
+          const r = await fetch("https://api.firecrawl.dev/v2/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: `${p.name} CRICOS ${code}`, limit: wsNum("search_results_cricos", 8), country: "AU" }), signal: AbortSignal.timeout(45000) });
           const d = await r.json().catch(() => ({}));
           const results = (d?.data?.web || d?.data || []).map((x: any) => ({ url: x.url, title: x.title })).filter((x: any) => typeof x.url === "string");
           const seenHosts = new Set<string>();
@@ -1133,7 +1140,7 @@ Deno.serve(async (req) => {
         if (!(await useFc("course_link_search", it.provider_id, it.query))) { await rpc("svc_course_link_search_record", { p_course_id: it.course_id, p_http: 0, p_urls: [], p_error: "credit budget" }); return }
         let http = 0, urls: string[] = [], err: string | null = null;
         try {
-          const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: it.query, limit: 5 }), signal: AbortSignal.timeout(45000) });
+          const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: it.query, limit: wsNum("search_results_scholarship_search", 5) }), signal: AbortSignal.timeout(45000) });
           http = r.status;
           const d = await r.json().catch(() => ({}));
           urls = Array.isArray(d?.data) ? d.data.map((x: { url?: string }) => String(x?.url || "")).filter(Boolean) : [];
@@ -1181,7 +1188,7 @@ Deno.serve(async (req) => {
         if (Date.now() - t0 > BUDGET_MS / 2 || !(await useFc("provider_facts_search", it.provider_id, it.query))) { await rpc("svc_provider_facts_search_record", { p_provider_id: it.provider_id, p_kind: it.kind, p_http: 0, p_results: [], p_error: "budget" }); return }
         let http = 0, results: { url: string; title: string }[] = [];
         try {
-          const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: it.query, limit: 6 }), signal: AbortSignal.timeout(45000) });
+          const r = await fetch("https://api.firecrawl.dev/v1/search", { method: "POST", headers: fcHeaders, body: JSON.stringify({ query: it.query, limit: wsNum("search_results_scholarship_discover", 6) }), signal: AbortSignal.timeout(45000) });
           http = r.status; const d = await r.json().catch(() => ({}));
           results = Array.isArray(d?.data) ? d.data.map((x: { url?: string; title?: string }) => ({ url: String(x?.url || ""), title: String(x?.title || "") })).filter((x: { url: string }) => x.url) : [];
         } catch { http = 0 }
@@ -1194,7 +1201,7 @@ Deno.serve(async (req) => {
           await rpc("svc_provider_facts_read_record", { p_id: it.id, p_status: "failed", p_http: null, p_storage_path: null, p_sha256: null, p_mime: null, p_rows: [], p_summary: { error: "budget" } }); return
         }
         try {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: it.url, formats: ["markdown"], onlyMainContent: true }), signal: AbortSignal.timeout(90000) });
+          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["markdown"], onlyMainContent: true }), signal: AbortSignal.timeout(90000) });
           const d = await r.json().catch(() => ({}));
           const md: string = d?.data?.markdown || "";
           const http = Number(d?.data?.metadata?.statusCode ?? r.status);
@@ -1243,7 +1250,7 @@ Deno.serve(async (req) => {
             const methods: string[] = []; let total = 0;
             {
               if (await useFc("sch_map", p.provider_id, site.origin, true)) {
-                const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: "scholarship", limit: 5000, sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
+                const r = await fetch("https://api.firecrawl.dev/v2/map", { method: "POST", headers: fcHeaders, body: JSON.stringify({ url: site.origin, search: "scholarship", limit: wsNum("map_limit_scholarships", 5000), sitemap: "include", includeSubdomains: true }), signal: AbortSignal.timeout(60000) });
                 const d = await r.json().catch(() => ({}));
                 if (!r.ok || d?.success === false) methods.push(`map:${r.status}`);
                 else {
@@ -1542,7 +1549,7 @@ Deno.serve(async (req) => {
         const started = Date.now(); let http: number | null = null, d: any = null, hdrs: Headers | null = null, err: string | null = null;
         // v0.17.4: the builder captures the international view when the university's adapter names one
         const capPv = capAdapters?.[dr.provider_id]?.page_view;
-        const reqBody = { proxy: "basic", url: viewApplies(sm.url, capPv) ? withView(sm.url, capPv) : sm.url, formats: ["rawHtml", { type: "screenshot", fullPage: true }], onlyMainContent: false, waitFor: Math.max(3000, Math.min(Number(capPv?.wait_ms ?? 3000), 8000)), timeout: 60000 };
+        const reqBody = { proxy: FC_PROXY, url: viewApplies(sm.url, capPv) ? withView(sm.url, capPv) : sm.url, formats: ["rawHtml", { type: "screenshot", fullPage: true }], onlyMainContent: false, waitFor: Math.max(3000, Math.min(Number(capPv?.wait_ms ?? 3000), 8000)), timeout: 60000 };
         try { const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify(reqBody), signal: AbortSignal.timeout(90000) }); http = r.status; hdrs = r.headers; d = await r.json().catch(() => null) } catch (e) { err = e instanceof Error ? e.message : String(e) }
         const rec = callRecord(http, d, hdrs, Date.now() - started, err);
         const used = rec.credits_used ?? 1;
@@ -1896,7 +1903,7 @@ Deno.serve(async (req) => {
           else if (viewRender) {
             const viewUrl = withView(it.url, pv);
             if (await useFc("scrape", it.provider_id, viewUrl)) {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: viewUrl, formats: ["rawHtml"], onlyMainContent: false, waitFor: Math.max(0, Math.min(Number(pv?.wait_ms ?? 3000), 8000)) }), signal: AbortSignal.timeout(90000) }).catch(() => null);
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: viewUrl, formats: ["rawHtml"], onlyMainContent: false, waitFor: Math.max(0, Math.min(Number(pv?.wait_ms ?? 3000), 8000)) }), signal: AbortSignal.timeout(90000) }).catch(() => null);
               const d = r ? await r.json().catch(() => ({})) : {};
               if (r?.ok && pageHtml(d)) { html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = viewUrl }
               else http = r?.status ?? null;
@@ -1915,7 +1922,7 @@ Deno.serve(async (req) => {
             // v0.15.1: no Firecrawl call when the university's adapter already reads the page's own data from the plain fetch
             const adDirect = thin && adapters[it.provider_id] ? applyAdapter(adapters[it.provider_id], html, { title: it.title, code: it.code, country: it.country || "", status: it.status }, VERSION) : null;
             if (fcTrusted && (!searchCandidate || searchFound) && !(adDirect?.json_found && adDirect.identity) && (!html || thin) && (it.status === "bound" || it.priority === true || searchFound) && (http === null || [401, 403, 406, 429, 503].includes(http) || thin) && await useFc("scrape", it.provider_id, it.url)) {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: it.url, formats: ["rawHtml"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
+              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) });
               const d = await r.json().catch(() => ({}));
               if (r.ok && pageHtml(d)) { html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? 200; finalUrl = d.data?.metadata?.sourceURL || it.url }
             }
@@ -1939,7 +1946,7 @@ Deno.serve(async (req) => {
           // v0.6.2: a priority page read directly without the code may be a script-rendered handbook (UNSW, Melbourne):
           // render it once through Firecrawl before calling it a mismatch.
           if (!identityBasis && via === "direct" && it.priority === true && !searchCandidate && fcTrusted && await useFc("scrape", it.provider_id, it.url)) {
-            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: "basic", url: it.url, formats: ["rawHtml"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
+            const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: it.url, formats: ["rawHtml"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
             const d = r ? await r.json().catch(() => ({})) : {};
             if (r?.ok && pageHtml(d)) {
               html = pageHtml(d); via = "firecrawl"; http = d.data?.metadata?.statusCode ?? http; finalUrl = d.data?.metadata?.sourceURL || finalUrl;
