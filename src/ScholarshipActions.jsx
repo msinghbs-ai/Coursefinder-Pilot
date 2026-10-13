@@ -5,7 +5,8 @@
 // scraper, attaches courses by the evidence rules and finishes on its own. Progress and Cancel are on the button and in
 // Scheduled jobs › Task manager. Shown to Operators and above (the job system's own rule); hidden for everyone else.
 import React,{useEffect,useState}from'react'
-import{Search,RefreshCw,Sparkles,Globe}from'lucide-react'
+import{Search,RefreshCw,Sparkles,Globe,Power}from'lucide-react'
+import{Button,StatusChip,fmtDateTime}from'./ui-kit'
 import{supabase}from'./lib/supabase'
 import JobButton from'./JobButton'
 
@@ -24,6 +25,32 @@ export function ProviderScholarshipAction({providerId,name}){
     <JobButton kind="scholarship_provider_scan" scope={providerId} args={{provider_ids:[providerId]}} icon={Search} label="Find scholarships now"
       question={`Find scholarships now for ${name||'this provider'}? Every page is read through the scraper (about one credit a page).`}/>
   </Wrap>
+}
+
+// v2.15.271 (Platform Admin, 14 Oct 2026: "skip scholarship search for any provider whose website is a directory site ... I need visible
+// flag in provider for such rows. Which we can toggle to enable"): Off automatically when the only website known is a directory site.
+// A Pipeline Operator turns it On with a reason and the provider's own website (a fresh search starts), or Off with a reason.
+// public.admin_provider_sch_search('states' | 'set').
+export function ProviderScholarshipSearch({providerId,onChanged}){
+  const[s,setS]=useState(null),[open,setOpen]=useState(false),[site,setSite]=useState(''),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
+  const load=()=>supabase.rpc('admin_provider_sch_search',{p_action:'states',p_args:{provider_ids:[providerId]}}).then(({data,error})=>{if(error)throw error;const x=(data||{})[providerId]||null;setS(x);setSite(x?.own_site||'')}).catch(e=>setErr(String(e?.message||e)))
+  useEffect(()=>{if(providerId)load()},[providerId])
+  if(!providerId||!s)return null
+  const turnOn=!s.on,ok=reason.trim().length>=4&&(!turnOn||/^https?:\/\/[^\s/]+\.[^\s]+$/.test(site.trim()))
+  const save=async()=>{setBusy(true);setErr('');try{const{data,error}=await supabase.rpc('admin_provider_sch_search',{p_action:'set',p_args:{provider_id:providerId,on:turnOn,reason:reason.trim(),website:turnOn?site.trim():null}});if(error)throw error;setS((data||{})[providerId]||s);setOpen(false);setReason('');onChanged?.()}catch(e){setErr(String(e?.message||e).replace(/^.*?ERROR:\s*/,''))}finally{setBusy(false)}}
+  return <div className="sa-flag" data-sch-search={s.on?'on':'off'}>
+    <div className="sa-flag-row"><span>Scholarship search</span>
+      <StatusChip tone={s.on?'success':'warning'} label={s.on?'On':s.directory_only&&s.auto?'Off · directory site':'Off'} title={s.reason||undefined}/>
+      {s.can_manage&&<Button compact onClick={()=>setOpen(o=>!o)}><Power size={13}/>{s.on?'Turn off':'Turn on'}</Button>}</div>
+    {!s.on&&<small className="sl-sub">{s.reason||'Switched off.'}{s.set_at?` · ${fmtDateTime(s.set_at)}`:''}. Scholarship pages are not searched or read for this provider.</small>}
+    {open&&<div className="sa-flag-form">
+      {turnOn&&<label><small>Provider's own website</small><input className="fv-input" value={site} onChange={e=>setSite(e.target.value)} placeholder="https://www.example.edu.au"/></label>}
+      <label><small>Reason (kept in the log)</small><input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)}/></label>
+      <Button compact variant="primary" disabled={busy||!ok} onClick={save}>{turnOn?'Turn on and search':'Turn off'}</Button>
+      {turnOn&&<small className="sl-sub">The search starts from this website. Directory sites are refused. The 30-course rule and the credit caps still apply.</small>}
+    </div>}
+    {err&&<small className="fr-error" role="alert">{err}</small>}
+  </div>
 }
 
 // Course record: read the provider's scholarship pages again and apply the course-link rules; the task lists what changed

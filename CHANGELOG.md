@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.198 — 14 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.271**. The Platform Admin asked on 14 Oct 2026 at 08:33 for Canadian course codes ("fill the real program code and if missing generate the studysearch code ... meaningful with uni/campus/Degree based, applicable to upcoming countries") and "skip scholarship search for any provider whose website is a directory site ... visible flag in provider ... which we can toggle to enable".
+  - **StudySearch codes.** `ref.course_code_schemes` says which identifier types are printed codes (CRICOS, NZQA, Quebec and Ontario program codes, college program codes) and which are source IDs (portal GUIDs, page IDs). 6,313 Canadian courses without a printed code now show a StudySearch code such as `UBC-MA-014` (university, level, number), marked SS; the list and course record show it and search finds it. `course_code` keeps the source's own value. The hourly job `studysearch-codes` codes new courses (setting `batch.studysearch_codes`). A code never changes; a printed code always wins.
+  - **Scholarship search flag.** Off automatically for 85 providers whose only website is a directory site; shown on Providers and in the provider panel, where a Pipeline Operator turns it on with the provider's own website and a reason (a fresh search starts) or off. 105 providers whose own website is known were pointed back to it.
+  - **Retry loop stopped.** 1,391 queued AI reads of directory pages were closed (`skip_reason`). The AI reader now closes such reads, and a read refused for credits counts toward its 3 tries.
+  - Migrations 20261014013200 and 20261014013300. SOPs 1.14.
+
 ## 0.1.197 — 14 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.270**. The Platform Admin reported on 14 Oct 2026 at 07:13: "Bug/fix: Courses > state filter is not showing options for nz and Canada. Cross check all filters across all pages and report all relevant drop down options are visible."

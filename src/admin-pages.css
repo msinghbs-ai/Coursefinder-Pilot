@@ -690,3 +690,8 @@
 .sr-hide{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .sr-cell{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.sr-cell input[type=number]{width:120px}.sr-cell input[aria-label=Reason]{width:140px}
 @media (max-width:760px){.sr-row{grid-template-columns:1fr}}
+/* v2.15.271: StudySearch code marker; Scholarship search flag in the provider panel */
+.m-code-ss{display:inline-flex;align-items:center;gap:4px}.m-code-ss small{font-size:var(--cf-fs-3xs);font-weight:800;color:var(--cf-indigo-600);letter-spacing:.04em}
+.sa-flag{display:grid;gap:6px;margin:8px 0;padding:10px 12px;border:1px solid var(--cf-slate-150);border-radius:var(--cf-radius-sm);background:var(--cf-white)}
+.sa-flag-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sa-flag-row>span:first-child{font-weight:700;font-size:var(--cf-fs-xs);color:var(--cf-slate-700)}
+.sa-flag-form{display:grid;gap:6px;max-width:460px}.sa-flag-form label{display:grid;gap:2px}

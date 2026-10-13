@@ -30,14 +30,16 @@ export function CourseSummary({data,feeUsed}){
   const english=(data.english||[]).map(x=>({label:`${x.test_name||x.test_code} ${x.overall_score!=null?Number(x.overall_score):''}`.trim(),tone:'info'}))
   const intakes=(data.intakes||[]).filter(x=>(x.status||'active')==='active').map(x=>({label:[x.label,x.year].filter(Boolean).join(' '),tone:'violet'}))
   const campuses=(data.campuses||[]).map(x=>({label:x.city||x.name,title:x.name,tone:'neutral'}))
-  const code=data.course_code
+  // v2.15.271: the course's printed code, or its StudySearch code when none is printed, with what kind of code it is
+  const dc=data.display_code||(data.course_code?{code:data.course_code,label:/^[0-9]{6}[0-9A-Z]$/.test(data.course_code)?'CRICOS':'Course code'}:null),code=dc?.code
+  const codeLabel={'CRICOS course code':'CRICOS','NZQA qualification number':'NZQA'}[dc?.label]||dc?.label||'Course code'
   return <section className="ds-summary" data-course-summary>
     <PillRow>
       {data.level_name&&<StatusChip tone="info" label={data.level_name}/>}
       {data.field_name&&<StatusChip tone="violet" label={data.field_name}/>}
       {data.delivery_mode&&<StatusChip tone="neutral" label={DELIVERY[data.delivery_mode]||human(data.delivery_mode)}/>}
       {duration&&<StatusChip tone="neutral" label={duration}/>}
-      {code&&<StatusChip tone="neutral" label={`CRICOS ${code}`}/>}
+      {code&&<StatusChip tone={dc.kind==='studysearch'?'violet':'neutral'} label={`${codeLabel} ${code}`} title={dc.kind==='studysearch'?'Given by StudySearch: no code is printed by the university or regulator':undefined}/>}
       {publication(data.publication_status)}{lifecycle(data.lifecycle_status)}
     </PillRow>
     <FactCards>
