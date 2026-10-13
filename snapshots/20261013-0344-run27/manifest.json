@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-13T03:44:41.985Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-coverage?tab=progress&view=journeys&group=top.png",
+      "route": "coverage?tab=progress&view=journeys&group=top",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 3144,
+      "height": 3198,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=progress&view=journeys&group=top",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-coverage?tab=progress&view=running.png",
+      "route": "coverage?tab=progress&view=running",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 4041,
+      "height": 1162,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=progress&view=running",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
