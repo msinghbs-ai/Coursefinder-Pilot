@@ -65,7 +65,9 @@ test('browser: notices on the layer page, acknowledged with a reason', async ({ 
   await page.goto('/#layer-2-discovery')
   const strip = page.locator('[data-layer-notices="2"]')
   await expect(strip.locator('[data-notice="scheduled_jobs:2:timeout:scholarship-nationality"]')).toContainText('hit the database time limit')
-  await expect(strip.locator('.tn-seen summary')).toHaveText('1 acknowledged')
+  // v2.15.268: the acknowledged one-off job failure is information only, so it is kept to Toolsets and limits
+  await expect(strip.locator('[data-notice="scheduled_jobs:2:failed:coverage-bind"]')).toHaveCount(0)
+  await expect(strip.locator('[data-layer-notice-infos]')).toContainText('information-only')
   await strip.locator('[data-notice="scheduled_jobs:2:timeout:scholarship-nationality"]').getByRole('button', { name: 'Acknowledge' }).click()
   await expect.poll(() => page.l3calls.find(c => c.toolsets === 'ack')?.args).toMatchObject({ notice_key: 'scheduled_jobs:2:timeout:scholarship-nationality', reason: 'Seen; reviewing the batch size' })
   // v2.15.252: Layer 3 retired; its old address opens Layer 2 › Adapters, which shows the Layer 2 notices.

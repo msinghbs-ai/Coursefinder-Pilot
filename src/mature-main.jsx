@@ -103,6 +103,19 @@ const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'
 // v2.15.107: the menu, page titles, tabs, role gates and old-address redirects all come from nav-map.js.
 const ICONS={dashboard:LayoutDashboard,course:GraduationCap,provider:Building2,scholarship:Sparkles,chart:BarChart3,check:CheckCircle2,database:Database,activity:Activity,ai:BrainCircuit,review:ListChecks,health:HeartPulse,workflow:Workflow,book:BookOpen,plug:Plug,sliders:SlidersHorizontal,shield:ShieldCheck,tags:Tags,users:UsersRound,guide:BookOpen}
 
+// v2.15.268 (Platform Admin, 13 Oct 2026: notice links "doesnt open the specific card"): opens the named cards if closed and scrolls to
+// the anchor once it is drawn (a card, a Toolsets settings section or a data-anchor), highlighted briefly.
+function focusTarget(cards,at){
+  if(!at&&!cards.length)return undefined
+  let tries=0,stop=false
+  const esc=v=>window.CSS?.escape?CSS.escape(v):v.replace(/["\\]/g,'\\$&')
+  const step=()=>{if(stop)return
+    for(const id of cards){const c=document.querySelector(`[data-card="${esc(id)}"][data-card-open="false"] .cf-card-toggle`);if(c)c.click()}
+    const e=esc(at),el=at?document.querySelector(`[data-card="${e}"],[data-toolset-section="${e}"],[data-anchor="${e}"]`):null
+    if(el){el.scrollIntoView?.({block:'start',behavior:'smooth'});el.classList.add('is-focus');setTimeout(()=>el.classList.remove('is-focus'),2500);return}
+    if(++tries<40)setTimeout(step,150)}
+  step();return()=>{stop=true}
+}
 function routeFromHash(){
   const raw=location.hash.replace(/^#/,'');const[route,query='']=raw.split('?')
   const r=resolveTarget(route||'dashboard',new URLSearchParams(query))
@@ -150,6 +163,8 @@ function App(){
   },[])
   useEffect(()=>{if(!session){setContext(null);return}api.context().then(setContext).catch(e=>setError(e.message))},[session])
   useEffect(()=>{const h=()=>setRoute(routeFromHash());addEventListener('hashchange',h);return()=>removeEventListener('hashchange',h)},[])
+  // v2.15.268: a notice's Go to opens its card (card=) and scrolls to the card, setting section or anchor (at=).
+  useEffect(()=>focusTarget(String(route.params?.get?.('card')||'').split(',').filter(Boolean),String(route.params?.get?.('at')||'')),[route])
   const rank=Number(context?.role_rank||0)
   // Top-bar health dot: read once after sign-in and every five minutes.
   useEffect(()=>{if(!session||!canOpen('health',rank))return;let live=true;const read=()=>readPlatformHealth().then(h=>{if(live)setHealth(h)});read();const t=setInterval(read,300000);return()=>{live=false;clearInterval(t)}},[session,rank])
