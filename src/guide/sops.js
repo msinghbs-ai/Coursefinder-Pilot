@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.269'
+export const SOP_REVIEWED_FOR = '2.15.270'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.12', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.13', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -108,10 +108,11 @@ export const SOPS = [
       { version: '1.9', date: '13 Oct 2026', release: '2.15.266', change: 'New first step: Coverage & completeness › Progress › Overview (Needs attention, the pilot and the top 50 hour by hour). The Pilot panel on Layer 2 › Onboarding, Live activity, the Dashboard health strip, Layers and Recent activity, and Task manager › Running now are retired; Progress replaces them.' },
       { version: '1.10', date: '13 Oct 2026', release: '2.15.267', change: 'Progress › Journeys: filter by what holds a university up (needs a person, course pages, scholarship credits, search stopped, AI reading) or tick Only held up; the Next step button opens the university\'s steps and its run-on-demand actions (Find scholarships now, read the scholarship pages with AI again, read course pages again, Qualify adapter, Retry, Search again).' },
       { version: '1.11', date: '13 Oct 2026', release: '2.15.268', change: 'Notices on the layer pages show only what needs a person and say so (Action needed, Action outside StudySearch, Optional); Go to opens the exact card or setting; held or stopped course searches are released with Search again, and a missing website entered, inside the notice. Information-only notices (for example a daily share used up, which carries on after midnight) are on Toolsets and limits.' },
-      { version: '1.12', date: '13 Oct 2026', release: '2.15.269', change: 'Every job size, re-read and retry time and onboarding rule is a setting on Settings › Pipeline settings (with what uses it); the Firecrawl proxy, site map sizes and search result counts are on Toolsets › Firecrawl; capacity, evidence storage, retention and provider fee rule policies are changed on Pipeline settings. Each change needs a reason and is logged. The controls check on Pipeline settings should always show that every running job reads its sizes from settings.' }],
+      { version: '1.12', date: '13 Oct 2026', release: '2.15.269', change: 'Every job size, re-read and retry time and onboarding rule is a setting on Settings › Pipeline settings (with what uses it); the Firecrawl proxy, site map sizes and search result counts are on Toolsets › Firecrawl; capacity, evidence storage, retention and provider fee rule policies are changed on Pipeline settings. Each change needs a reason and is logged. The controls check on Pipeline settings should always show that every running job reads its sizes from settings.' },
+      { version: '1.13', date: '14 Oct 2026', release: '2.15.270', change: 'Filters work for every country in the catalogue: Courses › Region (NZ) and Province / territory (Canada) list regions (a course without a campus region takes its university\'s region); Delivery reads the course\'s own mode; an empty filter says why; Data Quality, Key dates, Regulatory sources and the fee currency include Canada.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.12', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.13', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -167,7 +168,8 @@ export const SOPS = [
       { version: '1.9', date: '13 Oct 2026', release: '2.15.266', change: 'Live activity is retired: the start-of-day check is Coverage & completeness › Progress › Running now (jobs by journey stage, worker errors with Mark as seen, and the universities each job works on).' },
       { version: '1.10', date: '13 Oct 2026', release: '2.15.267', change: 'Running now shows schedules in words; a job that touched no particular university in the last hour lists the universities now at its stage.' },
       { version: '1.11', date: '13 Oct 2026', release: '2.15.268', change: 'Notices on the layer pages show only what needs a person and say so (Action needed, Action outside StudySearch, Optional); Go to opens the exact card or setting; held or stopped course searches are released with Search again, and a missing website entered, inside the notice. Information-only notices (for example a daily share used up, which carries on after midnight) are on Toolsets and limits.' },
-      { version: '1.12', date: '13 Oct 2026', release: '2.15.269', change: 'Every job size, re-read and retry time and onboarding rule is a setting on Settings › Pipeline settings (with what uses it); the Firecrawl proxy, site map sizes and search result counts are on Toolsets › Firecrawl; capacity, evidence storage, retention and provider fee rule policies are changed on Pipeline settings. Each change needs a reason and is logged. The controls check on Pipeline settings should always show that every running job reads its sizes from settings.' }],
+      { version: '1.12', date: '13 Oct 2026', release: '2.15.269', change: 'Every job size, re-read and retry time and onboarding rule is a setting on Settings › Pipeline settings (with what uses it); the Firecrawl proxy, site map sizes and search result counts are on Toolsets › Firecrawl; capacity, evidence storage, retention and provider fee rule policies are changed on Pipeline settings. Each change needs a reason and is logged. The controls check on Pipeline settings should always show that every running job reads its sizes from settings.' },
+      { version: '1.13', date: '14 Oct 2026', release: '2.15.270', change: 'Filters work for every country in the catalogue: Courses › Region (NZ) and Province / territory (Canada) list regions (a course without a campus region takes its university\'s region); Delivery reads the course\'s own mode; an empty filter says why; Data Quality, Key dates, Regulatory sources and the fee currency include Canada.' }],
   },
 ]
 

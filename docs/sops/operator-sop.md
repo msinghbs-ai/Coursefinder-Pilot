@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.12 (reviewed for platform release v2.15.269)  
+**Version:** 1.13 (reviewed for platform release v2.15.270)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -114,3 +114,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.10 | 13 Oct 2026 | v2.15.267 | Running now shows schedules in words; a job that touched no particular university in the last hour lists the universities now at its stage. |
 | 1.11 | 13 Oct 2026 | v2.15.268 | Notices on the layer pages show only what needs a person and say so (Action needed, Action outside StudySearch, Optional); Go to opens the exact card or setting; held or stopped course searches are released with Search again, and a missing website entered, inside the notice. Information-only notices (for example a daily share used up, which carries on after midnight) are on Toolsets and limits. |
 | 1.12 | 13 Oct 2026 | v2.15.269 | Every job size, re-read and retry time and onboarding rule is a setting on Settings › Pipeline settings (with what uses it); the Firecrawl proxy, site map sizes and search result counts are on Toolsets › Firecrawl; capacity, evidence storage, retention and provider fee rule policies are changed on Pipeline settings. Each change needs a reason and is logged. The controls check on Pipeline settings should always show that every running job reads its sizes from settings. |
+| 1.13 | 14 Oct 2026 | v2.15.270 | Filters work for every country in the catalogue: Courses › Region (NZ) and Province / territory (Canada) list regions (a course without a campus region takes its university's region); Delivery reads the course's own mode; an empty filter says why; Data Quality, Key dates, Regulatory sources and the fee currency include Canada. |

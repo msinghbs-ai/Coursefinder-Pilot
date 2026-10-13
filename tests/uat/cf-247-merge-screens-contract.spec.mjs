@@ -21,7 +21,7 @@ test('Regulatory settings merged into Layer 1; its Pilot reset and the readiness
   expect(main).not.toContain('mode="reset"')
   expect(read('src/lib/supabase.js')).not.toContain('pilot-reset')
   const reg = read('src/RegulatorySettings.jsx')
-  expect(reg).toContain("const IN_SCOPE = ['AU', 'NZ']")
+  expect(reg).toContain("const IN_SCOPE = ['AU', 'NZ', 'CA']")
   expect(reg).not.toContain('Layer 1 source registry')
   expect(reg).not.toContain('RESET DATABASE')
 })

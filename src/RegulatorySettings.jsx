@@ -8,7 +8,7 @@ import{fmtNumber,fmtDateTime,fmtPercent}from'./lib/format.js'
 import { api } from './lib/supabase'
 import './settings.css'
 
-const IN_SCOPE = ['AU', 'NZ']
+const IN_SCOPE = ['AU', 'NZ', 'CA'] // the countries with courses in the catalogue (v2.15.270)
 const DEFAULT_BATCH = 2500
 const RESULT_KEY = 'coursefinder-layer1-country-result-v2'
 const STATCAN_RESULT_KEY = 'coursefinder-layer2a-statcan-ca-result-v1'
