@@ -863,3 +863,26 @@ export const progressRunningUnis = { job: 'scholarship-discover', unis: [
 export const progressLevers = { can_manage: true, sections: [
   { title: 'Onboarding pace', rows: [{ name: 'Universities worked at once', now: '100', page: 'layer2', tab: 'onboarding', where: 'Layer 2 › Onboarding › Settings', effect: '59 in progress; 0 queued' }] },
   { title: 'Firecrawl budget', rows: [{ key: 'daily_share_scholarships', name: 'Share: scholarships', now: '3500 credits', page: 'services', tab: 'limits', where: 'Toolsets & limits › Firecrawl › Daily budget', effect: '3500 used today, 17615 refused', hot: true }] }] }
+
+// v2.15.269: the settings register (toolset "pipeline") and the policy tables, as Pipeline settings reads them
+export const settingsRegister = {
+  can_manage: true, jobs: 89, check: [],
+  sections: [
+    { section: 'Job sizes', settings: [
+      { key: 'batch.coverage_admit', label: 'Admit official page and English', help: 'Courses admitted in each run.', kind: 'number', value: 500, min: 10, max: 5000, unit: 'courses a run', used_by: 'coverage-admit (every 10 minutes)', reason: "CF-247 v2.15.269: moved from code (today's value)", updated_at: '2026-10-13T10:52:00Z' },
+      { key: 'batch.coverage_read', label: 'Read course pages', help: 'Pages read in each run (both readers).', kind: 'number', value: 60, min: 10, max: 200, unit: 'pages every 30 seconds', used_by: 'coverage-read, coverage-read-2 (every 30 seconds)', reason: null, updated_at: null }] },
+    { section: 'Re-read and retry', settings: [
+      { key: 'reread.scholarship_page_days', label: 'Read a scholarship page again after', help: '', kind: 'number', value: 90, min: 1, max: 365, unit: 'days', used_by: 'svc_scholarship_read_record', reason: null, updated_at: null }] },
+    { section: 'Onboarding', settings: [
+      { key: 'onboarding.proposal_attempts', label: 'Adapter proposals before a person is asked', help: '', kind: 'number', value: 2, min: 1, max: 5, unit: 'tries', used_by: 'provider_onboarding_step_v1', reason: null, updated_at: null }] },
+  ],
+}
+export const policyTables = {
+  can_manage: true, providers: { 'p-mon': 'Monash University' },
+  tables: [
+    { table: 'retention_class_policies', key: 'class_key', columns: [{ col: 'default_retention_days', label: 'Keep for', unit: 'days', type: 'integer' }, { col: 'bounded_delete_limit', label: 'Most rows removed at a time', unit: 'rows', type: 'integer' }],
+      rows: [{ class_key: 'job_history', default_retention_days: 30, bounded_delete_limit: 20000 }] },
+    { table: 'provider_fee_profiles', key: 'id', columns: [{ col: 'active', label: 'Applied', unit: null, type: 'boolean' }, { col: 'review_by', label: 'Review by', unit: 'date', type: 'date' }],
+      rows: [{ id: 'fp-1', provider_id: 'p-mon', rule_code: 'MON-ANNUAL', active: true, review_by: '2027-01-31' }] },
+  ],
+}
