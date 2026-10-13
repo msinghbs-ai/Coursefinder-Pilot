@@ -11,12 +11,13 @@
 // v2.15.200 (Decision 254, Platform Admin 6 Oct 15:38 "Services, keys and limits only, every card collapsed"): every
 // panel here is a collapsed card (Card.jsx). Firecrawl runs, targets and university adapters moved to Layer 2 › Adapters.
 import React,{useEffect,useState}from'react'
-import{RefreshCw,BellRing,Check}from'lucide-react'
+import{RefreshCw,BellRing,Check,ArrowRight}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import FirecrawlWork from'./FirecrawlWork'
 import FirecrawlCredits from'./FirecrawlCredits'
-import Card from'./Card'
+import Card,{rememberOpen}from'./Card'
+import{hrefFor}from'./nav-map'
 
 const errText=e=>e?.message||String(e)
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -34,26 +35,99 @@ const money=v=>v==null?'—':`US$${Number(v).toFixed(2)}`
 const pct=(a,b)=>b?`${Math.round(100*a/b)}%`:'—'
 
 // ---- notices on each layer page -------------------------------------------------------------------------------------
+// v2.15.268 (Platform Admin, 13 Oct 2026 14:56: "these notification are asking for cant be fixed and if followed the link its doesnt open
+// the specific card to adjust the values if required"; chose all four). Each notice now says plainly whether a person needs to act
+// (Action needed, Action outside StudySearch, Optional) or not (Nothing to do), its Go to button opens the exact card or setting
+// (the card is opened and scrolled to; see focusTarget in mature-main.jsx), the universities it is about are listed in the notice with
+// Search again or a website box, and information-only notices are kept to Toolsets and limits, not shown on the layer pages.
+const LIMITS={page:'services',tab:'limits'}
+const go=(label,page,tab,card,at)=>({label,page,tab,card,at})
+const NEED={action:['Action needed','warning'],outside:['Action outside StudySearch','warning'],optional:['Optional','neutral'],info:['Nothing to do','success']}
+export function noticePlan(n){
+  const k=`${n.toolset}:${n.kind}`,key=n.key||'',used=/^Used up/.test(n.detail||'')
+  const fc=go('Firecrawl settings',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl')
+  const or=go('OpenRouter settings',LIMITS.page,LIMITS.tab,'services.toolset.openrouter')
+  switch(k){
+    case'firecrawl:daily_budget':return{need:'info',say:used?'Nothing to do: this work carries on by itself after midnight, Melbourne time.':'Nothing to do yet: this work stops for the day only if the share is used up.',
+      go:go('Daily budget settings',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl','firecrawl:Daily budget')}
+    case'firecrawl:search_stopped':return{need:'action',say:'Check each website below, then press Search again.',items:'resume',go:go('Credits by university',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl.credits','services.toolset.firecrawl.credits')}
+    case'firecrawl:search_held':return{need:'action',say:'Check the adapter and website below, then press Search again.',items:'resume',go:go('Credits by university',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl.credits','services.toolset.firecrawl.credits')}
+    case'firecrawl:no_official_site':return{need:'optional',say:'Enter a website below if you know it. Otherwise nothing to do.',items:'website',go:go('Websites to find','layer4','websites','','websites-to-find')}
+    case'firecrawl:shared_site':return{need:'info',say:'Nothing to do, unless a college needs its own website (enter it on the provider).',go:go('Providers','providers','','','')}
+    case'firecrawl:low_balance':return{need:'outside',say:'Top up the Firecrawl account. Work stops by itself at the reserve.',go:go('Firecrawl credits',LIMITS.page,LIMITS.tab,'services.firecrawl-credits','services.firecrawl-credits')}
+    case'firecrawl:cap_reached':return key.startsWith('firecrawl:2:course_link_cap')
+      ?{need:'optional',say:'Raise the monthly cap if the search should carry on this month. Otherwise it carries on next month.',go:go('Course-page search budget','jobs','priority','','search-cap')}
+      :{need:'optional',say:'Raise the scholarship cap if these pages should be read.',go:go('Scholarship credits','layer2','scholarships','','sch-credits')}
+    case'openrouter:refused':return /:rate$/.test(key)?{need:'info',say:'Nothing to do: the pages are read again by themselves.',go:or}
+      :{need:'outside',say:/:key_limit$/.test(key)?'Raise or clear the key’s limit at OpenRouter.':/:credit$/.test(key)?'Top up the OpenRouter balance.':'Check the key on Settings.',go:or}
+    case'openrouter:low_balance':return{need:'outside',say:'Top up the OpenRouter account.',go:or}
+    case'openrouter:not_observed':return{need:'action',say:'Check the job “Read the OpenRouter balance”.',go:go('Task manager','jobs','tasks','','')}
+    case'openrouter:over_guard':return{need:'info',say:'Nothing to do: it carries on when the UTC day changes. Raise the guard if it should carry on today.',go:go('Daily guards',LIMITS.page,LIMITS.tab,'services.toolset.openrouter','openrouter:Daily guards')}
+    case'scheduled_jobs:timeout':return{need:'action',say:'Lower the job’s batch size so each run finishes inside the limit.',go:go('Jobs','jobs','jobs','','')}
+    case'scheduled_jobs:failed':return{need:n.severity==='high'?'action':'info',say:n.severity==='high'?'It keeps failing: the job needs a fix.':'Nothing to do unless it repeats.',go:go('Jobs','jobs','jobs','','')}
+    case'edge_functions:timeout':return{need:'action',say:'Lower the worker’s per-run limit.',go:fc}
+    default:return{need:'action',say:'',go:go('Toolsets and limits',LIMITS.page,LIMITS.tab,'services.toolsets','services.toolsets')}
+  }
+}
+// Opens the card (and any card it sits in) for this session and goes to the page; mature-main scrolls to `at`.
+export function goToCard(g){
+  if(!g)return
+  for(const id of String(g.card||'').split(',').filter(Boolean))rememberOpen(id)
+  const params={};if(g.card)params.card=g.card;if(g.at)params.at=g.at
+  window.location.hash=hrefFor(g.page,g.tab,params).slice(1)
+}
+
 export function LayerNotices({layer}){
   const[d,setD]=useState(null),[open,setOpen]=useState(false),[busy,setBusy]=useState(false)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_platform_notices_read',{p_layer:layer});if(!error)setD(data||{})}catch{/* notices are advisory */}}
   useEffect(()=>{setD(null);load()},[layer])
   if(!d)return null
-  const all=d.notices||[],live=all.filter(n=>!n.acknowledged),seen=all.filter(n=>n.acknowledged)
-  if(!all.length)return null
+  // information-only notices stay on Toolsets and limits
+  const shown=(d.notices||[]).filter(n=>noticePlan(n).need!=='info'),infos=(d.notices||[]).length-shown.length
+  const live=shown.filter(n=>!n.acknowledged),seen=shown.filter(n=>n.acknowledged)
+  if(!shown.length&&!infos)return null
   const ack=async n=>{const reason=ask(`Acknowledge “${n.title}”? It comes back if it happens again.`);if(!reason)return;setBusy(true);try{const{error}=await supabase.rpc('admin_toolsets_write',{p_action:'ack',p_args:{notice_key:n.key,reason}});if(error)throw error;await load()}catch(e){window.alert(errText(e))}finally{setBusy(false)}}
   return <section className="tn-strip" data-layer-notices={layer} aria-label="Toolset notices">
-    {live.map(n=><Notice key={n.key} n={n} can={d.can_manage&&!busy} onAck={()=>ack(n)}/>)}
-    {seen.length>0&&<details className="tn-seen" open={open} onToggle={e=>setOpen(e.currentTarget.open)}><summary>{seen.length} acknowledged</summary>{seen.map(n=><Notice key={n.key} n={n}/>)}</details>}
+    {live.map(n=><Notice key={n.key} n={n} can={d.can_manage&&!busy} onAck={()=>ack(n)} onDone={load}/>)}
+    {seen.length>0&&<details className="tn-seen" open={open} onToggle={e=>setOpen(e.currentTarget.open)}><summary>{seen.length} acknowledged</summary>{seen.map(n=><Notice key={n.key} n={n} onDone={load}/>)}</details>}
+    {infos>0&&<p className="tn-infos" data-layer-notice-infos><button type="button" className="cf-linkbtn" onClick={()=>goToCard(go('Toolsets and limits',LIMITS.page,LIMITS.tab,'services.toolsets','services.toolsets'))}>
+      {infos} information-only notice{infos===1?'':'s'} (nothing to do) on Toolsets and limits</button></p>}
   </section>
 }
-function Notice({n,can,onAck}){
-  return <div className={`tn-item tn-${n.severity||'info'}`} data-notice={n.key}>
+export function Notice({n,can,onAck,onDone}){
+  const plan=noticePlan(n),[label,tone]=NEED[plan.need]
+  const cls=plan.need==='info'?'info':n.severity||'info'
+  return <div className={`tn-item tn-${cls}`} data-notice={n.key} data-notice-need={plan.need}>
     <BellRing size={15} aria-hidden/>
-    <div className="tn-text"><strong>{n.title}</strong>{n.detail&&<span>{n.detail}</span>}{n.hint&&<small>{n.hint}</small>}
-      <small className="tn-meta">{LAYER[n.layer]} · {n.toolset?.replace(/_/g,' ')} · last {fmtDateTime(n.last_at)}{n.acknowledged?` · acknowledged ${fmtDateTime(n.acknowledged_at)}`:''} · <a href="#models-services">Toolsets and limits</a></small></div>
-    {can&&!n.acknowledged&&<Button compact onClick={onAck}><Check size={13}/>Acknowledge</Button>}
+    <div className="tn-text"><strong>{n.title}</strong>{n.detail&&<span>{n.detail}</span>}
+      <span className="tn-need"><span className={`cf-chip tone-${tone}`}>{label}</span>{plan.say||n.hint}</span>
+      {plan.items&&(n.items||[]).length>0&&<NoticeItems n={n} mode={plan.items} onDone={onDone}/>}
+      <small className="tn-meta">{LAYER[n.layer]} · {n.toolset?.replace(/_/g,' ')} · last {fmtDateTime(n.last_at)}{n.acknowledged?` · acknowledged ${fmtDateTime(n.acknowledged_at)}`:''}</small></div>
+    <div className="tn-acts">
+      {plan.go&&<Button compact onClick={()=>goToCard(plan.go)} data-notice-go={plan.go.at||plan.go.card||plan.go.page}>Go to {plan.go.label}<ArrowRight size={13}/></Button>}
+      {can&&!n.acknowledged&&<Button compact onClick={onAck}><Check size={13}/>Acknowledge</Button>}
+    </div>
   </div>
+}
+// The universities a notice is about, with the fix in place: Search again (held or stopped course search) or a website box.
+function NoticeItems({n,mode,onDone}){
+  const items=n.items||[],[busy,setBusy]=useState(false),[val,setVal]=useState({}),[msg,setMsg]=useState('')
+  const resume=async u=>{const reason=ask(`Search course pages again for ${u.name}? Check its website and adapter first.`);if(!reason)return;setBusy(true);setMsg('')
+    try{const{error}=await supabase.rpc('admin_firecrawl_search_resume',{p_provider_id:u.provider_id,p_reason:reason});if(error)throw error;setMsg(`${u.name}: course-page search starts again.`);await onDone?.()}catch(e){setMsg(errText(e))}finally{setBusy(false)}}
+  const save=async u=>{const url=String(val[u.provider_id]||'').trim();if(!url)return;setBusy(true);setMsg('')
+    try{const{error}=await supabase.rpc('admin_provider_website_set',{p_provider_id:u.provider_id,p_url:url});if(error)throw error;setMsg(`${u.name}: website saved. The course-page search starts within minutes.`);setVal(v=>({...v,[u.provider_id]:''}));await onDone?.()}catch(e){setMsg(errText(e))}finally{setBusy(false)}}
+  return <details className="tn-items" data-notice-items={n.key}><summary>Show the {fmtNumber(items.length)} {mode==='website'?'providers':'universities'}</summary>
+    {msg&&<p className="sl-sub" role="status">{msg}</p>}
+    <div className="cf-table-wrap"><table className="cf-table"><tbody>
+      {items.map(u=><tr key={u.provider_id} data-notice-item={u.provider_id}>
+        <td><strong>{u.name}</strong>{u.reason&&<small className="sl-sub">{u.reason}</small>}{u.searches>0&&<small className="sl-sub">{fmtNumber(u.searches)} searches with no correct course page</small>}</td>
+        {mode==='resume'?<><td>{u.website?<a href={u.website} target="_blank" rel="noreferrer">{u.website.replace(/^https?:\/\//,'')}</a>:'No website on record'}</td>
+          <td><Button compact disabled={busy} onClick={()=>resume(u)}>Search again</Button></td></>
+        :<td><span className="tn-site"><input aria-label={`Website for ${u.name}`} placeholder="https://" value={val[u.provider_id]||''} disabled={busy} onChange={e=>setVal(v=>({...v,[u.provider_id]:e.target.value}))}/>
+          <Button compact disabled={busy||!String(val[u.provider_id]||'').trim()} onClick={()=>save(u)}>Save website</Button></span></td>}
+      </tr>)}
+    </tbody></table></div>
+  </details>
 }
 
 // ---- Models & services › Toolsets and limits ------------------------------------------------------------------------
@@ -70,7 +144,7 @@ export default function Toolsets({onError}){
     <Card id="services.toolsets" title="Toolsets and limits" subtitle="The outside services and platform limits each layer depends on. A notice appears on the layer’s page when one of them hits a limit or times out."
       meta={<span className={`cf-chip tone-${notices.length?'warning':'success'}`}>{notices.length?`${fmtNumber(notices.length)} notice${notices.length===1?'':'s'}`:'No notices'}</span>}>
       {!d.can_manage&&<p className="l3v-note">You can view this. Only a Platform Admin can change it.</p>}
-      <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
+      <div className="tn-all" data-toolset-notices>{notices.length?notices.map(x=><Notice key={x.key} n={x} onDone={load}/>):<p className="sl-sub">No notices on any layer.</p>}</div>
     </Card>
     {(d.toolsets||[]).map(t=><React.Fragment key={t.key}><Toolset t={t} d={d} can={can} write={write}/>{t.key==='firecrawl'&&<><FirecrawlCredits onError={onError}/><FirecrawlWork onError={onError}/></>}</React.Fragment>)}
     <SearchPass can={Boolean(d.can_manage)} onError={onError}/>

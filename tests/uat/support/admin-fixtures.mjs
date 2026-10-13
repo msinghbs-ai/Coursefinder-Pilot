@@ -490,6 +490,12 @@ export const platformNotices = layer => {
     notice({ key: 'openrouter:3:refused:key_limit', layer: 3, toolset: 'openrouter', kind: 'refused', severity: 'high', title: 'OpenRouter refused calls: the key\'s own spending limit was reached', detail: '92 work items in the last 24 hours were released and will be retried.', hint: 'The limit is set on the key at OpenRouter (Workspaces › Keys), not in CourseFinder.' }),
     notice({ key: 'openrouter:3:low_balance', layer: 3, toolset: 'openrouter', kind: 'low_balance', severity: 'warning', title: 'OpenRouter balance is US$27.67', detail: 'Below the warning level of US$30.' }),
     notice({ key: 'scheduled_jobs:2:timeout:scholarship-nationality', layer: 2, toolset: 'scheduled_jobs', kind: 'timeout', severity: 'high', title: 'Job "scholarship-nationality" hit the database time limit 10 times', detail: 'In the last 24 hours (16 runs in all).', hint: 'Lower the job\'s batch size setting so each run finishes inside the limit.' }),
+    // v2.15.268: Firecrawl notices with the universities to act on
+    notice({ key: 'firecrawl:2:daily:scholarships:2026-10-13', layer: 2, toolset: 'firecrawl', kind: 'daily_budget', severity: 'high', title: 'Firecrawl daily budget, Scholarships: 3500 of 3500 credits used', detail: 'Used up: this work waits until midnight, Melbourne time.' }),
+    notice({ key: 'firecrawl:2:search_held', layer: 2, toolset: 'firecrawl', kind: 'search_held', severity: 'warning', title: 'Course-page search held for 1: Victoria University', detail: 'Victoria University: 676 search credits in 30 days for 1 correct course page.',
+      items: [{ provider_id: 'u-vu', name: 'Victoria University', website: 'https://www.vu.edu.au', reason: 'check the adapter’s course pages (vu.edu.au)' }] }),
+    notice({ key: 'firecrawl:2:no_official_site', layer: 2, toolset: 'firecrawl', kind: 'no_official_site', severity: 'info', title: '2 Australian providers have no official website found', detail: 'Not in the CRICOS register, TEQSA or training.gov.au.',
+      items: [{ provider_id: 'p-ach', name: 'Achievers Global Pty Ltd' }, { provider_id: 'p-bri', name: 'Bright Futures College' }] }),
     notice({ key: 'scheduled_jobs:2:failed:coverage-bind', layer: 2, toolset: 'scheduled_jobs', kind: 'failed', severity: 'warning', title: 'Job "coverage-bind" failed 1 times', acknowledged: true, acknowledged_at: '2026-10-04T03:00:00Z' }),
   ]
   return { can_manage: true, notices: layer == null ? all : all.filter(n => n.layer === layer) }
@@ -504,6 +510,7 @@ export const toolsets = {
         { key: 'read_proxy', label: 'Proxy', help: 'basic, auto, stealth or enhanced.', kind: 'text', value: 'auto', section: 'Read pages' },
         { key: 'find_query', label: 'Search wording', help: '', kind: 'text', value: '{course} site:{domain}', section: 'Find pages' },
         { key: 'run_concurrency', label: 'Calls at the same time', help: '', kind: 'number', value: 12, min: 1, max: 50, unit: 'calls', section: 'Runs' },
+        { key: 'daily_budget_total', label: 'Credits a day (billed)', help: '', kind: 'number', value: 15000, min: 0, max: 100000, unit: 'credits', section: 'Daily budget' },
       ] },
     { key: 'openrouter', label: 'OpenRouter (AI models)', kind: 'ai', layers: [3], enforcement: 'observe', help: 'Observe only: the daily spend guards and the credit floor are shown and raise notices but do not stop Layer 3.', reason: 'Decision 252', updated_at: '2026-10-04T03:30:00Z',
       settings: [{ key: 'low_balance_warn_usd', label: 'Warn when the balance is below', help: 'A notice is raised on Layer 3.', kind: 'number', value: 10, min: 0, max: 1000, unit: 'US$' }] },

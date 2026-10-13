@@ -23,7 +23,7 @@ export default function SearchCapCard(){
     if(!window.confirm(`Set the course-page search cap to ${fmtNumber(v)} credits a month? Each search uses 2 Firecrawl credits. The Firecrawl monthly limit and safety reserve still apply.`))return
     setBusy(true);setSaved('')
     try{const d=await load(v);if(Number(d?.monthly_credit_cap)!==v)throw new Error('The new cap did not save; refresh and try again');setSaved(`Saved: ${fmtNumber(v)} credits a month.`)}catch(e){setErr(errText(e))}finally{setBusy(false)}}
-  return <section className="m-panel" data-search-cap>
+  return <section className="m-panel" data-search-cap data-anchor="search-cap">
     <SectionTitle icon={Search} title="Course-page search budget" subtitle="Searches for a course's own page on its university's site (2 Firecrawl credits each). When this month's cap is reached the searches wait until the cap is raised or the month ends."/>
     <dl className="fs-totals">
       <div><dt>Used this month</dt><dd>{fmtNumber(used)}</dd></div>

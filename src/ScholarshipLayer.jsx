@@ -103,7 +103,7 @@ const PURPOSE={sch_map:'Mapping university sites',sch_search:'Searching for a pa
 function Credits({fc}){
   const cap=Number(fc.cap||0),used=Number(fc.used||0),reserve=Number(fc.reserve||0),left=Math.max(0,cap-used),pct=cap?Math.min(100,Math.round(used/cap*100)):100
   const state=left<=0?'All used: scholarship pages wait until the cap is raised (there is no direct read).':left<=reserve?`Close to the cap: ${fmtNumber(left)} credits left.`:'Within the cap.'
-  return <section className="m-panel" data-sl-credits><SectionTitle title="Firecrawl credits for scholarships" subtitle="Every scholarship page, listing page and candidate page is read through the scraper (Firecrawl, rendered page); there is no direct read. When the cap is used up, pages wait. The cap is a setting below."/>
+  return <section className="m-panel" data-sl-credits data-anchor="sch-credits"><SectionTitle title="Firecrawl credits for scholarships" subtitle="Every scholarship page, listing page and candidate page is read through the scraper (Firecrawl, rendered page); there is no direct read. When the cap is used up, pages wait. The cap is a setting below."/>
     <div className="sl-credit"><div className="sl-credit-bar" role="img" aria-label={`${fmtNumber(used)} of ${fmtNumber(cap)} credits used`}><span style={{width:`${pct}%`}}/>{cap>0&&<i style={{left:`${Math.max(0,Math.min(100,(cap-reserve)/cap*100))}%`}} title="Reserve starts here"/>}</div>
       <div className="sl-credit-figs"><span><b>{fmtNumber(used)}</b> used</span><span><b>{fmtNumber(left)}</b> left of <b>{fmtNumber(cap)}</b></span><span>Reserve <b>{fmtNumber(reserve)}</b></span></div>
       <p className={`sl-status ${left<=reserve?'sl-off':''}`} data-sl-credit-state>{state}</p>

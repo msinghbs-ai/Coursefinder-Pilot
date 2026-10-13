@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.10 (reviewed for platform release v2.15.267)  
+**Version:** 1.11 (reviewed for platform release v2.15.268)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -112,3 +112,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.8 | 13 Oct 2026 | v2.15.265 | A university refused for "directory site", "fewer than 30 courses" or "scholarship cap" is expected, not a fault; Toolsets & limits › Firecrawl credits by university lists today's refusals by university. |
 | 1.9 | 13 Oct 2026 | v2.15.266 | Live activity is retired: the start-of-day check is Coverage & completeness › Progress › Running now (jobs by journey stage, worker errors with Mark as seen, and the universities each job works on). |
 | 1.10 | 13 Oct 2026 | v2.15.267 | Running now shows schedules in words; a job that touched no particular university in the last hour lists the universities now at its stage. |
+| 1.11 | 13 Oct 2026 | v2.15.268 | Notices on the layer pages show only what needs a person and say so (Action needed, Action outside StudySearch, Optional); Go to opens the exact card or setting; held or stopped course searches are released with Search again, and a missing website entered, inside the notice. Information-only notices (for example a daily share used up, which carries on after midnight) are on Toolsets and limits. |

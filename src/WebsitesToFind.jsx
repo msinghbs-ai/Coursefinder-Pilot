@@ -18,7 +18,7 @@ export default function WebsitesToFind({onError}){
     catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
   if(!data)return <section className="m-panel"><Loading label="Loading websites to find…"/></section>
   const items=(data.items||[]).filter(i=>!country||i.country===country),cs=Object.entries(data.countries||{})
-  return <section className="m-panel" data-websites-to-find>
+  return <section className="m-panel" data-websites-to-find data-anchor="websites-to-find">
     <SectionTitle icon={Globe} title="Websites to find" subtitle="The website finder could not confirm these universities’ own sites, so their course pages cannot be found. Check what was tried, find the university’s official website, and enter it." action={<div className="l3c-actions">
       <select className="fv-filter" value={country} onChange={e=>setCountry(e.target.value)} aria-label="Country"><option value="">All countries ({fmtNumber(cs.reduce((t,[,n])=>t+Number(n),0))})</option>{cs.map(([c,n])=><option key={c} value={c}>{c} ({fmtNumber(n)})</option>)}</select>
       <Button compact onClick={()=>load()} disabled={busy}><RefreshCw size={14}/>Refresh</Button></div>}/>
