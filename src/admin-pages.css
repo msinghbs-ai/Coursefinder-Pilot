@@ -641,12 +641,13 @@
 .pg-needs li.tone-danger{border-left-color:var(--cf-danger)}
 .pg-needs li div{display:flex;flex-direction:column;gap:2px}
 .pg-needs small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.pg-needs strong,.pg-run-item strong{font-size:var(--cf-fs-sm);font-weight:600}
 .pg-stages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px}
 .pg-stages a{display:flex;flex-direction:column;gap:2px;padding:10px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);text-decoration:none;color:var(--cf-text);background:var(--cf-surface)}
 .pg-stages a:hover{border-color:var(--cf-indigo-600)}
 .pg-stages small{color:var(--cf-muted);font-size:var(--cf-fs-xs)}
 .pg-stages strong{font-size:var(--cf-fs-lg)}
-.pg-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.pg-two{display:flex;flex-direction:column;gap:16px}
 .pg-journeys tr.is-selected,.pg-jobs tr.is-selected{background:var(--cf-indigo-50)}
 .pg-expand>td{background:var(--cf-surface-2);padding:10px 14px 14px 32px}
 .pg-unis{background:var(--cf-surface)}

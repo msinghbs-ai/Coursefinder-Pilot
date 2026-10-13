@@ -51,7 +51,7 @@ function Overview({group,setGroup,onError}){
   if(!d)return <Loading label="Reading progress…"/>
   const st=d.stages||{},f=d.fields||{},s=d.scholarships||{},pg=d.pages_hour||{},b=d.budget||{}
   const needs=[]
-  for(const[k,n]of Object.entries(d.stop_reasons||{}))if(Number(n)>0){const h=heldText(k);needs.push({key:`stop:${k}`,tone:['nothing_ready','approve_central'].includes(k)?'warning':'neutral',title:`${fmtNumber(n)} ${h[0].toLowerCase()}`,hint:h[1],href:hrefFor('coverage','progress',{view:'journeys',group,held:'stopped',stop:k})})}
+  for(const[k,n]of Object.entries(d.stop_reasons||{}))if(Number(n)>0){const h=heldText(k);needs.push({key:`stop:${k}`,tone:['nothing_ready','approve_central'].includes(k)?'warning':'neutral',title:`${fmtNumber(n)} ${Number(n)===1?'university':'universities'}: ${h[0]}`,hint:h[1],href:hrefFor('coverage','progress',{view:'journeys',group,held:'stopped',stop:k})})}
   for(const n of d.notices||[])needs.push({key:n.key,tone:n.severity==='high'?'danger':'warning',title:n.title,hint:[n.detail,n.hint].filter(Boolean).join(' ')})
   const journeyHref=stage=>hrefFor('coverage','progress',{view:'journeys',group,stage})
   return <div className="m-page-stack" data-progress-overview>
@@ -220,7 +220,7 @@ function Levers({onError}){
     {(d.sections||[]).map(s=><section key={s.title} className="m-panel" aria-label={s.title} data-progress-lever-section={s.title}>
       <h3 className="sl-h4">{s.title}</h3>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Lever</th><th>Now</th><th>What it did today</th><th/></tr></thead><tbody>
-        {(s.rows||[]).map(r=><tr key={r.name} className={r.hot?'pg-hot':''} data-progress-lever={r.key||r.name}><td><strong>{r.name}</strong><br/><small className="sl-sub">{r.where}</small></td><td>{r.now}</td><td>{r.effect||'—'}</td>
+        {(s.rows||[]).map(r=><tr key={r.name} className={r.hot?'pg-hot':''} data-progress-lever={r.key||r.name}><td><strong>{r.name}</strong><br/><small className="sl-sub">{r.where}</small></td><td>{r.now==='true'?'On':r.now==='false'?'Off':r.now}</td><td>{r.effect||'—'}</td>
           <td><a className="cf-link" href={r.page==='coverage'&&r.tab==='progress'?hrefFor('coverage','progress',{view:'running'}):hrefFor(r.page,r.tab)}>Change</a></td></tr>)}
       </tbody></table></div>
     </section>)}
