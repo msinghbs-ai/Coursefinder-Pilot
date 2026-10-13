@@ -79,8 +79,8 @@ function AddPin({data,can,act,onError}){
   const list=kind==='state'?data.states||[]:kind==='country'?data.countries||[]:[]
   return <div className="pq-add">
     <label><small>Add to the front</small><select className="fv-filter" value={kind} onChange={e=>setKind(e.target.value)} aria-label="What to prioritise" disabled={!can}>
-      <option value="provider">University or provider</option><option value="state">State</option><option value="country">Country</option><option value="course">Single course</option></select></label>
-    {['state','country'].includes(kind)?<label className="pq-grow"><small>{kind==='state'?'State':'Country'}</small><select className="fv-filter" value={pick} onChange={e=>setPick(e.target.value)} aria-label={kind==='state'?'State':'Country'} disabled={!can}>
+      <option value="provider">University or provider</option><option value="state">State or region</option><option value="country">Country</option><option value="course">Single course</option></select></label>
+    {['state','country'].includes(kind)?<label className="pq-grow"><small>{kind==='state'?'State or region':'Country'}</small><select className="fv-filter" value={pick} onChange={e=>setPick(e.target.value)} aria-label={kind==='state'?'State or region':'Country'} disabled={!can}>
         <option value="">Choose…</option>{list.map(x=><option key={x.id} value={x.id}>{x.name}{x.country?` (${x.country})`:''}</option>)}</select></label>
       :<label className="pq-grow"><small>{kind==='course'?'Course name or CRICOS code':'University name'}</small><span className="pq-search"><Search size={14}/><input type="search" value={q} onChange={e=>setQ(e.target.value)} placeholder={kind==='course'?'e.g. 083765J or Master of Nursing':'e.g. Monash'} aria-label={kind==='course'?'Find a course':'Find a university'} disabled={!can}/></span></label>}
     <label className="pq-top"><input type="checkbox" checked={top} onChange={e=>setTop(e.target.checked)} disabled={!can}/><span>Put at the very top</span></label>

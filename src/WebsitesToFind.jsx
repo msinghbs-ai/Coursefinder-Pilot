@@ -10,14 +10,14 @@ import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
 
 export default function WebsitesToFind({onError}){
-  const[data,setData]=useState(null),[country,setCountry]=useState(''),[busy,setBusy]=useState(false),[val,setVal]=useState({}),[done,setDone]=useState('')
-  const load=async(c=country)=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_provider_websites',{p_args:{country:c||null,limit:200}});if(error)throw error;setData(d||{})}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
+  const[data,setData]=useState(null),[country,setCountry]=useState(''),[busy,setBusy]=useState(false),[val,setVal]=useState({}),[done,setDone]=useState(''),[allCounts,setAllCounts]=useState(null)
+  const load=async(c=country)=>{setBusy(true);try{const{data:d,error}=await supabase.rpc('admin_provider_websites',{p_args:{country:c||null,limit:200}});if(error)throw error;setData(d||{});if(!c)setAllCounts(d?.countries||{})}catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
   useEffect(()=>{load(country)},[country])
   const save=async it=>{const url=String(val[it.provider_id]||'').trim();if(!url)return;setBusy(true);setDone('')
     try{const{data:d,error}=await supabase.rpc('admin_provider_website_set',{p_provider_id:it.provider_id,p_url:url});if(error)throw error;setDone(`${it.name}: website saved. The sweep maps the site and searches for its course pages.`);setVal(v=>({...v,[it.provider_id]:''}));setData(d||{})}
     catch(e){onError?.(e.message||String(e))}finally{setBusy(false)}}
   if(!data)return <section className="m-panel"><Loading label="Loading websites to find…"/></section>
-  const items=(data.items||[]).filter(i=>!country||i.country===country),cs=Object.entries(data.countries||{})
+  const items=(data.items||[]).filter(i=>!country||i.country===country),cs=Object.entries(allCounts||data.countries||{}) // the full list, kept when one country is chosen (v2.15.270)
   return <section className="m-panel" data-websites-to-find data-anchor="websites-to-find">
     <SectionTitle icon={Globe} title="Websites to find" subtitle="The website finder could not confirm these universities’ own sites, so their course pages cannot be found. Check what was tried, find the university’s official website, and enter it." action={<div className="l3c-actions">
       <select className="fv-filter" value={country} onChange={e=>setCountry(e.target.value)} aria-label="Country"><option value="">All countries ({fmtNumber(cs.reduce((t,[,n])=>t+Number(n),0))})</option>{cs.map(([c,n])=><option key={c} value={c}>{c} ({fmtNumber(n)})</option>)}</select>

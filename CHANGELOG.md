@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.197 — 14 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.270**. The Platform Admin reported on 14 Oct 2026 at 07:13: "Bug/fix: Courses > state filter is not showing options for nz and Canada. Cross check all filters across all pages and report all relevant drop down options are visible."
+  - **Regions.** A course's region is its campus region; when no campus region is recorded (every NZ and Canadian course today), it is the university's region. Courses › Region (NZ, 15) and Province / territory (Canada, 10) now list options, and the course list filters, shows and counts regions the same way (migration 20261014013000).
+  - **Delivery.** Delivery options and the course list read the course's own mode first (On campus, Online, Blended, On campus and online); before, every course showed on campus.
+  - **Empty filters say why.** University group (Australia only) and Field (not yet classified for NZ and Canada) explain an empty list.
+  - **Every catalogue country.** Data Quality (Canada computed when opened), Enrichment operations, Provider assets, Key dates, Regulatory sources, the Layer 4 fee currency (CAD), the contacts provider picker (follows the country) and Websites to find (keeps the full country list) cover Canada. Scholarship amounts no longer assume A$. Priority queue says "State or region".
+  - Fix migration 20261014013100 (Provider assets read the country list once). SOPs 1.13.
+
 ## 0.1.196 — 13 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.269**. The Platform Admin asked on 13 Oct 2026 at 21:43: "Bring all controls to UI and make sure in future it's not getting hard coded. All controls need to be reflected and control in UI. Use current recommended settings and choices." This follows the settings control audit v1.0.

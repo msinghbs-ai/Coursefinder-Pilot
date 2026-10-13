@@ -38,7 +38,7 @@ test.describe('mocked browser', () => {
     await page.getByRole('button', { name: 'Move UNSW Sydney to the front' }).click()
     await expect.poll(() => page.l3calls.find(c => c.p_action === 'add')?.p_args).toEqual({ kind: 'provider', target_id: 'p-unsw', top: true })
     await page.getByLabel('What to prioritise').selectOption('state')
-    await page.getByLabel('State').selectOption('s-nsw')
+    await page.getByLabel('State or region').selectOption('s-nsw')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await expect.poll(() => page.l3calls.filter(c => c.p_action === 'add').map(c => c.p_args)).toContainEqual({ kind: 'state', target_id: 's-nsw', top: false })
     await page.getByLabel('What to prioritise').selectOption('provider')

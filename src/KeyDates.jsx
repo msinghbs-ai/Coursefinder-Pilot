@@ -12,7 +12,7 @@ import{Button,Empty,Loading,SectionTitle,StatusChip,fmtDateTime}from'./ui-kit'
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 export const KINDS={course_application_deadline:'Course application deadline',provider_application_window:'University application window',intake_date:'Intake date',scholarship_window:'Scholarship window',regulatory_dataset_release:'Government data release',national_education_event:'National education event'}
 export const PRECISION={exact:'Exact date',date_range:'Date range',month:'Month only',term:'Term only',year:'Year only',source_vague:'Vague (keep the wording)'}
-const COUNTRY={AU:'Australia',NZ:'New Zealand'}
+const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 export const auDate=v=>{if(!v)return'';const[y,m,d]=String(v).slice(0,10).split('-');return d&&m&&y?`${d}/${m}/${y}`:String(v)}
 
 export default function KeyDates({onError}){

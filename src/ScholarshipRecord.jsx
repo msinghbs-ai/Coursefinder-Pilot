@@ -38,7 +38,7 @@ export default function ScholarshipRecord({id,onError,onChanged}){
   const run=async(action,args)=>{setBusy(true);try{const{error}=await supabase.rpc('admin_scholarship_edit',{p_scholarship_id:id,p_action:action,p_args:args});if(error)throw error;setEditing('');await load();onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const nats=Array.isArray(d.nationalities)?d.nationalities:[],phr=d.nationality_phrases||{}
   const tiers=Array.isArray(d.tiers)?d.tiers:[]
-  const tierText=tiers.map(t=>t.percentage!=null?`${fmtNumber(t.percentage)}%`:t.amount!=null?`${t.currency&&t.currency!=='AUD'?t.currency+' ':'A$'}${fmtNumber(t.amount)}`:t.label).join(', ')
+  const tierText=tiers.map(t=>t.percentage!=null?`${fmtNumber(t.percentage)}%`:t.amount!=null?`${t.currency==='AUD'?'A$':t.currency?t.currency+' ':''}${fmtNumber(t.amount)}`:t.label).join(', ')
   const crit=(d.criteria||[]).filter(c=>c.criterion_type!=='published_eligibility_narrative').map(c=>criterionLabel(c)).filter(([,v])=>v)
   const narrative=(d.criteria||[]).find(c=>c.criterion_type==='published_eligibility_narrative')
   const levels=Array.isArray(d.course_levels)?d.course_levels:[],courseList=Array.isArray(d.course_list)?d.course_list:[]
@@ -117,8 +117,8 @@ function ValueEditor({d,busy,onSave,onCancel}){
   const[kind,setKind]=useState(d.award_value_type==='percentage'?'award_percentage':'award_amount'),[v,setV]=useState(String((kind==='award_percentage'?d.award_percentage:d.award_amount)??'')),[reason,setReason]=useState('')
   const ok=/^\d+(\.\d+)?$/.test(v.trim())&&Number(v)>0&&(kind!=='award_percentage'||Number(v)<=100)
   return <Shell busy={busy} ok={ok} onCancel={onCancel} reason={reason} setReason={setReason} onSave={()=>onSave('set_core',{field:kind,value:v.trim(),reason})}>
-    <label><small>The page states</small><select value={kind} onChange={e=>{setKind(e.target.value);setV('')}}><option value="award_amount">An amount (A$)</option><option value="award_percentage">A percentage of tuition</option></select></label>
-    <label><small>{kind==='award_percentage'?'Percentage (1 to 100)':'Amount in A$'}</small><input inputMode="decimal" value={v} onChange={e=>setV(e.target.value)} placeholder={kind==='award_percentage'?'e.g. 20':'e.g. 10000'}/></label>
+    <label><small>The page states</small><select value={kind} onChange={e=>{setKind(e.target.value);setV('')}}><option value="award_amount">An amount</option><option value="award_percentage">A percentage of tuition</option></select></label>
+    <label><small>{kind==='award_percentage'?'Percentage (1 to 100)':'Amount (in the university\u2019s own currency)'}</small><input inputMode="decimal" value={v} onChange={e=>setV(e.target.value)} placeholder={kind==='award_percentage'?'e.g. 20':'e.g. 10000'}/></label>
   </Shell>
 }
 // The evidence journey: how this scholarship's facts were found, read, saved, extracted and applied (CF-247, 11 Oct 2026)

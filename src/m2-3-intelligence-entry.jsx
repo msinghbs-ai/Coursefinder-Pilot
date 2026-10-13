@@ -187,7 +187,7 @@ export function Layer4({onError,rank=0}){
            </div><div className="l4d-actions"><button className="l4d-primary" onClick={()=>saveEdit(current)}>Save and approve</button><button onClick={()=>setEdit(null)}>Cancel</button></div></div>}
            {edit&&edit.kind!=='link'&&<div className="l4d-edit"><strong>Edit the fee, then approve</strong><div className="l4b-form">
              <label>Amount<input type="number" min="1" value={edit.amount} onChange={e=>setEdit({...edit,amount:e.target.value})}/></label>
-             <label>Currency<select value={edit.currency_code} onChange={e=>setEdit({...edit,currency_code:e.target.value})}><option>AUD</option><option>NZD</option></select></label>
+             <label>Currency<select value={edit.currency_code} onChange={e=>setEdit({...edit,currency_code:e.target.value})}><option>AUD</option><option>NZD</option><option>CAD</option></select></label>
              <label>Charged<select value={edit.basis} onChange={e=>setEdit({...edit,basis:e.target.value})}><option value="annual">Per year</option><option value="indicative_annual">Per year (indicative)</option></select></label>
              <label>Fee year<input type="number" min="2024" max="2030" value={edit.fee_year??''} onChange={e=>setEdit({...edit,fee_year:e.target.value})} placeholder="blank if not stated"/></label>
              <label className="l4d-edit-note">Note saved with your decision<input value={edit.note} onChange={e=>setEdit({...edit,note:e.target.value})}/></label>
