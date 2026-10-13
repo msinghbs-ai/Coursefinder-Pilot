@@ -50,19 +50,39 @@ test.describe('mocked browser', () => {
     await expect(page).toHaveURL(/stage=admit_scholarships/)
   })
 
-  test('Journeys: a row opens its journey with the actions for it; a held search can be released', async ({ page }) => {
+  test('Journeys (as the mock-up): sorted by courses, stage pills, fields, scholarship journey, held up by; a row opens its steps and actions', async ({ page }) => {
     page.on('dialog', d => d.accept('Adapter checked: vu.edu.au'))
     await mockAdmin(page)
     await page.goto('/#coverage?tab=progress&view=journeys')
     const j = page.locator('[data-progress-journeys]')
+    await expect(j.locator('[data-progress-count]')).toContainText('3 universities · sorted by courses')
     await expect(j.locator('[data-progress-row="prov-vu"]')).toContainText('Search held for a check')
+    await expect(j.locator('[data-progress-row="prov-vu"] [data-progress-next]')).toHaveText('Search again')
     await expect(j.locator('[data-progress-row="prov-alpha"]')).toContainText('Too few course pages')
-    await expect(j.locator('[data-progress-row="prov-monash"] [data-progress-sch]')).toContainText('61 / 74')
+    await expect(j.locator('[data-progress-row="prov-monash"] [data-progress-sch]')).toContainText('Found 74 · AI 12 waiting · published 61')
+    await expect(j.locator('[data-progress-row="prov-monash"]')).toContainText('86% intakes · 96% English · 100% fee · 52% delivery')
+    await expect(j.locator('[data-progress-row="prov-monash"] .pg-pills > span.is-done')).toHaveCount(6)
+    await j.getByLabel('Held up by').selectOption('search')
+    await expect(j.locator('[data-progress-row]')).toHaveCount(1)
+    await j.getByLabel('Held up by').selectOption('')
     await j.locator('[data-progress-row="prov-vu"]').getByRole('button', { name: 'Victoria University' }).click()
     const sel = j.locator('[data-progress-selected="ob-vu"]')
-    await expect(sel.locator('[data-progress-find-scholarships]')).toBeVisible()
+    await expect(sel.locator('[data-progress-steps]')).toContainText('Queued first')
+    await expect(sel).toContainText('Find scholarships now')
+    await expect(sel).toContainText('Read course pages again')
+    await expect(sel).toContainText('Qualify adapter')
     await sel.locator('[data-progress-search-again]').click()
     await expect.poll(() => page.l3calls.find(c => c.fcResume)).toEqual({ fcResume: 'prov-vu', reason: 'Adapter checked: vu.edu.au' })
+  })
+
+  test('Running now: schedules in words; a job with no university activity lists the universities at its stage', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#coverage?tab=progress&view=running')
+    const r = page.locator('[data-progress-running]')
+    await expect(r.locator('[data-progress-job="scholarship-discover"]')).toContainText('every 10 min')
+    await r.locator('[data-progress-job-toggle="coverage-read"]').click()
+    await expect(r.locator('[data-progress-unis-fallback]')).toContainText('now at this stage of the journey (2 Prepare)')
+    await expect(r.locator('[data-progress-unis="coverage-read"] [data-progress-uni="prov-alpha"]')).toContainText('at this stage now')
   })
 
   test('Levers: value, what it did today and a link to where it is changed; run on demand', async ({ page }) => {

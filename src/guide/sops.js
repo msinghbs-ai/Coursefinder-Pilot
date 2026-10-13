@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.266'
+export const SOP_REVIEWED_FOR = '2.15.267'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.9', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.10', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -104,10 +104,11 @@ export const SOPS = [
       { version: '1.6', date: '12 Oct 2026', release: '2.15.263', change: 'Firecrawl reads only course pages found by their CRICOS code, listed on the university\'s own site or entered by a person; a page found by a title search that needs a browser waits for its next candidate or a page entered by hand.' },
       { version: '1.7', date: '13 Oct 2026', release: '2.15.264', change: 'Models & services in three tabs; AI & OpenRouter holds the OpenRouter key, mode, floor, each AI use\'s model and daily guard, the central pages model, the scholarship AI models and the model profiles (the settings Layer 3 used to hold).' },
       { version: '1.8', date: '13 Oct 2026', release: '2.15.265', change: 'Firecrawl is never spent on directory sites; search order is top 50, Australian providers with 30+ courses, overseas, then small providers; scholarships are searched for Australian providers with 30+ courses (and overseas universities); the scholarship cap counts from when a university joined onboarding. New start-of-day check: Refused today, by university, and universities whose search is held for an adapter check. Websites are found on training.gov.au and TEQSA first.' },
-      { version: '1.9', date: '13 Oct 2026', release: '2.15.266', change: 'New first step: Coverage & completeness › Progress › Overview (Needs attention, the pilot and the top 50 hour by hour). The Pilot panel on Layer 2 › Onboarding, Live activity, the Dashboard health strip, Layers and Recent activity, and Task manager › Running now are retired; Progress replaces them.' }],
+      { version: '1.9', date: '13 Oct 2026', release: '2.15.266', change: 'New first step: Coverage & completeness › Progress › Overview (Needs attention, the pilot and the top 50 hour by hour). The Pilot panel on Layer 2 › Onboarding, Live activity, the Dashboard health strip, Layers and Recent activity, and Task manager › Running now are retired; Progress replaces them.' },
+      { version: '1.10', date: '13 Oct 2026', release: '2.15.267', change: 'Progress › Journeys: filter by what holds a university up (needs a person, course pages, scholarship credits, search stopped, AI reading) or tick Only held up; the Next step button opens the university\'s steps and its run-on-demand actions (Find scholarships now, read the scholarship pages with AI again, read course pages again, Qualify adapter, Retry, Search again).' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.9', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.10', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -160,7 +161,8 @@ export const SOPS = [
       { version: '1.6', date: '12 Oct 2026', release: '2.15.263', change: 'A course page found by a title search is read directly only; if it needs a browser, enter the right page by hand (Adapter builder 2.1) and Firecrawl may read it.' },
       { version: '1.7', date: '13 Oct 2026', release: '2.15.264', change: 'Models & services has three tabs: Services, AI & OpenRouter, Toolsets & limits (notices and Firecrawl credits are on Toolsets & limits).' },
       { version: '1.8', date: '13 Oct 2026', release: '2.15.265', change: 'A university refused for "directory site", "fewer than 30 courses" or "scholarship cap" is expected, not a fault; Toolsets & limits › Firecrawl credits by university lists today\'s refusals by university.' },
-      { version: '1.9', date: '13 Oct 2026', release: '2.15.266', change: 'Live activity is retired: the start-of-day check is Coverage & completeness › Progress › Running now (jobs by journey stage, worker errors with Mark as seen, and the universities each job works on).' }],
+      { version: '1.9', date: '13 Oct 2026', release: '2.15.266', change: 'Live activity is retired: the start-of-day check is Coverage & completeness › Progress › Running now (jobs by journey stage, worker errors with Mark as seen, and the universities each job works on).' },
+      { version: '1.10', date: '13 Oct 2026', release: '2.15.267', change: 'Running now shows schedules in words; a job that touched no particular university in the last hour lists the universities now at its stage.' }],
   },
 ]
 

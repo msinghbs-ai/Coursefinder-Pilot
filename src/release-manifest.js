@@ -1,7 +1,7 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.266'
-export const PACKAGE_VERSION='0.1.193'
+export const UI_VERSION='2.15.267'
+export const PACKAGE_VERSION='0.1.194'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,

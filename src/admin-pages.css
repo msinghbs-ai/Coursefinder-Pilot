@@ -657,3 +657,21 @@
 .pg-run-item{display:flex;flex-direction:column;gap:2px;padding:12px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-md);text-decoration:none;color:var(--cf-text)}
 .pg-run-item small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
 .pg-run-item:hover{border-color:var(--cf-indigo-600)}
+/* v2.15.267 Progress › Journeys as the mock-up */
+.pg-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:var(--cf-fs-sm)}
+.pg-filters label{display:inline-flex;gap:6px;align-items:center}
+.pg-filters select,.pg-filters input[type=search]{font:inherit;padding:5px 8px;border:1px solid var(--cf-border-input);border-radius:var(--cf-radius-sm);background:var(--cf-surface)}
+.pg-find{flex:1 1 220px}.pg-find input{flex:1}
+.pg-pills{display:inline-flex;gap:3px;align-items:center;white-space:nowrap}
+.pg-pills>span{width:18px;height:8px;border-radius:4px;background:var(--cf-slate-200)}
+.pg-pills>span.is-done{background:var(--cf-indigo-600)}
+.pg-pills>span.is-now{background:var(--cf-indigo-100);outline:1px solid var(--cf-indigo-500)}
+.pg-pills>span.is-held{background:var(--cf-amber-500)}
+.pg-pills small{margin-left:6px;color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
+.pg-selected{display:flex;flex-direction:row;flex-wrap:wrap;gap:24px}
+.pg-sel-main{flex:1 1 380px;display:flex;flex-direction:column;gap:8px}
+.pg-sel-title{margin:0;font-size:var(--cf-fs-lg)}
+.pg-sel-actions{flex:1 1 280px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.pg-sel-actions .cf-btn{justify-content:flex-start}
+.pg-steps{margin:4px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:var(--cf-fs-sm)}
+.pg-links{color:var(--cf-text-2)}
