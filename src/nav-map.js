@@ -9,7 +9,8 @@
 export const PAGES = {
   dashboard: { label: 'Dashboard', slug: 'dashboard', icon: 'dashboard', min: 1, title: 'Dashboard', subtitle: 'What needs attention today, and recent activity.' },
   // v2.15.141 (Decision 214): what is running at each layer right now, refreshed every 20 seconds.
-  activity: { label: 'Live activity', slug: 'live-activity', icon: 'activity', min: 1, subtitle: 'What is running at each layer now, what each job last did, what runs next, and what waits for a person.' },
+  // v2.15.266 (Platform Admin, 13 Oct 2026): the Live activity page is retired; Coverage & completeness › Progress › Running now replaces
+  // it (every job by journey stage, the universities each works on, pause, resume and run now). Old addresses redirect (LEGACY).
 
   courses: { label: 'Courses', slug: 'courses', icon: 'course', min: 1, subtitle: 'Every course, with its sources and evidence.' },
   providers: { label: 'Providers', slug: 'providers', icon: 'provider', subtitle: 'Providers, their campuses and their logos.', tabs: [
@@ -40,6 +41,8 @@ export const PAGES = {
   coverage: { label: 'Coverage & completeness', slug: 'coverage', icon: 'check', subtitle: 'How complete each course is, and each attribute across all courses.', tabs: [
     { key: 'courses', label: 'Courses', min: 1 },
     { key: 'attributes', label: 'Attributes', min: 1 },
+    // v2.15.266 (Platform Admin, 13 Oct 2026): how the platform is progressing, what is running and where to tweak it
+    { key: 'progress', label: 'Progress', min: 3 },
   ] },
   // v2.15.246 (Platform Admin bugs 11/10-3, Feature 2): Runs and Source settings are one Sources list (expandable rows, settings
   // edited in place, + Add source); Manual batch runs is retired (each source has Run now, recorded as one job).
@@ -117,7 +120,7 @@ export const PAGES = {
 }
 
 export const SECTIONS = [
-  { label: '', pages: ['dashboard', 'activity'] },
+  { label: '', pages: ['dashboard'] },
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources'] },
@@ -139,6 +142,9 @@ export const LEGACY = {
   'completeness': { page: 'coverage', tab: 'attributes' },
   'data-quality-readiness': { page: 'coverage', tab: 'attributes' },
   'course-coverage': { page: 'coverage', tab: 'courses' },
+  // v2.15.266: Live activity retired → Progress › Running now
+  'live-activity': { page: 'coverage', tab: 'progress', view: 'running' },
+  'activity': { page: 'coverage', tab: 'progress', view: 'running' },
   'compare': { page: 'rankings', tab: 'compare' },
   'outcomes-qilt': { page: 'rankings', tab: 'qilt' },
   'student-flow-prisms': { page: 'rankings', tab: 'prisms' },
@@ -216,6 +222,7 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (!hit) return { page: 'dashboard', tab: '', params: new URLSearchParams(), unknown: Boolean(raw) }
   const tab = p.get('tab') || hit.tab || ''
   p.delete('tab')
+  if (hit.view && !p.get('view')) p.set('view', hit.view)
   // Layer 1 tabs moved in v2.15.112: old links keep working.
   if (hit.page === 'layer1' && MOVED_L1[tab]) return { page: MOVED_L1[tab].page, tab: MOVED_L1[tab].tab, params: p }
   // v2.15.124: Readiness by area is part of Attributes; Layer 1 › Sources is Operations › Sources.

@@ -58,22 +58,16 @@ test('mocked browser: Layer 1 › Sources is a list; a failing source says why; 
   await expect(l).toContainText('Ontario Colleges register added')
 })
 
-test('mocked browser: Task manager shows the last 15 minutes, calls, AI, queues and an uncatalogued job', async ({ page }) => {
+test('mocked browser: Task manager links to Progress › Running now (v2.15.266; its own Running now board is retired)', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#scheduled-jobs?tab=tasks')
-  const b = page.locator('[data-running-now]')
-  await expect(b.locator('[data-recent-job="course-link-reverse"]')).toContainText('Match known course pages by CRICOS code')
-  await expect(b.locator('[data-running-summary]')).toContainText('database time used')
-  await expect(b.locator('[data-running-calls]')).toContainText('layer3-model-routing')
-  await expect(b.locator('[data-running-ai]')).toContainText('Layer 3 checks')
-  await expect(b.locator('[data-running-queues]')).toContainText('2,884')
-  await expect(b.locator('[data-uncatalogued]')).toContainText('mystery-job')
+  await expect(page.locator('[data-task-running-link] a')).toHaveAttribute('href', '#coverage?tab=progress&view=running')
+  await expect(page.locator('[data-running-now]')).toHaveCount(0)
 })
 
 test('source: the Task manager shows an error instead of loading for ever; Jobs folds a register run and opens it', () => {
   const t = read('src/AdminTasks.jsx')
   expect(t).toContain('The task manager could not be read: {err}')
-  expect(t).toContain('<RunningNow now={null} error={err}/>')
   const j = read('src/pipeline-ops-entry.jsx')
   expect(j).toContain('if(data.run)return <RunDetail run={data.run} job={data.job}/>')
   expect(j).toContain('href={`#evidence?evidence_id=${e.id}`}')

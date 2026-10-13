@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.8 (reviewed for platform release v2.15.265)  
+**Version:** 1.9 (reviewed for platform release v2.15.266)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -14,7 +14,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 ## 2. What you own
 
 - Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links
-- Pipeline Operator: Live activity, failed jobs and live errors, onboarding follow-up, scholarship links, starting jobs again
+- Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again
 - PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder
 
 ## 3. How the platform automates, and where a person decides
@@ -45,7 +45,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | # | Who | Do | Why | Done when |
 |---|---|---|---|---|
-| 1 | Pipeline Operator | Live activity: each layer should show Running or Working. Note anything Stuck or Failing and any Workers sending back errors; acknowledge errors you have dealt with. _(Live activity)_ | The fastest view of a stopped stage. | Nothing Stuck without a note. |
+| 1 | Pipeline Operator | Coverage & completeness › Progress › Running now: note any job Failing or Paused and any Workers sending back errors; open a job to see the universities it is working on; mark errors you have dealt with as seen. _(Coverage & completeness › Progress)_ | The fastest view of a stopped stage (Live activity was retired in v2.15.266). | Nothing Failing without a note. |
 | 2 | Curator | Dashboard › Waiting for you: review items, scholarships to link, onboarding stopped or needing a person, reference sites not reachable, key dates coming up. _(Dashboard)_ | Today's queue for people. | You know what to work first. |
 | 3 | Pipeline Operator | Scheduled jobs › Automations: "Failed in the last 24 hours". Read each last error; act from Platform guide › Signal → action (for example lower "per run" by a third when a run hit the time limit). _(Scheduled jobs › Automations)_ | A failing job stops its stage. | Each failure fixed, or raised with the Platform Admin. |
 
@@ -87,7 +87,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 ## 8. What to pay attention to
 
-- Live activity: Stuck, Failing or a worker repeating the same error.
+- Progress › Running now: a job Failing, or a worker repeating the same error.
 - Layer 4 waiting counts rising two days running: reviewers are behind.
 - A coverage count flat for a day.
 - Reference sites not reachable and key dates coming up.
@@ -110,3 +110,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.6 | 12 Oct 2026 | v2.15.263 | A course page found by a title search is read directly only; if it needs a browser, enter the right page by hand (Adapter builder 2.1) and Firecrawl may read it. |
 | 1.7 | 13 Oct 2026 | v2.15.264 | Models & services has three tabs: Services, AI & OpenRouter, Toolsets & limits (notices and Firecrawl credits are on Toolsets & limits). |
 | 1.8 | 13 Oct 2026 | v2.15.265 | A university refused for "directory site", "fewer than 30 courses" or "scholarship cap" is expected, not a fault; Toolsets & limits › Firecrawl credits by university lists today's refusals by university. |
+| 1.9 | 13 Oct 2026 | v2.15.266 | Live activity is retired: the start-of-day check is Coverage & completeness › Progress › Running now (jobs by journey stage, worker errors with Mark as seen, and the universities each job works on). |

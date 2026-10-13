@@ -37,18 +37,18 @@ test('buttons on provider, course and scholarship records and bulk on Coverage s
   expect(cov).toContain('Read listing page again')
 })
 
-test('Task manager shows running now with safe controls and registry-driven pause', () => {
+test('Task manager keeps tasks with registry-driven pause; scheduled jobs running now moved to Progress › Running now (v2.15.266)', () => {
   const t = fs.readFileSync('src/AdminTasks.jsx', 'utf8')
-  expect(t).toContain('function RunningNow(')
-  expect(t).toContain("{running:true}")
-  expect(t).toContain("supabase.rpc('admin_automation_control'")
+  expect(t).not.toContain('function RunningNow(')
+  expect(t).toContain('data-task-running-link')
+  expect(fs.readFileSync('src/Progress.jsx', 'utf8')).toContain("supabase.rpc('admin_automation_control'")
   expect(t).toContain('kinds[j.kind].can_pause')
   expect(t).toContain('SchResult')
 })
 
 test('guide describes the buttons and Running now', () => {
   const g = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
-  expect(g).toContain('Task manager › Running now')
+  expect(g).toContain('Progress › Running now')
   expect(g).toContain('Find scholarships now')
   expect(g).toContain('Check scholarships for this course')
 })

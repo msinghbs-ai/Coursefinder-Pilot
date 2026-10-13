@@ -53,7 +53,7 @@ test.describe('mocked browser', () => {
     await expect(w.locator('[data-website-row="prov-macewan"]')).toHaveCount(0)
   })
 
-  test('Live activity: worker errors say what to do', async ({ page }) => {
+  test('Progress › Running now (was Live activity): worker errors say what to do', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#live-activity')
     await expect(page.locator('[data-error-todo]').first()).toContainText('What to do:')

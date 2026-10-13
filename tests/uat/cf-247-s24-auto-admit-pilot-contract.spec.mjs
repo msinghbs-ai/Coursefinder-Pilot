@@ -33,19 +33,15 @@ test('11600: pilot 60 AU / 25 NZ / 15 CA with a baseline, hourly catalogued snap
 })
 
 test.describe('mocked browser', () => {
-  test('automatic Admit shows on the page, the Admit stage and in settings; the pilot panel compares before and now by country', async ({ page }) => {
+  test('automatic Admit shows on the page, the Admit stage and in settings; the pilot is linked to Progress', async ({ page }) => {
     await mockAdmin(page, { onboardingAuto: true })
     await page.goto('/#layer-2-discovery?tab=onboarding')
     const ob = page.locator('[data-provider-onboarding]')
     await expect(ob.locator('[data-onboarding-auto-admit]')).toContainText('Auto-admit everything that passes')
     await expect(ob.locator('[data-onboarding-stage="admit"]')).toContainText('Admit (automatic)')
-    const p = ob.locator('[data-onboarding-pilot]')
-    await expect(p).toContainText('Pilot: 100 universities (60 AU · 25 NZ · 15 CA)')
-    await expect(p.locator('[data-pilot-country="AU"] [data-pilot-fill="intakes"]')).toContainText('30% → 50%')
-    await expect(p.locator('[data-pilot-country="All"] [data-pilot-fill="fee"]')).toContainText('15% → 31%')
-    await p.locator('[data-pilot-refresh]').click()
-    await expect(p).toContainText('read now')
-    await p.locator('[data-pilot-filter]').click()
+    // v2.15.266: the Pilot panel is retired; the pilot is followed on Coverage & completeness › Progress
+    await expect(ob.locator('[data-onboarding-pilot]')).toHaveCount(0)
+    await expect(ob.locator('[data-onboarding-progress-link] a')).toHaveAttribute('href', '#coverage?tab=progress&group=pilot')
     await ob.locator('[data-onboarding-settings] summary').click()
     await expect(ob.locator('[data-onboarding-auto-admit-setting] input')).toBeChecked()
   })

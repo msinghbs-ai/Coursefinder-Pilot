@@ -85,6 +85,13 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_ai_config_read: F.aiConfig,
     admin_ai_config: b => { calls.push({ aiConfig: b.p_action, args: b.p_args }); return F.aiConfig },
     admin_firecrawl_credits: b => { calls.push({ fcCredits: b.p_hours }); return F.firecrawlCredits },
+    admin_progress_read: b => { calls.push({ progress: b.p_view, args: b.p_args }); const v = b.p_view, a = b.p_args || {}
+      if (v === 'overview') return a.group === 'top' ? F.progressTop : F.progressOverview
+      if (v === 'journeys') return { ...F.progressJourneys, rows: F.progressJourneys.rows.filter(r => (!a.stage || r.stage === a.stage) && (!a.group || a.group === 'all' || r.grp === a.group) && (!a.q || r.name.toLowerCase().includes(String(a.q).toLowerCase()))) }
+      if (v === 'running') return { at: F.liveActivity.now, can_manage: rank >= 6, jobs: F.liveActivity.jobs.map(j => ({ ...j, stage: j.area === 'Scholarships' ? '6 Scholarship adapter' : j.area === 'Course pages' ? '2 Prepare' : 'Reporting' })), in_flight: 2, worker_errors: F.liveActivity.worker_errors.filter(e => !calls.some(c => c.errorSeen && c.errorSeen.p_status === e.status && c.errorSeen.p_message === e.message)), credits_hour: { course_search: 120, reads: 30 }, refused_hour: 26 }
+      if (v === 'running_unis') return { ...F.progressRunningUnis, job: a.job }
+      if (v === 'levers') return F.progressLevers
+      return {} },
     admin_firecrawl_search_resume: b => { calls.push({ fcResume: b.p_provider_id, reason: b.p_reason }); return { ok: true } },
     admin_firecrawl_report: b => { calls.push({ fcReport: b.p_since }); return F.firecrawlReport },
     admin_firecrawl_write: b => { calls.push({ firecrawl: b.p_action, args: b.p_args }); return { ok: true, run_id: 'fc000000-0000-4000-8000-000000000003', items: 1102 } },
