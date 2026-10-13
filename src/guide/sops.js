@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.265'
+export const SOP_REVIEWED_FOR = '2.15.266'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,11 +44,12 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.8', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.9', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
       { when: 'Start of day (about 20 minutes)', steps: [
+        step({ do: 'Coverage & completeness › Progress › Overview: read Needs attention, then pick the pilot and the top 50 and compare the hourly rows with yesterday. Open Journeys for any stage that has not moved.', page: 'coverage', tab: 'progress', why: 'One place shows how far every university has got and what holds it up.', done: 'Each item in Needs attention is fixed or noted.' }),
         step({ do: 'Read the credit and limit bar under the page title, if one shows. Red means a toolset has stopped: fix it first.', page: 'services', why: 'Firecrawl, OpenRouter, the adapter AI allowance and the scholarship scraper cap stop work when used up.', done: 'No red bar.' }),
         step({ do: 'Models & services › Firecrawl credits by university: read Today (each purpose against its share and the billed total), then tick Flagged only. For Search stopped, check the website on the Adapter builder (1.1) and press Search again with a reason; for Mostly wrong pages or No pages, note the university for its adapter or website.', page: 'services', why: 'Firecrawl may bill 15,000 credits a day; credits spent without correct pages are waste.', done: 'No university is flagged without a note, and no share was used up before the afternoon.' }),
         step({ do: 'Same card, Refused today, by university: a university held by the scholarship cap, or with Search held (an adapter check, for example Victoria University and Adelaide University), needs its adapter or website checked; then press Search again with a reason. Directory site and fewer than 30 courses are the platform keeping credits off waste, not faults.', page: 'services', why: 'Refusals show where credits would have gone; a held top-50 university is lost coverage.', done: 'No top-50 university is held without a note.' }),
@@ -57,7 +58,7 @@ export const SOPS = [
         step({ do: 'Dashboard › Waiting for you: note universities ready to admit, onboarding stopped or needing a person, review items and scholarships to link.', page: 'dashboard', why: 'One list of everything waiting for a person.', done: 'You know today\'s queue.' }),
       ] },
       { when: 'Morning: decisions only you can make', steps: [
-        step({ do: 'Layer 2 › Onboarding: with Admit automatically on, open three or four universities marked "Admitted automatically", compare a few admitted values on Courses with their pages, and switch Admit off on Layer 2 › Adapters for any that are wrong (with a reason). With it off, admit the Ready to admit fields yourself. Check the Pilot panel against yesterday.', page: 'layer2', tab: 'onboarding', why: 'Automatic admits are the control point for everything after stage 4; your spot-check keeps them honest.', done: 'Spot-check noted; wrong admits undone with a reason.' }),
+        step({ do: 'Layer 2 › Onboarding: with Admit automatically on, open three or four universities marked "Admitted automatically", compare a few admitted values on Courses with their pages, and switch Admit off on Layer 2 › Adapters for any that are wrong (with a reason). With it off, admit the Ready to admit fields yourself. Check the pilot and the top 50 on Coverage & completeness › Progress against yesterday.', page: 'layer2', tab: 'onboarding', why: 'Automatic admits are the control point for everything after stage 4; your spot-check keeps them honest.', done: 'Spot-check noted; wrong admits undone with a reason.' }),
         step({ do: 'Layer 2 › Onboarding › Approvals waiting (or Adapter builder 1.3 for one university): for each fee schedule, English policy and calendar, open the document, compare three or four values, then approve or reject with a reason. Proposals marked ai:gpt-4.1-mini were read by the AI; check each quoted value against the page.', page: 'layer2', tab: 'onboarding', why: 'Approval writes values to every course of that university that has none.', done: 'Approvals waiting falls; rejected ones carry a reason.' }),
         step({ do: 'Layer 2 › Onboarding › Stopped: read each row\'s reason and What to do, fix it, tick the rows and choose Retry selected.', page: 'layer2', tab: 'onboarding', why: 'A stopped university gets no adapter until someone acts.', done: 'Only rows that truly need outside help remain stopped.' }),
         step({ do: 'Scholarships › Coverage: open three or four scholarships from the latest automatic publishing; compare the value and who it is for with the page; Hold anything wrong, with a reason.', page: 'scholarships', tab: 'coverage', why: 'Publishing is automatic every hour; your spot-check is the control on it.', done: 'Spot-check recorded; holds explained.' }),
@@ -102,15 +103,16 @@ export const SOPS = [
       { version: '1.5', date: '12 Oct 2026', release: '2.15.262', change: 'Firecrawl daily budget (15,000 a day, shared by purpose) and per-university caps; new start-of-day step to read Firecrawl credits by university and resume stopped searches; top 50 Australian providers by CRICOS courses onboarded first.' },
       { version: '1.6', date: '12 Oct 2026', release: '2.15.263', change: 'Firecrawl reads only course pages found by their CRICOS code, listed on the university\'s own site or entered by a person; a page found by a title search that needs a browser waits for its next candidate or a page entered by hand.' },
       { version: '1.7', date: '13 Oct 2026', release: '2.15.264', change: 'Models & services in three tabs; AI & OpenRouter holds the OpenRouter key, mode, floor, each AI use\'s model and daily guard, the central pages model, the scholarship AI models and the model profiles (the settings Layer 3 used to hold).' },
-      { version: '1.8', date: '13 Oct 2026', release: '2.15.265', change: 'Firecrawl is never spent on directory sites; search order is top 50, Australian providers with 30+ courses, overseas, then small providers; scholarships are searched for Australian providers with 30+ courses (and overseas universities); the scholarship cap counts from when a university joined onboarding. New start-of-day check: Refused today, by university, and universities whose search is held for an adapter check. Websites are found on training.gov.au and TEQSA first.' }],
+      { version: '1.8', date: '13 Oct 2026', release: '2.15.265', change: 'Firecrawl is never spent on directory sites; search order is top 50, Australian providers with 30+ courses, overseas, then small providers; scholarships are searched for Australian providers with 30+ courses (and overseas universities); the scholarship cap counts from when a university joined onboarding. New start-of-day check: Refused today, by university, and universities whose search is held for an adapter check. Websites are found on training.gov.au and TEQSA first.' },
+      { version: '1.9', date: '13 Oct 2026', release: '2.15.266', change: 'New first step: Coverage & completeness › Progress › Overview (Needs attention, the pilot and the top 50 hour by hour). The Pilot panel on Layer 2 › Onboarding, Live activity, the Dashboard health strip, Layers and Recent activity, and Task manager › Running now are retired; Progress replaces them.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.8', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.9', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
-    owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Live activity, failed jobs and live errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
+    owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
       { when: 'Start of day (about 15 minutes)', steps: [
-        step({ role: 'Pipeline Operator', do: 'Live activity: each layer should show Running or Working. Note anything Stuck or Failing and any Workers sending back errors; acknowledge errors you have dealt with.', page: 'activity', why: 'The fastest view of a stopped stage.', done: 'Nothing Stuck without a note.' }),
+        step({ role: 'Pipeline Operator', do: 'Coverage & completeness › Progress › Running now: note any job Failing or Paused and any Workers sending back errors; open a job to see the universities it is working on; mark errors you have dealt with as seen.', page: 'coverage', tab: 'progress', why: 'The fastest view of a stopped stage (Live activity was retired in v2.15.266).', done: 'Nothing Failing without a note.' }),
         step({ role: 'Curator', do: 'Dashboard › Waiting for you: review items, scholarships to link, onboarding stopped or needing a person, reference sites not reachable, key dates coming up.', page: 'dashboard', why: 'Today\'s queue for people.', done: 'You know what to work first.' }),
         step({ role: 'Pipeline Operator', do: 'Scheduled jobs › Automations: "Failed in the last 24 hours". Read each last error; act from Platform guide › Signal → action (for example lower "per run" by a third when a run hit the time limit).', page: 'jobs', tab: 'automations', why: 'A failing job stops its stage.', done: 'Each failure fixed, or raised with the Platform Admin.' }),
       ] },
@@ -142,7 +144,7 @@ export const SOPS = [
       { trigger: 'Onboarding stopped: no website, too few course pages', action: 'Enter the website, or add course pages in the Adapter builder (2.1); onboarding carries on or the Platform Admin retries.', where: 'Layer 2 › Onboarding; Layer 2 › Adapter builder' },
     ],
     watch: [
-      'Live activity: Stuck, Failing or a worker repeating the same error.',
+      'Progress › Running now: a job Failing, or a worker repeating the same error.',
       'Layer 4 waiting counts rising two days running: reviewers are behind.',
       'A coverage count flat for a day.',
       'Reference sites not reachable and key dates coming up.',
@@ -157,7 +159,8 @@ export const SOPS = [
       { version: '1.5', date: '12 Oct 2026', release: '2.15.262', change: 'Firecrawl work now keeps to a daily budget; a purpose that used its share waits until midnight (not a fault).' },
       { version: '1.6', date: '12 Oct 2026', release: '2.15.263', change: 'A course page found by a title search is read directly only; if it needs a browser, enter the right page by hand (Adapter builder 2.1) and Firecrawl may read it.' },
       { version: '1.7', date: '13 Oct 2026', release: '2.15.264', change: 'Models & services has three tabs: Services, AI & OpenRouter, Toolsets & limits (notices and Firecrawl credits are on Toolsets & limits).' },
-      { version: '1.8', date: '13 Oct 2026', release: '2.15.265', change: 'A university refused for "directory site", "fewer than 30 courses" or "scholarship cap" is expected, not a fault; Toolsets & limits › Firecrawl credits by university lists today\'s refusals by university.' }],
+      { version: '1.8', date: '13 Oct 2026', release: '2.15.265', change: 'A university refused for "directory site", "fewer than 30 courses" or "scholarship cap" is expected, not a fault; Toolsets & limits › Firecrawl credits by university lists today\'s refusals by university.' },
+      { version: '1.9', date: '13 Oct 2026', release: '2.15.266', change: 'Live activity is retired: the start-of-day check is Coverage & completeness › Progress › Running now (jobs by journey stage, worker errors with Mark as seen, and the universities each job works on).' }],
   },
 ]
 

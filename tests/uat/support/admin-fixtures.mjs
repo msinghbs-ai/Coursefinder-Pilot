@@ -823,3 +823,36 @@ export const aiConfig = { can_manage: true, generated_at: '2026-10-13T00:10:00Z'
   central_choices: [{ code: 'gpt-4.1', label: 'GPT-4.1', model: 'openai/gpt-4.1', status: 'candidate' }, { code: 'gpt-4.1-mini', label: 'GPT-4.1 mini', model: 'openai/gpt-4.1-mini', status: 'candidate' }],
   profiles: [{ id: 'p-qwen', code: 'openrouter-intake-l3c-qwen3-30b-a3b-2507-v1', model: 'qwen/qwen3-30b-a3b-instruct-2507', enabled: true, paused: false, prompt_version: 'v1.2.0', prompt_chars: 181, prompt_hash: '0ef16b1996e1', tasks: ['provider_intake_validation'], requests_per_day: 40000, used_now: true }],
   events: [{ at: '2026-10-12T07:00:00Z', area: 'toolsets', action: 'enforcement', target: 'openrouter', reason: 'v2.15.258' }] }
+
+// v2.15.266 Coverage & completeness › Progress (admin_progress_read)
+export const progressOverview = { group: 'all', at: '2026-10-13T01:10:00Z', facts_at: '2026-10-13T01:09:00Z', universities: 1201, can_manage: true,
+  groups: { all: 1201, pilot: 100, top: 50 },
+  stages: { provider_in: 0, prepare: 640, create_adapter: 12, admit: 330, enrich: 3, scholarship_adapter: 2, admit_scholarships: 160, done: 54 },
+  needs_person: 43, stopped: 520, stop_reasons: { nothing_ready: 41, approve_central: 2, too_few_pages: 480, no_website: 40 }, auto_admitted: 30,
+  fields: { courses: 30000, intakes: 15000, english: 18000, fee: 27000, delivery: 12000 },
+  scholarships: { found: 1900, published: 1400, waiting_ai: 41 },
+  pages_hour: { correct: 23, wrong: 11, failed: 18, via_firecrawl: 1 },
+  budget: { on: true, total: 15000, billed_today: 7668, groups: [
+    { group: 'course_search', label: 'Finding course pages', share: 6000, used: 3558, refused: 0 }, { group: 'reads', label: 'Reading pages', share: 3000, used: 1049, refused: 0 },
+    { group: 'scholarships', label: 'Scholarships', share: 3500, used: 3500, refused: 17615 }, { group: 'central', label: 'Central pages', share: 1500, used: 23, refused: 2133 },
+    { group: 'other', label: 'Other', share: 1000, used: 1000, refused: 0 }] },
+  ai_today: [{ use: 'scholarship_ai', label: 'Scholarship pages', spent: 1.2, guard: 20 }], openrouter_usd: 27.1,
+  notices: [{ key: 'firecrawl:2:daily:scholarships:2026-10-13', toolset: 'firecrawl', severity: 'high', title: 'Firecrawl daily budget, Scholarships: 3500 of 3500 credits used', detail: 'Used up: this work waits until midnight, Melbourne time.', hint: 'Budget settings are on Toolsets › Firecrawl.' }],
+  trend: [{ at: '2026-10-13T00:09:00Z', done: 54, found: 1890, published: 1395, pages_correct: 30, billed_today: 6500 }, { at: '2026-10-13T01:09:00Z', done: 54, found: 1900, published: 1400, pages_correct: 23, billed_today: 7668 }] }
+export const progressTop = { ...progressOverview, group: 'top', universities: 50, needs_person: 2, stopped: 0, stop_reasons: { approve_central: 2 },
+  stages: { provider_in: 0, prepare: 0, create_adapter: 0, admit: 2, enrich: 0, scholarship_adapter: 0, admit_scholarships: 41, done: 7 },
+  fields: { courses: 12874, intakes: 7061, english: 7988, fee: 12788, delivery: 6061, courses_before: 12874, intakes_before: 7051, english_before: 7988, fee_before: 12788, delivery_before: 6024 },
+  scholarships: { found: 1126, published: 883, found_before: 1101, published_before: 859, waiting_ai: 12 } }
+export const progressJourneys = { group: 'all', can_manage: true, can_run: true, rows: [
+  { onboarding_id: 'ob-monash', provider_id: 'prov-monash', name: 'Monash University', country: 'AU', tier: 0, grp: 'top', status: 'scholarships', stop_reason: null, stage: 'admit_scholarships',
+    facts: { courses: 582, intakes: 500, english: 560, fee: 582, delivery: 300, scholarships: 74, scholarships_published: 61 }, waiting_ai: 12, held_by: null },
+  { onboarding_id: 'ob-vu', provider_id: 'prov-vu', name: 'Victoria University', country: 'AU', tier: 0, grp: 'top', status: 'scholarships', stop_reason: null, stage: 'admit_scholarships',
+    facts: { courses: 280, intakes: 100, english: 200, fee: 280, delivery: 100, scholarships: 20, scholarships_published: 12 }, waiting_ai: 0, held_by: 'search_held' },
+  { onboarding_id: 'ob-alpha', provider_id: 'prov-alpha', name: 'Alpha Institute', country: 'AU', tier: 3, grp: 'pilot', status: 'stopped', stop_reason: 'too_few_pages', stage: 'prepare',
+    facts: { courses: 12, intakes: 0, english: 2, fee: 12, delivery: 0, scholarships: 0, scholarships_published: 0 }, waiting_ai: 0, held_by: 'too_few_pages' }] }
+export const progressRunningUnis = { job: 'scholarship-discover', unis: [
+  { provider_id: 'prov-monash', name: 'Monash University', country: 'AU', onboarding_id: 'ob-monash', stage: 'admit_scholarships', what: '12 credits', n: 12 },
+  { provider_id: 'prov-sydney', name: 'The University of Sydney', country: 'AU', onboarding_id: null, stage: null, what: '40 refused (share)', n: 40 }] }
+export const progressLevers = { can_manage: true, sections: [
+  { title: 'Onboarding pace', rows: [{ name: 'Universities worked at once', now: '100', page: 'layer2', tab: 'onboarding', where: 'Layer 2 › Onboarding › Settings', effect: '59 in progress; 0 queued' }] },
+  { title: 'Firecrawl budget', rows: [{ key: 'daily_share_scholarships', name: 'Share: scholarships', now: '3500 credits', page: 'services', tab: 'limits', where: 'Toolsets & limits › Firecrawl › Daily budget', effect: '3500 used today, 17615 refused', hot: true }] }] }

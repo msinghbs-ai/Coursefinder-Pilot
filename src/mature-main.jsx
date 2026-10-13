@@ -56,7 +56,7 @@ const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
 const LinkRefresh=lazyPage(()=>import('./LinkRefresh'))
 const ScholarshipLayer=lazyPage(()=>import('./ScholarshipLayer'))
-const LiveActivity=lazyPage(()=>import('./LiveActivity'))
+const Progress=lazyPage(()=>import('./Progress'))
 const AdminTasks=lazyPage(()=>import('./AdminTasks'))
 const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
 const Sop=lazyPage(()=>import('./Sops'))
@@ -210,7 +210,6 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
     switch(pageKey){
       case'dashboard':return <DashboardHome onError={onError}/>
       case'guide':return tab==='admin-sop'||tab==='operator-sop'?<Sop key={tab} id={tab} rank={rank} navigate={navigate}/>:<PlatformGuide rank={rank} navigate={navigate}/>
-      case'activity':return <LiveActivity navigate={navigate} rank={rank}/>
       case'courses':return <Catalogue key="course" type="course" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'providers':
         if(tab==='campuses')return <Catalogue key="campus" type="campus" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
@@ -227,7 +226,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='prisms')return <Prisms onError={onError}/>
         if(tab==='datasets')return <StatisticsDatasets rank={rank}/>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
+      case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       case'layer1':
         if(tab==='scholarships')return <ScholarshipLayer layer={1} rank={rank} onError={err}/>
         return <Layer1Sources/>

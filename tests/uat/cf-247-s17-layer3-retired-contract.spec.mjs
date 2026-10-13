@@ -71,8 +71,9 @@ test.describe('mocked browser', () => {
     await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByRole('tab', { name: 'Send back to AI' })).toHaveCount(0)
     await page.goto('/#dashboard')
-    await expect(page.locator('.db-layers button').first()).toBeVisible()
-    await expect(page.locator('.db-layers')).not.toContainText('Layer 3')
+    // v2.15.266: the Layers tiles are retired; the Dashboard keeps Waiting for you and four tiles, none for Layer 3
+    await expect(page.locator('[data-waiting]')).toBeVisible()
+    await expect(page.locator('.db-home')).not.toContainText('Layer 3')
   })
 })
 

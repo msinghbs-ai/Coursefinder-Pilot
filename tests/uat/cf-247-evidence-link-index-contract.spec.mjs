@@ -27,16 +27,15 @@ test('plain-English reading of worker errors', () => {
   expect(errorReading({ status: 429, message: '' })).toContain('slow down')
 })
 
-test('browser: Live activity lists worker error replies', async ({ page }) => {
+test('browser: Progress › Running now lists worker error replies (Live activity retired in v2.15.266)', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#live-activity')
-  const la = page.locator('[data-live-activity]')
+  const la = page.locator('[data-progress-running]')
   const errs = la.locator('[data-worker-errors]')
   await expect(errs).toContainText('Workers sending back errors')
   await expect(errs.locator('[data-worker-error="401"]')).toContainText('Error 401')
   await expect(errs.locator('[data-worker-error="401"]')).toContainText('old automation key')
   await expect(errs.locator('[data-worker-error="401"]')).toContainText('36')
-  await expect(la).toContainText('37 worker error replies')
 })
 
 test('platform guide covers worker errors and evidence link indexing', () => {

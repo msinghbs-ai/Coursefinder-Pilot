@@ -70,46 +70,7 @@ function SchResult({r,kind}){
 // scraper spend, and the work waiting in each queue with the job that drains it. A scheduled job missing from the catalogue is
 // flagged (standing rule G1). The board always shows, even when the read fails, so an empty page never hides a problem.
 const QUEUE_TONE=n=>n>1000?'warning':n>0?'info':'neutral'
-function RunningNow({now,busy,control,error}){
-  if(!now)return <section className="m-panel" data-running-now><SectionTitle icon={RefreshCw} title="Running now and the last 15 minutes" subtitle="Everything using the database, the workers, AI models or the scraper."/><p className="sl-sub" role={error?'alert':undefined}>{error?`Could not read what is running: ${error}`:'Reading what is running…'}</p></section>
-  const sched=now.scheduled||[],calls=now.worker_calls||[],recent=now.recent_jobs||[],rcalls=now.recent_calls||[],queues=now.queues||[],unc=now.uncatalogued||[]
-  const cred=Object.entries(now.credits_15m||{}),credHour=Object.entries(now.credits_last_hour||{}),ai=Object.entries(now.ai_15m||{})
-  const used=recent.reduce((a,j)=>a+Number(j.runs||0)*Number(j.avg_seconds||0),0),failed=recent.reduce((a,j)=>a+Number(j.failed||0),0)
-  const ctl=(j,label)=><>{j.active?<Button compact disabled={busy} onClick={()=>control(j.job,'pause',`Pause the schedule of "${label}"? The run in progress finishes; no new runs start until you resume it.`)}><Pause size={13}/> Pause</Button>
-    :<Button compact disabled={busy} onClick={()=>control(j.job,'resume',`Resume the schedule of "${label}"?`)}><Play size={13}/> Resume</Button>}
-    <Button compact disabled={busy} onClick={()=>control(j.job,'run_now',`Run "${label}" once more now, in addition to its schedule?`)}>Run now</Button></>
-  return <section className="m-panel" data-running-now>
-    <SectionTitle icon={RefreshCw} title={`Running now and the last ${now.window_minutes||15} minutes`} subtitle="Everything using the database, the workers, AI models or the scraper. Scheduled jobs can be paused (the run in progress finishes), resumed or run once now; worker calls finish on their own. Refreshes every 30 seconds."/>
-    <div className="tm-now-strip" data-running-summary>
-      <span><b>{fmtNumber(sched.length)}</b><small>running this moment</small></span>
-      <span><b>{fmtNumber(recent.length)}</b><small>scheduled jobs ran</small></span>
-      <span><b>{fmtNumber(Math.round(used))} s</b><small>database time used</small></span>
-      <span className={failed?'is-bad':''}><b>{fmtNumber(failed)}</b><small>runs failed</small></span>
-      <span><b>{fmtNumber(rcalls.reduce((a,c)=>a+Number(c.calls||0),0))}</b><small>worker and API calls</small></span>
-      <span><b>{fmtNumber(cred.reduce((a,[,v])=>a+Number(v||0),0))}</b><small>scraper credits</small></span>
-    </div>
-    {unc.length>0&&<div className="m-alert compact" role="alert" data-uncatalogued><AlertTriangle size={15}/><span>{fmtNumber(unc.length)} scheduled job(s) are not in the Automations catalogue, so they have no label or owner: {unc.join(', ')}.</span></div>}
-    <h4 className="tm-h">Running this moment</h4>
-    <div className="cf-table-wrap"><table className="cf-table tm-table"><thead><tr><th>Scheduled job</th><th>Area</th><th>Running for</th><th>Schedule</th><th>Actions</th></tr></thead><tbody>
-      {sched.length===0&&<EmptyRow colSpan={5} text="No scheduled job is running this moment."/>}
-      {sched.map((j,i)=><tr key={`${j.job}-${i}`} data-running-job={j.job}><td><strong>{j.label}</strong><br/><small className="sl-sub">{j.job}</small></td><td>{j.area}</td><td>{ago(j.seconds)}</td>
-        <td>{j.active?<Badge tone="success">On</Badge>:<Badge tone="warning">Paused</Badge>}</td><td className="tm-actions">{ctl(j,j.label)}</td></tr>)}
-    </tbody></table></div>
-    <h4 className="tm-h">Scheduled jobs in the last {now.window_minutes||15} minutes</h4>
-    <div className="cf-table-wrap"><table className="cf-table tm-table" data-recent-jobs><thead><tr><th>Job</th><th>Area</th><th className="num">Runs</th><th className="num">Failed</th><th className="num">Average</th><th className="num">Longest</th><th>Last run</th><th>Schedule</th><th>Actions</th></tr></thead><tbody>
-      {recent.length===0&&<EmptyRow colSpan={9} text="No scheduled job ran in this window."/>}
-      {recent.map(j=><tr key={j.job} data-recent-job={j.job}><td><strong>{j.label}</strong><br/><small className="sl-sub">{j.job}{j.catalogued===false?' · not catalogued':''}</small></td><td>{j.area}</td><td className="num">{fmtNumber(j.runs)}</td><td className="num">{Number(j.failed)>0?<span className="tm-err">{fmtNumber(j.failed)}</span>:'0'}</td><td className="num">{j.avg_seconds} s</td><td className="num">{j.max_seconds} s</td><td>{fmtDateTime(j.last_at)}</td>
-        <td>{j.active?<Badge tone="success">On</Badge>:<Badge tone="warning">Paused</Badge>}<br/><small className="sl-sub">{j.schedule}</small></td><td className="tm-actions">{ctl(j,j.label)}</td></tr>)}
-    </tbody></table></div>
-    <div className="tm-now-grid">
-      <div data-running-calls><small className="sl-sub">Worker and API calls (last {now.window_minutes||15} min)</small>{rcalls.length?<ul className="tm-now-list">{rcalls.map((c,i)=><li key={i}><span>{MODE[c.mode]||c.mode||c.function}</span><b>{fmtNumber(c.calls)}</b><small>{c.function}{Number(c.failed)>0?` · ${fmtNumber(c.failed)} failed`:''}{Number(c.on_their_way)>0?` · ${fmtNumber(c.on_their_way)} on their way`:''}</small></li>)}</ul>:<p className="sl-sub">None</p>}
-        {calls.length>0&&<><small className="sl-sub">Still on their way</small><ul className="tm-now-list">{calls.map((c,i)=><li key={i}><span>{MODE[c.mode]||c.mode||c.function}</span><b>{fmtNumber(c.calls)}</b><small>oldest {ago(c.seconds)}</small></li>)}</ul></>}</div>
-      <div data-running-ai><small className="sl-sub">AI model calls (last {now.window_minutes||15} min)</small>{ai.length?<ul className="tm-now-list">{ai.map(([k,v])=><li key={k}><span>{k}</span><b>{fmtNumber(v.calls)}</b><small>US${Number(v.usd||0).toFixed(4)}</small></li>)}</ul>:<p className="sl-sub">None</p>}</div>
-      <div data-running-credits><small className="sl-sub">Scraper credits (last {now.window_minutes||15} min · last hour)</small>{credHour.length?<ul className="tm-now-list">{credHour.map(([k,v])=><li key={k}><span>{PURPOSE[k]||k}</span><b>{fmtNumber((now.credits_15m||{})[k]||0)}</b><small>{fmtNumber(v)} in the last hour</small></li>)}</ul>:<p className="sl-sub">None</p>}</div>
-      <div data-running-queues><small className="sl-sub">Work waiting</small><ul className="tm-now-list">{queues.map(q=><li key={q.job}><span>{q.label}</span><b><Badge tone={QUEUE_TONE(Number(q.waiting))}>{fmtNumber(q.waiting)}</Badge></b><small>worked by {q.job}</small></li>)}</ul></div>
-    </div>
-  </section>
-}
+// v2.15.266: RunningNow (scheduled jobs running, worker calls, AI calls, credits, work waiting) moved to Coverage & completeness › Progress › Running now.
 
 export default function AdminTasks({rank=0,onError}){
   const[d,setD]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[open,setOpen]=useState(()=>{try{return new URLSearchParams(window.location.hash.split('?')[1]||'').get('job')||''}catch{return ''}})
@@ -119,10 +80,9 @@ export default function AdminTasks({rank=0,onError}){
   const live=Boolean((d?.jobs||[]).some(j=>['queued','running'].includes(j.state)))
   useEffect(()=>{clearInterval(timer.current);timer.current=setInterval(()=>{if(document.visibilityState==='visible')load(open)},live?5000:30000);return()=>clearInterval(timer.current)},[live,open])
   const act=async(action,args,q)=>{const reason=ask(q);if(!reason)return;setBusy(true);try{const{data,error}=await supabase.rpc('admin_jobs',{p_action:action,p_args:{...args,reason}});if(error)throw error;if(action==='start'&&data?.id)setOpen(data.id);await load(action==='start'&&data?.id?data.id:open)}catch(e){setErr(errText(e))}finally{setBusy(false)}}
-  if(!d)return <div className="m-page-stack" data-task-manager>{err?<div className="m-alert compact" role="alert"><AlertTriangle size={15}/><span>The task manager could not be read: {err}</span><button type="button" onClick={()=>load(open)}>Try again</button></div>:<div className="m-panel"><Loading label="Loading the task manager…"/></div>}<RunningNow now={null} error={err}/></div>
+  if(!d)return <div className="m-page-stack" data-task-manager>{err?<div className="m-alert compact" role="alert"><AlertTriangle size={15}/><span>The task manager could not be read: {err}</span><button type="button" onClick={()=>load(open)}>Try again</button></div>:<div className="m-panel"><Loading label="Loading the task manager…"/></div>}</div>
   const job=d.job,canAdmit=Boolean(d.can_admit),kinds=d.kinds||{}
   const label=k=>kinds[k]?.label||KIND_LABEL[k]||k
-  const control=async(jobname,action,q)=>{if(!window.confirm(q))return;setBusy(true);try{const{error}=await supabase.rpc('admin_automation_control',{p_job:jobname,p_action:action,p_args:{}});if(error)throw error;await load(open)}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   const startAdmit=j=>act('start',{kind:'admit_qualified',args:{qualification_job_id:j.id}},`Admit the passing fields of every adapter measured by "${j.title}"? Fields already admitted stay. Values entered by hand are never changed.`)
   return <div className="m-page-stack" data-task-manager>
     {err&&<div className="m-alert compact" role="alert"><AlertTriangle size={15}/><span>{err}</span><button type="button" aria-label="Dismiss" onClick={()=>setErr('')}>×</button></div>}
@@ -145,7 +105,9 @@ export default function AdminTasks({rank=0,onError}){
         </tr>)}
       </tbody></table></div>
     </section>
-    <RunningNow now={d.running_now} busy={busy} control={control} error={err}/>
+    {/* v2.15.266 (Platform Admin, 13 Oct 2026): Running now moved to Coverage & completeness › Progress › Running now (every job by journey stage,
+        the universities it works on, pause, resume and run now). Task manager keeps the tasks people start and their history. */}
+    <p className="sd-desc" data-task-running-link>Scheduled jobs running now, worker calls and credits in the last hour: <a className="cf-link" href="#coverage?tab=progress&view=running">Coverage &amp; completeness › Progress › Running now</a>.</p>
     {job&&<section className="m-panel" data-task-detail={job.id}>
       <SectionTitle icon={ListChecks} title={job.title} subtitle={`${label(job.kind)} · ${job.state} · started by ${job.requested_by_name||''} · reason: ${job.reason}`} action={<Button compact onClick={()=>setOpen('')}>Close</Button>}/>
       <TaskResult job={job} onAdmit={job.kind==='qualify_adapters'&&job.state==='done'&&canAdmit?()=>startAdmit(job):null}/>
