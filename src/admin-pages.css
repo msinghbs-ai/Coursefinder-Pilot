@@ -695,3 +695,13 @@
 .sa-flag{display:grid;gap:6px;margin:8px 0;padding:10px 12px;border:1px solid var(--cf-slate-150);border-radius:var(--cf-radius-sm);background:var(--cf-white)}
 .sa-flag-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sa-flag-row>span:first-child{font-weight:700;font-size:var(--cf-fs-xs);color:var(--cf-slate-700)}
 .sa-flag-form{display:grid;gap:6px;max-width:460px}.sa-flag-form label{display:grid;gap:2px}
+/* v2.15.273: Enrich fields */
+.ef-form{display:grid;gap:10px}.ef-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}.ef-k{min-width:96px;font-weight:700;font-size:var(--cf-fs-xs);color:var(--cf-slate-700)}
+.ef-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.ef-actions .fv-input{min-width:260px}
+.ef-unis{display:grid;gap:6px;min-width:280px}.ef-search{display:flex;align-items:center;gap:6px;border:1px solid var(--cf-slate-175);border-radius:var(--cf-radius-sm);padding:4px 8px;background:var(--cf-white)}
+.ef-search input{border:0;outline:0;font:inherit;min-width:220px;background:transparent}.ef-hits{display:flex;flex-wrap:wrap;gap:4px}.ef-hits button{border:1px solid var(--cf-slate-175);background:var(--cf-white);border-radius:var(--cf-radius-pill);padding:3px 8px;font-size:var(--cf-fs-2xs);cursor:pointer}
+.ef-chips{display:flex;flex-wrap:wrap;gap:4px}.ef-jobs{display:grid;gap:8px}.ef-job{border:1px solid var(--cf-slate-150);border-radius:var(--cf-radius-sm);padding:8px 10px;display:grid;gap:6px}
+.ef-job-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:0;background:transparent;padding:0;text-align:left;cursor:pointer;font:inherit}.ef-job-head small{color:var(--cf-slate-500)}
+.ef-byfield{display:flex;flex-wrap:wrap;gap:6px 12px}.ef-field{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}.ef-field b{font-size:var(--cf-fs-2xs);color:var(--cf-slate-600)}
+.ef-items{display:grid;gap:6px}.ef-quote{max-width:420px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-600)}.ef-src{display:block;font-size:var(--cf-fs-2xs)}
+.ef-edit{display:grid;gap:6px;margin-top:8px;padding:10px;border:1px dashed var(--cf-slate-175);border-radius:var(--cf-radius-sm)}

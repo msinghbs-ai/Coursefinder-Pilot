@@ -65,6 +65,8 @@ export const PAGES = {
     // v2.15.258 (Platform Admin bug 12/10-01): the onboarding journey, from Providers › Onboarding: provider in, prepare, create adapter,
     // admit, enrich courses, scholarship adapter, admit scholarships
     { key: 'onboarding', label: 'Onboarding', min: 3 },
+    // v2.15.273 (Platform Admin, 14 Oct 2026 10:41): a task that fills chosen missing fields for countries or universities
+    { key: 'enrich', label: 'Enrich fields', min: 3 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
   ] },
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. University adapters (Layer 2) admit intakes,
