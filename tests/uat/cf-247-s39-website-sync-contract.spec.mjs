@@ -29,6 +29,8 @@ test('sync: full load by pages, then only changes with removals, by an opaque cu
   expect(mig).toContain("select cron.schedule('website-sync-check', '* * * * *', 'select security.website_sync_check_v1(security.pipeline_num_v1(''batch.website_sync_check'', 600)::int)');")
   expect(mig).toContain("values ('website-sync-check', 'Search and API', 40,")
   expect(mig).toContain("grant execute on function public.website_v2_sync(text, boolean, text[], integer) to service_role;")
+  // fix: checked_through stays null until every chosen entity has finished a pass
+  expect(fs.readFileSync('supabase/migrations/20261014111500_cf247_website_sync_checked_through.sql', 'utf8')).toContain("'checked_through', (select case when bool_or(s.last_cycle_at is null) then null else min(s.last_cycle_at) end")
 })
 
 test('edge: sync is added at the end of the actions; logo link validity is read from the setting', () => {
