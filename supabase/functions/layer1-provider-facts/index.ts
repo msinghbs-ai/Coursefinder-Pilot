@@ -10,8 +10,11 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 // v1.1.0 (same day): format "nzqa_type_listing" reads the NZQA provider search once per organisation type named in the source
 // metadata (types, listing_url with {type}) and records each provider's type as fact nzqa_org_type.
 // v1.2.0: the search links providers by an internal number, not the NZQA organisation number, so each row also sends the
-// provider name as listed; the facts writer matches on it when the number matches nothing (one provider of that name only).
-const VERSION = "layer1-provider-facts-v1.2.0";
+// provider name as listed; the facts writer matches on it when the number matches nothing.
+// v1.3.0: the search number is the NZQA organisation number followed by a five-digit site number (415 of 415 checked
+// against the stored register, 14 Oct 2026). The source metadata code_from_id (a pattern whose first group is the code)
+// turns it into the organisation number, so rows match exactly; the name stays a fallback only.
+const VERSION = "layer1-provider-facts-v1.3.0";
 const FN = "layer1-provider-facts";
 const FETCH_MS = 90000; // fixed: API time-out
 
@@ -115,12 +118,13 @@ async function pickResource(meta: any, domains: string[]) {
 // NZQA provider search results: one page per organisation type; each provider row has the name in its first cell and links to
 // details.do?providerId=<search number>.
 const decodeHtml = (v: string) => v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
-export function nzqaListing(pages: { type: string; html: string }[], fact: string) {
+export function nzqaListing(pages: { type: string; html: string }[], fact: string, codeFromId: RegExp | null = null) {
   const byCode = new Map<string, { name: string; facts: Record<string, string> }>();
   for (const p of pages) for (const m of p.html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
     const id = m[1].match(/href=["']\/providers\/details\.do\?providerId=([0-9]+)["']/i)?.[1];
     const name = decodeHtml(m[1].match(/<td[^>]*>([\s\S]*?)<\/td>/i)?.[1] || "");
-    if (id && !byCode.has(id)) byCode.set(id, { name, facts: { [fact]: p.type } });
+    const code = id && codeFromId ? (id.match(codeFromId)?.[1] || id) : id;
+    if (code && !byCode.has(code)) byCode.set(code, { name, facts: { [fact]: p.type } });
   }
   return [...byCode.entries()].map(([code, v]) => ({ codes: [code], names: v.name ? [v.name] : [], facts: v.facts }));
 }
@@ -137,7 +141,8 @@ async function readNzqa(meta: any, domains: string[]) {
   }
   const bytes = new TextEncoder().encode(JSON.stringify(pages));
   const fact = Object.keys(meta.facts || {})[0] || "nzqa_org_type";
-  return { bytes, entries: nzqaListing(pages, fact), res: { id: null, name: "nzqa-provider-types.json", url: template, lastModified: null, packageId: null }, dataRows: pages.length, rowsWithoutCode: 0 };
+  const codeFromId = clean(meta.code_from_id) ? new RegExp(clean(meta.code_from_id)) : null;
+  return { bytes, entries: nzqaListing(pages, fact, codeFromId), res: { id: null, name: "nzqa-provider-types.json", url: template, lastModified: null, packageId: null }, dataRows: pages.length, rowsWithoutCode: 0 };
 }
 
 async function storeEvidence(service: any, sourceId: string, url: string, name: string, bytes: Uint8Array, hash: string, metadata: unknown, mime = "text/csv") {
