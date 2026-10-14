@@ -8,7 +8,8 @@
   - **Layer 1 reader `layer1-provider-facts` v1.0.0** reads the TEQSA National Register providers file and CRICOS Institutions through the data.gov.au CKAN API, keeps the file as evidence and runs the rules. `layer1-operations-control` v1.9.0 and `layer1-operations-scheduled` v1.5.0 verify and run the two sources. The NZQA register applier now keeps the organisation type.
   - **Screens.** Providers › Type column (Needs type with its reason; PIM Admin sets it by hand or back to Auto, no reason asked). Settings › Pipeline settings › Institution type rules (Platform Admin).
   - **Website API v2:** `institution_type` on providers and courses, the `institution_types` filter on search and providers, and the type list in reference. Additive.
-  - Daily job `provider-type-classify` (catalogued). Migration 20261014060746; test `cf-247-institution-type-contract`; SOPs 1.17.
+  - Daily job `provider-type-classify` (catalogued). Migrations 20261014060746 and 20261014063911 (the facts writer matches every code in one statement; the first live apply had passed the 8 second limit); test `cf-247-institution-type-contract`; SOPs 1.17.
+  - Reader v1.1.0 adds the NZQA provider search by organisation type (format `nzqa_type_listing`), so New Zealand providers are typed without waiting for the next NZQA register change.
 
 ## 0.1.202 — 14 Oct 2026
 
