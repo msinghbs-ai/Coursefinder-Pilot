@@ -505,7 +505,7 @@ do $t$ declare r jsonb := '{}'::jsonb; s jsonb; c text; n int := 0; t0 timestamp
   r := r || jsonb_build_object('rankings_terms', (public.website_v2_rankings('{}'::jsonb,1,1))->'items'->0->>'terms_status',
                                'bad_cursor', public.website_v2_sync('not-a-cursor', false, null, 5)->'error'->>'code',
                                'bad_entity', public.website_v2_sync(null, false, array['nope'], 5)->'error'->>'code',
-                               'counts', (select jsonb_object_agg(entity, c) from (select entity, count(*) c from pipeline.website_sync_items group by 1) z));
+                               'counts', (select jsonb_object_agg(z.entity, z.cnt) from (select i.entity, count(*) cnt from pipeline.website_sync_items i group by 1) z));
   update pipeline.website_sync_scan set after_key = null, done = false;
   t0 := clock_timestamp(); perform security.website_sync_check_v1(600);
   r := r || jsonb_build_object('check_600_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
