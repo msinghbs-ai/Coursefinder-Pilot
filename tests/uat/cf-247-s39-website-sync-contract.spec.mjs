@@ -80,6 +80,7 @@ test('reference: answered from a copy built every 15 minutes (catalogued job); l
 test('sync: a page is filled by build cost (provider 8, scholarship 2, other 1) up to page_size; has_more when rows are left', () => {
   const m = fs.readFileSync('supabase/migrations/20261015000300_cf247_website_sync_page_by_cost.sql', 'utf8')
   expect(m).toContain("filter (where x.rn = 1 or x.cw <= v_size)")
-  expect(m).toContain("when y.entity = 'provider' then 8 when y.entity = 'scholarship' then 2 else 1 end")
+  expect(m).toContain("when y.entity = 'scholarship' then 2 else 1 end")
+  expect(fs.readFileSync('supabase/migrations/20261015000400_cf247_website_sync_provider_weight.sql', 'utf8')).toContain("when y.entity = 'provider' then 16 when")
   expect(m).toContain('v_more := jsonb_array_length(v_rows) < v_n;')
 })
