@@ -66,3 +66,12 @@ test.describe('mocked browser', () => {
     await expect(sec.locator('[data-register-setting="website.logo_link_days"]').getByLabel('Website: logo link valid for')).toHaveValue('365')
   })
 })
+
+// 15 Oct 2026: reference passed the API's 8 s statement limit under load; it now returns a copy built every 15 minutes
+test('reference: answered from a copy built every 15 minutes (catalogued job); live build only when no copy exists', () => {
+  const m = fs.readFileSync('supabase/migrations/20261015000200_cf247_website_reference_cache.sql', 'utf8')
+  expect(m).toContain("select coalesce((select c.payload - 'generated_at' || jsonb_build_object('generated_at', c.built_at) from pipeline.website_reference_cache c where c.id = 1),")
+  expect(m).toContain("select cron.schedule('website-reference-cache', '2-59/15 * * * *', 'select security.website_reference_cache_refresh_v1()');")
+  expect(m).toContain("values ('website-reference-cache', 'Search and API', 41,")
+  expect(m).not.toMatch(/^(drop|delete|truncate)\b/im)
+})
