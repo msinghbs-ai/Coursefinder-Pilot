@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.203 — 14 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.276** (Decision 258). The Platform Admin chose on 14 Oct 2026 to map institution type for the website (multiple choice): types mirror the registers; Australian universities from the TEQSA National Register on data.gov.au; a CRICOS Government provider that offers VET is TAFE; New Zealand from NZQA; Canada left empty; training.gov.au later.
+  - **Types:** University, University College, Higher Education Institute, TAFE / Polytechnic, Private VET college, School, Wānanga, Other. The unused tafe and college rows are retired, not dropped.
+  - **Register facts and rules.** `catalogue.provider_register_facts` keeps each register value with its source and evidence. `pipeline.provider_type_rules` are ordered and editable; the first enabled match sets the type. A type set by hand is kept. No match, no type: the reason is kept and shown.
+  - **Layer 1 reader `layer1-provider-facts` v1.0.0** reads the TEQSA National Register providers file and CRICOS Institutions through the data.gov.au CKAN API, keeps the file as evidence and runs the rules. `layer1-operations-control` v1.9.0 and `layer1-operations-scheduled` v1.5.0 verify and run the two sources. The NZQA register applier now keeps the organisation type.
+  - **Screens.** Providers › Type column (Needs type with its reason; PIM Admin sets it by hand or back to Auto, no reason asked). Settings › Pipeline settings › Institution type rules (Platform Admin).
+  - **Website API v2:** `institution_type` on providers and courses, the `institution_types` filter on search and providers, and the type list in reference. Additive.
+  - Daily job `provider-type-classify` (catalogued). Migration 20261014060746; test `cf-247-institution-type-contract`; SOPs 1.17.
+
 ## 0.1.202 — 14 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.275**. The Platform Admin asked on 14 Oct 2026 at 12:04: "make sure all config and limits can be controlled through UI. go for NZ and CA enrichment. record any lesson learnt and start with top tier 50 uni batch. maintain stats and telemetry. raise and use the scraper and AI accordingly."

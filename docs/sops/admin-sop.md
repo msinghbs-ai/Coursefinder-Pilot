@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.16 (reviewed for platform release v2.15.275)  
+**Version:** 1.17 (reviewed for platform release v2.15.276)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -129,3 +129,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.14 | 14 Oct 2026 | v2.15.271 | Courses with no code printed by the university or regulator show a StudySearch code (university, level, number, marked SS), and search finds it. Providers show a Scholarship search flag: Off automatically when the only website known is a directory site; a Pipeline Operator turns it on in the provider panel with the provider's own website and a reason. |
 | 1.15 | 14 Oct 2026 | v2.15.273 | Layer 2 › Enrich fields: choose countries or universities and fields (campus, duration, level, delivery, field of study, international, provider address), preview what is missing, and start a task with a reason (Pipeline Operator and above). It fills only missing values from stored pages, rules and AI, and from a new read only when allowed; results show each value with the words it was read from. Field sources (which sources fill a field, per country) are changed there by a Platform Admin. |
 | 1.16 | 14 Oct 2026 | v2.15.275 | Layer 2 › Enrich fields › Coverage and telemetry: the share of active courses with each field by country, how it moved since the first snapshot and in the last 24 hours, what the job did (settled, filled, AI calls and failures, AI spend, scraper credits) and the limits in force with where each is changed. How much page text the AI reads and titles per AI call are settings on Pipeline settings. |
+| 1.17 | 14 Oct 2026 | v2.15.276 | Providers show a Type column: the institution type set by the register rules (TEQSA National Register, CRICOS institution type, NZQA organisation type and the provider's courses), or Needs type with the reason no rule matched. PIM Admin and above can set a type by hand (it is kept) or return it to Auto, with no reason asked. Settings › Pipeline settings › Institution type rules: the Platform Admin changes a rule's type, order or switch and runs the rules. Two new Layer 1 sources (TEQSA National Register, CRICOS Institutions) are read through data.gov.au. |

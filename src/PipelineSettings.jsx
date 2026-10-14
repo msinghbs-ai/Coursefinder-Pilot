@@ -14,6 +14,7 @@ import{supabase}from'./lib/supabase'
 import{Button,Loading,SectionTitle,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import SettingsRegister from'./SettingsRegister'
+import InstitutionTypeRules from'./InstitutionTypeRules'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const ATTRS=[['official_url','Official page'],['english','English'],['intakes','Intakes'],['tuition','Tuition']]
@@ -60,6 +61,9 @@ export default function PipelineSettings({onError}){
           {ATTRS.map(([attr])=>{const cur=row.identities?.[attr]||[];return <td key={attr}>{IDENTITIES.map(([id,label])=>{const on=cur.includes(id);const relevant=cc==='AU'?['cricos_code','exact_title','title_level'].includes(id):cc==='NZ'?id!=='field_award':id!=='nzqa_code'&&id!=='degree_name';if(!relevant&&!on)return null;return <label key={id}><input type="checkbox" checked={on} disabled={!can} aria-label={`${cc} ${attr} ${label}`} onChange={e=>{const next=e.target.checked?[...cur,id]:cur.filter(x=>x!==id);if(window.confirm(`${cc}: ${e.target.checked?'admit':'stop admitting'} ${ATTRS.find(a=>a[0]===attr)[1].toLowerCase()} by ${label.toLowerCase()}?`))write('identity.attribute',{country:cc,attribute:attr,identities:next},`${cc} ${attr}`)}}/>{label}</label>})}</td>})}
         </tr>)}</tbody></table>
     </section>
+
+    {/* v2.15.276 (Decision 258): institution type rules */}
+    <InstitutionTypeRules onError={onError}/>
 
     {/* v2.15.252 (Platform Admin, 12 Oct 2026): "5 · Extract values (Layer 3)" removed — Layer 3 is retired; adapters admit the values. */}
     <section className="m-panel" data-settings-section="budgets">
