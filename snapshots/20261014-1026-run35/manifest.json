@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-14T10:26:24.263Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-environment.png",
+      "route": "environment",
+      "action": null,
+      "clicked": true,
+      "heading": "Settings",
+      "settle_ms": 3964,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#environment",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-environment-website-api.png",
+      "route": "environment",
+      "action": "Website API",
+      "clicked": false,
+      "heading": "Settings",
+      "settle_ms": 1509,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#environment",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
