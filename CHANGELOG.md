@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.201 — 14 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.274**: fixes from the Enrich fields live trial (University of Waikato).
+  - Worker v0.22.1: stored contact pages are plain, not gzip; the AI step now reads either (the address and campus list reads had failed).
+  - Worker v0.22.2: "open to international" needs a quote about the course's students or fees; a site-wide footer line ("International Enquiries") no longer counts. The 39 trial values that rested on the footer were undone.
+
 ## 0.1.200 — 14 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.273**. The Platform Admin asked on 14 Oct 2026 at 10:41 for "a job to enrich data for specific or multiple fields across uni or countries using scraper and ai in layer 2 and layer 3. Keep it simple" (plan `FIELD-GAPS-AND-ENRICHMENT-PLAN.md` v1.0; decisions: build the full job first, campus lists admitted when sources agree, international by the institution rule).

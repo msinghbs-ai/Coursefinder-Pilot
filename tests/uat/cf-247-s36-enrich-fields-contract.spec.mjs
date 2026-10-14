@@ -35,10 +35,13 @@ test('the job: field sources by country, one item per course and field, only mis
 
 test('worker v0.22.0: every AI value must quote the stored page; the scraper reads a home page only when allowed and keeps a copy', () => {
   expect(worker).toContain('if (mode === "enrich_ai") {')
-  expect(worker).toContain('const proven = val != null && on(page, q);')
+  expect(worker).toContain('const proven = val != null && on(page, q) && strong;')
   expect(worker).toContain('if (!(await useFc("enrich_address", p.provider_id, p.website, true)))')
   expect(worker).toContain('const up = await c.storage.from("evidence").upload(path, await gzip(text)')
   expect(worker).toContain('if (d?.model && !String(d.model).startsWith(model))')
+  // v0.22.1: stored copies read whether gzip or plain; v0.22.2: international needs a quote about the course's students or fees (not a site footer)
+  expect(worker).toContain('if (buf[0] === 0x1f && buf[1] === 0x8b)')
+  expect(worker).toContain('"only a site-wide line mentions international"')
 })
 
 test('screen: Layer 2 › Enrich fields', () => {
