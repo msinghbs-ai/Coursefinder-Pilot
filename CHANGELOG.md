@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.206 — 15 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.279** (central pages and fee checks). Platform Admin decisions on 15 Oct 2026 (multiple choice): "Central pages, per course group"; fees "Qualify first, then decide", then "Clear the >=90% ones"; "Auto-approve checked AI proposals", "Double degrees take the shared default", "Research degrees need a research default", "Keep the other holds".
+  - **Fees:** Wollongong, Tasmania, TAFE NSW and Notre Dame adapters admit fee (fee only); before admission each fee is compared with the CRICOS registered course total and held back and flagged when more than `admit.fee_crosscheck_pct` (25%) off. Victoria University, Academies Australasia and Torrens are flagged for an adapter fix.
+  - **Central pages:** the top 50 providers' English policies and calendars are read with the pinned AI model (206 pages); a reading is approved automatically when every value is quoted on the page and course pages do not mostly disagree (`central.max_disagree_pct`, `central.min_compare`); otherwise it is flagged for a person. Job policy-auto-approve.
+  - **English plan:** double degrees whose awards are all at the course's level take that level's default (513 top-50 courses to fill); research degrees take a research default only where the policy states one (worker v0.24.0 asks for it). Other Decision 227 holds stay.
+  - Migration 20261015020000 (three functions md5-guarded). Worker coverage-sweep v0.24.0. SOPs 1.20.
+
 ## 0.1.205 — 15 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.278** (waste rules for data enrichment). The Platform Admin asked on 15 Oct 2026 at 09:18: "If we are wasting resources on multiple tries then tighten rules around it, recording, flagging and moving on, rather getting stuck an wasting resources." Decisions (multiple choice): "Auto-pause idle jobs", "Yield-based retry cap", "No repeat reads unchanged", "Run admit jobs on new input"; approach "Top 50 by adapter, flag the tail".
