@@ -17,26 +17,31 @@ const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
 const SECTION_HELP={'Job sizes':'How much each scheduled job takes in a run. The job reads the value each time it runs.',
   'Re-read and retry':'How often pages are read again, and when failed work is tried again.',
-  'Onboarding':'The rules the onboarding journey follows for each university.'}
+  'Onboarding':'The rules the onboarding journey follows for each university.',
+  'Website API':'What the website (Wix) is given: whether rankings and logos may be displayed, how long logo links last, and the sync page size.'}
 
 // One setting: value, range and unit, what uses it, the last change; Save asks for a reason inline.
 function SettingRow({s,can,onSave}){
   const[v,setV]=useState(String(s.value??'')),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
   useEffect(()=>{setV(String(s.value??''))},[s.value])
-  const n=Number(v),changed=v!==''&&n!==Number(s.value),valid=Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))
-  const save=async()=>{setBusy(true);setErr('');try{await onSave(s.key,n,reason.trim());setReason('')}catch(e){setErr(errText(e))}finally{setBusy(false)}}
+  // v2.15.277: a yes/no setting (kind boolean) is chosen from Yes or No; numbers as before
+  const yn=s.kind==='boolean',n=Number(v)
+  const changed=yn?v!==String(s.value):v!==''&&n!==Number(s.value)
+  const valid=yn||(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max)))
+  const save=async()=>{setBusy(true);setErr('');try{await onSave(s.key,yn?v==='true':n,reason.trim());setReason('')}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   return <div className="sr-row" data-register-setting={s.key}>
     <div className="sr-text"><strong>{s.label}</strong>{s.help&&<small>{s.help}</small>}<small className="sr-used">Used by: {s.used_by||'—'}</small>
       {s.updated_at&&<small className="sr-meta">{s.reason||'—'} · {fmtDateTime(s.updated_at)}</small>}</div>
     <div className="sr-edit">
       {can?<>
-        <label className="sr-value"><span className="sr-hide">{s.label}</span><input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/><span>{s.unit}</span></label>
+        <label className="sr-value"><span className="sr-hide">{s.label}</span>{yn?<select className="fv-input" value={v} onChange={e=>setV(e.target.value)}><option value="true">Yes</option><option value="false">No</option></select>
+          :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&<span>{s.unit}</span>}</label>
         {changed&&<label className="sr-reason"><span className="sr-hide">Reason</span><input className="fv-input" placeholder="Reason (kept in the log)" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
         {changed&&<Button compact variant="primary" disabled={busy||!valid||reason.trim().length<4} onClick={save}><Save size={13}/>Save</Button>}
         {changed&&!valid&&<small className="fr-error">Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</small>}
         {err&&<small className="fr-error" role="alert">{err}</small>}
-      </>:<strong>{fmtNumber(Number(s.value))} {s.unit}</strong>}
-      <small className="sr-range">{s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
+      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
+      <small className="sr-range">{!yn&&s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
     </div>
   </div>
 }

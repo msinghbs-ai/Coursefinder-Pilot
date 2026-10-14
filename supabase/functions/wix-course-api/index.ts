@@ -14,12 +14,13 @@ const ACTIONS = ["sync_courses","reference_bundle","lookup","search","scholarshi
 // CF-CHG-20260915-247 website-search-v2 (8 Oct 2026): opt-in by sending
 // "contract":"website-search-v2" with the same integration key. Requests
 // without the contract field follow the v1 path above, unchanged.
-// Logos are returned as short-lived signed URLs from the private
-// provider-assets bucket. Ranking and logo usage terms remain a management
-// decision (terms_status management_decision_pending).
-const V2_ACTIONS = ["reference","search","course","providers","provider","rankings","scholarships","scholarship"];
+// Logos are returned as signed URLs from the private provider-assets bucket.
+// CF-247 v2.15.277 (Platform Admin, 14 Oct 2026): rankings and logos approved
+// for display (terms_status from Settings > Pipeline settings > Website API);
+// logo links valid website.logo_link_days (365); new additive action "sync"
+// (full load, then only what changed, with removals, by cursor).
+const V2_ACTIONS = ["reference","search","course","providers","provider","rankings","scholarships","scholarship","sync"];
 const LOGO_BUCKET = "provider-assets";
-const LOGO_TTL_SECONDS = 86400;
 
 const cleanText = (v: unknown) => typeof v === "string" ? v.trim() : "";
 const integer = (v: unknown, fallback:number) => { const n=Number(v); return Number.isInteger(n)?n:fallback; };
@@ -49,6 +50,10 @@ async function signLogos(svc:any, data:unknown){
   if(logos.length===0) return;
   const paths=[...new Set(logos.map(l=>l.storage_path as string))];
   const signed=new Map<string,string>();
+  // v2.15.277: link validity is a setting (website.logo_link_days), read each request
+  let days=1; // fixed: one day if the setting cannot be read
+  try{ const {data:st}=await svc.rpc("svc_website_settings_v1"); const d=Number((st as Json|null)?.logo_link_days); if(Number.isFinite(d)&&d>0) days=d; }catch{ /* keep one day */ }
+  const LOGO_TTL_SECONDS=Math.round(days*86400); // fixed: seconds in a day
   const expiresAt=new Date(Date.now()+LOGO_TTL_SECONDS*1000).toISOString();
   try{
     const {data:urls}=await svc.storage.from(LOGO_BUCKET).createSignedUrls(paths,LOGO_TTL_SECONDS);
@@ -96,6 +101,13 @@ async function handleV2(svc:any, body:Json, requestId:string){
     case "scholarship": {
       const id=cleanText(body.scholarship_id); if(!id) return err(400,"INVALID_INPUT",requestId);
       fn="website_v2_scholarship"; args={p_scholarship_id:id}; break;
+    }
+    case "sync": {
+      // v2.15.277: no cursor (or full_load) = everything in pages; pass next_cursor back for only what changed since
+      if(body.cursor!==undefined && body.cursor!==null && typeof body.cursor!=="string") return err(400,"INVALID_INPUT",requestId);
+      if(body.full_load!==undefined && typeof body.full_load!=="boolean") return err(400,"INVALID_INPUT",requestId);
+      if(body.entities!==undefined && (!Array.isArray(body.entities)||body.entities.some(x=>typeof x!=="string"))) return err(400,"INVALID_INPUT",requestId);
+      fn="website_v2_sync"; args={p_cursor:cleanText(body.cursor)||null,p_full:body.full_load===true,p_entities:Array.isArray(body.entities)?body.entities:null,p_page_size:body.page_size!==undefined?pageSize:null}; break;
     }
   }
   const {data,error}=await svc.rpc(fn,args);
