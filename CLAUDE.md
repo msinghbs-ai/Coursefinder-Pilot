@@ -13,6 +13,7 @@ These rules come from the Platform Admin and apply to every change.
   - Only technical safety values stay in code: claim and lease timers, fire guards, the month roll-over, and API time-outs. Each such line is marked `-- fixed: <why>`.
   - `tests/uat/cf-247-s32-controls-in-settings-contract.spec.mjs` fails any migration from `20261013012900` on that breaks this.
   - `security.controls_check_v1()` raises a notice for any running job that does.
+- **Website API v2 (`website-search-v2`, Decisions 257 and 258) is additive only.** Nothing the website reads is renamed or removed; the provider Published switch decides what is returned; null means not held. Before changing anything the website reads, read `docs/integrations/WEBSITE-DEVELOPER-REQUIREMENTS.md` in the admin repo (requests, status, open work). Keep `tests/uat/cf-247-website-api-v2-contract.spec.mjs` and `cf-247-institution-type-contract.spec.mjs` passing, and reissue the developer handover (Version 2, new change-log line) for any visible change.
 - **Nothing is dropped or deleted by an applied migration.** Drops and deletes go to the Platform Admin as a paste file.
 - **A passing qualification never switches anything on by itself.**
 - Never create `package-lock.json`. Never commit the `node_modules` symlink.
