@@ -9,6 +9,7 @@ import{
 import{fmtDate,fmtDateTime,fmtMoney,fmtPercent,fmtShare}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
 import CourseDetailPolish from'./CourseDetailPolish'
+import EnrichFields from'./EnrichFields'
 import{ProviderSummary,PillRow,FactCards,FactCard}from'./DetailSummary'
 import{startTableResize}from'./table-resize'
 import'./ui-standard.css'
@@ -254,6 +255,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         // v2.15.258 (bug 12/10-01): the onboarding journey lives on Layer 2 (old Providers › Onboarding addresses redirect here)
         if(tab==='onboarding')return <ProviderOnboarding rank={rank} actorId={actorId} onError={err}/>
         // v2.15.211 (CF-247, Platform Admin 7 Oct 18:23): Adapter builder, one simple screen to build or change an adapter.
+        if(tab==='enrich')return <EnrichFields rank={rank} onError={err}/>
         if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
         // v2.15.200 (Decision 254): Adapters is Layer 2's first tab. Overview, Fetch an area and History retired, Source
         // profiles moved to Scrapers & fetchers.
