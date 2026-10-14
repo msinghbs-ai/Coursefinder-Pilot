@@ -705,3 +705,4 @@
 .ef-byfield{display:flex;flex-wrap:wrap;gap:6px 12px}.ef-field{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}.ef-field b{font-size:var(--cf-fs-2xs);color:var(--cf-slate-600)}
 .ef-items{display:grid;gap:6px}.ef-quote{max-width:420px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-600)}.ef-src{display:block;font-size:var(--cf-fs-2xs)}
 .ef-edit{display:grid;gap:6px;margin-top:8px;padding:10px;border:1px dashed var(--cf-slate-175);border-radius:var(--cf-radius-sm)}
+.ef-tiles{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.ef-tiles span{display:grid;gap:2px;border:1px solid var(--cf-slate-150);border-radius:var(--cf-radius-sm);padding:6px 10px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-600);min-width:150px}.ef-tiles b{font-size:var(--cf-fs-md);color:var(--cf-slate-800)}
