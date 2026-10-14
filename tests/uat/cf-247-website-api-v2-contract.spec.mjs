@@ -36,11 +36,13 @@ test('edge function: v2 is opt-in on the same key and v1 is untouched', () => {
   expect(edge).toContain('const V2_CONTRACT = "website-search-v2";')
   // v2.15.277 adds "sync" at the end (additive); every earlier action stays
   expect(edge).toContain('const V2_ACTIONS = ["reference","search","course","providers","provider","rankings","scholarships","scholarship","sync"];')
-  expect(edge).toContain('if(contract===V2_CONTRACT) return await handleV2(svc,body,requestId);')
+  expect(edge).toContain('if(contract===V2_CONTRACT) return await handleV2(svc,body,requestId,rateId);')
   expect(edge).toContain('const ACTIONS = ["sync_courses","reference_bundle","lookup","search","scholarships"];')
   expect(edge).toContain('return json(200,{contract_version:CONTRACT_VERSION,source_contract_version:obj.contract_version??null,...obj,request_id:requestId},requestId);')
   // the key is checked before any action, v2 included
-  expect(edge.indexOf('website_edge_auth_v1')).toBeLessThan(edge.indexOf('handleV2(svc,body,requestId)'))
+  // 15 Oct 2026: the key check returns the key's identity (website_edge_identity_v1) and still happens before any v2 handling
+  expect(edge.indexOf('website_edge_identity_v1')).toBeLessThan(edge.indexOf('handleV2(svc,body,requestId,rateId)'))
+  expect(edge.indexOf('if(identity!==WIX_CREDENTIAL) return err(401')).toBeGreaterThan(edge.indexOf('handleV2(svc,body,requestId,rateId)'))
 })
 
 test('edge function: logos leave the private bucket only as short-lived signed links', () => {

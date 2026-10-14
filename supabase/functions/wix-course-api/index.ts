@@ -66,11 +66,11 @@ async function signLogos(svc:any, data:unknown){
   }
 }
 
-async function handleV2(svc:any, body:Json, requestId:string){
+async function handleV2(svc:any, body:Json, requestId:string, rateId:string){
   const action=cleanText(body.action);
   if(!V2_ACTIONS.includes(action)) return err(400,"INVALID_ACTION",requestId);
 
-  const {data:rate,error:rateError}=await svc.rpc("zoho_edge_rate_check_v1",{p_identity:"coursefinder_wix_pilot_v1",p_resource:"v2:"+action,p_limit:60,p_window_seconds:60});
+  const {data:rate,error:rateError}=await svc.rpc("zoho_edge_rate_check_v1",{p_identity:rateId,p_resource:"v2:"+action,p_limit:60,p_window_seconds:60});
   if(rateError) return err(503,"SERVICE_UNAVAILABLE",requestId);
   const rs=(rate&&typeof rate==="object")?rate as Record<string,unknown>:{};
   if(rs.allowed!==true){ const retry=Math.max(Number(rs.retry_after_seconds)||1,1); return err(429,"RATE_LIMITED",requestId,{"retry-after":String(retry)}); }
@@ -135,12 +135,17 @@ Deno.serve(async (req:Request)=>{
   const supplied=token(req,body);
   if(!supplied || supplied.length>512) return err(401,"AUTHENTICATION_REQUIRED",requestId);
   const tokenHash=await sha256Hex(supplied);
-  const {data:authOk,error:authError}=await svc.rpc("website_edge_auth_v1",{p_token_sha256:tokenHash});
-  if(authError || authOk!==true) return err(401,"AUTHENTICATION_REQUIRED",requestId);
+  // 15 Oct 2026: each key has its own identity (website_edge_identity_v1; replaces website_edge_auth_v1 here). The original Wix key keeps
+  // its rate-limit name and both contracts; any other key (for example the developers' key) may use website-search-v2 only.
+  const {data:identity,error:authError}=await svc.rpc("website_edge_identity_v1",{p_token_sha256:tokenHash});
+  if(authError || typeof identity!=="string" || !identity) return err(401,"AUTHENTICATION_REQUIRED",requestId);
   delete body.integration_token;
+  const WIX_CREDENTIAL="coursefinder_website_wix_pilot_v1";
+  const rateId=identity===WIX_CREDENTIAL?"coursefinder_wix_pilot_v1":identity;
 
   const contract=cleanText(body.contract);
-  if(contract===V2_CONTRACT) return await handleV2(svc,body,requestId);
+  if(contract===V2_CONTRACT) return await handleV2(svc,body,requestId,rateId);
+  if(identity!==WIX_CREDENTIAL) return err(401,"AUTHENTICATION_REQUIRED",requestId);
 
   const action=cleanText(body.action);
   if(!ACTIONS.includes(action)) return err(400,"INVALID_ACTION",requestId);
