@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.202 — 14 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.275**. The Platform Admin asked on 14 Oct 2026 at 12:04: "make sure all config and limits can be controlled through UI. go for NZ and CA enrichment. record any lesson learnt and start with top tier 50 uni batch. maintain stats and telemetry. raise and use the scraper and AI accordingly."
+  - **Every limit on screen.** The worker's last fixed Enrich fields values (page text the AI reads, titles per AI call) are settings (worker v0.23.0 reads them). The Coverage and telemetry card lists every limit in force and where it is changed.
+  - **Stats and telemetry.** Hourly job `enrich-coverage-snapshot` (catalogued) records, per country and field, how many active courses have the field. Layer 2 › Enrich fields › Coverage and telemetry shows shares, movement since the first snapshot and in 24 hours, and the job's last 24 hours (settled, filled, AI calls and failures, AI spend, scraper credits).
+  - **Raised (logged with reasons):** Enrich fields AI daily guard US$2 → US$25; AI calls at once 2 → 6. Firecrawl shares left as they are (today: 0 of 1,000 "other", 76 of 3,000 "reads").
+  - **Batch 1 started:** the top 50 New Zealand and Canadian universities (17 world-ranked, then the largest by courses), 8,901 courses, 44,539 items, AI and scraper on.
+  - Migration 20261014013800; test S37; SOPs 1.16.
+
 ## 0.1.201 — 14 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.274**: fixes from the Enrich fields live trial (University of Waikato).

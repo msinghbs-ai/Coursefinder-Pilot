@@ -5,7 +5,7 @@
 // each field, per country, and in what order) are changed here by a Platform Admin, with a reason.
 // Reads and writes: public.admin_enrich_fields('fields' | 'preview' | 'start' | 'jobs' | 'items' | 'rule_set').
 import React,{useEffect,useState}from'react'
-import{ListChecks,Play,RefreshCw,Search,X}from'lucide-react'
+import{Activity,ListChecks,Play,RefreshCw,Search,X}from'lucide-react'
 import{api,supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
@@ -27,6 +27,7 @@ export default function EnrichFields({rank=0,onError}){
   if(!meta)return <section className="m-panel"><Loading label="Loading Enrich fields…"/></section>
   const label=f=>FIELD_LABEL[f]||(meta.fields||[]).find(x=>x.field===f)?.label||f
   return <div className="m-page-stack" data-enrich-fields>
+    <Telemetry label={label}/>
     <StartCard meta={meta} label={label} onStarted={()=>load()} onError={onError}/>
     <Card id="layer2.enrich.tasks" title="Enrich fields tasks" subtitle="The last 20 tasks. Each value keeps its source and the words it was read from." icon={ListChecks}
       meta={<span className="cf-chip tone-neutral">{fmtNumber(jobs.length)} task{jobs.length===1?'':'s'}</span>}>
@@ -127,5 +128,32 @@ function FieldSources({meta,label,onSaved,onError}){
         <Button compact variant="primary" disabled={busy||reason.trim().length<4} onClick={save}>Save</Button><Button compact onClick={()=>setEdit(null)}>Cancel</Button></div>
       {err&&<small className="fr-error" role="alert">{err}</small>}
     </div>}
+  </Card>
+}
+
+// v2.15.275 (Platform Admin, 14 Oct 2026 12:04: "maintain stats and telemetry"): field coverage per country now, at the first
+// snapshot and a day ago (hourly job enrich-coverage-snapshot), the job's last 24 hours, and the limits in force with where to change them.
+function Telemetry({label}){
+  const[cc,setCc]=useState('NZ,CA'),[d,setD]=useState(null)
+  const load=()=>call('stats',{countries:cc?cc.split(','):[]}).then(setD).catch(()=>setD({}))
+  useEffect(()=>{load();const t=setInterval(load,60000);return()=>clearInterval(t)},[cc])
+  const pct=(a,b)=>b?`${Math.round(100*Number(a||0)/Number(b))}%`:'—'
+  const l=d?.limits||{},h=d?.last_24h||{}
+  return <Card id="layer2.enrich.telemetry" title="Coverage and telemetry" subtitle="Share of active courses with each field, how it moved, and what the job did in the last 24 hours." icon={Activity} data-enrich-telemetry>
+    {!d?<Loading compact/>:<>
+      <div className="ef-row"><span className="ef-k">Countries</span><select className="fv-filter" aria-label="Countries" value={cc} onChange={e=>setCc(e.target.value)}>
+        <option value="NZ,CA">New Zealand and Canada</option><option value="NZ">New Zealand</option><option value="CA">Canada</option><option value="AU">Australia</option><option value="">All</option></select>
+        <small className="sl-sub">Snapshot {d.snapshot_at?fmtDateTime(d.snapshot_at):'—'} · first {d.first_snapshot_at?fmtDateTime(d.first_snapshot_at):'—'}</small></div>
+      <div className="cf-table-wrap"><table className="cf-table" data-coverage-table><thead><tr><th>Country</th><th>Field</th><th className="num">Have it</th><th className="num">Share</th><th className="num">Since first</th><th className="num">Last 24 hours</th></tr></thead><tbody>
+        {(d.coverage||[]).map(r=><tr key={r.country+r.field} data-coverage-row={`${r.country}:${r.field}`}><td>{COUNTRY[r.country]||r.country}</td><td>{label(r.field)}</td>
+          <td className="num">{fmtNumber(r.filled)} of {fmtNumber(r.courses)}</td><td className="num">{pct(r.filled,r.courses)}</td>
+          <td className="num">{r.first==null?'—':`+${fmtNumber(r.filled-r.first)}`}</td><td className="num">{r.day_ago==null?'—':`+${fmtNumber(r.filled-r.day_ago)}`}</td></tr>)}
+      </tbody></table></div>
+      <div className="ef-tiles" data-enrich-last24>
+        <span><b>{fmtNumber(h.last_hour||0)}</b>settled in the last hour</span><span><b>{fmtNumber(h.filled||0)}</b>values filled (24 h)</span>
+        <span><b>{fmtNumber(h.ai_calls||0)}</b>AI calls · {fmtNumber(h.ai_failed||0)} failed</span><span><b>US${Number(h.ai_cost_usd||0).toFixed(2)}</b>AI spend (24 h)</span>
+        <span><b>{fmtNumber(h.scraper_credits||0)}</b>scraper credits · {fmtNumber(h.pages_requested||0)} pages asked to be read</span></div>
+      <p className="l3v-note" data-enrich-limits>Model {l.model||'—'} (Models &amp; services › AI &amp; OpenRouter, central pages model) · AI daily guard US${l.ai_guard_usd??'—'}, spent today US${Number(l.ai_spent_today_usd||0).toFixed(2)}, OpenRouter {l.openrouter_mode==='stop'?'stops at limits':'observes only'} (Toolsets › OpenRouter) · {l.calls_at_once} AI calls at once, {l.items_per_call} items a call, {l.items_a_minute} items a minute, campus admitted at {l.campus_min_pages} pages (Settings › Pipeline settings) · scraper shares: other {fmtNumber(l.scraper_share||0)}, reads {fmtNumber(l.reads_share||0)} credits a day (Toolsets › Firecrawl).</p>
+    </>}
   </Card>
 }
