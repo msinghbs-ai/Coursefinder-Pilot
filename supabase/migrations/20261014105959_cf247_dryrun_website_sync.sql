@@ -470,46 +470,29 @@ do $$ declare n jsonb; begin
   if (select count(*) from cron.job where jobname = 'website-sync-check' and active) <> 1 then raise exception 'v2.15.277 post-check: job missing'; end if;
 end $$;
 
-do $t$ declare r jsonb := '{}'::jsonb; s jsonb; c text; n int := 0; t0 timestamptz; k text; seq0 bigint; seq1 bigint; begin
-  -- full load paging for 'reference' + 'logo' (small): follow cursors to the end, then a delta must be empty
-  s := public.website_v2_sync(null, false, array['reference','logo'], 20);
-  r := r || jsonb_build_object('first_page_items', jsonb_array_length(s->'items'), 'first_more', s->'has_more', 'mode', s->'mode', 'first_item', left((s->'items'->0)::text, 160));
-  loop n := n + jsonb_array_length(s->'items'); c := s->>'next_cursor'; exit when not (s->>'has_more')::boolean; s := public.website_v2_sync(c, false, null, 20); end loop;
-  r := r || jsonb_build_object('full_total', n, 'full_complete', s->'full_load_complete');
-  s := public.website_v2_sync(c, false, null, 20);
-  r := r || jsonb_build_object('delta_after_full_items', jsonb_array_length(s->'items'), 'delta_mode', s->'mode');
-  -- a change: bump one logo the way the check does, delta must return exactly it
-  update pipeline.website_sync_items set seq = nextval('pipeline.website_sync_seq') where entity = 'logo' and item_key = (select min(item_key) from pipeline.website_sync_items where entity='logo');
-  s := public.website_v2_sync(c, false, null, 20);
-  r := r || jsonb_build_object('delta_one', jsonb_array_length(s->'items'), 'delta_change', s->'items'->0->>'change', 'logo_terms', s->'items'->0->'item'->'logo'->>'terms_status');
-  -- the check: make every entity but course finished, then plant a stale hash and a vanished course
+do $t$ declare r jsonb := '{}'::jsonb; s jsonb; c text; n int := 0; t0 timestamptz; x record; v jsonb; q int; begin
+  t0 := clock_timestamp(); select count(*) into q from security.website_sync_candidates_v1('course');
+  r := r || jsonb_build_object('cand_course_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
+  t0 := clock_timestamp(); select count(*) into q from security.website_sync_candidates_v1('provider');
+  r := r || jsonb_build_object('cand_prov_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
+  t0 := clock_timestamp(); v := security.website_sync_item_v1('reference', null, 'reference');
+  r := r || jsonb_build_object('ref_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
+  t0 := clock_timestamp(); for x in select item_key, ref_id from pipeline.website_sync_items where entity='provider' order by item_key limit 50 loop v := security.website_sync_item_v1('provider', x.ref_id, x.item_key); end loop;
+  r := r || jsonb_build_object('prov50_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
+  t0 := clock_timestamp(); for x in select item_key, ref_id from pipeline.website_sync_items where entity='scholarship' order by item_key limit 50 loop v := security.website_sync_item_v1('scholarship', x.ref_id, x.item_key); end loop;
+  r := r || jsonb_build_object('sch50_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
+  t0 := clock_timestamp(); for x in select item_key, ref_id from pipeline.website_sync_items where entity='course' order by item_key limit 50 loop v := security.website_sync_item_v1('course', x.ref_id, x.item_key); end loop;
+  r := r || jsonb_build_object('course50_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
+  t0 := clock_timestamp(); for x in select item_key, ref_id from pipeline.website_sync_items where entity='rankings' order by item_key limit 50 loop v := security.website_sync_item_v1('rankings', x.ref_id, x.item_key); end loop;
+  r := r || jsonb_build_object('rank50_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
   update pipeline.website_sync_scan set done = true where entity <> 'course';
-  insert into pipeline.website_sync_items(entity, item_key, ref_id, hash, seq) values ('course', 'course:fake:zzz', null, 'h', nextval('pipeline.website_sync_seq'));
-  update pipeline.website_sync_scan set after_key = 'course:fake:zzy' where entity = 'course';
-  s := security.website_sync_check_v1(1);
-  r := r || jsonb_build_object('check_removed', s->'course'->'removed', 'fake_removed_at_set', (select removed_at is not null from pipeline.website_sync_items where item_key='course:fake:zzz'));
-  s := public.website_v2_sync(c, false, array['course'], 50);
-  r := r || jsonb_build_object('delta_course_remove', (select count(*) from jsonb_array_elements(s->'items') x where x->>'change'='remove' and x->>'id'='course:fake:zzz'));
-  -- first hash recorded without a change; a stale hash is a change
-  select item_key into k from pipeline.website_sync_items where entity='course' and item_key > 'course:fake:zzz' order by item_key limit 1;
-  update pipeline.website_sync_scan set after_key = 'course:fake:zzz' where entity = 'course';
-  select seq into seq0 from pipeline.website_sync_items where entity='course' and item_key=k;
-  perform security.website_sync_check_v1(1);
-  select seq into seq1 from pipeline.website_sync_items where entity='course' and item_key=k;
-  r := r || jsonb_build_object('first_hash_no_bump', seq0 = seq1, 'hash_set', (select hash is not null from pipeline.website_sync_items where entity='course' and item_key=k));
-  update pipeline.website_sync_items set hash = 'stale' where entity='course' and item_key=k;
-  update pipeline.website_sync_scan set after_key = 'course:fake:zzz' where entity = 'course';
-  perform security.website_sync_check_v1(1);
-  r := r || jsonb_build_object('stale_bumped', (select seq > seq1 from pipeline.website_sync_items where entity='course' and item_key=k));
-  -- terms, bad cursor, timing of a normal run
-  r := r || jsonb_build_object('rankings_terms', (public.website_v2_rankings('{}'::jsonb,1,1))->'items'->0->>'terms_status',
-                               'bad_cursor', public.website_v2_sync('not-a-cursor', false, null, 5)->'error'->>'code',
-                               'bad_entity', public.website_v2_sync(null, false, array['nope'], 5)->'error'->>'code',
-                               'counts', (select jsonb_object_agg(z.entity, z.cnt) from (select i.entity, count(*) cnt from pipeline.website_sync_items i group by 1) z));
-  update pipeline.website_sync_scan set after_key = null, done = false;
-  t0 := clock_timestamp(); perform security.website_sync_check_v1(600);
-  r := r || jsonb_build_object('check_600_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
+  t0 := clock_timestamp(); s := security.website_sync_check_v1(200);
+  r := r || jsonb_build_object('check200_course_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
   t0 := clock_timestamp(); s := public.website_v2_sync(null, false, array['course'], 50);
   r := r || jsonb_build_object('page50_course_ms', round(extract(epoch from clock_timestamp()-t0)*1000));
+  s := public.website_v2_sync(null, false, array['reference','logo'], 20); n := 0;
+  loop n := n + jsonb_array_length(s->'items'); c := s->>'next_cursor'; exit when not (s->>'has_more')::boolean; s := public.website_v2_sync(c, false, null, 20); end loop;
+  r := r || jsonb_build_object('full_total', n, 'full_complete', s->'full_load_complete', 'delta_after_full', jsonb_array_length(public.website_v2_sync(c, false, null, 20)->'items'),
+                               'rankings_terms', (public.website_v2_rankings('{}'::jsonb,1,1))->'items'->0->>'terms_status');
   raise exception 'TESTRESULT %', r;
 end $t$;
