@@ -977,29 +977,3 @@ begin
   if v_n <> security.pipeline_num_v1('enrich.focus_top_n', 50)::int then raise exception 'waste rules post-check: % focus providers', v_n; end if;
   if exists (select 1 from security.controls_check_v1()) then raise exception 'waste rules post-check: a running job has a number written into it'; end if;
 end $post2$;
-
-do $dry$
-declare t0 timestamptz; r jsonb := '{}'::jsonb; v jsonb;
-begin
-  r := r || jsonb_build_object('cap', security.retry_cap_v1('ai_match'));
-  t0 := clock_timestamp(); v := security.coverage_admission_gated_v1('coverage-admit', 500, 'coverage-sweep-v0.5.6', array['official_url','english']);
-  r := r || jsonb_build_object('admit1', v, 'admit1_s', extract(epoch from clock_timestamp()-t0));
-  t0 := clock_timestamp(); v := security.coverage_admission_gated_v1('coverage-admit', 500, 'coverage-sweep-v0.5.6', array['official_url','english']);
-  r := r || jsonb_build_object('admit2', v, 'admit2_s', extract(epoch from clock_timestamp()-t0));
-  t0 := clock_timestamp(); v := security.adapter_overwrite_gated_v1(200);
-  r := r || jsonb_build_object('ao1', v, 'ao1_s', extract(epoch from clock_timestamp()-t0));
-  t0 := clock_timestamp(); v := security.adapter_overwrite_gated_v1(200);
-  r := r || jsonb_build_object('ao2', v, 'ao2_s', extract(epoch from clock_timestamp()-t0));
-  t0 := clock_timestamp(); v := security.waste_guard_v1();
-  r := r || jsonb_build_object('guard2', v, 'guard_s', extract(epoch from clock_timestamp()-t0));
-  r := r || jsonb_build_object('reverse_active', (select active from cron.job where jobname='course-link-reverse'),
-     'flags', (select jsonb_object_agg(reason_code, n) from (select reason_code, count(*) n from pipeline.enrichment_flags where cleared_at is null group by 1) x),
-     'focus', (select count(*) from pipeline.enrich_focus_providers where in_focus),
-     'focus_top3', (select jsonb_agg(p.canonical_name order by f.rank) from pipeline.enrich_focus_providers f join catalogue.providers p on p.id=f.provider_id where f.rank<=3),
-     'own_delivery_106', (select count(*) filter (where security.own_page_value_v1(c.course_id,'delivery')) from (select distinct course_id from pipeline.adapter_overwrite_changes where field='delivery' and at>now()-interval '4 days') c),
-     'notices_waste', (select count(*) from jsonb_array_elements(security.platform_notices_v1()) e where e->>'kind' like 'waste_%'));
-  t0 := clock_timestamp(); perform public.svc_coverage_discovery_next(1); r := r || jsonb_build_object('disc_s', extract(epoch from clock_timestamp()-t0));
-  t0 := clock_timestamp(); perform security.exit_awards_hourly_v1(); r := r || jsonb_build_object('exit_s', extract(epoch from clock_timestamp()-t0),
-     'exit_delivery_changes_now', (select count(*) from pipeline.adapter_overwrite_changes where at > t0 and field='delivery'));
-  raise exception 'DRYRUN %', r;
-end $dry$;
