@@ -40,7 +40,7 @@ AS $function$
   -- a double degree whose every award is in the same group as the course (for example Bachelor of Arts / Bachelor of Laws, both undergraduate)
   select p_grp is not null and coalesce((
     select count(*) >= 2 and bool_and(case when m[1] in ('bachelor', 'associate degree') then 'undergraduate'
-                                           when m[1] in ('master', 'graduate certificate', 'graduate diploma') then 'postgraduate' end = p_grp)
+                                           when m[1] in ('master', 'graduate certificate', 'graduate diploma') then 'postgraduate' else 'other' end = p_grp)
       from regexp_matches(lower(coalesce(p_title, '')), '(bachelor|associate degree|master|graduate certificate|graduate diploma|diploma|doctor)', 'g') m), false)
 $function$;
 
@@ -345,20 +345,10 @@ begin
 end $post2$;
 
 do $dry$
-declare r jsonb := '{}'::jsonb;
 begin
-  r := r || jsonb_build_object(
-    'fee_held_back', (select count(*) from pipeline.enrichment_flags where reason_code='fee_crosscheck'),
-    'fee_held_by_provider', (select jsonb_object_agg(p.canonical_name, n) from (select provider_id, count(*) n from pipeline.enrichment_flags where reason_code='fee_crosscheck' group by 1) x join catalogue.providers p on p.id=x.provider_id),
-    'adapters_flagged', (select count(*) from pipeline.enrichment_flags where reason_code='adapter_fee_fails_check'),
-    'central_queued', (select count(*) from pipeline.central_ai_queue where state='queued'),
-    'central_queued_kinds', (select jsonb_object_agg(kind, n) from (select kind, count(*) n from pipeline.central_ai_queue where state='queued' group by 1) x),
-    'approved_now', (select count(*) from pipeline.provider_policy_proposals where decision_note like 'Automatic:%'),
-    'refused_now', (select count(*) from pipeline.enrichment_flags where reason_code='policy_disagrees'),
+  raise exception 'DRYRUN %', jsonb_build_object('dd_test', jsonb_build_array(security.double_degree_same_group_v1('Bachelor of Arts / Bachelor of Laws','undergraduate'), security.double_degree_same_group_v1('Bachelor of Science/Master of Science','undergraduate'), security.double_degree_same_group_v1('Master of Business Administration and Master of Engineering','postgraduate'), security.double_degree_same_group_v1('Bachelor of Laws (Honours)/Juris Doctor','undergraduate')),
     'plan_write_top50', (select jsonb_object_agg(o, n) from (select pl.outcome||':'||coalesce(pl.reason,'') o, count(distinct pl.course_id) n
         from pipeline.provider_policy_proposals pp join pipeline.enrich_focus_providers f on f.provider_id=pp.provider_id and f.in_focus
-        cross join lateral security.provider_english_plan_v1(pp.id) pl
-       where pp.kind='english_policy' and pp.status='approved' group by 1) x),
-    'dd_test', jsonb_build_array(security.double_degree_same_group_v1('Bachelor of Arts / Bachelor of Laws','undergraduate'), security.double_degree_same_group_v1('Bachelor of Science/Master of Science','undergraduate'), security.double_degree_same_group_v1('Master of Business Administration and Master of Engineering','postgraduate'), security.double_degree_same_group_v1('Bachelor of Laws (Honours)/Juris Doctor','undergraduate')));
-  raise exception 'DRYRUN %', r;
+        cross join lateral security.provider_english_plan_v1(pp.id) pl where pp.kind='english_policy' and pp.status='approved' group by 1) x),
+    'fee_held', (select jsonb_object_agg(p.canonical_name, n) from (select provider_id, count(*) n from pipeline.enrichment_flags where reason_code='fee_crosscheck' group by 1) x join catalogue.providers p on p.id=x.provider_id));
 end $dry$;

@@ -40,7 +40,7 @@ AS $function$
   -- a double degree whose every award is in the same group as the course (for example Bachelor of Arts / Bachelor of Laws, both undergraduate)
   select p_grp is not null and coalesce((
     select count(*) >= 2 and bool_and(case when m[1] in ('bachelor', 'associate degree') then 'undergraduate'
-                                           when m[1] in ('master', 'graduate certificate', 'graduate diploma') then 'postgraduate' end = p_grp)
+                                           when m[1] in ('master', 'graduate certificate', 'graduate diploma') then 'postgraduate' else 'other' end = p_grp)
       from regexp_matches(lower(coalesce(p_title, '')), '(bachelor|associate degree|master|graduate certificate|graduate diploma|diploma|doctor)', 'g') m), false)
 $function$;
 
