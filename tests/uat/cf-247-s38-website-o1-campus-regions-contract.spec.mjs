@@ -21,3 +21,13 @@ test('O1: Enrich fields values reach the website: a refresh when a task finishes
   // every replaced function is md5-guarded
   expect((mig.match(/md5\(replace\(pg_get_functiondef/g) || []).length).toBeGreaterThanOrEqual(2)
 })
+
+test('O7: fee-line durations undone (exactly two, reversible) and the worker rejects such quotes (v0.23.2); semesters stay null', () => {
+  const o7 = fs.readFileSync('supabase/migrations/20261014100000_cf247_undo_fee_line_durations.sql', 'utf8')
+  expect(o7).toContain("where c.id = b.course_id and c.duration_value = b.v and c.duration_unit = b.u")
+  expect(o7).toContain("if n <> 2 then raise exception 'O7 post-check")
+  expect(o7).not.toMatch(/^(drop|delete|truncate)\b/im)
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('const proven = val != null && on(page, q) && strong && !feeLine;')
+  expect(w).toContain('"the quote is about the fee basis, not the course length"')
+})

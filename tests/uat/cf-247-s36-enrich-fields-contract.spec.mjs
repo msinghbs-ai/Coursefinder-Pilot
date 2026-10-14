@@ -35,7 +35,7 @@ test('the job: field sources by country, one item per course and field, only mis
 
 test('worker v0.22.0: every AI value must quote the stored page; the scraper reads a home page only when allowed and keeps a copy', () => {
   expect(worker).toContain('if (mode === "enrich_ai") {')
-  expect(worker).toContain('const proven = val != null && on(page, q) && strong;')
+  expect(worker).toMatch(/const proven = val != null && on\(page, q\) && strong( && !feeLine)?;/)  // v0.23.2 adds the fee-line rule for duration
   expect(worker).toContain('if (!(await useFc("enrich_address", p.provider_id, p.website, true)))')
   expect(worker).toContain('const up = await c.storage.from("evidence").upload(path, await gzip(text)')
   expect(worker).toContain('if (d?.model && !String(d.model).startsWith(model))')
