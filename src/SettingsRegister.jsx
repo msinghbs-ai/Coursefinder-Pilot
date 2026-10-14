@@ -18,6 +18,7 @@ const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-
 const SECTION_HELP={'Job sizes':'How much each scheduled job takes in a run. The job reads the value each time it runs.',
   'Re-read and retry':'How often pages are read again, and when failed work is tried again.',
   'Onboarding':'The rules the onboarding journey follows for each university.',
+  'Admission checks':'Checks a value must pass before it is admitted automatically: adapter fees against the registered course total, and AI readings of central pages (English policy, academic calendar) for the top providers.',
   'Waste rules':'Stops work that keeps failing or finds nothing: pauses idle jobs, caps retries by how often they still succeed, freezes values two automatic jobs keep changing, reuses stored pages, and limits course-page search to the providers that matter most. What is stopped is recorded and flagged.',
   'Website API':'What the website (Wix) is given: whether rankings and logos may be displayed, how long logo links last, and the sync page size.'}
 
