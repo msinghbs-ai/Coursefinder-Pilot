@@ -8,6 +8,8 @@ const sql = fs.readFileSync('supabase/migrations/20261014060746_cf247_institutio
 const putFix = fs.readFileSync('supabase/migrations/20261014063911_cf247_register_facts_put_set_based.sql', 'utf8')
 const byName = fs.readFileSync('supabase/migrations/20261014065115_cf247_register_facts_match_by_name.sql', 'utf8')
 const live = fs.readFileSync('supabase/migrations/20261014064736_cf247_institution_type_sources_live.sql', 'utf8')
+const byName3 = fs.readFileSync('supabase/migrations/20261014070327_cf247_register_facts_match_by_name_v3.sql', 'utf8')
+const nzCode = fs.readFileSync('supabase/migrations/20261014070622_cf247_nzqa_code_from_search_number.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/layer1-provider-facts/index.ts', 'utf8')
 const control = fs.readFileSync('supabase/functions/layer1-operations-control/index.ts', 'utf8')
 const scheduled = fs.readFileSync('supabase/functions/layer1-operations-scheduled/index.ts', 'utf8')
@@ -55,7 +57,11 @@ test('NZQA: types come from the source metadata; a name is used only when exactl
   expect(byName).toContain("if md5(pg_get_functiondef('public.svc_provider_register_facts_put(uuid,uuid,text,jsonb)'::regprocedure)) <> '9d5275784d1f9f50bcd0b1c43deafb78'")
   expect(byName).toContain("group by 1 having count(*) = 1")
   expect(byName).toContain("coalesce(reg.provider_id, p.id, nm.provider_id)") // the number first, the name last
-  for (const f of [live, byName]) expect(f).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+  // third pass: a name is used only when every listed row with it has the same type; a number match always wins
+  expect(byName3).toContain("having count(distinct facts::text) = 1")
+  expect(byName3).toContain("order by m.provider_id, e.key, m.by_name, m.ord desc")
+  expect(byName3).toContain("with src as materialized (")
+  for (const f of [live, byName, byName3, nzCode]) expect(f).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
 
 test('G1/G2: the daily job is catalogued and its command holds no number; the sources start paused', () => {
@@ -66,7 +72,9 @@ test('G1/G2: the daily job is catalogued and its command holds no number; the so
 })
 
 test('worker: service key or one-time nonce, approved host only, evidence kept, then the rules run', () => {
-  expect(worker).toContain('const VERSION = "layer1-provider-facts-v1.2.0";')
+  expect(worker).toContain('const VERSION = "layer1-provider-facts-v1.3.0";')
+  expect(worker).toContain("const code = id && codeFromId ? (id.match(codeFromId)?.[1] || id) : id;")
+  expect(nzCode).toContain("jsonb_build_object('code_from_id', '^([0-9]+)[0-9]{5}$')")
   expect(worker).toContain('({ codes: [code], names: v.name ? [v.name] : [], facts: v.facts })')
   expect(worker).toContain('clean(meta.format) === "nzqa_type_listing"')
   expect(worker).toContain('svc_pilot_consume_nonce')

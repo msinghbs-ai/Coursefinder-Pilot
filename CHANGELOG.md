@@ -10,6 +10,7 @@
   - **Website API v2:** `institution_type` on providers and courses, the `institution_types` filter on search and providers, and the type list in reference. Additive.
   - Daily job `provider-type-classify` (catalogued). Migrations 20261014060746 and 20261014063911 (the facts writer matches every code in one statement; the first live apply had passed the 8 second limit); test `cf-247-institution-type-contract`; SOPs 1.17.
   - Reader v1.2.0 adds the NZQA provider search by organisation type (format `nzqa_type_listing`), so New Zealand providers are typed without waiting for the next NZQA register change. The search links providers by an internal number, so each row is matched by the NZQA number first and otherwise by its listed name, only when exactly one provider of the register has that name (migration 20261014065115). Migration 20261014064736 adds the NZQA source and resumes the three sources (verified weekly, applied when the file changes).
+  - Reader v1.3.0: the NZQA search number is the organisation number followed by a five-digit site number (415 of 415 checked), so every NZQA row now matches by number (migration 20261014070622). The name match (migrations 20261014070026 and 20261014070327, the first of which passed the time limit) stays as a fallback for a number that matches nothing; a name is used only when every listed row with it has the same type.
 
 ## 0.1.202 — 14 Oct 2026
 
