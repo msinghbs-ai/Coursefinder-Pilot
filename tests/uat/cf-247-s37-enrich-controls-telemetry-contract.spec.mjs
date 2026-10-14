@@ -48,3 +48,14 @@ test.describe('mocked browser', () => {
     await expect(card.locator('[data-enrich-limits]')).toContainText('Settings › Pipeline settings')
   })
 })
+
+// v2.15.275 hotfix (scheduled check, 14 Oct 2026 15:24): an AI reply with a null character could not be recorded; its items used their
+// tries while leased and were never settled, so batch 1 could not finish and batch 2 could not start.
+test('hotfix: items that used their AI tries are settled as failed; null characters removed before recording', () => {
+  const fix = fs.readFileSync('supabase/migrations/20261014013900_cf247_enrich_settle_spent_items.sql', 'utf8')
+  expect(fix).toContain("where e.job_id = p_id and e.attempts >= 3 and (e.state = 'ai' or (e.state = 'leased' and e.leased_until < now()));")
+  expect(fix).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('await rpc("svc_enrich_ai_record", { p_results: noNul(out) })')
+  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.23.1";')
+})
