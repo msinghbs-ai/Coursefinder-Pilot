@@ -88,6 +88,8 @@ jobs:
             [layer1-ca-sk-programs]=false
             # CF-247 production readiness (10 Oct 2026): previously deployed by hand; verify_jwt taken from the live project
             [ranking-publisher-import]=false
+            # CF-247 v2.15.276 (14 Oct 2026), Decision 258: provider register facts reader (service key or one-time nonce)
+            [layer1-provider-facts]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do
