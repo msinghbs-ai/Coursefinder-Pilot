@@ -76,7 +76,7 @@ test('worker v0.20.2+: an audience quote must itself name international (or dome
   const w = read('supabase/functions/coverage-sweep/index.ts')
   expect(w).toContain('const INTL_WORDS = /\\b(international|overseas|offshore|student visa|subclass 500|non[- ]?residents?|foreign|non[- ]?domestic|not (?:be )?an? domestic student)\\b/i;')
   expect(w).toContain('["international", "both"].includes(a?.audience) ? (INTL_WORDS.test(String(a?.audience_quote || "")) || foreignNamed(a?.audience_quote, home))')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.2[01]\.\d+"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.2[0-9]\.\d+"/)
 })
 
 test('confirm admissions: an admission by the first model is confirmed by the next while the setting is on (default on), switchable on Extraction', () => {

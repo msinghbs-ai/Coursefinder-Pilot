@@ -43,7 +43,7 @@ test('Victoria University and Adelaide University held for an adapter check, sho
 })
 
 test('worker v0.21.6: official registers first, website accepted only with the CRICOS code or a name-fitting address', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.21\.(6|7)";/) // v0.21.7 (v2.15.269) reads Firecrawl settings
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(21\.(6|7)|2[2-9]\.\d+)";/) // v0.21.7 (v2.15.269) reads Firecrawl settings
   expect(worker).toContain('{ key: "training_gov_au", site: "training.gov.au"')
   expect(worker).toContain('{ key: "teqsa", site: "teqsa.gov.au"')
   expect(worker).toContain('if (codeOn || fits) return { accepted: new URL(finalUrl).origin, basis: `register_${reg.key}_${codeOn ? "code" : "name"}`')

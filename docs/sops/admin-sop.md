@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.14 (reviewed for platform release v2.15.272)  
+**Version:** 1.15 (reviewed for platform release v2.15.273)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -127,3 +127,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.12 | 13 Oct 2026 | v2.15.269 | Every job size, re-read and retry time and onboarding rule is a setting on Settings › Pipeline settings (with what uses it); the Firecrawl proxy, site map sizes and search result counts are on Toolsets › Firecrawl; capacity, evidence storage, retention and provider fee rule policies are changed on Pipeline settings. Each change needs a reason and is logged. The controls check on Pipeline settings should always show that every running job reads its sizes from settings. |
 | 1.13 | 14 Oct 2026 | v2.15.270 | Filters work for every country in the catalogue: Courses › Region (NZ) and Province / territory (Canada) list regions (a course without a campus region takes its university's region); Delivery reads the course's own mode; an empty filter says why; Data Quality, Key dates, Regulatory sources and the fee currency include Canada. |
 | 1.14 | 14 Oct 2026 | v2.15.271 | Courses with no code printed by the university or regulator show a StudySearch code (university, level, number, marked SS), and search finds it. Providers show a Scholarship search flag: Off automatically when the only website known is a directory site; a Pipeline Operator turns it on in the provider panel with the provider's own website and a reason. |
+| 1.15 | 14 Oct 2026 | v2.15.273 | Layer 2 › Enrich fields: choose countries or universities and fields (campus, duration, level, delivery, field of study, international, provider address), preview what is missing, and start a task with a reason (Pipeline Operator and above). It fills only missing values from stored pages, rules and AI, and from a new read only when allowed; results show each value with the words it was read from. Field sources (which sources fill a field, per country) are changed there by a Platform Admin. |

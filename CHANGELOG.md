@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.200 — 14 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.273**. The Platform Admin asked on 14 Oct 2026 at 10:41 for "a job to enrich data for specific or multiple fields across uni or countries using scraper and ai in layer 2 and layer 3. Keep it simple" (plan `FIELD-GAPS-AND-ENRICHMENT-PLAN.md` v1.0; decisions: build the full job first, campus lists admitted when sources agree, international by the institution rule).
+  - **Layer 2 › Enrich fields.** Choose countries or universities and fields; preview what is missing, what has a stored page and what the adapters already read; start a task with a reason (Pipeline Operator and above). Tasks show progress, results by field and every value with the words it was read from.
+  - **The task (`enrich_fields`).** It fills only missing values, never a value entered or locked by hand. Sources, in the order set per country under Field sources: adapter values already read, the institution rule, the AI reading the stored page (it must quote it) or classifying the title, and one new read through the scraper only when the task allows it.
+  - **Campuses.** The AI turns a university's campus names into one list; a campus is admitted when at least `enrich.campus_min_pages` course pages name it; courses are then linked. International: Canada by the IRCC list; otherwise what the page says.
+  - **Worker v0.22.0** (mode `enrich_ai`, the pinned central-pages model). AI spend shows on Toolsets as "Enrich fields with AI" with its own daily guard. Migrations 20261014013500–3700; new settings in Pipeline settings. SOPs 1.15.
+
 ## 0.1.199 — 14 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.272** (Platform Admin, 14 Oct 2026 10:14: "Proceed", after the settings control audit correction v1.2).
