@@ -1,0 +1,47 @@
+{
+  "captured_at": "2026-10-14T00:35:51.900Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery.png",
+      "route": "layer-2-discovery",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2 Discovery & reading",
+      "settle_ms": 4889,
+      "height": 5117,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery",
+      "diag": {
+        "rows": 50,
+        "tally": "82 shown of 1,768 · admitting 67 · testing 12 · switched off 0 · no adapter 3",
+        "list_html": "no .ad-list",
+        "alerts": []
+      },
+      "console_errors": []
+    },
+    {
+      "file": "02-layer-2-discovery-enrich-fields.png",
+      "route": "layer-2-discovery",
+      "action": "Enrich fields",
+      "clicked": true,
+      "heading": "Layer 2 Discovery & reading",
+      "settle_ms": 3024,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=enrich",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-layer-2-discovery-enrich-fields-tasks.png",
+      "route": "layer-2-discovery",
+      "action": "Enrich fields tasks",
+      "clicked": true,
+      "heading": "Layer 2 Discovery & reading",
+      "settle_ms": 1506,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=enrich",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
