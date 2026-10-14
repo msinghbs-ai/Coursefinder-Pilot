@@ -7,7 +7,9 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 // CRICOS code. After an apply it runs the institution type rules (security.provider_type_classify_v1).
 // Source metadata: discovery_url (CKAN package_show), resource_url_regex or resource_name_regex, key_column, key_pattern,
 // scheme, facts {fact_code: column}. Called by layer1-operations-control and -scheduled (service key) or with a one-time nonce.
-const VERSION = "layer1-provider-facts-v1.0.0";
+// v1.1.0 (same day): format "nzqa_type_listing" reads the NZQA provider search once per organisation type named in the source
+// metadata (types, listing_url with {type}) and records each provider's type as fact nzqa_org_type, keyed by its NZQA number.
+const VERSION = "layer1-provider-facts-v1.1.0";
 const FN = "layer1-provider-facts";
 const FETCH_MS = 90000; // fixed: API time-out
 
@@ -108,15 +110,40 @@ async function pickResource(meta: any, domains: string[]) {
   return { id: res.id, name: clean(res.name), url: clean(res.url), lastModified: clean(res.last_modified || res.created) || null, packageId: pkg.result.id };
 }
 
-async function storeEvidence(service: any, sourceId: string, url: string, name: string, bytes: Uint8Array, hash: string, metadata: unknown) {
+// NZQA provider search results: one page per organisation type; each provider row links to details.do?providerId=<number>.
+export function nzqaListing(pages: { type: string; html: string }[], fact: string) {
+  const byCode = new Map<string, Record<string, string>>();
+  for (const p of pages) for (const m of p.html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const id = m[1].match(/href=["']\/providers\/details\.do\?providerId=([0-9]+)["']/i)?.[1];
+    if (id && !byCode.has(id)) byCode.set(id, { [fact]: p.type });
+  }
+  return [...byCode.entries()].map(([code, f]) => ({ codes: [code], facts: f }));
+}
+
+async function readNzqa(meta: any, domains: string[]) {
+  const types: string[] = Array.isArray(meta.types) ? meta.types.map(clean).filter(Boolean) : [];
+  const template = clean(meta.listing_url);
+  if (!types.length || !template.includes("{type}")) throw new Error("source metadata needs types and a listing_url with {type}");
+  const pages = [];
+  for (const type of types) {
+    const u = template.replace("{type}", encodeURIComponent(type));
+    hostAllowed(u, domains);
+    pages.push({ type, url: u, html: await (await fetchT(u)).text() });
+  }
+  const bytes = new TextEncoder().encode(JSON.stringify(pages));
+  const fact = Object.keys(meta.facts || {})[0] || "nzqa_org_type";
+  return { bytes, entries: nzqaListing(pages, fact), res: { id: null, name: "nzqa-provider-types.json", url: template, lastModified: null, packageId: null }, dataRows: pages.length, rowsWithoutCode: 0 };
+}
+
+async function storeEvidence(service: any, sourceId: string, url: string, name: string, bytes: Uint8Array, hash: string, metadata: unknown, mime = "text/csv") {
   const existing = await rpc(service, "svc_layer1_evidence_by_hash", { p_source_id: sourceId, p_hash: hash });
   if (existing) return existing;
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const path = `regulatory/AU/provider-facts/${sourceId}/${stamp}-${name.replace(/[^A-Za-z0-9._-]+/g, "_") || "resource.csv"}`;
-  const up = await service.storage.from("evidence").upload(path, bytes, { contentType: "text/csv", upsert: true });
+  const path = `regulatory/provider-facts/${sourceId}/${stamp}-${name.replace(/[^A-Za-z0-9._-]+/g, "_") || "resource"}`;
+  const up = await service.storage.from("evidence").upload(path, bytes, { contentType: mime, upsert: true });
   if (up.error) throw new Error(up.error.message);
   return await rpc(service, "svc_layer1_record_evidence", {
-    p_source_id: sourceId, p_job_id: null, p_source_url: url, p_storage_path: path, p_content_hash: hash, p_mime_type: "text/csv", p_metadata: metadata,
+    p_source_id: sourceId, p_job_id: null, p_source_url: url, p_storage_path: path, p_content_hash: hash, p_mime_type: mime, p_metadata: metadata,
   });
 }
 
@@ -144,11 +171,18 @@ Deno.serve(async (req: Request) => {
     const facts = meta.facts || {};
     if (!Object.keys(facts).length) throw new Error("source metadata names no facts");
 
-    const res = await pickResource(meta, domains);
-    const bytes = new Uint8Array(await (await fetchT(res.url)).arrayBuffer());
+    const nz = clean(meta.format) === "nzqa_type_listing";
+    let res: any, bytes: Uint8Array, parsed: { dataRows: number; rowsWithoutCode: number; entries: any[] };
+    if (nz) {
+      const r = await readNzqa(meta, domains);
+      res = r.res; bytes = r.bytes; parsed = { dataRows: r.dataRows, rowsWithoutCode: 0, entries: r.entries };
+    } else {
+      res = await pickResource(meta, domains);
+      bytes = new Uint8Array(await (await fetchT(res.url)).arrayBuffer());
+      parsed = extractFacts(new TextDecoder().decode(bytes), clean(meta.key_column), clean(meta.key_pattern) || "[0-9]{5}[A-Za-z]", facts);
+    }
     const fileSha256 = await sha(bytes);
-    const parsed = extractFacts(new TextDecoder().decode(bytes), clean(meta.key_column), clean(meta.key_pattern) || "[0-9]{5}[A-Za-z]", facts);
-    if (!parsed.entries.length) throw new Error("no register codes found in the file");
+    if (!parsed.entries.length) throw new Error("no register codes found");
     const out: Record<string, unknown> = {
       ok: true, workerVersion: VERSION, mode: apply ? "apply" : "dry_run", sourceId, resourceName: res.name, resourceUrl: res.url,
       lastModified: res.lastModified, fileSha256, dataRows: parsed.dataRows, rowsWithoutCode: parsed.rowsWithoutCode,
@@ -158,7 +192,7 @@ Deno.serve(async (req: Request) => {
 
     const evidenceId = await storeEvidence(service, sourceId, res.url, res.name, bytes, fileSha256, {
       resource_id: res.id, resource_name: res.name, last_modified: res.lastModified, package_id: res.packageId, byte_size: bytes.length, worker_version: VERSION,
-    });
+    }, nz ? "application/json" : "text/csv");
     const put = await rpc(service, "svc_provider_register_facts_put", { p_source_id: sourceId, p_evidence_id: evidenceId, p_scheme: clean(meta.scheme) || "cricos", p_rows: parsed.entries });
     const classify = await rpc(service, "svc_provider_type_classify", {});
     return json({
