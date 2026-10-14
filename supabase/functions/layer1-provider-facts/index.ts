@@ -8,8 +8,10 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 // Source metadata: discovery_url (CKAN package_show), resource_url_regex or resource_name_regex, key_column, key_pattern,
 // scheme, facts {fact_code: column}. Called by layer1-operations-control and -scheduled (service key) or with a one-time nonce.
 // v1.1.0 (same day): format "nzqa_type_listing" reads the NZQA provider search once per organisation type named in the source
-// metadata (types, listing_url with {type}) and records each provider's type as fact nzqa_org_type, keyed by its NZQA number.
-const VERSION = "layer1-provider-facts-v1.1.0";
+// metadata (types, listing_url with {type}) and records each provider's type as fact nzqa_org_type.
+// v1.2.0: the search links providers by an internal number, not the NZQA organisation number, so each row also sends the
+// provider name as listed; the facts writer matches on it when the number matches nothing (one provider of that name only).
+const VERSION = "layer1-provider-facts-v1.2.0";
 const FN = "layer1-provider-facts";
 const FETCH_MS = 90000; // fixed: API time-out
 
@@ -110,14 +112,17 @@ async function pickResource(meta: any, domains: string[]) {
   return { id: res.id, name: clean(res.name), url: clean(res.url), lastModified: clean(res.last_modified || res.created) || null, packageId: pkg.result.id };
 }
 
-// NZQA provider search results: one page per organisation type; each provider row links to details.do?providerId=<number>.
+// NZQA provider search results: one page per organisation type; each provider row has the name in its first cell and links to
+// details.do?providerId=<search number>.
+const decodeHtml = (v: string) => v.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
 export function nzqaListing(pages: { type: string; html: string }[], fact: string) {
-  const byCode = new Map<string, Record<string, string>>();
+  const byCode = new Map<string, { name: string; facts: Record<string, string> }>();
   for (const p of pages) for (const m of p.html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
     const id = m[1].match(/href=["']\/providers\/details\.do\?providerId=([0-9]+)["']/i)?.[1];
-    if (id && !byCode.has(id)) byCode.set(id, { [fact]: p.type });
+    const name = decodeHtml(m[1].match(/<td[^>]*>([\s\S]*?)<\/td>/i)?.[1] || "");
+    if (id && !byCode.has(id)) byCode.set(id, { name, facts: { [fact]: p.type } });
   }
-  return [...byCode.entries()].map(([code, f]) => ({ codes: [code], facts: f }));
+  return [...byCode.entries()].map(([code, v]) => ({ codes: [code], names: v.name ? [v.name] : [], facts: v.facts }));
 }
 
 async function readNzqa(meta: any, domains: string[]) {
