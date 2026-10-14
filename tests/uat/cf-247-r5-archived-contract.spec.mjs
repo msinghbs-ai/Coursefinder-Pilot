@@ -52,11 +52,11 @@ test.describe('mocked browser', () => {
     await expect(box.locator('[data-departures-waiting]')).toContainText('1 provider departure waits')
     await box.locator('[data-archived-provider="p-u"]').getByRole('button', { name: 'Restore' }).click()
     await expect(box.getByRole('status')).toContainText('restored')
-    expect(calls.find(c => c.fn === 'admin_provider_restore')).toEqual({ fn: 'admin_provider_restore', p_provider_id: 'p-u' })
+    await expect.poll(() => calls.find(c => c.fn === 'admin_provider_restore')).toEqual({ fn: 'admin_provider_restore', p_provider_id: 'p-u' })
     await box.getByRole('tab', { name: /Courses not active/ }).click()
     await expect(box.locator('[data-archived-course="c-1"]')).toContainText('Archived by hand')
     await box.locator('[data-archived-course="c-1"]').getByRole('button', { name: 'Restore' }).click()
-    expect(calls.find(c => c.fn === 'admin_course_edit')).toEqual({ fn: 'admin_course_edit', p_course_id: 'c-1', p_action: 'restore', p_args: {} })
+    await expect.poll(() => calls.find(c => c.fn === 'admin_course_edit')).toEqual({ fn: 'admin_course_edit', p_course_id: 'c-1', p_action: 'restore', p_args: {} })
   })
 
   test('Curator sees the screen without Restore', async ({ page }) => {

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.205 — 15 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.278** (waste rules for data enrichment). The Platform Admin asked on 15 Oct 2026 at 09:18: "If we are wasting resources on multiple tries then tighten rules around it, recording, flagging and moving on, rather getting stuck an wasting resources." Decisions (multiple choice): "Auto-pause idle jobs", "Yield-based retry cap", "No repeat reads unchanged", "Run admit jobs on new input"; approach "Top 50 by adapter, flag the tail".
+  - **Idle jobs:** the waste-guard job (hourly) pauses a watched job with no output and nothing waiting (course-link-reverse, about 6.5 hours of database time a day for 2 courses ever), and switches it on again when work arrives.
+  - **Admit jobs on new input:** coverage-admit, coverage-admit-intakes and adapter-overwrite run only when pages, adapters, checked values, exclusions, locks, decisions, courses or providers changed, with a full check every `waste.admit_full_check_hours` (6).
+  - **Retry cap by yield:** AI course-page matching makes a further attempt only while that attempt still finds a page in at least `waste.retry_min_yield_pct` (15%) of recent cases (now 2 attempts; attempt 3 found 9%).
+  - **Flip-flops:** exit awards no longer overwrite a value the course's own page gives (106 courses were rewritten about 33 times each in 4 days); a value changed automatically more than `waste.flipflop_max_changes` in the window is frozen through the adapter exclusions and flagged; the same review item is not raised again while an identical one was superseded (9 courses were raised 144 times a day).
+  - **Stored pages:** a scholarship page stored within `waste.page_reuse_hours` (24) is used instead of being read again.
+  - **Focus providers:** course-page search, site mapping and AI matching run only for the top `enrich.focus_top_n` (50) Australian providers by missing English and intakes; others keep their register data and are flagged.
+  - **Records:** `pipeline.enrichment_flags` (what was stopped and why); notices for paused jobs and frozen values; Firecrawl panel and target refresh no longer run at the same time (95 deadlocks a day). Migration 20261015010000 (eight functions md5-guarded). SOPs 1.19.
+
 ## 0.1.204 — 14 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.277**. The Platform Admin asked on 14 Oct 2026 at 20:43: "For ranking, we can pass it on v2 api and for logos we can pass it on as file links to be stored in wix platform with maximun validity. And subsequent api requests only pass changed data unless queried for full load." Decisions (multiple choice): approved to display; logo links 1 year, renewed in the delta; a new sync action with a cursor.
