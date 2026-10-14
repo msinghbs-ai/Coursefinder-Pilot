@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.204 — 14 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.277**. The Platform Admin asked on 14 Oct 2026 at 20:43: "For ranking, we can pass it on v2 api and for logos we can pass it on as file links to be stored in wix platform with maximun validity. And subsequent api requests only pass changed data unless queried for full load." Decisions (multiple choice): approved to display; logo links 1 year, renewed in the delta; a new sync action with a cursor.
+  - **Display terms:** rankings and logos are returned with `terms_status: approved`, read from two Yes/No settings on Settings › Pipeline settings › Website API (no longer a fixed value in five functions).
+  - **Logo links:** valid for `website.logo_link_days` (365) instead of 24 hours written into the edge function.
+  - **Sync action (website API v2, additive):** no cursor or `full_load` returns everything in pages; `next_cursor` passed back returns only what changed since, with removals. Entities: reference, provider, logo, rankings, scholarship, course (course items are the search items). Job `website-sync-check` (catalogued, Search and API) builds and compares items every minute; a logo is resent before its link ends.
+  - Pipeline settings show Yes/No settings. Migration 20261014110000 (five website functions md5-guarded). SOPs 1.18.
+
 ## 0.1.203 — 14 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.276** (Decision 258). The Platform Admin chose on 14 Oct 2026 to map institution type for the website (multiple choice): types mirror the registers; Australian universities from the TEQSA National Register on data.gov.au; a CRICOS Government provider that offers VET is TAFE; New Zealand from NZQA; Canada left empty; training.gov.au later.

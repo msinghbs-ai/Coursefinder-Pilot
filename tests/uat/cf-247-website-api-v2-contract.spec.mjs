@@ -34,7 +34,8 @@ test('every v2 migration is checked in and drops or deletes nothing', () => {
 
 test('edge function: v2 is opt-in on the same key and v1 is untouched', () => {
   expect(edge).toContain('const V2_CONTRACT = "website-search-v2";')
-  expect(edge).toContain('const V2_ACTIONS = ["reference","search","course","providers","provider","rankings","scholarships","scholarship"];')
+  // v2.15.277 adds "sync" at the end (additive); every earlier action stays
+  expect(edge).toContain('const V2_ACTIONS = ["reference","search","course","providers","provider","rankings","scholarships","scholarship","sync"];')
   expect(edge).toContain('if(contract===V2_CONTRACT) return await handleV2(svc,body,requestId);')
   expect(edge).toContain('const ACTIONS = ["sync_courses","reference_bundle","lookup","search","scholarships"];')
   expect(edge).toContain('return json(200,{contract_version:CONTRACT_VERSION,source_contract_version:obj.contract_version??null,...obj,request_id:requestId},requestId);')
