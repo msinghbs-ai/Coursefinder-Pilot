@@ -133,7 +133,7 @@ begin
 end $function$;
 
 do $post$
-declare v_expected jsonb := '{"security.enrich_fields_slice_v1(uuid,integer)": "f6371f5e9aa481ac88a47a0fde843b70"}'::jsonb;
+declare v_expected jsonb := '{"security.enrich_fields_slice_v1(uuid,integer)": "aa68e9a80a65f4e513b51ef1453b2751"}'::jsonb;
   v_sig text;
 begin
   for v_sig in select jsonb_object_keys(v_expected) loop
