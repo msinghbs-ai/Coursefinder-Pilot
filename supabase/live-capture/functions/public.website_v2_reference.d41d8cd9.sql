@@ -27,6 +27,9 @@ AS $function$
                                 where d.country_code=c.country_code and e->>'test_code' is not null group by 1) x)
       ) order by c.n desc) from (select country_code, count(*) n from search.course_documents group by 1) c),
     'regional_categories', jsonb_build_array(jsonb_build_object('code',1,'name','Major city'), jsonb_build_object('code',2,'name','City or major regional centre'), jsonb_build_object('code',3,'name','Regional centre or other regional area')),
+    'institution_types', (select jsonb_agg(jsonb_build_object('code', t.code, 'name', t.name, 'description', t.description,
+                             'providers', (select count(*) from catalogue.providers p where p.provider_type_id = t.id and p.publication_status = 'published' and p.lifecycle_status = 'active')) order by t.name)
+                           from ref.provider_types t where t.status = 'active'),
     'university_groups', (select jsonb_agg(jsonb_build_object('code', replace(gic.code,'au_',''), 'name', gic.name,
                            'members', (select count(*) from catalogue.provider_collection_memberships gm where gm.collection_id=gic.id and gm.status='active')))
                           from ref.institution_collections gic where gic.collection_type='university_group' and gic.status='active'),

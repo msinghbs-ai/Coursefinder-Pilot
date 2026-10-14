@@ -29,6 +29,7 @@ begin
     join ranking.observation_provider_links l on l.observation_id=o.id
     join catalogue.providers p on p.id=l.provider_id join ref.countries c on c.id=p.country_id
     where (v_countries is null or trim(c.iso_alpha2::text) = any(v_countries))
+      and not exists (select 1 from security.layer4_search_blocked_providers b where b.provider_id = p.id)  -- v2.15.236
       and (v_providers is null or p.stable_key = any(v_providers))
       and (v_rank_max is null or coalesce(o.rank_low,o.rank_exact) <= v_rank_max)
     order by ed.id, l.provider_id, l.is_primary desc nulls last
