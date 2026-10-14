@@ -96,7 +96,7 @@ CREATE OR REPLACE FUNCTION security.website_sync_item_v1(p_entity text, p_ref uu
 AS $function$
 declare v jsonb;
 begin
-  if p_entity = 'course' then v := public.website_v2_course(p_key)->'item';
+  if p_entity = 'course' then v := case when p_ref is null then null else api.website_v2_course_item(p_ref, null, null) end;  -- the search item (Wix CF_Courses)
   elsif p_entity = 'scholarship' then v := public.website_v2_scholarship(p_key)->'item';
   elsif p_entity = 'reference' then v := public.website_v2_reference();
   elsif p_entity in ('provider', 'logo', 'rankings') then
