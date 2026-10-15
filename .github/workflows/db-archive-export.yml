@@ -37,6 +37,7 @@ jobs:
           if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ] || [ "$PROJECT_REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
           if ! [[ "${{ inputs.definition }}" =~ ^[a-z0-9-]+\.json$ ]] || [ ! -f "$DEFINITION" ]; then echo "::error::Refused definition: ${{ inputs.definition }}"; exit 1; fi
       - name: Export, read back and check
+        shell: bash  # -eo pipefail: a failed export fails the step (tee would hide it)
         run: |
           GIT_SHA=$(git rev-parse HEAD) python3 scripts/archive_export.py | tee export.log
           grep '^MANIFEST ' export.log | cut -c10- > manifest.json
