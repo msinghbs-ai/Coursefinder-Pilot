@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.208 — 15 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.281** (bug fix and feature). The Platform Admin reported on 15 Oct 2026: "Bug/fix: i'm unable to upload Uni Logos or request to find it".
+  - **Cause:** the provider panel's logo was made clickable by a page watcher that only noticed new tables and panels; when the provider's details arrived after the panel opened (a direct link, a slow load) the logo never became clickable, so no upload reached the server. The old logo finder had been retired on 10 Oct; 49 of 3,091 providers had a logo.
+  - **Logo editing:** the logo is clickable in the provider panel, the providers list and the Logos list for roles allowed by the setting Pipeline settings › Logos (Platform Admin). The editor uploads a file, downloads an image address, or asks the logo finder. Errors show the server's reason. The page watcher is retired.
+  - **Logo finder** (job logo-find, every 10 minutes; coverage-sweep v0.25.0 mode logo_find): providers with a website and no logo, asked-for first then by courses; the logo from the home page (header logo, declared logo, SVG icon, touch icon); type read from the bytes, size and SVG content checked; stored and attached only when the provider still has no logo; not found flagged (`logo_not_found`) and tried again after the set days. Migration 20261015050000; S44.
+
 ## 0.1.207 — 15 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.280** (Decision 260, housekeeping). The Platform Admin asked on 15 Oct 2026: "always keep the snapshot/documentation what corresponds to what and decommission as we create new approach. outcome is code/platform and database are always streamlined and secure." Choice: "Live table + generated doc".

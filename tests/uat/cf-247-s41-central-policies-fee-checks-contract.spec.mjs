@@ -36,7 +36,7 @@ test('English plan: same-level double degrees and stated research defaults; othe
   expect(mig).toContain("jsonb_typeof(v_defaults->'research') is distinct from 'array' then 'held|research degree (the policy states no research requirement)'")
   expect(mig).toContain("then 'held|level not covered by the policy default'")
   expect(worker).toContain('for (const lv of ["undergraduate", "postgraduate", "research"]) {')
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.24\.\d+"/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(2[4-9])\.\d+"/) // v0.25.0 (logo finder) keeps this
 })
 
 test('md5-guarded and nothing dropped or deleted', () => {
