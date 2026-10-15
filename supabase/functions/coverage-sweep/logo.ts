@@ -44,8 +44,8 @@ export function logoCandidates(html: string, base: string, name = ""): LogoCandi
     const named = nameWords.some((w) => (label + " " + src).toLowerCase().includes(w));
     const svg = /\.svg$/.test(file);
     const photo = /\.jpe?g$/.test(file) || /photo|campus|student|homepage/.test(file);  // logos are rarely JPEG; photos often are
-    const knockout = /white|reverse|inverse|negative|knockout|light/.test(file);         // drawn for dark backgrounds: invisible on white
-    add(src, inHeader ? "header_logo" : "page_logo", (inHeader ? 60 : 30) + (named ? 15 : 0) + (svg ? 5 : 0) + (/footer/i.test(label) ? -20 : 0) + (photo ? -45 : 0) + (knockout ? -50 : 0));
+    const knockout = /white|reverse|inverse|negative|knockout/.test(file);  // drawn for dark backgrounds: a blank tile on white, never used (v0.25.2)
+    add(src, inHeader ? "header_logo" : "page_logo", (inHeader ? 60 : 30) + (named ? 15 : 0) + (svg ? 5 : 0) + (/footer/i.test(label) ? -20 : 0) + (photo ? -45 : 0) + (knockout ? -200 : 0));
   }
   // inline SVG logos have no address: skipped (the next candidates usually exist)
   // 2. the logo the page declares (schema.org Organization, CollegeOrUniversity)
