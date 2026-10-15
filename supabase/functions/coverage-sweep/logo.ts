@@ -36,12 +36,16 @@ export function logoCandidates(html: string, base: string, name = ""): LogoCandi
     // the element around the image (its link or wrapper) often carries the "logo" name
     const before = html.slice(Math.max(0, idx - 300), idx);
     const wrapper = (before.match(/<(a|div|span|figure|picture)\b[^>]*>[^<]*$/i)?.[0] || before.slice(-200));
-    const isLogo = /logo|brand|crest/i.test(label + " " + src) || /class\s*=\s*["'][^"']*(logo|brand)/i.test(wrapper);
-    if (!isLogo || NOT_OURS.test(label)) continue;
+    // v0.25.1: the file name (not its folder: "/new-brand/homepage/campus.jpeg" is a photo) or the image's own label says logo
+    const file = (src.split(/[?#]/)[0].split("/").pop() || "").toLowerCase();
+    const isLogo = /logo|wordmark|crest|emblem/.test(file) || /logo|brand|crest|wordmark/i.test(label) || /class\s*=\s*["'][^"']*(logo|brand)/i.test(wrapper);
+    if (!isLogo || NOT_OURS.test(label) || NOT_OURS.test(file)) continue;
     const inHeader = idx < head.length;
     const named = nameWords.some((w) => (label + " " + src).toLowerCase().includes(w));
-    const svg = /\.svg(\?|$)/i.test(src);
-    add(src, inHeader ? "header_logo" : "page_logo", (inHeader ? 60 : 30) + (named ? 15 : 0) + (svg ? 5 : 0) + (/footer/i.test(label) ? -20 : 0));
+    const svg = /\.svg$/.test(file);
+    const photo = /\.jpe?g$/.test(file) || /photo|campus|student|homepage/.test(file);  // logos are rarely JPEG; photos often are
+    const knockout = /white|reverse|inverse|negative|knockout|light/.test(file);         // drawn for dark backgrounds: invisible on white
+    add(src, inHeader ? "header_logo" : "page_logo", (inHeader ? 60 : 30) + (named ? 15 : 0) + (svg ? 5 : 0) + (/footer/i.test(label) ? -20 : 0) + (photo ? -45 : 0) + (knockout ? -50 : 0));
   }
   // inline SVG logos have no address: skipped (the next candidates usually exist)
   // 2. the logo the page declares (schema.org Organization, CollegeOrUniversity)
@@ -56,11 +60,12 @@ export function logoCandidates(html: string, base: string, name = ""): LogoCandi
   for (const m of html.matchAll(/<link\b[^>]*>/gi)) {
     const rel = attr(m[0], "rel").toLowerCase(), href = attr(m[0], "href"), sizes = attr(m[0], "sizes"), type = attr(m[0], "type");
     if (!href) continue;
-    if (/(^|\s)(icon|mask-icon)(\s|$)/.test(rel) && (/svg/i.test(type) || /\.svg(\?|$)/i.test(href))) add(href, "svg_icon", 25);
+    if (/(^|\s)icon(\s|$)/.test(rel) && (/svg/i.test(type) || /\.svg(\?|$)/i.test(href))) add(href, "svg_icon", 25);
+    else if (/mask-icon/.test(rel)) add(href, "mask_icon", 8);  // v0.25.1: a one-colour silhouette, used only when nothing else is there
     else if (/apple-touch-icon/.test(rel)) add(href, "touch_icon", 20);
     else if (/(^|\s)icon(\s|$)/.test(rel) && Number((sizes.match(/(\d+)x\d+/) || [])[1] || 0) >= 128) add(href, "large_icon", 18);
   }
-  return [...out.values()].sort((a, b) => b.score - a.score);
+  return [...out.values()].filter((c) => c.score > 0).sort((a, b) => b.score - a.score);
 }
 
 // width and height of a PNG, JPEG or WebP; null when the bytes do not say
