@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.207 — 15 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.280** (Decision 260, housekeeping). The Platform Admin asked on 15 Oct 2026: "always keep the snapshot/documentation what corresponds to what and decommission as we create new approach. outcome is code/platform and database are always streamlined and secure." Choice: "Live table + generated doc".
+  - **Component register** (`pipeline.component_register`): every job, table, view, edge function and screen with its layer, purpose, status (active, retiring, retired), replaces and replaced by, last used and size.
+  - **Weekly hygiene check** (job hygiene-check): usage counters; unused tables, indexes and edge functions; uncatalogued jobs; tables without row-level security; definer functions without a pinned search path; public functions open to anonymous callers; components ready to drop. Notice "Housekeeping".
+  - **Component register workflow** (daily): edge function calls from the logs, edge functions and screens from this repository; generated document on the `component-register-snapshot` branch.
+  - **Build rule (S42):** migrations from 20261015030000 say what they replace and retire, state each new table's purpose and catalogue each new job. Repository rules (CLAUDE.md) updated. SOPs 1.21.
+
 ## 0.1.206 — 15 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.279** (central pages and fee checks). Platform Admin decisions on 15 Oct 2026 (multiple choice): "Central pages, per course group"; fees "Qualify first, then decide", then "Clear the >=90% ones"; "Auto-approve checked AI proposals", "Double degrees take the shared default", "Research degrees need a research default", "Keep the other holds".

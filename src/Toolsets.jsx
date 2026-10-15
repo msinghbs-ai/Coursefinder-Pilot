@@ -65,6 +65,7 @@ export function noticePlan(n){
     case'openrouter:over_guard':return{need:'info',say:'Nothing to do: it carries on when the UTC day changes. Raise the guard if it should carry on today.',go:go('Daily guards',LIMITS.page,LIMITS.tab,'services.toolset.openrouter','openrouter:Daily guards')}
     case'scheduled_jobs:timeout':return{need:'action',say:'Lower the job’s batch size so each run finishes inside the limit.',go:go('Jobs','jobs','jobs','','')}
     case'scheduled_jobs:failed':return{need:n.severity==='high'?'action':'info',say:n.severity==='high'?'It keeps failing: the job needs a fix.':'Nothing to do unless it repeats.',go:go('Jobs','jobs','jobs','','')}
+    case'pipeline:hygiene':return{need:'action',say:'Retire what is unused, fix the security items, and run the drop paste file for what is ready (component register).',go:go('Jobs','jobs','jobs','','')}
     case'pipeline:waste_paused':return{need:'info',say:'Nothing to do: it switches on again by itself when work arrives.',go:go('Pipeline settings','environment','','','settings-register')}
     case'pipeline:waste_frozen':return{need:'action',say:'Check the frozen values and set the right one by hand.',go:go('Pipeline settings','environment','','','settings-register')}
     case'pipeline:fixed_value':return{need:'action',say:'Move the number into a setting so it can be changed on screen.',go:go('Pipeline settings','environment','','','settings-register')}
