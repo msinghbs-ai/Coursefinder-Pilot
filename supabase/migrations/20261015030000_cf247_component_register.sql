@@ -174,7 +174,8 @@ begin
   select now(), 'table', t.schemaname || '.' || t.relname, coalesce(t.seq_scan, 0) + coalesce(t.idx_scan, 0), t.n_tup_ins + t.n_tup_upd + t.n_tup_del
     from pg_stat_user_tables t
   union all
-  select now(), 'index', i.schemaname || '.' || i.indexrelname, i.idx_scan, null from pg_stat_user_indexes i;
+  select now(), 'index', i.schemaname || '.' || i.indexrelname, i.idx_scan, null from pg_stat_user_indexes i
+  on conflict do nothing;
   -- the latest snapshot at least the idle time old
   v_since := now() - make_interval(days => v_idle);
   select max(x.at) into v_then from pipeline.component_usage_snapshots x where x.at <= v_since;
