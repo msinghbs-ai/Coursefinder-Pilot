@@ -21,7 +21,7 @@ test('CF-150 de-duplicates Provider logo requests and removes reset hydration lo
 test('CF-150 preserves Provider logo management and release currentness',()=>{
  expect(src).toContain("supabase.functions.invoke('provider-asset-upload'")
  expect(src).toContain('coursefinder:provider-logo-refresh')
- expect(src).toContain('rank<5')
+ expect(src).toContain("supabase.rpc('admin_provider_logo_capability')") // CF-247 15 Oct 2026: who may change logos is a setting (was rank 5)
  // 7 Oct 2026: version pins moved to release-manifest.js (its own contract); the page title carries no version.
  expect(index).toContain('<title>StudySearch PIM Admin</title>')
 })

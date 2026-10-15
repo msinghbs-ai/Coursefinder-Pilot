@@ -21,6 +21,7 @@ const SECTION_HELP={'Job sizes':'How much each scheduled job takes in a run. The
   'Housekeeping':'The weekly hygiene check: when something counts as unused, and how long a retired component is kept before it is dropped (Decision 260).',
   'Admission checks':'Checks a value must pass before it is admitted automatically: adapter fees against the registered course total, and AI readings of central pages (English policy, academic calendar) for the top providers.',
   'Waste rules':'Stops work that keeps failing or finds nothing: pauses idle jobs, caps retries by how often they still succeed, freezes values two automatic jobs keep changing, reuses stored pages, and limits course-page search to the providers that matter most. What is stopped is recorded and flagged.',
+  'Logos':'Provider logos: who may upload or find one, and how the logo finder works through providers with no logo (job logo-find).',
   'Website API':'What the website (Wix) is given: whether rankings and logos may be displayed, how long logo links last, and the sync page size.'}
 
 // One setting: value, range and unit, what uses it, the last change; Save asks for a reason inline.

@@ -56,7 +56,11 @@ Deno.serve(async(req:Request)=>{
   });
   const {data:context,error:contextError}=await userClient.rpc("admin_read",{p_operation:"context",p_args:{}});
   if(contextError||!context?.authenticated)return reply(401,{error:"authentication_required"});
-  if(Number(context?.role_rank||0)<5)return reply(403,{error:"pim_operator_role_required"});
+  // CF-247 15 Oct 2026: the lowest role that may change logos is a setting (Pipeline settings › Logos), the same one the screens read
+  const gate=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const {data:allowedRole,error:roleError}=await gate.rpc("svc_logo_upload_allowed",{p_user_id:context.user_id});
+  if(roleError)return reply(500,{error:"role_check_failed",detail:roleError.message});
+  if(allowedRole!==true)return reply(403,{error:"your_role_cannot_change_logos"});
 
   let form:FormData;
   try{form=await req.formData()}catch{return reply(400,{error:"multipart_form_required"})}
