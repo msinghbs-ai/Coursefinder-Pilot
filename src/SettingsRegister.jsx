@@ -18,7 +18,7 @@ const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-
 const SECTION_HELP={'Job sizes':'How much each scheduled job takes in a run. The job reads the value each time it runs.',
   'Re-read and retry':'How often pages are read again, and when failed work is tried again.',
   'Onboarding':'The rules the onboarding journey follows for each university.',
-  'Housekeeping':'The weekly hygiene check: when something counts as unused, and how long a retired component is kept before it is dropped (Decision 260).',
+  'Housekeeping':'The weekly hygiene check: when something counts as unused, and how long a retired component is kept before it is dropped (Decision 260). Storage & retention: how long job logs, adapter screenshots and hourly resource readings are kept, and how much each clean-up run removes.',
   'Admission checks':'Checks a value must pass before it is admitted automatically: adapter fees against the registered course total, and AI readings of central pages (English policy, academic calendar) for the top providers.',
   'Waste rules':'Stops work that keeps failing or finds nothing: pauses idle jobs, caps retries by how often they still succeed, freezes values two automatic jobs keep changing, reuses stored pages, and limits course-page search to the providers that matter most. What is stopped is recorded and flagged.',
   'Flags':'The flag unit: how many tries before a soft reason holds an item, the free recheck and trial-run back-offs, when a worker job counts as running empty, and who may raise or release flags (Coverage & completeness › Flags).',

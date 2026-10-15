@@ -1,0 +1,26 @@
+{
+  "about": "CF-247 usage audit decisions D6, D7, D9 and D10 (Platform Admin, 15 Oct 2026 22:12: \"Proceed with D6, D7, D9 and D10\"). Rows exported here before the paste file purges or drops them. Each set's select is the exact row set the paste file removes; the paste file refuses to run unless the row count and key hash still match this export.",
+  "bucket": "archive",
+  "prefix": "cf247-usage-audit-2026-10-15",
+  "part_rows": 20000,
+  "sets": [
+    {"name": "layer3_fact_handoffs", "key": "id", "select": "select h.* from pipeline.layer3_fact_handoffs h"},
+    {"name": "layer3_work_items_purged", "key": "id", "select": "select w.* from pipeline.layer3_work_items w where w.task_class <> 'provider_current_tuition_validation' and w.status in ('admitted', 'no_candidate', 'superseded') and not exists (select 1 from pipeline.adapter_shadow_reads x where x.work_item_id = w.id)"},
+    {"name": "layer3_interpretations_purged", "key": "id", "select": "select i.* from pipeline.layer3_interpretations i where not exists (select 1 from pipeline.layer3_work_items w where w.interpretation_id = i.id and not (w.task_class <> 'provider_current_tuition_validation' and w.status in ('admitted', 'no_candidate', 'superseded') and not exists (select 1 from pipeline.adapter_shadow_reads x where x.work_item_id = w.id))) and not exists (select 1 from pipeline.layer4_review_items r where r.layer3_interpretation_id = i.id) and not exists (select 1 from pipeline.scholarship_ai_run_items s where s.interpretation_id = i.id)"},
+    {"name": "layer2_scope_wave_items", "key": "id", "select": "select t.* from pipeline.layer2_scope_wave_items t"},
+    {"name": "zz_qualify_scratch_v1", "key": "provider_id", "select": "select t.* from pipeline.zz_qualify_scratch_v1 t"},
+    {"name": "reading_restores_20261005", "key": null, "select": "select t.* from pipeline.reading_restores_20261005 t"},
+    {"name": "_layer1_depth_uat_control", "key": "id", "select": "select t.* from public._layer1_depth_uat_control t"},
+    {"name": "layer2_fanout_tasks", "key": "id", "select": "select t.* from pipeline.layer2_fanout_tasks t"},
+    {"name": "night_run_queue", "key": "provider_id", "select": "select t.* from pipeline.night_run_queue t"},
+    {"name": "night_run_rebatch", "key": "provider_id", "select": "select t.* from pipeline.night_run_rebatch t"},
+    {"name": "refused_host_changes", "key": "id", "select": "select t.* from pipeline.refused_host_changes t"},
+    {"name": "scholarship_reread_snapshots", "key": null, "select": "select t.* from pipeline.scholarship_reread_snapshots t"},
+    {"name": "layer2_provider_benchmark_observations", "key": "id", "select": "select t.* from pipeline.layer2_provider_benchmark_observations t"},
+    {"name": "pilot_edge_execution_queue", "key": "id", "select": "select t.* from pipeline.pilot_edge_execution_queue t"},
+    {"name": "intent_aliases", "key": "id", "select": "select t.* from search.intent_aliases t"},
+    {"name": "evidence_links", "key": "id", "select": "select t.* from pipeline.evidence_links t"},
+    {"name": "layer2_domain_refresh_policies", "key": "domain", "select": "select t.* from pipeline.layer2_domain_refresh_policies t"},
+    {"name": "layer3_work_item_rebinds", "key": "id", "select": "select t.* from pipeline.layer3_work_item_rebinds t"}
+  ]
+}
