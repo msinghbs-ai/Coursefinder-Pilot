@@ -1,0 +1,47 @@
+# Export rows to the private Storage bucket before a paste file purges or drops them (CF-247, 15 Oct 2026; usage audit decisions
+# D6, D7, D9 and D10, Platform Admin 22:12: "Proceed with D6, D7, D9 and D10").
+# Reads a definition from supabase/archive/<name>.json (row sets, each one read-only select), exports every set as gzipped JSON lines,
+# downloads each object again and checks its sha256, line count and key hash against the database, then uploads a manifest.
+# Nothing in the database changes. The paste file that removes the rows checks the same counts and key hashes first.
+# Safety: the typed project ref must match the repository variable SUPABASE_PROJECT_REF (never the demo project); only a
+# definition file under supabase/archive; every set must be a single select.
+name: Database archive export
+on:
+  workflow_dispatch:
+    inputs:
+      definition:
+        description: "Definition file name under supabase/archive (e.g. cf247-usage-audit-2026-10-15.json)"
+        required: true
+      git_ref:
+        description: "Branch or commit holding the definition"
+        required: true
+      project_ref:
+        description: "Type the target project ref to confirm"
+        required: true
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ${{ inputs.project_ref }}
+      DEFINITION: supabase/archive/${{ inputs.definition }}
+      RUN_ID: ${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+      - name: Confirm target and definition
+        run: |
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ] || [ "$PROJECT_REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          if ! [[ "${{ inputs.definition }}" =~ ^[a-z0-9-]+\.json$ ]] || [ ! -f "$DEFINITION" ]; then echo "::error::Refused definition: ${{ inputs.definition }}"; exit 1; fi
+      - name: Export, read back and check
+        run: |
+          GIT_SHA=$(git rev-parse HEAD) python3 scripts/archive_export.py | tee export.log
+          grep '^MANIFEST ' export.log | cut -c10- > manifest.json
+          { echo "## Archive export"; grep -v '^MANIFEST ' export.log; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archive-manifest
+          path: manifest.json
