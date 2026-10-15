@@ -18,6 +18,10 @@ on:
       project_ref:
         description: "Type the target project ref to confirm"
         required: true
+      show_run:
+        description: "Optional: the run id of an earlier export whose manifest to show (nothing is exported)"
+        required: false
+        default: ""
 jobs:
   export:
     runs-on: ubuntu-latest
@@ -28,6 +32,7 @@ jobs:
       PROJECT_REF: ${{ inputs.project_ref }}
       DEFINITION: supabase/archive/${{ inputs.definition }}
       RUN_ID: ${{ github.run_id }}
+      SHOW_RUN: ${{ inputs.show_run }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,10 +42,13 @@ jobs:
           if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ] || [ "$PROJECT_REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "::error::Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
           if ! [[ "${{ inputs.definition }}" =~ ^[a-z0-9-]+\.json$ ]] || [ ! -f "$DEFINITION" ]; then echo "::error::Refused definition: ${{ inputs.definition }}"; exit 1; fi
       - name: Export, read back and check
+        shell: bash  # -eo pipefail: a failed export fails the step (tee would hide it)
         run: |
           GIT_SHA=$(git rev-parse HEAD) python3 scripts/archive_export.py | tee export.log
           grep '^MANIFEST ' export.log | cut -c10- > manifest.json
           { echo "## Archive export"; grep -v '^MANIFEST ' export.log; } >> "$GITHUB_STEP_SUMMARY"
+          # the counts and key hashes as annotations, so the paste file can be written from them without downloading the artifact
+          python3 -c 'import json; m=json.load(open("manifest.json")); s=[[x["name"],x["rows"],x["key_hash"],[[p["path"].rsplit("/",2)[-2]+"/"+p["path"].rsplit("/",1)[-1],p["rows"],p["bytes"],p["sha256"][:16]] for p in x["parts"]]] for x in m["sets"]]; print("::notice title=archive prefix::"+m["prefix"]); [print("::notice title=archive sets %d::"%i+json.dumps(s[i:i+4])) for i in range(0,len(s),4)]'
       - uses: actions/upload-artifact@v4
         with:
           name: archive-manifest

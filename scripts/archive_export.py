@@ -77,6 +77,15 @@ def main():
     code, out = http('POST', f'{STORAGE}/bucket', {'id': d['bucket'], 'name': d['bucket'], 'public': False}, auth)
     if code >= 300 and 'already exists' not in str(out).lower() and 'duplicate' not in str(out).lower():
         sys.exit(f'::error::bucket {d["bucket"]}: {code} {out}')
+    shown = os.environ.get('SHOW_RUN', '').strip()
+    if shown:  # print the manifest of an earlier export (nothing exported)
+        if not shown.isdigit():
+            sys.exit('::error::show_run must be a run id')
+        code, b = http('GET', f"{STORAGE}/object/{d['bucket']}/{d['prefix']}/{shown}/manifest.json", None, auth, raw=True)
+        if code >= 300:
+            sys.exit(f'::error::no manifest for run {shown} ({code})')
+        print('MANIFEST ' + json.dumps(json.loads(b)))
+        return
     base = f"{d['prefix']}/{RUN}"
     manifest = {'definition': os.path.basename(DEF), 'definition_sha256': hashlib.sha256(open(DEF, 'rb').read()).hexdigest(), 'git_sha': SHA,
                 'run_id': RUN, 'bucket': d['bucket'], 'prefix': base, 'exported_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'sets': []}
