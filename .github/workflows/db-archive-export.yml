@@ -18,6 +18,10 @@ on:
       project_ref:
         description: "Type the target project ref to confirm"
         required: true
+      show_run:
+        description: "Optional: the run id of an earlier export whose manifest to show (nothing is exported)"
+        required: false
+        default: ""
 jobs:
   export:
     runs-on: ubuntu-latest
@@ -28,6 +32,7 @@ jobs:
       PROJECT_REF: ${{ inputs.project_ref }}
       DEFINITION: supabase/archive/${{ inputs.definition }}
       RUN_ID: ${{ github.run_id }}
+      SHOW_RUN: ${{ inputs.show_run }}
     steps:
       - uses: actions/checkout@v4
         with:
