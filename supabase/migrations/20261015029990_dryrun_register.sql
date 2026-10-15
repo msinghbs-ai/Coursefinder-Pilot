@@ -482,7 +482,6 @@ begin
     end if;
   end loop;
 end $post$;
-end $post$;
 
 do $dry$
 declare t0 timestamptz := clock_timestamp(); v jsonb;
@@ -491,8 +490,8 @@ begin
   raise exception 'DRYRUN %', jsonb_build_object('second_check', v, 'second_s', extract(epoch from clock_timestamp()-t0),
     'register', (select jsonb_object_agg(k, n) from (select kind||':'||layer k, count(*) n from pipeline.component_register group by 1) x),
     'md_len', length(security.component_register_markdown_v1()),
-    'rls_missing', (select f->'tables_without_rls' from pipeline.hygiene_reports h, lateral (select h.findings f) z order by h.at desc limit 1),
-    'definer_no_path', (select jsonb_array_length(h.findings->'definer_functions_without_search_path') from pipeline.hygiene_reports h order by h.at desc limit 1),
+    'definer_no_path', (select h.findings->'definer_functions_without_search_path' from pipeline.hygiene_reports h order by h.at desc limit 1),
     'anon_fns', (select h.findings->'public_functions_open_to_anon' from pipeline.hygiene_reports h order by h.at desc limit 1),
+    'rls_missing', (select h.findings->'tables_without_rls' from pipeline.hygiene_reports h order by h.at desc limit 1),
     'notice', (select count(*) from jsonb_array_elements(security.platform_notices_v1()) e where e->>'kind'='hygiene'));
 end $dry$;
