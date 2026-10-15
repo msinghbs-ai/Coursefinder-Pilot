@@ -54,3 +54,8 @@ test('the export workflow: confirmed target, read back and checked, nothing chan
   expect(py).toContain("print(f'::add-mask::{svc}')")
   expect(py).not.toMatch(/\b(delete from|drop table|truncate table)\b/i)
 })
+
+test('removing an interpretation looks up its review items by index (the pending-only index cannot serve the check)', () => {
+  const ix = fs.readFileSync('supabase/migrations/20261015130000_cf247_review_item_interpretation_index.sql', 'utf8')
+  expect(ix).toContain('create index if not exists layer4_review_items_layer3_interpretation on pipeline.layer4_review_items (layer3_interpretation_id) where layer3_interpretation_id is not null;')
+})
