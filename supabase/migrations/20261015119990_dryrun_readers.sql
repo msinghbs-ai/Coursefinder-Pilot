@@ -28,11 +28,13 @@ create temp table _r_b on commit drop as select
 --   overwrite's and the admit input mark's reads of validated interpretations (now pipeline.layer3_validated_readings, the same rows);
 --   the hourly and month-to-date AI spend read from interpretations (now pipeline.layer3_call_costs_hourly, the same totals);
 --   every read of pipeline.layer2_scope_wave_items (empty since 1 Oct; now an empty set)
+--   and the fixed values in the functions re-created here (retention worker, retention estimate, screenshot removal, platform resources):
+--   now settings in Housekeeping at today's values (G2)
 -- Retires: pipeline.layer2_scope_wave_items and 14 tables nothing uses (marked retiring, dropped by paste file)
--- 1 Frozen copies  2 Readers changed  3 Register  Nothing dropped or deleted.
+-- 1 Settings  2 Frozen copies  3 Readers changed  4 Register  Nothing dropped or deleted.
 
 do $guard$
-declare v_expected jsonb := '{"security.provider_english_plan_v1(uuid)": "6f331c061b2655d3a66b0e7b60678312", "security.adapter_overwrite_v1(integer)": "eeeae4a72954f7e1669b45eacc4842c5", "security.admit_input_mark_v1()": "8a282bf1d4a07ea8aecf2a24a3a1c6a4", "security.platform_resource_observe_v1()": "cff466274457327fc009261a689bcfe3", "security.retention_tick_v1()": "6fbd858175d763108c03b1bfee119736", "security.retention_estimate_v1(text)": "eab919bb7db5578238f2408bf8846706", "security.admin_layer2_parent_runs(integer)": "dca92f43f61a019b0a733ecf54a1db67", "security.admin_layer_status_summary_compute()": "c6d0ef3131c1df620ee489d14e206fb9", "security.layer2_lineage_for_job(uuid)": "7ab780f673ba689a8d68f6a4ec3e5710"}'::jsonb;
+declare v_expected jsonb := '{"security.provider_english_plan_v1(uuid)": "6f331c061b2655d3a66b0e7b60678312", "security.adapter_overwrite_v1(integer)": "eeeae4a72954f7e1669b45eacc4842c5", "security.admit_input_mark_v1()": "8a282bf1d4a07ea8aecf2a24a3a1c6a4", "security.platform_resource_observe_v1()": "cff466274457327fc009261a689bcfe3", "security.retention_tick_v1()": "6fbd858175d763108c03b1bfee119736", "security.retention_estimate_v1(text)": "eab919bb7db5578238f2408bf8846706", "security.admin_layer2_parent_runs(integer)": "dca92f43f61a019b0a733ecf54a1db67", "security.admin_layer_status_summary_compute()": "c6d0ef3131c1df620ee489d14e206fb9", "security.layer2_lineage_for_job(uuid)": "7ab780f673ba689a8d68f6a4ec3e5710", "public.svc_retention_files_next(uuid,integer)": "ed2d774a39a454c300c235f960c505c8"}'::jsonb;
   v_sig text;
 begin
   for v_sig in select jsonb_object_keys(v_expected) loop
@@ -42,7 +44,17 @@ begin
   end loop;
 end $guard$;
 
--- 1 Frozen copies of what live jobs still need from layer3_interpretations (Layer 3 has written nothing since 11 Oct 2026)
+-- 1 Settings (G2: the retention worker and the platform resources job are re-created here, so their fixed values become settings, at today's values)
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by) values
+ ('pipeline', 'retention.job_log_keep_days', 'Keep the job run log for', 'Storage & retention removes scheduled-job run records older than this when the job log clean-up is run.', 'number', to_jsonb(7), 1, 90, 'days', 742, 'CF-247 15 Oct 2026: was fixed in the retention worker (G2)', 'Housekeeping', 'security.retention_tick_v1; security.retention_estimate_v1'),
+ ('pipeline', 'retention.screenshot_keep_days', 'Keep adapter screenshots for', 'Storage & retention removes adapter builder screenshots older than this when the screenshot clean-up is run.', 'number', to_jsonb(7), 1, 90, 'days', 743, 'CF-247 15 Oct 2026: was fixed in the retention worker (G2)', 'Housekeeping', 'public.svc_retention_files_next; security.retention_estimate_v1'),
+ ('pipeline', 'retention.resource_observations_days', 'Keep hourly platform resource readings for', 'Platform resources keeps one reading an hour (database size, jobs, AI spend) for this long.', 'number', to_jsonb(180), 30, 730, 'days', 744, 'CF-247 15 Oct 2026: was fixed in platform-resource-observe (G2)', 'Housekeeping', 'security.platform_resource_observe_v1'),
+ ('pipeline', 'retention.estimate_refresh_hours', 'Refresh Storage & retention estimates every', 'The retention worker measures one category''s removable rows and bytes at a time, each no more often than this.', 'number', to_jsonb(1), 1, 24, 'hours', 745, 'CF-247 15 Oct 2026: was fixed in the retention worker (G2)', 'Housekeeping', 'security.retention_tick_v1'),
+ ('pipeline', 'batch.retention_rows', 'Rows removed per retention run (job log, shared directory links)', 'Each retention worker run (every 2 minutes) removes up to this many rows, so a clean-up never holds the database for long.', 'number', to_jsonb(20000), 1000, 100000, 'rows', 746, 'CF-247 15 Oct 2026: was fixed in the retention worker (G2)', 'Housekeeping', 'security.retention_tick_v1'),
+ ('pipeline', 'batch.retention_layer2_rows', 'Rows removed per retention run (retired Layer 2 tables)', 'Each retention worker run removes up to this many rows from the retired Layer 2 tables.', 'number', to_jsonb(5000), 500, 50000, 'rows', 747, 'CF-247 15 Oct 2026: was fixed in the retention worker (G2)', 'Housekeeping', 'security.retention_tick_v1'),
+ ('pipeline', 'batch.retention_evidence', 'Evidence records checked per retention run', 'Each retention worker run checks up to this many unreferenced evidence records for removal.', 'number', to_jsonb(500), 50, 5000, 'records', 748, 'CF-247 15 Oct 2026: was fixed in the retention worker (G2)', 'Housekeeping', 'security.retention_tick_v1')
+on conflict do nothing;
+-- 2 Frozen copies of what live jobs still need from layer3_interpretations (Layer 3 has written nothing since 11 Oct 2026)
 create table if not exists pipeline.layer3_validated_readings as
   select i.id, i.entity_type, i.entity_id, i.task_class, i.status, i.candidate_value, i.created_at
     from pipeline.layer3_interpretations i
@@ -279,7 +291,7 @@ CREATE OR REPLACE FUNCTION security.platform_resource_observe_v1()
  SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'pipeline', 'cron', 'net'
 AS $function$
-declare h timestamptz := date_trunc('hour', now()); h0 timestamptz := date_trunc('hour', now()) - interval '1 hour';
+declare h timestamptz := date_trunc('hour', now()); h0 timestamptz := date_trunc('hour', now()) - interval '1 hour';  -- fixed: one reading per hour (the reading's own period)
   m timestamptz := date_trunc('month', now()); cp pipeline.platform_compute_profile%rowtype; r pipeline.platform_resource_observations%rowtype;
 begin
   select * into cp from pipeline.platform_compute_profile where id=1;
@@ -291,10 +303,10 @@ begin
     into r.cron_runs, r.cron_failures, r.cron_max_seconds from cron.job_run_details where start_time >= h0 and start_time < h;
   select coalesce(max(c) filter (where t >= h0 and t < h and d = 1),0) into r.cron_max_concurrent from (
     select e.t, e.d, sum(e.d) over (order by e.t, e.d desc) c from (
-      select b.start_time t, 1 d from cron.job_run_details b where b.start_time >= h0 - interval '1 hour' and b.start_time < h
+      select b.start_time t, 1 d from cron.job_run_details b where b.start_time >= h0 - interval '1 hour' and b.start_time < h  -- fixed: runs overlapping the hour read
       union all
       select coalesce(b.end_time, case when b.status in ('running','starting','sending','connecting') then now() else b.start_time end), -1
-        from cron.job_run_details b where b.start_time >= h0 - interval '1 hour' and b.start_time < h) e) z;
+        from cron.job_run_details b where b.start_time >= h0 - interval '1 hour' and b.start_time < h) e) z;  -- fixed: runs overlapping the hour read
   select count(*) into r.http_requests from net._http_response where created >= h0 and created < h;
   select coalesce(jsonb_agg(jsonb_build_object('provider',coalesce(ap.provider_key,'unknown'),'units',u,'cost_usd',cst)),'[]'::jsonb) into r.acquisition
     from (select ri.selected_provider_id, sum(coalesce(ri.vendor_units,0)) u, sum(coalesce(ri.vendor_cost_usd,0)) cst
@@ -317,7 +329,7 @@ begin
     cron_runs=excluded.cron_runs, cron_failures=excluded.cron_failures, cron_max_seconds=excluded.cron_max_seconds, cron_max_concurrent=excluded.cron_max_concurrent,
     http_requests=excluded.http_requests, acquisition=excluded.acquisition, acquisition_units_mtd=excluded.acquisition_units_mtd, acquisition_cost_mtd_usd=excluded.acquisition_cost_mtd_usd,
     ai_calls=excluded.ai_calls, ai_tokens=excluded.ai_tokens, ai_cost_usd=excluded.ai_cost_usd, ai_cost_mtd_usd=excluded.ai_cost_mtd_usd, largest_tables=excluded.largest_tables;
-  delete from pipeline.platform_resource_observations where observed_at < now() - interval '180 days';
+  delete from pipeline.platform_resource_observations where observed_at < now() - make_interval(days => security.pipeline_num_v1('retention.resource_observations_days', 180)::int);
   return to_jsonb(r);
 end $function$;
 
@@ -333,7 +345,7 @@ begin
   -- keep the estimates fresh (one category per run, oldest first)
   select c->>'key' into v_cat from jsonb_array_elements(security.retention_catalogue_v1()) c
    left join pipeline.retention_estimates e on e.category = c->>'key'
-   where c->>'key' <> 'evidence_audit' and (e.measured_at is null or e.measured_at < now() - interval '1 hour')
+   where c->>'key' <> 'evidence_audit' and (e.measured_at is null or e.measured_at < now() - make_interval(hours => security.pipeline_num_v1('retention.estimate_refresh_hours', 1)::int))
    order by e.measured_at nulls first limit 1;
   if v_cat is not null then perform security.retention_estimate_v1(v_cat); end if;
 
@@ -359,12 +371,12 @@ begin
     end if;
 
     if r.category = 'job_log' then
-      delete from cron.job_run_details where runid in (select d.runid from cron.job_run_details d where d.start_time < coalesce(r.started_at, now()) - interval '7 days' limit 20000);
+      delete from cron.job_run_details where runid in (select d.runid from cron.job_run_details d where d.start_time < coalesce(r.started_at, now()) - make_interval(days => security.pipeline_num_v1('retention.job_log_keep_days', 7)::int) limit security.pipeline_num_v1('batch.retention_rows', 20000)::int);
       get diagnostics v_n = row_count;
     elsif r.category = 'retired_layer2' then
       foreach v_t in array array['pipeline.layer2_provider_trial_results', 'pipeline.layer2_course_discovery_candidates', 'pipeline.layer2_provider_attempts',
                                  'pipeline.layer2_scale_qualification_items'] loop  -- CF-247 15 Oct 2026: layer2_scope_wave_items retired
-        execute format('delete from %s where ctid = any(array(select ctid from %s limit 5000))', v_t, v_t);
+        execute format('delete from %s where ctid = any(array(select ctid from %s limit %s))', v_t, v_t, security.pipeline_num_v1('batch.retention_layer2_rows', 5000)::int);
         get diagnostics v_n = row_count;
         exit when v_n > 0;
       end loop;
@@ -375,7 +387,7 @@ begin
          where substring(u.url from '^https?://(?:www\.)?([^/:?#]+)') = any(v_hosts)
            and (p.website is null or p.website not ilike '%' || substring(u.url from '^https?://(?:www\.)?([^/:?#]+)') || '%')
            and not exists (select 1 from pipeline.coverage_course_pages pg where pg.url = u.url)
-         limit 20000);
+         limit security.pipeline_num_v1('batch.retention_rows', 20000)::int);
       get diagnostics v_n = row_count;
     elsif r.category = 'adapter_screenshots' then
       -- files go through Storage: hand the run to the worker; it reports back with svc_retention_files_done
@@ -402,7 +414,7 @@ begin
       create temporary table ev_batch on commit drop as
         select c.evidence_id id, c.storage_path from security.retention_evidence_candidates_v1() c
          where not exists (select 1 from pipeline.retention_evidence_skips s where s.run_id = r.id and s.evidence_id = c.evidence_id)
-         order by c.created_at limit 500;
+         order by c.created_at limit security.pipeline_num_v1('batch.retention_evidence', 500)::int;
       if not exists (select 1 from ev_batch) then
         perform security.retention_estimate_v1('evidence_unreferenced');
         update pipeline.retention_runs set status = 'done', finished_at = now(), updated_at = now(),
@@ -483,8 +495,8 @@ AS $function$
 declare v_size bigint; v_rows bigint; v_bytes bigint; v_detail jsonb := '{}'::jsonb;
 begin
   if p_cat = 'adapter_screenshots' then
-    select coalesce(sum((o.metadata->>'size')::bigint), 0), count(*) filter (where o.created_at < now() - interval '7 days'),
-           coalesce(sum((o.metadata->>'size')::bigint) filter (where o.created_at < now() - interval '7 days'), 0)
+    select coalesce(sum((o.metadata->>'size')::bigint), 0), count(*) filter (where o.created_at < now() - make_interval(days => security.pipeline_num_v1('retention.screenshot_keep_days', 7)::int)),
+           coalesce(sum((o.metadata->>'size')::bigint) filter (where o.created_at < now() - make_interval(days => security.pipeline_num_v1('retention.screenshot_keep_days', 7)::int)), 0)
       into v_size, v_rows, v_bytes from storage.objects o where o.bucket_id = 'adapter-captures';
   elsif p_cat = 'retired_layer2' then
     select sum(pg_total_relation_size(t::regclass)) into v_size
@@ -498,7 +510,7 @@ begin
       'scope_wave_items', 0);
   elsif p_cat = 'job_log' then
     v_size := pg_total_relation_size('cron.job_run_details');
-    select count(*) filter (where d.start_time < now() - interval '7 days'), count(*) into v_rows, v_bytes from cron.job_run_details d;
+    select count(*) filter (where d.start_time < now() - make_interval(days => security.pipeline_num_v1('retention.job_log_keep_days', 7)::int)), count(*) into v_rows, v_bytes from cron.job_run_details d;
     v_bytes := case when v_bytes > 0 then v_size * v_rows / v_bytes else 0 end;
   elsif p_cat = 'directory_urls' then
     v_size := pg_total_relation_size('pipeline.coverage_provider_urls');
@@ -746,7 +758,31 @@ AS $function$
   limit 1
 $function$;
 
--- 3 Register: the two frozen copies; the tables the paste file drops are marked retiring (Platform Admin decision, no 14-day wait)
+CREATE OR REPLACE FUNCTION public.svc_retention_files_next(p_run_id uuid, p_limit integer DEFAULT 100)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_cat text; v_out jsonb;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  select category into v_cat from pipeline.retention_runs where id = p_run_id and status = 'running';
+  if v_cat = 'adapter_screenshots' then
+    return coalesce((select jsonb_agg(jsonb_build_object('name', o.name, 'size', (o.metadata->>'size')::bigint, 'bucket', 'adapter-captures'))
+                       from (select name, metadata from storage.objects where bucket_id = 'adapter-captures' and created_at < now() - make_interval(days => security.pipeline_num_v1('retention.screenshot_keep_days', 7)::int) order by created_at limit least(greatest(p_limit, 1), 200)) o), '[]'::jsonb);
+  elsif v_cat = 'evidence_unreferenced' then
+    with h as (
+      update pipeline.retention_file_queue q set status = 'handed', handed_at = now()
+       where q.id in (select id from pipeline.retention_file_queue where run_id = p_run_id and status = 'queued' order by id limit least(greatest(p_limit, 1), 200))
+      returning q.name, q.size, q.bucket)
+    select coalesce(jsonb_agg(jsonb_build_object('name', name, 'size', size, 'bucket', bucket)), '[]'::jsonb) into v_out from h;
+    return v_out;
+  end if;
+  return '[]'::jsonb;
+end $function$;
+
+-- 4 Register: the two frozen copies; the tables the paste file drops are marked retiring (Platform Admin decision, no 14-day wait)
 insert into pipeline.component_register(kind, name, layer, purpose, status, introduced_in) values
  ('table', 'pipeline.layer3_validated_readings', 'Layer 3 (retired)', 'Validated Layer 3 readings kept for adapter overwrite corroboration', 'active', '20261015120000'),
  ('table', 'pipeline.layer3_call_costs_hourly', 'Layer 3 (retired)', 'Layer 3 AI calls and cost per hour, for platform resources', 'active', '20261015120000')
@@ -763,7 +799,7 @@ update pipeline.component_register set note = 'Usage audit 15 Oct 2026, decision
  where kind = 'table' and name in ('pipeline.layer3_interpretations', 'pipeline.layer3_work_items', 'pipeline.layer3_fact_handoffs');
 
 do $post$
-declare v_expected jsonb := '{"security.provider_english_plan_v1(uuid)": "60f5892657ef976634b12914d91f24a9", "security.adapter_overwrite_v1(integer)": "c96ca02c38878da034758b637abf60a8", "security.admit_input_mark_v1()": "93dcde29d68d8653d61cb8b53065d50c", "security.platform_resource_observe_v1()": "531f1092752cf150572eb640f9a1da24", "security.retention_tick_v1()": "b8602a4a05b9db7b7debe8500f44f297", "security.retention_estimate_v1(text)": "ef4f4fdd9df8ad089b1eab4950af0753", "security.admin_layer2_parent_runs(integer)": "50165e495917dd2bb002379d9efa4067", "security.admin_layer_status_summary_compute()": "5560c2b5ac501a90e9487139a957de3d", "security.layer2_lineage_for_job(uuid)": "eb1385cb96173a721d7a6ee4f47e6ca8"}'::jsonb;
+declare v_expected jsonb := '{"security.provider_english_plan_v1(uuid)": "60f5892657ef976634b12914d91f24a9", "security.adapter_overwrite_v1(integer)": "c96ca02c38878da034758b637abf60a8", "security.admit_input_mark_v1()": "93dcde29d68d8653d61cb8b53065d50c", "security.platform_resource_observe_v1()": "a35a7eb5678ab8dd35a2bb5f145e2a37", "security.retention_tick_v1()": "f07532088b71cade49c48ddd2aa07943", "security.retention_estimate_v1(text)": "67188cf89e76c7b48725cfdb7982bb0d", "security.admin_layer2_parent_runs(integer)": "50165e495917dd2bb002379d9efa4067", "security.admin_layer_status_summary_compute()": "5560c2b5ac501a90e9487139a957de3d", "security.layer2_lineage_for_job(uuid)": "eb1385cb96173a721d7a6ee4f47e6ca8", "public.svc_retention_files_next(uuid,integer)": "44fe53e8d1a4e92b88c8cbee102d3402"}'::jsonb;
   v_sig text;
 begin
   for v_sig in select jsonb_object_keys(v_expected) loop
@@ -815,5 +851,6 @@ begin
     'cost_hours', (select count(*) from pipeline.layer3_call_costs_hourly));
   perform security.retention_estimate_v1('retired_layer2');
   v := v || jsonb_build_object('retention_estimate_after', (select to_jsonb(e) - 'computed_at' from pipeline.retention_estimates e where e.category = 'retired_layer2'));
-  raise exception 'DRYRUN %', jsonb_build_object('a', v->'changed_outside_54', 'b', v->'courses_waiting_on_l3', 'c', v->'lineage_nonnull_before', 'd', v->'retention_estimate_after', 'e', v->'retention_estimate');
+  v := v || jsonb_build_object('tick', security.retention_tick_v1(), 'files_next', public.svc_retention_files_next(gen_random_uuid(), 5), 'settings', (select count(*) from pipeline.platform_toolset_settings where key like 'retention.%' or key like 'batch.retention%'));
+  raise exception 'DRYRUN %', jsonb_build_object('changed', v->'changed', 'outside', v->'changed_outside_54', 'transitions', v->'transitions', 'summary_same', v->'summary_same', 'parent_runs_same', v->'parent_runs_same', 'cost', jsonb_build_array(v->'cost_oct_same', v->'cost_sep_same', v->'hour_same'), 'mtd', v->'resource_observe'->'ai_cost_mtd_usd', 'est', v->'retention_estimate_after'->'size_bytes', 'tick', v->'tick', 'files_next', v->'files_next', 'settings', v->'settings', 'readings', v->'readings');
 end $dry$;
