@@ -481,6 +481,7 @@ begin
     end if;
   end loop;
 end $post$;
+end $post$;
 
 do $dry$
 declare t0 timestamptz := clock_timestamp(); v jsonb;
