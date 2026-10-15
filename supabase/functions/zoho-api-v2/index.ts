@@ -194,7 +194,7 @@ Deno.serve(async (req: Request) => {
   if (action === "export" && cleanText(body.format) !== "json") {
     const name = `coursefinder-${obj.entity}-${new Date().toISOString().slice(0, 10)}.csv`;
     return finish(200, obj, { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${name}"`,
-      "x-rows": String(obj.rows ?? 0), "x-complete": String(obj.complete ?? false) }, String(obj.csv ?? ""));
+      "x-rows": String(obj.rows ?? 0), "x-complete": String(obj.complete ?? false), "x-sync-cursor": String(obj.sync_cursor ?? "") }, String(obj.csv ?? ""));
   }
   await signLogos(svc, obj, Number(id.logo_link_days) || 1);
   return finish(200, { ...obj, api_version: API_VERSION, request_id: requestId });
