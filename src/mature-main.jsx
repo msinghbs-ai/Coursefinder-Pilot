@@ -23,6 +23,7 @@ import DashboardHome from'./Dashboard'
 import ContextualInsights from'./ContextualInsights'
 import ProviderLogo,{ProviderBrand,logoCapability}from'./ProviderLogo'
 import FlagsPanel from'./FlagsPanel'
+import ApiUsagePanel from'./ApiUsagePanel'
 import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
@@ -268,6 +269,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='priority'?<div className="m-page-stack"><SearchCapCard/><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'sources':return <SourcesWorkspace/>
+      // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action
+      case'apiUsage':return <ApiUsagePanel onError={onError}/>
       case'environment':return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
       // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
       case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>

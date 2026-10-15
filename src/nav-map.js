@@ -98,6 +98,8 @@ export const PAGES = {
   evidence: { label: 'Evidence', slug: 'evidence', icon: 'book', min: 3, subtitle: 'Saved source pages and files, and what they changed.' },
   // v2.15.124 (screen review): the cross-layer source list moved out of Layer 1 to Operations.
   sources: { label: 'Sources', slug: 'pipeline-sources', icon: 'database', min: 4, subtitle: 'Every source the pipeline reads, across all layers, with its health and history.' },
+  // CF-247 (16 Oct 2026, Platform Admin: "summary and stat collection"): calls to the API version URLs by key and action
+  apiUsage: { label: 'API usage', slug: 'api-usage', icon: 'chart', min: 4, subtitle: 'Calls to the API URLs (from Zoho API v2 on) by key and action: volume, errors, rate limits and times.' },
 
   environment: { label: 'Settings', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity and budgets; keys for outside services below (never shown).' },
   scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: services, keys and limits.' },
@@ -127,7 +129,7 @@ export const SECTIONS = [
   { label: '', pages: ['dashboard'] },
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer4'] },
-  { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources'] },
+  { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources', 'apiUsage'] },
   { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'retention', 'migration'] },
   { label: 'Administration', pages: ['users'] },
   { label: 'Guides', pages: ['guide'] },

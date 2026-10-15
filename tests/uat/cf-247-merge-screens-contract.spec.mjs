@@ -43,7 +43,7 @@ test('v2.15.124: Readiness by area is part of Attributes; the cross-layer Source
   expect(resolveTarget('coverage', new URLSearchParams({ tab: 'domains' })).tab).toBe('attributes')
   expect(resolveTarget('data-quality-readiness').tab).toBe('attributes')
   expect(PAGES.layer1.tabs.map(t => t.key)).toEqual(['operations', 'scholarships']) // v2.15.246: one Sources list
-  expect(SECTIONS.find(s => s.label === 'Operations').pages).toEqual(['health', 'jobs', 'evidence', 'sources'])
+  expect(SECTIONS.find(s => s.label === 'Operations').pages).toEqual(['health', 'jobs', 'evidence', 'sources', 'apiUsage']) // CF-247 16 Oct 2026: API usage
   expect(resolveTarget('layer-1-register', new URLSearchParams({ tab: 'sources' })).page).toBe('sources')
   expect(read('src/data-quality-entry.jsx')).not.toContain('No single completeness score')
 })
