@@ -1,4 +1,5 @@
 -- DRY RUN ONLY (rolled back by the raise at the end)
+set local statement_timeout = '15min';
 do $purge$
 declare v_n bigint; v_h text; v_refs text; t text; v_wi_before bigint; v_tuition_before jsonb; v_li_before bigint; v_fh bigint; v_wi bigint; v_li bigint;
 begin
