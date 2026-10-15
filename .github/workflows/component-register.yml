@@ -25,7 +25,7 @@ jobs:
         run: |
           sql="select extract(log_attributes['request.pathname'], '^/functions/v1/([^/?]+)') fn, count(*) n, max(timestamp) last from logs where source = 'function_edge_logs' group by fn"
           end=$(date -u +%Y-%m-%dT%H:%M:%SZ); start=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          code=$(curl -sS -G -o "$RUNNER_TEMP/calls.json" -w '%{http_code}' "https://api.supabase.com/v1/projects/$REF/analytics/endpoints/logs.all" \
+          code=$(curl -sS -G -o "$RUNNER_TEMP/calls.json" -w '%{http_code}' "https://api.supabase.com/v1/projects/$REF/analytics/endpoints/logs" \
             --data-urlencode "sql=$sql" --data-urlencode "iso_timestamp_start=$start" --data-urlencode "iso_timestamp_end=$end" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
           if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "::warning::Logs query failed ($code): $(head -c 300 "$RUNNER_TEMP/calls.json" | tr -d '\n')"; echo '{}' > "$RUNNER_TEMP/calls.json"; fi
