@@ -1,0 +1,59 @@
+CREATE OR REPLACE FUNCTION public.website_v2_sync(p_cursor text DEFAULT NULL::text, p_full boolean DEFAULT false, p_entities text[] DEFAULT NULL::text[], p_page_size integer DEFAULT NULL::integer)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare v_all text[] := array['reference', 'provider', 'logo', 'rankings', 'scholarship', 'course'];
+        v_c jsonb; v_mode text; v_a bigint := 0; v_s bigint; v_e text[]; v_max int; v_size int; v_rows jsonb; v_n int; v_more boolean; v_last bigint;
+        v_next jsonb; v_items jsonb; t text; v_unit numeric;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  if nullif(btrim(p_cursor), '') is not null and not coalesce(p_full, false) then
+    begin
+      t := translate(btrim(p_cursor), '-_', '+/');
+      v_c := convert_from(decode(t || repeat('=', (4 - length(t) % 4) % 4), 'base64'), 'utf8')::jsonb;
+    exception when others then return jsonb_build_object('error', jsonb_build_object('code', 'INVALID_INPUT', 'detail', 'cursor'));
+    end;
+    if v_c->>'v' is distinct from '1' or v_c->>'m' not in ('full', 'delta') or (v_c->>'a') !~ '^\d+$' then
+      return jsonb_build_object('error', jsonb_build_object('code', 'INVALID_INPUT', 'detail', 'cursor')); end if;
+    v_mode := v_c->>'m'; v_a := (v_c->>'a')::bigint; v_s := nullif(v_c->>'s', '')::bigint;
+    v_e := array(select jsonb_array_elements_text(coalesce(v_c->'e', to_jsonb(v_all))));
+  else
+    v_mode := 'full'; v_a := 0; v_s := (select coalesce(max(seq), 0) from pipeline.website_sync_items);
+    v_e := coalesce(nullif(p_entities, '{}'::text[]), v_all);
+  end if;
+  if not (v_e <@ v_all) or (v_mode = 'full' and v_s is null) then
+    return jsonb_build_object('error', jsonb_build_object('code', 'INVALID_INPUT', 'detail', 'entities')); end if;
+  v_max := greatest(security.pipeline_num_v1('website.sync_page_max', 200)::int, 1);
+  v_unit := greatest(security.pipeline_num_v1('website.sync_item_unit_bytes', 2048), 1);
+  v_size := least(greatest(coalesce(p_page_size, v_max), 1), v_max);
+  -- 15 Oct 2026: a page is filled by build cost up to page_size (at least one item); has_more when rows are left
+  select coalesce(jsonb_agg(to_jsonb(x) - 'cw' - 'rn' order by x.seq) filter (where x.rn = 1 or x.cw <= v_size), '[]'::jsonb), count(*) into v_rows, v_n from (
+    -- CF-247 15 Oct 2026: a stored item counts by its size (one unit per setting bytes); one not yet stored by its build cost as before
+    select y.*, sum(case when y.removed_at is not null then 1
+                         when y.item is not null then greatest(ceil(octet_length(y.item::text)::numeric / v_unit), 1)::int
+                         when y.entity = 'provider' then 16 when y.entity = 'scholarship' then 2 else 1 end) over (order by y.seq) cw,  -- fixed: build cost relative to a course item, measured 14 Oct 2026
+           row_number() over (order by y.seq) rn
+      from (select i.entity, i.item_key, i.ref_id, i.seq, i.removed_at, i.item from pipeline.website_sync_items i
+             where i.entity = any (v_e) and i.seq > v_a
+               and (v_mode = 'delta' or (i.removed_at is null and i.seq <= v_s))
+             order by i.seq limit v_size + 1) y) x;
+  v_more := jsonb_array_length(v_rows) < v_n;
+  v_last := (v_rows->-1->>'seq')::bigint;
+  select coalesce(jsonb_agg(case when z.item is null then jsonb_build_object('entity', z.entity, 'id', z.item_key, 'seq', z.seq, 'change', 'remove')
+                                 else jsonb_build_object('entity', z.entity, 'id', z.item_key, 'seq', z.seq, 'change', 'upsert', 'item', z.item) end order by z.seq), '[]'::jsonb)
+    into v_items
+    from (select r->>'entity' entity, r->>'item_key' item_key, (r->>'seq')::bigint seq,
+                 case when r->>'removed_at' is null then coalesce(nullif(r->'item', 'null'::jsonb), security.website_sync_item_v1(r->>'entity', (r->>'ref_id')::uuid, r->>'item_key')) end item
+            from jsonb_array_elements(v_rows) r) z;
+  v_next := case when v_mode = 'full' and v_more then jsonb_build_object('v', 1, 'm', 'full', 'a', v_last, 's', v_s, 'e', to_jsonb(v_e))
+                 when v_mode = 'full' then jsonb_build_object('v', 1, 'm', 'delta', 'a', v_s, 'e', to_jsonb(v_e))
+                 else jsonb_build_object('v', 1, 'm', 'delta', 'a', coalesce(v_last, v_a), 'e', to_jsonb(v_e)) end;
+  return jsonb_build_object(
+    'mode', v_mode, 'entities', to_jsonb(v_e), 'items', v_items, 'has_more', v_more,
+    'full_load_complete', case when v_mode = 'full' then not v_more end,
+    'next_cursor', rtrim(translate(replace(encode(convert_to(v_next::text, 'utf8'), 'base64'), E'\n', ''), '+/', '-_'), '='),
+    'checked_through', (select case when bool_or(s.last_cycle_at is null) then null else min(s.last_cycle_at) end from pipeline.website_sync_scan s where s.entity = any (v_e)),
+    'as_of', now());
+end $function$

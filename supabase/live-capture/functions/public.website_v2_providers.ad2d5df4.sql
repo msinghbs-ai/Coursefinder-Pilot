@@ -21,7 +21,7 @@ declare
   v_the_max int := nullif(f->>'the_rank_max','')::int;
   v_sort text := coalesce(nullif(p_sort,''),'name_asc');
   v_known text[] := array['keyword','country_codes','country_code','subdivision_codes','cities','city','regional_categories','university_groups','university_group',
-                          'study_level_codes','study_area_codes','has_scholarship','ranked_in','qs_rank_max','the_rank_max','has_logo','provider_ids'];
+                          'study_level_codes','study_area_codes','has_scholarship','ranked_in','qs_rank_max','the_rank_max','has_logo','provider_ids','institution_types'];
   v_providers text[] := api.website_text_array(f->'provider_ids');
   v_not_applied jsonb; v_total bigint; v_items jsonb;
 begin
@@ -33,7 +33,9 @@ begin
     select d.provider_id, min(d.provider_stable_key) provider_stable_key, min(d.provider_name) provider_name, min(d.country_code) country_code,
       count(*) course_count, bool_or(d.has_scholarship) any_scholarship,
       array_agg(distinct d.study_level_code) levels, array_agg(distinct d.primary_field_code) areas
-    from search.course_documents d group by d.provider_id
+    from search.course_documents d
+   where not exists (select 1 from security.layer4_search_blocked_providers b where b.provider_id = d.provider_id)  -- v2.15.236
+   group by d.provider_id
   ), rk as (
     select l.provider_id,
       min(case when s.code='qs_wur' and e.edition_year = (select max(e2.edition_year) from ranking.editions e2 where e2.system_id=s.id and e2.status='accepted') then coalesce(o.rank_low,o.rank_exact) end) qs_rank,
@@ -54,6 +56,7 @@ begin
       and (v_subdivs is null or exists (select 1 from search.course_documents d2 where d2.provider_id=a.provider_id and d2.subdivision_codes && v_subdivs))
       and (v_levels is null or a.levels && v_levels)
       and (v_areas is null or a.areas && v_areas)
+      and (f->'institution_types' is null or api.website_v2_institution_type_code(a.provider_id) = any(api.website_text_array(f->'institution_types')))
       and (v_groups is null or exists (select 1 from catalogue.provider_collection_memberships gm join ref.institution_collections gic on gic.id=gm.collection_id
             where gm.provider_id=a.provider_id and gm.status='active' and (gm.valid_to is null or gm.valid_to>=current_date)
               and gic.collection_type='university_group' and gic.status='active' and replace(gic.code,'au_','') = any(v_groups)))
@@ -79,7 +82,7 @@ begin
     coalesce(jsonb_agg(jsonb_build_object(
       'provider_id', o.provider_stable_key,
       'name', security.provider_presentable_name(o.provider_name),
-      'legal_name', o.provider_name,
+      'legal_name', o.provider_name, 'institution_type', api.website_v2_institution_type(o.provider_id),
       'website', o.website,
       'country_code', o.country_code,
       'campuses', api.website_v2_provider_campuses(o.provider_id),

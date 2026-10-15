@@ -17,9 +17,11 @@ begin
     'rankings', public.website_v2_provider_rankings(v_pid),
     'outcomes_state', case when v_outcomes_ok then 'admitted' else 'not_admitted' end,
     'outcomes', case when v_outcomes_ok then coalesce((select jsonb_agg(jsonb_build_object('survey', sv.code, 'metric_code', m.code, 'metric_name', m.name,
-                   'study_level', o.source_cohort_code, 'value', o.metric_value, 'unit', m.unit, 'ci_low', o.confidence_low, 'ci_high', o.confidence_high,
+                   'study_level', o.source_cohort_code,
+                   'study_level_name', case o.source_cohort_code when 'UG' then 'Undergraduate' when 'PGC' then 'Postgraduate coursework' when 'PGR' then 'Postgraduate research' when 'ALL' then 'All students' end,
+                   'survey_name', sv.name, 'national_benchmark', o.national_benchmark, 'value', o.metric_value, 'unit', m.unit, 'ci_low', o.confidence_low, 'ci_high', o.confidence_high,
                    'reference_year', o.collection_year_to, 'responses', o.response_count, 'grain', 'provider'))
                  from catalogue.provider_outcomes o join ref.outcome_metrics m on m.id=o.metric_id join ref.outcome_surveys sv on sv.id=o.survey_id
-                 where o.provider_id=v_pid and o.external_study_area_id is null), '[]'::jsonb) else '[]'::jsonb end);
+                 where o.provider_id=v_pid and o.external_study_area_id is null and o.status in ('current','active','accepted') and left(sv.code, 5) = 'qilt_'), '[]'::jsonb) else '[]'::jsonb end);
   return jsonb_build_object('contract_version','website-search-v2','item',v);
 end $function$

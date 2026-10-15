@@ -7,9 +7,11 @@ AS $function$
 declare v_id uuid; v_matches int; v jsonb; v_outcomes_ok boolean;
 begin
   if nullif(btrim(coalesce(p_identifier,'')),'') is null then raise exception 'INVALID_INPUT: course_id or course_code required' using errcode='22023'; end if;
-  select count(*) into v_matches from search.course_documents d where lower(d.course_stable_key)=lower(btrim(p_identifier)) or lower(d.course_code)=lower(btrim(p_identifier));
+  select count(*) into v_matches from search.course_documents d where lower(d.course_stable_key)=lower(btrim(p_identifier)) or lower(d.course_code)=lower(btrim(p_identifier))
+    or d.course_id in (select i.course_id from catalogue.course_identifiers i where i.scheme = 'studysearch' and upper(i.identifier) = upper(btrim(p_identifier)));
   select d.course_id into v_id from search.course_documents d
    where lower(d.course_stable_key)=lower(btrim(p_identifier)) or lower(d.course_code)=lower(btrim(p_identifier))
+      or d.course_id in (select i.course_id from catalogue.course_identifiers i where i.scheme = 'studysearch' and upper(i.identifier) = upper(btrim(p_identifier)))
    order by (lower(d.course_stable_key)=lower(btrim(p_identifier))) desc, d.course_stable_key limit 1;
   if v_id is null then return jsonb_build_object('contract_version','website-search-v2','error',jsonb_build_object('code','NOT_FOUND')); end if;
   v := api.website_v2_course_item(v_id);
@@ -28,11 +30,13 @@ begin
                         from search.course_documents d, jsonb_array_elements(coalesce(d.scholarship_options,'[]'::jsonb)) s where d.course_id=v_id), '[]'::jsonb),
     'provider_outcomes_state', case when v_outcomes_ok then 'admitted' else 'not_admitted' end,
     'provider_outcomes', case when v_outcomes_ok then coalesce((select jsonb_agg(jsonb_build_object('survey', sv.code, 'metric_code', m.code, 'metric_name', m.name,
-                          'study_level', o.source_cohort_code, 'value', o.metric_value, 'unit', m.unit, 'ci_low', o.confidence_low, 'ci_high', o.confidence_high,
+                          'study_level', o.source_cohort_code,
+                          'study_level_name', case o.source_cohort_code when 'UG' then 'Undergraduate' when 'PGC' then 'Postgraduate coursework' when 'PGR' then 'Postgraduate research' when 'ALL' then 'All students' end,
+                          'survey_name', sv.name, 'national_benchmark', o.national_benchmark, 'value', o.metric_value, 'unit', m.unit, 'ci_low', o.confidence_low, 'ci_high', o.confidence_high,
                           'reference_year', o.collection_year_to, 'responses', o.response_count, 'grain', 'provider'))
                         from catalogue.provider_outcomes o join ref.outcome_metrics m on m.id=o.metric_id join ref.outcome_surveys sv on sv.id=o.survey_id
                         join search.course_documents d on d.provider_id=o.provider_id and d.course_id=v_id
-                        where o.status in ('active','accepted') and o.external_study_area_id is null), '[]'::jsonb) else '[]'::jsonb end,
+                        where o.status in ('current','active','accepted') and o.external_study_area_id is null and left(sv.code, 5) = 'qilt_'), '[]'::jsonb) else '[]'::jsonb end,
     'other_matches', greatest(v_matches - 1, 0));
   return jsonb_build_object('contract_version','website-search-v2','item',v);
 end $function$

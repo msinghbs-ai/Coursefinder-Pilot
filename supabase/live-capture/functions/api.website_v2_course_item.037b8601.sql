@@ -8,12 +8,16 @@ declare d search.course_documents; v jsonb;
 begin
   select * into d from search.course_documents where course_id = p_course_id;
   if not found then return null; end if;
+  if exists (select 1 from security.layer4_search_blocked_courses b where b.course_id = p_course_id) then return null; end if;  -- v2.15.236
   v := jsonb_build_object(
     'course_id', d.course_stable_key,
     'course_code', d.course_code,
+    'display_code', security.course_display_code_v1(d.course_id)->>'code',
+    'display_code_kind', security.course_display_code_v1(d.course_id)->>'kind',
+    'display_code_label', security.course_display_code_v1(d.course_id)->>'label',
     'title', d.course_title,
     'country_code', d.country_code,
-    'provider', jsonb_build_object('provider_id', d.provider_stable_key, 'name', security.provider_presentable_name(d.provider_name), 'legal_name', d.provider_name,
+    'provider', jsonb_build_object('provider_id', d.provider_stable_key, 'name', security.provider_presentable_name(d.provider_name), 'legal_name', d.provider_name, 'institution_type', api.website_v2_institution_type(d.provider_id),
                   'university_groups', security.provider_university_groups(d.provider_id),
                   'ranking_summary', api.website_v2_ranking_summary(d.provider_id),
                   'logo', api.website_v2_provider_logo(d.provider_id)),
@@ -50,7 +54,7 @@ begin
     'official_url', d.official_course_url,
     'scholarship_count', jsonb_array_length(coalesce(d.scholarship_options,'[]'::jsonb)),
     'subdivision_codes', to_jsonb(d.subdivision_codes),
-    'publication_status', d.publication_status,
+    'publication_status', case when d.provider_id in (select h.provider_id from security.provider_hidden_v1 h where h.provider_id is not null) then 'unpublished' else 'published' end,
     'freshness', jsonb_build_object('projection_updated_at', d.updated_at, 'source_updated_at', d.source_updated_at));
   v := v || jsonb_build_object(
     'campus_city', v->'campuses'->0->'city',

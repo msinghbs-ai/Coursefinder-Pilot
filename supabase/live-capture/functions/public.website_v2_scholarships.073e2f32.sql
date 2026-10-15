@@ -30,7 +30,8 @@ begin
     select s.id, s.name, s.stable_key
     from scholarship.scholarships s join catalogue.providers p on p.id=s.provider_id join ref.countries c on c.id=p.country_id
     where s.lifecycle_status='active'
-      and (not coalesce((f->>'published_only')::boolean,false) or s.publication_status='published')
+      and not exists (select 1 from security.layer4_search_blocked_scholarships b where b.scholarship_id=s.id)  -- v2.15.236: hidden providers' scholarships too
+      and s.publication_status='published'  -- v2.15.239 (S1): published scholarships only, always
       and (not coalesce((f->>'open_only')::boolean,false) or (s.application_close_date >= current_date and (s.application_open_date is null or s.application_open_date <= current_date)))
       and (v_kw is null or s.name ilike '%'||v_kw||'%' or coalesce(p.display_name,p.canonical_name) ilike '%'||v_kw||'%')
       and (v_countries is null or trim(c.iso_alpha2::text) = any(v_countries))

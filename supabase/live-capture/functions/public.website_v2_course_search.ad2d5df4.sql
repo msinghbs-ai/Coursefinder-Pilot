@@ -29,7 +29,7 @@ declare
   v_sort text := coalesce(nullif(p_sort,''), case when nullif(btrim(coalesce(f->>'keyword','')),'') is not null then 'relevance' else 'title_asc' end);
   v_known text[] := array['keyword','country_codes','country_code','study_area_codes','study_level_codes','subdivision_codes','cities','city','postcodes','regional_categories',
                           'provider_ids','university_groups','university_group','delivery_modes','intake_months','english_test_codes','english_score_max',
-                          'tuition_annual_min','tuition_annual_max','has_intake','has_english','has_official_url','has_scholarship','has_tuition','changed_since'];
+                          'tuition_annual_min','tuition_annual_max','has_intake','has_english','has_official_url','has_scholarship','has_tuition','changed_since','institution_types'];
   v_not_applied jsonb;
   v_total bigint; v_ids uuid[];
   v_need_fee boolean;
@@ -62,7 +62,7 @@ begin
                        from jsonb_array_elements(coalesce(d.provider_tuition_options,'[]'::jsonb)) o
                        where (o->>'amount') ~ '^[0-9]+(\.[0-9]+)?$' and (o->>'amount')::numeric >= 1000
                        order by nullif(o->>'fee_year','')::int desc nulls last limit 1) pt on v_need_fee
-    where not exists (select 1 from security.layer4_search_blocked_courses b where b.course_id = d.course_id)
+    where (d.course_id is null or d.course_id not in (select b.course_id from security.layer4_search_blocked_courses b where b.course_id is not null))
       and (v_kw is null or d.search_tsv @@ v_q or d.course_title ilike '%'||v_kw||'%' or d.provider_name ilike '%'||v_kw||'%'
            or lower(d.course_code) = lower(v_kw) or lower(d.course_stable_key) = lower(v_kw))
       and (v_countries is null or d.country_code = any(v_countries))
@@ -70,6 +70,7 @@ begin
       and (v_levels is null or d.study_level_code = any(v_levels))
       and (v_subdivs is null or d.subdivision_codes && v_subdivs)
       and (v_providers is null or d.provider_stable_key = any(v_providers))
+      and (f->'institution_types' is null or api.website_v2_institution_type_code(d.provider_id) = any(api.website_text_array(f->'institution_types')))
       and (v_groups is null or exists (select 1 from catalogue.provider_collection_memberships gm join ref.institution_collections gic on gic.id=gm.collection_id
             where gm.provider_id=d.provider_id and gm.status='active' and (gm.valid_to is null or gm.valid_to>=current_date)
               and gic.collection_type='university_group' and gic.status='active' and replace(gic.code,'au_','') = any(v_groups)))
