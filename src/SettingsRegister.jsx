@@ -23,30 +23,35 @@ const SECTION_HELP={'Job sizes':'How much each scheduled job takes in a run. The
   'Waste rules':'Stops work that keeps failing or finds nothing: pauses idle jobs, caps retries by how often they still succeed, freezes values two automatic jobs keep changing, reuses stored pages, and limits course-page search to the providers that matter most. What is stopped is recorded and flagged.',
   'Flags':'The flag unit: how many tries before a soft reason holds an item, the free recheck and trial-run back-offs, when a worker job counts as running empty, and who may raise or release flags (Coverage & completeness › Flags).',
   'Logos':'Provider logos: who may upload or find one, and how the logo finder works through providers with no logo (job logo-find).',
-  'Website API':'What the website (Wix) is given: whether rankings and logos may be displayed, how long logo links last, and the sync page size.'}
+  'Website API':'What the website (Wix) is given: whether rankings and logos may be displayed, how long logo links last, and the sync page size.',
+  'Zoho API':'Zoho API v2 (zoho-api-v2): calls a minute per key, page sizes, how long logo links last, the countries in the Zoho change stream and CSV export, and how long single calls stay in the request log (Operations › API usage).'}
 
 // One setting: value, range and unit, what uses it, the last change; Save asks for a reason inline.
 function SettingRow({s,can,onSave}){
-  const[v,setV]=useState(String(s.value??'')),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
-  useEffect(()=>{setV(String(s.value??''))},[s.value])
+  // CF-247 16 Oct 2026: a list setting (for example the Zoho countries) is edited as comma-separated values
+  const shown=x=>Array.isArray(x)?x.join(', '):String(x??'')
+  const[v,setV]=useState(shown(s.value)),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[err,setErr]=useState('')
+  useEffect(()=>{setV(shown(s.value))},[s.value])
   // v2.15.277: a yes/no setting (kind boolean) is chosen from Yes or No; numbers as before
-  const yn=s.kind==='boolean',n=Number(v)
-  const changed=yn?v!==String(s.value):v!==''&&n!==Number(s.value)
-  const valid=yn||(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max)))
-  const save=async()=>{setBusy(true);setErr('');try{await onSave(s.key,yn?v==='true':n,reason.trim());setReason('')}catch(e){setErr(errText(e))}finally{setBusy(false)}}
+  const yn=s.kind==='boolean',ls=s.kind==='list',n=Number(v)
+  const list=v.split(',').map(x=>x.trim()).filter(Boolean)
+  const changed=yn?v!==String(s.value):ls?v.trim()!==shown(s.value):v!==''&&n!==Number(s.value)
+  const valid=yn||(ls?list.length>0:(Number.isFinite(n)&&(s.min==null||n>=Number(s.min))&&(s.max==null||n<=Number(s.max))))
+  const save=async()=>{setBusy(true);setErr('');try{await onSave(s.key,yn?v==='true':ls?list:n,reason.trim());setReason('')}catch(e){setErr(errText(e))}finally{setBusy(false)}}
   return <div className="sr-row" data-register-setting={s.key}>
     <div className="sr-text"><strong>{s.label}</strong>{s.help&&<small>{s.help}</small>}<small className="sr-used">Used by: {s.used_by||'—'}</small>
       {s.updated_at&&<small className="sr-meta">{s.reason||'—'} · {fmtDateTime(s.updated_at)}</small>}</div>
     <div className="sr-edit">
       {can?<>
         <label className="sr-value"><span className="sr-hide">{s.label}</span>{yn?<select className="fv-input" value={v} onChange={e=>setV(e.target.value)}><option value="true">Yes</option><option value="false">No</option></select>
-          :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&<span>{s.unit}</span>}</label>
+          :ls?<input className="fv-input" type="text" value={v} onChange={e=>setV(e.target.value)}/>
+          :<input className="fv-input" type="number" inputMode="numeric" min={s.min??undefined} max={s.max??undefined} value={v} onChange={e=>setV(e.target.value)}/>}{!yn&&!ls&&<span>{s.unit}</span>}</label>
         {changed&&<label className="sr-reason"><span className="sr-hide">Reason</span><input className="fv-input" placeholder="Reason (kept in the log)" value={reason} onChange={e=>setReason(e.target.value)}/></label>}
         {changed&&<Button compact variant="primary" disabled={busy||!valid||reason.trim().length<4} onClick={save}><Save size={13}/>Save</Button>}
-        {changed&&!valid&&<small className="fr-error">Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</small>}
+        {changed&&!valid&&<small className="fr-error">{ls?'At least one value.':<>Between {fmtNumber(Number(s.min))} and {fmtNumber(Number(s.max))}.</>}</small>}
         {err&&<small className="fr-error" role="alert">{err}</small>}
-      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
-      <small className="sr-range">{!yn&&s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
+      </>:<strong>{yn?(String(s.value)==='true'?'Yes':'No'):ls?shown(s.value):<>{fmtNumber(Number(s.value))} {s.unit}</>}</strong>}
+      <small className="sr-range">{!yn&&!ls&&s.min!=null?`${fmtNumber(Number(s.min))} to ${fmtNumber(Number(s.max))}`:''}</small>
     </div>
   </div>
 }
