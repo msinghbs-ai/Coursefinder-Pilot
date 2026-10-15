@@ -19,7 +19,7 @@ test.describe('CF-102 Provider logos across detail, list and comparison @targete
    const api=fs.readFileSync('src/lib/supabase.js','utf8')
 
    // Feature contract, deliberately NOT pinned to an old UI version.
-   expect(main).toContain("import ProviderLogo,{ProviderBrand}from'./ProviderLogo'")
+   expect(main).toMatch(/import ProviderLogo,\{ProviderBrand[^}]*\}from'\.\/ProviderLogo'/) // v2.15.281 also imports logoCapability
    expect(main).toContain("ProviderBrand providerId={data.id}")
    expect(course).toContain("ProviderBrand providerId={data.provider_id}")
    expect(compare).toContain("import ProviderLogo from'./ProviderLogo'")

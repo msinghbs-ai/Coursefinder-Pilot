@@ -19,9 +19,9 @@ test.describe('CF-103 Provider logo UX and identity quality @targeted',()=>{
     expect(logo).toContain('sessionStorage')
     expect(logo).toContain('flex:0 0 34px!important')
     expect(logo).toContain('const misses=targets.filter(x=>!x.cached)')
-    expect(logo).toContain("img.loading='eager'")
-    expect(logo).toContain('Image URL')
-    expect(upload).toContain("role_rank||0)<5")
+    expect(logo).toContain("img.loading='lazy'") // lazy since CF-150 (as CF-102 checks)
+    expect(logo).toContain('Image address') // v2.15.281 editor wording
+    expect(upload).toContain('gate.rpc("svc_logo_upload_allowed"') // v2.15.281: the role is a setting (Pipeline settings › Logos)
     expect(upload).toContain('unsafe_source_url')
     expect(access).toContain('stable_keys')
   })
@@ -54,7 +54,7 @@ test.describe('CF-103 Provider logo UX and identity quality @targeted',()=>{
       await loginAsUatUser(page);await page.goto(new URL('/#providers',process.env.UAT_BASE_URL).toString());await page.locator('.m-catalogue-panel .m-table tbody tr').first().click()
       const drawer=page.locator('.m-drawer-provider');await expect(drawer).toBeVisible({timeout:45000});const name=drawer.locator('.cf-provider-brand-copy strong');const style=await name.evaluate(el=>({color:getComputedStyle(el).color,weight:parseInt(getComputedStyle(el).fontWeight,10)}));expect(style.color).toBe('rgb(15, 23, 42)');expect(style.weight).toBeGreaterThanOrEqual(700)
       const role=((await page.locator('.m-role-pill').textContent())||'').trim(),editable=drawer.locator('.cf-logo-editable')
-      if(role==='PIM Operator'||role==='Platform Admin'){await expect(editable).toBeVisible({timeout:45000});await editable.click();await expect(page.getByRole('dialog',{name:'Replace Provider logo'})).toBeVisible();await expect(page.getByText('Browse image',{exact:true})).toBeVisible();await expect(page.getByText('Image URL',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Cancel'}).click()}else await expect(editable).toHaveCount(0)
+      if(role==='Platform Admin'){await expect(editable).toBeVisible({timeout:45000});await editable.click();await expect(page.getByRole('dialog',{name:'Provider logo'})).toBeVisible();await expect(page.getByText('Image address',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:"Find it on the provider's website"})).toBeVisible();await page.getByRole('button',{name:'Cancel'}).click()}else await expect(editable).toHaveCount(0) // v2.15.281: Platform Admin by default (setting)
       await page.goto(new URL('/#courses',process.env.UAT_BASE_URL).toString());await expect(page.locator('.m-drawer-course .cf-logo-editable')).toHaveCount(0)
       await milestoneScreenshot(page,testInfo,'cf-103-provider-detail-bold-logo-editor')
     }finally{await finish(testInfo,runtime)}
