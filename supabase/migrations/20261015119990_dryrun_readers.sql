@@ -815,5 +815,5 @@ begin
     'cost_hours', (select count(*) from pipeline.layer3_call_costs_hourly));
   perform security.retention_estimate_v1('retired_layer2');
   v := v || jsonb_build_object('retention_estimate_after', (select to_jsonb(e) - 'computed_at' from pipeline.retention_estimates e where e.category = 'retired_layer2'));
-  raise exception 'DRYRUN %', v;
+  raise exception 'DRYRUN %', jsonb_build_object('a', v->'changed_outside_54', 'b', v->'courses_waiting_on_l3', 'c', v->'lineage_nonnull_before', 'd', v->'retention_estimate_after', 'e', v->'retention_estimate');
 end $dry$;
