@@ -41,6 +41,8 @@ jobs:
           GIT_SHA=$(git rev-parse HEAD) python3 scripts/archive_export.py | tee export.log
           grep '^MANIFEST ' export.log | cut -c10- > manifest.json
           { echo "## Archive export"; grep -v '^MANIFEST ' export.log; } >> "$GITHUB_STEP_SUMMARY"
+          # the counts and key hashes as annotations, so the paste file can be written from them without downloading the artifact
+          python3 -c 'import json; m=json.load(open("manifest.json")); s=[[x["name"],x["rows"],x["key_hash"],[[p["path"].rsplit("/",2)[-2]+"/"+p["path"].rsplit("/",1)[-1],p["rows"],p["bytes"],p["sha256"][:16]] for p in x["parts"]]] for x in m["sets"]]; print("::notice title=archive prefix::"+m["prefix"]); [print("::notice title=archive sets %d::"%i+json.dumps(s[i:i+4])) for i in range(0,len(s),4)]'
       - uses: actions/upload-artifact@v4
         with:
           name: archive-manifest
