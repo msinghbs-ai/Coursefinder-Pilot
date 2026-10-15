@@ -79,3 +79,10 @@ test.describe('mocked browser', () => {
     await expect(page.locator('.cf-api-errors')).toContainText('INVALID_INPUT')
   })
 })
+
+test('CSV seed then sync: the export gives the cursor to continue from', () => {
+  const cur = fs.readFileSync('supabase/migrations/20261016030000_cf247_zoho_export_sync_cursor.sql', 'utf8')
+  expect(cur).toContain("v_at bigint := (select coalesce(max(z.seq), 0) from pipeline.zoho_sync_items z);")
+  expect(cur).toContain("'sync_cursor', rtrim(translate(replace(encode(convert_to(jsonb_build_object('v', 1, 'm', 'delta', 'a', v_at,")
+  expect(fn).toContain('"x-sync-cursor": String(obj.sync_cursor ?? "")')
+})
