@@ -17,3 +17,7 @@ These rules come from the Platform Admin and apply to every change.
 - **Nothing is dropped or deleted by an applied migration.** Drops and deletes go to the Platform Admin as a paste file.
 - **A passing qualification never switches anything on by itself.**
 - Never create `package-lock.json`. Never commit the `node_modules` symlink.
+- **Housekeeping (Decision 260, 15 Oct 2026; admin repo `docs/platform/DATA-PIPELINE-OPERATING-MODEL.md`).**
+  - Every migration from `20261015030000` on has `-- Replaces:` and `-- Retires:` lines (or "nothing"), a `comment on table` for each new table, and a catalogue row for each new job. `tests/uat/cf-247-s42-housekeeping-contract.spec.mjs` fails the build otherwise.
+  - A change that brings a new approach switches the old one off in the same change and marks it `retiring` in `pipeline.component_register` (with `replaced_by` and `retire_after`). Tables, functions and edge functions are dropped by a paste file after `hygiene.retire_after_days` (14), once nothing used them.
+  - One-off probes and audits are not left deployed as edge functions. The weekly `hygiene-check` job and the daily Component register workflow keep the register current; the generated document is on the `component-register-snapshot` branch.
