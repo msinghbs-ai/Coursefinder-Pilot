@@ -5,7 +5,7 @@
 -- one of their providers has its province (the 14 Oct decision "keep CA" accepts a Canadian provider's province).
 -- Replaces: nothing (writers unchanged; a guard on the table stops a second active row for the same month, whichever writer sends it)
 -- Retires: search.refresh_course_documents_v2 (no caller and no job since search.refresh_course_base_v3; marked retiring, dropped by paste file after 14 days)
--- 1 Setting   2 Guard on catalogue.course_intakes; regions from the provider for the listed countries; register kind for functions
+-- 1 Setting   2 Guard on catalogue.course_intakes; regions from the provider for the listed countries
 -- 3 Replaced functions (md5-guarded): search.refresh_course_base_v3 (province), security.admin_read_impl (course detail gives country and province)
 -- 4 Duplicates withdrawn (status, kept), projection refreshed   Nothing dropped or deleted.
 
@@ -58,8 +58,6 @@ end $function$;
 create trigger course_intake_same_month_guard before insert or update on catalogue.course_intakes
   for each row execute function security.course_intake_same_month_guard();
 
-alter table pipeline.component_register drop constraint if exists component_register_kind_check;
-alter table pipeline.component_register add constraint component_register_kind_check check (kind in ('job', 'table', 'view', 'edge_function', 'screen', 'function'));
 
 revoke execute on function security.region_fallback_countries_v1(), security.course_intake_same_month_guard() from public, anon, authenticated;
 
@@ -310,11 +308,7 @@ begin
 end $dedupe$;
 -- the projection takes the provinces on its next run
 insert into search.refresh_requests(requested_by) values ('CF-247 15 Oct 2026: Canadian provinces for courses with no campus');
--- housekeeping: the old projection function is retiring
-insert into pipeline.component_register(kind, name, layer, purpose, status, replaced_by, introduced_in, retire_after, note)
-values ('function', 'search.refresh_course_documents_v2(boolean)', 'Website API', 'Former search projection build', 'retiring', 'search.refresh_course_base_v3(boolean)',
-        '20261015040000', current_date + security.pipeline_num_v1('hygiene.retire_after_days', 14)::int, 'No caller and no job (15 Oct 2026)')
-on conflict (kind, name) do nothing;
+-- housekeeping: search.refresh_course_documents_v2 is retiring; the register records functions once the Platform Admin runs the paste file that lets it (CF-247 15 Oct 2026)
 
 do $post$
 declare v_expected jsonb := '{"search.refresh_course_base_v3(boolean)": "d9b021b2ac51c48c4818d54dcb6c4042", "security.admin_read_impl(text,jsonb)": "2c2da9acdacaa6a99b37e527718aec6c"}'::jsonb;
