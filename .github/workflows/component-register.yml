@@ -28,7 +28,8 @@ jobs:
           code=$(curl -sS -G -o "$RUNNER_TEMP/calls.json" -w '%{http_code}' "https://api.supabase.com/v1/projects/$REF/analytics/endpoints/logs.all" \
             --data-urlencode "sql=$sql" --data-urlencode "iso_timestamp_start=$start" --data-urlencode "iso_timestamp_end=$end" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
-          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "Logs query failed ($code); usage not recorded this run"; echo '{}' > "$RUNNER_TEMP/calls.json"; fi
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "::warning::Logs query failed ($code): $(head -c 300 "$RUNNER_TEMP/calls.json" | tr -d '\n')"; echo '{}' > "$RUNNER_TEMP/calls.json"; fi
+          if [ "$(jq '.result | length' "$RUNNER_TEMP/calls.json" 2>/dev/null || echo 0)" = "0" ]; then echo "::warning::No edge function calls returned: $(head -c 300 "$RUNNER_TEMP/calls.json" | tr -d '\n')"; fi
           echo "Edge functions called: $(jq '.result | length' "$RUNNER_TEMP/calls.json" 2>/dev/null || echo 0)" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Update the register
         run: |
@@ -38,14 +39,15 @@ jobs:
           jq -n --rawfile q "$RUNNER_TEMP/q.sql" '{query:$q}' > "$RUNNER_TEMP/q.json"
           code=$(curl -sS -o "$RUNNER_TEMP/out.json" -w '%{http_code}' -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @"$RUNNER_TEMP/q.json")
-          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "Register update failed ($code)"; head -c 500 "$RUNNER_TEMP/out.json"; exit 1; fi
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "::error::Register update failed ($code): $(head -c 300 "$RUNNER_TEMP/out.json" | tr -d '\n')"; exit 1; fi
           jq -c '.[0]' "$RUNNER_TEMP/out.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Generate the document
         run: |
-          jq -n '{query:"select security.component_register_markdown_v1() as md", read_only:true}' > "$RUNNER_TEMP/m.json"
+          # not read_only: the read-only role may not run the platform's private functions
+          jq -n '{query:"select security.component_register_markdown_v1() as md"}' > "$RUNNER_TEMP/m.json"
           code=$(curl -sS -o "$RUNNER_TEMP/md.json" -w '%{http_code}' -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" --data @"$RUNNER_TEMP/m.json")
-          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "Document query failed ($code)"; head -c 500 "$RUNNER_TEMP/md.json"; exit 1; fi
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then echo "::error::Document query failed ($code): $(head -c 300 "$RUNNER_TEMP/md.json" | tr -d '\n')"; exit 1; fi
           jq -r '.[0].md' "$RUNNER_TEMP/md.json" > "$RUNNER_TEMP/COMPONENT-REGISTER.md"
           wc -l "$RUNNER_TEMP/COMPONENT-REGISTER.md" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit to the snapshot branch
