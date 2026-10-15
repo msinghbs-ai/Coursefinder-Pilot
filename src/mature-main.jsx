@@ -22,6 +22,7 @@ import ListEdit from'./ListEdit'
 import DashboardHome from'./Dashboard'
 import ContextualInsights from'./ContextualInsights'
 import ProviderLogo,{ProviderBrand,logoCapability}from'./ProviderLogo'
+import FlagsPanel from'./FlagsPanel'
 import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
@@ -242,7 +243,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='prisms')return <Prisms onError={onError}/>
         if(tab==='datasets')return <StatisticsDatasets rank={rank}/>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
+      case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;if(tab==='flags')return <FlagsPanel onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       case'layer1':
         if(tab==='scholarships')return <ScholarshipLayer layer={1} rank={rank} onError={err}/>
         return <Layer1Sources/>
