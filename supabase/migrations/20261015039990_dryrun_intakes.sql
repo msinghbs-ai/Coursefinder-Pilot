@@ -342,7 +342,7 @@ begin
     'refresh_s', extract(epoch from clock_timestamp()-t0),
     'atha_intakes', (select jsonb_agg(intake_label order by intake_label) from catalogue.course_intakes where course_id=c and coalesce(status,'active')='active'),
     'atha_doc_sub', (select subdivision_codes from search.course_documents where course_id=c),
-    'atha_detail', (select jsonb_build_object('country',x->>'country_code','sub',x->>'subdivision_name') from (select security.admin_read_impl('course_detail', jsonb_build_object('id',c)) x) z),
+    'atha_detail', (select s2.name from catalogue.courses c2 join catalogue.providers p2 on p2.id=c2.provider_id join ref.subdivisions s2 on s2.id=p2.subdivision_id where c2.id=c), 'detail_has_keys', (select prosrc like '%''subdivision_name'',(select s2.name%' from pg_proc where oid='security.admin_read_impl'::regproc),
     'ca_with_sub', (select count(*) filter (where cardinality(subdivision_codes)>0) from search.course_documents where country_code='CA'),
     'nz_with_sub', (select count(*) filter (where cardinality(subdivision_codes)>0) from search.course_documents where country_code='NZ'),
     'au_with_sub', (select count(*) filter (where cardinality(subdivision_codes)>0) from search.course_documents where country_code='AU'),
