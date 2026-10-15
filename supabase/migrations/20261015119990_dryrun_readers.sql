@@ -807,7 +807,7 @@ begin
     'lineage_nonnull_before', (select count(*) from _l_b where j is not null),
     'cost_oct_same', (select m_oct from _r_b) = (select coalesce(sum(cost_usd),0) from pipeline.layer3_call_costs_hourly where hour >= '2026-10-01'),
     'cost_sep_same', (select m_sep from _r_b) = (select coalesce(sum(cost_usd),0) from pipeline.layer3_call_costs_hourly where hour >= '2026-09-01' and hour < '2026-10-01'),
-    'hour_same', (select (h_calls, h_tok) from _r_b) = (select (coalesce(sum(calls),0)::bigint, sum(tokens)::numeric) from pipeline.layer3_call_costs_hourly where hour >= '2026-10-05 03:00+00' and hour < '2026-10-05 04:00+00'),
+    'hour_same', (select (h_calls::bigint, h_tok::numeric) from _r_b) = (select (coalesce(sum(calls),0)::bigint, sum(tokens)::numeric) from pipeline.layer3_call_costs_hourly where hour >= '2026-10-05 03:00+00' and hour < '2026-10-05 04:00+00'),
     'resource_observe', security.platform_resource_observe_v1() - 'largest_tables' - 'acquisition',
     'retention_estimate', (select to_jsonb(e) from pipeline.retention_estimates e where e.category = 'retired_layer2'),
     'input_mark', security.admit_input_mark_v1(),
