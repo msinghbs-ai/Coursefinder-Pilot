@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.209 — 15 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.282** (the flag unit). The Platform Admin asked on 15 Oct 2026: "we don't keep burning the toolset on repetitive waste and produce nothing ... have flag unit that can be removed or raised manually and automatically by tried burn ... the said entry or provider get re-entered in queue".
+  - **Found:** in 6 hours about 4,000 worker calls, 3 jobs produced anything; the central-page finder picked the same four universities every 5 minutes (716 refusals that day); every Canadian and New Zealand gap had already been tried and skipped by Enrich fields.
+  - **Flags** (`pipeline.enrichment_flags` extended, history in `pipeline.enrichment_flag_events`): providers, course fields and jobs; hard reasons hold at once, soft after 2 tries (a second try only on new input); released when input changes, a free website check passes (coverage-sweep v0.26.0 mode flag_check; 3, 7, 14, 30 days) or the date comes; released items re-queued. Person raise and release with a reason. Coverage & completeness › Flags.
+  - **Waste:** worker jobs whose last 30 runs found nothing are paused and tried again after 1, 2, 4, then 6 hours; central pages held until due; Enrich fields does not queue held or unchanged items. Job flag-recheck every 10 minutes. Migration 20261015080000; S45. SOPs 1.23.
+
 ## 0.1.208 — 15 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.281** (bug fix and feature). The Platform Admin reported on 15 Oct 2026: "Bug/fix: i'm unable to upload Uni Logos or request to find it".
