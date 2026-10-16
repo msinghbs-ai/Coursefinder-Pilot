@@ -174,7 +174,7 @@ Deno.serve(async (req: Request) => {
     case "export": {
       const e = cleanText(body.entity);
       if (!["provider", "campus", "contact", "course"].includes(e)) return fail(400, "INVALID_INPUT", {}, "entity must be provider, campus, contact or course");
-      fn = "zoho_v2_export"; args = { p_entity: e }; break;
+      fn = "zoho_v2_export_page"; args = { p_entity: e, p_page: page }; break; // paged: a whole course file is past the API time limit
     }
   }
 
@@ -192,9 +192,10 @@ Deno.serve(async (req: Request) => {
 
   // export: the CSV itself (format "json" returns it inside JSON)
   if (action === "export" && cleanText(body.format) !== "json") {
-    const name = `coursefinder-${obj.entity}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const name = `coursefinder-${obj.entity}-${new Date().toISOString().slice(0, 10)}-page-${obj.page ?? 1}.csv`;
     return finish(200, obj, { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${name}"`,
-      "x-rows": String(obj.rows ?? 0), "x-complete": String(obj.complete ?? false), "x-sync-cursor": String(obj.sync_cursor ?? "") }, String(obj.csv ?? ""));
+      "x-rows": String(obj.rows ?? 0), "x-complete": String(obj.complete ?? false), "x-sync-cursor": String(obj.sync_cursor ?? ""),
+      "x-page": String(obj.page ?? 1), "x-pages": String(obj.pages ?? 1), "x-total-rows": String(obj.total_rows ?? 0), "x-has-more": String(obj.has_more ?? false) }, String(obj.csv ?? ""));
   }
   await signLogos(svc, obj, Number(id.logo_link_days) || 1);
   return finish(200, { ...obj, api_version: API_VERSION, request_id: requestId });
