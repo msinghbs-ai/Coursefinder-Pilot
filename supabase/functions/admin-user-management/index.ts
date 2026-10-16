@@ -105,7 +105,9 @@ Deno.serve(async (req: Request) => {
           ...a,
           active: !a.expires_at || new Date(a.expires_at).getTime() > now,
         }));
-        const effective = userAssignments.filter((a: any) => a.active).sort((a: any, b: any) => (roleRank.get(b.role_code) || 0) - (roleRank.get(a.role_code) || 0))[0] || null;
+        const effective = userAssignments
+          .filter((a: any) => a.active)
+          .sort((a: any, b: any) => (roleRank.get(b.role_code) || 0) - (roleRank.get(a.role_code) || 0))[0] || null;
         const disabled = Boolean(u.banned_until && new Date(u.banned_until).getTime() > now);
         return {
           id: u.id,
@@ -116,7 +118,11 @@ Deno.serve(async (req: Request) => {
           banned_until: u.banned_until || null,
           disabled,
           roles: userAssignments,
-          effective_role: effective ? { code: effective.role_code, name: effective.role_name, rank: roleRank.get(effective.role_code) || effective.rank || 0 } : null,
+          effective_role: effective ? {
+            code: effective.role_code,
+            name: effective.role_name,
+            rank: roleRank.get(effective.role_code) || effective.rank || 0,
+          } : null,
         };
       }).sort((a: any, b: any) => String(a.email || "").localeCompare(String(b.email || "")));
       const emailById = new Map(users.map((u: any) => [u.id, u.email]));
@@ -176,7 +182,11 @@ Deno.serve(async (req: Request) => {
         p_after_state: { email, roles: roleState?.roles || [], confirmed: mode === "password" },
         p_metadata: { mode },
       });
-      return reply(req, 201, { ok: true, user: { id: createdUser.id, email: createdUser.email || email, mode, roles: roleState?.roles || [] } });
+
+      return reply(req, 201, {
+        ok: true,
+        user: { id: createdUser.id, email: createdUser.email || email, mode, roles: roleState?.roles || [] },
+      });
     }
 
     if (action === "roles") {
@@ -198,6 +208,7 @@ Deno.serve(async (req: Request) => {
     if (action === "disable" || action === "enable") {
       const targetUserId = String(body?.user_id || "");
       if (!uuidRe.test(targetUserId)) return reply(req, 400, { error: "valid_user_id_required" });
+
       const { data: beforeData, error: beforeError } = await serviceClient.auth.admin.getUserById(targetUserId);
       if (beforeError || !beforeData?.user) return reply(req, 404, { error: "target_user_not_found" });
       const beforeDisabled = Boolean(beforeData.user.banned_until && new Date(beforeData.user.banned_until).getTime() > Date.now());
@@ -210,7 +221,9 @@ Deno.serve(async (req: Request) => {
         if (guardError) return reply(req, 409, { error: guardError.message || "disable_not_allowed" });
       }
 
-      const { data: updated, error: updateError } = await serviceClient.auth.admin.updateUserById(targetUserId, { ban_duration: action === "disable" ? "876000h" : "none" });
+      const { data: updated, error: updateError } = await serviceClient.auth.admin.updateUserById(targetUserId, {
+        ban_duration: action === "disable" ? "876000h" : "none",
+      });
       if (updateError || !updated?.user) return reply(req, 400, { error: updateError?.message || `user_${action}_failed` });
 
       await serviceClient.rpc("svc_admin_access_log_event", {
