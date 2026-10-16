@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.211 — 16 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.284** (health, scholarships, dashboard icons, delete users). The Platform Admin reported on 16 Oct 2026 15:25: "Platform health: CRITICAL, with 5 critical issues and 1 warning. Most are stale or mis-labelled. The real one is scholarships: none published or read for two days." "Dashboard should display Icons" "Platform Users - can't be deleted, only disabled".
+  - **Found:** no scholarship page read since 14 Oct; the only pages due belong to The University of Sydney (83) and RMIT (27), held by the per-university Firecrawl cap (150 credits in 30 days, used at onboarding on 12 Oct), 86 of them re-reads asked for on 12 Oct; the reader was then paused by the flag unit for running empty. Discovery has been through every eligible provider (the 106 waiting are small Australian providers, skipped by design).
+  - **Fixed:** a requested read is not held by the per-university cap (`svc_scholarship_read_next`); the reader switched on again. Health checks: claimable work only, held work shown apart; tuition hand-off retired; trial-run restarts not overdue; scholarship allowance from its setting (60,000); live connection limit (120); compute profile Medium; size levels 4/6/7 GB. Migration 20261016070000.
+  - **Users:** Delete (Platform Admin; database guard refuses Platform Admins, self and the system account; soft delete when recorded work names the user; roles end; `security.user_deletions`). `admin-user-management` now deployed from the repository. Migration 20261016080000. Dashboard queue icons. S51. SOPs 1.25.
+
 ## 0.1.210 — 16 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.283** (API usage console). The Platform Admin asked on 16 Oct 2026 14:31: "Create me a ui to check stats on Both APIs with relevant metrics/API calls or statistics, success & failure, last login, full sync, delta sync, bandwidth, load size etc. be able to rotate their keys. and on Demand fresh statistics by pressing a button, otherwise get refresh daily basis."

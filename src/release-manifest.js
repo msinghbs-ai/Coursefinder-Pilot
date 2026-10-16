@@ -1,21 +1,22 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.283'
-export const PACKAGE_VERSION='0.1.210'
+export const UI_VERSION='2.15.284'
+export const PACKAGE_VERSION='0.1.211'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Oct 2026',
-  title:'API usage console for Zoho API v2 and Website API v2',
+  title:'Platform health that matches reality; scholarship reading restarted; dashboard icons; delete users',
   changes:[
-    'Operations \u203a API usage: for each API (Zoho API v2, Website API v2) the calls, success rate, failures, bandwidth sent and the last call, for the last 24 hours, 7 days or 30 days.',
-    'Each key: who uses it, on or off, last call and last success, calls, failures (client errors, rate limited, server errors, with the last error), bandwidth, average and largest reply, times, and when it was last rotated.',
-    'Full loads and deltas: the last completed full load (when, how long, pages, items, load size), deltas, CSV exports and searches per key.',
-    'Statistics refresh every day at about 00:20 Melbourne time; Refresh statistics now gives fresh figures at once.',
-    'Platform Admin: Rotate a key (the new key is shown once and not stored; the old key keeps working for the hours you choose, 24 by default in Settings), End old key, Switch off and on. Every change is listed under Key changes.'
+    'Users & roles: a Platform Admin can delete a user (type the email to confirm). A Platform Admin, your own account and the system automation account cannot be deleted. Deleted users are listed with who deleted them and when.',
+    'Dashboard: each queue in Waiting for you has its icon.',
+    'Platform health shows work held on purpose (a university past its scholarship cap, small Australian providers) as held, not stalled.'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Scholarship pages asked to be read again were held by the per-university cap and nothing was read from 14 Oct; they are read again now.',
+    'Platform health no longer reports the retired tuition hand-off, a job back from a trial-run pause as overdue, the scholarship Firecrawl allowance as 3,000 credits, or the database against the old Micro plan (it is Medium, 120 connections; size levels follow the 8 GB disk).'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

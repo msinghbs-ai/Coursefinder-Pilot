@@ -226,7 +226,7 @@
 .cov-by-area>summary{cursor:pointer;font-weight:600;padding:var(--cf-space-2) 0}
 /* Dashboard "Today" (v2.15.125). */
 .db-waiting{list-style:none;margin:0;padding:0;display:grid}
-.db-waiting li{display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 4px;border-top:1px solid var(--cf-border)}
+.db-waiting li{display:grid;grid-template-columns:32px 70px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 4px;border-top:1px solid var(--cf-border)}
 .db-waiting li:first-child{border-top:0}
 .db-count{font-size:var(--cf-fs-2xl);font-variant-numeric:tabular-nums;text-align:right}
 .db-label{display:grid;gap:2px}.db-label small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
@@ -715,3 +715,6 @@
 .cf-api-key-actions{display:flex;gap:6px;flex-wrap:wrap}
 .cf-api-key-value{display:block;padding:12px;border-radius:var(--cf-radius-lg);background:var(--cf-slate-50);border:1px solid var(--cf-slate-200);font-size:var(--cf-fs-md);word-break:break-all;user-select:all}
 .cf-api-keys td:nth-child(4),.cf-api-keys td:nth-child(5),.cf-api-sync td:nth-child(2),.cf-api-sync td:nth-child(7),.cf-api-sync td:nth-child(12){white-space:nowrap}
+.db-queue-icon{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--cf-radius-lg);background:var(--cf-indigo-50);color:var(--cf-indigo-600)}
+.db-waiting li[data-queue^="failed"] .db-queue-icon{background:var(--cf-red-50);color:var(--cf-red-600)}
+.db-waiting li[data-queue="onboarding_stopped"] .db-queue-icon{background:var(--cf-amber-50);color:var(--cf-amber-700)}

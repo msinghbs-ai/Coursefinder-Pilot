@@ -84,10 +84,14 @@ Deno.serve(async (req: Request) => {
 
   try {
     if (action === "list") {
-      const [authUsers, snapshotResult] = await Promise.all([
+      const [authUsersAll, snapshotResult, deletedResult] = await Promise.all([
         listAuthUsers(serviceClient),
         serviceClient.rpc("svc_admin_access_snapshot"),
+        serviceClient.rpc("svc_admin_access_deleted"),
       ]);
+      // 16 Oct 2026: deleted users (removed or soft-deleted) leave the list
+      const deletedIds = new Set<string>(Array.isArray(deletedResult.data?.ids) ? deletedResult.data.ids.map(String) : []);
+      const authUsers = authUsersAll.filter((u: any) => !u.deleted_at && !deletedIds.has(String(u.id)));
       if (snapshotResult.error) throw new Error("access_snapshot_failed");
       const snapshot = snapshotResult.data || {};
       const roles = Array.isArray(snapshot.roles) ? snapshot.roles : [];
@@ -125,7 +129,7 @@ Deno.serve(async (req: Request) => {
         actor_email: emailById.get(String(event.actor_user_id || "")) || null,
         target_email: emailById.get(String(event.target_user_id || "")) || null,
       }));
-      return reply(req, 200, { users, roles, events, total: users.length, actor_user_id: actorUserId });
+      return reply(req, 200, { users, roles, events, deletions: deletedResult.data?.recent || [], total: users.length, actor_user_id: actorUserId });
     }
 
     if (action === "create") {
@@ -222,6 +226,35 @@ Deno.serve(async (req: Request) => {
         p_metadata: {},
       });
       return reply(req, 200, { ok: true, user_id: targetUserId, disabled: action === "disable" });
+    }
+
+    // 16 Oct 2026 (Platform Admin: "only Platform admin should be able to delete the user from UI, Platform admins roles user can't be
+    // deleted"): the database guard decides; a user named on recorded work is soft-deleted so the history keeps its link
+    if (action === "delete") {
+      const targetUserId = String(body?.user_id || "");
+      if (!uuidRe.test(targetUserId)) return reply(req, 400, { error: "valid_user_id_required" });
+      const { data: guard, error: guardError } = await serviceClient.rpc("svc_admin_access_guard_delete", {
+        p_actor_user_id: actorUserId,
+        p_target_user_id: targetUserId,
+      });
+      if (guardError || !guard?.allowed) return reply(req, 409, { error: guardError?.message || "delete_not_allowed" });
+      let mode = guard.soft ? "soft_deleted" : "removed";
+      let { error: deleteError } = await serviceClient.auth.admin.deleteUser(targetUserId, guard.soft === true);
+      if (deleteError && mode === "removed") {
+        // work recorded since the check (or a link the check does not know): keep the history and soft-delete instead
+        mode = "soft_deleted";
+        ({ error: deleteError } = await serviceClient.auth.admin.deleteUser(targetUserId, true));
+      }
+      if (deleteError) return reply(req, 400, { error: deleteError.message || "user_delete_failed" });
+      const { error: recordError } = await serviceClient.rpc("svc_admin_access_record_delete", {
+        p_actor_user_id: actorUserId,
+        p_target_user_id: targetUserId,
+        p_email: guard.email || null,
+        p_roles: guard.roles || [],
+        p_mode: mode,
+      });
+      if (recordError) return reply(req, 500, { error: "deleted_but_not_recorded" });
+      return reply(req, 200, { ok: true, user_id: targetUserId, mode });
     }
 
     return reply(req, 400, { error: "unsupported_action" });

@@ -5,10 +5,12 @@
 // 'layer_status_summary' and 'platform_health'.
 // v2.15.266: reads only admin_waiting_read and admin_read 'dashboard' (Waiting for you and the four tiles).
 import React,{useEffect,useState}from'react'
-import{ArrowRight,Building2,CheckCircle2,ClipboardCheck,GraduationCap,Inbox,RefreshCw,Sparkles}from'lucide-react'
+import{ArrowRight,Award,Building2,CalendarClock,CheckCircle2,ClipboardCheck,Globe,GraduationCap,Inbox,Link2,PauseCircle,RefreshCw,Sparkles,Workflow,XCircle}from'lucide-react'
 import{adminRead,supabase}from'./lib/supabase'
 import{Button,Loading,Metric,SectionTitle,fmtDate,fmtNumber}from'./ui-kit'
 
+// v2.15.284 (Platform Admin, 16 Oct 2026: "Dashboard should display Icons"): an icon for each queue in Waiting for you
+const QUEUE_ICON={review:ClipboardCheck,onboarding_admit:Building2,onboarding_stopped:PauseCircle,scholarship_links:Link2,scholarships_ready:Award,reference:Globe,dates:CalendarClock,failed_jobs:XCircle,failed_automations:Workflow}
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const ago=v=>{if(!v)return'';const d=Math.floor((Date.now()-new Date(v).getTime())/86400000);return d<=0?'today':d===1?'1 day':`${fmtNumber(d)} days`}
 
@@ -27,10 +29,11 @@ export default function Dashboard({onError}){
   return <div className="m-page-stack db-home">
     <section className="m-panel" data-waiting>
       <SectionTitle icon={Inbox} title="Waiting for you" subtitle={open.length?`${open.length} ${open.length===1?'queue needs':'queues need'} a person. Oldest first is a good rule.`:'Nothing is waiting for a person right now.'} action={<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>}/>
-      {open.length?<ul className="db-waiting">{open.map(r=><li key={r.key} data-queue={r.key}>
+      {open.length?<ul className="db-waiting">{open.map(r=>{const Icon=QUEUE_ICON[r.key]||Inbox;return <li key={r.key} data-queue={r.key}>
+        <span className="db-queue-icon" aria-hidden="true"><Icon size={16}/></span>
         <strong className="db-count">{fmtNumber(Number(r.count))}</strong>
         <span className="db-label">{r.label}{r.oldest&&<small>{r.key==='dates'?`next on ${fmtDate(r.oldest)}`:`oldest waiting ${ago(r.oldest)}`}</small>}</span>
-        <Button compact onClick={()=>go(r.href)} aria-label={`Open ${r.label}`}>Open<ArrowRight size={13}/></Button></li>)}</ul>:<p className="db-clear"><CheckCircle2 size={16}/>All clear.</p>}
+        <Button compact onClick={()=>go(r.href)} aria-label={`Open ${r.label}`}>Open<ArrowRight size={13}/></Button></li>})}</ul>:<p className="db-clear"><CheckCircle2 size={16}/>All clear.</p>}
       {clear.length>0&&<p className="db-allclear">Clear: {clear.map(r=>r.label.toLowerCase()).join(' · ')}</p>}
     </section>
     <div className="cf-metric-grid db-tiles">
