@@ -74,7 +74,7 @@ export default function ApiUsagePanel({onError}){
    <p className="l3v-note cf-api-asof"><Clock size={13}/> {ref?<>Statistics as of <strong>{fmtDateTime(ref.at)}</strong> ({ref.trigger==='on_demand'?`refreshed on demand${ref.by?` by ${ref.by}`:''}`:'daily refresh'}, {fmtRelative(ref.at)}). They refresh every day at about 00:20 Melbourne time, or now with the button.</>:'Statistics have not been built yet: press Refresh statistics now.'} Calls to the older URLs (Zoho v1, and the website through wix-course-api) are not logged here.</p>
    <div className="cf-api-platforms">
     {PLATFORMS.map(p=>{const ks=keys.filter(k=>k.platform===p.key),t=platformTotals(ks,period);return <div key={p.key} className="cf-api-platform" data-platform={p.key}>
-     <h4>{p.label} <small><code>{p.url}</code> · {t.on} of {t.total} keys on</small></h4>
+     <h4>{p.label} <small><code>{p.url}</code> · keys on: {t.on} of {t.total}</small></h4>
      <div className="cf-metric-grid">
       <Metric label={`Calls (${PERIODS.find(x=>x.key===period).label})`} value={fmtNumber(t.calls)}/>
       <Metric label="Success rate" value={t.success==null?'—':fmtPercent(t.success)} tone={t.success!=null&&t.success<95?'warning':'neutral'}/>

@@ -714,3 +714,4 @@
 .cf-api-sub{font-size:var(--cf-fs-xs);color:var(--cf-slate-500);margin-top:2px;white-space:normal}.cf-api-overlap{color:var(--cf-amber-700)}
 .cf-api-key-actions{display:flex;gap:6px;flex-wrap:wrap}
 .cf-api-key-value{display:block;padding:12px;border-radius:var(--cf-radius-lg);background:var(--cf-slate-50);border:1px solid var(--cf-slate-200);font-size:var(--cf-fs-md);word-break:break-all;user-select:all}
+.cf-api-keys td:nth-child(4),.cf-api-keys td:nth-child(5),.cf-api-sync td:nth-child(2),.cf-api-sync td:nth-child(7),.cf-api-sync td:nth-child(12){white-space:nowrap}
