@@ -5,6 +5,7 @@ import React,{useEffect,useState}from'react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,fmtNumber}from'./ui-kit'
 import{fmtDateTime}from'./lib/format.js'
+import StorageSizes from'./StorageSizes'
 
 const errText=e=>e?.message||String(e)
 const mb=b=>b==null?'—':b>=1e9?`${(b/1e9).toFixed(2)} GB`:`${Math.round(b/1e6)} MB`
@@ -26,7 +27,7 @@ export default function RetentionScreen({onError}){
   useEffect(()=>{load()},[])
   const active=(r?.categories||[]).some(c=>c.active)
   useEffect(()=>{if(!active)return;const t=setInterval(load,15000);return()=>clearInterval(t)},[active])
-  if(!r)return <Loading label="Measuring storage…"/>
+  if(!r)return <div className="m-page-stack rt-screen" data-retention><StorageSizes onError={onError}/><Loading label="Measuring storage…"/></div>
   const act=async(c,action)=>{
     const reason=window.prompt(action==='stop'?`Stop the ${c.label.toLowerCase()} run?\n\nReason (kept in the log):`:c.key==='evidence_audit'?`Run the evidence audit? It counts references in the background and deletes nothing.\n\nReason (kept in the log):`:`Purge ${c.label.toLowerCase()}?\n\nRule: ${c.rule}\n\nReason (kept in the log):`)
     if(!reason||reason.trim().length<4)return
@@ -34,6 +35,8 @@ export default function RetentionScreen({onError}){
     if(action==='purge'&&c.key!=='evidence_audit'){confirm=window.prompt(`Type ${c.key} to confirm. This cannot be undone.`)||'';if(confirm!==c.key)return}
     setBusy(c.key);try{const{error}=await supabase.rpc('admin_retention',{p_action:action,p_args:{category:c.key,reason:reason.trim(),confirm}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy('')}}
   return <div className="m-page-stack rt-screen" data-retention>
+    {/* 16 Oct 2026: database, schema, table and bucket sizes, recorded daily */}
+    <StorageSizes onError={onError}/>
     <section className="m-panel"><div className="m-workspace-head"><div><h2>Storage & retention</h2><p>Database {mb(r.database_bytes)}. Each category shows what it holds and its rule. Preview changes nothing; Purge runs in the background in small batches and is logged. Values on record and the evidence behind them are never purged here.</p></div></div>
       <div className="cf-table-wrap"><table className="cf-table" data-retention-categories><thead><tr><th>Category</th><th>Size now</th><th>Would go</th><th>Measured</th><th>Status</th><th></th></tr></thead><tbody>
         {r.categories.map(c=>{const e=c.estimate,run=c.active||c.last;return <React.Fragment key={c.key}><tr data-retention-row={c.key}>
