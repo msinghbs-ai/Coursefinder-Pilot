@@ -99,7 +99,7 @@ export const PAGES = {
   // v2.15.124 (screen review): the cross-layer source list moved out of Layer 1 to Operations.
   sources: { label: 'Sources', slug: 'pipeline-sources', icon: 'database', min: 4, subtitle: 'Every source the pipeline reads, across all layers, with its health and history.' },
   // CF-247 (16 Oct 2026, Platform Admin: "summary and stat collection"): calls to the API version URLs by key and action
-  apiUsage: { label: 'API usage', slug: 'api-usage', icon: 'chart', min: 4, subtitle: 'Calls to the API URLs (from Zoho API v2 on) by key and action: volume, errors, rate limits and times.' },
+  apiUsage: { label: 'API usage', slug: 'api-usage', icon: 'chart', min: 4, subtitle: 'Zoho API v2 and Website API v2: calls, success and failure, last use, full loads and deltas, bandwidth; rotate or switch off keys' },
 
   environment: { label: 'Settings', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity and budgets; keys for outside services below (never shown).' },
   scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: services, keys and limits.' },

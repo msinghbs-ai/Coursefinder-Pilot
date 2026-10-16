@@ -706,3 +706,12 @@
 .ef-items{display:grid;gap:6px}.ef-quote{max-width:420px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-600)}.ef-src{display:block;font-size:var(--cf-fs-2xs)}
 .ef-edit{display:grid;gap:6px;margin-top:8px;padding:10px;border:1px dashed var(--cf-slate-175);border-radius:var(--cf-radius-sm)}
 .ef-tiles{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.ef-tiles span{display:grid;gap:2px;border:1px solid var(--cf-slate-150);border-radius:var(--cf-radius-sm);padding:6px 10px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-600);min-width:150px}.ef-tiles b{font-size:var(--cf-fs-md);color:var(--cf-slate-800)}
+/* CF-247 16 Oct 2026: Operations › API usage console */
+.cf-api-asof{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap}.cf-api-asof svg{margin-top:2px;flex:0 0 auto}
+.cf-api-platforms{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:var(--cf-space-3,12px);margin-top:12px}
+.cf-api-platform{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-xl);padding:12px;background:var(--cf-white)}
+.cf-api-platform h4{margin:0 0 10px;font-size:var(--cf-fs-base);color:var(--cf-slate-900)}.cf-api-platform h4 small{font-weight:400;color:var(--cf-slate-500);margin-left:6px}
+.cf-api-sub{font-size:var(--cf-fs-xs);color:var(--cf-slate-500);margin-top:2px;white-space:normal}.cf-api-overlap{color:var(--cf-amber-700)}
+.cf-api-key-actions{display:flex;gap:6px;flex-wrap:wrap}
+.cf-api-key-value{display:block;padding:12px;border-radius:var(--cf-radius-lg);background:var(--cf-slate-50);border:1px solid var(--cf-slate-200);font-size:var(--cf-fs-md);word-break:break-all;user-select:all}
+.cf-api-keys td:nth-child(4),.cf-api-keys td:nth-child(5),.cf-api-sync td:nth-child(2),.cf-api-sync td:nth-child(7),.cf-api-sync td:nth-child(12){white-space:nowrap}

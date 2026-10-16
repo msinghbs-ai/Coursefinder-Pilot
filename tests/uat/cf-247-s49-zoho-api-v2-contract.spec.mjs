@@ -30,7 +30,8 @@ test('its own URL, its own keys, no contract field; v1 and the website untouched
   // keys: two consumers, only hashes in the repository
   expect(mig).toMatch(/\('zoho_creator_v2', 'zoho', 'v2', 'Zoho Creator app[^']*', '[0-9a-f]{64}'/)
   expect(mig).toMatch(/\('zoho_crm_sync_v2', 'zoho', 'v2', 'Zoho CRM sync[^']*', '[0-9a-f]{64}'/)
-  expect(execSync('git grep -l "cfz2_" -- . ":!tests/uat/cf-247-s49-zoho-api-v2-contract.spec.mjs" || true').toString().trim()).toBe('')
+  // 16 Oct 2026 (API console): the prefix alone appears where keys are made; a key is the prefix and 20 or more key characters
+  expect(execSync('git grep -lE "cfz2_[A-Za-z0-9_-]{20,}" -- . ":!tests/uat/cf-247-s49-zoho-api-v2-contract.spec.mjs" || true').toString().trim()).toBe('')
   expect(mig).toContain("select * into k from private.api_keys where platform = 'zoho' and api_version = 'v2' and enabled and token_sha256 = lower(coalesce(p_token_sha256, ''));")
 })
 
@@ -111,7 +112,8 @@ test('website v2 at its own URL, in parallel: same functions, own key, logged; w
   expect(wmig).toMatch(/\('website_developer_v2', 'website', 'v2', 'Website \(Wix\) developer', '[0-9a-f]{64}'/)
   expect(wmig).toContain("where platform = 'website' and api_version = 'v2' and enabled")
   expect(wmig).toContain("security.pipeline_num_v1('website.rate_per_minute', 300)")
-  expect(execSync('git grep -l "cfw2_" -- . ":!tests/uat/cf-247-s49-zoho-api-v2-contract.spec.mjs" || true').toString().trim()).toBe('')
+  // 16 Oct 2026 (API console): the prefix alone appears where keys are made; a key is the prefix and 20 or more key characters
+  expect(execSync('git grep -lE "cfw2_[A-Za-z0-9_-]{20,}" -- . ":!tests/uat/cf-247-s49-zoho-api-v2-contract.spec.mjs" || true').toString().trim()).toBe('')
   // the contract path on the old URL is unchanged by this change
   expect(execSync('git diff --name-only origin/main -- supabase/functions/wix-course-api || true').toString().trim()).toBe('')
 })
