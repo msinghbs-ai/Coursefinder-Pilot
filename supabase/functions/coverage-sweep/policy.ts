@@ -6,26 +6,30 @@
 //    to all (or the standard) courses of that level; course-by-course pages, English bands and faculty tables are
 //    reported, not turned into a default.
 //  * calendarStarts: the months in which each semester or trimester starts, from an academic calendar.
-export const POLICY_PARSER = "provider-policy-v0.2.2";
+// v0.2.3 (17 Oct 2026, CF-247 R18): the Duolingo English Test (DET, 10 to 160 in steps of 5) is read as a fifth test, overall score only
+// (its subscores are not the four IELTS skills).
+export const POLICY_PARSER = "provider-policy-v0.2.3";
 
-export type TestCode = "IELTS" | "PTE" | "TOEFL_IBT" | "CAE";
+export type TestCode = "IELTS" | "PTE" | "TOEFL_IBT" | "CAE" | "DET";
 export type Req = { test_code: TestCode; overall_score: number; component_scores: Record<string, number>; quote: string };
 type Level = "undergraduate" | "postgraduate";
 
 const clean = (s: string) => String(s ?? "").replace(/<br\s*\/?>/gi, " ").replace(/\*\*|__|`/g, "").replace(/\\([*_|])/g, "$1").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ").trim();
 
-const TESTS: { code: TestCode; re: RegExp; range: [number, number]; comp: [number, number]; decimals: boolean }[] = [
+const TESTS: { code: TestCode; re: RegExp; range: [number, number]; comp: [number, number]; decimals: boolean; step?: number; overallOnly?: boolean }[] = [
   { code: "IELTS", re: /\bIELTS\b/i, range: [4, 9], comp: [4, 9], decimals: true },
   { code: "PTE", re: /\bPTE\b|Pearson/i, range: [30, 90], comp: [30, 90], decimals: false },
   { code: "TOEFL_IBT", re: /TOEFL/i, range: [32, 120], comp: [1, 30], decimals: false },
   { code: "CAE", re: /Cambridge|C1 Advanced|\bCAE\b|C2 Proficiency/i, range: [140, 230], comp: [140, 230], decimals: false },
+  { code: "DET", re: /Duolingo(?:\s+English\s+Test)?(?:\s*\(DET\))?|\bDET\b/i, range: [10, 160], comp: [10, 160], decimals: false, step: 5, overallOnly: true },
 ];
 const OTHER_TEST = /\b(IELTS|PTE|Pearson|TOEFL|Cambridge|C1 Advanced|CAE|C2 Proficiency|Duolingo|DET|OET|Occupational English|LanguageCert|Michigan|MET)\b/i;
 const SKILLS = ["listening", "reading", "writing", "speaking"];
 const NUM = "(\\d{1,3}(?:\\.\\d)?)";
 
-function inRange(v: number, r: [number, number], decimals: boolean) {
+function inRange(v: number, r: [number, number], decimals: boolean, step?: number) {
   if (!(v >= r[0] && v <= r[1])) return false;
+  if (step && v % step !== 0) return false;
   return decimals ? Math.abs(v * 2 - Math.round(v * 2)) < 1e-9 : Number.isInteger(v);
 }
 
@@ -34,17 +38,18 @@ export function parseScore(code: TestCode, text: string): { overall: number; com
   const t = TESTS.find((x) => x.code === code)!;
   const s = clean(text).replace(/\s;\s/g, " ").replace(/[–—]/g, "-");
   if (/not accepted|not applicable|^n\/?a$|^-$/i.test(s)) return null;
-  const ok = (v: number) => inRange(v, t.range, t.decimals);
-  const okc = (v: number) => inRange(v, t.comp, t.decimals);
+  const ok = (v: number) => inRange(v, t.range, t.decimals, t.step);
+  const okc = (v: number) => inRange(v, t.comp, t.decimals, t.step);
   let overall: number | null = null;
   for (const re of [new RegExp(`(?:overall|total)(?: band)?(?: score)?(?: of| minimum| min\\.?| at least| is|:)*\\s*[:=\\-]?\\s*${NUM}(?!\\d)`, "i"),
                     new RegExp(`${NUM}\\s*(?:\\(|,)?\\s*(?:or (?:above|higher|better|more)\\s*)?(?:overall|total)`, "i"),
-                    new RegExp(`^\\s*(?:min(?:imum)?\\.?\\s*(?:of\\s*)?)?${NUM}(?!\\d|\\s*(?:in|for|on) (?:each|all|every|listening|reading|writing|speaking)|\\s*-\\s*\\d)`, "i")]) {
+                    new RegExp(`^\\s*(?:min(?:imum)?\\.?\\s*(?:(?:overall |required )?score\\s*)?(?:of\\s*|is\\s*)?)?${NUM}(?!\\d|\\s*(?:in|for|on) (?:each|all|every|listening|reading|writing|speaking)|\\s*-\\s*\\d)`, "i")]) {
     const m = s.match(re);
     if (m && ok(Number(m[1]))) { overall = Number(m[1]); break }
   }
   if (overall == null) return null;
   const comps: Record<string, number> = {};
+  if (t.overallOnly) return { overall, comps };
   const all = s.match(new RegExp(`no (?:individual |single |other )?(?:band|section|sub-?test|sub-?score|skill|component|communicative skill|score)s?(?: score)?(?: (?:less|lower) than| below| under)\\s*(?:an? )?${NUM}`, "i"))
     || s.match(new RegExp(`${NUM}\\s*(?:or (?:above|higher|more|better)\\s*)?(?:in|for|on) (?:each|all|every)(?: of the)?(?: four)?(?: (?:band|section|sub-?test|skill|component|communicative skill|sub-?score)s?)?`, "i"))
     || s.match(new RegExp(`(?:each|all|every) (?:band|section|sub-?test|skill|component|communicative skill|sub-?score)s?(?: (?:of|at least|minimum|min\\.?))*\\s*[:\\-]?\\s*${NUM}`, "i"))
