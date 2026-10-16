@@ -224,7 +224,8 @@ function lastText(j){const l=j.last||{},w=j.worker?.result
   return `${l.status||'—'}${when}`}
 const humanKey=k=>String(k).replace(/_/g,' ')
 
-function Running({rank,onError}){
+// v2.15.285: also shown on Scheduled jobs › Task manager (Platform Admin 11 Oct 2026: every background job using resources is visible there)
+export function Running({rank,onError}){
   const[d,setD]=useState(null),[only,setOnly]=useState(true),[open,setOpen]=useState(''),[busy,setBusy]=useState(false)
   const timer=useRef(null)
   const load=async()=>{try{setD(await read('running'))}catch(e){onError?.(errText(e))}}

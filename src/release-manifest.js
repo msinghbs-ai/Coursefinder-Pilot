@@ -1,21 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.284'
-export const PACKAGE_VERSION='0.1.211'
+export const UI_VERSION='2.15.285'
+export const PACKAGE_VERSION='0.1.212'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Oct 2026',
-  title:'Platform health that matches reality; scholarship reading restarted; dashboard icons; delete users',
+  title:'Task manager shows background jobs again',
   changes:[
-    'Users & roles: a Platform Admin can delete a user (type the email to confirm). A Platform Admin, your own account and the system automation account cannot be deleted. Deleted users are listed with who deleted them and when.',
-    'Dashboard: each queue in Waiting for you has its icon.',
-    'Platform health shows work held on purpose (a university past its scholarship cap, small Australian providers) as held, not stalled.'
+    'Scheduled jobs \u203a Task manager: Background jobs lists every scheduled job and worker using the platform (running this moment, failing, paused, Firecrawl credits in the last hour) with Pause, Resume and Run now, under the tasks people start.'
   ],
   bugFixes:[
-    'Scholarship pages asked to be read again were held by the per-university cap and nothing was read from 14 Oct; they are read again now.',
-    'Platform health no longer reports the retired tuition hand-off, a job back from a trial-run pause as overdue, the scholarship Firecrawl allowance as 3,000 credits, or the database against the old Micro plan (it is Medium, 120 connections; size levels follow the 8 GB disk).'
+    'Task manager showed nothing while about 280 scheduled runs and 70 worker calls ran every 15 minutes: since v2.15.266 the background board was only on Coverage & completeness \u203a Progress \u203a Running now.'
   ]
 }
 
