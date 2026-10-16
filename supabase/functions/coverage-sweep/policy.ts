@@ -8,7 +8,11 @@
 //  * calendarStarts: the months in which each semester or trimester starts, from an academic calendar.
 // v0.2.3 (17 Oct 2026, CF-247 R18): the Duolingo English Test (DET, 10 to 160 in steps of 5) is read as a fifth test, overall score only
 // (its subscores are not the four IELTS skills).
-export const POLICY_PARSER = "provider-policy-v0.2.3";
+// v0.2.4 (17 Oct 2026, R18 first run): a number after "Overall" that names a skill ("105 Overall ; 110 Speaking") is that skill's score,
+// not the overall; the overall is then the number before "Overall".
+export const POLICY_PARSER = "provider-policy-v0.2.4";
+// Tests the parser learnt after English policies were first approved: only these are added to an approved policy (job policy-add-tests).
+export const ADDED_TESTS: TestCode[] = ["DET"];
 
 export type TestCode = "IELTS" | "PTE" | "TOEFL_IBT" | "CAE" | "DET";
 export type Req = { test_code: TestCode; overall_score: number; component_scores: Record<string, number>; quote: string };
@@ -41,7 +45,7 @@ export function parseScore(code: TestCode, text: string): { overall: number; com
   const ok = (v: number) => inRange(v, t.range, t.decimals, t.step);
   const okc = (v: number) => inRange(v, t.comp, t.decimals, t.step);
   let overall: number | null = null;
-  for (const re of [new RegExp(`(?:overall|total)(?: band)?(?: score)?(?: of| minimum| min\\.?| at least| is|:)*\\s*[:=\\-]?\\s*${NUM}(?!\\d)`, "i"),
+  for (const re of [new RegExp(`(?:overall|total)(?: band)?(?: score)?(?: of| minimum| min\\.?| at least| is|:)*\\s*[:=\\-]?\\s*${NUM}(?!\\d|\\.\\d|\\s*(?:in\\s+)?(?:listening|reading|writing|speaking)\\b)`, "i"),
                     new RegExp(`${NUM}\\s*(?:\\(|,)?\\s*(?:or (?:above|higher|better|more)\\s*)?(?:overall|total)`, "i"),
                     new RegExp(`^\\s*(?:min(?:imum)?\\.?\\s*(?:(?:overall |required )?score\\s*)?(?:of\\s*|is\\s*)?)?${NUM}(?!\\d|\\s*(?:in|for|on) (?:each|all|every|listening|reading|writing|speaking)|\\s*-\\s*\\d)`, "i")]) {
     const m = s.match(re);
