@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.212 — 16 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.285** (Task manager). The Platform Admin reported on 16 Oct 2026 22:51: "Task manager doesnt show any job running in the background."
+  - **Found:** since v2.15.266 (13 Oct) the background board (scheduled jobs running, failing, paused, credits) was only on Coverage & completeness › Progress › Running now; Task manager listed only tasks people start (none were running) while about 280 scheduled runs and 70 worker calls ran every 15 minutes. That broke the standing rule of 11 Oct 2026 ("All background jobs using resources at any given time should be visible under task manager").
+  - **Fixed:** Task manager shows Background jobs (the same component and read as Progress › Running now) under Tasks started by people. S51. SOPs 1.26.
+
 ## 0.1.211 — 16 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.284** (health, scholarships, dashboard icons, delete users). The Platform Admin reported on 16 Oct 2026 15:25: "Platform health: CRITICAL, with 5 critical issues and 1 warning. Most are stale or mis-labelled. The real one is scholarships: none published or read for two days." "Dashboard should display Icons" "Platform Users - can't be deleted, only disabled".

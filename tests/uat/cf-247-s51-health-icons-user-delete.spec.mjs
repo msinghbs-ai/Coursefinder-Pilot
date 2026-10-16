@@ -67,3 +67,27 @@ test('the spend check lets a requested scholarship read past the per-university 
   expect(spend).toContain("and not (p_purpose = 'sch_scrape' and exists (select 1 from pipeline.scholarship_pages sp join scholarship.scholarships s on s.id = sp.scholarship_id")
   expect(spend).toContain("if security.fc_budget_left_v1(p_purpose) < p_units then")
 })
+
+test('Task manager shows the background jobs board again (standing rule 11 Oct 2026)', () => {
+  const tm = fs.readFileSync('src/AdminTasks.jsx', 'utf8')
+  const pg = fs.readFileSync('src/Progress.jsx', 'utf8')
+  expect(pg).toContain('export function Running({rank,onError}){')
+  expect(tm).toContain("import{Running as BackgroundJobs}from'./Progress'")
+  expect(tm).toContain('<BackgroundJobs rank={rank} onError={onError}/>')
+  expect(tm).toContain('data-task-background')
+})
+
+test.describe('mocked browser: Task manager', () => {
+  test('background jobs show under Task manager with their state', async ({ page }) => {
+    const { mockAdmin } = await import('./support/admin-mock.mjs')
+    await mockAdmin(page, { rank: 6 })
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_progress_read', r => r.fulfill({ json: { can_manage: true, credits_hour: { scholarships: 21 }, refused_hour: 0,
+      jobs: [{ job: 'scholarship-read', label: 'Scholarship page reading', stage: 'Scholarships', schedule: '*/5 * * * *', active: true, running: true, runs_24h: 288, failed_24h: 0, queue: { left: 80 } },
+             { job: 'coverage-sweep', label: 'Coverage sweep', stage: 'Courses', schedule: '* * * * *', active: true, running: false, runs_24h: 1440, failed_24h: 2 }] } }))
+    await page.goto('/#scheduled-jobs?tab=tasks')
+    const bg = page.locator('[data-task-background]')
+    await expect(bg).toBeVisible()
+    await expect(bg.locator('[data-progress-job="scholarship-read"]')).toBeVisible()
+    await expect(bg).toContainText('Running this moment')
+  })
+})

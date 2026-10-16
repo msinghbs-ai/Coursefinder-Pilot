@@ -17,6 +17,7 @@ import{ListChecks,Play,Pause,Square,RefreshCw,CheckCircle2,XCircle,AlertTriangle
 import{supabase}from'./lib/supabase'
 import{ScholarshipJourney}from'./ScholarshipJourney'
 import{Button,Badge,Loading,SectionTitle,EmptyRow,fmtDateTime,fmtNumber}from'./ui-kit'
+import{Running as BackgroundJobs}from'./Progress'
 
 const errText=e=>e?.message||String(e)
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -87,9 +88,9 @@ export default function AdminTasks({rank=0,onError}){
   return <div className="m-page-stack" data-task-manager>
     {err&&<div className="m-alert compact" role="alert"><AlertTriangle size={15}/><span>{err}</span><button type="button" aria-label="Dismiss" onClick={()=>setErr('')}>×</button></div>}
     <section className="m-panel" data-task-list>
-      <SectionTitle icon={RefreshCw} title="Running and waiting" subtitle={live?'Refreshes every 5 seconds. Pause and cancel take effect at the next provider, never half way through one. Finished tasks move to the Jobs tab.':'Nothing is running or waiting. Finished tasks, with their results, are under the Jobs tab.'}/>
+      <SectionTitle icon={RefreshCw} title="Tasks started by people" subtitle={live?'Refreshes every 5 seconds. Pause and cancel take effect at the next provider, never half way through one. Finished tasks move to the Jobs tab.':'Nothing is running or waiting. Finished tasks, with their results, are under the Jobs tab.'}/>
       <div className="cf-table-wrap"><table className="cf-table tm-table"><thead><tr><th>Task</th><th>State</th><th>Progress</th><th>Result</th><th>Started by</th><th>When</th><th>Actions</th></tr></thead><tbody>
-        {(d.jobs||[]).length===0&&<EmptyRow colSpan={7} text="No task is running or waiting."/>}
+        {(d.jobs||[]).length===0&&<EmptyRow colSpan={7} text="No task started by a person is running or waiting. Background jobs are below."/>}
         {(d.jobs||[]).map(j=><tr key={j.id} data-task-row={j.id} className={open===j.id?'tm-open':''}>
           <td><button type="button" className="tm-link" onClick={()=>setOpen(open===j.id?'':j.id)}>{j.title}</button><br/><small className="sl-sub">{label(j.kind)}</small></td>
           <td><Badge tone={STATE_TONE[j.state]||'neutral'}>{j.state}</Badge>{j.cancel_requested&&j.state==='running'&&<small className="sl-sub"> cancelling…</small>}{j.pause_requested&&j.state==='running'&&<small className="sl-sub"> pausing…</small>}</td>
@@ -105,9 +106,14 @@ export default function AdminTasks({rank=0,onError}){
         </tr>)}
       </tbody></table></div>
     </section>
-    {/* v2.15.266 (Platform Admin, 13 Oct 2026): Running now moved to Coverage & completeness › Progress › Running now (every job by journey stage,
-        the universities it works on, pause, resume and run now). Task manager keeps the tasks people start and their history. */}
-    <p className="sd-desc" data-task-running-link>Scheduled jobs running now, worker calls and credits in the last hour: <a className="cf-link" href="#coverage?tab=progress&view=running">Coverage &amp; completeness › Progress › Running now</a>.</p>
+    {/* v2.15.285 (Platform Admin 16 Oct 2026: "Task manager doesnt show any job running in the background"; standing rule 11 Oct 2026: "All
+        background jobs using resources at any given time should be visible under task manager"): the background jobs board is back here,
+        the same board as Coverage & completeness › Progress › Running now (one component, one read). */}
+    <section className="m-panel" data-task-background>
+      <SectionTitle icon={RefreshCw} title="Background jobs" subtitle="Scheduled jobs and workers using the platform: running this moment, failing, paused, Firecrawl credits in the last hour. Pause, resume or run a job now."/>
+      <BackgroundJobs rank={rank} onError={onError}/>
+    </section>
+    <p className="sd-desc" data-task-running-link>The same board, by stage of the journey: <a className="cf-link" href="#coverage?tab=progress&view=running">Coverage &amp; completeness › Progress › Running now</a>.</p>
     {job&&<section className="m-panel" data-task-detail={job.id}>
       <SectionTitle icon={ListChecks} title={job.title} subtitle={`${label(job.kind)} · ${job.state} · started by ${job.requested_by_name||''} · reason: ${job.reason}`} action={<Button compact onClick={()=>setOpen('')}>Close</Button>}/>
       <TaskResult job={job} onAdmit={job.kind==='qualify_adapters'&&job.state==='done'&&canAdmit?()=>startAdmit(job):null}/>

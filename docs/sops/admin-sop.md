@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.25 (reviewed for platform release v2.15.284)  
+**Version:** 1.26 (reviewed for platform release v2.15.285)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -138,3 +138,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.23 | 15 Oct 2026 | v2.15.282 | Flags: work that keeps failing is held instead of tried again (Coverage & completeness › Flags). Providers whose website does not answer, course fields whose page gives no value (after 2 tries; a second try only on new input), central pages not yet due, and worker jobs that run empty are held. Each is released automatically when its input changes, its website answers a free check (3, 7, 14, then 30 days) or its date comes, and goes back in its queue. A Platform Admin can release or hold any item with a reason; every change is kept in its history with the evidence. Settings › Pipeline settings › Flags. |
 | 1.24 | 16 Oct 2026 | v2.15.283 | Operations › API usage: statistics for Zoho API v2 and Website API v2 (calls, success and failure, last call, bandwidth, reply sizes, full loads and deltas), refreshed daily or with Refresh statistics now; the Platform Admin rotates a key (shown once; the old key works for the overlap), ends an old key early, or switches a key off and on. |
 | 1.25 | 16 Oct 2026 | v2.15.284 | Users & roles: Delete (Platform Admin; never a Platform Admin, your own account or the system account; type the email to confirm). Platform health: held work is shown apart from stalls; scholarship pages asked to be read again are no longer held by the per-university cap. |
+| 1.26 | 16 Oct 2026 | v2.15.285 | Scheduled jobs › Task manager shows Background jobs again (every scheduled job and worker using the platform, with Pause, Resume and Run now) under the tasks people start. |
