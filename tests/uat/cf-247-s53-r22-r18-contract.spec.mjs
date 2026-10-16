@@ -24,7 +24,7 @@ test('R22: sync pages up to 600 units by setting (range to 1000); only the value
 
 test('R18 parser: Duolingo read as DET, overall only, 10 to 160 in steps of 5', async () => {
   const { englishPolicy, parseScore, POLICY_PARSER } = await parser()
-  expect(POLICY_PARSER).toBe('provider-policy-v0.2.3')
+  expect(POLICY_PARSER).toBe('provider-policy-v0.2.4')
   expect(parseScore('DET', '110 (no band less than 95)')).toEqual({ overall: 110, comps: {} })
   expect(parseScore('DET', 'Minimum score of 115')).toEqual({ overall: 115, comps: {} })
   expect(parseScore('DET', '92')).toBeNull()       // not a DET score (steps of 5)
@@ -33,6 +33,10 @@ test('R18 parser: Duolingo read as DET, overall only, 10 to 160 in steps of 5', 
   expect(p.defaults.postgraduate.map((r) => `${r.test_code}:${r.overall_score}`)).toEqual(['IELTS:6.5', 'TOEFL_IBT:90', 'DET:120'])
   const t = englishPolicy('## Undergraduate\n\n| Test | Minimum |\n|---|---|\n| IELTS Academic | 6.5 overall, no band below 6.0 |\n| Duolingo English Test | 115 |\n')
   expect(t.defaults.undergraduate.find((r) => r.test_code === 'DET')).toMatchObject({ overall_score: 115, component_scores: {} })
+  // v0.2.4: a number after "Overall" that names a skill is that skill's score (Flinders)
+  expect(parseScore('DET', '105 Overall ; 110 Speaking ; 110 Writing')).toEqual({ overall: 105, comps: {} })
+  expect(parseScore('IELTS', '6.5 Overall ; 6.0 Speaking').overall).toBe(6.5)
+  expect(parseScore('IELTS', 'Overall 6.5, Writing 6.0').overall).toBe(6.5)
   // existing tests unchanged
   expect(englishPolicy('Deakin’s current minimum IELTS requirement is 6.0 (CEFR B2) for undergraduate courses and 6.5 (CEFR C1) for postgraduate coursework courses.').defaults.undergraduate[0].overall_score).toBe(6)
 })
@@ -48,4 +52,17 @@ test('R18: DET added to approved policies only where the IELTS matches, only to 
   expect(r18).toContain("security.pipeline_num_v1('batch.policy_add_tests', 40)")
   expect(worker).toContain('if (mode === "provider_facts_add_tests") {')
   expect(worker).toContain('rpc("svc_provider_english_add_tests_v1", { p_proposal_id: it.id, p_parser: POLICY_PARSER, p_parsed: parsed, p_error: err })')
+})
+
+const fix = fs.readFileSync('supabase/migrations/20261017030000_cf247_r18_add_tests_fix.sql', 'utf8')
+test('R18 fix: only tests learnt after approval; earlier additions corrected or withdrawn (never deleted); differing IELTS flagged; md5-guarded', async () => {
+  const { ADDED_TESTS } = await parser()
+  expect(ADDED_TESTS).toEqual(['DET'])
+  expect(worker).toContain('parsed = { ...englishPolicy(md), add_only: ADDED_TESTS };')
+  expect(fix).toContain("<> '8f9bf4618f48a5efb5b05ebe8cc137eb' then")
+  expect(fix).toContain("where e->>'test_code' = any (v_scope)")
+  expect(fix).toContain("where catalogue.course_english_requirements.source_requirement_key = excluded.source_requirement_key")
+  expect(fix).toContain("set status = 'withdrawn'")
+  expect(fix).toContain("'policy_reading_differs'")
+  expect(fix).not.toMatch(/^\s*delete\b/im)
 })
