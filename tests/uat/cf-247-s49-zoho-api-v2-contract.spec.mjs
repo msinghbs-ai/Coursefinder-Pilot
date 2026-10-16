@@ -96,3 +96,22 @@ test('the CSV export comes in pages within the API time limit', () => {
   expect(fn).toContain('fn = "zoho_v2_export_page"; args = { p_entity: e, p_page: page };')
   expect(fn).toContain('"x-has-more": String(obj.has_more ?? false)')
 })
+
+test('website v2 at its own URL, in parallel: same functions, own key, logged; wix-course-api untouched', () => {
+  const wfn = fs.readFileSync('supabase/functions/website-api-v2/index.ts', 'utf8')
+  const wmig = fs.readFileSync('supabase/migrations/20261016050000_cf247_website_api_v2_url.sql', 'utf8')
+  expect(deploy).toContain('[website-api-v2]=false')
+  expect(wfn).toContain('const API_VERSION = "website-v2";')
+  expect(wfn).not.toContain('body.contract')
+  expect(wfn).toContain('svc.rpc("website_api_v2_auth", { p_token_sha256: await sha256Hex(supplied) })')
+  expect(wfn).toContain('await svc.rpc("website_api_v2_log", {')
+  for (const f of ['website_v2_reference', 'website_v2_course_search', 'website_v2_providers', 'website_v2_rankings', 'website_v2_scholarships', 'website_v2_course', 'website_v2_provider', 'website_v2_scholarship', 'website_v2_sync'])
+    expect(wfn).toContain(`fn = "${f}"`)
+  expect(wfn).not.toMatch(/new Response\((?!text)/)
+  expect(wmig).toMatch(/\('website_developer_v2', 'website', 'v2', 'Website \(Wix\) developer', '[0-9a-f]{64}'/)
+  expect(wmig).toContain("where platform = 'website' and api_version = 'v2' and enabled")
+  expect(wmig).toContain("security.pipeline_num_v1('website.rate_per_minute', 300)")
+  expect(execSync('git grep -l "cfw2_" -- . ":!tests/uat/cf-247-s49-zoho-api-v2-contract.spec.mjs" || true').toString().trim()).toBe('')
+  // the contract path on the old URL is unchanged by this change
+  expect(execSync('git diff --name-only origin/main -- supabase/functions/wix-course-api || true').toString().trim()).toBe('')
+})

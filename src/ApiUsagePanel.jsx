@@ -27,7 +27,7 @@ export default function ApiUsagePanel({onError}){
      <button className="m-secondary compact" onClick={load} disabled={busy} aria-label="Refresh"><RefreshCw size={14}/> Refresh</button>
     </div>
    </header>
-   <p className="l3v-note">Every call to an API version URL (from Zoho API v2 on) is logged and summed every 15 minutes. Website and Zoho v1 calls are not logged here yet.</p>
+   <p className="l3v-note">Every call to an API version URL (zoho-api-v2, website-api-v2) is logged and summed every 15 minutes. Calls to the older URLs (Zoho v1, and the website through wix-course-api) are not logged here.</p>
    <div className="cf-metric-grid">
     <Metric label={`Calls (${days} days)`} value={fmtNumber(calls)}/>
     <Metric label="Errors" value={fmtNumber(errors)}/>

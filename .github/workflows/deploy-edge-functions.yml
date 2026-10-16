@@ -94,6 +94,7 @@ jobs:
             [provider-asset-upload]=true
             # CF-247 (16 Oct 2026): Zoho API v2, its own URL and keys (checked in the function, like zoho-course-api)
             [zoho-api-v2]=false
+            [website-api-v2]=false
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do

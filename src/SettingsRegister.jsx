@@ -23,7 +23,7 @@ const SECTION_HELP={'Job sizes':'How much each scheduled job takes in a run. The
   'Waste rules':'Stops work that keeps failing or finds nothing: pauses idle jobs, caps retries by how often they still succeed, freezes values two automatic jobs keep changing, reuses stored pages, and limits course-page search to the providers that matter most. What is stopped is recorded and flagged.',
   'Flags':'The flag unit: how many tries before a soft reason holds an item, the free recheck and trial-run back-offs, when a worker job counts as running empty, and who may raise or release flags (Coverage & completeness › Flags).',
   'Logos':'Provider logos: who may upload or find one, and how the logo finder works through providers with no logo (job logo-find).',
-  'Website API':'What the website (Wix) is given: whether rankings and logos may be displayed, how long logo links last, and the sync page size.',
+  'Website API':'What the website (Wix) is given: whether rankings and logos may be displayed, how long logo links last, the sync page size, and calls a minute per key on the website-api-v2 URL.',
   'Zoho API':'Zoho API v2 (zoho-api-v2): calls a minute per key, page sizes, how long logo links last, the countries in the Zoho change stream and CSV export, and how long single calls stay in the request log (Operations › API usage).'}
 
 // One setting: value, range and unit, what uses it, the last change; Save asks for a reason inline.
