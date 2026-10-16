@@ -61,3 +61,9 @@ test.describe('mocked browser', () => {
     for (let i = 0; i < n; i++) await expect(rows.nth(i).locator('.db-queue-icon svg')).toHaveCount(1)
   })
 })
+
+test('the spend check lets a requested scholarship read past the per-university cap (day share and allowance still apply)', () => {
+  const spend = fs.readFileSync('supabase/migrations/20261016090000_cf247_requested_scholarship_reads_spend.sql', 'utf8')
+  expect(spend).toContain("and not (p_purpose = 'sch_scrape' and exists (select 1 from pipeline.scholarship_pages sp join scholarship.scholarships s on s.id = sp.scholarship_id")
+  expect(spend).toContain("if security.fc_budget_left_v1(p_purpose) < p_units then")
+})
