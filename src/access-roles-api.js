@@ -28,4 +28,6 @@ export const accessApi = {
     action: 'roles', user_id: userId, roles, expires_at: expiresAt,
   }),
   setDisabled: (userId, disabled) => invoke({ action: disabled ? 'disable' : 'enable', user_id: userId }),
+  // 16 Oct 2026: Platform Admin only; Platform Admins, your own account and the system account cannot be deleted (checked in the database)
+  deleteUser: (userId) => invoke({ action: 'delete', user_id: userId }),
 }

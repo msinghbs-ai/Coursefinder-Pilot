@@ -95,6 +95,8 @@ jobs:
             # CF-247 (16 Oct 2026): Zoho API v2, its own URL and keys (checked in the function, like zoho-course-api)
             [zoho-api-v2]=false
             [website-api-v2]=false
+            # CF-247 (16 Oct 2026): user delete; previously deployed by hand (live differed only in line breaks); verify_jwt from the live project
+            [admin-user-management]=true
           )
           IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           for raw in "${FNS[@]}"; do

@@ -31,3 +31,4 @@
 .ar-embedded .ar-policy{margin-top:0}
 .ar-embedded .ar-panel:last-child{margin-bottom:0}
 @media(max-width:900px){.ar-embedded .ar-main{padding:0}.ar-embedded .ar-topbar{margin:0;padding:0 0 12px}}
+.ar-row-actions button.delete{color:var(--cf-red-800);display:inline-flex;align-items:center;gap:4px}.ar-row-actions button.delete:disabled{color:var(--cf-slate-400);cursor:not-allowed}
