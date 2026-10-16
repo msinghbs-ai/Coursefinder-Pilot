@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.210 — 16 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.283** (API usage console). The Platform Admin asked on 16 Oct 2026 14:31: "Create me a ui to check stats on Both APIs with relevant metrics/API calls or statistics, success & failure, last login, full sync, delta sync, bandwidth, load size etc. be able to rotate their keys. and on Demand fresh statistics by pressing a button, otherwise get refresh daily basis."
+  - **Statistics** per key for 24 hours, 7 days and 30 days (`pipeline.api_usage_summary`, `security.api_key_stats_v1`), per API on top; full loads and deltas from the sync calls, now logged as `sync_full_start`, `sync_full`, `sync_full_end` and `sync_delta` by `zoho-api-v2` and `website-api-v2`.
+  - **Refresh** daily (job `api-usage-rollup`, was every 15 minutes) and on demand (`admin_api_usage_refresh`); each refresh recorded (`pipeline.api_usage_refreshes`).
+  - **Keys** (Platform Admin): rotate with an overlap (setting `api.key_rotate_overlap_hours`, 24), end the old key, switch off and on (`pipeline.api_key_events`); a call with an old key during the overlap is logged as `<key>#previous`. Also in this release: the API usage screen itself and the Website API v2 notes (Pilot PRs #541, #544). Migration 20261016060000; S50. SOPs 1.24.
+
 ## 0.1.209 — 15 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.282** (the flag unit). The Platform Admin asked on 15 Oct 2026: "we don't keep burning the toolset on repetitive waste and produce nothing ... have flag unit that can be removed or raised manually and automatically by tried burn ... the said entry or provider get re-entered in queue".

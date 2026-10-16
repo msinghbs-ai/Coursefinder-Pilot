@@ -1,17 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.282'
-export const PACKAGE_VERSION='0.1.209'
+export const UI_VERSION='2.15.283'
+export const PACKAGE_VERSION='0.1.210'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'11 Oct 2026',
-  title:'StudySearch',
+  date:'16 Oct 2026',
+  title:'API usage console for Zoho API v2 and Website API v2',
   changes:[
-    'The platform is renamed StudySearch: the app name and mark (SS), the sign-in screen, the browser tab, Access Admin, the Platform guide and the release notes page.',
-    'Messages and labels from the database that said CourseFinder now say StudySearch (for example \u201cStudySearch role required\u201d).',
-    'Unchanged until production: the web address, the repositories, the Wix and Zoho contract names, saved screen settings, and the name our page readers give university websites.'
+    'Operations \u203a API usage: for each API (Zoho API v2, Website API v2) the calls, success rate, failures, bandwidth sent and the last call, for the last 24 hours, 7 days or 30 days.',
+    'Each key: who uses it, on or off, last call and last success, calls, failures (client errors, rate limited, server errors, with the last error), bandwidth, average and largest reply, times, and when it was last rotated.',
+    'Full loads and deltas: the last completed full load (when, how long, pages, items, load size), deltas, CSV exports and searches per key.',
+    'Statistics refresh every day at about 00:20 Melbourne time; Refresh statistics now gives fresh figures at once.',
+    'Platform Admin: Rotate a key (the new key is shown once and not stored; the old key keeps working for the hours you choose, 24 by default in Settings), End old key, Switch off and on. Every change is listed under Key changes.'
   ],
   bugFixes:[]
 }
