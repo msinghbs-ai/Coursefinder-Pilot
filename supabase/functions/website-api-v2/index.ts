@@ -104,12 +104,15 @@ Deno.serve(async (req: Request) => {
   if (!who || typeof who !== "object") return fail(401, "AUTHENTICATION_REQUIRED");
   const id = who as Json;
   keyName = String(id.key_name);
+  const baseKey = keyName;
+  // 16 Oct 2026 (API console): a call made with the previous key during a rotation overlap is logged as <key>#previous
+  if (id.previous === true) keyName = `${baseKey}#previous`;
   delete body.integration_token;
 
   action = cleanText(body.action) || null;
   if (!action || !ACTIONS.includes(action)) return fail(400, "INVALID_ACTION");
 
-  const { data: rate, error: rateError } = await svc.rpc("website_api_v2_rate", { p_key_name: keyName, p_limit: Number(id.rate_per_minute) || 1 });
+  const { data: rate, error: rateError } = await svc.rpc("website_api_v2_rate", { p_key_name: baseKey, p_limit: Number(id.rate_per_minute) || 1 });
   if (rateError) return fail(503, "SERVICE_UNAVAILABLE");
   const rs = (rate && typeof rate === "object") ? rate as Json : {};
   if (rs.allowed !== true) return fail(429, "RATE_LIMITED", { "retry-after": String(Math.max(Number(rs.retry_after_seconds) || 1, 1)) });
@@ -166,6 +169,11 @@ Deno.serve(async (req: Request) => {
   }
   const obj = (data && typeof data === "object") ? { ...(data as Json) } : {};
   const e = obj.error as Json | undefined;
+  // 16 Oct 2026 (API console): sync calls are logged as the start, a page or the end of a full load, or a delta
+  if (action === "sync" && !e) {
+    const first = body.full_load === true || !cleanText(body.cursor);
+    action = obj.mode === "delta" ? "sync_delta" : obj.full_load_complete === true ? "sync_full_end" : first ? "sync_full_start" : "sync_full";
+  }
   if (e && e.code === "NOT_FOUND") return fail(404, "NOT_FOUND");
   if (e && e.code === "INVALID_INPUT") return fail(400, "INVALID_INPUT", {}, typeof e.detail === "string" ? e.detail : undefined);
   delete obj.contract_version;
