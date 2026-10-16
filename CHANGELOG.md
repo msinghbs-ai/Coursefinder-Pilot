@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.213 — 16 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.286** (Storage sizes). The Platform Admin asked on 16 Oct 2026 23:18: "Prepare and record all db and tables data and sizes also prepare total bucket usage. Keep the stat's simple and recoed on daily basis."
+  - **Added:** table `pipeline.storage_size_daily` (one row a day for the database, each schema, each table and each bucket), job `storage-size-daily` (00:25 Melbourne), setting `storage.size_keep_days` (365, table rows only), `admin_storage_sizes` (Pipeline Operator and above) and `admin_storage_sizes_measure` (Platform Admin). Migration `20261016100000`.
+  - **Screen:** Settings › Storage & retention starts with Storage sizes: Database, File storage and Tables tiles, then By day, Buckets, Schemas and Tables (filter; largest 25 or All). S52. SOPs 1.27.
+
 ## 0.1.212 — 16 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.285** (Task manager). The Platform Admin reported on 16 Oct 2026 22:51: "Task manager doesnt show any job running in the background."

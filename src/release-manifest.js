@@ -1,19 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.285'
-export const PACKAGE_VERSION='0.1.212'
+export const UI_VERSION='2.15.286'
+export const PACKAGE_VERSION='0.1.213'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'16 Oct 2026',
-  title:'Task manager shows background jobs again',
+  title:'Storage sizes recorded daily',
   changes:[
-    'Scheduled jobs \u203a Task manager: Background jobs lists every scheduled job and worker using the platform (running this moment, failing, paused, Firecrawl credits in the last hour) with Pause, Resume and Run now, under the tasks people start.'
+    'Settings \u203a Storage & retention: Storage sizes, recorded every day at about 00:25 Melbourne time: the database, each schema, each table (rows, table, index and long-value bytes, with the change over 1 and 7 days) and each file storage bucket (files and bytes, with the change over 7 days). Measure now (Platform Admin) records today again.'
   ],
-  bugFixes:[
-    'Task manager showed nothing while about 280 scheduled runs and 70 worker calls ran every 15 minutes: since v2.15.266 the background board was only on Coverage & completeness \u203a Progress \u203a Running now.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
