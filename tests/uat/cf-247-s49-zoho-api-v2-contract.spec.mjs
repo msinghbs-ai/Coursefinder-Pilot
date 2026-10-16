@@ -86,3 +86,13 @@ test('CSV seed then sync: the export gives the cursor to continue from', () => {
   expect(cur).toContain("'sync_cursor', rtrim(translate(replace(encode(convert_to(jsonb_build_object('v', 1, 'm', 'delta', 'a', v_at,")
   expect(fn).toContain('"x-sync-cursor": String(obj.sync_cursor ?? "")')
 })
+
+test('the CSV export comes in pages within the API time limit', () => {
+  const pg = fs.readFileSync('supabase/migrations/20261016040000_cf247_zoho_export_pages.sql', 'utf8')
+  expect(pg).toContain("v_lim int := greatest(security.pipeline_num_v1('zoho.export_page_rows', 3000)::int, 1);")
+  expect(pg).toContain("order by z.item->'provider'->>'name', z.item->>'title', z.item_key limit v_lim offset v_off) x;")
+  expect(pg).toContain("'has_more', v_off + coalesce(v_n, 0) < v_total,")
+  expect(pg).toContain("set status = 'retiring', replaced_by = 'public.zoho_v2_export_page(text, integer)'")
+  expect(fn).toContain('fn = "zoho_v2_export_page"; args = { p_entity: e, p_page: page };')
+  expect(fn).toContain('"x-has-more": String(obj.has_more ?? false)')
+})
