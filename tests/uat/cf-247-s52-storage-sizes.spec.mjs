@@ -35,3 +35,14 @@ test.describe('mocked browser', () => {
     await expect.poll(() => measured).toBe(1)
   })
 })
+
+// Platform Admin 16 Oct 2026 23:44: "Run 1,2,6,7": daily housekeeping job replaces the two job-log trims made outside git.
+const hk = fs.readFileSync('supabase/migrations/20261016110000_cf247_housekeeping_daily.sql', 'utf8')
+test('daily housekeeping: expired request codes and old job run records by setting; old trims switched off, not removed', () => {
+  expect(hk).toContain("make_interval(days => security.pipeline_num_v1('retention.nonce_keep_days', 1)::int)")
+  expect(hk).toContain("make_interval(days => security.pipeline_num_v1('retention.job_log_keep_days', 3)::int)")
+  expect(hk).toContain("security.pipeline_num_v1('batch.housekeeping_rows', 400000)::int")
+  expect(hk.indexOf("('housekeeping-daily', 'Platform upkeep'")).toBeLessThan(hk.indexOf("select cron.schedule('housekeeping-daily'"))
+  expect(hk).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'cron-history-trim'), active := false);")
+  expect(hk).not.toMatch(/cron\.unschedule|^select security\.housekeeping_daily_v1/m)
+})
