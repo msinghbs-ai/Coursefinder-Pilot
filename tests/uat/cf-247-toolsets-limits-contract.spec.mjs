@@ -724,7 +724,7 @@ test('delivery from location and course years from months, weeks, semesters or t
   expect(m).toContain('security.delivery_mode_from_location(coalesce(')
   const ad = read('supabase/functions/coverage-sweep/adapters.ts')
   expect(ad).toContain('export function yearsOf(')
-  expect(ad).toContain('"other_requirements"]')
+  expect(ad).toMatch(/"other_requirements"(, "english_level")?\]/)  // Decision 264 adds english_level after it
 })
 
 // 5 Oct 17:04/18:04: indicative whole-course fee range per university — current first, CRICOS fallback, award only, published per university
