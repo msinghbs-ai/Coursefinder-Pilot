@@ -55,3 +55,13 @@ test('a person-added source is not held by the central refresh interval; the bud
   expect(spend).toContain("and g.candidates->>'page_title' like 'Page not found%'")
   expect(spend).not.toMatch(/^(delete|drop|truncate)\b/im)
 })
+
+const acu = fs.readFileSync('supabase/migrations/20261018040000_cf247_acu_english_by_course_group.sql', 'utf8')
+test('ACU by course group from the stored UAC page: proposed only, ten ordered rules, nothing dropped', () => {
+  expect(acu).toContain("$j$::jsonb, 'proposed'")
+  expect(acu).toContain("<> 'cd638f2de25dabb3872692d5b69f9532' then")
+  expect(acu).toContain("and e.overall_score is not distinct from (q->>'overall_score')::numeric")
+  expect(acu).toContain('"level_rules"')
+  expect(acu).toContain("jsonb_array_length(proposal->'level_rules') = 10")
+  expect(acu).not.toMatch(/^(delete|drop|truncate)\b/im)
+})
