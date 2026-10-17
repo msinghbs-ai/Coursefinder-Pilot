@@ -10,7 +10,10 @@
 // (its subscores are not the four IELTS skills).
 // v0.2.4 (17 Oct 2026, R18 first run): a number after "Overall" that names a skill ("105 Overall ; 110 Speaking") is that skill's score,
 // not the overall; the overall is then the number before "Overall".
-export const POLICY_PARSER = "provider-policy-v0.2.4";
+// v0.2.5 (17 Oct 2026, Decision 262): a section headed for courses with alternative, higher, additional or different English
+// requirements lists exceptions, never a default (UTas: a bullet under "Postgraduate courses with alternative English language
+// requirements" was read as the postgraduate default).
+export const POLICY_PARSER = "provider-policy-v0.2.5";
 // Tests the parser learnt after English policies were first approved: only these are added to an approved policy (job policy-add-tests).
 export const ADDED_TESTS: TestCode[] = ["DET"];
 
@@ -29,6 +32,7 @@ const TESTS: { code: TestCode; re: RegExp; range: [number, number]; comp: [numbe
 ];
 const OTHER_TEST = /\b(IELTS|PTE|Pearson|TOEFL|Cambridge|C1 Advanced|CAE|C2 Proficiency|Duolingo|DET|OET|Occupational English|LanguageCert|Michigan|MET)\b/i;
 const SKILLS = ["listening", "reading", "writing", "speaking"];
+const ALT_HEAD = /\b(?:alternative|higher|additional|different|course-specific|faculty-specific)\b[^|]{0,60}?\b(?:english|language|requirements?|standards?|scores?)\b/i;
 const NUM = "(\\d{1,3}(?:\\.\\d)?)";
 
 function inRange(v: number, r: [number, number], decimals: boolean, step?: number) {
@@ -102,25 +106,29 @@ function namesFrom(label: string): string[] {
   return parts.map((p) => p.replace(/[:;,.\s]+$/, "").replace(/\s*\((?:including|incl\.?)[^)]*\)\s*$/i, "").trim()).filter((p) => p.length >= 4 && p.length <= 160 && !/^(and|or|the|all|other)$/i.test(p));
 }
 
-type Block = { kind: "table"; heading: string; rows: string[][] } | { kind: "text"; heading: string; text: string };
+type Block = { kind: "table"; heading: string; rows: string[][]; alt?: boolean } | { kind: "text"; heading: string; text: string; alt?: boolean };
 function blocks(md: string): Block[] {
   const out: Block[] = [];
   let heading = "", table: string[][] | null = null;
+  // v0.2.5: a section for courses with alternative or higher requirements (a heading, or a short heading-like line) runs until the next
+  // ordinary heading; bold course names inside it do not end it
+  let alt = false;
   const lines = md.replace(/\r/g, "").split("\n");
   for (const raw of lines) {
     const line = raw.trim();
     if (line.startsWith("|")) {
       const cells = line.replace(/^\||\|$/g, "").split("|").map((c) => clean(c.replace(/<br\s*\/?>/gi, " ; ")));
       if (cells.every((c) => /^:?-{2,}:?$/.test(c) || c === "")) continue;
-      if (!table) { table = []; out.push({ kind: "table", heading, rows: table }) }
+      if (!table) { table = []; out.push({ kind: "table", heading, rows: table, alt }) }
       table.push(cells);
       continue;
     }
     table = null;
     if (!line) continue;
     const h = line.match(/^#{1,6}\s+(.*)$/) || line.match(/^\*\*([^*]{2,120})\*\*:?$/);
-    if (h) { heading = clean(h[1]); continue }
-    out.push({ kind: "text", heading, text: clean(line.replace(/^[-*+]\s+/, "")) });
+    if (h) { heading = clean(h[1]); if (line.startsWith("#")) alt = ALT_HEAD.test(heading); else if (ALT_HEAD.test(heading)) alt = true; continue }
+    if (!/^[-*+]\s+/.test(line) && !/\d/.test(line) && !/[.!?]$/.test(line) && clean(line).length <= 140) { alt = ALT_HEAD.test(line); if (alt) continue }
+    out.push({ kind: "text", heading, text: clean(line.replace(/^[-*+]\s+/, "")), alt });
   }
   return out;
 }
@@ -194,6 +202,7 @@ export function englishPolicy(md: string) {
   if (HIGHER_UNLISTED.test(flat)) signals.add("higher_unlisted");
   for (const b of blocks(md)) {
     if (NOT_ADMISSION.test(b.heading)) continue;
+    if (b.alt || ALT_HEAD.test(b.heading)) { signals.add("course_specific"); continue }
     if (b.kind === "table") {
       if (b.rows.length < 2) continue;
       const head = b.rows[0];
