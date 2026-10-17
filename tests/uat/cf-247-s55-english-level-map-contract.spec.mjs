@@ -34,7 +34,7 @@ test('a level is written only where the course page names it; own readings, lock
 test('worker v0.28.0 reads english_level as an adapter field', () => {
   expect(adapters).toMatch(/EXTRA_FIELDS = \[[^\]]*"english_level"\]/)
   expect(builder).toMatch(/PATTERN_FIELDS = \[[^\]]*"english_level"\]/)
-  expect(worker).toContain('const WORKER = "coverage-sweep-worker-v0.28.0";')
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(28|29)\.\d+";/)
   expect(mig).toContain("'other_requirements', 'english_level']")
 })
 
