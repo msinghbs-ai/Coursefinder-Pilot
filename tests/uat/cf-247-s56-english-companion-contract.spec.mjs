@@ -46,3 +46,12 @@ test('Decision 265 follow-up: "band 7.0" is band 7, "band 7+" is read; guarded; 
   expect(fix).toContain("'{levels,band 7+}'")
   expect(fix).not.toMatch(/^(delete|drop|truncate)\b/im)
 })
+
+const spend = fs.readFileSync('supabase/migrations/20261018030000_cf247_manual_source_read_and_melbourne_flags.sql', 'utf8')
+test('a person-added source is not held by the central refresh interval; the budget still applies; Melbourne pages not found flagged soft', () => {
+  expect(spend).toContain("<> 'd43113b1a6ec99ea3e44c61a562d9cb0' then")
+  expect(spend).toContain("and fs.found_via = 'manual' and fs.status in ('found', 'reading')) then")
+  expect(spend).toContain("if security.fc_budget_left_v1(p_purpose) < p_units then")
+  expect(spend).toContain("and g.candidates->>'page_title' like 'Page not found%'")
+  expect(spend).not.toMatch(/^(delete|drop|truncate)\b/im)
+})
