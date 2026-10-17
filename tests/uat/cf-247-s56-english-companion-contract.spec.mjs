@@ -38,3 +38,11 @@ test('worker v0.29.0 reads companion pages and writes nothing to courses', () =>
   expect(worker).toContain('if (mode === "companion_read") {')
   expect(worker).toContain('await rpc("svc_companion_record", { p_course_id: it.course_id, p_status: st')
 })
+
+const fix = fs.readFileSync('supabase/migrations/20261018020000_cf247_english_level_band_wording.sql', 'utf8')
+test('Decision 265 follow-up: "band 7.0" is band 7, "band 7+" is read; guarded; nothing dropped', () => {
+  expect(fix).toContain("<> 'ed73353d0ca703f59f1cd74f46f830ee' then")
+  expect(fix).toContain("'(\\d)\\.0(?![0-9])', '\\1', 'g')")
+  expect(fix).toContain("'{levels,band 7+}'")
+  expect(fix).not.toMatch(/^(delete|drop|truncate)\b/im)
+})
