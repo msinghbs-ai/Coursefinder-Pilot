@@ -37,3 +37,11 @@ test('worker v0.28.0 reads english_level as an adapter field', () => {
   expect(worker).toContain('const WORKER = "coverage-sweep-worker-v0.28.0";')
   expect(mig).toContain("'other_requirements', 'english_level']")
 })
+
+const fix = fs.readFileSync('supabase/migrations/20261017080000_cf247_english_level_own_differs.sql', 'utf8')
+test('Decision 264 fix: a course whose own score differs from its level keeps its own reading only', () => {
+  expect(fix).toContain("<> '4c44713235dd2ee97867ca1e37bb9db1' then")
+  expect(fix).toContain("v_own_differs := v_own_differs + 1;")
+  expect(fix).toContain("and e.notes like 'English level %Decision 264%'")
+  expect(fix).not.toMatch(/^(delete|drop|truncate)\b/im)
+})
