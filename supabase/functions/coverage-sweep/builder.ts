@@ -41,7 +41,7 @@ export function mainJsonScript(html: string): string | null {
 }
 
 export const BUILDER_FIELDS = ["title", "code", "intakes", "fee", "ielts_overall", "ielts_min_band", "english", "campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level"];
-export const PATTERN_FIELDS = ["intakes", "fee", "ielts_overall", "campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level"];
+export const PATTERN_FIELDS = ["intakes", "fee", "ielts_overall", "campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "english_level"];
 // The same rule the database applies on save, plus the database's own limits (no [\s\S], no repeat above 255).
 export function patternSafe(p: string): string | null {
   try { new RegExp(p, "i") } catch { return "cannot be read" }
