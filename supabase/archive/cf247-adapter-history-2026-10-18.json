@@ -1,0 +1,23 @@
+{
+  "about": "CF-247, 18 Oct 2026 (Platform Admin 11:58, choice \"Latest only, export rest (Recommended)\"): adapter history before 18 Oct 2026 01:00 UTC that a later row has replaced. Kept in the database: the latest result per course, the latest preview and draft per university, every draft that carries AI cost, and anything newer than the cut-off. The paste file refuses to run unless each set's row count and key hash still match this export.",
+  "bucket": "archive",
+  "prefix": "cf247-adapter-history-2026-10-18",
+  "part_rows": 20000,
+  "sets": [
+    {
+      "name": "uni_adapter_results_replaced",
+      "key": "id",
+      "select": "select r.* from pipeline.uni_adapter_results r where r.at < timestamptz '2026-10-18 01:00:00+00' and exists (select 1 from pipeline.uni_adapter_results x where x.provider_id = r.provider_id and x.course_id = r.course_id and x.at < timestamptz '2026-10-18 01:00:00+00' and (x.at > r.at or (x.at = r.at and x.id > r.id)))"
+    },
+    {
+      "name": "uni_adapter_previews_replaced",
+      "key": "id",
+      "select": "select v.* from pipeline.uni_adapter_previews v where v.created_at < timestamptz '2026-10-18 01:00:00+00' and v.done_at is not null and exists (select 1 from pipeline.uni_adapter_previews x where x.provider_id = v.provider_id and x.created_at < timestamptz '2026-10-18 01:00:00+00' and (x.created_at > v.created_at or (x.created_at = v.created_at and x.id > v.id)))"
+    },
+    {
+      "name": "uni_adapter_drafts_replaced",
+      "key": "id",
+      "select": "select d.* from pipeline.uni_adapter_drafts d where d.created_at < timestamptz '2026-10-18 01:00:00+00' and coalesce(d.cost_usd, 0) = 0 and d.status in ('captured', 'proposed', 'error') and exists (select 1 from pipeline.uni_adapter_drafts x where x.provider_id = d.provider_id and x.created_at < timestamptz '2026-10-18 01:00:00+00' and (x.created_at > d.created_at or (x.created_at = d.created_at and x.id > d.id)))"
+    }
+  ]
+}
