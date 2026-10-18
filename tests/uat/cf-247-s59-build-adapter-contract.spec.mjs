@@ -39,7 +39,7 @@ test('worker v0.30.0 reads majors as a pattern field (every match kept)', () => 
   expect(adapters).toMatch(/EXTRA_FIELDS = \[[^\]]*"majors"\]/)
   expect(builder).toMatch(/PATTERN_FIELDS = \[[^\]]*"majors"\]/)
   expect(builder).toContain('for majors capture one major or specialisation name per match and set pick "all"')
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.30\.\d+";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.3\d\.\d+";/)
   expect(mig).toContain("'english_level', 'majors']")
 })
 

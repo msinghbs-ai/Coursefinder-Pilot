@@ -437,6 +437,8 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-builder .ab-facts span{display:block;font-size:12px;color:var(--cf-muted)}
 .ab-builder .ab-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
 .ab-builder .ab-add input{flex:1;min-width:220px;padding:6px 8px}
+.ab-builder .ab-sitecheck{margin-top:8px;display:grid;gap:6px}
+.ab-builder .ab-checkresult{border-top:1px solid var(--cf-border);padding-top:6px}
 .ab-builder .ab-facts li{font-size:14px}
 /* v2.15.215: automatic adapter build panel and the Providers-list Adapter column (tokens only) */
 .ab-builder .ab-auto{border:1px solid var(--cf-brand);border-radius:10px;padding:12px 14px;background:var(--cf-surface-2)}

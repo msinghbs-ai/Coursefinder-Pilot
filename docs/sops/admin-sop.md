@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.28 (reviewed for platform release v2.15.287)  
+**Version:** 1.29 (reviewed for platform release v2.15.288)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -91,7 +91,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | OpenRouter notice: low balance, credit floor, or an AI use past its daily guard | Look at the spend by use on Models & services › OpenRouter; top up, or raise the guard if the spend is expected. With limits on Observe nothing has stopped. | Models & services › OpenRouter |
 | Credit or limit bar (amber or red) | Top up the account named, or raise the allowance in Models & services; then check the stopped work resumes. | Models & services |
 | A new AI model or new AI instructions | Qualify on the sample, compare scores, then make active or add to the order as a separate step with a reason. A new instructions version switches AI admission off until the models are qualified again. | Scholarships › Extraction |
-| A wrong website for a provider | Enter the official website in the Adapter builder (1.1); a different website replaces the course-page search. Then Retry onboarding. | Layer 2 › Adapter builder |
+| A wrong website for a provider | Adapter builder 1.1: Check website to see what the home page shows; then Change website with the official address and a reason (checked first, saved only when Verified or Likely). Course-page searches, a stopped or held search, contacts and central pages start again by themselves. A second site of the same provider goes in Other site. | Layer 2 › Adapter builder |
 | A paste file from a change (anything that drops or deletes) | Read it, run it in the Supabase SQL editor for project fxcwkweaxjtknorudmwp, check the expected counts it states. | Supabase SQL editor |
 
 ## 8. What to pay attention to
@@ -141,3 +141,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.26 | 16 Oct 2026 | v2.15.285 | Scheduled jobs › Task manager shows Background jobs again (every scheduled job and worker using the platform, with Pause, Resume and Run now) under the tasks people start. |
 | 1.27 | 16 Oct 2026 | v2.15.286 | Settings › Storage & retention starts with Storage sizes: database, schema, table and bucket sizes recorded daily, with Measure now for the Platform Admin. |
 | 1.28 | 18 Oct 2026 | v2.15.287 | Layer 2 › Build adapter: universities with the readiness of eight fields (Ready, Review, Not ready) and what they would add; a university's page admits its Ready fields with one click (Platform Admin, with a reason); build selected universities into a wave. An unused settings screen and seven unused worker modes retired. |
+| 1.29 | 18 Oct 2026 | v2.15.288 | Adapter builder 1.1 Website: Check website (reads the home page now: answers, not a third-party site, CRICOS code or name on it, or the register-listed site; Verified, Likely or Failed) and Change website (Platform Admin; checked first, saved only when Verified or Likely; searches, contacts and central pages start again; a second site is kept as an extra source). |
