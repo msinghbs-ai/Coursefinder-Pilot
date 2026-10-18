@@ -57,8 +57,7 @@ export function withView(url: string, pv?: Adapter["page_view"]): string {
 // Fields an adapter may give besides intakes, English and fee. They are shown for testing only and never admitted.
 // v0.17.7 (Platform Admin 5 Oct 15:22, 15:34): fee_total (a whole-course fee) with course_years (full-time years) gives
 // the annual fee as total / years; exit_awards (the awards a student can exit with after N years of full-time study).
-// v0.28.0 (Decision 264): english_level, the English level the course page names ("Band 2", "higher"); the approved policy gives its scores.
-export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location", "fee_total", "course_years", "exit_awards", "entry_requirement", "other_requirements", "english_level", "majors"];
+export const EXTRA_FIELDS = ["campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "location", "fee_total", "course_years", "exit_awards", "entry_requirement", "other_requirements"];
 
 const clean = (s: string) => String(s || "").replace(/\s+/g, " ").trim();
 const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim();
@@ -132,7 +131,7 @@ export function applyAdapter(a: Adapter, html: string, course: { title: string; 
   const pat = patternValues(a, text, course.code);
   const extra: Record<string, string> = {};
   for (const f of EXTRA_FIELDS) {
-    const v = pat[f] ?? (data && paths[f] ? clean(jsonText(jsonAt(data, paths[f]))).slice(0, f === "majors" ? 900 : 300) : "");
+    const v = pat[f] ?? (data && paths[f] ? clean(jsonText(jsonAt(data, paths[f]))).slice(0, 300) : "");
     if (v) extra[f] = v;
   }
   // a pattern for intakes or fee is the adapter's own reading: it replaces the general reader's and is marked as such
@@ -240,7 +239,7 @@ export function patternValues(a: Adapter, text: string, code = ""): Record<strin
     const ms = [...text.matchAll(r)].slice(0, 20).map((m) => clean(m[1] ?? m[0])).filter(Boolean);
     if (!ms.length) continue;
     const how = (a.pick || {})[f] || "first";
-    out[f] = (how === "last" ? ms[ms.length - 1] : how === "all" ? [...new Set(ms)].join(" | ") : ms[0]).slice(0, f === "exit_awards" || f === "majors" ? 900 : 300);
+    out[f] = (how === "last" ? ms[ms.length - 1] : how === "all" ? [...new Set(ms)].join(" | ") : ms[0]).slice(0, f === "exit_awards" ? 900 : 300);
   }
   return out;
 }
