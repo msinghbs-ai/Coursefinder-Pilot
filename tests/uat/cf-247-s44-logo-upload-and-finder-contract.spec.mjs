@@ -26,7 +26,7 @@ test('the finder: a job, a request from the editor, attached only when the provi
   expect(mig).toContain("'logo', 'logo_not_found'")
   expect(mig).toContain('CREATE OR REPLACE FUNCTION public.admin_provider_logo_find_request(p_provider_id uuid)')
   expect(worker).toContain('if (mode === "logo_find") {')
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(2[5-9])\.\d+";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(2[5-9]|3\d)\.\d+";/)
   expect(logo).toContain('export function svgSafe(text: string): boolean {')
   expect(src).toContain("supabase.rpc('admin_provider_logo_find_request',{p_provider_id:providerId})")
 })

@@ -38,7 +38,7 @@ test('central pages held until due; logo finder and website checks; worker jobs 
   expect(mig).toContain("'Trial run: switched on again to look for new work'")
   expect(mig).toContain("select cron.schedule('flag-recheck', '*/10 * * * *', 'select security.flag_recheck_v1()');")
   expect(worker).toContain('if (mode === "flag_check") {')
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(2[6-9])\.\d+";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(2[6-9]|3\d)\.\d+";/)
 })
 
 test.describe('mocked browser', () => {

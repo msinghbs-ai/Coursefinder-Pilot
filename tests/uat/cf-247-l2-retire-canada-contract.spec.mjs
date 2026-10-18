@@ -29,7 +29,7 @@ test.describe('static contract', () => {
   test('worker finds Canadian sites by name or DLI, never on an empty code, and reads CAD', async () => {
     const ix = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
     const ex = await fs.readFile('supabase/functions/coverage-sweep/extract.ts', 'utf8')
-    expect(ix).toMatch(/coverage-sweep-worker-v0\.(?:9\.[2-9]|[12]\d\.\d+)/) // v0.9.2 or later
+    expect(ix).toMatch(/coverage-sweep-worker-v0\.(?:9\.[2-9]|[1-3]\d\.\d+)/) // v0.9.2 or later
     expect(ix).toContain('findCanadianSite')
     expect(ix).toContain('const tldOk = (host: string, cc: string) => cc === "CA" ? host.endsWith(".ca")') // v0.19.0: the same search by name for every country, a .ca host for Canada
     expect(ix).toContain('no CRICOS provider code to check a site against')

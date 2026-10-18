@@ -40,8 +40,8 @@ export function mainJsonScript(html: string): string | null {
   return s && pageJson(html, s.id) ? s.id : null;
 }
 
-export const BUILDER_FIELDS = ["title", "code", "intakes", "fee", "ielts_overall", "ielts_min_band", "english", "campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level"];
-export const PATTERN_FIELDS = ["intakes", "fee", "ielts_overall", "campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "english_level"];
+export const BUILDER_FIELDS = ["title", "code", "intakes", "fee", "ielts_overall", "ielts_min_band", "english", "campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "majors"];
+export const PATTERN_FIELDS = ["intakes", "fee", "ielts_overall", "campus", "mode", "duration", "study_level", "student_type", "not_admitting", "aqf_level", "english_level", "majors"];
 // The same rule the database applies on save, plus the database's own limits (no [\s\S], no repeat above 255).
 export function patternSafe(p: string): string | null {
   try { new RegExp(p, "i") } catch { return "cannot be read" }
@@ -58,7 +58,7 @@ An adapter has:
 - json_paths: field -> dotted path in that JSON ("*" means every item of a list). Fields: ${BUILDER_FIELDS.join(", ")};
 - patterns: field -> regular expression (JavaScript, case-insensitive) on the page TEXT whose first bracketed group is the value. Fields: ${PATTERN_FIELDS.join(", ")};
 - pick: field -> "first", "last" or "all" when a page prints a field more than once.
-Rules for patterns: anchor them on stable labels near the value; write {code} where the course's own code (for example its CRICOS code) is printed, because one page can cover several courses; for "any text" write (?:.|\\n){0,N} with N at most 250, never (.|\\s) or [\\s\\S]; for intakes capture the text holding the month names; for fee capture the amount digits of the international annual fee only (never domestic, CSP or FFP); keep each pattern short.
+Rules for patterns: anchor them on stable labels near the value; write {code} where the course's own code (for example its CRICOS code) is printed, because one page can cover several courses; for "any text" write (?:.|\\n){0,N} with N at most 250, never (.|\\s) or [\\s\\S]; for intakes capture the text holding the month names; for fee capture the amount digits of the international annual fee only (never domestic, CSP or FFP); for majors capture one major or specialisation name per match and set pick "all"; keep each pattern short.
 Prefer a JSON path when the value is in the page data. Use only what the samples show. Keep it short: each pattern under 300 characters, never list course names or values inside a pattern, reason and notes under 400 characters each. Answer JSON only.`;
 
 export function builderRequest(model: string, draft: any) {
