@@ -149,11 +149,12 @@ begin
   select nullif(btrim(p.website), '') into v_old from catalogue.providers p where p.id = v_c.provider_id;
   v_dom := security.site_host_v1(v_url);
   v_old_dom := security.site_host_v1((security.provider_website_list_v1(v_old))[1]);
+  select * into v_rec from pipeline.course_link_recipes r where r.provider_id = v_c.provider_id;
   perform set_config('request.jwt.claims', jsonb_build_object('sub', v_c.requested_by::text, 'role', 'authenticated')::text, true);
   perform public.admin_provider_website_set(v_c.provider_id, v_url);
   perform set_config('request.jwt.claims', '', true);
   -- the generic recipe follows the new address; a recipe built for this provider's site by hand or by an adapter is kept
-  select * into v_rec from pipeline.course_link_recipes r where r.provider_id = v_c.provider_id;
+  -- (with none before, admin_provider_website_set has just created the generic one)
   if v_rec.provider_id is not null and v_dom is not null and v_rec.search_domain <> v_dom then
     if coalesce(v_rec.notes, '') like 'Generic recipe%' then
       update pipeline.course_link_recipes set search_domain = v_dom, active = true, updated_at = now(), updated_by = v_c.requested_by,
@@ -168,7 +169,7 @@ begin
       v_recipe := 'kept: a recipe built for ' || v_rec.search_domain || ' (review it in step 3)';
     end if;
   else
-    v_recipe := case when v_rec.provider_id is null then 'none' else 'unchanged' end;
+    v_recipe := case when v_rec.provider_id is not null then 'unchanged' when exists (select 1 from pipeline.course_link_recipes r where r.provider_id = v_c.provider_id) then 'created for ' || v_dom else 'none' end;
   end if;
   -- a second site of the same provider: its pages are accepted as course pages too
   v_extra := security.site_host_v1(v_c.extra_site);
