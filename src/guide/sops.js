@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.288'
+export const SOP_REVIEWED_FOR = '2.15.289'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.29', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.30', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -83,7 +83,7 @@ export const SOPS = [
       { trigger: 'OpenRouter notice: low balance, credit floor, or an AI use past its daily guard', action: 'Look at the spend by use on Models & services › OpenRouter; top up, or raise the guard if the spend is expected. With limits on Observe nothing has stopped.', where: 'Models & services › OpenRouter' },
       { trigger: 'Credit or limit bar (amber or red)', action: 'Top up the account named, or raise the allowance in Models & services; then check the stopped work resumes.', where: 'Models & services' },
       { trigger: 'A new AI model or new AI instructions', action: 'Qualify on the sample, compare scores, then make active or add to the order as a separate step with a reason. A new instructions version switches AI admission off until the models are qualified again.', where: 'Scholarships › Extraction' },
-      { trigger: 'A wrong website for a provider', action: 'Adapter builder 1.1: Check website to see what the home page shows; then Change website with the official address and a reason (checked first, saved only when Verified or Likely). Course-page searches, a stopped or held search, contacts and central pages start again by themselves. A second site of the same provider goes in Other site.', where: 'Layer 2 › Adapter builder' },
+      { trigger: 'A wrong website for a provider', action: 'Adapter builder 1.1: Check website to see what the home page shows; then Change website with the official address and a reason (checked first, saved only when Verified or Likely). Course-page searches, a stopped or held search, contacts and central pages start again by themselves; follow them in the guide at the top of the builder. A second site of the same provider goes in Other site.', where: 'Layer 2 › Adapter builder' },
       { trigger: 'A paste file from a change (anything that drops or deletes)', action: 'Read it, run it in the Supabase SQL editor for project fxcwkweaxjtknorudmwp, check the expected counts it states.', where: 'Supabase SQL editor' },
     ],
     watch: [
@@ -125,10 +125,11 @@ export const SOPS = [
       { version: '1.26', date: '16 Oct 2026', release: '2.15.285', change: 'Scheduled jobs › Task manager shows Background jobs again (every scheduled job and worker using the platform, with Pause, Resume and Run now) under the tasks people start.' },
       { version: '1.27', date: '16 Oct 2026', release: '2.15.286', change: 'Settings › Storage & retention starts with Storage sizes: database, schema, table and bucket sizes recorded daily, with Measure now for the Platform Admin.' },
       { version: '1.28', date: '18 Oct 2026', release: '2.15.287', change: 'Layer 2 › Build adapter: universities with the readiness of eight fields (Ready, Review, Not ready) and what they would add; a university\'s page admits its Ready fields with one click (Platform Admin, with a reason); build selected universities into a wave. An unused settings screen and seven unused worker modes retired.' },
-      { version: '1.29', date: '18 Oct 2026', release: '2.15.288', change: 'Adapter builder 1.1 Website: Check website (reads the home page now: answers, not a third-party site, CRICOS code or name on it, or the register-listed site; Verified, Likely or Failed) and Change website (Platform Admin; checked first, saved only when Verified or Likely; searches, contacts and central pages start again; a second site is kept as an extra source).' }],
+      { version: '1.29', date: '18 Oct 2026', release: '2.15.288', change: 'Adapter builder 1.1 Website: Check website (reads the home page now: answers, not a third-party site, CRICOS code or name on it, or the register-listed site; Verified, Likely or Failed) and Change website (Platform Admin; checked first, saved only when Verified or Likely; searches, contacts and central pages start again; a second site is kept as an extra source).' },
+      { version: '1.30', date: '18 Oct 2026', release: '2.15.289', change: 'Adapter builder: follow the guide at the top. It shows each step (Done, Running by itself, Your turn, Optional, Later) and the one next thing to press, with Go to step. Contacts, central pages and course-page search run by themselves after a website change; nothing to press while they run.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.29', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.30', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -201,7 +202,8 @@ export const SOPS = [
       { version: '1.26', date: '16 Oct 2026', release: '2.15.285', change: 'Scheduled jobs › Task manager shows Background jobs again (every scheduled job and worker using the platform, with Pause, Resume and Run now) under the tasks people start.' },
       { version: '1.27', date: '16 Oct 2026', release: '2.15.286', change: 'Settings › Storage & retention starts with Storage sizes: database, schema, table and bucket sizes recorded daily, with Measure now for the Platform Admin.' },
       { version: '1.28', date: '18 Oct 2026', release: '2.15.287', change: 'Layer 2 › Build adapter: universities with the readiness of eight fields (Ready, Review, Not ready) and what they would add; a university\'s page admits its Ready fields with one click (Platform Admin, with a reason); build selected universities into a wave. An unused settings screen and seven unused worker modes retired.' },
-      { version: '1.29', date: '18 Oct 2026', release: '2.15.288', change: 'Adapter builder 1.1 Website: Check website (reads the home page now: answers, not a third-party site, CRICOS code or name on it, or the register-listed site; Verified, Likely or Failed) and Change website (Platform Admin; checked first, saved only when Verified or Likely; searches, contacts and central pages start again; a second site is kept as an extra source).' }],
+      { version: '1.29', date: '18 Oct 2026', release: '2.15.288', change: 'Adapter builder 1.1 Website: Check website (reads the home page now: answers, not a third-party site, CRICOS code or name on it, or the register-listed site; Verified, Likely or Failed) and Change website (Platform Admin; checked first, saved only when Verified or Likely; searches, contacts and central pages start again; a second site is kept as an extra source).' },
+      { version: '1.30', date: '18 Oct 2026', release: '2.15.289', change: 'Adapter builder: follow the guide at the top. It shows each step (Done, Running by itself, Your turn, Optional, Later) and the one next thing to press, with Go to step. Contacts, central pages and course-page search run by themselves after a website change; nothing to press while they run.' }],
   },
 ]
 

@@ -42,6 +42,7 @@ function WebsiteStep({b,onChanged,onError}){
     </div>
     {!b.website&&can&&<div className="ab-add"><input aria-label="Provider's own website" type="url" placeholder="https://www.provider.edu.au" value={url} disabled={busy} onChange={e=>setUrl(e.target.value)}/>
       <Button compact disabled={busy||!/^https?:\/\/\S+\.\S+$/.test(url.trim())} onClick={save}>Save website (entered by hand)</Button></div>}
+    {b.website&&<small className="ab-muted">Contacts, central pages and course pages are read by themselves after the website is set or changed; press Fill in from website again only to read them again now.</small>}
     {msg&&<p className="cf-chip tone-info" role="status">{msg}</p>}
     <WebsiteCheck b={b} onChanged={onChanged} onError={onError}/>
   </div>
@@ -91,7 +92,7 @@ function WebsiteCheck({b,onChanged,onError}){
         <li>Provider's name on the home page: {r.name_basis?'yes':'no'} · address fits the name: {yes(r.domain_fits)}</li>
         {r.title&&<li>Page title: {r.title}</li>}
       </ul>}
-      {last.action==='change'&&!running&&(last.applied?<p className="cf-chip tone-success" data-website-applied>Saved {n.saved}{n.before?` (was ${n.before})`:''}. Course-page searches queued again: {fmtNumber(n.searches_queued||0)}; search resumed; contacts and central pages queued{n.extra_site?`; ${n.extra_site} kept as an extra source`:''}{n.pages_on_old_address?`; ${fmtNumber(n.pages_on_old_address)} course pages on the old address are left for relinking`:''}.</p>
+      {last.action==='change'&&!running&&(last.applied?<p className="cf-chip tone-success" data-website-applied>Saved {n.saved}{n.before?` (was ${n.before})`:''}. Course-page searches queued again: {fmtNumber(n.searches_queued||0)}; search resumed; contacts and central pages queued{n.extra_site?`; ${n.extra_site} kept as an extra source`:''}{n.pages_on_old_address?`; ${fmtNumber(n.pages_on_old_address)} course pages on the old address are left for relinking`:''}. All of this runs by itself: follow it in the guide at the top; nothing to press.</p>
         :<p className="cf-chip tone-warning">Not saved{n.error?`: ${n.error}`:last.verdict==='failed'?': the check failed':''}.</p>)}
     </div>}
   </div>
@@ -145,7 +146,7 @@ function CentralPages({b,onDone,onError}){
     setBusy(true);try{const{error}=await supabase.rpc('admin_provider_central_page',{p_action:'add',p_args:{provider_id:b.provider_id,kind:k,url:u,reason}});if(error)throw error;setUrl('');onDone()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const have=b.central||[],sug=b.suggested||[],cs=b.central_search
   return <div className="ab-central">
-    {have.length>0?<ul className="tn-list">{have.slice(0,8).map((c,i)=><li key={i}><strong>{KIND[c.kind]||c.kind}</strong> <small className="sl-sub">{c.status}{c.decision?` · ${c.decision}`:''} · <a href={c.url} target="_blank" rel="noreferrer">{c.url}</a></small></li>)}</ul>:<p className="sl-sub">No central page attached yet.</p>}
+    {have.length>0?<ul className="tn-list">{have.slice(0,8).map((c,i)=><li key={i}><strong>{KIND[c.kind]||c.kind}</strong> <small className="sl-sub">{c.decision||CENTRAL_STATE[c.status]||c.status} · <a href={c.url} target="_blank" rel="noreferrer">{c.url}</a></small></li>)}</ul>:<p className="sl-sub">No central page attached yet.</p>}
     {cs&&<p className="ab-text" data-central-search>{cs.state==='done'?`Searched with Firecrawl ${cs.searched_at?fmtDate(cs.searched_at):''}: ${fmtNumber(cs.found)} likely page(s) among ${fmtNumber(cs.addresses||0)} addresses on the site.`:cs.state==='failed'?`The Firecrawl search failed${cs.error?` (${cs.error})`:''}.`:cs.state==='leased'?'Searching the site with Firecrawl now…':'Waiting its turn in the Firecrawl search of the site.'}</p>}
     {b.can_manage&&sug.length>0&&<><p className="ab-text">Suggested (attach the right one):</p><ul className="tn-list">{sug.map((s,i)=><li key={i}><Button compact disabled={busy} onClick={()=>add(s.kind,s.url)}>Attach</Button> <strong>{KIND[s.kind]}</strong> <span className="ab-muted">{s.source==='map'?'found by Firecrawl':'from stored links'} · <a href={s.url} target="_blank" rel="noreferrer">{s.url}</a></span></li>)}</ul></>}
     {b.can_manage&&<div className="ab-add"><select aria-label="Central page kind" value={kind} onChange={e=>setKind(e.target.value)}>{Object.entries(KIND).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
@@ -221,7 +222,60 @@ function ManualPage({r,pid,busy,onDone,onError}){
     {msg&&<small className="cf-chip tone-info" role="status">{msg}</small>}
   </div>
 }
-function GuidedBuild({b,find,onChanged,onError}){
+// v2.15.289 (Platform Admin 18 Oct 2026 22:03: "flow was not clear ... no movement or clear indication for next step ... find course pages
+// are running without me pressing anything ... this has to be intuitive"): one guide at the top says what runs by itself now, what is done,
+// and the one next thing for a person, with a button that goes to that step. The page refreshes by itself while work runs.
+const CENTRAL_STATE={found:'found, waiting to be read (automatic)',read:'read: approve it in 1.3 if it shows values',parsed:'read'}
+export function builderFlow(b,st={}){
+  if(!b)return null
+  const list=b.course_list||[],searching=list.filter(c=>c.state==='searching').length,read=b.pages?.read||0,stored=b.pages?.stored||0
+  const need=list.filter(c=>!['read','stored','searching'].includes(c.state)).length,cs=b.central_search||{},central=b.central||[],c=b.contacts||{}
+  const running=[]
+  if(!b.website&&b.website_found?.status==='no_website'&&!b.website_found?.searched_at)running.push({step:'1.1',text:'Searching for the website'})
+  if(['requested','leased'].includes(c.outcome))running.push({step:'1.2',text:'Reading contacts from the website'})
+  if(b.website&&['queued','leased'].includes(cs.state))running.push({step:'1.3',text:'Looking for central pages (key dates, fees, English) on the site'})
+  const unread=central.filter(x=>x.status==='found').length
+  if(unread)running.push({step:'1.3',text:`Reading ${unread} attached central page(s)`})
+  if(searching)running.push({step:'2.1',text:`Finding course pages: ${fmtNumber(searching)} of ${fmtNumber(list.length)} courses being searched`})
+  if(stored>read)running.push({step:'2.1',text:`Reading ${fmtNumber(stored-read)} stored course page(s)`})
+  if(st.capture==='busy')running.push({step:'2.2',text:'Capturing sample pages'})
+  if(st.propose==='busy')running.push({step:'3.1',text:'The model is proposing the settings'})
+  const approve=central.filter(x=>x.status==='read'&&!x.decision).length
+  const also=approve?{step:'1.3',text:`${approve} central page(s) read: approve or reject the values in 1.3 (optional for the adapter).`}:null
+  let next
+  if(!b.website)next={step:'1.1',text:'Record the provider’s own website: press Fill in from website (search) or enter it by hand.',you:true}
+  else if(read<3&&(searching||stored>read))next={step:'2.1',text:'Nothing to press: course pages are being found and read by themselves. This page refreshes on its own; step 2.2 opens at 3 read pages.',you:false}
+  else if(read<3&&need)next={step:'2.1',text:`Find the missing course pages: press Find every missing page with Firecrawl (${fmtNumber(need)}), or enter a page by hand.`,you:true}
+  else if(read<3)next={step:'2.1',text:'Fewer than 3 course pages could be read: enter a course page by hand in 2.1, or check the website (1.1).',you:true}
+  else if(st.capture==='busy')next={step:'2.2',text:'Nothing to press: sample pages are being captured.',you:false}
+  else if(st.capture==='todo')next={step:'2.2',text:'Press Capture samples.',you:true}
+  else if(st.propose==='busy')next={step:'3.1',text:'Nothing to press: the model is proposing the settings.',you:false}
+  else if(st.propose==='todo')next={step:'3.1',text:'Press Ask for a proposal.',you:true}
+  else if(st.save==='todo')next={step:'3.2',text:'Press Save and apply.',you:true}
+  else if(st.qualify==='todo')next={step:'3.3',text:'Applying runs by itself for a few minutes; then press Refresh the measures.',you:true}
+  else if(st.admit==='todo')next={step:'3.4',text:'Press Admit these.',you:true}
+  else if(st.admit==='done')next={step:'3.4',text:'Done: the adapter is admitting. Nothing else to do.',you:false}
+  else next={step:'3.3',text:'Nothing passes the checks yet: adjust by hand (step 4) or add better samples (2.2).',you:true}
+  const steps=[['1.1','Website',b.website?'done':'you'],['1.2','Contacts',running.some(r=>r.step==='1.2')?'auto':c.phone||c.email?'done':'optional'],
+    ['1.3','Central pages',running.some(r=>r.step==='1.3')?'auto':approve?'optional':central.length?'done':'optional'],
+    ['2.1','Course pages',read>=3?'done':running.some(r=>r.step==='2.1')?'auto':'you'],['2.2','Samples',st.capture==='done'?'done':st.capture==='busy'?'auto':st.capture==='todo'?'you':'wait'],
+    ['3.1','Proposal',st.propose==='done'?'done':st.propose==='busy'?'auto':st.propose==='todo'?'you':'wait'],['3.2','Save and apply',st.save==='done'?'done':st.save==='todo'?'you':'wait'],
+    ['3.3','Qualify',st.qualify==='done'?'done':st.qualify==='todo'?'you':'wait'],['3.4','Admit',st.admit==='done'?'done':st.admit==='todo'?'you':'wait']]
+  return{running,next,also,steps}
+}
+const FLOW_CHIP={done:['Done','tone-success'],auto:['Running by itself','tone-info'],you:['Your turn','tone-warning'],optional:['Optional','tone-neutral'],wait:['Later','tone-neutral']}
+const goTo=n=>{const el=document.querySelector(`[data-builder-step="${n}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function BuilderGuide({flow}){
+  if(!flow)return null
+  const{running,next,also,steps}=flow
+  return <div className="ab-guide" data-builder-guide>
+    <ol className="ab-flow" aria-label="Steps">{steps.map(([n,label,state])=><li key={n} className={`is-${state}`} data-flow-step={n}><button type="button" className="cf-link" onClick={()=>goTo(n)}><span className="ab-num">{state==='done'?'✓':n}</span> {label}</button> <small className={`cf-chip ${FLOW_CHIP[state][1]}`}>{FLOW_CHIP[state][0]}</small></li>)}</ol>
+    <div className={`ab-next ${next.you?'is-you':'is-auto'}`} data-builder-next={next.step}><strong>{next.you?'Next for you':'Now'}</strong> <span>({next.step}) {next.text}</span> <Button compact onClick={()=>goTo(next.step)}>Go to step {next.step}</Button></div>
+    {also&&<p className="ab-text" data-builder-also>Also: {also.text} <button type="button" className="cf-link" onClick={()=>goTo(also.step)}>Go to 1.3</button></p>}
+    {running.length>0&&<div className="ab-running" data-builder-running><strong>Running by itself</strong> <span className="ab-muted">(refreshes every 15 seconds)</span><ul>{running.map((r,i)=><li key={i}><span className="m-spinner tiny"/> {r.text} <button type="button" className="cf-link" onClick={()=>goTo(r.step)}>{r.step}</button></li>)}</ul></div>}
+  </div>
+}
+function GuidedBuild({b,find,onChanged,onError,onStage}){
   const[r,setR]=useState(null),[busy,setBusy]=useState('')
   const pid=b.provider_id,read=b.pages?.read||0,can=Boolean(b.can_manage)
   const loadDraft=async()=>{try{const{data,error}=await supabase.rpc('admin_adapter_builder',{p_action:'read',p_args:{provider_id:pid}});if(error)throw error;setR(data||{})}catch(e){onError?.(errText(e))}}
@@ -239,9 +293,12 @@ function GuidedBuild({b,find,onChanged,onError}){
   // Fix 5: the capture line counts captures only; a failed proposal is reported at 3.1, not here
   const caps=dr?.captures||[],okCaps=caps.filter(c=>!c.error).length,badCaps=caps.length-okCaps
   const att=(last?.attempts||[])
+  const stKey=JSON.stringify(st)
+  useEffect(()=>{onStage?.(st)},[stKey])
   return <>
     <Step n="2" title="Course pages" hint="Every course from the register, and whether its page on the provider's own site is found and read. At least 3 read pages are needed to build an adapter.">
-      <SubStep n="2.1" title="Find course pages" state={st.find}>
+      <SubStep n="2.1" title="Find course pages" state={st.find==='done'?'done':(b.course_list||[]).some(c=>c.state==='searching')?'busy':st.find}>
+        {(b.course_list||[]).some(c=>c.state==='searching')&&<p className="cf-chip tone-info" data-find-auto>Searching by itself now (started by the website change or the course-page job): nothing to press. Results appear here as each course is done.</p>}
         <p className="ab-text"><strong>{fmtNumber(read)}</strong> read of <strong>{fmtNumber(b.pages?.stored||0)}</strong> stored, for <strong>{fmtNumber(b.courses)}</strong> active courses (3 read pages needed).</p>
         {find}
         <ManualPage r={r} pid={pid} busy={Boolean(busy)||st.capture==='busy'} onDone={async()=>{await loadDraft();onChanged?.()}} onError={onError}/>
@@ -275,26 +332,29 @@ function GuidedBuild({b,find,onChanged,onError}){
 }
 
 export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
-  const[pid,setPid]=useState(initialProvider||null),[b,setB]=useState(null),[busy,setBusy]=useState(false),[key,setKey]=useState(0)
+  const[pid,setPid]=useState(initialProvider||null),[b,setB]=useState(null),[busy,setBusy]=useState(false),[key,setKey]=useState(0),[stage,setStage]=useState({})
   const load=async(id=pid)=>{if(!id)return;try{const{data,error}=await supabase.rpc('admin_adapter_builder_basics',{p_action:'basics',p_args:{provider_id:id}});if(error)throw error;setB(data)}catch(e){onError?.(errText(e))}}
   useEffect(()=>{setB(null);load(pid)},[pid])
   useEffect(()=>{if(initialProvider&&initialProvider!==pid)setPid(initialProvider)},[initialProvider])
+  const flow=builderFlow(b,stage),auto=Boolean(flow?.running?.length)
+  useEffect(()=>{if(!auto||!pid)return;const t=setTimeout(()=>load(),15000);return()=>clearTimeout(t)},[b,auto]) // fixed: screen refresh while work runs
   if(rank<5)return <Empty text="The adapter builder is for PIM Admins and Platform Admins."/>
   const read=b?.pages?.read||0
   return <div className="m-page-stack ab-builder" data-adapter-builder-tab>
     <p className="ab-text">Build or change an adapter step by step. Everything depends on the provider's own website (1.1); each step uses evidence from its own pages, and nothing is admitted until you admit it.</p>
-    <Step n="1" title="Provider">{b?<p className="ab-text"><strong>{b.name}</strong> <span className="ab-muted">{b.country} · {fmtNumber(b.courses)} active courses · adapter: {stateLabel(b.adapter).toLowerCase()}</span> <Button compact onClick={()=>{setPid(null);setB(null)}}>Change</Button></p>:<PickProvider onPick={setPid} onError={onError}/>}
+    <Step n="1" title="Provider">{b?<p className="ab-text"><strong>{b.name}</strong> <span className="ab-muted">{b.country} · {fmtNumber(b.courses)} active courses · adapter: {stateLabel(b.adapter).toLowerCase()}</span> <Button compact onClick={()=>{setPid(null);setB(null);setStage({})}}>Change</Button></p>:<PickProvider onPick={setPid} onError={onError}/>}
+      {b&&<BuilderGuide flow={flow}/>}
       {b&&<>
         <SubStep n="1.1" title="Website" state={b.website?'done':'todo'}><WebsiteStep b={b} onChanged={()=>load()} onError={onError}/></SubStep>
-        <SubStep n="1.2" title="Contacts" state={b.contacts?.phone&&b.contacts?.email?'done':'todo'}><ContactsStep b={b}/><p className="ab-muted">Read from the provider's own site by Fill in from website (1.1) and the contact job. The Principal Executive Officer comes from the register (CRICOS) where there is one.</p></SubStep>
+        <SubStep n="1.2" title="Contacts" state={['requested','leased'].includes(b.contacts?.outcome)?'busy':b.contacts?.phone||b.contacts?.email?'done':'todo'}><ContactsStep b={b}/><p className="ab-muted">Optional for the adapter. Read by itself from the provider's own site after the website is set or changed (and by Fill in from website). The Principal Executive Officer comes from the register (CRICOS) where there is one.</p></SubStep>
         {/* v2.15.253 (Platform Admin, 12 Oct 2026): central pages are approved here (Layer 4 › Attributes retired); across universities on Providers › Onboarding */}
-        <SubStep n="1.3" title="Central pages" state={(b.central||[]).length?'done':'todo'}><p className="ab-text">Key dates, the international fee schedule and English requirements cover every course at once. Attached pages are read and wait for approval below.</p><CentralPages b={b} onDone={()=>load()} onError={onError}/>
+        <SubStep n="1.3" title="Central pages" state={['queued','leased'].includes(b.central_search?.state)||(b.central||[]).some(x=>x.status==='found')?'busy':(b.central||[]).length?'done':'todo'}><p className="ab-text">Optional for the adapter, done in parallel with step 2. Key dates, the international fee schedule and English requirements cover every course at once: the site is searched for them by itself, a page found is attached and read by itself, and its values wait for your approval below. Attach a page by hand only if the search missed it.</p><CentralPages b={b} onDone={()=>load()} onError={onError}/>
           <CentralApprovals b={b}/></SubStep>
       </>}
     </Step>
     {pid&&!b&&<Loading label="Reading the provider…"/>}
     {b&&<>
-      <GuidedBuild b={b} find={<CourseList b={b} onChanged={()=>load()}/>} onChanged={()=>{setKey(k=>k+1);load()}} onError={onError}/>
+      <GuidedBuild b={b} find={<CourseList b={b} onChanged={()=>load()}/>} onChanged={()=>{setKey(k=>k+1);load()}} onError={onError} onStage={setStage}/>
       <details className="ab-step ab-hand" data-builder-step="4"><summary className="sl-h4"><span className="ab-num">4</span> Adjust by hand</summary>
         {read>=3?<><p className="ab-text">Mark which text block or page-data value holds each attribute and ask for a proposal; preview it on the stored pages, then save and apply.</p>
           <AdapterEditor key={key} providerId={b.provider_id} hideReview onError={onError}/>
