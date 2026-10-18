@@ -226,7 +226,7 @@ function ManualPage({r,pid,busy,onDone,onError}){
 // are running without me pressing anything ... this has to be intuitive"): one guide at the top says what runs by itself now, what is done,
 // and the one next thing for a person, with a button that goes to that step. The page refreshes by itself while work runs.
 const CENTRAL_STATE={found:'found, waiting to be read (automatic)',read:'read: approve it in 1.3 if it shows values',parsed:'read'}
-export function builderFlow(b,st={}){
+export function builderFlow(b,st={},q=null){
   if(!b)return null
   const list=b.course_list||[],searching=list.filter(c=>c.state==='searching').length,read=b.pages?.read||0,stored=b.pages?.stored||0
   const need=list.filter(c=>!['read','stored','searching'].includes(c.state)).length,cs=b.central_search||{},central=b.central||[],c=b.contacts||{}
@@ -236,7 +236,9 @@ export function builderFlow(b,st={}){
   if(b.website&&['queued','leased'].includes(cs.state))running.push({step:'1.3',text:'Looking for central pages (key dates, fees, English) on the site'})
   const unread=central.filter(x=>x.status==='found').length
   if(unread)running.push({step:'1.3',text:`Reading ${unread} attached central page(s)`})
-  if(searching)running.push({step:'2.1',text:`Finding course pages: ${fmtNumber(searching)} of ${fmtNumber(list.length)} courses being searched`})
+  // v2.15.290: the queue says whether the searches will run (admin_course_search_queue); a search waiting on a rule is not "running by itself"
+  const blocked=Boolean(searching&&q&&!q.runs&&q.why)
+  if(searching&&!blocked)running.push({step:'2.1',text:`Finding course pages: ${fmtNumber(searching)} of ${fmtNumber(list.length)} courses being searched${q?.sent?` (${fmtNumber(q.sent)} sent now)`:q?.ahead?` (${fmtNumber(q.ahead)} asked-for searches ahead in the queue)`:''}`})
   if(stored>read)running.push({step:'2.1',text:`Reading ${fmtNumber(stored-read)} stored course page(s)`})
   if(st.capture==='busy')running.push({step:'2.2',text:'Capturing sample pages'})
   if(st.propose==='busy')running.push({step:'3.1',text:'The model is proposing the settings'})
@@ -244,6 +246,7 @@ export function builderFlow(b,st={}){
   const also=approve?{step:'1.3',text:`${approve} central page(s) read: approve or reject the values in 1.3 (optional for the adapter).`}:null
   let next
   if(!b.website)next={step:'1.1',text:'Record the provider’s own website: press Fill in from website (search) or enter it by hand.',you:true}
+  else if(read<3&&blocked)next={step:'2.1',text:`Course-page search is not running: ${q.why}.`,you:true}
   else if(read<3&&(searching||stored>read))next={step:'2.1',text:'Nothing to press: course pages are being found and read by themselves. This page refreshes on its own; step 2.2 opens at 3 read pages.',you:false}
   else if(read<3&&need)next={step:'2.1',text:`Find the missing course pages: press Find every missing page with Firecrawl (${fmtNumber(need)}), or enter a page by hand.`,you:true}
   else if(read<3)next={step:'2.1',text:'Fewer than 3 course pages could be read: enter a course page by hand in 2.1, or check the website (1.1).',you:true}
@@ -258,7 +261,7 @@ export function builderFlow(b,st={}){
   else next={step:'3.3',text:'Nothing passes the checks yet: adjust by hand (step 4) or add better samples (2.2).',you:true}
   const steps=[['1.1','Website',b.website?'done':'you'],['1.2','Contacts',running.some(r=>r.step==='1.2')?'auto':c.phone||c.email?'done':'optional'],
     ['1.3','Central pages',running.some(r=>r.step==='1.3')?'auto':approve?'optional':central.length?'done':'optional'],
-    ['2.1','Course pages',read>=3?'done':running.some(r=>r.step==='2.1')?'auto':'you'],['2.2','Samples',st.capture==='done'?'done':st.capture==='busy'?'auto':st.capture==='todo'?'you':'wait'],
+    ['2.1','Course pages',read>=3?'done':blocked?'you':running.some(r=>r.step==='2.1')?'auto':'you'],['2.2','Samples',st.capture==='done'?'done':st.capture==='busy'?'auto':st.capture==='todo'?'you':'wait'],
     ['3.1','Proposal',st.propose==='done'?'done':st.propose==='busy'?'auto':st.propose==='todo'?'you':'wait'],['3.2','Save and apply',st.save==='done'?'done':st.save==='todo'?'you':'wait'],
     ['3.3','Qualify',st.qualify==='done'?'done':st.qualify==='todo'?'you':'wait'],['3.4','Admit',st.admit==='done'?'done':st.admit==='todo'?'you':'wait']]
   return{running,next,also,steps}
@@ -298,7 +301,7 @@ function GuidedBuild({b,find,onChanged,onError,onStage}){
   return <>
     <Step n="2" title="Course pages" hint="Every course from the register, and whether its page on the provider's own site is found and read. At least 3 read pages are needed to build an adapter.">
       <SubStep n="2.1" title="Find course pages" state={st.find==='done'?'done':(b.course_list||[]).some(c=>c.state==='searching')?'busy':st.find}>
-        {(b.course_list||[]).some(c=>c.state==='searching')&&<p className="cf-chip tone-info" data-find-auto>Searching by itself now (started by the website change or the course-page job): nothing to press. Results appear here as each course is done.</p>}
+        {(b.course_list||[]).some(c=>c.state==='searching')&&<p className="cf-chip tone-info" data-find-auto>Queued for search (started by the website change, Find, or the course-page job). The guide at the top says whether it is running now or waiting on a rule. Results appear here as each course is done.</p>}
         <p className="ab-text"><strong>{fmtNumber(read)}</strong> read of <strong>{fmtNumber(b.pages?.stored||0)}</strong> stored, for <strong>{fmtNumber(b.courses)}</strong> active courses (3 read pages needed).</p>
         {find}
         <ManualPage r={r} pid={pid} busy={Boolean(busy)||st.capture==='busy'} onDone={async()=>{await loadDraft();onChanged?.()}} onError={onError}/>
@@ -336,7 +339,10 @@ export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
   const load=async(id=pid)=>{if(!id)return;try{const{data,error}=await supabase.rpc('admin_adapter_builder_basics',{p_action:'basics',p_args:{provider_id:id}});if(error)throw error;setB(data)}catch(e){onError?.(errText(e))}}
   useEffect(()=>{setB(null);load(pid)},[pid])
   useEffect(()=>{if(initialProvider&&initialProvider!==pid)setPid(initialProvider)},[initialProvider])
-  const flow=builderFlow(b,stage),auto=Boolean(flow?.running?.length)
+  const[queue,setQueue]=useState(null)
+  const searching=(b?.course_list||[]).some(c=>c.state==='searching')
+  useEffect(()=>{if(!b||!searching){setQueue(null);return}let live=true;supabase.rpc('admin_course_search_queue',{p_provider_id:b.provider_id}).then(({data,error})=>{if(live&&!error&&data&&typeof data==='object'&&'runs' in data)setQueue(data)});return()=>{live=false}},[b])
+  const flow=builderFlow(b,stage,queue),auto=Boolean(flow?.running?.length)
   useEffect(()=>{if(!auto||!pid)return;const t=setTimeout(()=>load(),15000);return()=>clearTimeout(t)},[b,auto]) // fixed: screen refresh while work runs
   if(rank<5)return <Empty text="The adapter builder is for PIM Admins and Platform Admins."/>
   const read=b?.pages?.read||0

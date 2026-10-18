@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.217 — 18 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.290** (Asked-for searches first). The Platform Admin chose on 18 Oct 2026 22:25 ("proceed with recommended choice") that searches started from the builder go first.
+  - **Database:** migration `20261018140000_cf247_asked_searches_first.sql`: `svc_course_link_search_next` lets a search a person asked for (requested) run for any provider and takes those first; a website change marks the provider's queued searches as asked for; new `admin_course_search_queue(provider)` for the builder guide. Found: since the focus rule of 15 Oct no search outside the 50 focus providers ran, even when asked for.
+  - **Screen:** the Adapter builder guide shows course-page searches as running only when they will run, otherwise why.
+  - Consumer API unchanged (Decision 266).
+
 ## 0.1.216 — 18 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.289** (Adapter builder guide). The Platform Admin said on 18 Oct 2026 22:03: "flow was not clear ... After this no movement or clear indication for next step ... find course pages are running 0-4 without me pressing anything. this has to be intutive right now very confusing with the flow of execution, fix and procced".
