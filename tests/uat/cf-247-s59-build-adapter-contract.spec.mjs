@@ -62,3 +62,13 @@ test('first wave fix 2: approvals made once at admit; campus agrees only with th
   expect(fix2).not.toMatch(/^(delete|drop|truncate)\b/im)
   expect(fix2).not.toMatch(/create\s+or\s+replace\s+function\s+security\.coverage_admission/i) // the admit jobs are unchanged
 })
+
+const fix3 = fs.readFileSync('supabase/migrations/20261018100000_cf247_enrich_reads_page_reading.sql', 'utf8')
+test('follow-up 3: Enrichment reads the current page reading first; admit releases only holds the page reading now answers', () => {
+  expect(fix3).toContain("<> '3428eef302a7086bb045ddc683ca41ba' then")
+  expect(fix3).toContain("if md5(d) <> '03cc5526a082f59867a8313cdefa04fd' then")
+  expect(fix3).toContain("if (length(d) - length(replace(d, o, ''))) / length(o) <> 1 then")
+  expect(fix3).toContain("release_reason = 'Build adapter: the course page reading now gives a value (Decision 267)'")
+  expect(fix3).toContain("where f.entity = 'course' and f.reason_code = 'enrich_no_value' and f.state in ('raised', 'counting')")
+  expect(fix3).not.toMatch(/^(delete|drop|truncate)\b/im)
+})
