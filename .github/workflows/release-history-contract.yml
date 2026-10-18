@@ -4,8 +4,8 @@ on:
   pull_request:
     paths:
       - 'src/release-manifest.js'
-      - 'src/pim-version-entry.js'
-      - 'src/release-currentness-entry.js'
+      - 'src/release-history-legacy.js'
+      - 'src/ReleaseNotes.jsx'
       - 'src/mature-main.jsx'
       - 'index.html'
       - 'package.json'
@@ -17,8 +17,8 @@ on:
     branches: [main]
     paths:
       - 'src/release-manifest.js'
-      - 'src/pim-version-entry.js'
-      - 'src/release-currentness-entry.js'
+      - 'src/release-history-legacy.js'
+      - 'src/ReleaseNotes.jsx'
       - 'src/mature-main.jsx'
       - 'index.html'
       - 'package.json'

@@ -18,11 +18,11 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
       fs.readFile('src/platform-maturity.css','utf8'),
       fs.readFile('src/mature-main.jsx','utf8'),
       fs.readFile('supabase/migrations-archive/20260901220500_m2_5_platform_maturity_admin_read_surface.sql','utf8'),
-      fs.readFile('src/pim-version-entry.js','utf8'),
+      fs.readFile('src/release-history-legacy.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('tests/uat/release-notes-deployed.spec.mjs','utf8'),
       fs.readFile('src/release-manifest.js','utf8'),
-      fs.readFile('src/release-currentness-entry.js','utf8'),
+      fs.readFile('src/ReleaseNotes.jsx','utf8'),
     ])
 
     expect(component).toContain('data-platform-maturity="true"')
@@ -44,14 +44,14 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(shell).not.toContain("{tool==='platform'&&rank>=6&&<div className=\"m-legacy-host\"><RegulatorySettings")
     // v2.15.107: PIM configuration is the Platform settings > Data model page (role rank 5).
     expect(await fs.readFile('src/nav-map.js','utf8')).toContain("dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5")
-    const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-    const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
+    // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
+    const historyVersion=versionEntry.match(/export const LEGACY_BASELINE='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
-    expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
-    expect(historyVersion).toBe(fallbackVersion)
+    expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+    expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
+    expect(historyVersion).toBe('2.15.78')
     expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-    // The fallback version's notes live in the legacy history (pim-version-entry.js); the manifest holds only the current release.
-    expect(versionEntry).toContain(`version:'${fallbackVersion}'`)
+    expect(versionEntry).toContain(`version:'${historyVersion}'`)
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>StudySearch PIM Admin</title>')
     expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)

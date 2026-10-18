@@ -5,8 +5,8 @@ on:
     branches: [main]
     paths:
       - 'src/release-manifest.js'
-      - 'src/release-currentness-entry.js'
-      - 'src/pim-version-entry.js'
+      - 'src/ReleaseNotes.jsx'
+      - 'src/release-history-legacy.js'
       - 'src/mature-main.jsx'
       - 'index.html'
       - 'package.json'

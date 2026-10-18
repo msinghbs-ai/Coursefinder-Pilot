@@ -8,7 +8,7 @@ test('app text says StudySearch; identifiers stay', () => {
   const m = fs.readFileSync('src/mature-main.jsx', 'utf8')
   expect(m).toContain('<span className="m-brand-mark">SS</span><span className="m-brand-copy"><strong>StudySearch</strong>')
   expect(m).not.toMatch(/\bCoursefinder\b|\bCourseFinder\b/)
-  expect(fs.readFileSync('src/release-currentness-entry.js', 'utf8')).toContain('StudySearch PIM Admin v')
+  expect(fs.readFileSync('src/ReleaseNotes.jsx', 'utf8')).toContain('StudySearch PIM Admin v') // v2.15.291: replaces release-currentness-entry.js
   expect(fs.readFileSync('src/ui-kit.jsx', 'utf8')).toContain('coursefinder:pim:screen-state:v1:') // saved screen settings keep their key
 })
 

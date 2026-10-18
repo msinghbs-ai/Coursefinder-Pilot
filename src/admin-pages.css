@@ -734,3 +734,14 @@
 .ba-note{margin:10px 0 0;font-size:var(--cf-fs-xs);color:var(--cf-text-2)}.ba-note.is-done{padding:8px 10px;border-radius:var(--cf-radius-sm);background:var(--cf-green-50);border:1px solid var(--cf-green-200);color:var(--cf-green-800)}
 .ba-back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;font:inherit;font-size:var(--cf-fs-xs);cursor:pointer;margin-bottom:6px}
 .ba-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}.ba-admitted{margin-left:4px}.ba-stage{display:inline-flex;align-items:center;gap:3px;margin-right:8px;font-size:var(--cf-fs-2xs)}
+/* v2.15.291: Rankings & statistics cards and dataset details, moved from the retired StatisticsDatasetEnhancer.js */
+.m-stats-card{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.m-stats-card>div{margin-top:auto}
+.m-stats-card>.cf-stat-desc{line-height:1.45;color:var(--cf-slate-500);margin:1px 0 4px}
+.cf-stat-dialog-backdrop{position:fixed;inset:0;z-index:65000;background:color-mix(in srgb,var(--cf-slate-900) 50%,transparent);display:grid;place-items:center;padding:18px}
+.cf-stat-dialog{width:min(620px,100%);background:var(--cf-white);border:1px solid var(--cf-slate-225);border-radius:var(--cf-radius-2xl);padding:18px;box-shadow:var(--cf-shadow-xl)}
+.cf-stat-dialog h3{margin:0;color:var(--cf-slate-900)}
+.cf-stat-dialog p{font-size:var(--cf-fs-xs);line-height:1.55;color:var(--cf-slate-600)}
+.cf-stat-dialog small{display:block;color:var(--cf-slate-500)}
+.cf-stat-dialog-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:14px}
+.cf-stat-dialog-actions button{border:1px solid var(--cf-slate-225);border-radius:var(--cf-radius-sm);background:var(--cf-white);padding:7px 9px;font-size:var(--cf-fs-2xs);font-weight:800;cursor:pointer}

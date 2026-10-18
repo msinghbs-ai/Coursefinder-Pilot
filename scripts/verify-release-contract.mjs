@@ -9,8 +9,8 @@ const manifest=await import(`${pathToFileURL(path.join(root,'src/release-manifes
 const{UI_VERSION,PACKAGE_VERSION,RELEASE_STATE,RELEASE,ACCEPTED_RELEASES,RECOVERY_RELEASE}=manifest
 const pkg=JSON.parse(read('package.json'))
 const changelog=read('CHANGELOG.md')
-const history=read('src/pim-version-entry.js')
-const overlay=read('src/release-currentness-entry.js')
+const history=read('src/release-history-legacy.js')
+const pill=read('src/ReleaseNotes.jsx')
 const shell=read('src/mature-main.jsx')
 const html=read('index.html')
 
@@ -31,17 +31,22 @@ if(RELEASE_STATE==='accepted'){
 }else{
   if(RECOVERY_RELEASE?.version===UI_VERSION)fail(`candidate ${UI_VERSION} cannot also be the accepted recovery release`)
 }
-const historyBaseline=history.match(/^const VERSION='([^']+)'/)?.[1]
+const historyBaseline=history.match(/^export const LEGACY_BASELINE='([^']+)'/m)?.[1]
 if(!historyBaseline)fail('legacy release history baseline is missing')
 if(!history.includes(`{version:'${historyBaseline}'`))fail(`legacy release history missing its baseline ${historyBaseline}`)
-const shellFallback=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-if(!shellFallback)fail('shell safe fallback is missing')
-if(!history.includes(`{version:'${shellFallback}'`))fail(`shell safe fallback ${shellFallback} is not retained in release history`)
-if(!overlay.includes("import{UI_VERSION as VERSION,RELEASE}from'./release-manifest.js'"))fail('release-currentness overlay must import the canonical manifest')
-if(/const VERSION='2\.15\.\d+'/.test(overlay))fail('release-currentness overlay defines a competing current-version literal')
+// v2.15.291: the post-render patch scripts are retired; React draws the version from the manifest and nothing else holds one.
+for(const gone of['pim-version-entry.js','release-currentness-entry.js','StatisticsDatasetEnhancer.js','ranking-dataset-header.js','evidence-acquisition-provenance-entry.js']){
+  if(fs.existsSync(path.join(root,'src',gone)))fail(`retired page-patch script src/${gone} is back`)
+  if(html.includes(`/src/${gone}`))fail(`index.html loads retired page-patch script ${gone}`)
+}
+if((html.match(/<script\b/g)||[]).length!==1||!html.includes('<script type="module" src="/src/mature-main.jsx"></script>'))fail('index.html must load only the React entry (src/mature-main.jsx)')
+if(/const UI_VERSION='2\.15\.\d+'/.test(shell))fail('mature-main.jsx defines a competing version literal; import UI_VERSION from release-manifest.js')
+if(!shell.includes("import{UI_VERSION}from'./release-manifest.js'"))fail('mature-main.jsx must take UI_VERSION from the canonical manifest')
+if(!pill.includes("import{UI_VERSION,RELEASE}from'./release-manifest.js'"))fail('ReleaseNotes.jsx must import the canonical manifest')
+if(/const UI_VERSION='2\.15\.\d+'/.test(pill))fail('ReleaseNotes.jsx defines a competing current-version literal')
 if(/StudySearch PIM Admin v2\.15\.\d+/.test(html))fail('index.html contains a duplicate current-version literal')
 if(!html.includes('<title>StudySearch PIM Admin</title>'))fail('index.html must keep a version-neutral bootstrap title')
-if(!overlay.includes('document.title=`StudySearch PIM Admin v${VERSION}`'))fail('runtime title is not reconciled from the canonical manifest')
+if(!pill.includes('`StudySearch PIM Admin v${UI_VERSION}`')||!pill.includes('document.title=RELEASE_TITLE'))fail('runtime title is not set from the canonical manifest')
 // Decision 209: the in-app Platform guide is reviewed with every release.
 const guide=await import(`${pathToFileURL(path.join(root,'src/guide/platformGuide.js')).href}?t=${Date.now()}`)
 const nav=await import(`${pathToFileURL(path.join(root,'src/nav-map.js')).href}?t=${Date.now()}`)

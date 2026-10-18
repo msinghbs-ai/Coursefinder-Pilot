@@ -1,17 +1,17 @@
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 
-test('v2.15.290 is the release candidate while v2.15.79 remains the accepted recovery release and v2.15.78 retained history',()=>{
+test('v2.15.291 is the release candidate while v2.15.79 remains the accepted recovery release and v2.15.78 retained history',()=>{
   const manifest=fs.readFileSync('src/release-manifest.js','utf8')
-  const history=fs.readFileSync('src/pim-version-entry.js','utf8')
+  const history=fs.readFileSync('src/release-history-legacy.js','utf8') // v2.15.291: moved from the retired pim-version-entry.js
   const shell=fs.readFileSync('src/mature-main.jsx','utf8')
-  const current=fs.readFileSync('src/release-currentness-entry.js','utf8')
+  const current=fs.readFileSync('src/ReleaseNotes.jsx','utf8') // v2.15.291: replaces release-currentness-entry.js
   const html=fs.readFileSync('index.html','utf8')
   const pkg=JSON.parse(fs.readFileSync('package.json','utf8'))
   const changelog=fs.readFileSync('CHANGELOG.md','utf8')
 
-  expect(manifest).toContain("export const UI_VERSION='2.15.290'")
-  expect(manifest).toContain("export const PACKAGE_VERSION='0.1.217'")
+  expect(manifest).toContain("export const UI_VERSION='2.15.291'")
+  expect(manifest).toContain("export const PACKAGE_VERSION='0.1.218'")
   expect(manifest).toContain("export const RELEASE_STATE='candidate'")
   expect(manifest).toContain('export const ACCEPTED_RELEASES=[')
   expect(manifest).toContain("version:'2.15.79'")
@@ -20,7 +20,7 @@ test('v2.15.290 is the release candidate while v2.15.79 remains the accepted rec
   expect(manifest).toContain('export const RECOVERY_RELEASE=ACCEPTED_RELEASES[0]')
   expect(manifest).not.toContain('PREVIOUS_ACCEPTED_RELEASE')
 
-  expect(pkg.version).toBe('0.1.217')
+  expect(pkg.version).toBe('0.1.218')
   expect(changelog).toContain('## 0.1.140 — 7 Oct 2026')
   expect(changelog).toContain('**v2.15.261**')
   expect(changelog).toContain('## 0.1.26 — 28 Sep 2026')
@@ -59,18 +59,20 @@ test('v2.15.290 is the release candidate while v2.15.79 remains the accepted rec
   expect(changelog).toContain('**v2.15.78**')
 
   // Legacy history remains retained display content only; it no longer decides recovery authority.
-  expect(history).toContain("const VERSION='2.15.78'")
+  expect(history).toContain("export const LEGACY_BASELINE='2.15.78'")
   expect(history).toContain("{version:'2.15.78'")
   expect(history).toContain("{version:'2.15.77'")
   expect(history).toContain("{version:'2.15.76'")
   expect(history).toContain("{version:'2.15.75'")
   expect(history.indexOf("{version:'2.15.78'")).toBeLessThan(history.indexOf("{version:'2.15.77'"))
 
-  // Static shell fallback must remain an immutable retained release; runtime currentness comes only from the manifest overlay.
-  expect(shell).toContain("const UI_VERSION='2.15.78'")
-  expect(current).toContain("import{UI_VERSION as VERSION,RELEASE}from'./release-manifest.js'")
-  expect(current).not.toMatch(/const VERSION='2\.15\.\d+'/)
-  expect(current).toContain('document.title=`StudySearch PIM Admin v${VERSION}`')
+  // v2.15.291: no fixed fallback version in the shell; the shell and the pill take the version only from the manifest.
+  expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+  expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
+  expect(current).toContain("import{UI_VERSION,RELEASE}from'./release-manifest.js'")
+  expect(current).not.toMatch(/const (UI_)?VERSION='2\.15\.\d+'/)
+  expect(current).toContain('`StudySearch PIM Admin v${UI_VERSION}`')
+  expect(current).toContain('document.title=RELEASE_TITLE')
   expect(html).toContain('<title>StudySearch PIM Admin</title>')
   expect(html).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)
 })

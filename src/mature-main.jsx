@@ -34,6 +34,8 @@ import ScholarshipRecord from'./ScholarshipRecord'
 import{ProviderScholarshipAction,ProviderScholarshipSearch,CourseScholarshipAction,ProviderFillAction}from'./ScholarshipActions'
 import{LayerNotices}from'./Toolsets'
 import Layer4Intervention from'./Layer4Intervention'
+import{UI_VERSION}from'./release-manifest.js'
+import{ReleasePill,applyReleaseIdentity}from'./ReleaseNotes'
 import'./styles.css'
 import'./mature.css'
 import'./admin-pages.css'
@@ -85,13 +87,9 @@ function CoverageAttributes({rank}){
 // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Attributes retired. Fee schedules, English policies and academic calendars are
 // approved in Layer 2 › Adapter builder (1.3) for one university, or across universities on Providers › Onboarding.
 
-const UI_VERSION='2.15.78'
-const UI_FIXES=[
- 'Independent QILT, PRISMS, QS and THE year/edition controls in Provider Compare.',
- 'Frozen Provider/university identity headers across comparison statistics and rankings.',
- 'Standard Statistics & Rankings breadcrumbs with dedicated QILT, PRISMS, QS and THE dataset subpages.',
- 'QS/THE dataset pages aligned to the standard StudySearch dataset table theme.'
-]
+// v2.15.291: the version comes only from release-manifest.js (the old fixed '2.15.78' here was corrected after drawing by a
+// separate script, now retired). The pill and its release notes are ReleaseNotes.jsx.
+applyReleaseIdentity()
 const PAGE_SIZE=50
 // 8 Oct 2026 (Platform Admin): any edition can be uploaded, including next year's (QS names its edition a year ahead): from two years ahead back to 2010.
 const rankingYearOptions=()=>{const top=new Date().getFullYear()+2;return Array.from({length:top-2009},(_,i)=>top-i)}
@@ -127,6 +125,13 @@ function routeFromHash(){
   const canonical=hrefFor(r.page,r.tab,Object.fromEntries(r.params))
   if(raw&&`#${raw}`!==canonical)history.replaceState(null,'',canonical)
   return r
+}
+
+// v2.15.291: a ranking dataset page (Rankings & statistics ?dataset=qs_wur|the_wur) names the dataset in the page header.
+// Moved from the retired ranking-dataset-header.js, which rewrote the heading after the page was drawn.
+const RANKING_DATASET_HEADER={
+  qs_wur:{title:'QS World University Rankings',subtitle:'QS ranking positions by edition, matched to our providers, with the source file kept.'},
+  the_wur:{title:'Times Higher Education',subtitle:'Times Higher Education ranking positions by edition, matched to our providers, with the source file kept.'}
 }
 
 function pageBreadcrumbs(pageKey,tab,routeParams){
@@ -182,6 +187,7 @@ function App(){
   const pageKey=route.page,page=PAGES[pageKey]||PAGES.dashboard,tab=effectiveTab(pageKey,route.tab,rank)
   const tone=health===undefined?'unknown':healthTone(health?.overall)
   const healthLabel=health===undefined?'Checking platform health':HEALTH_WORDS[tone]
+  const datasetHeader=pageKey==='rankings'?RANKING_DATASET_HEADER[route.params?.get?.('dataset')||'']:null
   return <div className={`m-shell ${collapsed?'is-collapsed':''}`}>
     <aside className={`m-sidebar ${navOpen?'is-open':''}`}>
       <div className="m-brand-row">
@@ -200,8 +206,8 @@ function App(){
       <PageHeader
         leading={<button className="m-mobile-menu" onClick={()=>setNavOpen(true)} aria-label="Open menu"><Menu size={20}/></button>}
         breadcrumbs={<AppBreadcrumbs pageKey={pageKey} tab={tab} routeParams={route.params} navigate={go}/>}
-        title={page.title} subtitle={page.subtitle}
-        actions={<>{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<span className="m-release-pill"><span className="m-live-dot"/><span className="m-release-version-label">v{UI_VERSION}</span></span><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
+        title={datasetHeader?.title||page.title} subtitle={datasetHeader?.subtitle||page.subtitle}
+        actions={<>{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<ReleasePill/><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
       {/* v2.15.253 (Platform Admin, 12 Oct 2026): credit and limit notices on every page (Curator and above) */}
       <CreditBanner rank={rank} canOpenServices={canOpen('services',rank)}/>
       {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
@@ -290,16 +296,40 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
 }
 
 
+// v2.15.291: used while the dataset registry is read, or if it cannot be read (same list the retired enhancer used).
+const STAT_REGISTRY_FALLBACK=[
+ {dataset_key:'qilt',label:'QILT',dataset_type:'statistics',description:'Quality Indicators for Learning and Teaching',display_enabled:true,display_order:10,compare_enabled:true},
+ {dataset_key:'prisms',label:'PRISMS',dataset_type:'statistics',description:'International student-flow observations',display_enabled:true,display_order:20,compare_enabled:true},
+ {dataset_key:'qs_wur',label:'QS World University Rankings',dataset_type:'ranking',description:'Imported QS World University Ranking editions',display_enabled:true,display_order:30,compare_enabled:true,source_system_code:'qs_wur'},
+ {dataset_key:'the_wur',label:'Times Higher Education',dataset_type:'ranking',description:'Imported Times Higher Education ranking editions',display_enabled:true,display_order:40,compare_enabled:true,source_system_code:'the_wur'}
+]
+// A dataset added in the registry and switched on, with no dedicated card yet: name, description, latest figures and its details.
+function StatDatasetCard({item,systems,onOpen,navigate}){
+ const r=(systems||[]).find(x=>x.code===item.source_system_code||x.system_code===item.source_system_code)||null
+ const headline=r?.latest_edition||r?.edition_year||'Configured',detail=r?.observations?`${fmtNumber(r.observations)} observations${r.mapped_observations!=null?` · ${fmtNumber(r.mapped_observations)} mapped`:''}`:'No accepted observations yet.'
+ return <article className="m-stats-card" data-dataset-key={item.dataset_key}><span>{item.label}</span>{item.description&&<p className="cf-stat-desc">{item.description}</p>}<strong>{headline}</strong><small>{detail}</small><div><button onClick={()=>onOpen({item,summary:detail})}>Open dataset</button>{item.compare_enabled&&<button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button>}</div></article>
+}
+function StatDatasetDialog({value,onClose,navigate}){
+ const{item,summary}=value
+ useEffect(()=>{const k=e=>{if(e.key==='Escape')onClose()};addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose])
+ return <div className="cf-stat-dialog-backdrop" onClick={e=>{if(e.target===e.currentTarget)onClose()}}><section className="cf-stat-dialog" role="dialog" aria-modal="true" aria-label={item.label}><h3>{item.label}</h3><p>{item.description}</p><small><b>Type:</b> {item.dataset_type} · <b>Authority:</b> {item.source_authority||'Governed source'}</small>{summary&&<p>{summary}</p>}<div className="cf-stat-dialog-actions"><button onClick={()=>{onClose();navigate('Compare',{type:'provider'})}}>Compare</button><button onClick={onClose}>Close</button></div></section></div>
+}
+
 function StatisticsRankings({onError,navigate,rank,routeParams}){
  const[qilt,setQilt]=useState(null),[prisms,setPrisms]=useState(null),[ranking,setRanking]=useState(null),[busy,setBusy]=useState(true)
  const[rankingYears,setRankingYears]=useState({qs:[],the:[]}),[rankingSelection,setRankingSelection]=useState({qs:'',the:''})
+ // v2.15.291: the dataset registry (Rankings & statistics › Datasets) decides which cards show, in what order, with what
+ // description; edition figures follow the chosen edition. Moved from the retired StatisticsDatasetEnhancer.js, which
+ // rewrote these cards after the page was drawn.
+ const[registry,setRegistry]=useState(STAT_REGISTRY_FALLBACK),[rankingEditions,setRankingEditions]=useState({qs:[],the:[]}),[datasetDialog,setDatasetDialog]=useState(null)
+ useEffect(()=>{let live=true;supabase.rpc('statistics_dataset_registry_read').then(({data,error})=>{if(live&&!error&&Array.isArray(data))setRegistry(data)}).catch(()=>{});return()=>{live=false}},[])
  useEffect(()=>{let live=true;setBusy(true);Promise.all([
   api.qiltPage({limit:1,offset:0,sort:'year',direction:'desc'}).catch(e=>({error:e})),
   api.prismsPage({limit:1,offset:0,sort:'period',direction:'desc'}).catch(e=>({error:e})),
   api.rankingSummary().catch(e=>({error:e})),
   api.rankingFilters('qs_wur').catch(e=>({error:e})),
   api.rankingFilters('the_wur').catch(e=>({error:e}))
- ]).then(([q,p,r,qsf,thef])=>{if(!live)return;if(q?.error)onError?.(q.error.message);else setQilt(q);if(p?.error)onError?.(p.error.message);else setPrisms(p);if(r?.error)onError?.(r.error.message);else setRanking(r);const qy=(qsf?.years||[]).map(String),ty=(thef?.years||[]).map(String);setRankingYears({qs:qy,the:ty});setRankingSelection(x=>({qs:x.qs&&qy.includes(x.qs)?x.qs:(qy[0]||''),the:x.the&&ty.includes(x.the)?x.the:(ty[0]||'')}))}).finally(()=>live&&setBusy(false));return()=>{live=false}},[])
+ ]).then(([q,p,r,qsf,thef])=>{if(!live)return;if(q?.error)onError?.(q.error.message);else setQilt(q);if(p?.error)onError?.(p.error.message);else setPrisms(p);if(r?.error)onError?.(r.error.message);else setRanking(r);const qy=(qsf?.years||[]).map(String),ty=(thef?.years||[]).map(String);setRankingYears({qs:qy,the:ty});setRankingEditions({qs:qsf?.editions||[],the:thef?.editions||[]});setRankingSelection(x=>({qs:x.qs&&qy.includes(x.qs)?x.qs:(qy[0]||''),the:x.the&&ty.includes(x.the)?x.the:(ty[0]||'')}))}).finally(()=>live&&setBusy(false));return()=>{live=false}},[])
  const q=qilt?.items?.[0]||qilt?.rows?.[0]||null,p=prisms?.items?.[0]||prisms?.rows?.[0]||null
  const qYear=q?[q.collection_year_from,q.collection_year_to].filter(Boolean).join('–'):'—'
  const pPeriod=p?[p.period_start,p.period_end].filter(Boolean).map(x=>String(x).slice(0,10)).join(' → '):'—'
@@ -307,16 +337,24 @@ function StatisticsRankings({onError,navigate,rank,routeParams}){
  const activeDataset=routeParams?.get?.('dataset')||'',activeYear=routeParams?.get?.('year')||''
  useEffect(()=>{if(activeDataset==='qs_wur'&&activeYear&&rankingYears.qs.includes(String(activeYear)))setRankingSelection(x=>({...x,qs:String(activeYear)}));if(activeDataset==='the_wur'&&activeYear&&rankingYears.the.includes(String(activeYear)))setRankingSelection(x=>({...x,the:String(activeYear)}))},[activeDataset,activeYear,rankingYears.qs.join('|'),rankingYears.the.join('|')])
  const openRanking=(system,key)=>{const selected=rankingSelection[key]||rankingYears[key][0]||'';if(selected)navigate('Statistics & Rankings',{dataset:system,year:selected})}
+ const statCards=registry.filter(x=>x?.display_enabled).sort((a,b)=>Number(a.display_order||0)-Number(b.display_order||0))
+ const statDesc=key=>{const d=registry.find(x=>x?.dataset_key===key)?.description;return d?<p className="cf-stat-desc">{d}</p>:null}
+ const editionDetail=(key,system)=>{const year=rankingSelection[key]||rankingYears[key][0]||'',e=rankingEditions[key].find(x=>String(x?.year)===String(year))
+  if(e)return `${fmtNumber(e.observations||0)} observations · ${fmtNumber(e.mapped_observations||0)} mapped`
+  return system?.accepted_editions?`${fmtNumber(system.observations||0)} observations · ${fmtNumber(system.mapped_observations||0)} mapped`:'No accepted edition applied yet.'}
  if(['qs_wur','the_wur'].includes(activeDataset))return <div className="m-page-stack"><RankingDatasetPanel system={activeDataset} year={activeYear} navigate={navigate} onError={onError}/></div>
  return <div className="m-page-stack">
   <section className="m-panel">
    <PanelTitle icon={BarChart3} title="Statistics & Rankings" subtitle="One verification workspace for contextual statistics, ranking editions, coverage and provenance."/>
    <div className="m-stats-grid">
-    <article className="m-stats-card"><span>QILT</span><strong>{busy?'…':fmtNumber(qilt?.total||0)}</strong><small>observations · latest period {qYear}</small><div><button onClick={()=>navigate('Outcomes (QILT)')}>Open dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
-    <article className="m-stats-card"><span>PRISMS</span><strong>{busy?'…':fmtNumber(prisms?.total||0)}</strong><small>observations · latest period {pPeriod}</small><div><button onClick={()=>navigate('Student Flow (PRISMS)')}>Open dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
-    <article className="m-stats-card"><span>QS World University Rankings</span><div className="m-ranking-card-picker"><label>Edition<select aria-label="QS ranking edition" value={rankingSelection.qs||rankingYears.qs[0]||''} onChange={e=>setRankingSelection(x=>({...x,qs:e.target.value}))}>{rankingYears.qs.map((y,i)=><option key={y} value={y}>{y}{i===0?' · latest':''}</option>)}</select></label></div><strong>{rankingSelection.qs||qs?.latest_edition||'—'}</strong><small>{qs?.accepted_editions?`${fmtNumber(qs.observations||0)} observations · ${fmtNumber(qs.mapped_observations||0)} mapped`:'No accepted edition applied yet.'}</small><div><button disabled={!rankingYears.qs.length} onClick={()=>openRanking('qs_wur','qs')}>Open Dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
-    <article className="m-stats-card"><span>Times Higher Education</span><div className="m-ranking-card-picker"><label>Edition<select aria-label="THE ranking edition" value={rankingSelection.the||rankingYears.the[0]||''} onChange={e=>setRankingSelection(x=>({...x,the:e.target.value}))}>{rankingYears.the.map((y,i)=><option key={y} value={y}>{y}{i===0?' · latest':''}</option>)}</select></label></div><strong>{rankingSelection.the||the?.latest_edition||'—'}</strong><small>{the?.accepted_editions?`${fmtNumber(the.observations||0)} observations · ${fmtNumber(the.mapped_observations||0)} mapped`:'No accepted edition applied yet.'}</small><div><button disabled={!rankingYears.the.length} onClick={()=>openRanking('the_wur','the')}>Open Dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
+    {statCards.map(item=><React.Fragment key={item.dataset_key}>{({
+    qilt:()=><article className="m-stats-card" data-dataset-key="qilt"><span>QILT</span>{statDesc('qilt')}<strong>{busy?'…':fmtNumber(qilt?.total||0)}</strong><small>observations · latest period {qYear}</small><div><button onClick={()=>navigate('Outcomes (QILT)')}>Open dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>,
+    prisms:()=><article className="m-stats-card" data-dataset-key="prisms"><span>PRISMS</span>{statDesc('prisms')}<strong>{busy?'…':fmtNumber(prisms?.total||0)}</strong><small>observations · latest period {pPeriod}</small><div><button onClick={()=>navigate('Student Flow (PRISMS)')}>Open dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>,
+    qs_wur:()=><article className="m-stats-card" data-dataset-key="qs_wur"><span>QS World University Rankings</span>{statDesc('qs_wur')}<div className="m-ranking-card-picker"><label>Edition<select aria-label="QS ranking edition" value={rankingSelection.qs||rankingYears.qs[0]||''} onChange={e=>setRankingSelection(x=>({...x,qs:e.target.value}))}>{rankingYears.qs.map((y,i)=><option key={y} value={y}>{y}{i===0?' · latest':''}</option>)}</select></label></div><strong>{rankingSelection.qs||qs?.latest_edition||'—'}</strong><small>{editionDetail('qs',qs)}</small><div><button disabled={!rankingYears.qs.length} onClick={()=>openRanking('qs_wur','qs')}>Open Dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>,
+    the_wur:()=><article className="m-stats-card" data-dataset-key="the_wur"><span>Times Higher Education</span>{statDesc('the_wur')}<div className="m-ranking-card-picker"><label>Edition<select aria-label="THE ranking edition" value={rankingSelection.the||rankingYears.the[0]||''} onChange={e=>setRankingSelection(x=>({...x,the:e.target.value}))}>{rankingYears.the.map((y,i)=><option key={y} value={y}>{y}{i===0?' · latest':''}</option>)}</select></label></div><strong>{rankingSelection.the||the?.latest_edition||'—'}</strong><small>{editionDetail('the',the)}</small><div><button disabled={!rankingYears.the.length} onClick={()=>openRanking('the_wur','the')}>Open Dataset</button><button onClick={()=>navigate('Compare',{type:'provider'})}>Compare</button></div></article>
+    })[item.dataset_key]?.()||<StatDatasetCard item={item} systems={systems} onOpen={setDatasetDialog} navigate={navigate}/>}</React.Fragment>)}
    </div>
+   {datasetDialog&&<StatDatasetDialog value={datasetDialog} onClose={()=>setDatasetDialog(null)} navigate={navigate}/>}
   </section>
   <section className="m-panel">
    <div className="m-stats-section-head"><div><h3>Coverage & verification</h3><p>Use dataset drill-downs to inspect exact observations. Ranking coverage, edition filters, Provider mapping and Evidence remain publisher-specific.</p></div><button className="m-secondary" onClick={()=>navigate('Compare',{type:'provider'})}><ArrowLeftRight size={15}/>Open Compare</button></div>

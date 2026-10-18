@@ -2,8 +2,10 @@
 // One history from three sources, newest first, one entry per version:
 //  1. docs/release-notes/v*.md          (authoritative for the releases they cover)
 //  2. src/release-manifest.js RELEASE   (the current release)
-//  3. src/pim-version-entry.js RELEASES (legacy hard-coded history, v2.15.78 and earlier)
+//  3. src/release-history-legacy.js LEGACY_RELEASES (history for v2.15.78 and earlier; moved from the retired
+//     pim-version-entry.js in v2.15.291)
 import{readFileSync,readdirSync,writeFileSync,mkdirSync}from'node:fs'
+import{LEGACY_RELEASES}from'../src/release-history-legacy.js'
 const root=new URL('../',import.meta.url)
 const read=p=>readFileSync(new URL(p,root),'utf8')
 const cmp=(a,b)=>{const x=a.split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(y[i]||0)-(x[i]||0);if(d)return d}return 0}
@@ -11,7 +13,7 @@ function arrayLiteral(src,marker){const start=src.indexOf(marker);if(start<0)thr
   for(let j=i;j<src.length;j++){const c=src[j];if(q){if(c==='\\'){j++;continue}if(c===q)q=null;continue}if(c==="'"||c==='"'||c==='`'){q=c;continue}if(c==='[')depth++;else if(c===']'){depth--;if(depth===0)return src.slice(i,j+1)}}throw new Error('unbalanced array')}
 function objectLiteral(src,marker){const start=src.indexOf(marker);if(start<0)throw new Error(`${marker} not found`);let i=src.indexOf('{',start),depth=0,q=null
   for(let j=i;j<src.length;j++){const c=src[j];if(q){if(c==='\\'){j++;continue}if(c===q)q=null;continue}if(c==="'"||c==='"'||c==='`'){q=c;continue}if(c==='{')depth++;else if(c==='}'){depth--;if(depth===0)return src.slice(i,j+1)}}throw new Error('unbalanced object')}
-const legacy=new Function(`return ${arrayLiteral(read('src/pim-version-entry.js'),'const RELEASES=')}`)()
+const legacy=LEGACY_RELEASES
 const manifest=read('src/release-manifest.js')
 const version=manifest.match(/export const UI_VERSION='([^']+)'/)[1]
 const current={version,...new Function(`const UI_VERSION='${version}',PACKAGE_VERSION='';return ${objectLiteral(manifest,'export const RELEASE=')}`)()}
