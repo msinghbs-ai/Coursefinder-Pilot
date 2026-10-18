@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.289'
-export const PACKAGE_VERSION='0.1.216'
+export const UI_VERSION='2.15.290'
+export const PACKAGE_VERSION='0.1.217'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Oct 2026',
-  title:'Adapter builder guide',
+  title:'Asked-for searches first',
   changes:[
-    'Layer 2 › Adapter builder: a guide at the top shows every step (Done, Running by itself, Your turn, Optional, Later), the one next thing for you with a button that goes to it, and what is running by itself now. The page refreshes every 15 seconds while work runs.',
-    'Steps that run by themselves say so: contacts (1.2), central pages (1.3) and course-page search (2.1) show a spinner and “nothing to press” while they run. Contacts and central pages are marked optional for the adapter; central pages are done in parallel with step 2.',
-    'After a website change the result says everything restarts by itself; Fill in from website is only needed to read again now.'
+    'Course-page searches a person asked for (Find course pages in the Adapter builder, a website change) now run for any university and go first in the queue, oldest request first. Searches nobody asked for keep the focus rule; the Firecrawl target list, stopped or held searches, directory sites and the daily and monthly limits still apply.',
+    'Adapter builder guide: course-page searches show as running only when they will run; otherwise the guide says why (for example outside the focus providers, search stopped, not a Firecrawl target, today’s share used) and it is your turn.'
   ],
-  bugFixes:['Platform Admin 18 Oct 2026 22:03: the builder flow after a website change was unclear (no indication of the next step; course-page search ran without saying so).']
+  bugFixes:['Course-page searches for universities outside the 50 focus providers never ran, even when a person asked for them (none sent since 13 Oct).']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.30 (reviewed for platform release v2.15.289)  
+**Version:** 1.31 (reviewed for platform release v2.15.290)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -132,3 +132,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.28 | 18 Oct 2026 | v2.15.287 | Layer 2 › Build adapter: universities with the readiness of eight fields (Ready, Review, Not ready) and what they would add; a university's page admits its Ready fields with one click (Platform Admin, with a reason); build selected universities into a wave. An unused settings screen and seven unused worker modes retired. |
 | 1.29 | 18 Oct 2026 | v2.15.288 | Adapter builder 1.1 Website: Check website (reads the home page now: answers, not a third-party site, CRICOS code or name on it, or the register-listed site; Verified, Likely or Failed) and Change website (Platform Admin; checked first, saved only when Verified or Likely; searches, contacts and central pages start again; a second site is kept as an extra source). |
 | 1.30 | 18 Oct 2026 | v2.15.289 | Adapter builder: follow the guide at the top. It shows each step (Done, Running by itself, Your turn, Optional, Later) and the one next thing to press, with Go to step. Contacts, central pages and course-page search run by themselves after a website change; nothing to press while they run. |
+| 1.31 | 18 Oct 2026 | v2.15.290 | Course-page searches you ask for (Find course pages, a website change) run for any university and go first. The Adapter builder guide shows them as running only when they will run, and otherwise says why. |
