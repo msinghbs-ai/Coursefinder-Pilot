@@ -72,3 +72,12 @@ test('follow-up 3: Enrichment reads the current page reading first; admit releas
   expect(fix3).toContain("where f.entity = 'course' and f.reason_code = 'enrich_no_value' and f.state in ('raised', 'counting')")
   expect(fix3).not.toMatch(/^(delete|drop|truncate)\b/im)
 })
+
+const fix4 = fs.readFileSync('supabase/migrations/20261018110000_cf247_build_readiness_fee_check_english.sql', 'utf8')
+test('follow-up 4: readiness uses the admit fee cross-check and counts any English requirement as held', () => {
+  expect(fix4).toContain("<> '178b0fdbbb3ed2b359d612de7a2f5a47' then")
+  expect(fix4).toContain("security.pipeline_num_v1('admit.fee_crosscheck_pct', 25)")
+  expect(fix4).toContain("exists (select 1 from catalogue.course_english_requirements e2 where e2.course_id = pg.course_id and e2.status = 'active') held")
+  expect(fix4).not.toMatch(/create\s+or\s+replace\s+function\s+security\.(fee_crosscheck_guard_v1|coverage_admission)/i)
+  expect(fix4).not.toMatch(/^(delete|drop|truncate)\b/im)
+})
