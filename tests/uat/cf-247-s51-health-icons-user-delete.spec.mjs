@@ -4,13 +4,15 @@
 // deleted form the UI".
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { readFileSync as __rf } from 'node:fs'
+const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
 const health = fs.readFileSync('supabase/migrations/20261016070000_cf247_health_and_scholarship_reads.sql', 'utf8')
 const del = fs.readFileSync('supabase/migrations/20261016080000_cf247_user_delete.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/admin-user-management/index.ts', 'utf8')
 const ui = fs.readFileSync('src/access-roles-entry.jsx', 'utf8')
 const dash = fs.readFileSync('src/Dashboard.jsx', 'utf8')
-const deploy = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+const deploy = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
 
 test('scholarship reads asked for are not held by the per-university cap; the paused reader is switched on again', () => {
   expect(health).toContain("and (p.requested_at is not null or not security.fc_sch_held_v1(s.provider_id, false))  -- v2.15.265")

@@ -6,8 +6,13 @@
 # The snapshot branch is never merged; delete it once used. Leave "functions" empty to check every
 # function folder in the repository.
 # Uses the same secret and project-ref safety check as "Deploy edge functions".
+# CF-247 Phase 3 (19 Oct 2026): also runs every day (20:15 UTC) on main against SUPABASE_PROJECT_REF, checks every function in
+# .github/edge-functions.json, and FAILS (GitHub notifies) when live differs from git, or when a live function is not in that list
+# (deployed by hand). The snapshot branch is pushed only by a run started by hand.
 name: Edge drift check
 on:
+  schedule:
+    - cron: '15 20 * * *'
   workflow_dispatch:
     inputs:
       functions:
@@ -17,6 +22,8 @@ on:
       project_ref:
         description: "Type the target project ref to confirm"
         required: true
+env:
+  TARGET_REF: ${{ inputs.project_ref || vars.SUPABASE_PROJECT_REF }}
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -29,7 +36,7 @@ jobs:
       - name: Confirm target project
         run: |
           if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
-          if [ "${{ inputs.project_ref }}" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
+          if [ "$TARGET_REF" != "${{ vars.SUPABASE_PROJECT_REF }}" ]; then echo "Typed project ref does not match SUPABASE_PROJECT_REF"; exit 1; fi
           if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
       - uses: supabase/setup-cli@v1
         with:
@@ -39,7 +46,7 @@ jobs:
           if [ -n "${{ inputs.functions }}" ]; then
             IFS=',' read -ra FNS <<< "${{ inputs.functions }}"
           else
-            mapfile -t FNS < <(ls supabase/functions | grep -v '^_')
+            mapfile -t FNS < <(jq -r '.functions | keys[]' .github/edge-functions.json)
           fi
           : > "$RUNNER_TEMP/failed.txt"
           for raw in "${FNS[@]}"; do
@@ -47,8 +54,8 @@ jobs:
             [ -z "$fn" ] && continue
             if ! [[ "$fn" =~ ^[a-z0-9-]+$ ]]; then echo "Refused: $fn"; exit 1; fi
             echo "::group::$fn"
-            if ! supabase functions download "$fn" --project-ref "${{ inputs.project_ref }}" --use-api; then
-              supabase functions download "$fn" --project-ref "${{ inputs.project_ref }}" || echo "$fn" >> "$RUNNER_TEMP/failed.txt"
+            if ! supabase functions download "$fn" --project-ref "$TARGET_REF" --use-api; then
+              supabase functions download "$fn" --project-ref "$TARGET_REF" || echo "$fn" >> "$RUNNER_TEMP/failed.txt"
             fi
             echo "::endgroup::"
           done
@@ -61,7 +68,16 @@ jobs:
           git diff --stat -- supabase/functions | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           if [ -s "$RUNNER_TEMP/failed.txt" ]; then echo "Download failed: $(paste -sd, "$RUNNER_TEMP/failed.txt")" | tee -a "$GITHUB_STEP_SUMMARY"; fi
+          # Phase 3: a live function not in .github/edge-functions.json was deployed by hand
+          curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" "https://api.supabase.com/v1/projects/$TARGET_REF/functions" | jq -r '.[].slug' | sort > "$RUNNER_TEMP/live.txt"
+          if [ ! -s "$RUNNER_TEMP/live.txt" ]; then echo "::error::Could not list live functions"; echo "DRIFT=1" >> "$GITHUB_ENV"; fi
+          jq -r '.functions | keys[]' .github/edge-functions.json | sort > "$RUNNER_TEMP/listed.txt"
+          extra="$(comm -23 "$RUNNER_TEMP/live.txt" "$RUNNER_TEMP/listed.txt" | paste -sd, -)"
+          if [ -n "$extra" ]; then echo "Live but not in .github/edge-functions.json (deployed by hand): $extra" | tee -a "$GITHUB_STEP_SUMMARY"; fi
+          drift="$(git diff --name-only -- supabase/functions | paste -sd, -)"
+          if [ -n "$drift" ] || [ -n "$extra" ] || [ -s "$RUNNER_TEMP/failed.txt" ]; then echo "::error::Live differs from git (files: ${drift:-none}; unlisted live: ${extra:-none})"; echo "DRIFT=1" >> "$GITHUB_ENV"; fi
       - name: Commit live source to a snapshot branch
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         run: |
           branch="edge-live-snapshot/${{ github.run_id }}"
           git config user.name "github-actions[bot]"
@@ -71,3 +87,6 @@ jobs:
           git commit -q --allow-empty -m "Live edge function source snapshot (run ${{ github.run_id }}; functions: ${{ inputs.functions || 'all' }})"
           git push -q origin "$branch"
           echo "Snapshot branch: $branch" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Fail on drift
+        if: ${{ always() }}
+        run: if [ "${DRIFT:-0}" = "1" ]; then exit 1; fi

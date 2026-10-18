@@ -4,11 +4,13 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { execSync } from 'node:child_process'
+import { readFileSync as __rf } from 'node:fs'
+const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
 const fix = fs.readFileSync('supabase/migrations/20261016010000_cf247_api_data_fixes.sql', 'utf8')
 const mig = fs.readFileSync('supabase/migrations/20261016020000_cf247_zoho_api_v2.sql', 'utf8')
 const fn = fs.readFileSync('supabase/functions/zoho-api-v2/index.ts', 'utf8')
-const deploy = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+const deploy = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
 const nav = fs.readFileSync('src/nav-map.js', 'utf8')
 const settingsUi = fs.readFileSync('src/SettingsRegister.jsx', 'utf8')
 

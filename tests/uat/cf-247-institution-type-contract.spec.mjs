@@ -3,6 +3,8 @@
 // Register (data.gov.au); a CRICOS Government provider offering VET is TAFE; NZ from NZQA; Canada empty; training.gov.au later.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { readFileSync as __rf } from 'node:fs'
+const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
 const sql = fs.readFileSync('supabase/migrations/20261014060746_cf247_institution_type.sql', 'utf8')
 const putFix = fs.readFileSync('supabase/migrations/20261014063911_cf247_register_facts_put_set_based.sql', 'utf8')
@@ -13,7 +15,7 @@ const nzCode = fs.readFileSync('supabase/migrations/20261014070622_cf247_nzqa_co
 const worker = fs.readFileSync('supabase/functions/layer1-provider-facts/index.ts', 'utf8')
 const control = fs.readFileSync('supabase/functions/layer1-operations-control/index.ts', 'utf8')
 const scheduled = fs.readFileSync('supabase/functions/layer1-operations-scheduled/index.ts', 'utf8')
-const deploy = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+const deploy = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
 
 test('migration: register types, facts, ordered rules, nothing dropped or deleted by data', () => {
   for (const c of ['university_college', 'higher_education_institute', 'tafe_polytechnic', 'private_vet', 'school', 'wananga']) expect(sql).toContain(`('${c}', `)

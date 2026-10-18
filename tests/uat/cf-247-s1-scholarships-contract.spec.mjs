@@ -33,7 +33,7 @@ test('worker: an academic-result percentage is not the award value; value text i
 })
 
 test('workflow: database migrations applied with the md5 guard, no top-level drops, history checked', () => {
-  const w = fs.readFileSync('.github/workflows/db-apply-migration.yml', 'utf8')
+  const w = fs.readFileSync('.github/workflows/db-apply-migration.yml', 'utf8') + fs.readFileSync('scripts/ci/apply-migration.sh', 'utf8') // CF-247 Phase 3: shared script
   expect(w).toContain("grep -nEi '^(drop|delete|truncate)\\b|^alter table .* drop '")
   expect(w).toContain('if [ "$got" != "$want" ]; then')
 })
