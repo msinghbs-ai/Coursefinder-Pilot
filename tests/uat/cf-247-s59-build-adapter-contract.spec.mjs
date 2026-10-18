@@ -51,3 +51,14 @@ test('first wave fix: readiness is measured on active courses only; qualificatio
   expect(fix).not.toMatch(/^(delete|drop|truncate)\b/im)
   expect(fix).toContain("v := security.consumer_api_check_v1()->'drift';")
 })
+
+const fix2 = fs.readFileSync('supabase/migrations/20261018090000_cf247_build_admit_approvals_and_campus.sql', 'utf8')
+test('first wave fix 2: approvals made once at admit; campus agrees only with the university\'s own campuses', () => {
+  expect(fix2).toContain("<> '3d301d9c786776704868a183f8c478bb' then")
+  expect(fix2).toContain("<> '96fda6f52cbd77022ec0b1346c015ea9' then")
+  expect(fix2).toContain("'CF-CHG-20260915-247; Decision 267 (Build adapter: a Platform Admin admits Ready fields)', now(), now(), now()")
+  expect(fix2).toContain('        on conflict do nothing;\n        perform public.admin_uni_adapter_control(\'admit\'')
+  expect(fix2).toContain("readings name no campus the university has")
+  expect(fix2).not.toMatch(/^(delete|drop|truncate)\b/im)
+  expect(fix2).not.toMatch(/create\s+or\s+replace\s+function\s+security\.coverage_admission/i) // the admit jobs are unchanged
+})
