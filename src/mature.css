@@ -439,6 +439,15 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-builder .ab-add input{flex:1;min-width:220px;padding:6px 8px}
 .ab-builder .ab-sitecheck{margin-top:8px;display:grid;gap:6px}
 .ab-builder .ab-checkresult{border-top:1px solid var(--cf-border);padding-top:6px}
+.ab-builder .ab-guide{position:sticky;top:0;z-index:5;margin:10px 0;padding:10px 12px;border:1px solid var(--cf-indigo-200);border-radius:10px;background:var(--cf-indigo-25);display:grid;gap:8px}
+.ab-builder .ab-flow{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px}
+.ab-builder .ab-flow li{display:flex;align-items:center;gap:4px;font-size:13px}
+.ab-builder .ab-flow li.is-wait,.ab-builder .ab-flow li.is-optional{opacity:.7}
+.ab-builder .ab-next{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:14px}
+.ab-builder .ab-next.is-you{background:var(--cf-amber-50);border:1px solid var(--cf-amber-300)}
+.ab-builder .ab-next.is-auto{background:var(--cf-green-50);border:1px solid var(--cf-green-300)}
+.ab-builder .ab-running ul{margin:4px 0 0;padding-left:18px;font-size:13px}
+.ab-builder .ab-running li{display:flex;align-items:center;gap:6px}
 .ab-builder .ab-facts li{font-size:14px}
 /* v2.15.215: automatic adapter build panel and the Providers-list Adapter column (tokens only) */
 .ab-builder .ab-auto{border:1px solid var(--cf-brand);border-radius:10px;padding:12px 14px;background:var(--cf-surface-2)}

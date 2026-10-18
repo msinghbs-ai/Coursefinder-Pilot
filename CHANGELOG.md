@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.216 — 18 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.289** (Adapter builder guide). The Platform Admin said on 18 Oct 2026 22:03: "flow was not clear ... After this no movement or clear indication for next step ... find course pages are running 0-4 without me pressing anything. this has to be intutive right now very confusing with the flow of execution, fix and procced".
+  - **Screen:** Layer 2 › Adapter builder: guide at the top (each step's state, the one next thing for a person with Go to step, what runs by itself now), automatic refresh every 15 seconds while work runs, spinners and "nothing to press" on steps that run by themselves (1.2, 1.3, 2.1), contacts and central pages marked optional for the adapter.
+  - No database or worker change. Consumer API unchanged (Decision 266).
+
 ## 0.1.215 — 18 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.288** (Check or change a website), bug 18/10-01. The Platform Admin asked on 18 Oct 2026 20:35: "add to bug/fix: Website - should have to feature to validate or change the website in the adapter builder."
