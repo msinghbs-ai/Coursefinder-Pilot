@@ -3,8 +3,9 @@
 -- the same course page has replaced: about 68,900 of 104,700. This change only PREPARES their removal; nothing is removed here.
 -- 1 pipeline.evidence_purge lists each candidate (the newest snapshot of every course page is never a candidate).
 -- 2 Job evidence-purge-prepare checks the candidates in batches (setting batch.evidence_purge_check) against every column in the database
---   that refers to evidence (any uuid column named *evidence_id*, *evidence_artifact_id* or source_artifact_id): a candidate referred to
---   anywhere is kept; the rest are marked checked.
+--   that refers to evidence (any uuid column named *evidence_id*, *evidence_artifact_id* or source_artifact_id), except columns whose rows
+--   are removed with the evidence (foreign key ON DELETE CASCADE: the link index and lineage statistics): a candidate referred to anywhere
+--   else is kept; the rest are marked checked.
 -- 3 When every candidate is checked, the checked rows are exported to the Storage archive (count and row hash) and the Platform Admin
 --   removes them with a paste file; their files in the evidence bucket follow through the Storage API.
 -- Replaces: nothing
@@ -56,7 +57,11 @@ begin
              from information_schema.columns c join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name and t.table_type = 'BASE TABLE'
             where c.data_type = 'uuid' and (c.column_name ilike '%evidence_id%' or c.column_name ilike '%evidence_artifact_id%' or c.column_name = 'source_artifact_id')
               and c.table_schema not in ('information_schema', 'pg_catalog')
-              and not (c.table_schema = 'pipeline' and c.table_name = 'evidence_purge') loop
+              and not (c.table_schema = 'pipeline' and c.table_name = 'evidence_purge')
+              -- a column whose rows go with the evidence (foreign key ON DELETE CASCADE: link index, lineage statistics) is not a reason to keep it
+              and not exists (select 1 from pg_constraint k join pg_attribute a on a.attrelid = k.conrelid and a.attnum = k.conkey[1]
+                                where k.contype = 'f' and k.confrelid = 'pipeline.evidence_artifacts'::regclass and k.confdeltype = 'c'
+                                  and k.conrelid = format('%I.%I', c.table_schema, c.table_name)::regclass and a.attname = c.column_name) loop
     execute format('select array_agg(distinct %I) from %I.%I where %I = any($1)', r.col, r.sch, r.tbl, r.col) into v_hit using v_ids;
     if coalesce(cardinality(v_hit), 0) > 0 then
       update pipeline.evidence_purge set state = 'kept', kept_by = r.sch || '.' || r.tbl || '.' || r.col, checked_at = now()
