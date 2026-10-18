@@ -139,5 +139,5 @@ test('batch 7: unused background functions and the scale-qualification chain ret
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(true)
   for (const f of ['layer3-intake-benchmark', 'layer3-cf245-tuition-benchmark', 'layer3-contact-benchmark']) expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
   expect(fs.readFileSync('src/lib/supabase.js', 'utf8')).not.toContain('pilot-reset')
-  expect(fs.readFileSync('src/RegulatorySettings.jsx', 'utf8')).not.toContain("mode === 'reset'")
+  expect(fs.existsSync('src/RegulatorySettings.jsx')).toBe(false) // 18 Oct 2026: unused screen retired
 })

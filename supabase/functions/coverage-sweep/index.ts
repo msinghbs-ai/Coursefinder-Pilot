@@ -58,7 +58,7 @@ const SCH_VERSION = "scholarship-sweep-v0.7.3"; // v0.7.3 (11 Oct 2026, Platform
 const VERSION = "coverage-sweep-v0.5.6"; // extractor version (unchanged by v0.6.0 worker modes)
 // v0.21.5: the page bases Firecrawl may read (found by CRICOS code, listed on the university's own site, or entered by a person)
 const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "title_match", "cms_path_public", "manual", "firecrawl_upgrade"];
-const WORKER = "coverage-sweep-worker-v0.30.0"; // v0.30.0 (18 Oct 2026, Decision 267): adapters read majors (pattern field, every match kept) for Build adapter; the builder proposes a majors pattern. v0.29.0 (18 Oct 2026, Decision 265): mode companion_read reads a page beside the course page (Melbourne entry requirements) and keeps the values its patterns find. v0.28.0 (17 Oct 2026, Decision 264): adapters read english_level (the English level a course page names, such as "Band 2"); the database writes that level's scores from the approved policy. v0.27.2 (17 Oct 2026, Decision 262): policy parser v0.2.5 (a section for courses with alternative English requirements gives no default). v0.27.1 (17 Oct 2026, R18 first run): policy parser v0.2.4 ("105 Overall ; 110 Speaking" is 105 overall); add-tests sends only the tests learnt after approval (ADDED_TESTS, today DET). v0.27.0 (17 Oct 2026, CF-247 R18): policy parser v0.2.3 reads the Duolingo English Test; mode provider_facts_add_tests reads approved English policy pages again from their stored copies and the database adds tests learnt since approval where the page's IELTS for the level matches. v0.26.0 (15 Oct 2026, flag unit): mode flag_check reads held providers' home pages directly (no Firecrawl, no AI) and releases those that answer. v0.25.2 (15 Oct 2026): a white (reverse) logo is never used; the provider is flagged for an upload instead. v0.25.1 (15 Oct 2026, first runs): a logo is named by its file or label, not its folder (a campus photo was taken); JPEGs and white logos rank low; the size check uses the longer side (wide wordmarks were refused); mask icons last. v0.25.0 (15 Oct 2026, Platform Admin: "make it background Job to find and attached"): mode logo_find takes a provider's logo from its own home page (header logo, declared logo, SVG icon, touch icon), checks the bytes, size and SVG content, stores it and records it; not found is flagged. v0.24.0 (15 Oct 2026, v2.15.279, Platform Admin "Research degrees need a research default"): the central English policy reader also reports the requirement for research masters and doctorates, with its quote; it is used only where the page states it. v0.23.2 (14 Oct 2026, v2.15.276 O7): a duration quote about the fee basis is not admitted. v0.23.1 (14 Oct 2026, v2.15.275 hotfix): null characters removed before an Enrich fields result is recorded. v0.23.0 (14 Oct 2026, v2.15.275): Enrich fields page text and titles per call read from settings. v0.22.2 (14 Oct 2026): international needs a quote about the course's students or fees. v0.22.1 (14 Oct 2026): enrich_ai reads stored copies that are gzip or plain. v0.22.0 (14 Oct 2026, CF-247 v2.15.273): mode enrich_ai for the Enrich fields job (stored pages, titles, campus lists, addresses). v0.21.7 (13 Oct 2026, CF-247 v2.15.269): Firecrawl proxy, site map sizes and search result counts read from settings (svc_worker_settings_v1). v0.21.6 (13 Oct 2026, Platform Admin: "learn and establish how best to find the uni official website ... use training.gov.au or ASQA, CRICOS/RTO code, flag the exceptions"): find_site looks an Australian provider up on the official registers first (training.gov.au, then the TEQSA National Register) and accepts the website the register lists only when its home page shows the provider's CRICOS code or its address fits the provider's name; then the CRICOS-code search as before; the RTO code found is kept in the evidence. v0.21.5 (12 Oct 2026, Platform Admin 23:54: "use Firecrawl for pages found by CRICOS code or listed by the uni"): a course page is read through Firecrawl only when it was found by its CRICOS code (cricos_search, cricos_code, cricos_code_on_page), is listed on the university's own site (title_match, cms_path_public), or was entered by a person (manual); pages found by a title or web search (title_search, firecrawl_search, serper_search, ai_match and the rest) are read directly only (Firecrawl read 99.7% correct pages for CRICOS-code finds and 87% for listed pages, but 48% for title searches and 24% for Firecrawl searches). v0.21.4 (12 Oct 2026, Platform Admin 21:47, Firecrawl daily budget of 15,000): every Firecrawl spend goes through svc_fc_spend, which keeps to the day's share by purpose and the day's billed total and to the per-university caps (scholarships 150 credits in 30 days, central pages again after 30 days, course search stopped after 30 searches with no correct page); a refused spend is not made. Firecrawl runs and adapter sample pages stop when their share is used. v0.21.3 (12 Oct 2026, Platform Admin 21:21, Firecrawl credits): a found course page is read directly first and through Firecrawl only when the direct read is blocked or needs a browser; every Firecrawl scrape uses the basic proxy (no automatic stealth retry). v0.21.2 (12 Oct 2026, Platform Admin 20:00: "use the mechanism that has been successful with Firecrawl in finding course pages, not direct HTTP"): a course page the search found (Firecrawl search) is read through Firecrawl too, rendered, the same scraper that found it; a direct read only when the scraper cannot be used. v0.21.1 (12 Oct 2026, bug 12/10-01): mode openrouter_balance reads the OpenRouter balance (credits) for the AI limits, now that the Layer 3 route guard that read it is retired. v0.21.0 (12 Oct 2026, Platform Admin status review, fix 3): mode central_ai reads a university's stored English language policy or academic calendar page with a pinned model; every score and month must be in a quote that is on the page; the result is recorded as a proposal a person approves (never applied here). v0.20.3 (12 Oct 2026, Platform Admin status review): an audience quote that names another country or region ("students from Papua New Guinea", "citizens of the People's Republic of China") or says "not a domestic student" proves international; the university's own country (and Australia/New Zealand for each other) does not. v0.20.2 (11 Oct 2026): an audience quote must itself name international (or domestic) students. v0.20.1 (11 Oct 2026): the AI value check uses only the numbers of the answer's value kind; an empty or cut-off answer is named. v0.20.0 (11 Oct 2026, Platform Admin bugs 11/10-6): mode scholarship_ai reads each queued scholarship page with a pinned AI model and checks every quote against the page. v0.19.3 (11 Oct 2026): extractor v0.7.3. v0.19.2 (11 Oct 2026, Platform Admin bugs 11/10-5): every scholarship candidate page read keeps a stored copy, refused and too-thin pages too. v0.19.1 (11 Oct 2026): a provider home page that refuses a direct read is checked through the scraper when its website is verified. v0.19.0 (11 Oct 2026, Platform Admin bugs 11/10-2): find_site searches every provider without a website (not only Firecrawl targets), by name for New Zealand, Australia without a CRICOS code and any other country; mode central_find (Firecrawl map, key dates, international fees and English requirements suggested); an adapter proposal cut off at its length limit is asked again once with a larger limit, and tokens are recorded. v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
+const WORKER = "coverage-sweep-worker-v0.30.1"; // v0.30.1 (18 Oct 2026): seven modes nothing ran in 30 days removed (directory_capture, fc_extract_qualify, id_qualify, openrouter_key, page_codes, reference_capture, site_hint_verify). v0.30.0 (18 Oct 2026, Decision 267): adapters read majors (pattern field, every match kept) for Build adapter; the builder proposes a majors pattern. v0.29.0 (18 Oct 2026, Decision 265): mode companion_read reads a page beside the course page (Melbourne entry requirements) and keeps the values its patterns find. v0.28.0 (17 Oct 2026, Decision 264): adapters read english_level (the English level a course page names, such as "Band 2"); the database writes that level's scores from the approved policy. v0.27.2 (17 Oct 2026, Decision 262): policy parser v0.2.5 (a section for courses with alternative English requirements gives no default). v0.27.1 (17 Oct 2026, R18 first run): policy parser v0.2.4 ("105 Overall ; 110 Speaking" is 105 overall); add-tests sends only the tests learnt after approval (ADDED_TESTS, today DET). v0.27.0 (17 Oct 2026, CF-247 R18): policy parser v0.2.3 reads the Duolingo English Test; mode provider_facts_add_tests reads approved English policy pages again from their stored copies and the database adds tests learnt since approval where the page's IELTS for the level matches. v0.26.0 (15 Oct 2026, flag unit): mode flag_check reads held providers' home pages directly (no Firecrawl, no AI) and releases those that answer. v0.25.2 (15 Oct 2026): a white (reverse) logo is never used; the provider is flagged for an upload instead. v0.25.1 (15 Oct 2026, first runs): a logo is named by its file or label, not its folder (a campus photo was taken); JPEGs and white logos rank low; the size check uses the longer side (wide wordmarks were refused); mask icons last. v0.25.0 (15 Oct 2026, Platform Admin: "make it background Job to find and attached"): mode logo_find takes a provider's logo from its own home page (header logo, declared logo, SVG icon, touch icon), checks the bytes, size and SVG content, stores it and records it; not found is flagged. v0.24.0 (15 Oct 2026, v2.15.279, Platform Admin "Research degrees need a research default"): the central English policy reader also reports the requirement for research masters and doctorates, with its quote; it is used only where the page states it. v0.23.2 (14 Oct 2026, v2.15.276 O7): a duration quote about the fee basis is not admitted. v0.23.1 (14 Oct 2026, v2.15.275 hotfix): null characters removed before an Enrich fields result is recorded. v0.23.0 (14 Oct 2026, v2.15.275): Enrich fields page text and titles per call read from settings. v0.22.2 (14 Oct 2026): international needs a quote about the course's students or fees. v0.22.1 (14 Oct 2026): enrich_ai reads stored copies that are gzip or plain. v0.22.0 (14 Oct 2026, CF-247 v2.15.273): mode enrich_ai for the Enrich fields job (stored pages, titles, campus lists, addresses). v0.21.7 (13 Oct 2026, CF-247 v2.15.269): Firecrawl proxy, site map sizes and search result counts read from settings (svc_worker_settings_v1). v0.21.6 (13 Oct 2026, Platform Admin: "learn and establish how best to find the uni official website ... use training.gov.au or ASQA, CRICOS/RTO code, flag the exceptions"): find_site looks an Australian provider up on the official registers first (training.gov.au, then the TEQSA National Register) and accepts the website the register lists only when its home page shows the provider's CRICOS code or its address fits the provider's name; then the CRICOS-code search as before; the RTO code found is kept in the evidence. v0.21.5 (12 Oct 2026, Platform Admin 23:54: "use Firecrawl for pages found by CRICOS code or listed by the uni"): a course page is read through Firecrawl only when it was found by its CRICOS code (cricos_search, cricos_code, cricos_code_on_page), is listed on the university's own site (title_match, cms_path_public), or was entered by a person (manual); pages found by a title or web search (title_search, firecrawl_search, serper_search, ai_match and the rest) are read directly only (Firecrawl read 99.7% correct pages for CRICOS-code finds and 87% for listed pages, but 48% for title searches and 24% for Firecrawl searches). v0.21.4 (12 Oct 2026, Platform Admin 21:47, Firecrawl daily budget of 15,000): every Firecrawl spend goes through svc_fc_spend, which keeps to the day's share by purpose and the day's billed total and to the per-university caps (scholarships 150 credits in 30 days, central pages again after 30 days, course search stopped after 30 searches with no correct page); a refused spend is not made. Firecrawl runs and adapter sample pages stop when their share is used. v0.21.3 (12 Oct 2026, Platform Admin 21:21, Firecrawl credits): a found course page is read directly first and through Firecrawl only when the direct read is blocked or needs a browser; every Firecrawl scrape uses the basic proxy (no automatic stealth retry). v0.21.2 (12 Oct 2026, Platform Admin 20:00: "use the mechanism that has been successful with Firecrawl in finding course pages, not direct HTTP"): a course page the search found (Firecrawl search) is read through Firecrawl too, rendered, the same scraper that found it; a direct read only when the scraper cannot be used. v0.21.1 (12 Oct 2026, bug 12/10-01): mode openrouter_balance reads the OpenRouter balance (credits) for the AI limits, now that the Layer 3 route guard that read it is retired. v0.21.0 (12 Oct 2026, Platform Admin status review, fix 3): mode central_ai reads a university's stored English language policy or academic calendar page with a pinned model; every score and month must be in a quote that is on the page; the result is recorded as a proposal a person approves (never applied here). v0.20.3 (12 Oct 2026, Platform Admin status review): an audience quote that names another country or region ("students from Papua New Guinea", "citizens of the People's Republic of China") or says "not a domestic student" proves international; the university's own country (and Australia/New Zealand for each other) does not. v0.20.2 (11 Oct 2026): an audience quote must itself name international (or domestic) students. v0.20.1 (11 Oct 2026): the AI value check uses only the numbers of the answer's value kind; an empty or cut-off answer is named. v0.20.0 (11 Oct 2026, Platform Admin bugs 11/10-6): mode scholarship_ai reads each queued scholarship page with a pinned AI model and checks every quote against the page. v0.19.3 (11 Oct 2026): extractor v0.7.3. v0.19.2 (11 Oct 2026, Platform Admin bugs 11/10-5): every scholarship candidate page read keeps a stored copy, refused and too-thin pages too. v0.19.1 (11 Oct 2026): a provider home page that refuses a direct read is checked through the scraper when its website is verified. v0.19.0 (11 Oct 2026, Platform Admin bugs 11/10-2): find_site searches every provider without a website (not only Firecrawl targets), by name for New Zealand, Australia without a CRICOS code and any other country; mode central_find (Firecrawl map, key dates, international fees and English requirements suggested); an adapter proposal cut off at its length limit is asked again once with a larger limit, and tokens are recorded. v0.18.2 (11 Oct 2026): extractor v0.7.2. v0.18.1 (11 Oct 2026): extractor v0.7.1. v0.18.0 (11 Oct 2026, Platform Admin): scholarship pages, listing pages, candidates and site maps are read through the scraper only (no direct read, no fallback, robots.txt not consulted for scholarship pages); a page waits when the scraper cannot be used; the register (Study Australia) search phase is retired; extractor v0.7.0. v0.17.42 (11 Oct 2026): scholarship reads are recorded at most two at a time (six at once hit the 8-second limit). v0.17.41 (11 Oct 2026): a scholarship read whose record hits the database time limit is retried once, then left for the next run, instead of failing the whole call. v0.17.40 (11 Oct 2026, Platform Admin "always use the scraper for scholarships"): scholarship pages and listing pages are read through Firecrawl first (rendered rawHtml, as course pages with a view are read) while the Layer 2 setting read_via_scraper is on, for any provider, within the scholarship credit cap; a direct read is the fallback. v0.17.39 (11 Oct 2026): a listing heading takes the first provider link under it. v0.17.38 (11 Oct 2026): listing reader leaves out questions, calls to action, brochures and sentence headings. v0.17.37 (11 Oct 2026): mode scholarship_listing (provider listing pages for the coverage check). v0.17.36 (11 Oct 2026): scholarship reader v0.6.3. v0.17.35 (10 Oct 2026): contact_page keeps only email addresses on the provider's own domain (not a library or helpdesk service) and skips library, vet hospital, clinic, ethics, philanthropy, partnership, facilities and research mailboxes. v0.17.34 (10 Oct 2026): contact_page skips media, security, feedback and similar mailboxes and prefers the main contact page; cricos_peo reads the CRICOS institution page by provider code directly (no search). v0.17.33 (10 Oct 2026, Platform Admin Fix 2): modes contact_page (public phone and email from the provider's own site, direct reads) and cricos_peo (Principal Executive Officer from the CRICOS website, internal only). v0.17.32 (10 Oct 2026, Platform Admin Feature 1): an AU site found by the CRICOS-code search is accepted only when the code is on its home page, or on a deeper page of a site whose address fits the provider's name; a course directory's profile page no longer passes. v0.17.31 (8 Oct 2026): CRICOS v2 replays read each location set in a call of its own after the records. v0.17.30 (8 Oct 2026): the CRICOS adapter joins and reads only the records of the slice (version 2 ran out of worker resources reading all of them every call). v0.17.29 (8 Oct 2026): text_items also reads bundles of stored pages, lists, lookups and nested objects (ALIS, EPBC). v0.17.28 (8 Oct 2026): text_items fields are read in dependency order (jsonb does not keep key order; Conestoga read 0). v0.17.27 (8 Oct 2026): a key repeated within one call is saved as key#2, key#3 (both engines number repeats in file order), so one save never updates the same row twice. v0.17.26 (8 Oct 2026): register_replay reads Canadian catalogues stored as one page or JSON file (text_items) against copies of their Layer 1 readers. v0.17.25 (8 Oct 2026): CRICOS replays also compare provider addresses and campus and course locations when the spec has them. v0.17.24 (8 Oct 2026): a replay run is leased to one call and released when the call ends. v0.17.23 (8 Oct 2026): the QILT reference follows qilt-au-etl v0.3.1 (upper bound stored). v0.17.22 (8 Oct 2026): register_replay also reads statistics published as Excel workbooks (PRISMS SA4, QILT national report tables), one stored workbook a call. v0.17.21 (8 Oct 2026): register_replay also reads registers published as web pages (NZQA): a run lists its stored batch files and three are read a call. v0.17.20 (8 Oct 2026): register_replay works in slices of 4,000 records a call (the whole archive in one call exceeded the edge resource limit). v0.17.19: mode register_replay reads a stored register archive with the register adapter and with the current Layer 1 code. v0.17.18: mode page_codes lists the CRICOS-shaped codes on stored pages for Rule 6. v0.17.17: retention_files also removes unreferenced evidence files.
 // was v0.17.15 // v0.17.15 (8 Oct 2026): adding a sample keeps pages already captured; the proposal reads every sample (up to 10).
 // was v0.17.14 // v0.17.14 (7 Oct 2026): adapter proposal answer up to 4000 tokens; a cut-off answer says so in plain words. // v0.17.13 (decision D2, opt-in per adapter, reading): numeric and capitalised start dates read as months, 34 to 44 weeks is one academic year. // v0.17.12: an adapter reads the fields of a page already confirmed (bound by hand), "Sept" is September. // v0.17.11: "wks" read as weeks, years not rounded before dividing. // v0.17.10: annual from a whole-course total for courses under a year. // v0.17.9: course years from months, weeks, semesters or trimesters; other_requirements read for review. v0.17.8: entry_requirement read for review (Coverage › Universities). v0.17.7: annual fee from a whole-course fee and full-time years (fee_total, course_years); exit awards read (exit_awards). v0.17.6: a search page rendered before keeps the Firecrawl fallback (rendered_before). v0.17.5: page_view.url_pattern (the view only for the pages it names). v0.17.4: international view of the course page (adapter page_view: Firecrawl render of the address with the view applied, e.g. La Trobe studentType=int), and a page bound by hand that the adapter confirms keeps the adapter's identity. v0.17.3: term_months (term names in the intakes reading become the university's published months). v0.17.2: page-data list filter [field=value] (Macquarie fees by fee type), a page-data fee counts as the adapter's reading. v0.17.1: {code} in adapter patterns (the course's own code), so pages covering several courses are read per course. v0.17.0: visual adapter builder (adapter_capture, adapter_propose), Firecrawl search results kept in the evidence bucket, adapter fee year. v0.16.2: adapter months read as printed (capitalised). v0.16.1: Apply reads stored pages one after another within the processor-time limit of a call and carries on in the next call. v0.16.0: adapter text patterns (intakes, fee, IELTS, campus, mode, duration, level), "pick" first or last match, extra fields shown for testing, adapter readings marked (intakes_by, fee_by, english_by). v0.15.1: adapters used by the reader and Read pages (page data read from a plain fetch), runs keep under the 120-second call wait. v0.15.0: university adapters (adapter_preview, adapter_apply) on stored pages, no Firecrawl credits. v0.14.1: raw HTML by default (keeps the page title), fc_probe to test read options on chosen pages. v0.14.0 (Decision 253): Firecrawl use cases (fc_run), target universities only, every run call logged; v0.13.5: calendar parser v0.2.2 (section rows)
 // v0.10.1 (2 Oct 2026, 22:11 direction): modes openrouter_key, reference_capture (Hipo), site_hint_verify; univ.cc directory hints.
@@ -485,101 +485,10 @@ Deno.serve(async (req) => {
     // hosts; robots.txt respected; each page fetched through Firecrawl (scrape, html + links), stored gzipped in the
     // evidence bucket under thirdparty/<site>/<country>/ and recorded with its links. Nothing from a directory is
     // admitted; names, website links and course counts become hints that our own rules verify.
-    if (mode === "directory_capture") {
-      const site = String(body.site || "");
-      const host = DIRECTORY_HOSTS[site];
-      if (!host) return j({ ok: false, mode, error: "unknown directory site", workerVersion: VERSION }, 422);
-      const country = String(body.country || "").toUpperCase();
-      const urls: string[] = (Array.isArray(body.urls) ? body.urls : []).map(String).filter((u: string) => { try { return new URL(u).hostname === host } catch { return false } }).slice(0, 25);
-      // v0.10.2: robots.txt per RFC 9309. A file with rules is followed. A site that answers 404 or 410 has no
-      // robots.txt, which means no rules. A site that refuses or fails our direct request is asked through Firecrawl;
-      // if it still cannot be read, nothing is captured.
-      let robotsTxt = "", robotsState = "unreadable";
-      const direct = await fetch(`https://${host}/robots.txt`, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(8000) }).catch(() => null);
-      const directText = direct?.ok ? await direct.text().catch(() => "") : "";
-      if (/user-agent/i.test(directText)) { robotsTxt = directText; robotsState = "read" }
-      // a file served successfully but holding no rule groups restricts nothing (RFC 9309 §2.2; Google reads it the same way)
-      else if (direct?.ok) robotsState = "no_rules";
-      else if (direct && (direct.status === 404 || direct.status === 410)) robotsState = "none";
-      else if (await useFc("directory_scrape", null, `https://${host}/robots.txt`)) {
-        const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: `https://${host}/robots.txt`, formats: ["rawHtml"] }), signal: AbortSignal.timeout(45000) }).catch(() => null);
-        const d = r ? await r.json().catch(() => ({})) : {};
-        const raw = String(d?.data?.rawHtml || "");
-        const sc = Number(d?.data?.metadata?.statusCode || 0);
-        if (/user-agent/i.test(raw)) { robotsTxt = raw.replace(/<[^>]+>/g, ""); robotsState = "read_via_firecrawl" }
-        else if (sc === 404 || sc === 410) robotsState = "none";
-      }
-      if (robotsState === "unreadable") return j({ ok: false, mode, error: "robots.txt could not be read; nothing captured", robotsHttp: direct?.status ?? null, workerVersion: VERSION }, 409);
-      const out: unknown[] = [];
-      await pool(urls, 4, async (u) => {
-        const url = new URL(u);
-        if (robotsTxt && !robotsAllows(robotsTxt, url.pathname + url.search)) { out.push({ url: u, status: "robots_disallowed" }); return }
-        if (!(await useFc("directory_scrape", null, u))) { out.push({ url: u, status: "credit_budget" }); return }
-        try {
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: u, formats: ["html", "links"], onlyMainContent: false, ...(body.wait_ms ? { waitFor: Math.min(Number(body.wait_ms), 8000) } : {}) }), signal: AbortSignal.timeout(90000) });
-          const d = await r.json().catch(() => ({}));
-          const html = String(d?.data?.html || "");
-          if (!r.ok || !html) { out.push({ url: u, status: "failed", http: r.status, error: String(d?.error || "").slice(0, 160) }); return }
-          const sha = await sha256(new TextEncoder().encode(html));
-          const path = `thirdparty/${site}/${country || "XX"}/${sha}.html.gz`;
-          const up = await c.storage.from("evidence").upload(path, await gzip(html), { contentType: "application/gzip", upsert: true });
-          const links: string[] = Array.isArray(d?.data?.links) ? d.data.links.map(String) : [];
-          const rec = await rpc("svc_directory_page_record", { p_site: site, p_country: country || null, p_url: u, p_final_url: d?.data?.metadata?.sourceURL || u, p_http: d?.data?.metadata?.statusCode ?? 200,
-            p_storage_path: up.error ? null : path, p_sha256: up.error ? null : sha, p_title: titleOf(html).slice(0, 300), p_links: links.slice(0, 5000), p_text: htmlToText(html).slice(0, 20000) });
-          // univ.cc lists each institution as a link to its own website: link text = name, address = website hint
-          let hints: unknown = null;
-          if (site === "univcc" && country) {
-            const anchors = [...html.matchAll(/<a\b[^>]*href\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]{1,300}?)<\/a>/gi)]
-              .map((m) => ({ href: m[1], text: htmlToText(m[2]) })).filter((a) => { try { return !new URL(a.href).hostname.endsWith("univ.cc") } catch { return false } });
-            hints = await rpc("svc_directory_anchor_hints", { p_site: site, p_country: country, p_page_id: rec, p_page_url: u, p_anchors: anchors });
-          }
-          out.push({ url: u, status: "stored", links: links.length, page_id: rec, hints });
-        } catch (e) { out.push({ url: u, status: "failed", error: e instanceof Error ? e.message : String(e) }) }
-      });
-      return j({ ok: true, mode, site, country, robots: robotsState, pages: out, firecrawlRemainingAboveReserve: fcRemaining, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
-    }
+    // directory_capture: retired 18 Oct 2026 (nothing ran it in 30 days; Platform Admin 11:58 "retire what is not used").
     // v0.10.0: AI page-identity check, qualification only (contract cf247-page-identity-v1.0.0). Runs one pinned model on
     // the frozen holdout and records each answer with the deterministic checks. Nothing is admitted or switched on.
-    if (mode === "id_qualify") {
-      const model = String(body.model || "");
-      if (!PAGE_ID_MODELS.includes(model)) return j({ ok: false, mode, error: "model is not a pinned candidate", workerVersion: VERSION }, 422);
-      const runLabel = String(body.run_label || "");
-      if (!/^q-pid-[a-z0-9.-]{3,60}$/.test(runLabel)) return j({ ok: false, mode, error: "run_label q-pid-... required", workerVersion: VERSION }, 422);
-      const goldSet = String(body.gold_set || "pid-h1");
-      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
-      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
-      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", workerVersion: VERSION }, 503);
-      const cases: { case_no: number; storage_path: string; gold: boolean; title: string; code: string; level: string | null; provider: string }[] =
-        await rpc("svc_coverage_identity_cases", { p_gold_set: goldSet, p_offset: Number(body.offset || 0), p_limit: Math.min(Number(body.limit || 60), 120) });
-      const tally: Record<string, number> = {}; let cost = 0;
-      await pool(cases, Math.min(Number(body.concurrency || 8), 12), async (k) => {
-        if (Date.now() - t0 > BUDGET_MS) { tally.time = (tally.time || 0) + 1; return }
-        let answer: any = null, checks: any = null, accepted: boolean | null = null, returned: string | null = null, c1 = 0;
-        try {
-          const { data, error } = await c.storage.from("evidence").download(k.storage_path);
-          if (error || !data) throw Error(error?.message || "missing page");
-          const html = await new Response(data.stream().pipeThrough(new DecompressionStream("gzip"))).text();
-          // a wrong pairing whose own code is printed on the page is not a wrong pairing (one page for two courses)
-          if (!k.gold && k.code && new RegExp(`\\b${String(k.code).replace(/[^0-9A-Z]/gi, "")}\\b`, "i").test(htmlToText(html))) { checks = { excluded: "asked course's code is on the page" } }
-          else {
-            const page = pageIdInput(html, mainText);
-            const r = await fetch("https://openrouter.ai/api/v1/chat/completions", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify(pageIdRequest(model, k, page)), signal: AbortSignal.timeout(60000) });
-            const d = await r.json().catch(() => ({}));
-            if (!r.ok) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || d).slice(0, 160)}`);
-            returned = d?.model || null; c1 = Number(d?.usage?.cost || 0);
-            answer = JSON.parse(String(d?.choices?.[0]?.message?.content || "{}"));
-            checks = pageIdChecks(k.title, answer, page.fullText);
-            accepted = returned === model ? checks.accepted : false;
-            if (returned !== model) checks.returned_model_mismatch = returned;
-          }
-        } catch (e) { checks = { ...(checks || {}), error: e instanceof Error ? e.message : String(e) } }
-        cost += c1;
-        await rpc("svc_coverage_identity_result", { p_run_label: runLabel, p_gold_set: goldSet, p_case_no: k.case_no, p_model: model, p_returned: returned, p_answer: answer, p_checks: checks, p_accepted: accepted, p_cost: c1 });
-        const o = checks?.excluded ? "excluded" : accepted === null ? "error" : accepted === k.gold ? "right" : k.gold ? "missed" : "WRONG_ACCEPTED";
-        tally[o] = (tally[o] || 0) + 1;
-      });
-      return j({ ok: true, mode, run_label: runLabel, model, contract: PAGE_ID_CONTRACT, cases: cases.length, tally, cost_usd: cost, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
-    }
+    // id_qualify: retired 18 Oct 2026 (nothing ran it in 30 days; Platform Admin 11:58 "retire what is not used").
     // v0.10.1: the OpenRouter key's own limits (weekly, daily, total), read with the governed credential; the key is
     // never returned.
     // v0.13.0 (3 Oct 2026, Platform Admin "Yes, qualify now"): Firecrawl's own AI extraction (JSON format) as a CANDIDATE
@@ -587,76 +496,7 @@ Deno.serve(async (req) => {
     // which returns fields against a fixed schema; the answer is scored against the gold value and recorded
     // (svc_fc_extract_result). Nothing is admitted and no cascade changes. Firecrawl does not name its model, so a pass
     // admits it only as a provider-level route (re-tested weekly, paused on a failure), never a model-cascade step.
-    if (mode === "fc_extract_qualify") {
-      const task = String(body.task_class || "");
-      if (!["provider_intake_validation", "provider_english_validation"].includes(task)) return j({ ok: false, mode, error: "task_class must be provider_intake_validation or provider_english_validation", workerVersion: VERSION }, 422);
-      const runLabel = String(body.run_label || "");
-      if (!/^q-fcx-[a-z0-9.-]{3,60}$/.test(runLabel)) return j({ ok: false, mode, error: "run_label q-fcx-... required", workerVersion: VERSION }, 422);
-      if (!fc?.secret) return j({ ok: false, mode, error: "Firecrawl credential unavailable", workerVersion: VERSION }, 503);
-      const intake = task === "provider_intake_validation";
-      const schema = intake
-        ? { type: "object", properties: { status: { type: "string", enum: ["months", "not_stated"] }, months: { type: "array", items: { type: "integer", minimum: 1, maximum: 12 } }, quote: { type: "string" } }, required: ["status", "months", "quote"] }
-        : { type: "object", properties: { status: { type: "string", enum: ["stated", "not_stated"] }, tests: { type: "array", items: { type: "object", properties: { test: { type: "string", enum: ["IELTS", "PTE", "TOEFL_IBT", "CAE"] }, overall: { type: "number" }, min_band: { type: ["number", "null"] } }, required: ["test", "overall"] } }, quote: { type: "string" } }, required: ["status", "tests", "quote"] };
-      // v0.13.1: two prompt wordings, chosen by body.prompt_version (1 = the strict wording of the first run, 2 = plainer);
-      // the wording used is recorded with every answer so runs are comparable.
-      // v0.13.3: prompt 3 adds the two rules of the live English contract the first English run broke (direct-entry
-      // score only, never a pathway score that needs an English course first; never a score for a test the page only
-      // calls "equivalent") and asks for one continuous quote (joined lines fail the on-page check).
-      const pv = [1, 2, 3].includes(Number(body.prompt_version)) ? Number(body.prompt_version) : 3;
-      const quoteRule = " quote must be ONE continuous passage copied exactly from the page (one sentence, line or table row); never join separate lines with '...' or '|'.";
-      const prompt = intake
-        ? pv === 1
-          ? "This is one course's page. Give the months of the year in which this course starts (intakes) for new students, ONLY where the page states them as month names or full dates for this course. Semester, trimester or term names without a month are NOT months: then status is not_stated and months is empty. Do not infer. quote = the exact words from the page that state the months."
-          : "Extract the intake (start) months of this course from this page. Look for intakes, intake dates, start dates, commencement dates or course start lists. When the page names months (for example 'February, May, August') or full dates (for example '14 September 2026'), set status to 'months' and list the month numbers (1 to 12). When the page gives only semester, trimester or term names with no month or date, or says nothing about when the course starts, set status to 'not_stated' and months to an empty list. quote: copy the exact line or sentence from the page that states the intakes." + (pv === 3 ? quoteRule : "")
-        : pv === 1
-          ? "This is one course's page. Give the English language test scores this course requires of international applicants, ONLY where the page states them for this course: IELTS, PTE, TOEFL_IBT or CAE with the overall score and the minimum band if stated. A statement that English is required without a score, or a link to a policy, is not_stated. Do not infer. quote = the exact words from the page that state the scores."
-          : "Extract the English language test scores this course requires of international applicants from this page. Look for entry requirements, English language requirements or admission criteria. When the page states a score for IELTS, PTE, TOEFL_IBT or CAE, set status to 'stated' and list each test with its overall score and the minimum band (min_band) if given. When the page only says English is required, or links to a policy, without a score, set status to 'not_stated' and tests to an empty list. quote: copy the exact line or sentence from the page that states the scores."
-            + (pv === 3 ? " Rules: list only the score for direct entry to this course; a lower score that is accepted only together with an English course first (ELICOS, EAP, a pathway) is NOT listed. List a test only when the page gives that test its own number; a test the page merely calls 'equivalent' or 'also accepted' is NOT listed. One entry per test." + quoteRule : "");
-      const cases: { case_id: string; task_class: string; url: string; gold: any }[] = await rpc("svc_fc_extract_cases", { p_task_class: task, p_offset: Number(body.offset || 0), p_limit: Math.min(Number(body.limit || 50), 100) });
-      const tally: Record<string, number> = {}; let credits = 0;
-      // v0.13.2: the quote is matched on letters and digits only (Firecrawl's markdown adds table pipes, escapes and
-      // line breaks that the model does not copy), and the same automatic check the live intake route applies is
-      // applied here: a month counts only when its name appears in the quote (no month inferred from "rolling",
-      // "Trimester 1" or "Autumn session"); for English, a score counts only when its number appears in the quote.
-      const norm = (s: string) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
-      const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
-      const monthInQuote = (m: number, quote: string) => { const n = MONTHS[m - 1]; return !!n && new RegExp("\\b(" + n + "|" + n.slice(0, 3) + ")\\b", "i").test(quote) };
-      const sameSet = (a: unknown[], b: unknown[]) => { const x = [...new Set(a.map(String))].sort().join(","), y = [...new Set(b.map(String))].sort().join(","); return x === y };
-      await pool(cases, Math.min(Number(body.concurrency || 4), 6), async (k) => {
-        if (Date.now() - t0 > BUDGET_MS) { tally.time = (tally.time || 0) + 1; return }
-        let answer: any = null, outcome = "error", quoteIn: boolean | null = null, http: number | null = null, err: string | null = null, c1 = 0;
-        try {
-          if (!(await useFc("fcx_qualify", null, k.url))) throw Error("credit budget");
-          const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: k.url, formats: ["markdown", { type: "json", schema, prompt }], onlyMainContent: false }), signal: AbortSignal.timeout(90000) });
-          http = r.status; const d = await r.json().catch(() => ({}));
-          if (!r.ok || !d?.data) throw Error(`HTTP ${r.status}: ${JSON.stringify(d?.error || "").slice(0, 160)}`);
-          c1 = Number(d?.data?.metadata?.creditsUsed || 5); credits += c1;
-          answer = d.data.json || null; const md = String(d.data.markdown || "");
-          const q = norm(answer?.quote || ""); quoteIn = q.length >= 8 ? norm(md).includes(q) : false;
-          if (answer && typeof answer === "object") {
-            if (intake && Array.isArray(answer.months)) { const kept = answer.months.filter((m: unknown) => monthInQuote(Number(m), String(answer.quote || ""))); answer = { ...answer, months_given: answer.months, months: kept, status: kept.length ? answer.status : "not_stated" } }
-            if (!intake && Array.isArray(answer.tests)) { const kept = answer.tests.filter((t: any) => new RegExp("(^|[^0-9.])(" + String(Number(t?.overall)).replace(".", "\\.") + "|" + Number(t?.overall).toFixed(1).replace(".", "\\.") + ")(?![0-9]|\\.[0-9])").test(String(answer.quote || ""))); answer = { ...answer, tests_given: answer.tests, tests: kept, status: kept.length ? answer.status : "not_stated" } }
-          }
-          // v0.13.1: what Firecrawl rendered is recorded in brief (size, head) so a miss can be told from an unread page
-          if (answer && typeof answer === "object") answer = { ...answer, _diag: { prompt_version: pv, md_chars: md.length, md_head: md.replace(/\s+/g, " ").slice(0, 300), status_code: d?.data?.metadata?.statusCode ?? null } };
-          const g = k.gold || {};
-          if (intake) {
-            const gm = Array.isArray(g.months) ? g.months : [], am = Array.isArray(answer?.months) ? answer.months : [];
-            const gStated = g.status === "months" && gm.length > 0, aStated = answer?.status === "months" && am.length > 0 && quoteIn === true;
-            outcome = !gStated && !aStated ? "exact_not_stated" : gStated && aStated && sameSet(gm, am) ? "exact" : aStated ? "wrong_admitted" : "missed";
-          } else {
-            const key = (t: any) => `${String(t?.test || "").toUpperCase()}:${Number(t?.overall)}`;
-            const gt = Array.isArray(g.tests) ? g.tests.map(key) : [], at = Array.isArray(answer?.tests) ? answer.tests.map(key) : [];
-            const gStated = g.status === "stated" && gt.length > 0, aStated = answer?.status === "stated" && at.length > 0 && quoteIn === true;
-            // right = every test the answer gives is in the gold with the same overall score, and the gold's tests are all given
-            outcome = !gStated && !aStated ? "exact_not_stated" : gStated && aStated && sameSet(gt, at) ? "exact" : aStated ? "wrong_admitted" : "missed";
-          }
-        } catch (e) { err = e instanceof Error ? e.message : String(e); outcome = "error" }
-        await rpc("svc_fc_extract_result", { p_run_label: runLabel, p_case_id: k.case_id, p_task_class: task, p_answer: answer, p_outcome: outcome, p_quote_in_page: quoteIn, p_credits: c1, p_http: http, p_error: err });
-        tally[outcome] = (tally[outcome] || 0) + 1;
-      });
-      return j({ ok: true, mode, run_label: runLabel, task_class: task, cases: cases.length, tally, credits, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
-    }
+    // fc_extract_qualify: retired 18 Oct 2026 (nothing ran it in 30 days; Platform Admin 11:58 "retire what is not used").
     // v0.21.1 (bug 12/10-01): the OpenRouter balance, every 15 minutes (job openrouter-balance), recorded for the AI limits and notices
     if (mode === "openrouter_balance") {
       let key = Deno.env.get("OPENROUTER_API_KEY") || "";
@@ -668,80 +508,14 @@ Deno.serve(async (req) => {
       const rec = await rpc("svc_openrouter_balance_record", { p_payload: { total_credits: Number(d.total_credits), total_usage: Number(d.total_usage) } });
       return j({ ok: true, mode, ...rec, workerVersion: VERSION, worker: WORKER });
     }
-    if (mode === "openrouter_key") {
-      let key = Deno.env.get("OPENROUTER_API_KEY") || "";
-      if (!key) { const prof = await rpc("layer3_routing_profile_service", { p_code: AI_MATCH_PROFILE }); const { data } = await c.rpc("layer3_provider_credential_resolve_service", { p_profile_id: prof?.id }); key = typeof data === "string" ? data : "" }
-      if (!key) return j({ ok: false, mode, error: "OpenRouter credential unavailable", workerVersion: VERSION }, 503);
-      const r = await fetch("https://openrouter.ai/api/v1/key", { headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15000) });
-      const d = (await r.json().catch(() => ({})))?.data || {};
-      const pick = ["label", "limit", "limit_remaining", "limit_reset", "include_byok_in_limit", "usage", "usage_daily", "usage_weekly", "usage_monthly", "is_free_tier"];
-      return j({ ok: r.ok, mode, http: r.status, key: Object.fromEntries(pick.filter((k) => k in d).map((k) => [k, d[k]])), workerVersion: VERSION, worker: WORKER });
-    }
+    // openrouter_key: retired 18 Oct 2026 (nothing ran it in 30 days; Platform Admin 11:58 "retire what is not used").
     // v0.10.1: reference lists read as a whole file (Hipo university-domains-list, MIT), stored as evidence, loaded as
     // website hints (Decision 232). Only allow-listed files.
-    if (mode === "reference_capture") {
-      const src = String(body.source || ""), url = REFERENCE_FILES[src];
-      if (!url) return j({ ok: false, mode, error: "unknown reference source", workerVersion: VERSION }, 422);
-      const r = await fetch(url, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(60000) });
-      const txt = r.ok ? await r.text() : "";
-      let rows: unknown[] = []; try { rows = JSON.parse(txt) } catch { /* not JSON */ }
-      if (!Array.isArray(rows) || !rows.length) return j({ ok: false, mode, error: `could not read ${src} (HTTP ${r.status})`, workerVersion: VERSION }, 502);
-      const sha = await sha256(new TextEncoder().encode(txt));
-      const path = `reference/${src}/${sha}.json.gz`;
-      const up = await c.storage.from("evidence").upload(path, await gzip(txt), { contentType: "application/gzip", upsert: true });
-      const res = await rpc("svc_reference_institutions_load", { p_source: src, p_rows: rows, p_storage_path: up.error ? null : path });
-      return j({ ok: true, mode, source: src, rows: rows.length, stored: up.error ? null : path, result: res, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
-    }
+    // reference_capture: retired 18 Oct 2026 (nothing ran it in 30 days; Platform Admin 11:58 "retire what is not used").
     // v0.10.1: website hints (reference lists, directories) are accepted only when our own website rule passes on the
     // home page: AU the CRICOS provider code on the page; CA a .ca site naming the provider or printing its DLI number;
     // NZ a .nz site naming the provider.
-    if (mode === "site_hint_verify") {
-      const items: { provider_id: string; name: string; country: string; cricos: string | null; dli: string | null; urls: { url: string; via: string }[] }[] =
-        await rpc("svc_site_hint_next", { p_limit: Math.min(Number(body.limit || 20), 60) });
-      const tally: Record<string, number> = {};
-      await pool(items, 6, async (it) => {
-        let done = false;
-        for (const h of it.urls.slice(0, 4)) {
-          if (Date.now() - t0 > BUDGET_MS) return;
-          let accepted = false, basis: string | null = null, ev: Record<string, unknown> = { hint: h.url, via: h.via, worker: WORKER };
-          try {
-            const u = new URL(/^https?:/i.test(h.url) ? h.url : "https://" + h.url);
-            const resp = await fetch(u.origin + "/", { headers: { "user-agent": UA }, redirect: "follow", signal: AbortSignal.timeout(15000) }).catch(() => null);
-            let html = resp?.ok ? await resp.text() : "";
-            let finalUrl = resp?.url || u.origin + "/";
-            ev = { ...ev, final: finalUrl, http: resp?.status ?? null };
-            const check = (page: string, at: string) => {
-              const host = new URL(at).hostname.toLowerCase();
-              if (it.country === "AU") {
-                const code = String(it.cricos || "").toUpperCase();
-                if (code.length >= 5 && new RegExp("(^|[^0-9A-Z])" + code.split("").join("\\s?") + "([^0-9A-Z]|$)", "i").test(htmlToText(page))) { accepted = true; basis = "cricos_code" }
-              } else if ((it.country === "CA" && host.endsWith(".ca")) || (it.country === "NZ" && host.endsWith(".nz"))) {
-                const b = siteNameMatch(page, htmlToText(page), it.name, it.dli || "", host);
-                if (b) { accepted = true; basis = String(b) }
-              }
-            };
-            if (!done && html) check(html, finalUrl);
-            // v0.10.2: a home page that refuses our direct request, or does not prove itself as fetched (often a page
-            // drawn by script), is read once through Firecrawl (rendered). robots.txt is respected; the same rule decides.
-            if (!done && !accepted && robotsAllows(await robotsFor(new URL(u.origin)), "/") && await useFc("site_hint", it.provider_id, u.origin + "/")) {
-              const r = await fetch("https://api.firecrawl.dev/v2/scrape", { method: "POST", headers: fcHeaders, body: JSON.stringify({ proxy: FC_PROXY, url: u.origin + "/", formats: ["html"], onlyMainContent: false }), signal: AbortSignal.timeout(60000) }).catch(() => null);
-              const d = r ? await r.json().catch(() => ({})) : {};
-              const fh = String(d?.data?.html || "");
-              if (fh) { html = fh; finalUrl = String(d?.data?.metadata?.url || d?.data?.metadata?.sourceURL || finalUrl); ev = { ...ev, via_firecrawl: true, final: finalUrl, http_firecrawl: d?.data?.metadata?.statusCode ?? null }; check(html, finalUrl) }
-            }
-            const site = accepted ? new URL(finalUrl).origin : h.url;
-            const st = await rpc("svc_site_hint_record", { p_provider_id: it.provider_id, p_url: accepted ? site : h.url, p_accepted: accepted, p_basis: basis, p_evidence: ev });
-            if (accepted && site !== h.url) await rpc("svc_site_hint_record", { p_provider_id: it.provider_id, p_url: h.url, p_accepted: false, p_basis: "redirected", p_evidence: { ...ev, accepted_as: site } });
-            tally[st] = (tally[st] || 0) + 1;
-            if (accepted) { done = true; break }
-          } catch (e) {
-            await rpc("svc_site_hint_record", { p_provider_id: it.provider_id, p_url: h.url, p_accepted: false, p_basis: "fetch_failed", p_evidence: { ...ev, error: e instanceof Error ? e.message : String(e) } });
-            tally.failed = (tally.failed || 0) + 1;
-          }
-        }
-      });
-      return j({ ok: true, mode, providers: items.length, tally, ms: Date.now() - t0, workerVersion: VERSION, worker: WORKER });
-    }
+    // site_hint_verify: retired 18 Oct 2026 (nothing ran it in 30 days; Platform Admin 11:58 "retire what is not used").
     // v0.10.0: pages stored as identity mismatches are checked again with the current identity rule from their stored
     // copy (no fetch). A page that now passes is set back to read; the usual admission runs on it.
     if (mode === "reidentify") {
@@ -1997,23 +1771,7 @@ Deno.serve(async (req) => {
       }
       } finally { await rpc("svc_register_replay_release", { p_run_id: n.run_id }).catch(() => null) }
     }
-    if (mode === "page_codes") {
-      let checked = 0;
-      for (let b = 0; b < 10 && Date.now() - t0 < BUDGET_MS - 20000; b++) {
-        const next: any[] = (await rpc("svc_rule6_next", { p_limit: 20 }).catch(() => [])) || [];
-        if (!next.length) break;
-        const out: any[] = [];
-        await pool(next, 4, async (x: any) => {
-          try {
-            const html = await storedHtml(String(x.storage_path));
-            const codes = [...new Set((html.match(/\b\d{6}[A-Za-z]\b/g) || []).map((v: string) => v.toUpperCase()))];
-            out.push({ course_id: x.course_id, codes });
-          } catch (e) { out.push({ course_id: x.course_id, codes: [], error: String((e as Error)?.message || e).slice(0, 200) }) }
-        });
-        await rpc("svc_rule6_done", { p_results: out }); checked += out.length;
-      }
-      return j({ ok: true, mode, checked, worker: WORKER });
-    }
+    // page_codes: retired 18 Oct 2026 (nothing ran it in 30 days; Platform Admin 11:58 "retire what is not used").
     if (mode === "retention_files") {
       const runId = String(body.run_id || "");
       let removed = 0, bytes = 0, finished = false, error: string | null = null;

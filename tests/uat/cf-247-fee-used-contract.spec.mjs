@@ -128,8 +128,8 @@ test('migration 1800 and worker page_codes only measure (nothing unbound or with
   expect(m).not.toMatch(/delete\s+from/i)
   expect(m).not.toMatch(/update\s+pipeline\.coverage_course_pages/i)
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('if (mode === "page_codes")')
-  expect(w).toContain('/\\b\\d{6}[A-Za-z]\\b/g')
+  expect(w).not.toContain('if (mode === "page_codes")') // 18 Oct 2026: retired (nothing ran it in 30 days)
+  expect(w).toContain('// page_codes: retired 18 Oct 2026')
 })
 
 // Rule 6 (8 Oct 2026, Platform Admin, "Unbind and re-find, no review"): code not on the page -> unbind, block the pair, re-find.

@@ -102,16 +102,10 @@ test('worker and database contract: nothing written to the catalogue, budget gua
 // holdouts and recorded only. It must not write a value, change a cascade tier, or run without a q-fcx- run label.
 test('Firecrawl AI extraction mode is qualification only: records outcomes, admits nothing', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  const start = w.indexOf('if (mode === "fc_extract_qualify") {'), end = w.indexOf('if (mode === "openrouter_key") {')
-  expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start)
-  const block = w.slice(start, end)
-  expect(block).toContain('/^q-fcx-[a-z0-9.-]{3,60}$/.test(runLabel)')
-  expect(block).toContain('await rpc("svc_fc_extract_cases"')
-  expect(block).toContain('await rpc("svc_fc_extract_result"')
-  expect(block).toContain('useFc("fcx_qualify"')
-  expect(block).toContain('quoteIn === true') // a value counts as stated only when its quote is on the rendered page
-  for (const forbidden of ['svc_coverage_apply', 'coverage_apply_course', 'layer3_route_tiers', 'layer3_model_profiles', 'svc_coursefacts', 'svc_layer3_'])
-    expect(block).not.toContain(forbidden)
+  // 18 Oct 2026: the mode is retired (nothing ran it in 30 days); it can no longer write anything
+  expect(w).not.toContain('if (mode === "fc_extract_qualify") {')
+  expect(w).toContain('// fc_extract_qualify: retired 18 Oct 2026')
+  expect(w).toContain('// openrouter_key: retired 18 Oct 2026')
   const m = fs.readFileSync('supabase/migrations-archive/20261003000800_cf247_firecrawl_extract_qualify.sql', 'utf8')
   expect(m).toContain("check (outcome in ('exact', 'exact_not_stated', 'wrong_admitted', 'missed', 'error'))")
   expect(m).toContain("'pass_80_rule', (n >= 30 and ok::numeric / n >= 0.80 and wrong = 0)")

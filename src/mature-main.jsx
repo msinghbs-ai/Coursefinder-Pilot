@@ -57,6 +57,7 @@ const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
 const CoverageView=lazyPage(()=>import('./course-coverage'),'CoverageView')
 const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
+const BuildAdapter=lazyPage(()=>import('./BuildAdapter'))
 const LinkRefresh=lazyPage(()=>import('./LinkRefresh'))
 const ScholarshipLayer=lazyPage(()=>import('./ScholarshipLayer'))
 const Progress=lazyPage(()=>import('./Progress'))
@@ -258,6 +259,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='onboarding')return <ProviderOnboarding rank={rank} actorId={actorId} onError={err}/>
         // v2.15.211 (CF-247, Platform Admin 7 Oct 18:23): Adapter builder, one simple screen to build or change an adapter.
         if(tab==='enrich')return <EnrichFields rank={rank} onError={err}/>
+        // v2.15.287 (Decision 267): Build adapter, one click per university
+        if(tab==='build')return <BuildAdapter rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
         if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
         // v2.15.200 (Decision 254): Adapters is Layer 2's first tab. Overview, Fetch an area and History retired, Source
         // profiles moved to Scrapers & fetchers.
