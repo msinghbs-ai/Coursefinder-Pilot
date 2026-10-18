@@ -46,7 +46,7 @@ jobs:
           echo "Target confirmed: $REF (coursefinder-baseline-test, empty)" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.120.0  # CF-247 Phase 5 (19 Oct 2026): pinned; "latest" failed on a GitHub API rate limit
       - name: Rebuild from the baseline
         id: rebuild
         continue-on-error: true

@@ -49,3 +49,10 @@ test('retired probes and Layer 3 functions are on the retired list and have no s
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
   }
 })
+
+test('Phase 5: every workflow pins the Supabase CLI (no "latest", which failed on a rate limit)', () => {
+  for (const f of fs.readdirSync('.github/workflows')) {
+    const y = fs.readFileSync(`.github/workflows/${f}`, 'utf8')
+    if (y.includes('supabase/setup-cli')) expect(y, f).not.toMatch(/version:\s*latest/)
+  }
+})

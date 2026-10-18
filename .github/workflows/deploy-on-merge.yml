@@ -47,7 +47,7 @@ jobs:
           for f in "${FILES[@]}"; do scripts/ci/apply-migration.sh "$f"; done
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.120.0  # CF-247 Phase 5 (19 Oct 2026): pinned; "latest" failed on a GitHub API rate limit
       - name: Deploy changed edge functions
         run: |
           mapfile -t CHANGED < <(git diff --name-only "$BEFORE" "$AFTER" -- supabase/functions | cut -d/ -f3 | sort -u)
