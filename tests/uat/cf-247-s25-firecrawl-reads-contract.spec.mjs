@@ -10,7 +10,7 @@ const outside = s => s.slice(0, s.indexOf('CREATE OR REPLACE FUNCTION')) + s.sli
 
 test('worker v0.21.3: a found page is read directly first, Firecrawl only when blocked or needing a browser; basic proxy', () => {
   // v2.15.261 (Platform Admin, 12 Oct 2026 21:21) replaced the v0.21.2 Firecrawl-first read of found pages
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.2[1-9]\.\d+"/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(?:2[1-9]|3\d)\.\d+"/)
   expect(worker).toContain('const searchFound = ["title_search", "cricos_search", "firecrawl_search", "serper_search"].includes(it.basis || "");')
   expect(worker).not.toContain('else if (searchFound && await useFc("scrape", it.provider_id, it.url)) {')
   expect(worker).toContain('(!searchCandidate || searchFound) && !(adDirect?.json_found && adDirect.identity) && (!html || thin) && (it.status === "bound" || it.priority === true || searchFound)')
