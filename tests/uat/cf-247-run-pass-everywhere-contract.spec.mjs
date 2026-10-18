@@ -2,6 +2,8 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { errorReading } from '../../src/lib/workerErrors.js'
+import { readFileSync as __rf } from 'node:fs'
+const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
 const MOVED = ['layer1-ca-ab-alis-degrees','layer1-ca-algonquin-catalogue','layer1-ca-bc-epbc-programs','layer1-ca-cna-programs',
   'layer1-ca-conestoga-catalogue','layer1-ca-durham-programs','layer1-ca-fanshawe-pgwp','layer1-ca-firstparty-catalogues',
@@ -29,7 +31,7 @@ const RETIRED_B2 = ['layer2-batch-runner', 'layer2-scholarship-extract-v2', 'lay
   'layer2-acquire-v2', 'layer2-hotcourses-directory-parse', 'layer2-provider-asset-promote', 'layer2-provider-page-fanout']
 
 test('each moved function consumes a pass under its own name and is deployable by CI', () => {
-  const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+  const wf = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
   for (const fn of MOVED.filter(f => !RETIRED_B2.includes(f))) {
     const s = fs.readFileSync(`supabase/functions/${fn}/index.ts`, 'utf8')
     expect(s, fn).toMatch(new RegExp(`svc_pilot_consume_nonce["'],\\{p_function:["']${fn}["']`))

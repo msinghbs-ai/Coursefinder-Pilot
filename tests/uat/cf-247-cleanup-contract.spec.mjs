@@ -1,6 +1,8 @@
 // CF-247 clean-up of the old system (Platform Admin, 9 Oct 2026). Each batch removes only what is switched off or unused.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { readFileSync as __rf } from 'node:fs'
+const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
 const batch1 = ['cf212-qs-endpoint-verify', 'cf212-qs-evidence-upload', 'cf212-qs-page-probe', 'cf213-qs-meta-probe', 'cf231-qs2026-revalidate-once',
   'cricos-depth-inspect', 'layer1-au-full-gate', 'layer1-depth-uat', 'layer1-nz-gate-uat', 'layer1-nz-source-inspect', 'layer1-runtime-uat',
@@ -9,7 +11,7 @@ const batch1 = ['cf212-qs-endpoint-verify', 'cf212-qs-evidence-upload', 'cf212-q
   'ranking-qs-static-backfill-year', 'ranking-qs-upload-recovery', 'scholarship-course-fill-control', 'search-vector-gate']
 
 test('batch 1: retired functions have no source, are on the retired list and are not deployable', () => {
-  const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+  const wf = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
   const retired = wf.match(/RETIRED="([^"]*)"/)[1].split(/\s+/).filter(Boolean)
   for (const f of batch1) {
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
@@ -38,7 +40,7 @@ const batch2Ui = ['src/layer2-platform-entry.jsx', 'src/layer2-platform.css', 's
 const srcFiles = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? srcFiles(`${dir}/${e.name}`) : [`${dir}/${e.name}`])
 
 test('batch 2: retired functions have no source, are on the retired list and are not deployable', () => {
-  const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+  const wf = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
   const retired = wf.match(/RETIRED="([^"]*)"/)[1].split(/\s+/).filter(Boolean)
   for (const f of batch2) {
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
@@ -78,7 +80,7 @@ test('batch 4: old database functions dropped behind md5 guards; tables and hist
   expect(m).not.toMatch(/^drop function [^;]*\bcascade\b/im)
   expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate/i)
   expect(m).toContain("6e6f2d16653913617191a1520f26143f")
-  const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+  const wf = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
   const retired = wf.match(/RETIRED="([^"]*)"/)[1].split(/\s+/).filter(Boolean)
   for (const f of ['layer2-extract-v2', 'layer2-course-fact-extract-v2', 'layer2-scholarship-extract', 'layer2-scholarship-catalogue-enumerate']) {
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)
@@ -127,7 +129,7 @@ test('batch 7: unused background functions and the scale-qualification chain ret
   expect(m).not.toMatch(/drop\s+(table|schema|view)|truncate/i)
   expect((m.match(/delete\s+from/gi) || []).length).toBe(1)
   for (const g of ['7514962e364c92b93dd5c530d253ca7f', 'ea90e5f5e2cc6c941e1a071d92f683f7', 'e8cd7e428b3862ee55e5fe9f2482bf1a']) expect(m).toContain(g)
-  const wf = fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+  const wf = (fs.readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
   const retired = wf.match(/RETIRED="([^"]*)"/)[1].split(/\s+/).filter(Boolean)
   for (const f of ['coursefacts-au-qut', 'coursefacts-au-rmit', 'coursefacts-au-uq', 'layer2-scale-qualify-scheduled', 'layer2-screenshot-backfill-scheduled', 'layer3-source-pattern-benchmark', 'layer1-au-completeness', 'pilot-reset']) {
     expect(fs.existsSync(`supabase/functions/${f}`), f).toBe(false)

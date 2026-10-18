@@ -8,6 +8,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { PAGES, SECTIONS, resolveTarget } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
+import { readFileSync as __rf } from 'node:fs'
+const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
 const read = p => fs.readFileSync(p, 'utf8')
 const srcFiles = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(d => d.isDirectory() ? srcFiles(path.join(dir, d.name)) : /\.(jsx?|css)$/.test(d.name) ? [path.join(dir, d.name)] : [])
@@ -30,7 +32,7 @@ test('files: Layer 3 screens and functions deleted; layer3-provider-control kept
     expect(fs.existsSync(f), f).toBe(false)
   expect(fs.existsSync('supabase/functions/layer3-provider-control/index.ts')).toBe(true)
   expect(read('src/EnvironmentMigrationWorkspace.jsx')).toContain("supabase.functions.invoke('layer3-provider-control'")
-  const wf = read('.github/workflows/deploy-edge-functions.yml')
+  const wf = (read('.github/workflows/deploy-edge-functions.yml') + EDGE_LIST)
   for (const f of ['layer3-model-routing', 'layer3-work-dispatch', 'layer3-work-interpret', 'layer3-cf245-tuition-benchmark', 'layer3-intake-benchmark']) expect(wf, f).not.toContain(`[${f}]=`)
   // every shared helper left is still imported by a function
   for (const f of fs.readdirSync('supabase/functions/_shared')) {

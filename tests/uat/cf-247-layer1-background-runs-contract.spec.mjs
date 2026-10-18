@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { readFileSync as __rf } from 'node:fs'
+const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
 // Decision 155 (part 1): Layer 1 runs are advanced in the background and the card shows live truth.
 test('Layer 1 background runs: driver-safe control, live card status, readable failures',async()=>{
@@ -27,7 +29,7 @@ test('Layer 1 background runs: driver-safe control, live card status, readable f
   // ranking family card: operational edition is the newest ingested one, titled with its year (CF-068)
   expect(card).toContain('const current=xs.find(x=>x.edition_is_current!==false&&hasData(x))')
   expect(card).toContain('source_label:`${rankingFamilyLabel(current)}${current.edition_year?` ${current.edition_year}`:\'\'}`')
-  const flow=fs.readFileSync('.github/workflows/deploy-edge-functions.yml','utf8')
+  const flow=(fs.readFileSync('.github/workflows/deploy-edge-functions.yml','utf8') + EDGE_LIST)
   for(const f of ['[layer1-operations-control]=false','[layer1-nz-live]=true','[layer1-register-etl]=true'])expect(flow).toContain(f)
   const mig=fs.readFileSync('supabase/migrations-archive/20260927030000_layer1_background_run_driver.sql','utf8')
   expect(mig).toContain("cron.schedule('layer1-run-driver'")
@@ -56,7 +58,7 @@ test('Layer 1 change-based apply, departures and automatic ingestion are wired e
   expect(card).toContain("supabase.rpc('layer1_approve_departures'")
   expect(card).toContain('const PlanLine=')
   expect(card).toContain('Automatic ingestion')
-  const flow=fs.readFileSync('.github/workflows/deploy-edge-functions.yml','utf8')
+  const flow=(fs.readFileSync('.github/workflows/deploy-edge-functions.yml','utf8') + EDGE_LIST)
   for(const f of ['[layer1-au-cricos-facts]=false','[evidence-storage-dedupe]=false'])expect(flow).toContain(f)
   for(const m of ['20260928010000_layer1_change_based_apply.sql','20260928020000_layer1_departures_automatic.sql','20260928030000_evidence_storage_dedupe.sql','20260928040000_layer1_auto_ingest.sql'])expect(fs.existsSync(`supabase/migrations-archive/${m}`)).toBe(true)
 })

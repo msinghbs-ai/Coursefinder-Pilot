@@ -1,0 +1,66 @@
+# CF-247 Phase 3 (19 Oct 2026, Platform Admin 09:29 "every function and database change deploys through the workflow"):
+# on every push to main, what changed goes live the checked way, with nothing done by hand.
+#  1 Migrations: each .sql file ADDED under supabase/migrations by the push is applied in file-name order by
+#    scripts/ci/apply-migration.sh (one transaction with its history row; refused if it drops, deletes or truncates; skipped if its
+#    version is already in the history; the history md5 must equal the file). The first failure stops the run: nothing after it
+#    is applied, and the function deploys below do not run.
+#  2 Edge functions: each function folder CHANGED by the push is deployed by scripts/ci/deploy-function.sh with the verify_jwt in
+#    .github/edge-functions.json; a change under supabase/functions/_shared deploys every function that imports it. A function not in
+#    that list fails the run (add it to the list in the same change).
+# The target is always the repository variable SUPABASE_PROJECT_REF (the Pilot); the demo project can never be targeted.
+# Consumer API (Decision 266): its functions deploy only when their own folder changes, and test S57 blocks any such change that is not
+# recorded as approved.
+name: Deploy on merge
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/*.sql'
+      - 'supabase/functions/**'
+concurrency:
+  group: deploy-on-merge
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      BEFORE: ${{ github.event.before }}
+      AFTER: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Confirm target
+        run: |
+          if [ -z "$REF" ]; then echo "::error::Repository variable SUPABASE_PROJECT_REF is not set"; exit 1; fi
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "::error::Secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; fi
+          if ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then echo "::error::Previous commit $BEFORE is unknown; deploy this push by hand"; exit 1; fi
+      - name: Apply new migrations
+        run: |
+          mapfile -t FILES < <(git diff --name-only --diff-filter=A "$BEFORE" "$AFTER" -- 'supabase/migrations/*.sql' | xargs -r -n1 basename | sort)
+          echo "## Deploy on merge" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${#FILES[@]}" -eq 0 ]; then echo "No new migrations." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          for f in "${FILES[@]}"; do scripts/ci/apply-migration.sh "$f"; done
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy changed edge functions
+        run: |
+          mapfile -t CHANGED < <(git diff --name-only "$BEFORE" "$AFTER" -- supabase/functions | cut -d/ -f3 | sort -u)
+          FNS=()
+          for d in "${CHANGED[@]}"; do
+            [ -z "$d" ] && continue
+            if [ "$d" = "_shared" ]; then
+              mapfile -t USERS < <(grep -rl --include='*.ts' '_shared/' supabase/functions | grep -v '^supabase/functions/_shared/' | cut -d/ -f3 | sort -u)
+              FNS+=("${USERS[@]}")
+            elif [ -d "supabase/functions/$d" ] && [ -f "supabase/functions/$d/index.ts" ]; then
+              FNS+=("$d")
+            fi
+          done
+          mapfile -t FNS < <(printf '%s\n' "${FNS[@]}" | grep -v '^$' | sort -u)
+          if [ "${#FNS[@]}" -eq 0 ]; then echo "No edge function changes." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          for fn in "${FNS[@]}"; do scripts/ci/deploy-function.sh "$fn"; done

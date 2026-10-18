@@ -2,6 +2,8 @@
 import { test, expect } from '@playwright/test'
 import { readFileSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
+import { readFileSync as __rf } from 'node:fs'
+const EDGE_LIST = Object.entries(JSON.parse(__rf('.github/edge-functions.json', 'utf8')).functions).map(([k, v]) => `\n[${k}]=${v}`).join('') // CF-247 Phase 3: the allow-list moved to .github/edge-functions.json
 
 const dir = 'supabase/live-capture/functions'
 const md5 = (b) => createHash('md5').update(b).digest('hex')
@@ -26,6 +28,6 @@ test('website edge functions hold the live contracts', () => {
 })
 
 test('ranking-publisher-import deploys through CI', () => {
-  const wf = readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8')
+  const wf = (readFileSync('.github/workflows/deploy-edge-functions.yml', 'utf8') + EDGE_LIST)
   expect(wf).toContain('[ranking-publisher-import]=false')
 })
