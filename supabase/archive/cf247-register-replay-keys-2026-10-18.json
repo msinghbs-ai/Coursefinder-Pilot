@@ -1,13 +1,78 @@
 {
-  "about": "CF-247 housekeeping step 3 (Platform Admin 18 Oct 2026 18:53, \"First close the easier steps 1, 2, 5, 7\"): the register replay keys, the working rows of the one-off register replay checks of 8 Oct 2026 (85 runs; each run keeps its result in pipeline.register_replay_runs). Exported before the paste file empties the table; the paste file refuses to run unless the row count and row hash still match this export.",
+  "about": "CF-247 housekeeping step 3 (Platform Admin 18 Oct 2026 18:53, \"First close the easier steps 1, 2, 5, 7\"): the register replay keys, the working rows of the one-off register replay checks of 8 Oct 2026 (85 runs; each run keeps its result in pipeline.register_replay_runs). Exported before the paste file empties the table; the paste file refuses to run unless the row count and row hash still match this export. Split into one set per large run (the whole-table sort per page was too slow).",
   "bucket": "archive",
   "prefix": "cf247-register-replay-keys-2026-10-18",
   "part_rows": 50000,
   "sets": [
     {
-      "name": "register_replay_keys",
+      "name": "run_8d8d04ea",
       "key": null,
-      "select": "select k.* from pipeline.register_replay_keys k"
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '8d8d04ea-0d4f-4c1a-81f5-14ded0927c1a'"
+    },
+    {
+      "name": "run_5f91cbae",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '5f91cbae-8dee-4b06-a3b2-067d46af39a7'"
+    },
+    {
+      "name": "run_a5bfa1a8",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = 'a5bfa1a8-d909-4af7-a8a7-ae082011464f'"
+    },
+    {
+      "name": "run_11260145",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '11260145-c149-4c25-a5ca-d4a0934bf985'"
+    },
+    {
+      "name": "run_61e6b085",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '61e6b085-c214-4412-8e46-59731ad4b8c1'"
+    },
+    {
+      "name": "run_5531c945",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '5531c945-2215-48cc-972d-904fda5b33df'"
+    },
+    {
+      "name": "run_16e221e5",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '16e221e5-d627-4391-b7cc-729e79687aa6'"
+    },
+    {
+      "name": "run_fa4e313c",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = 'fa4e313c-d0c0-4faf-9454-37ae3322bfd8'"
+    },
+    {
+      "name": "run_f932b838",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = 'f932b838-7967-48ed-9c61-899b30d15afb'"
+    },
+    {
+      "name": "run_7f7b2fb0",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '7f7b2fb0-eb14-4d7e-b59c-5430a0d5f064'"
+    },
+    {
+      "name": "run_77c0d8af",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '77c0d8af-1ce7-44ae-b485-a3a022983924'"
+    },
+    {
+      "name": "run_080956ef",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '080956ef-6585-43fa-a006-9a18b86662a4'"
+    },
+    {
+      "name": "run_415fe0ea",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id = '415fe0ea-86a1-4ffe-ad0f-5efdc7c666c2'"
+    },
+    {
+      "name": "small_runs",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k where k.run_id not in ('8d8d04ea-0d4f-4c1a-81f5-14ded0927c1a','5f91cbae-8dee-4b06-a3b2-067d46af39a7','a5bfa1a8-d909-4af7-a8a7-ae082011464f','11260145-c149-4c25-a5ca-d4a0934bf985','61e6b085-c214-4412-8e46-59731ad4b8c1','5531c945-2215-48cc-972d-904fda5b33df','16e221e5-d627-4391-b7cc-729e79687aa6','fa4e313c-d0c0-4faf-9454-37ae3322bfd8','f932b838-7967-48ed-9c61-899b30d15afb','7f7b2fb0-eb14-4d7e-b59c-5430a0d5f064','77c0d8af-1ce7-44ae-b485-a3a022983924','080956ef-6585-43fa-a006-9a18b86662a4','415fe0ea-86a1-4ffe-ad0f-5efdc7c666c2')"
     }
   ]
 }
