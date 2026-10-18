@@ -12,7 +12,7 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
     const main=fs.readFileSync('src/mature-main.jsx','utf8')
     const access=fs.readFileSync('src/access-roles-entry.jsx','utf8')
     const index=fs.readFileSync('index.html','utf8')
-    expect(main).toMatch(/const UI_VERSION='2\.15\.\d+'/ )
+    expect(main).toContain("import{UI_VERSION}from'./release-manifest.js'") // v2.15.291: the shell's version comes only from the manifest
     // v2.15.107: Administration sections became pages in nav-map.js; every old Administration
     // section and legacy address (users-roles, attributes, settings) still resolves.
     const nav=fs.readFileSync('src/nav-map.js','utf8')

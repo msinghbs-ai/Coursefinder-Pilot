@@ -8,7 +8,7 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
   const[index,nav,evidence,migration]=await Promise.all([
    fs.readFile('index.html','utf8'),
    fs.readFile('src/nav-map.js','utf8'),
-   fs.readFile('src/evidence-acquisition-provenance-entry.js','utf8'),
+   fs.readFile('src/EvidenceWorkspace.jsx','utf8'),
    fs.readFile('supabase/migrations-archive/20260904060000_cf_142_evidence_acquisition_provenance.sql','utf8'),
   ])
   // v2.15.107: the fixed Layer 1 > 2 > 3 > 4 order is declared once in nav-map.js (Data pipeline section);
@@ -19,7 +19,9 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
   expect(evidence).toContain('Acquisition provenance')
   // 'Derived from stored Evidence' wording was removed from the provenance panel; 'Acquisition provenance' (above) remains the check.
   expect(evidence).toContain('Storage reuse')
-  expect(index).toContain('/src/evidence-acquisition-provenance-entry.js')
+  // v2.15.291: the box is drawn by EvidenceWorkspace.jsx from evidence_detail; the post-render script is retired.
+  expect(evidence).toContain('<AcquisitionProvenance value={data?.acquisition_provenance}/>')
+  expect(index).not.toContain('evidence-acquisition-provenance-entry')
   expect(migration).toContain('admin_evidence_acquisition_provenance')
   expect(migration).toContain("'stored_evidence_derived'")
   expect(migration).toContain("'live_acquisition'")

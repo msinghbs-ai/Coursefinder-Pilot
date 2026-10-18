@@ -9,7 +9,7 @@ test.describe('CF-067 QS THE Layer 1 ranking ingestion contract',()=>{
   const[ui,shell,version,ctl,etl,m1,m2,m3,m4,m5]=await Promise.all([
    fs.readFile('src/layer1-operations-entry.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8'),
-   fs.readFile('src/pim-version-entry.js','utf8'),
+   fs.readFile('src/release-history-legacy.js','utf8'),
    fs.readFile('supabase/functions/layer1-operations-control/index.ts','utf8'),
    fs.readFile('supabase/functions/ranking-layer1-etl/index.ts','utf8'),
    fs.readFile('supabase/migrations-archive/20260902004533_cf_067_ranking_layer1_ingest_service_contract.sql','utf8'),

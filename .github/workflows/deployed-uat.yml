@@ -124,7 +124,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature\.css|layer2-operations-entry\.jsx|layer2-operations\.css|EvidenceWorkspace\.jsx|evidence-workspace\.css)$|^supabase/functions/(layer2-acquire-v2|admin-evidence-access)/|^supabase/migrations/.*a13_.*(provider_attempt|screenshot)|^tests/uat/a13-filter-demo-trace-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a13-filter-demo-trace-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^supabase/functions/provider-contact-|^supabase/migrations/.*a15_|^tests/uat/a15-provider-contact-intelligence-deployed\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|ReleaseNotes\.jsx)$|^supabase/functions/provider-contact-|^supabase/migrations/.*a15_|^tests/uat/a15-provider-contact-intelligence-deployed\.spec\.mjs$)'; then
             targeted=(tests/uat/a15-provider-contact-intelligence-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_4_4_|^tests/uat/m2-4-4-cross-layer-operations-deployed\.spec\.mjs$)'; then
@@ -163,19 +163,19 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_universal_layer4_block|^tests/uat/m2-5-layer4-block-enforcement-contract\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-layer4-block-enforcement-contract.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(platform-maturity-entry\.jsx|platform-maturity\.css|mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/migrations/.*m2_5_platform_maturity_admin_read|^tests/uat/m2-5-platform-maturity-admin-contract\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(platform-maturity-entry\.jsx|platform-maturity\.css|mature-main\.jsx|ReleaseNotes\.jsx)$|^index\.html$|^supabase/migrations/.*m2_5_platform_maturity_admin_read|^tests/uat/m2-5-platform-maturity-admin-contract\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-platform-maturity-admin-contract.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_evidence_lineage_reconciliation_contact_claim|^supabase/functions/provider-contact-discover-scheduled/|^src/(platform-maturity-entry\.jsx|mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^tests/uat/m2-5-evidence-lineage-reconciliation-contract\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*m2_5_evidence_lineage_reconciliation_contact_claim|^supabase/functions/provider-contact-discover-scheduled/|^src/(platform-maturity-entry\.jsx|mature-main\.jsx|ReleaseNotes\.jsx)$|^index\.html$|^tests/uat/m2-5-evidence-lineage-reconciliation-contract\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-evidence-lineage-reconciliation-contract.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pipeline-ops-entry\.jsx|pim-version-entry\.js)$|^src/lib/supabase\.js$|^index\.html$|^tests/uat/m2-5-jobs-workspace-read-path-contract\.spec\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pipeline-ops-entry\.jsx|ReleaseNotes\.jsx)$|^src/lib/supabase\.js$|^index\.html$|^tests/uat/m2-5-jobs-workspace-read-path-contract\.spec\.mjs$)'; then
             targeted=(tests/uat/m2-5-jobs-workspace-read-path-contract.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -qx '.github/m2-5-jobs-workspace-deployed-candidate'; then
             targeted=(tests/uat/m2-5-jobs-workspace-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(ComparisonWorkspace\\.jsx|ContextualInsights\\.jsx|mature-main\\.jsx|pim-version-entry\\.js)$|^index\\.html$|^supabase/migrations/.*cf_061_contextual_compare|^tests/uat/cf-061-qilt-prisms-comparison-contract\\.spec\\.mjs$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(ComparisonWorkspace\\.jsx|ContextualInsights\\.jsx|mature-main\\.jsx|ReleaseNotes\\.jsx)$|^index\\.html$|^supabase/migrations/.*cf_061_contextual_compare|^tests/uat/cf-061-qilt-prisms-comparison-contract\\.spec\\.mjs$)'; then
             targeted=(tests/uat/cf-061-qilt-prisms-comparison-contract.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^tests/uat/cf-061-qilt-prisms-comparison-deployed\\.spec\\.mjs$|^\\.github/cf-061-comparison-deployed-candidate$)'; then
@@ -184,7 +184,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^\.github/cf-070-provider-compare-candidate$|^\.github/cf-079-course-compare-candidate$)'; then
             targeted=(tests/uat/cf-061-qilt-prisms-comparison-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(ProviderContactsWorkspace\\.jsx|provider-contacts\\.css|mature-main\\.jsx|pim-version-entry\\.js|m2-3-intelligence-entry\\.jsx)$|^src/lib/supabase\\.js$|^supabase/functions/provider-contact-(import|control)/|^supabase/migrations/.*cf_080_provider_contacts|^tests/uat/cf-080-provider-contacts-deployed\\.spec\\.mjs$|^\\.github/cf-080-provider-contacts-candidate$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(ProviderContactsWorkspace\\.jsx|provider-contacts\\.css|mature-main\\.jsx|ReleaseNotes\\.jsx|m2-3-intelligence-entry\\.jsx)$|^src/lib/supabase\\.js$|^supabase/functions/provider-contact-(import|control)/|^supabase/migrations/.*cf_080_provider_contacts|^tests/uat/cf-080-provider-contacts-deployed\\.spec\\.mjs$|^\\.github/cf-080-provider-contacts-candidate$)'; then
             targeted=(tests/uat/cf-080-provider-contacts-deployed.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -qx '.github/cf-080-provider-contacts-candidate'; then
@@ -247,22 +247,22 @@ jobs:
           if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css)$|^supabase/functions/(ranking-publisher-import|ranking-publisher-control)/|^tests/uat/cf-076-ranking-import-ux-deployed\.spec\.mjs$|^\.github/cf-076-ranking-import-ux-candidate$)'; then
             targeted=(tests/uat/cf-076-ranking-import-ux-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_097_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/functions/(ranking-publisher-import)/|^tests/uat/cf-097-ranking-workflow-history-deployed\.spec\.mjs$|^\.github/cf-097-ranking-workflow-history-candidate$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_097_|^src/(mature-main\.jsx|ReleaseNotes\.jsx)$|^index\.html$|^supabase/functions/(ranking-publisher-import)/|^tests/uat/cf-097-ranking-workflow-history-deployed\.spec\.mjs$|^\.github/cf-097-ranking-workflow-history-candidate$)'; then
             targeted=(tests/uat/cf-097-ranking-workflow-history-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|access-roles-entry\.jsx|access-roles\.css|pim-version-entry\.js)$|^index\.html$|^tests/uat/cf-088-admin-ia-targeted\.spec\.mjs$|^\.github/workflows/deployed-uat\.yml$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|mature\.css|access-roles-entry\.jsx|access-roles\.css|ReleaseNotes\.jsx)$|^index\.html$|^tests/uat/cf-088-admin-ia-targeted\.spec\.mjs$|^\.github/workflows/deployed-uat\.yml$)'; then
             targeted=(tests/uat/cf-088-admin-ia-targeted.spec.mjs)
           fi
           if printf '%s\n' "$changed" | grep -Eq '(^supabase/functions/ranking-publisher-control/|^supabase/migrations/.*cf_090_|^src/lib/supabase\.js$|^tests/uat/cf-090-ranking-import-recovery-deployed\.spec\.mjs$|^\.github/cf-090-ranking-import-recovery-candidate$)'; then
             targeted=(tests/uat/cf-090-ranking-import-recovery-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|pim-version-entry\.js)$|^src/lib/supabase\.js$|^index\.html$|^supabase/functions/(ranking-publisher-import|ranking-layer1-etl)/|^tests/uat/cf-098-ranking-file-bundle-deployed\.spec\.mjs$|^\.github/cf-098-ranking-file-bundle-candidate$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^src/(mature-main\.jsx|ReleaseNotes\.jsx)$|^src/lib/supabase\.js$|^index\.html$|^supabase/functions/(ranking-publisher-import|ranking-layer1-etl)/|^tests/uat/cf-098-ranking-file-bundle-deployed\.spec\.mjs$|^\.github/cf-098-ranking-file-bundle-candidate$)'; then
             targeted=(tests/uat/cf-098-ranking-file-bundle-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_100_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^tests/uat/cf-100-ranking-country-extension-deployed\.spec\.mjs$|^\.github/cf-100-ranking-country-extension-candidate$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_100_|^src/(mature-main\.jsx|ReleaseNotes\.jsx)$|^index\.html$|^tests/uat/cf-100-ranking-country-extension-deployed\.spec\.mjs$|^\.github/cf-100-ranking-country-extension-candidate$)'; then
             targeted=(tests/uat/cf-100-ranking-country-extension-deployed.spec.mjs)
           fi
-          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_097_|^src/(mature-main\.jsx|pim-version-entry\.js)$|^index\.html$|^supabase/functions/(ranking-publisher-import)/|^tests/uat/cf-097-ranking-workflow-history-deployed\.spec\.mjs$|^\.github/cf-097-ranking-workflow-history-candidate$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '(^supabase/migrations/.*cf_097_|^src/(mature-main\.jsx|ReleaseNotes\.jsx)$|^index\.html$|^supabase/functions/(ranking-publisher-import)/|^tests/uat/cf-097-ranking-workflow-history-deployed\.spec\.mjs$|^\.github/cf-097-ranking-workflow-history-candidate$)'; then
             targeted=(tests/uat/cf-097-ranking-workflow-history-deployed.spec.mjs)
           fi
           # CF-101 must resolve after the generic Admin/Scraper workflow-file routes so

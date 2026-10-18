@@ -17,11 +17,11 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
       fs.readFile('supabase/functions/provider-contact-discover-scheduled/index.ts','utf8'),
       fs.readFile('src/platform-maturity-entry.jsx','utf8'),
       fs.readFile('src/mature-main.jsx','utf8'),
-      fs.readFile('src/pim-version-entry.js','utf8'),
+      fs.readFile('src/release-history-legacy.js','utf8'),
       fs.readFile('index.html','utf8'),
       fs.readFile('tests/uat/release-notes-deployed.spec.mjs','utf8'),
       fs.readFile('src/release-manifest.js','utf8'),
-      fs.readFile('src/release-currentness-entry.js','utf8'),
+      fs.readFile('src/ReleaseNotes.jsx','utf8'),
     ])
 
     expect(migration).toContain('create table if not exists pipeline.evidence_lineage_reconciliations')
@@ -73,12 +73,14 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
     expect(platform).toContain('Unresolved missing Storage objects')
     expect(platform).toContain('with proven duplicates, past corrections and open problems shown separately') // v2.15.131 plain wording
 
-    const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-    const historyVersion=versionEntry.match(/const VERSION='([^']+)'/)?.[1]
+    // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
+    const historyVersion=versionEntry.match(/export const LEGACY_BASELINE='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
-    expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
-    expect(historyVersion).toBe(fallbackVersion)
+    expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+    expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
+    expect(historyVersion).toBe('2.15.78')
     expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
+    expect(versionEntry).toContain(`version:'${historyVersion}'`)
     expect(manifest).toMatch(/version:(UI_VERSION|'2\.15\.\d+')/)
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>StudySearch PIM Admin</title>')

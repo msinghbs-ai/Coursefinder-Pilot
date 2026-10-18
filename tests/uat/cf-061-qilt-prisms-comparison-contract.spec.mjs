@@ -13,10 +13,10 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
    fs.readFile('src/ContextualInsights.jsx','utf8'),
    fs.readFile('src/mature-main.jsx','utf8'),
    Promise.all([fs.readFile('supabase/migrations-archive/20260901133212_cf_061_contextual_compare_qilt_prisms.sql','utf8'),fs.readFile('supabase/migrations-archive/20260901134059_cf_061_contextual_compare_provider_city_fix.sql','utf8'),fs.readFile('supabase/migrations-archive/20260901134137_cf_061_contextual_insights_study_area_code_fix.sql','utf8')]).then(xs=>xs.join('\n')),
-   fs.readFile('src/pim-version-entry.js','utf8'),
+   fs.readFile('src/release-history-legacy.js','utf8'),
    fs.readFile('index.html','utf8'),
    fs.readFile('src/release-manifest.js','utf8'),
-   fs.readFile('src/release-currentness-entry.js','utf8'),
+   fs.readFile('src/ReleaseNotes.jsx','utf8'),
   ])
 
   expect(ui).toContain('const MAX=6')
@@ -42,13 +42,15 @@ test.describe('CF-061 QILT PRISMS comparison source/server contract',()=>{
   expect(shell).toContain("const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))")
   expect(shell).toContain("if(tab==='compare')return <ComparisonWorkspace")
   expect(shell).toContain("navigate?.('Compare',{type,ids:data.id})")
-  const fallbackVersion=shell.match(/const UI_VERSION='([^']+)'/)?.[1]
-  const historyVersion=version.match(/const VERSION='([^']+)'/)?.[1]
+  // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
+  const historyVersion=version.match(/export const LEGACY_BASELINE='([^']+)'/)?.[1]
   const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
-  expect(fallbackVersion).toMatch(/^2\.15\.\d+$/)
-  expect(historyVersion).toBe(fallbackVersion)
+  expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
+  expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
+  expect(historyVersion).toBe('2.15.78')
   expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-  expect(manifest).toMatch(/version:(UI_VERSION|'2\.15\.\d+')/) // the manifest drives the pill; the shell constant is only a fallback
+  expect(version).toContain(`version:'${historyVersion}'`)
+  expect(manifest).toMatch(/version:(UI_VERSION|'2\.15\.\d+')/) // the manifest drives the pill and the shell
   expect(current).toContain("from'./release-manifest.js'")
   expect(index).toContain('<title>StudySearch PIM Admin</title>')
   expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)

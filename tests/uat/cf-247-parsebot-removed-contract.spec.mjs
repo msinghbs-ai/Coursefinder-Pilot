@@ -6,7 +6,7 @@ import path from 'node:path'
 const walk = d => fs.readdirSync(d, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)])
 
 test('no screen, API helper or edge function refers to Parse.bot; the URL import functions are gone', () => {
-  const files = [...walk('src'), ...walk('supabase/functions')].filter(f => /\.(jsx?|tsx?|css)$/.test(f) && !f.endsWith('pim-version-entry.js') && !f.endsWith('release-manifest.js'))
+  const files = [...walk('src'), ...walk('supabase/functions')].filter(f => /\.(jsx?|tsx?|css)$/.test(f) && !f.endsWith('release-history-legacy.js') && !f.endsWith('release-manifest.js'))
   for (const f of files) expect(fs.readFileSync(f, 'utf8'), f).not.toMatch(/parse\.?bot/i)
   for (const fn of ['ranking-publisher-url-import', 'ranking-qs-url-import', 'ranking-the-url-import']) expect(fs.existsSync(`supabase/functions/${fn}`)).toBe(false)
   const m = fs.readFileSync('supabase/migrations-archive/20260930170000_cf247_remove_parsebot.sql', 'utf8')

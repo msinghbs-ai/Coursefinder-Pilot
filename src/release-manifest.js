@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.290'
-export const PACKAGE_VERSION='0.1.217'
+export const UI_VERSION='2.15.291'
+export const PACKAGE_VERSION='0.1.218'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'18 Oct 2026',
-  title:'Asked-for searches first',
+  date:'19 Oct 2026',
+  title:'One source for the version and release notes',
   changes:[
-    'Course-page searches a person asked for (Find course pages in the Adapter builder, a website change) now run for any university and go first in the queue, oldest request first. Searches nobody asked for keep the focus rule; the Firecrawl target list, stopped or held searches, directory sites and the daily and monthly limits still apply.',
-    'Adapter builder guide: course-page searches show as running only when they will run; otherwise the guide says why (for example outside the focus providers, search stopped, not a Firecrawl target, today’s share used) and it is your turn.'
+    'Retired the scripts that patched the page after it was drawn; the version and release history now come from one place.',
+    'The version pill and release notes, the Rankings & statistics cards (which datasets show, their descriptions and edition figures), the ranking dataset page heading and the Evidence acquisition provenance box are now drawn with the page itself. They look and work as before.'
   ],
-  bugFixes:['Course-page searches for universities outside the 50 focus providers never ran, even when a person asked for them (none sent since 13 Oct).']
+  bugFixes:['The QS and THE cards on Rankings & statistics showed two edition pickers; they now show one, and its figures follow the chosen edition.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

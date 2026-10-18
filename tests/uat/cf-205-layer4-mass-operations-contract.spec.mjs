@@ -5,7 +5,7 @@ import{readFile}from'node:fs/promises'
 const read=p=>readFile(new URL(`../../${p}`,import.meta.url),'utf8')
 
 test('CF-205 Layer 4 mass operations is loaded and release current',async()=>{
- const[index,entry,release]=await Promise.all([read('index.html'),read('src/layer4-mass-operations-entry.jsx'),read('src/release-currentness-entry.js')])
+ const[index,entry,release]=await Promise.all([read('index.html'),read('src/layer4-mass-operations-entry.jsx'),read('src/ReleaseNotes.jsx')])
  assert.doesNotMatch(index,/layer4-mass-operations-entry\.jsx/) // 18 Oct 2026: loaded by Layer 4 (Batches) only; the separate script tag was retired
  // Version pins removed: the release manifest is the version authority.
  assert.match(release,/release-manifest/)

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.218 — 19 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.291** (One source for the version and release notes). Platform Admin request, Phase 5 "retire the leftovers".
+  - Retired the scripts that patched the page after it was drawn; the version and release history now come from one place.
+  - **Screen:** `index.html` loads only the React entry. Retired `src/pim-version-entry.js` (an old v2.15.78 version and release list), `src/release-currentness-entry.js`, `src/StatisticsDatasetEnhancer.js`, `src/ranking-dataset-header.js` and `src/evidence-acquisition-provenance-entry.js`. What they still showed is now drawn by React: the version pill and release notes (`src/ReleaseNotes.jsx`), the Rankings & statistics cards from the dataset registry and the ranking dataset heading (`src/mature-main.jsx`), and the Evidence acquisition provenance box (`src/EvidenceWorkspace.jsx`).
+  - **Release history:** the notes for v2.15.78 and earlier moved, unchanged, to `src/release-history-legacy.js`, read by `scripts/build-release-history.mjs`; `scripts/verify-release-contract.mjs` now fails if a retired script returns or `index.html` loads anything but the React entry.
+  - **Fixed:** the QS and THE cards showed two edition pickers; now one, and its figures follow the chosen edition.
+  - No database or worker change. Consumer API unchanged (Decision 266). SOPs 1.32.
+
 ## 0.1.217 — 18 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.290** (Asked-for searches first). The Platform Admin chose on 18 Oct 2026 22:25 ("proceed with recommended choice") that searches started from the builder go first.
