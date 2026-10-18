@@ -1,0 +1,13 @@
+{
+  "about": "CF-247 housekeeping step 3 (Platform Admin 18 Oct 2026 18:53, \"First close the easier steps 1, 2, 5, 7\"): the register replay keys, the working rows of the one-off register replay checks of 8 Oct 2026 (85 runs; each run keeps its result in pipeline.register_replay_runs). Exported before the paste file empties the table; the paste file refuses to run unless the row count and row hash still match this export.",
+  "bucket": "archive",
+  "prefix": "cf247-register-replay-keys-2026-10-18",
+  "part_rows": 50000,
+  "sets": [
+    {
+      "name": "register_replay_keys",
+      "key": null,
+      "select": "select k.* from pipeline.register_replay_keys k"
+    }
+  ]
+}
