@@ -42,3 +42,12 @@ test('worker v0.30.0 reads majors as a pattern field (every match kept)', () => 
   expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.30\.\d+";/)
   expect(mig).toContain("'english_level', 'majors']")
 })
+
+const fix = fs.readFileSync('supabase/migrations/20261018080000_cf247_build_readiness_active_courses.sql', 'utf8')
+test('first wave fix: readiness is measured on active courses only; qualification and admission unchanged', () => {
+  expect(fix).toContain("<> '602d5ab6df40864d987cec1d8dd8b701' then")
+  expect(fix).toContain("join catalogue.courses c0 on c0.id = pg.course_id and c0.lifecycle_status = 'active'")
+  expect(fix).not.toMatch(/create\s+or\s+replace\s+function\s+security\.adapter_qualify_one_v1/i)
+  expect(fix).not.toMatch(/^(delete|drop|truncate)\b/im)
+  expect(fix).toContain("v := security.consumer_api_check_v1()->'drift';")
+})
