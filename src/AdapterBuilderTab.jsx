@@ -43,6 +43,57 @@ function WebsiteStep({b,onChanged,onError}){
     {!b.website&&can&&<div className="ab-add"><input aria-label="Provider's own website" type="url" placeholder="https://www.provider.edu.au" value={url} disabled={busy} onChange={e=>setUrl(e.target.value)}/>
       <Button compact disabled={busy||!/^https?:\/\/\S+\.\S+$/.test(url.trim())} onClick={save}>Save website (entered by hand)</Button></div>}
     {msg&&<p className="cf-chip tone-info" role="status">{msg}</p>}
+    <WebsiteCheck b={b} onChanged={onChanged} onError={onError}/>
+  </div>
+}
+// v2.15.288 (bug 18/10-01, Platform Admin 18 Oct 2026 20:35 "validate or change the website in the adapter builder"): Check website reads
+// the home page now (it answers, it is not a third-party site, the provider's CRICOS code or name is on it, or it is the site the register
+// lists). Change website (Platform Admin) is checked the same way and saved only when Verified or Likely; course-page searches, a stopped
+// or held search, contacts and central pages then start again. A second site of the same provider is kept as an extra source.
+// Reads and writes: admin_provider_website_check (list, check, change).
+const VERDICT={verified:['Verified','success'],likely:['Likely','warning'],failed:['Failed','danger']}
+const yes=v=>v===true?'yes':v===false?'no':'—'
+function WebsiteCheck({b,onChanged,onError}){
+  const[d,setD]=useState(null),[open,setOpen]=useState(false),[url,setUrl]=useState(''),[extra,setExtra]=useState(''),[reason,setReason]=useState(''),[busy,setBusy]=useState(false)
+  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_provider_website_check',{p_action:'list',p_args:{provider_id:b.provider_id}});if(error)throw error;setD(data&&typeof data==='object'&&'checks' in data?data:null)}catch{setD(null)}} // quiet: the panel simply does not show
+  useEffect(()=>{setD(null);load()},[b.provider_id])
+  const last=d?.checks?.[0],running=Boolean(last&&last.state!=='done')
+  useEffect(()=>{if(!running)return;const t=setTimeout(async()=>{await load();},5000);return()=>clearTimeout(t)},[d])
+  useEffect(()=>{if(last?.applied)onChanged?.()},[last?.id,last?.applied])
+  const go=async(action)=>{setBusy(true);try{
+      const args={provider_id:b.provider_id,...(action==='change'?{url:url.trim(),extra_site:extra.trim()||null,reason:reason.trim()||ask(`Change website of ${b.name} to ${url.trim()}`)}:{})}
+      const{error}=await supabase.rpc('admin_provider_website_check',{p_action:action,p_args:args});if(error)throw error
+      if(action==='change'){setOpen(false);setUrl('');setExtra('');setReason('')}
+      await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!d)return null
+  const sites=d.sites||[],r=last?.result||{},v=VERDICT[last?.verdict],n=last?.apply_note||{}
+  return <div className="ab-sitecheck" data-website-check>
+    {sites.length>1&&<p className="cf-chip tone-warning" data-website-multi>This record holds {sites.length} addresses ({sites.join(', ')}). Keep one main website with Change website; the other is kept as an extra source.</p>}
+    <div className="ab-actions">
+      {d.website&&<Button compact disabled={busy||running} onClick={()=>go('check')} data-website-check-run>{running&&last?.action==='check'?'Checking…':'Check website'}</Button>}
+      {d.can_change&&<Button compact disabled={busy||running} onClick={()=>{setOpen(!open);if(!url&&sites.length>1){setUrl(sites[0]);setExtra(sites[1])}}} data-website-change-open>Change website</Button>}
+    </div>
+    {open&&d.can_change&&<div className="ab-add" data-website-change-form>
+      <input aria-label="New website" type="url" placeholder="https://www.provider.edu.au" value={url} disabled={busy} onChange={e=>setUrl(e.target.value)}/>
+      <input aria-label="Other site of this provider (optional)" type="url" placeholder="Other site of this provider (optional)" value={extra} disabled={busy} onChange={e=>setExtra(e.target.value)}/>
+      <input aria-label="Reason" type="text" placeholder="Reason (for the log)" value={reason} disabled={busy} onChange={e=>setReason(e.target.value)}/>
+      <Button compact disabled={busy||!/^(https?:\/\/)?[^\s,;]+\.[^\s,;]+$/.test(url.trim())} onClick={()=>go('change')} data-website-change-save>Check and save</Button>
+      <small className="ab-muted">The new address is checked first (its home page is read now; about 1 Firecrawl credit only if the site refuses a direct read) and saved only when Verified or Likely. Course-page searches, a stopped or held search, contacts and central pages then start again.</small>
+    </div>}
+    {last&&<div className="ab-checkresult" data-website-result={last.verdict||last.state}>
+      <p className="ab-text">{last.action==='change'?'Change to':'Check of'} <strong>{last.url}</strong>{' · '}{fmtDateTime(last.checked_at||last.requested_at)}{' · '}
+        {running?<span className="cf-chip tone-info">Checking…</span>:v?<span className={`cf-chip tone-${v[1]}`}>{v[0]}</span>:null}{last.why&&<span> {last.why}</span>}</p>
+      {!running&&last.result&&<ul className="ab-facts" data-website-evidence>
+        <li>Answers: {yes(r.answers)}{r.http?` (HTTP ${r.http}${r.via==='scraper'?', read through the scraper':''})`:''}{r.redirected?` · goes to ${r.final_url}`:''}</li>
+        <li>Third-party site: {yes(r.third_party)}</li>
+        {r.cricos_code&&<li>CRICOS code {r.cricos_code} on the home page: {yes(r.cricos_on_site)}</li>}
+        {r.register_site&&<li>The site the register lists ({r.register_site}): {yes(r.register_match)}</li>}
+        <li>Provider's name on the home page: {r.name_basis?'yes':'no'} · address fits the name: {yes(r.domain_fits)}</li>
+        {r.title&&<li>Page title: {r.title}</li>}
+      </ul>}
+      {last.action==='change'&&!running&&(last.applied?<p className="cf-chip tone-success" data-website-applied>Saved {n.saved}{n.before?` (was ${n.before})`:''}. Course-page searches queued again: {fmtNumber(n.searches_queued||0)}; search resumed; contacts and central pages queued{n.extra_site?`; ${n.extra_site} kept as an extra source`:''}{n.pages_on_old_address?`; ${fmtNumber(n.pages_on_old_address)} course pages on the old address are left for relinking`:''}.</p>
+        :<p className="cf-chip tone-warning">Not saved{n.error?`: ${n.error}`:last.verdict==='failed'?': the check failed':''}.</p>)}
+    </div>}
   </div>
 }
 function ContactsStep({b}){

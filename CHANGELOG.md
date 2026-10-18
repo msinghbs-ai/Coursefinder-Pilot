@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.215 — 18 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.288** (Check or change a website), bug 18/10-01. The Platform Admin asked on 18 Oct 2026 20:35: "add to bug/fix: Website - should have to feature to validate or change the website in the adapter builder."
+  - **Screen:** Layer 2 › Adapter builder, step 1.1 Website: Check website (Curator and above) and Change website (Platform Admin, with a reason), with the verdict, the evidence and, after a change, what was saved and restarted. A record holding two addresses is pointed out.
+  - **Database:** table `pipeline.provider_website_checks`, `public.admin_provider_website_check` (list, check, change), worker functions `svc_provider_website_check_next` and `svc_provider_website_check_record`, `security.provider_website_change_apply_v1`, job `provider-website-check` (every 5 minutes, only when a check waits), setting `batch.website_check`.
+  - **Worker:** coverage-sweep v0.31.0, mode `site_check`.
+  - Consumer API unchanged (Decision 266).
+
 ## 0.1.214 — 18 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.287** (Build adapter). The Platform Admin asked on 17 Oct 2026 18:56: "click and generate the adapter and configure it for all fields available in the db and seek value for enrichment or foundation fill", on 18 Oct 11:58 "position and plan it on right ui and retire what is not used" (Build adapter added to Layer 2 › Adapters, the Adapter builder kept) and at 14:05 "Proceed with next step".

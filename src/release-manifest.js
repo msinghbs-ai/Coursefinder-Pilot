@@ -1,20 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.287'
-export const PACKAGE_VERSION='0.1.214'
+export const UI_VERSION='2.15.288'
+export const PACKAGE_VERSION='0.1.215'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'18 Oct 2026',
-  title:'Build adapter',
+  title:'Check or change a website',
   changes:[
-    'Layer 2 › Build adapter (new tab beside Adapters; the Adapter builder stays): every university with its stage (tested, admitted, building, needs pages, stopped, no adapter) and, for those with an adapter, how many of eight fields are Ready, for Review or Not ready, and how many values the Ready fields would add. Measured every hour; measuring never admits anything.',
-    'A university’s page measures the eight fields now (intakes, international fee, English, delivery, duration, campus, study level, majors and specialisations), says why each is where it is, and has one Admit button (Platform Admin, with a reason) for the Ready fields only: intakes, fee, English and delivery through the adapter; duration, campus and study level through an Enrichment task that fills only what is missing; majors into the majors list.',
-    'Tick universities to build them (onboarding starts, or a stopped one is retried) and name the wave they belong to; the Waves view groups them.',
-    'Retired: an unused settings screen and an unused page script; seven worker modes nothing ran in 30 days (worker v0.30.1).'
+    'Layer 2 › Adapter builder, step 1.1 Website: Check website reads the home page now and shows whether it answers, whether it is a third-party site, whether the provider’s CRICOS code or name is on it and whether it is the site the register lists, with a verdict (Verified, Likely, Failed).',
+    'Change website (Platform Admin): the new address is checked the same way and saved only when Verified or Likely; course-page searches, a stopped or held search, contacts and central pages then start again. A second site of the same provider is kept as an extra source.'
   ],
-  bugFixes:[]
+  bugFixes:['Bug 18/10-01: a wrong or double website could not be checked or replaced in the Adapter builder.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
