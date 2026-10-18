@@ -48,7 +48,8 @@ test('page identity v1.0.2: a "yes" needs the name on the page, the same qualifi
 
 test('page identity is qualification only and directory pages are hints only', async () => {
   const idx = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(idx).toContain('if (mode === "id_qualify")')
+  expect(idx).not.toContain('if (mode === "id_qualify")') // 18 Oct 2026: retired (nothing ran it in 30 days)
+  expect(idx).toContain('// id_qualify: retired 18 Oct 2026')
   expect(idx).not.toMatch(/mode === "id_check"|mode === "ai_identity"/) // no live mode yet
   for (const f of ['20261002184900_cf247_page_identity_holdout.sql', '20261002185000_cf247_page_identity_holdout_h2.sql', '20261002185200_cf247_directory_match.sql'])
     expect(await fs.readFile(`supabase/migrations-archive/${f}`, 'utf8')).not.toMatch(/coverage_course_pages\s+set|insert into catalogue\.|update catalogue\./i)
@@ -63,10 +64,9 @@ test('22:26 decisions: AU English by exact title too; robots.txt per RFC 9309; F
   const f = await fs.readFile('supabase/migrations-archive/20261002185700_cf247_english_policy_flag_step.sql', 'utf8')
   expect(f).not.toMatch(/status = 'approved', decided_by/) // the flag step approves nothing
   const idx = await fs.readFile('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(idx).toContain('else if (direct && (direct.status === 404 || direct.status === 410)) robotsState = "none";')
-  expect(idx).toContain('else if (direct?.ok) robotsState = "no_rules";')
-  expect(idx).toContain('if (robotsState === "unreadable") return j(')
-  expect(idx).toContain('robotsAllows(await robotsFor(new URL(u.origin)), "/") && await useFc("site_hint", it.provider_id, u.origin + "/")')
+  // 18 Oct 2026: the site-hint check (robots.txt then Firecrawl) is retired with mode site_hint_verify; robotsFor stays for other readers
+  expect(idx).toContain('robotsFor(')
+  expect(idx).toContain('// site_hint_verify: retired 18 Oct 2026') // the site-hint check that used Firecrawl after a direct read is retired
 })
 
 test('Decision 235: Canadian field + award rule (Canada only) and the website name rule', async () => {

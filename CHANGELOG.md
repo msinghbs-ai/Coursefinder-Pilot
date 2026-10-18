@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.214 — 18 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.287** (Build adapter). The Platform Admin asked on 17 Oct 2026 18:56: "click and generate the adapter and configure it for all fields available in the db and seek value for enrichment or foundation fill", on 18 Oct 11:58 "position and plan it on right ui and retire what is not used" (Build adapter added to Layer 2 › Adapters, the Adapter builder kept) and at 14:05 "Proceed with next step".
+  - **Screen:** Layer 2 › Build adapter: Universities (stage and readiness of eight fields, build selected into a wave), a university's page (fields measured now, one Admit for Ready fields only), Waves. Backend Decision 267 (migration `20261018070000`). S60.
+  - **Retired:** `src/RegulatorySettings.jsx` (nothing imported it); the separate script tag for the Layer 4 mass operations module (Layer 4 › Batches loads it); worker modes directory_capture, fc_extract_qualify, id_qualify, openrouter_key, page_codes, reference_capture and site_hint_verify (none ran in 30 days; worker v0.30.1). SOPs 1.28.
+
 ## 0.1.213 — 16 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.286** (Storage sizes). The Platform Admin asked on 16 Oct 2026 23:18: "Prepare and record all db and tables data and sizes also prepare total bucket usage. Keep the stat's simple and recoed on daily basis."

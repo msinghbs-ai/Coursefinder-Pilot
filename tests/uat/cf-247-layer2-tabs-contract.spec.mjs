@@ -5,7 +5,7 @@ import { PAGES } from '../../src/nav-map.js'
 import { mockAdmin } from './support/admin-mock.mjs'
 
 test('tabs and removed duplicates', () => {
-  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Adapters', 'Adapter builder', 'Onboarding', 'Enrich fields', 'Scholarships']) // v2.15.200 Decision 254: Overview, Fetch an area, History and Source profiles retired; v2.15.211 Adapter builder
+  expect(PAGES.layer2.tabs.map(t => t.label)).toEqual(['Adapters', 'Build adapter', 'Adapter builder', 'Onboarding', 'Enrich fields', 'Scholarships']) // v2.15.287: Build adapter (Decision 267) // v2.15.200 Decision 254: Overview, Fetch an area, History and Source profiles retired; v2.15.211 Adapter builder
   // v2.15.214: the retired Layer 2 screens (layer2-operations-entry.jsx, EnrichmentOperations.jsx) are deleted, not just unrouted.
   for (const f of ['src/layer2-operations-entry.jsx', 'src/EnrichmentOperations.jsx']) expect(fs.existsSync(f)).toBe(false)
 })

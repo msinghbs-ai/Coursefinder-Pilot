@@ -63,6 +63,8 @@ export const PAGES = {
   // and Coverage › Universities open Adapters.
   layer2: { label: 'Layer 2 Discovery & reading', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'University adapters: build, qualify, admit, switch on or off, and when the pages of each university are read again.', tabs: [
     { key: 'adapters', label: 'Adapters', min: 4 },
+    // v2.15.287 (Decision 267, Platform Admin 18 Oct 11:58 "Keep Adapter builder too"): one click per university, eight fields measured
+    { key: 'build', label: 'Build adapter', min: 3 },
     { key: 'builder', label: 'Adapter builder', min: 5 },
     // v2.15.258 (Platform Admin bug 12/10-01): the onboarding journey, from Providers › Onboarding: provider in, prepare, create adapter,
     // admit, enrich courses, scholarship adapter, admit scholarships

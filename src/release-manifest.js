@@ -1,15 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.286'
-export const PACKAGE_VERSION='0.1.213'
+export const UI_VERSION='2.15.287'
+export const PACKAGE_VERSION='0.1.214'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'16 Oct 2026',
-  title:'Storage sizes recorded daily',
+  date:'18 Oct 2026',
+  title:'Build adapter',
   changes:[
-    'Settings \u203a Storage & retention: Storage sizes, recorded every day at about 00:25 Melbourne time: the database, each schema, each table (rows, table, index and long-value bytes, with the change over 1 and 7 days) and each file storage bucket (files and bytes, with the change over 7 days). Measure now (Platform Admin) records today again.'
+    'Layer 2 › Build adapter (new tab beside Adapters; the Adapter builder stays): every university with its stage (tested, admitted, building, needs pages, stopped, no adapter) and, for those with an adapter, how many of eight fields are Ready, for Review or Not ready, and how many values the Ready fields would add. Measured every hour; measuring never admits anything.',
+    'A university’s page measures the eight fields now (intakes, international fee, English, delivery, duration, campus, study level, majors and specialisations), says why each is where it is, and has one Admit button (Platform Admin, with a reason) for the Ready fields only: intakes, fee, English and delivery through the adapter; duration, campus and study level through an Enrichment task that fills only what is missing; majors into the majors list.',
+    'Tick universities to build them (onboarding starts, or a stopped one is retried) and name the wave they belong to; the Waves view groups them.',
+    'Retired: an unused settings screen and an unused page script; seven worker modes nothing ran in 30 days (worker v0.30.1).'
   ],
   bugFixes:[]
 }

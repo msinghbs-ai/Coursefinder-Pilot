@@ -40,7 +40,6 @@ test('every catalogue country: Data Quality, Enrichment operations, Provider ass
   expect(fix).not.toContain('any((select')
   expect(read('src/data-quality-entry.jsx')).toContain("const DQ_COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}")
   expect(read('src/KeyDates.jsx')).toContain("CA:'Canada'")
-  expect(read('src/RegulatorySettings.jsx')).toContain("const IN_SCOPE = ['AU', 'NZ', 'CA']")
   expect(read('src/m2-3-intelligence-entry.jsx')).toContain('<option>CAD</option>')
   expect(read('src/ScholarshipRecord.jsx')).not.toContain('A$)')
   expect(read('src/ProviderContactsWorkspace.jsx')).toContain("country={filters.country||''}")

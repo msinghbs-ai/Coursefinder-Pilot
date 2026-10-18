@@ -8,7 +8,7 @@
 //     entry below in the same pull request.
 // Plain Australian English; no numbers that go stale (counts and amounts live on the screens themselves).
 
-export const GUIDE_REVIEWED_FOR = '2.15.286'
+export const GUIDE_REVIEWED_FOR = '2.15.287'
 
 export const ROLES = [
   { role: 'Viewer', rank: 1, who: 'Stakeholder, auditor', can: 'Read every screen they can open; change nothing.',
@@ -38,6 +38,7 @@ export const DAILY_ROUTINE = [
   { title: 'Platform health › Needs attention', page: 'health', text: 'Clear every Critical item today. Read each Warning: fix it, or note why it can wait.' },
   { title: 'Scheduled jobs › Automations', page: 'jobs', tab: 'automations', text: 'Check "Failed in the last 24 hours". Open any failed automation and read its last error (see Signal → action).' },
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and the AI send-back tab retired; adapters admit the values.
+  { title: 'Layer 2 › Build adapter', page: 'layer2', tab: 'build', text: 'Each university\'s eight fields are measured every hour. Open a university with Ready fields that add values, check why each field is where it is, and admit the Ready ones with one click (Platform Admin, with a reason). Review fields need a look in the Adapter builder first.' },
   { title: 'Layer 2 › Adapters', page: 'layer2', tab: 'adapters', text: 'Intakes, English requirements and fees are read by each university\'s adapter. A university without an adapter uses its university-wide academic calendar and English policy defaults.' },
   { title: 'Coverage & completeness', page: 'coverage', text: 'Course links, English, intakes and tuition counts should rise. Flat for a day means a job is stuck or out of budget.' },
   { title: 'Layer 4 Review', page: 'layer4', text: 'Work the oldest items first: approve, correct or reject, with a reason.' },

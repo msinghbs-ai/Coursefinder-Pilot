@@ -20,10 +20,7 @@ test('Regulatory settings merged into Layer 1; its Pilot reset and the readiness
   // v2.15.228: Reset database retired (Platform Admin, 9 Oct 2026)
   expect(main).not.toContain('mode="reset"')
   expect(read('src/lib/supabase.js')).not.toContain('pilot-reset')
-  const reg = read('src/RegulatorySettings.jsx')
-  expect(reg).toContain("const IN_SCOPE = ['AU', 'NZ', 'CA']")
-  expect(reg).not.toContain('Layer 1 source registry')
-  expect(reg).not.toContain('RESET DATABASE')
+  expect(fs.existsSync('src/RegulatorySettings.jsx')).toBe(false) // 18 Oct 2026: unused screen retired
 })
 
 test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live; Layer 4 › Blocks retired (v2.15.253)', () => {

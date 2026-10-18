@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.27 (reviewed for platform release v2.15.286)  
+**Version:** 1.28 (reviewed for platform release v2.15.287)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -129,3 +129,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.25 | 16 Oct 2026 | v2.15.284 | Users & roles: Delete (Platform Admin; never a Platform Admin, your own account or the system account; type the email to confirm). Platform health: held work is shown apart from stalls; scholarship pages asked to be read again are no longer held by the per-university cap. |
 | 1.26 | 16 Oct 2026 | v2.15.285 | Scheduled jobs › Task manager shows Background jobs again (every scheduled job and worker using the platform, with Pause, Resume and Run now) under the tasks people start. |
 | 1.27 | 16 Oct 2026 | v2.15.286 | Settings › Storage & retention starts with Storage sizes: database, schema, table and bucket sizes recorded daily, with Measure now for the Platform Admin. |
+| 1.28 | 18 Oct 2026 | v2.15.287 | Layer 2 › Build adapter: universities with the readiness of eight fields (Ready, Review, Not ready) and what they would add; a university's page admits its Ready fields with one click (Platform Admin, with a reason); build selected universities into a wave. An unused settings screen and seven unused worker modes retired. |
