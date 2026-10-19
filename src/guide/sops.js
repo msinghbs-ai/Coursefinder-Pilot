@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.291'
+export const SOP_REVIEWED_FOR = '2.15.292'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.32', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.33', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -128,10 +128,11 @@ export const SOPS = [
       { version: '1.29', date: '18 Oct 2026', release: '2.15.288', change: 'Adapter builder 1.1 Website: Check website (reads the home page now: answers, not a third-party site, CRICOS code or name on it, or the register-listed site; Verified, Likely or Failed) and Change website (Platform Admin; checked first, saved only when Verified or Likely; searches, contacts and central pages start again; a second site is kept as an extra source).' },
       { version: '1.30', date: '18 Oct 2026', release: '2.15.289', change: 'Adapter builder: follow the guide at the top. It shows each step (Done, Running by itself, Your turn, Optional, Later) and the one next thing to press, with Go to step. Contacts, central pages and course-page search run by themselves after a website change; nothing to press while they run.' },
       { version: '1.31', date: '18 Oct 2026', release: '2.15.290', change: 'Course-page searches you ask for (Find course pages, a website change) run for any university and go first. The Adapter builder guide shows them as running only when they will run, and otherwise says why.' },
-      { version: '1.32', date: '19 Oct 2026', release: '2.15.291', change: 'Reviewed, no steps changed: the version pill, release notes, Rankings & statistics cards and the Evidence acquisition box are now drawn with the page instead of added after it. They look and work as before; the QS and THE cards show one edition picker.' }],
+      { version: '1.32', date: '19 Oct 2026', release: '2.15.291', change: 'Reviewed, no steps changed: the version pill, release notes, Rankings & statistics cards and the Evidence acquisition box are now drawn with the page instead of added after it. They look and work as before; the QS and THE cards show one edition picker.' },
+      { version: '1.33', date: '19 Oct 2026', release: '2.15.292', change: 'Coverage & completeness › Counsellor reports: reports from counsellors in Zoho on a course, institute, campus or contact (missing, wrong or out of date, with a suggested value and source link). Close each as Fixed or Not changed with a reason; Zoho shows the outcome. Operator SOP: a morning step to work the reports.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.32', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.33', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -144,6 +145,7 @@ export const SOPS = [
         step({ role: 'Curator', do: 'Layer 4 Review › Review queue: oldest first. Open the stored page or document, then approve, correct or reject with a reason.', page: 'layer4', tab: 'review', why: 'These are values automation would not decide: sources disagree, only an unofficial source, a fee year that does not match.', done: 'The count falls day on day.' }),
         step({ role: 'Curator', do: 'Layer 4 › AI could not decide: for each page compare every model\'s answer and quote with the stored copy; Admit the right answer, or Refuse with a reason. Your decision is kept for that page copy.', page: 'layer4', tab: 'aireview', why: 'Scholarship pages no model could prove; admitted answers still pass the hourly publishing checks.', done: 'Oldest items cleared first.' }),
         step({ role: 'Curator', do: 'Layer 4 › Websites to find: enter the official website for each university listed and Save.', page: 'layer4', tab: 'websites', why: 'Onboarding cannot start without a website; it carries on by itself once one is saved.', done: 'List shorter; nothing guessed.' }),
+        step({ role: 'Pipeline Operator', do: 'Coverage & completeness › Counsellor reports: oldest first. Check what the counsellor reported against the source link or the provider\'s page; correct the value where it is held, then close the report as Fixed, or Not changed with the reason. Zoho shows the outcome to the counsellor.', page: 'coverage', tab: 'reports', why: 'Counsellors in Zoho Creator and CRM see the data with students and report missing or wrong values on courses, institutes, campuses and contacts.', done: 'No report older than two working days.' }),
       ] },
       { when: 'Afternoon: follow-up', steps: [
         step({ role: 'Pipeline Operator', do: 'Layer 2 › Onboarding › Stopped: read each reason. Fix what you can (website, course pages) and tell the Platform Admin which rows need Retry, approvals or admitting. Rows at Enrich courses or Admit scholarships move on by themselves.', page: 'layer2', tab: 'onboarding', why: 'Onboarding stops for a person; it never guesses.', done: 'Each stopped row has an owner.' }),
@@ -207,7 +209,8 @@ export const SOPS = [
       { version: '1.29', date: '18 Oct 2026', release: '2.15.288', change: 'Adapter builder 1.1 Website: Check website (reads the home page now: answers, not a third-party site, CRICOS code or name on it, or the register-listed site; Verified, Likely or Failed) and Change website (Platform Admin; checked first, saved only when Verified or Likely; searches, contacts and central pages start again; a second site is kept as an extra source).' },
       { version: '1.30', date: '18 Oct 2026', release: '2.15.289', change: 'Adapter builder: follow the guide at the top. It shows each step (Done, Running by itself, Your turn, Optional, Later) and the one next thing to press, with Go to step. Contacts, central pages and course-page search run by themselves after a website change; nothing to press while they run.' },
       { version: '1.31', date: '18 Oct 2026', release: '2.15.290', change: 'Course-page searches you ask for (Find course pages, a website change) run for any university and go first. The Adapter builder guide shows them as running only when they will run, and otherwise says why.' },
-      { version: '1.32', date: '19 Oct 2026', release: '2.15.291', change: 'Reviewed, no steps changed: the version pill, release notes, Rankings & statistics cards and the Evidence acquisition box are now drawn with the page instead of added after it. They look and work as before; the QS and THE cards show one edition picker.' }],
+      { version: '1.32', date: '19 Oct 2026', release: '2.15.291', change: 'Reviewed, no steps changed: the version pill, release notes, Rankings & statistics cards and the Evidence acquisition box are now drawn with the page instead of added after it. They look and work as before; the QS and THE cards show one edition picker.' },
+      { version: '1.33', date: '19 Oct 2026', release: '2.15.292', change: 'Coverage & completeness › Counsellor reports: reports from counsellors in Zoho on a course, institute, campus or contact (missing, wrong or out of date, with a suggested value and source link). Close each as Fixed or Not changed with a reason; Zoho shows the outcome. Operator SOP: a morning step to work the reports.' }],
   },
 ]
 

@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.291'
-export const PACKAGE_VERSION='0.1.218'
+export const UI_VERSION='2.15.292'
+export const PACKAGE_VERSION='0.1.219'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Oct 2026',
-  title:'One source for the version and release notes',
+  title:'Counsellor reports from Zoho',
   changes:[
-    'Retired the scripts that patched the page after it was drawn; the version and release history now come from one place.',
-    'The version pill and release notes, the Rankings & statistics cards (which datasets show, their descriptions and edition figures), the ranking dataset page heading and the Evidence acquisition provenance box are now drawn with the page itself. They look and work as before.'
+    'Coverage & completeness › Counsellor reports: counsellors in Zoho Creator and Zoho CRM report a missing, wrong or out-of-date value on a course, institute, campus or contact, with a suggested value and a source link.',
+    'Close each report as Fixed or Not changed with a reason; Zoho reads the outcome back and shows it to the counsellor.'
   ],
-  bugFixes:['The QS and THE cards on Rankings & statistics showed two edition pickers; they now show one, and its figures follow the chosen edition.']
+  bugFixes:['A report from Zoho naming a course only by its CRICOS code (for example 082960F) was refused as not found; it is now accepted.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

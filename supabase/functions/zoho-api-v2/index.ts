@@ -11,7 +11,7 @@ type Json = Record<string, unknown>;
 const API_VERSION = "zoho-v2";
 const LOGO_BUCKET = "provider-assets";
 const ACTIONS = ["reference", "search", "course", "courses", "providers", "provider", "campuses", "contacts", "rankings", "scholarships",
-  "scholarship", "statistics", "sync", "export", "report"];
+  "scholarship", "statistics", "sync", "export", "report", "report_status"];
 const MESSAGES: Record<string, string> = {
   INVALID_JSON: "Malformed JSON request",
   INVALID_ACTION: "Unsupported action",
@@ -156,13 +156,29 @@ Deno.serve(async (req: Request) => {
       fn = "zoho_v2_passthrough"; args = { p_action: action, p_filters: null, p_page: null, p_page_size: null, p_id: s, p_body: null }; break;
     }
     case "report": {
-      const c = cleanText(body.course_id) || cleanText(body.cricos_course_code);
-      const note = typeof body.note === "string" ? body.note.trim().slice(0, 1000) : "";
-      if (!c || note.length < 3) return fail(400, "INVALID_INPUT", {}, "course_id and a note of at least 3 characters required");
-      const rep = (body.reporter && typeof body.reporter === "object") ? body.reporter as Json : {};
-      fn = "zoho_v2_passthrough";
-      args = { p_action: "report", p_filters: null, p_page: null, p_page_size: null, p_id: c, p_body: { field: cleanText(body.field) || "other", note,
-        reporter: { name: cleanText(rep.name).slice(0, 120), email: cleanText(rep.email).slice(0, 160), ref: cleanText(rep.ref).slice(0, 120) } } };
+      // 19 Oct 2026 (Platform Admin 14:51, consumer API change approved): a course (by course_id or CRICOS code), institute, campus or contact;
+      // issue, suggested_value and source_url added. A report sent with the first-issue fields works as before.
+      const note = typeof body.note === "string" ? body.note.trim() : "";
+      if (note.length < 3) return fail(400, "INVALID_INPUT", {}, "a note of at least 3 characters required");
+      const rep = (body.reporter && typeof body.reporter === "object" && !Array.isArray(body.reporter)) ? body.reporter as Json : {};
+      const pick: Json = {};
+      for (const k of ["entity", "course_id", "cricos_course_code", "provider_id", "cricos_provider_code", "campus_id", "contact_id", "identifier",
+        "field", "issue", "suggested_value", "source_url"]) {
+        const v = body[k];
+        if (v !== undefined && v !== null) {
+          if (typeof v !== "string" && typeof v !== "number") return fail(400, "INVALID_INPUT", {}, `${k} must be text`);
+          pick[k] = String(v).trim().slice(0, 500); // fixed: input length cap
+        }
+      }
+      pick.note = note.slice(0, 1000); // fixed: input length cap
+      pick.reporter = { name: cleanText(rep.name).slice(0, 120), email: cleanText(rep.email).slice(0, 160), ref: cleanText(rep.ref).slice(0, 120) };
+      fn = "zoho_v2_report"; args = { p_body: pick };
+      break;
+    }
+    case "report_status": {
+      const ids = body.flag_ids;
+      if (!Array.isArray(ids) || ids.length === 0 || ids.some((x) => typeof x !== "string" || !x.trim() || x.length > 64)) return fail(400, "INVALID_INPUT", {}, "flag_ids must be a list of report ids");
+      fn = "zoho_v2_report_status"; args = { p_flag_ids: ids.map((x) => (x as string).trim()) };
       break;
     }
     case "sync": {
