@@ -10,7 +10,7 @@ import'./FlagsPanel.css'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const call=(action,args={})=>supabase.rpc('admin_flags',{p_action:action,p_args:args}).then(({data,error})=>{if(error)throw error;return data})
-export const REASONS={
+export const REASONS={course_pages_not_found:'Course pages not found',
  enrich_no_value:'Page gives no value (Enrich fields)',outside_focus:'Outside the focus providers',page_not_found:'No course page found',
  logo_not_found:'No logo on the home page',site_unreachable:'Website does not answer',central_not_due:'Central pages not due',central_budget:'No credit left today',
  idle_paused:'Job ran empty',manual_hold:'Held by a person',fee_crosscheck:'Fee fails the cross-check',policy_disagrees:'Policy disagrees with pages',
@@ -40,7 +40,7 @@ export default function FlagsPanel({onError}){
  useEffect(()=>{load()},[state,entity,reason,offset])
  useEffect(()=>{const t=setTimeout(()=>{setOffset(0);load()},300);return()=>clearTimeout(t)},[q])
  useEffect(()=>{setPicked([]);},[state,entity,reason,offset,q])
- const can=Boolean(summary?.can_change),rows=data?.items||[],held=(summary?.by_reason||[]).reduce((a,x)=>a+Number(x.held||0),0)
+ const can=Boolean(summary?.can_change),rel=summary?.release_codes||[],canRel=f=>can||rel.includes('*')||rel.includes(f?.reason_code),relAny=can||rel.length>0,rows=data?.items||[],held=(summary?.by_reason||[]).reduce((a,x)=>a+Number(x.held||0),0)
  const reasons=[...new Set((summary?.by_reason||[]).map(x=>x.reason_code))]
  async function release(ids){const why=prompt(`Release ${ids.length} flag${ids.length>1?'s':''} and put ${ids.length>1?'them':'it'} back in the queue. Reason (kept with the flag):`);if(!why)return
   try{const r=await call('release',{ids,reason:why});setNote(`${r.released} released and re-queued.`);setPicked([]);load()}catch(e){setNote('Not released: '+errText(e))}}
@@ -59,19 +59,19 @@ export default function FlagsPanel({onError}){
     <label>State<select value={state} onChange={e=>{setState(e.target.value);setOffset(0)}}><option value="raised">Held</option><option value="counting">Tried once</option><option value="released">Released</option><option value="">All</option></select></label>
     <label>On<select value={entity} onChange={e=>{setEntity(e.target.value);setOffset(0)}}><option value="">Everything</option><option value="provider">Providers</option><option value="course">Course fields</option><option value="job">Jobs</option></select></label>
     <label>Reason<select value={reason} onChange={e=>{setReason(e.target.value);setOffset(0)}}><option value="">All reasons</option>{reasons.map(r=><option key={r} value={r}>{reasonLabel(r)}</option>)}</select></label>
-    {can&&picked.length>0&&<button className="m-secondary compact" onClick={()=>release(picked)}><RotateCcw size={14}/>Release {picked.length}</button>}
+    {relAny&&picked.length>0&&<button className="m-secondary compact" onClick={()=>release(picked)}><RotateCcw size={14}/>Release {picked.length}</button>}
    </div>
    {note&&<p className="cf-flag-note" role="status">{note}</p>}
-   <div className="dense-table-wrap"><table className="dense-table"><thead><tr>{can&&<th/>}<th><span>Held item</span></th><th><span>Reason</span></th><th><span>State</span></th><th><span>Raised</span></th><th><span>Next check</span></th><th><span>History</span></th></tr></thead><tbody>
+   <div className="dense-table-wrap"><table className="dense-table"><thead><tr>{relAny&&<th/>}<th><span>Held item</span></th><th><span>Reason</span></th><th><span>State</span></th><th><span>Raised</span></th><th><span>Next check</span></th><th><span>History</span></th></tr></thead><tbody>
     {rows.length?rows.map(f=><tr key={f.id} data-flag-row={f.state}>
-     {can&&<td>{f.state!=='released'&&<input type="checkbox" aria-label="Select" checked={picked.includes(f.id)} onChange={e=>setPicked(p=>e.target.checked?[...p,f.id]:p.filter(x=>x!==f.id))}/>}</td>}
+     {relAny&&<td>{f.state!=='released'&&canRel(f)&&<input type="checkbox" aria-label="Select" checked={picked.includes(f.id)} onChange={e=>setPicked(p=>e.target.checked?[...p,f.id]:p.filter(x=>x!==f.id))}/>}</td>}
      <td className="primary-cell"><strong>{what(f)}</strong>{f.entity==='course'&&f.provider_name&&<small> · {f.provider_name}</small>}</td>
      <td><b>{reasonLabel(f.reason_code)}</b><br/><small>{f.reason}</small></td>
      <td><StatusChip tone={tone(f.state)} label={stateLabel(f.state)}/>{f.kind==='soft'&&f.state!=='released'&&<small> {f.tries} {f.tries===1?'try':'tries'}</small>}{f.state==='released'&&<small><br/>{f.release_kind==='person'?'by '+f.released_by:f.release_reason}</small>}</td>
      <td>{fmtDateTime(f.flagged_at)}<br/><small>{f.raised_by_kind==='person'?'by ':''}{f.raised_by}</small></td>
      <td>{f.state==='raised'?(f.next_check_at?fmtDateTime(f.next_check_at):<small>{f.entity==='course'?'when the page changes':'when released'}</small>):'—'}</td>
-     <td><button className="m-secondary compact" onClick={()=>setHistory(f.id)}><History size={13}/>History</button>{can&&f.state!=='released'&&<button className="m-secondary compact" onClick={()=>release([f.id])}>Release</button>}</td>
-    </tr>):<tr><td colSpan={can?7:6}><EmptyInline text={busy?'Loading…':'No flags match.'}/></td></tr>}
+     <td><button className="m-secondary compact" onClick={()=>setHistory(f.id)}><History size={13}/>History</button>{canRel(f)&&f.state!=='released'&&<button className="m-secondary compact" onClick={()=>release([f.id])}>Release</button>}</td>
+    </tr>):<tr><td colSpan={relAny?7:6}><EmptyInline text={busy?'Loading…':'No flags match.'}/></td></tr>}
    </tbody></table></div>
    <Pager offset={offset} limit={50} total={Number(data?.total||0)} onOffset={setOffset}/>
   </section>
