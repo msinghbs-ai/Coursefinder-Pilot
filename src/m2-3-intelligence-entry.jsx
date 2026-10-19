@@ -226,5 +226,6 @@ function Table({headers,rows}){return <div className="m23-table"><div className=
 function LinkCompare({r}){
   const t=r?.technical||{},b=t.before_value,held=Array.isArray(b)?b[0]:typeof b==='string'?b:b?.url||b?.course_url,pv=t.proposed_value,next=typeof pv==='string'?pv:pv?.url||pv?.course_url
   const a=u=>u?<a href={u} target="_blank" rel="noreferrer">{u} <ExternalLink size={12}/></a>:<span>none</span>
-  return <dl className="l4d-compare" data-l4-compare><dt>Page we hold</dt><dd data-l4-held>{a(held)}</dd><dt>New page</dt><dd data-l4-new>{a(next)}</dd></dl>
+  const code=r?.entity?.code||r?.entity?.course_code
+  return <dl className="l4d-compare" data-l4-compare>{code&&<><dt>CRICOS code</dt><dd data-l4-code><strong>{code}</strong></dd></>}<dt>Page we hold</dt><dd data-l4-held>{a(held)}</dd><dt>New page</dt><dd data-l4-new>{a(next)}</dd></dl>
 }

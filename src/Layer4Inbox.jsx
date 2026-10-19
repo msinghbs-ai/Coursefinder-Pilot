@@ -70,9 +70,9 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   const choose=c=>{setErr('');if(c.link){window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'?urlOf(d.proposed):'')}
   const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
   return <article className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind}>
-    <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d</small></header>
+    <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title="CRICOS code" data-l4-code>CRICOS {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d</small></header>
     <p className="l4i-why">{it.why}</p>
-    {it.kind==='course_link'&&(urlOf(d.before)||urlOf(d.proposed))&&<dl className="l4i-dl"><dt>Page we hold</dt><dd data-l4-held>{urlOf(d.before)?<a href={urlOf(d.before)} target="_blank" rel="noreferrer">{urlOf(d.before)} <ExternalLink size={11}/></a>:'none'}</dd><dt>New page</dt><dd data-l4-new>{urlOf(d.proposed)?<a href={urlOf(d.proposed)} target="_blank" rel="noreferrer">{urlOf(d.proposed)} <ExternalLink size={11}/></a>:'none'}</dd></dl>}
+    {it.kind==='course_link'&&(urlOf(d.before)||urlOf(d.proposed))&&<dl className="l4i-dl"><dt>Page we hold</dt><dd data-l4-held><PageLink u={urlOf(d.before)} title={it.subject}/></dd><dt>New page</dt><dd data-l4-new><PageLink u={urlOf(d.proposed)} title={it.subject}/></dd></dl>}
     {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
     <div className="l4i-choices">{(k.choices||[]).map(c=>{const low=c.rank&&rank<c.rank;return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low} title={low?'Your role cannot make this choice':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
     {open&&<div className="l4i-confirm">
@@ -85,3 +85,9 @@ function Item({it,k,showProvider,rank,onDone,onError}){
     </div>}
   </article>
 }
+
+// v2.15.299 (Platform Admin, 20 Oct 2026 09:41: "the course name is align to course url, there should be no confusion"): each address says
+// whether its last part is the course's own name, or the course name with more words (a major or specialisation)
+const slug=t=>String(t||'').toLowerCase().replace(/&/g,' and ').replace(/\([^)]*\)/g,m=>' '+m.slice(1,-1)+' ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')
+function nameMatch(u,title){if(!u||!title)return null;const last=String(u).replace(/[?#].*$/,'').replace(/\/+$/,'').split('/').pop().toLowerCase(),t=slug(title);if(!t)return null;if(last===t)return'name';if(last.startsWith(t+'-'))return'major';return null}
+function PageLink({u,title}){if(!u)return'none';const m=nameMatch(u,title);return <><a href={u} target="_blank" rel="noreferrer">{u} <ExternalLink size={11}/></a>{m==='name'&&<em className="l4i-match ok" data-l4-match="name">matches the course name</em>}{m==='major'&&<em className="l4i-match warn" data-l4-match="major">a major or specialisation of the course</em>}</>}
