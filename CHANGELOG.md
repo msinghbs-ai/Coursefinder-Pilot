@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.221 — 19 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.294** (View saved pages, and which copy is which). Platform Admin, 19 Oct 2026 22:13: "evidence still duplicated"; "tried opening view page and error Preview_not_allowed".
+  - **Screen:** Evidence (`src/EvidenceWorkspace.jsx`): each row carries a label from `public.admin_evidence_copy_roles` (migration `20261019100000_cf247_evidence_copy_roles.sql`, helper `api.evidenceCopyRoles`): Course page in use, Older copy · its values are in use, or Older copy, with copy n of m; Provider's facts page (not this course's page); Register or catalogue file; Page screenshot. The panel says "Older copy · its values are in use" instead of "Replaced by a newer copy" when the values in use still come from that copy.
+  - **Fixed:** View page was refused (`preview_not_allowed`) for saved web pages, markdown and every gzip-compressed file (about 117,000), and Download gave a .gz. `admin-evidence-access` v1.1 unpacks the file and returns its text; the panel shows HTML in a sandboxed frame (no scripts, forms or same-origin; a content policy blocks scripts and connections) and text as text; Download saves the unpacked .html or .md.
+  - Tests: new `tests/uat/cf-247-s75-evidence-view-copies-contract.spec.mjs`.
+  - SOPs 1.35 (reviewed, no steps changed).
+
 ## 0.1.220 — 19 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.293** (A shorter Evidence panel). Platform Admin, 19 Oct 2026 19:04: "explain why the evidence details panel is so bloated and hard to read ... simplify ... readability".

@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.293'
-export const PACKAGE_VERSION='0.1.220'
+export const UI_VERSION='2.15.294'
+export const PACKAGE_VERSION='0.1.221'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Oct 2026',
-  title:'A shorter Evidence panel',
+  title:'View saved pages, and which copy is which',
   changes:[
-    'Evidence: the panel for a saved page now fits one screen. It shows the course and university, the page address, when and how it was read, and whether it was accepted as the course\'s page (and how: exact title, CRICOS code and so on) and is in use now or was replaced by a newer copy.',
-    'It lists the values the page supplied (fees, intakes, English, links, campuses), any open review items and how many earlier or later copies there are. View page and Download work as before.',
-    'The hash, file, storage and job details are under Technical details, closed by default. The long sections (the lineage strip, private evidence boundary, acquisition box, storage controls and empty claims) are gone.'
+    'Evidence: each row now says what it is. Copies of a course page are numbered (for example copy 1 of 2), the copy in use is marked, and an older copy whose values are still in use says so. A provider\'s facts page or a register or catalogue file is named as such, so it is not mistaken for another copy of the course page.',
+    'The Evidence panel says "Older copy · its values are in use" (not "Replaced") when the page was read again later but the values in use still come from that copy.',
+    'View page opens the saved course page inside StudySearch, as it was read (scripts and forms switched off). Download saves the page as an ordinary .html or .md file.'
   ],
-  bugFixes:['Course pages showed "0 observations · 0 linked" in the Evidence panel because it read the retired observation model; it now shows what the page actually supplied.']
+  bugFixes:['View page was refused ("preview_not_allowed") for every saved course page and markdown page, and Download gave a compressed .gz file.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

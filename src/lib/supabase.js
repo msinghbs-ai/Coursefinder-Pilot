@@ -359,6 +359,13 @@ export const api = {
     if (error) throw error
     return data
   },
+  // v2.15.294: for the rows on screen, which copy of a course page is in use, older, or a different kind of page.
+  evidenceCopyRoles: async ids => {
+    if (!ids?.length) return {}
+    const { data, error } = await supabase.rpc('admin_evidence_copy_roles', { p_ids: ids })
+    if (error) throw new Error(error.message)
+    return data || {}
+  },
   evidenceDetail: evidenceId => adminRead('evidence_detail', { id: evidenceId }),
   evidenceObservations: (evidenceId, { limit = 100, offset = 0, entityType = '' } = {}) => adminRead('evidence_observations', {
     id: evidenceId, limit: bounded(limit, 100), offset: Math.max(Number(offset) || 0, 0), entity_type: entityType || null,

@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.293'
+export const SOP_REVIEWED_FOR = '2.15.294'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.34', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.35', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -130,10 +130,11 @@ export const SOPS = [
       { version: '1.31', date: '18 Oct 2026', release: '2.15.290', change: 'Course-page searches you ask for (Find course pages, a website change) run for any university and go first. The Adapter builder guide shows them as running only when they will run, and otherwise says why.' },
       { version: '1.32', date: '19 Oct 2026', release: '2.15.291', change: 'Reviewed, no steps changed: the version pill, release notes, Rankings & statistics cards and the Evidence acquisition box are now drawn with the page instead of added after it. They look and work as before; the QS and THE cards show one edition picker.' },
       { version: '1.33', date: '19 Oct 2026', release: '2.15.292', change: 'Coverage & completeness › Counsellor reports: reports from counsellors in Zoho on a course, institute, campus or contact (missing, wrong or out of date, with a suggested value and source link). Close each as Fixed or Not changed with a reason; Zoho shows the outcome. Operator SOP: a morning step to work the reports.' },
-      { version: '1.34', date: '19 Oct 2026', release: '2.15.293', change: 'Reviewed, no steps changed: the Evidence panel shows one screen: the course, the page address and when it was read, whether it was accepted as the course\'s page and is in use now, the values it supplied, and its earlier and later copies. View page and Download as before; the hash, file and job are under Technical details.' }],
+      { version: '1.34', date: '19 Oct 2026', release: '2.15.293', change: 'Reviewed, no steps changed: the Evidence panel shows one screen: the course, the page address and when it was read, whether it was accepted as the course\'s page and is in use now, the values it supplied, and its earlier and later copies. View page and Download as before; the hash, file and job are under Technical details.' },
+      { version: '1.35', date: '19 Oct 2026', release: '2.15.294', change: 'Reviewed, no steps changed: Evidence rows say what they are (copy 1 of 2, in use, older copy whose values are in use, provider facts page, register file). View page opens the saved page in StudySearch; Download saves an ordinary .html or .md file.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.34', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.35', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -212,7 +213,8 @@ export const SOPS = [
       { version: '1.31', date: '18 Oct 2026', release: '2.15.290', change: 'Course-page searches you ask for (Find course pages, a website change) run for any university and go first. The Adapter builder guide shows them as running only when they will run, and otherwise says why.' },
       { version: '1.32', date: '19 Oct 2026', release: '2.15.291', change: 'Reviewed, no steps changed: the version pill, release notes, Rankings & statistics cards and the Evidence acquisition box are now drawn with the page instead of added after it. They look and work as before; the QS and THE cards show one edition picker.' },
       { version: '1.33', date: '19 Oct 2026', release: '2.15.292', change: 'Coverage & completeness › Counsellor reports: reports from counsellors in Zoho on a course, institute, campus or contact (missing, wrong or out of date, with a suggested value and source link). Close each as Fixed or Not changed with a reason; Zoho shows the outcome. Operator SOP: a morning step to work the reports.' },
-      { version: '1.34', date: '19 Oct 2026', release: '2.15.293', change: 'Reviewed, no steps changed: the Evidence panel shows one screen: the course, the page address and when it was read, whether it was accepted as the course\'s page and is in use now, the values it supplied, and its earlier and later copies. View page and Download as before; the hash, file and job are under Technical details.' }],
+      { version: '1.34', date: '19 Oct 2026', release: '2.15.293', change: 'Reviewed, no steps changed: the Evidence panel shows one screen: the course, the page address and when it was read, whether it was accepted as the course\'s page and is in use now, the values it supplied, and its earlier and later copies. View page and Download as before; the hash, file and job are under Technical details.' },
+      { version: '1.35', date: '19 Oct 2026', release: '2.15.294', change: 'Reviewed, no steps changed: Evidence rows say what they are (copy 1 of 2, in use, older copy whose values are in use, provider facts page, register file). View page opens the saved page in StudySearch; Download saves an ordinary .html or .md file.' }],
   },
 ]
 
