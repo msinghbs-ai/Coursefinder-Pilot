@@ -2,6 +2,7 @@
 // consumer API is not affected).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { execFileSync } from 'node:child_process'
 const list = JSON.parse(fs.readFileSync('.github/edge-functions.json', 'utf8')).functions
 const onMerge = fs.readFileSync('.github/workflows/deploy-on-merge.yml', 'utf8')
 const drift = fs.readFileSync('.github/workflows/edge-drift-check.yml', 'utf8')
@@ -54,5 +55,14 @@ test('Phase 5: every workflow pins the Supabase CLI (no "latest", which failed o
   for (const f of fs.readdirSync('.github/workflows')) {
     const y = fs.readFileSync(`.github/workflows/${f}`, 'utf8')
     if (y.includes('supabase/setup-cli')) expect(y, f).not.toMatch(/version:\s*latest/)
+  }
+})
+
+test('deploy-function.sh reads verify_jwt false as false, not as missing (19 Oct 2026 fault)', () => {
+  expect(deploy).not.toContain('.functions[$f] // "missing"')
+  expect(deploy).toContain(`'if (.functions | has($f)) then (.functions[$f] | tostring) else "missing" end'`)
+  for (const [f, want] of [['zoho-api-v2', 'false'], ['ranking-evidence-export', 'true'], ['nope', 'missing']]) {
+    const got = execFileSync('jq', ['-r', '--arg', 'f', f, 'if (.functions | has($f)) then (.functions[$f] | tostring) else "missing" end', '.github/edge-functions.json']).toString().trim()
+    expect(got, f).toBe(want)
   }
 })
