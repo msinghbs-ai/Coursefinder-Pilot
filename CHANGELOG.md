@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.223 — 20 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.296** (Course pages not found: held until released). Platform Admin, 20 Oct 2026 06:33: "flag the failed one with reason so they dont get tried again, only operator and above can unflag them".
+  - Migration `20261020010000_cf247_course_pages_not_found_flag.sql`: flag reason `course_pages_not_found` (hard); `security.enrich_focus_v1` and `security.flag_requeue_v1` (md5-guarded), `admin_flags` and `admin_adapter_build` (one line each, md5-guarded); setting `flag.course_pages_release_min_rank` (4). Raised for the 54 re-find wave 1 providers without usable course pages.
+  - **Screen:** Coverage & completeness › Flags (`src/FlagsPanel.jsx`): Release shown for the reasons the user's role may release (`release_codes`).
+  - Tests: new `tests/uat/cf-247-s77-course-pages-flag-contract.spec.mjs`.
+  - SOPs 1.37 (reviewed, no steps changed).
+
 ## 0.1.222 — 19 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.295** (Pages kept once today; scholarship re-check). Platform Admin, 19 Oct 2026 22:47: "finish unis without adapter in waves, following scholarship and data enrichment"; choices "Daily figure on Live activity", "AI re-check, then finish", "20+ and 5–19 re-find; 1–4 CRICOS-only", "Check CRICOS, keep with soft flag".

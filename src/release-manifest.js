@@ -1,18 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.295'
-export const PACKAGE_VERSION='0.1.222'
+export const UI_VERSION='2.15.296'
+export const PACKAGE_VERSION='0.1.223'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Oct 2026',
-  title:'Pages kept once today; scholarship re-check',
+  title:'Course pages not found: held until released',
   changes:[
-    'Live activity: a new tile, Pages kept once today, shows how many course pages read today kept the copy they already had (their text had not changed), against those read, and how many new copies were stored and their size.',
-    'Layer 4 › AI could not decide: a held scholarship page shows the AI re-check: whether the page names international students (or says domestic only) and states the value, each with the sentence from the page, and a recommendation. It never publishes or refuses by itself; Refuse starts with the re-check reason filled in.'
+    'Flags: a new reason, Course pages not found. A university held for it is left out of course-page search, site mapping, AI page matching and Build adapter, so no credits are spent on it again.',
+    'A Pipeline Operator or above can release it (Release on the Flags screen, with a reason); release starts its onboarding again from the website step and maps its site again. Other flag reasons keep their usual role.'
   ],
-  bugFixes:['Small colleges outside the top 50 focus list never had their site mapped: the map was skipped while the daily Firecrawl allowance was used up, each skip counted as a try and after three they stopped. A university placed in a re-find wave is now mapped again.']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
