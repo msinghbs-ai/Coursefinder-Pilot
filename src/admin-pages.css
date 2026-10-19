@@ -531,6 +531,7 @@
 .sx h3{margin:0 0 4px}
 /* v2.15.250 Layer 4 › AI could not decide */
 .sx .sx-review{border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-lg);padding:12px 14px;margin:10px 0;background:var(--cf-white);display:grid;gap:8px}
+.sx .sx-recheck{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:var(--cf-fs-xs);color:var(--cf-slate-600);border-left:3px solid var(--cf-indigo-200);padding:4px 10px;background:var(--cf-slate-25)}.sx .sx-recheck q{display:block;flex-basis:100%;color:var(--cf-slate-700);font-style:italic}
 .sx .sx-review header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}
 .sx .sx-answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px}
 .sx .sx-answer{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--cf-slate-200);border-radius:var(--cf-radius-md);padding:8px 10px;font-size:var(--cf-fs-xs)}

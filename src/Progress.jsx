@@ -17,6 +17,7 @@ import{Button,Empty,Loading,StatusChip,fmtDateTime,fmtNumber,fmtTime}from'./ui-k
 import{JOURNEY,ReasonAction,STOP}from'./ProviderOnboarding'
 import JobButton from'./JobButton'
 import{errorReading,errorSteps}from'./lib/workerErrors.js'
+import{fmtBytes}from'./lib/format.js'
 
 const errText=e=>e?.message||String(e)
 export const VIEWS=[['overview','Overview'],['journeys','Journeys'],['running','Running now'],['levers','Levers']]
@@ -228,7 +229,10 @@ const humanKey=k=>String(k).replace(/_/g,' ')
 export function Running({rank,onError}){
   const[d,setD]=useState(null),[only,setOnly]=useState(true),[open,setOpen]=useState(''),[busy,setBusy]=useState(false)
   const timer=useRef(null)
-  const load=async()=>{try{setD(await read('running'))}catch(e){onError?.(errText(e))}}
+  const[reuse,setReuse]=useState(null)
+  // v2.15.295 (Platform Admin, 19 Oct 2026 22:47: "Daily figure on Live activity"): course pages read today that kept the copy they had
+  const loadReuse=async()=>{try{const{data,error}=await supabase.rpc('admin_evidence_reuse_today');if(error)throw error;setReuse(data||{})}catch{setReuse(null)}}
+  const load=async()=>{loadReuse();try{setD(await read('running'))}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load();timer.current=setInterval(()=>{if(document.visibilityState==='visible')load()},20000);return()=>clearInterval(timer.current)},[])
   const control=async(job,action,q)=>{if(!window.confirm(q))return;setBusy(true);try{const{error}=await supabase.rpc('admin_automation_control',{p_job:job,p_action:action,p_args:{}});if(error)throw error;await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const seen=async e=>{setBusy(true);try{const{error}=await supabase.rpc('admin_live_error_ack',{p_function:e.function||'',p_status:e.status??null,p_message:e.message||''});if(error)throw error;await load()}catch(x){onError?.(errText(x))}finally{setBusy(false)}}
@@ -240,6 +244,7 @@ export function Running({rank,onError}){
       <div><small>Running this moment</small><strong>{fmtNumber(jobs.filter(j=>j.running).length)}</strong><span>{fmtNumber(jobs.length)} scheduled jobs</span></div>
       <div className={failing.length?'tone-danger':''}><small>Failing (24 h)</small><strong>{fmtNumber(failing.length)}</strong><span>jobs with a failed run</span></div>
       <div><small>Paused</small><strong>{fmtNumber(jobs.filter(j=>!j.active).length)}</strong><span>schedules</span></div>
+      {reuse&&<div data-progress-tile="pages-kept" title="A course page read again whose text has not changed keeps the copy it had; no new file or record is stored."><small>Pages kept once, today</small><strong>{fmtNumber(reuse.kept)}</strong><span>of {fmtNumber(reuse.read)} read; {fmtNumber(reuse.new_copies)} new {Number(reuse.new_copies)===1?'copy':'copies'}{Number(reuse.new_bytes)>0?` (${fmtBytes(reuse.new_bytes)})`:''}{reuse.on===false?' · reuse is off':''}</span></div>}
       <div><small>Firecrawl, last hour</small><strong>{fmtNumber(Math.round(Object.values(d.credits_hour||{}).reduce((a,b)=>a+Number(b||0),0)))}</strong><span>{fmtNumber(d.refused_hour)} refused</span></div>
     </section>
     <div className="pg-bar"><label className="fcc-only"><input type="checkbox" checked={only} onChange={e=>setOnly(e.target.checked)}/> Only what is busy or needs attention</label><span className="pg-spacer"/><small className="sd-desc">Refreshes every 20 seconds. Click a job to see the universities it is working on.</small></div>

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.222 — 19 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.295** (Pages kept once today; scholarship re-check). Platform Admin, 19 Oct 2026 22:47: "finish unis without adapter in waves, following scholarship and data enrichment"; choices "Daily figure on Live activity", "AI re-check, then finish", "20+ and 5–19 re-find; 1–4 CRICOS-only", "Check CRICOS, keep with soft flag".
+  - **Screen:** Live activity (`src/Progress.jsx` Running): tile Pages kept once, today, from `public.admin_evidence_reuse_today` (migration `20261019140000`).
+  - **Screen:** Layer 4 › AI could not decide (`src/ScholarshipAiReview.jsx`): the AI re-check of each held page with its recommendation and sentences; Refuse starts with the re-check reason. Migration `20261019130000`: `pipeline.scholarship_ai_reviews.recheck`, `svc_scholarship_recheck_next/_record`, job `scholarship-recheck`, setting `batch.scholarship_recheck`; `admin_scholarship_ai('reviews')` returns the re-check (md5-guarded). Worker v0.33.0 mode `scholarship_recheck` (first model of the chain; recommendation only).
+  - **Fixed:** small colleges outside the top-50 focus never had their site mapped (map skipped for the allowance counted as tries). Migration `20261019110000`: providers in a `refind-…` Build adapter wave are in focus; `security.refind_wave_discovery_v1(wave)` re-opens their discovery.
+  - Migration `20261019120000`: 8 Adelaide University courses not on the new site keep their old page with a soft `not_on_provider_site` flag while CRICOS lists them.
+  - Tests: new `tests/uat/cf-247-s76-refind-recheck-contract.spec.mjs`.
+  - SOPs 1.36 (reviewed, no steps changed).
+
 ## 0.1.221 — 19 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.294** (View saved pages, and which copy is which). Platform Admin, 19 Oct 2026 22:13: "evidence still duplicated"; "tried opening view page and error Preview_not_allowed".
