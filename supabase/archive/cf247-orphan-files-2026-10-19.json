@@ -1,0 +1,23 @@
+{
+  "about": "CF-247, 19 Oct 2026 (Platform Admin 20:33: \"refresh plan for evidence, plan and execute the next steps\"): the Storage records of evidence-bucket files no record names, as listed once in pipeline.orphan_files (migration 20261019090000): course-page files, adapter-builder captures whose draft is gone, and scholarship page files saved before 19 Oct 2026. The paste file refuses to run unless each set's count and key hash still match, and checks every file again first.",
+  "bucket": "archive",
+  "prefix": "cf247-orphan-files-2026-10-19",
+  "part_rows": 10000,
+  "sets": [
+    {
+      "name": "orphan_course_page_files",
+      "key": "id",
+      "select": "select o.id, o.bucket_id, o.name, o.metadata, o.created_at from storage.objects o join pipeline.orphan_files f on f.object_id = o.id where o.bucket_id = 'evidence' and f.kind = 'course_page'"
+    },
+    {
+      "name": "orphan_adapter_files",
+      "key": "id",
+      "select": "select o.id, o.bucket_id, o.name, o.metadata, o.created_at from storage.objects o join pipeline.orphan_files f on f.object_id = o.id where o.bucket_id = 'evidence' and f.kind = 'adapter_capture'"
+    },
+    {
+      "name": "orphan_scholarship_files",
+      "key": "id",
+      "select": "select o.id, o.bucket_id, o.name, o.metadata, o.created_at from storage.objects o join pipeline.orphan_files f on f.object_id = o.id where o.bucket_id = 'evidence' and f.kind = 'scholarship_page'"
+    }
+  ]
+}
