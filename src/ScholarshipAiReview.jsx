@@ -54,6 +54,7 @@ function Review({v,decide}){
     <header><div><strong>{v.scholarship||answers.find(a=>a.answer?.name)?.answer?.name||host(v.url)}</strong><small className="sc-sub"> {v.provider||''}</small></div>
       <a className="cf-link" href={v.url} target="_blank" rel="noreferrer">{host(v.url)} <ExternalLink size={11}/></a></header>
     <p className="sc-note">Why: {v.reason}{v.status!=='pending'&&<> · <StatusChip value={v.status} tone={v.status==='admitted'?'success':'neutral'} label={v.status==='admitted'?'Admitted':'Refused'}/> {fmtDateTime(v.decided_at)}{v.note?` · ${v.note}`:''}</>}</p>
+    <Recheck r={v.recheck}/>
     <div className="sx-answers">{answers.map(a=>{const x=a.answer||{},k=a.checks||{};return <label key={a.id} className={`sx-answer${pick===a.id?' is-picked':''}`} data-ai-review-answer={a.model_code}>
       {v.status==='pending'&&<input type="radio" name={`pick-${v.id}`} checked={pick===a.id} onChange={()=>setPick(a.id)} disabled={!a.answer}/>}
       <div><b>{a.model_code}</b> {aiVerdict(a)}{x.name&&<small className="sc-sub"> {x.name}</small>}
@@ -67,8 +68,21 @@ function Review({v,decide}){
     {v.status==='pending'&&<div className="sx-row">
       <Button compact variant="primary" disabled={busy||!pick} onClick={()=>go('admit')} data-ai-review-admit>Admit the chosen answer</Button>
       {refusing?<span className="sx-reason"><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why it is not a scholarship for international students" aria-label="Reason for refusing" autoFocus/><Button compact disabled={busy||reason.trim().length<4} onClick={()=>go('refuse')} data-ai-review-refuse-confirm>Refuse</Button><Button compact onClick={()=>{setRefusing(false);setReason('')}}>Cancel</Button></span>
-        :<Button compact onClick={()=>setRefusing(true)} data-ai-review-refuse>Refuse</Button>}
+        :<Button compact onClick={()=>{setRefusing(true);if(!reason&&REFUSE_HINT[v.recheck?.recommendation])setReason(REFUSE_HINT[v.recheck.recommendation])}} data-ai-review-refuse>Refuse</Button>}
       <small className="sc-sub">Admit takes the chosen answer as confirmed for international students and currently offered; the hourly publish checks still apply.</small>
     </div>}
   </article>
+}
+
+// v2.15.295 (Platform Admin, 19 Oct 2026 22:47: "AI re-check, then finish"): the re-check of a held page by the first model of the chain
+// (who may apply, value, each with its sentence checked on the page). A recommendation only: the person still admits or refuses.
+const RECHECK={not_for_international:['Re-check: not for international students','neutral'],international_check_and_publish:['Re-check: international students named, value stated','success'],
+  international_value_unclear:['Re-check: international students named, value unclear','warning'],audience_not_stated:['Re-check: international students not mentioned','neutral'],unsettled:['Re-check: not settled','neutral']}
+const REFUSE_HINT={not_for_international:'The page says it is for domestic students only (AI re-check).',audience_not_stated:'The page does not say international students may apply (AI re-check).'}
+function Recheck({r}){
+  if(!r)return null
+  if(r.state!=='done')return <p className="sc-note" data-ai-recheck="queued">Re-check queued.</p>
+  const[label,tone]=RECHECK[r.recommendation]||RECHECK.unsettled
+  return <div className="sx-recheck" data-ai-recheck={r.recommendation||'unsettled'}><StatusChip value={r.recommendation||'unsettled'} tone={tone} label={label}/> <span>{r.why}</span>
+    {r.audience_quote&&<q>{r.audience_quote}</q>}{r.value_quote&&<q>{r.value_quote}</q>}</div>
 }

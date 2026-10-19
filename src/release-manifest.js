@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.294'
-export const PACKAGE_VERSION='0.1.221'
+export const UI_VERSION='2.15.295'
+export const PACKAGE_VERSION='0.1.222'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Oct 2026',
-  title:'View saved pages, and which copy is which',
+  title:'Pages kept once today; scholarship re-check',
   changes:[
-    'Evidence: each row now says what it is. Copies of a course page are numbered (for example copy 1 of 2), the copy in use is marked, and an older copy whose values are still in use says so. A provider\'s facts page or a register or catalogue file is named as such, so it is not mistaken for another copy of the course page.',
-    'The Evidence panel says "Older copy · its values are in use" (not "Replaced") when the page was read again later but the values in use still come from that copy.',
-    'View page opens the saved course page inside StudySearch, as it was read (scripts and forms switched off). Download saves the page as an ordinary .html or .md file.'
+    'Live activity: a new tile, Pages kept once today, shows how many course pages read today kept the copy they already had (their text had not changed), against those read, and how many new copies were stored and their size.',
+    'Layer 4 › AI could not decide: a held scholarship page shows the AI re-check: whether the page names international students (or says domestic only) and states the value, each with the sentence from the page, and a recommendation. It never publishes or refuses by itself; Refuse starts with the re-check reason filled in.'
   ],
-  bugFixes:['View page was refused ("preview_not_allowed") for every saved course page and markdown page, and Download gave a compressed .gz file.']
+  bugFixes:['Small colleges outside the top 50 focus list never had their site mapped: the map was skipped while the daily Firecrawl allowance was used up, each skip counted as a try and after three they stopped. A university placed in a re-find wave is now mapped again.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
