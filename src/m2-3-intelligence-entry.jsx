@@ -78,7 +78,9 @@ export function Layer4({onError,rank=0}){
    </div>
  }
  const actionsFor=r=>{
-   const main=[['reject','Reject'],['approve','Approve'],['edit_and_approve','Edit and approve']]
+   // v2.15.297 (Platform Admin, 20 Oct 2026: "there is no Approve button"): a course link says what each choice does
+   const link=r?.field_code==='official_course_url'
+   const main=link?[['reject','Keep the page we hold'],['approve','Use the new page'],['edit_and_approve','Enter another address']]:[['reject','Reject'],['approve','Approve'],['edit_and_approve','Edit and approve']]
    const s=r.suggestion?.action
    const editOnly=r.can_approve===false&&hasForm(r)
    const allowed=r.can_approve===false?main.filter(([a])=>a==='reject'||(a==='edit_and_approve'&&editOnly)):main
@@ -113,8 +115,7 @@ export function Layer4({onError,rank=0}){
    <section className="m23-panel l4d"><Head icon={ShieldCheck} title="Human resolution queue"/>
      <div className="l4d-filters">
        <label>Status<select value={status} onChange={e=>rememberFilters({status:e.target.value})}>{[['pending','Waiting for review'],['approved','Approved'],['edited_approved','Edited & approved'],['rejected','Rejected'],['more_evidence','More evidence requested'],['returned_layer2','Sent back to Layer 2'],['returned_layer3','Sent back to Layer 3'],['','All statuses']].map(([v,l])=><option key={v||'all'} value={v}>{l}</option>)}</select></label>
-       <div className="l4d-chips">{[['',status==='pending'?`All tasks (${fmtNumber(data.summary?.waiting||0)})`:'All tasks'],...tasks.map(([t,n])=>[t,status==='pending'?`${t} (${fmtNumber(n)})`:t])].map(([v,l])=><button key={v||'all'} type="button" className={task===v?'on':''} onClick={()=>rememberFilters({task:v})}>{l}</button>)}</div>
-       {(status!=='pending'||task)&&<button type="button" className="m23-clear" onClick={clearFilters}>Reset filters</button>}
+       <div className="l4d-chips">{[['',status==='pending'?`All tasks (${fmtNumber(data.summary?.waiting||0)})`:'All tasks'],...tasks.map(([t,n])=>[t,status==='pending'?`${t} (${fmtNumber(n)})`:t])].map(([v,l])=><button key={v||'all'} type="button" className={task===v?'on':''} onClick={()=>rememberFilters({task:v})}>{l}</button>)}{(status!=='pending'||task)&&<button type="button" className="l4d-reset" onClick={clearFilters}>Reset filters</button>}</div>
        {view==='review'&&<div className="l4d-chips">{[['all','Everyone'],['mine','Mine'],['unassigned','Unassigned']].map(([v,l])=><button key={v} type="button" className={who===v?'on':''} onClick={()=>rememberFilters({who:v})}>{l}</button>)}</div>}
        <div className="l4d-view">{[['review','Review one by one'],['batches','Bulk decisions'],['team','Team and forecast']].map(([v,l])=><button key={v} type="button" className={view===v?'on':''} onClick={()=>rememberFilters({view:v})}>{l}</button>)}</div>
      </div>
@@ -173,6 +174,7 @@ export function Layer4({onError,rank=0}){
              {current.page_quote&&<><dt>The page says</dt><dd className="l4d-quote">“{current.page_quote}”</dd></>}
              <dt>Suggestion</dt><dd className={`l4d-sugg ${current.suggestion?.action}`}>{current.suggestion?.text}</dd>
            </dl>
+           {current.field_code==='official_course_url'&&<LinkCompare r={current}/>}
            <div className="l4d-links">
              {current.links?.page_url&&<a href={current.links.page_url} target="_blank" rel="noreferrer">Open provider page <ExternalLink size={13}/></a>}
              {current.links?.course_url&&current.links.course_url!==current.links.page_url&&<a href={current.links.course_url} target="_blank" rel="noreferrer">Course page <ExternalLink size={13}/></a>}
@@ -219,3 +221,10 @@ function Head({icon:Icon,title,action}){return <div className="m23-head"><div><I
 function State({value}){return <StatusChip value={value||'unknown'} label={human(value||'unknown')}/>}
 
 function Table({headers,rows}){return <div className="m23-table"><div className="m23-tr head">{headers.map(h=><strong key={h}>{h}</strong>)}</div>{rows.length?rows.map((r,i)=><div className="m23-tr" key={i}>{r.map((v,j)=><span key={j}>{v??'—'}</span>)}</div>):<Empty text="No records."/>}</div>}
+
+// v2.15.297: the page we hold beside the new page, so the choice is made by looking at both
+function LinkCompare({r}){
+  const t=r?.technical||{},b=t.before_value,held=Array.isArray(b)?b[0]:typeof b==='string'?b:b?.url||b?.course_url,pv=t.proposed_value,next=typeof pv==='string'?pv:pv?.url||pv?.course_url
+  const a=u=>u?<a href={u} target="_blank" rel="noreferrer">{u} <ExternalLink size={12}/></a>:<span>none</span>
+  return <dl className="l4d-compare" data-l4-compare><dt>Page we hold</dt><dd data-l4-held>{a(held)}</dd><dt>New page</dt><dd data-l4-new>{a(next)}</dd></dl>
+}
