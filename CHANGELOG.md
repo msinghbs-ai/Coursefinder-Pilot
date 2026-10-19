@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.224 — 20 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.297** (Layer 4: clear choices for course links). Platform Admin, 20 Oct 2026 07:02: "there is no Approve button"; "Reset filter button is misplaced"; "Keep an running sheet for data admission per uni in the admin repo and make it daily schedule".
+  - **Fixed:** migration `20261020020000`: the review desk recognises a proposed page stored as `course_url` (all 24 waiting course links), so Approve shows (md5-guarded, one line).
+  - **Screen:** Layer 4 › Review queue (`src/m2-3-intelligence-entry.jsx`): course links show Page we hold and New page, with Keep the page we hold, Use the new page and Enter another address; Reset filters at the end of the task chips.
+  - Migration `20261020030000`: `security.admission_sheet_v1()` (per-university running sheet, service only) for the daily sheet in the admin repo.
+  - Tests: new `tests/uat/cf-247-s78-layer4-link-choices-contract.spec.mjs`.
+  - SOPs 1.38 (reviewed, no steps changed).
+
 ## 0.1.223 — 20 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.296** (Course pages not found: held until released). Platform Admin, 20 Oct 2026 06:33: "flag the failed one with reason so they dont get tried again, only operator and above can unflag them".

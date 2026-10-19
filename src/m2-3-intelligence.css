@@ -84,3 +84,8 @@
   .l4d-grid .l4d-queue{max-height:calc(100vh - 210px);overflow-y:auto;overscroll-behavior:contain}
   .l4d-grid .l4d-panel{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto}
 }
+/* v2.15.297: Reset filters sits at the end of the filter chips; course links show the page held beside the new page */
+.l4d-chips .l4d-reset{border:0;background:none;color:var(--cf-indigo-700);text-decoration:underline;padding:6px 4px;font-size:var(--cf-fs-sm)}
+.l4d-compare{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 10px;margin:8px 0;font-size:var(--cf-fs-sm)}
+.l4d-compare dt{color:var(--cf-slate-500)}
+.l4d-compare dd{margin:0;overflow-wrap:anywhere}

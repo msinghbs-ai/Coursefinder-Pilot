@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.296'
+export const SOP_REVIEWED_FOR = '2.15.297'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.37', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.38', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2 › Adapters)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -133,10 +133,11 @@ export const SOPS = [
       { version: '1.34', date: '19 Oct 2026', release: '2.15.293', change: 'Reviewed, no steps changed: the Evidence panel shows one screen: the course, the page address and when it was read, whether it was accepted as the course\'s page and is in use now, the values it supplied, and its earlier and later copies. View page and Download as before; the hash, file and job are under Technical details.' },
       { version: '1.35', date: '19 Oct 2026', release: '2.15.294', change: 'Reviewed, no steps changed: Evidence rows say what they are (copy 1 of 2, in use, older copy whose values are in use, provider facts page, register file). View page opens the saved page in StudySearch; Download saves an ordinary .html or .md file.' },
       { version: '1.36', date: '19 Oct 2026', release: '2.15.295', change: 'Reviewed, no steps changed: Live activity shows Pages kept once today. In Layer 4 › AI could not decide each held scholarship shows the AI re-check and its recommendation; the person still admits or refuses.' },
-      { version: '1.37', date: '20 Oct 2026', release: '2.15.296', change: 'Reviewed, no steps changed: Flags has a new reason, Course pages not found, which keeps a university out of page search and Build adapter. A Pipeline Operator or above may release it with a reason once a website or page list is fixed; onboarding then starts again.' }],
+      { version: '1.37', date: '20 Oct 2026', release: '2.15.296', change: 'Reviewed, no steps changed: Flags has a new reason, Course pages not found, which keeps a university out of page search and Build adapter. A Pipeline Operator or above may release it with a reason once a website or page list is fixed; onboarding then starts again.' },
+      { version: '1.38', date: '20 Oct 2026', release: '2.15.297', change: 'Reviewed, no steps changed: a Layer 4 course link shows the page we hold beside the new page, with Keep the page we hold, Use the new page and Enter another address.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.37', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.38', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 Review queue, AI could not decide, Websites to find, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -218,7 +219,8 @@ export const SOPS = [
       { version: '1.34', date: '19 Oct 2026', release: '2.15.293', change: 'Reviewed, no steps changed: the Evidence panel shows one screen: the course, the page address and when it was read, whether it was accepted as the course\'s page and is in use now, the values it supplied, and its earlier and later copies. View page and Download as before; the hash, file and job are under Technical details.' },
       { version: '1.35', date: '19 Oct 2026', release: '2.15.294', change: 'Reviewed, no steps changed: Evidence rows say what they are (copy 1 of 2, in use, older copy whose values are in use, provider facts page, register file). View page opens the saved page in StudySearch; Download saves an ordinary .html or .md file.' },
       { version: '1.36', date: '19 Oct 2026', release: '2.15.295', change: 'Reviewed, no steps changed: Live activity shows Pages kept once today. In Layer 4 › AI could not decide each held scholarship shows the AI re-check and its recommendation; the person still admits or refuses.' },
-      { version: '1.37', date: '20 Oct 2026', release: '2.15.296', change: 'Reviewed, no steps changed: Flags has a new reason, Course pages not found, which keeps a university out of page search and Build adapter. A Pipeline Operator or above may release it with a reason once a website or page list is fixed; onboarding then starts again.' }],
+      { version: '1.37', date: '20 Oct 2026', release: '2.15.296', change: 'Reviewed, no steps changed: Flags has a new reason, Course pages not found, which keeps a university out of page search and Build adapter. A Pipeline Operator or above may release it with a reason once a website or page list is fixed; onboarding then starts again.' },
+      { version: '1.38', date: '20 Oct 2026', release: '2.15.297', change: 'Reviewed, no steps changed: a Layer 4 course link shows the page we hold beside the new page, with Keep the page we hold, Use the new page and Enter another address.' }],
   },
 ]
 
