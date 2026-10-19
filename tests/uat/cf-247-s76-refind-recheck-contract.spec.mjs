@@ -67,3 +67,10 @@ test.describe('mocked browser', () => {
     await expect(row.getByLabel('Reason for refusing')).toHaveValue('The page does not say international students may apply (AI re-check).')
   })
 })
+
+test('then finish: a university whose held pages all have a re-check is done; the held pages stay for a person', () => {
+  const fin = fs.readFileSync('supabase/migrations/20261019150000_cf247_recheck_then_finish.sql', 'utf8')
+  expect(fin).toContain("not exists (select 1 from pipeline.scholarship_ai_reviews r where r.provider_id = ob.provider_id and r.status = 'pending' and coalesce(r.recheck->>'state', 'none') <> 'done')")
+  expect(fin).toContain("Layer 4 › AI could not decide")
+  expect(fin).not.toMatch(/scholarship_ai_apply_v1|review_decide|set status = '(admitted|refused)'/)
+})
