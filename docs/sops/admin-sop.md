@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.32 (reviewed for platform release v2.15.291)  
+**Version:** 1.33 (reviewed for platform release v2.15.292)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -145,3 +145,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.30 | 18 Oct 2026 | v2.15.289 | Adapter builder: follow the guide at the top. It shows each step (Done, Running by itself, Your turn, Optional, Later) and the one next thing to press, with Go to step. Contacts, central pages and course-page search run by themselves after a website change; nothing to press while they run. |
 | 1.31 | 18 Oct 2026 | v2.15.290 | Course-page searches you ask for (Find course pages, a website change) run for any university and go first. The Adapter builder guide shows them as running only when they will run, and otherwise says why. |
 | 1.32 | 19 Oct 2026 | v2.15.291 | Reviewed, no steps changed: the version pill, release notes, Rankings & statistics cards and the Evidence acquisition box are now drawn with the page instead of added after it. They look and work as before; the QS and THE cards show one edition picker. |
+| 1.33 | 19 Oct 2026 | v2.15.292 | Coverage & completeness › Counsellor reports: reports from counsellors in Zoho on a course, institute, campus or contact (missing, wrong or out of date, with a suggested value and source link). Close each as Fixed or Not changed with a reason; Zoho shows the outcome. Operator SOP: a morning step to work the reports. |

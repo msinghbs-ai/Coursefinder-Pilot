@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.219 — 19 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.292** (Counsellor reports from Zoho). Platform Admin, 19 Oct 2026 14:51: "Can I add some control for counsellor in zohoncreator or crm to flag or comment to pass on to studsearch platform admin for specific record."
+  - **Screen:** Coverage & completeness › Counsellor reports (`src/CounsellorReports.jsx`): open, fixed and not changed reports with the record, field, issue, note, suggested value, source link, the value held when reported and the counsellor; close as Fixed or Not changed with a reason (role from setting `reports.resolve_min_rank`).
+  - **Zoho API v2 (additive):** `report` takes a course by `course_id` or CRICOS code, an institute (`provider_id` or `cricos_provider_code`), a campus (`campus_id`) or a contact (`contact_id`), with `issue`, `suggested_value` and `source_url`; new action `report_status`. Migration `20261019040000_cf247_zoho_counsellor_reports.sql` (new functions `zoho_v2_report`, `zoho_v2_report_status`, `admin_counsellor_reports`).
+  - Consumer API change approved: Platform Admin, 19 Oct 2026 14:51, "Approve all (Recommended)": the zoho-api-v2 edge function's report action extended and report_status added; additive only, no consumer API function altered; `tests/uat/consumer-api-baseline.json` updated.
+  - **Fixed:** a Zoho report naming a course only by its CRICOS code was refused as not found.
+  - SOPs 1.33 (Operator SOP: a morning step for counsellor reports).
+
 ## 0.1.218 — 19 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.291** (One source for the version and release notes). Platform Admin request, Phase 5 "retire the leftovers".

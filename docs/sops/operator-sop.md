@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.32 (reviewed for platform release v2.15.291)  
+**Version:** 1.33 (reviewed for platform release v2.15.292)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -56,6 +56,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1 | Curator | Layer 4 Review › Review queue: oldest first. Open the stored page or document, then approve, correct or reject with a reason. _(Layer 4 Review › Review queue)_ | These are values automation would not decide: sources disagree, only an unofficial source, a fee year that does not match. | The count falls day on day. |
 | 2 | Curator | Layer 4 › AI could not decide: for each page compare every model's answer and quote with the stored copy; Admit the right answer, or Refuse with a reason. Your decision is kept for that page copy. _(Layer 4 Review › AI could not decide)_ | Scholarship pages no model could prove; admitted answers still pass the hourly publishing checks. | Oldest items cleared first. |
 | 3 | Curator | Layer 4 › Websites to find: enter the official website for each university listed and Save. _(Layer 4 Review › Websites to find)_ | Onboarding cannot start without a website; it carries on by itself once one is saved. | List shorter; nothing guessed. |
+| 4 | Pipeline Operator | Coverage & completeness › Counsellor reports: oldest first. Check what the counsellor reported against the source link or the provider's page; correct the value where it is held, then close the report as Fixed, or Not changed with the reason. Zoho shows the outcome to the counsellor. _(Coverage & completeness › Counsellor reports)_ | Counsellors in Zoho Creator and CRM see the data with students and report missing or wrong values on courses, institutes, campuses and contacts. | No report older than two working days. |
 
 ### Afternoon: follow-up
 
@@ -134,3 +135,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.30 | 18 Oct 2026 | v2.15.289 | Adapter builder: follow the guide at the top. It shows each step (Done, Running by itself, Your turn, Optional, Later) and the one next thing to press, with Go to step. Contacts, central pages and course-page search run by themselves after a website change; nothing to press while they run. |
 | 1.31 | 18 Oct 2026 | v2.15.290 | Course-page searches you ask for (Find course pages, a website change) run for any university and go first. The Adapter builder guide shows them as running only when they will run, and otherwise says why. |
 | 1.32 | 19 Oct 2026 | v2.15.291 | Reviewed, no steps changed: the version pill, release notes, Rankings & statistics cards and the Evidence acquisition box are now drawn with the page instead of added after it. They look and work as before; the QS and THE cards show one edition picker. |
+| 1.33 | 19 Oct 2026 | v2.15.292 | Coverage & completeness › Counsellor reports: reports from counsellors in Zoho on a course, institute, campus or contact (missing, wrong or out of date, with a suggested value and source link). Close each as Fixed or Not changed with a reason; Zoho shows the outcome. Operator SOP: a morning step to work the reports. |

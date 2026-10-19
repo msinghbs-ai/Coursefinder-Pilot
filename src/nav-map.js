@@ -45,6 +45,8 @@ export const PAGES = {
     { key: 'progress', label: 'Progress', min: 3 },
     // v2.15.282 (Platform Admin, 15 Oct 2026): the flag unit: what is held out of the queues, why, and its history; release or hold
     { key: 'flags', label: 'Flags', min: 3 },
+    // v2.15.292 (Platform Admin, 19 Oct 2026): reports from counsellors in Zoho on a course, institute, campus or contact
+    { key: 'reports', label: 'Counsellor reports', min: 3 },
   ] },
   // v2.15.246 (Platform Admin bugs 11/10-3, Feature 2): Runs and Source settings are one Sources list (expandable rows, settings
   // edited in place, + Add source); Manual batch runs is retired (each source has Run now, recorded as one job).
