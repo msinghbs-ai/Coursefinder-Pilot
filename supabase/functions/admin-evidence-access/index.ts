@@ -10,6 +10,12 @@ const cors = {
 };
 const jsonHeaders = { ...cors, "content-type": "application/json; charset=utf-8" };
 const previewMimes = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp", "text/plain", "application/json"]);
+// v1.1 (CF-247, Platform Admin 19 Oct 2026 22:13: "tried opening view page and error Preview_not_allowed"): course pages and markdown pages
+// are saved gzip-compressed (*.gz), about 117,000 files, and HTML was never on the preview list, so View page was refused for every course
+// page and Download handed back a .gz. Now a saved web page, markdown or CSV file is opened here, unpacked and returned as text: the panel
+// shows HTML in a sandboxed frame (no scripts, no forms, no same-origin) and text as text; Download returns the unpacked file.
+const textMimes = new Set(["text/html", "application/xhtml+xml", "text/markdown", "text/csv", "text/plain", "application/json"]);
+const maxTextBytes = 8 * 1024 * 1024; // fixed: response-size safety for the edge runtime, not an operational limit
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function reply(status: number, body: unknown) {
@@ -49,10 +55,34 @@ Deno.serve(async (req: Request) => {
   if (!descriptor?.available || !descriptor?.storage_path) return reply(404, { error: "evidence_object_unavailable" });
 
   const mime = String(descriptor?.mime_type || "application/octet-stream").toLowerCase();
+  const path = String(descriptor.storage_path);
+  const packed = path.toLowerCase().endsWith(".gz");
+  if (textMimes.has(mime) && (packed || mime === "text/html" || mime === "application/xhtml+xml" || mime === "text/markdown")) {
+    const { data: blob, error: fileError } = await serviceClient.storage.from("evidence").download(path);
+    if (fileError || !blob) return reply(404, { error: "evidence_object_unavailable" });
+    let stream: ReadableStream<Uint8Array> = blob.stream();
+    if (packed) stream = stream.pipeThrough(new DecompressionStream("gzip"));
+    const reader = stream.getReader();
+    const parts: Uint8Array[] = [];
+    let size = 0, truncated = false;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (size + value.length > maxTextBytes) { parts.push(value.slice(0, maxTextBytes - size)); size = maxTextBytes; truncated = true; await reader.cancel(); break; }
+      parts.push(value); size += value.length;
+    }
+    const bytes = new Uint8Array(size);
+    let at = 0;
+    for (const p of parts) { bytes.set(p, at); at += p.length; }
+    const content = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    const base = path.split("/").pop()!.replace(/\.gz$/i, "");
+    const kind = mime === "text/html" || mime === "application/xhtml+xml" ? "html" : mime === "text/markdown" ? "markdown" : "text";
+    return reply(200, { evidence_id: evidenceId, mode, mime_type: mime, kind, file_name: base, content, size_bytes: size, truncated });
+  }
   if (mode === "preview" && !previewMimes.has(mime)) return reply(415, { error: "preview_not_allowed", download_allowed: true });
 
   const options = mode === "download" ? { download: true } : undefined;
-  const { data: signed, error: signedError } = await serviceClient.storage.from("evidence").createSignedUrl(descriptor.storage_path, 60, options);
+  const { data: signed, error: signedError } = await serviceClient.storage.from("evidence").createSignedUrl(path, 60, options);
   if (signedError || !signed?.signedUrl) return reply(500, { error: "signed_access_failed" });
 
   return reply(200, {

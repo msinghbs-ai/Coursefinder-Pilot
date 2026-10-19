@@ -41,3 +41,14 @@
 .ev-sum-tech dd{margin:0;font-size:var(--cf-fs-xs);overflow-wrap:anywhere}
 .ev-sum-tech dd.mono{font-family:var(--cf-font-mono)}
 @media(max-width:760px){.ev-sum-supplied li{grid-template-columns:1fr auto}.ev-sum-supplied li span{grid-column:1/-1}}
+/* v2.15.294: what each row is (copies of a course page numbered; other kinds named) and the saved-page viewer */
+.ev-copy-role{display:inline-flex;width:max-content;margin-top:4px;border-radius:var(--cf-radius-pill);padding:2px 8px;font-size:var(--cf-fs-3xs);font-weight:700;background:var(--cf-slate-100);color:var(--cf-slate-600)}
+.ev-copy-role[data-ev-role="in_use"]{background:var(--cf-green-50);color:var(--cf-green-700)}
+.ev-copy-role[data-ev-role="older_values_live"]{background:var(--cf-amber-50);color:var(--cf-amber-700)}
+.ev-viewer{position:fixed;inset:24px;z-index:1300;display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--cf-white);border:1px solid var(--m-border);border-radius:var(--cf-radius-lg);box-shadow:var(--cf-shadow-xl);overflow:hidden}
+.ev-viewer-head{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--m-border);font-size:var(--cf-fs-sm)}
+.ev-viewer-head small{color:var(--cf-slate-500)}
+.ev-viewer-head button{margin-left:auto;border:0;background:none;cursor:pointer;color:var(--cf-slate-600)}
+.ev-viewer-frame{width:100%;height:100%;border:0;background:var(--cf-white)}
+.ev-viewer-text{margin:0;padding:14px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:12px/1.5 var(--cf-font-mono)}
+@media(max-width:760px){.ev-viewer{inset:0;border-radius:0}}

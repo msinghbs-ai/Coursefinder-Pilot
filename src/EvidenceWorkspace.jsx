@@ -33,6 +33,8 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   useEffect(()=>setOffset(0),[debounced,JSON.stringify(filters)])
 
   const rows=rowsOf(data),total=Number(data?.total??rows.length),active=activeFilters(filters)
+  const[roles,setRoles]=useState({})
+  useEffect(()=>{let live=true;const ids=rows.map(r=>r.id).filter(Boolean);setRoles({});if(ids.length)api.evidenceCopyRoles(ids).then(x=>live&&setRoles(x||{})).catch(()=>{});return()=>{live=false}},[rows.map(r=>r.id).join(',')])
   const setFilter=(k,v)=>setFilters(f=>({...f,[k]:v}))
   const setCountry=v=>{setSourceLabel('');setFilters(f=>({...f,country:v,sourceId:''}))}
   const clear=()=>{setQuery('');setFilters({...EMPTY_FILTERS});setOffset(0)}
@@ -77,7 +79,7 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
       {(query||active.length>0)&&<div className="evidence-chips">{query&&<Chip label={`Search: ${query}`} onRemove={()=>setQuery('')}/>} {active.map(([k,v])=><Chip key={k} label={`${labelFor(k)}: ${k==='sourceId'?(sourceLabel||String(v)):optionLabel(k,v,opts)}`} onRemove={()=>{if(k==='sourceId')setSourceLabel('');setFilter(k,'')}}/>)}</div>}
       {deepContext&&<div className="evidence-context"><Link2 size={14}/><span>Opened from a link on another screen.</span><button onClick={()=>{setFilter('entityId','');setFilter('providerId','');setFilter('jobId','')}}>Remove scope</button></div>}
 
-      <EvidenceTable rows={rows} loading={busy} selected={selected} onSelect={setSelected}/>
+      <EvidenceTable rows={rows} roles={roles} loading={busy} selected={selected} onSelect={setSelected}/>
       <Pager offset={offset} limit={PAGE_SIZE} total={total} onOffset={setOffset} className="evidence-pager"/>
     </section>
 
@@ -85,12 +87,12 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   </div>
 }
 
-function EvidenceTable({rows,loading,selected,onSelect}){
+function EvidenceTable({rows,roles={},loading,selected,onSelect}){
   const cols=10
   return <div className="evidence-table-wrap"><table className="evidence-table"><thead><tr><th>Artifact</th><th>Source</th><th>Layer</th><th>Evidence type</th><th>Captured</th><th>Extraction</th><th>Freshness</th><th>Status</th><th>Job</th><th>Integrity</th></tr></thead><tbody>
     {loading&&!rows.length?Array.from({length:8}).map((_,i)=><tr key={i}>{Array.from({length:cols}).map((__,j)=><td key={j}><span className="evidence-skeleton"/></td>)}</tr>):rows.length?rows.map(r=><tr key={r.id} className={String(selected)===String(r.id)?'selected':''} onClick={()=>onSelect(r.id)}>
       <td><span className="evidence-artifact"><FileCheck2 size={15}/><span><strong>{shortId(r.id)}</strong><small>{r.country_code?`${flag(r.country_code)} ${r.country_code}`:'No country'} · {r.mime_type||'Unknown MIME'}</small></span></span></td>
-      <td><strong>{r.source_label||'Unlinked source'}</strong><small>{r.source_type||r.source_status||'—'}</small></td>
+      <td><strong>{r.source_label||'Unlinked source'}</strong><small>{r.source_type||r.source_status||'—'}</small><CopyRole role={roles[r.id]}/></td>
       <td><Badge value={r.layer}/></td><td><span className="evidence-type-cell"><strong>{human(r.evidence_type)}</strong><span className="evidence-format-badge">{formatOf(r.mime_type,r.evidence_type)}</span></span></td><td><strong>{dateTime(r.captured_at)}</strong><small>{relative(r.captured_at)}</small></td>
       <td><State value={r.extraction_state}/><small>{fmt(r.observation_count)} observation{Number(r.observation_count)===1?'':'s'}{r.has_source_null?' · source-null':''}</small></td>
       <td><State value={r.freshness_state}/><small>{r.history_state?human(r.history_state):'—'}</small></td><td><State value={r.status}/>{r.unresolved_conflict&&<small className="danger-text">Unresolved conflict</small>}</td>
@@ -109,7 +111,10 @@ function EvidenceDrawer({id,onClose,onOpen,onError,navigate}){
   const[accessBusy,setAccessBusy]=useState('')
   useEffect(()=>{const k=e=>e.key==='Escape'&&onClose();addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose])
   useEffect(()=>{let live=true;setData(null);setBusy(true);api.evidenceSummary(id).then(x=>{if(live)setData(x||{})}).catch(e=>onError(e.message)).finally(()=>live&&setBusy(false));return()=>{live=false}},[id])
-  async function access(mode){setAccessBusy(mode);try{const x=await api.evidenceAccess(id,mode);if(!x?.url)throw new Error('The link to the saved file was not returned.');window.open(x.url,'_blank','noopener,noreferrer')}catch(e){onError(e.message)}finally{setAccessBusy('')}}
+  const[viewer,setViewer]=useState(null)
+  // v2.15.294 (Platform Admin, 19 Oct 2026 22:13: "tried opening view page and error Preview_not_allowed"): saved web pages come back
+  // unpacked as text and open in a sandboxed frame here (no scripts, no forms); Download saves the unpacked file.
+  async function access(mode){setAccessBusy(mode);try{const x=await api.evidenceAccess(id,mode);if(typeof x?.content==='string'){if(mode==='download'){const b=new Blob([x.content],{type:`${x.mime_type||'text/plain'};charset=utf-8`}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=x.file_name||'page.html';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}else setViewer(x);return}if(!x?.url)throw new Error('The link to the saved file was not returned.');window.open(x.url,'_blank','noopener,noreferrer')}catch(e){onError(e.message)}finally{setAccessBusy('')}}
   const d=data||{},course=d.course||null,accepted=d.accepted||null,supplied=d.supplied||{},items=rowsOf(supplied),suppliedTotal=Number(supplied.total||0),copies=d.copies||null,file=d.file||{},job=d.job||null
   const pageUrl=safeUrl(d.page_url),earlier=Number(copies?.earlier||0),later=Number(copies?.later||0),reviews=Number(d.reviews_open||0),how=fetchedVia(d.fetched_via)
   const newest=copies?.newest_id&&onOpen?<button className="ev-sum-link" onClick={()=>onOpen(copies.newest_id)}>Open the newest copy →</button>:null
@@ -126,7 +131,7 @@ function EvidenceDrawer({id,onClose,onOpen,onError,navigate}){
       </section>
 
       {!course?<div className="ev-sum-result" data-ev-result="unlinked"><span>Not linked to a course</span></div>
-        :accepted?.basis?<div className="ev-sum-result" data-ev-result="accepted"><span>Accepted as this course's page ({basisLabel(accepted.basis)})</span>{accepted.in_use?<StatusChip value="active" label="In use now"/>:<><StatusChip value="superseded" label="Replaced by a newer copy"/>{newest}</>}</div>
+        :accepted?.basis?<div className="ev-sum-result" data-ev-result="accepted"><span>Accepted as this course's page ({basisLabel(accepted.basis)})</span>{accepted.in_use?<StatusChip value="active" label="In use now"/>:suppliedTotal>0?<><StatusChip value="active" label="Older copy · its values are in use"/>{newest}</>:<><StatusChip value="superseded" label="Replaced by a newer copy"/>{newest}</>}</div>
         :accepted&&!accepted.in_use&&copies?.newest_id?<div className="ev-sum-result" data-ev-result="replaced"><StatusChip value="superseded" label="Replaced by a newer copy"/>{newest}</div>:null}
 
       {suppliedTotal>0?<section className="ev-sum-supplied"><h4>What this page supplied</h4><ul>{items.map((x,i)=><li key={`${x.field}-${i}`}><span>{x.field}</span><strong>{x.value||'—'}</strong>{x.status&&x.status!=='active'&&<State value={x.status}/>}</li>)}</ul>{suppliedTotal>items.length&&<p className="ev-sum-more">and {fmt(suppliedTotal-items.length)} more</p>}</section>
@@ -136,10 +141,31 @@ function EvidenceDrawer({id,onClose,onOpen,onError,navigate}){
 
       <div className="ev-sum-actions"><button className="m-secondary" disabled={!file.available||Boolean(accessBusy)} onClick={()=>access('preview')}><FileSearch size={14}/>{accessBusy==='preview'?'Opening…':'View page'}</button><button className="m-secondary" disabled={!file.available||Boolean(accessBusy)} onClick={()=>access('download')}><Download size={14}/>{accessBusy==='download'?'Opening…':'Download'}</button>{!file.available&&<small>The saved file is no longer held.</small>}</div>
 
+      {!accepted?.in_use&&suppliedTotal>0&&later>0&&<p className="ev-sum-line" data-ev-values-here>The page was read again later; the values in use still come from this copy, so it is kept.</p>}
+
       {tech.length>0&&<details className="ev-sum-tech"><summary>Technical details</summary><dl>{tech.map(([k,v,c])=><div key={k}><dt>{k}</dt><dd className={c||''}>{String(v)}</dd></div>)}</dl></details>}
     </div>}
-  </aside></>
+  </aside>{viewer&&<PageViewer page={viewer} pageUrl={pageUrl} onClose={()=>setViewer(null)}/>}</>
 }
+
+// The saved page as it was read. HTML is shown in a frame with every sandbox restriction on (no scripts, forms, pop-ups or same-origin
+// access) and a content policy that blocks scripts and connections; pictures and styles load from the university's site.
+const VIEW_POLICY="default-src 'none'; img-src https: data:; style-src https: 'unsafe-inline'; font-src https: data:"
+// The policy and base go first (after any doctype, so the page keeps its own layout mode).
+function viewDoc(content,pageUrl){const head=`<meta http-equiv="Content-Security-Policy" content="${VIEW_POLICY}">${pageUrl?`<base href="${pageUrl.replace(/"/g,'&quot;')}">`:''}`;const m=/^\s*<!doctype[^>]*>/i.exec(content);return m?m[0]+head+content.slice(m[0].length):head+content}
+function PageViewer({page,pageUrl,onClose}){
+  useEffect(()=>{const k=e=>{if(e.key==='Escape'){e.stopPropagation();onClose()}};addEventListener('keydown',k,true);return()=>removeEventListener('keydown',k,true)},[onClose])
+  const html=page.kind==='html'
+  const doc=html?viewDoc(page.content,pageUrl):''
+  return <div className="ev-viewer" role="dialog" aria-label="Saved page"><div className="ev-viewer-head"><strong>Saved page{page.file_name?` · ${page.file_name}`:''}</strong>{page.truncated&&<small>Shown in part (the file is very large).</small>}<button onClick={onClose} aria-label="Close saved page"><X size={18}/></button></div>
+    {html?<iframe className="ev-viewer-frame" title="Saved page" sandbox="" referrerPolicy="no-referrer" srcDoc={doc}/>:<pre className="ev-viewer-text">{page.content}</pre>}
+  </div>
+}
+
+// v2.15.294 (Platform Admin, 19 Oct 2026 22:13: "evidence still duplicated"): each row says what it is. Copies of one course page are
+// numbered, with the one in use marked; an older copy whose values are still in use says so; other pages say what kind of page they are.
+const COPY_KIND={provider_facts:"Provider's facts page (not this course's page)",register_file:'Register or catalogue file',screenshot:'Page screenshot'}
+function CopyRole({role}){if(!role)return null;if(role.kind==='course_page'){const n=Number(role.copies||0),of=n>1?` · copy ${fmt(role.copy)} of ${fmt(n)}`:'';const label=role.role==='in_use'?'Course page in use':role.role==='older_values_live'?'Older copy · its values are in use':'Older copy';return <span className="ev-copy-role" data-ev-role={role.role||'none'}>{label}{of}</span>}const label=COPY_KIND[role.kind];return label?<span className="ev-copy-role" data-ev-role={role.kind}>{label}</span>:null}
 
 const EVIDENCE_KIND={source_snapshot:'Course page',layer2_raw_html:'Saved web page',layer2_raw_json:'Saved data file',website_screenshot:'Page screenshot',screenshot:'Page screenshot',regulatory_snapshot:'Register snapshot'}
 const BASIS={exact_title:'exact title',cricos_code:'CRICOS code',cricos_code_on_page:'CRICOS code on the page',title_level:'title and level',field_award:'field and award',adapter_title:"title found by the university's reader",adapter_code:"course code found by the university's reader",manual:'chosen by a person'}
