@@ -34,7 +34,7 @@ test('the shared scripts keep the safeguards', () => {
   expect(apply).toContain("grep -nEi '^(drop|delete|truncate)\\b|^alter table .* drop '")
   expect(apply).toContain('already applied (version $ver in the history); skipped')
   expect(apply).toContain('if [ "$got" != "$want" ]; then')
-  expect(deploy).toContain('.functions[$f] // "missing"')
+  expect(deploy).toContain('else "missing" end') // 19 Oct 2026: has(), not // (which read false as missing)
 })
 
 test('daily drift check fails on drift or on a function deployed by hand', () => {
