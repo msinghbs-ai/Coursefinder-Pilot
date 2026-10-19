@@ -37,8 +37,10 @@ test('one version source: the shell and the pill import the manifest; the legacy
   // The ported pieces live in their React components
   expect(shell).toContain("supabase.rpc('statistics_dataset_registry_read')")
   expect(shell).toContain('RANKING_DATASET_HEADER')
-  expect(fs.readFileSync('src/EvidenceWorkspace.jsx', 'utf8')).toContain('<AcquisitionProvenance value={data?.acquisition_provenance}/>')
-  expect(fs.readFileSync('src/evidence-workspace.css', 'utf8')).toContain('.cf-evidence-acq{')
+  // v2.15.293: the Evidence acquisition box ported here was then retired with the one-screen Evidence panel (S73).
+  expect(fs.readFileSync('src/EvidenceWorkspace.jsx', 'utf8')).not.toContain('AcquisitionProvenance')
+  expect(fs.readFileSync('src/evidence-workspace.css', 'utf8')).not.toContain('.cf-evidence-acq{')
+  expect(fs.readFileSync('src/evidence-workspace.css', 'utf8')).toContain('.ev-sum{')
   expect(fs.readFileSync('src/release-notes.css', 'utf8')).toContain('.m-release-notes-dialog{')
 })
 

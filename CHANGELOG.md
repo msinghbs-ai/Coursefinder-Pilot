@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.220 — 19 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.293** (A shorter Evidence panel). Platform Admin, 19 Oct 2026 19:04: "explain why the evidence details panel is so bloated and hard to read ... simplify ... readability".
+  - **Screen:** Evidence (`src/EvidenceWorkspace.jsx`): the panel for a saved page is one screen, read from `public.admin_evidence_summary` (migration `20261019070000_cf247_evidence_summary.sql`, new helper `api.evidenceSummary`). It shows the kind of page and read date; the course, code and university (Open course), the page address and how it was read; whether it was accepted as the course's page and how, and In use now or Replaced by a newer copy (with Open the newest copy); What this page supplied (or "No live value comes from this copy"); open review items and earlier or later copies; View page and Download; and Technical details (hash, size, MIME type, storage path, job, worker, evidence id), closed by default. Parts with nothing to show are not drawn.
+  - Removed from the panel: the lineage strip, Private evidence boundary, the inline preview and related screenshot card, Acquisition provenance, Source authority, Acquisition job, Extracted observations, Affected canonical entities, Snapshot & change history, Claims, review & decisions, and Storage controls. The panel no longer reads `evidence_detail`, `evidence_entities` or `evidence_observations` (the helpers stay for Jobs). The evidence list, table and filters are unchanged.
+  - **Fixed:** course pages showed "0 observations · 0 linked" because the panel read the retired observation model.
+  - Tests: new `tests/uat/cf-247-s73-evidence-panel-contract.spec.mjs`; old drawer assertions updated in the CF-142/143, S70, data-quality and A25 specs.
+  - SOPs 1.34 (reviewed, no steps changed).
+
 ## 0.1.219 — 19 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.292** (Counsellor reports from Zoho). Platform Admin, 19 Oct 2026 14:51: "Can I add some control for counsellor in zohoncreator or crm to flag or comment to pass on to studsearch platform admin for specific record."
