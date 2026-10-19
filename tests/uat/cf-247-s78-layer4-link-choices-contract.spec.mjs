@@ -19,7 +19,7 @@ test.describe('mocked browser', () => {
       links: {}, technical: { before_value: ['https://adelaide.edu.au/study/degrees/2027/bachelor-of-computer-science-honours/int/'], proposed_value: { course_url: 'https://adelaideuni.edu.au/study/degrees/bachelor-of-computer-science-honours-ai/' } } }
     await page.route('https://example.supabase.co/rest/v1/rpc/layer4_review_desk_v1', r => r.fulfill({ json: { items: [item], summary: { waiting: 1, oldest_days: 0, by_task: { 'Official course link': 1 } } } }))
     await page.route('https://example.supabase.co/rest/v1/rpc/layer4_claim_v1', r => r.fulfill({ json: { ok: true } }))
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?tab=review')
     await expect(page.getByRole('button', { name: 'Keep the page we hold' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Use the new page' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Enter another address' })).toBeVisible()

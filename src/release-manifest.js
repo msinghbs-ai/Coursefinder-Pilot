@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.297'
-export const PACKAGE_VERSION='0.1.224'
+export const UI_VERSION='2.15.298'
+export const PACKAGE_VERSION='0.1.225'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Oct 2026',
-  title:'Layer 4: clear choices for course links',
+  title:'Layer 4 Inbox: everything that needs a person',
   changes:[
-    'Layer 4 › Review queue: a course link item shows the page we hold beside the new page, and its buttons say what they do: Keep the page we hold, Use the new page, Enter another address.',
-    'Reset filters now sits at the end of the task chips.'
+    'Layer 4 › Inbox (new, first tab): everything that needs a person in one place, grouped by university: course links, held scholarships, websites needed, universities held because course pages were not found, too few course pages, adapters with nothing ready, central pages to approve, failed adapter proposals, websites down for 30 days, courses not offered, fees failing the check, counsellor reports, and courses no longer on the university\'s site (at the bottom).',
+    'Each item says why it is here; each choice says what happens next. Choices that need another screen (Adapter builder, the course, counsellor reports) open it. A reason is kept with every decision.',
+    'By kind shows one kind across every university, for working through many at once. The Review queue, AI could not decide and Websites to find tabs stay for now.'
   ],
-  bugFixes:['Approve was missing on every course link item, because the proposed page was stored under a different name than the screen looked for.']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

@@ -52,6 +52,7 @@ const KeyDates=lazyPage(()=>import('./KeyDates'))
 const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))
 const ProviderContactsWorkspace=lazyPage(()=>import('./ProviderContactsWorkspace'))
 const WebsitesToFind=lazyPage(()=>import('./WebsitesToFind'))
+const Layer4Inbox=lazyPage(()=>import('./Layer4Inbox'))
 const Automations=lazyPage(()=>import('./Automations'))
 const ProviderOnboarding=lazyPage(()=>import('./ProviderOnboarding'))
 const PriorityQueue=lazyPage(()=>import('./PriorityQueue'))
@@ -274,7 +275,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         return <AdaptersWorkspace rank={rank} onError={err}/>
       // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and Layer 4 AI send-back tab retired; adapters admit the values.
       // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired (old addresses redirect in nav-map.js).
-      case'layer4':return tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>
+      case'layer4':return tab==='inbox'?<Layer4Inbox onError={err}/>:tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>
       case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='priority'?<div className="m-page-stack"><SearchCapCard/><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>

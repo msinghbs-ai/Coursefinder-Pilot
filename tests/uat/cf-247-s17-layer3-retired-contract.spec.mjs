@@ -69,7 +69,7 @@ test.describe('mocked browser', () => {
   test('old Send back to AI address opens the Layer 4 Review queue; no Layer 3 tile on the Dashboard', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-4-review?tab=sendback')
-    await expect(page).toHaveURL(/#layer-4-review$/)
+    await expect(page).toHaveURL(/#layer-4-review\?tab=review$/)
     await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByRole('tab', { name: 'Send back to AI' })).toHaveCount(0)
     await page.goto('/#dashboard')

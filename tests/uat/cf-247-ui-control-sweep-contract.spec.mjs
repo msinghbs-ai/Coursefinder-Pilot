@@ -11,7 +11,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 
 test('menu: Automations and Publishing tabs; old links still land', () => {
   expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs', 'tasks']) // v2.15.197: Task manager
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'aireview', 'websites']) // Decision 222: Websites to find; v2.15.253: Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['inbox', 'review', 'aireview', 'websites']) // v2.15.298: Inbox first // Decision 222: Websites to find; v2.15.253: Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired
   // v2.15.252 (Platform Admin, 12 Oct 2026): Send back to AI retired with Layer 3; the old address opens the Review queue.
   expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'sendback' }))).toMatchObject({ page: 'layer4', tab: 'review' })
   expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['coverage', 3], ['extraction', 3]]) // v2.15.240: Coverage; v2.15.174: Course links retired; Publishing is Layer 4
