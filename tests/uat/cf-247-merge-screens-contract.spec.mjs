@@ -27,7 +27,7 @@ test('Readiness is flat: Capacity on Platform health, gates and UAT on Go-live; 
   expect(PAGES.health.tabs.find(t => t.key === 'readiness').label).toBe('Capacity')
   expect(PAGES.layer4.tabs.find(t => t.key === 'blocks')).toBeUndefined()
   const main = read('src/mature-main.jsx')
-  expect(main).toContain(`case'layer4':return tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>`)
+  expect(main).toContain(`case'layer4':return tab==='inbox'?<Layer4Inbox onError={err}/>:tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>`)
   expect(main).not.toContain('view="blocks"')
   const pm = read('src/platform-maturity-entry.jsx')
   expect(pm).toContain("view==='capacity'?<>")

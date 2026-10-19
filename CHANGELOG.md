@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.225 — 20 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.298** (Layer 4 Inbox: everything that needs a person). Platform Admin, 20 Oct 2026 07:02: "anything that needs attention or intervention should come to Layer 4, define its return path"; 07:40 choices: by university; all stopped onboarding cases; courses not on the site at the bottom; websites down after 30 days.
+  - Migration `20261020040000_cf247_layer4_inbox.sql`: `security.layer4_inbox_items_v1` (13 kinds from the existing sources), `security.layer4_inbox_kinds_v1` (choices and return paths), `public.admin_layer4_inbox` (summary, universities, items, decide; decide routes to the existing actions and is logged); settings `layer4.site_down_days` (30), `layer4.target_days` (7).
+  - **Screen:** Layer 4 › Inbox (`src/Layer4Inbox.jsx`, first tab).
+  - Tests: new `tests/uat/cf-247-s79-layer4-inbox-contract.spec.mjs`; three Layer 4 tests open the Review queue tab by name.
+  - SOPs 1.39 (Operator SOP: start the day in Layer 4 › Inbox).
+
 ## 0.1.224 — 20 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.297** (Layer 4: clear choices for course links). Platform Admin, 20 Oct 2026 07:02: "there is no Approve button"; "Reset filter button is misplaced"; "Keep an running sheet for data admission per uni in the admin repo and make it daily schedule".

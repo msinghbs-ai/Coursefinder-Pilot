@@ -41,7 +41,7 @@ test('source: Onboarding component, builder approvals, Layer 4 retirements, bann
   for (const gone of ['ProviderOnboardingNotice', 'Layer4Attributes', 'FlaggedValues', 'FeeRules', 'ScholarshipPublishing', 'view="blocks"']) expect(main).not.toContain(gone)
   for (const f of ['src/FlaggedValues.jsx', 'src/FeeRules.jsx', 'src/ScholarshipPublishing.jsx', 'src/layer2-provider-onboarding.jsx']) expect(fs.existsSync(f)).toBe(false)
   expect(read('src/platform-maturity-entry.jsx')).not.toContain('BlockConsole')
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['review', 'aireview', 'websites'])
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['inbox', 'review', 'aireview', 'websites']) // v2.15.298: Inbox first
   const ob = read('src/ProviderOnboarding.jsx')
   expect(ob).toContain("supabase.rpc('admin_provider_onboarding'")
   expect(ob).not.toContain('admin_uni_adapter_control') // admitting stays on Layer 2 › Adapters
@@ -126,7 +126,7 @@ test.describe('mocked browser', () => {
   test('old Layer 4 addresses open the review queue, Providers › Onboarding and Scholarships › Coverage', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-4-review?tab=flags')
-    await expect(page).toHaveURL(/#layer-4-review$/)
+    await expect(page).toHaveURL(/#layer-4-review\?tab=review$/)
     await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByRole('tab', { name: 'Flagged values' })).toHaveCount(0)
     await page.goto('/#layer-4-review?tab=attributes')

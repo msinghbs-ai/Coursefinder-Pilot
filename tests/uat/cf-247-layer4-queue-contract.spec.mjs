@@ -15,7 +15,7 @@ test('source: renamed view, compact sections, pointer to Course links', () => {
 test.describe('mocked browser', () => {
   test('tiles, filter labels and the bulk view', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-4-review')
+    await page.goto('/#layer-4-review?tab=review')
     await expect(page.locator('.l4-status .cf-metric')).toHaveCount(4)
     await expect(page.getByRole('button', { name: 'All tasks (1,803)' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Everyone' })).toBeVisible()

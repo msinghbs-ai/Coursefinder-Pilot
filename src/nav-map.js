@@ -78,6 +78,8 @@ export const PAGES = {
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. University adapters (Layer 2) admit intakes,
   // English requirements and fees, so the AI check is no longer needed; its old addresses open Layer 2 › Adapters.
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
+    // v2.15.298 (Platform Admin, 20 Oct 2026: "anything that needs attention or intervention should come to Layer 4"): one inbox, by university
+    { key: 'inbox', label: 'Inbox', min: 3 },
     { key: 'review', label: 'Review queue', min: 3 },
     // v2.15.250 (Platform Admin, 11 Oct 2026: "Qwen 3 then GPT-4.1 mini then to Layer 4"): scholarship pages no model could settle
     { key: 'aireview', label: 'AI could not decide', min: 3 },

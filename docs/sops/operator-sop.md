@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.38 (reviewed for platform release v2.15.297)  
+**Version:** 1.39 (reviewed for platform release v2.15.298)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -141,3 +141,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.36 | 19 Oct 2026 | v2.15.295 | Reviewed, no steps changed: Live activity shows Pages kept once today. In Layer 4 › AI could not decide each held scholarship shows the AI re-check and its recommendation; the person still admits or refuses. |
 | 1.37 | 20 Oct 2026 | v2.15.296 | Reviewed, no steps changed: Flags has a new reason, Course pages not found, which keeps a university out of page search and Build adapter. A Pipeline Operator or above may release it with a reason once a website or page list is fixed; onboarding then starts again. |
 | 1.38 | 20 Oct 2026 | v2.15.297 | Reviewed, no steps changed: a Layer 4 course link shows the page we hold beside the new page, with Keep the page we hold, Use the new page and Enter another address. |
+| 1.39 | 20 Oct 2026 | v2.15.298 | Layer 4 › Inbox is the daily starting point: open each university at the top and clear its items; every item shows why it is waiting and what each choice does next. Operators and above decide university items (website, pages, holds); archiving and adapter rebuilds need PIM Admin or above. |

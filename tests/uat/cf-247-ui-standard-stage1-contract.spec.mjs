@@ -26,7 +26,7 @@ test('any table (here Scheduled jobs › Priority queue) gets resize handles; a 
 test('plain dropdowns share the standard look; Evidence and Jobs have no repeated header', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 })
   await mockAdmin(page)
-  await page.goto('/#layer-4-review') // v2.15.253: Flagged values retired; the Review queue has plain dropdowns too
+  await page.goto('/#layer-4-review?tab=review') // v2.15.253: Flagged values retired; the Review queue has plain dropdowns too
   const sel = page.locator('.m-main select').first()
   await expect(sel).toBeVisible()
   expect(await sel.evaluate(e => getComputedStyle(e).borderTopLeftRadius)).not.toBe('0px')

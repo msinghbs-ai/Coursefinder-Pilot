@@ -21,6 +21,6 @@ test.describe('mocked browser', () => {
     await expect(w).toContainText('Clear: fee rules waiting for approval · jobs that failed in the last 24 hours')
     await w.getByRole('button', { name: 'Open Flagged values to check' }).click()
     // v2.15.253: Layer 4 › Flagged values retired; the old address the server still sends opens the Review queue
-    await expect(page).toHaveURL(/#layer-4-review$/)
+    await expect(page).toHaveURL(/#layer-4-review\?tab=review$/)
   })
 })
