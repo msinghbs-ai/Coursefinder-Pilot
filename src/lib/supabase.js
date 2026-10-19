@@ -353,6 +353,12 @@ export const api = {
     sort, direction,
   }),
   evidenceFilterOptions: () => adminRead('evidence_filters'),
+  // v2.15.293: the one-screen Evidence panel (public.admin_evidence_summary): what the saved page is, its course, what it supplied.
+  evidenceSummary: async evidenceId => {
+    const { data, error } = await supabase.rpc('admin_evidence_summary', { p_id: evidenceId })
+    if (error) throw error
+    return data
+  },
   evidenceDetail: evidenceId => adminRead('evidence_detail', { id: evidenceId }),
   evidenceObservations: (evidenceId, { limit = 100, offset = 0, entityType = '' } = {}) => adminRead('evidence_observations', {
     id: evidenceId, limit: bounded(limit, 100), offset: Math.max(Number(offset) || 0, 0), entity_type: entityType || null,

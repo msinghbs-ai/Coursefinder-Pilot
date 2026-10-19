@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.292'
-export const PACKAGE_VERSION='0.1.219'
+export const UI_VERSION='2.15.293'
+export const PACKAGE_VERSION='0.1.220'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'19 Oct 2026',
-  title:'Counsellor reports from Zoho',
+  title:'A shorter Evidence panel',
   changes:[
-    'Coverage & completeness › Counsellor reports: counsellors in Zoho Creator and Zoho CRM report a missing, wrong or out-of-date value on a course, institute, campus or contact, with a suggested value and a source link.',
-    'Close each report as Fixed or Not changed with a reason; Zoho reads the outcome back and shows it to the counsellor.'
+    'Evidence: the panel for a saved page now fits one screen. It shows the course and university, the page address, when and how it was read, and whether it was accepted as the course\'s page (and how: exact title, CRICOS code and so on) and is in use now or was replaced by a newer copy.',
+    'It lists the values the page supplied (fees, intakes, English, links, campuses), any open review items and how many earlier or later copies there are. View page and Download work as before.',
+    'The hash, file, storage and job details are under Technical details, closed by default. The long sections (the lineage strip, private evidence boundary, acquisition box, storage controls and empty claims) are gone.'
   ],
-  bugFixes:['A report from Zoho naming a course only by its CRICOS code (for example 082960F) was refused as not found; it is now accepted.']
+  bugFixes:['Course pages showed "0 observations · 0 linked" in the Evidence panel because it read the retired observation model; it now shows what the page actually supplied.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

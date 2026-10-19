@@ -2,15 +2,14 @@ import React,{useEffect,useMemo,useRef,useState}from'react'
 import{Empty,FilterChip as Chip,Badge as KitBadge,LayerBadge,StatusChip}from'./ui-kit'
 import{Pager}from'./ui-kit'
 import{
-  ArrowLeft,BookOpen,ChevronDown,Database,Download,ExternalLink,FileCheck2,FileSearch,
-  Filter,GitBranch,History,Link2,RefreshCw,Search,ShieldCheck,Workflow,X
+  ChevronDown,Database,Download,ExternalLink,FileCheck2,FileSearch,
+  Filter,Link2,RefreshCw,Search,X
 }from'lucide-react'
-import{fmtNumber,fmtDateTime,fmtBytes as formatBytes}from'./lib/format.js'
+import{fmtNumber,fmtDate,fmtDateTime,fmtBytes as formatBytes}from'./lib/format.js'
 import{api}from'./lib/supabase'
 import'./evidence-workspace.css'
 
 const PAGE_SIZE=50
-const INLINE_OBSERVATION_LIMIT=500
 const ENTITY_PAGE={provider:'Providers',course:'Courses',campus:'Campuses',scholarship:'Scholarships'}
 const EMPTY_FILTERS={country:'',sourceId:'',layer:'',entityType:'',entityId:'',providerId:'',jobId:'',evidenceType:'',mime:'',jobStatus:'',status:'',extractionState:'',freshness:'',verifiedFrom:'',verifiedTo:'',hash:'',unresolvedConflicts:''}
 
@@ -25,8 +24,6 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   const[busy,setBusy]=useState(false)
   const[advanced,setAdvanced]=useState(Boolean(initial.entityId||initial.providerId||initial.jobId||initial.hash||initial.verifiedFrom||initial.verifiedTo))
   const[selected,setSelected]=useState(routeParams?.get?.('evidence_id')||null)
-  const[detail,setDetail]=useState(null)
-  const[detailBusy,setDetailBusy]=useState(false)
   const debounced=useDebounce(query,260)
 
   useEffect(()=>{api.evidenceFilterOptions().then(setOpts).catch(e=>onError(e.message))},[])
@@ -34,23 +31,6 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
   const args=useMemo(()=>({...filters,limit:PAGE_SIZE,offset,query:debounced,sort:'captured',direction:'desc'}),[offset,debounced,JSON.stringify(filters)])
   useEffect(()=>{let live=true;setBusy(true);api.evidencePage(args).then(x=>live&&setData(x)).catch(e=>onError(e.message)).finally(()=>live&&setBusy(false));return()=>{live=false}},[JSON.stringify(args)])
   useEffect(()=>setOffset(0),[debounced,JSON.stringify(filters)])
-  useEffect(()=>{
-    if(!selected){setDetail(null);return}
-    let live=true
-    setDetail(null);setDetailBusy(true)
-    Promise.all([api.evidenceDetail(selected),api.evidenceEntities(selected,{limit:100})])
-      .then(async([base,entities])=>{
-        const observationCount=Number(base?.artifact?.observation_count||0)
-        let observations={items:[],total:observationCount,limit:0,offset:0,scope_required:observationCount>INLINE_OBSERVATION_LIMIT}
-        if(observationCount>0&&observationCount<=INLINE_OBSERVATION_LIMIT){
-          observations=await api.evidenceObservations(selected,{limit:100})
-        }
-        if(live)setDetail({...base,observations,entities})
-      })
-      .catch(e=>onError(e.message))
-      .finally(()=>live&&setDetailBusy(false))
-    return()=>{live=false}
-  },[selected])
 
   const rows=rowsOf(data),total=Number(data?.total??rows.length),active=activeFilters(filters)
   const setFilter=(k,v)=>setFilters(f=>({...f,[k]:v}))
@@ -101,7 +81,7 @@ export default function EvidenceWorkspace({onError,navigate,routeParams}){
       <Pager offset={offset} limit={PAGE_SIZE} total={total} onOffset={setOffset} className="evidence-pager"/>
     </section>
 
-    {selected&&<EvidenceDrawer id={selected} data={detail} busy={detailBusy} onClose={()=>setSelected(null)} onError={onError} navigate={navigate}/>} 
+    {selected&&<EvidenceDrawer id={selected} onClose={()=>setSelected(null)} onOpen={setSelected} onError={onError} navigate={navigate}/>}
   </div>
 }
 
@@ -120,108 +100,53 @@ function EvidenceTable({rows,loading,selected,onSelect}){
   </tbody></table></div>
 }
 
-function EvidenceDrawer({id,data,busy,onClose,onError,navigate}){
+// v2.15.293 (Platform Admin, 19 Oct 2026: "explain why the evidence details panel is so bloated and hard to read ... simplify ... readability"):
+// one screen from public.admin_evidence_summary: what the saved page is, its course, whether it was accepted and is in use, what it
+// supplied, and its copies. The technical details sit in a closed part at the bottom. Sections with nothing to show are not drawn.
+function EvidenceDrawer({id,onClose,onOpen,onError,navigate}){
+  const[data,setData]=useState(null)
+  const[busy,setBusy]=useState(true)
   const[accessBusy,setAccessBusy]=useState('')
-  const[visualUrl,setVisualUrl]=useState('')
-  const[artifactUrl,setArtifactUrl]=useState('')
-  const[artifactText,setArtifactText]=useState('')
-  const[artifactPreviewBusy,setArtifactPreviewBusy]=useState(false)
-  const[artifactPreviewError,setArtifactPreviewError]=useState('')
   useEffect(()=>{const k=e=>e.key==='Escape'&&onClose();addEventListener('keydown',k);return()=>removeEventListener('keydown',k)},[onClose])
-  const visual=data?.related_visual||null
-  useEffect(()=>{let live=true;setVisualUrl('');if(!visual?.id||!visual?.preview_allowed)return()=>{live=false};api.evidenceAccess(visual.id,'preview').then(x=>{if(live)setVisualUrl(x?.url||'')}).catch(()=>{});return()=>{live=false}},[visual?.id,visual?.preview_allowed])
-  useEffect(()=>{let live=true;setArtifactUrl('');setArtifactText('');setArtifactPreviewError('');const artifact=data?.artifact||{},storage=data?.storage||{},mime=String(artifact.mime_type||storage.content_type||'').toLowerCase();if(!artifact.id||!storage.preview_allowed)return()=>{live=false};setArtifactPreviewBusy(true);api.evidenceAccess(artifact.id,'preview').then(async x=>{if(!live)return;const url=x?.url||'';if(!url)return;if(mime.startsWith('image/')||mime==='application/pdf'){setArtifactUrl(url);return}if(mime==='application/json'||mime.endsWith('+json')||mime==='text/plain'){const response=await fetch(url,{cache:'no-store'});if(!response.ok)throw new Error('preview fetch failed');let text=await response.text();if(mime.includes('json')){try{text=JSON.stringify(JSON.parse(text),null,2)}catch{}}const limit=20000;setArtifactText(text.length>limit?text.slice(0,limit)+'\n… preview truncated at 20,000 characters':text)}}).catch(()=>{if(live)setArtifactPreviewError('Inline preview unavailable; use the governed Preview/Download action.')}).finally(()=>{if(live)setArtifactPreviewBusy(false)});return()=>{live=false}},[data?.artifact?.id,data?.artifact?.mime_type,data?.storage?.preview_allowed,data?.storage?.content_type])
-  async function access(mode){setAccessBusy(mode);try{const x=await api.evidenceAccess(id,mode);if(!x?.url)throw new Error('Signed evidence URL was not returned.');window.open(x.url,'_blank','noopener,noreferrer')}catch(e){onError(e.message)}finally{setAccessBusy('')}}
-  const a=data?.artifact||{},s=data?.source||{},j=data?.job||{},storage=data?.storage||{},obs=rowsOf(data?.observations),entities=rowsOf(data?.entities),claims=data?.claims||[],reviews=data?.reviews||[],actions=data?.review_actions||[]
-  const observationTotal=Number(data?.observations?.total??a.observation_count??obs.length),entityTotal=Number(data?.entities?.total??entities.length),observationScoped=Boolean(data?.observations?.scope_required)
-  return <><button className="evidence-drawer-backdrop" onClick={onClose}/><aside className="evidence-drawer">
-    <div className="evidence-drawer-head"><div><small>Evidence artifact</small><h2>{a.evidence_type?human(a.evidence_type):shortId(id)}</h2><span>{id}</span></div><button onClick={onClose} aria-label="Close"><X size={18}/></button></div>
-    {busy?<div className="evidence-drawer-loading"><span className="evidence-spinner"/>Loading…</div>:<div className="evidence-drawer-body">
-      <LineageStrip source={s} job={j} artifact={a} observationCount={observationTotal} entityCount={entityTotal} reviewCount={reviews.length}/>
-      <section className="evidence-detail-hero">
-        <div><span className="evidence-private"><ShieldCheck size={13}/>Private evidence boundary</span><h3>{s.label||'Evidence artifact'}</h3><p>{safeUrl(a.source_url)||safeUrl(s.authority_url)||'No public source URL recorded.'}</p><div className="evidence-state-row"><State value={a.status}/><State value={a.extraction_state}/><State value={a.freshness_state}/>{data?.unresolved_conflict&&<State value="conflict"/>}</div></div>
-        <div className="evidence-access-actions"><button className="m-secondary" disabled={!storage.preview_allowed||accessBusy} onClick={()=>access('preview')}><FileSearch size={14}/>{accessBusy==='preview'?'Signing…':'Preview'}</button><button className="m-secondary" disabled={!storage.download_allowed||accessBusy} onClick={()=>access('download')}><Download size={14}/>{accessBusy==='download'?'Signing…':'Download'}</button></div>
+  useEffect(()=>{let live=true;setData(null);setBusy(true);api.evidenceSummary(id).then(x=>{if(live)setData(x||{})}).catch(e=>onError(e.message)).finally(()=>live&&setBusy(false));return()=>{live=false}},[id])
+  async function access(mode){setAccessBusy(mode);try{const x=await api.evidenceAccess(id,mode);if(!x?.url)throw new Error('The link to the saved file was not returned.');window.open(x.url,'_blank','noopener,noreferrer')}catch(e){onError(e.message)}finally{setAccessBusy('')}}
+  const d=data||{},course=d.course||null,accepted=d.accepted||null,supplied=d.supplied||{},items=rowsOf(supplied),suppliedTotal=Number(supplied.total||0),copies=d.copies||null,file=d.file||{},job=d.job||null
+  const pageUrl=safeUrl(d.page_url),earlier=Number(copies?.earlier||0),later=Number(copies?.later||0),reviews=Number(d.reviews_open||0),how=fetchedVia(d.fetched_via)
+  const newest=copies?.newest_id&&onOpen?<button className="ev-sum-link" onClick={()=>onOpen(copies.newest_id)}>Open the newest copy →</button>:null
+  const counts=[reviews>0&&`${fmt(reviews)} open review item${reviews===1?'':'s'}`,earlier>0&&`${fmt(earlier)} earlier cop${earlier===1?'y':'ies'}`,later>0&&`${fmt(later)} later cop${later===1?'y':'ies'}`].filter(Boolean)
+  const tech=[['Content hash',file.content_hash,'mono'],['File size',file.size_bytes!=null?fmtBytes(file.size_bytes):null],['MIME type',file.mime_type],['Storage path',file.storage_path,'mono'],['Source',d.source?.label],['Job',job?[human(job.type),human(job.status),job.id].filter(Boolean).join(' · '):null],['Worker',d.worker],['Evidence id',d.id||id,'mono']].filter(([,v])=>v!=null&&v!=='')
+  return <><button className="evidence-drawer-backdrop" aria-label="Close panel" onClick={onClose}/><aside className="evidence-drawer" aria-label="Evidence">
+    <div className="evidence-drawer-head"><div><small>Evidence</small><h2>{evidenceKind(d.evidence_type)}</h2>{d.captured_at&&<span className="ev-sum-read">Read {dateOnly(d.captured_at)}</span>}</div><button onClick={onClose} aria-label="Close"><X size={18}/></button></div>
+    {busy?<div className="evidence-drawer-loading"><span className="evidence-spinner"/>Loading…</div>:d.error?<div className="evidence-drawer-body"><p className="ev-sum-line">This saved page was not found.</p></div>:<div className="evidence-drawer-body ev-sum">
+      <section className="ev-sum-card">
+        <h3>{course?.title||d.source?.label||'Saved page'}</h3>
+        {course&&<p className="ev-sum-meta">{[course.code,course.provider].filter(Boolean).join(' · ')}{course.id&&navigate&&<button className="ev-sum-link" onClick={()=>openCanonical({entity_type:'course',entity_id:course.id},navigate)}>Open course →</button>}</p>}
+        {pageUrl&&<a className="ev-sum-url" href={pageUrl} target="_blank" rel="noreferrer"><ExternalLink size={13}/><span>{pageUrl}</span></a>}
+        {d.captured_at&&<p className="ev-sum-meta">Read on {dateOnly(d.captured_at)}{how?`, ${how}`:''}</p>}
       </section>
 
-      <AcquisitionProvenance value={data?.acquisition_provenance}/>
+      {!course?<div className="ev-sum-result" data-ev-result="unlinked"><span>Not linked to a course</span></div>
+        :accepted?.basis?<div className="ev-sum-result" data-ev-result="accepted"><span>Accepted as this course's page ({basisLabel(accepted.basis)})</span>{accepted.in_use?<StatusChip value="active" label="In use now"/>:<><StatusChip value="superseded" label="Replaced by a newer copy"/>{newest}</>}</div>
+        :accepted&&!accepted.in_use&&copies?.newest_id?<div className="ev-sum-result" data-ev-result="replaced"><StatusChip value="superseded" label="Replaced by a newer copy"/>{newest}</div>:null}
 
-      <ArtifactPreview artifact={a} storage={storage} url={artifactUrl} text={artifactText} busy={artifactPreviewBusy} error={artifactPreviewError}/>
+      {suppliedTotal>0?<section className="ev-sum-supplied"><h4>What this page supplied</h4><ul>{items.map((x,i)=><li key={`${x.field}-${i}`}><span>{x.field}</span><strong>{x.value||'—'}</strong>{x.status&&x.status!=='active'&&<State value={x.status}/>}</li>)}</ul>{suppliedTotal>items.length&&<p className="ev-sum-more">and {fmt(suppliedTotal-items.length)} more</p>}</section>
+        :<p className="ev-sum-line" data-ev-supplied="none">No live value comes from this copy.</p>}
 
-      {visual?.id&&<section className="evidence-visual-card"><div className="evidence-visual-copy"><span className="evidence-private"><FileSearch size={13}/>Exact same-attempt website screenshot</span><h3>Related visual snapshot</h3><p>Secondary visual Evidence linked to this exact HTML acquisition attempt. It is not reused for JSON/API/regulatory/workbook/PDF evidence, and the HTML/source artifact remains authoritative for extraction and audit.</p><small>{visual.mime_type||'image'} · {visual.captured_at?dateTime(visual.captured_at):'capture time unavailable'}</small><div className="evidence-access-actions"><button className="m-secondary" disabled={!visualUrl} onClick={()=>visualUrl&&window.open(visualUrl,'_blank','noopener,noreferrer')}><ExternalLink size={14}/>View full screenshot</button><button className="m-secondary" onClick={()=>{location.hash=`#evidence?evidence_id=${encodeURIComponent(visual.id)}`}}><FileSearch size={14}/>Open screenshot Evidence</button></div></div><div className="evidence-visual-thumb">{visualUrl?<img src={visualUrl} alt="Captured website screenshot Evidence"/>:<div><span className="evidence-spinner"/>Signing private thumbnail…</div>}</div></section>}
+      {counts.length>0&&<p className="ev-sum-line" data-ev-counts>{counts.join(' · ')}</p>}
 
-      <DetailGrid items={[
-        ['Acquired',dateTime(a.captured_at)],['Verified',a.verification_at?dateTime(a.verification_at):'Not verified'],['Snapshot / version',a.snapshot_version||'Not versioned'],['Content hash',a.content_hash||'—'],
-        ['Format',formatOf(a.mime_type||storage.content_type,a.evidence_type)],['MIME',a.mime_type||storage.content_type||'—'],['Validity',range(a.valid_from,a.valid_to)],['Storage',storage.available?`${fmtBytes(storage.size_bytes)} · private object`:'No private object'],['Change Control',(data?.change_control_ids||[]).join(', ')||'Not linked']
-      ]}/>
+      <div className="ev-sum-actions"><button className="m-secondary" disabled={!file.available||Boolean(accessBusy)} onClick={()=>access('preview')}><FileSearch size={14}/>{accessBusy==='preview'?'Opening…':'View page'}</button><button className="m-secondary" disabled={!file.available||Boolean(accessBusy)} onClick={()=>access('download')}><Download size={14}/>{accessBusy==='download'?'Opening…':'Download'}</button>{!file.available&&<small>The saved file is no longer held.</small>}</div>
 
-      <Section icon={BookOpen} title="Source authority & acquisition" subtitle="Public authority metadata only; no raw private Storage URL is exposed.">
-        <KeyRows rows={[
-          ['Source',s.label],['Type',s.source_type],['Country',s.country_code],['Trust rank',s.trust_rank],['Authority URL',safeUrl(s.authority_url)],['Artifact source URL',safeUrl(a.source_url)],['Source last success',s.last_success_at?dateTime(s.last_success_at):null],['Source last failure',s.last_failure_at?dateTime(s.last_failure_at):null]
-        ]}/>
-        <External url={a.source_url||s.authority_url} label="Open source authority"/>
-      </Section>
-
-      <Section icon={Workflow} title="Acquisition job" subtitle="The execution that captured or associated this artifact.">
-        {j.id?<div className="evidence-job-card"><div><strong>{human(j.type||j.job_type||j.domain||'Acquisition job')}</strong><span>{j.id}</span></div><State value={j.status}/><KeyRows rows={[["Domain",j.domain],["Started",j.started_at?dateTime(j.started_at):null],["Completed",j.completed_at?dateTime(j.completed_at):null],["Attempts",j.attempt_count]]}/></div>:<Empty icon={Workflow} text="No acquisition job is linked to this artifact."/>}
-      </Section>
-
-      <Section icon={FileCheck2} title={`Extracted observations · ${fmt(observationTotal)}`} subtitle={observationScoped?`High-volume snapshot: ${fmt(observationTotal)} extracted facts are retained, but bulk expansion is intentionally bounded to keep the operational detail responsive. Drill through the affected canonical entity/value for exact fact context.`:`Showing ${fmt(obs.length)} of ${fmt(observationTotal)} extracted facts. Source-null, rejected and superseded values remain explicit.`}>
-        {observationScoped?<Empty icon={FileSearch} text="This page has too many values to list here. Open an affected record to see its exact values."/>:obs.length?<div className="evidence-observation-list">{obs.map(x=><Observation key={x.observation_id} value={x} onCanonical={()=>openCanonical(x,navigate)}/>)}</div>:<Empty icon={FileSearch} text="Nothing was read from this page yet, unless it was rejected in review."/>}
-      </Section>
-
-      <Section icon={Link2} title={`Affected canonical entities · ${fmt(entityTotal)}`} subtitle={`${entityTotal>entities.length?`Showing the first ${fmt(entities.length)} of ${fmt(entityTotal)} linked entities. `:''}${data?.entities?.consequence_note||'Current downstream state is context, not an assertion of causal publication admission.'}`}>
-        {entities.length?<div className="evidence-entity-list">{entities.map(x=><EntityCard key={`${x.entity_type}:${x.entity_id}`} value={x} onOpen={()=>openCanonical(x,navigate)}/>)}</div>:<Empty icon={Link2} text="This page is not linked to any record yet."/>}
-      </Section>
-
-      <Section icon={GitBranch} title="Snapshot & change history" subtitle="Predecessor/successor state is shown without rewriting historical evidence.">
-        <Supersession value={data?.supersession}/>
-      </Section>
-
-      <Section icon={History} title="Claims, review & decisions" subtitle="Layer 3 suggestions and Layer 4 human resolution remain distinct from source authority.">
-        {!claims.length&&!reviews.length&&!actions.length?<Empty icon={History} text="No claims, review cases or review actions are currently linked to this artifact."/>:<><RecordList title="Claims" rows={claims}/><RecordList title="Review cases" rows={reviews}/><RecordList title="Review actions" rows={actions}/></>}
-      </Section>
-
-      <Section icon={ShieldCheck} title="Storage controls" subtitle="Access is issued only by the authorised signed-access service and expires after 60 seconds.">
-        <KeyRows rows={[["Private object available",yesNo(storage.available)],["Preview allowed",yesNo(storage.preview_allowed)],["Download allowed",yesNo(storage.download_allowed)],["Object created",storage.object_created_at?dateTime(storage.object_created_at):null],["Object updated",storage.object_updated_at?dateTime(storage.object_updated_at):null],["Content type",storage.content_type]]}/>
-      </Section>
+      {tech.length>0&&<details className="ev-sum-tech"><summary>Technical details</summary><dl>{tech.map(([k,v,c])=><div key={k}><dt>{k}</dt><dd className={c||''}>{String(v)}</dd></div>)}</dl></details>}
     </div>}
   </aside></>
 }
 
-function ArtifactPreview({artifact,storage,url,text,busy,error}){
-  const mime=String(artifact?.mime_type||storage?.content_type||'').toLowerCase(),format=formatOf(mime,artifact?.evidence_type),image=mime.startsWith('image/'),json=mime==='application/json'||mime.endsWith('+json'),plain=mime==='text/plain',pdf=mime==='application/pdf',html=mime==='text/html'||mime==='application/xhtml+xml'
-  const description=json?'Structured JSON Evidence. The preview below comes from this selected artifact only.':plain?'Text Evidence. The preview below comes from this selected artifact only.':image?'Image/screenshot Evidence. The image below is this selected artifact itself.':html?'HTML/source Evidence. A website screenshot is shown separately only when an exact same-attempt screenshot exists.':pdf?'PDF Evidence. Use the signed Preview action to open the selected document.':'This file type cannot be previewed in the browser; it is kept as it was fetched.'
-  return <section className="evidence-artifact-preview" data-artifact-format={format}>
-    <div className="evidence-artifact-preview-head"><div><span className="evidence-format-badge">{format}</span><h3>{human(artifact?.evidence_type||'Evidence artifact')}</h3><p>{description}</p></div><small>{artifact?.mime_type||storage?.content_type||'Unknown MIME'}</small></div>
-    {busy&&<div className="evidence-inline-preview-state"><span className="evidence-spinner"/>Loading this artifact preview…</div>}
-    {!busy&&image&&url&&<div className="evidence-own-image"><img src={url} alt={`${format} Evidence preview`}/></div>}
-    {!busy&&(json||plain)&&text&&<pre className="evidence-code-preview">{text}</pre>}
-    {!busy&&pdf&&url&&<a className="evidence-external" href={url} target="_blank" rel="noreferrer"><ExternalLink size={13}/>Open signed PDF preview</a>}
-    {!busy&&error&&<div className="evidence-inline-preview-state">{error}</div>}
-  </section>
-}
-
-function LineageStrip({source,job,artifact,observationCount,entityCount,reviewCount}){const steps=[['Source',source?.label||'Unlinked'],['Acquisition job',job?.type||job?.job_type||'Unlinked'],['Artifact',artifact?.evidence_type||'Evidence'],['Observation / claim',`${fmt(observationCount)} observation${Number(observationCount)===1?'':'s'}`],['Canonical entity',`${fmt(entityCount)} linked`],['Review / decision',`${reviewCount} review${reviewCount===1?'':'s'}`],['Search / publication','Current consequence state']];return <div className="evidence-lineage">{steps.map(([a,b],i)=><React.Fragment key={a}><div><small>{a}</small><strong>{b}</strong></div>{i<steps.length-1&&<span>→</span>}</React.Fragment>)}</div>}
-function Observation({value:x,onCanonical}){return <article className="evidence-observation"><div className="evidence-observation-head"><div><strong>{human(x.field_code||x.observation_type)}</strong><span>{human(x.observation_type)} · {x.entity_label||x.entity_code||'Unresolved entity'}</span></div><State value={x.value_state||x.status}/></div><pre>{pretty(x.value_json)}</pre><div className="evidence-observation-meta"><span>{x.verified_at?`Verified ${dateTime(x.verified_at)}`:x.observed_at?`Observed ${dateTime(x.observed_at)}`:'No observation timestamp'}</span>{x.entity_id&&<button onClick={onCanonical}><ArrowLeft size={12}/>Canonical {human(x.entity_type)}</button>}</div></article>}
-function EntityCard({value:x,onOpen}){return <article className="evidence-entity-card"><div><small>{human(x.entity_type)}</small><strong>{x.entity_label||x.entity_code||shortId(x.entity_id)}</strong><span>{x.provider_label&&x.provider_label!==x.entity_label?x.provider_label:''}</span></div><div className="evidence-entity-state"><State value={x.canonical_publication_status}/>{x.entity_type==='course'&&<span>{x.search_projected?'Search projected':'Not in Search'}{x.search_projected?` · fee ${yesNo(x.search_has_fee)} · intake ${yesNo(x.search_has_intake)} · English ${yesNo(x.search_has_english)}`:''}</span>}</div><button className="m-secondary compact" onClick={onOpen}>Open record →</button></article>}
-function Supersession({value}){const prev=value?.predecessor,next=value?.successors||[];if(!prev&&!next.length)return <Empty icon={GitBranch} text="This artifact has no explicit predecessor or successor link."/>;return <div className="evidence-history"><div><small>Predecessor</small><strong>{prev?shortId(prev.id):'None'}</strong>{prev?.captured_at&&<span>{dateTime(prev.captured_at)}</span>}</div><div><small>Successors</small><strong>{next.length}</strong>{next.map(x=><span key={x.id}>{shortId(x.id)} · {dateTime(x.captured_at)}</span>)}</div></div>}
-function RecordList({title,rows}){return <div className="evidence-record-group"><h4>{title}</h4>{rows.map((x,i)=><div className="evidence-record" key={x.id||i}><strong>{human(x.action||x.field_code||x.domain||x.status||title)}</strong><span>{Object.entries(x).filter(([k,v])=>k!=='id'&&v!=null&&typeof v!=='object').slice(0,5).map(([k,v])=>`${human(k)}: ${String(v)}`).join(' · ')}</span></div>)}</div>}
-// v2.15.291: how this page was acquired (live call or reuse of stored Evidence), from evidence_detail.acquisition_provenance.
-// Moved from the retired evidence-acquisition-provenance-entry.js, which read the same detail again and added this box after drawing.
-function AcquisitionProvenance({value:p}){
-  if(!p)return null
-  const reuses=Number(p.reuse_count||0)
-  return <section className="cf-evidence-acq"><div><h4>Acquisition provenance</h4><span className="cf-evidence-acq-mode">{p.mode_label||p.mode||'Recorded'}</span></div><div className="cf-evidence-acq-grid">
-    <div className="cf-evidence-acq-item"><small>Acquisition provider</small><strong>{p.provider_name||p.provider_key||'Recorded source'}</strong><span>{p.adapter_type||''}</span></div>
-    <div className="cf-evidence-acq-item"><small>Evidence origin</small><strong>{p.source_evidence_id?'Stored Evidence':'Live source acquisition'}</strong><span>{p.origin_evidence_id||''}</span></div>
-    <div className="cf-evidence-acq-item"><small>Storage reuse</small><strong>{reuses} reuse{reuses===1?'':'s'}</strong><span>{p.last_reused_at?fmtDateTime(p.last_reused_at):'No recorded shared-storage reuse'}</span></div>
-    <div className="cf-evidence-acq-item"><small>Runtime</small><strong>{p.runtime_version||p.response_adapter||'—'}</strong><span>{p.origin_storage_path||''}</span></div>
-  </div><div className="cf-evidence-acq-note">This distinguishes a live scraper/direct call from an artifact produced from Evidence already retained in private storage. Original Evidence lineage is preserved.</div></section>
-}
-function Section({icon:Icon,title,subtitle,children}){return <section className="evidence-section"><div className="evidence-section-title"><span><Icon size={15}/></span><div><h3>{title}</h3>{subtitle&&<p>{subtitle}</p>}</div></div>{children}</section>}
-function DetailGrid({items}){return <div className="evidence-detail-grid">{items.map(([k,v])=><div key={k}><small>{k}</small><strong className={k==='Content hash'?'mono':''}>{v||'—'}</strong></div>)}</div>}
-function KeyRows({rows}){return <div className="evidence-kv">{rows.filter(([,v])=>v!==undefined).map(([k,v])=><div key={k}><span>{k}</span><strong>{v==null||v===''?'—':String(v)}</strong></div>)}</div>}
-function External({url,label}){const safe=safeUrl(url);return safe?<a className="evidence-external" href={safe} target="_blank" rel="noreferrer"><ExternalLink size={13}/>{label}</a>:null}
+const EVIDENCE_KIND={source_snapshot:'Course page',layer2_raw_html:'Saved web page',layer2_raw_json:'Saved data file',website_screenshot:'Page screenshot',screenshot:'Page screenshot',regulatory_snapshot:'Register snapshot'}
+const BASIS={exact_title:'exact title',cricos_code:'CRICOS code',cricos_code_on_page:'CRICOS code on the page',title_level:'title and level',field_award:'field and award',adapter_title:"title found by the university's reader",adapter_code:"course code found by the university's reader",manual:'chosen by a person'}
+function evidenceKind(t){return t?EVIDENCE_KIND[String(t).toLowerCase()]||human(t):'Saved page'}
+function basisLabel(b){return BASIS[String(b).toLowerCase()]||String(b).replace(/[_-]+/g,' ')}
+function fetchedVia(v){const x=String(v||'').toLowerCase();if(!x)return'';if(x==='firecrawl')return'through Firecrawl';if(x==='direct')return'fetched directly';return`through ${human(x)}`}
+function dateOnly(v){return fmtDate(v)}
 
 
 function PagedEvidenceSelect({label,value,valueLabel='',country='',onChange}){const[open,setOpen]=useState(false),[q,setQ]=useState(''),[offset,setOffset]=useState(0),[data,setData]=useState({items:[],total:0,has_more:false}),[busy,setBusy]=useState(false),[selectedLabel,setSelectedLabel]=useState(valueLabel);const ref=useRef(null),inputRef=useRef(null),debounced=useDebounce(q,220);useEffect(()=>{const close=e=>{if(ref.current&&!ref.current.contains(e.target))setOpen(false)};addEventListener('mousedown',close);return()=>removeEventListener('mousedown',close)},[]);useEffect(()=>{setOffset(0)},[debounced,country]);useEffect(()=>{if(valueLabel)setSelectedLabel(valueLabel);if(!value)setSelectedLabel('')},[value,valueLabel]);useEffect(()=>{if(!open)return;let live=true;setBusy(true);api.filterOptionPage({kind:'evidence_source',country,query:debounced,limit:10,offset}).then(x=>{if(!live)return;setData(x||{items:[],total:0,has_more:false});const hit=(x?.items||[]).find(y=>String(y.value)===String(value));if(hit)setSelectedLabel(hit.label)}).catch(()=>live&&setData({items:[],total:0,has_more:false})).finally(()=>live&&setBusy(false));return()=>{live=false}},[open,country,debounced,offset,value]);useEffect(()=>{if(open&&typeof window!=='undefined'&&window.matchMedia?.('(pointer:fine)').matches)setTimeout(()=>inputRef.current?.focus(),0)},[open]);const items=data.items||[],page=Math.floor(offset/10)+1,pages=Math.max(1,Math.ceil(Number(data.total||0)/10));return <div className="evidence-select" ref={ref}><button className={value?'has-value':''} onClick={()=>setOpen(x=>!x)}><span><small>{label}</small><strong>{selectedLabel||'All'}</strong></span><ChevronDown size={13}/></button>{open&&<div className="evidence-select-pop"><label><Search size={13}/><input ref={inputRef} value={q} onChange={e=>setQ(e.target.value)} placeholder={`Search ${label.toLowerCase()}…`}/></label><button onClick={()=>{onChange('','All');setSelectedLabel('');setOpen(false);setQ('');setOffset(0)}} className={!value?'selected':''}>All</button>{items.map(x=><button key={String(x.value)} onClick={()=>{setSelectedLabel(x.label);onChange(x.value,x.label);setOpen(false);setQ('');setOffset(0)}} className={String(value)===String(x.value)?'selected':''}><span>{x.label}</span>{x.meta&&<small>{x.meta}</small>}</button>)}{!items.length&&!busy&&<small>No matching options</small>}{Number(data.total||0)>10&&<div className="evidence-pager"><button disabled={offset===0} onClick={()=>setOffset(o=>Math.max(0,o-10))}>Previous</button><span>{page} / {pages}</span><button disabled={!data.has_more} onClick={()=>setOffset(o=>o+10)}>Next</button></div>}</div>}</div>}
@@ -245,11 +170,8 @@ function human(v){if(v==null||v==='')return'—';return String(v).replace(/[_-]+
 function fmt(v){const n=Number(v);return Number.isFinite(n)?fmtNumber(n):'—'}
 function dateTime(v){if(!v)return'—';const d=new Date(v);return Number.isNaN(+d)?String(v):fmtDateTime(d)}
 function relative(v){const d=new Date(v);if(Number.isNaN(+d))return'Unknown time';const s=Math.max(0,Math.round((Date.now()-d.getTime())/1000));if(s<60)return'Just now';if(s<3600)return`${Math.round(s/60)}m ago`;if(s<86400)return`${Math.round(s/3600)}h ago`;if(s<604800)return`${Math.round(s/86400)}d ago`;return dateTime(v)}
-function range(a,b){if(!a&&!b)return'No explicit validity window';return`${a?dateTime(a):'Open'} → ${b?dateTime(b):'Open'}`}
 function formatOf(mime,evidenceType=''){const m=String(mime||'').toLowerCase(),t=String(evidenceType||'').toLowerCase();if(m==='application/json'||m.endsWith('+json'))return'JSON';if(m==='text/html'||m==='application/xhtml+xml')return'HTML';if(m.startsWith('image/'))return t.includes('screenshot')?'SCREENSHOT':'IMAGE';if(m==='application/pdf')return'PDF';if(m==='text/csv')return'CSV';if(m.includes('spreadsheetml')||m.includes('ms-excel'))return'XLSX';if(m==='application/zip'||m.includes('zip'))return'ZIP';if(m==='text/plain')return'TEXT';return m?m.split('/').pop().toUpperCase():'UNKNOWN'}
 function fmtBytes(v){return formatBytes(v,'Unknown size')}
-function yesNo(v){return v?'Yes':'No'}
 function shortId(v){return v?`${String(v).slice(0,8)}…`:'—'}
 function flag(code){const c=String(code||'').toUpperCase();return c.length===2?String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt())):''}
 function safeUrl(v){try{const u=new URL(String(v||''));return['http:','https:'].includes(u.protocol)?u.toString():null}catch{return null}}
-function pretty(v){if(v==null)return'—';try{return JSON.stringify(v,null,2)}catch{return String(v)}}

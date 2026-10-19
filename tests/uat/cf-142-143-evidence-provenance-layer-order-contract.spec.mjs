@@ -16,11 +16,12 @@ test.describe('CF-142/143 provenance and navigation order',()=>{
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired, so the order is Layer 1 > 2 > 4.
   expect(nav).toContain("pages: ['coverage', 'layer1', 'layer2', 'layer4']")
   expect(index).not.toContain('layer2-navigation-restore')
-  expect(evidence).toContain('Acquisition provenance')
-  // 'Derived from stored Evidence' wording was removed from the provenance panel; 'Acquisition provenance' (above) remains the check.
-  expect(evidence).toContain('Storage reuse')
-  // v2.15.291: the box is drawn by EvidenceWorkspace.jsx from evidence_detail; the post-render script is retired.
-  expect(evidence).toContain('<AcquisitionProvenance value={data?.acquisition_provenance}/>')
+  // v2.15.293 (Platform Admin, 19 Oct 2026: the Evidence panel was bloated and hard to read): the Acquisition provenance box is gone.
+  // The panel says how the page was read in one line ("Read on <date>, through Firecrawl | fetched directly") from admin_evidence_summary.
+  expect(evidence).not.toContain('Acquisition provenance')
+  expect(evidence).not.toContain('AcquisitionProvenance')
+  expect(evidence).toContain('api.evidenceSummary(id)')
+  expect(evidence).toContain("if(x==='firecrawl')return'through Firecrawl';if(x==='direct')return'fetched directly'")
   expect(index).not.toContain('evidence-acquisition-provenance-entry')
   expect(migration).toContain('admin_evidence_acquisition_provenance')
   expect(migration).toContain("'stored_evidence_derived'")

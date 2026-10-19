@@ -86,9 +86,10 @@ test.describe('CourseFinder deployed Data Quality acceptance @deployed', () => {
 
       const drawer = page.locator('aside.evidence-drawer')
       await expect(drawer).toBeVisible({ timeout: 45_000 })
-      await expect(drawer.getByText(/^Evidence artifact$/i)).toBeVisible()
-      await expect(drawer.locator('.evidence-detail-hero h3').first()).toBeVisible() // the source label wording is data-driven
-      await expect(drawer.getByText(/^Private evidence boundary$/i)).toBeVisible()
+      // v2.15.293: the one-screen Evidence panel (admin_evidence_summary)
+      await expect(drawer.getByText(/^Evidence$/)).toBeVisible()
+      await expect(drawer.locator('.ev-sum-card h3').first()).toBeVisible() // the course or source wording is data-driven
+      await expect(drawer.locator('details.ev-sum-tech > summary')).toHaveText('Technical details')
       await milestoneScreenshot(page, testInfo, 'evidence-regulatory-snapshot')
     } finally {
       await finish(testInfo, runtime)

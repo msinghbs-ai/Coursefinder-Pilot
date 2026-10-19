@@ -16,36 +16,35 @@ async function openEvidence(page,id){
 test.describe('A25 Evidence type-aware preview and screenshot lineage @deployed',()=>{
   test.beforeAll(async()=>{await writeRunEnvironment({suite:'m2-4-4-a25-evidence-preview-integrity',change_control:'CF-CHG-20260830-048'})})
 
-  test('JSON Evidence is visibly JSON and never inherits a website screenshot',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  // v2.15.293: the one-screen Evidence panel (admin_evidence_summary) has no inline preview or related-screenshot card. Each saved file
+  // shows its own type under Technical details and View page opens that file only, so a JSON or screenshot file never inherits a screenshot.
+  async function ownType(drawer,mime){
+    await expect(drawer.locator('.ev-sum-actions').getByRole('button',{name:'View page'})).toBeVisible({timeout:20000})
+    const tech=drawer.locator('details.ev-sum-tech')
+    await tech.locator('summary').click()
+    await expect(tech.locator('dd').filter({hasText:mime}).first()).toBeVisible()
+    await expect(drawer.locator('.evidence-visual-card')).toHaveCount(0)
+  }
+
+  test('JSON Evidence shows its own JSON type and never inherits a website screenshot',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const drawer=await openEvidence(page,JSON_EVIDENCE)
-    const preview=drawer.locator('[data-artifact-format="JSON"]')
-    await expect(preview).toBeVisible({timeout:20000})
-    await expect(preview).toContainText(/Structured JSON Evidence/i)
-    await expect(drawer.locator('.evidence-visual-card')).toHaveCount(0)
-    await expect(drawer.getByText('Layer2 Raw Json',{exact:true}).first()).toBeVisible()
+    await expect(drawer.locator('h2')).toHaveText('Saved data file')
+    await ownType(drawer,/json/i)
     await milestoneScreenshot(page,testInfo,'a25-json-evidence')
   }finally{await finish(testInfo,runtime)}})
 
-  test('HTML Evidence can show only its exact same-attempt screenshot',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('HTML Evidence shows its own HTML type',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const drawer=await openEvidence(page,HTML_EVIDENCE)
-    await expect(drawer.locator('[data-artifact-format="HTML"]')).toBeVisible({timeout:20000})
-    const visual=drawer.locator('.evidence-visual-card')
-    await expect(visual).toBeVisible({timeout:20000})
-    await expect(visual).toContainText(/Exact same-attempt website screenshot/i)
-    await expect(visual.getByRole('button',{name:'Open screenshot Evidence'})).toBeVisible()
-    await milestoneScreenshot(page,testInfo,'a25-html-related-screenshot')
+    await ownType(drawer,/text\/html/i)
+    await milestoneScreenshot(page,testInfo,'a25-html-evidence')
   }finally{await finish(testInfo,runtime)}})
 
-  test('Screenshot Evidence previews its own image rather than a related thumbnail',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+  test('Screenshot Evidence shows its own image type rather than a related thumbnail',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
     await loginAsUatUser(page)
     const drawer=await openEvidence(page,SCREENSHOT_EVIDENCE)
-    const preview=drawer.locator('[data-artifact-format="SCREENSHOT"]')
-    await expect(preview).toBeVisible({timeout:20000})
-    await expect(preview).toContainText(/selected artifact itself/i)
-    await expect(preview.locator('.evidence-own-image img')).toBeVisible({timeout:20000})
-    await expect(drawer.locator('.evidence-visual-card')).toHaveCount(0)
+    await ownType(drawer,/image\//i)
     await milestoneScreenshot(page,testInfo,'a25-screenshot-own-image')
   }finally{await finish(testInfo,runtime)}})
 })
