@@ -37,6 +37,7 @@ test('scholarship re-check: cheap first model, a recommendation only, nothing pu
   expect(worker).toContain('if (mode === "scholarship_recheck") {')
   expect(worker).toContain('const out = judgeScholarshipRecheck(a, `${title} ${h1} ${text}`);')
   expect(worker).toContain('INTL_WORDS.test(aq)')
+  expect(worker).toContain('const notNamed = a?.audience === "not_stated" || (["international", "both"].includes(a?.audience) && on(aq) && !INTL_WORDS.test(aq));')
   expect(review).toContain('<Recheck r={v.recheck}/>')
   expect(reuse).toContain("date_trunc('day', now() at time zone 'Australia/Melbourne') at time zone 'Australia/Melbourne'")
   expect(progress).toContain("supabase.rpc('admin_evidence_reuse_today')")
