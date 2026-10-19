@@ -5,7 +5,8 @@
 set -euo pipefail
 fn="$1"
 if ! [[ "$fn" =~ ^[a-z0-9-]+$ ]]; then echo "::error::Refused: $fn"; exit 1; fi
-v=$(jq -r --arg f "$fn" '.functions[$f] // "missing"' .github/edge-functions.json)
+# 19 Oct 2026: "has" not "//": jq's // treats false as missing, which refused every function deployed with verify_jwt false
+v=$(jq -r --arg f "$fn" 'if (.functions | has($f)) then (.functions[$f] | tostring) else "missing" end' .github/edge-functions.json)
 if [ "$v" = "missing" ]; then echo "::error::Refused: $fn is not in .github/edge-functions.json"; exit 1; fi
 if [ ! -f "supabase/functions/$fn/index.ts" ]; then echo "::error::Missing supabase/functions/$fn/index.ts"; exit 1; fi
 flag=""; [ "$v" = "false" ] && flag="--no-verify-jwt"
