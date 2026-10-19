@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.226 — 20 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.299** (Course links: CRICOS code and course-name match). Platform Admin, 20 Oct 2026 09:41: "on right of the Course name display the Cricos code ... the course name is align to course url, there should be no confusion. What we hold is correct."
+  - **Screen:** Layer 4 › Inbox (`src/Layer4Inbox.jsx`) and Review queue (`src/m2-3-intelligence-entry.jsx`): CRICOS code beside the course name; each address marked "matches the course name" or "a major or specialisation of the course".
+  - Migration `20261020050000_cf247_course_link_major_rule.sql`: `security.course_page_rule_v1` (md5-guarded) keeps the page held when the proposed page is a major or specialisation of it. The 5 waiting Adelaide items closed as Keep with the Platform Admin's decision.
+  - Tests: new `tests/uat/cf-247-s80-course-link-code-match-contract.spec.mjs`.
+  - SOPs 1.40 (reviewed, no steps changed).
+
 ## 0.1.225 — 20 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.298** (Layer 4 Inbox: everything that needs a person). Platform Admin, 20 Oct 2026 07:02: "anything that needs attention or intervention should come to Layer 4, define its return path"; 07:40 choices: by university; all stopped onboarding cases; courses not on the site at the bottom; websites down after 30 days.
