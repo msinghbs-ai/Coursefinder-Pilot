@@ -1,0 +1,23 @@
+{
+  "about": "CF-247, 19 Oct 2026 (Platform Admin 06:34, evidence retention: \"Archive, then remove (Recommended)\"; 17:05 \"Proceed with task 4,5 and 6\"): replaced course-page snapshots that job evidence-purge-prepare checked and found referred to nowhere (pipeline.evidence_purge state checked; a newer snapshot of the same course page is kept). Exported before the paste file removes them: the evidence rows, the link-index rows that go with them (ON DELETE CASCADE), and the Storage object records of their files. The paste file refuses to run unless each set's row count and key hash still match this export.",
+  "bucket": "archive",
+  "prefix": "cf247-evidence-purge-2026-10-19",
+  "part_rows": 5000,
+  "sets": [
+    {
+      "name": "evidence_artifacts_replaced",
+      "key": "id",
+      "select": "select e.* from pipeline.evidence_artifacts e where e.id in (select p.evidence_id from pipeline.evidence_purge p where p.state = 'checked')"
+    },
+    {
+      "name": "evidence_link_index_state_cascade",
+      "key": null,
+      "select": "select s.* from pipeline.evidence_link_index_state s where s.evidence_id in (select p.evidence_id from pipeline.evidence_purge p where p.state = 'checked')"
+    },
+    {
+      "name": "evidence_storage_objects",
+      "key": "id",
+      "select": "select o.id, o.bucket_id, o.name, o.metadata, o.created_at, o.updated_at from storage.objects o where o.bucket_id = 'evidence' and o.name in (select p.storage_path from pipeline.evidence_purge p where p.state = 'checked')"
+    }
+  ]
+}
