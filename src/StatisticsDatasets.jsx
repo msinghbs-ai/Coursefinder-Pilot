@@ -23,7 +23,7 @@ export default function StatisticsDatasets({rank=0}){
   const can=rank>=4
   if(rows===null)return <Loading label="Loading datasets…"/>
   return <div className="m-page-stack"><section className="m-panel" data-stat-datasets>
-    <SectionTitle icon={BarChart3} title="Datasets" subtitle="Statistics and rankings the platform holds. Choose which ones appear on Rankings & statistics; files are imported on Reference data › Ranking imports." action={<div className="sd-actions"><Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button>{can&&<Button compact onClick={()=>setAdding(x=>!x)}><Plus size={14}/>Add dataset</Button>}</div>}/>
+    <SectionTitle icon={BarChart3} title="Datasets" subtitle="Statistics and rankings the platform holds. Choose which ones appear on Rankings & statistics; files are imported below, under Ranking imports." action={<div className="sd-actions"><Button compact onClick={load}><RefreshCw size={14}/>Refresh</Button>{can&&<Button compact onClick={()=>setAdding(x=>!x)}><Plus size={14}/>Add dataset</Button>}</div>}/>
     {err&&<p className="fr-error" role="alert">{err}</p>}
     {adding&&<form className="sd-add" onSubmit={add} data-add-dataset>
       <label><small>Name</small><input className="fv-input" value={f.label} onChange={e=>setF({...f,label:e.target.value})} aria-label="Dataset name"/></label>
@@ -37,6 +37,6 @@ export default function StatisticsDatasets({rank=0}){
       <tbody>{rows.map(x=><tr key={x.dataset_key} data-dataset={x.dataset_key}><td><strong>{x.label}</strong><small className="sd-desc">{x.description}</small></td><td>{TYPE[x.dataset_type]||x.dataset_type}</td><td>{x.source_authority||'—'}</td>
         <td>{can?<label className="sd-toggle"><input type="checkbox" checked={Boolean(x.display_enabled)} disabled={busy===x.dataset_key} onChange={e=>save({...x,display_enabled:e.target.checked},x.dataset_key)} aria-label={`Show ${x.label} on Rankings & statistics`}/>{x.display_enabled?'Shown':'Hidden'}</label>
           :<StatusChip value={x.display_enabled?'on':'off'} tone={x.display_enabled?'success':'neutral'} label={x.display_enabled?'Shown':'Hidden'}/>}</td>
-        <td>{x.admin_import_system?<a href={`#reference-data?tab=imports&system=${encodeURIComponent(x.admin_import_system)}`}>Ranking imports</a>:'—'}</td></tr>)}</tbody></table></div>}
+        <td>{x.admin_import_system?<a href={`#statistics-rankings?tab=datasets&system=${encodeURIComponent(x.admin_import_system)}`}>Ranking imports</a>:'—'}</td></tr>)}</tbody></table></div>}
   </section></div>
 }

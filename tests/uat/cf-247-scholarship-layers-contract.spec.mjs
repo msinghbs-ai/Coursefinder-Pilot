@@ -11,7 +11,8 @@ const read = p => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8')
 // v2.15.243 (Platform Admin, 11 Oct 2026): Layer 3 › Scholarships (AI runs on the retired candidate table) removed
 // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired altogether
 test('nav: a Scholarships tab on Layers 1 and 2; no Layer 3 page', () => {
-  for (const l of ['layer1', 'layer2']) expect(PAGES[l].tabs.map(t => t.key)).toContain('scholarships')
+  expect(PAGES.layer2.tabs.map(t => t.key)).toContain('scholarships') // v2.15.301: one Scholarships tab on Layer 2/3 (finding, then reading)
+  expect(PAGES.layer1.tabs).toBeUndefined()
   expect(PAGES.layer3).toBeUndefined()
 })
 

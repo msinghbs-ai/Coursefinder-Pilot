@@ -18,8 +18,8 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
     const nav=fs.readFileSync('src/nav-map.js','utf8')
     expect(nav).toContain('export const LEGACY_ADMIN_SECTIONS = {')
     for(const k of ["'overview'","'sources-imports'","'layer1-sources'","'layer2-providers'","'provider-assets'","'layer2-sources'","'onboarding'","'pim'","'users-roles'","'environment-migration'","'platform'"])expect(nav).toContain(k+':')
-    expect(nav).toContain("'attributes': { page: 'dataModel' }")
-    expect(nav).toContain("'settings': { page: 'health', tab: 'readiness' }")
+    expect(nav).toContain("'attributes': { page: 'coverage', tab: 'attributes' }") // v2.15.301: Data model retired
+    expect(nav).toContain("'settings': { page: 'migration' }") // v2.15.301: Capacity is on the Go-live checklist
     expect(main).toContain("case'users':return <AccessRolesEmbedded actorId={actorId}/>")
     expect(main).not.toContain("if(key==='users-roles'){location.hash='#users-roles'")
     expect(access).toContain("export function AccessRolesEmbedded")

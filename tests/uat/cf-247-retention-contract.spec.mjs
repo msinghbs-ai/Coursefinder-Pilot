@@ -16,7 +16,8 @@ test('retention: Platform Admin only, preview changes nothing, purge needs reaso
   const ix = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(ix).toContain('c.storage.from(bk).remove(next.filter((x) => String(x.bucket || "adapter-captures") === bk).map((x) => x.name))')
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
-  expect(nav).toContain("retention: { label: 'Storage & retention', slug: 'storage-retention', icon: 'database', min: 6")
+  expect(nav).toContain("{ key: 'storage', label: 'Storage & retention', min: 6 },") // v2.15.301: a Platform health tab, Platform Admin only
+  expect(nav).toContain("'storage-retention': { page: 'health', tab: 'storage' },")
 })
 
 test.describe('mocked browser', () => {

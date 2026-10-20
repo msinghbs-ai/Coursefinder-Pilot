@@ -298,6 +298,11 @@ export const waiting = { rank: 6, rows: [
   { key: 'scholarship_links', label: 'Scholarships to link to courses', count: 87, oldest: '2026-09-25T00:00:00Z', href: '#scholarships?tab=links', min: 4 },
   { key: 'failed_jobs', label: 'Jobs that failed in the last 24 hours', count: 0, oldest: null, href: '#scheduled-jobs?tab=jobs', min: 4 } ] }
 
+// v2.15.301: the Layer 4 Inbox summary (public.admin_layer4_inbox 'summary'), live-shaped from 20 Oct 2026; the Dashboard's Waiting for you
+export const inboxSummary = { rank: 6, total: 898, universities: 120, late: 831, target_days: 7,
+  kinds: { course_link: { label: 'Course link', order: 1, choices: [] }, held_scholarship: { label: 'Held scholarship', order: 2, choices: [] }, website_needed: { label: 'Website needed', order: 3, choices: [] }, fee_check: { label: 'Fee fails the check', order: 11, choices: [] } },
+  by_kind: { course_link: { n: 1, late: 1, oldest: '2026-10-06T21:10:00Z' }, held_scholarship: { n: 857, late: 790, oldest: '2026-10-12T03:24:01Z' }, website_needed: { n: 40, late: 40, oldest: '2026-10-12T00:18:00Z' } } }
+
 // Layer 3 Work queue (v2.15.127), live-shaped from 1 Oct 2026.
 export const layer3Queue = { by_task_class: [
   { task_class: 'provider_current_tuition_validation', status_counts: { admitted: 1205, failed: 8, layer4_required: 712 }, total: 1925, oldest_pending_seconds: null, last_completed_at: '2026-09-30T23:48:26Z' },

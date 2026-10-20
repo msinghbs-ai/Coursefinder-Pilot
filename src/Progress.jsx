@@ -20,7 +20,9 @@ import{errorReading,errorSteps}from'./lib/workerErrors.js'
 import{fmtBytes}from'./lib/format.js'
 
 const errText=e=>e?.message||String(e)
-export const VIEWS=[['overview','Overview'],['journeys','Journeys'],['running','Running now'],['levers','Levers']]
+// v2.15.301 (Platform Admin, 20 Oct 2026, "Retire Running now and Levers"): two views. Running stays exported for Scheduled jobs › Task
+// manager (the same board); the pace settings are on Settings. Old ?view=running and ?view=levers addresses redirect (nav-map.js).
+export const VIEWS=[['overview','Overview'],['journeys','Journeys']]
 export const GROUPS=[['all','All universities'],['pilot','Pilot'],['top','Top 50 Australia']]
 const STAGES=[...JOURNEY.map(([k,l])=>[k,l]),['done','Done']]
 const pct=(n,c)=>Number(c)?Math.round(Number(n||0)*100/Number(c)):null
@@ -88,7 +90,7 @@ function Overview({group,setGroup,onError}){
             <td className="num"><StatusChip tone={Number(g.used)>=Number(g.share)?'danger':Number(g.used)>=0.8*Number(g.share)?'warning':'success'} label={`${pctText(g.used,g.share)} of ${fmtNumber(g.share)}`}/></td><td className="num">{fmtNumber(g.refused)}</td></tr>)}
           {(d.ai_today||[]).map(a=><tr key={a.use} data-progress-ai={a.use}><td>AI: {a.label}</td><td className="num">US${Number(a.spent||0).toFixed(2)}</td><td className="num">guard US${a.guard}</td><td className="num">—</td></tr>)}
         </tbody></table></div>
-        <small className="sd-desc">OpenRouter balance US${d.openrouter_usd!=null?Number(d.openrouter_usd).toFixed(2):'—'}. Change shares and guards on <a className="cf-link" href={hrefFor('coverage','progress',{view:'levers'})}>Levers</a>.</small>
+        <small className="sd-desc">OpenRouter balance US${d.openrouter_usd!=null?Number(d.openrouter_usd).toFixed(2):'—'}. Change shares and guards on <a className="cf-link" href={hrefFor('environment','settings')}>Settings</a>.</small>
       </section>
     </div>
     <section className="m-panel" aria-label="Hourly trend" data-progress-trend>
@@ -277,26 +279,6 @@ export function Running({rank,onError}){
   </div>
 }
 
-function Levers({onError}){
-  const[d,setD]=useState(null)
-  useEffect(()=>{read('levers').then(setD).catch(e=>onError?.(errText(e)))},[])
-  if(!d)return <Loading label="Reading levers…"/>
-  const RUN=[['Find scholarships now','scholarships','coverage','Tick universities (up to 50); uses scholarship credits.'],['Read the waiting pages with AI again','layer4','aireview','From the first model, on the stored copy; no Firecrawl credit.'],['Retry stopped universities','layer2','universities','Tick stopped rows; they start again at the step that stopped.'],['Search again for a stopped university','services','limits','After its website is checked (Firecrawl credits by university).'],['Onboard universities not yet queued','layer2','universities','Adds every university without an admitting adapter.'],['Pause or run a scheduled job','coverage','progress','Running now, or Scheduled jobs › Automations.']]
-  return <div className="m-page-stack" data-progress-levers>
-    <p className="sd-desc">Every setting that changes the pace, with its value and what it did today. Each is changed on its own screen (Platform Admin, with a reason, logged); this lists them in one place.</p>
-    {(d.sections||[]).map(s=><section key={s.title} className="m-panel" aria-label={s.title} data-progress-lever-section={s.title}>
-      <h3 className="sl-h4">{s.title}</h3>
-      <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Lever</th><th>Now</th><th>What it did today</th><th/></tr></thead><tbody>
-        {(s.rows||[]).map(r=><tr key={r.name} className={r.hot?'pg-hot':''} data-progress-lever={r.key||r.name}><td><strong>{r.name}</strong><br/><small className="sl-sub">{r.where}</small></td><td>{r.now==='true'?'On':r.now==='false'?'Off':r.now}</td><td>{r.effect||'—'}</td>
-          <td><a className="cf-link" href={r.page==='coverage'&&r.tab==='progress'?hrefFor('coverage','progress',{view:'running'}):hrefFor(r.page,r.tab)}>Change</a></td></tr>)}
-      </tbody></table></div>
-    </section>)}
-    <section className="m-panel" aria-label="Run on demand" data-progress-run>
-      <h3 className="sl-h4">Run on demand</h3>
-      <div className="pg-run">{RUN.map(([t,p,tab,what])=><a key={t} href={p==='coverage'?hrefFor('coverage','progress',{view:'running'}):hrefFor(p,tab)} className="pg-run-item"><strong>{t}</strong><small>{what}</small></a>)}</div>
-    </section>
-  </div>
-}
 
 export default function Progress({routeParams,rank=0,onError}){
   const params=routeParams||new URLSearchParams()
@@ -306,7 +288,5 @@ export default function Progress({routeParams,rank=0,onError}){
     <ViewTabs view={view}/>
     {view==='overview'&&<Overview group={group} setGroup={setGroup} onError={onError}/>}
     {view==='journeys'&&<Journeys key={params.toString()} group={group} setGroup={setGroup} params={params} onError={onError}/>}
-    {view==='running'&&<Running rank={rank} onError={onError}/>}
-    {view==='levers'&&<Levers onError={onError}/>}
   </div>
 }

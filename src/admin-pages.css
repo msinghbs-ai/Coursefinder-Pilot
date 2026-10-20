@@ -228,6 +228,7 @@
 .db-waiting{list-style:none;margin:0;padding:0;display:grid}
 .db-waiting li{display:grid;grid-template-columns:32px 70px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 4px;border-top:1px solid var(--cf-border)}
 .db-waiting li:first-child{border-top:0}
+.db-also{margin:14px 0 2px;font-size:12px;font-weight:600;color:var(--cf-muted);text-transform:uppercase;letter-spacing:.04em}
 .db-count{font-size:var(--cf-fs-2xl);font-variant-numeric:tabular-nums;text-align:right}
 .db-label{display:grid;gap:2px}.db-label small{color:var(--cf-text-2);font-size:var(--cf-fs-xs)}
 .db-clear{display:flex;gap:6px;align-items:center;color:var(--cf-success);margin:0}

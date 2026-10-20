@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.228 — 20 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.301** (menu review). Platform Admin, 20 Oct 2026 19:23: "Ask me nav menu wise and its tab wise questions with its use and recommended choice to keep, move or retire"; answers 19:2x; 19:31 "Go".
+  - **Moved:** Scholarships › Extraction → Models & services › AI & OpenRouter; Reference data › Ranking imports → Rankings & statistics › Datasets; Coverage › Flags → Layer 2/3 › Flags; Layer 1 › Scholarships → Layer 2/3 › Scholarships (one tab with Layer 2's); Platform health › Capacity → Go-live checklist; API usage → Settings › API usage (Operator and above, as before); Storage & retention → Platform health › Storage & retention.
+  - **Merged:** Key dates and Reference sources are one Reference data list with a type filter; Sources and Layer 1 › Sources are one page (Layer 1 Register) with a layer filter, registers first.
+  - **Retired:** Progress › Running now (the board is Scheduled jobs › Task manager) and Levers; Data model. Every old address redirects (`src/nav-map.js`).
+  - **Dashboard:** Waiting for you is the Layer 4 Inbox by kind (count, oldest, late; Open goes to the Inbox on that kind); failed jobs, key dates, reference sites and scholarship links stay under Also.
+  - Migration `20261020110000_cf247_menu_decisions.sql` (component register: 12 screens retired, 4 added; nothing else). Menu 23 → 19 pages. SOPs 1.42.
+
 ## 0.1.227 — 20 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.300** (Layer 2/3 Build & enrich, and fewer screens). Platform Admin, 20 Oct 2026 10:35: "Proceed with task 4, 5 and suggest not used navigation items. Rework layer 2 into layer 2/3 so its cleared it has combined operations. Suggest tabs and nav items that can retire as well. Only actionable and operation relative information and items should be retained." Choices: "Operations first (Recommended)"; retire "Old Layer 4 tabs now", "Priority queue", "Counsellor reports tab", "Scrapers & fetchers page"; NZ flag "NZQA Code signatory (Recommended)".

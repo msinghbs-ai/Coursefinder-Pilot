@@ -78,6 +78,7 @@ test.describe('mocked browser', () => {
   test('Running now: schedules in words; a job with no university activity lists the universities at its stage', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#coverage?tab=progress&view=running')
+    await expect(page).toHaveURL(/#scheduled-jobs\?tab=tasks$/) // v2.15.301: Running now retired from Progress; the board is Task manager's
     const r = page.locator('[data-progress-running]')
     await expect(r.locator('[data-progress-job="scholarship-discover"]')).toContainText('every 10 min')
     await r.locator('[data-progress-job-toggle="coverage-read"]').click()
@@ -85,23 +86,24 @@ test.describe('mocked browser', () => {
     await expect(r.locator('[data-progress-unis="coverage-read"] [data-progress-uni="prov-alpha"]')).toContainText('at this stage now')
   })
 
-  test('Levers: value, what it did today and a link to where it is changed; run on demand', async ({ page }) => {
+  // v2.15.301 (Platform Admin, 20 Oct 2026, "Retire Running now and Levers"): Progress has Overview and Journeys; Levers opens Settings
+  test('Progress has two views; the Levers address opens Settings', async ({ page }) => {
     await mockAdmin(page)
+    await page.goto('/#coverage?tab=progress')
+    await expect(page.locator('.pg-views a')).toHaveText(['Overview', 'Journeys'])
+    await expect(page.locator('[data-progress-levers]')).toHaveCount(0)
     await page.goto('/#coverage?tab=progress&view=levers')
-    const l = page.locator('[data-progress-levers]')
-    await expect(l.locator('[data-progress-lever="daily_share_scholarships"]')).toContainText('17615 refused')
-    await expect(l.locator('[data-progress-lever="daily_share_scholarships"]')).toHaveClass(/pg-hot/)
-    await expect(l.locator('[data-progress-lever="daily_share_scholarships"] a')).toHaveAttribute('href', '#models-services?tab=limits')
-    await expect(l.locator('[data-progress-run]')).toContainText('Find scholarships now')
+    await expect(page).toHaveURL(/#environment$/)
   })
 
   test('Dashboard keeps Waiting for you and the four tiles, and links to Progress; Task manager links to Running now', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#dashboard')
-    await expect(page.locator('[data-dashboard-progress] a')).toHaveAttribute('href', '#coverage?tab=progress')
+    await expect(page.locator('[data-dashboard-progress] a').first()).toHaveAttribute('href', '#coverage?tab=progress')
+    await expect(page.locator('[data-dashboard-progress] a').nth(1)).toHaveAttribute('href', '#layer-2-discovery') // v2.15.301: what is running
     await expect(page.locator('.db-health')).toHaveCount(0)
     await page.goto('/#scheduled-jobs?tab=tasks')
-    await expect(page.locator('[data-task-running-link] a')).toHaveAttribute('href', '#coverage?tab=progress&view=running')
+    await expect(page.locator('[data-task-running-link] a')).toHaveAttribute('href', '#layer-2-discovery') // v2.15.301
     await expect(page.locator('[data-running-now]')).toHaveCount(0)
   })
 })

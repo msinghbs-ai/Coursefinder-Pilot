@@ -4,11 +4,11 @@ import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { mockAdmin } from './support/admin-mock.mjs'
 
-test('Live activity retired: no page, no menu entry; old addresses redirect to Progress › Running now', async () => {
+test('Live activity retired: no page, no menu entry; old addresses redirect to Task manager (v2.15.301: Progress › Running now retired too)', async () => {
   expect(fs.existsSync('src/LiveActivity.jsx')).toBe(false)
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
   expect(nav).not.toMatch(/^\s+activity: \{ label: 'Live activity'/m)
-  expect(nav).toContain("'live-activity': { page: 'coverage', tab: 'progress', view: 'running' },")
+  expect(nav).toContain("'live-activity': { page: 'jobs', tab: 'tasks' },")
   expect(nav).toContain("if (hit.view && !p.get('view')) p.set('view', hit.view)")
   // the read it used is still what Running now builds on
   const m = fs.readFileSync('supabase/migrations/20261013012500_cf247_progress_tab.sql', 'utf8')
@@ -18,7 +18,7 @@ test('Live activity retired: no page, no menu entry; old addresses redirect to P
 test('browser: Running now shows job states by stage, the busy filter and job rows that expand to universities', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#live-activity')
-  await expect(page).toHaveURL(/#coverage\?tab=progress&view=running/)
+  await expect(page).toHaveURL(/#scheduled-jobs\?tab=tasks/) // v2.15.301: the board is Task manager › Background jobs
   const r = page.locator('[data-progress-running]')
   await expect(r.locator('[data-progress-job="coverage-read"]')).toContainText('Running')
   await expect(r.locator('[data-progress-job="evidence-link-index"]')).toContainText('Failing')

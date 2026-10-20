@@ -24,11 +24,13 @@ test('migrations: task board, jobs per run, noisy-register rule, retired registe
   noDrops(c)
 })
 
-test('navigation: Layer 1 is Sources and Scholarships; old Runs, Source settings and Manual batch runs addresses open Sources', () => {
-  expect(PAGES.layer1.tabs).toEqual([{ key: 'operations', label: 'Sources', min: 4 }, { key: 'scholarships', label: 'Scholarships', min: 4 }])
-  for (const tab of ['settings', 'batch']) expect(resolveTarget('layer-1-register', new URLSearchParams({ tab })).tab).toBe('operations')
-  expect(resolveTarget('regulatory-settings').tab).toBe('operations')
-  expect(read('src/mature-main.jsx')).toContain('return <Layer1Sources/>')
+test('navigation: Layer 1 is one Sources page (v2.15.301); old Runs, Source settings and Manual batch runs addresses open it', () => {
+  expect(PAGES.layer1.tabs).toBeUndefined()
+  expect(PAGES.layer1.min).toBe(4)
+  for (const tab of ['settings', 'batch', 'operations']) expect(resolveTarget('layer-1-register', new URLSearchParams({ tab }))).toMatchObject({ page: 'layer1', tab: '' })
+  expect(resolveTarget('regulatory-settings')).toMatchObject({ page: 'layer1', tab: '' })
+  expect(resolveTarget('layer-1-register', new URLSearchParams({ tab: 'scholarships' }))).toMatchObject({ page: 'layer2', tab: 'scholarships' })
+  expect(read('src/mature-main.jsx')).toContain("{layer==='all'?<SourcesWorkspace/>:<Layer1Sources/>}")
 })
 
 test('mocked browser: Layer 1 › Sources is a list; a failing source says why; a row opens to edit; + Add source', async ({ page }) => {
@@ -61,7 +63,7 @@ test('mocked browser: Layer 1 › Sources is a list; a failing source says why; 
 test('mocked browser: Task manager links to Progress › Running now (v2.15.266; its own Running now board is retired)', async ({ page }) => {
   await mockAdmin(page)
   await page.goto('/#scheduled-jobs?tab=tasks')
-  await expect(page.locator('[data-task-running-link] a')).toHaveAttribute('href', '#coverage?tab=progress&view=running')
+  await expect(page.locator('[data-task-running-link] a')).toHaveAttribute('href', '#layer-2-discovery') // v2.15.301: Progress › Running now retired; this is the board
   await expect(page.locator('[data-running-now]')).toHaveCount(0)
 })
 

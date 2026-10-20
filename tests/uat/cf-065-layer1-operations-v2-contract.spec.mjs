@@ -31,9 +31,9 @@ test.describe('CF-065 Layer 1 operations v2 source contract',()=>{
     expect(layer1).not.toContain('Advanced source configuration')
     // v2.15.246 (bugs 11/10-3, Feature 2): Runs and Source settings are one Sources list (Operator opens it, rank 4; editing the
     // settings in a row stays Platform Admin, rank 6). The old cards remain exported for the legacy pop-up only.
-    expect(nav).toContain("{ key: 'operations', label: 'Sources', min: 4 }")
+    expect(nav).toContain("layer1: { label: 'Layer 1 Register', slug: 'layer-1-register', icon: 'database', min: 4,") // v2.15.301: one Sources page, registers first
     expect(nav).not.toContain("label: 'Source settings'")
-    expect(shell).toContain("return <Layer1Sources/>")
+    expect(shell).toContain("{layer==='all'?<SourcesWorkspace/>:<Layer1Sources/>}")
     expect(layer1).toContain('export function Layer1Sources()')
     expect(layer1).toContain('const set=k=>e=>setForm(f=>({...f,[k]:e.target.value})),canEdit=rank>=6')
     // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.

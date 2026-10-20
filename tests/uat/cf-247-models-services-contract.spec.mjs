@@ -8,8 +8,8 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('Models & services is a Platform settings page; switching is role-checked, logged, and a model off leaves every operation screen', () => {
-  expect(SECTIONS.find(s => s.label === 'Platform settings').pages).toEqual(['environment', 'services', 'dataModel', 'retention', 'migration']) // v2.15.300: Scrapers & fetchers is Models & services › Fetchers
-  expect(PAGES.services.min).toBe(4)
+  expect(SECTIONS.find(s => s.label === 'Platform settings').pages).toEqual(['environment', 'services', 'migration']) // v2.15.301: Data model retired, Storage & retention on Platform health
+  expect(PAGES.services.min).toBe(3) // v2.15.301: Scholarship extraction (Curator) on the AI tab; the AI configuration inside stays Operator and above
   const m = read('supabase/migrations-archive/20260930160000_cf247_models_services_toggles.sql')
   expect(m).toContain("if auth.uid() is null or security.current_role_rank() < 5 then raise exception 'PIM Operator role or above required'")
   expect(m).toContain('update pipeline.layer3_route_tiers set active = false, updated_at = now() where profile_id = p_id and active;')

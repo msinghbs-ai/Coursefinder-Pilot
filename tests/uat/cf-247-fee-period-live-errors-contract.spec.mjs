@@ -25,8 +25,8 @@ test('evidence indexing runs four pages at a time; compute-limit replies read pl
 
 test('browser: worker errors show the job and can be marked as seen', async ({ page }) => {
   await mockAdmin(page)
-  await page.goto('/#live-activity') // v2.15.266: Live activity retired; the address opens Progress › Running now
-  await expect(page).toHaveURL(/#coverage\?tab=progress&view=running/)
+  await page.goto('/#live-activity') // v2.15.266: Live activity retired; v2.15.301: the address opens Task manager (Running now retired)
+  await expect(page).toHaveURL(/#scheduled-jobs\?tab=tasks/)
   const errs = page.locator('[data-worker-errors]')
   const row = errs.locator('[data-worker-error="401"]')
   await expect(row).toContainText('Index evidence links')
