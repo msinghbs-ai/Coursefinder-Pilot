@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.45 (reviewed for platform release v2.15.304)  
+**Version:** 1.46 (reviewed for platform release v2.15.305)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -149,3 +149,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.43 | 20 Oct 2026 | v2.15.302 | Reviewed, no steps changed: the unused "Suggest a new record from a source" panel left the Layer 4 drawer on course and provider records. |
 | 1.44 | 21 Oct 2026 | v2.15.303 | Coverage & completeness › Attributes shows every field by country against its target, the standing Fill the gaps queue (Check now) and Cross-check differences (keep held or take page value). Weekly steps changed. |
 | 1.45 | 21 Oct 2026 | v2.15.304 | The 10-minute field check: Stalled fields (Fill now where pages are not read yet; note universities whose pages do not state the field), every field by country, Fill the gaps, the cross-check and Platform health. |
+| 1.46 | 21 Oct 2026 | v2.15.305 | Reviewed: delivery modes now read as blended (a mix inside one course) or on campus or online (a choice); a university's own phrase is in Coverage › Attributes › Delivery wording. |

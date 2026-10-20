@@ -79,3 +79,20 @@ test('stalled fields: daily history, rules from settings, health check, actions,
   expect(sops).toContain("role: 'Pipeline Operator', do: '10-minute field check.")
   expect(guide).toContain('The 10-minute check (weekly)')
 })
+
+// v2.15.305 (Platform Admin, 21 Oct 2026 "Keep two, fix reader"): blended is a mix inside one course; on campus or online is a choice
+test('delivery modes: two meanings, university wording first, cross-check closes what no longer differs', () => {
+  const d = fs.readFileSync('supabase/migrations/20261021150000_cf247_delivery_modes.sql', 'utf8')
+  const ui3 = fs.readFileSync('src/FieldCoverage.jsx', 'utf8')
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(d).toContain('create table if not exists pipeline.delivery_wording')
+  expect(d).toContain("'Face-to-face (includes blended)', 'on_campus'")
+  expect(d).toContain("security.delivery_mode_read_v1(left(v_txt, 300), it.provider_id)")
+  expect(d).toContain("note = 'no longer differs: the held value or the page reading changed'")
+  expect(d).toContain("if v_rank < 5 then raise exception 'PIM Admin role or above required'")
+  expect(d).toContain('Held course values are not changed.')
+  expect(ui3).toContain('data-delivery-wording')
+  expect(ui3).toContain("call('wording_list')")
+  expect(w).toContain('coverage-sweep-worker-v0.34.2')
+  expect(w).toContain('on_campus_and_online means the page offers a choice of modes')
+})

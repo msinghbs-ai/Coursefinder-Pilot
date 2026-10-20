@@ -6,13 +6,15 @@
 // Shows the field register (15 course and 9 provider fields) by country against each field's target, the standing gap queue (job
 // field-gap-queue: one Fill the gaps task when due) and the cross-check differences (held value against a newer page reading).
 // Reads and writes: public.admin_field_coverage('overview' | 'findings' | 'finding_decide' | 'queue_set' | 'target_set' | 'run_now' |
-// 'stalled' | 'fill_now' | 'release_and_fill').
+// 'stalled' | 'fill_now' | 'release_and_fill' | 'wording_list' | 'wording_set' | 'wording_off').
+// v2.15.305 (Platform Admin, 21 Oct 2026 "Keep two, fix reader"): blended is a mix inside one course (hours or a share each way); on campus
+// and online is a choice of modes; a university's own wording is set in Delivery wording (PIM Admin and above, with a reason).
 // v2.15.304 (Platform Admin, 21 Oct 2026 08:42: "go ahead with next step for Field Stalled and action to resolve it"): Stalled fields lists
 // each field below target that has not moved (or trails the best country, or has no reader), its main cause, the action that resolves it
 // and the universities missing it most; the same list raises Platform health issues (check field_stalled).
 import React,{useEffect,useMemo,useState}from'react'
 import{AlertTriangle,CheckCircle2,GitCompare,ListChecks,Play,RefreshCw}from'lucide-react'
-import{supabase}from'./lib/supabase'
+import{api,supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDateTime}from'./lib/format.js'
@@ -36,6 +38,7 @@ export default function FieldCoverage({rank=0,country='',provider=null,onError})
     <FieldMatrix data={data} rank={rank} busy={busy} onReload={load} onSaved={setData} onError={onError}/>
     <GapQueue data={data} rank={rank} onSaved={setData} onReload={load} onError={onError}/>
     <CrossCheck data={data} scope={scope} rank={rank} onDecided={load} onError={onError}/>
+    <DeliveryWording onError={onError}/>
   </div>
 }
 
@@ -103,7 +106,7 @@ function CrossCheck({data,scope,rank,onDecided,onError}){
   const load=()=>call('findings',{...scope,field,limit:25,offset}).then(r=>setItems(r?.items||[])).catch(e=>onError?.(errText(e)))
   useEffect(()=>{load()},[field,offset,scope.country,scope.provider])
   const decide=async(id,decision)=>{setBusy(id);try{await call('finding_decide',{id,decision,reason:decision==='accept'?'Page value taken on Coverage':'Held value kept on Coverage'});await load();onDecided?.()}catch(e){onError?.(errText(e))}finally{setBusy(0)}}
-  const show=v=>v?.name||v?.mode||(v?.value!=null?`${Number(v.value)} ${v.unit||''}`:'—')
+  const show=v=>v?.name||(v?.mode?MODE[v.mode]||v.mode:null)||(v?.value!=null?`${Number(v.value)} ${v.unit||''}`:'—')
   const LABEL={duration:'Duration',level:'Study level',delivery:'Delivery mode'}
   const open=Object.values(counts).reduce((a,s)=>a+Number(s.open||0),0)
   return <Card id="coverage.crosscheck" title="Cross-check differences" icon={GitCompare}
@@ -147,5 +150,32 @@ function StalledFields({scope,onChanged,onError}){
         <td className="fc-decide">{x.can_fill&&d.can_fill&&<Button compact onClick={()=>act(x,'fill_now')} disabled={!!busy}><Play size={14}/>Fill now</Button>}
           {x.can_fill&&d.can_release&&x.cause==='not_stated'&&<Button compact onClick={()=>act(x,'release_and_fill')} disabled={!!busy||reason.trim().length<4} title="Needs a reason above">Release holds and fill</Button>}</td>
       </tr>})}</tbody></table></div></>}
+  </Card>
+}
+
+export const MODE={on_campus:'On campus',online:'Online',blended:'Blended (a mix in one course)',on_campus_and_online:'On campus or online (a choice)'}
+function DeliveryWording({onError}){
+  const[d,setD]=useState(null),[f,setF]=useState({phrase:'',mode:'on_campus',provider:null,reason:''}),[busy,setBusy]=useState(false),[note,setNote]=useState(''),[q,setQ]=useState(''),[hits,setHits]=useState([])
+  useEffect(()=>{if(q.trim().length<2){setHits([]);return}let live=true;const t=setTimeout(()=>api.catalogueFilterPage({kind:'provider',query:q,limit:8}).then(x=>live&&setHits(x?.items||[])).catch(()=>{}),250);return()=>{live=false;clearTimeout(t)}},[q])
+  const load=()=>call('wording_list').then(setD).catch(e=>onError?.(errText(e)))
+  useEffect(()=>{load()},[])
+  const save=async(action,args)=>{setBusy(true);setNote('');try{const r=await call(action,args);setD(r);setNote(`Saved. Cross-check: ${fmtNumber(r?.crosscheck?.resolved||0)} difference(s) closed, ${fmtNumber(r?.crosscheck?.new||0)} new.`);setF({...f,phrase:'',reason:''})}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  return <Card id="coverage.delivery-wording" title="Delivery wording" icon={ListChecks}
+    subtitle="Blended means every student mixes campus and online study inside one course (for example 70% face to face and 30% online, or online with block weeks on campus). On campus or online means the page offers a choice of modes. Where a university uses its own phrase for a mode, add it here; it is applied before the reader, for that university or for every university. Online offered to domestic students only is read as on campus."
+    meta={<span className="cf-chip tone-neutral">{fmtNumber((d?.items||[]).filter(x=>x.active).length)} phrase(s)</span>} data-delivery-wording>
+    {!d?<Loading compact/>:<>
+    {(d.items||[]).length===0?<Empty text="No phrases yet."/>:<div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Phrase on the page</th><th>Means</th><th>University</th><th>Why</th>{d.can_edit&&<th/>}</tr></thead>
+      <tbody>{d.items.map(x=><tr key={x.id} className={x.active?'':'is-muted'}><td><strong>{x.phrase}</strong>{!x.active&&<small>Switched off</small>}</td><td>{MODE[x.mode]||x.mode}</td><td>{x.provider}</td><td><small>{x.reason}</small></td>
+        {d.can_edit&&<td>{x.active&&<Button compact disabled={busy||f.reason.trim().length<4} title="Needs a reason below" onClick={()=>save('wording_off',{id:x.id,reason:f.reason.trim()})}>Switch off</Button>}</td>}</tr>)}</tbody></table></div>}
+    {d.can_edit&&<div className="fc-actions" data-wording-form>
+      <input value={f.phrase} onChange={e=>setF({...f,phrase:e.target.value})} placeholder="Phrase as the page writes it" aria-label="Phrase"/>
+      <select value={f.mode} onChange={e=>setF({...f,mode:e.target.value})} aria-label="Mode it means">{Object.entries(MODE).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
+      {f.provider?<span className="cf-filter-chip">{f.provider.label}<button type="button" aria-label="Every university" onClick={()=>setF({...f,provider:null})}>×</button></span>
+        :<span className="ef-unis"><input value={q} onChange={e=>setQ(e.target.value)} placeholder="University (blank = every university)" aria-label="University"/>
+          {hits.length>0&&<span className="ef-hits">{hits.map(h=><button type="button" key={h.value} onClick={()=>{setF({...f,provider:{value:h.value,label:h.label}});setQ('');setHits([])}}>{h.label}</button>)}</span>}</span>}
+      <input value={f.reason} onChange={e=>setF({...f,reason:e.target.value})} placeholder="Reason" aria-label="Reason"/>
+      <Button compact disabled={busy||f.phrase.trim().length<3||f.reason.trim().length<4} onClick={()=>save('wording_set',{phrase:f.phrase,mode:f.mode,provider_id:f.provider?.value||null,reason:f.reason.trim()})}>Add phrase</Button>
+    </div>}
+    {note&&<p className="sd-desc" role="status">{note}</p>}</>}
   </Card>
 }

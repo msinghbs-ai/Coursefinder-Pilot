@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.45 (reviewed for platform release v2.15.304)  
+**Version:** 1.46 (reviewed for platform release v2.15.305)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -78,7 +78,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 - Models & services › AI & OpenRouter › Scholarship extraction: cost today, the model order, and any model waiting to be qualified or added. A model joins the order only after it qualifies, and only when you add it. _(Models & services › AI & OpenRouter)_
 - 10-minute field check, 1 of 4. Coverage & completeness › Attributes › Stalled fields: each Not moving row has its cause and action. Pages not read yet: Fill now. Pages do not state it: give the listed universities a central page or adapter rule (Layer 2/3 › Universities › Builder), then Release holds and fill with a reason; or lower the target with a reason if they do not publish it. No reader yet: a build task (set the target to 0 until it exists). _(Coverage & completeness › Attributes)_
 - 10-minute field check, 2 of 4. Every field by country: read across each row; a country far behind the others on a field gets the same treatment as a stalled field. _(Coverage & completeness › Attributes)_
-- 10-minute field check, 3 of 4. Fill the gaps (standing queue): a run in the last 6 hours and values filled in 7 days. Cross-check differences: many on one field means a reading rule to fix, not courses to change one by one. _(Coverage & completeness › Attributes)_
+- 10-minute field check, 3 of 4. Fill the gaps (standing queue): a run in the last 6 hours and values filled in 7 days. Cross-check differences: many on one field means a reading rule to fix, not courses to change one by one; a university's own delivery phrase goes in Delivery wording, with a reason. _(Coverage & completeness › Attributes)_
 - 10-minute field check, 4 of 4. Platform health: no Coverage sweep "below target and not moving" warning older than a week; Go to opens Stalled fields. _(Platform health › Health checks)_
 - Users & roles: lowest role that does the job; expiry dates for contractors. _(Users & roles)_
 - Layer 2/3 › Operations: the stage counts, the pace and the estimate for the queue. Adjust "How many at once" (100 now) in Onboarding settings if credits run low or the queue is slow; queue universities not yet in onboarding when new ones appear. _(Layer 2/3 Build & enrich › Universities)_
@@ -161,3 +161,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.43 | 20 Oct 2026 | v2.15.302 | Reviewed, no steps changed: the unused "Suggest a new record from a source" panel left the Layer 4 drawer on course and provider records; retired tables are no longer counted in the health check, Task manager or Storage & retention (D11). |
 | 1.44 | 21 Oct 2026 | v2.15.303 | Coverage & completeness › Attributes shows every field (15 course, 9 provider) by country against its target; Fill the gaps (standing queue) fills missing fields every 6 hours and checks a field the page did not state again when the page changes or after 60 days; Cross-check differences lists held values that differ from the page. Weekly steps changed: every field against its target, and the cross-check. |
 | 1.45 | 21 Oct 2026 | v2.15.304 | The 10-minute field check (weekly, 4 steps): Stalled fields on Coverage › Attributes (each field below target that is not moving, behind other countries or without a reader, with its cause and action: Fill now, adapter work for the listed universities then Release holds and fill, or a lower target with a reason), every field by country, Fill the gaps and the cross-check, and Platform health (stalled-field issues every 3 hours). |
+| 1.46 | 21 Oct 2026 | v2.15.305 | Delivery modes: blended is a mix inside one course, on campus or online is a choice of modes; a university's own phrase is set in Coverage › Attributes › Delivery wording (PIM Admin and above, with a reason). Step 3 of the 10-minute field check names it. |
