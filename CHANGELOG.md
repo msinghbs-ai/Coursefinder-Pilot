@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.232 — 21 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.305** (delivery modes). Platform Admin, 21 Oct 2026: choice "Keep two, fix reader (Recommended)".
+  - Migration `20261021150000_cf247_delivery_modes.sql`: the delivery reader tells a list of options (on campus or online) from a mix inside one course (blended: hours or a share each way, online with block or onsite weeks) and leaves out online offered to domestic students only; `pipeline.delivery_wording` (a university's own phrase, seeded with UNSW "Face-to-face (includes blended)" = on campus) applied first by `security.delivery_mode_read_v1`; Enrich fields and the cross-check use it; open differences that no longer differ close themselves (647 closed). `admin_field_coverage` wording actions. Edits md5-guarded.
+  - coverage-sweep worker v0.34.2: the AI prompt gets the same two meanings.
+  - Coverage › Attributes: Delivery wording card; cross-check shows modes in words. SOPs 1.46.
+
 ## 0.1.231 — 21 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.304** (stalled fields). Platform Admin, 21 Oct 2026 08:42: "go ahead with next step for Field Stalled and action to resolve it. and 10-min check up - should update in the guide/SOP".
