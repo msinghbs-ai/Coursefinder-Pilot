@@ -114,7 +114,7 @@ export function ScholarshipAiModels({onError}){
   useEffect(()=>{load()},[])
   if(!d)return <Loading label="Loading scholarship models…"/>
   return <div className="sx" data-ai-scholarship-models>
-    <p className="sc-sub">AI admission is {d.ai_admission?'on':'off'}; sample pages, instructions and page results are on <a className="cf-link" href="#scholarships?tab=extraction">Scholarships › Extraction</a>.</p>
+    <p className="sc-sub">AI admission is {d.ai_admission?'on':'off'}; sample pages, instructions and page results are on <a className="cf-link" href="#models-services?tab=ai">Models &amp; services › AI &amp; OpenRouter</a>.</p>
     <ModelsSection d={d} act={act}/>
     {msg&&<p role="status" className="sc-note" data-sx-note>{msg}</p>}
     {fail&&<p role="alert" className="sc-note sc-bad" data-sx-fail>{fail}</p>}

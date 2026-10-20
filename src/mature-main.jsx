@@ -23,7 +23,7 @@ import ContextualInsights from'./ContextualInsights'
 import ProviderLogo,{ProviderBrand,logoCapability}from'./ProviderLogo'
 import FlagsPanel from'./FlagsPanel'
 import ApiUsagePanel from'./ApiUsagePanel'
-import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
+import{SectionTitle,fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import{DomainReadiness}from'./data-quality-entry'
@@ -77,6 +77,27 @@ const Toolsets=lazyPage(()=>import('./Toolsets'))
 const RetentionScreen=lazyPage(()=>import('./RetentionScreen'))
 
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
+// v2.15.301 (Platform Admin, 20 Oct 2026, "Merge into one Sources page"): one Sources page with a layer filter. Registers (Layer 1) shows the
+// official registers with run, schedule and settings; All layers lists every source the pipeline reads (the old Sources page).
+const SOURCE_FILTERS=[['registers','Registers (Layer 1)'],['all','All layers']]
+function SourcesPage({routeParams,navigate}){
+  const layer=routeParams?.get?.('layer')==='all'?'all':'registers'
+  return <div className="m-page-stack" data-sources-page={layer}>
+    <div className="pg-views" role="toolbar" aria-label="Source layer">{SOURCE_FILTERS.map(([k,l])=><button key={k} type="button" className={`pg-view${layer===k?' is-on':''}`} aria-pressed={layer===k} data-sources-layer={k} onClick={()=>navigate('layer1',k==='registers'?{}:{layer:k})}>{l}</button>)}</div>
+    {layer==='all'?<SourcesWorkspace/>:<Layer1Sources/>}
+  </div>
+}
+// v2.15.301 (Platform Admin, 20 Oct 2026, "One list with a type filter"): Key dates and Reference sources, one list; Ranking imports is on
+// Rankings & statistics › Datasets.
+const REFERENCE_TYPES=[['','All'],['dates','Key dates'],['links','Reference sources']]
+function ReferenceList({routeParams,navigate,onError}){
+  const t=routeParams?.get?.('type')||'',type=REFERENCE_TYPES.some(([k])=>k===t)?t:''
+  return <div className="m-page-stack" data-reference-list={type||'all'}>
+    <div className="pg-views" role="toolbar" aria-label="Type">{REFERENCE_TYPES.map(([k,l])=><button key={k||'all'} type="button" className={`pg-view${type===k?' is-on':''}`} aria-pressed={type===k} data-reference-type={k||'all'} onClick={()=>navigate('reference',k?{type:k}:{})}>{l}</button>)}</div>
+    {type!=='links'&&<KeyDates onError={onError}/>}
+    {type!=='dates'&&<ReferenceSources onError={onError}/>}
+  </div>
+}
 function CoverageAttributes({rank}){
   const[scope,setScope]=useState({country:'',provider:null})
   return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#layer-2-discovery?tab=universities">Layer 2 › Onboarding</a>.</p>}</div>
@@ -245,25 +266,27 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='archived')return <ArchivedReview onError={onError} navigate={navigate}/>
         // v2.15.253 (Platform Admin, 12 Oct 2026): universities are onboarded automatically up to Ready to admit; admitting stays a person's step.
         return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
-      case'scholarships':if(tab==='coverage')return <ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>;if(tab==='extraction')return <ScholarshipExtraction onError={onError}/>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
+      // v2.15.301: Extraction is on Models & services › AI (old address redirects)
+      case'scholarships':if(tab==='coverage')return <ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
         if(tab==='compare')return <ComparisonWorkspace routeParams={routeParams} navigate={navigate} onError={onError}/>
         if(tab==='qilt')return <Qilt onError={onError}/>
         if(tab==='prisms')return <Prisms onError={onError}/>
-        if(tab==='datasets')return <StatisticsDatasets rank={rank}/>
+        // v2.15.301 (Platform Admin, 20 Oct 2026): Ranking imports moved here from Reference data
+        if(tab==='datasets')return <div className="m-page-stack"><StatisticsDatasets rank={rank}/>{rank>=4&&<section data-ranking-imports><RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/></section>}</div>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;if(tab==='flags')return <FlagsPanel onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
-      case'layer1':
-        if(tab==='scholarships')return <ScholarshipLayer layer={1} rank={rank} onError={err}/>
-        return <Layer1Sources/>
-      case'reference':
-        if(tab==='dates')return <div className="m-page-stack"><KeyDates onError={err}/></div>
-        if(tab==='links')return <div className="m-page-stack"><ReferenceSources onError={err}/></div>
-        return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
+      // v2.15.301: Flags moved to Layer 2/3 › Flags
+      case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
+      // v2.15.301 (Platform Admin, 20 Oct 2026, "Merge into one Sources page"): one Sources page with a layer filter; registers first
+      case'layer1':return <SourcesPage routeParams={routeParams} navigate={navigate}/>
+      // v2.15.301 (Platform Admin, 20 Oct 2026, "One list with a type filter"): Key dates and Reference sources in one list
+      case'reference':return <ReferenceList routeParams={routeParams} navigate={navigate} onError={err}/>
       case'layer2':
         // v2.15.300 (Platform Admin, 20 Oct 2026, "Operations first"): Layer 2/3 Build & enrich. Operations first; Universities joins the
         // old Onboarding and Adapters tabs (their addresses redirect, see nav-map.js); the Adapter builder opens from a university row.
-        if(tab==='scholarships')return <ScholarshipLayer layer={2} rank={rank} onError={err}/>
+        // v2.15.301 (Platform Admin, 20 Oct 2026, "One tab on Layer 2/3"): finding scholarships (was Layer 1 › Scholarships), then reading them
+        if(tab==='scholarships')return <div className="m-page-stack" data-scholarships-merged><SectionTitle title="Finding scholarships" subtitle="Countries switched on and the sources for each."/><ScholarshipLayer layer={1} rank={rank} onError={err}/><SectionTitle title="Reading scholarships" subtitle="Discovery and reading by country, refusals, the jobs and their limits."/><ScholarshipLayer layer={2} rank={rank} onError={err}/></div>
+        if(tab==='flags')return <FlagsPanel onError={onError}/>
         if(tab==='enrich')return <EnrichFields rank={rank} onError={err}/>
         // v2.15.287 (Decision 267): Build adapter, one click per university
         if(tab==='build')return <BuildAdapter rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
@@ -275,20 +298,19 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       // v2.15.300 (Platform Admin, 20 Oct 2026): Review queue, AI could not decide and Websites to find retired into the Inbox kinds.
       case'layer4':return <Layer4Inbox onError={err} routeParams={routeParams}/>
       // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
-      case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
+      // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention is a tab here
+      case'health':return tab==='storage'?<RetentionScreen onError={onError}/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
-      case'sources':return <SourcesWorkspace/>
-      // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action
-      case'apiUsage':return <ApiUsagePanel onError={onError}/>
-      case'environment':return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
+      // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
+      case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
       // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
       // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers
       // v2.15.264: Models & services in three tabs (Services · AI & OpenRouter · Toolsets & limits)
-      case'services':return tab==='ai'?<AiConfig onError={err}/>:tab==='limits'?<div className="m-page-stack"><SearchCapCard/><Toolsets onError={err}/></div>:tab==='fetchers'?<><p className="l3v-note">Switch services on or off on the Services tab. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>:<div className="m-page-stack"><ModelsServices onError={err}/></div>
-      case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
-      case'dataModel':return <Attributes onError={onError}/>
-      case'retention':return <RetentionScreen onError={onError}/>
+      // v2.15.301: Scholarship extraction (was Scholarships › Extraction) under the AI configuration
+      case'services':return tab==='ai'?<div className="m-page-stack">{rank>=4&&<AiConfig onError={err}/>}<section data-scholarship-extraction-moved><SectionTitle title="Scholarship extraction" subtitle="The AI that reads each stored scholarship page: models, qualification, instructions and answers."/><ScholarshipExtraction onError={onError}/></section></div>:tab==='limits'?<div className="m-page-stack"><SearchCapCard/><Toolsets onError={err}/></div>:tab==='fetchers'?<><p className="l3v-note">Switch services on or off on the Services tab. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>:<div className="m-page-stack"><ModelsServices onError={err}/></div>
+      case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.301: Capacity (was Platform health › Capacity) */}<section data-golive-capacity><PlatformMaturity rank={rank} onError={onError} view="capacity"/></section>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
+      // v2.15.301 (Platform Admin, 20 Oct 2026): Data model retired (its address opens Coverage › Attributes); Storage & retention is a Platform health tab
       case'users':return <AccessRolesEmbedded actorId={actorId}/>
       case'contacts':return <ProviderContactsWorkspace rank={rank} onError={onError} navigate={navigate} initialProviderId={routeParams?.get?.('provider_id')||''}/>
       default:return <EmptyState icon={AlertTriangle} title="Page not found" text="This address does not match a page. Use the menu to continue."/>
@@ -363,7 +385,7 @@ function StatisticsRankings({onError,navigate,rank,routeParams}){
     <div><b>Provider context</b><span>QILT, PRISMS and institutional rankings retain their native source grain.</span></div>
     <div><b>Years / editions</b><span>QS and THE use independent edition selectors; Compare retains its own per-ranking edition controls.</span></div>
     <div><b>Evidence</b><span>Every accepted value links back to the source page it came from.</span></div>
-    <div><b>Historical publisher files</b><span>{rank>=4?'Ranking files are imported in Reference data › Ranking imports.':'Import controls are restricted to authorised operator roles.'}</span></div>
+    <div><b>Historical publisher files</b><span>{rank>=4?'Ranking files are imported on Rankings &amp; statistics › Datasets.':'Import controls are restricted to authorised operator roles.'}</span></div>
    </div>
   </section>
  </div>
@@ -775,7 +797,7 @@ function InsightWorkspace({kind,onError}){
 
 function OperationalList({operation,title,onError}){const[data,setData]=useState(null),[busy,setBusy]=useState(true),[query,setQuery]=useState('');useEffect(()=>{setBusy(true);adminRead(operation,{limit:200,offset:0,query:query||null}).then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))},[operation,query]);const rows=rowsOf(data);return <div className="m-page-stack"><section className="m-panel"><div className="m-workspace-head"><div><h2>{title}</h2><p>Role-checked operational data; sensitive internal schemas remain private.</p></div><div className="m-result-count"><strong>{fmtNumber(data?.total??rows.length)}</strong><span>records</span></div></div><div className="m-search-row"><label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={`Search ${title.toLowerCase()}…`}/></label></div><DynamicTable rows={rows} loading={busy}/></section></div>}
 
-function Attributes({onError}){const[data,setData]=useState(null),[busy,setBusy]=useState(true);useEffect(()=>{adminRead('attributes',{limit:200}).then(setData).catch(e=>onError(e.message)).finally(()=>setBusy(false))},[]);if(busy)return <div className="m-skeleton panel tall"/>;const groups=[['Families',data?.families,Layers3],['Groups',data?.groups,Tags],['Attributes',data?.attributes,SlidersHorizontal],['Options',data?.options,ListChecks],['Completeness profiles',data?.completeness_profiles,CheckCircle2]];return <div className="m-page-stack"><div className="m-summary-strip attributes">{groups.map(([label,rows,Icon])=><SummaryCard key={label} icon={Icon} label={label} value={fmtNumber(rows?.length||0)} tone="indigo"/>)}</div>{groups.map(([label,rows,Icon])=><section className="m-panel" key={label}><PanelTitle icon={Icon} title={label} subtitle={`Governed PIM ${label.toLowerCase()} configuration`}/><DynamicTable rows={rows||[]} loading={false}/></section>)}</div>}
+// v2.15.301 (Platform Admin, 20 Oct 2026, "Retire the page"): Data model (Attributes) retired; the attribute data stays.
 
 function DynamicTable({rows,loading,sort='',direction='asc',sortMap={},onSort}){const cols=useMemo(()=>dynamicColumns(rows),[rows]);return <div className="m-table-wrap"><table className="m-table dynamic m-fluid-table" style={{width:'100%',minWidth:'max-content'}}><thead><tr>{cols.map((c,i)=>{const sk=sortMap[c]||'';return <th key={c} className={i===0?'sticky-col':''} style={{minWidth:`clamp(96px,12vw,220px)`}}>{sk?<button onClick={()=>onSort?.(sk)}>{humanise(c)}{sort===sk&&(direction==='asc'?<ArrowUp size={12}/>:<ArrowDown size={12}/>)}</button>:<span>{humanise(c)}</span>}</th>})}</tr></thead><tbody>{loading&&rows.length===0?Array.from({length:6}).map((_,i)=><tr key={i}>{Array.from({length:Math.max(cols.length,5)}).map((_,j)=><td key={j}><span className="m-row-skeleton"/></td>)}</tr>):rows.length?rows.map((r,i)=><tr key={r.id??i}>{cols.map((c,j)=><td key={c} className={j===0?'sticky-col':''}>{genericCell(c,r[c])}</td>)}</tr>):<tr><td colSpan={Math.max(cols.length,1)}><EmptyInline text="No records yet."/></td></tr>}</tbody></table></div>}
 function dynamicColumns(rows){if(!rows?.length)return['status'];const priority=['name','title','source_label','job_type','domain','status','country_code','provider_name','course_title','evidence_type','priority','created_at','updated_at','captured_at'];const keys=Object.keys(rows[0]).filter(k=>!['payload','result','metadata','content'].includes(k)&&typeof rows[0][k]!=='object');return[...priority.filter(k=>keys.includes(k)),...keys.filter(k=>!priority.includes(k))].slice(0,11)}

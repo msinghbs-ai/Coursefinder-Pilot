@@ -140,6 +140,8 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     admin_key_date_save: b => { calls.push({ dateSave: b }); return { ...F.keyDates, items: F.keyDates.items.map(x => x.id === b.p_id ? { ...x, ...b.p_fields } : x), saved: b.p_id || 'd-new' } },
     admin_key_date_action: b => { calls.push({ dateAction: b }); return { ...F.keyDates, items: F.keyDates.items.map(x => x.id === b.p_id ? { ...x, status: b.p_action === 'cancel' ? 'cancelled' : 'active' } : x) } },
     admin_waiting_read: F.waiting,
+    // v2.15.301: Dashboard › Waiting for you reads the Inbox summary (tests of the Inbox itself route this RPC themselves)
+    admin_layer4_inbox: b => b.p_action === 'summary' ? F.inboxSummary : { items: [], total: 0 },
     admin_course_links_read: { ...F.courseLinks, can_edit: rank >= 3 },
     admin_course_link_edit: b => { calls.push({ linkEdit: b }); return F.courseLinks },
     admin_course_applicants_edit: b => { calls.push({ applicants: b }); return { ...F.courseLinks, applicants: { ...F.courseLinks.applicants, ...b.p_args, basis: 'Set by hand' } } },

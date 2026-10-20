@@ -46,7 +46,8 @@ test('every call is logged and summed daily; limits are settings', () => {
   for (const k of ['zoho.rate_per_minute', 'zoho.page_max', 'zoho.sync_page_max', 'zoho.sync_item_unit_bytes', 'zoho.sync_countries', 'zoho.logo_link_days', 'zoho.logo_renew_before_days', 'zoho.log_keep_days', 'batch.zoho_sync_check'])
     expect(mig).toContain(`('pipeline', '${k}', `)
   expect(mig).toContain("'zoho.sync_countries', 'Countries in the Zoho change stream and CSV'")
-  expect(nav).toContain("apiUsage: { label: 'API usage', slug: 'api-usage'")
+  expect(nav).toContain("{ key: 'api', label: 'API usage', min: 4 },") // v2.15.301: Settings › API usage
+  expect(nav).toContain("'api-usage': { page: 'environment', tab: 'api' },")
   expect(settingsUi).toContain("const yn=s.kind==='boolean',ls=s.kind==='list',n=Number(v)")
 })
 

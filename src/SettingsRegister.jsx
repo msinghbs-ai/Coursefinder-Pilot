@@ -81,7 +81,7 @@ export default function SettingsRegister({onError}){
 // ---- policy tables: the safe columns of each, editable with a reason --------------------------------------------------------------------
 const TABLE={platform_capacity_policy:['Capacity thresholds','When database size, temporary files and integrity findings raise a warning, high or critical.'],
   evidence_capacity_policy:['Evidence storage thresholds','Planned evidence storage and the levels that raise a warning.'],
-  retention_class_policies:['Retention rules','How long each kind of record is kept, and the most removed at a time. Purging itself is on Storage & retention.'],
+  retention_class_policies:['Retention rules','How long each kind of record is kept, and the most removed at a time. Purging itself is on Platform health › Storage & retention.'],
   provider_fee_profiles:['Provider fee profiles','Approved fee rules per provider. Switch one off, or set when it is reviewed. New rules come through approvals.'],
   provider_fee_basis_rules:['Provider fee basis rules','Approved rules that admit tuition by its basis. Switch one off, or set when it is reviewed.']}
 const ROW_LABEL={platform_capacity_policy:r=>r.environment,evidence_capacity_policy:()=>'Evidence storage',retention_class_policies:r=>r.class_key,

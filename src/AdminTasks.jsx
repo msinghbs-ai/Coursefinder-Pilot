@@ -113,7 +113,8 @@ export default function AdminTasks({rank=0,onError}){
       <SectionTitle icon={RefreshCw} title="Background jobs" subtitle="Scheduled jobs and workers using the platform: running this moment, failing, paused, Firecrawl credits in the last hour. Pause, resume or run a job now."/>
       <BackgroundJobs rank={rank} onError={onError}/>
     </section>
-    <p className="sd-desc" data-task-running-link>The same board, by stage of the journey: <a className="cf-link" href="#coverage?tab=progress&view=running">Coverage &amp; completeness › Progress › Running now</a>.</p>
+    {/* v2.15.301: Progress › Running now retired; this is the board. The jobs by journey stage are on Layer 2/3 › Operations. */}
+    <p className="sd-desc" data-task-running-link>The jobs by stage of the journey: <a className="cf-link" href="#layer-2-discovery">Layer 2/3 Build &amp; enrich › Operations</a>.</p>
     {job&&<section className="m-panel" data-task-detail={job.id}>
       <SectionTitle icon={ListChecks} title={job.title} subtitle={`${label(job.kind)} · ${job.state} · started by ${job.requested_by_name||''} · reason: ${job.reason}`} action={<Button compact onClick={()=>setOpen('')}>Close</Button>}/>
       <TaskResult job={job} onAdmit={job.kind==='qualify_adapters'&&job.state==='done'&&canAdmit?()=>startAdmit(job):null}/>

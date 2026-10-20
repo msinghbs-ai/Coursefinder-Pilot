@@ -14,7 +14,7 @@ test('menu: Automations and Publishing tabs; old links still land', () => {
   expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['inbox']) // v2.15.300: the old Layer 4 tabs are Inbox kinds
   // v2.15.252 (Platform Admin, 12 Oct 2026): Send back to AI retired with Layer 3; the old address opens the Review queue.
   expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'sendback' }))).toMatchObject({ page: 'layer4', tab: 'inbox' })
-  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['coverage', 3], ['extraction', 3]]) // v2.15.240: Coverage; v2.15.174: Course links retired; Publishing is Layer 4
+  expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['coverage', 3]]) /* v2.15.301: Extraction is on Models & services › AI */ // v2.15.240: Coverage; v2.15.174: Course links retired; Publishing is Layer 4
   expect(PAGES.scholarships.min).toBe(1)
   expect(resolveTarget('jobs').params?.get?.('tab') ?? 'jobs').toBe('jobs')
   expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'publishing' }))).toMatchObject({ page: 'scholarships', tab: 'coverage' })
@@ -104,7 +104,7 @@ test.describe('mocked browser', () => {
     await mockAdmin(page)
     await page.goto('/#scholarships')
     await expect(page.locator('[data-sch-count]')).toBeVisible()
-    await expect(page.getByRole('tab')).toHaveText(['Scholarships', 'Coverage', 'Extraction'])
+    await expect(page.getByRole('tab')).toHaveText(['Scholarships', 'Coverage']) // v2.15.301: Extraction moved to Models & services › AI
     await expect(page.locator('[data-sch-count]')).toBeVisible()
   })
 })

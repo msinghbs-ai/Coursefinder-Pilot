@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.41 (reviewed for platform release v2.15.300)  
+**Version:** 1.42 (reviewed for platform release v2.15.301)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -14,7 +14,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 ## 2. What you own
 
 - Curator: Layer 4 › Inbox, key dates and reference links, course and provider details, ranking links
-- Pipeline Operator: Progress › Running now, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again
+- Pipeline Operator: Task manager › Background jobs, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again
 - PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder
 
 ## 3. How the platform automates, and where a person decides
@@ -45,7 +45,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 | # | Who | Do | Why | Done when |
 |---|---|---|---|---|
-| 1 | Pipeline Operator | Coverage & completeness › Progress › Running now: note any job Failing or Paused and any Workers sending back errors; open a job to see the universities it is working on; mark errors you have dealt with as seen. _(Coverage & completeness › Progress)_ | The fastest view of a stopped stage (Live activity was retired in v2.15.266). | Nothing Failing without a note. |
+| 1 | Pipeline Operator | Scheduled jobs › Task manager › Background jobs: note any job Failing or Paused and any Workers sending back errors; open a job to see the universities it is working on; mark errors you have dealt with as seen. _(Scheduled jobs › Task manager)_ | The fastest view of a stopped stage (Progress › Running now was retired in v2.15.301; this is the same board). | Nothing Failing without a note. |
 | 2 | Curator | Dashboard › Waiting for you: review items, scholarships to link, onboarding stopped or needing a person, reference sites not reachable, key dates coming up. _(Dashboard)_ | Today's queue for people. | You know what to work first. |
 | 3 | Pipeline Operator | Scheduled jobs › Automations: "Failed in the last 24 hours". Read each last error; act from Platform guide › Signal → action (for example lower "per run" by a third when a run hit the time limit). _(Scheduled jobs › Automations)_ | A failing job stops its stage. | Each failure fixed, or raised with the Platform Admin. |
 
@@ -65,14 +65,14 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1 | Pipeline Operator | Layer 2/3 › Universities (Journey: Needs a person, Stopped): read each reason. Fix what you can (website, course pages) and tell the Platform Admin which rows need Retry, approvals or admitting. Rows at Enrich courses or Admit scholarships move on by themselves. _(Layer 2/3 Build & enrich › Universities)_ | Onboarding stops for a person; it never guesses. | Each stopped row has an owner. |
 | 2 | Pipeline Operator | Scholarships to link to courses (Dashboard › Scholarships to link opens the list): on each scholarship, decide the suggested course links from the evidence. _(Scholarships › Scholarships)_ | A scholarship shows on a course only when linked. | Links decided. |
 | 3 | PIM Admin | Layer 2/3 › Operations and Scheduled jobs › Automations: move stuck work; pace or pause what is behind or failing, with a reason. _(Layer 2/3 Build & enrich › Operations)_ | Pacing keeps work inside credits and time limits. | Nothing waits for hours without a reason. |
-| 4 | Curator | Reference data › Key dates and Reference sources: dates coming up and sites not reachable. _(Reference data › Key dates)_ | Key dates and sources feed the website. | Current. |
+| 4 | Curator | Reference data (one list; type filter All): dates coming up and sites not reachable. _(Reference data)_ | Key dates and sources feed the website. | Current. |
 
 ## 6. Weekly
 
 - **Pipeline Operator:** Coverage & completeness: course links, English, intakes and tuition counts; a field flat for a day means its job is stuck or out of budget. _(Coverage & completeness)_
 - **Curator:** Rankings & statistics: ranked universities not linked in a country we hold; link from the suggestions or mark "Not this one". _(Rankings & statistics)_
 - **PIM Admin:** Layer 2/3 › Universities › Builder: for universities needing a person, test the adapter on sample pages and mark values, so the Platform Admin can admit. _(Layer 2/3 Build & enrich › Adapter builder)_
-- **Pipeline Operator:** Layer 1 Register › Sources: the latest register runs completed. _(Layer 1 Register › Sources)_
+- **Pipeline Operator:** Layer 1 Register (Registers): the latest register runs completed. _(Layer 1 Register)_
 
 ## 7. Where a person intervenes
 
@@ -88,7 +88,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 ## 8. What to pay attention to
 
-- Progress › Running now: a job Failing, or a worker repeating the same error.
+- Task manager › Background jobs: a job Failing, or a worker repeating the same error.
 - Layer 4 waiting counts rising two days running: reviewers are behind.
 - A coverage count flat for a day.
 - Reference sites not reachable and key dates coming up.
@@ -144,3 +144,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.39 | 20 Oct 2026 | v2.15.298 | Layer 4 › Inbox is the daily starting point: open each university at the top and clear its items; every item shows why it is waiting and what each choice does next. Operators and above decide university items (website, pages, holds); archiving and adapter rebuilds need PIM Admin or above. |
 | 1.40 | 20 Oct 2026 | v2.15.299 | Reviewed, no steps changed: a course link shows the CRICOS code beside the course name, and each address says whether it matches the course name or is a major of the course. Prefer the page that matches the course name. |
 | 1.41 | 20 Oct 2026 | v2.15.300 | Layer 4 › Inbox holds everything that needs a person: course links, held scholarships (with the AI re-check), websites needed, counsellor reports (close as Fixed or Not changed) and providers that left the register. The Review queue, AI could not decide, Websites to find and Counsellor reports tabs retired; their addresses open the Inbox on that kind, and Decided lists what was decided. Layer 2 is Layer 2/3 Build & enrich: Operations first, then Universities (journey, why it stopped, Retry or Stop, the adapter). |
+| 1.42 | 20 Oct 2026 | v2.15.301 | Menu review. Dashboard › Waiting for you lists the Inbox kinds; Open goes to the Inbox on that kind. The running jobs board is Scheduled jobs › Task manager › Background jobs (Progress › Running now retired). Reference data is one list (Key dates and Reference sources); ranking files are imported on Rankings & statistics › Datasets. Flags and Scholarships are on Layer 2/3; Layer 1 Register is the one Sources page; API usage is a tab of Settings. Old addresses open the new places. |

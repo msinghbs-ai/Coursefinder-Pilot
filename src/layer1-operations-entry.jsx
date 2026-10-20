@@ -291,7 +291,7 @@ function SourceRowBody({source,rank,onRefresh,candidates}){
    {rank>=4&&<button onClick={validate} disabled={!!busy}><ShieldCheck size={14}/>{busy==='validate'?'Checking…':'Check source'}</button>}
    {rank>=6&&<button onClick={pause} disabled={!!busy}>{source.paused?<Play size={14}/>:<Pause size={14}/>}{source.paused?'Resume':'Pause'}</button>}
    {r?.stuck&&r?.status==='running'&&rank>=6&&<button onClick={recover} disabled={!!busy}><AlertTriangle size={14}/>Recover stalled run</button>}
-   {isRanking&&rank>=4&&<a className="button" href={`#reference-data?tab=imports&system=${rankingCode(source)}&year=${encodeURIComponent(source.edition_year||'')}`}><FileCheck2 size={14}/>Upload edition</a>}
+   {isRanking&&rank>=4&&<a className="button" href={`#statistics-rankings?tab=datasets&system=${rankingCode(source)}&year=${encodeURIComponent(source.edition_year||'')}`}><FileCheck2 size={14}/>Upload edition</a>}
   </div>
   {canEdit?<div className="xl-form" data-l1-source-form>
    <XlField label="Source address" wide><input value={form.source_url} onChange={set('source_url')}/></XlField>

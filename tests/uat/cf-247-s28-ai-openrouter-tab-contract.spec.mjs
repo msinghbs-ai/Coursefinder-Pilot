@@ -17,7 +17,8 @@ test('12100: one read for the AI tab; central pages model and switch by a Platfo
 test('nav: Models & services has Services, AI & OpenRouter and Toolsets & limits tabs', () => {
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
   expect(nav).toContain("{ key: 'services', label: 'Services', min: 4 },")
-  expect(nav).toContain("{ key: 'ai', label: 'AI & OpenRouter', min: 4 },")
+  expect(nav).toContain("{ key: 'ai', label: 'AI & OpenRouter', min: 3 },") // v2.15.301: Scholarship extraction (Curator) is on this tab; AiConfig stays rank 4
+  expect(fs.readFileSync('src/mature-main.jsx', 'utf8')).toContain("{rank>=4&&<AiConfig onError={err}/>}")
   expect(nav).toContain("{ key: 'limits', label: 'Toolsets & limits', min: 4 },")
 })
 

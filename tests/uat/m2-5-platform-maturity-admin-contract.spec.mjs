@@ -43,7 +43,7 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     expect(shell).toContain('<PlatformMaturity rank={rank} onError={onError} view="capacity"/>')
     expect(shell).not.toContain("{tool==='platform'&&rank>=6&&<div className=\"m-legacy-host\"><RegulatorySettings")
     // v2.15.107: PIM configuration is the Platform settings > Data model page (role rank 5).
-    expect(await fs.readFile('src/nav-map.js','utf8')).toContain("dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5")
+    expect(await fs.readFile('src/nav-map.js','utf8')).toContain("'data-model': { page: 'coverage', tab: 'attributes' },") // v2.15.301: Data model retired
     // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
     const historyVersion=versionEntry.match(/export const LEGACY_BASELINE='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]

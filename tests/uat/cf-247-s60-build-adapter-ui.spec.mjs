@@ -29,7 +29,7 @@ async function setup(page, rank = 6) {
 
 test('the tab sits on Layer 2 beside Adapters, and the Adapter builder stays', () => {
   const keys = PAGES.layer2.tabs.map(t => t.key)
-  expect(keys).toEqual(['operations', 'universities', 'build', 'enrich', 'scholarships', 'builder']) // v2.15.300: Layer 2/3; the builder opens from a university row
+  expect(keys).toEqual(['operations', 'flags', 'universities', 'build', 'enrich', 'scholarships', 'builder']) // v2.15.301: Flags; v2.15.300: Layer 2/3; the builder opens from a university row
   expect(PAGES.layer2.tabs.find(t => t.key === 'build').label).toBe('Build adapter')
 })
 
