@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.44 (reviewed for platform release v2.15.303)  
+**Version:** 1.45 (reviewed for platform release v2.15.304)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -69,8 +69,8 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 ## 6. Weekly
 
-- **Pipeline Operator:** Coverage & completeness › Attributes › Every field by country: every field against its target; a field flat for a day means its job is stuck or out of budget. Fill the gaps should show a recent run; use Check now after a large page re-read. _(Coverage & completeness › Attributes)_
-- **Pipeline Operator:** Coverage & completeness › Attributes › Cross-check differences: keep the held value or take the page value for each open difference. _(Coverage & completeness › Attributes)_
+- **Pipeline Operator:** 10-minute field check. Coverage & completeness › Attributes › Stalled fields: Fill now on each Not moving row whose cause is "Pages not read for it yet"; note the universities listed for "Pages read do not state it" for the PIM Admin (Builder) and the Platform Admin (Release holds and fill). _(Coverage & completeness › Attributes)_
+- **Pipeline Operator:** 10-minute field check. Every field by country: a country far behind on a field; Fill the gaps: a run in the last 6 hours and values filled in 7 days; Cross-check differences: keep held or take page value; Platform health: no stalled-field warning older than a week. _(Coverage & completeness › Attributes)_
 - **Curator:** Rankings & statistics: ranked universities not linked in a country we hold; link from the suggestions or mark "Not this one". _(Rankings & statistics)_
 - **PIM Admin:** Layer 2/3 › Universities › Builder: for universities needing a person, test the adapter on sample pages and mark values, so the Platform Admin can admit. _(Layer 2/3 Build & enrich › Adapter builder)_
 - **Pipeline Operator:** Layer 1 Register (Registers): the latest register runs completed. _(Layer 1 Register)_
@@ -148,3 +148,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.42 | 20 Oct 2026 | v2.15.301 | Menu review. Dashboard › Waiting for you lists the Inbox kinds; Open goes to the Inbox on that kind. The running jobs board is Scheduled jobs › Task manager › Background jobs (Progress › Running now retired). Reference data is one list (Key dates and Reference sources); ranking files are imported on Rankings & statistics › Datasets. Flags and Scholarships are on Layer 2/3; Layer 1 Register is the one Sources page; API usage is a tab of Settings. Old addresses open the new places. |
 | 1.43 | 20 Oct 2026 | v2.15.302 | Reviewed, no steps changed: the unused "Suggest a new record from a source" panel left the Layer 4 drawer on course and provider records. |
 | 1.44 | 21 Oct 2026 | v2.15.303 | Coverage & completeness › Attributes shows every field by country against its target, the standing Fill the gaps queue (Check now) and Cross-check differences (keep held or take page value). Weekly steps changed. |
+| 1.45 | 21 Oct 2026 | v2.15.304 | The 10-minute field check: Stalled fields (Fill now where pages are not read yet; note universities whose pages do not state the field), every field by country, Fill the gaps, the cross-check and Platform health. |

@@ -47,3 +47,4 @@
 .fc-queue-metrics span{display:flex;flex-direction:column;gap:2px}.fc-queue-metrics strong{font-size:var(--cf-fs-md)}.fc-queue-metrics small{color:var(--dq-muted)}
 .fc-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.fc-actions input{min-width:220px}
 .fc-decide{white-space:nowrap}.fc-decide button+button{margin-left:6px}
+.fc-top{display:block;margin-top:4px}

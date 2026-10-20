@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.303'
+export const SOP_REVIEWED_FOR = '2.15.304'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.44', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.45', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -71,8 +71,11 @@ export const SOPS = [
     weekly: [
       step({ do: 'Models & services › AI & OpenRouter: OpenRouter balance (read every 15 minutes) and each AI use against its daily guard (change a guard there); Models & services › Toolsets & limits: Firecrawl balance against the month and the spend by day; the adapter AI allowance (proposals and US$ a day). Top up or adjust a guard before the balance reaches the credit floor.', page: 'services' }),
       step({ do: 'Models & services › AI & OpenRouter › Scholarship extraction: cost today, the model order, and any model waiting to be qualified or added. A model joins the order only after it qualifies, and only when you add it.', page: 'services', tab: 'ai' }),
-      step({ do: 'Coverage & completeness › Attributes › Every field by country: each field against its target in every country; a field below target in New Zealand or Canada should rise week on week. Fill the gaps (standing queue) should show a recent run and values filled in 7 days; switch it off only with a reason. Change a target with a reason when the business need changes.', page: 'coverage', tab: 'attributes' }),
-      step({ do: 'Coverage & completeness › Attributes › Cross-check differences: open differences by field; keep the held value or take the page value. In Australia the held value is usually the register\'s: take the page value only when the page is clearly newer.', page: 'coverage', tab: 'attributes' }),
+      // v2.15.304: the 10-minute field check (Platform Admin, 21 Oct 2026 08:42)
+      step({ do: '10-minute field check, 1 of 4. Coverage & completeness › Attributes › Stalled fields: each Not moving row has its cause and action. Pages not read yet: Fill now. Pages do not state it: give the listed universities a central page or adapter rule (Layer 2/3 › Universities › Builder), then Release holds and fill with a reason; or lower the target with a reason if they do not publish it. No reader yet: a build task (set the target to 0 until it exists).', page: 'coverage', tab: 'attributes', why: 'A field below target that is not moving does not fix itself.', done: 'Every Not moving row has an action or a lower target with a reason.' }),
+      step({ do: '10-minute field check, 2 of 4. Every field by country: read across each row; a country far behind the others on a field gets the same treatment as a stalled field.', page: 'coverage', tab: 'attributes' }),
+      step({ do: '10-minute field check, 3 of 4. Fill the gaps (standing queue): a run in the last 6 hours and values filled in 7 days. Cross-check differences: many on one field means a reading rule to fix, not courses to change one by one.', page: 'coverage', tab: 'attributes' }),
+      step({ do: '10-minute field check, 4 of 4. Platform health: no Coverage sweep "below target and not moving" warning older than a week; Go to opens Stalled fields.', page: 'health', tab: 'checks' }),
       step({ do: 'Users & roles: lowest role that does the job; expiry dates for contractors.', page: 'users' }),
       step({ do: 'Layer 2/3 › Operations: the stage counts, the pace and the estimate for the queue. Adjust "How many at once" (100 now) in Onboarding settings if credits run low or the queue is slow; queue universities not yet in onboarding when new ones appear.', page: 'layer2', tab: 'universities' }),
     ],
@@ -141,10 +144,11 @@ export const SOPS = [
       { version: '1.41', date: '20 Oct 2026', release: '2.15.300', change: 'Layer 2 is Layer 2/3 Build & enrich. Start on Operations (each stage: working, waiting, stopped for a person, its jobs; the onboarding settings and pace; approvals across universities). Each university is on Universities (its journey stage, why it stopped, Retry or Stop, its adapter; Builder opens the Adapter builder). Held scholarships, websites needed, counsellor reports and providers that left the register are decided in Layer 4 › Inbox; the Review queue, AI could not decide, Websites to find, Counsellor reports, Priority queue and Scrapers & fetchers retired (the search cap is on Models & services › Toolsets & limits, fetchers on Models & services › Fetchers). Platform health › Screen use shows which screens are not opened. New Zealand providers take the international-enrolment flag from the NZQA Code of Practice signatory list.' },
       { version: '1.42', date: '20 Oct 2026', release: '2.15.301', change: 'Menu review (Platform Admin, 20 Oct 2026). Dashboard › Waiting for you is the Inbox by kind. Scholarship extraction is on Models & services › AI & OpenRouter. Reference data is one list with a type filter; Ranking imports is on Rankings & statistics › Datasets. Progress keeps Overview and Journeys (Running now is Scheduled jobs › Task manager; Levers retired, pace is on Settings). Flags and the one Scholarships tab are on Layer 2/3. Layer 1 Register is the one Sources page (Registers or All layers). Capacity is on the Go-live checklist; API usage is a Settings tab; Storage & retention is a Platform health tab; Data model is retired. Old addresses open the new places.' },
       { version: '1.43', date: '20 Oct 2026', release: '2.15.302', change: 'Reviewed, no steps changed: the unused "Suggest a new record from a source" panel left the Layer 4 drawer on course and provider records; retired tables are no longer counted in the health check, Task manager or Storage & retention (D11).' },
-      { version: '1.44', date: '21 Oct 2026', release: '2.15.303', change: 'Coverage & completeness › Attributes shows every field (15 course, 9 provider) by country against its target; Fill the gaps (standing queue) fills missing fields every 6 hours and checks a field the page did not state again when the page changes or after 60 days; Cross-check differences lists held values that differ from the page. Weekly steps changed: every field against its target, and the cross-check.' }],
+      { version: '1.44', date: '21 Oct 2026', release: '2.15.303', change: 'Coverage & completeness › Attributes shows every field (15 course, 9 provider) by country against its target; Fill the gaps (standing queue) fills missing fields every 6 hours and checks a field the page did not state again when the page changes or after 60 days; Cross-check differences lists held values that differ from the page. Weekly steps changed: every field against its target, and the cross-check.' },
+      { version: '1.45', date: '21 Oct 2026', release: '2.15.304', change: 'The 10-minute field check (weekly, 4 steps): Stalled fields on Coverage › Attributes (each field below target that is not moving, behind other countries or without a reader, with its cause and action: Fill now, adapter work for the listed universities then Release holds and fill, or a lower target with a reason), every field by country, Fill the gaps and the cross-check, and Platform health (stalled-field issues every 3 hours).' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.44', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.45', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 › Inbox, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Task manager › Background jobs, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -167,8 +171,9 @@ export const SOPS = [
       ] },
     ],
     weekly: [
-      step({ role: 'Pipeline Operator', do: 'Coverage & completeness › Attributes › Every field by country: every field against its target; a field flat for a day means its job is stuck or out of budget. Fill the gaps should show a recent run; use Check now after a large page re-read.', page: 'coverage', tab: 'attributes' }),
-      step({ role: 'Pipeline Operator', do: 'Coverage & completeness › Attributes › Cross-check differences: keep the held value or take the page value for each open difference.', page: 'coverage', tab: 'attributes' }),
+      // v2.15.304: the 10-minute field check
+      step({ role: 'Pipeline Operator', do: '10-minute field check. Coverage & completeness › Attributes › Stalled fields: Fill now on each Not moving row whose cause is "Pages not read for it yet"; note the universities listed for "Pages read do not state it" for the PIM Admin (Builder) and the Platform Admin (Release holds and fill).', page: 'coverage', tab: 'attributes', why: 'A field below target that is not moving does not fix itself.', done: 'Every Not moving row has an action.' }),
+      step({ role: 'Pipeline Operator', do: '10-minute field check. Every field by country: a country far behind on a field; Fill the gaps: a run in the last 6 hours and values filled in 7 days; Cross-check differences: keep held or take page value; Platform health: no stalled-field warning older than a week.', page: 'coverage', tab: 'attributes' }),
       step({ role: 'Curator', do: 'Rankings & statistics: ranked universities not linked in a country we hold; link from the suggestions or mark "Not this one".', page: 'rankings' }),
       step({ role: 'PIM Admin', do: 'Layer 2/3 › Universities › Builder: for universities needing a person, test the adapter on sample pages and mark values, so the Platform Admin can admit.', page: 'layer2', tab: 'builder' }),
       step({ role: 'Pipeline Operator', do: 'Layer 1 Register (Registers): the latest register runs completed.', page: 'layer1', tab: '' }),
@@ -234,7 +239,8 @@ export const SOPS = [
       { version: '1.41', date: '20 Oct 2026', release: '2.15.300', change: 'Layer 4 › Inbox holds everything that needs a person: course links, held scholarships (with the AI re-check), websites needed, counsellor reports (close as Fixed or Not changed) and providers that left the register. The Review queue, AI could not decide, Websites to find and Counsellor reports tabs retired; their addresses open the Inbox on that kind, and Decided lists what was decided. Layer 2 is Layer 2/3 Build & enrich: Operations first, then Universities (journey, why it stopped, Retry or Stop, the adapter).' },
       { version: '1.42', date: '20 Oct 2026', release: '2.15.301', change: 'Menu review. Dashboard › Waiting for you lists the Inbox kinds; Open goes to the Inbox on that kind. The running jobs board is Scheduled jobs › Task manager › Background jobs (Progress › Running now retired). Reference data is one list (Key dates and Reference sources); ranking files are imported on Rankings & statistics › Datasets. Flags and Scholarships are on Layer 2/3; Layer 1 Register is the one Sources page; API usage is a tab of Settings. Old addresses open the new places.' },
       { version: '1.43', date: '20 Oct 2026', release: '2.15.302', change: 'Reviewed, no steps changed: the unused "Suggest a new record from a source" panel left the Layer 4 drawer on course and provider records.' },
-      { version: '1.44', date: '21 Oct 2026', release: '2.15.303', change: 'Coverage & completeness › Attributes shows every field by country against its target, the standing Fill the gaps queue (Check now) and Cross-check differences (keep held or take page value). Weekly steps changed.' }],
+      { version: '1.44', date: '21 Oct 2026', release: '2.15.303', change: 'Coverage & completeness › Attributes shows every field by country against its target, the standing Fill the gaps queue (Check now) and Cross-check differences (keep held or take page value). Weekly steps changed.' },
+      { version: '1.45', date: '21 Oct 2026', release: '2.15.304', change: 'The 10-minute field check: Stalled fields (Fill now where pages are not read yet; note universities whose pages do not state the field), every field by country, Fill the gaps, the cross-check and Platform health.' }],
   },
 ]
 

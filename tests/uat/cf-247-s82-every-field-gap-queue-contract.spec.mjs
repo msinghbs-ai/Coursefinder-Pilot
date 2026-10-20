@@ -55,3 +55,27 @@ test('Coverage › Attributes shows every field, the queue and the cross-check',
   expect(cov).toContain("in_queue:'In the fill queue (Enrich fields)',no_reader:'No reader yet'")
   for (const f of ['level', 'field_of_study', 'delivery', 'campus_city', 'international', 'deadline', 'academic_entry', 'description']) expect(cov).toContain(`${f}:{label:`)
 })
+
+// v2.15.304 (Platform Admin, 21 Oct 2026 08:42): "go ahead with next step for Field Stalled and action to resolve it. and 10-min check up -
+// should update in the guide/SOP"
+test('stalled fields: daily history, rules from settings, health check, actions, guide and SOPs', () => {
+  const s = fs.readFileSync('supabase/migrations/20261021130000_cf247_field_stalled.sql', 'utf8')
+  const sops = fs.readFileSync('src/guide/sops.js', 'utf8')
+  const guide = fs.readFileSync('src/guide/platformGuide.js', 'utf8')
+  const health = fs.readFileSync('src/PlatformHealth.jsx', 'utf8')
+  const ui2 = fs.readFileSync('src/FieldCoverage.jsx', 'utf8')
+  expect(s).toContain('create table if not exists pipeline.field_coverage_daily')
+  for (const k of ['stall.days', 'stall.min_points', 'stall.country_gap_points', 'stall.queue_hours']) expect(s).toContain(`security.pipeline_num_v1('${k}'`)
+  expect(s).toContain("if security.platform_health_due_v1('field_stalled',p_force) then")
+  expect(s).toContain("values ('field_stalled', 'coverage sweep', 'Fields below target are moving'")
+  expect(s).toContain("elsif p_action in ('fill_now', 'release_and_fill') then")
+  expect(s).toContain("if v_rank < 6 then raise exception 'Platform Admin role required'")
+  expect(s).toMatch(/-- Replaces: /)
+  expect(s).toMatch(/-- Retires: /)
+  expect(ui2).toContain("call('stalled',scope)")
+  expect(ui2).toContain('data-stalled-fields')
+  expect(health).toContain("field_stalled:['#coverage?tab=attributes','Coverage › Attributes › Stalled fields']")
+  expect(sops).toContain('10-minute field check, 1 of 4.')
+  expect(sops).toContain("role: 'Pipeline Operator', do: '10-minute field check.")
+  expect(guide).toContain('The 10-minute check (weekly)')
+})
