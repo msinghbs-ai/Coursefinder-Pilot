@@ -1,0 +1,42 @@
+{
+  "captured_at": "2026-10-20T22:16:06.770Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-attributes.png",
+      "route": "attributes",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 6835,
+      "height": 3495,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=attributes",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-attributes-stalled-fields.png",
+      "route": "attributes",
+      "action": "Stalled fields",
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 1506,
+      "height": 5586,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=attributes",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-platform-health.png",
+      "route": "platform-health",
+      "action": null,
+      "clicked": true,
+      "heading": "Platform health",
+      "settle_ms": 2771,
+      "height": 1922,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#platform-health",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
