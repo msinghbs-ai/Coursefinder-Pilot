@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.43 (reviewed for platform release v2.15.302)  
+**Version:** 1.44 (reviewed for platform release v2.15.303)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -69,7 +69,8 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 ## 6. Weekly
 
-- **Pipeline Operator:** Coverage & completeness: course links, English, intakes and tuition counts; a field flat for a day means its job is stuck or out of budget. _(Coverage & completeness)_
+- **Pipeline Operator:** Coverage & completeness › Attributes › Every field by country: every field against its target; a field flat for a day means its job is stuck or out of budget. Fill the gaps should show a recent run; use Check now after a large page re-read. _(Coverage & completeness › Attributes)_
+- **Pipeline Operator:** Coverage & completeness › Attributes › Cross-check differences: keep the held value or take the page value for each open difference. _(Coverage & completeness › Attributes)_
 - **Curator:** Rankings & statistics: ranked universities not linked in a country we hold; link from the suggestions or mark "Not this one". _(Rankings & statistics)_
 - **PIM Admin:** Layer 2/3 › Universities › Builder: for universities needing a person, test the adapter on sample pages and mark values, so the Platform Admin can admit. _(Layer 2/3 Build & enrich › Adapter builder)_
 - **Pipeline Operator:** Layer 1 Register (Registers): the latest register runs completed. _(Layer 1 Register)_
@@ -146,3 +147,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.41 | 20 Oct 2026 | v2.15.300 | Layer 4 › Inbox holds everything that needs a person: course links, held scholarships (with the AI re-check), websites needed, counsellor reports (close as Fixed or Not changed) and providers that left the register. The Review queue, AI could not decide, Websites to find and Counsellor reports tabs retired; their addresses open the Inbox on that kind, and Decided lists what was decided. Layer 2 is Layer 2/3 Build & enrich: Operations first, then Universities (journey, why it stopped, Retry or Stop, the adapter). |
 | 1.42 | 20 Oct 2026 | v2.15.301 | Menu review. Dashboard › Waiting for you lists the Inbox kinds; Open goes to the Inbox on that kind. The running jobs board is Scheduled jobs › Task manager › Background jobs (Progress › Running now retired). Reference data is one list (Key dates and Reference sources); ranking files are imported on Rankings & statistics › Datasets. Flags and Scholarships are on Layer 2/3; Layer 1 Register is the one Sources page; API usage is a tab of Settings. Old addresses open the new places. |
 | 1.43 | 20 Oct 2026 | v2.15.302 | Reviewed, no steps changed: the unused "Suggest a new record from a source" panel left the Layer 4 drawer on course and provider records. |
+| 1.44 | 21 Oct 2026 | v2.15.303 | Coverage & completeness › Attributes shows every field by country against its target, the standing Fill the gaps queue (Check now) and Cross-check differences (keep held or take page value). Weekly steps changed. |

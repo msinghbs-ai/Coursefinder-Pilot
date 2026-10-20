@@ -21,10 +21,10 @@ test('Course coverage is reachable from Coverage & completeness and uses the val
   expect(nav).toContain("'course-coverage': { page: 'coverage', tab: 'courses' }")
   expect(main).toContain("case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className=\"m-page-stack\"><CoverageView view=\"courses\"/><LinkRefresh/></div>")
   // Decision 217: the attributes view, By area and Fee schedules share the Coverage country and university
-  expect(main).toContain('<CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>') // v2.15.157: approvals moved to Layer 4 › Attributes
+  expect(main).toContain('<CoverageView view="attributes" onScope={setScope} belowFilters={({country,provider})=><FieldCoverage rank={rank} country={country} provider={provider}/>}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>') // v2.15.157: approvals moved to Layer 4 › Attributes
   expect(main).not.toContain('Layer4Attributes') // v2.15.253: Layer 4 › Attributes retired; approvals on Providers › Onboarding and the Adapter builder
   expect(v).toContain("adminRead('course_coverage'")
   expect(v).toContain("adminRead('course_coverage_courses'")
-  expect(v).toContain("states:['candidate','in_review','awaiting_l3']")
+  expect(v).toContain("states:['candidate','in_review','awaiting_l3','in_queue']") // v2.15.303: the fill queue is work in progress
   for (const c of ['#0d366b', '#1c5cab', '#2a78d6', '#5598e7', '#86b6ef']) expect(v).toContain(c)
 })

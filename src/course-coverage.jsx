@@ -12,10 +12,11 @@ import{Metric,Button}from'./ui-kit'
 // Pipeline stages use one blue ordinal ramp (validated light, ordinal: steps 250/350/450/550/700; = --cf-seq-1..5).
 export const COVERAGE_STAGES=[
   {key:'admitted',label:'Admitted',states:['admitted'],color:'#0d366b'},
-  {key:'progress',label:'Found, awaiting admission or review',states:['candidate','in_review','awaiting_l3'],color:'#1c5cab'},
+  // v2.15.303: the fill queue (standing Fill the gaps queue and Enrich fields tasks) is work in progress too
+  {key:'progress',label:'Found or queued, awaiting admission or review',states:['candidate','in_review','awaiting_l3','in_queue'],color:'#1c5cab'},
   {key:'read',label:'Page read, not published',states:['not_on_page'],color:'#2a78d6'},
   {key:'found',label:'Page found or site blocked',states:['page_found','blocked'],color:'#5598e7'},
-  {key:'unreached',label:'Course page not found yet',states:['site_known','no_website','missing_l1'],color:'#86b6ef'},
+  {key:'unreached',label:'Course page not found yet, or no reader yet',states:['site_known','no_website','missing_l1','no_reader'],color:'#86b6ef'},
 ]
 // The nine completeness states (Design Reference §3). `built` marks the states the hourly build produces today;
 // the others are always shown, as 0, so a gap is visible rather than hidden.
@@ -32,13 +33,21 @@ export const COMPLETENESS_STATES=[
 ]
 const CSTATE=Object.fromEntries(COMPLETENESS_STATES.map(s=>[s.key,s]))
 const STATE_LABEL={admitted:'Admitted',candidate:'Found on verified page (awaiting admission)',in_review:'In human review (Layer 4)',awaiting_l3:'Awaiting AI check (Layer 3)',not_on_page:'Page read, not published',
-  blocked:'Site blocked',page_found:'Page found, not read',site_known:'Site known, page not found',no_website:'No website known',missing_l1:'Missing in the register'}
+  blocked:'Site blocked',page_found:'Page found, not read',site_known:'Site known, page not found',no_website:'No website known',missing_l1:'Missing in the register',
+  in_queue:'In the fill queue (Enrich fields)',no_reader:'No reader yet'}
 // v2.15.132 (att-wide-table): short column headings; the full wording is on hover and in the legend.
-const STATE_SHORT={admitted:'Admitted',candidate:'Awaiting admission',in_review:'Person',awaiting_l3:'AI check',not_on_page:'Not published',blocked:'Blocked',page_found:'Not read',site_known:'No page',no_website:'No site',missing_l1:'Not in register'}
-const STATE_ORDER=['admitted','candidate','in_review','awaiting_l3','not_on_page','blocked','page_found','site_known','no_website','missing_l1']
+const STATE_SHORT={admitted:'Admitted',candidate:'Awaiting admission',in_review:'Person',awaiting_l3:'AI check',not_on_page:'Not published',blocked:'Blocked',page_found:'Not read',site_known:'No page',no_website:'No site',missing_l1:'Not in register',in_queue:'Queued',no_reader:'No reader'}
+const STATE_ORDER=['admitted','candidate','in_review','awaiting_l3','in_queue','not_on_page','blocked','page_found','site_known','no_website','missing_l1','no_reader']
 const ATTR={official_url:{label:'Official course page',layer:'Layer 2'},provider_tuition:{label:'Provider tuition (fee year)',layer:'Layer 2'},
   english:{label:'English requirements',layer:'Layer 2'},intakes:{label:'Intakes / start dates',layer:'Layer 2'},
-  registered_tuition:{label:'Registered tuition (register)',layer:'Layer 1'},duration:{label:'Duration (register)',layer:'Layer 1'},campus:{label:'Campus (register)',layer:'Layer 1'}}
+  registered_tuition:{label:'Registered tuition (register)',layer:'Layer 1'},
+  // v2.15.303 (Platform Admin 21 Oct 2026: "all data fields ... not the top 7"): every course field of the field register. Duration and
+  // campus are register values in Australia only; elsewhere the Enrich fields queue fills them like the rest.
+  duration:{label:'Duration',layer:'Register (AU) · Enrich fields'},campus:{label:'Campus linked',layer:'Register (AU) · Enrich fields'},
+  level:{label:'Study level',layer:'Register · Enrich fields'},field_of_study:{label:'Field of study',layer:'Register (AU) · Enrich fields'},
+  delivery:{label:'Delivery mode',layer:'Register · Enrich fields'},campus_city:{label:'Campus city',layer:'Enrich fields'},
+  international:{label:'Open to international students',layer:'Register (AU) · Enrich fields'},deadline:{label:'Application deadline',layer:'No reader yet'},
+  academic_entry:{label:'Academic entry requirements',layer:'No reader yet'},description:{label:'Course description',layer:'No reader yet'}}
 const TIERS=[['','All providers'],['top_10','Top 10'],['top_11_40','11–40'],['top_41_100','41–100'],['rest','All others']]
 const COUNTRY_NAME={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const PAGE=50
@@ -49,7 +58,7 @@ export const FIELD_SOURCES=[['adapter','Adapter','var(--cf-blue-700)'],['central
 
 // v2.15.112: view 'courses' (course completeness) or 'attributes' (attribute completeness and pipeline stage); both
 // kept by default for older callers. Platform Admin 30 Sep 2026: separate course and attribute completion in tabs.
-export function CoverageView({view='all',onScope}={}){
+export function CoverageView({view='all',onScope,belowFilters}={}){
   const[tier,setTier]=useState(''),[data,setData]=useState(null),[busy,setBusy]=useState(true),[error,setError]=useState('')
   // Decision 213: country and university filters (opens on all countries)
   const[country,setCountry]=useState(''),[provider,setProvider]=useState(null),[pq,setPq]=useState(''),[found,setFound]=useState([])
@@ -95,6 +104,8 @@ export function CoverageView({view='all',onScope}={}){
       <Button compact className="cf-icon-btn cc-refresh" title="Refresh" aria-label="Refresh" onClick={load} disabled={busy}><RefreshCw size={14}/></Button>
     </section>
     {error&&<div className="dq-alert"><AlertTriangle size={16}/><span>{error}</span></div>}
+    {/* v2.15.303: every field by country, the standing queue and the cross-check follow the same country and university */}
+    {typeof belowFilters==='function'?belowFilters({country,provider}):belowFilters}
 
     {view!=='attributes'&&<>
     <section className="cf-metric-grid cc-score" aria-label="Course completeness">

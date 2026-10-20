@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.230 — 21 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.303** (every field, every country). Platform Admin, 21 Oct 2026 07:30: "Platform needs to keep working and cross checking on missing data fields ... coverage menu should details all data fields filled together not the top 7"; choices "Stored pages + AI, small reads", "When page changes, or 60 days", "All on Coverage; queue for readable ones".
+  - Migration `20261021110000_cf247_field_register_gap_queue.sql`: field register (15 course and 9 provider fields, how each is filled, target 80%); the hourly coverage build covers every course field (In the fill queue, No reader yet; duration and campus are register values in Australia only); standing gap queue (job `field-gap-queue`, every 6 hours: one Enrich fields task when due, new page reads capped at 200 a day, a field the page did not state tried again when the page changes or after 60 days); cross-check of held duration, level and delivery against the latest page reading (listed, never overwritten); `public.admin_field_coverage`. Edits md5-guarded.
+  - Coverage › Attributes: Every field by country (with targets), Fill the gaps (standing queue) and Cross-check differences above the attribute table, which now lists every course field. SOPs 1.44.
+
 ## 0.1.229 — 20 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.302** (D11 second step). Platform Admin, 20 Oct 2026 21:29: "proceed with task 1"; on the reference cross-check, "Drop the 9, keep the 15 (Recommended)".
