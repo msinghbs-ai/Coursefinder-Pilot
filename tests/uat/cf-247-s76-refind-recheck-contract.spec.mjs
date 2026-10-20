@@ -10,7 +10,6 @@ const adelaide = fs.readFileSync('supabase/migrations/20261019120000_cf247_adela
 const recheck = fs.readFileSync('supabase/migrations/20261019130000_cf247_scholarship_recheck.sql', 'utf8')
 const reuse = fs.readFileSync('supabase/migrations/20261019140000_cf247_evidence_reuse_today.sql', 'utf8')
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-const review = fs.readFileSync('src/ScholarshipAiReview.jsx', 'utf8')
 const progress = fs.readFileSync('src/Progress.jsx', 'utf8')
 
 test('re-find waves: wave providers are in focus; discovery re-opened only for sites never mapped; md5-guarded', () => {
@@ -38,7 +37,8 @@ test('scholarship re-check: cheap first model, a recommendation only, nothing pu
   expect(worker).toContain('const out = judgeScholarshipRecheck(a, `${title} ${h1} ${text}`);')
   expect(worker).toContain('INTL_WORDS.test(aq)')
   expect(worker).toContain('const notNamed = a?.audience === "not_stated" || (["international", "both"].includes(a?.audience) && on(aq) && !INTL_WORDS.test(aq));')
-  expect(review).toContain('<Recheck r={v.recheck}/>')
+  // v2.15.300: Layer 4 › AI could not decide retired; the held page and its re-check are an Inbox kind (held_scholarship)
+  expect(fs.existsSync('src/ScholarshipAiReview.jsx')).toBe(false)
   expect(reuse).toContain("date_trunc('day', now() at time zone 'Australia/Melbourne') at time zone 'Australia/Melbourne'")
   expect(progress).toContain("supabase.rpc('admin_evidence_reuse_today')")
 })
@@ -55,16 +55,10 @@ test.describe('mocked browser', () => {
     await expect(tile).toContainText('of 492 read; 182 new copies')
   })
 
-  test('a held scholarship shows its re-check, and Refuse starts with the reason', async ({ page }) => {
+  test('the old AI could not decide address opens the Inbox on held scholarships', async ({ page }) => {
     await mockAdmin(page, { rank: 6 })
-    await page.route('https://example.supabase.co/rest/v1/rpc/admin_scholarship_ai', r => r.fulfill({ json: { can_decide: true, pending: 1, reviews: [{ id: 7, url: 'https://uni.example/s/housing', reason: 'who it is for is not proven by a quote on the page', status: 'pending', provider: 'Example University', scholarship: 'Housing Award',
-      recheck: { state: 'done', recommendation: 'audience_not_stated', why: 'The page does not say international students may apply; do not publish unless you know otherwise.', audience_quote: '' },
-      answers: [{ id: 1, model_code: 'qwen3-30b', answer: { is_scholarship: true, name: 'Housing Award', audience: 'both' }, checks: { audience: false } }] }] } }))
     await page.goto('/#layer4?tab=aireview')
-    const row = page.locator('[data-ai-review-row="7"]')
-    await expect(row.locator('[data-ai-recheck="audience_not_stated"]')).toContainText('Re-check: international students not mentioned')
-    await row.locator('[data-ai-review-refuse]').click()
-    await expect(row.getByLabel('Reason for refusing')).toHaveValue('The page does not say international students may apply (AI re-check).')
+    await expect(page).toHaveURL(/layer-4-review\?kind=held_scholarship/)
   })
 })
 

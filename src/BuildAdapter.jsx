@@ -140,7 +140,7 @@ function University({pid,rank,onError,onBack}){
           <td className="num">{x.new?`+${fmtNumber(x.new)}`:'—'}</td>
           <td className="ba-muted">{ROUTE[k]}</td>
           <td>{x.why||'—'}</td></tr>})}</tbody></table></div>
-      <p className="ba-note">Ready: read on at least {pct(d.min_read)} of the pages read and, where the catalogue already holds a value, agreeing on at least {pct(d.min_agree)} (Settings › Toolsets & limits). Admitting never replaces a value entered or locked by hand. <a className="cf-link" href={hrefFor('layer2','builder',{provider:pid})}>Open in Adapter builder</a> · <a className="cf-link" href={hrefFor('layer2','adapters',{provider:pid})}>Open adapter</a></p>
+      <p className="ba-note">Ready: read on at least {pct(d.min_read)} of the pages read and, where the catalogue already holds a value, agreeing on at least {pct(d.min_agree)} (Settings › Toolsets & limits). Admitting never replaces a value entered or locked by hand. <a className="cf-link" href={hrefFor('layer2','builder',{provider:pid})}>Open in Adapter builder</a> · <a className="cf-link" href={hrefFor('layer2','universities',{provider:pid})}>Open adapter</a></p>
     </section>
   </>
 }

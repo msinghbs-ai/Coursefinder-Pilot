@@ -25,11 +25,11 @@ test('migration 1750: read cycle, Adapters list and detail, per-adapter admit, a
 })
 
 test('screens: Layer 2 is Adapters, Adapter builder and Scholarships, Coverage has no Universities tab, redirects keep old links working', () => {
-  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['adapters', 'build', 'builder', 'onboarding', 'enrich', 'scholarships']) // v2.15.258: Onboarding moved to Layer 2; v2.15.287: Build adapter
-  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'progress', 'flags', 'reports']) /* v2.15.282: Flags; v2.15.292: Counsellor reports */ // v2.15.266: Progress
-  for (const old of ['operations', 'start', 'history', 'profiles']) expect(resolveTarget('layer-2-discovery', new URLSearchParams({ tab: old }))).toMatchObject({ page: 'layer2', tab: 'adapters' })
-  expect(resolveTarget('coverage', new URLSearchParams({ tab: 'universities' }))).toMatchObject({ page: 'layer2', tab: 'adapters' })
-  expect(resolveTarget('layer-2-operations')).toMatchObject({ page: 'layer2', tab: 'adapters' })
+  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'universities', 'build', 'enrich', 'scholarships', 'builder']) // v2.15.300: Layer 2/3, Operations first; Universities joins Adapters and Onboarding; builder hidden
+  expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'progress', 'flags']) /* v2.15.282: Flags; v2.15.300: Counsellor reports retired into the Inbox */ // v2.15.266: Progress
+  for (const old of ['start', 'history', 'profiles', 'adapters', 'onboarding']) expect(resolveTarget('layer-2-discovery', new URLSearchParams({ tab: old }))).toMatchObject({ page: 'layer2', tab: 'universities' })
+  expect(resolveTarget('coverage', new URLSearchParams({ tab: 'universities' }))).toMatchObject({ page: 'layer2', tab: 'universities' })
+  expect(resolveTarget('layer-2-operations')).toMatchObject({ page: 'layer2', tab: 'operations' })
   const main = read('src/mature-main.jsx')
   expect(main).not.toContain('UniversitiesCoverage')
   expect(main).not.toContain('Layer2Workspace')
@@ -69,7 +69,7 @@ test.describe('mocked browser', () => {
   test('Adapters: filters, one collapsed row per university, open a row, read schedule and switch consequences', async ({ page }) => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept('Checked in the browser test'))
-    await page.goto('/#layer-2-discovery')
+    await page.goto('/#layer-2-discovery?tab=universities')
     const w = page.locator('[data-adapters-workspace]')
     await expect(w.locator('[data-adapters-tally]')).toContainText('3 shown of 4') // universities only by default
     await expect(w.locator('[data-adapter-detail]')).toHaveCount(0) // every row collapsed
@@ -101,7 +101,7 @@ test.describe('mocked browser', () => {
   test('Adapters: tick rows, the bulk bar counts what each action will touch, Admit takes each adapter\'s own latest Qualify', async ({ page }) => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept('Bulk check in the browser test'))
-    await page.goto('/#layer-2-discovery')
+    await page.goto('/#layer-2-discovery?tab=universities')
     const w = page.locator('[data-adapters-workspace]')
     await w.getByLabel('Tick every row shown').check()
     const bar = w.locator('[data-adapters-bulk]')
@@ -114,7 +114,7 @@ test.describe('mocked browser', () => {
   test('Adapters: bulk Qualify and Admit are tasks; Admit sends provider_ids and never one Qualify job', async ({ page }) => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept('Bulk check in the browser test'))
-    await page.goto('/#layer-2-discovery')
+    await page.goto('/#layer-2-discovery?tab=universities')
     const w = page.locator('[data-adapters-workspace]')
     await w.getByLabel('Tick Example University').check()
     await w.getByLabel('Tick Southern University').check()
@@ -144,7 +144,7 @@ test.describe('mocked browser', () => {
 
   test('retired addresses open Adapters; Scrapers & fetchers shows the provider registry only (clean-up batch 2)', async ({ page }) => {
     await mockAdmin(page)
-    for (const url of ['/#layer-2-discovery?tab=operations', '/#layer-2-discovery?tab=start', '/#layer-2-discovery?tab=history', '/#coverage?tab=universities', '/#administration?section=layer2-sources']) {
+    for (const url of ['/#layer-2-discovery?tab=adapters', '/#layer-2-discovery?tab=onboarding', '/#layer-2-discovery?tab=start', '/#layer-2-discovery?tab=history', '/#coverage?tab=universities', '/#administration?section=layer2-sources']) {
       await page.goto(url)
       await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
     }
@@ -155,25 +155,20 @@ test.describe('mocked browser', () => {
 
   test('Adapters: opening a card does not read what is inside a closed one', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-2-discovery')
+    await page.goto('/#layer-2-discovery?tab=universities')
     await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
     await expect(page.locator('[data-firecrawl-targets]')).toHaveCount(0) // closed: nothing drawn, nothing read
     await openCard(page, 'adapters.firecrawl-targets')
     await expect(page.locator('[data-firecrawl-targets]')).toContainText('The University of Sydney')
   })
 
-  test('Adapters: the fee-rules dry run is read only and reads nothing until its card is opened', async ({ page }) => {
+  test('Universities leaves out the read-only cards (how it works, what each needs next, the page-fee dry run) and reads none of them', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-2-discovery')
+    await page.goto('/#layer-2-discovery?tab=universities')
     await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
-    await expect(page.locator('[data-fee-rules-report]')).toHaveCount(0)
+    for (const c of ['adapters.how', 'adapters.next', 'adapters.fee-rules']) await expect(page.locator(`[data-card="${c}"]`)).toHaveCount(0)
     expect(page.l3calls.filter(c => c.feeRules).length).toBe(0)
-    await openCard(page, 'adapters.fee-rules')
-    await expect(page.locator('[data-fee-rules-report]')).toContainText('2,349')
-    await expect(page.locator('[data-fee-rules-report]')).toContainText('Nothing is written')
-    await expect(page.locator('[data-fee-rules-report]')).toContainText('Rule 2')
-    await expect(page.locator('[data-fee-rules-report]')).toContainText('Alpha University')
-    await expect(page.locator('[data-fee-suspected-half]')).toContainText('Beta College')
-    expect(page.l3calls.filter(c => c.feeRules).length).toBeGreaterThan(0)
+    await expect(page.locator('[data-uni-stage="stopped"]')).toContainText('Needs a person')
+    await expect(page.locator('[data-uni-inbox="2"]')).toHaveAttribute('href', /layer-4-review\?provider=/)
   })
 })

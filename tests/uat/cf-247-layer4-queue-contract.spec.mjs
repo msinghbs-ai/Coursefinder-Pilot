@@ -13,19 +13,11 @@ test('source: renamed view, compact sections, pointer to Course links', () => {
 })
 
 test.describe('mocked browser', () => {
-  test('tiles, filter labels and the bulk view', async ({ page }) => {
+  // v2.15.300 (Platform Admin, 20 Oct 2026, "Old Layer 4 tabs now"): the Review queue retired; course links and provider departures are Inbox kinds
+  test('the Review queue address opens the Inbox on course links', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-4-review?tab=review')
-    await expect(page.locator('.l4-status .cf-metric')).toHaveCount(4)
-    await expect(page.getByRole('button', { name: 'All tasks (1,803)' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Everyone' })).toBeVisible()
-    await expect(page.locator('.l4d-queue')).toContainText('Yours')
-    await expect(page.locator('.l4d-queue')).toContainText('With someone else')
-    await page.getByRole('button', { name: 'Bulk decisions' }).click()
-    await expect(page.getByText('120 × Intakes')).toBeVisible()
-    const more = page.getByRole('tablist', { name: 'More bulk work' })
-    await expect(more.getByRole('button')).toHaveText(['Provider departures', 'Errors & improvements', 'Decision history'])
-    await expect(page.getByText('comes from the study levels, fields and courses its own page names')).toBeVisible()
-    await expect(page.getByText('Scholarship Course-scope review')).toHaveCount(0)
+    await expect(page).toHaveURL(/#layer-4-review\?kind=course_link$/)
+    await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveCount(0)
   })
 })

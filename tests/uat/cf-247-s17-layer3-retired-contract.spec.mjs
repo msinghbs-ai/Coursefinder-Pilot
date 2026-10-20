@@ -20,9 +20,9 @@ test('menu: no Layer 3 page or Send back to AI tab; old addresses resolve to Lay
   expect(SECTIONS.find(s => s.label === 'Data pipeline').pages).toEqual(['coverage', 'layer1', 'layer2', 'layer4'])
   expect(PAGES.layer4.tabs.map(t => t.key)).not.toContain('sendback')
   for (const [addr, tab] of [['layer-3-ai', ''], ['layer-3-ai', 'routing'], ['layer-3-ai', 'work'], ['layer-3-ai-interpretation', ''], ['layer3', ''], ['Layer 3 AI validation', '']])
-    expect(resolveTarget(addr, new URLSearchParams(tab ? { tab } : {})), `${addr} ${tab}`).toMatchObject({ page: 'layer2', tab: 'adapters' })
+    expect(resolveTarget(addr, new URLSearchParams(tab ? { tab } : {})), `${addr} ${tab}`).toMatchObject({ page: 'layer2', tab: 'universities' }) // v2.15.300
   expect(resolveTarget('layer-3-ai', new URLSearchParams({ tab: 'models' })).page).toBe('services') // v2.15.122 kept
-  expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'sendback' }))).toMatchObject({ page: 'layer4', tab: 'review' })
+  expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'sendback' }))).toMatchObject({ page: 'layer4', tab: 'inbox' }) // v2.15.300: the Inbox on course links
 })
 
 test('files: Layer 3 screens and functions deleted; layer3-provider-control kept', () => {
@@ -58,19 +58,18 @@ test.describe('mocked browser', () => {
   test('old Layer 3 addresses open Layer 2 › Adapters', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-3-ai')
-    await expect(page).toHaveURL(/#layer-2-discovery$/)
-    await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2 Discovery & reading')
-    await expect(page.getByRole('tab', { name: 'Adapters' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities$/) // v2.15.300: Layer 2/3 › Universities
+    await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2/3 Build & enrich')
+    await expect(page.getByRole('tab', { name: 'Universities' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('.m-nav').getByRole('button', { name: 'Layer 3 AI validation', exact: true })).toHaveCount(0)
     await page.goto('/#layer-3-ai-interpretation?tab=work')
-    await expect(page).toHaveURL(/#layer-2-discovery$/)
+    await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities$/)
   })
 
   test('old Send back to AI address opens the Layer 4 Review queue; no Layer 3 tile on the Dashboard', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-4-review?tab=sendback')
-    await expect(page).toHaveURL(/#layer-4-review\?tab=review$/)
-    await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page).toHaveURL(/#layer-4-review\?kind=course_link$/) // v2.15.300: the Inbox on course links
     await expect(page.getByRole('tab', { name: 'Send back to AI' })).toHaveCount(0)
     await page.goto('/#dashboard')
     // v2.15.266: the Layers tiles are retired; the Dashboard keeps Waiting for you and four tiles, none for Layer 3

@@ -16,11 +16,11 @@ test('menu map: five plain sections, every page reachable, old addresses and nam
   expect(new Set(inMenu).size).toBe(inMenu.length)
   expect(Object.keys(PAGES).sort()).toEqual([...inMenu].sort())
   // Every old menu entry, hidden route and alias.
-  const old = { 'dashboard': 'dashboard', 'providers': 'providers', 'courses': 'courses', 'campuses': 'providers', 'scholarships': 'scholarships', 'provider-contacts': 'contacts', 'layer-1-operations': 'layer1', 'layer-2-enrichment': 'layer2', 'layer-3-ai-interpretation': 'layer2', 'layer-4-human-resolution': 'layer4', 'jobs-schedules': 'jobs', 'evidence': 'evidence', 'completeness': 'coverage', 'data-quality-readiness': 'coverage', 'course-coverage': 'coverage', 'statistics-rankings': 'rankings', 'compare': 'rankings', 'administration': 'scrapers', 'outcomes-qilt': 'rankings', 'student-flow-prisms': 'rankings', 'sources': 'sources', 'attributes': 'dataModel', 'settings': 'health', 'onboarding': 'layer2', 'jobs': 'jobs', 'scheduled-tasks': 'jobs', 'important-links': 'reference', 'important-dates': 'reference', 'review-queue': 'layer4', 'refresh-scheduling': 'jobs', 'layer-1-regulatory': 'layer1', 'layer-1-authority': 'layer1', 'layer-2-operations': 'layer2', 'layer-3-ai': 'layer2', 'layer-4-review': 'layer4', 'users-roles': 'users' }
+  const old = { 'dashboard': 'dashboard', 'providers': 'providers', 'courses': 'courses', 'campuses': 'providers', 'scholarships': 'scholarships', 'provider-contacts': 'contacts', 'layer-1-operations': 'layer1', 'layer-2-enrichment': 'layer2', 'layer-3-ai-interpretation': 'layer2', 'layer-4-human-resolution': 'layer4', 'jobs-schedules': 'jobs', 'evidence': 'evidence', 'completeness': 'coverage', 'data-quality-readiness': 'coverage', 'course-coverage': 'coverage', 'statistics-rankings': 'rankings', 'compare': 'rankings', 'administration': 'services', 'outcomes-qilt': 'rankings', 'student-flow-prisms': 'rankings', 'sources': 'sources', 'attributes': 'dataModel', 'settings': 'health', 'onboarding': 'layer2', 'jobs': 'jobs', 'scheduled-tasks': 'jobs', 'important-links': 'reference', 'important-dates': 'reference', 'review-queue': 'layer4', 'refresh-scheduling': 'jobs', 'layer-1-regulatory': 'layer1', 'layer-1-authority': 'layer1', 'layer-2-operations': 'layer2', 'layer-3-ai': 'layer2', 'layer-4-review': 'layer4', 'users-roles': 'users' }
   for (const [slug, page] of Object.entries(old)) expect(resolveTarget(slug).page, slug).toBe(page)
   // Old menu labels passed to navigate().
   for (const [label, page] of [['Layer 4 — Human Resolution', 'layer4'], ['Statistics & Rankings', 'rankings'], ['Outcomes (QILT)', 'rankings'], ['Provider Contacts', 'contacts'], ['Jobs', 'jobs'], ['Compare', 'rankings'], ['Evidence', 'evidence']]) expect(resolveTarget(label).page, label).toBe(page)
-  for (const [section, page] of Object.entries({ 'sources-imports': 'reference', 'layer1-sources': 'layer1', 'layer2-providers': 'scrapers', 'provider-assets': 'providers', 'layer2-sources': 'layer2', 'onboarding': 'layer2', 'pim': 'dataModel', 'users-roles': 'users', 'environment-migration': 'environment', 'platform': 'health', 'statistics-datasets': 'rankings' })) {
+  for (const [section, page] of Object.entries({ 'sources-imports': 'reference', 'layer1-sources': 'layer1', 'layer2-providers': 'services', 'provider-assets': 'providers', 'layer2-sources': 'layer2', 'onboarding': 'layer2', 'pim': 'dataModel', 'users-roles': 'users', 'environment-migration': 'environment', 'platform': 'health', 'statistics-datasets': 'rankings' })) {
     const r = resolveTarget('administration', new URLSearchParams({ section, system: 'the_wur' }))
     expect(r.page, section).toBe(page)
     expect(r.params.get('section')).toBeNull()
@@ -31,20 +31,22 @@ test('menu map: five plain sections, every page reachable, old addresses and nam
   expect(resolveTarget('layer-3-ai', new URLSearchParams({ tab: 'models' })).page).toBe('services')
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired; its old addresses open Layer 2 › Adapters.
   expect(PAGES.layer3).toBeUndefined()
-  for (const tab of ['routing', 'work', 'scholarships', '']) expect(resolveTarget('layer-3-ai', new URLSearchParams(tab ? { tab } : {}))).toMatchObject({ page: 'layer2', tab: 'adapters' })
-  expect(hrefFor('layer2', 'adapters')).toBe('#layer-2-discovery')
+  // v2.15.300: Layer 2/3 › Universities replaces Adapters; Operations is the first tab
+  for (const tab of ['routing', 'work', 'scholarships', '']) expect(resolveTarget('layer-3-ai', new URLSearchParams(tab ? { tab } : {}))).toMatchObject({ page: 'layer2', tab: 'universities' })
+  expect(hrefFor('layer2', 'operations')).toBe('#layer-2-discovery')
 })
 
 test('role gates are unchanged from the screens they came from', () => {
   const min = (p, t) => PAGES[p].tabs ? PAGES[p].tabs.find(x => x.key === t).min : PAGES[p].min
-  expect([min('layer1', 'operations'), min('layer1', 'scholarships') + 2, min('layer2', 'adapters'), min('layer4', 'review'), min('jobs', 'jobs'), min('evidence')]).toEqual([4, 6, 4, 3, 4, 3])
-  expect([min('users'), min('environment'), min('migration'), 6, min('dataModel'), min('scrapers'), min('health', 'readiness')]).toEqual([6, 6, 6, 6, 5, 4, 6])
+  // v2.15.300: Universities opens to Curators (they saw Onboarding); the adapter detail inside a row stays Operator and above (admin_adapters)
+  expect([min('layer1', 'operations'), min('layer1', 'scholarships') + 2, min('layer2', 'universities'), min('layer4', 'inbox'), min('jobs', 'jobs'), min('evidence')]).toEqual([4, 6, 3, 3, 4, 3])
+  expect([min('users'), min('environment'), min('migration'), 6, min('dataModel'), min('services', 'fetchers'), min('health', 'readiness')]).toEqual([6, 6, 6, 6, 5, 4, 6])
   expect(canOpen('users', 5)).toBe(false)
   // v2.15.112: Key dates and Key links moved to Reference data, Onboarding to Providers (still rank 3)
   expect(canOpen('layer1', 3)).toBe(false)
   expect(canOpen('reference', 3)).toBe(true)
   expect(effectiveTab('reference', 'imports', 3)).toBe('dates')
-  expect(PAGES.layer2.tabs.find(t => t.key === 'onboarding').min).toBe(3) // v2.15.258: Onboarding moved to Layer 2, same role gate
+  expect(PAGES.layer2.tabs.find(t => t.key === 'universities').min).toBe(3) // v2.15.258: Onboarding moved to Layer 2, same role gate; v2.15.300: Universities
   for (const tab of ['imports', 'dates', 'links', 'onboarding']) expect(resolveTarget('layer-1-register', new URLSearchParams({ tab })).page).toBe(tab === 'onboarding' ? 'layer2' : 'reference')
 })
 
@@ -112,11 +114,11 @@ test.describe('mocked browser', () => {
   })
 
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 Control retired; the old address opens Layer 2 › Adapters.
-  test('old Layer 3 address opens Layer 2 › Adapters', async ({ page }) => {
+  test('old Layer 3 address opens Layer 2/3 › Universities', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-3-ai')
-    await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2 Discovery & reading')
-    await expect(page.getByRole('tab', { name: 'Adapters' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.locator('.m-topbar h1')).toHaveText('Layer 2/3 Build & enrich')
+    await expect(page.getByRole('tab', { name: 'Universities' })).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByRole('tab', { name: 'Control' })).toHaveCount(0)
   })
 

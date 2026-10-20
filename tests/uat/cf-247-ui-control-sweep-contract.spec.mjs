@@ -10,10 +10,10 @@ import { mockAdmin } from './support/admin-mock.mjs'
 const read = p => fs.readFileSync(p, 'utf8')
 
 test('menu: Automations and Publishing tabs; old links still land', () => {
-  expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'priority', 'jobs', 'tasks']) // v2.15.197: Task manager
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['inbox', 'review', 'aireview', 'websites']) // v2.15.298: Inbox first // Decision 222: Websites to find; v2.15.253: Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired
+  expect(PAGES.jobs.tabs.map(t => t.key)).toEqual(['automations', 'jobs', 'tasks']) // v2.15.300: Priority queue retired // v2.15.197: Task manager
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['inbox']) // v2.15.300: the old Layer 4 tabs are Inbox kinds
   // v2.15.252 (Platform Admin, 12 Oct 2026): Send back to AI retired with Layer 3; the old address opens the Review queue.
-  expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'sendback' }))).toMatchObject({ page: 'layer4', tab: 'review' })
+  expect(resolveTarget('layer-4-review', new URLSearchParams({ tab: 'sendback' }))).toMatchObject({ page: 'layer4', tab: 'inbox' })
   expect(PAGES.scholarships.tabs.map(t => [t.key, t.min])).toEqual([['list', 1], ['coverage', 3], ['extraction', 3]]) // v2.15.240: Coverage; v2.15.174: Course links retired; Publishing is Layer 4
   expect(PAGES.scholarships.min).toBe(1)
   expect(resolveTarget('jobs').params?.get?.('tab') ?? 'jobs').toBe('jobs')
@@ -91,10 +91,10 @@ test.describe('mocked browser', () => {
   })
 
   // v2.15.252 (Platform Admin, 12 Oct 2026): Send back to AI and the Layer 3 task cards retired with Layer 3.
-  test('old Send back to AI address opens the Layer 4 Review queue', async ({ page }) => {
+  test('old Send back to AI address opens the Layer 4 Inbox on course links', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-4-review?tab=sendback')
-    await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page).toHaveURL(/kind=course_link/) // v2.15.300
     await expect(page.getByRole('tab', { name: 'Send back to AI' })).toHaveCount(0)
     await expect(page.locator('.sb-field')).toHaveCount(0)
   })

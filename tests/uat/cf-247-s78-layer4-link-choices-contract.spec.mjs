@@ -11,21 +11,24 @@ test('the desk recognises a proposed page stored as course_url', () => {
 })
 
 test.describe('mocked browser', () => {
-  test('a course link: keep, use the new page or enter another; both addresses shown; reset filters in the chip row', async ({ page }) => {
+  // v2.15.300: the Review queue retired; a course link is decided in the Inbox with the same three choices
+  test('a course link in the Inbox: Keep the page we hold, Use the new page, Enter another address', async ({ page }) => {
     await mockAdmin(page)
-    const item = { id: 'i1', status: 'pending', task: 'Official course link', field_code: 'official_course_url', can_approve: true, claimed_by_me: true, claim_active: true,
-      entity: { type: 'course', title: 'Bachelor of Computer Science (Honours)', provider: 'Adelaide University', code: '115686J' },
-      reason: "The course page that shows this course's CRICOS code is a different address from the official page we hold.", suggestion: { action: 'check', text: 'Check the page, then decide.' },
-      links: {}, technical: { before_value: ['https://adelaide.edu.au/study/degrees/2027/bachelor-of-computer-science-honours/int/'], proposed_value: { course_url: 'https://adelaideuni.edu.au/study/degrees/bachelor-of-computer-science-honours-ai/' } } }
-    await page.route('https://example.supabase.co/rest/v1/rpc/layer4_review_desk_v1', r => r.fulfill({ json: { items: [item], summary: { waiting: 1, oldest_days: 0, by_task: { 'Official course link': 1 } } } }))
-    await page.route('https://example.supabase.co/rest/v1/rpc/layer4_claim_v1', r => r.fulfill({ json: { ok: true } }))
+    const kinds = { course_link: { label: 'Course link', order: 1, choices: [{ key: 'keep', label: 'Keep the page we hold', returns: 'Closed' }, { key: 'use', label: 'Use the new page', returns: 'Link written' }, { key: 'enter', label: 'Enter another address', input: 'url', returns: 'Link written' }] } }
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_layer4_inbox', async route => {
+      const b = route.request().postDataJSON()
+      if (b.p_action === 'summary') return route.fulfill({ json: { kinds, target_days: 7, rank: 6, total: 1, universities: 1, late: 0, by_kind: { course_link: { n: 1 } } } })
+      if (b.p_action === 'items') return route.fulfill({ json: { total: 1, items: [{ kind: 'course_link', ref: 'i1', provider_id: 'pa', provider: 'Adelaide University', subject: 'Bachelor of Computer Science (Honours)', why: "The course page that shows this course's CRICOS code is a different address from the official page we hold.", created_at: '2026-10-20T00:00:00Z',
+        detail: { course_code: '115686J', before: ['https://adelaide.edu.au/study/degrees/2027/bachelor-of-computer-science-honours/int/'], proposed: { course_url: 'https://adelaideuni.edu.au/study/degrees/bachelor-of-computer-science-honours/' } } }] } })
+      return route.fulfill({ json: { total: 1, items: [{ provider_id: 'pa', name: 'Adelaide University', n: 1, by_kind: { course_link: 1 } }] } })
+    })
     await page.goto('/#layer-4-review?tab=review')
-    await expect(page.getByRole('button', { name: 'Keep the page we hold' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Use the new page' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Enter another address' })).toBeVisible()
-    await expect(page.locator('[data-l4-held]')).toContainText('adelaide.edu.au/study/degrees/2027/')
-    await expect(page.locator('[data-l4-new]')).toContainText('adelaideuni.edu.au')
-    await page.getByRole('button', { name: 'Official course link (1)' }).click()
-    await expect(page.locator('.l4d-chips .l4d-reset')).toHaveText('Reset filters')
+    await expect(page).toHaveURL(/kind=course_link/)
+    const it = page.locator('[data-l4-item="course_link"]')
+    await expect(it.getByRole('button', { name: 'Keep the page we hold' })).toBeVisible()
+    await expect(it.getByRole('button', { name: 'Use the new page' })).toBeVisible()
+    await expect(it.getByRole('button', { name: /Enter another address/ })).toBeVisible()
+    await expect(it.locator('[data-l4-held]')).toContainText('adelaide.edu.au/study/degrees/2027/')
+    await expect(it.locator('[data-l4-new]')).toContainText('adelaideuni.edu.au')
   })
 })

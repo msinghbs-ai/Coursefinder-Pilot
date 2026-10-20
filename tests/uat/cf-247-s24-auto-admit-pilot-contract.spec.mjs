@@ -33,23 +33,20 @@ test('11600: pilot 60 AU / 25 NZ / 15 CA with a baseline, hourly catalogued snap
 })
 
 test.describe('mocked browser', () => {
-  test('automatic Admit shows on the page, the Admit stage and in settings; the pilot is linked to Progress', async ({ page }) => {
+  // v2.15.300: the Onboarding list retired; automatic Admit shows on Layer 2/3 › Operations and in the onboarding settings there
+  test('automatic Admit shows on Operations and in the onboarding settings', async ({ page }) => {
     await mockAdmin(page, { onboardingAuto: true })
-    await page.goto('/#layer-2-discovery?tab=onboarding')
-    const ob = page.locator('[data-provider-onboarding]')
-    await expect(ob.locator('[data-onboarding-auto-admit]')).toContainText('Auto-admit everything that passes')
-    await expect(ob.locator('[data-onboarding-stage="admit"]')).toContainText('Admit (automatic)')
-    // v2.15.266: the Pilot panel is retired; the pilot is followed on Coverage & completeness › Progress
-    await expect(ob.locator('[data-onboarding-pilot]')).toHaveCount(0)
-    await expect(ob.locator('[data-onboarding-progress-link] a')).toHaveAttribute('href', '#coverage?tab=progress&group=pilot')
-    await ob.locator('[data-onboarding-settings] summary').click()
-    await expect(ob.locator('[data-onboarding-auto-admit-setting] input')).toBeChecked()
+    await page.goto('/#layer-2-discovery')
+    const op = page.locator('[data-layer23-operations]')
+    await expect(op).toContainText('admits automatically')
+    await op.locator('[data-onboarding-settings] summary').click()
+    await expect(op.locator('[data-onboarding-auto-admit-setting] input')).toBeChecked()
   })
 
-  test('with Admit automatic off the page says admitting is a person\'s step', async ({ page }) => {
+  test('with Admit automatic off Operations does not say it admits automatically', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-2-discovery?tab=onboarding')
-    await expect(page.locator('[data-provider-onboarding] .po-lead')).toContainText("Admitting is a person's step")
-    await expect(page.locator('[data-onboarding-auto-admit]')).toHaveCount(0)
+    await page.goto('/#layer-2-discovery')
+    await expect(page.locator('[data-layer23-operations]')).toBeVisible()
+    await expect(page.locator('[data-layer23-operations]')).not.toContainText('admits automatically')
   })
 })

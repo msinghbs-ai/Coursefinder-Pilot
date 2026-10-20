@@ -162,7 +162,7 @@ function Toolset({t,d,can,write}){
   const sections=SECTION_ORDER.filter(x=>(t.settings||[]).some(s=>(s.section||'Notices')===x))
   return <Card id={`services.toolset.${t.key}`} title={t.label} subtitle={`${(t.layers||[]).map(l=>LAYER[l]).join(', ')}. ${t.help}`} data-toolset={t.key}
     meta={<>{t.enforcement&&<span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only':'Stops at limits'}</span>}{t.key in SAMPLES&&<span className={`cf-chip tone-${t.key_saved?'success':'warning'}`}>{t.key_saved?'Key saved':'No key'}</span>}{t.plan?.at_reserve&&<span className="cf-chip tone-danger">At its reserve</span>}</>}>
-    {t.key==='firecrawl'&&<p className="tn-jump"><a href="#layer-2-discovery?tab=adapters">Firecrawl runs, targets and university adapters are on Layer 2 › Adapters</a></p>}
+    {t.key==='firecrawl'&&<p className="tn-jump"><a href="#layer-2-discovery?tab=universities">Firecrawl runs, targets and university adapters are on Layer 2 › Adapters</a></p>}
     {t.enforcement&&<div className="tn-mode" data-toolset-mode={t.key}>
       <span className={`cf-chip tone-${t.enforcement==='observe'?'warning':'success'}`}>{t.enforcement==='observe'?'Observe only — not stopped by the platform':'Stop at limits'}</span>
       {can&&<Button compact onClick={()=>write('enforcement',{toolset:t.key,enforcement:t.enforcement==='observe'?'stop':'observe'},t.enforcement==='observe'?`Make ${t.label} stop at its spend guards and credit floor?`:`Let ${t.label} run past its spend guards and credit floor (observe only)?`)}>{t.enforcement==='observe'?'Switch to stop at limits':'Switch to observe only'}</Button>}

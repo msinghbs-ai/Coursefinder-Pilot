@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.227 — 20 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.300** (Layer 2/3 Build & enrich, and fewer screens). Platform Admin, 20 Oct 2026 10:35: "Proceed with task 4, 5 and suggest not used navigation items. Rework layer 2 into layer 2/3 so its cleared it has combined operations. Suggest tabs and nav items that can retire as well. Only actionable and operation relative information and items should be retained." Choices: "Operations first (Recommended)"; retire "Old Layer 4 tabs now", "Priority queue", "Counsellor reports tab", "Scrapers & fetchers page"; NZ flag "NZQA Code signatory (Recommended)".
+  - **Screens:** `src/Layer23Operations.jsx` (new, Layer 2/3 › Operations); `src/AdaptersWorkspace.jsx` (`merged`: Layer 2/3 › Universities with onboarding stage, stop help, Retry/Stop, journey, Inbox count); `src/Layer4Inbox.jsx` (`?kind=`, `?provider=`, Decided, counsellor reports, provider departures); `src/ScreenUse.jsx` (Platform health › Screen use); `src/nav-map.js` (Layer 2/3 tabs, hidden builder tab, redirects); `src/ProviderOnboarding.jsx` (list retired; shared parts kept). Removed: `src/PriorityQueue.jsx`, `src/WebsitesToFind.jsx`, `src/CounsellorReports.jsx`, `src/ScholarshipAiReview.jsx`.
+  - Migrations `20261020060000_cf247_layer23_operations.sql` (`public.admin_layer23`, `pipeline.automation_catalogue.layer23_stage`, `pipeline.admin_screen_opens`, `public.admin_screen_open`, `public.admin_screen_usage`, Inbox 'decided', counsellor report and provider departure choices, retired screens marked), `20261020070000_cf247_nz_cop_signatory.sql` (NZQA Code signatory → `enrols_international` for NZ; job `nz-cop`), `20261020080000_cf247_d11_idle_tables_retiring.sql` (D11 tables marked retiring with their readers). Worker `coverage-sweep` v0.34.0 (mode `nz_cop`).
+  - Tests updated for the retired tabs; SOPs 1.41.
+
 ## 0.1.226 — 20 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.299** (Course links: CRICOS code and course-name match). Platform Admin, 20 Oct 2026 09:41: "on right of the Course name display the Cricos code ... the course name is align to course url, there should be no confusion. What we hold is correct."

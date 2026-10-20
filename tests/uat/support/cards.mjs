@@ -16,7 +16,7 @@ export async function openCard(page, id) {
 
 // v2.15.200: Layer 2 › Adapters. Opens one university's row and then the named blocks (switch, build, schedule, central, fees, hosted, firecrawl, history, courses).
 export async function openAdapter(page, id, blocks = []) {
-  await page.goto('/#layer-2-discovery')
+  await page.goto('/#layer-2-discovery?tab=universities') // v2.15.300: Layer 2/3 › Universities
   await page.locator('[data-adapters-list] select[aria-label="Provider kind"]').selectOption('any')
   const row = page.locator(`[data-adapter-row="${id}"]`)
   await row.locator('.adp-row-head .adp-row-name').click()

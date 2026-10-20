@@ -20,7 +20,7 @@ test('migration: sweep-based Fetch an area, Websites to find, dispatch wait and 
   expect(m).toContain("perform public.admin_provider_edit(p_provider_id, 'set_course_finder'")
   expect(m).toContain("v_rank < 4 then raise exception 'Pipeline Operator role or above required'")
   expect(m).not.toMatch(/\bdrop\s|delete\s+from|truncate|on delete cascade/i)
-  expect(PAGES.layer4.tabs.map(t => t.key)).toContain('websites')
+  expect(PAGES.layer4.tabs.map(t => t.key)).not.toContain('websites') // v2.15.300: Websites to find is the Inbox kind Website needed
 })
 
 test('worker errors: each reading says what to do', () => {
@@ -40,17 +40,11 @@ test('worker errors: each reading says what to do', () => {
 test.describe('mocked browser', () => {
   // v2.15.200 (Decision 254): the Fetch an area screen is retired from Layer 2 (unused for 30 days). Its database function stays.
 
-  test('Websites to find: what was tried, enter and save a website', async ({ page }) => {
+  test('Websites to find opens the Inbox on Website needed (v2.15.300)', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-4-review?tab=websites')
-    const w = page.locator('[data-websites-to-find]')
-    const row = w.locator('[data-website-row="prov-macewan"]')
-    await expect(row).toContainText('DLI O19092022262')
-    await expect(row.getByRole('link', { name: 'https://www.macewan.ca/' })).toBeVisible()
-    await row.getByRole('textbox', { name: 'Website for Grant MacEwan University' }).fill('https://www.macewan.ca')
-    await row.getByRole('button', { name: 'Save' }).click()
-    await expect(w.getByRole('status')).toContainText('Grant MacEwan University: website saved')
-    await expect(w.locator('[data-website-row="prov-macewan"]')).toHaveCount(0)
+    await expect(page).toHaveURL(/#layer-4-review\?kind=website_needed$/)
+    await expect(page.locator('[data-l4-inbox]')).toBeVisible()
   })
 
   test('Progress › Running now (was Live activity): worker errors say what to do', async ({ page }) => {

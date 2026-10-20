@@ -43,8 +43,9 @@ test('every catalogue country: Data Quality, Enrichment operations, Provider ass
   expect(read('src/m2-3-intelligence-entry.jsx')).toContain('<option>CAD</option>')
   expect(read('src/ScholarshipRecord.jsx')).not.toContain('A$)')
   expect(read('src/ProviderContactsWorkspace.jsx')).toContain("country={filters.country||''}")
-  expect(read('src/WebsitesToFind.jsx')).toContain('allCounts||data.countries')
-  expect(read('src/PriorityQueue.jsx')).toContain('<option value="state">State or region</option>')
+  // v2.15.300 (Platform Admin, 20 Oct 2026): Websites to find and Priority queue retired (Layer 4 › Inbox kind, focus list and waves)
+  expect(fs.existsSync('src/WebsitesToFind.jsx')).toBe(false)
+  expect(fs.existsSync('src/PriorityQueue.jsx')).toBe(false)
 })
 
 test.describe('mocked browser', () => {

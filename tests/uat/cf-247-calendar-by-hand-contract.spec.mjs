@@ -62,7 +62,7 @@ test.describe('browser: calendars list with a by-hand row', () => {
     const calls = page.l3calls
     page.on('dialog', (d) => d.accept())
     // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
-    await page.goto('/#providers?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: approvals across universities are on Layer 2/3 › Operations
     await page.locator('[data-onboarding-approvals] > summary').click()
     const pp = page.locator('[data-provider-policies]')
     await pp.getByRole('button', { name: 'Academic calendars' }).click()

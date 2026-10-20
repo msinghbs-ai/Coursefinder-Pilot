@@ -100,7 +100,7 @@ export default function FirecrawlWork({onError}){
   return <>
     <Card id="services.firecrawl-credits" title="Firecrawl credits" subtitle="What Firecrawl reports as left this period, and the reserve where the platform stops Firecrawl work. Runs, targets and university adapters are on Layer 2 › Adapters."
       meta={d?.plan?.vendor?<span>{fmtNumber(d.plan.vendor.remaining)} of {fmtNumber(d.plan.vendor.plan_credits)} left</span>:null} data-firecrawl-credits>
-      {d?<><Plan d={d}/><p className="sl-sub"><a className="cf-link" href="#layer-2-discovery?tab=adapters">Firecrawl runs, targets and university adapters: Layer 2 › Adapters</a></p></>:<Waiting failed={failed} load={load} what="Firecrawl credits"/>}
+      {d?<><Plan d={d}/><p className="sl-sub"><a className="cf-link" href="#layer-2-discovery?tab=universities">Firecrawl runs, targets and university adapters: Layer 2 › Adapters</a></p></>:<Waiting failed={failed} load={load} what="Firecrawl credits"/>}
     </Card>
     <SupportReport onError={onError}/>
   </>

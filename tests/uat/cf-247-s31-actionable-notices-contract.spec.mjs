@@ -19,7 +19,7 @@ test.describe('mocked browser', () => {
   test('layer page: only notices that need a person; each says what to do; held search released in the notice', async ({ page }) => {
     page.on('dialog', d => d.accept('Adapter checked: vu.edu.au'))
     await mockAdmin(page)
-    await page.goto('/#layer-2-discovery?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: Layer 2/3 › Operations
     const strip = page.locator('[data-layer-notices="2"]')
     await expect(strip.locator('[data-notice="firecrawl:2:daily:scholarships:2026-10-13"]')).toHaveCount(0)
     await expect(strip.locator('[data-layer-notice-infos]')).toContainText('2 information-only notices (nothing to do)')
@@ -38,7 +38,7 @@ test.describe('mocked browser', () => {
 
   test('Go to opens the exact card and scrolls to it', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-2-discovery?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: Layer 2/3 › Operations
     await page.locator('[data-notice="firecrawl:2:search_held"] [data-notice-go]').click()
     await expect(page).toHaveURL(/tab=limits/)
     await expect(page.locator('[data-card="services.toolset.firecrawl.credits"]')).toHaveAttribute('data-card-open', 'true')

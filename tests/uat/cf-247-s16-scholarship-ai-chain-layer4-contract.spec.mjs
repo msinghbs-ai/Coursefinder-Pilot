@@ -48,28 +48,15 @@ test('mocked browser: Extraction sets the reading order and links to the pages n
   await x.locator('[data-sx-confirm="set-chain"]').click()
   await expect(x.locator('[data-sx-note]')).toContainText('AI admission is unchanged')
   expect(page.l3calls.find(c => c.scholarshipAi?.p_action === 'set_chain').scholarshipAi.p_args.models).toEqual(['qwen3-30b'])
-  await expect(x.locator('[data-sx-reviews-link]')).toHaveAttribute('href', '#layer-4-review?tab=aireview')
+  await expect(x.locator('[data-sx-reviews-link]')).toHaveAttribute('href', '#layer-4-review?kind=held_scholarship') // v2.15.300: the Inbox kind
 })
 
-test('mocked browser: Layer 4 › AI could not decide shows both answers; admitting sends the chosen answer; refusing needs a reason', async ({ page }) => {
-  await mockAdmin(page)
-  await page.goto('/#layer-4-review?tab=aireview')
-  const v = page.locator('[data-ai-review]')
-  await expect(v.locator('[data-ai-review-adapter]')).toContainText('704')
-  await expect(v.locator('[data-ai-review-reroutes]')).toContainText('Intakes 625')
-  const row = v.locator('[data-ai-review-row="77"]')
-  await expect(row).toContainText('who it is for is not proven')
-  await expect(row.locator('[data-ai-review-answer="qwen3-30b"]')).toContainText('for students from overseas')
-  await expect(row.locator('[data-ai-review-answer="gpt-4.1-mini"]')).toContainText('International and domestic')
-  await row.locator('[data-ai-review-refuse]').click()
-  await expect(row.locator('[data-ai-review-refuse-confirm]')).toBeDisabled()
-  await row.getByLabel('Reason for refusing').fill('')
-  await row.locator('[data-ai-review-answer="qwen3-30b"] input').check()
-  await row.getByRole('button', { name: 'Cancel' }).click()
-  await row.locator('[data-ai-review-admit]').click()
-  await expect(v.locator('[data-ai-review-note]')).toContainText('Admitted')
-  const call = page.l3calls.find(c => c.scholarshipAi?.p_action === 'review_decide')
-  expect(call.scholarshipAi.p_args).toMatchObject({ review_id: 77, decision: 'admit', extraction_id: 901 })
+// v2.15.300 (Platform Admin, 20 Oct 2026, "Old Layer 4 tabs now"): AI could not decide retired; a held page is an Inbox kind and Publish
+// sends the extraction the AI read with the chosen answer (admin_layer4_inbox decide → admin_scholarship_ai 'review_decide')
+test('held scholarship pages are decided in the Inbox through review_decide', () => {
+  const m = read('supabase/migrations/20261020040000_cf247_layer4_inbox.sql')
+  expect(m).toContain("v_r := public.admin_scholarship_ai('review_decide', jsonb_build_object('review_id', v_ref::bigint, 'decision', case when v_choice = 'publish' then 'admit' else 'refuse' end,")
+  expect(fs.existsSync('src/ScholarshipAiReview.jsx')).toBe(false)
 })
 
 test('worker v0.20.2+: an audience quote must itself name international (or domestic) students (v0.20.3: or another country)', () => {

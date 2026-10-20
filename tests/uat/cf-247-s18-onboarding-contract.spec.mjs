@@ -35,17 +35,19 @@ test('migration: the onboarding table, tick, stop at Ready to admit, no auto-adm
 
 test('source: Onboarding component, builder approvals, Layer 4 retirements, banner', () => {
   const main = read('src/mature-main.jsx')
-  expect(main).toContain("const ProviderOnboarding=lazyPage(()=>import('./ProviderOnboarding'))")
-  expect(main).toContain("if(tab==='onboarding')return <ProviderOnboarding rank={rank} actorId={actorId} onError={err}/>")
+  // v2.15.300: the Onboarding list retired into Layer 2/3 › Universities (each university) and Operations (stages, settings, approvals)
+  expect(main).not.toContain("const ProviderOnboarding=lazyPage(()=>import('./ProviderOnboarding'))")
+  expect(main).toContain("if(tab==='universities')return <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/>")
   expect(main).toContain("<CreditBanner rank={rank} canOpenServices={canOpen('services',rank)}/>")
   for (const gone of ['ProviderOnboardingNotice', 'Layer4Attributes', 'FlaggedValues', 'FeeRules', 'ScholarshipPublishing', 'view="blocks"']) expect(main).not.toContain(gone)
   for (const f of ['src/FlaggedValues.jsx', 'src/FeeRules.jsx', 'src/ScholarshipPublishing.jsx', 'src/layer2-provider-onboarding.jsx']) expect(fs.existsSync(f)).toBe(false)
   expect(read('src/platform-maturity-entry.jsx')).not.toContain('BlockConsole')
-  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['inbox', 'review', 'aireview', 'websites']) // v2.15.298: Inbox first
+  expect(PAGES.layer4.tabs.map(t => t.key)).toEqual(['inbox']) // v2.15.298: Inbox first; v2.15.300: the old tabs are Inbox kinds
   const ob = read('src/ProviderOnboarding.jsx')
   expect(ob).toContain("supabase.rpc('admin_provider_onboarding'")
   expect(ob).not.toContain('admin_uni_adapter_control') // admitting stays on Layer 2 › Adapters
-  expect(ob).toContain('setInterval(load,30000)')
+  expect(ob).not.toContain('export default function ProviderOnboarding') // v2.15.300
+  expect(read('src/Layer23Operations.jsx')).toContain("supabase.rpc('admin_provider_onboarding',{p_action:'read'")
   const builder = read('src/AdapterBuilderTab.jsx')
   expect(builder).toContain('<FeeSchedules provider={provider}/><ProviderPolicies provider={provider}/>')
   const banner = read('src/CreditBanner.jsx')
@@ -56,82 +58,69 @@ test('source: Onboarding component, builder approvals, Layer 4 retirements, bann
 })
 
 test('old Layer 4 addresses lead to where the work now happens', () => {
-  for (const t of ['flags', 'rules', 'blocks']) expect(resolveTarget('layer-4-review', new URLSearchParams(`tab=${t}`))).toMatchObject({ page: 'layer4', tab: 'review' })
-  expect(resolveTarget('layer-4-review', new URLSearchParams('tab=attributes'))).toMatchObject({ page: 'layer2', tab: 'onboarding' }) // v2.15.258
+  // v2.15.300: the Review queue retired; its old addresses open the Inbox on course links, Attributes on central pages to approve
+  for (const t of ['flags', 'rules', 'blocks', 'review']) { const r = resolveTarget('layer-4-review', new URLSearchParams(`tab=${t}`)); expect(r).toMatchObject({ page: 'layer4', tab: 'inbox' }); expect(r.params.get('kind')).toBe('course_link') }
+  expect(resolveTarget('layer-4-review', new URLSearchParams('tab=attributes')).params.get('kind')).toBe('central_to_approve')
   expect(resolveTarget('layer-4-review', new URLSearchParams('tab=publishing'))).toMatchObject({ page: 'scholarships', tab: 'coverage' })
   expect(resolveTarget('scholarships', new URLSearchParams('tab=publishing'))).toMatchObject({ page: 'scholarships', tab: 'coverage' })
 })
 
 test.describe('mocked browser', () => {
-  test('Onboarding shows the tiles and a stopped row with its note and what to do', async ({ page }) => {
+  // v2.15.300 (Platform Admin, 20 Oct 2026, Layer 2/3 "Operations first"): the Onboarding list's parts moved to Operations and Universities
+  test('Operations: stages with what is stopped for a person (each kind opens the Inbox), the pace, and approvals across universities', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#providers?tab=onboarding')
-    const ob = page.locator('[data-provider-onboarding]')
-    await expect(ob).toContainText("Admitting is a person's step on Layer 2 › Adapters")
-    await expect(ob.locator('[data-onboarding-tile="queued"]')).toContainText('1,100')
-    await expect(ob.locator('[data-onboarding-tile="active"]')).toContainText('30')
-    await expect(ob.locator('[data-onboarding-tile="stopped"]')).toContainText('No website: 1')
-    await expect(ob.locator('[data-onboarding-tile="waiting_admit"]')).toContainText('1')
-    await expect(ob.locator('[data-onboarding-tile="without"]')).toContainText('1,153')
-    await expect(ob.locator('[data-onboarding-tile="approvals"]')).toHaveAttribute('href', '#layer-2-discovery?tab=builder')
-    const rows = ob.locator('[data-onboarding-row]')
-    await expect(rows).toHaveCount(6)
-    await expect(rows.first()).toHaveAttribute('data-status', 'stopped') // stopped rows first
-    const stopped = ob.locator('[data-onboarding-row="ob-2"]')
-    await expect(stopped).toContainText('Stopped')
-    await expect(stopped).toContainText('No website could be found and verified')
-    await expect(stopped.locator('[data-stop-help]')).toContainText('Enter the website in the Adapter builder (1.1)')
-    await expect(stopped.getByRole('link', { name: 'Kaplan Business School' })).toHaveAttribute('href', '#layer-2-discovery?tab=builder&provider=pv-ob-2')
-    const ready = ob.locator('[data-onboarding-row="ob-3"]')
-    await expect(ready).toContainText('Ready to admit')
-    await expect(ready).toContainText('Intakes')
-    await expect(ready.locator('[data-held="fee"]')).toContainText('agrees on under 90%')
-    await expect(ob.locator('[data-onboarding-auto]')).toBeVisible()
-    // the stopped filter asks the server for stopped rows only
-    await ob.locator('[data-onboarding-filter="stopped"]').click()
-    await expect(rows).toHaveCount(2)
-    await expect.poll(() => page.l3calls.some(c => c.onboarding === 'read' && c.args?.status === 'stopped')).toBe(true)
-    // approvals across universities
-    await ob.locator('[data-onboarding-approvals] > summary').click()
-    await expect(ob.locator('[data-onboarding-approvals] [data-fee-schedules]')).toBeVisible()
-    await expect(ob.locator('[data-onboarding-approvals] [data-provider-policies]')).toBeVisible()
+    await expect(page).toHaveURL(/layer-2-discovery\?tab=universities/)
+    await page.goto('/#layer-2-discovery')
+    const op = page.locator('[data-layer23-operations]')
+    await expect(op.locator('[data-layer23-stage]')).toHaveCount(5)
+    await expect(op.locator('[data-layer23-stage="adapter"] [data-layer23-kind="nothing_ready"]')).toHaveAttribute('href', '#layer-4-review?kind=nothing_ready')
+    await expect(op.locator('[data-layer23-stage="adapter"]')).toContainText('305')
+    await expect(op.locator('[data-layer23-enrich-review]')).toContainText('634 Enrich fields values to review')
+    await expect(op.locator('[data-layer23-pace]')).toContainText('20 universities finished a stage in the last hour')
+    await expect(op.locator('[data-po-action="start-all"]')).toContainText('Onboard universities not yet queued (0)')
+    await op.locator('[data-onboarding-approvals] > summary').click()
+    await expect(op.locator('[data-onboarding-approvals] [data-fee-schedules]')).toBeVisible()
+    await expect(op.locator('[data-onboarding-approvals] [data-provider-policies]')).toBeVisible()
   })
 
-  test('Retry selected asks for a reason and sends the ticked stopped rows', async ({ page }) => {
+  test('Universities: a stopped university says why and what to do; Retry asks for a reason; the journey opens in the row', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#providers?tab=onboarding')
-    const ob = page.locator('[data-provider-onboarding]')
-    await ob.getByLabel('Tick Kaplan Business School').check()
-    await ob.getByLabel('Tick Southern Cross University').check() // in progress: can be stopped, not retried
-    await expect(ob.locator('[data-po-action="retry"]')).toHaveText('Retry selected (1)')
-    await expect(ob.locator('[data-po-action="stop"]')).toHaveText('Stop selected (2)')
-    await ob.locator('[data-po-action="retry"]').click()
-    const confirm = ob.locator('[data-po-confirm="retry"]')
-    await expect(confirm).toBeDisabled()
-    await ob.getByLabel('Reason: Retry selected (1)').fill('Website entered by hand')
-    await confirm.click()
-    await expect.poll(() => page.l3calls.find(c => c.onboarding === 'retry')?.args).toEqual({ ids: ['ob-2'], reason: 'Website entered by hand' })
-    await expect(ob.locator('[data-onboarding-note]')).toContainText('Retrying 1')
+    await page.goto('/#layer-2-discovery?tab=universities')
+    const w = page.locator('[data-adapters-workspace]')
+    await w.getByRole('combobox', { name: 'Journey stage' }).selectOption('person')
+    await expect(w.locator('[data-adapter-row]')).toHaveCount(1)
+    const row = w.locator('[data-adapter-row="u1"]')
+    await expect(row.locator('[data-uni-stage]')).toContainText('Needs a person')
+    await row.locator('.adp-row-head .adp-row-name').click()
+    const ob = row.locator('[data-uni-onboarding="u1"]')
+    await expect(ob.locator('[data-uni-stop-help]')).toContainText('mark the values on the sample pages')
+    await ob.locator('[data-po-action="uni-retry"]').click()
+    await expect(ob.locator('[data-po-confirm="uni-retry"]')).toBeDisabled()
+    await ob.getByLabel('Reason: Retry from the step that stopped').fill('Patterns fixed in the builder')
+    await ob.locator('[data-po-confirm="uni-retry"]').click()
+    await expect.poll(() => page.l3calls.find(c => c.onboarding === 'retry')?.args).toEqual({ ids: ['ob-1'], reason: 'Patterns fixed in the builder' })
+    await expect(ob.locator('[data-onboarding-journey="ob-1"]')).toContainText('AI attempts in this onboarding')
   })
 
-  test('a Curator sees the list without the Platform Admin controls', async ({ page }) => {
+  test('a Curator sees the universities in onboarding without Retry, Stop or settings', async ({ page }) => {
     await mockAdmin(page, { rank: 3 })
-    await page.goto('/#providers?tab=onboarding')
-    const ob = page.locator('[data-provider-onboarding]')
-    await expect(ob.locator('[data-onboarding-row]')).toHaveCount(6)
-    await expect(ob.locator('[data-onboarding-actions]')).toHaveCount(0)
-    await expect(ob.locator('[data-onboarding-settings]')).toHaveCount(0)
+    await page.goto('/#layer-2-discovery?tab=universities')
+    const w = page.locator('[data-adapters-workspace]')
+    await expect(w.locator('[data-adapter-row]').first()).toBeVisible()
+    await page.goto('/#layer-2-discovery')
+    await expect(page.locator('[data-layer23-operations]')).toBeVisible()
+    await expect(page.locator('[data-layer23-onboarding]')).toHaveCount(0)
+    await expect(page.locator('[data-onboarding-settings]')).toHaveCount(0)
   })
 
-  test('old Layer 4 addresses open the review queue, Providers › Onboarding and Scholarships › Coverage', async ({ page }) => {
+  test('old Layer 4 addresses open the Inbox on their kind and Scholarships › Coverage', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#layer-4-review?tab=flags')
-    await expect(page).toHaveURL(/#layer-4-review\?tab=review$/)
-    await expect(page.getByRole('tab', { name: 'Review queue' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page).toHaveURL(/#layer-4-review\?kind=course_link$/)
     await expect(page.getByRole('tab', { name: 'Flagged values' })).toHaveCount(0)
     await page.goto('/#layer-4-review?tab=attributes')
-    await expect(page).toHaveURL(/#layer-2-discovery\?tab=onboarding$/) // v2.15.258: Onboarding is on Layer 2
-    await expect(page.locator('[data-provider-onboarding]')).toBeVisible()
+    await expect(page).toHaveURL(/#layer-4-review\?kind=central_to_approve$/)
     await page.goto('/#layer-4-review?tab=publishing')
     await expect(page).toHaveURL(/#scholarships\?tab=coverage$/)
     await expect(page.getByRole('tab', { name: 'Coverage' })).toHaveAttribute('aria-selected', 'true')

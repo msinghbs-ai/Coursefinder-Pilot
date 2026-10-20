@@ -59,7 +59,8 @@ export default function ScholarshipExtraction({onError}){
           ?<ReasonAction label="Second model confirms admissions: On" testid="confirm-off" confirm="Switch off" onDo={r=>act('set_confirm',{on:false,reason:r},'The first model now admits on its own answer.')}/>
           :<ReasonAction label="Second model confirms admissions: Off" testid="confirm-on" confirm="Switch on" onDo={r=>act('set_confirm',{on:true,reason:r},'Each admission by the first model is now confirmed by the next model.')}/>}
         <ReasonAction label="Re-read parked scholarships with AI" disabled={!active} testid="reroute" onDo={r=>act('reroute_parked',{reason:r},'Queued: active scholarships not published, and held ones, are read again by the AI. A hold a person made stays. Progress is in Scheduled jobs › Task manager.')}/>
-        <a className="cf-link" href="#layer-4-review?tab=aireview" data-sx-reviews-link>AI could not decide: {fmtNumber(d.reviews_pending||0)}</a>
+        {/* v2.15.300: the held pages are decided in Layer 4 › Inbox (AI could not decide retired) */}
+        <a className="cf-link" href="#layer-4-review?kind=held_scholarship" data-sx-reviews-link>Held for a person (Layer 4 › Inbox): {fmtNumber(d.reviews_pending||0)}</a>
         {!active&&<small className="sc-sub">Both need an active model.</small>}
       </div>}
       {msg&&<p role="status" className="sc-note" data-sx-note>{msg}</p>}

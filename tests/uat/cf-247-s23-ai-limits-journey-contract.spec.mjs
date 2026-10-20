@@ -52,42 +52,27 @@ test('11500: qualifying ends at Admit; admitted → enrich → scholarship searc
 })
 
 test('Providers › Onboarding redirects to Layer 2 › Onboarding', () => {
-  expect(resolveTarget('providers', new URLSearchParams('tab=onboarding'))).toMatchObject({ page: 'layer2', tab: 'onboarding' })
-  expect(resolveTarget('onboarding')).toMatchObject({ page: 'layer2', tab: 'onboarding' })
-  expect(resolveTarget('layer-4-review', new URLSearchParams('tab=attributes'))).toMatchObject({ page: 'layer2', tab: 'onboarding' })
+  // v2.15.300: Layer 2/3 › Universities; Layer 4 Attributes opens the Inbox on central pages to approve
+  expect(resolveTarget('providers', new URLSearchParams('tab=onboarding'))).toMatchObject({ page: 'layer2', tab: 'universities' })
+  expect(resolveTarget('onboarding')).toMatchObject({ page: 'layer2', tab: 'universities' })
+  expect(resolveTarget('layer-4-review', new URLSearchParams('tab=attributes'))).toMatchObject({ page: 'layer4', tab: 'inbox' })
 })
 
 test.describe('mocked browser', () => {
-  test('Layer 2 › Onboarding: seven stages, a stepper per row, stage filter, the pace, and the button counts only universities not yet queued', async ({ page }) => {
+  // v2.15.300: the Onboarding list retired; the stepper is in each university's row (Layer 2/3 › Universities), the pace on Operations
+  test('Layer 2/3: the stepper in a university row, and the pace and the not-yet-queued button on Operations', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-2-discovery?tab=onboarding')
-    const ob = page.locator('[data-provider-onboarding]')
-    const strip = ob.locator('[data-onboarding-stages]')
-    await expect(strip.locator('[data-onboarding-stage]')).toHaveCount(8)
-    await expect(strip.locator('[data-onboarding-stage="enrich"]')).toContainText('Enrich courses')
-    await expect(strip.locator('[data-onboarding-stage="enrich"]')).toContainText('2')
-    await expect(ob.locator('[data-onboarding-pace]')).toContainText('20 universities finished a stage in the last hour')
-    await expect(ob.locator('[data-onboarding-pace]')).toContainText('About 3 days for the 1,100 queued')
-    await expect(ob.locator('[data-onboarding-row="ob-3"] .po-stepper li')).toHaveCount(7)
-    await expect(ob.locator('[data-onboarding-row="ob-3"] .po-stepper')).toHaveAttribute('data-stage', 'admit')
-    await expect(ob.locator('[data-onboarding-row="ob-1"] [data-onboarding-origin]')).toContainText('From the Layer 1 register')
-    await strip.locator('[data-onboarding-stage="admit"]').click()
-    await expect(ob.locator('[data-onboarding-row]')).toHaveCount(3)
-    const start = ob.locator('[data-po-action="start-all"]')
+    await page.goto('/#layer-2-discovery?tab=universities')
+    const row = page.locator('[data-adapter-row="u1"]')
+    await row.locator('.adp-row-head .adp-row-name').click()
+    await expect(row.locator('[data-uni-onboarding="u1"] [data-journey-stage] .po-stepper li')).toHaveCount(7)
+    await expect(row.locator('[data-uni-onboarding="u1"] [data-journey-stage]')).toContainText('Stage 4 of 7: Admit')
+    await expect(row.locator('[data-journey-enriched]')).toContainText('After it is admitted')
+    await page.goto('/#layer-2-discovery')
+    await expect(page.locator('[data-layer23-pace]')).toContainText('20 universities finished a stage in the last hour')
+    const start = page.locator('[data-po-action="start-all"]')
     await expect(start).toContainText('Onboard universities not yet queued (0)')
     await expect(start).toBeDisabled()
-    await expect(ob.locator('[data-onboarding-all-queued]')).toBeVisible()
-  })
-
-  test('the journey shows the stage and that scholarships wait until the courses are enriched', async ({ page }) => {
-    await mockAdmin(page)
-    await page.goto('/#providers?tab=onboarding')
-    await expect(page).toHaveURL(/layer-2-discovery\?tab=onboarding/)
-    const ob = page.locator('[data-provider-onboarding]')
-    await ob.locator('[data-onboarding-journey-toggle="ob-3"]').click()
-    const j = ob.locator('[data-onboarding-journey="ob-3"]')
-    await expect(j.locator('[data-journey-stage="admit"]')).toContainText('Stage 4 of 7: Admit')
-    await expect(j.locator('[data-journey-enriched]')).toContainText('After it is admitted')
   })
 
   test('Models & services › OpenRouter: each AI use against its daily guard, and the credit floor', async ({ page }) => {

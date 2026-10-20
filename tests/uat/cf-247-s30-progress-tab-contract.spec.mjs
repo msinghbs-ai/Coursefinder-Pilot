@@ -26,7 +26,7 @@ test('retired: Live activity page, Pilot panel, Dashboard health strip, Layers a
   expect(dash).toContain('data-dashboard-progress')
   const ob = read('src/ProviderOnboarding.jsx')
   expect(ob).not.toContain('export function Pilot(')
-  expect(ob).toContain('data-onboarding-progress-link')
+  expect(ob).not.toContain('data-onboarding-progress-link') // v2.15.300: the Onboarding list retired
   const tm = read('src/AdminTasks.jsx')
   expect(tm).not.toContain('function RunningNow(')
   expect(tm).toContain('data-task-running-link')

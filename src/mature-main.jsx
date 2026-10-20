@@ -17,16 +17,14 @@ import{CourseEditor,ProviderEditor,CreateRecord}from'./RecordEditor'
 import ArchivedReview from'./ArchivedReview'
 import ScholarshipCoverage from'./ScholarshipCoverage'
 import ScholarshipExtraction from'./ScholarshipExtraction'
-import ScholarshipAiReview from'./ScholarshipAiReview'
 import ListEdit from'./ListEdit'
 import DashboardHome from'./Dashboard'
 import ContextualInsights from'./ContextualInsights'
 import ProviderLogo,{ProviderBrand,logoCapability}from'./ProviderLogo'
 import FlagsPanel from'./FlagsPanel'
-import CounsellorReports from'./CounsellorReports'
 import ApiUsagePanel from'./ApiUsagePanel'
 import{fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInline,Pager,useRememberedState,StatusChip,FilterChip,PageHeader,PageLayout,StatusDot,Metric}from'./ui-kit'
-import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,allowedTabs,effectiveTab}from'./nav-map'
+import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import{DomainReadiness}from'./data-quality-entry'
 import CreditBanner from'./CreditBanner'
@@ -51,15 +49,14 @@ const ReferenceSources=lazyPage(()=>import('./ReferenceSources'))
 const KeyDates=lazyPage(()=>import('./KeyDates'))
 const ComparisonWorkspace=lazyPage(()=>import('./ComparisonWorkspace'))
 const ProviderContactsWorkspace=lazyPage(()=>import('./ProviderContactsWorkspace'))
-const WebsitesToFind=lazyPage(()=>import('./WebsitesToFind'))
 const Layer4Inbox=lazyPage(()=>import('./Layer4Inbox'))
 const Automations=lazyPage(()=>import('./Automations'))
-const ProviderOnboarding=lazyPage(()=>import('./ProviderOnboarding'))
-const PriorityQueue=lazyPage(()=>import('./PriorityQueue'))
 const SearchCapCard=lazyPage(()=>import('./SearchCapCard'))
 const PipelineSettings=lazyPage(()=>import('./PipelineSettings'))
 const CoverageView=lazyPage(()=>import('./course-coverage'),'CoverageView')
 const AdaptersWorkspace=lazyPage(()=>import('./AdaptersWorkspace'))
+const Layer23Operations=lazyPage(()=>import('./Layer23Operations'))
+const ScreenUse=lazyPage(()=>import('./ScreenUse'))
 const AdapterBuilderTab=lazyPage(()=>import('./AdapterBuilderTab'))
 const BuildAdapter=lazyPage(()=>import('./BuildAdapter'))
 const LinkRefresh=lazyPage(()=>import('./LinkRefresh'))
@@ -69,7 +66,6 @@ const AdminTasks=lazyPage(()=>import('./AdminTasks'))
 const PlatformGuide=lazyPage(()=>import('./PlatformGuide'))
 const Sop=lazyPage(()=>import('./Sops'))
 const Layer1Sources=lazyPage(()=>import('./layer1-operations-entry'),'Layer1Sources')
-const Layer4Workspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Layer4')
 const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')
 const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Console')
 const PlatformMaturity=lazyPage(()=>import('./platform-maturity-entry'))
@@ -83,7 +79,7 @@ const RetentionScreen=lazyPage(()=>import('./RetentionScreen'))
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
 function CoverageAttributes({rank}){
   const[scope,setScope]=useState({country:'',provider:null})
-  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#layer-2-discovery?tab=onboarding">Layer 2 › Onboarding</a>.</p>}</div>
+  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#layer-2-discovery?tab=universities">Layer 2 › Onboarding</a>.</p>}</div>
 }
 
 // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Attributes retired. Fee schedules, English policies and academic calendars are
@@ -177,6 +173,10 @@ function App(){
   // v2.15.268: a notice's Go to opens its card (card=) and scrolls to the card, setting section or anchor (at=).
   useEffect(()=>focusTarget(String(route.params?.get?.('card')||'').split(',').filter(Boolean),String(route.params?.get?.('at')||'')),[route])
   const rank=Number(context?.role_rank||0)
+  // v2.15.300 (Platform Admin, 20 Oct 2026 10:35 "suggest not used navigation items"): each page and tab opened is counted once a day per
+  // person (public.admin_screen_open), so screens retire on their use. Failures are ignored; nothing waits for it.
+  const openedKey=context?`${route.page}|${effectiveTab(route.page,route.tab,rank)}`:''
+  useEffect(()=>{if(!openedKey)return;const[p,t]=openedKey.split('|');supabase.rpc('admin_screen_open',{p_page:p,p_tab:t||''}).then(()=>{},()=>{})},[openedKey])
   // Top-bar health dot: read once after sign-in and every five minutes.
   useEffect(()=>{if(!session||!canOpen('health',rank))return;let live=true;const read=()=>readPlatformHealth().then(h=>{if(live)setHealth(h)});read();const t=setInterval(read,300000);return()=>{live=false;clearInterval(t)}},[session,rank])
   function go(target,params={}){
@@ -227,7 +227,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
   const focusId=routeParams?.get?.('id')||''
   const err=e=>onError(e?.message||String(e))
   if(!canOpen(pageKey,rank))return <EmptyState icon={AlertTriangle} title="Not authorised" text="Your role does not include this page. Ask a Platform Admin if you need access."/>
-  const page=PAGES[pageKey],tabs=allowedTabs(page,rank)
+  const page=PAGES[pageKey],tabs=shownTabs(page,rank,tab)
   const onTab=key=>navigate(pageKey,{tab:key})
   const body=pageBody()
   // v2.15.177 (Decision 252): a notice on the layer's page when a toolset it depends on hits a limit or times out
@@ -244,7 +244,6 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         // v2.15.224: the old country and source onboarding cases panel is retired (no case was ever opened)
         if(tab==='archived')return <ArchivedReview onError={onError} navigate={navigate}/>
         // v2.15.253 (Platform Admin, 12 Oct 2026): universities are onboarded automatically up to Ready to admit; admitting stays a person's step.
-        if(tab==='onboarding')return <ProviderOnboarding rank={rank} actorId={actorId} onError={err}/>
         return <Catalogue key="provider" type="provider" onError={onError} navigate={navigate} initialId={focusId} rank={rank}/>
       case'scholarships':if(tab==='coverage')return <ScholarshipCoverage rank={rank} onError={onError} navigate={navigate}/>;if(tab==='extraction')return <ScholarshipExtraction onError={onError}/>;return <ScholarshipWorkspace rank={rank} onError={onError} navigate={navigate} initialId={focusId}/>
       case'rankings':
@@ -253,7 +252,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='prisms')return <Prisms onError={onError}/>
         if(tab==='datasets')return <StatisticsDatasets rank={rank}/>
         return <StatisticsRankings onError={onError} navigate={navigate} rank={rank} routeParams={routeParams}/>
-      case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;if(tab==='flags')return <FlagsPanel onError={onError}/>;if(tab==='reports')return <CounsellorReports onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
+      case'coverage':if(tab==='progress')return <Progress routeParams={routeParams} rank={rank} onError={onError}/>;if(tab==='flags')return <FlagsPanel onError={onError}/>;return tab==='attributes'?<CoverageAttributes rank={rank}/>:<div className="m-page-stack"><CoverageView view="courses"/><LinkRefresh/></div>
       case'layer1':
         if(tab==='scholarships')return <ScholarshipLayer layer={1} rank={rank} onError={err}/>
         return <Layer1Sources/>
@@ -262,31 +261,31 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         if(tab==='links')return <div className="m-page-stack"><ReferenceSources onError={err}/></div>
         return <RankingImportPanel onError={onError} routeParams={routeParams} navigate={navigate}/>
       case'layer2':
+        // v2.15.300 (Platform Admin, 20 Oct 2026, "Operations first"): Layer 2/3 Build & enrich. Operations first; Universities joins the
+        // old Onboarding and Adapters tabs (their addresses redirect, see nav-map.js); the Adapter builder opens from a university row.
         if(tab==='scholarships')return <ScholarshipLayer layer={2} rank={rank} onError={err}/>
-        // v2.15.258 (bug 12/10-01): the onboarding journey lives on Layer 2 (old Providers › Onboarding addresses redirect here)
-        if(tab==='onboarding')return <ProviderOnboarding rank={rank} actorId={actorId} onError={err}/>
-        // v2.15.211 (CF-247, Platform Admin 7 Oct 18:23): Adapter builder, one simple screen to build or change an adapter.
         if(tab==='enrich')return <EnrichFields rank={rank} onError={err}/>
         // v2.15.287 (Decision 267): Build adapter, one click per university
         if(tab==='build')return <BuildAdapter rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
         if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
-        // v2.15.200 (Decision 254): Adapters is Layer 2's first tab. Overview, Fetch an area and History retired, Source
-        // profiles moved to Scrapers & fetchers.
-        return <AdaptersWorkspace rank={rank} onError={err}/>
+        if(tab==='universities')return <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/>
+        return <Layer23Operations rank={rank} actorId={actorId} onError={err}/>
       // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and Layer 4 AI send-back tab retired; adapters admit the values.
       // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired (old addresses redirect in nav-map.js).
-      case'layer4':return tab==='inbox'?<Layer4Inbox onError={err}/>:tab==='aireview'?<ScholarshipAiReview onError={err}/>:tab==='websites'?<WebsitesToFind onError={err}/>:<div className="m-page-stack"><Layer4Workspace rank={rank} onError={err}/></div>
-      case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<PlatformHealth onError={onError}/>
-      case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='priority'?<div className="m-page-stack"><SearchCapCard/><PriorityQueue onError={err}/></div>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
+      // v2.15.300 (Platform Admin, 20 Oct 2026): Review queue, AI could not decide and Websites to find retired into the Inbox kinds.
+      case'layer4':return <Layer4Inbox onError={err} routeParams={routeParams}/>
+      // v2.15.300: Screen use (Platform Admin) under the health checks, to decide which screens retire
+      case'health':return tab==='readiness'?<PlatformMaturity rank={rank} onError={onError} view="capacity"/>:<><PlatformHealth onError={onError}/>{rank>=6&&<ScreenUse onError={onError}/>}</>
+      case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       case'sources':return <SourcesWorkspace/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action
       case'apiUsage':return <ApiUsagePanel onError={onError}/>
       case'environment':return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
       // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
-      case'scrapers':return <><p className="l3v-note">Switch services on or off in <a href="#models-services">Models &amp; services</a>. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>
+      // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers
       // v2.15.264: Models & services in three tabs (Services · AI & OpenRouter · Toolsets & limits)
-      case'services':return tab==='ai'?<AiConfig onError={err}/>:tab==='limits'?<Toolsets onError={err}/>:<div className="m-page-stack"><ModelsServices onError={err}/></div>
+      case'services':return tab==='ai'?<AiConfig onError={err}/>:tab==='limits'?<div className="m-page-stack"><SearchCapCard/><Toolsets onError={err}/></div>:tab==='fetchers'?<><p className="l3v-note">Switch services on or off on the Services tab. Keys are on <a href="#environment">Settings</a>.</p><Layer2ProviderConfig rank={rank} embedded/></>:<div className="m-page-stack"><ModelsServices onError={err}/></div>
       case'migration':return <div className="m-page-stack"><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="migration"/><PlatformMaturity rank={rank} onError={onError} view="golive"/>{/* v2.15.228: the Reset database control was retired (Platform Admin, 9 Oct 2026) */}</div>
       case'dataModel':return <Attributes onError={onError}/>
       case'retention':return <RetentionScreen onError={onError}/>
