@@ -38,3 +38,12 @@
 .cf-page .cc-wrap{padding:0}
 
 .cc-target-wrap{position:relative}.cc-target{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--cf-slate-900);border-radius:1px;pointer-events:none}
+/* v2.15.303 Every field by country, the standing gap queue and the cross-check (Coverage › Attributes) */
+.fc-matrix td small.fc-fills{color:var(--dq-muted);max-width:280px;white-space:normal}
+.fc-matrix td.fc-low strong{color:var(--cf-orange-700)}
+.fc-matrix td.fc-low::after{content:'below target';display:block;font-size:var(--cf-fs-3xs);color:var(--cf-orange-700)}
+.fc-target-edit{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}.fc-target-edit input{width:64px}.fc-target-edit input:nth-of-type(2){width:140px}
+.fc-queue-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:4px 0 12px}
+.fc-queue-metrics span{display:flex;flex-direction:column;gap:2px}.fc-queue-metrics strong{font-size:var(--cf-fs-md)}.fc-queue-metrics small{color:var(--dq-muted)}
+.fc-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.fc-actions input{min-width:220px}
+.fc-decide{white-space:nowrap}.fc-decide button+button{margin-left:6px}

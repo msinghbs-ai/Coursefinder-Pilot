@@ -10,6 +10,7 @@ import{fmtDate,fmtDateTime,fmtMoney,fmtPercent,fmtShare}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
 import CourseDetailPolish from'./CourseDetailPolish'
 import EnrichFields from'./EnrichFields'
+import FieldCoverage from'./FieldCoverage'
 import{ProviderSummary,PillRow,FactCards,FactCard}from'./DetailSummary'
 import{startTableResize}from'./table-resize'
 import'./ui-standard.css'
@@ -100,7 +101,7 @@ function ReferenceList({routeParams,navigate,onError}){
 }
 function CoverageAttributes({rank}){
   const[scope,setScope]=useState({country:'',provider:null})
-  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#layer-2-discovery?tab=universities">Layer 2 › Onboarding</a>.</p>}</div>
+  return <div className="m-page-stack"><CoverageView view="attributes" onScope={setScope} belowFilters={({country,provider})=><FieldCoverage rank={rank} country={country} provider={provider}/>}/><details className="m-admin-advanced cov-by-area"><summary>By area: providers, courses, campuses and scholarships</summary><DomainReadiness rank={rank}/></details>{rank>=4&&<p className="sd-desc" data-attributes-moved>Fee schedules, English policies and academic calendars are approved in <a className="cf-link" href="#layer-2-discovery?tab=builder">Layer 2 › Adapter builder</a> (1.3) for one university, or across universities on <a className="cf-link" href="#layer-2-discovery?tab=universities">Layer 2 › Onboarding</a>.</p>}</div>
 }
 
 // v2.15.253 (Platform Admin, 12 Oct 2026): Layer 4 › Attributes retired. Fee schedules, English policies and academic calendars are
