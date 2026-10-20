@@ -5,9 +5,13 @@
 // readable ones".
 // Shows the field register (15 course and 9 provider fields) by country against each field's target, the standing gap queue (job
 // field-gap-queue: one Fill the gaps task when due) and the cross-check differences (held value against a newer page reading).
-// Reads and writes: public.admin_field_coverage('overview' | 'findings' | 'finding_decide' | 'queue_set' | 'target_set' | 'run_now').
+// Reads and writes: public.admin_field_coverage('overview' | 'findings' | 'finding_decide' | 'queue_set' | 'target_set' | 'run_now' |
+// 'stalled' | 'fill_now' | 'release_and_fill').
+// v2.15.304 (Platform Admin, 21 Oct 2026 08:42: "go ahead with next step for Field Stalled and action to resolve it"): Stalled fields lists
+// each field below target that has not moved (or trails the best country, or has no reader), its main cause, the action that resolves it
+// and the universities missing it most; the same list raises Platform health issues (check field_stalled).
 import React,{useEffect,useMemo,useState}from'react'
-import{CheckCircle2,GitCompare,ListChecks,Play,RefreshCw}from'lucide-react'
+import{AlertTriangle,CheckCircle2,GitCompare,ListChecks,Play,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,StatusChip}from'./ui-kit'
@@ -28,6 +32,7 @@ export default function FieldCoverage({rank=0,country='',provider=null,onError})
   useEffect(()=>{load()},[country,provider?.id])
   if(!data)return <section className="m-panel"><Loading label="Loading every field…"/></section>
   return <div className="m-page-stack" data-field-coverage>
+    <StalledFields scope={scope} onChanged={load} onError={onError}/>
     <FieldMatrix data={data} rank={rank} busy={busy} onReload={load} onSaved={setData} onError={onError}/>
     <GapQueue data={data} rank={rank} onSaved={setData} onReload={load} onError={onError}/>
     <CrossCheck data={data} scope={scope} rank={rank} onDecided={load} onError={onError}/>
@@ -110,5 +115,37 @@ function CrossCheck({data,scope,rank,onDecided,onError}){
         <td>{LABEL[r.field]||r.field}</td><td>{show(r.held_value)}</td><td><strong>{show(r.page_value)}</strong></td><td><small>{r.quote}</small></td>
         {data.can_decide&&<td className="fc-decide"><Button compact onClick={()=>decide(r.id,'dismiss')} disabled={busy===r.id}>Keep held</Button><Button compact onClick={()=>decide(r.id,'accept')} disabled={busy===r.id}>Take page value</Button></td>}</tr>)}</tbody></table></div>}
     <footer className="dq-pager"><button disabled={offset===0} onClick={()=>setOffset(Math.max(0,offset-25))}>Previous</button><span>{fmtNumber(offset+1)}–{fmtNumber(offset+(items?.length||0))}</span><button disabled={(items?.length||0)<25} onClick={()=>setOffset(offset+25)}>Next</button></footer>
+  </Card>
+}
+
+const REASON={flat:['Not moving','warning'],behind:['Behind other countries','info'],no_reader:['No reader yet','neutral']}
+const CAUSE={not_stated:'Pages read do not state it',not_read:'Pages not read for it yet',no_page:'No course page found yet',in_review:'Waiting for a person',in_queue:'Being filled now',register:'Register value missing',no_reader:'Nothing reads it yet',provider:'Provider field'}
+function StalledFields({scope,onChanged,onError}){
+  const[d,setD]=useState(null),[busy,setBusy]=useState(''),[note,setNote]=useState(''),[reason,setReason]=useState('')
+  const load=()=>call('stalled',scope).then(setD).catch(e=>onError?.(errText(e)))
+  useEffect(()=>{load()},[scope.country])
+  const act=async(x,action)=>{const k=`${x.country}|${x.field}|${action}`;setBusy(k);setNote('')
+    try{const r=await call(action,{country:x.country,field:x.field,reason:reason.trim()})
+      setNote(`${x.label} (${COUNTRY[x.country]||x.country}): ${action==='release_and_fill'?`${fmtNumber(r?.released||0)} hold(s) released; `:''}task started with ${fmtNumber(r?.items||0)} item(s). Progress is in Task manager and Layer 2 › Enrich fields.`);setReason('');load();onChanged?.()}
+    catch(e){onError?.(errText(e))}finally{setBusy('')}}
+  const items=d?.items||[]
+  const flat=items.filter(x=>x.reason==='flat').length
+  return <Card id="coverage.stalled" title="Stalled fields" icon={AlertTriangle}
+    subtitle={`Fields below their target that have gained less than ${d?fmtNumber(d.min_points):1} point in ${d?fmtNumber(d.days):7} days, that trail the best country by ${d?fmtNumber(d.gap_points):30} points or more, or that nothing reads yet. Each shows its main cause, the action that resolves it and the universities missing it most. The same list raises Platform health issues every 3 hours; an issue closes itself when the field moves again.`}
+    meta={<span className={`cf-chip tone-${flat?'warning':'neutral'}`}>{fmtNumber(flat)} not moving · {fmtNumber(items.length)} in all</span>} data-stalled-fields>
+    {!d?<Loading compact/>:items.length===0?<Empty text="No field is stalled."/>:<>
+    {d.can_release&&<p className="fc-actions"><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason (needed to release holds)" aria-label="Reason for releasing holds"/><small className="sd-desc">Release holds and fill: use after a new central page, adapter rule or reader, so courses whose page did not state the field are read again.</small></p>}
+    {note&&<p className="sd-desc" role="status">{note}</p>}
+    <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Country</th><th>Field</th><th className="num">Now</th><th className="num">{fmtNumber(d.days)} days ago</th><th>Why</th><th>What resolves it</th><th/></tr></thead>
+      <tbody>{items.map(x=>{const[rl,tone]=REASON[x.reason]||[x.reason,'neutral'];return <tr key={x.country+x.field} data-stalled={x.reason}>
+        <td>{COUNTRY[x.country]||x.country}</td>
+        <td><strong>{x.label}</strong><small><StatusChip value={x.reason} tone={tone} label={rl}/></small></td>
+        <td className="num"><strong>{fmtPct(Number(x.pct))}</strong><small>target {fmtPct(Number(x.target))}{x.best_country&&x.best_country!==x.country?` · best ${x.best_country} ${fmtPct(Number(x.best_pct))}`:''}</small></td>
+        <td className="num">{x.pct_ago==null?<small>no history yet</small>:<>{fmtPct(Number(x.pct_ago))}<small>{Number(x.moved)>=0?'+':''}{x.moved} points</small></>}</td>
+        <td>{CAUSE[x.cause]||x.cause}{x.causes&&<small>{Object.entries(x.causes).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,n])=>`${CAUSE[k]||k}: ${fmtNumber(n)}`).join(' · ')}</small>}</td>
+        <td><small>{x.action}</small>{(x.top_providers||[]).length>0&&<small className="fc-top">Most missing: {x.top_providers.map((p,i)=><span key={p.id}>{i?', ':''}<a className="cf-link" href={`#providers?id=${encodeURIComponent(p.id)}`}>{p.name}</a> ({fmtNumber(p.missing)})</span>)}</small>}</td>
+        <td className="fc-decide">{x.can_fill&&d.can_fill&&<Button compact onClick={()=>act(x,'fill_now')} disabled={!!busy}><Play size={14}/>Fill now</Button>}
+          {x.can_fill&&d.can_release&&x.cause==='not_stated'&&<Button compact onClick={()=>act(x,'release_and_fill')} disabled={!!busy||reason.trim().length<4} title="Needs a reason above">Release holds and fill</Button>}</td>
+      </tr>})}</tbody></table></div></>}
   </Card>
 }

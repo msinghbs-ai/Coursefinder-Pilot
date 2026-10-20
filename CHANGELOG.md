@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.231 — 21 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.304** (stalled fields). Platform Admin, 21 Oct 2026 08:42: "go ahead with next step for Field Stalled and action to resolve it. and 10-min check up - should update in the guide/SOP".
+  - Migration `20261021130000_cf247_field_stalled.sql`: `pipeline.field_coverage_daily` (each field's filled share per country a day, history back-filled from 29 Sep); `security.field_stalled_v1` (below target and not moving in 7 days, behind the best country by 30 points, or no reader; main cause, action, top five universities missing it); Platform health check `field_stalled` every 3 hours (issue per country, no-reader fields, Fill the gaps not running); `admin_field_coverage` actions `stalled`, `fill_now`, `release_and_fill`. Settings `stall.*`. Edits md5-guarded.
+  - Coverage › Attributes opens on Stalled fields (cause, action, Fill now, Release holds and fill); Platform health links field issues there. The 10-minute field check is in the guide and both SOPs (1.45).
+
 ## 0.1.230 — 21 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.303** (every field, every country). Platform Admin, 21 Oct 2026 07:30: "Platform needs to keep working and cross checking on missing data fields ... coverage menu should details all data fields filled together not the top 7"; choices "Stored pages + AI, small reads", "When page changes, or 60 days", "All on Coverage; queue for readable ones".
