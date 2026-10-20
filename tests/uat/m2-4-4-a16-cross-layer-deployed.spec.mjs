@@ -70,8 +70,7 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
       await page.goto(`${process.env.UAT_BASE_URL}/#providers?id=${UQ_ID}`)
       const drawer=page.locator('aside.m-drawer-provider')
       await expect(drawer).toBeVisible({timeout:45_000})
-      await expect(drawer.getByRole('heading',{name:'International contacts',exact:true})).toBeVisible()
-      await expect(drawer.locator('.cf-contact-summary').first()).toBeVisible() // disposition wording is data-driven
+      // v2.15.225: contacts are on the Provider contacts page, not the provider panel (the panel links there)
       // v2.15.225: the Layer 4 corrections sit under "More about this provider" (closed by default)
       await drawer.locator('details[data-provider-more] > summary').click()
       const providerL4=drawer.locator('section.cf-layer4-override:visible').first()
