@@ -1,0 +1,178 @@
+{
+  "about": "CF-247 D11, 20 Oct 2026 (Platform Admin 20:54 \"Why do we need to wait for 3 Nov ... cross check all references\"; choice \"Drop 34 now, fix 23 (Recommended)\"): the 34 retiring tables with no live reader (references cross-checked: functions, views, triggers, foreign keys, scheduled jobs, admin screens and edge workers; no activity during the check). Every row is exported here before the paste file drops the tables; the paste file refuses to run unless each table's row count and key hash still match this export.",
+  "bucket": "archive",
+  "prefix": "cf247-d11-drop-34-2026-10-20",
+  "part_rows": 20000,
+  "sets": [
+    {
+      "name": "pipeline__ca_source_qualifications",
+      "key": "source_id",
+      "select": "select z.* from pipeline.ca_source_qualifications z"
+    },
+    {
+      "name": "pipeline__coverage_identity_cases",
+      "key": null,
+      "select": "select z.* from pipeline.coverage_identity_cases z"
+    },
+    {
+      "name": "pipeline__coverage_identity_sets",
+      "key": "gold_set",
+      "select": "select z.* from pipeline.coverage_identity_sets z"
+    },
+    {
+      "name": "pipeline__directory_institutions",
+      "key": null,
+      "select": "select z.* from pipeline.directory_institutions z"
+    },
+    {
+      "name": "pipeline__directory_pages",
+      "key": "id",
+      "select": "select z.* from pipeline.directory_pages z"
+    },
+    {
+      "name": "pipeline__evidence_purge",
+      "key": "evidence_id",
+      "select": "select z.* from pipeline.evidence_purge z"
+    },
+    {
+      "name": "pipeline__layer2_auto_discovery_attempts",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_auto_discovery_attempts z"
+    },
+    {
+      "name": "pipeline__layer2_auto_discovery_settings",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_auto_discovery_settings z"
+    },
+    {
+      "name": "pipeline__layer2_auto_discovery_settings_audit",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_auto_discovery_settings_audit z"
+    },
+    {
+      "name": "pipeline__layer2_completeness_trial_courses",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_completeness_trial_courses z"
+    },
+    {
+      "name": "pipeline__layer2_completeness_trials",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_completeness_trials z"
+    },
+    {
+      "name": "pipeline__layer2_tuning_events",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_tuning_events z"
+    },
+    {
+      "name": "pipeline__layer3_benchmark_jobs",
+      "key": "id",
+      "select": "select z.* from pipeline.layer3_benchmark_jobs z"
+    },
+    {
+      "name": "pipeline__layer3_intake_benchmark_cases",
+      "key": "id",
+      "select": "select z.* from pipeline.layer3_intake_benchmark_cases z"
+    },
+    {
+      "name": "pipeline__layer3_intake_benchmark_results",
+      "key": "id",
+      "select": "select z.* from pipeline.layer3_intake_benchmark_results z"
+    },
+    {
+      "name": "pipeline__layer3_intake_gold_sets",
+      "key": "gold_set",
+      "select": "select z.* from pipeline.layer3_intake_gold_sets z"
+    },
+    {
+      "name": "pipeline__layer3_profile_activation_events",
+      "key": "id",
+      "select": "select z.* from pipeline.layer3_profile_activation_events z"
+    },
+    {
+      "name": "pipeline__layer3_task_contract_freezes",
+      "key": "id",
+      "select": "select z.* from pipeline.layer3_task_contract_freezes z"
+    },
+    {
+      "name": "pipeline__onboarding_cases",
+      "key": "id",
+      "select": "select z.* from pipeline.onboarding_cases z"
+    },
+    {
+      "name": "pipeline__onboarding_lifecycle_events",
+      "key": "id",
+      "select": "select z.* from pipeline.onboarding_lifecycle_events z"
+    },
+    {
+      "name": "pipeline__orphan_files",
+      "key": "name",
+      "select": "select z.* from pipeline.orphan_files z"
+    },
+    {
+      "name": "pipeline__provider_asset_candidates",
+      "key": "id",
+      "select": "select z.* from pipeline.provider_asset_candidates z"
+    },
+    {
+      "name": "pipeline__provider_directory_observations",
+      "key": "id",
+      "select": "select z.* from pipeline.provider_directory_observations z"
+    },
+    {
+      "name": "pipeline__scholarship_ai_run_items",
+      "key": "id",
+      "select": "select z.* from pipeline.scholarship_ai_run_items z"
+    },
+    {
+      "name": "pipeline__scholarship_catalogue_runs",
+      "key": "id",
+      "select": "select z.* from pipeline.scholarship_catalogue_runs z"
+    },
+    {
+      "name": "pipeline__scholarship_coverage_benchmarks",
+      "key": "id",
+      "select": "select z.* from pipeline.scholarship_coverage_benchmarks z"
+    },
+    {
+      "name": "pipeline__scholarship_maintenance_runs",
+      "key": "id",
+      "select": "select z.* from pipeline.scholarship_maintenance_runs z"
+    },
+    {
+      "name": "pipeline__scholarship_runtime_settings",
+      "key": "country_code",
+      "select": "select z.* from pipeline.scholarship_runtime_settings z"
+    },
+    {
+      "name": "pipeline__scholarship_scope_acquisition_requests",
+      "key": "id",
+      "select": "select z.* from pipeline.scholarship_scope_acquisition_requests z"
+    },
+    {
+      "name": "workflow__import_errors",
+      "key": "id",
+      "select": "select z.* from workflow.import_errors z"
+    },
+    {
+      "name": "workflow__import_rows",
+      "key": "id",
+      "select": "select z.* from workflow.import_rows z"
+    },
+    {
+      "name": "workflow__migration_entity_map",
+      "key": "id",
+      "select": "select z.* from workflow.migration_entity_map z"
+    },
+    {
+      "name": "workflow__migration_runs",
+      "key": "id",
+      "select": "select z.* from workflow.migration_runs z"
+    },
+    {
+      "name": "workflow__reconciliation_checks",
+      "key": "id",
+      "select": "select z.* from workflow.reconciliation_checks z"
+    }
+  ]
+}
