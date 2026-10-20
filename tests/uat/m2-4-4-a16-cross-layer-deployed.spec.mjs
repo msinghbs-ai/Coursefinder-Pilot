@@ -72,6 +72,8 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
       await expect(drawer).toBeVisible({timeout:45_000})
       await expect(drawer.getByRole('heading',{name:'International contacts',exact:true})).toBeVisible()
       await expect(drawer.locator('.cf-contact-summary').first()).toBeVisible() // disposition wording is data-driven
+      // v2.15.225: the Layer 4 corrections sit under "More about this provider" (closed by default)
+      await drawer.locator('details[data-provider-more] > summary').click()
       const providerL4=drawer.locator('section.cf-layer4-override:visible').first()
       await expect(providerL4.getByRole('heading',{name:'Corrections shown instead of the source',exact:true})).toBeVisible()
       await expect(providerL4.getByText(/the source value and its history are kept/i)).toBeVisible()
@@ -100,6 +102,8 @@ test.describe('M2.4.4 A16 cross-layer contact + Layer 4 intervention @deployed',
       await page.goto(`${process.env.UAT_BASE_URL}/#courses?id=${COURSE_ID}`)
       const drawer=page.locator('aside.m-drawer-course')
       await expect(drawer).toBeVisible({timeout:45_000})
+      // v2.15.225: the Layer 4 corrections sit under "More about this course" (closed by default)
+      await drawer.locator('details[data-course-more] > summary').click()
       await expect(drawer.getByRole('heading',{name:'Corrections shown instead of the source',exact:true})).toBeVisible()
       await drawer.locator('section.cf-layer4-override summary').first().click()
       await expect(drawer.getByText('Publishing decision',{exact:true})).toBeVisible()
