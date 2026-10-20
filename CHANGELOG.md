@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.229 — 20 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.302** (D11 second step). Platform Admin, 20 Oct 2026 21:29: "proceed with task 1"; on the reference cross-check, "Drop the 9, keep the 15 (Recommended)".
+  - Migration `20261020140000_cf247_d11_readers_off_nine.sql`: nine live functions (retention estimate and tick, wave parent stamp, Task manager running now, platform health check, resource observe, platform health summary, scholarship layer read, dispatcher tuning read) stop reading the 9 tables to be dropped; the old scholarship AI control read answers "retired". Each edit md5-guarded. The 15 tables still in use go back to active in the component register.
+  - Layer 4 drawer: the unused "Suggest a new record from a source" panel and `src/ManualPimCandidateWorkspace.jsx` retired (its table is one of the 9).
+  - The 9 tables and 31 dead functions are dropped by a paste file after export. SOPs 1.43.
+
 ## 0.1.228 — 20 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.301** (menu review). Platform Admin, 20 Oct 2026 19:23: "Ask me nav menu wise and its tab wise questions with its use and recommended choice to keep, move or retire"; answers 19:2x; 19:31 "Go".

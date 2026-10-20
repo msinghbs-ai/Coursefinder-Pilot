@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.42 (reviewed for platform release v2.15.301)  
+**Version:** 1.43 (reviewed for platform release v2.15.302)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -145,3 +145,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.40 | 20 Oct 2026 | v2.15.299 | Reviewed, no steps changed: a course link shows the CRICOS code beside the course name, and each address says whether it matches the course name or is a major of the course. Prefer the page that matches the course name. |
 | 1.41 | 20 Oct 2026 | v2.15.300 | Layer 4 › Inbox holds everything that needs a person: course links, held scholarships (with the AI re-check), websites needed, counsellor reports (close as Fixed or Not changed) and providers that left the register. The Review queue, AI could not decide, Websites to find and Counsellor reports tabs retired; their addresses open the Inbox on that kind, and Decided lists what was decided. Layer 2 is Layer 2/3 Build & enrich: Operations first, then Universities (journey, why it stopped, Retry or Stop, the adapter). |
 | 1.42 | 20 Oct 2026 | v2.15.301 | Menu review. Dashboard › Waiting for you lists the Inbox kinds; Open goes to the Inbox on that kind. The running jobs board is Scheduled jobs › Task manager › Background jobs (Progress › Running now retired). Reference data is one list (Key dates and Reference sources); ranking files are imported on Rankings & statistics › Datasets. Flags and Scholarships are on Layer 2/3; Layer 1 Register is the one Sources page; API usage is a tab of Settings. Old addresses open the new places. |
+| 1.43 | 20 Oct 2026 | v2.15.302 | Reviewed, no steps changed: the unused "Suggest a new record from a source" panel left the Layer 4 drawer on course and provider records. |

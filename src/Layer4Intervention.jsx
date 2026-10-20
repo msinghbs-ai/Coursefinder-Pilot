@@ -1,6 +1,5 @@
 import React,{useEffect,useState}from'react'
 import{supabase}from'./lib/supabase'
-import ManualPimCandidateWorkspace from'./ManualPimCandidateWorkspace'
 import{fmtDateTime}from'./lib/format.js'
 
 const fmt=v=>{if(v==null)return'—';if(typeof v==='string')return v;try{return JSON.stringify(v)}catch{return String(v)}}
@@ -12,9 +11,8 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
  const[pub,setPub]=useState(data?.layer4_publication||{})
  const[pubScope,setPubScope]=useState('governed_publication')
  const[history,setHistory]=useState(null)
- const[candidatesOpen,setCandidatesOpen]=useState(false)
  const[busy,setBusy]=useState('')
- useEffect(()=>{setLayer4(data?.layer4||{fields:[]});setPub(data?.layer4_publication||{});setHistory(null);setPubScope('governed_publication');setCandidatesOpen(false)},[data?.id])
+ useEffect(()=>{setLayer4(data?.layer4||{fields:[]});setPub(data?.layer4_publication||{});setHistory(null);setPubScope('governed_publication')},[data?.id])
  async function refresh(){
   const{data:r,error}=await supabase.rpc('layer4_effective_entity',{p_entity_type:type,p_entity_id:data.id})
   if(error)throw error
@@ -78,7 +76,6 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
   }catch(e){window.alert(e.message||String(e))}
  }
  const fields=Array.isArray(layer4?.fields)?layer4.fields:[]
- const providerContext=type==='provider'?data?.id:(data?.provider_id||data?.provider?.id||'')
  return <section className="m-detail-section cf-layer4-override">
   {/* v2.15.130: collapsed unless a correction is active (screen review crs-detail-long, crs-detail-jargon). */}
   <details className="l4i-details" open={Number(layer4?.active_override_count||0)>0}><summary style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'flex-start',cursor:'pointer'}}>
@@ -114,12 +111,7 @@ export default function Layer4Intervention({type,data,publicationEnabled=true}){
    </div>}
    <small>Nothing is published automatically. This records a decision with its reason; it does not switch on the website, Search or Zoho.</small>
   </div>}
-  {['provider','course','campus','scholarship'].includes(type)&&<div className="m-record" style={{marginTop:8}}>
-   <strong>Suggest a new record from a source</strong>
-   <span>Adds a candidate for review. Nothing changes in the catalogue until it is approved.</span>
-   <button className="m-secondary compact" onClick={()=>setCandidatesOpen(x=>!x)}>{candidatesOpen?'Close candidate workspace':'Open candidate workspace'}</button>
-   {candidatesOpen&&<div style={{marginTop:8}}><ManualPimCandidateWorkspace initialEntityType={type} initialProviderId={providerContext} onError={e=>window.alert(e?.message||String(e))}/></div>}
-  </div>}
+  {/* v2.15.302 (CF-247 D11, Platform Admin 20 Oct 2026 "Drop the 9, keep the 15"): "Suggest a new record from a source" retired; never used, its table is dropped */}
   {history&&<div className="m-record-list" style={{marginTop:8}}>
    <strong>Audit history · {history.field.display_label}</strong>
    {history.rows.map(x=><div className="m-record" key={x.id}><span>{human(x.event_type)} · {x.actor_email||x.actor_id} · {when(x.created_at)}</span><small>{human(x.reason_code)}{x.comment?' · '+x.comment:''}</small></div>)}
