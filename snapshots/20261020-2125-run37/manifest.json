@@ -1,0 +1,54 @@
+{
+  "captured_at": "2026-10-20T21:25:09.744Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-attributes.png",
+      "route": "attributes",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 6053,
+      "height": 3432,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=attributes",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-attributes-every-field-by-country.png",
+      "route": "attributes",
+      "action": "Every field by country",
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 1507,
+      "height": 4721,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=attributes",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-attributes-fill-the-gaps-standing-queue-.png",
+      "route": "attributes",
+      "action": "Fill the gaps (standing queue)",
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 1505,
+      "height": 5096,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=attributes",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "04-attributes-cross-check-differences.png",
+      "route": "attributes",
+      "action": "Cross-check differences",
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 1507,
+      "height": 6351,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=attributes",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
