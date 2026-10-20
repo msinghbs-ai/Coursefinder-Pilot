@@ -15,25 +15,12 @@ test('CF-211 H5 source-backed candidates cannot directly write canonical or publ
  assert.doesNotMatch(sql,/insert into catalogue\.(providers|courses|campuses|scholarships)/i)
 })
 
-test('CF-211 H5 operator workspace states candidate boundary clearly and resolves operator context',async()=>{
- const src=await read('src/ManualPimCandidateWorkspace.jsx')
- assert.match(src,/Add source-backed candidate/)
- assert.match(src,/never writes canonical catalogue tables or publishes records/)
- assert.match(src,/manual_pim_candidate_register/)
- assert.match(src,/manual_pim_candidate_decide/)
- assert.match(src,/Ready for acquisition/)
- assert.match(src,/api\.context\(\)/)
- assert.match(src,/initialProviderId/)
-})
-
-test('CF-211 H5 is exposed from the existing canonical Layer 4 detail surface',async()=>{
+// v2.15.302 (CF-247 D11, 20 Oct 2026): the manual candidate workspace was never used; it and pipeline.pim_source_candidates are retired.
+test('CF-211 H5 candidate workspace retired from the Layer 4 detail surface',async()=>{
  const src=await read('src/Layer4Intervention.jsx')
- assert.match(src,/ManualPimCandidateWorkspace/)
- assert.match(src,/Suggest a new record from a source/) // v2.15.130 plain wording
- assert.match(src,/Open candidate workspace/)
- assert.match(src,/initialEntityType=\{type\}/)
- assert.match(src,/initialProviderId=\{providerContext\}/)
- assert.doesNotMatch(src,/floating|launcher/i)
+ assert.doesNotMatch(src,/ManualPimCandidateWorkspace/)
+ assert.doesNotMatch(src,/Open candidate workspace/)
+ await assert.rejects(read('src/ManualPimCandidateWorkspace.jsx'))
 })
 
 test('CF-211 public browser RPCs are invoker wrappers over private implementations',async()=>{

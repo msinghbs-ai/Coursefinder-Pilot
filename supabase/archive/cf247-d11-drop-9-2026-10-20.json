@@ -1,0 +1,53 @@
+{
+  "about": "CF-247 D11 second step, 20 Oct 2026 (Platform Admin 21:29 \"proceed with task 1\"; choice \"Drop the 9, keep the 15 (Recommended)\"): the 9 retiring tables whose live readers migration 20261020140000 moved off. Every row is exported before the paste file drops them; the paste file refuses to run unless each table's row count and key hash still match.",
+  "bucket": "archive",
+  "prefix": "cf247-d11-drop-9-2026-10-20",
+  "part_rows": 20000,
+  "sets": [
+    {
+      "name": "pipeline__layer2_scale_qualification_items",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_scale_qualification_items z"
+    },
+    {
+      "name": "pipeline__layer2_provider_trial_results",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_provider_trial_results z"
+    },
+    {
+      "name": "pipeline__layer2_scale_qualification_runs",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_scale_qualification_runs z"
+    },
+    {
+      "name": "pipeline__coverage_identity_results",
+      "key": "id",
+      "select": "select z.* from pipeline.coverage_identity_results z"
+    },
+    {
+      "name": "pipeline__layer3_quality_benchmark_runs",
+      "key": "id",
+      "select": "select z.* from pipeline.layer3_quality_benchmark_runs z"
+    },
+    {
+      "name": "pipeline__layer2_tuning_events",
+      "key": "id",
+      "select": "select z.* from pipeline.layer2_tuning_events z"
+    },
+    {
+      "name": "pipeline__scholarship_ai_runs",
+      "key": "id",
+      "select": "select z.* from pipeline.scholarship_ai_runs z"
+    },
+    {
+      "name": "pipeline__scholarship_ai_settings",
+      "key": "country_code",
+      "select": "select z.* from pipeline.scholarship_ai_settings z"
+    },
+    {
+      "name": "pipeline__pim_source_candidates",
+      "key": "id",
+      "select": "select z.* from pipeline.pim_source_candidates z"
+    }
+  ]
+}

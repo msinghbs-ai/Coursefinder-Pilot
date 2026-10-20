@@ -1,7 +1,7 @@
 {
   "name": "coursefinder-pilot",
   "private": true,
-  "version": "0.1.228",
+  "version": "0.1.229",
   "type": "module",
   "scripts": {
     "release:verify": "node scripts/verify-release-contract.mjs",
