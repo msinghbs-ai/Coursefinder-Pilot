@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-20T21:23:44.259Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-coverage.png",
+      "route": "coverage",
+      "action": null,
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 5901,
+      "height": 2441,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-coverage-attributes.png",
+      "route": "coverage",
+      "action": "Attributes",
+      "clicked": true,
+      "heading": "Coverage & completeness",
+      "settle_ms": 5797,
+      "height": 3432,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#coverage?tab=attributes",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
