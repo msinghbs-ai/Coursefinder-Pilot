@@ -46,15 +46,15 @@ test.describe('mocked browser', () => {
     await expect(s.locator('[data-sop-automation]')).toContainText('Where a person decides')
     await expect(s.locator('[data-sop-step]').first()).toBeVisible()
     await expect(s.locator('[data-sop-interventions]')).toContainText('Ready to admit')
-    await s.getByRole('button', { name: 'Layer 2 Discovery & reading › Onboarding' }).first().click()
-    await expect(page).toHaveURL(/#layer-2-discovery\?tab=onboarding/)
+    await s.getByRole('button', { name: 'Layer 2/3 Build & enrich › Universities' }).first().click() // v2.15.300
+    await expect(page).toHaveURL(/#layer-2-discovery\?tab=universities/)
   })
 
   test('a Curator sees both SOP tabs; the Operator SOP names who does each step', async ({ page }) => {
     await mockAdmin(page, { rank: 3 })
     await page.goto('/#platform-guide?tab=operator-sop')
     const s = page.locator('[data-sop="operator-sop"]')
-    await expect(s.locator('[data-sop-daily]')).toContainText('Curator: Layer 4 Review › Review queue')
+    await expect(s.locator('[data-sop-daily]')).toContainText('Curator: Layer 4 › Inbox') // v2.15.300
     await expect(page.getByRole('tab', { name: 'Platform Admin SOP' })).toBeVisible()
   })
 

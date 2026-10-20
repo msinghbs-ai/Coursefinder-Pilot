@@ -153,7 +153,7 @@ function SelectedJourney({id,onClose,onChanged}){
       {j.can_run&&<JobButton kind="qualify_adapters" scope={pid} args={{provider_ids:[pid],adapter_state:'any'}} label="Qualify adapter" variant={undefined} compact={false}/>}
       {j.can_manage&&j.status==='stopped'&&<ReasonAction label="Retry onboarding from the step that stopped" testid="progress-retry" onDo={r=>run(async()=>{const{error}=await supabase.rpc('admin_provider_onboarding',{p_action:'retry',p_args:{ids:[j.onboarding_id],reason:r}});if(error)throw error},'Retrying from the step that stopped.')}/>}
       {j.can_manage&&<Button disabled={busy} onClick={searchAgain} data-progress-search-again>Search again for course pages</Button>}
-      <small className="pg-links"><a className="cf-link" href={hrefFor('layer2','adapters',{provider:pid})}>Open adapter</a> · <a className="cf-link" href={hrefFor('layer2','builder',{provider:pid})}>Open in Adapter builder</a> · <a className="cf-link" href={hrefFor('scholarships','coverage')}>Open scholarships</a></small>
+      <small className="pg-links"><a className="cf-link" href={hrefFor('layer2','universities',{provider:pid})}>Open adapter</a> · <a className="cf-link" href={hrefFor('layer2','builder',{provider:pid})}>Open in Adapter builder</a> · <a className="cf-link" href={hrefFor('scholarships','coverage')}>Open scholarships</a></small>
       {msg&&<p role="status" className="sd-desc">{msg}</p>}{fail&&<p role="alert" className="fr-error">{fail}</p>}
     </div>
   </section>
@@ -281,7 +281,7 @@ function Levers({onError}){
   const[d,setD]=useState(null)
   useEffect(()=>{read('levers').then(setD).catch(e=>onError?.(errText(e)))},[])
   if(!d)return <Loading label="Reading levers…"/>
-  const RUN=[['Find scholarships now','scholarships','coverage','Tick universities (up to 50); uses scholarship credits.'],['Read the waiting pages with AI again','layer4','aireview','From the first model, on the stored copy; no Firecrawl credit.'],['Retry stopped universities','layer2','onboarding','Tick stopped rows; they start again at the step that stopped.'],['Search again for a stopped university','services','limits','After its website is checked (Firecrawl credits by university).'],['Onboard universities not yet queued','layer2','onboarding','Adds every university without an admitting adapter.'],['Pause or run a scheduled job','coverage','progress','Running now, or Scheduled jobs › Automations.']]
+  const RUN=[['Find scholarships now','scholarships','coverage','Tick universities (up to 50); uses scholarship credits.'],['Read the waiting pages with AI again','layer4','aireview','From the first model, on the stored copy; no Firecrawl credit.'],['Retry stopped universities','layer2','universities','Tick stopped rows; they start again at the step that stopped.'],['Search again for a stopped university','services','limits','After its website is checked (Firecrawl credits by university).'],['Onboard universities not yet queued','layer2','universities','Adds every university without an admitting adapter.'],['Pause or run a scheduled job','coverage','progress','Running now, or Scheduled jobs › Automations.']]
   return <div className="m-page-stack" data-progress-levers>
     <p className="sd-desc">Every setting that changes the pace, with its value and what it did today. Each is changed on its own screen (Platform Admin, with a reason, logged); this lists them in one place.</p>
     {(d.sections||[]).map(s=><section key={s.title} className="m-panel" aria-label={s.title} data-progress-lever-section={s.title}>

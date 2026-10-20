@@ -62,7 +62,7 @@ test('sample-run worker: classifiers, plan limits respected, no constants for li
 test('browser: notices on the layer page, acknowledged with a reason', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Seen; reviewing the batch size'))
-  await page.goto('/#layer-2-discovery')
+  await page.goto('/#layer-2-discovery') // v2.15.300: Layer 2/3 › Operations; the layer notices sit above every tab
   const strip = page.locator('[data-layer-notices="2"]')
   await expect(strip.locator('[data-notice="scheduled_jobs:2:timeout:scholarship-nationality"]')).toContainText('hit the database time limit')
   // v2.15.268: the acknowledged one-off job failure is information only, so it is kept to Toolsets and limits
@@ -193,7 +193,7 @@ test('browser: Firecrawl work — credits and report on Models & services, runs 
   await expect(r.locator('[data-report-totals]')).toContainText('461')
   await expect(page.locator('[data-toolsets]')).not.toContainText(/trial/i)
   // Layer 2 › Adapters: the two runs start as tasks, targets are added by hand
-  await page.goto('/#layer-2-discovery')
+  await page.goto('/#layer-2-discovery?tab=universities') // v2.15.300: Layer 2/3 › Universities
   await openCard(page, 'adapters.firecrawl-runs')
   const w = page.locator('[data-firecrawl-work]')
   await expect(w.locator('[data-firecrawl-plan]')).toHaveCount(0) // v2.15.213: credits shown once, on Models & services
@@ -388,16 +388,13 @@ test('adapter overwrite, better pages and evaluation: migrations shaped, hand-en
   expect(read('supabase/migrations-archive/20261004001320_cf247_adapter_evaluation.sql')).toContain("'eval_field_share'")
 })
 
-test('browser: what each university needs next is a collapsed card on Layer 2 › Adapters; Set up adapter opens that row with its builder', async ({ page }) => {
+// v2.15.300 (Platform Admin, 20 Oct 2026: "Only actionable and operation relative information"): the What each university needs next card
+// retired from Layer 2/3 › Universities; what needs a person is in Layer 4 › Inbox, each with its choices.
+test('browser: Universities has no What each university needs next card', async ({ page }) => {
   await mockAdmin(page)
-  await page.goto('/#layer-2-discovery')
-  await expect(page.locator('[data-adapter-eval]')).toHaveCount(0) // collapsed by default
-  await openCard(page, 'adapters.next')
-  const ev = page.locator('[data-adapter-eval]')
-  await expect(ev.locator('[data-eval-row="u2"]')).toContainText('Adapter for start dates')
-  await expect(ev.locator('[data-eval-row="u3"]')).toContainText('Adapter for page data')
-  await ev.locator('[data-eval-row="u2"]').getByRole('button', { name: 'Set up adapter' }).click()
-  await expect(page.locator('[data-adapter-editor="u2"]')).toBeVisible()
+  await page.goto('/#layer-2-discovery?tab=universities')
+  await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
+  await expect(page.locator('[data-card="adapters.next"]')).toHaveCount(0)
 })
 
 test('better page refused by the identity check is undone: earlier page bound again, logged, hand-entered links kept', () => {
@@ -843,7 +840,7 @@ test('award link settings: tolerances from the screen, register lag allowed, han
 test('browser: Layer 2 › Adapters — award link settings saved with a reason', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Register runs a year behind'))
-  await page.goto('/#layer-2-discovery')
+  await page.goto('/#layer-2-discovery?tab=universities') // v2.15.300: Layer 2/3 › Universities
   await openCard(page, 'adapters.settings')
   const st = page.locator('[data-award-link-settings]')
   await st.locator('summary').click()
@@ -890,7 +887,7 @@ test('university re-read: preview counts, Platform Admin queues with a reason, l
 test('browser: Layer 2 › Adapters — tick universities, preview and read pages again', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Pages changed since the last read'))
-  await page.goto('/#layer-2-discovery')
+  await page.goto('/#layer-2-discovery?tab=universities') // v2.15.300: Layer 2/3 › Universities
   const w = page.locator('[data-adapters-workspace]')
   await w.getByLabel('Tick Example University').check()
   await w.getByLabel('Tick Northern College University').check()
@@ -1120,7 +1117,7 @@ test('job system Phase C: watcher tasks, the kind constraint widened under the 1
 test('browser: JobButton — finds its running task after a refresh and offers Cancel', async ({ page }) => {
   await mockAdmin(page)
   page.on('dialog', d => d.accept('Cancel from the button (browser test)'))
-  await page.goto('/#layer-2-discovery')
+  await page.goto('/#layer-2-discovery?tab=universities') // v2.15.300: Layer 2/3 › Universities
   await openCard(page, 'adapters.firecrawl-runs')
   const w = page.locator('[data-firecrawl-work]')
   // the fixture holds a running firecrawl_run task for find_page: the button shows it instead of Start

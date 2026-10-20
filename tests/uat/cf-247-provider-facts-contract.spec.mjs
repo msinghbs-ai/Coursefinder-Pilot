@@ -86,7 +86,7 @@ test.describe('browser: fee schedules panel', () => {
     await mockAdmin(page)
     page.on('dialog', d => d.accept())
     // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
-    await page.goto('/#providers?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: approvals across universities are on Layer 2/3 › Operations
     await page.locator('[data-onboarding-approvals] > summary').click()
     const fs = page.locator('[data-fee-schedules]')
     await expect(fs).toContainText('Waiting for approval')
@@ -103,7 +103,7 @@ test.describe('browser: fee schedules panel', () => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page, { rank: 4 })
     // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
-    await page.goto('/#providers?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: approvals across universities are on Layer 2/3 › Operations
     await page.locator('[data-onboarding-approvals] > summary').click()
     const fs = page.locator('[data-fee-schedules]')
     await expect(fs.locator('[data-doc="fs1"]')).toContainText('Waiting for a Platform Admin')

@@ -1,17 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.299'
-export const PACKAGE_VERSION='0.1.226'
+export const UI_VERSION='2.15.300'
+export const PACKAGE_VERSION='0.1.227'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'19 Oct 2026',
-  title:'Course links: CRICOS code and course-name match',
+  date:'20 Oct 2026',
+  title:'Layer 2/3 Build & enrich, and fewer screens',
   changes:[
-    'Layer 4 › Inbox and Review queue: a course link shows the course\'s CRICOS code beside its name.',
-    'Each address says whether it matches the course name or is a major or specialisation of the course, so the right page is clear at a glance.',
-    'A page proposed for a major or specialisation of the course page held (for example bachelor-of-journalism-creative-writing for Bachelor of Journalism) no longer replaces it and is no longer sent to a person.'
+    'Layer 2 is now Layer 2/3 Build & enrich. Operations comes first: each stage (find the website, find course pages, build the adapter, admit and enrich, scholarships) shows the universities working on it, waiting for it and stopped for a person, with the jobs behind it (pause, resume, run now), the onboarding pace and settings, and the central pages waiting for approval across universities.',
+    'Universities joins the old Onboarding and Adapters tabs: one row per university with its journey stage, why it stopped and what waits in the Inbox; open a row for Retry or Stop, its journey and its adapter. The Adapter builder opens from a row.',
+    'Retired, with their addresses redirected: Layer 4 Review queue, AI could not decide and Websites to find (now Inbox kinds), Coverage › Counsellor reports (closed in the Inbox as Fixed or Not changed), Scheduled jobs › Priority queue (the search cap moved to Models & services › Toolsets & limits) and the Scrapers & fetchers page (now Models & services › Fetchers).',
+    'Layer 4 › Inbox: providers that left the register are decided here (closed, merged with a successor, or still operating), and Decided lists the decisions taken.',
+    'Platform health › Screen use (Platform Admin): how often each page and tab is opened, so unused screens can be retired on evidence.'
   ],
   bugFixes:[]
 }

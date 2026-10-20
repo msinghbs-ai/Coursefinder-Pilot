@@ -62,7 +62,7 @@ test('migrations: NZ rule, country-aware tuition hand-off, title search without 
 test('browser: fee schedules follow the Approvals country (Providers › Onboarding)', async ({ page }) => {
   await mockAdmin(page)
   // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
-  await page.goto('/#providers?tab=onboarding')
+  await page.goto('/#layer-2-discovery') // v2.15.300: approvals across universities are on Layer 2/3 › Operations
   await page.locator('[data-onboarding-approvals] > summary').click()
   const fsx = page.locator('[data-fee-schedules]')
   await expect(fsx.locator('[data-doc="fs1"]')).toHaveCount(1)

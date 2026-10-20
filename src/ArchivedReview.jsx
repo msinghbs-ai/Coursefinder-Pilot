@@ -3,7 +3,7 @@
 // work stopped. This screen lists:
 //  - archived providers: why (left the register, archived by hand, closed or merged at the departure review), when and by whom; Restore;
 //  - courses that are not active and why (left the register, archived by hand, outside the import scope, suspended); Restore;
-//  - how many provider departures wait in Layer 4 Review › Review queue (Bulk decisions › Provider departures) to record a closure or a merger.
+//  - how many provider departures wait in Layer 4 › Inbox (Provider left the register) to record a closure or a merger (v2.15.300).
 // Read: public.admin_archive_read. Restore: public.admin_provider_restore, public.admin_course_edit('restore');
 // several at once: public.admin_archive_restore_bulk (v2.15.240).
 import React,{useEffect,useState}from'react'
@@ -37,7 +37,7 @@ export default function ArchivedReview({onError,navigate}){
       <button role="tab" aria-selected={section==='providers'} className={section==='providers'?'active':''} onClick={()=>setSection('providers')}>Providers ({fmtNumber(c.providers||0)})</button>
       <button role="tab" aria-selected={section==='courses'} className={section==='courses'?'active':''} onClick={()=>setSection('courses')}>Courses not active ({fmtNumber(c.courses||0)})</button>
     </div>
-    {Number(c.departures_waiting)>0&&<p className="ar-why" data-departures-waiting>{fmtNumber(c.departures_waiting)} provider departure{Number(c.departures_waiting)===1?'':'s'} wait{Number(c.departures_waiting)===1?'s':''} in Layer 4 Review › Review queue (Bulk decisions › Provider departures) to record a closure or a merger (the providers are already archived). <Button compact onClick={()=>navigate?.('layer4',{tab:'review'})}>Open</Button></p>}
+    {Number(c.departures_waiting)>0&&<p className="ar-why" data-departures-waiting>{fmtNumber(c.departures_waiting)} provider departure{Number(c.departures_waiting)===1?'':'s'} wait{Number(c.departures_waiting)===1?'s':''} in Layer 4 › Inbox (Provider left the register) to record a closure, a merger or that it still operates. <Button compact onClick={()=>navigate?.('layer4',{kind:'provider_departure'})}>Open</Button></p>}
     <label className="m-searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={section==='providers'?'Search provider name':'Search course, code or provider'} aria-label="Search archived records"/></label>
     {can&&<div className="ar-bulk" data-bulk-restore><span>{picked.size?`${fmtNumber(picked.size)} selected`:'Tick records to restore several at once'}</span>{picked.size>0&&<><Button compact variant="primary" onClick={bulk} disabled={working==='bulk'}><RotateCcw size={13}/>{working==='bulk'?'Restoring…':`Restore ${fmtNumber(picked.size)}`}</Button><Button compact onClick={()=>setPicked(new Set())}>Clear</Button></>}</div>}
     {note&&<p role="status" className="ar-why">{note}</p>}

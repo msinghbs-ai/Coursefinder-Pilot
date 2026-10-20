@@ -78,7 +78,7 @@ test.describe('browser: English policies panel', () => {
     await mockAdmin(page)
     page.on('dialog', (d) => d.accept())
     // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
-    await page.goto('/#providers?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: approvals across universities are on Layer 2/3 › Operations
     await page.locator('[data-onboarding-approvals] > summary').click()
     const pp = page.locator('[data-provider-policies]')
     await expect(pp.getByRole('heading', { name: 'English policies' })).toBeVisible()
@@ -105,7 +105,7 @@ test.describe('browser: English policies panel', () => {
     await mockAdmin(page)
     page.on('dialog', (d) => d.accept())
     // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
-    await page.goto('/#providers?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: approvals across universities are on Layer 2/3 › Operations
     await page.locator('[data-onboarding-approvals] > summary').click()
     const pp = page.locator('[data-provider-policies]')
     await expect(pp.locator('[data-policy-bulk]')).toBeVisible()
@@ -118,14 +118,15 @@ test.describe('browser: English policies panel', () => {
     await expect(pp.locator('[data-policy-bulk-result]')).toContainText('Approved')
   })
 
-  test('v2.15.155: Platform Admin raises the course-page search cap on the Priority queue screen', async ({ page }) => {
+  // v2.15.300: the Priority queue retired; the search cap is the first panel of Models & services › Toolsets & limits
+  test('v2.15.155: Platform Admin raises the course-page search cap (Models & services › Toolsets & limits)', async ({ page }) => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page)
     page.on('dialog', (d) => d.accept())
-    await page.goto('/#jobs?tab=priority')
+    await page.goto('/#models-services?tab=limits')
     const c = page.locator('[data-search-cap]')
     await expect(c.locator('[data-cap-reached]')).toContainText('320 searches are waiting')
-    // the budget is the first panel on the page, above the priority list
+    // the budget is the first panel on the page, above the toolsets
     expect(await page.locator('.m-page-stack > section').first().getAttribute('data-search-cap')).not.toBeNull()
     await c.getByLabel('Course-page search monthly cap').fill('80000')
     await c.getByRole('button', { name: 'Save cap' }).click()
@@ -141,7 +142,7 @@ test.describe('browser: English policies panel', () => {
     await expect(page.locator('[data-provider-policies]')).toHaveCount(0)
     await expect(page.locator('[data-fee-schedules]')).toHaveCount(0)
     // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
-    await page.goto('/#providers?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: approvals across universities are on Layer 2/3 › Operations
     await page.locator('[data-onboarding-approvals] > summary').click()
     await expect(page.locator('[data-fee-schedules]')).toBeVisible()
     await expect(page.locator('[data-provider-policies]')).toBeVisible()
@@ -153,7 +154,7 @@ test.describe('browser: English policies panel', () => {
     const { mockAdmin } = await import('./support/admin-mock.mjs')
     await mockAdmin(page, { rank: 4 })
     // v2.15.253: Layer 4 › Attributes retired; central page approvals are on Providers › Onboarding › Approvals waiting
-    await page.goto('/#providers?tab=onboarding')
+    await page.goto('/#layer-2-discovery') // v2.15.300: approvals across universities are on Layer 2/3 › Operations
     await page.locator('[data-onboarding-approvals] > summary').click()
     const pp = page.locator('[data-provider-policies]')
     await expect(pp.locator('[data-policy="ep1"]')).toContainText('Waiting for a Platform Admin')

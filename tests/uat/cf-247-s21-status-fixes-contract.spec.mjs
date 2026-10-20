@@ -53,26 +53,10 @@ test('11300 + worker v0.21.0: central pages read by a pinned model become propos
 })
 
 test.describe('mocked browser', () => {
-  test('Approve central pages shows under Needs a person with what to do', async ({ page }) => {
+  // v2.15.300: Approve central pages is an Inbox kind (central_to_approve); AI could not decide retired into the Inbox (held scholarships)
+  test('Approve central pages opens the Inbox on that kind from Operations', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#providers?tab=onboarding')
-    const ob = page.locator('[data-provider-onboarding]')
-    await expect(ob.locator('[data-onboarding-tile="needs_person"]')).toContainText('1 with central pages to approve')
-    const row = ob.locator('[data-onboarding-row="ob-6"]')
-    await expect(row).toContainText('Approve central pages')
-    await expect(row.locator('[data-stop-help]')).toContainText('Approve or reject each in the Adapter builder (1.3)')
-  })
-
-  test('AI could not decide: read the waiting pages again asks for a reason', async ({ page }) => {
-    await mockAdmin(page)
-    await page.goto('/#layer-4-review?tab=aireview')
-    const r = page.locator('[data-ai-review]')
-    await r.locator('[data-ai-review-reread]').click()
-    await expect(r.locator('[data-ai-review-reread-confirm]')).toBeDisabled()
-    await r.getByLabel('Reason: read the waiting pages again').fill('New rules in v2.15.256')
-    await r.locator('[data-ai-review-reread-confirm]').click()
-    await expect(r.locator('[data-ai-review-note]')).toContainText('2 page(s) will be read again')
-    const call = page.l3calls.find(x => x.scholarshipAi?.p_action === 'reviews_reread')
-    expect(call.scholarshipAi.p_args).toEqual({ reason: 'New rules in v2.15.256' })
+    await page.goto('/#layer-4-review?tab=attributes')
+    await expect(page).toHaveURL(/kind=central_to_approve/)
   })
 })

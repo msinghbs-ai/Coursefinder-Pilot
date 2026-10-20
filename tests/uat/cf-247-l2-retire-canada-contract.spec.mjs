@@ -43,7 +43,7 @@ test.describe('static contract', () => {
 
   test('Layer 2 screen no longer reads the old alerts or shows the old run lists', async () => {
     const main = await fs.readFile('src/mature-main.jsx', 'utf8')
-    expect(main).toContain('<AdaptersWorkspace rank={rank} onError={err}/>') // v2.15.200: Layer 2 opens Adapters; the old Overview and History screens are no longer routed
+    expect(main).toContain('<AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/>') // v2.15.200: Layer 2 opens Adapters; v2.15.300: Layer 2/3 › Universities
   })
 })
 

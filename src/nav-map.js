@@ -45,8 +45,7 @@ export const PAGES = {
     { key: 'progress', label: 'Progress', min: 3 },
     // v2.15.282 (Platform Admin, 15 Oct 2026): the flag unit: what is held out of the queues, why, and its history; release or hold
     { key: 'flags', label: 'Flags', min: 3 },
-    // v2.15.292 (Platform Admin, 19 Oct 2026): reports from counsellors in Zoho on a course, institute, campus or contact
-    { key: 'reports', label: 'Counsellor reports', min: 3 },
+    // v2.15.292 (19 Oct 2026) Counsellor reports: v2.15.300 retired as a tab; each report is an Inbox kind (Layer 4 › Inbox, Counsellor report)
   ] },
   // v2.15.246 (Platform Admin bugs 11/10-3, Feature 2): Runs and Source settings are one Sources list (expandable rows, settings
   // edited in place, + Add source); Manual batch runs is retired (each source has Run now, recorded as one job).
@@ -63,31 +62,28 @@ export const PAGES = {
   // v2.15.200 (Decision 254, Platform Admin 6 Oct 15:31 and 15:38): Layer 2 is the adapters and their whole lifecycle, plus
   // scholarships. Overview, Fetch an area, History and Source profiles retired (unused for 30 days); their old addresses
   // and Coverage › Universities open Adapters.
-  layer2: { label: 'Layer 2 Discovery & reading', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'University adapters: build, qualify, admit, switch on or off, and when the pages of each university are read again.', tabs: [
-    { key: 'adapters', label: 'Adapters', min: 4 },
+  // v2.15.300 (Platform Admin, 20 Oct 2026 10:35: "Rework layer 2 into layer 2/3 so its cleared it has combined operations ... Only actionable
+  // and operation relative information and items should be retained"; choice "Operations first"): Layer 2/3 Build & enrich. Operations
+  // (each stage: working, waiting, stopped for a person, its jobs) first; Universities joins Onboarding and Adapters (one row per university:
+  // its journey stage, adapter, Inbox items); the Adapter builder opens from a university row (hidden tab, its address still works).
+  layer2: { label: 'Layer 2/3 Build & enrich', slug: 'layer-2-discovery', icon: 'activity', subtitle: 'Find each university\'s pages, build and admit its adapter, enrich its courses and check its scholarships: what is working, waiting or stopped, and the jobs behind it.', tabs: [
+    { key: 'operations', label: 'Operations', min: 3 },
+    { key: 'universities', label: 'Universities', min: 3 },
     // v2.15.287 (Decision 267, Platform Admin 18 Oct 11:58 "Keep Adapter builder too"): one click per university, eight fields measured
     { key: 'build', label: 'Build adapter', min: 3 },
-    { key: 'builder', label: 'Adapter builder', min: 5 },
-    // v2.15.258 (Platform Admin bug 12/10-01): the onboarding journey, from Providers › Onboarding: provider in, prepare, create adapter,
-    // admit, enrich courses, scholarship adapter, admit scholarships
-    { key: 'onboarding', label: 'Onboarding', min: 3 },
     // v2.15.273 (Platform Admin, 14 Oct 2026 10:41): a task that fills chosen missing fields for countries or universities
     { key: 'enrich', label: 'Enrich fields', min: 3 },
     { key: 'scholarships', label: 'Scholarships', min: 4 },
+    { key: 'builder', label: 'Adapter builder', min: 5, hidden: true },
   ] },
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. University adapters (Layer 2) admit intakes,
   // English requirements and fees, so the AI check is no longer needed; its old addresses open Layer 2 › Adapters.
   layer4: { label: 'Layer 4 Review', slug: 'layer-4-review', icon: 'review', subtitle: 'Decisions that need a person, with an audit trail.', tabs: [
     // v2.15.298 (Platform Admin, 20 Oct 2026: "anything that needs attention or intervention should come to Layer 4"): one inbox, by university
     { key: 'inbox', label: 'Inbox', min: 3 },
-    { key: 'review', label: 'Review queue', min: 3 },
-    // v2.15.250 (Platform Admin, 11 Oct 2026: "Qwen 3 then GPT-4.1 mini then to Layer 4"): scholarship pages no model could settle
-    { key: 'aireview', label: 'AI could not decide', min: 3 },
-    { key: 'websites', label: 'Websites to find', min: 3 },
-    // v2.15.252: the AI send-back tab retired with Layer 3; the old address opens the Review queue.
-    // v2.15.253 (Platform Admin, 12 Oct 2026): Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired.
-    // Central pages (fee schedules, English policies, calendars) are approved in Layer 2 › Adapter builder (1.3) and on
-    // Layer 2 › Onboarding; scholarships are published from Scholarships › Coverage. Old addresses redirect (see resolveTarget).
+    // v2.15.300 (Platform Admin, 20 Oct 2026, "Old Layer 4 tabs now"): Review queue, AI could not decide and Websites to find retired; each
+    // is a kind in the Inbox, and their addresses open the Inbox on that kind (resolveTarget). Decisions taken are under Inbox › Decided.
+    // v2.15.252: the AI send-back tab retired with Layer 3. v2.15.253: Flagged values, Fee rules, Attributes, Scholarship publishing and Blocks retired.
   ] },
 
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database.', tabs: [
@@ -96,7 +92,8 @@ export const PAGES = {
   ] },
   jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, the order work is taken in, job history and refresh schedules.', tabs: [
     { key: 'automations', label: 'Automations', min: 4 },
-    { key: 'priority', label: 'Priority queue', min: 3 },
+    // v2.15.300 (Platform Admin, 20 Oct 2026, "Priority queue"): retired (no use in 7 days; the focus list and Build adapter waves order the
+    // work). The course-page search cap moved to Models & services › Toolsets & limits.
     { key: 'jobs', label: 'Jobs', min: 4 },
     // v2.15.197 (Decision 254, job system Phase A): long-running admin actions as tasks with progress, pause and cancel
     { key: 'tasks', label: 'Task manager', min: 4 },
@@ -108,12 +105,13 @@ export const PAGES = {
   apiUsage: { label: 'API usage', slug: 'api-usage', icon: 'chart', min: 4, subtitle: 'Zoho API v2 and Website API v2: calls, success and failure, last use, full loads and deltas, bandwidth; rotate or switch off keys' },
 
   environment: { label: 'Settings', slug: 'environment', icon: 'plug', min: 6, subtitle: 'Every pipeline setting in one place, by step: throughput, reading, page identity and budgets; keys for outside services below (never shown).' },
-  scrapers: { label: 'Scrapers & fetchers', slug: 'scrapers', icon: 'sliders', min: 4, subtitle: 'How pages are fetched: services, keys and limits.' },
+  // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is the Fetchers tab of Models & services (old addresses redirect).
   // v2.15.264 (Platform Admin, 13 Oct 2026 00:09): three tabs; the AI configuration Layer 3 used to hold is back as AI & OpenRouter.
   services: { label: 'Models & services', slug: 'models-services', icon: 'ai', min: 4, subtitle: 'Switch AI models and page-fetching services on or off; configure the AI that runs now and OpenRouter; and the limits each layer depends on.', tabs: [
     { key: 'services', label: 'Services', min: 4 },
     { key: 'ai', label: 'AI & OpenRouter', min: 4 },
     { key: 'limits', label: 'Toolsets & limits', min: 4 },
+    { key: 'fetchers', label: 'Fetchers', min: 4 },
   ] },
   migration: { label: 'Go-live checklist', slug: 'environment-migration', icon: 'shield', min: 6, subtitle: 'What must be set up and pass before Production is switched on.' },
   dataModel: { label: 'Data model', slug: 'data-model', icon: 'tags', min: 5, subtitle: 'Attributes, families, groups and options.' },
@@ -136,7 +134,7 @@ export const SECTIONS = [
   { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence', 'sources', 'apiUsage'] },
-  { label: 'Platform settings', pages: ['environment', 'scrapers', 'services', 'dataModel', 'retention', 'migration'] },
+  { label: 'Platform settings', pages: ['environment', 'services', 'dataModel', 'retention', 'migration'] },
   { label: 'Administration', pages: ['users'] },
   { label: 'Guides', pages: ['guide'] },
 ]
@@ -166,15 +164,18 @@ export const LEGACY = {
   'regulatory-settings': { page: 'layer1', tab: 'operations' },
   'layer-1-authority': { page: 'layer1', tab: 'operations' },
   'sources': { page: 'sources' },
-  'onboarding': { page: 'layer2', tab: 'onboarding' },
+  'onboarding': { page: 'layer2', tab: 'universities' },
   'important-dates': { page: 'reference', tab: 'dates' },
   'important-links': { page: 'reference', tab: 'links' },
-  'layer-2-enrichment': { page: 'layer2', tab: 'adapters' },
-  'layer-2-operations': { page: 'layer2', tab: 'adapters' },
+  'layer-2-enrichment': { page: 'layer2', tab: 'universities' },
+  'layer-2-operations': { page: 'layer2', tab: 'operations' },
+  // v2.15.300: Scrapers & fetchers is Models & services › Fetchers
+  'scrapers': { page: 'services', tab: 'fetchers' },
+  'scrapers-fetchers': { page: 'services', tab: 'fetchers' },
   // v2.15.252: Layer 3 retired; every old Layer 3 address opens Layer 2 › Adapters (see resolveTarget).
-  'layer-3-ai-interpretation': { page: 'layer2', tab: 'adapters', legacyL3: true },
-  'layer-3-ai': { page: 'layer2', tab: 'adapters', legacyL3: true },
-  'layer-3-ai-validation': { page: 'layer2', tab: 'adapters', legacyL3: true },
+  'layer-3-ai-interpretation': { page: 'layer2', tab: 'universities', legacyL3: true },
+  'layer-3-ai': { page: 'layer2', tab: 'universities', legacyL3: true },
+  'layer-3-ai-validation': { page: 'layer2', tab: 'universities', legacyL3: true },
   'layer-4-human-resolution': { page: 'layer4' },
   'review-queue': { page: 'layer4' },
   'jobs-schedules': { page: 'jobs' },
@@ -186,18 +187,18 @@ export const LEGACY = {
   // The old '#settings' address opened Administration > Platform (readiness), not the regulatory page.
   'settings': { page: 'health', tab: 'readiness' },
   'statistics-rankings': { page: 'rankings' },
-  'administration': { page: 'scrapers' },
+  'administration': { page: 'services', tab: 'fetchers' },
 }
 
 // Old Administration sections (#administration?section=...) → new page and tab.
 export const LEGACY_ADMIN_SECTIONS = {
-  'overview': { page: 'scrapers' },
+  'overview': { page: 'services', tab: 'fetchers' },
   'sources-imports': { page: 'reference', tab: 'imports' },
   'layer1-sources': { page: 'layer1', tab: 'operations' },
-  'layer2-providers': { page: 'scrapers' },
+  'layer2-providers': { page: 'services', tab: 'fetchers' },
   'provider-assets': { page: 'providers', tab: 'assets' },
-  'layer2-sources': { page: 'layer2', tab: 'adapters' },
-  'onboarding': { page: 'layer2', tab: 'onboarding' },
+  'layer2-sources': { page: 'layer2', tab: 'universities' },
+  'onboarding': { page: 'layer2', tab: 'universities' },
   'pim': { page: 'dataModel' },
   'users-roles': { page: 'users' },
   'environment-migration': { page: 'environment' },
@@ -205,12 +206,14 @@ export const LEGACY_ADMIN_SECTIONS = {
   'statistics-datasets': { page: 'rankings', tab: 'datasets' },
 }
 
-const MOVED_L1 = { imports: { page: 'reference', tab: 'imports' }, dates: { page: 'reference', tab: 'dates' }, links: { page: 'reference', tab: 'links' }, onboarding: { page: 'layer2', tab: 'onboarding' } }
+const MOVED_L1 = { imports: { page: 'reference', tab: 'imports' }, dates: { page: 'reference', tab: 'dates' }, links: { page: 'reference', tab: 'links' }, onboarding: { page: 'layer2', tab: 'universities' } }
 
 const BY_SLUG = Object.fromEntries(Object.values(PAGES).map(p => [p.slug, p.key]))
 const BY_LABEL = Object.fromEntries(Object.values(PAGES).map(p => [slugify(p.label), p.key]))
 
 export function allowedTabs(page, rank) { return (page?.tabs || []).filter(t => rank >= t.min) }
+// v2.15.300: a hidden tab (Layer 2/3 › Adapter builder) opens by its address (from a university row) and is drawn only while it is open
+export function shownTabs(page, rank, active = '') { return allowedTabs(page, rank).filter(t => !t.hidden || t.key === active) }
 export function canOpen(pageKey, rank) { const p = PAGES[pageKey]; return Boolean(p) && rank >= p.min }
 
 /**
@@ -241,23 +244,32 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'jobs' && tab === 'schedules') return { page: 'jobs', tab: 'automations', params: p }
   if (hit.page === 'coverage' && tab === 'domains') return { page: 'coverage', tab: 'attributes', params: p }
   // v2.15.200 (Decision 254): Coverage › Universities and the retired Layer 2 tabs open Layer 2 › Adapters.
-  if (hit.page === 'coverage' && tab === 'universities') return { page: 'layer2', tab: 'adapters', params: p }
-  if (hit.page === 'layer2' && ['operations', 'start', 'history', 'profiles'].includes(tab)) return { page: 'layer2', tab: 'adapters', params: p }
+  if (hit.page === 'coverage' && tab === 'universities') return { page: 'layer2', tab: 'universities', params: p }
+  if (hit.page === 'layer2' && ['start', 'history', 'profiles'].includes(tab)) return { page: 'layer2', tab: 'universities', params: p }
+  // v2.15.300: Layer 2 › Adapters and Onboarding are Layer 2/3 › Universities
+  if (hit.page === 'layer2' && ['adapters', 'onboarding'].includes(tab)) return { page: 'layer2', tab: 'universities', params: p }
+  // v2.15.300: Counsellor reports, Priority queue and Scrapers & fetchers retired
+  if (hit.page === 'coverage' && tab === 'reports') return inboxOf('counsellor_report', p)
+  if (hit.page === 'jobs' && tab === 'priority') return { page: 'layer2', tab: 'build', params: p }
   if (hit.page === 'layer1' && tab === 'sources') return { page: 'sources', tab: '', params: p }
   // v2.15.246: Source settings and Manual batch runs are part of Layer 1 › Sources.
   if (hit.page === 'layer1' && ['settings', 'batch'].includes(tab)) return { page: 'layer1', tab: 'operations', params: p }
   // v2.15.122: the Layer 3 Models list is Platform settings › Models & services (still true after Layer 3 retired).
   // v2.15.252 (Platform Admin, 12 Oct 2026): every other Layer 3 address (Control, Work queue, ...) opens Layer 2 › Adapters.
   if (hit.legacyL3 && tab === 'models') return { page: 'services', tab: '', params: p }
-  if (hit.legacyL3) return { page: 'layer2', tab: 'adapters', params: p }
+  if (hit.legacyL3) return { page: 'layer2', tab: 'universities', params: p }
   // v2.15.252: the Layer 4 AI send-back tab retired with Layer 3; the old address opens the Review queue.
-  if (hit.page === 'layer4' && tab === 'sendback') return { page: 'layer4', tab: 'review', params: p }
+  if (hit.page === 'layer4' && tab === 'sendback') return inboxOf('course_link', p)
+  // v2.15.300 (Platform Admin, 20 Oct 2026): the old Layer 4 tabs open the Inbox on their kind
+  if (hit.page === 'layer4' && tab === 'review') return inboxOf('course_link', p)
+  if (hit.page === 'layer4' && tab === 'aireview') return inboxOf('held_scholarship', p)
+  if (hit.page === 'layer4' && tab === 'websites') return inboxOf('website_needed', p)
   // v2.15.253 (Platform Admin, 12 Oct 2026): retired Layer 4 tabs. Flagged values, Fee rules and Blocks open the Review queue;
   // Attributes (central page approvals) opens Layer 2 › Onboarding (v2.15.258); Scholarship publishing opens Scholarships › Coverage.
-  if (hit.page === 'layer4' && ['flags', 'rules', 'blocks'].includes(tab)) return { page: 'layer4', tab: 'review', params: p }
-  if (hit.page === 'layer4' && tab === 'attributes') return { page: 'layer2', tab: 'onboarding', params: p }
-  // v2.15.258 (bug 12/10-01): Providers › Onboarding moved to Layer 2 › Onboarding
-  if (hit.page === 'providers' && tab === 'onboarding') return { page: 'layer2', tab: 'onboarding', params: p }
+  if (hit.page === 'layer4' && ['flags', 'rules', 'blocks'].includes(tab)) return inboxOf('course_link', p)
+  if (hit.page === 'layer4' && tab === 'attributes') return inboxOf('central_to_approve', p)
+  // v2.15.258 (bug 12/10-01): Providers › Onboarding moved to Layer 2 › Onboarding (v2.15.300: Layer 2/3 › Universities)
+  if (hit.page === 'providers' && tab === 'onboarding') return { page: 'layer2', tab: 'universities', params: p }
   if (hit.page === 'layer4' && tab === 'publishing') return { page: 'scholarships', tab: 'coverage', params: p }
   // v2.15.169 (Decision 249) moved Scholarships › Publishing to Layer 4; v2.15.253 retired that tab, so it opens Scholarships › Coverage.
   if (hit.page === 'scholarships' && tab === 'publishing') return { page: 'scholarships', tab: 'coverage', params: p }
@@ -265,6 +277,8 @@ export function resolveTarget(target, params = new URLSearchParams()) {
   if (hit.page === 'scholarships' && tab === 'links') return { page: 'scholarships', tab: 'list', params: p }
   return { page: hit.page, tab, params: p }
 }
+
+function inboxOf(kind, p) { if (!p.get('kind')) p.set('kind', kind); return { page: 'layer4', tab: 'inbox', params: p } }
 
 /** The canonical address for a page, tab and extra parameters. */
 export function hrefFor(pageKey, tab = '', params = {}) {

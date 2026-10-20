@@ -1,0 +1,14 @@
+/* v2.15.300: Layer 2/3 › Operations (Layer23Operations.jsx) and the Universities additions (AdaptersWorkspace merged) */
+.l23{display:grid;gap:12px}
+.l23-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.l23-tile-link{text-decoration:none;color:inherit}
+.l23-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.l23-what{display:block;max-width:340px}
+.l23-sub{display:block;font-size:var(--cf-fs-xs);margin-top:2px}
+.l23-kinds{list-style:none;margin:0;padding:0;display:grid;gap:2px;font-size:var(--cf-fs-sm)}
+.l23-jobs{margin:4px 0}
+.l23-onboard{display:grid;gap:8px}
+.l23-stage{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px}
+.l23-inbox-link{font-size:var(--cf-fs-xs);font-weight:600;color:var(--cf-amber-700)}
+.l23-stop{font-size:var(--cf-fs-xs);color:var(--cf-slate-600)}
+@media (max-width:720px){.l23-stages th:nth-child(3),.l23-stages td:nth-child(3){display:none}}

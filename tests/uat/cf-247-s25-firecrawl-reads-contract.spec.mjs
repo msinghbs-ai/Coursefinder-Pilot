@@ -44,8 +44,8 @@ test('11700: reads more, re-reads the found pages that failed, keeps moving; not
 test.describe('mocked browser', () => {
   test('a stopped row explains that Too few course pages carries on by itself', async ({ page }) => {
     await mockAdmin(page)
-    await page.goto('/#layer-2-discovery?tab=onboarding')
-    await expect(page.locator('[data-provider-onboarding]')).toBeVisible()
+    await page.goto('/#layer-2-discovery?tab=onboarding') // v2.15.300: opens Layer 2/3 › Universities, where each stopped row says what to do
+    await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
     const src = fs.readFileSync('src/ProviderOnboarding.jsx', 'utf8')
     expect(src).toContain("ai_allowance:['AI allowance used'")
     expect(src).toContain('carries on by itself once enough of its pages are read')

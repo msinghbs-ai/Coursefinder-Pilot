@@ -20,7 +20,7 @@ test.describe('mocked browser', () => {
     await expect(w.locator('[data-queue="review"]')).toContainText('1,803')
     await expect(w).toContainText('Clear: fee rules waiting for approval · jobs that failed in the last 24 hours')
     await w.getByRole('button', { name: 'Open Flagged values to check' }).click()
-    // v2.15.253: Layer 4 › Flagged values retired; the old address the server still sends opens the Review queue
-    await expect(page).toHaveURL(/#layer-4-review\?tab=review$/)
+    // v2.15.253: Layer 4 › Flagged values retired; v2.15.300: the old address the server still sends opens the Inbox on course links
+    await expect(page).toHaveURL(/#layer-4-review\?kind=course_link$/)
   })
 })

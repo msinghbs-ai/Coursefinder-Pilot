@@ -11,7 +11,7 @@ test('source: Melbourne time, no IST, onboarding merged, datasets component, no 
   expect(describeSchedule('17 20 * * *').text).not.toContain('IST')
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   expect(main).toContain("if(tab==='datasets')return <StatisticsDatasets rank={rank}/>")
-  expect(main).toContain('<ProviderOnboarding rank={rank} actorId={actorId} onError={err}/>') // v2.15.253: automatic onboarding replaced the notice
+  expect(main).toContain('<Layer23Operations rank={rank} actorId={actorId} onError={err}/>') // v2.15.253: automatic onboarding replaced the notice; v2.15.300: on Layer 2/3 › Operations
   for (const f of ['src/platform-maturity-entry.jsx', 'src/pipeline-ops-entry.jsx', 'src/EvidenceWorkspace.jsx'])
     expect(fs.readFileSync(f, 'utf8')).not.toMatch(/M2\.4\.4 permanent baseline|M1-PIPELINE-OPS · |M2\.4\.5 · Scholarship PIM|Private governed evidence/)
 })
@@ -25,8 +25,8 @@ test.describe('mocked browser', () => {
     await ds.getByLabel('Show Academic Ranking of World Universities on Rankings & statistics').click() // the mock re-reads the old value, so poll the save
     await expect.poll(() => page.l3calls.find(c => c.datasetWrite)?.datasetWrite?.p_dataset?.display_enabled).toBe(true)
     await page.goto('/#providers?tab=onboarding')
-    // v2.15.224: the old onboarding cases panel is retired; v2.15.253: Providers › Onboarding lists the automatic onboarding
-    await expect(page.locator('[data-provider-onboarding]')).toBeVisible()
+    // v2.15.224: the old onboarding cases panel is retired; v2.15.300: the automatic onboarding is on Layer 2/3 › Universities
+    await expect(page.locator('[data-adapters-workspace]')).toBeVisible()
     await expect(page.locator('details.onb-cases')).toHaveCount(0)
     await page.goto('/#users-roles')
     await page.locator('details.ar-roles-help > summary').click()

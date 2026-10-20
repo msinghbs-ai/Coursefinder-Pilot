@@ -66,12 +66,13 @@ test('batch 2: removed screens are gone and nothing in src/ or the edge function
 test('batch 2: Providers › Onboarding links each university to the Adapter builder; Refresh schedules and the provider registry stay', () => {
   const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
   // v2.15.253: the notice became the automatic onboarding list; each university opens in the Adapter builder
-  expect(fs.readFileSync('src/ProviderOnboarding.jsx', 'utf8')).toContain("const builderHref=id=>hrefFor('layer2','builder',id?{provider:id}:{})")
+  // v2.15.300: the Onboarding list retired; each university row on Layer 2/3 › Universities opens the Adapter builder
+  expect(fs.readFileSync('src/AdaptersWorkspace.jsx', 'utf8')).toContain("href={hrefFor('layer2','builder',{provider:pid})} data-uni-builder")
   expect(main).toContain("const Layer2ProviderConfig=lazyPage(()=>import('./layer2-provider-entry'),'Console')")
   expect(main).toContain("const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')")
   expect(fs.readFileSync('src/layer2-provider-entry.jsx', 'utf8')).toContain("functions.invoke('layer2-provider-control'")
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
-  expect(nav).toContain("{ key: 'builder', label: 'Adapter builder', min: 5 }")
+  expect(nav).toContain("{ key: 'builder', label: 'Adapter builder', min: 5, hidden: true },")
 })
 
 test('batch 4: old database functions dropped behind md5 guards; tables and history kept; four dormant functions retired', () => {

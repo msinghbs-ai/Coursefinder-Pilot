@@ -93,7 +93,7 @@ function ProviderCard({provider:p,title,hint,onSaved}){
  const saveSecret=async()=>{setBusy(true);setErr('');try{await control('set_secret',{id:p.id,secret});setSecret('');await onSaved(title+' key saved.')}catch(e){setErr(e.message)}finally{setBusy(false)}}
  return <article className="env-card"><div className="env-card-title"><div><strong>{title}</strong><span>{p.credential_configured?'Key saved':p.auth_scheme==='none'?'No key needed':'No key yet'}</span></div><b className={p.enabled?'on':'off'}>{p.enabled?'On':'Off'}</b></div><p>{hint}</p>
   {p.auth_scheme!=='none'&&<><label>Set or replace the API key<input type="password" autoComplete="new-password" value={secret} onChange={e=>setSecret(e.target.value)} placeholder="Write-only; never shown"/></label><button disabled={busy||!secret} onClick={saveSecret}><KeyRound size={13}/>Save key</button></>}
-  <small className="env-links">Switch on or off: <a href="#models-services">Models &amp; services</a> · Address, limits and routing: <a href="#scrapers">Scrapers &amp; fetchers</a></small>
+  <small className="env-links">Switch on or off: <a href="#models-services">Models &amp; services</a> · Address, limits and routing: <a href="#models-services?tab=fetchers">Scrapers &amp; fetchers</a></small>
   {err&&<div className="env-error">{err}</div>}
  </article>
 }

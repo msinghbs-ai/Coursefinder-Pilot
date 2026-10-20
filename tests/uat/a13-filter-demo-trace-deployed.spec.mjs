@@ -40,7 +40,7 @@ test.describe('A13 stable Course filters and Layer 2 acquisition Evidence trace 
   // v2.15.128: the policy chain and the fixed UQ example were removed from Layer 2 (policy lives on Scrapers &
   // fetchers); History lists the latest page fetches, each opening the evidence it saved.
   const dialog=await openLayer2Tab(page,'History')
-  await expect(page.getByRole('heading',{name:'Layer 2 Discovery & reading'}).first()).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Layer 2/3 Build & enrich'}).first()).toBeVisible()
   // Decision 220 (v2.15.147): the retired pipeline's fetch list is gone; History shows daily progress by country and
   // the execution trace, whose rows still open their evidence.
   await expect(dialog.getByRole('heading',{name:'Daily progress',exact:true})).toBeVisible()
