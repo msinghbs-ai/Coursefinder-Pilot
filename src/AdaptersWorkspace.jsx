@@ -95,6 +95,8 @@ function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,on
       <span className="adp-hide-sm"><small className="sl-sub">{fmtNumber(row.pages_read)} of {fmtNumber(row.pages)} pages read{row.next_read?` · next read ${fmtDate(row.next_read)}`:''}</small>
         {row.target&&<Pill tone={row.target.included?'info':'neutral'}>{row.target.included?'Firecrawl target':'Not a Firecrawl target'}</Pill>}</span>
       {merged&&<a className="cf-link adp-hide-sm" href={hrefFor('layer2','builder',{provider:pid})} data-uni-builder title="Open in the Adapter builder">Builder</a>}
+      {/* v2.15.306: the university's enrichment plan (steps, estimate, Run now) */}
+      {merged&&<a className="cf-link adp-hide-sm" href={hrefFor('layer2','plan',{provider:pid})} data-uni-plan title="Open the university's enrichment plan">Plan</a>}
       <Button compact onClick={()=>onOpen(open?null:pid)} aria-label={`${open?'Close':'Open'} ${row.name}`}>{open?'Close':'Open'}</Button>
     </div>
     {open&&<div className="adp-row-body" data-adapter-detail={pid}>
