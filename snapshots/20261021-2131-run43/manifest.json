@@ -1,0 +1,54 @@
+{
+  "captured_at": "2026-10-21T21:31:05.700Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-environment.png",
+      "route": "environment",
+      "action": null,
+      "clicked": true,
+      "heading": "Settings",
+      "settle_ms": 4140,
+      "height": 5537,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#environment",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-environment-backup-restore.png",
+      "route": "environment",
+      "action": "Backup & restore",
+      "clicked": false,
+      "heading": "Settings",
+      "settle_ms": 1505,
+      "height": 5537,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#environment",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-layer-2-3-operations.png",
+      "route": "layer-2-3-operations",
+      "action": null,
+      "clicked": true,
+      "heading": "Dashboard",
+      "settle_ms": 3277,
+      "height": 1240,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#dashboard",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "04-layer-2-3-operations-flags.png",
+      "route": "layer-2-3-operations",
+      "action": "Flags",
+      "clicked": false,
+      "heading": "Dashboard",
+      "settle_ms": 1503,
+      "height": 1240,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#dashboard",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
