@@ -47,3 +47,10 @@ test('screen: providers, rows, findings, notes, country rules', () => {
   for (const s of ['data-fee-reader', 'data-fee-rows', 'data-fee-findings', 'data-fee-profiles']) expect(ui).toContain(s)
   expect(ui).not.toMatch(/US\$\s?\d/)
 })
+
+test('a fee page never read is not held by the central-page refresh rule', () => {
+  const h = fs.readFileSync('supabase/migrations/20261022002000_cf247_fee_pages_first_read.sql', 'utf8')
+  expect(h).toContain("and fs.status in ('found', 'reading') and fs.read_at is null) then")
+  expect(h).toMatch(/^-- Replaces: /m)
+  expect(h).toMatch(/^-- Retires: /m)
+})
