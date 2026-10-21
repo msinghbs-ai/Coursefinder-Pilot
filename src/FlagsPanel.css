@@ -25,3 +25,10 @@
 .cf-flag-actions button.primary{background:var(--cf-slate-750);color:var(--cf-white);border-color:var(--cf-slate-750)}
 .cf-flag-actions button:disabled{opacity:.5;cursor:not-allowed}
 .cf-flag-err{color:var(--cf-red-750)}
+
+/* v2.15.310: toolset used before a flag */
+.cf-flag-toolline{color:var(--m-muted,#5b6475)}
+.cf-flag-tools{margin:8px 0 12px}
+.cf-flag-tools p{margin:4px 0}
+.cf-flag-tools .dense-table{font-size:12px}
+.cf-flag-site{color:var(--m-muted,#5b6475)}

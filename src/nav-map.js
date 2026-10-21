@@ -113,6 +113,8 @@ export const PAGES = {
     { key: 'settings', label: 'Settings', min: 6 },
     // CF-247 (16 Oct 2026, Platform Admin: "summary and stat collection"): calls to the API version URLs by key and action
     { key: 'api', label: 'API usage', min: 4 },
+    // v2.15.310 (Platform Admin, 22 Oct 2026 07:41): daily backup of the provider Published switch and setting values, restore (Platform Admin)
+    { key: 'backup', label: 'Backup & restore', min: 6 },
   ] },
   // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is the Fetchers tab of Models & services (old addresses redirect).
   // v2.15.264 (Platform Admin, 13 Oct 2026 00:09): three tabs; the AI configuration Layer 3 used to hold is back as AI & OpenRouter.

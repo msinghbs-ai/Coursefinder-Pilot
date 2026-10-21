@@ -14,7 +14,23 @@ export const REASONS={course_pages_not_found:'Course pages not found',
  enrich_no_value:'Page gives no value (Enrich fields)',outside_focus:'Outside the focus providers',page_not_found:'No course page found',
  logo_not_found:'No logo on the home page',site_unreachable:'Website does not answer',central_not_due:'Central pages not due',central_budget:'No credit left today',
  idle_paused:'Job ran empty',manual_hold:'Held by a person',fee_crosscheck:'Fee fails the cross-check',policy_disagrees:'Policy disagrees with pages',
- adapter_fee_fails_check:'Adapter fee fails its check',flip_flop:'Value kept changing'}
+ adapter_fee_fails_check:'Adapter fee fails its check',flip_flop:'Value kept changing',
+ course_pages_not_listed:'Search off: the site lists too few course pages',not_on_provider_site:'Not on the provider\'s site',not_offered:'Not offered'}
+// v2.15.310 (Platform Admin, 22 Oct 2026 08:12): each flag shows the toolset used on the university or course before it was flagged
+export const TOOL_LABELS={course_search:'Course-page search',page_reads:'Page reads',ai_page_match:'AI page match',ai_field_reader:'AI field reader',
+ fee_reader:'Fee reader',scholarship_ai:'Scholarship AI',other_credits:'Other scraper credits',flags_raised:'Flags raised'}
+const n0=v=>Number(v||0)
+// one line for the table: the tools that ran, "used · worked / did not work · credits"
+export const toolLine=t=>{if(!t)return'';const parts=(t.tools||[]).filter(x=>x.tool!=='flags_raised'&&(n0(x.used)||n0(x.credits))).map(x=>`${TOOL_LABELS[x.tool]||x.tool} ${fmtNumber(n0(x.used))}× (${fmtNumber(n0(x.ok))} worked, ${fmtNumber(n0(x.failed))} did not)${n0(x.credits)?` · ${fmtNumber(n0(x.credits))} credits`:''}`)
+ const sm=t.site_map;if(sm)parts.unshift(sm.status==='failed'?'Site map failed':`Site lists ${fmtNumber(n0(sm.pages))} pages, ${fmtNumber(n0(sm.course_pages))} course-like`)
+ return parts.join(' · ')}
+function ToolTable({t}){
+ if(!t||!(t.tools||[]).length&&!t.site_map)return null
+ return <div className="cf-flag-tools" data-flag-tools><p><b>Toolset used before this flag</b>{t.scope==='provider'&&t.since?` (since ${t.since})`:''}</p>
+  {t.site_map&&<p className="cf-flag-site">{t.site_map.status==='failed'?'The site map failed: no course pages could be listed.':`The provider's site lists ${fmtNumber(n0(t.site_map.pages))} pages, of which ${fmtNumber(n0(t.site_map.course_pages))} look like course pages.`}</p>}
+  {(t.tools||[]).length>0&&<table className="dense-table"><thead><tr><th>Tool</th><th>Used</th><th>Worked</th><th>Did not work</th><th>Credits</th><th>AI cost</th></tr></thead>
+   <tbody>{t.tools.map(x=><tr key={x.tool}><td>{TOOL_LABELS[x.tool]||x.tool}{x.note&&<small> · {x.note}</small>}</td><td>{fmtNumber(n0(x.used))}</td><td>{fmtNumber(n0(x.ok))}</td><td>{fmtNumber(n0(x.failed))}</td><td>{fmtNumber(n0(x.credits))}</td><td>{n0(x.cost_usd)?n0(x.cost_usd).toFixed(3):'—'}</td></tr>)}</tbody></table>}
+ </div>}
 const reasonLabel=c=>REASONS[c]||String(c||'').replace(/_/g,' ')
 const what=f=>f.entity==='job'?`Job ${f.entity_key}`:f.entity==='course'?`${f.course_title||'Course'}${f.field?' · '+f.field.replace(/_/g,' '):''}`:f.entity==='provider'?(f.provider_name||'Provider'):`${f.entity} ${f.entity_key}`
 const tone=s=>s==='raised'?'warning':s==='counting'?'info':'success'
@@ -27,6 +43,7 @@ function FlagHistory({id,onClose}){
   <header><h3>Flag history</h3><button onClick={onClose} aria-label="Close"><X size={16}/></button></header>
   {err&&<p className="cf-flag-err">{err}</p>}
   {d?.flag&&<p className="cf-flag-head"><b>{reasonLabel(d.flag.reason_code)}</b> · {d.flag.reason}</p>}
+  <ToolTable t={d?.tools}/>
   {d?.flag?.evidence&&Object.keys(d.flag.evidence).length>0&&<details open><summary>Evidence</summary><pre>{JSON.stringify(d.flag.evidence,null,2)}</pre></details>}
   <ol className="cf-flag-events">{(d?.events||[]).map(e=><li key={e.id}><span><StatusChip tone={e.action==='released'||e.action==='requeued'?'success':e.action==='counted'?'info':'warning'} label={e.action.replace(/_/g,' ')}/> {fmtDateTime(e.at)} · {e.actor_kind==='person'?'by ':''}{e.actor}</span><span>{e.reason}</span>{e.evidence&&Object.keys(e.evidence).length>0&&<pre>{JSON.stringify(e.evidence,null,2)}</pre>}</li>)}</ol>
   {!d&&!err&&<p>Loading…</p>}
@@ -66,7 +83,7 @@ export default function FlagsPanel({onError}){
     {rows.length?rows.map(f=><tr key={f.id} data-flag-row={f.state}>
      {relAny&&<td>{f.state!=='released'&&canRel(f)&&<input type="checkbox" aria-label="Select" checked={picked.includes(f.id)} onChange={e=>setPicked(p=>e.target.checked?[...p,f.id]:p.filter(x=>x!==f.id))}/>}</td>}
      <td className="primary-cell"><strong>{what(f)}</strong>{f.entity==='course'&&f.provider_name&&<small> · {f.provider_name}</small>}</td>
-     <td><b>{reasonLabel(f.reason_code)}</b><br/><small>{f.reason}</small></td>
+     <td><b>{reasonLabel(f.reason_code)}</b><br/><small>{f.reason}</small>{f.tools&&toolLine(f.tools)&&<><br/><small className="cf-flag-toolline" data-flag-toolline>Tried: {toolLine(f.tools)}</small></>}</td>
      <td><StatusChip tone={tone(f.state)} label={stateLabel(f.state)}/>{f.kind==='soft'&&f.state!=='released'&&<small> {f.tries} {f.tries===1?'try':'tries'}</small>}{f.state==='released'&&<small><br/>{f.release_kind==='person'?'by '+f.released_by:f.release_reason}</small>}</td>
      <td>{fmtDateTime(f.flagged_at)}<br/><small>{f.raised_by_kind==='person'?'by ':''}{f.raised_by}</small></td>
      <td>{f.state==='raised'?(f.next_check_at?fmtDateTime(f.next_check_at):<small>{f.entity==='course'?'when the page changes':'when released'}</small>):'—'}</td>

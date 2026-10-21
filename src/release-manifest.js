@@ -1,21 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.309'
-export const PACKAGE_VERSION='0.1.236'
+export const UI_VERSION='2.15.310'
+export const PACKAGE_VERSION='0.1.237'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'20 Oct 2026',
-  title:'Layer 2/3 Build & enrich, and fewer screens',
+  date:'22 Oct 2026',
+  title:'New Zealand enrichment review fixes; daily backup of publishing and settings',
   changes:[
-    'Layer 2 is now Layer 2/3 Build & enrich. Operations comes first: each stage (find the website, find course pages, build the adapter, admit and enrich, scholarships) shows the universities working on it, waiting for it and stopped for a person, with the jobs behind it (pause, resume, run now), the onboarding pace and settings, and the central pages waiting for approval across universities.',
-    'Universities joins the old Onboarding and Adapters tabs: one row per university with its journey stage, why it stopped and what waits in the Inbox; open a row for Retry or Stop, its journey and its adapter. The Adapter builder opens from a row.',
-    'Retired, with their addresses redirected: Layer 4 Review queue, AI could not decide and Websites to find (now Inbox kinds), Coverage › Counsellor reports (closed in the Inbox as Fixed or Not changed), Scheduled jobs › Priority queue (the search cap moved to Models & services › Toolsets & limits) and the Scrapers & fetchers page (now Models & services › Fetchers).',
-    'Layer 4 › Inbox: providers that left the register are decided here (closed, merged with a successor, or still operating), and Decided lists the decisions taken.',
-    'Platform health › Screen use (Platform Admin): how often each page and tab is opened, so unused screens can be retired on evidence.'
+    'Course-page search skips providers whose own website lists too few course pages (one flag on the provider instead of one per course), and universities are matched against their own course list before any title search.',
+    'Pages that need a browser are read again within a day in New Zealand; address guesses are no longer made there.',
+    'The AI page match is asked only when there are at least two candidate pages, and is retried only while retries find right pages.',
+    'Enrich fields asks once more, with a note, when a quote was not on the page, and does not ask again about a page copy that did not state the field.',
+    'The daily New Zealand report has a Toolset use sheet: each tool used, worked and did not work, per provider.',
+    'Settings › Backup & restore (Platform Admin): a daily copy of each provider\'s Published switch and every setting value; compare, download as a SQL file, or put back.',
+    'Layer 2/3 › Flags shows, for each flagged university or course, the tools tried before it was flagged: how often each was used, worked and did not work, with credits and AI cost.'
   ],
-  bugFixes:[]
+  bugFixes:['Two fee pages could not be recorded by the fee reader because of hidden characters in the page; pages with no fee amount are no longer sent to the AI.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

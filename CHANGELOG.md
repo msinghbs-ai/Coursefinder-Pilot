@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.237 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.310** (NZ enrichment review fixes; daily backup of publishing and settings). Platform Admin, 22 Oct 2026 07:22: "Review the data enrichment for nz and keep the stat how much of toolset we used used successfully and failed before uni or courses were flagged. Find the gaps and resolution."; choices "Quick wins: 1, 3, 6, 8", "University route change (2)", "Field reader fallbacks (4, 7)", "Daily toolset sheet (9)". 07:41: "Maintain daily unpublished providers as the sql script and report ... backup on daily basis and restore it, only by platform admin".
+  - Migration `20261022010000_cf247_nz_review_quick_wins.sql`: `security.site_few_course_pages_v1`, `security.course_search_off_v1`, `security.render_country_v1`; search skips providers whose site map kept `search.min_site_course_pages` (5) or fewer pages in `search.site_check_countries` (["NZ"]); four more providers never searched; `render_ok` and `retry.course_page_render_hours` (24) in `pages.render_countries` (["NZ"]); address guesses only in `relink.url_pattern_countries` (["AU","CA"]); provider flag `course_pages_not_listed` replaces per-course `page_not_found` for those providers. md5-guarded.
+  - Migration `20261022011000_cf247_nz_review_route_reader_stats.sql`: `security.site_list_match_done_v1` (`search.site_list_first_types` ["university"]); `retry_cap_v1('ai_match')` counts right pages; `ai_match.min_candidates` (2); Enrich fields hint after a quote miss and no re-ask of an unchanged page copy; `pipeline.toolset_use_daily`, `security.toolset_use_daily_record_v1`, job `toolset-use-daily` (seeded 8–21 Oct).
+  - Migration `20261022012000_cf247_settings_backup.sql`: `pipeline.settings_backups`, `security.settings_backup_take_v1`, `security.settings_backup_diff_v1`, `public.admin_settings_backup` (Platform Admin), job `settings-backup-daily`, `retention.settings_backup_days` (60).
+  - coverage-sweep worker v0.36.0: `render_ok` pages through Firecrawl; Enrich fields quote-miss retry with a note; fee reader `noNul` and `hasFeeAmount`.
+  - Migration `20261022013000_cf247_flag_tool_stats.sql` (Platform Admin 08:12, flags "helpful and intuitive"): `security.flag_tool_summary_v1`; `admin_flags` list and events return the toolset used before each flag; Layer 2/3 › Flags shows it.
+  - Settings › Backup & restore; guide; SOPs 1.51.
+
 ## 0.1.236 — 21 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.309** (AI fee reader). Platform Admin, 21 Oct 2026 20:02: "Build fee reader for nz unis and make sure its compatible to ca and upcoming countries ... collect and feed error to build and evolve data reader"; choices "Automatic above confidence", "As published + yearly estimate", "NZ universities, then NZ rest, then CA".

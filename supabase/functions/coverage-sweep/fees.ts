@@ -62,6 +62,18 @@ export function feeAiRequest(model: string, it: FeeItem, text: string) {
 // letters and digits only, so table bars, currency signs, thousands separators and spacing do not matter
 export const squash = (s: string) => String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
 
+// 22 Oct 2026 (NZ enrichment review, fix 6): null characters in page text or answers made the database refuse the record
+// ("unsupported Unicode escape sequence"); they are removed from everything recorded.
+export function noNul<T>(v: T): T {
+  if (typeof v === "string") return v.replace(/\u0000/g, "") as unknown as T;
+  if (Array.isArray(v)) return v.map(noNul) as unknown as T;
+  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, noNul(x)])) as T;
+  return v;
+}
+
+// 22 Oct 2026 (fix 6): a page without a single money amount has no fee table; it is recorded as no rows without asking the AI
+export const hasFeeAmount = (text: string) => /(?:[$£€]|\b(?:NZD|CAD|AUD|USD)\b)\s?\d{1,3}(?:[,\s]?\d{3})+(?:\.\d{2})?|\d{1,3}(?:,\d{3})+(?:\.\d{2})?\s?(?:NZD|CAD|AUD)\b/i.test(String(text || ""));
+
 export function feeAiParsed(a: any, page: string, courseIds: Set<string>) {
   const on = squash(page);
   const rows: any[] = []; let quotes_missing = 0;
@@ -73,5 +85,5 @@ export function feeAiParsed(a: any, page: string, courseIds: Set<string>) {
       match_confidence: Math.max(0, Math.min(1, Number(r?.match_confidence) || 0)) });
   }
   const more = (Array.isArray(a?.more_fee_pages) ? a.more_fee_pages : []).filter((u: unknown) => /^https?:\/\/\S+$/.test(String(u))).slice(0, 20);
-  return { rows, quotes_missing, more_fee_pages: more, page_notes: String(a?.page_notes || "").slice(0, 1500) };
+  return noNul({ rows, quotes_missing, more_fee_pages: more, page_notes: String(a?.page_notes || "").slice(0, 1500) });
 }

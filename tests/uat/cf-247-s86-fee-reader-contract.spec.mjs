@@ -34,7 +34,7 @@ test('errors are kept and fed back; notes evolve; admission above confidence, ot
 })
 
 test('worker: pinned model, quotes and amounts must be on the page, past problems in the prompt', () => {
-  expect(w).toContain('coverage-sweep-worker-v0.35.0')
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(3[5-9]|[4-9]\d)\.\d/)  // v0.35.0 brought the fee reader; later versions keep it
   expect(w).toContain('if (mode === "fee_ai") {')
   expect(w).toContain('if (d?.model && !String(d.model).startsWith(it.model))')
   expect(f).toContain('Problems with earlier reads of this provider (avoid them)')
