@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.307'
+export const SOP_REVIEWED_FOR = '2.15.308'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.48', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.49', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -150,10 +150,11 @@ export const SOPS = [
       { version: '1.45', date: '21 Oct 2026', release: '2.15.304', change: 'The 10-minute field check (weekly, 4 steps): Stalled fields on Coverage › Attributes (each field below target that is not moving, behind other countries or without a reader, with its cause and action: Fill now, adapter work for the listed universities then Release holds and fill, or a lower target with a reason), every field by country, Fill the gaps and the cross-check, and Platform health (stalled-field issues every 3 hours).' },
       { version: '1.46', date: '21 Oct 2026', release: '2.15.305', change: 'Delivery modes: blended is a mix inside one course, on campus or online is a choice of modes; a university\'s own phrase is set in Coverage › Attributes › Delivery wording (PIM Admin and above, with a reason). Step 3 of the 10-minute field check names it.' },
       { version: '1.47', date: '21 Oct 2026', release: '2.15.306', change: 'Layer 2/3 › Enrichment plan: each university\'s plan from its gaps with its toolset estimate; Run now from the on-demand allowance; automatic plans most missing first within the shares (on and off by the Platform Admin). New weekly step.' },
-      { version: '1.48', date: '21 Oct 2026', release: '2.15.307', change: 'Enrichment plan: Plans that need a person (what stopped and what to do); Task manager shows tasks started by a plan.' }],
+      { version: '1.48', date: '21 Oct 2026', release: '2.15.307', change: 'Enrichment plan: Plans that need a person (what stopped and what to do); Task manager shows tasks started by a plan.' },
+      { version: '1.49', date: '21 Oct 2026', release: '2.15.308', change: 'Enrichment plans: Fill missing fields runs beside the other steps; priority countries first (New Zealand); larger Firecrawl shares. Check the shares left on the Enrichment plan tab in the weekly step.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.48', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.49', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 › Inbox, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Task manager › Background jobs, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -249,7 +250,8 @@ export const SOPS = [
       { version: '1.45', date: '21 Oct 2026', release: '2.15.304', change: 'The 10-minute field check: Stalled fields (Fill now where pages are not read yet; note universities whose pages do not state the field), every field by country, Fill the gaps, the cross-check and Platform health.' },
       { version: '1.46', date: '21 Oct 2026', release: '2.15.305', change: 'Reviewed: delivery modes now read as blended (a mix inside one course) or on campus or online (a choice); a university\'s own phrase is in Coverage › Attributes › Delivery wording.' },
       { version: '1.47', date: '21 Oct 2026', release: '2.15.306', change: 'Layer 2/3 › Enrichment plan: open a university\'s plan, read the estimate and Run now the steps worth their cost (on-demand allowance). New weekly step.' },
-      { version: '1.48', date: '21 Oct 2026', release: '2.15.307', change: 'Enrichment plan: Plans that need a person lists finished plans with a step that did not get through; Task manager shows tasks started by a plan.' }],
+      { version: '1.48', date: '21 Oct 2026', release: '2.15.307', change: 'Enrichment plan: Plans that need a person lists finished plans with a step that did not get through; Task manager shows tasks started by a plan.' },
+      { version: '1.49', date: '21 Oct 2026', release: '2.15.308', change: 'Reviewed: in a plan, Fill missing fields now runs beside the other steps; New Zealand providers are planned first.' }],
   },
 ]
 

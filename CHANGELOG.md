@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.235 — 21 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.308** (enrichment plans: two tracks, New Zealand first, more credits). Platform Admin, 21 Oct 2026 18:36: "Lets speed up course data for each provider, [Firecrawl] as a separate parallel job?"; choice "Two tracks + more credits".
+  - Migration `20261021230000_cf247_plan_two_tracks.sql`: `security.enrich_plan_tick_v1` runs one step per track (Fill missing fields beside the Firecrawl steps); `security.enrich_plan_auto_v1` takes `plans.priority_countries` (["NZ"]) first; Firecrawl `daily_budget_total` 25,000, `daily_share_course_search` 13,000, `daily_share_reads` 5,000, `daily_share_central` 2,500; `plans.auto_per_run` 20, `plans.auto_open_max` 40 (each change logged). Edits md5-guarded.
+  - Enrichment plan tab wording; guide; SOPs 1.49.
+  - Also on 21 Oct (PR #615): `pipeline.provider_field_daily` and job `provider-field-daily` for the daily NZ field report per provider.
+
 ## 0.1.234 — 21 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.307** (enrichment plans: labels, plans that need a person, search refresh gap). Platform Admin, 21 Oct 2026 17:30: "Pick b, and proceed with task 2 and 3".
