@@ -70,6 +70,9 @@ export const PAGES = {
     // v2.15.301 (Platform Admin, 20 Oct 2026): Flags moved here from Coverage & completeness, beside Operations
     { key: 'flags', label: 'Flags', min: 3 },
     { key: 'universities', label: 'Universities', min: 3 },
+    // v2.15.306 (Platform Admin, 21 Oct 2026: "end to end data enrichment for universities"): each university's plan from its gaps, Run now
+    // from the on-demand allowance, automatic plans most missing first within the toolset shares
+    { key: 'plan', label: 'Enrichment plan', min: 3 },
     // v2.15.287 (Decision 267, Platform Admin 18 Oct 11:58 "Keep Adapter builder too"): one click per university, eight fields measured
     { key: 'build', label: 'Build adapter', min: 3 },
     // v2.15.273 (Platform Admin, 14 Oct 2026 10:41): a task that fills chosen missing fields for countries or universities

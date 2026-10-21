@@ -15,7 +15,7 @@ test('menu: 19 pages (was 23); Sources, API usage, Data model and Storage & rete
   expect(SECTIONS.find(s => s.label === 'Data pipeline').pages).toEqual(['coverage', 'layer1', 'layer2', 'layer4'])
   expect(PAGES.scholarships.tabs.map(t => t.key)).toEqual(['list', 'coverage'])
   expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'progress'])
-  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'flags', 'universities', 'build', 'enrich', 'scholarships', 'builder'])
+  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'flags', 'universities', 'plan', 'build', 'enrich', 'scholarships', 'builder'] /* v2.15.306: Enrichment plan */)
   expect(PAGES.health.tabs.map(t => [t.key, t.min])).toEqual([['checks', 3], ['storage', 6]])
   expect(PAGES.environment.tabs.map(t => [t.key, t.min])).toEqual([['settings', 6], ['api', 4]])
   expect(PAGES.rankings.tabs.map(t => t.key)).toEqual(['overview', 'compare', 'qilt', 'prisms', 'datasets'])

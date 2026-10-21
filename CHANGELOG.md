@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.233 — 21 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.306** (enrichment plans). Platform Admin, 21 Oct 2026 12:03: "end to end data enrichment for universities ... automation is gated by toolset configurable limits but manual should decide on screen of required toolset usage but can do it on demand"; choices "Own on-demand allowance", "All, most missing first", "Universities row + plan tab".
+  - Migration `20261021170000_cf247_enrichment_plan.sql`: a plan per university from its gaps (website/contacts/central pages, course pages, adapter, admit, missing fields, scholarships) with estimates from the last 30 days; `pipeline.enrich_plan_runs` run step by step by job `enrich-plan-run` with the existing tasks and onboarding; manual runs charged to the on-demand allowance in `svc_fc_spend` (`coverage_vendor_usage.on_demand_run`; shares leave it out); automatic plans hourly (`enrich-plan-auto`, most missing first, within shares); `public.admin_enrich_plan`. Settings `firecrawl.ondemand_credits_per_day`, `openrouter.ondemand_usd_per_day`, `plans.*`. Edits md5-guarded.
+  - Layer 2/3 › Enrichment plan tab and Plan on each university row. SOPs 1.47.
+
 ## 0.1.232 — 21 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.305** (delivery modes). Platform Admin, 21 Oct 2026: choice "Keep two, fix reader (Recommended)".

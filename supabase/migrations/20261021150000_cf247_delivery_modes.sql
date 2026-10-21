@@ -16,8 +16,9 @@
 --     security.delivery_mode_read_v1; an open cross-check difference that no longer differs closes itself. The AI prompt (coverage-sweep
 --     worker v0.34.2) gets the same two meanings.
 --   4 public.admin_field_coverage: 'wording_list', 'wording_set', 'wording_off' (two lines added, md5-guarded).
--- Held course values are not changed. Replaces: security.enrich_parse_delivery_v1 (whole); security.field_crosscheck_v1 (whole);
--- security.enrich_fields_slice_v1 (one line); public.admin_field_coverage (three actions)
+-- Held course values are not changed.
+-- Replaces: security.enrich_parse_delivery_v1 (whole); security.field_crosscheck_v1 (whole); security.enrich_fields_slice_v1 (one
+--   line); public.admin_field_coverage (three actions)
 -- Retires: nothing
 -- Nothing dropped or deleted. Consumer API not touched (Decision 266).
 
