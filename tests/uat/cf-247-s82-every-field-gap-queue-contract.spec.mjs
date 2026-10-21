@@ -93,6 +93,7 @@ test('delivery modes: two meanings, university wording first, cross-check closes
   expect(d).toContain('Held course values are not changed.')
   expect(ui3).toContain('data-delivery-wording')
   expect(ui3).toContain("call('wording_list')")
-  expect(w).toContain('coverage-sweep-worker-v0.34.2')
+  // v0.34.2 brought the two meanings; later worker versions keep them (v0.35.0 fee reader)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(3[4-9]|[4-9][0-9])\.[0-9]+/)
   expect(w).toContain('on_campus_and_online means the page offers a choice of modes')
 })

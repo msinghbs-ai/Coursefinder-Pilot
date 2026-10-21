@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.308'
+export const SOP_REVIEWED_FOR = '2.15.309'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.49', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.50', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -77,7 +77,7 @@ export const SOPS = [
       step({ do: '10-minute field check, 3 of 4. Fill the gaps (standing queue): a run in the last 6 hours and values filled in 7 days. Cross-check differences: many on one field means a reading rule to fix, not courses to change one by one; a university\'s own delivery phrase goes in Delivery wording, with a reason.', page: 'coverage', tab: 'attributes' }),
       step({ do: '10-minute field check, 4 of 4. Platform health: no Coverage sweep "below target and not moving" warning older than a week; Go to opens Stalled fields.', page: 'health', tab: 'checks' }),
       // v2.15.306: enrichment plans
-      step({ do: 'Layer 2/3 › Enrichment plan: automatic plans open and the toolset shares left; the on-demand allowance used. For a university a customer or the website asks about, Open plan, read each step\'s estimate and Run now the steps worth their cost, with a reason. Switch automatic plans off (with a reason) if a share is needed elsewhere. Then open Plans that need a person: each line says what stopped (for example an adapter that read nothing); open the plan or the Adapter builder.', page: 'layer2', tab: 'plan', why: 'Each university\'s gaps are filled end to end, automatically within the shares or on demand when a person decides.', done: 'Open plans moving; on-demand use matches what was decided.' }),
+      step({ do: 'Layer 2/3 › Enrichment plan: automatic plans open and the toolset shares left; the on-demand allowance used. For a university a customer or the website asks about, Open plan, read each step\'s estimate and Run now the steps worth their cost, with a reason. Switch automatic plans off (with a reason) if a share is needed elsewhere. Then open Plans that need a person: each line says what stopped (for example an adapter that read nothing); open the plan or the Adapter builder. On Enrich fields › Fee reader (AI), check the providers with problems and widen the scope (Settings › Pipeline settings › Enrichment) when the current one reads well.', page: 'layer2', tab: 'plan', why: 'Each university\'s gaps are filled end to end, automatically within the shares or on demand when a person decides.', done: 'Open plans moving; on-demand use matches what was decided.' }),
       step({ do: 'Users & roles: lowest role that does the job; expiry dates for contractors.', page: 'users' }),
       step({ do: 'Layer 2/3 › Operations: the stage counts, the pace and the estimate for the queue. Adjust "How many at once" (100 now) in Onboarding settings if credits run low or the queue is slow; queue universities not yet in onboarding when new ones appear.', page: 'layer2', tab: 'universities' }),
     ],
@@ -151,10 +151,11 @@ export const SOPS = [
       { version: '1.46', date: '21 Oct 2026', release: '2.15.305', change: 'Delivery modes: blended is a mix inside one course, on campus or online is a choice of modes; a university\'s own phrase is set in Coverage › Attributes › Delivery wording (PIM Admin and above, with a reason). Step 3 of the 10-minute field check names it.' },
       { version: '1.47', date: '21 Oct 2026', release: '2.15.306', change: 'Layer 2/3 › Enrichment plan: each university\'s plan from its gaps with its toolset estimate; Run now from the on-demand allowance; automatic plans most missing first within the shares (on and off by the Platform Admin). New weekly step.' },
       { version: '1.48', date: '21 Oct 2026', release: '2.15.307', change: 'Enrichment plan: Plans that need a person (what stopped and what to do); Task manager shows tasks started by a plan.' },
-      { version: '1.49', date: '21 Oct 2026', release: '2.15.308', change: 'Enrichment plans: Fill missing fields runs beside the other steps; priority countries first (New Zealand); larger Firecrawl shares. Check the shares left on the Enrichment plan tab in the weekly step.' }],
+      { version: '1.49', date: '21 Oct 2026', release: '2.15.308', change: 'Enrichment plans: Fill missing fields runs beside the other steps; priority countries first (New Zealand); larger Firecrawl shares. Check the shares left on the Enrichment plan tab in the weekly step.' },
+      { version: '1.50', date: '21 Oct 2026', release: '2.15.309', change: 'AI fee reader: weekly look at Enrich fields › Fee reader (AI) and widening the scope when it reads well.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.49', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.50', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 › Inbox, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Task manager › Background jobs, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -251,7 +252,8 @@ export const SOPS = [
       { version: '1.46', date: '21 Oct 2026', release: '2.15.305', change: 'Reviewed: delivery modes now read as blended (a mix inside one course) or on campus or online (a choice); a university\'s own phrase is in Coverage › Attributes › Delivery wording.' },
       { version: '1.47', date: '21 Oct 2026', release: '2.15.306', change: 'Layer 2/3 › Enrichment plan: open a university\'s plan, read the estimate and Run now the steps worth their cost (on-demand allowance). New weekly step.' },
       { version: '1.48', date: '21 Oct 2026', release: '2.15.307', change: 'Enrichment plan: Plans that need a person lists finished plans with a step that did not get through; Task manager shows tasks started by a plan.' },
-      { version: '1.49', date: '21 Oct 2026', release: '2.15.308', change: 'Reviewed: in a plan, Fill missing fields now runs beside the other steps; New Zealand providers are planned first.' }],
+      { version: '1.49', date: '21 Oct 2026', release: '2.15.308', change: 'Reviewed: in a plan, Fill missing fields now runs beside the other steps; New Zealand providers are planned first.' },
+      { version: '1.50', date: '21 Oct 2026', release: '2.15.309', change: 'Reviewed: fee rows from the AI fee reader that were not sure enough arrive in Layer 4 like other fees; approve or reject them as usual (the reader learns from each decision).' }],
   },
 ]
 
