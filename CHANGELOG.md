@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.234 — 21 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.307** (enrichment plans: labels, plans that need a person, search refresh gap). Platform Admin, 21 Oct 2026 17:30: "Pick b, and proceed with task 2 and 3".
+  - Migration `20261021190000_cf247_plan_needs_person.sql`: tasks a plan starts carry `plan_run`/`plan_mode` and say so in their reason (running ones labelled too); `pipeline.enrich_plan_runs.needs_person` written by `security.enrich_plan_needs_person_v1` when a plan finishes with a stopped, failed, timed out, cancelled or skipped step, or an adapter ready to admit (finished plans filled in); `admin_enrich_plan` overview lists them; `search_refresh_requested_v1` runs the full comparison for Enrich fields and plan requests at most every `search.refresh_min_gap_minutes` (30). Edits md5-guarded.
+  - Task manager: Started by shows Enrichment plan (automatic) or (Run now). Layer 2/3 › Enrichment plan: Plans that need a person card; Needs a person on the list and runs. SOPs 1.48.
+
 ## 0.1.233 — 21 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.306** (enrichment plans). Platform Admin, 21 Oct 2026 12:03: "end to end data enrichment for universities ... automation is gated by toolset configurable limits but manual should decide on screen of required toolset usage but can do it on demand"; choices "Own on-demand allowance", "All, most missing first", "Universities row + plan tab".

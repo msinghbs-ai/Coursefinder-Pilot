@@ -88,7 +88,7 @@ export default function AdminTasks({rank=0,onError}){
   return <div className="m-page-stack" data-task-manager>
     {err&&<div className="m-alert compact" role="alert"><AlertTriangle size={15}/><span>{err}</span><button type="button" aria-label="Dismiss" onClick={()=>setErr('')}>×</button></div>}
     <section className="m-panel" data-task-list>
-      <SectionTitle icon={RefreshCw} title="Tasks started by people" subtitle={live?'Refreshes every 5 seconds. Pause and cancel take effect at the next provider, never half way through one. Finished tasks move to the Jobs tab.':'Nothing is running or waiting. Finished tasks, with their results, are under the Jobs tab.'}/>
+      <SectionTitle icon={RefreshCw} title="Tasks started by people" subtitle={live?'Includes tasks started by enrichment plans (Started by says which). Refreshes every 5 seconds. Pause and cancel take effect at the next provider, never half way through one. Finished tasks move to the Jobs tab.':'Nothing is running or waiting. Finished tasks, with their results, are under the Jobs tab.'}/>
       <div className="cf-table-wrap"><table className="cf-table tm-table"><thead><tr><th>Task</th><th>State</th><th>Progress</th><th>Result</th><th>Started by</th><th>When</th><th>Actions</th></tr></thead><tbody>
         {(d.jobs||[]).length===0&&<EmptyRow colSpan={7} text="No task started by a person is running or waiting. Background jobs are below."/>}
         {(d.jobs||[]).map(j=><tr key={j.id} data-task-row={j.id} className={open===j.id?'tm-open':''}>
@@ -96,7 +96,8 @@ export default function AdminTasks({rank=0,onError}){
           <td><Badge tone={STATE_TONE[j.state]||'neutral'}>{j.state}</Badge>{j.cancel_requested&&j.state==='running'&&<small className="sl-sub"> cancelling…</small>}{j.pause_requested&&j.state==='running'&&<small className="sl-sub"> pausing…</small>}</td>
           <td className="tm-progress-cell"><Progress progress={j.progress} state={j.state}/><small className="sl-sub">{fmtNumber(j.progress?.done||0)} of {fmtNumber(j.progress?.total||0)}</small></td>
           <td>{SCH_KINDS.has(j.kind)?<>{j.result?.phase_detail||'Starting'}{j.result?.new_scholarships?` · ${fmtNumber(j.result.new_scholarships)} new`:''}{j.result?.credits!=null?` · ${fmtNumber(j.result.credits)} credit(s)`:''}</>:j.kind==='qualify_adapters'?<>{fmtNumber(j.result?.passing||0)} with a passing field</>:<>{fmtNumber(j.result?.passing||0)} admitted</>}{Number(j.result?.errors||0)>0&&<>, <span className="tm-err">{fmtNumber(j.result.errors)} error(s)</span></>}{j.error&&<><br/><span className="tm-err">{j.error}</span></>}</td>
-          <td>{j.requested_by_name}</td>
+          {/* v2.15.307: a task an enrichment plan started says so; automatic plans run as the Platform Admin who switched them on */}
+          <td>{j.args?.plan_mode?<><span data-task-plan={j.args.plan_mode}>{j.args.plan_mode==='auto'?'Enrichment plan (automatic)':'Enrichment plan (Run now)'}</span><br/><small className="sl-sub">{j.args.plan_mode==='auto'?'runs as ':'by '}{j.requested_by_name}</small></>:j.requested_by_name}</td>
           <td>{fmtDateTime(j.finished_at||j.started_at||j.created_at)}</td>
           <td className="tm-actions">
             {['queued','running'].includes(j.state)&&(kinds[j.kind]?kinds[j.kind].can_pause:!SCH_KINDS.has(j.kind))&&<Button compact disabled={busy||j.pause_requested} onClick={()=>act('pause',{id:j.id},`Pause "${j.title}" at the next provider?`)}><Pause size={13}/> Pause</Button>}

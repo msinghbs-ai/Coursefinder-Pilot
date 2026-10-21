@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.47 (reviewed for platform release v2.15.306)  
+**Version:** 1.48 (reviewed for platform release v2.15.307)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -80,7 +80,7 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 - 10-minute field check, 2 of 4. Every field by country: read across each row; a country far behind the others on a field gets the same treatment as a stalled field. _(Coverage & completeness › Attributes)_
 - 10-minute field check, 3 of 4. Fill the gaps (standing queue): a run in the last 6 hours and values filled in 7 days. Cross-check differences: many on one field means a reading rule to fix, not courses to change one by one; a university's own delivery phrase goes in Delivery wording, with a reason. _(Coverage & completeness › Attributes)_
 - 10-minute field check, 4 of 4. Platform health: no Coverage sweep "below target and not moving" warning older than a week; Go to opens Stalled fields. _(Platform health › Health checks)_
-- Layer 2/3 › Enrichment plan: automatic plans open and the toolset shares left; the on-demand allowance used. For a university a customer or the website asks about, Open plan, read each step's estimate and Run now the steps worth their cost, with a reason. Switch automatic plans off (with a reason) if a share is needed elsewhere. _(Layer 2/3 Build & enrich › Enrichment plan)_
+- Layer 2/3 › Enrichment plan: automatic plans open and the toolset shares left; the on-demand allowance used. For a university a customer or the website asks about, Open plan, read each step's estimate and Run now the steps worth their cost, with a reason. Switch automatic plans off (with a reason) if a share is needed elsewhere. Then open Plans that need a person: each line says what stopped (for example an adapter that read nothing); open the plan or the Adapter builder. _(Layer 2/3 Build & enrich › Enrichment plan)_
 - Users & roles: lowest role that does the job; expiry dates for contractors. _(Users & roles)_
 - Layer 2/3 › Operations: the stage counts, the pace and the estimate for the queue. Adjust "How many at once" (100 now) in Onboarding settings if credits run low or the queue is slow; queue universities not yet in onboarding when new ones appear. _(Layer 2/3 Build & enrich › Universities)_
 
@@ -164,3 +164,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.45 | 21 Oct 2026 | v2.15.304 | The 10-minute field check (weekly, 4 steps): Stalled fields on Coverage › Attributes (each field below target that is not moving, behind other countries or without a reader, with its cause and action: Fill now, adapter work for the listed universities then Release holds and fill, or a lower target with a reason), every field by country, Fill the gaps and the cross-check, and Platform health (stalled-field issues every 3 hours). |
 | 1.46 | 21 Oct 2026 | v2.15.305 | Delivery modes: blended is a mix inside one course, on campus or online is a choice of modes; a university's own phrase is set in Coverage › Attributes › Delivery wording (PIM Admin and above, with a reason). Step 3 of the 10-minute field check names it. |
 | 1.47 | 21 Oct 2026 | v2.15.306 | Layer 2/3 › Enrichment plan: each university's plan from its gaps with its toolset estimate; Run now from the on-demand allowance; automatic plans most missing first within the shares (on and off by the Platform Admin). New weekly step. |
+| 1.48 | 21 Oct 2026 | v2.15.307 | Enrichment plan: Plans that need a person (what stopped and what to do); Task manager shows tasks started by a plan. |

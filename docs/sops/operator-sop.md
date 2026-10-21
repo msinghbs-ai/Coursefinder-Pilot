@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.47 (reviewed for platform release v2.15.306)  
+**Version:** 1.48 (reviewed for platform release v2.15.307)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -71,7 +71,7 @@ How operators keep the data flowing and decide what automation cannot: the revie
 
 - **Pipeline Operator:** 10-minute field check. Coverage & completeness › Attributes › Stalled fields: Fill now on each Not moving row whose cause is "Pages not read for it yet"; note the universities listed for "Pages read do not state it" for the PIM Admin (Builder) and the Platform Admin (Release holds and fill). _(Coverage & completeness › Attributes)_
 - **Pipeline Operator:** 10-minute field check. Every field by country: a country far behind on a field; Fill the gaps: a run in the last 6 hours and values filled in 7 days; Cross-check differences: keep held or take page value; Platform health: no stalled-field warning older than a week. _(Coverage & completeness › Attributes)_
-- **Pipeline Operator:** Layer 2/3 › Enrichment plan: for a university that needs attention, Open plan, read each step's estimate, tick the steps worth their cost and Run now with a reason; it uses the on-demand allowance shown at the top. Follow the run on the plan. _(Layer 2/3 Build & enrich › Enrichment plan)_
+- **Pipeline Operator:** Layer 2/3 › Enrichment plan: for a university that needs attention, Open plan, read each step's estimate, tick the steps worth their cost and Run now with a reason; it uses the on-demand allowance shown at the top. Follow the run on the plan. Plans that need a person lists finished plans with a step that did not get through, and what to do. _(Layer 2/3 Build & enrich › Enrichment plan)_
 - **Curator:** Rankings & statistics: ranked universities not linked in a country we hold; link from the suggestions or mark "Not this one". _(Rankings & statistics)_
 - **PIM Admin:** Layer 2/3 › Universities › Builder: for universities needing a person, test the adapter on sample pages and mark values, so the Platform Admin can admit. _(Layer 2/3 Build & enrich › Adapter builder)_
 - **Pipeline Operator:** Layer 1 Register (Registers): the latest register runs completed. _(Layer 1 Register)_
@@ -152,3 +152,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.45 | 21 Oct 2026 | v2.15.304 | The 10-minute field check: Stalled fields (Fill now where pages are not read yet; note universities whose pages do not state the field), every field by country, Fill the gaps, the cross-check and Platform health. |
 | 1.46 | 21 Oct 2026 | v2.15.305 | Reviewed: delivery modes now read as blended (a mix inside one course) or on campus or online (a choice); a university's own phrase is in Coverage › Attributes › Delivery wording. |
 | 1.47 | 21 Oct 2026 | v2.15.306 | Layer 2/3 › Enrichment plan: open a university's plan, read the estimate and Run now the steps worth their cost (on-demand allowance). New weekly step. |
+| 1.48 | 21 Oct 2026 | v2.15.307 | Enrichment plan: Plans that need a person lists finished plans with a step that did not get through; Task manager shows tasks started by a plan. |
