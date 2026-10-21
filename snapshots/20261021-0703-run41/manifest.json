@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-21T07:03:40.331Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery?tab=plan.png",
+      "route": "layer-2-discovery?tab=plan",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2/3 Build & enrich",
+      "settle_ms": 7238,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=plan",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-layer-2-discovery?tab=plan-plans-that-need-a-person.png",
+      "route": "layer-2-discovery?tab=plan",
+      "action": "Plans that need a person",
+      "clicked": true,
+      "heading": "Layer 2/3 Build & enrich",
+      "settle_ms": 1507,
+      "height": 1389,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=plan",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
