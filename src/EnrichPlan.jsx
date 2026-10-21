@@ -6,11 +6,12 @@
 // (from what the same step used in the last 30 days). Run now (Pipeline Operator) runs the ticked steps at once from the on-demand allowance;
 // automatic plans (most missing first) wait for room in each toolset share. Reads and writes: public.admin_enrich_plan.
 import React,{useEffect,useState}from'react'
-import{Gauge,ListChecks,Play,RefreshCw,Route}from'lucide-react'
+import{Gauge,ListChecks,Play,RefreshCw,Route,UserCheck}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
+import{hrefFor}from'./nav-map.js'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enrich_plan',{p_action:action,p_args:args||{}});if(error)throw error;return data}
@@ -28,6 +29,7 @@ export default function EnrichPlan({rank=0,onError,initialProvider=''}){
   if(!ov)return <section className="m-panel"><Loading label="Loading enrichment plans…"/></section>
   return <div className="m-page-stack" data-enrich-plan>
     <Overview ov={ov} onSaved={setOv} onReload={load} onError={onError}/>
+    <NeedsPerson items={ov.needs_person||[]} onOpen={id=>{setPid(id);window.scrollTo?.({top:0,behavior:'smooth'})}}/>
     {pid&&<PlanPanel pid={pid} onClose={()=>setPid('')} onRan={load} onError={onError}/>}
     <PlanList onOpen={id=>{setPid(id);window.scrollTo?.({top:0,behavior:'smooth'})}} onError={onError}/>
   </div>
@@ -56,6 +58,22 @@ function Overview({ov,onSaved,onReload,onError}){
   </Card>
 }
 
+// v2.15.307 (Platform Admin 21 Oct 2026 17:30, "proceed with task 2"): a plan can finish with a step a person has to pick up (the adapter
+// built but no field passed its check, too few course pages, a failed or skipped step, an adapter ready to admit). Listed first, newest
+// plan per university.
+function NeedsPerson({items,onOpen}){
+  return <Card id="layer2.plan.needs" title="Plans that need a person" icon={UserCheck}
+    subtitle="These plans finished, but a step did not get through. The note says what stopped it; open the plan, or the Adapter builder for an adapter that read nothing."
+    meta={<StatusChip value={items.length?'warning':'ok'} tone={items.length?'warning':'success'} label={`${fmtNumber(items.length)} to look at`}/>} data-plan-needs-person>
+    {items.length===0?<Empty text="No finished plan is waiting for a person."/>:<div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>University</th><th>What to do</th><th>Finished</th><th/></tr></thead>
+      <tbody>{items.map(x=><tr key={x.run} data-needs-person-row>
+        <td><strong>{x.name}</strong><small>{x.mode==='auto'?'Automatic plan':'Run now'}</small></td>
+        <td><small>{x.note}</small></td><td><small>{fmtDateTime(x.finished_at)}</small></td>
+        <td className="fc-actions"><Button compact onClick={()=>onOpen(x.provider_id)}><Route size={14}/>Open plan</Button>
+          {/^Adapter/.test(x.note||'')&&<a className="cf-link" href={hrefFor('layer2','builder',{provider:x.provider_id})}>Adapter builder</a>}</td></tr>)}</tbody></table></div>}
+  </Card>
+}
+
 function PlanList({onOpen,onError}){
   const[country,setCountry]=useState(''),[q,setQ]=useState(''),[items,setItems]=useState(null),[offset,setOffset]=useState(0)
   useEffect(()=>{setItems(null);const t=setTimeout(()=>call('list',{country,query:q.trim(),limit:50,offset}).then(r=>setItems(r?.items||[])).catch(e=>onError?.(errText(e))),q?250:0);return()=>clearTimeout(t)},[country,q,offset])
@@ -66,7 +84,7 @@ function PlanList({onOpen,onError}){
     {items==null?<Loading compact/>:items.length===0?<Empty text="No university with gaps here."/>:<div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>University</th><th>Country</th><th className="num">Courses</th><th className="num">Missing values</th><th className="num">Best world rank</th><th>Latest plan</th><th/></tr></thead>
       <tbody>{items.map(x=>{const r=x.last_run,[l,t]=STATUS[r?.state]||['—','neutral'];return <tr key={x.provider_id}><td><strong>{x.name}</strong></td><td>{COUNTRY[x.country]||x.country}</td>
         <td className="num">{fmtNumber(x.courses)}</td><td className="num">{fmtNumber(x.missing)}</td><td className="num">{x.best_rank?fmtNumber(x.best_rank):'—'}</td>
-        <td>{r?<><StatusChip value={r.state} tone={t} label={`${r.mode==='auto'?'Automatic':'Manual'}: ${l}`}/><small>{r.step||fmtDateTime(r.finished_at||r.created_at)}</small></>:<small>Not planned yet</small>}</td>
+        <td>{r?<><StatusChip value={r.state} tone={t} label={`${r.mode==='auto'?'Automatic':'Manual'}: ${l}`}/><small>{r.step||fmtDateTime(r.finished_at||r.created_at)}</small>{r.needs_person&&<span data-plan-needs><StatusChip value="needs_person" tone="warning" label="Needs a person"/></span>}</>:<small>Not planned yet</small>}</td>
         <td><Button compact onClick={()=>onOpen(x.provider_id)}><Route size={14}/>Open plan</Button></td></tr>})}</tbody></table></div>}
     <footer className="dq-pager"><button disabled={offset===0} onClick={()=>setOffset(Math.max(0,offset-50))}>Previous</button><span>{fmtNumber(offset+1)}–{fmtNumber(offset+(items?.length||0))}</span><button disabled={(items?.length||0)<50} onClick={()=>setOffset(offset+50)}>Next</button></footer>
   </Card>
@@ -108,6 +126,7 @@ function PlanPanel({pid,onClose,onRan,onError}){
       <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Step</th><th>Status</th><th className="num">Estimate</th><th>Note</th></tr></thead>
         <tbody>{(r.steps||[]).map(s=><tr key={s.step}><td>{s.label}</td><td><StatusChip value={s.status} tone={(STATUS[s.status]||[])[1]||'neutral'} label={(STATUS[s.status]||[s.status])[0]}/></td>
           <td className="num">{cr(s.est_credits)} · {usd(s.est_usd)}</td><td><small>{s.note||(s.started_at?`started ${fmtDateTime(s.started_at)}`:'')}</small></td></tr>)}</tbody></table></div>
+      {r.needs_person&&<p className="sd-desc" data-run-needs-person><strong>Needs a person:</strong> {r.needs_person}</p>}
       {r.state==='done'&&<p className="sd-desc">Used {cr(r.actual?.credits)} ({cr(r.actual?.credits_on_demand)} on demand) and {usd(r.actual?.usd)}; estimate {cr(r.estimate?.credits)} and {usd(r.estimate?.usd)}. {gained(r)}</p>}
     </div>)}
   </Card>

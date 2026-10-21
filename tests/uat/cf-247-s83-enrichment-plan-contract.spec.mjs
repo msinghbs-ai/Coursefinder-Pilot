@@ -38,3 +38,21 @@ test('screen: plan tab, row link, estimate before Run now', () => {
   expect(ui).toContain("call('run',{provider:pid,steps:pick,reason:reason.trim()})")
   expect(ui).toContain('More than the on-demand allowance left today')
 })
+
+// v2.15.307 (Platform Admin 21 Oct 2026 17:30, "Pick b, and proceed with task 2 and 3"): plan tasks say they belong to a plan; plans that
+// finish with a stopped or skipped step say what a person has to do; automatic search refresh requests are spaced out.
+test('plan tasks are labelled, plans that need a person are listed, automatic refreshes spaced', () => {
+  const n = fs.readFileSync('supabase/migrations/20261021190000_cf247_plan_needs_person.sql', 'utf8')
+  const tasks = fs.readFileSync('src/AdminTasks.jsx', 'utf8')
+  expect(n).toContain("args || jsonb_build_object('plan_run', r.id, 'plan_mode', r.mode)")
+  expect(n).toContain('alter table pipeline.enrich_plan_runs add column if not exists needs_person text;')
+  expect(n).toContain('comment on column pipeline.enrich_plan_runs.needs_person')
+  expect(n).toContain('needs_person = security.enrich_plan_needs_person_v1(r.id),')
+  expect(n).toContain("security.pipeline_num_v1('search.refresh_min_gap_minutes', 30)")
+  expect(n).toContain("q.requested_by !~ '^(enrich fields task|enrichment plan) '")
+  expect(n).toMatch(/^-- Replaces: /m)
+  expect(n).toMatch(/^-- Retires: /m)
+  expect(ui).toContain('data-plan-needs-person')
+  expect(ui).toContain("ov.needs_person||[]")
+  expect(tasks).toContain("'Enrichment plan (automatic)'")
+})
