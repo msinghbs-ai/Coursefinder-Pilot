@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-21T10:21:09.907Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery?tab=enrich.png",
+      "route": "layer-2-discovery?tab=enrich",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2/3 Build & enrich",
+      "settle_ms": 8448,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=enrich",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-layer-2-discovery?tab=enrich-fee-reader-ai-.png",
+      "route": "layer-2-discovery?tab=enrich",
+      "action": "Fee reader (AI)",
+      "clicked": true,
+      "heading": "Layer 2/3 Build & enrich",
+      "settle_ms": 1504,
+      "height": 1579,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=enrich",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
