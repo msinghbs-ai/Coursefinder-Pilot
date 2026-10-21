@@ -57,3 +57,15 @@ test('backup and restore: daily job, Platform Admin only, reason and backup befo
   for (const s of ['data-settings-backup', 'data-backup-list', 'data-backup-diff', 'Download SQL file']) expect(ui).toContain(s)
   expect(nav).toContain("{ key: 'backup', label: 'Backup & restore', min: 6 },")
 })
+
+test('flags show the toolset used before them (Platform Admin 22 Oct 2026 08:12)', () => {
+  const t = fs.readFileSync('supabase/migrations/20261022013000_cf247_flag_tool_stats.sql', 'utf8')
+  const fp = fs.readFileSync('src/FlagsPanel.jsx', 'utf8')
+  expect(t).toContain('create or replace function security.flag_tool_summary_v1(p_provider uuid, p_course uuid default null)')
+  expect(t).toContain("'tools', case when x.entity in ('provider', 'course') and x.provider_id is not null")
+  expect(t).toMatch(/^-- Replaces: /m)
+  expect(t).not.toMatch(/^(drop|delete|truncate)\b/im)
+  expect(fp).toContain('data-flag-tools')
+  expect(fp).toContain('data-flag-toolline')
+  expect(fp).toContain("course_pages_not_listed:'Search off: the site lists too few course pages'")
+})

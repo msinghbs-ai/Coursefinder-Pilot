@@ -14,7 +14,8 @@ export const RELEASE={
     'The AI page match is asked only when there are at least two candidate pages, and is retried only while retries find right pages.',
     'Enrich fields asks once more, with a note, when a quote was not on the page, and does not ask again about a page copy that did not state the field.',
     'The daily New Zealand report has a Toolset use sheet: each tool used, worked and did not work, per provider.',
-    'Settings › Backup & restore (Platform Admin): a daily copy of each provider\'s Published switch and every setting value; compare, download as a SQL file, or put back.'
+    'Settings › Backup & restore (Platform Admin): a daily copy of each provider\'s Published switch and every setting value; compare, download as a SQL file, or put back.',
+    'Layer 2/3 › Flags shows, for each flagged university or course, the tools tried before it was flagged: how often each was used, worked and did not work, with credits and AI cost.'
   ],
   bugFixes:['Two fee pages could not be recorded by the fee reader because of hidden characters in the page; pages with no fee amount are no longer sent to the AI.']
 }

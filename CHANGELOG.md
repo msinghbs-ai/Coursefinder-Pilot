@@ -7,6 +7,7 @@
   - Migration `20261022011000_cf247_nz_review_route_reader_stats.sql`: `security.site_list_match_done_v1` (`search.site_list_first_types` ["university"]); `retry_cap_v1('ai_match')` counts right pages; `ai_match.min_candidates` (2); Enrich fields hint after a quote miss and no re-ask of an unchanged page copy; `pipeline.toolset_use_daily`, `security.toolset_use_daily_record_v1`, job `toolset-use-daily` (seeded 8–21 Oct).
   - Migration `20261022012000_cf247_settings_backup.sql`: `pipeline.settings_backups`, `security.settings_backup_take_v1`, `security.settings_backup_diff_v1`, `public.admin_settings_backup` (Platform Admin), job `settings-backup-daily`, `retention.settings_backup_days` (60).
   - coverage-sweep worker v0.36.0: `render_ok` pages through Firecrawl; Enrich fields quote-miss retry with a note; fee reader `noNul` and `hasFeeAmount`.
+  - Migration `20261022013000_cf247_flag_tool_stats.sql` (Platform Admin 08:12, flags "helpful and intuitive"): `security.flag_tool_summary_v1`; `admin_flags` list and events return the toolset used before each flag; Layer 2/3 › Flags shows it.
   - Settings › Backup & restore; guide; SOPs 1.51.
 
 ## 0.1.236 — 21 Oct 2026

@@ -9,7 +9,7 @@ const read = p => fs.readFileSync(p, 'utf8')
 test('Settings page: one page by pipeline step, backed by the read/write pair, logged, prompts read-only', () => {
   expect(PAGES.environment.label).toBe('Settings')
   const main = read('src/mature-main.jsx')
-  expect(main).toContain(`case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace`) // v2.15.301: API usage tab
+  expect(main).toContain(`case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;if(tab==='backup')return rank>=6?<SettingsBackup onError={err}/>:null;return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace`) // v2.15.301: API usage tab; v2.15.310: Backup & restore (Platform Admin)
   const ps = read('src/PipelineSettings.jsx')
   expect(ps).toContain("supabase.rpc('admin_pipeline_settings_read')")
   expect(ps).toContain("supabase.rpc('admin_pipeline_settings_write',{p_key:key,p_value:value})")
