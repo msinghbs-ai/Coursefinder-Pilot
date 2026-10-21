@@ -1,0 +1,44 @@
+{
+  "captured_at": "2026-10-21T07:01:58.748Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery?tab=plan.png",
+      "route": "layer-2-discovery?tab=plan",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2/3 Build & enrich",
+      "settle_ms": 45042,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=plan",
+      "diag": null,
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ]
+    },
+    {
+      "file": "02-layer-2-discovery?tab=plan-plans-that-need-a-person.png",
+      "route": "layer-2-discovery?tab=plan",
+      "action": "Plans that need a person",
+      "clicked": false,
+      "heading": "Layer 2/3 Build & enrich",
+      "settle_ms": 45179,
+      "height": 1040,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=plan",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "03-jobs?tab=tasks.png",
+      "route": "jobs?tab=tasks",
+      "action": null,
+      "clicked": true,
+      "heading": "Scheduled jobs",
+      "settle_ms": 6056,
+      "height": 2506,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#scheduled-jobs?tab=tasks",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
