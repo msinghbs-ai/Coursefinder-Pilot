@@ -1,0 +1,59 @@
+import { test, expect } from '@playwright/test'
+import fs from 'node:fs'
+
+// CF-247 v2.15.310 (Platform Admin 22 Oct 2026 07:22): NZ enrichment review fixes 1, 2, 3, 4, 6, 7, 8, 9; 07:41: daily backup of the
+// provider Published switch and setting values, restored only by the Platform Admin.
+const q = fs.readFileSync('supabase/migrations/20261022010000_cf247_nz_review_quick_wins.sql', 'utf8')
+const r = fs.readFileSync('supabase/migrations/20261022011000_cf247_nz_review_route_reader_stats.sql', 'utf8')
+const b = fs.readFileSync('supabase/migrations/20261022012000_cf247_settings_backup.sql', 'utf8')
+const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+const f = fs.readFileSync('supabase/functions/coverage-sweep/fees.ts', 'utf8')
+const ui = fs.readFileSync('src/SettingsBackup.jsx', 'utf8')
+const nav = fs.readFileSync('src/nav-map.js', 'utf8')
+
+test('every change is md5-guarded, housekeeping lines present, nothing dropped at top level', () => {
+  for (const m of [q, r, b]) {
+    expect(m).toMatch(/^-- Replaces: /m)
+    expect(m).toMatch(/^-- Retires: /m)
+    expect(m).not.toMatch(/^(drop|delete|truncate)\b/im)
+  }
+  expect(q).toContain('differs from the definition this change replaces')
+  expect(r).toContain('differs from the definition this change replaces')
+})
+
+test('quick wins: site check before search, render pass, address guesses by country, one provider flag', () => {
+  for (const k of ['search.site_check_countries', 'search.min_site_course_pages', 'pages.render_countries', 'retry.course_page_render_hours', 'relink.url_pattern_countries']) expect(q).toContain(`'${k}'`)
+  expect(q).toContain('and (s.requested_at is not null or not security.site_few_course_pages_v1(s.provider_id))')
+  expect(q).toContain("'render_ok',(u.read_status in ('needs_render','blocked') and security.render_country_v1(u.provider_id))")
+  expect(q).toContain("'course_pages_not_listed'")
+  expect(w).toContain('|| it.render_ok === true')
+})
+
+test('route, reader and daily stats', () => {
+  expect(r).toContain('security.site_list_match_done_v1(s.course_id, s.provider_id)')
+  expect(r).toContain("security.pipeline_num_v1('ai_match.min_candidates', 2)")
+  expect(r).toContain('the same page copy was read for this before and did not state it')
+  expect(r).toContain('create table if not exists pipeline.toolset_use_daily')
+  expect(r).toContain("select cron.schedule('toolset-use-daily', '58 19 * * *', $$select security.toolset_use_daily_record_v1()$$);")
+  expect(r).toContain("('toolset-use-daily', 'Reporting'")
+  expect(w).toContain('the quote is not on the page')
+  expect(w).toContain('x.hint')
+})
+
+test('fee reader: null characters removed, pages without an amount skip the AI', () => {
+  expect(f).toContain('export function noNul')
+  expect(f).toContain('export const hasFeeAmount')
+  expect(w).toContain('if (!hasFeeAmount(text))')
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(3[6-9]|[4-9]\d)\.\d/)
+})
+
+test('backup and restore: daily job, Platform Admin only, reason and backup before restore', () => {
+  expect(b).toContain('create table if not exists pipeline.settings_backups')
+  expect(b).toContain("select cron.schedule('settings-backup-daily', '50 19 * * *', $$select security.settings_backup_take_v1('daily')$$);")
+  expect(b).toContain("coalesce(security.current_role_rank(), 0) < 6 then raise exception 'Platform Admin required'")
+  expect(b).toContain("v_before := security.settings_backup_take_v1('before_restore'")
+  expect(b).toContain("if r.then_status = 'published' and r.lifecycle_status <> 'active' then")
+  expect(ui).toContain("supabase.rpc('admin_settings_backup'")
+  for (const s of ['data-settings-backup', 'data-backup-list', 'data-backup-diff', 'Download SQL file']) expect(ui).toContain(s)
+  expect(nav).toContain("{ key: 'backup', label: 'Backup & restore', min: 6 },")
+})
