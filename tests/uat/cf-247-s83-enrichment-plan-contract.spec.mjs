@@ -56,3 +56,16 @@ test('plan tasks are labelled, plans that need a person are listed, automatic re
   expect(ui).toContain("ov.needs_person||[]")
   expect(tasks).toContain("'Enrichment plan (automatic)'")
 })
+
+// v2.15.308 (Platform Admin 21 Oct 2026 18:36, "Two tracks + more credits")
+test('two tracks per plan, priority countries, larger shares logged', () => {
+  const k = fs.readFileSync('supabase/migrations/20261021230000_cf247_plan_two_tracks.sql', 'utf8')
+  expect(k).toContain("foreach v_track in array array['ai', 'fc'] loop")
+  expect(k).toContain("case when x->>'step' = 'fields' then 'ai' else 'fc' end = v_track")
+  expect(k).toContain("('pipeline', 'plans.priority_countries'")
+  expect(k).toContain("s.key = 'plans.priority_countries')) desc,")
+  expect(k).toContain("insert into pipeline.admin_control_events(area, action, target, detail, actor)")
+  expect(k).toMatch(/^-- Replaces: /m)
+  expect(k).toMatch(/^-- Retires: /m)
+  expect(ui).toContain('Fill missing fields starts straight away on its own track')
+})

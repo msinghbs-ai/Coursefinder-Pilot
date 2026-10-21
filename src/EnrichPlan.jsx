@@ -40,7 +40,7 @@ function Overview({ov,onSaved,onReload,onError}){
   const a=ov.auto||{},od=ov.on_demand||{}
   const toggle=async()=>{setBusy(true);try{onSaved(await call('control',{auto:!a.enabled,reason:reason.trim()}));setReason('')}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   return <Card id="layer2.plan.limits" title="Enrichment plan: limits today" icon={Gauge}
-    subtitle="Automatic plans start for the universities with the most missing values and each step waits for room in its toolset share. Run now on a university's plan uses the on-demand allowance instead, so manual and automatic work never use up each other's credits. Limits are on Models & services › Toolsets & limits and Settings › Pipeline settings › Onboarding."
+    subtitle="Automatic plans start for the universities in the priority countries first (Settings › Pipeline settings › Onboarding), then the most missing values; Fill missing fields runs beside the other steps, and each step waits for room in its toolset share. Run now on a university's plan uses the on-demand allowance instead, so manual and automatic work never use up each other's credits. Limits are on Models & services › Toolsets & limits and Settings › Pipeline settings › Onboarding."
     meta={<StatusChip value={a.enabled?'on':'off'} tone={a.enabled?'success':'neutral'} label={`Automatic ${a.enabled?'on':'off'}`}/>} data-plan-limits>
     <div className="fc-queue-metrics">
       <span><strong>{fmtNumber(od.credits_left)} of {fmtNumber(od.credits)}</strong><small>On-demand Firecrawl credits left today</small></span>
@@ -103,7 +103,7 @@ function PlanPanel({pid,onClose,onRan,onError}){
   const cancel=async id=>{setBusy(true);try{await call('cancel',{run_id:id,reason:'Cancelled on the plan'});load();onRan?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const open=p.open_run&&p.open_run!=='null'?p.open_run:null
   return <Card id="layer2.plan.university" title={`Plan: ${p.name}`} icon={Route} level={2}
-    subtitle={`${COUNTRY[p.country]||p.country} · ${fmtNumber(p.courses)} courses · ${fmtNumber(p.missing)} missing values. Steps run in order; each says why it is needed and what it is expected to use.`}
+    subtitle={`${COUNTRY[p.country]||p.country} · ${fmtNumber(p.courses)} courses · ${fmtNumber(p.missing)} missing values. Fill missing fields starts straight away on its own track; the other steps run in order. Each says why it is needed and what it is expected to use.`}
     meta={<Button compact onClick={onClose}>Close</Button>} data-plan-panel>
     {steps.length===0?<Empty text="Nothing left that a step can fill; remaining gaps need a reader or a person."/>:<div className="dq-table-wrap"><table className="dq-table"><thead><tr><th/><th>Step</th><th>Why</th><th>Fills</th><th className="num">Firecrawl</th><th className="num">AI</th></tr></thead>
       <tbody>{steps.map((s,i)=><tr key={s.step} data-plan-step={s.step}>

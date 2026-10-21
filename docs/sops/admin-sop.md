@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.48 (reviewed for platform release v2.15.307)  
+**Version:** 1.49 (reviewed for platform release v2.15.308)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -165,3 +165,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.46 | 21 Oct 2026 | v2.15.305 | Delivery modes: blended is a mix inside one course, on campus or online is a choice of modes; a university's own phrase is set in Coverage › Attributes › Delivery wording (PIM Admin and above, with a reason). Step 3 of the 10-minute field check names it. |
 | 1.47 | 21 Oct 2026 | v2.15.306 | Layer 2/3 › Enrichment plan: each university's plan from its gaps with its toolset estimate; Run now from the on-demand allowance; automatic plans most missing first within the shares (on and off by the Platform Admin). New weekly step. |
 | 1.48 | 21 Oct 2026 | v2.15.307 | Enrichment plan: Plans that need a person (what stopped and what to do); Task manager shows tasks started by a plan. |
+| 1.49 | 21 Oct 2026 | v2.15.308 | Enrichment plans: Fill missing fields runs beside the other steps; priority countries first (New Zealand); larger Firecrawl shares. Check the shares left on the Enrichment plan tab in the weekly step. |
