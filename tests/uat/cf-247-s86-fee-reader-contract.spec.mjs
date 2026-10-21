@@ -54,3 +54,13 @@ test('a fee page never read is not held by the central-page refresh rule', () =>
   expect(h).toMatch(/^-- Replaces: /m)
   expect(h).toMatch(/^-- Retires: /m)
 })
+
+// 21 Oct 2026 21:36 job queue review ("Keep 13,000, fix order only")
+test('course-page search: priority countries first, wrong-in-a-row stop, providers never searched', () => {
+  const s = fs.readFileSync('supabase/migrations/20261022003000_cf247_search_order_and_waste.sql', 'utf8')
+  expect(s).toContain("sp.key = 'search.priority_countries')) desc,")
+  expect(s).toContain("security.pipeline_num_v1('search.wrong_in_row_stop', 20)")
+  expect(s).toContain("sk.key = 'search.skip_providers' and sk.value ? px.stable_key")
+  expect(s).toMatch(/^-- Replaces: /m)
+  expect(s).toMatch(/^-- Retires: /m)
+})
