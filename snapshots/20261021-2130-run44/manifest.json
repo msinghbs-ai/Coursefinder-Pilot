@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-21T21:30:50.351Z",
+  "base_url": "https://coursefinder-pilot.techm.workers.dev",
+  "screens": [
+    {
+      "file": "01-layer-2-discovery.png",
+      "route": "layer-2-discovery",
+      "action": null,
+      "clicked": true,
+      "heading": "Layer 2/3 Build & enrich",
+      "settle_ms": 5906,
+      "height": 1264,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery",
+      "diag": null,
+      "console_errors": []
+    },
+    {
+      "file": "02-layer-2-discovery-flags.png",
+      "route": "layer-2-discovery",
+      "action": "Flags",
+      "clicked": true,
+      "heading": "Layer 2/3 Build & enrich",
+      "settle_ms": 3277,
+      "height": 6457,
+      "url": "https://coursefinder-pilot.techm.workers.dev/#layer-2-discovery?tab=flags",
+      "diag": null,
+      "console_errors": []
+    }
+  ]
+}
