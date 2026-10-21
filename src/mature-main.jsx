@@ -77,6 +77,7 @@ const AccessRolesEmbedded=lazyPage(()=>import('./access-roles-entry'),'AccessRol
 const JobsWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'JobsWorkspace')
 const SourcesWorkspace=lazyPage(()=>import('./pipeline-ops-entry'),'SourcesWorkspace')
 const Toolsets=lazyPage(()=>import('./Toolsets'))
+const SettingsBackup=lazyPage(()=>import('./SettingsBackup'))
 const RetentionScreen=lazyPage(()=>import('./RetentionScreen'))
 
 // Decision 217: the attributes view and the fee schedules below it share the Coverage country and university filter
@@ -308,7 +309,7 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
       case'jobs':return tab==='tasks'?<AdminTasks rank={rank} onError={onError}/>:tab==='automations'?<div className="m-page-stack"><Automations onError={err}/><RefreshWorkspace onError={err}/></div>:<JobsWorkspace/>
       case'evidence':return <EvidenceWorkspace onError={onError} navigate={navigate} routeParams={routeParams}/>
       // CF-247 (16 Oct 2026): calls to the API version URLs (zoho-api-v2 first), by key and action; v2.15.301 Settings › API usage
-      case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
+      case'environment':if(tab==='api')return <ApiUsagePanel onError={onError}/>;if(tab==='backup')return rank>=6?<SettingsBackup onError={err}/>:null;return <><PipelineSettings onError={err}/><EnvironmentMigrationWorkspace rank={rank} onError={onError} view="integrations"/></>
       // Clean-up batch 2 (9 Oct 2026): Source profiles and the Layer 2 workload defaults were retired; the provider registry and keys stay.
       // v2.15.300 (Platform Admin, 20 Oct 2026): Scrapers & fetchers is Models & services › Fetchers
       // v2.15.264: Models & services in three tabs (Services · AI & OpenRouter · Toolsets & limits)
