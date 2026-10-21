@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.49 (reviewed for platform release v2.15.308)  
+**Version:** 1.50 (reviewed for platform release v2.15.309)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -154,3 +154,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.47 | 21 Oct 2026 | v2.15.306 | Layer 2/3 › Enrichment plan: open a university's plan, read the estimate and Run now the steps worth their cost (on-demand allowance). New weekly step. |
 | 1.48 | 21 Oct 2026 | v2.15.307 | Enrichment plan: Plans that need a person lists finished plans with a step that did not get through; Task manager shows tasks started by a plan. |
 | 1.49 | 21 Oct 2026 | v2.15.308 | Reviewed: in a plan, Fill missing fields now runs beside the other steps; New Zealand providers are planned first. |
+| 1.50 | 21 Oct 2026 | v2.15.309 | Reviewed: fee rows from the AI fee reader that were not sure enough arrive in Layer 4 like other fees; approve or reject them as usual (the reader learns from each decision). |

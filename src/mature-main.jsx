@@ -10,6 +10,7 @@ import{fmtDate,fmtDateTime,fmtMoney,fmtPercent,fmtShare}from'./lib/format.js'
 import{adminRead,api,supabase}from'./lib/supabase'
 import CourseDetailPolish from'./CourseDetailPolish'
 import EnrichFields from'./EnrichFields'
+import FeeReader from'./FeeReader'
 import FieldCoverage from'./FieldCoverage'
 import EnrichPlan from'./EnrichPlan'
 import{ProviderSummary,PillRow,FactCards,FactCard}from'./DetailSummary'
@@ -289,7 +290,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         // v2.15.301 (Platform Admin, 20 Oct 2026, "One tab on Layer 2/3"): finding scholarships (was Layer 1 › Scholarships), then reading them
         if(tab==='scholarships')return <div className="m-page-stack" data-scholarships-merged><SectionTitle title="Finding scholarships" subtitle="Countries switched on and the sources for each."/><ScholarshipLayer layer={1} rank={rank} onError={err}/><SectionTitle title="Reading scholarships" subtitle="Discovery and reading by country, refusals, the jobs and their limits."/><ScholarshipLayer layer={2} rank={rank} onError={err}/></div>
         if(tab==='flags')return <FlagsPanel onError={onError}/>
-        if(tab==='enrich')return <EnrichFields rank={rank} onError={err}/>
+        // v2.15.309 (Platform Admin 21 Oct 2026, fee reader): the AI fee reader sits under Enrich fields
+        if(tab==='enrich')return <div className="m-page-stack"><EnrichFields rank={rank} onError={err}/><FeeReader onError={err}/></div>
         if(tab==='plan')return <EnrichPlan rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
         // v2.15.287 (Decision 267): Build adapter, one click per university
         if(tab==='build')return <BuildAdapter rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>

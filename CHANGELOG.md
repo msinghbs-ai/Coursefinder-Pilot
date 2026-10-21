@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.236 — 21 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.309** (AI fee reader). Platform Admin, 21 Oct 2026 20:02: "Build fee reader for nz unis and make sure its compatible to ca and upcoming countries ... collect and feed error to build and evolve data reader"; choices "Automatic above confidence", "As published + yearly estimate", "NZ universities, then NZ rest, then CA".
+  - Migration `20261022001000_cf247_fee_reader.sql`: `pipeline.fee_country_profiles` (NZ, CA, AU), `fee_reader_queue`, `fee_reader_rows`, `fee_reader_findings`, `fee_reader_recipes`; `security.fee_reader_tick_v1` (job `fee-reader`, every 10 minutes): fee pages from the central search, queue per page version, learning from Layer 4 decisions, worker; `svc_fee_ai_next`/`svc_fee_ai_record`: admission above `fees.auto_admit_confidence`, Layer 4 otherwise, findings, notes, further fee pages; `admin_fee_reader`; spend in `ai_spend_today_v1` (`guard_fee_ai`); provider-facts woken when pages wait.
+  - coverage-sweep worker v0.35.0: mode `fee_ai` (fees.ts).
+  - Layer 2/3 › Enrich fields › Fee reader (AI); guide; SOPs 1.50.
+  - Also on 21 Oct (PR #617, #618): never-a-course-page patterns, NZ/CA term dates, NZIST names; CRICOS deployed test suspended until data.gov.au returns.
+
 ## 0.1.235 — 21 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.308** (enrichment plans: two tracks, New Zealand first, more credits). Platform Admin, 21 Oct 2026 18:36: "Lets speed up course data for each provider, [Firecrawl] as a separate parallel job?"; choice "Two tracks + more credits".
