@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.246 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.319** (progress watchdog). Platform Admin, 22 Oct 2026 19:42: "I wanted the platform to self maintain work job or queue until it completes the data enrichment or notify when it runs out of toolset or get stuck." Choices at 19:53: alerts "Health page + phone/email", build order "Watchdog, rules, workspace, clean-up", self-fix "Safe fixes only, logged".
+  - Migration `20261022033000_cf247_queue_watchdog.sql`: `pipeline.queue_watch` (14 enrichment queues with their counts, tools and fixes), `queue_watch_state`, `queue_watch_events`, `queue_watch_alerts` (outbox: notify / report), `queue_watch_fixes`, `queue_watch_retries`; `security.queue_watch_run_v1` (job `queue-watch`, every 15 minutes, catalogued), `security.queue_watch_tool_state_v1`, `security.queue_watch_alerts_take_v1`, `security.queue_watch_report_v1`, `public.admin_queue_watch` (list, report, run); Platform health check `queue_watch`; settings `queue_watch.*` (9).
+  - `src/QueueWatch.jsx`, `src/nav-map.js` (Platform health › Work queues), `src/mature-main.jsx`, `src/PlatformHealth.jsx` (Go to link), `src/admin-pages.css`.
+  - Delivery of phone and email alerts and the daily report: scheduled tasks reading the outbox and the report.
+  - Consumer API unchanged (Decision 266). SOPs 1.60.
+
 ## 0.1.245 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.318**. Platform Admin, 22 Oct 2026 19:05: "Yes, we need to accommodate manual actions as well. Do what complete the process in manual mode".

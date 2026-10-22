@@ -96,6 +96,8 @@ export const PAGES = {
   // v2.15.301 (Platform Admin, 20 Oct 2026): Capacity moved to the Go-live checklist; Storage & retention is a tab here (Platform Admin only)
   health: { label: 'Platform health', slug: 'platform-health', icon: 'health', subtitle: 'Automatic checks across jobs, queues, budgets and the database; what takes space and purging it.', tabs: [
     { key: 'checks', label: 'Health checks', min: 3 },
+    // v2.15.319 (Platform Admin 22 Oct 2026 19:53, "Watchdog" first): each enrichment queue's state, alerts and self-fixes
+    { key: 'queues', label: 'Work queues', min: 3 },
     { key: 'storage', label: 'Storage & retention', min: 6 },
   ] },
   jobs: { label: 'Scheduled jobs', slug: 'scheduled-jobs', icon: 'workflow', subtitle: 'Every automation the platform runs, the order work is taken in, job history and refresh schedules.', tabs: [
