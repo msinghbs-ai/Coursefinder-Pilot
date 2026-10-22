@@ -166,3 +166,12 @@ test('v2.15.316 no-course providers need no adapter; builder course list says wh
   expect(ui).toContain('Tick all shown')
   expect(main).toContain("['no_courses','Not needed: no courses']")
 })
+
+test('Sydney course data file is a companion read directly; values recorded, nothing admitted', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022024000_cf247_sydney_course_data_file.sql', 'utf8')
+  expect(mig).toContain("'ce56347eb846de075a33146a5101f4f9'")
+  expect(mig).toContain("'\\1.coredata.json'")
+  expect(mig).toContain("'direct'")
+  expect(mig).toContain('"type":"INTFEE"')
+  expect(mig).not.toMatch(/coverage_apply_course_v1/)
+})
