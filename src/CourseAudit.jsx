@@ -19,7 +19,7 @@ export default function CourseAudit({courseId,onChanged,onError}){
   useEffect(()=>{if(courseId)load()},[courseId])
   const readNow=async()=>{if(reason.trim().length<4){setMsg('Write a reason first (it is kept with the request).');return}
     setBusy(true);setMsg('');try{const{data,error}=await supabase.rpc('admin_course_read_now',{p_course_id:courseId,p_reason:reason.trim()});if(error)throw error
-      setMsg([data?.page_read_again?'The page is read again first in line (a few minutes).':null,(data?.ai_fields||[]).length?`AI fills ${data.ai_fields.join(', ')}.`:'No missing field for AI to fill.',data?.note].filter(Boolean).join(' '));setReason('');await load();onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+      setMsg([data?.page_read_again?'The page is read again first in line (a few minutes), then its fee goes to the AI fee reader first in line.':null,(data?.ai_fields||[]).length?`AI fills ${data.ai_fields.join(', ')}.`:'No missing field for AI to fill.',data?.note].filter(Boolean).join(' '));setReason('');await load();onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   if(!d)return <section className="m-detail-section ca-panel"><Loading label="Reading what happened…"/></section>
   const pg=d.page,held=d.held||{},rd=READ[pg?.read_status]||[pg?.read_status||'Not read yet','neutral']
   const intl=(held.fees||[]).filter(f=>f.audience==='international')
@@ -29,7 +29,7 @@ export default function CourseAudit({courseId,onChanged,onError}){
       {d.can_read_now&&<div className="ca-read" data-read-now>
         <input className="fv-input" value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason, e.g. page changed; fee missing" aria-label="Reason for Read with AI"/>
         <Button compact onClick={readNow} disabled={busy}><Bot size={13}/>{busy?'Asking…':'Read with AI'}</Button>
-        <small>Reads the page again first in line, then AI fills the fields this course does not hold. Values set by hand are never changed.</small>
+        <small>Reads the page again first in line; then the AI fee reader reads its fee first in line (even when a fee is held) and AI fills the fields this course does not hold from the new page. Changing the official page does the same. Values set by hand are never changed.</small>
         {msg&&<p className="qw-msg" role="status">{msg}</p>}
       </div>}
       <h4>Course page</h4>

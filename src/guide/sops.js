@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.323'
+export const SOP_REVIEWED_FOR = '2.15.324'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -166,7 +166,8 @@ export const SOPS = [
       { version: '1.61', date: '22 Oct 2026', release: '2.15.320', change: 'Platform health › Work queues › Last 15 minutes: check the gaps list first (a field not moving for 24 hours, a Firecrawl share used up, failing or slow worker calls, tasks not moving, stuck queues); the hourly phone message sums up the last four snapshots. Fill in from website finishes when the provider\'s central pages are held until due (read in the last 30 days).' },
       { version: '1.62', date: '23 Oct 2026', release: '2.15.321', change: 'Layer 2/3 › Course sources: the platform finds each university\'s course list itself (Firecrawl map, site maps, list pages). Check Nothing found rows and What was tried; Find again or Add source with a reason. Approve a programme list only after checking its created courses (they stay hidden until approved). Countries and list addresses the finder uses are changed here.' },
       { version: '1.63', date: '23 Oct 2026', release: '2.15.322', change: 'Course drawer › What happened to this course: read it before deciding where a gap is (page found or refused, reads, AI tries, field fills with reasons, admissions). Read with AI (with a reason) reads the page again first in line and fills missing fields with AI; values set by hand are never changed.' },
-      { version: '1.64', date: '23 Oct 2026', release: '2.15.323', change: 'Fee reader (AI) also reads course pages that show an international fee for a course with no fee held (Settings: Fee reader: read course pages). Settings › Identify the page: every page proof can be ticked (Page bound by a person, University page, adapter proofs). New Zealand fees are admitted from pages proved by exact title, title with level or bound by a person.' }],
+      { version: '1.64', date: '23 Oct 2026', release: '2.15.323', change: 'Fee reader (AI) also reads course pages that show an international fee for a course with no fee held (Settings: Fee reader: read course pages). Settings › Identify the page: every page proof can be ticked (Page bound by a person, University page, adapter proofs). New Zealand fees are admitted from pages proved by exact title, title with level or bound by a person.' },
+      { version: '1.65', date: '23 Oct 2026', release: '2.15.324', change: 'Fee reader: run every, pages a run and pages read at once are on Settings › Pipeline settings with their ranges. Read with AI or a changed official page puts the course fee first in line for the AI fee reader.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -281,7 +282,8 @@ export const SOPS = [
       { version: '1.61', date: '22 Oct 2026', release: '2.15.320', change: 'Reviewed: Platform health › Work queues shows the last 15 minutes (fields held per country, toolset use, gaps). No operator steps changed.' },
       { version: '1.62', date: '23 Oct 2026', release: '2.15.321', change: 'Reviewed: Layer 2/3 › Course sources shows the course lists the platform found and why. No operator steps changed.' },
       { version: '1.63', date: '23 Oct 2026', release: '2.15.322', change: 'Reviewed: the course drawer shows What happened to this course and Read with AI. No operator steps changed.' },
-      { version: '1.64', date: '23 Oct 2026', release: '2.15.323', change: 'Reviewed: more New Zealand courses show an international fee. No operator steps changed.' }],
+      { version: '1.64', date: '23 Oct 2026', release: '2.15.323', change: 'Reviewed: more New Zealand courses show an international fee. No operator steps changed.' },
+      { version: '1.65', date: '23 Oct 2026', release: '2.15.324', change: 'Reviewed: Read with AI on a course also reads its fee first in line. No operator steps changed.' }],
   },
 ]
 

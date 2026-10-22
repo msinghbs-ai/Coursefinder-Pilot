@@ -1,21 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.323'
-export const PACKAGE_VERSION='0.1.250'
+export const UI_VERSION='2.15.324'
+export const PACKAGE_VERSION='0.1.251'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Course page fees through the AI fee reader; fee proofs for New Zealand',
+  title:'Fee reader at full speed; a course first in line from its page',
   changes:[
-    'Settings › Identify the page: every proof the admission gate reads can now be ticked, including Page bound by a person, University page and the adapter proofs. Before, changing English, intakes or the official address for a country that held one of these proofs was refused.',
-    'Course pages: the University of Auckland catalogue\'s newer-version link is followed even when it sits inside escaped markup, so the 2027 page and its fees are read.',
-    'Read with AI now runs the AI fill even for fields where AI earlier found no value (the hold is released with the reason given), and sends the page\'s fee to the AI fee check again. A page fee that changed after an earlier AI fee check is checked again.',
-    'Fee reader (AI): a course\'s own page that shows an international fee, for a course with no fee held, is now read by the AI fee reader with the same checks as fee schedules; passes are admitted and the rest go to Layer 4. Since Layer 3 was retired these fees had no way in outside universities with an adapter. Settings: Fee reader: read course pages, course pages queued a run.',
-    'New Zealand international fees are now also admitted from course pages proved by exact title, title with level, or bound by a person (Platform Admin decision, 23 Oct 2026). The fee still passes the AI fee check before it is admitted.'
+    'Fee reader (AI): runs every 2 minutes and reads up to 40 pages a run, 4 at a time (Settings › Pipeline settings: Fee reader: run every, pages a run, pages read at once; each shows its range). About 1,200 pages an hour instead of about 60.',
+    'Course drawer: Read with AI, or changing the official page, now also puts the course\'s fee first in line for the AI fee reader once the page has been read again, even when a fee is held (a different fee held from another source goes to Layer 4). The AI fill waits for the new page instead of reading the old copy.'
   ],
-  bugFixes:['Settings › Identify the page refused every change to English, intakes and official address for AU, NZ and CA (unknown identity).']
+  bugFixes:['Read with AI could fill fields from the old copy of a page that was being read again.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
