@@ -331,7 +331,7 @@ test('v0.40.0 course source finder: the platform finds each university\'s course
   expect(m).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'source-find'), active := false);")
   expect(w).toContain('const fcMap = async (url: string, providerId: string | null')
   expect(w).toContain('if (it.link_pattern && it.read_via === "map") {')
-  expect(w).toContain('chosen = { kind: "map", url: mo, link_pattern: mpat.re, matches: fit.size, recall }')
+  expect(w).toContain('if (jd.ok) chosen = { kind: "map", url: new URL(fitL[0].url).origin, link_pattern: pat.re, matches: fit.size, recall: jd.recall };')
   expect(m).toContain("'c5ae4d50b84cd36ea5eca5936aa4cf48'")
   expect(m).toContain("'14f671b5c9aa6da5d2fbb4d03e9b06b4'")
   for (const k of ['batch.source_find', 'source_find.min_links', 'source_find.min_recall', 'source_find.max_files', 'source_find.max_locs', 'source_find.max_list_tries', 'source_find.retry_days', 'source_find.page_share_below', 'source_find.programme_below']) expect(m).toContain(`'${k}'`)
@@ -344,5 +344,22 @@ test('v0.40.1 source finder: every host in the map, a searched second map, time-
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('const fcMap = async (url: string, providerId: string | null, search: string | null = null) => {')
   expect(w).toContain('const k = h + "|" + sg.slice(0, i + 1).join("/")')
-  expect(w).toContain('if (!chosen && Date.now() - t0 > BUDGET_MS) { tally.deferred = (tally.deferred || 0) + 1; return }')
+  expect(w).toContain('const STEP_MS = 55_000;')
+})
+
+test('v0.40.2 source finder: short waits for robots.txt and site maps; unreachable hosts skipped', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('if (robots.http === null) { tried.push({ kind: "sitemap", host, result: "site does not answer direct reads" }); continue }')
+  expect(w).toContain('AbortSignal.timeout(10000) });  // fixed: a site map or robots.txt answers quickly or not at all')
+})
+
+test('v0.40.2: the pattern allows the depths known pages have; known pages taken at the address they were read at', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const m = fs.readFileSync('supabase/migrations/20261023001000_cf247_source_finder_steps.sql', 'utf8')
+  expect(w).toContain('const lo = Math.min(...ds), hi = Math.max(...ds);')
+  expect(m).toContain('coalesce(e.source_url, pg.url) u')
+  // steps carried over between runs
+  expect(m).toContain("if p_result ? 'step_next' then")
+  expect(m).toContain('alter table pipeline.source_find_runs add column if not exists step text;')
+  expect(w).toContain('const order = ["map", "map_search", "sitemap", "lists"]; const nextStep = order[order.indexOf(step) + 1];')
 })
