@@ -132,3 +132,12 @@ test('v2.15.313 fee reader: a fee printed for a number of points is not read per
   expect(fees).toContain('"unit", "units_covered", "audience"')
   expect(fees).toContain('NOT a fee per point')
 })
+
+test('v2.15.314 fee reader screen shows the points a fee is for and how the yearly figure was worked out', () => {
+  const ui = fs.readFileSync('src/FeeReader.jsx', 'utf8')
+  expect(ui).toContain('data-fee-quote')
+  expect(ui).toContain('for ${fmtNumber(r.units_covered)} points')
+  expect(ui).toContain('÷ ${r.units_covered} × ${ft}')
+  expect(ui).toContain('data-fee-replaced')
+  expect(ui).toContain('data-fee-finding-detail')
+})

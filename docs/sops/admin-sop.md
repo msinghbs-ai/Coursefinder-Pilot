@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.313)  
+**Version:** 1.53 (reviewed for platform release v2.15.314)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -171,3 +171,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.52 | 22 Oct 2026 | v2.15.311 | Backup & restore: Restore on a backup row (or Restore this backup under the comparison) puts it back with a reason. |
 | 1.53 | 22 Oct 2026 | v2.15.312 | Unpublished providers are paused in every scheduled job; publish one to bring it back. Providers › Adapter filter shows which providers have no adapter or are still testing. |
 | 1.54 | 22 Oct 2026 | v2.15.313 | Reviewed, no steps changed: the fee reader reads a fee printed for a number of points as the fee for those points; a page read again shows its older rows as Replaced by a newer read. |
+| 1.55 | 22 Oct 2026 | v2.15.314 | Fee reader (AI): in the weekly look, open a provider and check that each row's quote matches what it was read as ("for 60 points", per year) and how the yearly figure was worked out; Read again with a reason when it does not. |

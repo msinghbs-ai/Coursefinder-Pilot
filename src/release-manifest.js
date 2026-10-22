@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.313'
-export const PACKAGE_VERSION='0.1.240'
+export const UI_VERSION='2.15.314'
+export const PACKAGE_VERSION='0.1.241'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Oct 2026',
-  title:'Fee reader: fees printed for a number of points',
+  title:'Fee reader shows how each yearly figure was worked out',
   changes:[
-    'The AI fee reader reads a fee printed for a number of points, such as "$19,929.84 (for 60 points)", as the fee for those points and works the yearly figure out from it (NZ: 120 points a year). The note on the fee says so.',
-    'A fee page read again replaces its earlier rows; the old rows stay, marked Replaced by a newer read.'
+    'Enrich fields › Fee reader (AI), a provider\'s rows: each row shows the words it was read from, "for 60 points" when the fee is for a number of points, and how the yearly figure was worked out (for example 19,930 ÷ 60 × 120).',
+    'Rows replaced when a page was read again are hidden behind a count (Show them).',
+    'Problems the reader learns from show what a row was read as and what it really is.'
   ],
-  bugFixes:['Fees printed for 60 points (AUT, Lincoln, Canterbury) were read as a fee per point, giving NZ$2.4 to 3.4 million a year. They were held for review and never published; the eight pages are read again.']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
