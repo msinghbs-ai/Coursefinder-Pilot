@@ -3,8 +3,9 @@
 -- agreement, usual range, held fee); a row that passes is admitted, the rest go to Layer 4. Found: since Layer 3 was retired (12 Oct)
 -- nothing admitted a fee read from a course's own page outside universities with an adapter (about 1,800 pages across AU, NZ and CA
 -- with an international fee read and none held; 238 of them NZ with a safe reading).
--- 1 pipeline.fee_reader_queue takes a course page as well as a fee page (course_id, evidence_id; fact_source_id may be empty).
---   pipeline.fee_reader_rows.fact_source_id may be empty for rows read from a course page.
+-- 1 pipeline.fee_reader_queue takes a course page as well as a fee page (course_id, evidence_id). For a course page, fact_source_id
+--   (not null, no foreign key) holds the page copy's evidence id, so the reader's rows and findings stay keyed per page version and
+--   every existing column rule stays.
 -- 2 security.fee_course_pages_enqueue_v1: the fee reader's tick queues each course page version that shows one international fee
 --   (security.coverage_tuition_target_v1) for a course with no fee held, where the page's proof admits tuition for the country
 --   (Settings › Identify the page) and the country is in fees.countries. Settings fees.course_pages (on/off) and
@@ -17,15 +18,13 @@
 -- 1 queue and rows take a course page -----------------------------------------------------------------------------------------------
 alter table pipeline.fee_reader_queue add column if not exists course_id uuid;
 alter table pipeline.fee_reader_queue add column if not exists evidence_id uuid;
-alter table pipeline.fee_reader_queue alter column fact_source_id drop not null;
 do $do$ begin
   if not exists (select 1 from pg_constraint where conname = 'fee_reader_queue_page_or_course') then
-    alter table pipeline.fee_reader_queue add constraint fee_reader_queue_page_or_course check (fact_source_id is not null or (course_id is not null and evidence_id is not null));
+    alter table pipeline.fee_reader_queue add constraint fee_reader_queue_page_or_course check (course_id is null or (evidence_id is not null and fact_source_id = evidence_id));
   end if;
 end $do$;
 create unique index if not exists fee_reader_queue_course_hash on pipeline.fee_reader_queue(course_id, content_hash) where course_id is not null;
-alter table pipeline.fee_reader_rows alter column fact_source_id drop not null;
-comment on column pipeline.fee_reader_queue.course_id is 'CF-247 23 Oct 2026: a course''s own page read by the AI fee reader (with evidence_id, its stored copy); empty for a fee page (fact_source_id).';
+comment on column pipeline.fee_reader_queue.course_id is 'CF-247 23 Oct 2026: a course''s own page read by the AI fee reader (with evidence_id, its stored copy); empty for a fee page. For a course page fact_source_id holds the same evidence id.';
 
 -- settings (G2) -------------------------------------------------------------------------------------------------------------------
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
@@ -43,8 +42,8 @@ as $function$
 declare v int := 0;
 begin
   if security.pipeline_num_v1('fees.course_pages', 1) < 1 then return 0; end if;
-  insert into pipeline.fee_reader_queue(course_id, provider_id, evidence_id, content_hash)
-  select g.course_id, g.provider_id, g.evidence_id, coalesce(e.content_hash, g.evidence_id::text)
+  insert into pipeline.fee_reader_queue(fact_source_id, course_id, provider_id, evidence_id, content_hash)
+  select g.evidence_id, g.course_id, g.provider_id, g.evidence_id, coalesce(e.content_hash, g.evidence_id::text)
     from pipeline.coverage_course_pages g
     join pipeline.evidence_artifacts e on e.id = g.evidence_id and e.storage_path is not null
     join catalogue.courses c on c.id = g.course_id and c.lifecycle_status = 'active'
@@ -103,7 +102,7 @@ begin
   loop
     v := v || (
       select jsonb_build_object(
-        'queue_id', q.id, 'source_id', f.id, 'url', coalesce(f.url, ce.source_url, cg.url), 'storage_path', coalesce(e.storage_path, ce.storage_path),
+        'queue_id', q.id, 'source_id', coalesce(f.id, q.fact_source_id), 'url', coalesce(f.url, ce.source_url, cg.url), 'storage_path', coalesce(e.storage_path, ce.storage_path),
         -- CF-247 23 Oct 2026: a course's own page; the worker reads the stored page as text and the course list is that one course
         'course_page', q.course_id is not null,
         'provider', coalesce(p.display_name, p.canonical_name), 'country', k.iso_alpha2,
@@ -119,11 +118,11 @@ begin
                                from catalogue.courses c left join ref.study_levels sl on sl.id = c.study_level_id
                               where c.provider_id = q.provider_id and c.lifecycle_status = 'active' and (q.course_id is null or c.id = q.course_id)), '[]'::jsonb))
         from catalogue.providers p join ref.countries k on k.id = p.country_id
-        left join pipeline.provider_fact_sources f on f.id = q.fact_source_id
+        left join pipeline.provider_fact_sources f on f.id = q.fact_source_id and q.course_id is null
         left join pipeline.evidence_artifacts e on e.id = f.evidence_id
         left join pipeline.coverage_course_pages cg on cg.course_id = q.course_id
         left join pipeline.evidence_artifacts ce on ce.id = q.evidence_id
-       where p.id = q.provider_id and (q.fact_source_id is null or f.id is not null));
+       where p.id = q.provider_id and (q.course_id is not null or f.id is not null));
   end loop;
   return v;
 end $function$;
@@ -140,15 +139,10 @@ declare v_def text := pg_get_functiondef('public.svc_fee_ai_record(uuid,jsonb,nu
     select coalesce(e.source_url, g.url), q.evidence_id, q.content_hash, q.provider_id into f.url, f.evidence_id, f.content_hash, f.provider_id
       from pipeline.evidence_artifacts e left join pipeline.coverage_course_pages g on g.course_id = q.course_id where e.id = q.evidence_id;
   end if;$n$;
-  v_k_old text := $o$q.fact_source_id::text$o$;
-  v_k_new text := $n$coalesce(q.fact_source_id, q.course_id)::text$n$;
-  v_n int;
 begin
   if md5(v_def) <> '1b76a14646fdbd90252b7dffb5e02e61' then raise exception 'public.svc_fee_ai_record is not the expected version (md5 %)', md5(v_def); end if;
   if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'fee record: expected one fee page lookup'; end if;
-  v_n := (length(v_def) - length(replace(v_def, v_k_old, ''))) / length(v_k_old);
-  if v_n <> 4 then raise exception 'fee record: expected four finding keys, found %', v_n; end if;
-  execute replace(replace(v_def, v_old, v_new), v_k_old, v_k_new);
+  execute replace(v_def, v_old, v_new);
 end $do$;
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
