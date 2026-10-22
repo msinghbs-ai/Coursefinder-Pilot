@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.239 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.312**. Platform Admin, 22 Oct 2026: 11:42 "unpublished providers should be removed from any schedule tasks or updates. - reenabling them bring back to respective tasks and jobs"; 11:47 Adapter filter, sortable Adapter status, "Create adapters for All ... where website were found" (choice "All 738 with a website"); 11:50 course "not published" bug; 11:57 "Sujata last login was yesterday".
+  - Migration `20261022014000_cf247_unpublished_providers_pause.sql`: 15 scheduled queues skip `security.provider_hidden_v1`; AI field reader items of automatic tasks settled as `provider unpublished` and asked again by the gap queue once published. md5-guarded.
+  - Migration `20261022015000_cf247_course_detail_provider_published.sql`: course detail returns `provider_publication_status`; the course shows On the website or Hidden.
+  - Migration `20261022016000_cf247_adapter_filter_and_backfill.sql`: `security.provider_adapter_status_v1`, `security.admin_providers_page_v2` (adapter filter, column, sort; old function retiring), `admin_catalogue_page` calls it; 726 providers queued for onboarding.
+  - Migration `20261022017000_cf247_user_last_active.sql` and `admin-user-management`: Last active on Users & roles.
+  - Guide; SOPs 1.53.
+
 ## 0.1.238 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.311** (Backup & restore fix). Platform Admin, 22 Oct 2026 11:40: "shown button doesn't work and there is no restore button to restore the select backup".

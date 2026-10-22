@@ -1,15 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.311'
-export const PACKAGE_VERSION='0.1.238'
+export const UI_VERSION='2.15.312'
+export const PACKAGE_VERSION='0.1.239'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Oct 2026',
-  title:'Backup & restore: Restore button',
-  changes:['Settings › Backup & restore: each backup has Compare and Restore; the backup being shown is marked Selected; a Restore this backup section is always shown under the comparison.'],
-  bugFixes:['The selected backup showed a "Shown" button that did nothing, and Restore only appeared when something differed.']
+  title:'Unpublished providers pause; Adapter filter; last active',
+  changes:[
+    'Unpublished providers are left out of every scheduled job (AI field reader, fee reader, logos, onboarding, automatic plans, gap queue, scholarships); publishing them again brings them back.',
+    'Providers: an Adapter filter (has an adapter, admitting, testing, building, switched off, no adapter) and the Adapter column sorts.',
+    'Every published provider with its own website and no adapter is queued for onboarding, which finds its course pages and builds its adapter.',
+    'Course detail shows whether the course is on the website, from its provider\'s Published switch.',
+    'Users & roles shows Last active (the latest sign-in or session refresh), with the sign-in date under it.'
+  ],
+  bugFixes:['Courses showed "Not published": courses have no Published switch of their own.','A user who stayed signed in showed an old last sign-in date.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
