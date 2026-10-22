@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.244 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.317**. Platform Admin, 22 Oct 2026 16:30, choice "Course list page per provider (Recommended)".
+  - Migration `20261022026000_cf247_course_list_pages.sql`: `pipeline.provider_course_lists`; `public.admin_course_list` (list, add, stop, read_now); `svc_course_list_next` / `svc_course_list_record` (links into `pipeline.coverage_provider_urls`, source `course_list`); `security.coverage_ai_match_prepare_v1` runs for providers with a read course list and gives one more attempt after each read (md5-guarded); job `course-list-read` (catalogued); six settings.
+  - Worker v0.37.0: mode `course_list_read` (direct, then the scraper when too few links; follows next pages).
+  - Adapter builder 2.1 Course list page box. Guide; SOPs 1.58.
+
 ## 0.1.243 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.316**. Platform Admin, 22 Oct 2026: 16:22 "is ti correct 1410 don't have adapters" (choice "Stop onboarding, label 'No courses'"); 16:10 UTS Adapter builder course list (choice "Yes, build them").

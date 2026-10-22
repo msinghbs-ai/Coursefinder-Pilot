@@ -45,7 +45,7 @@ const FIELD={intakes:'Intakes',english:'English',fee:'Fee',delivery:'Delivery'}
 const needsPerson=r=>r.status==='stopped'&&['nothing_ready','approve_central'].includes(r.stop_reason)
 export const STOP={no_courses:['No courses','No active courses, so there is nothing for an adapter to read. Queued again by itself once the provider has an active course (v2.15.316).'],
   no_website:['No website','Enter the website in the Adapter builder (1.1). Onboarding carries on by itself once a website is recorded, or press Retry.'],
-  too_few_pages:['Too few course pages','The next university has started. This one carries on by itself once enough of its pages are read: add course pages in the Adapter builder (2.1), then Retry.'],
+  too_few_pages:['Too few course pages','The next university has started. This one carries on by itself once enough of its pages are read: in the Adapter builder (2.1) add its course list page (read again weekly) or course pages by hand.'],
   ai_allowance:['AI allowance used','The adapter AI allowance for today is used (Adapter builder settings). The next university has started; this one carries on by itself when the allowance renews at midnight, Melbourne time.'],
   capture_failed:['Sample pages not captured','Check the site opens and Firecrawl credits remain (Models & services), then Retry.'],
   proposal_failed:['AI proposal failed','Check the OpenRouter credit and the adapter AI allowance, then Retry; or build the adapter by hand in the Adapter builder.'],

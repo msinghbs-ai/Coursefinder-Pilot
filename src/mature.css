@@ -592,3 +592,5 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-filter.is-on{border-color:var(--m-text);font-weight:700}
 .ab-edit{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ab-edit input{min-width:22rem;flex:1 1 22rem}
+/* v2.15.317: course list page box in Adapter builder 2.1 */
+.ab-course-lists{margin:12px 0;padding:10px 12px;border:1px solid var(--m-border);border-radius:10px}

@@ -38,6 +38,7 @@ test.describe('mocked browser', () => {
     const calls = []
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_adapter_builder_basics', r => r.fulfill({ json: basics }))
     await page.route('https://example.supabase.co/rest/v1/rpc/admin_adapter_builder', async r => { const b = r.request().postDataJSON(); calls.push({ fn: 'admin_adapter_builder', ...b }); await r.fulfill({ json: b.p_action === 'read' ? { budget: { used_usd: 0, limit_usd: 1.5 }, can_manage: true, drafts: [], pages: [], courses: [{ id: 'c1', course: 'Advanced Diploma of Business', code: '112357' }], website: basics.website || null, ...builder } : { ok: true } }) })
+    await page.route('https://example.supabase.co/rest/v1/rpc/admin_course_list', r => r.fulfill({ json: { lists: [], can_manage: true } }))
     for (const fn of ['admin_provider_website_set', 'admin_firecrawl_write', 'admin_uni_adapter_read', 'admin_uni_adapter_review']) await page.route(`https://example.supabase.co/rest/v1/rpc/${fn}`, async r => { const b = r.request().postDataJSON(); calls.push({ fn, ...b }); await r.fulfill({ json: fn === 'admin_firecrawl_write' ? (b.p_action === 'target' ? { ok: true, domain: 'brittscollege.edu.au' } : { ok: true, items: 27, credits_cap: 200 }) : fn === 'admin_uni_adapter_read' ? { adapter: {}, previews: [] } : {} }) })
     await page.goto('/#layer-2-discovery?tab=builder&provider=p-bc')
     return calls

@@ -178,6 +178,21 @@ test('Sydney course data file is a companion read directly; values recorded, not
 
 test('worker v0.36.2 reads an address ending in .json as JSON text', () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('coverage-sweep-worker-v0.36.2')
+  expect(w).toContain('v0.36.2 (22 Oct 2026')
   expect(w).toContain('const isJson = /\\.json$/i.test(u.pathname);')
+})
+
+test('v2.15.317 course list page per provider feeds the page matcher; weekly re-read; worker mode', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022026000_cf247_course_list_pages.sql', 'utf8')
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const ui = fs.readFileSync('src/AdapterBuilderTab.jsx', 'utf8')
+  expect(mig).toContain("'7ee31f407e29af54aa32e5cd6104f294'")
+  expect(mig).toContain("comment on table pipeline.provider_course_lists")
+  expect(mig).toContain("insert into pipeline.automation_catalogue(jobname")
+  expect(mig).toContain("'course_list.reread_days'")
+  expect(mig).toContain('or security.course_list_read_v1(co.provider_id))')
+  expect(w).toContain('if (mode === "course_list_read") {')
+  expect(w).toContain('coverage-sweep-worker-v0.37.0')
+  expect(ui).toContain('data-course-list-pages')
+  expect(ui).toContain("supabase.rpc('admin_course_list'")
 })
