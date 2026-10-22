@@ -154,13 +154,13 @@ do $t$ declare n int; items jsonb; it jsonb; res jsonb; tgt jsonb; cid uuid; beg
   n := security.fee_course_pages_enqueue_v1();
   perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
   perform set_config('request.jwt.claim.role', 'service_role', true);
-  update pipeline.fee_reader_queue set created_at = '2000-01-01' where course_id is not null and state = 'queued' and id = (select id from pipeline.fee_reader_queue where course_id is not null and state='queued' order by created_at desc limit 1);
+  update pipeline.fee_reader_queue set created_at = '2000-01-01' where course_id is not null and state = 'queued' and course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576';
   items := public.svc_fee_ai_next(1);
   it := items->0; cid := (it->'courses'->0->>'id')::uuid;
   select security.coverage_tuition_target_v1(g.candidates->'fee') into tgt from pipeline.coverage_course_pages g where g.course_id = cid;
   res := public.svc_fee_ai_record((it->>'queue_id')::uuid, jsonb_build_object('rows', jsonb_build_array(jsonb_build_object('qualification', it->'courses'->0->>'title', 'subject', null, 'level', null,
             'amount_min', (tgt->>'amount')::numeric, 'amount_max', null, 'currency', 'NZD', 'unit', 'per_year', 'units_covered', null, 'audience', 'international', 'fee_year', 2026,
             'quote', 'test', 'course_id', cid, 'match_confidence', 0.95)), 'quotes_missing', 0, 'more_fee_pages', '[]'::jsonb, 'page_notes', '', 'model', it->>'model'), 0, null);
-  raise exception 'DRYRUN OK %', jsonb_build_object('queued', n, 'target', tgt, 'record', res,
+  raise exception 'DRYRUN OK %', jsonb_build_object('queued', n, 'has', (select count(*) from pipeline.fee_reader_queue where course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576'), 'target', tgt, 'record', res,
      'fee', (select jsonb_agg(jsonb_build_object('a', f.amount, 'y', f.fee_year, 'b', f.basis, 'st', f.status)) from catalogue.course_fees f where f.course_id = cid and f.fee_type = 'provider_current_tuition'),
      'rows', (select jsonb_agg(jsonb_build_object('o', r.outcome, 'n', r.note)) from pipeline.fee_reader_rows r where r.queue_id = (it->>'queue_id')::uuid)); end $t$;
