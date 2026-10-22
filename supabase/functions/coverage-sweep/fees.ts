@@ -15,6 +15,8 @@ export const FEE_AI_PROMPT = `You read one tuition fee page of a tertiary educat
 Rules:
 - One row per fee shown: the qualification (e.g. "Bachelor of Science"), the subject or major if the fee is for one subject, the level if stated, the amount (amount_min; amount_max only when the page gives a range), the currency, the unit and the fee year.
 - unit: per_year (a yearly or annual fee, a fee per EFTS or full-time year), per_credit, per_point (NZ points), per_term (semester, trimester or term), per_course (whole programme), or unknown.
+- An amount printed for a number of points or credits, such as "$19,929.84 (for 60 points)" or "$27,300 (60 points)", is the fee for those points, NOT a fee per point: use per_year when the points are a full-time year, otherwise per_course, and give that number as units_covered. Use per_point or per_credit only when the page says per point, per credit or per paper.
+- units_covered: the number of points or credits the amount is for, when the page states it next to the amount; otherwise null.
 - audience: international or domestic, from the page's heading or column. If the page is only for international students, every row is international.
 - quote: copy the words of the row from the page exactly, including the amount, so it can be found on the page.
 - course_id: the id of the one course in the given course list that this row's fee is for (same qualification; a subject row belongs to its qualification's course when the list has no separate course for the subject). Use null when no course in the list fits. match_confidence 0 to 1: how sure the match is.
@@ -27,11 +29,12 @@ const fees_schema = {
   required: ["rows", "more_fee_pages", "page_notes"],
   properties: {
     rows: { type: "array", items: { type: "object", additionalProperties: false,
-      required: ["qualification", "subject", "level", "amount_min", "amount_max", "currency", "unit", "audience", "fee_year", "quote", "course_id", "match_confidence"],
+      required: ["qualification", "subject", "level", "amount_min", "amount_max", "currency", "unit", "units_covered", "audience", "fee_year", "quote", "course_id", "match_confidence"],
       properties: {
         qualification: { type: "string" }, subject: { type: ["string", "null"] }, level: { type: ["string", "null"] },
         amount_min: { type: "number" }, amount_max: { type: ["number", "null"] }, currency: { type: "string" },
         unit: { type: "string", enum: ["per_year", "per_credit", "per_point", "per_term", "per_course", "unknown"] },
+        units_covered: { type: ["number", "null"] },
         audience: { type: "string", enum: ["international", "domestic"] }, fee_year: { type: ["integer", "null"] },
         quote: { type: "string" }, course_id: { type: ["string", "null"] }, match_confidence: { type: "number" } } } },
     more_fee_pages: { type: "array", items: { type: "string" } },

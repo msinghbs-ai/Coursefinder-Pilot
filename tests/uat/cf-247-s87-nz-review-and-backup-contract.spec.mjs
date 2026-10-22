@@ -119,3 +119,16 @@ test('NZ resolutions finished (Platform Admin 22 Oct 2026 13:28) and search gate
   expect(f).toContain('create or replace function security.nz_resolution_measures_v1(p_country text default')
   expect((g.match(/security\.search_asked_by_person_v1\(s\.provider_id, s\.requested_at\)/g) || []).length).toBe(3)
 })
+
+test('v2.15.313 fee reader: a fee printed for a number of points is not read per point', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022021000_cf247_fee_reader_units_covered.sql', 'utf8')
+  const fees = fs.readFileSync('supabase/functions/coverage-sweep/fees.ts', 'utf8')
+  expect(mig).toContain('create or replace function security.fee_row_units_v1(p_row jsonb)')
+  expect(mig).toContain("'b34253b9806cfb1b6d0aa14992412250'")
+  expect(mig).toContain("update pipeline.fee_reader_rows set outcome = 'replaced' where queue_id = q.id;")
+  expect(mig).toContain("where x.queue_id = q.id and x.outcome = 'pending';")
+  expect(mig).toMatch(/^-- Replaces: public\.svc_fee_ai_record/m)
+  expect(fees).toContain('units_covered: { type: ["number", "null"] }')
+  expect(fees).toContain('"unit", "units_covered", "audience"')
+  expect(fees).toContain('NOT a fee per point')
+})

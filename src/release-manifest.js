@@ -1,21 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.312'
-export const PACKAGE_VERSION='0.1.239'
+export const UI_VERSION='2.15.313'
+export const PACKAGE_VERSION='0.1.240'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Oct 2026',
-  title:'Unpublished providers pause; Adapter filter; last active',
+  title:'Fee reader: fees printed for a number of points',
   changes:[
-    'Unpublished providers are left out of every scheduled job (AI field reader, fee reader, logos, onboarding, automatic plans, gap queue, scholarships); publishing them again brings them back.',
-    'Providers: an Adapter filter (has an adapter, admitting, testing, building, switched off, no adapter) and the Adapter column sorts.',
-    'Every published provider with its own website and no adapter is queued for onboarding, which finds its course pages and builds its adapter.',
-    'Course detail shows whether the course is on the website, from its provider\'s Published switch.',
-    'Users & roles shows Last active (the latest sign-in or session refresh), with the sign-in date under it.'
+    'The AI fee reader reads a fee printed for a number of points, such as "$19,929.84 (for 60 points)", as the fee for those points and works the yearly figure out from it (NZ: 120 points a year). The note on the fee says so.',
+    'A fee page read again replaces its earlier rows; the old rows stay, marked Replaced by a newer read.'
   ],
-  bugFixes:['Courses showed "Not published": courses have no Published switch of their own.','A user who stayed signed in showed an old last sign-in date.']
+  bugFixes:['Fees printed for 60 points (AUT, Lincoln, Canterbury) were read as a fee per point, giving NZ$2.4 to 3.4 million a year. They were held for review and never published; the eight pages are read again.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
