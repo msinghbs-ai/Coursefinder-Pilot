@@ -288,55 +288,76 @@ declare v_at timestamptz := date_trunc('hour', now()); v int;
 begin
   delete from pipeline.gap_cause_snapshots where at < now() - make_interval(days => security.pipeline_num_v1('gaps.cause_keep_days', 14)::int);
   delete from pipeline.gap_cause_snapshots where at = v_at;  -- run again within the hour: the latest wins
-  insert into pipeline.gap_cause_snapshots(at, country_code, attribute, cause, action, automatic, courses)
-  with c as (
+  -- set-based: each lookup is read once (the hourly run must stay well inside the statement time limit)
+  create temp table _gc on commit drop as
     select c.id, c.provider_id, k.iso_alpha2::text cc, c.duration_value, c.study_level_id, c.delivery_mode, c.primary_field_id, c.open_to_international,
-           g.status gs, g.read_status rs, g.identity_basis ib,
-           (select s.state from pipeline.course_link_search s where s.course_id = c.id) ls
+           g.status gs, g.read_status rs, g.identity_basis ib, s.state ls
       from catalogue.courses c join catalogue.providers p on p.id = c.provider_id join ref.countries k on k.id = p.country_id
       left join pipeline.coverage_course_pages g on g.course_id = c.id
-     where c.lifecycle_status = 'active' and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = c.provider_id)),
-  m as (
+      left join pipeline.course_link_search s on s.course_id = c.id
+     where c.lifecycle_status = 'active'
+       and (p.publication_status is not distinct from 'published' and coalesce(p.lifecycle_status, 'active') = 'active');
+  create temp table _gh on commit drop as
+    select course_id id, 'official_page' attr from catalogue.course_links where link_type = 'official_course' and status = 'active'
+    union select course_id, 'fee' from catalogue.course_fees where audience = 'international' and status = 'active'
+    union select course_id, 'english' from catalogue.course_english_requirements where coalesce(status, 'active') = 'active'
+    union select course_id, 'intakes' from catalogue.course_intakes where status = 'active'
+    union select course_id, 'campus' from catalogue.course_campuses
+    union select cc.course_id, 'campus_region' from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where k.subdivision_id is not null
+    union select cc.course_id, 'campus_city' from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where nullif(btrim(k.city), '') is not null;
+  create index on _gh(id, attr);
+  create temp table _gi on commit drop as
+    select distinct on (course_id, field) course_id id, field attr, state from pipeline.field_enrich_items where course_id is not null order by course_id, field, id desc;
+  create index on _gi(id, attr);
+  create temp table _gf on commit drop as
+    select distinct entity_key id, field attr from pipeline.enrichment_flags where entity = 'course' and reason_code = 'enrich_no_value' and state in ('raised', 'counting');
+  create index on _gf(id, attr);
+  create temp table _gfee on commit drop as
+    select q.course_id id,
+           bool_or(q.state in ('queued', 'leased')) queued, bool_or(q.state = 'done') done,
+           bool_or(exists (select 1 from pipeline.fee_reader_rows r where r.queue_id = q.id and r.outcome in ('domestic', 'not_yearly'))) no_intl
+      from pipeline.fee_reader_queue q where q.course_id is not null group by q.course_id;
+  create temp table _greview on commit drop as
+    select distinct entity_id id from pipeline.layer4_review_items where field_code = 'provider_current_tuition_validation' and status = 'pending';
+  create temp table _gm on commit drop as
     select c.*, x.attr
-      from c cross join lateral (values
-        ('official_page', exists (select 1 from catalogue.course_links l where l.course_id = c.id and l.link_type = 'official_course' and l.status = 'active')),
-        ('fee', exists (select 1 from catalogue.course_fees f where f.course_id = c.id and f.audience = 'international' and f.status = 'active')),
-        ('english', exists (select 1 from catalogue.course_english_requirements e where e.course_id = c.id and coalesce(e.status, 'active') = 'active')),
-        ('intakes', exists (select 1 from catalogue.course_intakes i where i.course_id = c.id and i.status = 'active')),
-        ('campus', exists (select 1 from catalogue.course_campuses cc where cc.course_id = c.id)),
-        ('campus_region', exists (select 1 from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where cc.course_id = c.id and k.subdivision_id is not null)),
-        ('duration', c.duration_value is not null),
-        ('delivery', nullif(btrim(c.delivery_mode), '') is not null),
-        ('level', c.study_level_id is not null),
-        ('field_of_study', c.primary_field_id is not null),
-        ('international', c.open_to_international is not null)) x(attr, held)
-     where not x.held),
-  e as (  -- the latest Enrich fields item and any open "AI found no value" hold for the course and field
-    select m.*,
-           (select f.state from pipeline.field_enrich_items f where f.course_id = m.id and f.field = m.attr order by f.id desc limit 1) item_state,
-           exists (select 1 from pipeline.enrichment_flags f where f.entity = 'course' and f.entity_key = m.id::text and f.field = m.attr
-                     and f.reason_code = 'enrich_no_value' and f.state in ('raised', 'counting')) no_value
-      from m),
+      from _gc c cross join unnest(array['official_page', 'fee', 'english', 'intakes', 'campus', 'campus_region', 'duration', 'delivery', 'level', 'field_of_study', 'international']) x(attr)
+     where case x.attr when 'duration' then c.duration_value is null when 'delivery' then nullif(btrim(c.delivery_mode), '') is null
+                       when 'level' then c.study_level_id is null when 'field_of_study' then c.primary_field_id is null
+                       when 'international' then c.open_to_international is null
+                       else not exists (select 1 from _gh h where h.id = c.id and h.attr = x.attr) end;
+  create temp table _gid on commit drop as
+    select d.provider_id, d.ib, d.attr, security.coverage_identity_allowed(d.provider_id, d.ib, case d.attr when 'fee' then 'tuition' when 'official_page' then 'official_url' else d.attr end) ok
+      from (select distinct provider_id, ib, attr from _gm where attr in ('official_page', 'fee', 'english', 'intakes')) d;
+  insert into pipeline.gap_cause_snapshots(at, country_code, attribute, cause, action, automatic, courses)
+  with e as (
+    select m.*, i.state item_state, (f.id is not null) no_value, coalesce(idn.ok, true) id_ok, fe.queued fee_queued, fe.done fee_done, fe.no_intl fee_no_intl,
+           (rv.id is not null) in_review, exists (select 1 from _gh h where h.id = m.id and h.attr = 'campus') has_campus,
+           exists (select 1 from _gh h where h.id = m.id and h.attr = 'campus_city') has_city
+      from _gm m
+      left join _gi i on i.id = m.id and i.attr = m.attr
+      left join _gf f on f.id = m.id::text and f.attr = m.attr
+      left join _gid idn on idn.provider_id = m.provider_id and idn.ib is not distinct from m.ib and idn.attr = m.attr
+      left join _gfee fe on fe.id = m.id and m.attr = 'fee'
+      left join _greview rv on rv.id = m.id and m.attr = 'fee'),
   z as (
     select e.cc, e.attr,
       case
-        when e.attr = 'campus_region' and not exists (select 1 from catalogue.course_campuses cc where cc.course_id = e.id) then 'no campus yet'
-        when e.attr = 'campus_region' and not exists (select 1 from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where cc.course_id = e.id and nullif(btrim(k.city), '') is not null) then 'campus has no city'
+        when e.attr = 'campus_region' and not e.has_campus then 'no campus yet'
+        when e.attr = 'campus_region' and not e.has_city then 'campus has no city'
         when e.attr = 'campus_region' then 'campus city has no region yet'
         when e.attr in ('level', 'field_of_study') and e.item_state in ('queued', 'waiting', 'ai', 'leased') then 'AI reading queued'
         when e.attr in ('level', 'field_of_study') and e.no_value then 'AI: the title gives no value'
         when e.attr in ('level', 'field_of_study') then 'not tried yet'
         when e.gs is null or e.gs <> 'bound' then case when e.ls = 'queued' then 'no page: web search queued' when e.ls = 'none' then 'no page: search and AI page match found none' else 'no page found' end
         when e.rs is distinct from 'read' then 'page not read: ' || coalesce(e.rs, 'not yet')
-        when e.attr in ('official_page', 'fee', 'english', 'intakes') and not security.coverage_identity_allowed(e.provider_id, e.ib, case e.attr when 'fee' then 'tuition' when 'official_page' then 'official_url' else e.attr end)
-          then 'page proof (' || coalesce(e.ib, 'none') || ') not admitted for this field'
+        when e.attr in ('official_page', 'fee', 'english', 'intakes') and not e.id_ok then 'page proof (' || coalesce(e.ib, 'none') || ') not admitted for this field'
         when e.attr = 'official_page' then 'page read, address not admitted yet'
-        when e.attr = 'fee' and exists (select 1 from pipeline.layer4_review_items r where r.entity_id = e.id and r.field_code = 'provider_current_tuition_validation' and r.status = 'pending') then 'fee waiting in review'
-        when e.attr = 'fee' and exists (select 1 from pipeline.fee_reader_queue q where q.course_id = e.id and q.state in ('queued', 'leased')) then 'fee reader queued'
+        when e.attr = 'fee' and e.in_review then 'fee waiting in review'
+        when e.attr = 'fee' and coalesce(e.fee_queued, false) then 'fee reader queued'
         when e.attr = 'fee' and not (e.cc = any (v_fee_cc)) then 'fee reader not on for this country'
-        when e.attr = 'fee' and exists (select 1 from pipeline.fee_reader_rows r join pipeline.fee_reader_queue q on q.id = r.queue_id where q.course_id = e.id and r.outcome in ('domestic', 'not_yearly'))
-          then 'page shows no international yearly fee'
-        when e.attr = 'fee' and exists (select 1 from pipeline.fee_reader_queue q where q.course_id = e.id and q.state = 'done') then 'fee reader found no fee on the page'
+        when e.attr = 'fee' and coalesce(e.fee_no_intl, false) then 'page shows no international yearly fee'
+        when e.attr = 'fee' and coalesce(e.fee_done, false) then 'fee reader found no fee on the page'
         when e.attr = 'fee' then 'page shows no single international fee to the reader'
         when e.item_state in ('queued', 'waiting', 'ai', 'leased') then 'AI reading queued'
         when e.no_value then 'AI: the page does not state it'
