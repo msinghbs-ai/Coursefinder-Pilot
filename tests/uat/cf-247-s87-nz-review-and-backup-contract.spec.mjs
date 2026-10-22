@@ -198,3 +198,11 @@ test('v2.15.317 course list page per provider feeds the page matcher; weekly re-
   expect(ui).toContain('data-course-list-pages')
   expect(ui).toContain("supabase.rpc('admin_course_list'")
 })
+
+test('course search pick works out provider checks once per provider (it timed out per row)', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022028000_cf247_search_next_per_provider.sql', 'utf8')
+  expect(mig).toContain("'d74f17bdf20b971b584291ef20f637c4'")
+  expect(mig).toContain('with prov as materialized (')
+  expect(mig).toContain('coverage_vendor_usage_purpose_at_idx')
+  expect(mig).toContain("when s.requested_at is not null and not pv.bulk then true")
+})
