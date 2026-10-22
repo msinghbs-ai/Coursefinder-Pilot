@@ -3,6 +3,8 @@
 -- ran the directory-site test on every provider with a website and a missing phone or email (1,327) before the cheap filters (checked in
 -- the last 90 days, has an active course, published); it took 10.4 seconds and found none, so each run timed out instead of returning
 -- nothing. The cheap filters now run first (materialized) and the directory-site test only on what is left. Same rules, order and limit.
+-- (22 Oct 2026 19:40: the 90-day recheck written here as a number was made a setting, contact.recheck_days, by 20261022032000, which
+-- brought the live function to this text; the settings guard caught it.)
 -- Replaces: public.svc_provider_contact_next (filter order). md5-guarded.
 -- Retires: nothing
 -- Nothing dropped or deleted. Consumer API not touched (Decision 266).
@@ -28,7 +30,7 @@ begin
            (select count(*) from catalogue.courses c where c.provider_id = p.id and c.lifecycle_status = 'active') courses
       from catalogue.providers p
      where p.lifecycle_status = 'active' and p.website ~* '^https?://' and (p.phone is null or p.email is null)
-       and not exists (select 1 from pipeline.provider_contact_checks k where k.provider_id = p.id and k.kind = 'public_general' and k.checked_at > now() - interval '90 days')
+       and not exists (select 1 from pipeline.provider_contact_checks k where k.provider_id = p.id and k.kind = 'public_general' and k.checked_at > now() - make_interval(days => security.pipeline_num_v1('contact.recheck_days', 90)::int))
        and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.id)  -- v2.15.237: paused while the provider is unpublished or archived
        and exists (select 1 from catalogue.courses c where c.provider_id = p.id and c.lifecycle_status = 'active')),
   pick as (

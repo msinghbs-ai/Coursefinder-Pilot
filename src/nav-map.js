@@ -75,11 +75,13 @@ export const PAGES = {
     { key: 'plan', label: 'Enrichment plan', min: 3 },
     // v2.15.287 (Decision 267, Platform Admin 18 Oct 11:58 "Keep Adapter builder too"): one click per university, eight fields measured
     { key: 'build', label: 'Build adapter', min: 3 },
+    // v2.15.318 (Platform Admin 22 Oct 2026 19:05, "accommodate manual actions ... complete the process in manual mode"): the Adapter builder is
+    // back in the tabs; every step can be done by hand there (pages, samples, settings, save, qualify, admit)
+    { key: 'builder', label: 'Adapter builder', min: 5 },
     // v2.15.273 (Platform Admin, 14 Oct 2026 10:41): a task that fills chosen missing fields for countries or universities
     { key: 'enrich', label: 'Enrich fields', min: 3 },
     // v2.15.301 (Platform Admin, 20 Oct 2026, "One tab on Layer 2/3"): finding (was Layer 1 › Scholarships) and reading scholarships, one tab
     { key: 'scholarships', label: 'Scholarships', min: 4 },
-    { key: 'builder', label: 'Adapter builder', min: 5, hidden: true },
   ] },
   // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation retired. University adapters (Layer 2) admit intakes,
   // English requirements and fees, so the AI check is no longer needed; its old addresses open Layer 2 › Adapters.

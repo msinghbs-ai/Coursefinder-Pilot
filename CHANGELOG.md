@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.245 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.318**. Platform Admin, 22 Oct 2026 19:05: "Yes, we need to accommodate manual actions as well. Do what complete the process in manual mode".
+  - `src/nav-map.js` Adapter builder back in the Layer 2/3 tabs; `src/BuildAdapter.jsx` Do it by hand in Adapter builder; `src/AdapterBuilderTab.jsx` Write the settings by hand (3.1), hand-saved settings count for 3.2/3.3, step 4 from one read page, admit by decision in 3.4.
+  - Migration `20261022031000_cf247_builder_screenshots_open_build.sql`: screenshots of an open build kept (`security.screenshot_in_open_build_v1`, setting `retention.screenshot_open_build_days`). md5-guarded. Guide; SOPs 1.59.
+
 ## 0.1.244 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.317**. Platform Admin, 22 Oct 2026 16:30, choice "Course list page per provider (Recommended)".

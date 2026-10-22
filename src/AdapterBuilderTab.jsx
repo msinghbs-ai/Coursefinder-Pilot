@@ -327,17 +327,20 @@ function GuidedBuild({b,find,onChanged,onError,onStage}){
   useEffect(()=>{loadDraft()},[pid])
   const dr=(r?.drafts||[])[0],last=(dr?.proposals||[]).slice(-1)[0],captured=(dr?.captures||[]).some(c=>!c.error)
   useEffect(()=>{if(!dr||!['capturing','proposing'].includes(dr.status))return;const t=setTimeout(loadDraft,5000);return()=>clearTimeout(t)},[r])
-  const run=async(key,q,fn)=>{const reason=ask(q,{confirm:['capture','propose'].includes(key)});if(!reason)return;setBusy(key);try{await fn(reason)}catch(e){onError?.(errText(e))}finally{setBusy('')}}
+  const run=async(key,q,fn)=>{const reason=ask(q,{confirm:['capture','propose'].includes(key)||key.startsWith('admit_')});if(!reason)return;setBusy(key);try{await fn(reason)}catch(e){onError?.(errText(e))}finally{setBusy('')}}
   const rpc=async(name,args)=>{const{data,error}=await supabase.rpc(name,args);if(error)throw error;return data}
   const a=b.adapter,{ready,held}=readyFields(b.qualify),admitted=a?.admit?(a.admit_fields||[]):[],toAdmit=ready.filter(f=>!admitted.includes(f))
   const proposalOk=last&&last.kind!=='error'&&last.adapter
   const savedAfter=a&&last&&a.updated_at&&new Date(a.updated_at)>=new Date(last.at)
+  // v2.15.318 (manual mode): settings written and saved by hand (step 4) count as saved, with no AI proposal needed
+  const handSaved=Boolean(a)&&!proposalOk
   const st={find:read>=3?'done':'todo',capture:dr&&dr.status==='capturing'?'busy':captured?'done':read>=3?'todo':'wait',
-    propose:dr?.status==='proposing'?'busy':proposalOk?'done':captured?'todo':'wait',save:savedAfter?'done':proposalOk?'todo':'wait',
-    qualify:savedAfter&&b.qualify?'done':savedAfter?'todo':'wait',admit:toAdmit.length===0&&admitted.length>0?'done':toAdmit.length?'todo':'wait'}
+    propose:dr?.status==='proposing'?'busy':proposalOk||handSaved?'done':captured?'todo':'wait',save:savedAfter||handSaved?'done':proposalOk?'todo':'wait',
+    qualify:(savedAfter||handSaved)&&b.qualify?'done':savedAfter||handSaved?'todo':'wait',admit:toAdmit.length===0&&admitted.length>0?'done':toAdmit.length?'todo':'wait'}
   // Fix 5: the capture line counts captures only; a failed proposal is reported at 3.1, not here
   const caps=dr?.captures||[],okCaps=caps.filter(c=>!c.error).length,badCaps=caps.length-okCaps
   const att=(last?.attempts||[])
+  const openHand=()=>{const el=document.querySelector('[data-builder-step="4"]');if(el){el.open=true;el.scrollIntoView({behavior:'smooth',block:'start'})}}
   const stKey=JSON.stringify(st)
   useEffect(()=>{onStage?.(st)},[stKey])
   return <>
@@ -362,6 +365,7 @@ function GuidedBuild({b,find,onChanged,onError,onStage}){
         <p className={`ab-text${last?.kind==='error'?' ab-error':''}`} data-proposal-status>{last?(last.kind==='error'?<>Last proposal failed: {last.error}</>:`${last.model} · US$ ${Number(last.cost||0).toFixed(4)} · ${last.reason||''}`):'The pinned model reads the samples and suggests where each attribute is.'}</p>
         {att.length>0&&<p className="ab-muted" data-proposal-attempts>{att.map((a,i)=>`${i?'then ':''}limit ${fmtNumber(a.max_tokens)} tokens: ${a.finish==='length'?'cut off':a.finish||'no answer'}${a.completion_tokens!=null?`, ${fmtNumber(a.completion_tokens)} answer tokens`:''}`).join('; ')} · US$ {Number(att.reduce((t,a)=>t+Number(a.cost||0),0)).toFixed(4)} in all. A cut-off answer is asked again once, automatically, with a larger limit.</p>}
         {can&&st.propose!=='wait'&&<Button compact disabled={Boolean(busy)||st.propose==='busy'} onClick={()=>run('propose',`Ask the pinned model to propose settings for ${b.name} from the captured samples (uses the AI allowance)?`,async reason=>{await rpc('admin_adapter_builder',{p_action:'propose',p_args:{provider_id:pid,draft_id:dr.id,marks:dr.marks||[],comments:dr.comments||'Propose settings that read international intakes (months), IELTS overall, the international annual fee and delivery from these course pages.',reason}});await loadDraft()})}>{proposalOk?'Propose again':'Ask for a proposal'}</Button>}
+              <p className="ab-text" data-manual-settings>Or write the settings yourself: <Button compact onClick={openHand}>Write the settings by hand (step 4)</Button> — mark the blocks on the captured pages, preview on the stored pages, then save and apply there. Steps 3.2 and 3.3 then count as done.</p>
       </SubStep>
       <SubStep n="3.2" title="Save in testing and apply" state={st.save}><p className="ab-text">Saves the proposed settings switched on but not admitting, then reads the stored pages with them.</p>
         {can&&st.save!=='wait'&&<Button compact disabled={Boolean(busy)} onClick={()=>run('save',`Save the proposed settings for ${b.name} (switched on, testing, nothing admitted) and apply them to its stored pages?`,async reason=>{const cur=(await rpc('admin_uni_adapter_read',{p_provider_id:pid}))?.adapter||{};const p=last.adapter||{};const adapter={...cur,...(p.json_source!=null?{json_source:p.json_source}:{}),json_paths:{...(cur.json_paths||{}),...(p.json_paths||{})},patterns:{...(cur.patterns||{}),...(p.patterns||{})},pick:{...(cur.pick||{}),...(p.pick||{})},enabled:true};delete adapter.updated_at;delete adapter.reason;await rpc('admin_uni_adapter_write',{p_action:'save',p_args:{provider_id:pid,adapter,reason}});await rpc('admin_uni_adapter_write',{p_action:'apply',p_args:{provider_id:pid,reason}});onChanged?.()})}>{savedAfter?'Save and apply again':'Save and apply'}</Button>}
@@ -372,6 +376,9 @@ function GuidedBuild({b,find,onChanged,onError,onStage}){
       </SubStep>
       <SubStep n="3.4" title="Admit the ready fields" state={st.admit}><p className="ab-text">{toAdmit.length?`Ready: ${toAdmit.map(f=>FIELD[f]).join(', ')}.`:admitted.length?`Admitting: ${admitted.map(f=>FIELD[f]||f).join(', ')}.`:'Nothing is ready to admit yet.'}</p>
         {can&&toAdmit.length>0&&<Button compact variant="primary" disabled={Boolean(busy)} onClick={()=>run('admit',`Admit ${toAdmit.map(f=>FIELD[f]).join(', ')} for ${b.name}? Values read from its pages are written to the catalogue; values entered by hand are never changed.`,async reason=>{await rpc('admin_uni_adapter_control',{p_action:'admit',p_args:{provider_id:pid,admit:true,fields:[...new Set([...admitted,...toAdmit])].sort(),reason}});onChanged?.()})}>Admit these</Button>}
+      
+        {/* v2.15.318 (manual mode): a person may admit a field that has not passed the check; it is logged as their decision */}
+        {can&&a&&Object.keys(FIELD).filter(k=>!admitted.includes(k)&&!toAdmit.includes(k)).length>0&&<p className="ab-text" data-manual-admit>Admit by your decision (not passed the check{b.qualify?'':', not measured yet'}): {Object.keys(FIELD).filter(k=>!admitted.includes(k)&&!toAdmit.includes(k)).map(k=><Button key={k} compact disabled={Boolean(busy)} onClick={()=>run('admit_'+k,`Admit ${FIELD[k]} for ${b.name} although it has not passed the check${held[k]?` (${held[k]})`:''}? Values read from its pages are written to the catalogue; values entered by hand are never changed. You can stop it again from Validate and admit.`,async reason=>{await rpc('admin_uni_adapter_control',{p_action:'admit',p_args:{provider_id:pid,admit:true,fields:[...new Set([...admitted,k])].sort(),reason:`${reason} (admitted by a person without passing the check)`}});onChanged?.()})}>Admit {FIELD[k]}</Button>)}</p>}
       </SubStep>
     </Step>
   </>
@@ -405,9 +412,9 @@ export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
     {b&&<>
       <GuidedBuild b={b} find={<CourseList b={b} onChanged={()=>load()} onError={onError}/>} onChanged={()=>{setKey(k=>k+1);load()}} onError={onError} onStage={setStage}/>
       <details className="ab-step ab-hand" data-builder-step="4"><summary className="sl-h4"><span className="ab-num">4</span> Adjust by hand</summary>
-        {read>=3?<><p className="ab-text">Mark which text block or page-data value holds each attribute and ask for a proposal; preview it on the stored pages, then save and apply.</p>
+        {read>=1?<><p className="ab-text">Mark which text block or page-data value holds each attribute and ask for a proposal, or write the patterns yourself; preview them on the stored pages, then save and apply. {read<3?'Only '+read+' read page(s) so far: the preview has little to measure on; add pages in 2.1.':''}</p>
           <AdapterEditor key={key} providerId={b.provider_id} hideReview onError={onError}/>
-          <Button compact onClick={()=>{setKey(k=>k+1);load()}}>Refresh the measures</Button></>:<p className="ab-text">Needs at least 3 read course pages (step 2.1).</p>}
+          <Button compact onClick={()=>{setKey(k=>k+1);load()}}>Refresh the measures</Button></>:<p className="ab-text">Needs at least one read course page (step 2.1: Add page on a course, or a course list page).</p>}
         {b.adapter&&<><h4 className="sl-h4">Validate and admit</h4><Qualify q={b.qualify}/><AdapterReview providerId={b.provider_id} can={Boolean(b.can_manage)} onError={onError}/></>}
       </details>
     </>}
