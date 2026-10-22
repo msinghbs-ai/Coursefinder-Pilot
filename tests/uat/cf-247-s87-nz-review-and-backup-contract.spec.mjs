@@ -206,3 +206,9 @@ test('course search pick works out provider checks once per provider (it timed o
   expect(mig).toContain('coverage_vendor_usage_purpose_at_idx')
   expect(mig).toContain("when s.requested_at is not null and not pv.bulk then true")
 })
+
+test('contact pick runs the directory-site test only after the cheap filters', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022029000_cf247_contact_next_cheap_first.sql', 'utf8')
+  expect(mig).toContain("'b759b7e0badf624d8e5c931f3d5bb7a6'")
+  expect(mig).toContain('with cand as materialized (')
+})
