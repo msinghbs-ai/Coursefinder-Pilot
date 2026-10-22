@@ -288,6 +288,27 @@ export function builderFlow(b,st={},q=null){
   return{running,next,also,steps}
 }
 const FLOW_CHIP={done:['Done','tone-success'],auto:['Running by itself','tone-info'],you:['Your turn','tone-warning'],optional:['Optional','tone-neutral'],wait:['Later','tone-neutral']}
+// v2.15.317 (Platform Admin 22 Oct 2026 16:30, "Course list page per provider"): the provider's own course list or course finder page.
+// Its course links are read with their link text (any language) and go to the page matcher; read again weekly. Pipeline Operator and above.
+const LIST_STATE={due:['Waiting to be read','tone-info'],read:['Read','tone-success'],failed:['Could not read','tone-warning'],blocked:['Refused by the site','tone-warning'],gone:['Page gone','tone-warning'],stopped:['Stopped','tone-neutral']}
+function CourseListPages({b,onError}){
+  const[d,setD]=useState(null),[url,setUrl]=useState(''),[busy,setBusy]=useState(false),[msg,setMsg]=useState('')
+  const load=async()=>{try{const{data,error}=await supabase.rpc('admin_course_list',{p_action:'list',p_args:{provider:b.provider_id}});if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
+  useEffect(()=>{load()},[b.provider_id])
+  const act=async(action,args,q)=>{const reason=ask(q);setBusy(true);setMsg('')  // no reason prompts in the builder (Fix 5): the action is the reason
+    try{const{data,error}=await supabase.rpc('admin_course_list',{p_action:action,p_args:{provider:b.provider_id,...args,reason}});if(error)throw error;setMsg(data?.note||'Done.');if(action==='add')setUrl('');await load()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
+  if(!d)return null
+  const lists=d.lists||[]
+  return <div className="ab-course-lists" data-course-list-pages>
+    <p className="ab-text"><strong>Course list page</strong> — the provider's own page that lists its courses (course finder, A–Z, qualifications). Every course link on it is read with its name, in any language, and matched to the courses above; read again every week.</p>
+    {lists.length>0&&<ul className="tn-list">{lists.map(l=><li key={l.id} data-course-list-row={l.status}><span className={`cf-chip ${LIST_STATE[l.status]?.[1]||'tone-neutral'}`}>{LIST_STATE[l.status]?.[0]||l.status}</span> <a href={l.url} target="_blank" rel="noreferrer">{l.url.replace(/^https?:\/\//,'').slice(0,90)}</a>
+      <small className="ab-muted">{l.read_at?` · ${fmtNumber(l.links_found)} links (${fmtNumber(l.links_new)} new) from ${fmtNumber(l.pages_read)} page(s) · ${fmtDateTime(l.read_at)}${l.fetched_via?` · ${l.fetched_via}`:''}`:''}</small>
+      {d.can_manage&&<> <Button compact disabled={busy} onClick={()=>act('read_now',{id:l.id},`Read ${l.url} again now`)}>Read now</Button>{l.status!=='stopped'&&<Button compact disabled={busy} onClick={()=>act('stop',{id:l.id},`Stop reading ${l.url}`)}>Stop</Button>}</>}</li>)}</ul>}
+    {d.can_manage&&<div className="ab-edit"><input value={url} onChange={e=>setUrl(e.target.value)} placeholder={`${b.website||'https://'}… the page that lists the courses`} aria-label="Course list page address"/>
+      <Button compact disabled={busy||!/^https?:\/\/\S+\.\S+$/.test(url.trim())} onClick={()=>act('add',{url:url.trim()},`Add ${url.trim()} as ${b.name}'s course list page`)}>Add course list page</Button></div>}
+    {msg&&<small className="sd-desc" role="status">{msg}</small>}
+  </div>
+}
 const goTo=n=>{const el=document.querySelector(`[data-builder-step="${n}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 function BuilderGuide({flow}){
   if(!flow)return null
@@ -326,6 +347,7 @@ function GuidedBuild({b,find,onChanged,onError,onStage}){
         <p className="ab-text"><strong>{fmtNumber(read)}</strong> read of <strong>{fmtNumber(b.pages?.stored||0)}</strong> stored, for <strong>{fmtNumber(b.courses)}</strong> active courses (3 read pages needed).</p>
         {find}
         {/* v2.15.316: the page address is entered on the course's own row above (Add page / Change page) */}
+        <CourseListPages b={b} onError={onError}/>
       </SubStep>
       <SubStep n="2.2" title="Capture sample pages" state={st.capture}>
         <p className="ab-text" data-capture-status>{dr?<><strong>{fmtNumber(okCaps)}</strong> of {fmtNumber(caps.length)} sample pages captured{badCaps?` · ${fmtNumber(badCaps)} could not be captured`:''}{dr.status==='capturing'?' · capturing now':''}.</>:'Firecrawl captures 6 course pages spread across course types (about 1 credit each). Add a particular course below.'}</p>

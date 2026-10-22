@@ -1,20 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.316'
-export const PACKAGE_VERSION='0.1.243'
+export const UI_VERSION='2.15.317'
+export const PACKAGE_VERSION='0.1.244'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Oct 2026',
-  title:'No-course providers; Adapter builder course list',
+  title:'Course list page per provider',
   changes:[
-    'Providers › Adapter filter: Not needed: no courses. A provider with no active course shows No courses instead of Create adapter; Has an adapter and No adapter leave it out.',
-    'Onboarding stops a provider with no active course (no credits spent) and queues it again by itself once it has one.',
-    'Adapter builder › 2.1 Course pages: each page says what is wrong with it (Wrong page, about another course; Old site, refused) instead of Stored, not read yet. The state chips filter the list (Read included), every row can be ticked (Tick all shown), Search again takes the ticked courses, and each row has Add page / Change page. The list pages through every course.',
-    'Step numbers stay visible; a finished step adds a Done chip that says what done means.'
+    'Adapter builder › 2.1: Course list page. Paste the provider\'s own page that lists its courses (course finder, A–Z, qualifications); every course link on it is read with its name, in any language, following the list\'s next pages, and matched to the provider\'s courses. Read now and Stop on each list.',
+    'The AI page match now also runs for any provider with a read course list (not only the focus providers), and each course without a page gets one more attempt after every read of the list.',
+    'Weekly retry: each course list is read again every 7 days (setting), so providers stopped for too few course pages carry on by themselves once 3 of their pages are read.'
   ],
-  bugFixes:['Show courses already read did not show them (only the first 200 rows were listed).','Bound pages about another course or on an old site were counted as "Stored, not read yet".']
+  bugFixes:['Providers stopped for too few course pages said they carry on by themselves, but nothing searched for their pages any more.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.316)  
+**Version:** 1.53 (reviewed for platform release v2.15.317)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -174,3 +174,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.55 | 22 Oct 2026 | v2.15.314 | Fee reader (AI): in the weekly look, open a provider and check that each row's quote matches what it was read as ("for 60 points", per year) and how the yearly figure was worked out; Read again with a reason when it does not. |
 | 1.56 | 22 Oct 2026 | v2.15.315 | Fee reader (AI): Stop a fee page that gives no fees and Add a fee page by hand (the right international fee page); it is fetched within about 10 minutes and read by the AI on the next run. |
 | 1.57 | 22 Oct 2026 | v2.15.316 | Adapter builder › 2.1: fix Wrong page and Old site rows with Change page on the row, or tick them and Search again. Providers with no courses show No courses and are not onboarded until they have one. |
+| 1.58 | 22 Oct 2026 | v2.15.317 | Providers stopped for too few course pages: open them in the Adapter builder and add their course list page in 2.1 (the page that lists their courses); it is read within 10 minutes and again weekly, and onboarding carries on by itself once 3 pages are read. |
