@@ -286,3 +286,13 @@ test('15-minute stats per country with toolset use and gaps; Fill in from websit
   expect(m.indexOf("('stats-15m', 'Reports'")).toBeLessThan(m.indexOf("select cron.schedule('stats-15m'"))
   for (const k of ['stats.slow_call_seconds', 'stats.task_wait_minutes', 'stats.flat_field_hours']) expect(m).toContain(`'${k}'`)
 })
+
+test('website review fixes: NZ graduate levels read from register codes; intakes only from the course page (calendar jobs off)', () => {
+  const a = fs.readFileSync('supabase/migrations/20261022041000_cf247_nz_graduate_levels.sql', 'utf8')
+  const b = fs.readFileSync('supabase/migrations/20261022042000_cf247_intakes_page_only.sql', 'utf8')
+  expect(a).toContain("'d8e3ed699880f44ff3257d9941f11d1b'")
+  expect(a).toContain("v_level_name:=replace(lower(coalesce(r->>'course_level','')),'_',' ');")
+  expect(b).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'provider-calendar-intakes'), active := false);")
+  expect(b).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'provider-calendar-defaults'), active := false);")
+  expect(b).toContain("coalesce(i.source_intake_key, '') like 'calendar%'")
+})
