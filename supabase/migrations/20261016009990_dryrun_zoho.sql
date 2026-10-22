@@ -397,7 +397,8 @@ begin
       -- Platform health issue while Stuck, Failing or Out of toolset; closed when it is not
       if v_state in ('stuck', 'failing', 'out_of_toolset') then
         insert into pipeline.platform_issues as i(check_key, severity, area, title, detail)
-        values ('queue_watch:' || q.key, case when v_state = 'out_of_toolset' then 'critical' else 'warning' end, 'work queues', left(v_title, 300),
+        values ('queue_watch:' || q.key, case when v_state = 'out_of_toolset' then 'critical' else 'warning' end,
+                case when q.area = 'Scholarships' then 'scholarships' else 'coverage sweep' end, left(v_title, 300),  -- the issue areas the health page groups by
                 jsonb_build_object('reason', v_reason, 'waiting', v_pending, 'last_progress', v_last, 'resolve', q.fix_at))
         on conflict (check_key) where resolved_at is null do update set severity = excluded.severity, title = excluded.title, detail = excluded.detail,
           last_seen = now(), occurrences = i.occurrences + 1;
@@ -485,7 +486,7 @@ grant execute on function public.admin_queue_watch(text, jsonb) to authenticated
 
 -- 5 health check row, job, register --------------------------------------------------------------------------------------------------
 insert into pipeline.platform_health_checks(key, area, label, status, detail, cadence_minutes, slow, sort_order)
-values ('queue_watch', 'work queues', 'Work queues are moving (progress watchdog)', 'ok', '{}'::jsonb, 15, false, 150)
+values ('queue_watch', 'coverage sweep', 'Work queues are moving (progress watchdog)', 'ok', '{}'::jsonb, 15, false, 150)
 on conflict (key) do nothing;
 
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
@@ -504,6 +505,9 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('function', 'security.queue_watch_tool_state_v1', 'Platform', 'Progress watchdog: tool out, waiting or ok', 'active', '{}', '20261022033000'),
  ('function', 'security.queue_watch_alerts_take_v1', 'Platform', 'Progress watchdog: alerts to the delivery', 'active', '{}', '20261022033000'),
  ('function', 'security.queue_watch_report_v1', 'Platform', 'Progress watchdog: daily report', 'active', '{}', '20261022033000'),
+ ('function', 'public.admin_queue_watch', 'Platform', 'Work queues screen: list, report, run now', 'active', '{}', '20261022033000')
+on conflict (kind, name) do nothing;
+
  ('function', 'public.admin_queue_watch', 'Platform', 'Work queues screen: list, report, run now', 'active', '{}', '20261022033000')
 on conflict (kind, name) do nothing;
 
