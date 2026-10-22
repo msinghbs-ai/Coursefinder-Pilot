@@ -22,6 +22,6 @@ do $t$ declare it jsonb; res jsonb; q uuid; begin
   perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
   select x.id into q from pipeline.fee_reader_queue x join pipeline.evidence_artifacts e on e.id = x.evidence_id where x.course_id is not null and x.state = 'queued' and e.source_url like 'https://www.aut.ac.nz/%' limit 1;
   update pipeline.fee_reader_queue set state = 'leased', attempts = 1 where id = q;
-  res := public.svc_fee_ai_record(q, jsonb_build_object('rows', '[]'::jsonb, 'quotes_missing', 0, 'more_fee_pages', jsonb_build_array('https://www.aut.ac.nz/study/fees-and-scholarships/international-fees'), 'page_notes', '', 'model', 'x'), 0, null);
+  res := public.svc_fee_ai_record(q, jsonb_build_object('rows', '[]'::jsonb, 'quotes_missing', 0, 'more_fee_pages', jsonb_build_array('https://www.aut.ac.nz/dryrun-fee-page'), 'page_notes', '', 'model', 'x'), 0, null);
   raise exception 'DRYRUN OK %', jsonb_build_object('res', res, 'requeued', (select count(*) from pipeline.fee_reader_queue where course_id is not null and state='queued' and attempts=0 and error is null),
-    'added', (select count(*) from pipeline.provider_fact_sources where title = 'linked from a course page (AI fee reader)')); end $t$;
+    'added', (select count(*) from pipeline.provider_fact_sources where title = 'linked from a course page (AI fee reader)'), 'aut_pages', (select count(*) from pipeline.provider_fact_sources f join pipeline.fee_reader_queue x on x.provider_id = f.provider_id and x.id = q where f.kind = 'fee_schedule'), 'q', q); end $t$;
