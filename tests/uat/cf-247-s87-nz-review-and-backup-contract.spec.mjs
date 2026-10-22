@@ -423,3 +423,13 @@ test('v2.15.322: course audit and Read with AI (Curator, reason, logged, missing
   expect(m).toContain("case when v_c.duration_value is null then 'duration' end,")
   expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
 })
+
+test('v2.15.323: identity settings accept every proof the gate reads; NZ fees admit pages bound by a person', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023007000_cf247_identity_settings_all_proofs.sql', 'utf8')
+  expect(m).toContain("if md5(v_def) <> '47491f592951aaeada568c06411cd8be' then raise exception")
+  expect(m).toContain("'degree_name', 'manual', 'host_page', 'adapter_code', 'adapter_title')$n$;")
+  expect(m).toContain("coalesce(v_cur, '[]'::jsonb) || '[\"manual\"]'::jsonb")
+  expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+  const ui = fs.readFileSync('src/PipelineSettings.jsx', 'utf8')
+  expect(ui).toContain("['manual','Page bound by a person'],['host_page','University page'],['adapter_code','Adapter code'],['adapter_title','Adapter title']]")
+})

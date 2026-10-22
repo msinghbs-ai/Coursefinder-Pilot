@@ -1,20 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.322'
-export const PACKAGE_VERSION='0.1.249'
+export const UI_VERSION='2.15.323'
+export const PACKAGE_VERSION='0.1.250'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'What happened to a course, and Read with AI',
+  title:'Fee proofs for New Zealand; every page proof can be set in Settings',
   changes:[
-    'Course drawer › What happened to this course: the course page and how it was found, every page read kept, the page searches and AI page match tries with what they chose, page changes, every AI field fill with its result and reason, admissions and refusals, fee reader rows, cross-checks, the values held now and those set by hand.',
-    'Read with AI (Curator and above, with a reason): the course page is read again first in line, then AI fills the fields the course does not hold. Values set by hand are never changed. Every request is logged on the course.',
-    'Course pages: a page that links to itself with a later year (University of Auckland catalogue) is read at its newest version; values carried as escaped markup are read; a fee amount\'s own label decides whether it is the domestic or international fee.',
-    'Course sources: the finder learns up to three course folders per university (UNSW postgraduate and undergraduate); Find again works for a university that already has a source.'
+    'Settings › Identify the page: every proof the admission gate reads can now be ticked, including Page bound by a person, University page and the adapter proofs. Before, changing English, intakes or the official address for a country that held one of these proofs was refused.',
+    'New Zealand international fees are now also admitted from course pages proved by exact title, title with level, or bound by a person (Platform Admin decision, 23 Oct 2026). The fee still passes the AI fee check before it is admitted.'
   ],
-  bugFixes:['University of Auckland catalogue pages gave no fee, campus, duration or delivery: the values were in escaped markup the page reader dropped.']
+  bugFixes:['Settings › Identify the page refused every change to English, intakes and official address for AU, NZ and CA (unknown identity).']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
