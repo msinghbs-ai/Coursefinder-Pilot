@@ -446,9 +446,9 @@ do $t$ declare v_job uuid; v_c uuid; v_p uuid; v_item bigint; r1 text; r2 text; 
   values (v_job, v_kp, null, 'campus_region', 'ai', 'ai_city', '{"cities":[{"city":"Napier","region":"Hawke''s Bay"}]}'::jsonb) returning id into v_item;
   r2 := security.enrich_apply_v1(v_item);
   select count(*) into n from pipeline.gap_cause_snapshots;
-  raise exception 'DRYRUN OK %', jsonb_build_object('english_apply', r1, 'english_rows', (select jsonb_agg(jsonb_build_object('o', overall_score, 'c', component_scores)) from catalogue.course_english_requirements where course_id = v_c),
+  raise exception 'DRYRUN OK %', jsonb_build_object('a_english_apply', r1, 'english_rows', (select jsonb_agg(jsonb_build_object('o', overall_score, 'c', component_scores)) from catalogue.course_english_requirements where course_id = v_c),
     'intakes_parse', security.enrich_parse_intakes_v1('February, July', 'Start dates: February and July'), 'bad_parse', security.enrich_parse_english_v1('7.0', 'IELTS 6.5 overall'),
     'region_apply', r2, 'napier', (select count(*) from catalogue.campuses where city = 'Napier' and subdivision_id is not null),
-    'snap_rows', n, 'nz_english', (select jsonb_agg(jsonb_build_object('c', cause, 'n', courses, 'a', automatic) order by courses desc) from pipeline.gap_cause_snapshots where country_code = 'NZ' and attribute = 'english'),
+    'snap_rows', n, 'zz_nz_english', (select jsonb_agg(jsonb_build_object('c', cause, 'n', courses, 'a', automatic) order by courses desc) from pipeline.gap_cause_snapshots where country_code = 'NZ' and attribute = 'english'),
     'design_gaps', (select jsonb_agg(jsonb_build_object('cc', country_code, 'f', attribute, 'c', cause, 'n', courses)) from (select * from pipeline.gap_cause_snapshots where not automatic order by courses desc limit 8) d),
     'x', 1); end $t$;
