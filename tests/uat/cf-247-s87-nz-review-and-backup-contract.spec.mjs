@@ -212,3 +212,9 @@ test('contact pick runs the directory-site test only after the cheap filters', (
   expect(mig).toContain("'b759b7e0badf624d8e5c931f3d5bb7a6'")
   expect(mig).toContain('with cand as materialized (')
 })
+
+test('Firecrawl spend checks the stopped search for the one provider', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022030000_cf247_fc_spend_stopped_one_provider.sql', 'utf8')
+  expect(mig).toContain("'db2f642b7a70400bd62452ec282913ff'")
+  expect(mig).toContain('security.fc_search_stopped_for_v1(p_provider_id)')
+})
