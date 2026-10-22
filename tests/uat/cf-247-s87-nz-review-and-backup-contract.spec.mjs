@@ -72,3 +72,15 @@ test('flags show the toolset used before them (Platform Admin 22 Oct 2026 08:12)
   expect(fp).toContain('data-flag-toolline')
   expect(fp).toContain("course_pages_not_listed:'Search off: the site lists too few course pages'")
 })
+
+test('unpublished providers wait in every scheduled queue; publishing brings them back (Platform Admin 22 Oct 2026 11:42)', () => {
+  const u = fs.readFileSync('supabase/migrations/20261022014000_cf247_unpublished_providers_pause.sql', 'utf8')
+  expect(u).toMatch(/^-- Replaces: /m)
+  expect(u).not.toMatch(/^(drop|delete|truncate)\b/im)
+  for (const f of ['svc_fee_ai_next', 'svc_companion_next', 'svc_logo_find_next', 'svc_central_ai_next', 'svc_flag_check_next', 'svc_provider_policy_add_tests_next',
+    'svc_scholarship_recheck_next', 'svc_scholarship_ai_next', 'svc_enrich_ai_next', 'enrich_plan_auto_v1', 'enrich_plan_tick_v1', 'field_gap_queue_tick_v1',
+    'provider_onboarding_tick_v1', 'scholarship_ai_backfill_tick_v1', 'scholarship_discovery_refill_v1']) expect(u).toContain(`select pg_temp.edit_once('`)
+  expect((u.match(/select pg_temp\.edit_once\('/g) || []).length).toBe(15)
+  expect(u).toContain("reason = 'provider unpublished'")
+  expect(u).toContain("or l.reason = 'provider unpublished'")
+})
