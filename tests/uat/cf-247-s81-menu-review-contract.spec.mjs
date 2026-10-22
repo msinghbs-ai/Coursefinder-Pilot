@@ -119,6 +119,10 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-stats-15m]')).toContainText('Worker read: 1 of 30 calls failed')
     await expect(page.locator('[data-stats-15m]')).toContainText('NZ · 6,474 courses')
     await expect(page.locator('[data-queue="course_page_search"]')).toBeVisible()
+    // v2.15.325: why values are missing, with what the platform does and what needs a change
+    await expect(page.locator('[data-gap-causes]')).toContainText('not tried yet')
+    await expect(page.locator('[data-gap-causes]')).toContainText('1,049')
+    await expect(page.locator('[data-gap-manual]')).toContainText('Fee: page proof (adapter_title) not admitted for this field')
     await page.screenshot({ path: 'test-results/work-queues.png', fullPage: true })
   })
 

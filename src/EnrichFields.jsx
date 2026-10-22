@@ -13,7 +13,7 @@ import{fmtNumber}from'./lib/format.js'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enrich_fields',{p_action:action,p_args:args||{}});if(error)throw error;return data}
-export const SOURCE_LABEL={adapter:'Adapter reading (stored page)',institution_rule:'Institution rule',ai_stored:'AI reads the stored page',ai_title:'AI from title and level',scraper:'New read (scraper)'}
+export const SOURCE_LABEL={adapter:'Adapter reading (stored page)',institution_rule:'Institution rule',ai_stored:'AI reads the stored page',ai_title:'AI from title and level',scraper:'New read (scraper)',ai_city:'AI region of the campus city'}
 const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const TONE={filled:'success',review:'warning',skipped:'neutral',failed:'danger'}
 const STATE_LABEL={filled:'Filled',review:'For review',skipped:'Skipped',failed:'Failed',queued:'Waiting',waiting:'Waiting',ai:'With AI',leased:'With AI'}
@@ -103,7 +103,12 @@ function JobItems({jobId,fields,label}){
 }
 function valueText(i){const v=i.value||{};if(i.field==='duration')return v.value!=null?`${v.value} ${v.unit||''}`:'—';if(i.field==='delivery')return v.mode||'—';if(i.field==='international')return v.open==null?'—':v.open?'Yes':'No'
   if(i.field==='campus')return (v.campuses||[]).map(c=>c.name).join(', ')||'—';if(i.field==='campus_list')return (v.admitted||v.campuses||[]).map(c=>c.name).join(', ')||'—'
-  if(i.field==='provider_address')return [v.street,v.city,v.postcode].filter(Boolean).join(', ')||'—';return i.state==='filled'?'Set':'—'}
+  if(i.field==='provider_address')return [v.street,v.city,v.postcode].filter(Boolean).join(', ')||'—'
+  // v2.15.325 (23 Oct 2026): English, intakes and campus regions read by the AI
+  if(i.field==='english')return v.overall!=null?`IELTS ${v.overall}${v.band!=null?` (no band below ${v.band})`:''}`:'—'
+  if(i.field==='intakes')return (v.months||[]).join(', ')||'—'
+  if(i.field==='campus_region')return (v.cities||[]).map(c=>`${c.city}: ${c.region}`).join('; ')||'—'
+  return i.state==='filled'?'Set':'—'}
 
 function FieldSources({meta,label,onSaved,onError}){
   const fields=meta.fields||[],rules=meta.rules||[]

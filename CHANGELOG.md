@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.252 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.325** (the AI reader covers every attribute; why values are missing, every hour). Platform Admin, 23 Oct 2026 10:25: "cross check the gaps and accommodate the ai reader requiement. What is point of hourly reporting if you are not finding gaps and making the platform self sufficient."
+  - Migration `20261023012000_cf247_ai_reader_every_attribute_and_gap_causes.sql`: Enrich fields english, intakes, campus_region; `pipeline.city_regions`; `pipeline.gap_cause_snapshots`, job `gap-causes`, `public.admin_gap_causes`.
+  - Worker `coverage-sweep-worker-v0.42.0`. `src/GapCauses.jsx` on Platform health › Work queues; `src/EnrichFields.jsx` values.
+  - Consumer API unchanged (Decision 266). SOPs 1.66.
+
 ## 0.1.251 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.324** (fee reader at full speed; a course first in line from its page). Platform Admin, 23 Oct 2026 09:03 and 09:07: "what maximum system can handle", "push it as priority from course page", "all avaible to change from ui with maximum values displayed".
