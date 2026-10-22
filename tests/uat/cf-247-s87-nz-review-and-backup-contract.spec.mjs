@@ -108,3 +108,14 @@ test('hotfix: the pause check names its table (onboarding and automatic plans mo
   expect(h).toContain('h.provider_id = q.provider_id')
   expect(h).toContain('h.provider_id = pipeline.enrich_plan_runs.provider_id')
 })
+
+test('NZ resolutions finished (Platform Admin 22 Oct 2026 13:28) and search gates pass only a person\'s request', () => {
+  const f = fs.readFileSync('supabase/migrations/20261022019000_cf247_nz_resolutions_finish.sql', 'utf8')
+  const g = fs.readFileSync('supabase/migrations/20261022020000_cf247_search_gates_automatic_requests.sql', 'utf8')
+  for (const m of [f, g]) { expect(m).toMatch(/^-- Replaces: /m); expect(m).not.toMatch(/^(drop|delete|truncate)\b/im) }
+  expect(f).toContain('create or replace function security.site_not_checked_v1(p_provider uuid)')
+  expect(f).toContain("'pages_refuse_reading'")
+  expect(f).toContain('create or replace function security.enrich_fallback_v1(p_item bigint)')
+  expect(f).toContain('create or replace function security.nz_resolution_measures_v1(p_country text default')
+  expect((g.match(/security\.search_asked_by_person_v1\(s\.provider_id, s\.requested_at\)/g) || []).length).toBe(3)
+})
