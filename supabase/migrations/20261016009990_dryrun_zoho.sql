@@ -7,7 +7,8 @@
 --   (not null, no foreign key) holds the page copy's evidence id, so the reader's rows and findings stay keyed per page version and
 --   every existing column rule stays.
 -- 2 security.fee_course_pages_enqueue_v1: the fee reader's tick queues each course page version that shows one international fee
---   (security.coverage_tuition_target_v1) for a course with no fee held, where the page's proof admits tuition for the country
+--   (security.coverage_tuition_target_v1), or whose adapter fee reading is excluded for that course (University of Auckland: 58
+--   catalogue pages excluded on 7 Oct because the pattern read the low end of a range or a whole-programme fee), for a course with no fee held, where the page's proof admits tuition for the country
 --   (Settings › Identify the page) and the country is in fees.countries. Settings fees.course_pages (on/off) and
 --   fees.course_pages_per_tick.
 -- 3 public.svc_fee_ai_next gives a course page with that one course as the course list (course_page true; the worker reads the
@@ -49,8 +50,10 @@ begin
     join catalogue.courses c on c.id = g.course_id and c.lifecycle_status = 'active'
     join catalogue.providers p on p.id = g.provider_id join ref.countries k on k.id = p.country_id
    where g.status = 'bound' and g.read_status = 'read'
-     and g.candidates->'fee'->'candidates' @> '[{"international": true}]'::jsonb
-     and security.coverage_tuition_target_v1(g.candidates->'fee') is not null
+     and ((g.candidates->'fee'->'candidates' @> '[{"international": true}]'::jsonb and security.coverage_tuition_target_v1(g.candidates->'fee') is not null)
+          -- an adapter's fee reading the university's adapter may not admit for this course (adapter exclusion, e.g. Auckland 7 Oct:
+          -- the low end of a range, a whole-programme fee): the AI reads the page and tells annual from whole-programme fees
+          or (g.candidates->>'fee_by' = 'adapter' and nullif(g.candidates->'fee'->>'value', '') is not null and security.uni_adapter_excluded(g.course_id, 'fee')))
      and k.iso_alpha2 in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fees.countries')
      and security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'tuition')
      and not exists (select 1 from catalogue.course_fees f where f.course_id = g.course_id and f.fee_type = 'provider_current_tuition' and f.status = 'active')
