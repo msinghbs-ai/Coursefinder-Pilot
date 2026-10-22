@@ -325,7 +325,7 @@ test('v0.40.0 course source finder: the platform finds each university\'s course
   const m = fs.readFileSync('supabase/migrations/20261022044000_cf247_course_source_finder.sql', 'utf8')
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('if (mode === "source_find") {')
-  expect(w).toMatch(/coverage-sweep-worker-v0\.40\.\d/)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(40|4[1-9])\.\d/)
   expect(w).toContain('await rpc("svc_source_find_record", { p_provider_id: it.provider_id, p_result: result, p_test: test });')
   expect(m.indexOf("('source-find', 'Enrichment'")).toBeLessThan(m.indexOf("select cron.schedule('source-find'"))
   expect(m).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'source-find'), active := false);")
@@ -436,7 +436,7 @@ test('v2.15.323: identity settings accept every proof the gate reads; NZ fees ad
 
 test('v0.40.9: the newer-version link is found inside escaped markup and page items', async () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.40.9";')
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[1-9]|40\.9)/)
   const i = w.indexOf('export function newestVersionUrl'), j = w.indexOf('\n}\n', i) + 3
   const src = w.slice(i, j).replace('export function', 'function').replace(/: string \| null/, '').replace('(html: string, url: string)', '(html, url)')
     .replace('let base: URL', 'let base').replace('let best: { url: string; year: number } | null', 'let best').replace('let u: URL', 'let u').replace(/\(k: string\)/g, '(k)')
@@ -455,4 +455,21 @@ test('v2.15.323: Read with AI releases AI-found-no-value holds; a changed page f
   expect(m).toContain("release_kind = 'person', release_reason = 'Read with AI: ' || v_reason")
   expect(m).toContain("(w.candidate_context->'provider_current_tuition'->>'amount') is distinct from (security.coverage_tuition_target_v1(p.candidates->'fee')->>'amount')")
   expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+})
+
+test('v2.15.323 / v0.41.0: the AI fee reader reads course pages (one course, proof admits tuition, no fee held, adapter exclusions)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023009000_cf247_fee_reader_course_pages.sql', 'utf8')
+  expect(m).toContain("create or replace function security.fee_course_pages_enqueue_v1()")
+  expect(m).toContain("and security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'tuition')")
+  expect(m).toContain("security.uni_adapter_excluded(g.course_id, 'fee')")
+  expect(m).toContain("if md5(v_def) <> '34313a3d7e235480a242c4201db236f9' then raise exception")
+  expect(m).toContain("<> '1b611d09d01d976a4ba9304930322c81' then")
+  expect(m).toContain("if md5(v_def) <> '1b76a14646fdbd90252b7dffb5e02e61' then raise exception")
+  expect(m).toContain("(q.course_id is null or c.id = q.course_id)")
+  expect(m).toContain("security.pipeline_num_v1('fees.course_pages_per_tick', 40)")
+  expect(m).not.toMatch(/\b(drop|delete|truncate)\b/i)
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const f = fs.readFileSync('supabase/functions/coverage-sweep/fees.ts', 'utf8')
+  expect(w).toContain('const text = noNul(it.course_page ? htmlToText(md) : md).slice(0, Number(it.page_chars || 40000));')
+  expect(f).toContain('This is the page of one course (the only course in the list), not a fee schedule.')
 })

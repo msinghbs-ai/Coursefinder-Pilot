@@ -9,6 +9,7 @@ export type FeeItem = {
   profile?: { currency_code?: string; usual_unit?: string; full_time_units_a_year?: number; unit_name?: string; terms_a_year?: number; notes?: string } | null;
   findings?: { kind: string; detail: unknown; times: number }[];
   courses: { id: string; title: string; level: string | null }[];
+  course_page?: boolean;
 };
 
 export const FEE_AI_PROMPT = `You read one tuition fee page of a tertiary education provider and return every fee row on it, exactly as published.
@@ -50,6 +51,8 @@ export function feeAiRequest(model: string, it: FeeItem, text: string) {
   const courses = it.courses.map((c) => `${c.id} | ${c.title} | ${c.level || ""}`).join("\n");
   const user = [
     `Provider: ${it.provider}`, `Page: ${it.url}`, country,
+    // v0.41.0 (23 Oct 2026): a course's own page, not a fee schedule
+    it.course_page ? "This is the page of one course (the only course in the list), not a fee schedule. Return the fee rows it shows for that course. A fee for the whole programme or qualification (not a year) is per_course; give the lower figure of a range as amount_min and the higher as amount_max." : "",
     it.notes ? `How this provider's fee pages were read before:\n${it.notes}` : "",
     past ? `Problems with earlier reads of this provider (avoid them):\n${past}` : "",
     `Courses of this provider (id | title | level):\n${courses}`,

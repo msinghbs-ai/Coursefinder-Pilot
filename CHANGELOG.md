@@ -2,9 +2,10 @@
 
 ## 0.1.250 — 23 Oct 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.323** (fee proofs for New Zealand). Platform Admin, 23 Oct 2026 07:47: "Page bound by a person, exact title, title and level" admit NZ international fees.
+- Prepared visible PIM Admin release candidate **v2.15.323** (course page fees through the AI fee reader; fee proofs for New Zealand). Platform Admin, 23 Oct 2026 07:47: "Page bound by a person, exact title, title and level" admit NZ international fees.
   - Migration `20261023007000_cf247_identity_settings_all_proofs.sql`: `public.admin_pipeline_settings_write` accepts every proof the gate reads; NZ tuition admits pages bound by a person.
   - `src/PipelineSettings.jsx` shows the four extra proofs.
+  - Migration `20261023009000_cf247_fee_reader_course_pages.sql` and worker `coverage-sweep-worker-v0.41.0`: the AI fee reader reads course pages (Platform Admin 23 Oct: "Through the AI fee reader"). Settings `fees.course_pages`, `fees.course_pages_per_tick`.
   - Migration `20261023008000_cf247_read_now_releases_holds.sql`: Read with AI releases AI-found-no-value holds and re-sends the fee; `svc_coverage_tuition_handoff_next` re-sends a changed page fee after a closed check.
   - Worker `coverage-sweep-worker-v0.40.9`: the newer-version link is found inside escaped markup and page items (Auckland catalogue).
   - Consumer API unchanged (Decision 266). SOPs 1.64.
