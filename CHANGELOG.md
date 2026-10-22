@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.243 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.316**. Platform Admin, 22 Oct 2026: 16:22 "is ti correct 1410 don't have adapters" (choice "Stop onboarding, label 'No courses'"); 16:10 UTS Adapter builder course list (choice "Yes, build them").
+  - Migration `20261022023000_cf247_no_courses_and_course_pages_card.sql`: adapter status `no_courses`; providers page filter and sort; onboarding stops `no_courses` and re-queues when a course is active; builder course list states `wrong_page`, `old_site`, list up to 2,000. md5-guarded.
+  - `src/AdapterBuilderTab.jsx` course list (filter chips, tick any row, Search again, Add/Change page on the row, paging), step numbers kept; `src/mature-main.jsx` No courses chip and filter option; `src/ProviderOnboarding.jsx` stop reason. Guide; SOPs 1.57.
+
 ## 0.1.242 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.315**. Platform Admin, 22 Oct 2026 15:57 (University of Otago): "how to change the existing non-producing URL in UI and replace them with correct them. can we add manually in UI by ourselves, how will it start admitting data to the courses field?"

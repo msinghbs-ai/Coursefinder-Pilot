@@ -65,19 +65,38 @@ test.describe('mocked browser', () => {
     const step = page.locator('[data-builder-step="2.1"]')
     await expect(step.locator('[data-course-list]')).toContainText('Advanced Diploma of Business')
     await expect(step.locator('[data-course-list]')).toContainText('No page yet')
-    await step.getByRole('button', { name: /Find every missing page with Firecrawl \(1\)/ }).click()
+    await step.getByRole('button', { name: /Find every course without a read page \(1\)/ }).click()
     await expect.poll(() => (page.l3calls || []).find(c => c.jobs === 'start')?.args).toMatchObject({ kind: 'course_page_find', args: { provider_id: 'p-bc', scope: 'p-bc' } })
   })
 
-  test('a course page entered by hand is captured as a sample', async ({ page }) => {
+  // v2.15.316 (Platform Admin 22 Oct 2026 16:10, UTS): the page address is entered on the course's own row
+  test('a course page entered by hand on its row is saved and captured', async ({ page }) => {
     const calls = await open(page, { ...base, website: 'https://www.brittscollege.edu.au' })
-    const box = page.locator('[data-manual-page]')
-    await box.getByLabel('Course for the page').fill('advanced')
-    await box.getByRole('button', { name: /Advanced Diploma of Business/ }).click()
-    await box.getByLabel('Course page address').fill('https://www.brittscollege.edu.au/courses/advanced-diploma-of-business')
-    await box.getByRole('button', { name: 'Capture this page' }).click()
-    await expect(box.getByRole('status')).toContainText('page saved as its official page and added as a sample')
+    const list = page.locator('[data-course-list]')
+    await list.getByRole('button', { name: 'Add page' }).first().click()
+    await list.getByLabel('Page for Advanced Diploma of Business').fill('https://www.brittscollege.edu.au/courses/advanced-diploma-of-business')
+    await list.getByRole('button', { name: 'Save page' }).click()
+    await expect(list.getByRole('status')).toContainText('page saved and captured')
     const add = calls.find(c => c.fn === 'admin_adapter_builder' && c.p_action === 'add_page')
     expect(add.p_args).toEqual({ provider_id: 'p-bc', course_id: 'c1', url: 'https://www.brittscollege.edu.au/courses/advanced-diploma-of-business', reason: 'Adapter builder: course page entered by hand for Advanced Diploma of Business' })
   })
+
+  test('state chips filter the list, any row can be ticked and Search again takes the ticked courses', async ({ page }) => {
+    page.on('dialog', d => d.accept('Search again'))
+    await open(page, { ...base, website: 'https://www.brittscollege.edu.au', pages: { stored: 2, read: 1 }, course_list: [
+      { course_id: 'c1', title: 'Advanced Diploma of Business', code: '112357', state: 'read', url: 'https://www.brittscollege.edu.au/a' },
+      { course_id: 'c2', title: 'Diploma of Leadership', code: '112358', state: 'wrong_page', url: 'https://www.brittscollege.edu.au/b' },
+      { course_id: 'c3', title: 'Certificate IV in Business', code: '112359', state: 'old_site', url: 'https://old.brittscollege.edu.au/c' }] })
+    const list = page.locator('[data-course-list]')
+    await expect(list).toContainText('Wrong page (about another course)')
+    await expect(list).toContainText('Old site, refused')
+    await expect(list.locator('tbody tr')).toHaveCount(2)
+    await list.getByRole('button', { name: /^Read: 1/ }).click()
+    await expect(list.locator('tbody tr')).toHaveCount(1)
+    await list.getByLabel('Tick Advanced Diploma of Business').check()
+    await list.getByRole('button', { name: /Search again for 1 ticked/ }).click()
+    await expect.poll(() => (page.l3calls || []).find(c => c.jobs === 'start')?.args).toMatchObject({ kind: 'course_page_find', args: { provider_id: 'p-bc', course_ids: ['c1'] } })
+    await expect(page.locator('[data-builder-step="2.1"] .ab-num').first()).toHaveText('2.1')
+  })
+
 })

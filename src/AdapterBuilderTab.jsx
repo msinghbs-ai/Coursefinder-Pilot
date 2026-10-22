@@ -24,7 +24,8 @@ const stateLabel=a=>!a?'No adapter yet':!a.enabled?'Switched off':a.admit?`Admit
 function Step({n,title,children,hint}){return <section className="ab-step" data-builder-step={n}><h3 className="sl-h4"><span className="ab-num">{n}</span> {title}</h3>{hint&&<p className="ab-text">{hint}</p>}{children}</section>}
 // v2.15.245 (Platform Admin bugs 11/10-2, Fix 6): one numbering for the whole build. 1 Provider (1.1 Website, 1.2 Contacts, 1.3 Central
 // pages), 2 Course pages (2.1 Find, 2.2 Capture samples), 3 Adapter (3.1 Propose, 3.2 Save and apply, 3.3 Qualify, 3.4 Admit), 4 Adjust by hand.
-function SubStep({n,title,state,children}){return <div className={`ab-sub is-${state||'todo'}`} data-builder-step={n}><div className="ab-sub-head"><span className="ab-num">{state==='done'?'✓':n}</span><strong>{title}</strong>{state==='busy'&&<span className="m-spinner tiny"/>}</div><div className="ab-sub-body">{children}</div></div>}
+// v2.15.316 (Platform Admin 22 Oct 2026 16:10): the step number always shows; a done step adds a Done chip (doneText says what done means)
+function SubStep({n,title,state,children,doneText}){return <div className={`ab-sub is-${state||'todo'}`} data-builder-step={n}><div className="ab-sub-head"><span className="ab-num">{n}</span><strong>{title}</strong>{state==='done'&&<small className="cf-chip tone-success" data-step-done>✓ {doneText||'Done'}</small>}{state==='busy'&&<span className="m-spinner tiny"/>}</div><div className="ab-sub-body">{children}</div></div>}
 const SITE_SOURCE={search_verified_cricos_code:'found by search and verified: its CRICOS code is on the site',search_verified_name_on_home_page:'found by search and verified: its name is on the home page',search_verified_name_in_page_and_domain:'found by search and verified: its name is on the site and in the address',search_verified_dli_number:'found by search and verified: its DLI number is on the site',manual:'entered by hand'}
 // 1.1 Website (Fix 3, Features 2 and 3). A website found and verified by search goes on the record by itself; with none, the search runs
 // on its own (every provider without a website is queued), Fill in from website runs it now, or a person enters it.
@@ -105,33 +106,53 @@ function ContactsStep({b}){
     <li><span>Last read from the site</span>{c.checked_at&&c.outcome!=='requested'?fmtDateTime(c.checked_at):'not yet'}{c.outcome&&!['leased','requested'].includes(c.outcome)?` · ${c.outcome.replace(/_/g,' ')}`:''}</li>
   </ul>
 }
-const PAGE_STATE={read:['Read','tone-success'],stored:['Stored, not read yet','tone-info'],searching:['Searching','tone-info'],not_found:['Not found on the site','tone-warning'],no_page:['No page yet','tone-neutral']}
-// 2.1 (Feature 1): every course and where its page stands, from the CRICOS course list; the ones without a page are searched on the
-// provider's own site with Firecrawl as a task (Task manager), or entered by hand below.
-function CourseList({b,onChanged}){
-  const[show,setShow]=useState('need'),[pick,setPick]=useState([])
+// v2.15.316 (Platform Admin 22 Oct 2026 16:10, UTS): a bound page says what is wrong with it (about another course, or the old site)
+// instead of one "Stored, not read yet"; the state chips are the filters (Read included); any row can be ticked, with Tick all shown and
+// bulk Search again; each row has Edit page to enter the right address (captured at once, about 1 Firecrawl credit).
+const PAGE_STATE={read:['Read','tone-success'],stored:['Stored, waiting to be read','tone-info'],wrong_page:['Wrong page (about another course)','tone-warning'],old_site:['Old site, refused','tone-warning'],searching:['Searching','tone-info'],not_found:['Not found on the site','tone-warning'],no_page:['No page yet','tone-neutral']}
+const PAGE_SIZE=100
+function CourseList({b,onChanged,onError}){
+  const[show,setShow]=useState('todo'),[pick,setPick]=useState([]),[page,setPage]=useState(0),[edit,setEdit]=useState(''),[url,setUrl]=useState(''),[busy,setBusy]=useState(''),[msg,setMsg]=useState('')
   const list=b.course_list||[],count=k=>list.filter(c=>c.state===k).length
-  const need=list.filter(c=>c.state!=='read'&&c.state!=='stored'),rows=(show==='need'?list.filter(c=>c.state!=='read'):list).slice(0,200)
+  const todo=list.filter(c=>c.state!=='read')
+  const shown=show==='all'?list:show==='todo'?todo:list.filter(c=>c.state===show)
+  const rows=shown.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE),pages=Math.max(1,Math.ceil(shown.length/PAGE_SIZE))
   const toggle=id=>setPick(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])
+  const allShown=rows.length>0&&rows.every(c=>pick.includes(c.course_id))
+  const tickShown=()=>setPick(p=>allShown?p.filter(x=>!rows.some(c=>c.course_id===x)):[...new Set([...p,...rows.map(c=>c.course_id)])])
+  const filter=k=>{setShow(k);setPage(0)}
+  const savePage=async c=>{const u=url.trim();if(!/^https?:\/\/\S+\.\S+$/.test(u))return;setBusy(c.course_id);setMsg('')
+    try{const{error}=await supabase.rpc('admin_adapter_builder',{p_action:'add_page',p_args:{provider_id:b.provider_id,course_id:c.course_id,url:u,reason:`Adapter builder: course page entered by hand for ${c.title}`}});if(error)throw error
+      setMsg(`${c.title}: page saved and captured; it is read within a few minutes.`);setEdit('');setUrl('');onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy('')}}
   if(!list.length)return <p className="ab-text">No active courses.</p>
+  const chip=(k,label,n,tone)=><button key={k} type="button" className={`cf-chip ${tone} ab-filter${show===k?' is-on':''}`} aria-pressed={show===k} onClick={()=>filter(k)}>{label}: {fmtNumber(n)}</button>
   return <div className="ab-courses" data-course-list>
-    <p className="ab-text">{Object.keys(PAGE_STATE).filter(k=>count(k)).map(k=><span key={k} className={`cf-chip ${PAGE_STATE[k][1]}`}>{PAGE_STATE[k][0]}: {fmtNumber(count(k))}</span>)}</p>
-    <div className="ab-actions">
-      {b.website?<JobButton kind="course_page_find" scope={b.provider_id} icon={FileSearch} disabled={!b.can_manage||(!pick.length&&!need.length)} onFinished={()=>{setPick([]);onChanged?.()}}
-          args={{provider_id:b.provider_id,...(pick.length?{course_ids:pick}:{})}}
-          label={pick.length?`Find ${fmtNumber(pick.length)} ticked with Firecrawl`:`Find every missing page with Firecrawl (${fmtNumber(need.length)})`}
-          question={`Search ${b.website} for the official page of ${pick.length?`${pick.length} ticked course(s)`:`${need.length} course(s) without a page`}? About 2 Firecrawl credits a course.`}/>
-        :<small className="ab-text">Record the website in step 1.1 first: course pages are searched on it.</small>}
-      <label className="tn-check"><input type="checkbox" checked={show==='all'} onChange={e=>setShow(e.target.checked?'all':'need')}/> Show courses already read</label>
+    <div className="ab-filters" role="group" aria-label="Show courses">
+      {chip('todo','Needs a page',todo.length,'tone-neutral')}
+      {Object.keys(PAGE_STATE).filter(k=>count(k)).map(k=>chip(k,PAGE_STATE[k][0],count(k),PAGE_STATE[k][1]))}
+      {chip('all','All',list.length,'tone-neutral')}
     </div>
-    <div className="cf-table-wrap ab-course-table"><table className="cf-table"><thead><tr><th aria-label="Tick"/><th>Course</th><th>Page</th></tr></thead><tbody>
-      {rows.map(c=><tr key={c.course_id}><td><input type="checkbox" aria-label={`Tick ${c.title}`} checked={pick.includes(c.course_id)} disabled={c.state==='read'} onChange={()=>toggle(c.course_id)}/></td>
+    <div className="ab-actions">
+      {b.website?<JobButton kind="course_page_find" scope={b.provider_id} icon={FileSearch} disabled={!b.can_manage||(!pick.length&&!todo.length)} onFinished={()=>{setPick([]);onChanged?.()}}
+          args={{provider_id:b.provider_id,...(pick.length?{course_ids:pick.slice(0,300)}:{})}}
+          label={pick.length?`Search again for ${fmtNumber(Math.min(pick.length,300))} ticked`:`Find every course without a read page (${fmtNumber(todo.length)})`}
+          question={`Search ${b.website} for the official page of ${pick.length?`${Math.min(pick.length,300)} ticked course(s)`:`${todo.length} course(s) without a read page`}? About 2 Firecrawl credits a course.`}/>
+        :<small className="ab-text">Record the website in step 1.1 first: course pages are searched on it.</small>}
+      {pick.length>0&&<Button compact onClick={()=>setPick([])}>Clear {fmtNumber(pick.length)} ticked</Button>}
+      {msg&&<small className="sd-desc" role="status">{msg}</small>}
+    </div>
+    <div className="cf-table-wrap ab-course-table"><table className="cf-table"><thead><tr><th><input type="checkbox" aria-label="Tick all shown" checked={allShown} onChange={tickShown}/></th><th>Course</th><th>Page</th>{b.can_manage&&<th/>}</tr></thead><tbody>
+      {rows.map(c=><tr key={c.course_id} data-course-state={c.state}><td><input type="checkbox" aria-label={`Tick ${c.title}`} checked={pick.includes(c.course_id)} onChange={()=>toggle(c.course_id)}/></td>
         <td><strong>{c.title}</strong>{c.code&&<span className="ab-muted"> · {c.code}</span>}</td>
-        <td><span className={`cf-chip ${PAGE_STATE[c.state]?.[1]||'tone-neutral'}`}>{PAGE_STATE[c.state]?.[0]||c.state}</span>{c.url&&<> <a href={c.url} target="_blank" rel="noreferrer" className="ab-muted">{c.url.replace(/^https?:\/\//,'').slice(0,70)}</a></>}</td></tr>)}
+        <td>{edit===c.course_id?<span className="ab-edit"><input value={url} onChange={e=>setUrl(e.target.value)} placeholder={`${b.website||'https://'}… the course's own page`} aria-label={`Page for ${c.title}`} autoFocus/>
+              <Button compact disabled={busy===c.course_id||!/^https?:\/\/\S+\.\S+$/.test(url.trim())} onClick={()=>savePage(c)}>{busy===c.course_id?'Saving…':'Save page'}</Button><Button compact onClick={()=>{setEdit('');setUrl('')}}>Cancel</Button></span>
+          :<><span className={`cf-chip ${PAGE_STATE[c.state]?.[1]||'tone-neutral'}`}>{PAGE_STATE[c.state]?.[0]||c.state}</span>{c.url&&<> <a href={c.url} target="_blank" rel="noreferrer" className="ab-muted">{c.url.replace(/^https?:\/\//,'').slice(0,70)}</a></>}</>}</td>
+        {b.can_manage&&<td>{edit!==c.course_id&&<Button compact onClick={()=>{setEdit(c.course_id);setUrl(c.state==='read'?'':'')}}>{c.url?'Change page':'Add page'}</Button>}</td>}</tr>)}
     </tbody></table></div>
-    {rows.length<(show==='need'?list.filter(c=>c.state!=='read').length:list.length)&&<small className="ab-muted">The first 200 are shown.</small>}
+    {pages>1&&<div className="ab-actions" data-course-pages><Button compact disabled={page===0} onClick={()=>setPage(page-1)}>Previous</Button><small className="ab-muted">{fmtNumber(page*PAGE_SIZE+1)}–{fmtNumber(Math.min((page+1)*PAGE_SIZE,shown.length))} of {fmtNumber(shown.length)}</small><Button compact disabled={page>=pages-1} onClick={()=>setPage(page+1)}>Next</Button></div>}
   </div>
 }
+
 
 function PickProvider({onPick,onError}){
   const[q,setQ]=useState(''),[list,setList]=useState(null)
@@ -272,7 +293,7 @@ function BuilderGuide({flow}){
   if(!flow)return null
   const{running,next,also,steps}=flow
   return <div className="ab-guide" data-builder-guide>
-    <ol className="ab-flow" aria-label="Steps">{steps.map(([n,label,state])=><li key={n} className={`is-${state}`} data-flow-step={n}><button type="button" className="cf-link" onClick={()=>goTo(n)}><span className="ab-num">{state==='done'?'✓':n}</span> {label}</button> <small className={`cf-chip ${FLOW_CHIP[state][1]}`}>{FLOW_CHIP[state][0]}</small></li>)}</ol>
+    <ol className="ab-flow" aria-label="Steps">{steps.map(([n,label,state])=><li key={n} className={`is-${state}`} data-flow-step={n}><button type="button" className="cf-link" onClick={()=>goTo(n)}><span className="ab-num">{n}</span> {label}{state==='done'&&' ✓'}</button> <small className={`cf-chip ${FLOW_CHIP[state][1]}`}>{FLOW_CHIP[state][0]}</small></li>)}</ol>
     <div className={`ab-next ${next.you?'is-you':'is-auto'}`} data-builder-next={next.step}><strong>{next.you?'Next for you':'Now'}</strong> <span>({next.step}) {next.text}</span> <Button compact onClick={()=>goTo(next.step)}>Go to step {next.step}</Button></div>
     {also&&<p className="ab-text" data-builder-also>Also: {also.text} <button type="button" className="cf-link" onClick={()=>goTo(also.step)}>Go to 1.3</button></p>}
     {running.length>0&&<div className="ab-running" data-builder-running><strong>Running by itself</strong> <span className="ab-muted">(refreshes every 15 seconds)</span><ul>{running.map((r,i)=><li key={i}><span className="m-spinner tiny"/> {r.text} <button type="button" className="cf-link" onClick={()=>goTo(r.step)}>{r.step}</button></li>)}</ul></div>}
@@ -300,11 +321,11 @@ function GuidedBuild({b,find,onChanged,onError,onStage}){
   useEffect(()=>{onStage?.(st)},[stKey])
   return <>
     <Step n="2" title="Course pages" hint="Every course from the register, and whether its page on the provider's own site is found and read. At least 3 read pages are needed to build an adapter.">
-      <SubStep n="2.1" title="Find course pages" state={st.find==='done'?'done':(b.course_list||[]).some(c=>c.state==='searching')?'busy':st.find}>
+      <SubStep n="2.1" title="Find course pages" doneText={`enough to build (3+ read)${(b.course_list||[]).filter(c=>c.state!=='read').length?` · ${fmtNumber((b.course_list||[]).filter(c=>c.state!=='read').length)} still need a page`:''}`} state={st.find==='done'?'done':(b.course_list||[]).some(c=>c.state==='searching')?'busy':st.find}>
         {(b.course_list||[]).some(c=>c.state==='searching')&&<p className="cf-chip tone-info" data-find-auto>Queued for search (started by the website change, Find, or the course-page job). The guide at the top says whether it is running now or waiting on a rule. Results appear here as each course is done.</p>}
         <p className="ab-text"><strong>{fmtNumber(read)}</strong> read of <strong>{fmtNumber(b.pages?.stored||0)}</strong> stored, for <strong>{fmtNumber(b.courses)}</strong> active courses (3 read pages needed).</p>
         {find}
-        <ManualPage r={r} pid={pid} busy={Boolean(busy)||st.capture==='busy'} onDone={async()=>{await loadDraft();onChanged?.()}} onError={onError}/>
+        {/* v2.15.316: the page address is entered on the course's own row above (Add page / Change page) */}
       </SubStep>
       <SubStep n="2.2" title="Capture sample pages" state={st.capture}>
         <p className="ab-text" data-capture-status>{dr?<><strong>{fmtNumber(okCaps)}</strong> of {fmtNumber(caps.length)} sample pages captured{badCaps?` · ${fmtNumber(badCaps)} could not be captured`:''}{dr.status==='capturing'?' · capturing now':''}.</>:'Firecrawl captures 6 course pages spread across course types (about 1 credit each). Add a particular course below.'}</p>
@@ -360,7 +381,7 @@ export default function AdapterBuilderTab({rank,onError,initialProvider=''}){
     </Step>
     {pid&&!b&&<Loading label="Reading the provider…"/>}
     {b&&<>
-      <GuidedBuild b={b} find={<CourseList b={b} onChanged={()=>load()}/>} onChanged={()=>{setKey(k=>k+1);load()}} onError={onError} onStage={setStage}/>
+      <GuidedBuild b={b} find={<CourseList b={b} onChanged={()=>load()} onError={onError}/>} onChanged={()=>{setKey(k=>k+1);load()}} onError={onError} onStage={setStage}/>
       <details className="ab-step ab-hand" data-builder-step="4"><summary className="sl-h4"><span className="ab-num">4</span> Adjust by hand</summary>
         {read>=3?<><p className="ab-text">Mark which text block or page-data value holds each attribute and ask for a proposal; preview it on the stored pages, then save and apply.</p>
           <AdapterEditor key={key} providerId={b.provider_id} hideReview onError={onError}/>
