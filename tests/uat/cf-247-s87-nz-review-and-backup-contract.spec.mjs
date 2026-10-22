@@ -263,3 +263,15 @@ test('Canadian colleges: level required (ca-intl-college-plus-v2), credential re
   expect(mig).toContain("and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and l.field = 'study_level_id')")
   expect(mig.indexOf("('credential-read', 'Enrichment'")).toBeLessThan(mig.indexOf("select cron.schedule('credential-read'"))
 })
+
+test('scope gate hides levelled out-of-scope courses and asks for a search refresh; watchdog counts anything finished as progress', () => {
+  const a = fs.readFileSync('supabase/migrations/20261022035000_cf247_scope_gate_levelled_out_of_scope.sql', 'utf8')
+  const b = fs.readFileSync('supabase/migrations/20261022036000_cf247_scope_gate_search_refresh.sql', 'utf8')
+  const c = fs.readFileSync('supabase/migrations/20261022037000_cf247_watchdog_finished_counts_as_progress.sql', 'utf8')
+  expect(a).toContain("'6f1b9d783af6e31dd7cf145b0fe06336'")
+  expect(a).toContain('and (c.study_level_id is not null or not exists')
+  expect(b).toContain("'585dcb3fd275e206afe1b107f46b7ee4'")
+  expect(b).toContain('insert into search.refresh_requests(requested_by)')
+  expect(c).toContain("'ce7eac324e9f6731edf20ad57a99c212'")
+  expect(c).toContain("v_done = 0 and coalesce(v_last, '-infinity') < now() - v_stuck_default")
+})
