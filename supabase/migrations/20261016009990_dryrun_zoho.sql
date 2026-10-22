@@ -31,4 +31,4 @@ select 'programme list record fixed' ok;
 
 do $t$ declare r jsonb; begin
   r := public.svc_programme_source_record((select id from pipeline.programme_sources limit 1), 'read', 200, 'map', '[{"url":"https://admission.umontreal.ca/programmes/baccalaureat-en-informatique/","title":"Baccalauréat en informatique"},{"url":"https://admission.umontreal.ca/nouvelles/x/","title":"no"}]'::jsonb);
-  raise exception 'DRYRUN OK %', r || jsonb_build_object('src', (select jsonb_build_object('status', status, 'found', found) from pipeline.programme_sources limit 1)); end $t$;
+  raise exception 'DRYRUN OK %', r || jsonb_build_object('src', (select jsonb_build_object('status', s.status, 'found', s.found) from pipeline.programme_sources s limit 1)); end $t$;
