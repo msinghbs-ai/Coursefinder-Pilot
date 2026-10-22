@@ -250,3 +250,16 @@ test('v2.15.319 progress watchdog: queue states, alerts for Stuck and Out of too
   expect(ui).toContain("supabase.rpc('admin_queue_watch'")
   expect(ui).not.toContain('window.prompt')
 })
+
+test('Canadian colleges: level required (ca-intl-college-plus-v2), credential read from the course page, scope gate logged and off until checked', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022034000_cf247_ca_college_scope.sql', 'utf8')
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('if (mode === "credential_read") {')
+  expect(w).toContain('coverage-sweep-worker-v0.38.0')
+  expect(mig).toContain("'c25496f235831a85b3a3efe00c9aee0d'")
+  expect(mig).toContain('AND NOT security.course_in_country_scope_v1(c.id)')
+  expect(mig).toContain("('CA', 'diploma', 'ca-intl-college-plus-v2'")
+  expect(mig).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'country-scope-gate'), active := false);")
+  expect(mig).toContain("and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and l.field = 'study_level_id')")
+  expect(mig.indexOf("('credential-read', 'Enrichment'")).toBeLessThan(mig.indexOf("select cron.schedule('credential-read'"))
+})
