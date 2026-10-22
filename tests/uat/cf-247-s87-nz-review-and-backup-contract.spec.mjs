@@ -386,3 +386,11 @@ test('v0.40.5: finder and list readers report work in the idle guard keys; progr
   expect((w.match(/read: tally\.read \|\| 0, items: items\.length, tally/g) || []).length).toBe(2)
   expect(m).toContain('found = case when p_status = \'read\' then v_found else ps.found end')
 })
+
+test('v0.40.6: programme page record has no chr(0); the worker removes null characters', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const m = fs.readFileSync('supabase/migrations/20261023004000_cf247_programme_record_null_fix.sql', 'utf8')
+  expect(m).toContain("v_heading := nullif(btrim(left(p_result->>'heading', 300)), '');")
+  expect(m.split('\n').filter((l) => !l.trim().startsWith('--') && /chr\(0\)/.test(l.split('--')[0]))).toEqual([])
+  expect(w).toContain('htmlToText(m[1]).replace(/\\u0000/g, "")')
+})
