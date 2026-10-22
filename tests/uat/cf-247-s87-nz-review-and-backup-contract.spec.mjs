@@ -191,6 +191,7 @@ test('v2.15.317 course list page per provider feeds the page matcher; weekly re-
   expect(mig).toContain("insert into pipeline.automation_catalogue(jobname")
   expect(mig).toContain("'course_list.reread_days'")
   expect(mig).toContain('or security.course_list_read_v1(co.provider_id))')
+  expect(fs.readFileSync('supabase/migrations/20261022027000_cf247_course_list_attempt_rule.sql', 'utf8')).toContain("or security.course_list_bonus_v1(co.id, co.provider_id) = 1)")
   expect(w).toContain('if (mode === "course_list_read") {')
   expect(w).toContain('v0.37.0 (22 Oct 2026')
   expect(w).toContain('const under = (links')
