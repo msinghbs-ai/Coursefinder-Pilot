@@ -30,6 +30,7 @@ import{SectionTitle,fmtNumber,PanelTitle,Pulse,SummaryCard,EmptyState,EmptyInlin
 import{PAGES,SECTIONS,SECTION_OF,resolveTarget,hrefFor,canOpen,shownTabs,effectiveTab}from'./nav-map'
 import PlatformHealth,{readPlatformHealth,healthTone,HEALTH_WORDS}from'./PlatformHealth'
 import QueueWatch from'./QueueWatch'
+import CourseSources from'./CourseSources'
 import{DomainReadiness}from'./data-quality-entry'
 import CreditBanner from'./CreditBanner'
 import{ProviderRankings,RankingLinkPicker}from'./RankingLinks'
@@ -300,6 +301,8 @@ function Page({pageKey,tab,routeParams,rank,actorId,onError,navigate}){
         // v2.15.287 (Decision 267): Build adapter, one click per university
         if(tab==='build')return <BuildAdapter rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
         if(tab==='builder')return <AdapterBuilderTab rank={rank} onError={err} initialProvider={routeParams?.get?.('provider')||''}/>
+        // v2.15.321: Course sources, found by the platform (job source-find), managed here
+        if(tab==='sources')return <CourseSources rank={rank} onError={err}/>
         if(tab==='universities')return <AdaptersWorkspace merged rank={rank} actorId={actorId} onError={err} routeParams={routeParams}/>
         return <Layer23Operations rank={rank} actorId={actorId} onError={err}/>
       // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 AI validation and Layer 4 AI send-back tab retired; adapters admit the values.

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.248 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.321** (Course sources). Platform Admin, 22 Oct 2026 23:46: "Platform needs to independently read website ... leave all configurable and manageable from ui"; 23:53: "use the ai or firecrawl to fasten up the process".
+  - Migration `20261022044000_cf247_course_source_finder.sql`: `pipeline.source_find_countries`, `pipeline.source_find_paths`, `pipeline.source_find_runs`, `public.svc_source_find_next`, `public.svc_source_find_record`, `public.admin_course_sources`, `read_via` on course and programme lists, job `source-find` (off until its test run is checked), settings `source_find.*` and `batch.source_find`.
+  - Migration `20261022043000_cf247_programme_lists.sql` (PR #652): `pipeline.programme_sources`, `pipeline.programme_candidates`, jobs `programme-discover`, `programme-read` and `programme-create`; courses created inactive; the country scope gate waits for a Platform Admin approval; French university credentials for CA; course lists may be site maps with a pattern.
+  - Worker `coverage-sweep-worker-v0.40.0` (modes `source_find`, `programme_discover`, `programme_read`; course lists read by Firecrawl map or site map). v0.38.1 (PR #651): AI-matched pages may use the scraper when blocked.
+  - `src/CourseSources.jsx` (Layer 2/3 › Course sources), `src/nav-map.js`, `src/mature-main.jsx`, `src/admin-pages.css`.
+  - Consumer API unchanged (Decision 266). SOPs 1.62.
+
 ## 0.1.247 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.320** (15-minute stats). Platform Admin, 22 Oct 2026 21:57: "Give me stat's and toolset usuage every 15 minutes. Keep the lesson learnt and find gaps quickly"; tasks seen stuck at 2 of 3.

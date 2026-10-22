@@ -70,6 +70,9 @@ export const PAGES = {
     // v2.15.301 (Platform Admin, 20 Oct 2026): Flags moved here from Coverage & completeness, beside Operations
     { key: 'flags', label: 'Flags', min: 3 },
     { key: 'universities', label: 'Universities', min: 3 },
+    // v2.15.321 (Platform Admin 22 Oct 2026 23:46, "Platform needs to independently read website ... manageable from ui"): each university's
+    // course source found by the platform (Firecrawl map, site maps, list pages), with the finder's tries and every control
+    { key: 'sources', label: 'Course sources', min: 3 },
     // v2.15.306 (Platform Admin, 21 Oct 2026: "end to end data enrichment for universities"): each university's plan from its gaps, Run now
     // from the on-demand allowance, automatic plans most missing first within the toolset shares
     { key: 'plan', label: 'Enrichment plan', min: 3 },

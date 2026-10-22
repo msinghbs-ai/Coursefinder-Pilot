@@ -34,7 +34,7 @@ test('relinking is logged with the old page and respects locks and blocks; lefto
 })
 
 test('worker v0.29.0 reads companion pages and writes nothing to courses', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(29|3\d)\.\d+";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(29|[3-9]\d)\.\d+";/)
   expect(worker).toContain('if (mode === "companion_read") {')
   expect(worker).toContain('await rpc("svc_companion_record", { p_course_id: it.course_id, p_status: st')
 })

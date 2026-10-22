@@ -762,3 +762,15 @@
 .st-chg{display:block;color:var(--cf-muted);font-size:var(--cf-fs-xs)}
 .st-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px;font-size:var(--cf-fs-sm)}
 .st-grid h4{margin:0 0 4px;font-size:var(--cf-fs-sm)}.st-grid ul{margin:0;padding-left:18px}.st-grid p{margin:0}
+/* Layer 2/3 › Course sources (v2.15.321): the course source finder and each university's sources. */
+.cs-reason{display:flex;flex-direction:column;gap:4px;margin:10px 0 0;font-size:var(--cf-fs-xs);font-weight:700;color:var(--cf-text-2);max-width:520px}
+.cs-reason input,.cs-add input,.cs-add select,.cs-search input{border:1px solid var(--cf-border);border-radius:var(--cf-radius-sm);padding:6px 8px;font-size:var(--cf-fs-sm);background:var(--cf-surface);color:var(--cf-text)}
+.cs-filters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
+.cs-search{display:flex;align-items:center;gap:6px;color:var(--cf-muted)}
+.cs-chip{border:1px solid var(--cf-border);border-radius:999px;background:var(--cf-surface);padding:4px 10px;font-size:var(--cf-fs-xs);font-weight:700;color:var(--cf-text-2);cursor:pointer}
+.cs-chip.on{border-color:var(--cf-brand);color:var(--cf-brand)}
+.cs-src{padding:4px 0;border-top:1px solid var(--cf-border);word-break:break-all}.cs-src:first-child{border-top:0}
+.cs-kind{font-size:var(--cf-fs-2xs);font-weight:800;text-transform:uppercase;color:var(--cf-muted)}
+.cs-actions{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.cs-detail td{background:var(--cf-surface)}
+.cs-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}.cs-add input{min-width:220px;flex:1}

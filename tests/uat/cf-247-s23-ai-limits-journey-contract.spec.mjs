@@ -24,7 +24,7 @@ test('11400: OpenRouter limits read the AI uses that run now; observe never stop
   expect((m14.match(/security\.ai_use_allowed_v1\('/g) || []).length).toBeGreaterThanOrEqual(2)
   expect(m14).toContain('live % differs from the definition this change replaces')
   expect(outside(m14)).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
-  expect(worker).toMatch(/coverage-sweep-worker-v0\.(?:2[1-9]|3\d)\.\d+/)
+  expect(worker).toMatch(/coverage-sweep-worker-v0\.(?:2[1-9]|[3-9]\d)\.\d+/)
   expect(worker).toContain('mode === "openrouter_balance"')
   expect(worker).toContain('https://openrouter.ai/api/v1/credits')
 })

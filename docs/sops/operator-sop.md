@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.320)  
+**Version:** 1.53 (reviewed for platform release v2.15.321)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -166,3 +166,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.59 | 22 Oct 2026 | v2.15.318 | Reviewed: the Adapter builder is in the Layer 2/3 tabs again (PIM Admin and above); Build adapter links to it for manual work. |
 | 1.60 | 22 Oct 2026 | v2.15.319 | Reviewed: Platform health has a Work queues tab (Curator and above) showing each queue's state; Check now (Pipeline Operator and above) runs the watchdog at once. No operator steps changed. |
 | 1.61 | 22 Oct 2026 | v2.15.320 | Reviewed: Platform health › Work queues shows the last 15 minutes (fields held per country, toolset use, gaps). No operator steps changed. |
+| 1.62 | 23 Oct 2026 | v2.15.321 | Reviewed: Layer 2/3 › Course sources shows the course lists the platform found and why. No operator steps changed. |

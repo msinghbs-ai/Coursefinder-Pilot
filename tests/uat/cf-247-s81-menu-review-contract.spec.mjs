@@ -15,7 +15,7 @@ test('menu: 19 pages (was 23); Sources, API usage, Data model and Storage & rete
   expect(SECTIONS.find(s => s.label === 'Data pipeline').pages).toEqual(['coverage', 'layer1', 'layer2', 'layer4'])
   expect(PAGES.scholarships.tabs.map(t => t.key)).toEqual(['list', 'coverage'])
   expect(PAGES.coverage.tabs.map(t => t.key)).toEqual(['courses', 'attributes', 'progress'])
-  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'flags', 'universities', 'plan', 'build', 'builder', 'enrich', 'scholarships'] /* v2.15.306: Enrichment plan */)
+  expect(PAGES.layer2.tabs.map(t => t.key)).toEqual(['operations', 'flags', 'universities', 'sources', 'plan', 'build', 'builder', 'enrich', 'scholarships'] /* v2.15.321: Course sources */ /* v2.15.306: Enrichment plan */)
   expect(PAGES.health.tabs.map(t => [t.key, t.min])).toEqual([['checks', 3], ['queues', 3], ['storage', 6]])
   expect(PAGES.environment.tabs.map(t => [t.key, t.min])).toEqual([['settings', 6], ['api', 4], ['backup', 6]]) // v2.15.310: Backup & restore
   expect(PAGES.rankings.tabs.map(t => t.key)).toEqual(['overview', 'compare', 'qilt', 'prisms', 'datasets'])
@@ -120,6 +120,20 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-stats-15m]')).toContainText('NZ · 6,474 courses')
     await expect(page.locator('[data-queue="course_page_search"]')).toBeVisible()
     await page.screenshot({ path: 'test-results/work-queues.png', fullPage: true })
+  })
+
+  test('Layer 2/3 › Course sources shows what the platform found, why, and the controls', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#layer-2-discovery?tab=sources')
+    const t = page.locator('[data-course-sources]')
+    await expect(t).toBeVisible()
+    await expect(page.locator('[data-cs-row="p-rmit"]')).toContainText('Firecrawl map')
+    await expect(page.locator('[data-cs-row="p-udem"]')).toContainText('courses hidden until approved')
+    await expect(page.locator('[data-cs-row="p-x"]')).toContainText('Nothing found')
+    await page.locator('[data-cs-row="p-udem"]').getByRole('button', { name: 'What was tried' }).click()
+    await expect(t).toContainText('study sites: admission.umontreal.ca')
+    await expect(page.locator('[data-cs-reason]')).toBeVisible()
+    await page.screenshot({ path: 'test-results/course-sources.png', fullPage: true })
   })
 
   test('Storage & retention is a Platform health tab; Capacity is on the Go-live checklist', async ({ page }) => {
