@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.322)  
+**Version:** 1.53 (reviewed for platform release v2.15.323)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -168,3 +168,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.61 | 22 Oct 2026 | v2.15.320 | Reviewed: Platform health › Work queues shows the last 15 minutes (fields held per country, toolset use, gaps). No operator steps changed. |
 | 1.62 | 23 Oct 2026 | v2.15.321 | Reviewed: Layer 2/3 › Course sources shows the course lists the platform found and why. No operator steps changed. |
 | 1.63 | 23 Oct 2026 | v2.15.322 | Reviewed: the course drawer shows What happened to this course and Read with AI. No operator steps changed. |
+| 1.64 | 23 Oct 2026 | v2.15.323 | Reviewed: more New Zealand courses show an international fee. No operator steps changed. |

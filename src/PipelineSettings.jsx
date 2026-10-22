@@ -18,7 +18,7 @@ import InstitutionTypeRules from'./InstitutionTypeRules'
 
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const ATTRS=[['official_url','Official page'],['english','English'],['intakes','Intakes'],['tuition','Tuition']]
-const IDENTITIES=[['cricos_code','CRICOS code'],['nzqa_code','NZQA code'],['exact_title','Exact title'],['title_level','Title with level'],['field_award','Field and award'],['degree_name','Degree name']]
+const IDENTITIES=[['cricos_code','CRICOS code'],['nzqa_code','NZQA code'],['exact_title','Exact title'],['title_level','Title with level'],['field_award','Field and award'],['degree_name','Degree name'],['manual','Page bound by a person'],['host_page','University page'],['adapter_code','Adapter code'],['adapter_title','Adapter title']]
 
 function NumberRow({label,help,value,min,max,step=1,unit,can,onSave,busy,confirm}){
   const[v,setV]=useState(value==null?'':String(value))
@@ -58,7 +58,7 @@ export default function PipelineSettings({onError}){
       <SectionTitle icon={Sliders} title="4 · Identify the page" subtitle="Which proofs on a page admit each attribute, per country. A page that shows none of the ticked proofs for an attribute is rejected for it. Every change is logged with its date; the decisions behind the current setting are kept on the row."/>
       <table className="ps-id-table"><thead><tr><th>Country</th>{ATTRS.map(([k,l])=><th key={k}>{l}</th>)}</tr></thead><tbody>
         {Object.entries(ids).sort().map(([cc,row])=><tr key={cc} data-identity-country={cc}><td><strong>{cc}</strong><div className="ps-note">{row.currency}{row.active?'':' · off'}</div></td>
-          {ATTRS.map(([attr])=>{const cur=row.identities?.[attr]||[];return <td key={attr}>{IDENTITIES.map(([id,label])=>{const on=cur.includes(id);const relevant=cc==='AU'?['cricos_code','exact_title','title_level'].includes(id):cc==='NZ'?id!=='field_award':id!=='nzqa_code'&&id!=='degree_name';if(!relevant&&!on)return null;return <label key={id}><input type="checkbox" checked={on} disabled={!can} aria-label={`${cc} ${attr} ${label}`} onChange={e=>{const next=e.target.checked?[...cur,id]:cur.filter(x=>x!==id);if(window.confirm(`${cc}: ${e.target.checked?'admit':'stop admitting'} ${ATTRS.find(a=>a[0]===attr)[1].toLowerCase()} by ${label.toLowerCase()}?`))write('identity.attribute',{country:cc,attribute:attr,identities:next},`${cc} ${attr}`)}}/>{label}</label>})}</td>})}
+          {ATTRS.map(([attr])=>{const cur=row.identities?.[attr]||[];return <td key={attr}>{IDENTITIES.map(([id,label])=>{const on=cur.includes(id);const relevant=['manual','host_page','adapter_code','adapter_title'].includes(id)||(cc==='AU'?['cricos_code','exact_title','title_level'].includes(id):cc==='NZ'?id!=='field_award':id!=='nzqa_code'&&id!=='degree_name');if(!relevant&&!on)return null;return <label key={id}><input type="checkbox" checked={on} disabled={!can} aria-label={`${cc} ${attr} ${label}`} onChange={e=>{const next=e.target.checked?[...cur,id]:cur.filter(x=>x!==id);if(window.confirm(`${cc}: ${e.target.checked?'admit':'stop admitting'} ${ATTRS.find(a=>a[0]===attr)[1].toLowerCase()} by ${label.toLowerCase()}?`))write('identity.attribute',{country:cc,attribute:attr,identities:next},`${cc} ${attr}`)}}/>{label}</label>})}</td>})}
         </tr>)}</tbody></table>
     </section>
 

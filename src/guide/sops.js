@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.322'
+export const SOP_REVIEWED_FOR = '2.15.323'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -165,7 +165,8 @@ export const SOPS = [
       { version: '1.60', date: '22 Oct 2026', release: '2.15.319', change: 'Platform health › Work queues: each morning read the daily report (or the tab). Stuck and Out of toolset reach you by phone and email: open the queue\'s screen from Go to the screen, top up the tool (Firecrawl credit, OpenRouter balance) or fix what holds it. Nothing left to try lists items every tool has tried; give them a page by hand or leave them. Thresholds are queue_watch.* on Settings › Pipeline settings.' },
       { version: '1.61', date: '22 Oct 2026', release: '2.15.320', change: 'Platform health › Work queues › Last 15 minutes: check the gaps list first (a field not moving for 24 hours, a Firecrawl share used up, failing or slow worker calls, tasks not moving, stuck queues); the hourly phone message sums up the last four snapshots. Fill in from website finishes when the provider\'s central pages are held until due (read in the last 30 days).' },
       { version: '1.62', date: '23 Oct 2026', release: '2.15.321', change: 'Layer 2/3 › Course sources: the platform finds each university\'s course list itself (Firecrawl map, site maps, list pages). Check Nothing found rows and What was tried; Find again or Add source with a reason. Approve a programme list only after checking its created courses (they stay hidden until approved). Countries and list addresses the finder uses are changed here.' },
-      { version: '1.63', date: '23 Oct 2026', release: '2.15.322', change: 'Course drawer › What happened to this course: read it before deciding where a gap is (page found or refused, reads, AI tries, field fills with reasons, admissions). Read with AI (with a reason) reads the page again first in line and fills missing fields with AI; values set by hand are never changed.' }],
+      { version: '1.63', date: '23 Oct 2026', release: '2.15.322', change: 'Course drawer › What happened to this course: read it before deciding where a gap is (page found or refused, reads, AI tries, field fills with reasons, admissions). Read with AI (with a reason) reads the page again first in line and fills missing fields with AI; values set by hand are never changed.' },
+      { version: '1.64', date: '23 Oct 2026', release: '2.15.323', change: 'Fee reader (AI) also reads course pages that show an international fee for a course with no fee held (Settings: Fee reader: read course pages). Settings › Identify the page: every page proof can be ticked (Page bound by a person, University page, adapter proofs). New Zealand fees are admitted from pages proved by exact title, title with level or bound by a person.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -279,7 +280,8 @@ export const SOPS = [
       { version: '1.60', date: '22 Oct 2026', release: '2.15.319', change: 'Reviewed: Platform health has a Work queues tab (Curator and above) showing each queue\'s state; Check now (Pipeline Operator and above) runs the watchdog at once. No operator steps changed.' },
       { version: '1.61', date: '22 Oct 2026', release: '2.15.320', change: 'Reviewed: Platform health › Work queues shows the last 15 minutes (fields held per country, toolset use, gaps). No operator steps changed.' },
       { version: '1.62', date: '23 Oct 2026', release: '2.15.321', change: 'Reviewed: Layer 2/3 › Course sources shows the course lists the platform found and why. No operator steps changed.' },
-      { version: '1.63', date: '23 Oct 2026', release: '2.15.322', change: 'Reviewed: the course drawer shows What happened to this course and Read with AI. No operator steps changed.' }],
+      { version: '1.63', date: '23 Oct 2026', release: '2.15.322', change: 'Reviewed: the course drawer shows What happened to this course and Read with AI. No operator steps changed.' },
+      { version: '1.64', date: '23 Oct 2026', release: '2.15.323', change: 'Reviewed: more New Zealand courses show an international fee. No operator steps changed.' }],
   },
 ]
 
