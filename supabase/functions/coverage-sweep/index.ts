@@ -297,6 +297,23 @@ const j = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, 
 const normText = (t: string) => String(t || "").replace(/\s+/g, " ").trim();
 async function sha256(b: Uint8Array) { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("") }
 async function gzip(s: string) { const cs = new CompressionStream("gzip"); const w = cs.writable.getWriter(); w.write(new TextEncoder().encode(s)); w.close(); return new Uint8Array(await new Response(cs.readable).arrayBuffer()) }
+// v0.40.8: the newest year of the same page that the page links to (a parameter named for the year with a later 4-digit year,
+// every other parameter of the page's own address unchanged); null when there is none
+export function newestVersionUrl(html: string, url: string): string | null {
+  let base: URL; try { base = new URL(url) } catch { return null }
+  const yearKey = (k: string) => /year/i.test(k), loose = (k: string) => /(year|term|clear|session|semester)/i.test(k);
+  const ownYear = [...base.searchParams].filter(([k, v]) => yearKey(k) && /^20\d\d$/.test(v)).map(([, v]) => Number(v))[0] ?? new Date().getUTCFullYear();
+  let best: { url: string; year: number } | null = null;
+  for (const m of html.matchAll(/href\s*=\s*["']([^"'#]+)["']/gi)) {
+    let u: URL; try { u = new URL(m[1].replace(/&amp;/g, "&"), base) } catch { continue }
+    if (u.origin !== base.origin || u.pathname !== base.pathname) continue;
+    const yr = [...u.searchParams].filter(([k, v]) => yearKey(k) && /^20\d\d$/.test(v)).map(([, v]) => Number(v))[0];
+    if (!yr || yr <= ownYear) continue;
+    if ([...base.searchParams].some(([k, v]) => !loose(k) && u.searchParams.get(k) !== v)) continue;
+    if (!best || yr > best.year) best = { url: u.toString(), year: yr };
+  }
+  return best?.url || null;
+}
 async function pool<T>(items: T[], n: number, f: (x: T) => Promise<void>) { let i = 0; await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => { while (i < items.length) await f(items[i++]) })) }
 
 
@@ -2614,6 +2631,17 @@ Deno.serve(async (req) => {
         const adHit = ad && html && (status === "read" || status === "needs_render") ? applyAdapter(ad, html, { title: it.title, code: it.code, country: it.country || "", status: it.status }, VERSION) : null;
         if (adHit?.json_found && adHit.identity && status === "needs_render") status = "read";
         let identityBasis: string | null = null, path: string | null = null, sha: string | null = null, candidates: unknown = null;
+        if (status === "read" && via === "direct") {
+          // v0.40.8 (23 Oct 2026, Platform Admin: "the university page for a course i checked had newer version link"): a page that links
+          // to itself with a later year in its address (University of Auckland catalogue: p0_catalogue_year=2027), every other
+          // parameter the same, is read at its newest version
+          const nv = newestVersionUrl(html, finalUrl);
+          if (nv) {
+            const r2 = await fetch(nv, { headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(20000) }).catch(() => null);
+            const h2 = r2?.ok ? await r2.text().catch(() => "") : "";
+            if (h2 && htmlToText(h2).length >= 1500) { html = h2; finalUrl = r2?.url || nv; http = r2?.status ?? http }
+          }
+        }
         if (status === "read") {
           let text = htmlToText(html);
           // v0.6.3: a page a person entered on the course page is the course's page (Decision 179).
