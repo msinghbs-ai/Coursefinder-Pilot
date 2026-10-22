@@ -340,4 +340,10 @@ select p.id, 'https://admission.umontreal.ca/sitemap.xml', 'sitemap', '^https://
 on conflict (provider_id, url) do nothing;
 
 select 'programme lists ready' ok;
-do $dry$ begin raise exception 'DRYRUN OK %', (select detail from pipeline.admin_control_events where area='course_intakes' order by id desc limit 1); end $dry$;
+
+do $t$ begin raise exception 'DRYRUN OK %', jsonb_build_object(
+  'gate_has_approval', pg_get_functiondef('security.country_scope_gate_v1'::regproc) like '%programme_provider_approved_v1%',
+  'sources', (select count(*) from pipeline.programme_sources),
+  'jobs', (select count(*) from cron.job where jobname like 'programme-%'),
+  'levels', (select jsonb_object_agg(t, security.credential_level_v1('CA', t)) from unnest(array['Baccalauréat en informatique','Maîtrise en droit','Doctorat en chimie','Diplôme d''études supérieures spécialisées (D.E.S.S.) en finance','Microprogramme de deuxième cycle en santé','Microprogramme de premier cycle en arts','Certificat en gestion','Majeure en histoire','Ph. D. en physique','Ontario College Diploma']) t),
+  'create_dry', security.programme_create_v1(false, null)); end $t$;
