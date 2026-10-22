@@ -153,3 +153,16 @@ test('v2.15.315 fee pages can be added by hand, stopped and started again', () =
   expect(ui).toContain("page('page_resume'")
   expect(ui).toContain("no_values:'Fetched'")
 })
+
+test('v2.15.316 no-course providers need no adapter; builder course list says what is wrong with a page', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022023000_cf247_no_courses_and_course_pages_card.sql', 'utf8')
+  const ui = fs.readFileSync('src/AdapterBuilderTab.jsx', 'utf8')
+  const main = fs.readFileSync('src/mature-main.jsx', 'utf8')
+  expect(mig).toContain("then 'no_courses' end")
+  expect(mig).toContain("stop_reason = 'no_courses'")
+  expect(mig).toContain("then 'wrong_page'")
+  expect(mig).toContain("then 'old_site'")
+  expect(ui).toContain("wrong_page:['Wrong page (about another course)'")
+  expect(ui).toContain('Tick all shown')
+  expect(main).toContain("['no_courses','Not needed: no courses']")
+})

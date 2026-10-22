@@ -586,3 +586,9 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .sj-runs{margin:12px 0;display:flex;flex-direction:column;gap:6px}.sj-runs ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .sj-runs li{border:1px solid var(--cf-border);border-radius:10px;padding:8px 10px;background:var(--cf-surface)}
 .sj-run-toggle{border:0;background:none;padding:0;cursor:pointer;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:inherit;text-align:left}
+/* v2.15.316 (Platform Admin 22 Oct 2026 16:10): Adapter builder course list — state chips are the filters; a row edits its own page */
+.ab-filters{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.ab-filter{cursor:pointer;border:1px solid transparent}
+.ab-filter.is-on{border-color:var(--m-text);font-weight:700}
+.ab-edit{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ab-edit input{min-width:22rem;flex:1 1 22rem}

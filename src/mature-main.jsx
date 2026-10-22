@@ -125,7 +125,7 @@ async function loadRankingSources(){try{const{data}=await supabase.rpc('admin_re
 const STATUS_OPTIONS=['active','archived','inactive','suspended','retired','unknown','any'].map(x=>({value:x,label:x==='any'?'Any status':humanise(x)}))
 const PUBLICATION_OPTIONS=['published','unpublished','draft','review','archived'].map(x=>({value:x,label:humanise(x)}))
 // v2.15.312 (Platform Admin, 22 Oct 2026 11:47): Adapter filter on the provider list (Platform Admin)
-const ADAPTER_OPTIONS=[['any','Has an adapter'],['admitting','Admitting'],['testing','Testing'],['building','Building'],['off','Switched off'],['none','No adapter']].map(([value,label])=>({value,label}))
+const ADAPTER_OPTIONS=[['any','Has an adapter'],['admitting','Admitting'],['testing','Testing'],['building','Building'],['off','Switched off'],['none','No adapter'],['no_courses','Not needed: no courses']].map(([value,label])=>({value,label}))
 
 // v2.15.107: the menu, page titles, tabs, role gates and old-address redirects all come from nav-map.js.
 const ICONS={dashboard:LayoutDashboard,course:GraduationCap,provider:Building2,scholarship:Sparkles,chart:BarChart3,check:CheckCircle2,database:Database,activity:Activity,ai:BrainCircuit,review:ListChecks,health:HeartPulse,workflow:Workflow,book:BookOpen,plug:Plug,sliders:SlidersHorizontal,shield:ShieldCheck,tags:Tags,users:UsersRound,guide:BookOpen}
@@ -637,7 +637,7 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   useEffect(()=>{if(!schCol||!rowIds)return;let live=true;supabase.rpc('admin_provider_sch_search',{p_action:'states',p_args:{provider_ids:rowIds.split(',')}}).then(({data,error})=>{if(error)throw error;if(live)setSchStates(data||{})}).catch(e=>onError(e.message));return()=>{live=false}},[schCol,rowIds])
   const schCell={key:'_sch_search',label:'Scholarship search',width:150,render:r=>{const s=schStates[String(r.id)];if(!s)return'—';return s.on?<span className="sch-muted" data-sch-flag="on">On</span>:<span data-sch-flag="off"><StatusChip tone="warning" label={s.directory_only&&s.auto?'Off · directory site':'Off'} title={s.reason||undefined}/></span>}}
   const withSch=schCol?[...baseCols.slice(0,-1),schCell,baseCols[baseCols.length-1]]:baseCols
-  const cols=adapterCol?[withSch[0],{key:'_adapter',label:'Adapter',width:150,sortKey:'adapter',render:r=><AdapterCell state={adapterStates[String(r.id)]} onOpen={()=>navigate?.('layer2',{tab:'builder',provider:r.id})}/>},...withSch.slice(1)]:withSch
+  const cols=adapterCol?[withSch[0],{key:'_adapter',label:'Adapter',width:150,sortKey:'adapter',render:r=><AdapterCell state={adapterStates[String(r.id)]} noCourses={r.adapter_status==='no_courses'} onOpen={()=>navigate?.('layer2',{tab:'builder',provider:r.id})}/>},...withSch.slice(1)]:withSch
   return <div className="m-page-stack">
     
     <section className="m-panel m-catalogue-panel">
@@ -689,7 +689,8 @@ function AsyncPagedFilterSelect({kind,label,value,valueLabel='',onChange,country
 
 function TriFilter({label,value,onChange}){return <FilterSelect label={label} value={value} onChange={onChange} options={[opt('true','Yes'),opt('false','No')]}/>}function opt(value,label,meta=''){return{value,label,meta}}
 const ADAPTER_CELL={admitting:['Admitting','tone-success'],testing:['Testing','tone-info'],off:['Switched off','tone-neutral']}
-function AdapterCell({state,onOpen}){if(!state)return <span className="m-row-skeleton"/>;const build=state.build,active=build&&!['done','failed','stopped'].includes(build.status),has=Boolean(state.adapter),[l,t]=active?['Building…','tone-info']:ADAPTER_CELL[state.adapter]||['No adapter','tone-neutral'];return <span className="m-adapter-cell" data-adapter-cell={state.adapter||'none'}><button type="button" className="m-secondary compact" onClick={e=>{e.stopPropagation();onOpen()}}>{has||active?'Open adapter':'Create adapter'}</button>{(has||active)&&<small className={`cf-chip ${t}`}>{l}</small>}</span>}
+// v2.15.316 (Platform Admin 22 Oct 2026 16:22): a provider with no active course needs no adapter; it says so instead of offering Create adapter
+function AdapterCell({state,onOpen,noCourses=false}){if(!state)return <span className="m-row-skeleton"/>;const build=state.build,active=build&&!['done','failed','stopped'].includes(build.status),has=Boolean(state.adapter);if(noCourses&&!has&&!active)return <span className="m-adapter-cell" data-adapter-cell="no_courses"><small className="cf-chip tone-neutral" title="No active courses: nothing for an adapter to read. Onboarding starts by itself once the provider has an active course.">No courses</small></span>;const [l,t]=active?['Building…','tone-info']:ADAPTER_CELL[state.adapter]||['No adapter','tone-neutral'];return <span className="m-adapter-cell" data-adapter-cell={state.adapter||'none'}><button type="button" className="m-secondary compact" onClick={e=>{e.stopPropagation();onOpen()}}>{has||active?'Open adapter':'Create adapter'}</button>{(has||active)&&<small className={`cf-chip ${t}`}>{l}</small>}</span>}
 // v2.15.225 (Platform Admin, 9 Oct 2026: "doesn't pan out to page width, columns not adjustable"): every list fills the
 // width of the page with a fixed layout, so one long value can never push other columns off screen; drag a heading's right
 // edge to resize a column (double-click resets). Widths are remembered per list in this browser only.

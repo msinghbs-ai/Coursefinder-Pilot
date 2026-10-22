@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.315)  
+**Version:** 1.53 (reviewed for platform release v2.15.316)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -161,3 +161,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.54 | 22 Oct 2026 | v2.15.313 | Reviewed, no steps changed: fee rows in Layer 4 that came from a fee printed for a number of points are now worked out as a yearly figure. |
 | 1.55 | 22 Oct 2026 | v2.15.314 | Reviewed, no steps changed: the Fee reader shows each row's quote and how its yearly figure was worked out. |
 | 1.56 | 22 Oct 2026 | v2.15.315 | Reviewed, no operator step changed: fee pages can be added, stopped and started again on the Fee reader (Pipeline Operator and above). |
+| 1.57 | 22 Oct 2026 | v2.15.316 | Reviewed: Providers › Adapter filter has Not needed: no courses; providers with no active course need no adapter. |
