@@ -8,6 +8,7 @@ import{Activity,AlertTriangle,Bell,CheckCircle2,RefreshCw,Wrench}from'lucide-rea
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import Stats15m from'./Stats15m'
+import GapCauses from'./GapCauses'
 
 export const QUEUE_STATES={
   moving:{label:'Moving',tone:'success',help:'Work is waiting and items are finishing.'},
@@ -35,6 +36,7 @@ export default function QueueWatch({onError}){
   const needs=count('stuck')+count('out_of_toolset')
   return <>
     <Stats15m onError={onError}/>
+    <GapCauses onError={onError}/>
     <section className="m-panel">
       <SectionTitle icon={Activity} title="Work queues" subtitle={`Checked every 15 minutes. Stuck means work is waiting and nothing finished in ${fmtNumber(d.settings?.stuck_minutes||120)} minutes. Stuck and Out of toolset are sent to phone and email; Done and Nothing left to try go in the daily report.`}
         action={d.can_run&&<Button compact onClick={run} disabled={busy} data-queue-run><RefreshCw size={14}/>{busy?'Checking…':'Check now'}</Button>}/>

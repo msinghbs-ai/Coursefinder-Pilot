@@ -1,18 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.324'
-export const PACKAGE_VERSION='0.1.251'
+export const UI_VERSION='2.15.325'
+export const PACKAGE_VERSION='0.1.252'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Fee reader at full speed; a course first in line from its page',
+  title:'The AI reader covers every attribute; why values are missing, every hour',
   changes:[
-    'Fee reader (AI): runs every 2 minutes and reads up to 40 pages a run, 4 at a time (Settings › Pipeline settings: Fee reader: run every, pages a run, pages read at once; each shows its range). About 1,200 pages an hour instead of about 60.',
-    'Course drawer: Read with AI, or changing the official page, now also puts the course\'s fee first in line for the AI fee reader once the page has been read again, even when a fee is held (a different fee held from another source goes to Layer 4). The AI fill waits for the new page instead of reading the old copy.'
+    'Enrich fields and the standing Fill the gaps task also read English requirements (IELTS overall and lowest band) and intakes (start months) from the stored course page with AI, each with its quote, admitted only where the page proof admits that field (Settings › Identify the page).',
+    'Campus region: the AI gives each campus city its region from the country\'s own list; the city keeps it, so every campus in that city gets it without asking again.',
+    'Platform health › Work queues › Why values are missing: every hour, for each country and attribute, how many courses miss the value, why, and what the platform does about it. Causes nothing automatic covers are listed under Needs a change.'
   ],
-  bugFixes:['Read with AI could fill fields from the old copy of a page that was being read again.']
+  bugFixes:['English requirements and intakes were never read by the AI fill; 50 of 75 NZ campuses had a city but no region.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
