@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.318'
-export const PACKAGE_VERSION='0.1.245'
+export const UI_VERSION='2.15.319'
+export const PACKAGE_VERSION='0.1.246'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Oct 2026',
-  title:'Adapter builder: every step by hand',
+  title:'Progress watchdog for the work queues',
   changes:[
-    'Layer 2/3 › Adapter builder is back in the tabs (after Build adapter). Build adapter › a university has Do it by hand in Adapter builder.',
-    'Manual mode end to end: course pages on each row or from a course list page (2.1), samples (2.2), Write the settings by hand (3.1 opens step 4), steps 3.2 and 3.3 count as done when the settings were saved by hand, and step 4 opens with one read page (was 3).',
-    '3.4: a Platform Admin can admit a field that has not passed the check, as their own decision (asked to confirm, logged).',
-    'Screenshots of a university\'s latest capture are kept while its adapter is not admitting yet, up to 30 days (setting); others are removed after 7 days as before.'
+    'Platform health › Work queues: every 15 minutes each enrichment queue (course page search, discovery and reading, AI page matching, course list pages, companion pages, fee reader, central pages, onboarding, enrichment plans, scholarships) gets one state: Moving, Waiting for budget, Stuck, Failing, Out of toolset, Nothing left to try, Done or Paused, with what is waiting, how fast it finishes and the time to finish.',
+    'Stuck and Out of toolset are sent to the Platform Admin\'s phone and email (again after 12 hours if still so); Done and Nothing left to try go in the daily report. Stuck, Failing and Out of toolset also open an issue on Health checks that closes by itself.',
+    'Fixed by itself, and logged: items that gave up on a passing error (time-out, busy server, cut-off AI answer) get one more try, at most once a week each and never while a tool is out. Course data is never changed by the watchdog.',
+    'All thresholds are settings (queue_watch.*) on Settings › Pipeline settings.'
   ],
-  bugFixes:['A build done by hand never showed steps 3.2 and 3.3 as done, because they waited for an AI proposal.']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

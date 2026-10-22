@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.318)  
+**Version:** 1.53 (reviewed for platform release v2.15.319)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -176,3 +176,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.57 | 22 Oct 2026 | v2.15.316 | Adapter builder › 2.1: fix Wrong page and Old site rows with Change page on the row, or tick them and Search again. Providers with no courses show No courses and are not onboarded until they have one. |
 | 1.58 | 22 Oct 2026 | v2.15.317 | Providers stopped for too few course pages: open them in the Adapter builder and add their course list page in 2.1 (the page that lists their courses); it is read within 10 minutes and again weekly, and onboarding carries on by itself once 3 pages are read. |
 | 1.59 | 22 Oct 2026 | v2.15.318 | Adapter builder (back in the Layer 2/3 tabs): a university the automatic build cannot finish is done by hand: pages in 2.1, samples in 2.2, Write the settings by hand (step 4), save and apply, Refresh the measures, then admit; a field that has not passed the check can be admitted as your decision. |
+| 1.60 | 22 Oct 2026 | v2.15.319 | Platform health › Work queues: each morning read the daily report (or the tab). Stuck and Out of toolset reach you by phone and email: open the queue's screen from Go to the screen, top up the tool (Firecrawl credit, OpenRouter balance) or fix what holds it. Nothing left to try lists items every tool has tried; give them a page by hand or leave them. Thresholds are queue_watch.* on Settings › Pipeline settings. |

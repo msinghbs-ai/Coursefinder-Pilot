@@ -24,7 +24,7 @@ test('Regulatory settings merged into Layer 1; its Pilot reset and the readiness
 })
 
 test('Readiness is flat: Capacity, gates and UAT on Go-live (v2.15.301); Layer 4 › Blocks retired (v2.15.253)', () => {
-  expect(PAGES.health.tabs.map(t => t.key)).toEqual(['checks', 'storage']) // v2.15.301: Capacity moved to the Go-live checklist; Storage & retention here
+  expect(PAGES.health.tabs.map(t => t.key)).toEqual(['checks', 'queues', 'storage']) // v2.15.319: Work queues (progress watchdog); v2.15.301: Capacity moved to the Go-live checklist; Storage & retention here
   expect(resolveTarget('platform-health', new URLSearchParams({ tab: 'readiness' }))).toMatchObject({ page: 'migration', tab: '' })
   expect(read('src/mature-main.jsx')).toContain('<section data-golive-capacity><PlatformMaturity rank={rank} onError={onError} view="capacity"/></section>')
   expect(PAGES.layer4.tabs.find(t => t.key === 'blocks')).toBeUndefined()
