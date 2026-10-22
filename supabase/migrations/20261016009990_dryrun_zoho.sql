@@ -46,11 +46,11 @@ create or replace function security.fee_course_pages_enqueue_v1()
  security definer
  set search_path to ''
 as $function$
-declare v int := 0; v2 int := 0; r record; v_hash text;
+declare v int := 0; v2 int := 0; rq record; v_hash text;
 begin
   if security.pipeline_num_v1('fees.course_pages', 1) < 1 then return 0; end if;
   -- a) requests from the course page, first in line, once the page was read after the request (a fee held does not stop them)
-  for r in
+  for rq in
     select q.course_id, g.provider_id, g.evidence_id, g.identity_basis, e.content_hash, k.iso_alpha2 cc, g.read_at, q.requested_at
       from pipeline.fee_course_requests q
       join pipeline.coverage_course_pages g on g.course_id = q.course_id
@@ -59,26 +59,26 @@ begin
      where q.queued_at is null
      for update of q skip locked
   loop
-    if r.read_at is null or r.read_at < r.requested_at or r.evidence_id is null then
-      if r.requested_at < now() - make_interval(hours => security.pipeline_num_v1('enrich.wait_page_hours', 6)::int) then
-        update pipeline.fee_course_requests set queued_at = now(), outcome = 'page_not_read' where course_id = r.course_id;
+    if rq.read_at is null or rq.read_at < rq.requested_at or rq.evidence_id is null then
+      if rq.requested_at < now() - make_interval(hours => security.pipeline_num_v1('enrich.wait_page_hours', 6)::int) then
+        update pipeline.fee_course_requests set queued_at = now(), outcome = 'page_not_read' where course_id = rq.course_id;
       end if;
       continue;
     end if;
-    if not security.coverage_identity_allowed(r.provider_id, r.identity_basis, 'tuition')
-       or r.cc not in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fees.countries') then
-      update pipeline.fee_course_requests set queued_at = now(), outcome = 'not_admitted' where course_id = r.course_id;
+    if not security.coverage_identity_allowed(rq.provider_id, rq.identity_basis, 'tuition')
+       or rq.cc not in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'fees.countries') then
+      update pipeline.fee_course_requests set queued_at = now(), outcome = 'not_admitted' where course_id = rq.course_id;
       continue;
     end if;
-    v_hash := coalesce(r.content_hash, r.evidence_id::text);
+    v_hash := coalesce(rq.content_hash, rq.evidence_id::text);
     update pipeline.fee_reader_queue set state = 'queued', attempts = 0, leased_until = null, error = null, priority = 1
-     where course_id = r.course_id and content_hash = v_hash and state <> 'leased';
+     where course_id = rq.course_id and content_hash = v_hash and state <> 'leased';
     if not found then
       insert into pipeline.fee_reader_queue(fact_source_id, course_id, provider_id, evidence_id, content_hash, priority)
-      select r.evidence_id, r.course_id, r.provider_id, r.evidence_id, v_hash, 1
-       where not exists (select 1 from pipeline.fee_reader_queue x where x.fact_source_id = r.evidence_id and x.content_hash = v_hash);
+      select rq.evidence_id, rq.course_id, rq.provider_id, rq.evidence_id, v_hash, 1
+       where not exists (select 1 from pipeline.fee_reader_queue x where x.fact_source_id = rq.evidence_id and x.content_hash = v_hash);
     end if;
-    update pipeline.fee_course_requests set queued_at = now(), outcome = 'queued' where course_id = r.course_id;
+    update pipeline.fee_course_requests set queued_at = now(), outcome = 'queued' where course_id = rq.course_id;
     v2 := v2 + 1;
   end loop;
 
