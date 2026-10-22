@@ -1,20 +1,23 @@
--- CF-247 (22 Oct 2026). Found after the first live scope gate run: the website search copy (search.course_documents) is refreshed only
--- on a request, so the 1,421 Canadian courses hidden or shown kept their old place on the website until a request was added by hand.
--- The gate now asks for a search refresh whenever it hides or shows a course.
--- Replaces: security.country_scope_gate_v1 (md5-guarded edit)
+-- CF-247 (22 Oct 2026). Found on the watchdog's second live run (10:19 UTC): Read course pages was called Stuck although 18 pages were
+-- read in the hour, because its last-finished time counted only pages read as the right page, while its finished count also counts pages
+-- read and found to be another page. A queue that finished anything in the progress window is not Stuck, Waiting or Out of toolset, and
+-- the course page reader's last-finished time counts every page it read. The one alert this raised was withdrawn before it was sent.
+-- Replaces: security.queue_watch_run_v1 (md5-guarded edit); pipeline.queue_watch row course_page_read (progress_sql)
 -- Retires: nothing
 do $edit$
-declare v_def text := pg_get_functiondef('security.country_scope_gate_v1(boolean,text)'::regprocedure);
-        v_old text := $o$    select count(*) into v_show from l;
-  end if;$o$;
+declare v_def text := pg_get_functiondef('security.queue_watch_run_v1(boolean)'::regprocedure);
+        v_old text := $o$coalesce(v_last, '-infinity') < now() - v_stuck_default$o$;
 begin
-  if position('search.refresh_requests' in v_def) > 0 then return; end if;
-  if md5(v_def) <> '585dcb3fd275e206afe1b107f46b7ee4' then raise exception 'live security.country_scope_gate_v1 differs from the definition this change edits'; end if;
-  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'end of apply must occur once'; end if;
-  execute replace(v_def, v_old, $n$    select count(*) into v_show from l;
-    if v_hide + v_show > 0 then
-      insert into search.refresh_requests(requested_by) values ('country scope gate ' || p_country || ' (' || v_tag || '): ' || v_hide || ' hidden, ' || v_show || ' shown');
-    end if;
-  end if;$n$);
+  if position('v_done = 0 and coalesce(v_last' in v_def) > 0 then return; end if;
+  if md5(v_def) <> 'ce7eac324e9f6731edf20ad57a99c212' then raise exception 'live security.queue_watch_run_v1 differs from the definition this change edits'; end if;
+  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 3 then raise exception 'the no-progress test must occur three times'; end if;
+  execute replace(v_def, v_old, $n$v_done = 0 and coalesce(v_last, '-infinity') < now() - v_stuck_default$n$);
 end $edit$;
-do $dry$ begin raise exception 'DRYRUN OK %', position('search.refresh_requests' in pg_get_functiondef('security.country_scope_gate_v1(boolean,text)'::regprocedure)) > 0; end $dry$;
+
+update pipeline.queue_watch set progress_sql = $q$select max(read_at) from pipeline.coverage_course_pages where read_status is not null and read_status not in ('fetch_failed', 'blocked')$q$
+ where key = 'course_page_read' and progress_sql = $q$select max(read_at) from pipeline.coverage_course_pages where read_status = 'read'$q$;
+
+update pipeline.queue_watch_alerts set sent_at = now(), sent_via = 'withdrawn: false Stuck (fixed by 20261022037000)'
+ where key = 'course_page_read' and state = 'stuck' and sent_at is null;
+update pipeline.platform_issues set resolved_at = now() where check_key = 'queue_watch:course_page_read' and resolved_at is null;
+do $dry$ declare r jsonb; begin r := security.queue_watch_run_v1(false); raise exception 'DRYRUN OK %', (select string_agg(key||'='||state, ', ') from pipeline.queue_watch_state where state not in ('done','moving')); end $dry$;
