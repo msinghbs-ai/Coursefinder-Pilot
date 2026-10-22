@@ -413,3 +413,13 @@ test('v0.40.8: escaped-markup values kept in page text; a fee label decides its 
   expect(w).toContain('export function newestVersionUrl(html: string, url: string): string | null {')
   expect(w).toContain('const nv = newestVersionUrl(html, finalUrl);')
 })
+
+test('v2.15.322: course audit and Read with AI (Curator, reason, logged, missing fields only, page read first in line)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023006000_cf247_course_audit_read_now.sql', 'utf8')
+  expect(m).toContain('create or replace function public.admin_course_audit(p_course_id uuid)')
+  expect(m).toContain('create or replace function public.admin_course_read_now(p_course_id uuid, p_reason text)')
+  expect(m).toContain("if length(v_reason) < 4 then raise exception 'give a reason (it is kept with the request)'; end if;")
+  expect(m).toContain("values ('course', 'read_now', p_course_id::text,")
+  expect(m).toContain("case when v_c.duration_value is null then 'duration' end,")
+  expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+})

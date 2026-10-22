@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.321'
-export const PACKAGE_VERSION='0.1.248'
+export const UI_VERSION='2.15.322'
+export const PACKAGE_VERSION='0.1.249'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Course sources: the platform finds each university\'s course list itself',
+  title:'What happened to a course, and Read with AI',
   changes:[
-    'Layer 2/3 › Course sources (new tab): the course source finder looks for each university\'s own course list by itself. It maps the site with Firecrawl (one credit), checks the result against the address pattern of the course pages already found, and falls back to the site maps and the usual list pages. Each university shows what was found and why, what was tried, and its course and programme lists. The countries it works on and the list addresses it tries are changed here, with a reason.',
-    'Courses from the university\'s own programme list: where the only official source lacks degrees (Quebec), programmes are read from the university\'s list, their level is taken from the credential the page names, and they are created hidden. They show on the website only after a Platform Admin approves that university\'s programme list on Course sources.',
-    'A course list can be read by Firecrawl map or from a site map with an address pattern, for course finders that are search apps.'
+    'Course drawer › What happened to this course: the course page and how it was found, every page read kept, the page searches and AI page match tries with what they chose, page changes, every AI field fill with its result and reason, admissions and refusals, fee reader rows, cross-checks, the values held now and those set by hand.',
+    'Read with AI (Curator and above, with a reason): the course page is read again first in line, then AI fills the fields the course does not hold. Values set by hand are never changed. Every request is logged on the course.',
+    'Course pages: a page that links to itself with a later year (University of Auckland catalogue) is read at its newest version; values carried as escaped markup are read; a fee amount\'s own label decides whether it is the domestic or international fee.',
+    'Course sources: the finder learns up to three course folders per university (UNSW postgraduate and undergraduate); Find again works for a university that already has a source.'
   ],
-  bugFixes:['24 courses bound to scholarship, events, policy or e-book pages were unbound so the page matcher finds their real course page.']
+  bugFixes:['University of Auckland catalogue pages gave no fee, campus, duration or delivery: the values were in escaped markup the page reader dropped.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

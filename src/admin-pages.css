@@ -774,3 +774,12 @@
 .cs-actions{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 .cs-detail td{background:var(--cf-surface)}
 .cs-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}.cs-add input{min-width:220px;flex:1}
+/* Course drawer › What happened (v2.15.322): the course's audit trail and Read with AI. */
+.ca-panel .ca-body{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ca-panel h4{margin:10px 0 2px;font-size:var(--cf-fs-sm);color:var(--cf-text)}.ca-panel h4 small{color:var(--cf-muted);font-weight:400}
+.ca-row{display:flex;flex-direction:column;gap:2px;word-break:break-all}.ca-row small,.ca-list small{color:var(--cf-muted);font-size:var(--cf-fs-xs)}
+.ca-empty{margin:0;font-size:var(--cf-fs-xs);color:var(--cf-muted)}
+.ca-held{margin:0;padding-left:18px;font-size:var(--cf-fs-sm)}.ca-held em{color:var(--cf-muted)}
+.ca-read{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;border:1px solid var(--cf-border);border-radius:var(--cf-radius-sm);background:var(--cf-surface)}
+.ca-read input{flex:1;min-width:200px}.ca-read small{flex-basis:100%;color:var(--cf-muted);font-size:var(--cf-fs-xs)}
+.ca-list li{word-break:break-word}
