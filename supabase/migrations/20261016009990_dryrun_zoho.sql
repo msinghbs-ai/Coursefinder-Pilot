@@ -1,360 +1,265 @@
--- CF-247 (22 Oct 2026). Platform Admin 22:55 "Start on task 2. Remeber for university of Montreal its admission.montreal.ca" and 23:09
--- "Proceed with all steps, keep iterating through the gaps found and apply the fixes": courses from the university's own programme list.
--- Finding: the only Quebec course source (Quebec MES "university programmes >20 credits (non-degree)") holds no bachelor, master or
--- doctoral degree at all (686 certificates, 154 DESS, 100 minors, 55 majors, 3 Juris Doctor across 14 universities, every one inactive),
--- so Université de Montréal, McGill, Laval, Concordia, UQAM and the rest show no degrees. The universities list them on their own sites.
--- 1 pipeline.programme_sources: a university's programme site map or list page and the address pattern of its programme pages (added
---   by a person, like a course list page). Worker mode programme_discover (job programme-discover) reads it and records each programme
---   page address in pipeline.programme_candidates.
--- 2 Worker mode programme_read (job programme-read) reads each programme page directly (the scraper only when blocked) for its heading;
---   the database maps the credential the heading names (Baccalauréat, Maîtrise, Doctorat, D.E.S.S., Microprogramme de 2e cycle,
---   Certificat, and the English names) to a study level with pipeline.credential_level_map. A heading naming no level is skipped.
--- 3 security.programme_create_v1 (job programme-create): a programme whose level is in the country's scope becomes a course, or is
---   matched to the university's existing course with the same page or the same title (which takes the level when it has none). New
---   courses are created INACTIVE and unpublished, with the programme page bound (basis programme_list) so the course page reader reads
---   fees, intakes and English from it.
--- 4 Activation is a separate, deliberate step (a passing check never switches anything on by itself): the country scope gate shows a
---   course whose page came from a programme list only when a person has approved that university's programme list
---   (public.admin_programme_lists 'approve', logged). md5-guarded edit to security.country_scope_gate_v1.
--- 5 pipeline.credential_level_map gains the French university credentials for Canada.
--- Replaces: nothing (security.country_scope_gate_v1 edited in place, md5-guarded)
--- 6 pipeline.provider_course_lists may hold a site map with an address pattern (link_pattern, child_pattern); svc_course_list_next
---   returns them (md5-guarded edit).
+-- CF-247 (22 Oct 2026). Platform Admin 23:46: "Platform needs to independently read website. You are finding it for the platform and
+-- reading it. I think adding new countries will have problems without you reading the website and courselinks. This is exactly where
+-- we need to make the platform self sufficient. We should only be trying out what works and let platform execute it using toolset.
+-- And leave all configurable and manageable from ui."
+-- The course source finder does what was done by hand on 22 Oct (NZ, AU and CA course list pages, Université de Montréal):
+-- 1 Worker mode source_find (job source-find) takes a university without a course source and:
+--   a learns the address pattern of its course pages from the pages already found for it (the folder most of them share and their depth,
+--      for example /study-with-us/levels-of-study/<3 parts> at RMIT); with too few pages found, the largest folder named like a course
+--      folder (pipeline.source_find_paths kind folder_word: courses, programmes, programs, degrees, ...) in its site map;
+--   b reads robots.txt and the site maps it names (or /sitemap.xml), following index files named like course files first;
+--   c keeps a site map when enough of its addresses fit the pattern (source_find.min_links) and it holds enough of the pages already
+--      found (source_find.min_recall);
+--   d otherwise tries the course folder itself and the usual list addresses (pipeline.source_find_paths kind list_path) and keeps the
+--      page with the most course links (the scraper only when the page is drawn by the browser, within the Firecrawl budget).
+-- 2 public.svc_source_find_record keeps what was tried and why in pipeline.source_find_runs and adds the source:
+--   a university with active courses gets a course list (pipeline.provider_course_lists, feeding the page matchers);
+--   one with fewer active courses than source_find.programme_below gets a programme list (pipeline.programme_sources: courses are
+--   created inactive and shown only after a person approves the list).
+--   Nothing found: state none, with the reason, shown on the Work queues tab (queue source_find, Nothing left to try) and tried again
+--   after source_find.retry_days.
+-- 3 Countries the finder works on: pipeline.source_find_countries (AU, NZ, CA). All of it is shown and changed on the Course sources screen.
+-- Replaces: hand-found course list pages and programme sources (22 Oct 2026); those stay as the finder's test set.
 -- Retires: nothing
 
 -- settings ---------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, reason, section, used_by) values
- ('pipeline', 'batch.programme_discover', 'Programme lists read per run', 'Each run of the programme-discover job reads this many university programme site maps or list pages.', 'number', to_jsonb(4), 1, 20, 'lists', 910, 'CF-247 22 Oct 2026 (courses from the university''s own programme list)', 'Enrichment', 'job programme-discover; coverage-sweep programme_discover'),
- ('pipeline', 'batch.programme_read', 'Programme pages read per run', 'Each run of the programme-read job reads this many programme pages for their heading and credential.', 'number', to_jsonb(40), 1, 100, 'pages', 911, 'CF-247 22 Oct 2026 (courses from the university''s own programme list)', 'Enrichment', 'job programme-read; coverage-sweep programme_read'),
- ('pipeline', 'batch.programme_create', 'Programmes made into courses per run', 'Each run of the programme-create job creates or matches at most this many courses.', 'number', to_jsonb(500), 10, 5000, 'programmes', 912, 'CF-247 22 Oct 2026 (courses from the university''s own programme list)', 'Enrichment', 'security.programme_create_v1'),
- ('pipeline', 'programme.reread_days', 'Programme list read again after', 'A programme site map or list page is read again after this many days (new programmes are added; none is removed by this).', 'number', to_jsonb(30), 1, 365, 'days', 913, 'CF-247 22 Oct 2026 (courses from the university''s own programme list)', 'Enrichment', 'public.svc_programme_source_record'),
- ('pipeline', 'programme.max_urls', 'Programme pages kept per list', 'At most this many programme page addresses are kept from one site map or list page.', 'number', to_jsonb(3000), 50, 20000, 'pages', 914, 'CF-247 22 Oct 2026 (courses from the university''s own programme list)', 'Enrichment', 'public.svc_programme_source_next'),
- ('pipeline', 'programme.read_attempts', 'Programme page read attempts', 'A programme page that cannot be read is tried this many times.', 'number', to_jsonb(3), 1, 10, 'tries', 915, 'CF-247 22 Oct 2026 (courses from the university''s own programme list)', 'Enrichment', 'public.svc_programme_next')
+ ('pipeline', 'batch.source_find', 'Universities looked at per source finder run', 'Each run of the source-find job looks for the course source of this many universities.', 'number', to_jsonb(3), 1, 10, 'universities', 920, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'job source-find; coverage-sweep source_find'),
+ ('pipeline', 'source_find.min_links', 'Course addresses a source must give', 'A site map or list page is kept only when at least this many of its addresses fit the course address pattern.', 'number', to_jsonb(20), 3, 500, 'addresses', 921, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'coverage-sweep source_find'),
+ ('pipeline', 'source_find.min_recall', 'Known course pages a source must hold', 'A site map is kept only when it holds at least this share of the course pages already found for the university (when 3 or more are known).', 'number', to_jsonb(0.5), 0.1, 1, 'share', 922, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'coverage-sweep source_find'),
+ ('pipeline', 'source_find.max_files', 'Site map files read per university', 'At most this many site map files are read for one university.', 'number', to_jsonb(25), 1, 100, 'files', 923, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'coverage-sweep source_find'),
+ ('pipeline', 'source_find.max_locs', 'Site map addresses read per university', 'At most this many site map addresses are read for one university.', 'number', to_jsonb(60000), 1000, 500000, 'addresses', 924, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'coverage-sweep source_find'),
+ ('pipeline', 'source_find.max_list_tries', 'List addresses tried per university', 'At most this many list page addresses are tried for one university when no site map fits.', 'number', to_jsonb(8), 1, 30, 'pages', 925, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'coverage-sweep source_find'),
+ ('pipeline', 'source_find.retry_days', 'Source finder tries again after', 'A university where no course source was found is looked at again after this many days.', 'number', to_jsonb(14), 1, 180, 'days', 926, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'public.svc_source_find_record'),
+ ('pipeline', 'source_find.page_share_below', 'Look for a source while course pages found are below', 'A university is looked at while the share of its active courses with a course page is below this.', 'number', to_jsonb(0.95), 0.1, 1, 'share', 927, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'public.svc_source_find_next'),
+ ('pipeline', 'source_find.programme_below', 'Programme list when active courses are fewer than', 'A university with fewer active courses than this gets a programme list (courses created inactive, shown after approval) instead of a course list.', 'number', to_jsonb(1), 0, 1000, 'courses', 928, 'CF-247 22 Oct 2026 (course source finder)', 'Enrichment', 'public.svc_source_find_record')
 on conflict do nothing;
 
--- 1 tables ---------------------------------------------------------------------------------------------------------------------------
-create table if not exists pipeline.programme_sources (
-  id bigserial primary key,
-  provider_id uuid not null references catalogue.providers(id),
-  url text not null,
-  kind text not null check (kind in ('sitemap', 'list')),
-  url_pattern text not null,
-  child_pattern text,
-  status text not null default 'due' check (status in ('due', 'read', 'blocked', 'gone', 'failed', 'stopped')),
-  http_status int, fetched_via text,
-  found int, found_new int,
-  read_at timestamptz, next_read_at timestamptz not null default now(), leased_until timestamptz,
-  source_id uuid references pipeline.sources(id),
-  approved_at timestamptz, approved_by uuid, approved_reason text,
-  reason text not null, added_by uuid,
-  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
-  unique (provider_id, url)
+-- tables -----------------------------------------------------------------------------------------------------------------------------
+create table if not exists pipeline.source_find_countries (
+  country_code text primary key,
+  enabled boolean not null default true,
+  reason text not null,
+  updated_at timestamptz not null default now()
 );
-comment on table pipeline.programme_sources is 'CF-247 22 Oct 2026: a university''s own programme site map (kind sitemap; child_pattern picks the files of a site map index) or list page (kind list), and the address pattern (url_pattern, JavaScript regular expression, case-insensitive) of its programme pages. approved_at: a person approved showing the courses made from it (the country scope gate waits for it).';
-
-create table if not exists pipeline.programme_candidates (
-  id bigserial primary key,
-  provider_id uuid not null references catalogue.providers(id),
-  programme_source_id bigint references pipeline.programme_sources(id),
-  url text not null,
-  link_title text,
-  state text not null default 'found' check (state in ('found', 'read', 'failed', 'gone', 'created', 'matched', 'skipped')),
-  heading text, page_title text, final_url text,
-  study_level_code text references ref.study_levels(code),
-  http_status int, fetched_via text,
-  read_at timestamptz, read_attempts int not null default 0, next_read_at timestamptz not null default now(), leased_until timestamptz,
-  course_id uuid references catalogue.courses(id),
-  outcome text,
-  found_at timestamptz not null default now(), updated_at timestamptz not null default now(),
-  unique (provider_id, url)
-);
-create index if not exists programme_candidates_state_idx on pipeline.programme_candidates(state, next_read_at);
-comment on table pipeline.programme_candidates is 'CF-247 22 Oct 2026: each programme page found on a university''s programme list, its heading and the study level the heading names, and what became of it (created: a new inactive course; matched: an existing course; skipped: no level or a level out of scope, in outcome).';
-
--- 5 French university credentials (Canada) ------------------------------------------------------------------------------------------
-insert into pipeline.credential_level_map(country_code, sort, match_regex, study_level_code, note) values
- ('CA', 25, $r$dipl[ôo]me d.[ée]tudes sup[ée]rieures sp[ée]cialis|(^|[^a-z])d\.?\s?e\.?\s?s\.?\s?s\.?([^a-z]|$)$r$, 'graduate_diploma', 'Quebec D.E.S.S. (2nd cycle, 30 credits); 22 Oct 2026 programme lists'),
- ('CA', 35, $r$microprogramme\s+(de\s+)?(2e|3e|deuxi[eè]me|troisi[eè]me|cycles?\s+sup)$r$, 'graduate_certificate', 'Quebec microprogramme of the 2nd or 3rd cycle; a 1st-cycle microprogramme names no level'),
- ('CA', 55, $r$baccalaur[ée]at$r$, 'bachelor', 'Quebec baccalauréat'),
- ('CA', 65, $r$ma[îi]trise$r$, 'masters', 'Quebec maîtrise'),
- ('CA', 66, $r$doctorat|ph\.?\s?d([^a-z]|$)|doctor of$r$, 'doctorate', 'Doctorat, Ph. D., Doctor of'),
- ('CA', 85, $r$(^|[^a-z])certificat([^a-z]|$)$r$, 'certificate', 'Quebec university certificat (1st cycle, 30 credits)')
+comment on table pipeline.source_find_countries is 'CF-247 22 Oct 2026: countries the course source finder works on (Course sources screen).';
+insert into pipeline.source_find_countries(country_code, reason) values
+ ('AU', 'Platform Admin 22 Oct 2026 23:46: platform finds course sources itself'),
+ ('NZ', 'Platform Admin 22 Oct 2026 23:46: platform finds course sources itself'),
+ ('CA', 'Platform Admin 22 Oct 2026 23:46: platform finds course sources itself')
 on conflict do nothing;
 
--- helpers ----------------------------------------------------------------------------------------------------------------------------
-create or replace function security.programme_norm_v1(p text)
-returns text language sql immutable set search_path = '' as $function$
-  select btrim(regexp_replace(lower(translate(coalesce(p, ''), 'ÀÂÄÁÃÇÉÈÊËÎÏÍÌÔÖÓÒÛÜÚÙŸàâäáãçéèêëîïíìôöóòûüúùÿ’''', 'AAAAACEEEEIIIIOOOOUUUUYaaaaaceeeeiiiioooouuuuy  ')), '[^a-z0-9]+', ' ', 'g'))
-$function$;
-revoke all on function security.programme_norm_v1(text) from public, anon, authenticated;
+create table if not exists pipeline.source_find_paths (
+  id bigserial primary key,
+  kind text not null check (kind in ('list_path', 'folder_word')),
+  value text not null,
+  sort int not null default 100,
+  enabled boolean not null default true,
+  unique (kind, value)
+);
+comment on table pipeline.source_find_paths is 'CF-247 22 Oct 2026: what the course source finder tries: list_path, list page addresses tried on a university''s site (in sort order); folder_word, words a course folder or course site map file is named with (when too few course pages are known to learn the pattern).';
+insert into pipeline.source_find_paths(kind, value, sort) values
+ ('list_path', '/courses', 10), ('list_path', '/programmes', 20), ('list_path', '/programs', 30), ('list_path', '/study', 40),
+ ('list_path', '/find-a-course', 50), ('list_path', '/study/courses', 60), ('list_path', '/degrees', 70), ('list_path', '/qualifications', 80),
+ ('list_path', '/study/find-a-course', 90), ('list_path', '/course-search', 100), ('list_path', '/programmes-detudes', 110),
+ ('folder_word', 'courses?', 10), ('folder_word', 'programmes?', 20), ('folder_word', 'programs?', 30), ('folder_word', 'degrees?', 40),
+ ('folder_word', 'qualifications?', 50), ('folder_word', 'study-options', 60), ('folder_word', 'majors', 70), ('folder_word', 'programme-search', 80)
+on conflict do nothing;
 
-create or replace function security.programme_provider_approved_v1(p_provider_id uuid)
-returns boolean language sql stable security definer set search_path = '' as $function$
-  select exists (select 1 from pipeline.programme_sources s where s.provider_id = p_provider_id and s.approved_at is not null)
-$function$;
-revoke all on function security.programme_provider_approved_v1(uuid) from public, anon, authenticated;
+create table if not exists pipeline.source_find_runs (
+  provider_id uuid primary key references catalogue.providers(id),
+  state text not null check (state in ('leased', 'found', 'none', 'failed', 'tested')),
+  tried_at timestamptz, next_try_at timestamptz, leased_until timestamptz,
+  attempts int not null default 0,
+  known int, pattern text, pattern_basis text,
+  chosen jsonb, tried jsonb not null default '[]'::jsonb,
+  reason text, added text, worker text
+);
+comment on table pipeline.source_find_runs is 'CF-247 22 Oct 2026: the course source finder''s last look at each university: the pattern it learnt, every site map and list page it tried with its counts, what it chose and what it added (course list or programme list), or why nothing was found. state tested: a test run that added nothing.';
 
--- 1 discover -------------------------------------------------------------------------------------------------------------------------
-create or replace function public.svc_programme_source_next(p_limit integer default 4)
+-- service functions ------------------------------------------------------------------------------------------------------------------
+create or replace function public.svc_source_find_next(p_limit integer default 3, p_provider_ids uuid[] default null)
 returns jsonb language plpgsql security definer set search_path = '' as $function$
-declare v jsonb;
+declare v jsonb; v_share numeric := security.pipeline_num_v1('source_find.page_share_below', 0.95);
 begin
   if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
-  with pick as (select s.id from pipeline.programme_sources s
-                 where s.status <> 'stopped' and s.next_read_at <= now() and coalesce(s.leased_until, '-infinity') < now()
-                 order by s.next_read_at limit greatest(1, least(coalesce(p_limit, 4), 20))  -- fixed: per-call safety cap; the run size is batch.programme_discover
-                 for update skip locked),
-       upd as (update pipeline.programme_sources s set leased_until = now() + interval '10 minutes', updated_at = now()  -- fixed: lease for one call
-                 from pick where s.id = pick.id returning s.*)
-  select coalesce(jsonb_agg(jsonb_build_object('id', u.id, 'provider_id', u.provider_id, 'url', u.url, 'kind', u.kind, 'url_pattern', u.url_pattern,
-           'child_pattern', u.child_pattern, 'max_urls', security.pipeline_num_v1('programme.max_urls', 3000)::int)), '[]'::jsonb) into v from upd u;
-  return v;
-end $function$;
-revoke all on function public.svc_programme_source_next(integer) from public, anon, authenticated;
-grant execute on function public.svc_programme_source_next(integer) to service_role;
-
-create or replace function public.svc_programme_source_record(p_id bigint, p_status text, p_http integer, p_via text, p_urls jsonb)
-returns jsonb language plpgsql security definer set search_path = '' as $function$
-declare v_s pipeline.programme_sources; v_found int := 0; v_new int := 0;
-begin
-  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
-  select * into v_s from pipeline.programme_sources where id = p_id;
-  if v_s.id is null then return jsonb_build_object('error', 'unknown source'); end if;
-  if p_status = 'read' and jsonb_typeof(p_urls) = 'array' then
-    with u as (select distinct on (x->>'url') x->>'url' url, nullif(left(x->>'title', 300), '') title
-                 from jsonb_array_elements(p_urls) x where x->>'url' ~* '^https?://' and x->>'url' ~* v_s.url_pattern),
-         ins as (insert into pipeline.programme_candidates(provider_id, programme_source_id, url, link_title)
-                 select v_s.provider_id, v_s.id, u.url, u.title from u on conflict (provider_id, url) do nothing returning 1)
-    select (select count(*) from u), (select count(*) from ins) into v_found, v_new;
-  end if;
-  update pipeline.programme_sources set status = case when p_status in ('read', 'blocked', 'gone') then p_status else 'failed' end,
-         http_status = p_http, fetched_via = p_via, found = case when p_status = 'read' then v_found else found end,
-         found_new = case when p_status = 'read' then v_new else found_new end, read_at = now(), leased_until = null, updated_at = now(),
-         next_read_at = now() + make_interval(days => case when p_status = 'read' then security.pipeline_num_v1('programme.reread_days', 30)::int else 1 end)  -- fixed: a failed read is tried the next day
-   where id = p_id;
-  return jsonb_build_object('found', v_found, 'new', v_new);
-end $function$;
-revoke all on function public.svc_programme_source_record(bigint, text, integer, text, jsonb) from public, anon, authenticated;
-grant execute on function public.svc_programme_source_record(bigint, text, integer, text, jsonb) to service_role;
-
--- 2 read -----------------------------------------------------------------------------------------------------------------------------
-create or replace function public.svc_programme_next(p_limit integer default 40)
-returns jsonb language plpgsql security definer set search_path = '' as $function$
-declare v jsonb; v_max int := security.pipeline_num_v1('programme.read_attempts', 3)::int;
-begin
-  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
-  with pick as (select c.id from pipeline.programme_candidates c
-                 where c.state in ('found', 'failed') and c.read_attempts < v_max and c.next_read_at <= now() and coalesce(c.leased_until, '-infinity') < now()
-                 order by c.state = 'failed', c.found_at limit greatest(1, least(coalesce(p_limit, 40), 100))  -- fixed: per-call safety cap; the run size is batch.programme_read
-                 for update skip locked),
-       upd as (update pipeline.programme_candidates c set leased_until = now() + interval '10 minutes', read_attempts = c.read_attempts + 1, updated_at = now()  -- fixed: lease for one call
-                 from pick where c.id = pick.id returning c.id, c.provider_id, c.url)
-  select coalesce(jsonb_agg(jsonb_build_object('id', u.id, 'provider_id', u.provider_id, 'url', u.url)), '[]'::jsonb) into v from upd u;
-  return v;
-end $function$;
-revoke all on function public.svc_programme_next(integer) from public, anon, authenticated;
-grant execute on function public.svc_programme_next(integer) to service_role;
-
-create or replace function public.svc_programme_record(p_id bigint, p_result jsonb)
-returns jsonb language plpgsql security definer set search_path = '' as $function$
-declare v_c pipeline.programme_candidates; v_country text; v_heading text; v_title text; v_level text; v_status text := coalesce(p_result->>'status', 'failed');
-begin
-  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
-  select * into v_c from pipeline.programme_candidates where id = p_id;
-  if v_c.id is null then return jsonb_build_object('error', 'unknown candidate'); end if;
-  v_country := security.coverage_country(v_c.provider_id);
-  v_heading := nullif(btrim(replace(left(p_result->>'heading', 300), chr(0), '')), '');
-  v_title := nullif(btrim(replace(left(coalesce(p_result->>'og_title', p_result->>'title'), 300), chr(0), '')), '');
-  if v_status in ('read', 'too_thin') and coalesce(v_heading, v_title) is not null then
-    v_level := coalesce(security.credential_level_v1(v_country, v_heading), security.credential_level_v1(v_country, v_title));
-    update pipeline.programme_candidates set state = 'read', heading = coalesce(v_heading, v_title), page_title = v_title, final_url = p_result->>'final_url',
-           study_level_code = v_level, http_status = (p_result->>'http')::int, fetched_via = p_result->>'via', read_at = now(), leased_until = null, updated_at = now(),
-           outcome = case when v_level is null then 'no_level' end
-     where id = p_id;
+  create temp table if not exists _sf_pick(provider_id uuid) on commit drop; truncate _sf_pick;
+  if p_provider_ids is not null then
+    insert into _sf_pick select unnest(p_provider_ids) limit 20;  -- fixed: a test run looks at a handful of universities
   else
-    update pipeline.programme_candidates set state = case when v_status = 'gone' then 'gone' else 'failed' end, http_status = (p_result->>'http')::int,
-           fetched_via = p_result->>'via', read_at = now(), leased_until = null, updated_at = now(), outcome = v_status,
-           next_read_at = now() + interval '1 day'  -- fixed: a failed page is tried again the next day
-     where id = p_id;
+    insert into _sf_pick
+    with cand as (
+      select p.id, (select count(*) from catalogue.courses c where c.provider_id = p.id and c.lifecycle_status = 'active') active,
+             (select count(*) from catalogue.courses c join pipeline.coverage_course_pages pg on pg.course_id = c.id and pg.status = 'bound' and pg.read_status = 'read'
+               where c.provider_id = p.id and c.lifecycle_status = 'active') paged,
+             (select count(*) from catalogue.courses c where c.provider_id = p.id) all_courses
+        from catalogue.providers p
+       where p.enrols_international is true and coalesce(p.lifecycle_status, 'active') = 'active' and p.website is not null
+         and security.coverage_country(p.id) in (select x.country_code from pipeline.source_find_countries x where x.enabled)
+         and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.id)
+         and not exists (select 1 from pipeline.provider_course_lists l where l.provider_id = p.id and l.status <> 'stopped')
+         and not exists (select 1 from pipeline.programme_sources s where s.provider_id = p.id and s.status <> 'stopped')
+         and not exists (select 1 from pipeline.source_find_runs r where r.provider_id = p.id
+                           and (r.state in ('found', 'tested') or coalesce(r.next_try_at, now()) > now() or coalesce(r.leased_until, '-infinity') > now())))
+    select c.id from cand c
+     where c.all_courses > 0 and (c.active = 0 or c.paged::numeric / c.active < v_share)
+     order by (c.active - c.paged) desc, c.all_courses desc
+     limit greatest(1, least(coalesce(p_limit, 3), 10));  -- fixed: per-call safety cap; the run size is batch.source_find
   end if;
-  return jsonb_build_object('level', v_level);
+  insert into pipeline.source_find_runs as r (provider_id, state, leased_until, attempts)
+  select provider_id, 'leased', now() + interval '10 minutes', 1 from _sf_pick  -- fixed: lease for one call
+  on conflict (provider_id) do update set state = 'leased', leased_until = excluded.leased_until, attempts = r.attempts + 1;
+  select jsonb_build_object(
+    'items', (select coalesce(jsonb_agg(jsonb_build_object('provider_id', p.id, 'name', p.display_name, 'website', p.website,
+                'known', (select coalesce(jsonb_agg(u), '[]'::jsonb) from (
+                           select distinct pg.url u from pipeline.coverage_course_pages pg where pg.provider_id = p.id and pg.status = 'bound' and pg.read_status = 'read' and pg.url is not null
+                           union select distinct c.course_url from catalogue.courses c where c.provider_id = p.id and c.course_url ~* '^https?://' and c.lifecycle_status = 'active'
+                           limit 400) k))), '[]'::jsonb)  -- fixed: a sample of known course pages is enough to learn the pattern
+                from _sf_pick x join catalogue.providers p on p.id = x.provider_id),
+    'list_paths', (select coalesce(jsonb_agg(s.value order by s.sort), '[]'::jsonb) from pipeline.source_find_paths s where s.kind = 'list_path' and s.enabled),
+    'folder_words', (select coalesce(jsonb_agg(s.value order by s.sort), '[]'::jsonb) from pipeline.source_find_paths s where s.kind = 'folder_word' and s.enabled),
+    'settings', jsonb_build_object('min_links', security.pipeline_num_v1('source_find.min_links', 20), 'min_recall', security.pipeline_num_v1('source_find.min_recall', 0.5),
+                'max_files', security.pipeline_num_v1('source_find.max_files', 25), 'max_locs', security.pipeline_num_v1('source_find.max_locs', 60000),
+                'max_list_tries', security.pipeline_num_v1('source_find.max_list_tries', 8)))
+    into v;
+  return v;
 end $function$;
-revoke all on function public.svc_programme_record(bigint, jsonb) from public, anon, authenticated;
-grant execute on function public.svc_programme_record(bigint, jsonb) to service_role;
+revoke all on function public.svc_source_find_next(integer, uuid[]) from public, anon, authenticated;
+grant execute on function public.svc_source_find_next(integer, uuid[]) to service_role;
 
--- 3 create or match ------------------------------------------------------------------------------------------------------------------
-create or replace function security.programme_create_v1(p_apply boolean default true, p_provider_id uuid default null)
-returns jsonb language plpgsql security definer set search_path = '' set statement_timeout to '120s' as $function$
-declare
-  v_cap int := security.pipeline_num_v1('batch.programme_create', 500)::int;
-  v_family uuid := (select f.id from pim.attribute_families f where f.entity_type = 'course' and f.status = 'active' order by case when f.code = 'course_default' then 0 else 1 end limit 1);
-  r record; v_course uuid; v_key text; v_src uuid; v_created int := 0; v_matched int := 0; v_skipped int := 0; v_n int := 0;
-begin
-  for r in
-    select c.*, security.coverage_country(c.provider_id) cc, p.display_name pname, sl.id level_id,
-           exists (select 1 from pipeline.country_scope_levels s where s.country_code = security.coverage_country(c.provider_id) and s.study_level_code = c.study_level_code) in_scope
-      from pipeline.programme_candidates c
-      join catalogue.providers p on p.id = c.provider_id
-      left join ref.study_levels sl on sl.code = c.study_level_code
-     where c.state = 'read' and (p_provider_id is null or c.provider_id = p_provider_id)
-     order by c.provider_id, c.id
-     limit v_cap
-  loop
-    v_n := v_n + 1;
-    if r.study_level_code is null or not r.in_scope then
-      if p_apply then update pipeline.programme_candidates set state = 'skipped', outcome = case when r.study_level_code is null then 'no_level' else 'level_out_of_scope' end, updated_at = now() where id = r.id; end if;
-      v_skipped := v_skipped + 1; continue;
-    end if;
-    -- the university's existing course with this page, or with the same title
-    select co.id into v_course from catalogue.courses co
-      left join pipeline.coverage_course_pages pg on pg.course_id = co.id
-     where co.provider_id = r.provider_id
-       and (rtrim(pg.url, '/') = rtrim(r.url, '/') or rtrim(co.course_url, '/') = rtrim(r.url, '/')
-            or security.programme_norm_v1(co.canonical_title) = security.programme_norm_v1(r.heading))
-     order by (rtrim(pg.url, '/') = rtrim(r.url, '/')) desc nulls last, (co.lifecycle_status = 'active') desc, co.created_at
-     limit 1;
-    if v_course is not null then
-      if p_apply then
-        update catalogue.courses co set study_level_id = r.level_id, updated_at = now()
-         where co.id = v_course and co.study_level_id is null
-           and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = co.id and l.field = 'study_level_id');
-        insert into pipeline.coverage_course_pages(course_id, provider_id, url, score, basis, status, identity_basis, next_read_at)
-        values (v_course, r.provider_id, r.url, 1, 'programme_list', 'bound', 'exact_title', now())
-        on conflict (course_id) do update set url = excluded.url, score = 1, basis = 'programme_list', status = 'bound', bound_at = now(), read_attempts = 0, next_read_at = now()
-         where pipeline.coverage_course_pages.status <> 'bound';
-        update pipeline.programme_candidates set state = 'matched', course_id = v_course, outcome = 'existing_course', updated_at = now() where id = r.id;
-      end if;
-      v_matched := v_matched + 1; continue;
-    end if;
-    if p_apply then
-      select s.source_id into v_src from pipeline.programme_sources s where s.id = r.programme_source_id;
-      if v_src is null then
-        insert into pipeline.sources(source_type, provider_id, url, label, trust_rank, metadata)
-        values ('institutional_catalogue', r.provider_id, (select s.url from pipeline.programme_sources s where s.id = r.programme_source_id),
-                r.pname || ' programme list (university''s own site)', 50,
-                jsonb_build_object('layer', '1', 'country', r.cc, 'coverage_role', 'first_party_programme_list', 'course_identity_scheme', 'programme_page_url', 'introduced', '20261022043000'))
-        returning id into v_src;
-        update pipeline.programme_sources set source_id = v_src where id = r.programme_source_id;
-      end if;
-      v_key := 'course:' || lower(r.cc) || ':programme_list:' || r.provider_id::text || ':' || md5(rtrim(r.url, '/'));
-      insert into pim.entity_registry(entity_type, stable_key, family_id) values ('course', v_key, v_family)
-      on conflict (stable_key) do nothing returning id into v_course;
-      if v_course is null then v_skipped := v_skipped + 1; continue; end if;
-      insert into catalogue.courses(id, stable_key, provider_id, canonical_title, display_title, course_url, study_level_id, lifecycle_status, publication_status, canonical_source_id, last_verified_at)
-      values (v_course, v_key, r.provider_id, r.heading, r.heading, r.url, r.level_id, 'inactive', 'unpublished', v_src, now());
-      insert into pipeline.coverage_course_pages(course_id, provider_id, url, score, basis, status, identity_basis, next_read_at)
-      values (v_course, r.provider_id, r.url, 1, 'programme_list', 'bound', 'exact_title', now());
-      update pipeline.programme_candidates set state = 'created', course_id = v_course, outcome = 'new_course', updated_at = now() where id = r.id;
-    end if;
-    v_created := v_created + 1;
-  end loop;
-  if p_apply and v_n > 0 then
-    insert into pipeline.admin_control_events(area, action, target, detail)
-    values ('programme_lists', 'create', coalesce(p_provider_id::text, 'all'), jsonb_build_object('created', v_created, 'matched', v_matched, 'skipped', v_skipped, 'note', 'created inactive; shown only after the programme list is approved'));
-  end if;
-  return jsonb_build_object('looked_at', v_n, 'created', v_created, 'matched', v_matched, 'skipped', v_skipped, 'applied', p_apply);
-end $function$;
-revoke all on function security.programme_create_v1(boolean, uuid) from public, anon, authenticated;
-
--- 4 approval, and the scope gate waits for it ----------------------------------------------------------------------------------------
-do $do$
-declare v_def text := pg_get_functiondef('security.country_scope_gate_v1'::regproc);
-  v_old text := $o$join pipeline.coverage_course_pages pg on pg.course_id = c.id and pg.read_status = 'read' and pg.status = 'bound' and pg.read_at > now() - v_fresh$o$;
-  v_new text := $n$join pipeline.coverage_course_pages pg on pg.course_id = c.id and pg.read_status = 'read' and pg.status = 'bound' and pg.read_at > now() - v_fresh
-                     and (pg.basis is distinct from 'programme_list' or security.programme_provider_approved_v1(c.provider_id))  -- 22 Oct 2026: a programme list course waits for a person's approval$n$;
-begin
-  if md5(v_def) <> 'f9cbbac000ea0dca8cf967d77cbbd9cc' then raise exception 'security.country_scope_gate_v1 is not the expected version (md5 %)', md5(v_def); end if;
-  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'gate: expected one show join'; end if;
-  execute replace(v_def, v_old, v_new);
-end $do$;
-
-create or replace function public.admin_programme_lists(p_action text, p_args jsonb default '{}'::jsonb)
+create or replace function public.svc_source_find_record(p_provider_id uuid, p_result jsonb, p_test boolean default false)
 returns jsonb language plpgsql security definer set search_path = '' as $function$
-declare v_rank int := security.current_role_rank(); v_pid uuid; v_reason text; v_n int;
+declare v_ch jsonb := p_result->'chosen'; v_active int; v_added text; v_state text;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  select count(*) into v_active from catalogue.courses c where c.provider_id = p_provider_id and c.lifecycle_status = 'active';
+  if jsonb_typeof(v_ch) = 'object' and v_ch->>'url' ~* '^https?://' then
+    v_state := case when p_test then 'tested' else 'found' end;
+    if not p_test then
+      if v_active < security.pipeline_num_v1('source_find.programme_below', 1) then
+        insert into pipeline.programme_sources(provider_id, url, kind, url_pattern, child_pattern, reason)
+        values (p_provider_id, v_ch->>'url', v_ch->>'kind', coalesce(v_ch->>'link_pattern', p_result->>'pattern'), v_ch->>'child_pattern',
+                'Found by the course source finder (' || coalesce(v_ch->>'matches', '?') || ' programme addresses)')
+        on conflict (provider_id, url) do nothing;
+        v_added := 'programme_list';
+      else
+        insert into pipeline.provider_course_lists(provider_id, url, reason, added_by, link_pattern, child_pattern)
+        values (p_provider_id, v_ch->>'url', 'Found by the course source finder (' || coalesce(v_ch->>'matches', '?') || ' course addresses)', null,
+                case when v_ch->>'kind' = 'sitemap' then coalesce(v_ch->>'link_pattern', p_result->>'pattern') end, case when v_ch->>'kind' = 'sitemap' then v_ch->>'child_pattern' end)
+        on conflict (provider_id, url) do nothing;
+        v_added := 'course_list';
+      end if;
+    end if;
+  else
+    v_state := case when p_result->>'error' is not null then 'failed' else 'none' end;
+  end if;
+  insert into pipeline.source_find_runs as r (provider_id, state, tried_at, next_try_at, leased_until, known, pattern, pattern_basis, chosen, tried, reason, added, worker)
+  values (p_provider_id, v_state, now(),
+          case when v_state in ('none', 'failed') then now() + make_interval(days => security.pipeline_num_v1('source_find.retry_days', 14)::int) end, null,
+          (p_result->>'known')::int, left(p_result->>'pattern', 500), p_result->>'pattern_basis', v_ch, coalesce(p_result->'tried', '[]'::jsonb),
+          left(coalesce(p_result->>'reason', p_result->>'error'), 500), v_added, p_result->>'worker')
+  on conflict (provider_id) do update set state = excluded.state, tried_at = excluded.tried_at, next_try_at = excluded.next_try_at, leased_until = null,
+         known = excluded.known, pattern = excluded.pattern, pattern_basis = excluded.pattern_basis, chosen = excluded.chosen, tried = excluded.tried,
+         reason = excluded.reason, added = excluded.added, worker = excluded.worker;
+  return jsonb_build_object('state', v_state, 'added', v_added);
+end $function$;
+revoke all on function public.svc_source_find_record(uuid, jsonb, boolean) from public, anon, authenticated;
+grant execute on function public.svc_source_find_record(uuid, jsonb, boolean) to service_role;
+
+-- Course sources screen --------------------------------------------------------------------------------------------------------------
+create or replace function public.admin_course_sources(p_action text, p_args jsonb default '{}'::jsonb)
+returns jsonb language plpgsql security definer set search_path = '' as $function$
+declare v_rank int := security.current_role_rank(); v_pid uuid := nullif(p_args->>'provider_id', '')::uuid; v_reason text := nullif(btrim(p_args->>'reason'), ''); v_n int;
 begin
   if auth.uid() is null or coalesce(v_rank, 0) < 3 then raise exception 'Curator role or above required' using errcode = '42501'; end if;
   if p_action = 'list' then
-    return jsonb_build_object('sources', (select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'provider_id', s.provider_id, 'provider', p.display_name, 'url', s.url, 'kind', s.kind,
-              'status', s.status, 'read_at', s.read_at, 'found', s.found, 'approved_at', s.approved_at, 'approved_reason', s.approved_reason,
-              'states', (select coalesce(jsonb_object_agg(z.state, z.n), '{}'::jsonb) from (select c.state, count(*) n from pipeline.programme_candidates c where c.programme_source_id = s.id group by 1) z),
-              'levels', (select coalesce(jsonb_object_agg(z.l, z.n), '{}'::jsonb) from (select coalesce(c.study_level_code, 'none') l, count(*) n from pipeline.programme_candidates c where c.programme_source_id = s.id and c.state in ('created', 'matched') group by 1) z))
-              order by p.display_name), '[]'::jsonb)
-           from pipeline.programme_sources s join catalogue.providers p on p.id = s.provider_id));
-  elsif p_action = 'approve' then
-    if v_rank < 6 then raise exception 'Platform Admin role required' using errcode = '42501'; end if;
-    v_pid := (p_args->>'provider_id')::uuid; v_reason := nullif(btrim(p_args->>'reason'), '');
-    if v_pid is null or v_reason is null then raise exception 'provider_id and reason required'; end if;
-    update pipeline.programme_sources set approved_at = now(), approved_by = auth.uid(), approved_reason = v_reason, updated_at = now() where provider_id = v_pid and approved_at is null;
-    get diagnostics v_n = row_count;
-    insert into pipeline.admin_control_events(area, action, target, detail, actor) values ('programme_lists', 'approve', v_pid::text, jsonb_build_object('sources', v_n, 'reason', v_reason), auth.uid());
-    return jsonb_build_object('approved', v_n);
+    return jsonb_build_object(
+      'countries', (select coalesce(jsonb_agg(to_jsonb(c) order by c.country_code), '[]'::jsonb) from pipeline.source_find_countries c),
+      'paths', (select coalesce(jsonb_agg(to_jsonb(s) order by s.kind, s.sort), '[]'::jsonb) from pipeline.source_find_paths s),
+      'providers', (select coalesce(jsonb_agg(z order by z->>'country', z->>'name'), '[]'::jsonb) from (
+         select jsonb_build_object('provider_id', p.id, 'name', p.display_name, 'country', security.coverage_country(p.id), 'website', p.website,
+                  'finder', (select to_jsonb(r) - 'provider_id' from pipeline.source_find_runs r where r.provider_id = p.id),
+                  'lists', (select coalesce(jsonb_agg(jsonb_build_object('id', l.id, 'url', l.url, 'status', l.status, 'links', l.links_found, 'new', l.links_new, 'read_at', l.read_at,
+                              'via', l.fetched_via, 'pattern', l.link_pattern, 'by_finder', l.reason like 'Found by the course source finder%')), '[]'::jsonb) from pipeline.provider_course_lists l where l.provider_id = p.id),
+                  'programmes', (select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'url', s.url, 'kind', s.kind, 'status', s.status, 'found', s.found, 'pattern', s.url_pattern,
+                              'approved_at', s.approved_at, 'states', (select coalesce(jsonb_object_agg(q.state, q.n), '{}'::jsonb) from (select c.state, count(*) n from pipeline.programme_candidates c where c.programme_source_id = s.id group by 1) q))), '[]'::jsonb)
+                              from pipeline.programme_sources s where s.provider_id = p.id)) z
+           from catalogue.providers p
+          where exists (select 1 from pipeline.source_find_runs r where r.provider_id = p.id)
+             or exists (select 1 from pipeline.provider_course_lists l where l.provider_id = p.id)
+             or exists (select 1 from pipeline.programme_sources s where s.provider_id = p.id)) x(z)));
   end if;
-  raise exception 'unknown action %', p_action;
+  if v_rank < 4 then raise exception 'Pipeline operator role or above required' using errcode = '42501'; end if;
+  if v_reason is null then raise exception 'A reason is required'; end if;
+  if p_action = 'find_again' then
+    update pipeline.source_find_runs set next_try_at = now(), state = case when state in ('found', 'tested') then 'none' else state end where provider_id = v_pid;
+    insert into pipeline.source_find_runs(provider_id, state, next_try_at) values (v_pid, 'none', now()) on conflict (provider_id) do nothing;
+  elsif p_action = 'stop_list' then
+    update pipeline.provider_course_lists set status = 'stopped', next_read_at = 'infinity', updated_at = now() where id = (p_args->>'id')::uuid;
+  elsif p_action = 'stop_programme' then
+    update pipeline.programme_sources set status = 'stopped', next_read_at = 'infinity', updated_at = now() where id = (p_args->>'id')::bigint;
+  elsif p_action = 'add_list' then
+    insert into pipeline.provider_course_lists(provider_id, url, reason, added_by, link_pattern, child_pattern)
+    values (v_pid, p_args->>'url', v_reason, auth.uid(), nullif(p_args->>'link_pattern', ''), nullif(p_args->>'child_pattern', ''))
+    on conflict (provider_id, url) do update set status = 'due', next_read_at = now(), link_pattern = excluded.link_pattern, child_pattern = excluded.child_pattern, updated_at = now();
+  elsif p_action = 'add_programme' then
+    insert into pipeline.programme_sources(provider_id, url, kind, url_pattern, child_pattern, reason, added_by)
+    values (v_pid, p_args->>'url', coalesce(nullif(p_args->>'kind', ''), 'sitemap'), p_args->>'url_pattern', nullif(p_args->>'child_pattern', ''), v_reason, auth.uid())
+    on conflict (provider_id, url) do update set status = 'due', next_read_at = now(), url_pattern = excluded.url_pattern, child_pattern = excluded.child_pattern, updated_at = now();
+  elsif p_action = 'approve_programme' then
+    if v_rank < 6 then raise exception 'Platform Admin role required' using errcode = '42501'; end if;
+    update pipeline.programme_sources set approved_at = now(), approved_by = auth.uid(), approved_reason = v_reason, updated_at = now() where provider_id = v_pid and approved_at is null;
+  elsif p_action = 'country' then
+    insert into pipeline.source_find_countries(country_code, enabled, reason) values (upper(p_args->>'country'), coalesce((p_args->>'enabled')::boolean, true), v_reason)
+    on conflict (country_code) do update set enabled = excluded.enabled, reason = excluded.reason, updated_at = now();
+  elsif p_action = 'path' then
+    insert into pipeline.source_find_paths(kind, value, sort, enabled) values (p_args->>'kind', p_args->>'value', coalesce((p_args->>'sort')::int, 100), coalesce((p_args->>'enabled')::boolean, true))
+    on conflict (kind, value) do update set enabled = excluded.enabled, sort = excluded.sort;
+  else
+    raise exception 'unknown action %', p_action;
+  end if;
+  get diagnostics v_n = row_count;
+  insert into pipeline.admin_control_events(area, action, target, detail, actor) values ('course_sources', p_action, coalesce(v_pid::text, p_args->>'id', p_args->>'country', p_args->>'value'), p_args, auth.uid());
+  return jsonb_build_object('ok', true, 'rows', v_n);
 end $function$;
-revoke all on function public.admin_programme_lists(text, jsonb) from public, anon;
-grant execute on function public.admin_programme_lists(text, jsonb) to authenticated;
+revoke all on function public.admin_course_sources(text, jsonb) from public, anon;
+grant execute on function public.admin_course_sources(text, jsonb) to authenticated;
 
--- jobs -------------------------------------------------------------------------------------------------------------------------------
+-- watchdog, job ----------------------------------------------------------------------------------------------------------------------
 insert into pipeline.queue_watch(key, label, area, purpose, jobnames, tools, pending_sql, progress_sql, done_sql, failed_sql, exhausted_sql, exhausted_label, fix_at, sort) values
-('programme_read', 'Programme pages from university lists', 'Enrichment', 'Reads each programme page found on a university''s own programme list for its heading and credential.',
- '{programme-discover,programme-read}', '{}',
- $q$select count(*) from pipeline.programme_candidates where state in ('found', 'failed') and read_attempts < security.pipeline_num_v1('programme.read_attempts', 3)::int$q$,
- $q$select max(read_at) from pipeline.programme_candidates$q$,
- $q$select count(*) from pipeline.programme_candidates where read_at >= $1 and state not in ('failed', 'found')$q$,
- $q$select count(*) from pipeline.programme_candidates where read_at >= $1 and state = 'failed'$q$,
- $q$select count(*) from pipeline.programme_candidates where state = 'failed' and read_attempts >= security.pipeline_num_v1('programme.read_attempts', 3)::int$q$,
- 'Programme pages that could not be read', '#layer-2-discovery?tab=operations', 160)
+('source_find', 'Course source finder', 'Enrichment', 'Finds each university''s own course site map or list page by itself (no person needed).',
+ '{source-find}', '{}',
+ $q$select count(*) from catalogue.providers p where p.enrols_international is true and coalesce(p.lifecycle_status, 'active') = 'active' and p.website is not null and security.coverage_country(p.id) in (select x.country_code from pipeline.source_find_countries x where x.enabled) and exists (select 1 from catalogue.courses c where c.provider_id = p.id) and not exists (select 1 from pipeline.provider_course_lists l where l.provider_id = p.id and l.status <> 'stopped') and not exists (select 1 from pipeline.programme_sources s where s.provider_id = p.id and s.status <> 'stopped') and not exists (select 1 from pipeline.source_find_runs r where r.provider_id = p.id and (r.state in ('found', 'tested') or coalesce(r.next_try_at, now()) > now()))$q$,
+ $q$select max(tried_at) from pipeline.source_find_runs$q$,
+ $q$select count(*) from pipeline.source_find_runs where tried_at >= $1 and state in ('found', 'none', 'tested')$q$,
+ $q$select count(*) from pipeline.source_find_runs where tried_at >= $1 and state = 'failed'$q$,
+ $q$select count(*) from pipeline.source_find_runs where state = 'none'$q$,
+ 'Universities where no course source was found (Course sources screen)', '#layer-2-discovery?tab=sources', 170)
 on conflict (key) do nothing;
 
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
- ('programme-discover', 'Enrichment', 52, 'Programme lists', 'Every 30 minutes while a list is due: reads each university''s own programme site map or list page (pipeline.programme_sources) and records its programme page addresses. Read again after programme.reread_days. Run size batch.programme_discover.', 4, true, 'pages'),
- ('programme-read', 'Enrichment', 53, 'Programme pages', 'Every 10 minutes while pages wait: reads each programme page found on a programme list for its heading; the credential it names gives the study level (pipeline.credential_level_map). Run size batch.programme_read.', 4, true, 'pages'),
- ('programme-create', 'Enrichment', 54, 'Courses from programme lists', 'Hourly: a programme whose level is in the country''s scope becomes an inactive, unpublished course with its page bound (or is matched to the university''s existing course). Shown only after a person approves the university''s programme list. Run size batch.programme_create.', 4, true, null)
+ ('source-find', 'Enrichment', 55, 'Course source finder', 'Every 20 minutes while universities wait: learns the address pattern of a university''s course pages and finds its own course site map or list page (robots.txt, site maps, the usual list addresses in pipeline.source_find_paths); adds it as a course list, or as a programme list (inactive until approved) for a university with no active courses; or records why nothing was found. Run size batch.source_find.', 4, true, 'pages')
 on conflict (jobname) do nothing;
 
-select cron.schedule('programme-discover', '12-59/30 * * * *',
-  $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'programme_discover', 'limit', security.pipeline_num_v1('batch.programme_discover', 4)::int)) where exists (select 1 from pipeline.programme_sources s where s.status <> 'stopped' and s.next_read_at <= now())$c$);
-select cron.schedule('programme-read', '8-59/10 * * * *',
-  $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'programme_read', 'limit', security.pipeline_num_v1('batch.programme_read', 40)::int)) where exists (select 1 from pipeline.queue_watch_state s where s.key = 'programme_read' and s.pending > 0) or not exists (select 1 from pipeline.queue_watch_state s where s.key = 'programme_read')$c$);
-select cron.schedule('programme-create', '44 * * * *', $c$select security.programme_create_v1(true, null) where exists (select 1 from pipeline.programme_candidates c where c.state = 'read')$c$);
+select cron.schedule('source-find', '16-59/20 * * * *',
+  $c$select pipeline.svc_pilot_submit_nonce('coverage-sweep', jsonb_build_object('mode', 'source_find', 'limit', security.pipeline_num_v1('batch.source_find', 3)::int)) where exists (select 1 from pipeline.queue_watch_state s where s.key = 'source_find' and s.pending > 0) or not exists (select 1 from pipeline.queue_watch_state s where s.key = 'source_find')$c$);
+-- off until its test run against the hand-found sources is checked (a passing check never switches anything on by itself)
+select cron.alter_job((select jobid from cron.job where jobname = 'source-find'), active := false);
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('table', 'pipeline.programme_sources', 'Layer 1', 'University programme site maps and list pages', 'active', '{}', '20261022043000'),
- ('table', 'pipeline.programme_candidates', 'Layer 1', 'Programme pages found on university lists and what became of them', 'active', '{}', '20261022043000'),
- ('function', 'public.svc_programme_source_next', 'Layer 1', 'Programme lists due for reading', 'active', '{}', '20261022043000'),
- ('function', 'public.svc_programme_source_record', 'Layer 1', 'Records the programme pages a list gave', 'active', '{}', '20261022043000'),
- ('function', 'public.svc_programme_next', 'Layer 1', 'Programme pages due for reading', 'active', '{}', '20261022043000'),
- ('function', 'public.svc_programme_record', 'Layer 1', 'Records a programme page heading and its level', 'active', '{}', '20261022043000'),
- ('function', 'security.programme_create_v1', 'Layer 1', 'Creates inactive courses from programme lists, or matches existing ones', 'active', '{}', '20261022043000'),
- ('function', 'security.programme_provider_approved_v1', 'Layer 1', 'Whether a person approved a university''s programme list', 'active', '{}', '20261022043000'),
- ('function', 'security.programme_norm_v1', 'Layer 1', 'Title comparison form (accents and punctuation removed)', 'active', '{}', '20261022043000'),
- ('function', 'public.admin_programme_lists', 'Platform', 'Programme lists: list and approve', 'active', '{}', '20261022043000'),
- ('job', 'programme-discover', 'Layer 1', 'Reads university programme lists', 'active', '{}', '20261022043000'),
- ('job', 'programme-read', 'Layer 1', 'Reads programme pages for heading and level', 'active', '{}', '20261022043000'),
- ('job', 'programme-create', 'Layer 1', 'Courses from programme lists (inactive until approved)', 'active', '{}', '20261022043000')
+ ('table', 'pipeline.source_find_countries', 'Layer 1', 'Countries the course source finder works on', 'active', '{}', '20261022044000'),
+ ('table', 'pipeline.source_find_paths', 'Layer 1', 'List addresses and folder words the source finder tries', 'active', '{}', '20261022044000'),
+ ('table', 'pipeline.source_find_runs', 'Layer 1', 'The source finder''s last look at each university', 'active', '{}', '20261022044000'),
+ ('function', 'public.svc_source_find_next', 'Layer 1', 'Universities due for the source finder', 'active', '{}', '20261022044000'),
+ ('function', 'public.svc_source_find_record', 'Layer 1', 'Records what the source finder tried and adds the source', 'active', '{}', '20261022044000'),
+ ('function', 'public.admin_course_sources', 'Platform', 'Course sources screen', 'active', '{}', '20261022044000'),
+ ('job', 'source-find', 'Layer 1', 'Course source finder', 'active', '{}', '20261022044000')
 on conflict (kind, name) do nothing;
 
--- 6 a course list may be a site map with an address pattern (search-app course finders give no links) --------------------------------
-alter table pipeline.provider_course_lists add column if not exists link_pattern text;
-alter table pipeline.provider_course_lists add column if not exists child_pattern text;
-comment on column pipeline.provider_course_lists.link_pattern is 'CF-247 22 Oct 2026: when set, url is a site map and only page addresses fitting this pattern (JavaScript regular expression, case-insensitive) are kept.';
-comment on column pipeline.provider_course_lists.child_pattern is 'CF-247 22 Oct 2026: the files of a site map index that are followed (pattern on their address); all when null.';
-do $do$
-declare v_def text := pg_get_functiondef('public.svc_course_list_next'::regproc);
-  v_old text := $o$'min_links', security.pipeline_num_v1('course_list.min_links', 20)::int)$o$;
-  v_new text := $n$'min_links', security.pipeline_num_v1('course_list.min_links', 20)::int, 'link_pattern', u.link_pattern, 'child_pattern', u.child_pattern)$n$;
-begin
-  if md5(v_def) <> 'a314bbefc1e70dd53dcc152a671705bd' then raise exception 'public.svc_course_list_next is not the expected version (md5 %)', md5(v_def); end if;
-  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'course list next: expected one min_links'; end if;
-  execute replace(v_def, v_old, v_new);
-end $do$;
+select 'course source finder ready' ok;
 
--- sources are found by the platform (Platform Admin 22 Oct 2026 23:46: "Platform needs to independently read website"); none is added here
-select 'programme lists ready' ok;
-
-do $t$ begin raise exception 'DRYRUN OK %', jsonb_build_object(
-  'gate_has_approval', pg_get_functiondef('security.country_scope_gate_v1'::regproc) like '%programme_provider_approved_v1%',
-  'sources', (select count(*) from pipeline.programme_sources), 'list_next', pg_get_functiondef('public.svc_course_list_next'::regproc) like '%link_pattern%',
-  'jobs', (select count(*) from cron.job where jobname like 'programme-%'),
-  'levels', (select jsonb_object_agg(t, security.credential_level_v1('CA', t)) from unnest(array['Baccalauréat en informatique','Maîtrise en droit','Doctorat en chimie','Diplôme d''études supérieures spécialisées (D.E.S.S.) en finance','Microprogramme de deuxième cycle en santé','Microprogramme de premier cycle en arts','Certificat en gestion','Majeure en histoire','Ph. D. en physique','Ontario College Diploma']) t),
-  'create_dry', security.programme_create_v1(false, null)); end $t$;
+do $t$ declare v jsonb; begin
+  v := public.svc_source_find_next(3, null);
+  raise exception 'DRYRUN OK %', jsonb_build_object('picked', (select jsonb_agg(x->>'name') from jsonb_array_elements(v->'items') x),
+    'known', (select jsonb_agg(jsonb_array_length(x->'known')) from jsonb_array_elements(v->'items') x), 'paths', jsonb_array_length(v->'list_paths'), 'settings', v->'settings',
+    'job_active', (select active from cron.job where jobname = 'source-find'), 'list_fn_ok', (select count(*) from pipeline.queue_watch where key = 'source_find')); end $t$;
