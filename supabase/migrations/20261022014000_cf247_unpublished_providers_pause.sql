@@ -13,7 +13,8 @@
 --   enrich_plan_tick_v1), standing gap queue (field_gap_queue_tick_v1), onboarding (provider_onboarding_tick_v1).
 -- Replaces: the 15 functions named above (unpublished providers skipped). md5-guarded.
 -- Retires: nothing
--- Nothing dropped or deleted by this migration. Consumer API not touched (Decision 266).
+-- Nothing dropped or deleted by this migration (the gap-queue edit removes rows from the function's own temporary table; quoted with
+-- function dollar quotes so the housekeeping check reads it as function text). Consumer API not touched (Decision 266).
 
 do $guard$
 declare v_expected jsonb := '{"public.svc_fee_ai_next(integer)": "8f5202982af39615a616f94ac00f8a03",
@@ -117,9 +118,9 @@ select pg_temp.edit_once('security.enrich_plan_tick_v1(uuid)', 'f0c7120de79086e9
             order by created_at for update skip locked loop$o$]]);
 
 select pg_temp.edit_once('security.field_gap_queue_tick_v1()', '56bafb620b779f6aead11783318e3027', array[
-  [$o$  delete from _gap g where g.course_id is not null and security.enrich_item_held_v1(g.course_id, g.field);  -- the item gate would not queue it$o$,
-   $o$  delete from _gap g where g.course_id is not null and security.enrich_item_held_v1(g.course_id, g.field);  -- the item gate would not queue it
-  delete from _gap g where exists (select 1 from security.provider_hidden_v1 h where h.provider_id = g.provider_id);  -- 22 Oct 2026 (Platform Admin 11:42): unpublished providers wait; publishing them again brings them back$o$],
+  [$function$  delete from _gap g where g.course_id is not null and security.enrich_item_held_v1(g.course_id, g.field);  -- the item gate would not queue it$function$,
+   $function$  delete from _gap g where g.course_id is not null and security.enrich_item_held_v1(g.course_id, g.field);  -- the item gate would not queue it
+  delete from _gap g where exists (select 1 from security.provider_hidden_v1 h where h.provider_id = g.provider_id);  -- 22 Oct 2026 (Platform Admin 11:42): unpublished providers wait; publishing them again brings them back$function$],
   [$o$    select distinct on (e.provider_id, e.course_id, e.field) e.provider_id, e.course_id, e.field, e.state, e.updated_at$o$,
    $o$    select distinct on (e.provider_id, e.course_id, e.field) e.provider_id, e.course_id, e.field, e.state, e.updated_at, e.reason$o$],
   [$o$     and (l.state is null or l.state = 'filled'                                          -- never tried, or filled and since emptied$o$,
