@@ -64,7 +64,7 @@ test('guard: no migration from v2.15.269 on writes a number into a job or a busi
 })
 
 test('worker v0.21.7: the Firecrawl proxy, site map sizes and search results come from settings', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(21\.7|2[2-9]\.\d+|3\d\.\d+)";/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(21\.7|2[2-9]\.\d+|[3-9]\d\.\d+)";/)
   expect(worker).toContain('const ws: Record<string, unknown> = (await rpc("svc_worker_settings_v1", {}).catch(() => ({}))) || {};')
   expect(worker).not.toContain('proxy: "basic"')
   for (const line of worker.split('\n').filter(l => l.includes('api.firecrawl.dev'))) expect(line, line.slice(0, 120)).not.toMatch(/\blimit:\s*\d/)
