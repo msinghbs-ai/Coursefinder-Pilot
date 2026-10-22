@@ -161,6 +161,6 @@ do $t$ declare n int; items jsonb; it jsonb; res jsonb; tgt jsonb; cid uuid; beg
   res := public.svc_fee_ai_record((it->>'queue_id')::uuid, jsonb_build_object('rows', jsonb_build_array(jsonb_build_object('qualification', it->'courses'->0->>'title', 'subject', null, 'level', null,
             'amount_min', (tgt->>'amount')::numeric, 'amount_max', null, 'currency', 'NZD', 'unit', 'per_year', 'units_covered', null, 'audience', 'international', 'fee_year', 2026,
             'quote', 'test', 'course_id', cid, 'match_confidence', 0.95)), 'quotes_missing', 0, 'more_fee_pages', '[]'::jsonb, 'page_notes', '', 'model', it->>'model'), 0, null);
-  raise exception 'DRYRUN OK %', jsonb_build_object('queued', n, 'item', it - 'findings' - 'profile', 'target', tgt, 'record', res,
+  raise exception 'DRYRUN OK %', jsonb_build_object('queued', n, 'target', tgt, 'record', res,
      'fee', (select jsonb_agg(jsonb_build_object('a', f.amount, 'y', f.fee_year, 'b', f.basis, 'st', f.status)) from catalogue.course_fees f where f.course_id = cid and f.fee_type = 'provider_current_tuition'),
      'rows', (select jsonb_agg(jsonb_build_object('o', r.outcome, 'n', r.note)) from pipeline.fee_reader_rows r where r.queue_id = (it->>'queue_id')::uuid)); end $t$;
