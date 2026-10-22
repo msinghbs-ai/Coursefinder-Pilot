@@ -508,9 +508,6 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('function', 'public.admin_queue_watch', 'Platform', 'Work queues screen: list, report, run now', 'active', '{}', '20261022033000')
 on conflict (kind, name) do nothing;
 
- ('function', 'public.admin_queue_watch', 'Platform', 'Work queues screen: list, report, run now', 'active', '{}', '20261022033000')
-on conflict (kind, name) do nothing;
-
 do $dry$
 declare r jsonb; t timestamptz := clock_timestamp(); s text;
 begin
