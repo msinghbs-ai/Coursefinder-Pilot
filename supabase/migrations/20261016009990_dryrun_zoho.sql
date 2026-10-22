@@ -1,38 +1,39 @@
--- CF-247 (22 Oct 2026). Platform Admin 22:32 (website review): "Some universities are showing Diploma and Certificate courses that they
--- do not offer. For example, the University of Auckland". Choice 22:40: "Fixes only, no note".
--- Found: the register reader gives each qualification its level as a code (graduate_certificate, graduate_diploma), but
--- public.svc_layer1_apply_register_records matched words with a space ('%graduate certificate%'), so every New Zealand postgraduate and
--- graduate certificate became Certificate (437) and every postgraduate and graduate diploma became Diploma (767). Auckland's
--- "Postgraduate Diploma in Arts (Level 8)" showed as a Diploma.
--- 1 The apply reads the code with underscores as spaces, so the next NZQA run keeps the right level (md5-guarded edit).
--- 2 The 1,204 New Zealand courses take the level the reader gave them (the register title's qualification type), logged in
---   pipeline.admin_control_events; manual locks are kept. The website search copy is asked to refresh.
--- Replaces: public.svc_layer1_apply_register_records (md5-guarded edit)
--- Retires: nothing
-do $edit$
-declare v_def text := pg_get_functiondef('public.svc_layer1_apply_register_records'::regproc);
-        v_old text := $o$v_level_name:=lower(coalesce(r->>'course_level',''));$o$;
-begin
-  if position($p$replace(lower(coalesce(r->>'course_level','')),'_',' ')$p$ in v_def) > 0 then return; end if;
-  if md5(v_def) <> 'd8e3ed699880f44ff3257d9941f11d1b' then raise exception 'live public.svc_layer1_apply_register_records differs from the definition this change edits'; end if;
-  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'level name line must occur once'; end if;
-  execute replace(v_def, v_old, $n$v_level_name:=replace(lower(coalesce(r->>'course_level','')),'_',' ');  -- CF-247 22 Oct 2026: the reader gives codes (graduate_certificate)$n$);
-end $edit$;
-
+-- CF-247 (22 Oct 2026). Platform Admin 22:32 (website review): "Intakes: The intake information and graphs are not accurate. All
+-- information must match the official university website without alterations or discrepancies." Choice 22:40: "Page-only months, no API
+-- change".
+-- Found: intake months came from three places: the course's own page (current read), an older read of the same page, and the
+-- university's academic calendar (a page saying "Semester 1", or nothing, turned into months by the calendar: 1,168 AU, NZ and CA courses).
+-- 1 Intakes made from a calendar are withdrawn (status withdrawn, kept for the record), and the two jobs that make them are switched off
+--   and marked retiring: provider-calendar-intakes (security.semester_intake_apply_v1) and provider-calendar-defaults
+--   (security.calendar_default_intakes_apply_v1).
+-- 2 Where the course's current page read gave its intakes, months from an older read of that page are withdrawn (the page changed).
+-- 3 Months from an older read of the official page stay until the page is read again (they are what the page said); the website search
+--   copy is asked to refresh. The API shape is unchanged.
+-- Replaces: calendar-derived intakes (jobs provider-calendar-intakes and provider-calendar-defaults switched off)
+-- Retires: security.semester_intake_apply_v1, security.calendar_default_intakes_apply_v1 (retiring; dropped later by a paste file)
 do $fix$
-declare v_n int;
+declare v_cal int; v_old int;
 begin
-  with t as (
-    select c.id, sl.code old_code, case when c.canonical_title ~* 'graduate diploma' then 'graduate_diploma' else 'graduate_certificate' end new_code
-      from catalogue.courses c join ref.study_levels sl on sl.id = c.study_level_id
-     where security.coverage_country(c.provider_id) = 'NZ' and sl.code in ('certificate', 'diploma')
-       and c.canonical_title ~* '^(post-?graduate|graduate) (certificate|diploma)'
-       and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and l.field = 'study_level_id')),
-  u as (update catalogue.courses c set study_level_id = (select x.id from ref.study_levels x where x.code = t.new_code), updated_at = now()
-          from t where c.id = t.id returning t.id, t.old_code, t.new_code)
-  select count(*) into v_n from u;
+  update catalogue.course_intakes i set status = 'withdrawn'
+   where i.status = 'active' and coalesce(i.source_intake_key, '') like 'calendar%';
+  get diagnostics v_cal = row_count;
+  with cur as (select distinct i.course_id from catalogue.course_intakes i join pipeline.coverage_course_pages pg on pg.course_id = i.course_id
+                where i.status = 'active' and pg.evidence_id is not null and i.evidence_id = pg.evidence_id)
+  update catalogue.course_intakes i set status = 'withdrawn'
+    from cur, pipeline.coverage_course_pages pg
+   where i.course_id = cur.course_id and pg.course_id = i.course_id and i.status = 'active' and i.evidence_id is distinct from pg.evidence_id;
+  get diagnostics v_old = row_count;
   insert into pipeline.admin_control_events(area, action, target, detail)
-  values ('course_levels', 'register_level_fix', 'NZ', jsonb_build_object('courses', v_n, 'reason', 'Register level codes (graduate_certificate, graduate_diploma) were read as Certificate and Diploma by svc_layer1_apply_register_records; Platform Admin 22 Oct 2026 website review'));
-  if v_n > 0 then insert into search.refresh_requests(requested_by) values ('NZ graduate and postgraduate levels corrected: ' || v_n || ' courses'); end if;
+  values ('course_intakes', 'page_only', 'all', jsonb_build_object('calendar_withdrawn', v_cal, 'older_read_withdrawn', v_old,
+          'reason', 'Platform Admin 22 Oct 2026 "Page-only months, no API change": intakes must match the official university website'));
+  insert into search.refresh_requests(requested_by) values ('intakes page only: ' || v_cal || ' calendar and ' || v_old || ' older-read months withdrawn');
 end $fix$;
-do $dry$ begin raise exception 'DRYRUN OK %', (select jsonb_object_agg(code, n) from (select sl.code, count(*) n from catalogue.courses c join ref.study_levels sl on sl.id=c.study_level_id where security.coverage_country(c.provider_id)='NZ' and c.lifecycle_status='active' group by 1) z); end $dry$;
+
+select cron.alter_job((select jobid from cron.job where jobname = 'provider-calendar-intakes'), active := false);
+select cron.alter_job((select jobid from cron.job where jobname = 'provider-calendar-defaults'), active := false);
+
+insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
+ ('function', 'security.semester_intake_apply_v1', 'Admission', 'Semester-only intakes turned into months by the calendar', 'retiring', '{}', '20261022042000'),
+ ('function', 'security.calendar_default_intakes_apply_v1', 'Admission', 'College intakes from the approved calendar', 'retiring', '{}', '20261022042000')
+on conflict (kind, name) do update set status = 'retiring', note = 'Platform Admin 22 Oct 2026: intakes only from the course''s own page (20261022042000)', updated_at = now();
+do $dry$ begin raise exception 'DRYRUN OK %', (select detail from pipeline.admin_control_events where area='course_intakes' order by id desc limit 1); end $dry$;
