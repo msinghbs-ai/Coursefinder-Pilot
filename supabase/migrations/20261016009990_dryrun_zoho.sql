@@ -133,7 +133,7 @@ insert into pipeline.queue_watch(key, label, area, purpose, jobnames, tools, pen
  '{coverage-read}', '{firecrawl:reads}',
  $q$select count(*) from pipeline.coverage_course_pages p where p.status in ('bound', 'ambiguous') and coalesce(p.next_read_at, now()) <= now() and p.read_attempts < 3$q$,
  $q$select max(read_at) from pipeline.coverage_course_pages where read_status = 'read'$q$,
- $q$select count(*) from pipeline.coverage_course_pages where read_at >= $1 and read_status = 'read'$q$,
+ $q$select count(*) from pipeline.coverage_course_pages where read_at >= $1 and read_status not in ('fetch_failed', 'blocked')$q$,
  $q$select count(*) from pipeline.coverage_course_pages where read_at >= $1 and read_status in ('fetch_failed', 'blocked')$q$,
  $q$select count(*) from pipeline.coverage_course_pages where status = 'bound' and read_attempts >= 3 and coalesce(read_status, '') <> 'read'$q$,
  'Matched pages given up after three failed reads',
@@ -250,7 +250,7 @@ insert into pipeline.queue_watch(key, label, area, purpose, jobnames, tools, pen
  $q$select max(updated_at) from pipeline.enrich_plan_runs where state in ('running', 'done')$q$,
  $q$select count(*) from pipeline.enrich_plan_runs where state = 'done' and finished_at >= $1$q$,
  $q$select count(*) from pipeline.enrich_plan_runs where state = 'failed' and updated_at >= $1$q$,
- $q$select count(*) from pipeline.enrich_plan_runs where needs_person and state not in ('done', 'cancelled')$q$,
+ $q$select count(*) from pipeline.enrich_plan_runs where coalesce(needs_person, '') <> '' and state not in ('done', 'cancelled')$q$,
  'Plans waiting for a person', null, null, '#layer-2-discovery?tab=plan', 110),
 ('scholarship_read', 'Read scholarship pages', 'Scholarships', 'Reads each scholarship''s own page.',
  '{scholarship-read,scholarship-ai-extract}', '{firecrawl:scholarships,ai:scholarship_ai}',
@@ -318,6 +318,7 @@ declare
 begin
   for q in select * from pipeline.queue_watch w where w.enabled order by w.sort loop
     v_t := clock_timestamp(); v_err := null; v_out := '{}'; v_wait := '{}'; v_paused := '{}'; v_idle := '{}'; v_fixed := 0;
+    v_pending := null; v_done := null; v_failed := null; v_exh := null; v_last := null; v_state := null; v_reason := null;
     select * into v_prev from pipeline.queue_watch_state s where s.key = q.key;
     begin
       execute q.pending_sql into v_pending;
