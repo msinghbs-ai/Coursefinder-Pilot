@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.249 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.322** (What happened to a course; Read with AI). Platform Admin, 23 Oct 2026 07:12 to 07:24: Auckland diplomas missing location and fees; "audit and logging of exactly what happened and was tried"; "read course pages with ai button".
+  - Migration `20261023006000_cf247_course_audit_read_now.sql`: `public.admin_course_audit`, `public.admin_course_read_now`. Migration `20261023005000_cf247_find_again_with_source.sql` (Find again with a source).
+  - Worker `coverage-sweep-worker-v0.40.8` (newest year version of a course page; escaped-markup values; fee label decides the audience) and v0.40.7 (up to three course folders).
+  - `src/CourseAudit.jsx` in the course drawer (`src/RecordEditor.jsx`), `src/admin-pages.css`.
+  - Consumer API unchanged (Decision 266). SOPs 1.63.
+
 ## 0.1.248 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.321** (Course sources). Platform Admin, 22 Oct 2026 23:46: "Platform needs to independently read website ... leave all configurable and manageable from ui"; 23:53: "use the ai or firecrawl to fasten up the process".

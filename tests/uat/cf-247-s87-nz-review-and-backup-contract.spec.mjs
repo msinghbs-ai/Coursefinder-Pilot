@@ -394,3 +394,32 @@ test('v0.40.6: programme page record has no chr(0); the worker removes null char
   expect(m.split('\n').filter((l) => !l.trim().startsWith('--') && /chr\(0\)/.test(l.split('--')[0]))).toEqual([])
   expect(w).toContain('htmlToText(m[1]).replace(/\\u0000/g, "")')
 })
+
+test('v0.40.7: up to three course folders per university; Find again works for a university that has a source', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const m = fs.readFileSync('supabase/migrations/20261023005000_cf247_find_again_with_source.sql', 'utf8')
+  expect(w).toContain('while (parts.length < 3 && segs.length >= 3) {  // fixed: three course folders at most')
+  expect(w).toContain('pattern = { re: `^${hostRe(host)}/(?:${parts.map((x) => x.re).join("|")})/?$`')
+  expect(m).toContain("'fc835f84dc06484b93eadcf3c48bd81a'")
+  expect(m).toContain("'f4cd3ce1e7ab727baeefd6a4a39c569c'")
+  expect(m).toContain("r.work->>'again' = 'true'")
+})
+
+test('v0.40.8: escaped-markup values kept in page text; a fee label decides its audience; newest year version read', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const x = fs.readFileSync('supabase/functions/coverage-sweep/extract.ts', 'utf8')
+  expect(x).toContain('.replace(/&lt;(?:\\/|&#x2F;|&#47;)?[a-z][a-z0-9-]*(?:\\s[^&<>]*?)?(?:\\/|&#x2F;)?&gt;/gi, " ")')
+  expect(x).toContain('if (li !== ld) { international = li; domestic = ld }')
+  expect(w).toContain('export function newestVersionUrl(html: string, url: string): string | null {')
+  expect(w).toContain('const nv = newestVersionUrl(html, finalUrl);')
+})
+
+test('v2.15.322: course audit and Read with AI (Curator, reason, logged, missing fields only, page read first in line)', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023006000_cf247_course_audit_read_now.sql', 'utf8')
+  expect(m).toContain('create or replace function public.admin_course_audit(p_course_id uuid)')
+  expect(m).toContain('create or replace function public.admin_course_read_now(p_course_id uuid, p_reason text)')
+  expect(m).toContain("if length(v_reason) < 4 then raise exception 'give a reason (it is kept with the request)'; end if;")
+  expect(m).toContain("values ('course', 'read_now', p_course_id::text,")
+  expect(m).toContain("case when v_c.duration_value is null then 'duration' end,")
+  expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+})

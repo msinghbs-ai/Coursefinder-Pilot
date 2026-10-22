@@ -10,6 +10,7 @@ import{Archive,Check,History,Lock,Pencil,Plus,RotateCcw,Trash2,Unlock,X}from'luc
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtMoney,fmtNumber}from'./ui-kit'
 import{CourseLinks,CURRENCY_BY_COUNTRY,ProviderApplicants}from'./CourseLinks'
+import CourseAudit from'./CourseAudit'
 
 export const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December']
 export const BASIS={annual:'Per year',per_semester:'Per semester',per_trimester:'Per trimester',total_indicative:'Whole course'}
@@ -153,6 +154,8 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
         {c.lifecycle_status==='active'?<Button compact variant="danger" onClick={()=>act('archive',{},'Archive this course? It stops being searched for and processed. You can restore it later.')} disabled={busy}><Archive size={13}/>Archive course</Button>
           :<Button compact onClick={()=>act('restore')} disabled={busy}><RotateCcw size={13}/>Restore course</Button>}</div>}
       <HistoryList rows={data.history}/>
+      {/* v2.15.322: what happened to this course, and Read with AI */}
+      <CourseAudit courseId={courseId} onChanged={onChanged} onError={onError}/>
     </div>}
   </section>
 }

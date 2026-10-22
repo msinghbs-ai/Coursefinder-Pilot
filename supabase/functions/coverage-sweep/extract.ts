@@ -5,7 +5,10 @@
 export function clean(s: string) { return String(s ?? "").replace(/\s+/g, " ").trim() }
 
 export function htmlToText(html: string) {
+  // 23 Oct 2026 (University of Auckland catalogue, an Oracle APEX app): a page can carry its values as escaped markup
+  // ("&lt;p&gt;NZ$ 48,133.00&lt;&#x2F;p&gt;"); escaped tags are removed like real ones so the value stands on its own
   return clean(html.replace(/<(script|style|noscript|svg|template)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/&lt;(?:\/|&#x2F;|&#47;)?[a-z][a-z0-9-]*(?:\s[^&<>]*?)?(?:\/|&#x2F;)?&gt;/gi, " ")
     .replace(/<br\s*\/?>|<\/(p|li|tr|h[1-6]|div|td|th|dd|dt|section)>/gi, " \n ")
     .replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&#36;|&dollar;/gi, "$")
     .replace(/&#39;|&rsquo;|&lsquo;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"').replace(/&ndash;|&mdash;/gi, "-"))
@@ -195,8 +198,8 @@ export function fee(text: string, currency: "AUD" | "NZD" | "CAD" = "AUD") {
     // ("This content is for domestic students", "Local Student Fee", "Switch to International Student"); the last such
     // marker before the amount decides its audience, ahead of words further away.
     const view = viewBefore(text.slice(Math.max(0, idx - 1500), idx))
-    const domestic = view === "domestic" || (view !== "international" && /(domestic|csp|commonwealth supported|student contribution|hecs)/i.test(local))
-    const international = view === "international" || (view !== "domestic" && (/(international|overseas)/i.test(local) || (!domestic && /(international|overseas)/i.test(context))))
+    let domestic = view === "domestic" || (view !== "international" && /(domestic|csp|commonwealth supported|student contribution|hecs)/i.test(local))
+    let international = view === "international" || (view !== "domestic" && (/(international|overseas)/i.test(local) || (!domestic && /(international|overseas)/i.test(context))))
     const indicative = /(indicative fee|indicative annual fee|typical first-year|first year enrolment|annual|per year|a year|yearly cost|per annum)/i.test(context)
     // v0.5.5: the wording that belongs to this amount starts after the previous amount ("Total Course Cost A$20,550
     // Tuition Fee A$18,000": "total" is about the first amount only)
@@ -208,6 +211,13 @@ export function fee(text: string, currency: "AUD" | "NZD" | "CAD" = "AUD") {
     // and payment limits, from the amount's own wording just before or after it
     // the label before the amount, or one or two words straight after it ("AUD$5,000 Regional bursary")
     const label = clean(ownPre.slice(-80)), tail = (nextAmt >= 0 ? after60.slice(0, nextAmt) : after60)
+    // 23 Oct 2026 (University of Auckland catalogue: "Domestic Student Annual Fees NZ$8,072.40 International Student Annual Fees
+    // NZ$42,236.00" with no full stop between): the amount's own label, the words since the previous amount, decides its audience
+    // when it names only one, unless the page marks a domestic or international view
+    if (!view) {
+      const li = /(international|overseas)/i.test(label), ld = /(domestic|csp|commonwealth supported|student contribution|hecs)/i.test(label)
+      if (li !== ld) { international = li; domestic = ld }
+    }
     const notTuition = (!/(?<!non[- ])tuition/i.test(label.slice(-40)) && /(bursary|scholarship|worth up to|student loan|vsl\b|loan cap|health cover|oshc|salary|earnings?\b|deposit|accept payment of more than|refund|application fee|enrolment fee|enrollment fee|materials? fee|resource fee|uniform|ppe\b|non[- ]tuition|service fee|amenit|levy|insurance|accommodation|living cost|airport|homestay)[^$]{0,40}$/i.test(label))
       || /^[\s*)\]-]*(?:[A-Za-z]+\s){0,2}(bursary|scholarship|salary|health cover|oshc|deposit)\b/i.test(tail)
       || /not accept payment of more than\s*$/i.test(label)
@@ -221,7 +231,7 @@ export function fee(text: string, currency: "AUD" | "NZD" | "CAD" = "AUD") {
     const tuition = /(tuition|fee)/i.test(context)
     const explicitAud = own ? own.explicit.test(token) : /(?:AUD\s*|A\$|AU\s?\$)\s*[\d,]+/i.test(token)
     const cricosNear = /CRICOS(?:\s+Code)?/i.test(near)
-    const year = (after.match(/\b(20[2-3]\d)\b/) || before.slice(-80).match(/\b(20[2-3]\d)\b/) || [])[1]
+    const year = (after.match(/\b(20[2-3]\d)\b/) || before.slice(-80).match(/\b(20[2-3]\d)\b/) || before.slice(-250).match(/\b(20[2-3]\d)\s+(?:fees?|tuition)\b/i) || [])[1]  // 23 Oct 2026: or a "2027 fees" heading further up
     const score = (international ? 5 : 0) + (cricosNear ? 4 : 0) + (explicitAud ? 4 : 0) + (indicative ? 3 : 0) + (tuition ? 1 : 0) + (/(?<!non[- ])tuition(?: fees?)?\s*:?\s*$/i.test(label) ? 1 : 0) - (domestic ? 8 : 0) - (total && !annualLocal ? 1 : 0) - (partial ? 3 : 0) // v0.5.5: an annual fee outranks a course total of equal standing
     return { amount, score, international, domestic, indicative, total, annualLocal, partial, notTuition, fee_year: year ? Number(year) : null, context: context.slice(0, 300) }
   }).filter((r) => r.amount >= 1000 && r.amount <= 500000 && !r.notTuition).sort((a, b) => b.score - a.score || b.amount - a.amount)

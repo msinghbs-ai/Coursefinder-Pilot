@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.321)  
+**Version:** 1.53 (reviewed for platform release v2.15.322)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -179,3 +179,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.60 | 22 Oct 2026 | v2.15.319 | Platform health › Work queues: each morning read the daily report (or the tab). Stuck and Out of toolset reach you by phone and email: open the queue's screen from Go to the screen, top up the tool (Firecrawl credit, OpenRouter balance) or fix what holds it. Nothing left to try lists items every tool has tried; give them a page by hand or leave them. Thresholds are queue_watch.* on Settings › Pipeline settings. |
 | 1.61 | 22 Oct 2026 | v2.15.320 | Platform health › Work queues › Last 15 minutes: check the gaps list first (a field not moving for 24 hours, a Firecrawl share used up, failing or slow worker calls, tasks not moving, stuck queues); the hourly phone message sums up the last four snapshots. Fill in from website finishes when the provider's central pages are held until due (read in the last 30 days). |
 | 1.62 | 23 Oct 2026 | v2.15.321 | Layer 2/3 › Course sources: the platform finds each university's course list itself (Firecrawl map, site maps, list pages). Check Nothing found rows and What was tried; Find again or Add source with a reason. Approve a programme list only after checking its created courses (they stay hidden until approved). Countries and list addresses the finder uses are changed here. |
+| 1.63 | 23 Oct 2026 | v2.15.322 | Course drawer › What happened to this course: read it before deciding where a gap is (page found or refused, reads, AI tries, field fills with reasons, admissions). Read with AI (with a reason) reads the page again first in line and fills missing fields with AI; values set by hand are never changed. |
