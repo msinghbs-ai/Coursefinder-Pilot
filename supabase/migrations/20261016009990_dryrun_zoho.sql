@@ -3,7 +3,8 @@
 -- Measured: 8 course pages read by the AI fee reader in 11 seconds (about US$0.003 a page); the limit was the job (every 10 minutes,
 -- at most 10 pages a run, 2 at a time), about 60 pages an hour against about 250 NZ course pages waiting. A course page changed by a
 -- person was read again at once, but its fee went to the AI fee reader only when the course held no fee, and no AI fill followed.
--- 1 Speed: job fee-reader runs every 2 minutes; a run reads up to fees.pages_per_run pages (range now 1 to 40, set to 40),
+-- 1 Speed: job fee-reader runs every fees.run_every_minutes minutes (new setting, 1 to 10, 2; the job is called each minute and
+--   waits out the rest); a run reads up to fees.pages_per_run pages (range now 1 to 40, set to 40),
 --   fees.concurrency at a time (new setting, 1 to 8, 4). svc_fee_ai_next caps a call at the pages-a-run setting.
 -- 2 First in line from the course page: Read with AI and a changed official course page (Course drawer › Official page) record a
 --   fee request (pipeline.fee_course_requests). Once the page has been read after the request, its fee is read by the AI fee reader
@@ -21,6 +22,13 @@ values ('toolsets', 'setting', 'pipeline.fees.pages_per_run', jsonb_build_object
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
 values ('pipeline', 'fees.concurrency', 'Fee reader: pages read at once', 'How many pages one worker call sends to the AI at the same time.', 'number', '4'::jsonb, '1', '8', 'pages', 349, 'Job sizes', 'job fee-reader', 'Platform Admin 23 Oct 2026 09:03: as fast as the system can handle')
 on conflict (toolset_key, key) do nothing;
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
+values ('pipeline', 'fees.run_every_minutes', 'Fee reader: run every', 'How often the fee reader queues pages and asks the worker to read them. 1 is the fastest.', 'number', '2'::jsonb, '1', '10', 'minutes', 346, 'Job sizes', 'job fee-reader', 'Platform Admin 23 Oct 2026 09:07: all available to change from the UI')
+on conflict (toolset_key, key) do nothing;
+-- help texts say what each setting now does (Platform Admin 09:07: "all avaible to change from ui with maximum values displayed")
+update pipeline.platform_toolset_settings set help = 'Fee pages and course pages one worker call reads with AI (8 course pages took 11 seconds).' where toolset_key = 'pipeline' and key = 'fees.pages_per_run';
+update pipeline.platform_toolset_settings set help = 'Course pages the fee reader''s job adds to its queue each run (Fee reader: run every).' where toolset_key = 'pipeline' and key = 'fees.course_pages_per_tick';
+update pipeline.platform_toolset_settings set help = 'When on (1), a course page that shows one international fee, for a course with no fee held, is read by the AI fee reader, and a course asked for from the course page (Read with AI, or a changed official page) is read first in line even when a fee is held. The page''s proof must admit tuition for its country (Settings › Identify the page) and the country must be in Fee reader: countries.' where toolset_key = 'pipeline' and key = 'fees.course_pages';
 
 -- 2 fee requests from the course page ----------------------------------------------------------------------------------------------
 create table if not exists pipeline.fee_course_requests (
@@ -111,10 +119,19 @@ do $do$
 declare v_def text := pg_get_functiondef('security.fee_reader_tick_v1()'::regprocedure);
   v_old text := $o$jsonb_build_object('mode', 'fee_ai', 'limit', security.pipeline_num_v1('fees.pages_per_run', 3)::int)$o$;
   v_new text := $n$jsonb_build_object('mode', 'fee_ai', 'limit', security.pipeline_num_v1('fees.pages_per_run', 3)::int, 'concurrency', security.pipeline_num_v1('fees.concurrency', 4)::int)$n$;
+  v_old2 text := $o$begin
+  -- 1 fee pages suggested by the central-page search, for providers in scope$o$;
+  v_new2 text := $n$begin
+  -- 23 Oct 2026: the job is called each minute and runs every fees.run_every_minutes minutes
+  if (extract(epoch from date_trunc('minute', now())) / 60)::bigint % greatest(security.pipeline_num_v1('fees.run_every_minutes', 2)::int, 1) <> 0 then
+    return jsonb_build_object('skipped', 'not this minute');
+  end if;
+  -- 1 fee pages suggested by the central-page search, for providers in scope$n$;
 begin
   if md5(v_def) <> '57e348492b970fd359a4b7b32bd7c48e' then raise exception 'security.fee_reader_tick_v1 is not the expected version (md5 %)', md5(v_def); end if;
   if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'fee reader tick: expected one worker call'; end if;
-  execute replace(v_def, v_old, v_new);
+  if (length(v_def) - length(replace(v_def, v_old2, ''))) / length(v_old2) <> 1 then raise exception 'fee reader tick: expected one first step'; end if;
+  execute replace(replace(v_def, v_old, v_new), v_old2, v_new2);
 end $do$;
 
 -- the queue: first in line, a call capped by the pages-a-run setting ------------------------------------------------------------
@@ -163,12 +180,12 @@ begin
   execute replace(v_def, v_old, v_new);
 end $do$;
 
--- every 2 minutes ----------------------------------------------------------------------------------------------------------------
-update pipeline.automation_catalogue set description = replace(description, 'Every 10 minutes:', 'Every 2 minutes:')
+-- called each minute; runs every fees.run_every_minutes ----------------------------------------------------------------------------------------------------------------
+update pipeline.automation_catalogue set description = replace(description, 'Every 10 minutes:', 'Every few minutes (Fee reader: run every, 2 by default):')
  where jobname = 'fee-reader' and description like 'Every 10 minutes:%';
-select cron.alter_job((select jobid from cron.job where jobname = 'fee-reader'), schedule := '*/2 * * * *');
+select cron.alter_job((select jobid from cron.job where jobname = 'fee-reader'), schedule := '* * * * *');
 
-select 'fee reader every 2 minutes; course page requests first in line' ok;
+select 'fee reader every fees.run_every_minutes; course page requests first in line' ok;
 do $t$ declare r jsonb; e jsonb; n int; it jsonb; begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
