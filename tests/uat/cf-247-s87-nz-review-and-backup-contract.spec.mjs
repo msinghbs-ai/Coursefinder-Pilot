@@ -72,3 +72,33 @@ test('flags show the toolset used before them (Platform Admin 22 Oct 2026 08:12)
   expect(fp).toContain('data-flag-toolline')
   expect(fp).toContain("course_pages_not_listed:'Search off: the site lists too few course pages'")
 })
+
+test('unpublished providers wait in every scheduled queue; publishing brings them back (Platform Admin 22 Oct 2026 11:42)', () => {
+  const u = fs.readFileSync('supabase/migrations/20261022014000_cf247_unpublished_providers_pause.sql', 'utf8')
+  expect(u).toMatch(/^-- Replaces: /m)
+  expect(u).not.toMatch(/^(drop|delete|truncate)\b/im)
+  for (const f of ['svc_fee_ai_next', 'svc_companion_next', 'svc_logo_find_next', 'svc_central_ai_next', 'svc_flag_check_next', 'svc_provider_policy_add_tests_next',
+    'svc_scholarship_recheck_next', 'svc_scholarship_ai_next', 'svc_enrich_ai_next', 'enrich_plan_auto_v1', 'enrich_plan_tick_v1', 'field_gap_queue_tick_v1',
+    'provider_onboarding_tick_v1', 'scholarship_ai_backfill_tick_v1', 'scholarship_discovery_refill_v1']) expect(u).toContain(`select pg_temp.edit_once('`)
+  expect((u.match(/select pg_temp\.edit_once\('/g) || []).length).toBe(15)
+  expect(u).toContain("reason = 'provider unpublished'")
+  expect(u).toContain("or l.reason = 'provider unpublished'")
+})
+
+test('v2.15.312: course shows its provider switch; Adapter filter and sort; onboarding backfill; users last active', () => {
+  const ds = fs.readFileSync('src/DetailSummary.jsx', 'utf8')
+  const mm = fs.readFileSync('src/mature-main.jsx', 'utf8')
+  const ad = fs.readFileSync('supabase/migrations/20261022016000_cf247_adapter_filter_and_backfill.sql', 'utf8')
+  const um = fs.readFileSync('supabase/functions/admin-user-management/index.ts', 'utf8')
+  const ar = fs.readFileSync('src/access-roles-entry.jsx', 'utf8')
+  expect(ds).toContain('{onWebsite(data.provider_publication_status)}')
+  expect(fs.readFileSync('supabase/migrations/20261022015000_cf247_course_detail_provider_published.sql', 'utf8')).toContain("'provider_publication_status',")
+  expect(mm).toContain("{key:'_adapter',label:'Adapter',width:150,sortKey:'adapter',")
+  expect(mm).toContain('label="Adapter" value={filters.adapter')
+  expect(mm).toContain("if(filters.adapter&&type==='provider')a.adapter=filters.adapter;")
+  expect(ad).toContain('FUNCTION security.admin_providers_page_v2(')
+  expect(ad).toContain("nullif(p_args->>'adapter',''));")
+  expect(ad).toContain("insert into pipeline.provider_onboarding(provider_id, source, reason, priority)")
+  expect(um).toContain('serviceClient.rpc("svc_admin_access_last_active")')
+  expect(ar).toContain('<th>Last active</th>')
+})

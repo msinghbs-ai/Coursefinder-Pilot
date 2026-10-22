@@ -72,7 +72,7 @@ function BackupDiff({id,focus,onError,onDone}){
         <td><strong>{s.label||s.key}</strong><small>{s.section||s.toolset_key} · {s.key}</small></td><td><code>{show(s.then_value)}</code></td><td><code>{show(s.now_value)}</code></td>
         <td><small>{s.updated_at?fmtDateTime(s.updated_at):''}{s.updated_by?` · ${s.updated_by}`:''}{s.reason?` · ${s.reason}`:''}</small></td></tr>})}</tbody></table></div>}
     {ps.length===0&&ss.length===0&&<Empty text="Nothing differs from this backup: publishing and settings are the same now as when it was taken."/>}
-    <div className="backup-restore" data-backup-restore style={{marginTop:16,paddingTop:12,borderTop:'1px solid var(--m-border,#e3e7ee)'}}>
+    <div className="backup-restore" data-backup-restore style={{marginTop:16,paddingTop:12,borderTop:'1px solid var(--m-border)'}}>
       <h3 className="sd-subhead">Restore backup {id}</h3>
       <p className="sd-desc">{ps.length+ss.length>0?'Put everything back as it was in this backup, or tick rows above and put back only those. A backup of the current state is taken first, so a restore can itself be undone.':'There is nothing to put back now: the platform already matches this backup. The Restore button works as soon as something differs.'}</p>
       <div className="fc-actions">

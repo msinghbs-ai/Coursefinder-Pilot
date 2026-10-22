@@ -27,8 +27,8 @@
 .cf-flag-err{color:var(--cf-red-750)}
 
 /* v2.15.310: toolset used before a flag */
-.cf-flag-toolline{color:var(--m-muted,#5b6475)}
+.cf-flag-toolline{color:var(--m-muted)}
 .cf-flag-tools{margin:8px 0 12px}
 .cf-flag-tools p{margin:4px 0}
 .cf-flag-tools .dense-table{font-size:12px}
-.cf-flag-site{color:var(--m-muted,#5b6475)}
+.cf-flag-site{color:var(--m-muted)}

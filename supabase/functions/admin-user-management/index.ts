@@ -84,11 +84,14 @@ Deno.serve(async (req: Request) => {
 
   try {
     if (action === "list") {
-      const [authUsersAll, snapshotResult, deletedResult] = await Promise.all([
+      const [authUsersAll, snapshotResult, deletedResult, activeResult] = await Promise.all([
         listAuthUsers(serviceClient),
         serviceClient.rpc("svc_admin_access_snapshot"),
         serviceClient.rpc("svc_admin_access_deleted"),
+        // 22 Oct 2026 (Platform Admin "Sujata last login was yesterday"): sign-in only changes when a password is typed; sessions refresh
+        serviceClient.rpc("svc_admin_access_last_active"),
       ]);
+      const lastActive: Record<string, string> = (activeResult && !activeResult.error && activeResult.data) || {};
       // 16 Oct 2026: deleted users (removed or soft-deleted) leave the list
       const deletedIds = new Set<string>(Array.isArray(deletedResult.data?.ids) ? deletedResult.data.ids.map(String) : []);
       const authUsers = authUsersAll.filter((u: any) => !u.deleted_at && !deletedIds.has(String(u.id)));
@@ -116,6 +119,7 @@ Deno.serve(async (req: Request) => {
           email: u.email || null,
           created_at: u.created_at || null,
           last_sign_in_at: u.last_sign_in_at || null,
+          last_active_at: lastActive[String(u.id)] || u.last_sign_in_at || null,
           email_confirmed_at: u.email_confirmed_at || null,
           banned_until: u.banned_until || null,
           disabled,

@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.311'
+export const SOP_REVIEWED_FOR = '2.15.312'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.52', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.53', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -154,10 +154,11 @@ export const SOPS = [
       { version: '1.49', date: '21 Oct 2026', release: '2.15.308', change: 'Enrichment plans: Fill missing fields runs beside the other steps; priority countries first (New Zealand); larger Firecrawl shares. Check the shares left on the Enrichment plan tab in the weekly step.' },
       { version: '1.50', date: '21 Oct 2026', release: '2.15.309', change: 'AI fee reader: weekly look at Enrich fields › Fee reader (AI) and widening the scope when it reads well.' },
       { version: '1.51', date: '22 Oct 2026', release: '2.15.310', change: 'Settings › Backup & restore: compare the last daily backup in the weekly step and put back anything published or changed by mistake. Providers whose site lists too few course pages carry one flag (course_pages_not_listed): add pages by hand or Search again.' },
-      { version: '1.52', date: '22 Oct 2026', release: '2.15.311', change: 'Backup & restore: Restore on a backup row (or Restore this backup under the comparison) puts it back with a reason.' }],
+      { version: '1.52', date: '22 Oct 2026', release: '2.15.311', change: 'Backup & restore: Restore on a backup row (or Restore this backup under the comparison) puts it back with a reason.' },
+      { version: '1.53', date: '22 Oct 2026', release: '2.15.312', change: 'Unpublished providers are paused in every scheduled job; publish one to bring it back. Providers › Adapter filter shows which providers have no adapter or are still testing.' }],
   },
   {
-    id: 'operator-sop', title: 'Operator SOP', version: '1.52', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
+    id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
     purpose: 'How operators keep the data flowing and decide what automation cannot: the review queues, stuck or failing work, and the records that need a person. Each step names the lowest role that does it.',
     owns: ['Curator: Layer 4 › Inbox, key dates and reference links, course and provider details, ranking links', 'Pipeline Operator: Task manager › Background jobs, failed jobs and worker errors, onboarding follow-up, scholarship links, starting jobs again', 'PIM Admin: pacing and pausing automations, the priority queue, testing adapters in the Adapter builder'],
     schedule: [
@@ -257,7 +258,8 @@ export const SOPS = [
       { version: '1.49', date: '21 Oct 2026', release: '2.15.308', change: 'Reviewed: in a plan, Fill missing fields now runs beside the other steps; New Zealand providers are planned first.' },
       { version: '1.50', date: '21 Oct 2026', release: '2.15.309', change: 'Reviewed: fee rows from the AI fee reader that were not sure enough arrive in Layer 4 like other fees; approve or reject them as usual (the reader learns from each decision).' },
       { version: '1.51', date: '22 Oct 2026', release: '2.15.310', change: 'Reviewed: a provider whose own site lists too few course pages now has one flag, Course pages not listed, instead of one per course; add its pages by hand or ask the Platform Admin to Search again.' },
-      { version: '1.52', date: '22 Oct 2026', release: '2.15.311', change: 'Reviewed: no operator step changed (Backup & restore is Platform Admin only).' }],
+      { version: '1.52', date: '22 Oct 2026', release: '2.15.311', change: 'Reviewed: no operator step changed (Backup & restore is Platform Admin only).' },
+      { version: '1.53', date: '22 Oct 2026', release: '2.15.312', change: 'Reviewed: a course shows On the website or Hidden from its provider\'s Published switch; Users & roles shows Last active.' }],
   },
 ]
 
