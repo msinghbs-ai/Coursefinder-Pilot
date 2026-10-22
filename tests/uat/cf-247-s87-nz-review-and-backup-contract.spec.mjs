@@ -491,3 +491,10 @@ test('v2.15.324 / v0.41.1: fee reader speed from settings (with ranges); a cours
   const ui = fs.readFileSync('src/CourseAudit.jsx', 'utf8')
   expect(ui).toContain('then the AI fee reader reads its fee first in line')
 })
+
+test('20261023011000: a fee page linked from a course page is added without linked_from; failed course pages read again', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023011000_cf247_fee_course_page_linked_pages.sql', 'utf8')
+  expect(m).toContain("if md5(v_def) <> '9efc86519854a15dbdd8a9707ac0462c' then raise exception")
+  expect(m).toContain("case when q.course_id is null then q.fact_source_id end$n$;")
+  expect(m).not.toMatch(/\b(drop|delete|truncate)\b/i)
+})
