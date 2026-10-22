@@ -18,8 +18,14 @@
 --   created inactive and shown only after a person approves the list).
 --   Nothing found: state none, with the reason, shown on the Work queues tab (queue source_find, Nothing left to try) and tried again
 --   after source_find.retry_days.
+-- 1e Platform Admin 23:53 "Can the providers course finder use the ai or firecrawl to fasten up the process ... we should toolset to maximise
+--    and fasten the process": each site is first mapped with Firecrawl (one call, 1 credit, every address with its page title, sub-sites
+--    included); a map that gives enough course addresses becomes the source (read_via map, read again by map). Site maps and list pages
+--    are the fallbacks when the Firecrawl budget refuses or the map gives too few.
 -- 3 Countries the finder works on: pipeline.source_find_countries (AU, NZ, CA). All of it is shown and changed on the Course sources screen.
 -- Replaces: hand-found course list pages and programme sources (22 Oct 2026); those stay as the finder's test set.
+-- read_via (map) on pipeline.provider_course_lists and pipeline.programme_sources; svc_course_list_next and svc_programme_source_next
+--   return it (md5-guarded edits).
 -- Retires: nothing
 
 -- settings ---------------------------------------------------------------------------------------------------------------------------
@@ -137,15 +143,17 @@ begin
     v_state := case when p_test then 'tested' else 'found' end;
     if not p_test then
       if v_active < security.pipeline_num_v1('source_find.programme_below', 1) then
-        insert into pipeline.programme_sources(provider_id, url, kind, url_pattern, child_pattern, reason)
-        values (p_provider_id, v_ch->>'url', v_ch->>'kind', coalesce(v_ch->>'link_pattern', p_result->>'pattern'), v_ch->>'child_pattern',
+        insert into pipeline.programme_sources(provider_id, url, kind, url_pattern, child_pattern, read_via, reason)
+        values (p_provider_id, v_ch->>'url', case when v_ch->>'kind' = 'list' then 'list' else 'sitemap' end, coalesce(v_ch->>'link_pattern', p_result->>'pattern'), v_ch->>'child_pattern',
+                case when v_ch->>'kind' = 'map' then 'map' end,
                 'Found by the course source finder (' || coalesce(v_ch->>'matches', '?') || ' programme addresses)')
         on conflict (provider_id, url) do nothing;
         v_added := 'programme_list';
       else
-        insert into pipeline.provider_course_lists(provider_id, url, reason, added_by, link_pattern, child_pattern)
+        insert into pipeline.provider_course_lists(provider_id, url, reason, added_by, link_pattern, child_pattern, read_via)
         values (p_provider_id, v_ch->>'url', 'Found by the course source finder (' || coalesce(v_ch->>'matches', '?') || ' course addresses)', null,
-                case when v_ch->>'kind' = 'sitemap' then coalesce(v_ch->>'link_pattern', p_result->>'pattern') end, case when v_ch->>'kind' = 'sitemap' then v_ch->>'child_pattern' end)
+                case when v_ch->>'kind' in ('sitemap', 'map') then coalesce(v_ch->>'link_pattern', p_result->>'pattern') end, case when v_ch->>'kind' = 'sitemap' then v_ch->>'child_pattern' end,
+                case when v_ch->>'kind' = 'map' then 'map' end)
         on conflict (provider_id, url) do nothing;
         v_added := 'course_list';
       end if;
@@ -166,6 +174,30 @@ end $function$;
 revoke all on function public.svc_source_find_record(uuid, jsonb, boolean) from public, anon, authenticated;
 grant execute on function public.svc_source_find_record(uuid, jsonb, boolean) to service_role;
 
+-- read by Firecrawl map ----------------------------------------------------------------------------------------------------------------
+alter table pipeline.provider_course_lists add column if not exists read_via text;
+alter table pipeline.programme_sources add column if not exists read_via text;
+comment on column pipeline.provider_course_lists.read_via is 'CF-247 22 Oct 2026: map = the site is listed by a Firecrawl map of url (1 credit) and the addresses fitting link_pattern are kept; null = read as a page or site map.';
+comment on column pipeline.programme_sources.read_via is 'CF-247 22 Oct 2026: map = the site is listed by a Firecrawl map of url (1 credit) and the addresses fitting url_pattern are kept; null = read by kind.';
+do $do$
+declare v_def text := pg_get_functiondef('public.svc_course_list_next'::regproc);
+  v_old text := $o$'link_pattern', u.link_pattern, 'child_pattern', u.child_pattern)$o$;
+  v_new text := $n$'link_pattern', u.link_pattern, 'child_pattern', u.child_pattern, 'read_via', u.read_via)$n$;
+begin
+  if md5(v_def) <> 'c5ae4d50b84cd36ea5eca5936aa4cf48' then raise exception 'public.svc_course_list_next is not the expected version (md5 %)', md5(v_def); end if;
+  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'course list next: expected one link_pattern'; end if;
+  execute replace(v_def, v_old, v_new);
+end $do$;
+do $do$
+declare v_def text := pg_get_functiondef('public.svc_programme_source_next'::regproc);
+  v_old text := $o$'child_pattern', u.child_pattern, $o$;
+  v_new text := $n$'child_pattern', u.child_pattern, 'read_via', u.read_via, $n$;
+begin
+  if md5(v_def) <> '14f671b5c9aa6da5d2fbb4d03e9b06b4' then raise exception 'public.svc_programme_source_next is not the expected version (md5 %)', md5(v_def); end if;
+  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'programme source next: expected one child_pattern'; end if;
+  execute replace(v_def, v_old, v_new);
+end $do$;
+
 -- Course sources screen --------------------------------------------------------------------------------------------------------------
 create or replace function public.admin_course_sources(p_action text, p_args jsonb default '{}'::jsonb)
 returns jsonb language plpgsql security definer set search_path = '' as $function$
@@ -180,8 +212,8 @@ begin
          select jsonb_build_object('provider_id', p.id, 'name', p.display_name, 'country', security.coverage_country(p.id), 'website', p.website,
                   'finder', (select to_jsonb(r) - 'provider_id' from pipeline.source_find_runs r where r.provider_id = p.id),
                   'lists', (select coalesce(jsonb_agg(jsonb_build_object('id', l.id, 'url', l.url, 'status', l.status, 'links', l.links_found, 'new', l.links_new, 'read_at', l.read_at,
-                              'via', l.fetched_via, 'pattern', l.link_pattern, 'by_finder', l.reason like 'Found by the course source finder%')), '[]'::jsonb) from pipeline.provider_course_lists l where l.provider_id = p.id),
-                  'programmes', (select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'url', s.url, 'kind', s.kind, 'status', s.status, 'found', s.found, 'pattern', s.url_pattern,
+                              'via', l.fetched_via, 'pattern', l.link_pattern, 'read_via', l.read_via, 'by_finder', l.reason like 'Found by the course source finder%')), '[]'::jsonb) from pipeline.provider_course_lists l where l.provider_id = p.id),
+                  'programmes', (select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'url', s.url, 'kind', s.kind, 'status', s.status, 'found', s.found, 'pattern', s.url_pattern, 'read_via', s.read_via,
                               'approved_at', s.approved_at, 'states', (select coalesce(jsonb_object_agg(q.state, q.n), '{}'::jsonb) from (select c.state, count(*) n from pipeline.programme_candidates c where c.programme_source_id = s.id group by 1) q))), '[]'::jsonb)
                               from pipeline.programme_sources s where s.provider_id = p.id)) z
            from catalogue.providers p
@@ -199,13 +231,13 @@ begin
   elsif p_action = 'stop_programme' then
     update pipeline.programme_sources set status = 'stopped', next_read_at = 'infinity', updated_at = now() where id = (p_args->>'id')::bigint;
   elsif p_action = 'add_list' then
-    insert into pipeline.provider_course_lists(provider_id, url, reason, added_by, link_pattern, child_pattern)
-    values (v_pid, p_args->>'url', v_reason, auth.uid(), nullif(p_args->>'link_pattern', ''), nullif(p_args->>'child_pattern', ''))
-    on conflict (provider_id, url) do update set status = 'due', next_read_at = now(), link_pattern = excluded.link_pattern, child_pattern = excluded.child_pattern, updated_at = now();
+    insert into pipeline.provider_course_lists(provider_id, url, reason, added_by, link_pattern, child_pattern, read_via)
+    values (v_pid, p_args->>'url', v_reason, auth.uid(), nullif(p_args->>'link_pattern', ''), nullif(p_args->>'child_pattern', ''), nullif(p_args->>'read_via', ''))
+    on conflict (provider_id, url) do update set status = 'due', next_read_at = now(), link_pattern = excluded.link_pattern, child_pattern = excluded.child_pattern, read_via = excluded.read_via, updated_at = now();
   elsif p_action = 'add_programme' then
-    insert into pipeline.programme_sources(provider_id, url, kind, url_pattern, child_pattern, reason, added_by)
-    values (v_pid, p_args->>'url', coalesce(nullif(p_args->>'kind', ''), 'sitemap'), p_args->>'url_pattern', nullif(p_args->>'child_pattern', ''), v_reason, auth.uid())
-    on conflict (provider_id, url) do update set status = 'due', next_read_at = now(), url_pattern = excluded.url_pattern, child_pattern = excluded.child_pattern, updated_at = now();
+    insert into pipeline.programme_sources(provider_id, url, kind, url_pattern, child_pattern, read_via, reason, added_by)
+    values (v_pid, p_args->>'url', coalesce(nullif(p_args->>'kind', ''), 'sitemap'), p_args->>'url_pattern', nullif(p_args->>'child_pattern', ''), nullif(p_args->>'read_via', ''), v_reason, auth.uid())
+    on conflict (provider_id, url) do update set status = 'due', next_read_at = now(), url_pattern = excluded.url_pattern, child_pattern = excluded.child_pattern, read_via = excluded.read_via, updated_at = now();
   elsif p_action = 'approve_programme' then
     if v_rank < 6 then raise exception 'Platform Admin role required' using errcode = '42501'; end if;
     update pipeline.programme_sources set approved_at = now(), approved_by = auth.uid(), approved_reason = v_reason, updated_at = now() where provider_id = v_pid and approved_at is null;
