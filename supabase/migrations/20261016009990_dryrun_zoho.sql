@@ -1,45 +1,38 @@
--- CF-247 (22 Oct 2026). Found right after 20261022038000: marking the fill's central page search as asked for did not move it. The
--- worker took it, but the Firecrawl spend check refused it as not due (central pages are read again only after central_refresh_days, 30),
--- put it back and cleared the request; the task fired again the next minute (417 refusals "not_due" today, one empty worker call a
--- minute). The refresh rule is right (it stops paying twice for the same pages), so the task respects it: when the provider's central
--- pages are held until due (or by today's central share), step 3 is done with the hold noted instead of waiting.
--- The 15-minute stats count Firecrawl refusals as a gap only when the reason is not "not due" (held by design).
--- Replaces: security.admin_job_watch_v1, security.stats_15m_v1 (md5-guarded edits; the requested_at line of 20261022038000 is removed);
---   pipeline.queue_watch row central_find (pending_sql: held providers are not waiting work)
+-- CF-247 (22 Oct 2026). Platform Admin 22:32 (website review): "Some universities are showing Diploma and Certificate courses that they
+-- do not offer. For example, the University of Auckland". Choice 22:40: "Fixes only, no note".
+-- Found: the register reader gives each qualification its level as a code (graduate_certificate, graduate_diploma), but
+-- public.svc_layer1_apply_register_records matched words with a space ('%graduate certificate%'), so every New Zealand postgraduate and
+-- graduate certificate became Certificate (437) and every postgraduate and graduate diploma became Diploma (767). Auckland's
+-- "Postgraduate Diploma in Arts (Level 8)" showed as a Diploma.
+-- 1 The apply reads the code with underscores as spaces, so the next NZQA run keeps the right level (md5-guarded edit).
+-- 2 The 1,204 New Zealand courses take the level the reader gave them (the register title's qualification type), logged in
+--   pipeline.admin_control_events; manual locks are kept. The website search copy is asked to refresh.
+-- Replaces: public.svc_layer1_apply_register_records (md5-guarded edit)
 -- Retires: nothing
 do $edit$
-declare v_def text := pg_get_functiondef('security.admin_job_watch_v1(uuid)'::regprocedure);
-        v_old text := $o$        if exists (select 1 from pipeline.provider_central_search s where s.provider_id = v_pid and s.state in ('queued', 'leased')) then
-          v_phase := 'finding central pages';
-          -- CF-247 22 Oct 2026: a fill asks for its central page search (the search takes only asked-for or due providers)
-          update pipeline.provider_central_search s set requested_at = now() where s.provider_id = v_pid and s.state = 'queued' and s.requested_at is null;
-          perform security.provider_task_fire_v1('central_find');$o$;
+declare v_def text := pg_get_functiondef('public.svc_layer1_apply_register_records'::regproc);
+        v_old text := $o$v_level_name:=lower(coalesce(r->>'course_level',''));$o$;
 begin
-  if position('central pages held until due' in v_def) > 0 then return; end if;
-  if md5(v_def) <> '40e1c7cfd4d924dd0bb7e8f395ad4d9a' then raise exception 'live security.admin_job_watch_v1 differs from the definition this change edits'; end if;
-  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'central page step must occur once'; end if;
-  execute replace(v_def, v_old, $n$        -- CF-247 22 Oct 2026: central pages held until due (or by today's central share) count as done for the fill; the hold is in the note
-        if exists (select 1 from pipeline.provider_central_search s where s.provider_id = v_pid and s.state in ('queued', 'leased'))
-           and not security.flag_provider_held_v1(v_pid, array['central_not_due', 'central_budget']) then
-          v_phase := 'finding central pages';
-          perform security.provider_task_fire_v1('central_find');$n$);
+  if position($p$replace(lower(coalesce(r->>'course_level','')),'_',' ')$p$ in v_def) > 0 then return; end if;
+  if md5(v_def) <> 'd8e3ed699880f44ff3257d9941f11d1b' then raise exception 'live public.svc_layer1_apply_register_records differs from the definition this change edits'; end if;
+  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'level name line must occur once'; end if;
+  execute replace(v_def, v_old, $n$v_level_name:=replace(lower(coalesce(r->>'course_level','')),'_',' ');  -- CF-247 22 Oct 2026: the reader gives codes (graduate_certificate)$n$);
 end $edit$;
 
-do $edit$
-declare v_def text := pg_get_functiondef('security.stats_15m_v1(text[])'::regprocedure);
-        v_old text := $o$((x->>'used')::numeric >= (x->>'share')::numeric or (x->>'refused')::numeric > 0)$o$;
+do $fix$
+declare v_n int;
 begin
-  if position('r.reason <> ''not_due''' in v_def) > 0 then return; end if;
-  if md5(v_def) <> 'a69fdf8d625021b8e20f5ecf46734fad' then raise exception 'live security.stats_15m_v1 differs from the definition this change edits'; end if;
-  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'share gap test must occur once'; end if;
-  execute replace(v_def, v_old, $n$((x->>'used')::numeric >= (x->>'share')::numeric
-                   or exists (select 1 from pipeline.firecrawl_budget_refusals r where r.day = (v_now at time zone 'Australia/Melbourne')::date and r.grp = x->>'group' and r.reason <> 'not_due'))$n$);
-end $edit$;
-
--- the watchdog counts as waiting only central searches the spend check will allow (held until due is not waiting work)
-update pipeline.queue_watch set pending_sql = $q$select count(*) from pipeline.provider_central_search s join catalogue.providers p on p.id = s.provider_id where (s.state = 'queued' or (s.state = 'leased' and s.leased_until < now())) and s.attempts < 3 and p.lifecycle_status = 'active' and p.website ~* '^https?://' and not security.third_party_host_v1(p.website) and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = s.provider_id) and not security.flag_provider_held_v1(s.provider_id, array['central_not_due', 'central_budget', 'site_unreachable'])$q$
- where key = 'central_find';
-do $dry$ declare r jsonb; begin
-  r := security.queue_watch_run_v1(false);
-  raise exception 'DRYRUN OK %', (select state||' p'||pending from pipeline.queue_watch_state where key='central_find');
-end $dry$;
+  with t as (
+    select c.id, sl.code old_code, case when c.canonical_title ~* 'graduate diploma' then 'graduate_diploma' else 'graduate_certificate' end new_code
+      from catalogue.courses c join ref.study_levels sl on sl.id = c.study_level_id
+     where security.coverage_country(c.provider_id) = 'NZ' and sl.code in ('certificate', 'diploma')
+       and c.canonical_title ~* '^(post-?graduate|graduate) (certificate|diploma)'
+       and not exists (select 1 from pipeline.manual_locks l where l.entity = 'course' and l.entity_id = c.id and l.field = 'study_level_id')),
+  u as (update catalogue.courses c set study_level_id = (select x.id from ref.study_levels x where x.code = t.new_code), updated_at = now()
+          from t where c.id = t.id returning t.id, t.old_code, t.new_code)
+  select count(*) into v_n from u;
+  insert into pipeline.admin_control_events(area, action, target, detail)
+  values ('course_levels', 'register_level_fix', 'NZ', jsonb_build_object('courses', v_n, 'reason', 'Register level codes (graduate_certificate, graduate_diploma) were read as Certificate and Diploma by svc_layer1_apply_register_records; Platform Admin 22 Oct 2026 website review'));
+  if v_n > 0 then insert into search.refresh_requests(requested_by) values ('NZ graduate and postgraduate levels corrected: ' || v_n || ' courses'); end if;
+end $fix$;
+do $dry$ begin raise exception 'DRYRUN OK %', (select jsonb_object_agg(code, n) from (select sl.code, count(*) n from catalogue.courses c join ref.study_levels sl on sl.id=c.study_level_id where security.coverage_country(c.provider_id)='NZ' and c.lifecycle_status='active' group by 1) z); end $dry$;
