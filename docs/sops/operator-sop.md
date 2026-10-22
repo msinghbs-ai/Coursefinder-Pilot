@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.317)  
+**Version:** 1.53 (reviewed for platform release v2.15.318)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -163,3 +163,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.56 | 22 Oct 2026 | v2.15.315 | Reviewed, no operator step changed: fee pages can be added, stopped and started again on the Fee reader (Pipeline Operator and above). |
 | 1.57 | 22 Oct 2026 | v2.15.316 | Reviewed: Providers › Adapter filter has Not needed: no courses; providers with no active course need no adapter. |
 | 1.58 | 22 Oct 2026 | v2.15.317 | Adapter builder › 2.1: add a provider's course list page (Pipeline Operator and above) when its course pages are not found; its links are matched to its courses. |
+| 1.59 | 22 Oct 2026 | v2.15.318 | Reviewed: the Adapter builder is in the Layer 2/3 tabs again (PIM Admin and above); Build adapter links to it for manual work. |

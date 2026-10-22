@@ -116,6 +116,7 @@ function University({pid,rank,onError,onBack}){
       <button type="button" className="cf-link ba-back" onClick={onBack}><ArrowLeft size={14}/>All universities</button>
       <div className="m-workspace-head"><div><h2>{d.university?.name}</h2><p>{d.university?.country}{d.university?.website?<> · <a className="cf-link" href={d.university.website} target="_blank" rel="noreferrer">{d.university.website}</a></>:null}{d.wave?` · wave ${d.wave}`:''} · measured {fmtDateTime(d.measured_at)}</p></div>
         <div className="ba-actions">
+          {rank>=5&&<a className="m-secondary compact" href={hrefFor('layer2','builder',{provider:pid})} data-open-builder>Do it by hand in Adapter builder</a>}
           {rank>=5&&<Button compact onClick={build} disabled={!!busy||(b&&!['done','cancelled','stopped'].includes(b.status))}><Hammer size={13}/>{d.has_adapter?'Build again':'Build adapter'}</Button>}
           {rank>=6&&<Button compact variant="primary" onClick={admit} disabled={!!busy||ready.length===0} data-build-admit><ShieldCheck size={13}/>{ready.length?`Admit ${ready.length} Ready field${ready.length===1?'':'s'}`:'Nothing Ready to admit'}</Button>}
         </div></div>

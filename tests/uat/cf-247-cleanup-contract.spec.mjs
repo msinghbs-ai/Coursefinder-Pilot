@@ -72,7 +72,7 @@ test('batch 2: Providers › Onboarding links each university to the Adapter bui
   expect(main).toContain("const RefreshWorkspace=lazyPage(()=>import('./m2-3-intelligence-entry'),'Refresh')")
   expect(fs.readFileSync('src/layer2-provider-entry.jsx', 'utf8')).toContain("functions.invoke('layer2-provider-control'")
   const nav = fs.readFileSync('src/nav-map.js', 'utf8')
-  expect(nav).toContain("{ key: 'builder', label: 'Adapter builder', min: 5, hidden: true },")
+  expect(nav).toContain("{ key: 'builder', label: 'Adapter builder', min: 5 },") // v2.15.318: back in the tabs (manual mode)
 })
 
 test('batch 4: old database functions dropped behind md5 guards; tables and history kept; four dormant functions retired', () => {

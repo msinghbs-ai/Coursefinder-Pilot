@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.317'
+export const SOP_REVIEWED_FOR = '2.15.318'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -160,7 +160,8 @@ export const SOPS = [
       { version: '1.55', date: '22 Oct 2026', release: '2.15.314', change: 'Fee reader (AI): in the weekly look, open a provider and check that each row\'s quote matches what it was read as ("for 60 points", per year) and how the yearly figure was worked out; Read again with a reason when it does not.' },
       { version: '1.56', date: '22 Oct 2026', release: '2.15.315', change: 'Fee reader (AI): Stop a fee page that gives no fees and Add a fee page by hand (the right international fee page); it is fetched within about 10 minutes and read by the AI on the next run.' },
       { version: '1.57', date: '22 Oct 2026', release: '2.15.316', change: 'Adapter builder › 2.1: fix Wrong page and Old site rows with Change page on the row, or tick them and Search again. Providers with no courses show No courses and are not onboarded until they have one.' },
-      { version: '1.58', date: '22 Oct 2026', release: '2.15.317', change: 'Providers stopped for too few course pages: open them in the Adapter builder and add their course list page in 2.1 (the page that lists their courses); it is read within 10 minutes and again weekly, and onboarding carries on by itself once 3 pages are read.' }],
+      { version: '1.58', date: '22 Oct 2026', release: '2.15.317', change: 'Providers stopped for too few course pages: open them in the Adapter builder and add their course list page in 2.1 (the page that lists their courses); it is read within 10 minutes and again weekly, and onboarding carries on by itself once 3 pages are read.' },
+      { version: '1.59', date: '22 Oct 2026', release: '2.15.318', change: 'Adapter builder (back in the Layer 2/3 tabs): a university the automatic build cannot finish is done by hand: pages in 2.1, samples in 2.2, Write the settings by hand (step 4), save and apply, Refresh the measures, then admit; a field that has not passed the check can be admitted as your decision.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -269,7 +270,8 @@ export const SOPS = [
       { version: '1.55', date: '22 Oct 2026', release: '2.15.314', change: 'Reviewed, no steps changed: the Fee reader shows each row\'s quote and how its yearly figure was worked out.' },
       { version: '1.56', date: '22 Oct 2026', release: '2.15.315', change: 'Reviewed, no operator step changed: fee pages can be added, stopped and started again on the Fee reader (Pipeline Operator and above).' },
       { version: '1.57', date: '22 Oct 2026', release: '2.15.316', change: 'Reviewed: Providers › Adapter filter has Not needed: no courses; providers with no active course need no adapter.' },
-      { version: '1.58', date: '22 Oct 2026', release: '2.15.317', change: 'Adapter builder › 2.1: add a provider\'s course list page (Pipeline Operator and above) when its course pages are not found; its links are matched to its courses.' }],
+      { version: '1.58', date: '22 Oct 2026', release: '2.15.317', change: 'Adapter builder › 2.1: add a provider\'s course list page (Pipeline Operator and above) when its course pages are not found; its links are matched to its courses.' },
+      { version: '1.59', date: '22 Oct 2026', release: '2.15.318', change: 'Reviewed: the Adapter builder is in the Layer 2/3 tabs again (PIM Admin and above); Build adapter links to it for manual work.' }],
   },
 ]
 

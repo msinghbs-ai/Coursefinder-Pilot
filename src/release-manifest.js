@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.317'
-export const PACKAGE_VERSION='0.1.244'
+export const UI_VERSION='2.15.318'
+export const PACKAGE_VERSION='0.1.245'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Oct 2026',
-  title:'Course list page per provider',
+  title:'Adapter builder: every step by hand',
   changes:[
-    'Adapter builder › 2.1: Course list page. Paste the provider\'s own page that lists its courses (course finder, A–Z, qualifications); every course link on it is read with its name, in any language, following the list\'s next pages, and matched to the provider\'s courses. Read now and Stop on each list.',
-    'The AI page match now also runs for any provider with a read course list (not only the focus providers), and each course without a page gets one more attempt after every read of the list.',
-    'Weekly retry: each course list is read again every 7 days (setting), so providers stopped for too few course pages carry on by themselves once 3 of their pages are read.'
+    'Layer 2/3 › Adapter builder is back in the tabs (after Build adapter). Build adapter › a university has Do it by hand in Adapter builder.',
+    'Manual mode end to end: course pages on each row or from a course list page (2.1), samples (2.2), Write the settings by hand (3.1 opens step 4), steps 3.2 and 3.3 count as done when the settings were saved by hand, and step 4 opens with one read page (was 3).',
+    '3.4: a Platform Admin can admit a field that has not passed the check, as their own decision (asked to confirm, logged).',
+    'Screenshots of a university\'s latest capture are kept while its adapter is not admitting yet, up to 30 days (setting); others are removed after 7 days as before.'
   ],
-  bugFixes:['Providers stopped for too few course pages said they carry on by themselves, but nothing searched for their pages any more.']
+  bugFixes:['A build done by hand never showed steps 3.2 and 3.3 as done, because they waited for an AI proposal.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
