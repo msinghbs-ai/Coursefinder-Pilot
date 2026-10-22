@@ -370,3 +370,11 @@ test('v0.40.3 source finder: fuller lists kept, list pages named by the map trie
   expect(w).toContain('const tries = [...new Set([...(work.list_candidates || []), ...(pattern ? [`${origin}/${pattern.folder}/`] : []), ...relaxed,')
   expect(w).toContain('if (tested.has(url)) continue; if (left() < 45_000) break;')
 })
+
+test('v0.40.4: list-page scrapes are recorded as list_scrape (1 credit), in the page reads group', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const m = fs.readFileSync('supabase/migrations/20261023002000_cf247_list_scrape_purpose.sql', 'utf8')
+  expect(w).not.toContain('useFc("fcx_course_list"')
+  expect((w.match(/useFc\("list_scrape"/g) || []).length).toBe(4)
+  expect(m).toContain("'adapter_builder', 'list_scrape') or p like 'fcx\\_%' then 'reads'")
+})
