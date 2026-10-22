@@ -212,7 +212,7 @@ insert into pipeline.queue_watch(key, label, area, purpose, jobnames, tools, pen
  'Fee pages that failed on a time-out, a busy service or a cut-off AI answer: asked once more', '#layer-2-discovery?tab=operations', 70),
 ('central_find', 'Find central pages', 'Enrichment', 'Searches each provider''s site for its fee schedule, English policy and calendar pages.',
  '{provider-facts}', '{firecrawl:central}',
- $q$select count(*) from pipeline.provider_central_search s where s.state = 'queued' and not exists (select 1 from pipeline.enrichment_flags f where f.entity = 'provider' and f.entity_key = s.provider_id::text and f.state = 'raised' and f.reason_code in ('central_not_due', 'central_budget'))$q$,
+ $q$select count(*) from pipeline.provider_central_search s join catalogue.providers p on p.id = s.provider_id where (s.state = 'queued' or (s.state = 'leased' and s.leased_until < now())) and s.attempts < 3 and p.lifecycle_status = 'active' and p.website ~* '^https?://' and not security.third_party_host_v1(p.website) and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = s.provider_id) and (s.requested_at is not null or not security.flag_provider_held_v1(s.provider_id, array['central_not_due', 'central_budget', 'site_unreachable']))$q$,
  $q$select max(searched_at) from pipeline.provider_central_search$q$,
  $q$select count(*) from pipeline.provider_central_search where searched_at >= $1$q$,
  $q$select count(*) from pipeline.provider_central_search where state = 'failed' and updated_at >= $1$q$,
