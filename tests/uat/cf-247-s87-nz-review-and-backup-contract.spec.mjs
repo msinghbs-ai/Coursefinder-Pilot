@@ -175,3 +175,9 @@ test('Sydney course data file is a companion read directly; values recorded, not
   expect(mig).toContain('"type":"INTFEE"')
   expect(mig).not.toMatch(/coverage_apply_course_v1/)
 })
+
+test('worker v0.36.2 reads an address ending in .json as JSON text', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('coverage-sweep-worker-v0.36.2')
+  expect(w).toContain('const isJson = /\\.json$/i.test(u.pathname);')
+})
