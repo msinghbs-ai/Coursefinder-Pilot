@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.251 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.324** (fee reader at full speed; a course first in line from its page). Platform Admin, 23 Oct 2026 09:03 and 09:07: "what maximum system can handle", "push it as priority from course page", "all avaible to change from ui with maximum values displayed".
+  - Migration `20261023010000_cf247_fee_reader_speed_and_course_priority.sql`: settings `fees.run_every_minutes`, `fees.concurrency`, `fees.pages_per_run` up to 40; `pipeline.fee_course_requests`; queue priority; Read with AI and a changed official page request the fee first in line; job fee-reader called each minute.
+  - Worker `coverage-sweep-worker-v0.41.1` (up to 40 pages a call, concurrency from the job). `src/CourseAudit.jsx` text.
+  - Consumer API unchanged (Decision 266). SOPs 1.65.
+
 ## 0.1.250 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.323** (course page fees through the AI fee reader; fee proofs for New Zealand). Platform Admin, 23 Oct 2026 07:47: "Page bound by a person, exact title, title and level" admit NZ international fees.
