@@ -394,3 +394,13 @@ test('v0.40.6: programme page record has no chr(0); the worker removes null char
   expect(m.split('\n').filter((l) => !l.trim().startsWith('--') && /chr\(0\)/.test(l.split('--')[0]))).toEqual([])
   expect(w).toContain('htmlToText(m[1]).replace(/\\u0000/g, "")')
 })
+
+test('v0.40.7: up to three course folders per university; Find again works for a university that has a source', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const m = fs.readFileSync('supabase/migrations/20261023005000_cf247_find_again_with_source.sql', 'utf8')
+  expect(w).toContain('while (parts.length < 3 && segs.length >= 3) {  // fixed: three course folders at most')
+  expect(w).toContain('pattern = { re: `^${hostRe(host)}/(?:${parts.map((x) => x.re).join("|")})/?$`')
+  expect(m).toContain("'fc835f84dc06484b93eadcf3c48bd81a'")
+  expect(m).toContain("'f4cd3ce1e7ab727baeefd6a4a39c569c'")
+  expect(m).toContain("r.work->>'again' = 'true'")
+})
