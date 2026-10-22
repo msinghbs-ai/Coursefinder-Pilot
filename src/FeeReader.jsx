@@ -14,7 +14,7 @@ import{fmtNumber}from'./lib/format.js'
 const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_fee_reader',{p_action:action,p_args:args||{}});if(error)throw error;return data}
 const OUTCOME={admitted:['Admitted','success'],review:['To Layer 4','warning'],conflict:['Differs from held fee','warning'],same:['Same as held','neutral'],no_course:['No matching course','danger'],
-  domestic:['Domestic (kept)','neutral'],not_yearly:['Not a yearly fee','neutral'],skipped:['Skipped','neutral']}
+  domestic:['Domestic (kept)','neutral'],not_yearly:['Not a yearly fee','neutral'],skipped:['Skipped','neutral'],replaced:['Replaced by a newer read','neutral']}
 const FINDING={no_rows:'No fee rows on the page',unmatched_row:'Row matched no course',currency:'Different currency',unit_unknown:'Fee unit not understood',outlier:'Outside the usual range',
   quote_missing:'Rows not found on the page',conflict:'Differs from a held fee',rejected:'Rejected or corrected by a person',page_changed:'Page changed',rows_dropped:'Far fewer rows than before',read_failed:'Read failed'}
 const money=v=>v==null?'—':fmtNumber(Math.round(Number(v)))

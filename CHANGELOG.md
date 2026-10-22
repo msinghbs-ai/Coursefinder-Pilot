@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.240 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.313**. Platform Admin, 22 Oct 2026 14:35: "proceed with AUT fee fix".
+  - Migration `20261022021000_cf247_fee_reader_units_covered.sql`: `security.fee_row_units_v1` (points or credits a fee row covers, from its quote); `svc_fee_ai_record` works the yearly figure out from them (amount / units x full-time load), records a finding when the reader called the row per point, and marks a re-read page's earlier rows `replaced`; the 8 affected fee pages queued again. md5-guarded.
+  - Worker v0.36.1: the fee reader prompt and schema carry `units_covered`.
+  - Fee reader screen labels the `replaced` outcome. Guide; SOPs 1.54.
+
 ## 0.1.239 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.312**. Platform Admin, 22 Oct 2026: 11:42 "unpublished providers should be removed from any schedule tasks or updates. - reenabling them bring back to respective tasks and jobs"; 11:47 Adapter filter, sortable Adapter status, "Create adapters for All ... where website were found" (choice "All 738 with a website"); 11:50 course "not published" bug; 11:57 "Sujata last login was yesterday".
