@@ -404,3 +404,12 @@ test('v0.40.7: up to three course folders per university; Find again works for a
   expect(m).toContain("'f4cd3ce1e7ab727baeefd6a4a39c569c'")
   expect(m).toContain("r.work->>'again' = 'true'")
 })
+
+test('v0.40.8: escaped-markup values kept in page text; a fee label decides its audience; newest year version read', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const x = fs.readFileSync('supabase/functions/coverage-sweep/extract.ts', 'utf8')
+  expect(x).toContain('.replace(/&lt;(?:\\/|&#x2F;|&#47;)?[a-z][a-z0-9-]*(?:\\s[^&<>]*?)?(?:\\/|&#x2F;)?&gt;/gi, " ")')
+  expect(x).toContain('if (li !== ld) { international = li; domestic = ld }')
+  expect(w).toContain('export function newestVersionUrl(html: string, url: string): string | null {')
+  expect(w).toContain('const nv = newestVersionUrl(html, finalUrl);')
+})
