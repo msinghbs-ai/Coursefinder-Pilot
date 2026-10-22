@@ -26,7 +26,7 @@ test('11900: daily budget 15,000 split by purpose, per-university caps, search s
 })
 
 test('worker v0.21.4: every useFc spend goes through svc_fc_spend; Firecrawl runs stop at the daily share', () => {
-  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(?:2[1-9]|3\d)\.\d+"/)
+  expect(worker).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(?:2[1-9]|[3-9]\d)\.\d+"/)
   expect(worker).toContain('if (!(await rpc("svc_fc_spend", { p_units: units, p_purpose: purpose, p_provider_id: providerId, p_url: url }))) return false;')
   expect(worker).toContain('stopReason = "daily_budget"')
   const useFc = worker.slice(worker.indexOf('const useFc = async'), worker.indexOf('const robots = new Map'))
