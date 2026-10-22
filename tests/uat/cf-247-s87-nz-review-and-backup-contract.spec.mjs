@@ -447,3 +447,12 @@ test('v0.40.9: the newer-version link is found inside escaped markup and page it
   expect(nv('<a href="/ords/r/uoa/catalogue/program?p5_code=DipArts&p0_catalogue_year=2027">x</a>', b)).toBeNull()
   expect(nv('<a href="/ords/r/uoa/catalogue/program?p5_code=DipLang&p0_catalogue_year=2025">x</a>', b)).toBeNull()
 })
+
+test('v2.15.323: Read with AI releases AI-found-no-value holds; a changed page fee goes to the AI fee check again', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023008000_cf247_read_now_releases_holds.sql', 'utf8')
+  expect(m).toContain("if md5(v_def) <> '1c75375d077b75eb9a9afb42f4f02ca5' then raise exception")
+  expect(m).toContain("if md5(v_def) <> 'bd6fb1d3e457a24c15c520943f4b3e69' then raise exception")
+  expect(m).toContain("release_kind = 'person', release_reason = 'Read with AI: ' || v_reason")
+  expect(m).toContain("(w.candidate_context->'provider_current_tuition'->>'amount') is distinct from (security.coverage_tuition_target_v1(p.candidates->'fee')->>'amount')")
+  expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+})

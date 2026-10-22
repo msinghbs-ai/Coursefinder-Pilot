@@ -11,6 +11,7 @@ export const RELEASE={
   changes:[
     'Settings › Identify the page: every proof the admission gate reads can now be ticked, including Page bound by a person, University page and the adapter proofs. Before, changing English, intakes or the official address for a country that held one of these proofs was refused.',
     'Course pages: the University of Auckland catalogue\'s newer-version link is followed even when it sits inside escaped markup, so the 2027 page and its fees are read.',
+    'Read with AI now runs the AI fill even for fields where AI earlier found no value (the hold is released with the reason given), and sends the page\'s fee to the AI fee check again. A page fee that changed after an earlier AI fee check is checked again.',
     'New Zealand international fees are now also admitted from course pages proved by exact title, title with level, or bound by a person (Platform Admin decision, 23 Oct 2026). The fee still passes the AI fee check before it is admitted.'
   ],
   bugFixes:['Settings › Identify the page refused every change to English, intakes and official address for AU, NZ and CA (unknown identity).']
