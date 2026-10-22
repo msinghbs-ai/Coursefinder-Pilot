@@ -433,3 +433,17 @@ test('v2.15.323: identity settings accept every proof the gate reads; NZ fees ad
   const ui = fs.readFileSync('src/PipelineSettings.jsx', 'utf8')
   expect(ui).toContain("['manual','Page bound by a person'],['host_page','University page'],['adapter_code','Adapter code'],['adapter_title','Adapter title']]")
 })
+
+test('v0.40.9: the newer-version link is found inside escaped markup and page items', async () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.40.9";')
+  const i = w.indexOf('export function newestVersionUrl'), j = w.indexOf('\n}\n', i) + 3
+  const src = w.slice(i, j).replace('export function', 'function').replace(/: string \| null/, '').replace('(html: string, url: string)', '(html, url)')
+    .replace('let base: URL', 'let base').replace('let best: { url: string; year: number } | null', 'let best').replace('let u: URL', 'let u').replace(/\(k: string\)/g, '(k)')
+  const nv = new Function(src + '\nreturn newestVersionUrl')()
+  const b = 'https://study.auckland.ac.nz/ords/r/uoa/catalogue/program?p5_code=DipLang&clear=5'
+  const esc = '&lt;a href=&quot;https:&#x2F;&#x2F;study.auckland.ac.nz&#x2F;ords&#x2F;r&#x2F;uoa&#x2F;catalogue&#x2F;program?p5_code=DipLang&amp;amp;p0_catalogue_year=2027&amp;amp;p0_catalogue_term=Summer&quot;&gt;newer version&lt;&#x2F;a&gt;'
+  expect(nv(esc, b)).toBe('https://study.auckland.ac.nz/ords/r/uoa/catalogue/program?p5_code=DipLang&p0_catalogue_year=2027&p0_catalogue_term=Summer')
+  expect(nv('<a href="/ords/r/uoa/catalogue/program?p5_code=DipArts&p0_catalogue_year=2027">x</a>', b)).toBeNull()
+  expect(nv('<a href="/ords/r/uoa/catalogue/program?p5_code=DipLang&p0_catalogue_year=2025">x</a>', b)).toBeNull()
+})

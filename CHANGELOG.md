@@ -5,6 +5,7 @@
 - Prepared visible PIM Admin release candidate **v2.15.323** (fee proofs for New Zealand). Platform Admin, 23 Oct 2026 07:47: "Page bound by a person, exact title, title and level" admit NZ international fees.
   - Migration `20261023007000_cf247_identity_settings_all_proofs.sql`: `public.admin_pipeline_settings_write` accepts every proof the gate reads; NZ tuition admits pages bound by a person.
   - `src/PipelineSettings.jsx` shows the four extra proofs.
+  - Worker `coverage-sweep-worker-v0.40.9`: the newer-version link is found inside escaped markup and page items (Auckland catalogue).
   - Consumer API unchanged (Decision 266). SOPs 1.64.
 
 ## 0.1.249 — 23 Oct 2026
