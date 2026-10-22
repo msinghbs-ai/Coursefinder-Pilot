@@ -275,3 +275,11 @@ test('scope gate hides levelled out-of-scope courses and asks for a search refre
   expect(c).toContain("'ce7eac324e9f6731edf20ad57a99c212'")
   expect(c).toContain("v_done = 0 and coalesce(v_last, '-infinity') < now() - v_stuck_default")
 })
+
+test('15-minute stats per country with toolset use and gaps; Fill in from website asks for its central page search', () => {
+  const m = fs.readFileSync('supabase/migrations/20261022038000_cf247_stats_15m_and_fill_central.sql', 'utf8')
+  expect(m).toContain("'33f0a68bffa354b09fc6d3576b088846'")
+  expect(m).toContain("update pipeline.provider_central_search s set requested_at = now() where s.provider_id = v_pid and s.state = 'queued' and s.requested_at is null;")
+  expect(m.indexOf("('stats-15m', 'Reports'")).toBeLessThan(m.indexOf("select cron.schedule('stats-15m'"))
+  for (const k of ['stats.slow_call_seconds', 'stats.task_wait_minutes', 'stats.flat_field_hours']) expect(m).toContain(`'${k}'`)
+})
