@@ -195,7 +195,7 @@ do $t$ declare r jsonb; e jsonb; n int; it jsonb; begin
   n := security.fee_course_pages_enqueue_v1();
   perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
   it := public.svc_fee_ai_next(40)->0;
-  raise exception 'DRYRUN OK %', jsonb_build_object('q', (select jsonb_agg(jsonb_build_object('s', state, 'p', priority, 'h', left(content_hash, 8))) from pipeline.fee_reader_queue where course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576'), 'reqs', (select jsonb_agg(outcome) from pipeline.fee_course_requests), 'queued', n, 'first', jsonb_build_object('course', it->'courses'->0->>'title', 'url', it->>'url'),
+  raise exception 'DRYRUN OK %', jsonb_build_object('tick', security.fee_reader_tick_v1(), 'q', (select jsonb_agg(jsonb_build_object('s', state, 'p', priority, 'h', left(content_hash, 8))) from pipeline.fee_reader_queue where course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576'), 'reqs', (select jsonb_agg(outcome) from pipeline.fee_course_requests), 'queued', n, 'first', jsonb_build_object('course', it->'courses'->0->>'title', 'url', it->>'url'),
     'requests', (select jsonb_agg(jsonb_build_object('c', course_id, 'o', outcome)) from pipeline.fee_course_requests),
     'zz', (select jsonb_agg(jsonb_build_object('f', i.field, 's', i.state)) from pipeline.field_enrich_items i where i.job_id = (r->>'job_id')::uuid),
     'dipcom_job', (select count(*) from pipeline.admin_jobs j where j.title = 'Read with AI · Diploma in Commerce (Level 5)' and j.created_at > now() - interval '1 minute'),
