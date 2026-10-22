@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.314'
-export const PACKAGE_VERSION='0.1.241'
+export const UI_VERSION='2.15.315'
+export const PACKAGE_VERSION='0.1.242'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'22 Oct 2026',
-  title:'Fee reader shows how each yearly figure was worked out',
+  title:'Fee reader: add, stop and start fee pages',
   changes:[
-    'Enrich fields › Fee reader (AI), a provider\'s rows: each row shows the words it was read from, "for 60 points" when the fee is for a number of points, and how the yearly figure was worked out (for example 19,930 ÷ 60 × 120).',
-    'Rows replaced when a page was read again are hidden behind a count (Show them).',
-    'Problems the reader learns from show what a row was read as and what it really is.'
+    'Enrich fields › Fee reader (AI), a provider\'s fee pages: Add a fee page by hand (fetched within about 10 minutes, then read by the AI), Stop a page that gives no fees (fees it gave stay), Start again.',
+    'Each page says whether it was fetched, what the AI got from it (fee rows, waiting, failed) and how many of its fees were admitted, were already on the course or went to Layer 4.',
+    'Read again leaves stopped pages out.'
   ],
-  bugFixes:[]
+  bugFixes:['Every fee page showed "no_values", the older page reader\'s status, even when the AI fee reader had admitted its fees.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

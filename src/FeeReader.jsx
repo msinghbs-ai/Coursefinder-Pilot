@@ -18,6 +18,11 @@ const OUTCOME={admitted:['Admitted','success'],review:['To Layer 4','warning'],c
 const FINDING={no_rows:'No fee rows on the page',unmatched_row:'Row matched no course',currency:'Different currency',unit_unknown:'Fee unit not understood',outlier:'Outside the usual range',
   quote_missing:'Rows not found on the page',conflict:'Differs from a held fee',rejected:'Rejected or corrected by a person',page_changed:'Page changed',rows_dropped:'Far fewer rows than before',read_failed:'Read failed'}
 const money=v=>v==null?'—':fmtNumber(Math.round(Number(v)))
+// v2.15.315: the fetch status in words, and what the AI fee reader got from the page
+const FETCH={found:'Waiting to be fetched',reading:'Being fetched',read:'Fetched',parsed:'Fetched',no_values:'Fetched',failed:'Could not fetch',rejected:'Stopped by a person'}
+const aiText=p=>{const l=p.last;if(p.stopped)return 'Not read (stopped)';if(!l)return p.status==='found'||p.status==='reading'?'Read after it is fetched':'Not read yet'
+  if(l.state==='queued')return 'Waiting for the AI (next 10-minute run)';if(l.state==='leased')return 'Being read now';if(l.state==='failed')return `Failed: ${l.error||'error'}`
+  return `${l.rows?`${fmtNumber(l.rows)} fee rows`:'No fee rows on the page'} · ${fmtDateTime(l.at)}`}
 // v2.15.314: a fee printed for a number of points ("$19,929.84 (for 60 points)") says so, and the yearly figure says how it was worked out
 const unitText=r=>r.units_covered?`for ${fmtNumber(r.units_covered)} points`:String(r.unit||'').replace('_',' ')
 const yearlyHow=(r,ft)=>r.yearly==null?'':r.units_covered&&ft&&Number(r.units_covered)!==ft?`estimate: ${money(r.amount_min)} ÷ ${r.units_covered} × ${ft}`:r.yearly_basis==='indicative_annual'?'estimate':''
@@ -48,10 +53,11 @@ export default function FeeReader({onError}){
 }
 
 function ProviderFees({pid,name,fullTime,onError,onChanged}){
-  const[d,setD]=useState(null),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[note,setNote]=useState(''),[showOld,setShowOld]=useState(false)
+  const[d,setD]=useState(null),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[note,setNote]=useState(''),[showOld,setShowOld]=useState(false),[addUrl,setAddUrl]=useState('')
   const load=()=>call('provider',{provider:pid}).then(setD).catch(e=>onError?.(errText(e)))
   useEffect(()=>{setD(null);load()},[pid])
   if(!d)return <Loading compact/>
+  const page=async(action,args,q)=>{const r=window.prompt(`${q}. Reason (kept in the log):`);if(!r||r.trim().length<4)return false;setBusy(true);try{await call(action,{provider:pid,...args,reason:r.trim()});setNote(action==='page_add'?'Page added: fetched within about 10 minutes, then read by the AI.':action==='page_stop'?'Page stopped.':'Page will be read again within 10 minutes.');await load();onChanged?.();return true}catch(e){onError?.(errText(e));return false}finally{setBusy(false)}}
   const again=async()=>{setBusy(true);try{const r=await call('read_again',{provider:pid,reason:reason.trim()});setNote(`${r?.queued||0} page(s) queued; they are read within 10 minutes.`);setReason('');load();onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   const open=(d.findings||[]).filter(f=>!f.resolved_at)
   const replaced=(d.rows||[]).filter(r=>r.outcome==='replaced').length
@@ -59,9 +65,18 @@ function ProviderFees({pid,name,fullTime,onError,onChanged}){
   const ft=Number(fullTime)||null
   return <div className="plan-run" data-fee-provider-panel>
     <h3 className="sd-subhead">{name}: fee pages</h3>
-    <div className="dq-table-wrap"><table className="dq-table"><thead><tr><th>Page</th><th>Status</th><th>Last AI read</th></tr></thead>
-      <tbody>{(d.pages||[]).map(p=><tr key={p.id}><td><a className="cf-link" href={p.url} target="_blank" rel="noreferrer">{p.url}</a><small>{p.found_via}</small></td><td>{p.status}</td>
-        <td><small>{p.last?`${p.last.state}${p.last.rows!=null?`, ${p.last.rows} rows`:''} · ${fmtDateTime(p.last.at)}${p.last.error?` · ${p.last.error}`:''}`:'—'}</small></td></tr>)}</tbody></table></div>
+    {/* v2.15.315 (Platform Admin 22 Oct 2026 15:57, Otago: "how to change the existing non-producing URL in UI and replace them ... can we add
+        manually in UI"): each page says what the AI got from it; Stop a page that gives no fees, Start again, Add a fee page by hand */}
+    <div className="dq-table-wrap"><table className="dq-table" data-fee-pages><thead><tr><th>Page</th><th>Fetched</th><th>AI fee reader</th><th className="num">Fees on the page</th>{d.can_run&&<th/>}</tr></thead>
+      <tbody>{(d.pages||[]).map(p=><tr key={p.id} data-fee-page={p.stopped?'stopped':'on'}><td><a className="cf-link" href={p.url} target="_blank" rel="noreferrer">{p.url}</a><small>{p.found_via==='manual'?'added by hand':'found by search'}</small></td>
+        <td><small>{FETCH[p.status]||p.status}{p.read_at?` · ${fmtDateTime(p.read_at)}`:''}</small></td>
+        <td><small>{aiText(p)}</small></td>
+        <td className="num">{p.stopped&&!p.fees?'—':fmtNumber(p.fees||0)}<small>{[p.admitted>0&&`${fmtNumber(p.admitted)} admitted`,p.already_held>0&&`${fmtNumber(p.already_held)} already on the course`,p.to_review>0&&`${fmtNumber(p.to_review)} to Layer 4`].filter(Boolean).join(' · ')}</small></td>
+        {d.can_run&&<td>{p.stopped?<Button compact disabled={busy} onClick={()=>page('page_resume',{page:p.id},`Start reading ${p.url} again`)}>Start again</Button>
+          :<Button compact disabled={busy} onClick={()=>page('page_stop',{page:p.id},`Stop reading ${p.url} (fees it gave stay)`)}>Stop</Button>}</td>}</tr>)}</tbody></table></div>
+    {d.can_run&&<div className="fc-actions" data-fee-page-add><input value={addUrl} onChange={e=>setAddUrl(e.target.value)} placeholder="https://… the provider's international fee page" aria-label="Fee page address" style={{minWidth:'28rem'}}/>
+      <Button compact disabled={busy||!/^https?:\/\/\S{6,}$/.test(addUrl.trim())} onClick={()=>page('page_add',{url:addUrl.trim()},`Add ${addUrl.trim()} as a fee page of ${name}`).then(ok=>ok&&setAddUrl(''))}>Add a fee page</Button>
+      <small className="sd-desc">An added page is fetched within about 10 minutes (about 1 Firecrawl credit), then read by the AI on the next run. Fees matched to a course at least as sure as the setting are admitted to that course's tuition; the rest go to Layer 4.</small></div>}
     {d.can_run&&<div className="fc-actions"><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason to read again" aria-label="Reason"/>
       <Button compact onClick={again} disabled={busy||reason.trim().length<4}><RotateCcw size={14}/>Read again</Button>{note&&<small className="sd-desc" role="status">{note}</small>}</div>}
     <h3 className="sd-subhead">Rows read</h3>

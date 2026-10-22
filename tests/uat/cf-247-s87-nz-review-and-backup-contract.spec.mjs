@@ -141,3 +141,15 @@ test('v2.15.314 fee reader screen shows the points a fee is for and how the year
   expect(ui).toContain('data-fee-replaced')
   expect(ui).toContain('data-fee-finding-detail')
 })
+
+test('v2.15.315 fee pages can be added by hand, stopped and started again', () => {
+  const mig = fs.readFileSync('supabase/migrations/20261022022000_cf247_fee_pages_add_stop.sql', 'utf8')
+  const ui = fs.readFileSync('src/FeeReader.jsx', 'utf8')
+  expect(mig).toContain("'5a99e8d420aac5e1428bf1c3995d5c32'")
+  expect(mig).toContain("elsif p_action in ('page_add', 'page_stop', 'page_resume') then")
+  expect(mig).toContain("sf.status = 'rejected'")
+  expect(ui).toContain('data-fee-page-add')
+  expect(ui).toContain("page('page_stop'")
+  expect(ui).toContain("page('page_resume'")
+  expect(ui).toContain("no_values:'Fetched'")
+})

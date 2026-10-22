@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.314'
+export const SOP_REVIEWED_FOR = '2.15.315'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -157,7 +157,8 @@ export const SOPS = [
       { version: '1.52', date: '22 Oct 2026', release: '2.15.311', change: 'Backup & restore: Restore on a backup row (or Restore this backup under the comparison) puts it back with a reason.' },
       { version: '1.53', date: '22 Oct 2026', release: '2.15.312', change: 'Unpublished providers are paused in every scheduled job; publish one to bring it back. Providers › Adapter filter shows which providers have no adapter or are still testing.' },
       { version: '1.54', date: '22 Oct 2026', release: '2.15.313', change: 'Reviewed, no steps changed: the fee reader reads a fee printed for a number of points as the fee for those points; a page read again shows its older rows as Replaced by a newer read.' },
-      { version: '1.55', date: '22 Oct 2026', release: '2.15.314', change: 'Fee reader (AI): in the weekly look, open a provider and check that each row\'s quote matches what it was read as ("for 60 points", per year) and how the yearly figure was worked out; Read again with a reason when it does not.' }],
+      { version: '1.55', date: '22 Oct 2026', release: '2.15.314', change: 'Fee reader (AI): in the weekly look, open a provider and check that each row\'s quote matches what it was read as ("for 60 points", per year) and how the yearly figure was worked out; Read again with a reason when it does not.' },
+      { version: '1.56', date: '22 Oct 2026', release: '2.15.315', change: 'Fee reader (AI): Stop a fee page that gives no fees and Add a fee page by hand (the right international fee page); it is fetched within about 10 minutes and read by the AI on the next run.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -263,7 +264,8 @@ export const SOPS = [
       { version: '1.52', date: '22 Oct 2026', release: '2.15.311', change: 'Reviewed: no operator step changed (Backup & restore is Platform Admin only).' },
       { version: '1.53', date: '22 Oct 2026', release: '2.15.312', change: 'Reviewed: a course shows On the website or Hidden from its provider\'s Published switch; Users & roles shows Last active.' },
       { version: '1.54', date: '22 Oct 2026', release: '2.15.313', change: 'Reviewed, no steps changed: fee rows in Layer 4 that came from a fee printed for a number of points are now worked out as a yearly figure.' },
-      { version: '1.55', date: '22 Oct 2026', release: '2.15.314', change: 'Reviewed, no steps changed: the Fee reader shows each row\'s quote and how its yearly figure was worked out.' }],
+      { version: '1.55', date: '22 Oct 2026', release: '2.15.314', change: 'Reviewed, no steps changed: the Fee reader shows each row\'s quote and how its yearly figure was worked out.' },
+      { version: '1.56', date: '22 Oct 2026', release: '2.15.315', change: 'Reviewed, no operator step changed: fee pages can be added, stopped and started again on the Fee reader (Pipeline Operator and above).' }],
   },
 ]
 

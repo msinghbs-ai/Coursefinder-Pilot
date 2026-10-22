@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.242 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.315**. Platform Admin, 22 Oct 2026 15:57 (University of Otago): "how to change the existing non-producing URL in UI and replace them with correct them. can we add manually in UI by ourselves, how will it start admitting data to the courses field?"
+  - Migration `20261022022000_cf247_fee_pages_add_stop.sql`: `admin_fee_reader` actions `page_add`, `page_stop`, `page_resume` (Pipeline Operator and above, with a reason, logged); Read again leaves stopped pages out; each page returns fees, admitted, already held and to-review counts. md5-guarded.
+  - `src/FeeReader.jsx`: fetch status in words, the AI fee reader's result per page, Stop / Start again, Add a fee page. Guide; SOPs 1.56.
+
 ## 0.1.241 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.314**. Platform Admin, 22 Oct 2026 15:21: "AUT fix - how can we make that available in the UI?".
