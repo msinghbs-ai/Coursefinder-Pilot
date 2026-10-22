@@ -255,7 +255,7 @@ test('Canadian colleges: level required (ca-intl-college-plus-v2), credential re
   const mig = fs.readFileSync('supabase/migrations/20261022034000_cf247_ca_college_scope.sql', 'utf8')
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('if (mode === "credential_read") {')
-  expect(w).toContain('coverage-sweep-worker-v0.38.0')
+  expect(w).toMatch(/coverage-sweep-worker-v0\.38\.\d/)
   expect(mig).toContain("'c25496f235831a85b3a3efe00c9aee0d'")
   expect(mig).toContain('AND NOT security.course_in_country_scope_v1(c.id)')
   expect(mig).toContain("('CA', 'diploma', 'ca-intl-college-plus-v2'")
@@ -295,4 +295,9 @@ test('website review fixes: NZ graduate levels read from register codes; intakes
   expect(b).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'provider-calendar-intakes'), active := false);")
   expect(b).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'provider-calendar-defaults'), active := false);")
   expect(b).toContain("coalesce(i.source_intake_key, '') like 'calendar%'")
+})
+
+test('v0.38.1: AI-matched pages from the university\'s own site may be read through the scraper', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('"firecrawl_upgrade", "ai_match"];')
 })
