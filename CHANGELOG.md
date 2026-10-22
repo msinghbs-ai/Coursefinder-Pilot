@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.241 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.314**. Platform Admin, 22 Oct 2026 15:21: "AUT fix - how can we make that available in the UI?".
+  - `src/FeeReader.jsx`: each row shows its quote, "for N points" when `units_covered` is held, and how the yearly figure was worked out (amount ÷ points × the country's full-time year); rows `replaced` by a newer read hidden behind a count; findings show what a row was read as and what it is. No database change.
+  - Guide; SOPs 1.55.
+
 ## 0.1.240 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.313**. Platform Admin, 22 Oct 2026 14:35: "proceed with AUT fee fix".
