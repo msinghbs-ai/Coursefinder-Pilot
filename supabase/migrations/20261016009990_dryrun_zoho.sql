@@ -18,6 +18,8 @@
 --   (public.admin_programme_lists 'approve', logged). md5-guarded edit to security.country_scope_gate_v1.
 -- 5 pipeline.credential_level_map gains the French university credentials for Canada.
 -- Replaces: nothing (security.country_scope_gate_v1 edited in place, md5-guarded)
+-- 6 pipeline.provider_course_lists may hold a site map with an address pattern (link_pattern, child_pattern); svc_course_list_next
+--   returns them (md5-guarded edit).
 -- Retires: nothing
 
 -- settings ---------------------------------------------------------------------------------------------------------------------------
@@ -332,18 +334,27 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('job', 'programme-create', 'Layer 1', 'Courses from programme lists (inactive until approved)', 'active', '{}', '20261022043000')
 on conflict (kind, name) do nothing;
 
--- first source: Université de Montréal (Platform Admin 22:55: programme pages are on admission.umontreal.ca)
-insert into pipeline.programme_sources(provider_id, url, kind, url_pattern, child_pattern, reason)
-select p.id, 'https://admission.umontreal.ca/sitemap.xml', 'sitemap', '^https://admission\.umontreal\.ca/programmes/[a-z0-9-]+/?$', 'sitemap=programmes',
-       'Platform Admin 22 Oct 2026 22:55: Université de Montréal programmes are on admission.umontreal.ca'
-  from catalogue.providers p where p.id = '788d79de-d55b-435a-b649-06203f9d6b76'
-on conflict (provider_id, url) do nothing;
+-- 6 a course list may be a site map with an address pattern (search-app course finders give no links) --------------------------------
+alter table pipeline.provider_course_lists add column if not exists link_pattern text;
+alter table pipeline.provider_course_lists add column if not exists child_pattern text;
+comment on column pipeline.provider_course_lists.link_pattern is 'CF-247 22 Oct 2026: when set, url is a site map and only page addresses fitting this pattern (JavaScript regular expression, case-insensitive) are kept.';
+comment on column pipeline.provider_course_lists.child_pattern is 'CF-247 22 Oct 2026: the files of a site map index that are followed (pattern on their address); all when null.';
+do $do$
+declare v_def text := pg_get_functiondef('public.svc_course_list_next'::regproc);
+  v_old text := $o$'min_links', security.pipeline_num_v1('course_list.min_links', 20)::int)$o$;
+  v_new text := $n$'min_links', security.pipeline_num_v1('course_list.min_links', 20)::int, 'link_pattern', u.link_pattern, 'child_pattern', u.child_pattern)$n$;
+begin
+  if md5(v_def) <> 'a314bbefc1e70dd53dcc152a671705bd' then raise exception 'public.svc_course_list_next is not the expected version (md5 %)', md5(v_def); end if;
+  if (length(v_def) - length(replace(v_def, v_old, ''))) / length(v_old) <> 1 then raise exception 'course list next: expected one min_links'; end if;
+  execute replace(v_def, v_old, v_new);
+end $do$;
 
+-- sources are found by the platform (Platform Admin 22 Oct 2026 23:46: "Platform needs to independently read website"); none is added here
 select 'programme lists ready' ok;
 
 do $t$ begin raise exception 'DRYRUN OK %', jsonb_build_object(
   'gate_has_approval', pg_get_functiondef('security.country_scope_gate_v1'::regproc) like '%programme_provider_approved_v1%',
-  'sources', (select count(*) from pipeline.programme_sources),
+  'sources', (select count(*) from pipeline.programme_sources), 'list_next', pg_get_functiondef('public.svc_course_list_next'::regproc) like '%link_pattern%',
   'jobs', (select count(*) from cron.job where jobname like 'programme-%'),
   'levels', (select jsonb_object_agg(t, security.credential_level_v1('CA', t)) from unnest(array['Baccalauréat en informatique','Maîtrise en droit','Doctorat en chimie','Diplôme d''études supérieures spécialisées (D.E.S.S.) en finance','Microprogramme de deuxième cycle en santé','Microprogramme de premier cycle en arts','Certificat en gestion','Majeure en histoire','Ph. D. en physique','Ontario College Diploma']) t),
   'create_dry', security.programme_create_v1(false, null)); end $t$;
