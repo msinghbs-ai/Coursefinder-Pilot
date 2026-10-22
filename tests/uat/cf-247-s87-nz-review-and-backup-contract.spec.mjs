@@ -102,3 +102,9 @@ test('v2.15.312: course shows its provider switch; Adapter filter and sort; onbo
   expect(um).toContain('serviceClient.rpc("svc_admin_access_last_active")')
   expect(ar).toContain('<th>Last active</th>')
 })
+
+test('hotfix: the pause check names its table (onboarding and automatic plans moved again)', () => {
+  const h = fs.readFileSync('supabase/migrations/20261022018000_cf247_pause_hotfix.sql', 'utf8')
+  expect(h).toContain('h.provider_id = q.provider_id')
+  expect(h).toContain('h.provider_id = pipeline.enrich_plan_runs.provider_id')
+})
