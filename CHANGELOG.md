@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.247 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.320** (15-minute stats). Platform Admin, 22 Oct 2026 21:57: "Give me stat's and toolset usuage every 15 minutes. Keep the lesson learnt and find gaps quickly"; tasks seen stuck at 2 of 3.
+  - Migrations `20261022038000_cf247_stats_15m_and_fill_central.sql` (`pipeline.stats_15m`, `security.stats_15m_v1` job `stats-15m`, `security.stats_15m_fields_v1`, `security.stats_15m_report_v1`, settings `stats.*`), `20261022039000_cf247_fill_respects_central_hold.sql` (Fill in from website respects the central page hold; not-due refusals are not a gap; watchdog central count follows the spend check), `20261022040000_cf247_admin_stats_15m.sql` (`public.admin_stats_15m`, setting `stats.trend_hours`).
+  - `src/Stats15m.jsx` on Platform health › Work queues; `src/QueueWatch.jsx`; `src/admin-pages.css`. Hourly scheduled task "StudySearch hourly stats (15-minute snapshots)" (scheduled tasks run at most hourly).
+  - Consumer API unchanged (Decision 266). SOPs 1.61.
+
 ## 0.1.246 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.319** (progress watchdog). Platform Admin, 22 Oct 2026 19:42: "I wanted the platform to self maintain work job or queue until it completes the data enrichment or notify when it runs out of toolset or get stuck." Choices at 19:53: alerts "Health page + phone/email", build order "Watchdog, rules, workspace, clean-up", self-fix "Safe fixes only, logged".

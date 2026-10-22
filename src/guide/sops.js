@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.319'
+export const SOP_REVIEWED_FOR = '2.15.320'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -162,7 +162,8 @@ export const SOPS = [
       { version: '1.57', date: '22 Oct 2026', release: '2.15.316', change: 'Adapter builder › 2.1: fix Wrong page and Old site rows with Change page on the row, or tick them and Search again. Providers with no courses show No courses and are not onboarded until they have one.' },
       { version: '1.58', date: '22 Oct 2026', release: '2.15.317', change: 'Providers stopped for too few course pages: open them in the Adapter builder and add their course list page in 2.1 (the page that lists their courses); it is read within 10 minutes and again weekly, and onboarding carries on by itself once 3 pages are read.' },
       { version: '1.59', date: '22 Oct 2026', release: '2.15.318', change: 'Adapter builder (back in the Layer 2/3 tabs): a university the automatic build cannot finish is done by hand: pages in 2.1, samples in 2.2, Write the settings by hand (step 4), save and apply, Refresh the measures, then admit; a field that has not passed the check can be admitted as your decision.' },
-      { version: '1.60', date: '22 Oct 2026', release: '2.15.319', change: 'Platform health › Work queues: each morning read the daily report (or the tab). Stuck and Out of toolset reach you by phone and email: open the queue\'s screen from Go to the screen, top up the tool (Firecrawl credit, OpenRouter balance) or fix what holds it. Nothing left to try lists items every tool has tried; give them a page by hand or leave them. Thresholds are queue_watch.* on Settings › Pipeline settings.' }],
+      { version: '1.60', date: '22 Oct 2026', release: '2.15.319', change: 'Platform health › Work queues: each morning read the daily report (or the tab). Stuck and Out of toolset reach you by phone and email: open the queue\'s screen from Go to the screen, top up the tool (Firecrawl credit, OpenRouter balance) or fix what holds it. Nothing left to try lists items every tool has tried; give them a page by hand or leave them. Thresholds are queue_watch.* on Settings › Pipeline settings.' },
+      { version: '1.61', date: '22 Oct 2026', release: '2.15.320', change: 'Platform health › Work queues › Last 15 minutes: check the gaps list first (a field not moving for 24 hours, a Firecrawl share used up, failing or slow worker calls, tasks not moving, stuck queues); the hourly phone message sums up the last four snapshots. Fill in from website finishes when the provider\'s central pages are held until due (read in the last 30 days).' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -273,7 +274,8 @@ export const SOPS = [
       { version: '1.57', date: '22 Oct 2026', release: '2.15.316', change: 'Reviewed: Providers › Adapter filter has Not needed: no courses; providers with no active course need no adapter.' },
       { version: '1.58', date: '22 Oct 2026', release: '2.15.317', change: 'Adapter builder › 2.1: add a provider\'s course list page (Pipeline Operator and above) when its course pages are not found; its links are matched to its courses.' },
       { version: '1.59', date: '22 Oct 2026', release: '2.15.318', change: 'Reviewed: the Adapter builder is in the Layer 2/3 tabs again (PIM Admin and above); Build adapter links to it for manual work.' },
-      { version: '1.60', date: '22 Oct 2026', release: '2.15.319', change: 'Reviewed: Platform health has a Work queues tab (Curator and above) showing each queue\'s state; Check now (Pipeline Operator and above) runs the watchdog at once. No operator steps changed.' }],
+      { version: '1.60', date: '22 Oct 2026', release: '2.15.319', change: 'Reviewed: Platform health has a Work queues tab (Curator and above) showing each queue\'s state; Check now (Pipeline Operator and above) runs the watchdog at once. No operator steps changed.' },
+      { version: '1.61', date: '22 Oct 2026', release: '2.15.320', change: 'Reviewed: Platform health › Work queues shows the last 15 minutes (fields held per country, toolset use, gaps). No operator steps changed.' }],
   },
 ]
 

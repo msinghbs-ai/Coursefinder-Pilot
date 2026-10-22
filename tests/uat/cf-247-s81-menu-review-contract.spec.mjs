@@ -112,6 +112,16 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-ai-config]')).toHaveCount(0)
   })
 
+  test('Platform health › Work queues shows the 15-minute stats, gaps and the queues', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#platform-health?tab=queues')
+    await expect(page.locator('[data-stats-15m]')).toBeVisible()
+    await expect(page.locator('[data-stats-15m]')).toContainText('Worker read: 1 of 30 calls failed')
+    await expect(page.locator('[data-stats-15m]')).toContainText('NZ · 6,474 courses')
+    await expect(page.locator('[data-queue="course_page_search"]')).toBeVisible()
+    await page.screenshot({ path: 'test-results/work-queues.png', fullPage: true })
+  })
+
   test('Storage & retention is a Platform health tab; Capacity is on the Go-live checklist', async ({ page }) => {
     await mockAdmin(page)
     await page.goto('/#platform-health')
