@@ -311,6 +311,7 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('function', 'security.credential_level_v1', 'Layer 2', 'Credential wording to study level', 'active', '{}', '20261022034000'),
  ('function', 'security.course_in_country_scope_v1', 'Layer 1', 'Course level in its country''s scope', 'active', '{}', '20261022034000'),
  ('function', 'security.country_scope_gate_v1', 'Layer 1', 'Hide and show courses by country scope', 'active', '{}', '20261022034000')
+on conflict (kind, name) do nothing;
 do $dry$
 declare n jsonb; g jsonb; r1 jsonb; r2 jsonb; r3 jsonb; c1 uuid; c2 uuid; c3 uuid; e1 uuid; e2 uuid; e3 uuid; t timestamptz := clock_timestamp(); t_next int; t_gate int;
 begin
