@@ -363,3 +363,10 @@ test('v0.40.2: the pattern allows the depths known pages have; known pages taken
   expect(m).toContain('alter table pipeline.source_find_runs add column if not exists step text;')
   expect(w).toContain('const order = ["map", "map_search", "sitemap", "lists"]; const nextStep = order[order.indexOf(step) + 1];')
 })
+
+test('v0.40.3 source finder: fuller lists kept, list pages named by the map tried first, relaxed folder, 45 s for heavy list pages', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('ok: recall === null ? fit.size >= S.min_links * 2 : fit.size >= S.min_links && (recall >= S.min_recall || fit.size >= k.length) } };')
+  expect(w).toContain('const tries = [...new Set([...(work.list_candidates || []), ...(pattern ? [`${origin}/${pattern.folder}/`] : []), ...relaxed,')
+  expect(w).toContain('if (tested.has(url)) continue; if (left() < 45_000) break;')
+})
