@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.51 (reviewed for platform release v2.15.310)  
+**Version:** 1.52 (reviewed for platform release v2.15.311)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -168,3 +168,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.49 | 21 Oct 2026 | v2.15.308 | Enrichment plans: Fill missing fields runs beside the other steps; priority countries first (New Zealand); larger Firecrawl shares. Check the shares left on the Enrichment plan tab in the weekly step. |
 | 1.50 | 21 Oct 2026 | v2.15.309 | AI fee reader: weekly look at Enrich fields › Fee reader (AI) and widening the scope when it reads well. |
 | 1.51 | 22 Oct 2026 | v2.15.310 | Settings › Backup & restore: compare the last daily backup in the weekly step and put back anything published or changed by mistake. Providers whose site lists too few course pages carry one flag (course_pages_not_listed): add pages by hand or Search again. |
+| 1.52 | 22 Oct 2026 | v2.15.311 | Backup & restore: Restore on a backup row (or Restore this backup under the comparison) puts it back with a reason. |

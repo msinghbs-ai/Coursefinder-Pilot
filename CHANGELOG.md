@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.238 — 22 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.311** (Backup & restore fix). Platform Admin, 22 Oct 2026 11:40: "shown button doesn't work and there is no restore button to restore the select backup".
+  - `src/SettingsBackup.jsx`: the backup shown is marked Selected (chip, not a button); every backup row has Compare and Restore; a Restore this backup section (reason, then Restore) is always shown, and says when there is nothing to put back. No database change.
+  - Guide; SOPs 1.52.
+
 ## 0.1.237 — 22 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.310** (NZ enrichment review fixes; daily backup of publishing and settings). Platform Admin, 22 Oct 2026 07:22: "Review the data enrichment for nz and keep the stat how much of toolset we used used successfully and failed before uni or courses were flagged. Find the gaps and resolution."; choices "Quick wins: 1, 3, 6, 8", "University route change (2)", "Field reader fallbacks (4, 7)", "Daily toolset sheet (9)". 07:41: "Maintain daily unpublished providers as the sql script and report ... backup on daily basis and restore it, only by platform admin".

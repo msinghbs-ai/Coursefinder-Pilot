@@ -56,6 +56,9 @@ test('backup and restore: daily job, Platform Admin only, reason and backup befo
   expect(ui).toContain("supabase.rpc('admin_settings_backup'")
   for (const s of ['data-settings-backup', 'data-backup-list', 'data-backup-diff', 'Download SQL file']) expect(ui).toContain(s)
   expect(nav).toContain("{ key: 'backup', label: 'Backup & restore', min: 6 },")
+  // v2.15.311 (Platform Admin 22 Oct 2026 11:40): no "Shown" button; Restore on each backup and an always-visible Restore section
+  expect(ui).not.toContain("'Shown'")
+  for (const s of ['data-backup-restore-row', 'data-backup-restore-all', 'Restore this backup', 'label="Selected"']) expect(ui).toContain(s)
 })
 
 test('flags show the toolset used before them (Platform Admin 22 Oct 2026 08:12)', () => {

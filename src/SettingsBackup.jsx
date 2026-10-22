@@ -1,4 +1,4 @@
-// Settings › Backup & restore (v2.15.310, CF-247). Platform Admin, 22 Oct 2026 07:41: "Maintain daily unpublished providers as the sql
+// Settings › Backup & restore (v2.15.310, CF-247; v2.15.311 Selected chip, Restore on each backup and an always-visible Restore section). Platform Admin, 22 Oct 2026 07:41: "Maintain daily unpublished providers as the sql
 // script and report, incase someone by mistake enables them ... misc settings backup on daily basis and restore it, only by platform admin".
 // A backup holds every provider's Published switch and every setting value (daily at 6:50 am Melbourne, by hand, and before every restore).
 // Pick a backup to see what differs now (who changed it last), download it as a SQL file, or put it back: all, providers, settings or the
@@ -16,7 +16,7 @@ const KIND={daily:'Daily',manual:'By hand',before_restore:'Before a restore'}
 const show=v=>v==null?'—':typeof v==='object'?JSON.stringify(v):String(v)
 
 export default function SettingsBackup({onError}){
-  const[list,setList]=useState(null),[id,setId]=useState(''),[busy,setBusy]=useState(false),[note,setNote]=useState('')
+  const[list,setList]=useState(null),[id,setId]=useState(''),[busy,setBusy]=useState(false),[note,setNote]=useState(''),[focus,setFocus]=useState(0)
   const load=()=>call('list').then(d=>{setList(d);if(!id&&d?.backups?.length)setId(String((d.backups.find(b=>b.kind==='daily')||d.backups[0]).id))}).catch(e=>onError?.(errText(e)))
   useEffect(()=>{load()},[])
   const take=async()=>{setBusy(true);try{const r=await call('take',{});setNote(`Backup ${r.backup_id} taken.`);await load();setId(String(r.backup_id))}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
@@ -30,22 +30,27 @@ export default function SettingsBackup({onError}){
       <tbody>{bs.slice(0,30).map(b=><tr key={b.id} className={String(b.id)===id?'is-selected':''}>
         <td>{b.id}{b.note&&<small>{b.note}</small>}</td><td><small>{fmtDateTime(b.taken_at)}{b.by?` · ${b.by}`:''}</small></td><td>{KIND[b.kind]||b.kind}</td>
         <td className="num">{fmtNumber(b.counts?.published)}</td><td className="num">{fmtNumber(b.counts?.unpublished)}</td><td className="num">{fmtNumber(b.counts?.settings)}</td>
-        <td><Button compact onClick={()=>setId(String(b.id))}>{String(b.id)===id?'Shown':'Compare'}</Button></td></tr>)}</tbody></table></div>}
-    {id&&<BackupDiff key={id} id={id} onError={onError} onDone={load}/>}
+        {/* v2.15.311 (Platform Admin 22 Oct 2026 11:40: "shown button doesn't work and there is no restore button"): the backup shown below is
+            marked Selected (not a button); every backup has Compare and Restore */}
+        <td className="backup-actions" style={{display:'flex',gap:8,alignItems:'center',justifyContent:'flex-end'}}>{String(b.id)===id?<StatusChip value="selected" tone="info" label="Selected"/>:<Button compact onClick={()=>setId(String(b.id))}>Compare</Button>}
+          <Button compact onClick={()=>{setId(String(b.id));setFocus(f=>f+1)}} data-backup-restore-row><RotateCcw size={14}/>Restore</Button></td></tr>)}</tbody></table></div>}
+    {id&&<BackupDiff key={id} id={id} focus={focus} onError={onError} onDone={load}/>}
   </Card>
 }
 
-function BackupDiff({id,onError,onDone}){
+function BackupDiff({id,focus,onError,onDone}){
   const[d,setD]=useState(null),[pick,setPick]=useState({}),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[msg,setMsg]=useState('')
   const load=()=>call('diff',{backup_id:id}).then(setD).catch(e=>onError?.(errText(e)))
   useEffect(()=>{load()},[id])
+  // Restore on a backup row brings its restore box into view
+  useEffect(()=>{if(focus&&d){const el=document.querySelector('[data-backup-restore]');el?.scrollIntoView({behavior:'smooth',block:'center'});el?.querySelector('input')?.focus()}},[focus,d])
   if(!d)return <Loading compact/>
   const ps=d.providers||[],ss=d.settings||[]
   const toggle=k=>setPick(p=>({...p,[k]:!p[k]}))
   const chosen=Object.keys(pick).filter(k=>pick[k])
   const download=async()=>{try{const r=await call('script',{backup_id:id});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([r.sql],{type:'text/plain'}));a.download=`studysearch-backup-${id}.sql`;a.click();URL.revokeObjectURL(a.href)}catch(e){onError?.(errText(e))}}
   const restore=async scope=>{
-    const what=scope==='items'?`${chosen.length} chosen row(s)`:scope==='providers'?'every provider that differs':scope==='settings'?'every setting that differs':'everything that differs'
+    const what=scope==='items'?`${chosen.length} chosen row(s)`:scope==='providers'?'every provider that differs':scope==='settings'?'every setting that differs':`all ${fmtNumber(ps.length)} provider(s) and ${fmtNumber(ss.length)} setting(s) that differ`
     if(!window.confirm(`Put back ${what} as in backup ${id}? A backup of the current state is taken first.`))return
     setBusy(true);try{
       const r=await call('restore',{backup_id:id,scope,reason:reason.trim(),providers:chosen.filter(k=>k.startsWith('p:')).map(k=>k.slice(2)),settings:chosen.filter(k=>k.startsWith('s:')).map(k=>k.slice(2))})
@@ -66,12 +71,19 @@ function BackupDiff({id,onError,onDone}){
       <tbody>{ss.map(s=>{const k=`s:${s.toolset_key}/${s.key}`;return <tr key={k}><td><input type="checkbox" aria-label={`Choose ${s.label}`} checked={!!pick[k]} onChange={()=>toggle(k)}/></td>
         <td><strong>{s.label||s.key}</strong><small>{s.section||s.toolset_key} · {s.key}</small></td><td><code>{show(s.then_value)}</code></td><td><code>{show(s.now_value)}</code></td>
         <td><small>{s.updated_at?fmtDateTime(s.updated_at):''}{s.updated_by?` · ${s.updated_by}`:''}{s.reason?` · ${s.reason}`:''}</small></td></tr>})}</tbody></table></div>}
-    {(ps.length>0||ss.length>0)&&<div className="fc-actions">
-      <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason to put back (at least 10 characters)" aria-label="Reason"/>
-      <Button compact onClick={()=>restore('items')} disabled={!can||chosen.length===0}><RotateCcw size={14}/>Put back chosen ({chosen.length})</Button>
-      {ps.length>0&&<Button compact onClick={()=>restore('providers')} disabled={!can}><RotateCcw size={14}/>Put back all providers</Button>}
-      {ss.length>0&&<Button compact onClick={()=>restore('settings')} disabled={!can}><RotateCcw size={14}/>Put back all settings</Button>}
-      {msg&&<small className="sd-desc" role="status">{msg}</small>}</div>}
-    {ps.length===0&&ss.length===0&&<Empty text="Nothing differs from this backup."/>}
+    {ps.length===0&&ss.length===0&&<Empty text="Nothing differs from this backup: publishing and settings are the same now as when it was taken."/>}
+    <div className="backup-restore" data-backup-restore style={{marginTop:16,paddingTop:12,borderTop:'1px solid var(--m-border,#e3e7ee)'}}>
+      <h3 className="sd-subhead">Restore backup {id}</h3>
+      <p className="sd-desc">{ps.length+ss.length>0?'Put everything back as it was in this backup, or tick rows above and put back only those. A backup of the current state is taken first, so a restore can itself be undone.':'There is nothing to put back now: the platform already matches this backup. The Restore button works as soon as something differs.'}</p>
+      <div className="fc-actions">
+        <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason (at least 10 characters)" aria-label="Reason to restore"/>
+        <Button compact onClick={()=>restore('all')} disabled={!can||ps.length+ss.length===0} data-backup-restore-all><RotateCcw size={14}/>Restore this backup</Button>
+        {chosen.length>0&&<Button compact onClick={()=>restore('items')} disabled={!can}><RotateCcw size={14}/>Put back chosen ({chosen.length})</Button>}
+        {ps.length>0&&ss.length>0&&<Button compact onClick={()=>restore('providers')} disabled={!can}>Providers only</Button>}
+        {ps.length>0&&ss.length>0&&<Button compact onClick={()=>restore('settings')} disabled={!can}>Settings only</Button>}
+      </div>
+      {ps.length+ss.length>0&&reason.trim().length<10&&<small className="sd-desc">Type a reason of at least 10 characters to switch on Restore.</small>}
+      {msg&&<p className="sd-desc" role="status">{msg}</p>}
+    </div>
   </div>
 }
