@@ -19,6 +19,8 @@ export function FactCard({label,value,sub,children,wide=false,tone='',id}){retur
 export function Pills({items,empty='Not stated',tone='neutral'}){return items?.length?<span className="ds-pill-list">{items.map((x,i)=>typeof x==='string'?<StatusChip key={i} tone={tone} label={x}/>:<StatusChip key={i} tone={x.tone||tone} label={x.label} title={x.title}/>)}</span>:<span className="ds-muted">{empty}</span>}
 
 function publication(v){return v==='published'?<StatusChip tone="success" label="Published"/>:<StatusChip tone="warning" label="Not published"/>}
+// v2.15.312 (Platform Admin 22 Oct 2026 11:50): a course has no Published switch of its own; its provider's switch decides the website
+function onWebsite(v){if(v==null)return null;const t='Courses follow their provider\'s Published switch (Providers › Published).';return v==='published'?<StatusChip tone="success" label="On the website" title={t}/>:<StatusChip tone="warning" label="Hidden: provider not published" title={t}/>}
 function lifecycle(v){return v&&v!=='active'?<StatusChip tone="danger" label={human(v)}/>:null}
 
 /** Course: what it is (pills), then fee, intakes, English, campuses and freshness. */
@@ -40,7 +42,7 @@ export function CourseSummary({data,feeUsed}){
       {data.delivery_mode&&<StatusChip tone="neutral" label={DELIVERY[data.delivery_mode]||human(data.delivery_mode)}/>}
       {duration&&<StatusChip tone="neutral" label={duration}/>}
       {code&&<StatusChip tone={dc.kind==='studysearch'?'violet':'neutral'} label={`${codeLabel} ${code}`} title={dc.kind==='studysearch'?'Given by StudySearch: no code is printed by the university or regulator':undefined}/>}
-      {publication(data.publication_status)}{lifecycle(data.lifecycle_status)}
+      {onWebsite(data.provider_publication_status)}{lifecycle(data.lifecycle_status)}
     </PillRow>
     <FactCards>
       <FactCard id="fee" label="Tuition used" value={used?.per_year!=null?`${fmtMoney(used.per_year,used.currency||'AUD')} a year`:'Not known yet'} tone={used?.per_year!=null?'':'warning'}>{feeUsed}</FactCard>
