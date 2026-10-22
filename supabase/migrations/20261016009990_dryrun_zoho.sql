@@ -18,10 +18,10 @@ update pipeline.fee_reader_queue set state = 'queued', attempts = 0, error = nul
  where course_id is not null and error like '%provider_fact_sources_linked_from_fkey%' and state in ('failed', 'queued');
 
 select 'course page readings with linked fee pages recorded' ok;
-do $t$ declare it jsonb; res jsonb; q uuid; begin
+do $t$ declare res jsonb; q uuid; u text; begin
   perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
-  select x.id into q from pipeline.fee_reader_queue x join pipeline.evidence_artifacts e on e.id = x.evidence_id where x.course_id is not null and x.state = 'queued' and e.source_url like 'https://www.aut.ac.nz/%' limit 1;
+  select x.id, substring(e.source_url from '^https?://[^/]+') || '/dryrun-fee-page' into q, u from pipeline.fee_reader_queue x join pipeline.evidence_artifacts e on e.id = x.evidence_id
+   where x.course_id is not null and x.state = 'queued' and (select count(*) from pipeline.provider_fact_sources f where f.provider_id = x.provider_id and f.kind = 'fee_schedule') < 12 limit 1;
   update pipeline.fee_reader_queue set state = 'leased', attempts = 1 where id = q;
-  res := public.svc_fee_ai_record(q, jsonb_build_object('rows', '[]'::jsonb, 'quotes_missing', 0, 'more_fee_pages', jsonb_build_array('https://www.aut.ac.nz/dryrun-fee-page'), 'page_notes', '', 'model', 'x'), 0, null);
-  raise exception 'DRYRUN OK %', jsonb_build_object('res', res, 'requeued', (select count(*) from pipeline.fee_reader_queue where course_id is not null and state='queued' and attempts=0 and error is null),
-    'added', (select count(*) from pipeline.provider_fact_sources where title = 'linked from a course page (AI fee reader)'), 'aut_pages', (select count(*) from pipeline.provider_fact_sources f join pipeline.fee_reader_queue x on x.provider_id = f.provider_id and x.id = q where f.kind = 'fee_schedule'), 'q', q); end $t$;
+  res := public.svc_fee_ai_record(q, jsonb_build_object('rows', '[]'::jsonb, 'quotes_missing', 0, 'more_fee_pages', jsonb_build_array(u), 'page_notes', '', 'model', 'x'), 0, null);
+  raise exception 'DRYRUN OK %', jsonb_build_object('u', u, 'res', res, 'added', (select jsonb_agg(jsonb_build_object('t', title, 'l', linked_from)) from pipeline.provider_fact_sources where url = u)); end $t$;
