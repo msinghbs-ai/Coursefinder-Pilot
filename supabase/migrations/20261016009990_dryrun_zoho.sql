@@ -1,18 +1,34 @@
--- CF-247 (23 Oct 2026). The course source finder's test runs used 126 list-page scrapes; the spend ledger counted each as 5 units because
--- purposes named fcx_ are priced as AI-extraction scrapes, though a list page is a plain page scrape billed at 1 credit (731 units recorded
--- for about 227 credits billed). Worker v0.40.4 records these scrapes as list_scrape; this puts list_scrape in the page reads group
--- with the other plain scrapes, so it keeps the same daily share.
--- Replaces: security.fc_purpose_group_v1 (replaced in full; adds list_scrape to the reads group)
+-- CF-247 (23 Oct 2026). public.svc_programme_source_record failed on every read ("column reference found is ambiguous": found is also
+-- PL/pgSQL's own FOUND), so the Université de Montréal programme list read by the worker (1,095 programme pages) was not recorded.
+-- The table's columns are now named through its alias.
+-- Replaces: public.svc_programme_source_record (20261022043000; replaced in full, same signature)
 -- Retires: nothing
-create or replace function security.fc_purpose_group_v1(p text)
-returns text language sql immutable set search_path = '' as $function$
-  select case when p = 'course_link_search' then 'course_search'
-              when p like 'sch\_%' then 'scholarships'
-              when p in ('central_map', 'central_scrape') or p like 'provider\_facts%' then 'central'
-              when p in ('scrape', 'fc_read', 'fc_probe', 'site_hint', 'adapter_builder', 'list_scrape') or p like 'fcx\_%' then 'reads'
-              else 'other' end
-$function$;
+create or replace function public.svc_programme_source_record(p_id bigint, p_status text, p_http integer, p_via text, p_urls jsonb)
+returns jsonb language plpgsql security definer set search_path = '' as $function$
+declare v_s pipeline.programme_sources; v_found int := 0; v_new int := 0;
+begin
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  select * into v_s from pipeline.programme_sources where id = p_id;
+  if v_s.id is null then return jsonb_build_object('error', 'unknown source'); end if;
+  if p_status = 'read' and jsonb_typeof(p_urls) = 'array' then
+    with u as (select distinct on (x->>'url') x->>'url' url, nullif(left(x->>'title', 300), '') title
+                 from jsonb_array_elements(p_urls) x where x->>'url' ~* '^https?://' and x->>'url' ~* v_s.url_pattern),
+         ins as (insert into pipeline.programme_candidates(provider_id, programme_source_id, url, link_title)
+                 select v_s.provider_id, v_s.id, u.url, u.title from u on conflict (provider_id, url) do nothing returning 1)
+    select (select count(*) from u), (select count(*) from ins) into v_found, v_new;
+  end if;
+  update pipeline.programme_sources ps set status = case when p_status in ('read', 'blocked', 'gone') then p_status else 'failed' end,
+         http_status = p_http, fetched_via = p_via, found = case when p_status = 'read' then v_found else ps.found end,
+         found_new = case when p_status = 'read' then v_new else ps.found_new end, read_at = now(), leased_until = null, updated_at = now(),
+         next_read_at = now() + make_interval(days => case when p_status = 'read' then security.pipeline_num_v1('programme.reread_days', 30)::int else 1 end)  -- fixed: a failed read is tried the next day
+   where ps.id = p_id;
+  return jsonb_build_object('found', v_found, 'new', v_new);
+end $function$;
+revoke all on function public.svc_programme_source_record(bigint, text, integer, text, jsonb) from public, anon, authenticated;
+grant execute on function public.svc_programme_source_record(bigint, text, integer, text, jsonb) to service_role;
 
-select 'list_scrape counted as a page read' ok;
+select 'programme list record fixed' ok;
 
-do $t$ begin raise exception 'DRYRUN OK %', jsonb_build_object('list_scrape', security.fc_purpose_group_v1('list_scrape'), 'fcx', security.fc_purpose_group_v1('fcx_course_list'), 'scrape', security.fc_purpose_group_v1('scrape'), 'sch', security.fc_purpose_group_v1('sch_map'), 'other', security.fc_purpose_group_v1('map')); end $t$;
+do $t$ declare r jsonb; begin
+  r := public.svc_programme_source_record((select id from pipeline.programme_sources limit 1), 'read', 200, 'map', '[{"url":"https://admission.umontreal.ca/programmes/baccalaureat-en-informatique/","title":"Baccalauréat en informatique"},{"url":"https://admission.umontreal.ca/nouvelles/x/","title":"no"}]'::jsonb);
+  raise exception 'DRYRUN OK %', r || jsonb_build_object('src', (select jsonb_build_object('status', status, 'found', found) from pipeline.programme_sources limit 1)); end $t$;
