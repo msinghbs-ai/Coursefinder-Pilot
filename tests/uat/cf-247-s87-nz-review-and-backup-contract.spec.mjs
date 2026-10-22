@@ -378,3 +378,11 @@ test('v0.40.4: list-page scrapes are recorded as list_scrape (1 credit), in the 
   expect((w.match(/useFc\("list_scrape"/g) || []).length).toBe(4)
   expect(m).toContain("'adapter_builder', 'list_scrape') or p like 'fcx\\_%' then 'reads'")
 })
+
+test('v0.40.5: finder and list readers report work in the idle guard keys; programme list record names its columns', () => {
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  const m = fs.readFileSync('supabase/migrations/20261023003000_cf247_programme_record_found_fix.sql', 'utf8')
+  expect(w).toContain('items: (next.items || []).length, done: Object.values(tally).reduce((a, b) => a + b, 0), tally')
+  expect((w.match(/read: tally\.read \|\| 0, items: items\.length, tally/g) || []).length).toBe(2)
+  expect(m).toContain('found = case when p_status = \'read\' then v_found else ps.found end')
+})
