@@ -1,20 +1,27 @@
--- CF-247 (24 Oct 2026). Platform Admin 07:43, zero-yield page re-acquisition (bug report and build mandate; admin repo
--- docs/platform/nz-enrichment-brief/2026-10-24-zero-yield-reacquisition.md holds the numbers, the predicate and every decision).
--- A bound course page whose stored copy gave no value and no statement after every reader ran is ZERO-YIELD. Zero-yield alone never
--- resets a page (Otago's real course pages are zero-yield because Otago prints fees elsewhere); a page is VERIFIED WRONG when, on top
--- of that, it looks like a listing or search page, its title does not overlap the course title, or it says "not found"; or, whether
--- zero-yield or not, it sits off the provider's dominant course-page pattern while an on-pattern candidate with a strong title match
--- exists in the provider's known pages (the University of Auckland catalogue-regulations case).
--- The flow: DETECT (nightly job, per-provider snapshot, a provider above the flag rate is systematic) → VERIFY (the signals above; the
--- stored copy is also re-verified by the existing reidentify lane once reset) → RESET (existing statuses mismatch / identity_mismatch;
--- a pipeline.page_rejections row, the minimal negative-evidence list the full S1 absorbs; item-5 links retract through guard 3) →
--- RE-ACQUIRE through the existing lanes (the provider's known pages from the Firecrawl map, refreshed through the source finder when
--- stale; the AI page match, which now skips rejected pages and gets one more attempt after a rejection) → REPLAY (the standing enrich
--- and fee lanes read the new page's stored copy; the official link fills the same night).
--- Everything tunable is a setting; manual bindings are never touched; a reset is count-limited per provider and per run; automatic
--- resets are OFF until the Platform Admin switches zero_yield.auto_reset on after the UoA pilot (a passing check never switches
--- anything on by itself).
--- Replaces: nothing (svc_coverage_reidentify_next and coverage_ai_match_prepare_v1 edited in place, md5-guarded)
+-- CF-247 (24 Oct 2026). R1 — the enabler the standing order begins with (Platform Admin 24 Oct 2026 09:55 "R1, for real this time";
+-- plan: admin repo docs/platform/nz-enrichment-brief/2026-10-23-platform-throughput-gap-schema.md items 1–3 and the 00:45 extension;
+-- record: docs/platform/nz-enrichment-brief/2026-10-24-au-builds-and-enrichment-jobs.md).
+-- Q2 EMPTY-TICK BACKOFF WITH EVENT-DRIVEN RESET. The flag unit (v2.15.283, 15 Oct) already pauses a worker lane after
+--   flag.empty_calls_to_pause empty calls and tries it again after flag.job_recheck_hours (6 h, rising with every check) or, for three modes
+--   only (read, link_search, provider_facts), as soon as work waits. Measured today: coverage-read paused at 09:40 AEDT with pages due and a
+--   next trial six hours away; central-find, find-site and the contact-page lane the same. So the backoff exists and its maximum is the
+--   defect. This change (a) caps every trial wait at tick.backoff_max_minutes (15, 1–60) and (b) gives every paused-prone lane its own
+--   "work is waiting" test, so the 10-minute flag-recheck wakes it as soon as its queue is fed (the event-driven reset). No worker change
+--   and no new counter: flag.empty_calls_to_pause stays the "after N empty ticks" setting the plan called tick.backoff_after_empty.
+-- Q4 (narrowed by the mandate): the companion-read failure and a "why idle" line. The University of Sydney's course data files
+--   (.coredata.json) answer with the course page itself (HTML, 200) and the worker refused the body as not JSON (219 of 583 files,
+--   attempts exhausted); worker v0.46.0 reads such an answer as the page, and the 219 get their attempts back here (count-guarded).
+--   Every queue on the Work queues screen now carries one plain line saying why it is idle (paused by the idle guard and when it is tried
+--   again; nothing waiting and which upstream lane feeds it; waiting with nothing finishing: a gate holds it; failing; nothing left).
+-- Q3 DURABLE PER-MODE LEDGER: pipeline.mode_outcome_ledger, one row per worker call, written by the worker through
+--   public.svc_worker_report_v1 at the end of every call (items, ok, failed, where the work landed, the call time); 90-day retention by
+--   its own catalogued daily job. Queue wait per lane comes from security.lane_queue_wait_v1 (queue timestamps: queued → finished) until
+--   the pickers carry the wait themselves; the health report reads both.
+-- APPLY-TIME IDENTITY CHECK: security.coverage_apply_course_v1 (the common fee write) now refuses to admit a fee live when the course's
+--   bound page carries a proof the country's tuition policy does not accept: the fee is written unverified with one Layer 4 row
+--   (source identity_basis_reverify, the same shape as the 24 Oct 00:35 quarantine) and the result says fee_quarantined_identity.
+--   Manual bindings and admin writes are exempt. Every caller is covered, whatever it checked before (the fee reader checks at enqueue only).
+-- Replaces: nothing (flag_jobs_v1, worker_mode_waiting_v1, admin_queue_watch and coverage_apply_course_v1 edited in place, md5-guarded)
 -- Retires: nothing
 
 create or replace function pg_temp.edit_n(p_sig text, p_md5 text, p_edits text[][], p_times int[]) returns void language plpgsql as $f$
@@ -29,257 +36,280 @@ begin
   execute v_def;
 end $f$;
 
--- 1 negative evidence (the S1 partial) and the detect snapshots ------------------------------------------------------------------
-create table if not exists pipeline.page_rejections (
-  course_id uuid not null references catalogue.courses(id),
-  url text not null,
-  provider_id uuid not null,
-  evidence_id uuid,
-  source text not null default 'zero_yield',
-  reason text not null,
-  signals jsonb not null default '{}'::jsonb,
-  rejected_at timestamptz not null default now(),
-  rejected_by uuid,
-  primary key (course_id, url)
-);
-comment on table pipeline.page_rejections is 'pages proven wrong for a course (negative evidence): the AI page match and the reidentify lane never offer or re-bind a rejected page; written by the zero-yield flow (source zero_yield) and, later, by the full S1 which absorbs this list; never deleted';
-create index if not exists page_rejections_provider_idx on pipeline.page_rejections (provider_id, rejected_at desc);
-alter table pipeline.page_rejections enable row level security;
-
-create table if not exists pipeline.zero_yield_snapshots (
-  at timestamptz not null,
-  provider_id uuid not null,
-  country text not null,
-  bound integer not null,
-  zero_yield integer not null,
-  verified_wrong integer not null,
-  rate_pct numeric,
-  flagged boolean not null default false,
-  reset integer not null default 0,
-  detail jsonb not null default '{}'::jsonb,
-  primary key (at, provider_id)
-);
-comment on table pipeline.zero_yield_snapshots is 'per-provider zero-yield figures written by the nightly zero-yield-detect job: bound pages with a stored copy, zero-yield pages, verified-wrong pages, the rate, whether the provider is flagged as systematic, and how many pages were reset; the before/after record of the re-acquisition flow; 90-day retention';
-create index if not exists zero_yield_snapshots_provider_idx on pipeline.zero_yield_snapshots (provider_id, at desc);
-alter table pipeline.zero_yield_snapshots enable row level security;
-
--- 2 settings ----------------------------------------------------------------------------------------------------------------------
+-- 1 settings -------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
- ('pipeline', 'zero_yield.min_bound', 'Zero-yield: smallest provider measured', 'A provider with fewer bound pages than this is listed but never flagged as systematic.', 'number', '10'::jsonb, '1', '500', 'pages', 701, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate (Platform Admin 24 Oct 2026 07:43)'),
- ('pipeline', 'zero_yield.flag_rate_pct', 'Zero-yield: rate that flags a provider', 'Share of a provider''s bound pages that are zero-yield above which its binding pattern counts as systematic and the provider goes to batch mode.', 'number', '25'::jsonb, '1', '100', '%', 702, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.title_overlap_min', 'Verify: least title overlap', 'Share of the course title''s words found in the page title below which a zero-yield page is verified wrong.', 'number', '0.5'::jsonb, '0.1', '1', 'share', 703, 'Zero-yield pages', 'security.zero_yield_pages_v1', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.off_pattern_share_max', 'Verify: off-pattern share', 'A bound page whose address pattern (host and first path folders) is used by fewer than this share of the provider''s bound pages is off-pattern; it is verified wrong when an on-pattern candidate with a strong title match exists.', 'number', '0.35'::jsonb, '0.05', '0.9', 'share', 704, 'Zero-yield pages', 'security.zero_yield_pages_v1', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.candidate_overlap_min', 'Verify: least candidate title overlap', 'Share of the course title''s words an on-pattern candidate page must carry for an off-pattern page to be verified wrong.', 'number', '0.6'::jsonb, '0.1', '1', 'share', 705, 'Zero-yield pages', 'security.zero_yield_pages_v1', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.listing_url_pattern', 'Verify: listing or search address', 'Regular expression (case ignored): a page address matching it is a listing or search page, never a course page.', 'text', '"/(search|category|categories|courses|programmes|programs|study-options|subjects|browse|listing|a-z|all-courses)/?(\\?|$)|[?&](q|query|search|keyword)="'::jsonb, null, null, 'pattern', 706, 'Zero-yield pages', 'security.zero_yield_pages_v1', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.not_found_pattern', 'Verify: not-found page title', 'Regular expression (case ignored) for a page title that says the page does not exist.', 'text', '"not found|page unavailable|no longer available|404"'::jsonb, null, null, 'pattern', 707, 'Zero-yield pages', 'security.zero_yield_pages_v1', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.reset_per_provider', 'Reset: pages a provider a run', 'Verified-wrong pages reset for one provider in one run.', 'number', '50'::jsonb, '1', '500', 'pages', 708, 'Zero-yield pages', 'security.zero_yield_reset_v1', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.providers_per_run', 'Reset: providers a run', 'Flagged providers the nightly job resets in one run when automatic resets are on.', 'number', '5'::jsonb, '1', '100', 'providers', 709, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.auto_reset', 'Reset: automatic', '1 lets the nightly job reset verified-wrong pages of flagged providers by itself; 0 only detects and reports (a person runs the reset). Off until the University of Auckland pilot is reviewed.', 'number', '0'::jsonb, '0', '1', 'on/off', 710, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate: activation is a separate step'),
- ('pipeline', 'zero_yield.urls_max_age_days', 'Re-acquire: refresh the provider''s pages after', 'When the provider''s known pages (Firecrawl map, site maps) are older than this, a reset also asks the source finder to look again.', 'number', '14'::jsonb, '1', '180', 'days', 711, 'Zero-yield pages', 'security.zero_yield_reset_v1', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.level_words', 'Verify: level words', 'Words that name a study level; an on-pattern candidate page whose address names a level the course title does not is never taken as the course''s page.', 'list', '["certificate","diploma","graduate","postgraduate","bachelor","bachelors","master","masters","doctor","doctorate","phd","honours","foundation","associate","apprenticeship","micro"]'::jsonb, null, null, 'words', 714, 'Zero-yield pages', 'security.zero_yield_pages_v1', 'zero-yield mandate'),
- ('pipeline', 'zero_yield.detect_providers_per_run', 'Detect: providers measured a run', 'Providers the hourly detect job measures in one run, those not measured in the last day first; the day covers every provider.', 'number', '150'::jsonb, '10', '2000', 'providers', 713, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate'),
- ('pipeline', 'retention.zero_yield_snapshots_days', 'Zero-yield snapshots kept', 'Snapshots older than this are removed by retention-worker.', 'number', '90'::jsonb, '30', '365', 'days', 712, 'Retention', 'job retention-worker', 'zero-yield mandate')
+ ('pipeline', 'tick.backoff_max_minutes', 'Idle lane: tried again within', 'A worker lane paused by the idle guard (its last runs found nothing to do) is tried again no later than this many minutes after the pause, and sooner the moment work waits for it. Keeps a drained lane from sleeping for hours while its queue fills.', 'number', '15'::jsonb, '1', '60', 'minutes', 770, 'Waste rules', 'security.flag_jobs_v1', 'R1 Q2 (Platform Admin 24 Oct 2026 09:55)'),
+ ('pipeline', 'retention.mode_outcome_ledger_days', 'Worker ledger: kept for', 'Rows of the per-call worker ledger older than this are removed by the daily mode-ledger-retention job.', 'number', '90'::jsonb, '30', '365', 'days', 771, 'Platform upkeep', 'job mode-ledger-retention', 'R1 Q3')
 on conflict (toolset_key, key) do nothing;
 
--- 3 the predicate and the signals -------------------------------------------------------------------------------------------------
-create or replace function security.zero_yield_pages_v1(p_provider uuid default null)
-returns table (course_id uuid, provider_id uuid, country text, url text, evidence_id uuid, identity_basis text, basis text, canonical_title text, page_title text,
-               zero boolean, listing boolean, not_found boolean, title_overlap numeric, pattern_share numeric, candidate_url text, candidate_overlap numeric, verified_wrong boolean)
-language sql stable security definer set search_path = '' as $$
-with s as (
-  select security.pipeline_num_v1('zero_yield.title_overlap_min', 0.5) t_min,
-         security.pipeline_num_v1('zero_yield.off_pattern_share_max', 0.35) off_max,
-         security.pipeline_num_v1('zero_yield.candidate_overlap_min', 0.6) c_min,
-         coalesce((select s.value #>> '{}' from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'zero_yield.listing_url_pattern'), '^$') listing_rx,
-         coalesce((select s.value #>> '{}' from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'zero_yield.not_found_pattern'), '^$') nf_rx,
-         coalesce((select array(select jsonb_array_elements_text(s.value)) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'zero_yield.level_words'), '{}'::text[]) level_words),
-b as materialized (
-  select p.course_id, p.provider_id, k.iso_alpha2::text country, p.url, p.evidence_id, p.identity_basis, p.basis, c.canonical_title, p.candidates->>'page_title' page_title,
-         regexp_replace(p.url, '^(https?://[^/]+/(?:[^/]+/){0,3}).*$', '\1') pattern,
-         security.coverage_text_tokens(regexp_replace(c.canonical_title, '\(\s*level\s+\d+\s*\)', '', 'i')) ttok,
-         security.coverage_text_tokens(coalesce(p.candidates->>'page_title', '')) ptok,
-         (exists (select 1 from catalogue.course_fees f where f.course_id = p.course_id and f.evidence_id = p.evidence_id)
-          or exists (select 1 from catalogue.course_english_requirements e where e.course_id = p.course_id and e.evidence_id = p.evidence_id)
-          or exists (select 1 from catalogue.course_intakes i where i.course_id = p.course_id and i.evidence_id = p.evidence_id)) admitted,
-         (exists (select 1 from pipeline.field_enrich_items i where i.course_id = p.course_id and i.evidence_id = p.evidence_id and i.state in ('filled', 'review'))) enrich_stated,
-         (exists (select 1 from pipeline.field_enrich_items i where i.course_id = p.course_id and i.evidence_id = p.evidence_id)) enrich_tried,
-         (exists (select 1 from pipeline.fee_reader_queue q where q.course_id = p.course_id and q.evidence_id = p.evidence_id and q.state = 'done' and coalesce(q.rows_found, 0) > 0)) fee_stated,
-         (nullif(p.candidates->'fee'->>'value', '') is not null or jsonb_array_length(coalesce(p.candidates->'fee'->'candidates', '[]'::jsonb)) > 0
-          or (p.candidates->'english' is not null and p.candidates->'english' <> '{}'::jsonb) or jsonb_array_length(coalesce(p.candidates->'intakes', '[]'::jsonb)) > 0) extract_stated
-    from pipeline.coverage_course_pages p
-    join catalogue.courses c on c.id = p.course_id and c.lifecycle_status = 'active'
-    join catalogue.providers pr on pr.id = p.provider_id
-    join ref.countries k on k.id = pr.country_id
-    join pipeline.evidence_artifacts e on e.id = p.evidence_id and e.storage_path is not null
-   where p.status = 'bound' and p.read_status = 'read' and (p_provider is null or p.provider_id = p_provider)),
-share as materialized (select provider_id, pattern, count(*)::numeric / sum(count(*)) over (partition by provider_id) sh from b group by 1, 2),
-z as materialized (
-  select b.*, sh.sh pattern_share,
-         (b.enrich_tried and not b.admitted and not b.enrich_stated and not b.fee_stated and not b.extract_stated) zero,
-         (b.url ~* s.listing_rx) listing,
-         (coalesce(b.page_title, '') ~* s.nf_rx) not_found,
-         (select coalesce(count(*) filter (where t = any (b.ptok)), 0)::numeric / greatest(1, cardinality(b.ttok)) from unnest(b.ttok) t) title_overlap
-    from b join share sh on sh.provider_id = b.provider_id and sh.pattern = b.pattern cross join s),
-purl as materialized (
-  -- the provider's known pages that sit on an accepted (on-pattern) address pattern, computed once
-  select u.provider_id, u.url, u.tokens, u.title_tokens
-    from pipeline.coverage_provider_urls u
-    join share sh on sh.provider_id = u.provider_id and sh.pattern = regexp_replace(u.url, '^(https?://[^/]+/(?:[^/]+/){0,3}).*$', '\1')
-    cross join s
-   where sh.sh >= s.off_max and u.url !~* s.listing_rx
-     and exists (select 1 from z where z.provider_id = u.provider_id and z.pattern_share < s.off_max)),
-cand as materialized (
-  select z.course_id, c.url, c.ov
-    from z cross join s
-    join lateral (
-      select u.url, (select count(*) filter (where t = any (u.tokens))::numeric / greatest(1, cardinality(z.ttok)) from unnest(z.ttok) t) ov
-        from purl u
-       where u.provider_id = z.provider_id and u.url <> z.url and u.tokens && z.ttok
-         -- a candidate naming a level the course does not (graduate diploma for a diploma, master for a bachelor) is not the course's page
-         and not exists (select 1 from unnest(u.tokens) w where w = any (s.level_words) and not (w = any (z.ttok)))
-         and not exists (select 1 from pipeline.page_rejections r where r.course_id = z.course_id and r.url = u.url)
-       order by ov desc, length(u.url) limit 1) c on true
-   where z.pattern_share < s.off_max)
-select z.course_id, z.provider_id, z.country, z.url, z.evidence_id, z.identity_basis, z.basis, z.canonical_title, z.page_title,
-       z.zero, z.listing, z.not_found, round(z.title_overlap, 2), round(z.pattern_share, 3), cand.url, round(cand.ov, 2),
-       (coalesce(z.basis, '') <> 'manual' and ((z.zero and (z.listing or z.not_found or z.title_overlap < s.t_min)) or (z.pattern_share < s.off_max and coalesce(cand.ov, 0) >= s.c_min))) verified_wrong
-  from z cross join s left join cand on cand.course_id = z.course_id
-$$;
-comment on function security.zero_yield_pages_v1(uuid) is 'every bound course page with a stored copy, with the zero-yield predicate (no value admitted and nothing stated by the fee, enrich and extract readers on that copy) and the verified-wrong signals (listing address, not-found title, weak title overlap, off the provider''s dominant pattern with an on-pattern candidate); zero-yield mandate 24 Oct 2026';
+-- 2 Q2: the trial wait is capped; every paused-prone lane says when work waits ----------------------------------------------------------
+select pg_temp.edit_n('security.flag_jobs_v1()', '48031e060996ce062287c52b433e8f0d', array[
+  array[$o$null, now() + make_interval(hours => coalesce(security.flag_list_num_v1('flag.job_recheck_hours', coalesce(f.checks, 0)), 6)));$o$,
+        $n$null, now() + least(make_interval(hours => coalesce(security.flag_list_num_v1('flag.job_recheck_hours', coalesce(f.checks, 0)), 6)),
+                                 make_interval(mins => security.pipeline_num_v1('tick.backoff_max_minutes', 15)::int)));  /* R1 Q2 (24 Oct 2026): never longer than the backoff cap */$n$]], array[1]);
 
-create or replace function security.page_rejection_bonus_v1(p_course uuid) returns integer
-language sql stable security definer set search_path = '' as $$
-  -- one more AI page match for a course after each rejection of a page it was bound to
-  select case when exists (select 1 from pipeline.page_rejections r where r.course_id = p_course
-                             and r.rejected_at > coalesce((select max(q.created_at) from pipeline.coverage_ai_match q where q.course_id = p_course), '-infinity'::timestamptz)) then 1 else 0 end
-$$;
-create or replace function security.page_match_bonus_v1(p_course uuid, p_provider uuid) returns integer
-language sql stable security definer set search_path = '' as $$
-  select greatest(security.course_list_bonus_v1(p_course, p_provider), security.page_rejection_bonus_v1(p_course))
-$$;
-
--- 4 reset: verified-wrong pages of one provider ---------------------------------------------------------------------------------------
-create or replace function security.zero_yield_reset_v1(p_provider uuid, p_limit integer default null) returns jsonb
-language plpgsql security definer set search_path = '' as $$
-declare v_lim int := greatest(1, least(coalesce(p_limit, security.pipeline_num_v1('zero_yield.reset_per_provider', 50)::int), 500));
-        v_age int := greatest(1, security.pipeline_num_v1('zero_yield.urls_max_age_days', 14)::int);
-        v_now timestamptz := clock_timestamp(); v_n int := 0; v_links int := 0; v_refind boolean := false; v_fill jsonb;
-begin
-  with sel as (
-    select * from security.zero_yield_pages_v1(p_provider) z where z.verified_wrong order by z.zero desc, z.title_overlap limit v_lim)
-  insert into pipeline.page_rejections(course_id, url, provider_id, evidence_id, source, reason, signals, rejected_at)
-  select r.course_id, r.url, r.provider_id, r.evidence_id, 'zero_yield',
-         case when r.zero and r.not_found then 'zero-yield page that says not found'
-              when r.zero and r.listing then 'zero-yield listing or search page'
-              when r.zero then 'zero-yield page whose title does not match the course'
-              else 'page off the provider''s course-page pattern while an on-pattern page matches the course' end,
-         jsonb_build_object('zero', r.zero, 'listing', r.listing, 'not_found', r.not_found, 'title_overlap', r.title_overlap, 'pattern_share', r.pattern_share, 'candidate_url', r.candidate_url, 'candidate_overlap', r.candidate_overlap, 'identity_basis', r.identity_basis, 'page_title', r.page_title), v_now
-    from sel r
-  on conflict (course_id, url) do update set rejected_at = v_now, reason = excluded.reason, signals = excluded.signals, evidence_id = excluded.evidence_id;
-  get diagnostics v_n = row_count;
-  if v_n = 0 then return jsonb_build_object('provider_id', p_provider, 'reset', 0); end if;
-  update pipeline.coverage_course_pages p
-     set status = 'mismatch', read_status = 'identity_mismatch', leased_until = null, next_read_at = now(), read_attempts = 0
-    from pipeline.page_rejections r where r.provider_id = p_provider and r.rejected_at = v_now and p.course_id = r.course_id and p.url = r.url and p.status = 'bound' and coalesce(p.basis, '') <> 'manual';
-  -- the official link filled from the page is taken back by guard 3 (the fill job retracts fills whose page left bound)
-  v_fill := security.course_url_fill_v1();
-  v_links := coalesce((v_fill->>'retracted')::int, 0);
-  -- the provider's known pages are refreshed when stale (the source finder looks again: Firecrawl map, site maps)
-  if coalesce((select max(u.last_seen_at) from pipeline.coverage_provider_urls u where u.provider_id = p_provider), '-infinity'::timestamptz) < now() - make_interval(days => v_age) then
-    update pipeline.source_find_runs set next_try_at = now(), step = null, leased_until = null, work = jsonb_build_object('again', true, 'reason', 'zero-yield re-acquisition') where provider_id = p_provider;
-    insert into pipeline.source_find_runs(provider_id, state, next_try_at, work) values (p_provider, 'none', now(), jsonb_build_object('again', true, 'reason', 'zero-yield re-acquisition')) on conflict (provider_id) do nothing;
-    v_refind := true;
+do $g$ begin
+  if md5(pg_get_functiondef('security.worker_mode_waiting_v1(text)'::regprocedure)) <> '92da330ef4d63c0127a4cba236caba6f' then
+    raise exception 'live security.worker_mode_waiting_v1 differs from the definition this change replaces';
   end if;
-  insert into pipeline.admin_control_events(area, action, target, detail, actor)
-  values ('pipeline', 'zero_yield_reset', p_provider::text,
-          jsonb_build_object('reset', v_n, 'links_retracted', v_links, 'finder_asked', v_refind, 'reasons', (select jsonb_object_agg(reason, n) from (select reason, count(*) n from pipeline.page_rejections where provider_id = p_provider and rejected_at = v_now group by 1) z)), null);
-  return jsonb_build_object('provider_id', p_provider, 'reset', v_n, 'links_retracted', v_links, 'finder_asked', v_refind);
-end $$;
-comment on function security.zero_yield_reset_v1(uuid, integer) is 'resets the verified-wrong pages of one provider: page_rejections row, page back to mismatch / identity_mismatch (the course unbinds; the AI page match and reidentify skip the rejected page), item-5 links retracted, the source finder asked again when the provider''s known pages are stale; count-limited; manual bindings never touched';
+end $g$;
+create or replace function security.worker_mode_waiting_v1(p_mode text) returns boolean
+language sql stable security definer set search_path = '' as $$
+  -- R1 Q2 (24 Oct 2026): one "work is waiting" test per lane the idle guard pauses; each mirrors its picker's eligibility (hidden
+  -- providers left out) without leasing anything. A lane not listed answers false and waits for its capped trial.
+  select case p_mode
+    when 'read' then exists (select 1 from pipeline.coverage_course_pages p
+                              where p.status in ('bound', 'ambiguous') and coalesce(p.next_read_at, now()) <= now() and coalesce(p.leased_until, '-infinity') < now() and p.read_attempts < 3
+                                and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.provider_id))
+    when 'link_search' then exists (select 1 from pipeline.course_link_search s
+                              where s.state = 'queued' and s.requested_at is not null
+                                and (not coalesce((security.firecrawl_setting('target_only') #>> '{}')::boolean, true)
+                                     or exists (select 1 from pipeline.firecrawl_target_cache tc where tc.provider_id = s.provider_id and tc.included))
+                                and s.provider_id <> all (array(select x.provider_id from security.fc_search_stopped_v1() x)))
+    when 'provider_facts' then exists (select 1 from pipeline.provider_fact_sources f where f.status = 'found' and coalesce(f.attempts, 0) < 3)
+    when 'ai_match' then exists (select 1 from pipeline.coverage_ai_match q
+                              where (q.state = 'ready' or (q.state = 'leased' and q.leased_until < now()))
+                                and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = q.provider_id))
+    when 'reidentify' then exists (select 1 from pipeline.coverage_course_pages p join pipeline.evidence_artifacts e on e.id = p.evidence_id
+                              where p.status = 'mismatch' and p.read_status = 'identity_mismatch' and coalesce(p.basis, '') <> 'manual' and e.storage_path is not null
+                                and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.provider_id)
+                                and not exists (select 1 from pipeline.page_rejections x where x.course_id = p.course_id and x.url = p.url))
+    when 'discover' then exists (select 1 from pipeline.coverage_provider_discovery d
+                              where (d.status = 'pending' or (d.status in ('mapped', 'failed') and d.next_due_at <= now())) and coalesce(d.leased_until, '-infinity') < now()
+                                and d.attempts < 3 and security.enrich_focus_v1(d.provider_id)
+                                and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = d.provider_id))
+    when 'find_site' then exists (select 1 from pipeline.coverage_provider_discovery d
+                              where d.status = 'no_website' and coalesce(d.site_searched_at, '-infinity') < now() - make_interval(days => security.pipeline_num_v1('retry.no_website_days', 30)::int)
+                                and coalesce(d.leased_until, '-infinity') < now()
+                                and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = d.provider_id))
+    when 'central_find' then exists (select 1 from pipeline.provider_central_search s join catalogue.providers p on p.id = s.provider_id
+                              where (s.state = 'queued' or (s.state = 'leased' and s.leased_until < now())) and s.attempts < 3 and p.lifecycle_status = 'active'
+                                and p.website ~* '^https?://' and not security.third_party_host_v1(p.website)
+                                and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = s.provider_id)
+                                and (s.requested_at is not null or not security.flag_provider_held_v1(s.provider_id, array['central_not_due', 'central_budget', 'site_unreachable'])))
+    when 'contact_page' then exists (select 1 from catalogue.providers p
+                              where p.lifecycle_status = 'active' and p.website ~* '^https?://' and (p.phone is null or p.email is null) and not security.third_party_host_v1(p.website)
+                                and not exists (select 1 from pipeline.provider_contact_checks k where k.provider_id = p.id and k.kind = 'public_general'
+                                                 and k.checked_at > now() - make_interval(days => security.pipeline_num_v1('contact.recheck_days', 90)::int))
+                                and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.id)
+                                and exists (select 1 from catalogue.courses c where c.provider_id = p.id and c.lifecycle_status = 'active'))
+    when 'logo_find' then exists (select 1 from catalogue.providers p left join pipeline.provider_logo_finds f on f.provider_id = p.id
+                              where p.lifecycle_status = 'active' and nullif(btrim(p.website), '') is not null and (f.requested_at is not null or p.publication_status = 'published')
+                                and not exists (select 1 from catalogue.provider_assets a where a.provider_id = p.id and a.is_primary and a.status = 'approved' and a.asset_type in ('logo', 'logo_dark', 'logo_light'))
+                                and (f.provider_id is null or f.requested_at is not null or f.status = 'queued')
+                                and (f.requested_at is not null or not security.flag_provider_held_v1(p.id, array['site_unreachable', 'logo_not_found'])))
+    when 'companion_read' then exists (select 1 from pipeline.course_companion_pages p
+                              where p.next_read_at <= now() and (p.leased_until is null or p.leased_until < now())
+                                and p.read_attempts < security.pipeline_num_v1('companion.max_attempts', 4) and p.status <> 'gone'
+                                and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = p.provider_id))
+    when 'source_find' then exists (select 1 from pipeline.source_find_runs r
+                              where (r.step is not null or (r.work->>'again' = 'true' and coalesce(r.next_try_at, now()) <= now()))
+                                and coalesce(r.leased_until, '-infinity') < now() and coalesce(r.work->>'test', 'false') <> 'true')
+    when 'programme_read' then exists (select 1 from pipeline.programme_candidates c
+                              where c.state in ('found', 'failed') and c.read_attempts < security.pipeline_num_v1('programme.read_attempts', 3)::int
+                                and c.next_read_at <= now() and coalesce(c.leased_until, '-infinity') < now())
+    else false end
+$$;
+comment on function security.worker_mode_waiting_v1(text) is 'R1 Q2: true when the lane''s own queue holds eligible work; the flag recheck (every 10 minutes) switches a paused lane on again the moment this is true';
 
--- 5 detect: the nightly job -----------------------------------------------------------------------------------------------------------
-create or replace function security.zero_yield_detect_v1() returns jsonb
+-- 3 Q3: the per-mode ledger -------------------------------------------------------------------------------------------------------------
+create table if not exists pipeline.mode_outcome_ledger (
+  id bigint generated always as identity primary key,
+  run_at timestamptz not null default now(),
+  mode text not null,
+  status int not null default 200,
+  ms int,
+  items int not null default 0,
+  ok int not null default 0,
+  failed int not null default 0,
+  wait_ms int,
+  landed jsonb not null default '{}'::jsonb,
+  worker text,
+  detail jsonb
+);
+comment on table pipeline.mode_outcome_ledger is 'R1 Q3 (24 Oct 2026): one row per worker call — the mode, what it processed (items), how much succeeded and failed, where the work landed (the call''s tally), the call time and the worker version; written by public.svc_worker_report_v1 at the end of every call; 90-day retention (mode-ledger-retention)';
+create index if not exists mode_outcome_ledger_run_at_idx on pipeline.mode_outcome_ledger (run_at desc);
+create index if not exists mode_outcome_ledger_mode_run_at_idx on pipeline.mode_outcome_ledger (mode, run_at desc);
+alter table pipeline.mode_outcome_ledger enable row level security;
+
+create or replace function public.svc_worker_report_v1(p_mode text, p_status int, p_ms int, p_body jsonb, p_worker text) returns bigint
 language plpgsql security definer set search_path = '' as $$
-declare v_at timestamptz := date_trunc('minute', now()); v_min int := security.pipeline_num_v1('zero_yield.min_bound', 10)::int;
-        v_rate numeric := security.pipeline_num_v1('zero_yield.flag_rate_pct', 25); v_auto boolean := security.pipeline_num_v1('zero_yield.auto_reset', 0) = 1;
-        v_per int := greatest(1, security.pipeline_num_v1('zero_yield.providers_per_run', 5)::int); v_batch int := greatest(10, least(security.pipeline_num_v1('zero_yield.detect_providers_per_run', 150)::int, 2000));
-        r record; v_r jsonb; v_reset int := 0; v_prov int := 0; v_flag int := 0;
+declare v_id bigint; v_items int; v_failed int; v_ok int; v_landed jsonb;
 begin
-  -- providers not measured in the last day first, a bounded number a run (the job runs hourly, so every provider is measured each day)
-  for r in select x.provider_id from (select distinct p.provider_id from pipeline.coverage_course_pages p join pipeline.evidence_artifacts e on e.id = p.evidence_id and e.storage_path is not null where p.status = 'bound' and p.read_status = 'read') x
-            where not exists (select 1 from pipeline.zero_yield_snapshots s where s.provider_id = x.provider_id and s.at > now() - interval '23 hours')
-            order by (select count(*) from pipeline.coverage_course_pages p2 where p2.provider_id = x.provider_id and p2.status = 'bound') desc
-            limit v_batch loop
-    insert into pipeline.zero_yield_snapshots(at, provider_id, country, bound, zero_yield, verified_wrong, rate_pct, flagged, detail)
-    select v_at, z.provider_id, z.country, count(*), count(*) filter (where z.zero), count(*) filter (where z.verified_wrong),
-           round(100.0 * count(*) filter (where z.zero) / count(*), 1),
-           (count(*) >= v_min and 100.0 * count(*) filter (where z.zero) / count(*) >= v_rate),
-           jsonb_build_object('listing', count(*) filter (where z.listing), 'not_found', count(*) filter (where z.not_found), 'off_pattern', count(*) filter (where z.pattern_share < security.pipeline_num_v1('zero_yield.off_pattern_share_max', 0.35)), 'manual', count(*) filter (where z.basis = 'manual'))
-      from security.zero_yield_pages_v1(r.provider_id) z group by z.provider_id, z.country
-    on conflict (at, provider_id) do nothing;
-    v_prov := v_prov + 1;
-  end loop;
-  select count(*) into v_flag from pipeline.zero_yield_snapshots s where s.at = v_at and s.flagged;
-  -- resets (when switched on) consider every flagged provider measured in the last day, most affected first
-  if v_auto then
-    for r in select distinct on (s.provider_id) s.provider_id, s.verified_wrong from pipeline.zero_yield_snapshots s where s.at > now() - interval '23 hours' and s.flagged and s.verified_wrong > 0
-               and not exists (select 1 from pipeline.admin_control_events d where d.action = 'zero_yield_reset' and d.target = s.provider_id::text and d.created_at > now() - interval '23 hours')
-             order by s.provider_id, s.at desc loop
-      v_r := security.zero_yield_reset_v1(r.provider_id);
-      v_reset := v_reset + coalesce((v_r->>'reset')::int, 0);
-      update pipeline.zero_yield_snapshots s set reset = coalesce((v_r->>'reset')::int, 0) where s.provider_id = r.provider_id and s.at = (select max(at) from pipeline.zero_yield_snapshots where provider_id = r.provider_id);
-      exit when (select count(*) from pipeline.admin_control_events d where d.action = 'zero_yield_reset' and d.created_at > now() - interval '1 hour') >= v_per;
-    end loop;
-  end if;
-  insert into pipeline.admin_control_events(area, action, target, detail, actor)
-  values ('pipeline', 'zero_yield_detect', 'zero_yield_snapshots', jsonb_build_object('at', v_at, 'providers', v_prov, 'flagged', v_flag, 'auto_reset', v_auto, 'reset', v_reset), null);
-  return jsonb_build_object('at', v_at, 'providers', v_prov, 'flagged', v_flag, 'auto_reset', v_auto, 'reset', v_reset);
+  if current_user <> 'postgres' and coalesce(auth.role(), '') <> 'service_role' then raise exception 'service_role required'; end if;
+  v_items := coalesce(security.worker_call_work_v1(p_body::text), 0)::int;
+  v_failed := coalesce(nullif(p_body->>'failed', '')::int, nullif(p_body->'tally'->>'failed', '')::int, 0)
+            + coalesce(nullif(p_body->'tally'->>'fetch_failed', '')::int, 0) + coalesce(nullif(p_body->'tally'->>'scrape_failed', '')::int, 0)
+            + case when p_status >= 400 or coalesce(p_body->>'ok', 'true') = 'false' then 1 else 0 end;
+  v_ok := greatest(0, coalesce(nullif(p_body->>'done', '')::int, nullif(p_body->>'applied', '')::int, v_items - v_failed));
+  v_landed := coalesce(p_body->'landed', p_body->'tally', '{}'::jsonb);
+  insert into pipeline.mode_outcome_ledger(mode, status, ms, items, ok, failed, landed, worker, detail)
+  values (left(coalesce(p_mode, ''), 60), coalesce(p_status, 200), p_ms, v_items, v_ok, v_failed, v_landed, left(p_worker, 80),
+          case when length((p_body - 'ok' - 'mode' - 'workerVersion' - 'tally' - 'landed')::text) <= 4000 then p_body - 'ok' - 'mode' - 'workerVersion' - 'tally' - 'landed'
+               else jsonb_build_object('truncated', true, 'keys', (select jsonb_agg(k) from jsonb_object_keys(p_body) k)) end)  -- fixed: a row keeps at most 4 KB of detail
+  returning id into v_id;
+  return v_id;
 end $$;
-comment on function security.zero_yield_detect_v1() is 'hourly: writes the per-provider zero-yield snapshot, flags providers above the rate as systematic, and (only when zero_yield.auto_reset is 1) resets the verified-wrong pages of the most affected flagged providers';
+revoke all on function public.svc_worker_report_v1(text, int, int, jsonb, text) from public, anon, authenticated;
+grant execute on function public.svc_worker_report_v1(text, int, int, jsonb, text) to service_role;
+comment on function public.svc_worker_report_v1(text, int, int, jsonb, text) is 'R1 Q3: the worker reports every call''s outcome to pipeline.mode_outcome_ledger (service role only)';
 
--- 6 the lanes consume the rejection list ------------------------------------------------------------------------------------------------
-select pg_temp.edit_n('public.svc_coverage_reidentify_next(integer,text)', 'ddd0fda00a869ce2bcfb2062502775eb', array[
-  array[$o$and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = p.course_id and d.evidence_id = p.evidence_id and d.rule = p_rule)$o$,
-        $n$and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = p.course_id and d.evidence_id = p.evidence_id and d.rule = p_rule)
-          and not exists (select 1 from pipeline.page_rejections x where x.course_id = p.course_id and x.url = p.url) /* 24 Oct 2026: a rejected page is never re-bound */$n$]], array[1]);
-select pg_temp.edit_n('security.coverage_ai_match_prepare_v1(integer,integer)', '3d6d0e1d90e210aa02eef8a962906e12', array[
-  array[$o$security.course_list_bonus_v1(co.id, co.provider_id)$o$, $n$security.page_match_bonus_v1(co.id, co.provider_id)$n$],
-  array[$o$union select q.course_id, q.chosen_url from pipeline.coverage_ai_match q join c using (course_id) where q.chosen_url is not null)$o$,
-        $n$union select q.course_id, q.chosen_url from pipeline.coverage_ai_match q join c using (course_id) where q.chosen_url is not null
-                union select x.course_id, x.url from pipeline.page_rejections x join c using (course_id) /* 24 Oct 2026: rejected pages are never candidates */)$n$]], array[4, 1]);
+-- queue wait per lane from the queues'' own timestamps (queued → finished), until the pickers carry the wait themselves
+create or replace function security.lane_queue_wait_v1(p_hours int default 24)
+returns table (lane text, finished bigint, p50_min numeric, p90_min numeric, max_min numeric, waiting bigint)
+language sql stable security definer set search_path = '' as $$
+  with w as (
+    select 'fee_reader' lane, extract(epoch from (q.finished_at - q.created_at)) / 60 m from pipeline.fee_reader_queue q where q.finished_at > now() - make_interval(hours => p_hours)
+    union all
+    select 'enrich_fields', extract(epoch from (i.updated_at - i.created_at)) / 60 from pipeline.field_enrich_items i where i.updated_at > now() - make_interval(hours => p_hours) and i.state in ('filled', 'skipped', 'review', 'applied')
+    union all
+    select 'course_page_read', extract(epoch from (p.read_at - p.next_read_at)) / 60 from pipeline.coverage_course_pages p where p.read_at > now() - make_interval(hours => p_hours) and p.next_read_at is not null and p.read_at >= p.next_read_at
+    union all
+    select 'ai_page_match', extract(epoch from (q.decided_at - q.created_at)) / 60 from pipeline.coverage_ai_match q where q.decided_at > now() - make_interval(hours => p_hours)
+    union all
+    select 'course_page_search', extract(epoch from (s.done_at - coalesce(s.requested_at, s.queued_at))) / 60 from pipeline.course_link_search s where s.done_at > now() - make_interval(hours => p_hours)
+    union all
+    select 'central_ai', extract(epoch from (q.done_at - q.created_at)) / 60 from pipeline.central_ai_queue q where q.done_at > now() - make_interval(hours => p_hours)),
+  q as (
+    select 'fee_reader' lane, count(*) n from pipeline.fee_reader_queue where state = 'queued'
+    union all select 'enrich_fields', count(*) from pipeline.field_enrich_items where state = 'queued'
+    union all select 'course_page_read', count(*) from pipeline.coverage_course_pages p where p.status in ('bound', 'ambiguous') and coalesce(p.next_read_at, now()) <= now() and p.read_attempts < 3
+    union all select 'ai_page_match', count(*) from pipeline.coverage_ai_match where state = 'ready'
+    union all select 'course_page_search', count(*) from pipeline.course_link_search where state = 'queued'
+    union all select 'central_ai', count(*) from pipeline.central_ai_queue where state = 'queued')
+  select q.lane, count(w.m) finished, round(percentile_cont(0.5) within group (order by w.m)::numeric, 1), round(percentile_cont(0.9) within group (order by w.m)::numeric, 1), round(max(w.m)::numeric, 1), max(q.n)
+    from q left join w on w.lane = q.lane group by q.lane order by q.lane
+$$;
+comment on function security.lane_queue_wait_v1(int) is 'R1 Q3: queue wait (minutes, p50/p90/max) and rows waiting per reader lane over the last p_hours, from the queues'' timestamps';
 
--- 7 the job: catalogue row before the schedule --------------------------------------------------------------------------------------------
+create or replace function security.mode_ledger_retention_v1() returns int
+language plpgsql security definer set search_path = '' as $$
+declare n int;
+begin
+  delete from pipeline.mode_outcome_ledger where run_at < now() - make_interval(days => security.pipeline_num_v1('retention.mode_outcome_ledger_days', 90)::int);
+  get diagnostics n = row_count; return n;
+end $$;
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
- ('zero-yield-detect', 'Course pages', 61, 'Zero-yield pages: detect and reset',
-  'Hourly at :21 (Detect: providers measured a run providers a run, every provider once a day): counts bound course pages whose stored copy gave the readers nothing (zero-yield) and those verified wrong (listing or not-found page, title that does not match, or off the provider''s course-page pattern with a better page known); a provider above Zero-yield: rate that flags a provider is flagged as systematic. With Reset: automatic on, resets the verified-wrong pages of the most affected flagged providers (Reset: providers a run, Reset: pages a provider a run): the page goes back to "does not match", its official link is taken back, the AI page match finds a new page from the provider''s known pages with the rejected one excluded, and the readers fill the course from the new page.',
-  6, true, null)
+ ('mode-ledger-retention', 'Platform upkeep', 95, 'Worker ledger: retention', 'Daily at 03:37 UTC: removes rows of the per-call worker ledger (pipeline.mode_outcome_ledger) older than Worker ledger: kept for.', 6, false, null)
 on conflict (jobname) do nothing;
-select cron.schedule('zero-yield-detect', '21 * * * *', $$select security.zero_yield_detect_v1()$$);
+select cron.schedule('mode-ledger-retention', '37 3 * * *', $$select security.mode_ledger_retention_v1()$$);
 
--- 8 register ------------------------------------------------------------------------------------------------------------------------------
+-- 4 Q4: why idle -------------------------------------------------------------------------------------------------------------------------
+alter table pipeline.queue_watch add column if not exists upstream_key text references pipeline.queue_watch(key);
+comment on column pipeline.queue_watch.upstream_key is 'R1 Q4: the queue that feeds this one; named in the "why idle" line when nothing is waiting';
+update pipeline.queue_watch set upstream_key = v.up from (values
+  ('course_page_read', 'course_page_search'), ('fee_reader', 'course_page_read'), ('ai_page_match', 'course_page_discover'),
+  ('credential_read', 'course_page_read'), ('companion_read', 'course_page_read'), ('central_ai', 'central_find'), ('programme_read', 'source_find')) v(k, up)
+ where queue_watch.key = v.k and exists (select 1 from pipeline.queue_watch u where u.key = v.up);
+
+create or replace function security.lane_why_idle_v1(p_key text) returns text
+language sql stable security definer set search_path = '' as $$
+  select case
+    when s.key is null then null
+    when coalesce(array_length(s.jobs_paused, 1), 0) > 0 then
+      'Paused by the idle guard (' || array_to_string(s.jobs_paused, ', ') || ')'
+      || coalesce(' since ' || to_char(f.flagged_at at time zone 'Australia/Melbourne', 'DD Mon HH24:MI'), '')
+      || coalesce('; tried again by ' || to_char(f.next_check_at at time zone 'Australia/Melbourne', 'DD Mon HH24:MI'), '') || ', or as soon as work waits'
+    when s.state = 'failing' then 'Failing: ' || coalesce(s.reason, 'most tries in the last hour failed')
+    when s.state = 'stuck' then 'Stuck: ' || coalesce(s.reason, 'work waiting and nothing finishing')
+    when s.state = 'out_of_toolset' then 'A tool is out: ' || array_to_string(s.tools_out, ', ')
+    when s.state = 'waiting' then 'Waiting for today''s budget: ' || array_to_string(s.tools_waiting, ', ')
+    when s.state = 'nothing_left' then 'Nothing left to try: ' || coalesce(s.reason, '')
+    when coalesce(s.pending, 0) > 0 and coalesce(s.done_window, 0) = 0 then
+      s.pending || ' waiting and nothing finished in the last window: a gate is holding the lane' || coalesce(' (' || w.retry_label || ')', '')
+    when coalesce(s.pending, 0) = 0 and w.upstream_key is not null then
+      'Nothing waiting; fed by ' || u.label || ' (' || coalesce(us.pending, 0) || ' waiting there, ' || coalesce(us.state, 'not checked') || ')'
+    when coalesce(s.pending, 0) = 0 then 'Nothing waiting'
+    else null end
+  from pipeline.queue_watch w
+  left join pipeline.queue_watch_state s on s.key = w.key
+  left join pipeline.queue_watch u on u.key = w.upstream_key
+  left join pipeline.queue_watch_state us on us.key = w.upstream_key
+  left join lateral (select x.flagged_at, x.next_check_at from pipeline.enrichment_flags x
+                      where x.entity = 'job' and x.reason_code = 'idle_paused' and x.state = 'raised' and x.entity_key = any (s.jobs_paused)
+                      order by x.flagged_at desc limit 1) f on true
+  where w.key = p_key
+$$;
+comment on function security.lane_why_idle_v1(text) is 'R1 Q4: one plain line per queue saying why it is idle (paused and when tried again, nothing waiting and who feeds it, gated, failing, nothing left)';
+
+select pg_temp.edit_n('public.admin_queue_watch(text,jsonb)', 'e2e9b8c9186590363acee4248973bd91', array[
+  array[$o$'nothing_left_is', w.exhausted_label, 'fix', w.retry_label, 'fix_at', w.fix_at) order by w.sort)$o$,
+        $n$'nothing_left_is', w.exhausted_label, 'fix', w.retry_label, 'fix_at', w.fix_at, 'why_idle', security.lane_why_idle_v1(w.key)) order by w.sort)$n$]], array[1]);
+
+-- the companion data files that answered with the course page: attempts back (count-guarded), re-read by worker v0.46.0
+do $g$ declare n int; begin
+  select count(*) into n from pipeline.course_companion_pages p
+   where p.provider_id = '68022bdf-43e8-44b3-ac14-e9eed9f71e83' and p.status = 'failed' and p.http_status = 200 and p.fetched_via = 'direct' and p.url ~* '\.json$' and p.read_attempts >= 4;
+  if n <> 219 then raise exception 'expected 219 exhausted Sydney companion data files, found %', n; end if;
+  update pipeline.course_companion_pages p set read_attempts = 0, next_read_at = now(), updated_at = now()
+   where p.provider_id = '68022bdf-43e8-44b3-ac14-e9eed9f71e83' and p.status = 'failed' and p.http_status = 200 and p.fetched_via = 'direct' and p.url ~* '\.json$' and p.read_attempts >= 4;
+end $g$;
+
+-- 5 apply-time identity check ----------------------------------------------------------------------------------------------------------
+select pg_temp.edit_n('security.coverage_apply_course_v1(uuid,uuid,uuid,text,text,jsonb)', 'd6287accb0ee955048978427b59c1ca2', array[
+  array[$o$declare c record; r jsonb; v_test uuid; v_key text; v_links int := 0; v_intakes int := 0; v_english int := 0; v_fees int := 0; v_cur text; v_floor numeric;$o$,
+        $n$declare c record; r jsonb; v_test uuid; v_key text; v_links int := 0; v_intakes int := 0; v_english int := 0; v_fees int := 0; v_cur text; v_floor numeric; v_ident text; v_ident_url text; v_cc text;$n$],
+  array[$o$    v_floor := security.fee_below_floor_v1(p_course_id, (p_payload->>'fee_amount')::numeric, nullif(btrim(p_payload->>'fee_basis'), ''));$o$,
+        $n$    v_floor := security.fee_below_floor_v1(p_course_id, (p_payload->>'fee_amount')::numeric, nullif(btrim(p_payload->>'fee_basis'), ''));
+    -- 24 Oct 2026 (R1, apply-time identity check): a fee for a course whose bound page carries a proof the country's tuition policy does not
+    -- accept is never admitted live, whatever the caller checked: written unverified with one Layer 4 row (source identity_basis_reverify).
+    -- Manual bindings are exempt. A page re-bound under the country's rule re-admits the fee through this same path.
+    select p.identity_basis, p.url, k.iso_alpha2 into v_ident, v_ident_url, v_cc
+      from pipeline.coverage_course_pages p join catalogue.providers pr on pr.id = p.provider_id join ref.countries k on k.id = pr.country_id
+     where p.course_id = p_course_id and p.status = 'bound' and coalesce(p.basis, '') <> 'manual' and p.identity_basis is not null
+       and p.identity_basis <> 'manual' and not security.coverage_identity_allowed(c.provider_id, p.identity_basis, 'tuition') limit 1;
+    if v_ident is not null then
+      if not exists (select 1 from pipeline.layer4_review_items l where l.entity_type = 'course' and l.entity_id = p_course_id and l.field_code = 'provider_current_tuition' and l.status = 'pending') then
+        insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
+        values ('course', p_course_id, 'provider_current_tuition', p_evidence_id, null,
+                jsonb_build_object('amount', (p_payload->>'fee_amount')::numeric, 'currency', v_cur, 'basis', nullif(btrim(p_payload->>'fee_basis'), ''), 'page', p_url),
+                jsonb_build_object('source', 'identity_basis_reverify', 'state', 'quarantined', 'country', v_cc, 'identity_basis', v_ident, 'page', v_ident_url), '{}'::jsonb, 'pending',
+                'quarantined at the write: the course page was bound with a ' || v_ident || ' proof, which the ' || v_cc || ' tuition policy does not accept; re-binding the page under the country''s rule re-admits the fee',
+                'CF-CHG-20260915-247 R1 apply-time identity check');
+      end if;
+      v_floor := coalesce(v_floor, -1);  /* fixed: a sentinel that keeps the fee unverified through the same write below; never shown */
+    end if;$n$],
+  array[$o$'fees_applied', v_fees, 'fee_quarantined', v_floor is not null);$o$,
+        $n$'fees_applied', v_fees, 'fee_quarantined', v_floor is not null and v_floor <> -1, 'fee_quarantined_identity', v_ident is not null);$n$],
+  -- the floor-quarantine Layer 4 row is not written for an identity quarantine (the sentinel): the floor branch runs only for a real floor
+  array[$o$    if v_floor is not null then
+      if not exists (select 1 from pipeline.layer4_review_items l where l.entity_type = 'course' and l.entity_id = p_course_id and l.field_code = 'provider_current_tuition' and l.status = 'pending') then
+        insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
+        values ('course', p_course_id, 'provider_current_tuition', p_evidence_id, null,
+                jsonb_build_object('amount', (p_payload->>'fee_amount')::numeric, 'currency', v_cur, 'basis', nullif(btrim(p_payload->>'fee_basis'), ''), 'page', p_url),
+                jsonb_build_object('page', p_url, 'source', 'fee floor', 'state', 'quarantined'), '{}'::jsonb, 'pending',$o$,
+        $n$    if v_floor is not null then
+      if v_floor <> -1 and not exists (select 1 from pipeline.layer4_review_items l where l.entity_type = 'course' and l.entity_id = p_course_id and l.field_code = 'provider_current_tuition' and l.status = 'pending') then
+        insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
+        values ('course', p_course_id, 'provider_current_tuition', p_evidence_id, null,
+                jsonb_build_object('amount', (p_payload->>'fee_amount')::numeric, 'currency', v_cur, 'basis', nullif(btrim(p_payload->>'fee_basis'), ''), 'page', p_url),
+                jsonb_build_object('page', p_url, 'source', 'fee floor', 'state', 'quarantined'), '{}'::jsonb, 'pending',$n$]], array[1, 1, 1, 1]);
+
+-- 6 register ------------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('table', 'pipeline.page_rejections', 'Layer 2', 'negative evidence: pages proven wrong for a course (S1 partial, consumed by the AI page match and reidentify)', 'active', '{}', '20261024003000'),
- ('table', 'pipeline.zero_yield_snapshots', 'Layer 2', 'nightly per-provider zero-yield figures (before/after record)', 'active', '{}', '20261024003000'),
- ('function', 'security.zero_yield_pages_v1', 'Layer 2', 'zero-yield predicate and verified-wrong signals per bound page', 'active', '{}', '20261024003000'),
- ('function', 'security.zero_yield_reset_v1', 'Layer 2', 'reset of verified-wrong pages for one provider (count-limited)', 'active', '{}', '20261024003000'),
- ('function', 'security.zero_yield_detect_v1', 'Layer 2', 'nightly detect job', 'active', '{}', '20261024003000'),
- ('function', 'security.page_rejection_bonus_v1', 'Layer 2', 'one more AI page match after a rejection', 'active', '{}', '20261024003000'),
- ('function', 'security.page_match_bonus_v1', 'Layer 2', 'course-list or rejection bonus for the AI page match', 'active', '{}', '20261024003000'),
- ('job', 'zero-yield-detect', 'Layer 2', 'hourly zero-yield detect (and reset when switched on)', 'active', '{}', '20261024003000')
+ ('table', 'pipeline.mode_outcome_ledger', 'Layer 2', 'R1 Q3 per-call worker ledger (items, ok, failed, landed)', 'active', '{}', '20261024004000'),
+ ('function', 'public.svc_worker_report_v1', 'Layer 2', 'worker call report into the ledger (service role)', 'active', '{}', '20261024004000'),
+ ('function', 'security.lane_queue_wait_v1', 'Layer 2', 'queue wait percentiles per reader lane from queue timestamps', 'active', '{}', '20261024004000'),
+ ('function', 'security.mode_ledger_retention_v1', 'Layer 2', 'ledger retention', 'active', '{}', '20261024004000'),
+ ('function', 'security.lane_why_idle_v1', 'Layer 2', 'R1 Q4 why-idle line per work queue', 'active', '{}', '20261024004000'),
+ ('job', 'mode-ledger-retention', 'Layer 2', 'daily ledger retention', 'active', '{}', '20261024004000')
 on conflict (kind, name) do nothing;
 
-do $t$ declare u uuid; r jsonb; before jsonb; after jsonb; prep jsonb; t0 timestamptz := clock_timestamp(); d jsonb; begin
-  select id into u from catalogue.providers where canonical_name='University of Auckland';
-  select jsonb_build_object('bound', count(*), 'zero', count(*) filter (where zero), 'wrong', count(*) filter (where verified_wrong), 'off_pattern', count(*) filter (where pattern_share < 0.35), 'off_with_cand', count(*) filter (where pattern_share < 0.35 and candidate_overlap >= 0.6), 'ms', round(extract(epoch from clock_timestamp()-t0)*1000)) into before from security.zero_yield_pages_v1(u);
-  update pipeline.platform_toolset_settings set value='200'::jsonb where toolset_key='pipeline' and key='zero_yield.reset_per_provider';
-  update pipeline.platform_toolset_settings set value='25'::jsonb where toolset_key='pipeline' and key='zero_yield.detect_providers_per_run';
-  r := security.zero_yield_reset_v1(u);
-  select jsonb_build_object('mismatch_now', count(*) filter (where status='mismatch'), 'bound_now', count(*) filter (where status='bound')) into after from pipeline.coverage_course_pages where provider_id=u;
-  prep := security.coverage_ai_match_prepare_v1(1, 300);
-  t0 := clock_timestamp();
-  d := security.zero_yield_detect_v1();
-  raise exception 'DRYRUN OK %', jsonb_build_object('uoa_before', before, 'reset', r, 'uoa_after', after,
-    'rejections', (select jsonb_object_agg(reason, n) from (select reason, count(*) n from pipeline.page_rejections where provider_id=u group by 1) z),
-    'sample', (select jsonb_agg(jsonb_build_object('c', left(c.canonical_title,32), 'u', regexp_replace(x.url,'^https://(www\.|study\.)?auckland\.ac\.nz',''), 'cand', regexp_replace(x.signals->>'candidate_url','^https://(www\.|study\.)?auckland\.ac\.nz/en/study/study-options/find-a-study-option/',''), 'ov', x.signals->>'candidate_overlap')) from (select * from pipeline.page_rejections where provider_id=u order by random() limit 6) x join catalogue.courses c on c.id=x.course_id),
-    'prepare', prep, 'ready_for_uoa', (select count(*) from pipeline.coverage_ai_match q where q.provider_id=u and q.state='ready'),
-    'detect', d, 'detect_ms', round(extract(epoch from clock_timestamp()-t0)*1000)); end $t$;
+do $t$ declare r jsonb; v_id bigint; n int; begin
+  v_id := public.svc_worker_report_v1('read', 200, 1234, '{"ok":true,"mode":"read","items":12,"tally":{"read":10,"fetch_failed":2},"ms":1234}'::jsonb, 'coverage-sweep-worker-v0.46.0');
+  select count(*) into n from pipeline.course_companion_pages where provider_id = '68022bdf-43e8-44b3-ac14-e9eed9f71e83' and read_attempts = 0 and status = 'failed';
+  r := jsonb_build_object(
+    'ledger', (select to_jsonb(l) - 'detail' from pipeline.mode_outcome_ledger l where l.id = v_id),
+    'waits', (select jsonb_agg(to_jsonb(w)) from security.lane_queue_wait_v1(24) w),
+    'why_read', security.lane_why_idle_v1('course_page_read'),
+    'why_fee', security.lane_why_idle_v1('fee_reader'),
+    'why_search', security.lane_why_idle_v1('course_page_search'),
+    'why_companion', security.lane_why_idle_v1('companion_read'),
+    'waiting', (select jsonb_object_agg(m, security.worker_mode_waiting_v1(m)) from unnest(array['read','ai_match','reidentify','discover','find_site','central_find','contact_page','logo_find','companion_read','source_find','programme_read','link_search','provider_facts','nz_cop']) m),
+    'companion_reset', n,
+    'settings', (select jsonb_object_agg(key, value) from pipeline.platform_toolset_settings where key in ('tick.backoff_max_minutes','retention.mode_outcome_ledger_days')),
+    'apply_has_sentinel', position('fee_quarantined_identity' in pg_get_functiondef('security.coverage_apply_course_v1(uuid,uuid,uuid,text,text,jsonb)'::regprocedure)) > 0,
+    'flag_jobs_capped', position('tick.backoff_max_minutes' in pg_get_functiondef('security.flag_jobs_v1()'::regprocedure)) > 0,
+    'queue_watch_why', position('why_idle' in pg_get_functiondef('public.admin_queue_watch(text,jsonb)'::regprocedure)) > 0,
+    'job', (select count(*) from cron.job where jobname = 'mode-ledger-retention'));
+  raise exception 'DRYRUN OK %', r; end $t$;
