@@ -188,4 +188,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.69 | 23 Oct 2026 | v2.15.328 | Read with AI: course facts a page holds as labelled data items (campus, length, delivery) are read too; only the course's own page is read, never another course's. |
 | 1.70 | 23 Oct 2026 | v2.15.329 | Read with AI: a campus the university already has is linked from one course page. |
 | 1.71 | 23 Oct 2026 | v2.15.330 | AI values from an earlier page that was not the course's own are taken back or read again; University of Auckland South Auckland campus added. |
-| 1.72 | 23 Oct 2026 | v2.15.331 | Task manager: up to 20 tasks per lane move forward each minute (Tasks moved per lane each minute). |
+| 1.72 | 23 Oct 2026 | v2.15.331 | Task manager: up to 40 tasks per lane move forward each minute; a live line shows the runner, what is waiting, running and finished, and each task's place in line. |

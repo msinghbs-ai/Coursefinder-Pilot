@@ -594,3 +594,6 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 .ab-edit input{min-width:22rem;flex:1 1 22rem}
 /* v2.15.317: course list page box in Adapter builder 2.1 */
 .ab-course-lists{margin:12px 0;padding:10px 12px;border:1px solid var(--m-border);border-radius:10px}
+
+/* v2.15.331 Task manager pulse: an info notice when the runner is alive (red only when it is late) */
+.m-alert.tm-pulse-ok{border-color:color-mix(in srgb,var(--cf-info) 28%,transparent);background:var(--cf-info-soft);color:var(--cf-info-ink)}

@@ -7,9 +7,10 @@ export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Task manager runs up to 20 tasks per lane each minute',
+  title:'Task manager: 40 tasks a minute, and shows it is alive',
   changes:[
-    'Scheduled jobs › Task manager: tasks started by people move forward up to 20 per lane each minute instead of one (Settings › Pipeline settings › Tasks moved per lane each minute, 1 to 20). A minute\'s run stops taking more after 40 seconds.'
+    'Scheduled jobs › Task manager: tasks started by people move forward up to 40 per lane each minute instead of one (Settings › Pipeline settings › Tasks moved per lane each minute, 1 to 40). A minute\'s run stops taking more after 40 seconds.',
+    'Task manager: a live line says when the page last refreshed, when the task runner last ran (red when it is late), how many tasks are waiting, running and finished in the last 15 minutes, and what the AI reader has waiting; each waiting task shows its place in line, when it starts and its items, and an Enrich fields task counts its items instead of 0 of 0.'
   ],
   bugFixes:[]
 }
