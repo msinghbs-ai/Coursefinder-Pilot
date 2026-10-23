@@ -37,9 +37,7 @@ values ('toolsets', 'setting', 'pipeline.reading.pages_at_once',
         jsonb_build_object('before', '8 (fixed in the worker)', 'after', 8, 'range', '1 to 32', 'reason', 'Platform Admin 23 Oct 2026 23:13 "Go" (migration 20261023027000)'),
         '63ba56cb-48d4-4169-98c2-7c4d1f72925b');
 
-insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('setting', 'pipeline.reading.pages_at_once', 'Layer 2', 'Pages one course-page read call fetches at the same time (worker coverage-sweep read)', 'active', '{}', '20261023027000')
-on conflict (kind, name) do nothing;
+-- No component_register row: settings are registered in pipeline.platform_toolset_settings itself (kind check allows job, table, view, edge_function, screen, function).
 
 do $t$ declare r jsonb; s record; begin
   select value, min_value, max_value, unit, section into s from pipeline.platform_toolset_settings where toolset_key='pipeline' and key='reading.pages_at_once';
