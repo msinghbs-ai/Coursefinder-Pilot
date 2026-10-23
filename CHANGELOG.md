@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.260 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.333** (AI reader load settings; OpenRouter on the Task manager). Platform Admin, 23 Oct 2026 19:27: "Lets test openrouter where it goes bottleneck, and make that settings configurable in ui as well."
+  - Worker `coverage-sweep-worker-v0.43.0`: enrich_ai and fee_ai count every OpenRouter request (answered, 429, 5xx, other, timed out, answer times) and return the summary; enrich_ai pages at once from the database (at most 12, fixed); fee_ai up to 16 pages at once. Migration `20261023022000_cf247_openrouter_load_settings.sql`: `enrich.ai_calls_at_once` 1 to 40, new `enrich.ai_pages_at_once` (1 to 12, 3), `fees.concurrency` 1 to 16 (logged, values unchanged); `security.enrich_ai_fire_v1` sends pages at once; `public.admin_jobs_pulse` sums the last 15 minutes (openrouter). `src/AdminTasks.jsx`: OpenRouter line, red when more than 5% are pushed back. SOPs 1.74. Consumer API unchanged (Decision 266).
+
 ## 0.1.259 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.332** (Task manager: up to 2,000 tasks a minute). Platform Admin, 23 Oct 2026 18:42: "We should try higher setting lets try 100"; 18:45: "Keep incrementing to higher i want to test the limits".

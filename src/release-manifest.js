@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.332'
-export const PACKAGE_VERSION='0.1.259'
+export const UI_VERSION='2.15.333'
+export const PACKAGE_VERSION='0.1.260'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Task manager: up to 2,000 tasks a minute',
+  title:'AI reader load settings; OpenRouter on the Task manager',
   changes:[
-    'Settings › Pipeline settings › Tasks moved per lane each minute goes up to 2,000 and is set to 1,000. Dry runs moved 1,000 Read with AI tasks in 12 seconds and 2,000 in 25 seconds. A minute\'s run still stops taking more after 40 seconds; lower the setting if the task manager shows the runner late.'
+    'Settings › Pipeline settings: Enrich fields: AI calls at once now 1 to 40, new Enrich fields: AI pages at once (1 to 12; it was 3, fixed in the worker), Fee reader: pages read at once now 1 to 16.',
+    'Scheduled jobs › Task manager: the live line shows how the AI readers\' OpenRouter requests went in the last 15 minutes (requests, answered, typical and slowest answer time, rate-limited, server errors, timed out); it turns red when more than 5% are pushed back.'
   ],
   bugFixes:[]
 }

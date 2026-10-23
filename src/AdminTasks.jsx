@@ -43,12 +43,19 @@ export function taskLine(j,pj,perLane){
   if(j.state==='queued'){const place=Number(pj?.place||0);const when=place&&perLane?(place<=perLane?'starts within a minute':`starts in about ${Math.ceil(place/perLane)} min`):'';return `Waiting${place?` · ${ord(place)} in line`:''}${when?` · ${when}`:''}${items?` · ${fmtNumber(it.total)} item(s)`:''}`}
   return `${fmtNumber(p?.done||0)} of ${fmtNumber(p?.total||0)}${items?' item(s)':''}${items&&Number(it.with_ai)>0?` · ${fmtNumber(it.with_ai)} with the AI reader`:''}${items&&Number(it.filled)>0?` · ${fmtNumber(it.filled)} filled`:''}`
 }
+// v2.15.333 (Platform Admin 23 Oct 2026 19:27: "Lets test openrouter where it goes bottleneck"): how the AI readers' OpenRouter requests
+// went in the last 15 minutes (worker v0.43.0); rate-limited (429), server errors and timeouts say where OpenRouter pushes back.
+export function orLine(o){
+  const s=x=>fmtNumber(Number(x||0)),sec=ms=>ms==null?'—':`${(Number(ms)/1000).toFixed(1)} s`
+  const bad=Number(o.http429||0)+Number(o.http5xx||0)+Number(o.timeout||0)
+  return `OpenRouter (15 min): ${s(o.calls)} request(s) from ${s(o.worker_calls)} AI reader call(s)${Number(o.worker_open)>0?` (${s(o.worker_open)} running)`:''}, ${s(o.ok)} answered, typical ${sec(o.ms_p50)}, slowest ${sec(o.ms_p95)}${bad?` · ${s(o.http429)} rate-limited (429), ${s(o.http5xx)} server error(s), ${s(o.timeout)} timed out`:' · none rate-limited'}${Number(o.worker_failed)>0?` · ${s(o.worker_failed)} AI reader call(s) failed`:''}.`
+}
 export function TaskPulse({pulse,loadedAt}){
   if(!pulse)return null
-  const r=pulse.runner||{},late=r.seconds_ago!=null&&Number(r.seconds_ago)>150
+  const r=pulse.runner||{},o=pulse.openrouter||{},late=(r.seconds_ago!=null&&Number(r.seconds_ago)>150)||(Number(o.calls)>0&&Number(o.http429||0)+Number(o.http5xx||0)+Number(o.timeout||0)>Number(o.calls)*0.05)
   return <div className={`m-alert compact${late?'':' tm-pulse-ok'}`} role="status" aria-live="polite" data-task-pulse data-task-pulse-late={late?'1':'0'}>
     {late?<AlertTriangle size={15}/>:<RefreshCw size={15}/>}
-    <span><b>{late?`The task runner has not run for ${ago(r.seconds_ago)}.`:'Live.'}</b> Refreshed {timeOf(loadedAt)}. Task runner last ran {r.seconds_ago!=null?`${ago(r.seconds_ago)} ago`:'—'} and moves up to {fmtNumber(pulse.per_lane||1)} task(s) per lane each minute. <span data-task-counts>{fmtNumber(pulse.queued||0)} waiting · {fmtNumber(pulse.running||0)} running{Number(pulse.paused)>0?` · ${fmtNumber(pulse.paused)} paused`:''} · {fmtNumber(pulse.finished_15m||0)} finished in the last 15 minutes (Jobs tab)</span>. AI reader: {fmtNumber(pulse.ai_waiting||0)} value(s) waiting, {fmtNumber(pulse.ai_done_15m||0)} read in the last 15 minutes.</span>
+    <span><b>{r.seconds_ago!=null&&Number(r.seconds_ago)>150?`The task runner has not run for ${ago(r.seconds_ago)}.`:late?'OpenRouter is pushing back: lower Enrich fields: AI calls at once.':'Live.'}</b> Refreshed {timeOf(loadedAt)}. Task runner last ran {r.seconds_ago!=null?`${ago(r.seconds_ago)} ago`:'—'} and moves up to {fmtNumber(pulse.per_lane||1)} task(s) per lane each minute. <span data-task-counts>{fmtNumber(pulse.queued||0)} waiting · {fmtNumber(pulse.running||0)} running{Number(pulse.paused)>0?` · ${fmtNumber(pulse.paused)} paused`:''} · {fmtNumber(pulse.finished_15m||0)} finished in the last 15 minutes (Jobs tab)</span>. AI reader: {fmtNumber(pulse.ai_waiting||0)} value(s) waiting, {fmtNumber(pulse.ai_done_15m||0)} read in the last 15 minutes.{pulse.openrouter&&Number(pulse.openrouter.worker_calls)>0&&<> <span data-task-openrouter>{orLine(pulse.openrouter)}</span></>}</span>
   </div>
 }
 
