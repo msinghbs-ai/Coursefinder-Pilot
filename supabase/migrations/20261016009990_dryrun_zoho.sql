@@ -23,26 +23,26 @@ values ('toolsets', 'setting', 'pipeline.jobs.per_lane_per_tick',
         '63ba56cb-48d4-4169-98c2-7c4d1f72925b');
 
 select pg_temp.edit_once('security.admin_jobs_tick_v1(integer)', '103c6596e1aea7a0096d2994ba782625', array[
-  array[$o$'jobs.per_lane_per_tick', 1)::int, 40));$o$, $n$'jobs.per_lane_per_tick', 1)::int, 100));$n$]]);
+  array[$o$'jobs.per_lane_per_tick', 1)::int, 40));$o$, $n$'jobs.per_lane_per_tick', 1)::int, 2000));$n$]]);
 select pg_temp.edit_once('public.admin_jobs_pulse()', 'b840c8e6130a71203bc8a57605f631b6', array[
-  array[$o$'jobs.per_lane_per_tick', 1)::int, 40))$o$, $n$'jobs.per_lane_per_tick', 1)::int, 100))$n$]]);
+  array[$o$'jobs.per_lane_per_tick', 1)::int, 40))$o$, $n$'jobs.per_lane_per_tick', 1)::int, 2000))$n$]]);
 
 do $d$ declare r jsonb; t0 timestamptz; ms int; n int;
 begin
-  update pipeline.platform_toolset_settings set value = '1000'::jsonb where toolset_key = 'pipeline' and key = 'jobs.per_lane_per_tick';
+  update pipeline.platform_toolset_settings set value = '250'::jsonb where toolset_key = 'pipeline' and key = 'jobs.per_lane_per_tick';
   with c as (select c.id, c.provider_id, c.canonical_title from catalogue.courses c join pipeline.coverage_course_pages g on g.course_id = c.id
-              where g.status = 'bound' and g.evidence_id is not null and c.duration_value is null and not security.enrich_item_held_v1(c.id, 'duration') limit 1000),
+              where g.status = 'bound' and g.evidence_id is not null and not security.enrich_item_held_v1(c.id, 'delivery') limit 250),
        j as (insert into pipeline.admin_jobs(kind, lane, state, title, args, progress, requested_by, reason, scope)
              select 'enrich_fields', 'enrich', 'queued', 'DRY ' || c.canonical_title,
-                    jsonb_build_object('read_now', true, 'countries', '[]'::jsonb, 'provider_ids', jsonb_build_array(c.provider_id), 'course_ids', jsonb_build_array(c.id), 'fields', '["duration"]'::jsonb, 'ai', true, 'scraper', false),
+                    jsonb_build_object('read_now', true, 'countries', '[]'::jsonb, 'provider_ids', jsonb_build_array(c.provider_id), 'course_ids', jsonb_build_array(c.id), 'fields', '["delivery"]'::jsonb, 'ai', true, 'scraper', false),
                     jsonb_build_object('done', 0, 'total', 0), '63ba56cb-48d4-4169-98c2-7c4d1f72925b'::uuid, 'dry run', '1 course' from c
              returning id, args)
   insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
-  select j.id, (j.args->'provider_ids'->>0)::uuid, (j.args->'course_ids'->>0)::uuid, 'duration', 'queued' from j;
+  select j.id, (j.args->'provider_ids'->>0)::uuid, (j.args->'course_ids'->>0)::uuid, 'delivery', 'queued' from j;
   get diagnostics n = row_count;
   t0 := clock_timestamp();
   r := security.admin_jobs_tick_v1(security.pipeline_num_v1('batch.admin_jobs', 10)::int);
   ms := (extract(epoch from clock_timestamp() - t0) * 1000)::int;
-  raise exception 'DRYRUN OK N=1000 items %; moved % in % ms; handed to AI %', n, jsonb_array_length(r), ms,
+  raise exception 'DRYRUN OK N=250 items %; moved % in % ms; handed to AI %', n, jsonb_array_length(r), ms,
     (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'DRY %' and i.state = 'ai');
 end $d$;
