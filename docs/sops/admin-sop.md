@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.329)  
+**Version:** 1.53 (reviewed for platform release v2.15.330)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -187,3 +187,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.68 | 23 Oct 2026 | v2.15.327 | Courses list: CRICOS tuition is now Tuition Only and Legacy presence is now Completeness. |
 | 1.69 | 23 Oct 2026 | v2.15.328 | Read with AI: course facts a page holds as labelled data items (campus, length, delivery) are read too; only the course's own page is read, never another course's. |
 | 1.70 | 23 Oct 2026 | v2.15.329 | Read with AI: a campus the university already has is linked from one course page. |
+| 1.71 | 23 Oct 2026 | v2.15.330 | AI values from an earlier page that was not the course's own are taken back or read again; University of Auckland South Auckland campus added. |

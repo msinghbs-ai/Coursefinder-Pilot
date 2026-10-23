@@ -606,3 +606,17 @@ test.describe('v2.15.329 Read with AI links a campus the university already has'
     expect(m).toMatch(/^-- Retires: /m)
   })
 })
+
+test.describe('v2.15.330 values from an older wrong page; South Auckland campus', () => {
+  test('older wrong-page values are taken back or read again; campus re-reads follow the paste file; no delete', async () => {
+    const m = fs.readFileSync('supabase/migrations/20261023019000_cf247_older_wrong_page_values_and_south_auckland.sql', 'utf8')
+    expect(m).toContain("case when g.status = 'mismatch' then 'take_back' else 'read_again' end act")
+    expect(m).toContain("and not exists (select 1 from pipeline.enrich_value_retractions r where r.item_id = i.id)")
+    expect(m).toContain("from _older o where o.act = 'read_again' and o.field <> 'campus' group by o.provider_id;")
+    expect(m).toContain("'campus:studysearch:e096aba7-e1eb-4903-9a63-2bfb71e9a8b8:south-auckland'")
+    expect(m).toMatch(/^-- Replaces: /m)
+    expect(m).toMatch(/^-- Retires: /m)
+    expect(m).not.toMatch(/^\s*delete\s+from/im)
+    expect(m).not.toMatch(/\b(drop|truncate)\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+  })
+})
