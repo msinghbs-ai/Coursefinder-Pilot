@@ -19,7 +19,7 @@ end $f$;
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
 values ('pipeline', 'jobs.per_lane_per_tick', 'Tasks moved per lane each minute',
         'How many tasks started by people (Scheduled jobs › Task manager) the task runner moves forward in each lane every minute, oldest first. It stops taking more after 40 seconds. 1 runs tasks one after another.',
-        'number', '20'::jsonb, '1', '20', 'tasks', 101, 'Job sizes', 'job admin-jobs',
+        'number', '40'::jsonb, '1', '40', 'tasks', 101, 'Job sizes', 'job admin-jobs',
         'Platform Admin 23 Oct 2026 16:40: maximise to speed it up')
 on conflict (toolset_key, key) do nothing;
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
@@ -30,7 +30,7 @@ values ('toolsets', 'setting', 'pipeline.jobs.per_lane_per_tick',
 select pg_temp.edit_once('security.admin_jobs_tick_v1(integer)', '865ed3c4a8b11aa9abe3368d7ee9cab1', array[
   array[$o$declare v_lane text; v_j pipeline.admin_jobs%rowtype; v_fin boolean; v_out jsonb := '[]'::jsonb;$o$,
         $n$declare v_lane text; v_j pipeline.admin_jobs%rowtype; v_fin boolean; v_out jsonb := '[]'::jsonb;
-        v_n int := greatest(1, least(security.pipeline_num_v1('jobs.per_lane_per_tick', 1)::int, 20)); v_t0 timestamptz := clock_timestamp();$n$],
+        v_n int := greatest(1, least(security.pipeline_num_v1('jobs.per_lane_per_tick', 1)::int, 40)); v_t0 timestamptz := clock_timestamp();$n$],
   array[$o$    select * into v_j from pipeline.admin_jobs j where j.lane = v_lane and j.state in ('queued', 'running')
      order by (j.state = 'running') desc, j.created_at limit 1 for update skip locked;
     if v_j.id is null then continue; end if;$o$,
@@ -44,10 +44,12 @@ select pg_temp.edit_once('security.admin_jobs_tick_v1(integer)', '865ed3c4a8b11a
     end loop;
   end loop;$n$]]);
 
-do $d$ declare r jsonb; b int; a int;
+do $d$ declare r jsonb; b int; a int; t0 timestamptz := clock_timestamp(); ms int;
 begin
-  select count(*) into b from pipeline.admin_jobs where title like 'Read with AI again from the correct page%' and state in ('queued','running');
+  select count(*) into b from pipeline.admin_jobs where state in ('queued','running') and lane = 'enrich';
   r := security.admin_jobs_tick_v1(security.pipeline_num_v1('batch.admin_jobs', 10)::int);
-  select count(*) into a from pipeline.admin_jobs where title like 'Read with AI again from the correct page%' and state in ('queued','running');
-  raise exception 'DRYRUN OK moved % tasks; re-read tasks open before % after %; setting %', jsonb_array_length(r), b, a, security.pipeline_num_v1('jobs.per_lane_per_tick', 1);
+  ms := extract(epoch from clock_timestamp() - t0) * 1000;
+  select count(*) into a from pipeline.admin_jobs where state in ('queued','running') and lane = 'enrich';
+  raise exception 'DRYRUN OK moved % tasks in % ms; done %; enrich tasks open before % after %; setting %', jsonb_array_length(r), ms,
+    (select count(*) from jsonb_array_elements(r) x where x->>'state' = 'done'), b, a, security.pipeline_num_v1('jobs.per_lane_per_tick', 1);
 end $d$;
