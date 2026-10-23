@@ -1,9 +1,13 @@
--- CF-247 (23 Oct 2026). Platform Admin 18:42: "We should try higher setting lets try 100"; 18:45: "Keep incrementing to higher i want
--- to test the limits if the system, we can decrease if it start failing or stalled by system". Dry runs on the live database (one
--- minute's run, one-course Read with AI tasks): 100 in 1.6 s, 250 in 3.5 s, 500 in 4.4 s, 1,000 in 12.4 s, 2,000 in 25.2 s (about
--- 12 ms a task; the 40-second stop is reached near 3,000). Tasks moved per lane each minute (jobs.per_lane_per_tick) now goes up to
--- 2,000 and is set to 1,000 (logged). The runner still stops taking more after 40 seconds, so a minute's run ends before the next.
--- Replaces: nothing (security.admin_jobs_tick_v1 and public.admin_jobs_pulse edited in place, md5-guarded)
+-- CF-247 (23 Oct 2026). Platform Admin 19:27: "Lets test openrouter where it goes bottleneck, and make that settings configurable in ui
+-- as well." The AI reader (Enrich fields) ran at most enrich.ai_calls_at_once (1 to 6) worker calls, each reading 3 pages at once
+-- (fixed in the worker), so at most 18 requests reached OpenRouter together; nothing recorded rate limits or answer times.
+-- 1 Settings (Settings › Pipeline settings, each with its range): enrich.ai_calls_at_once now 1 to 40; new enrich.ai_pages_at_once
+--   (pages one AI reader call reads at once, 1 to 12, 3 as before); fees.concurrency now 1 to 16. Values are unchanged here; the load
+--   test raises them step by step.
+-- 2 security.enrich_ai_fire_v1 sends enrich.ai_pages_at_once to the worker (v0.43.0).
+-- 3 Worker v0.43.0 returns, with each call, how its OpenRouter requests went (answered, rate-limited 429, server error, other, timed
+--   out, answer times); public.admin_jobs_pulse sums the last 15 minutes for the Task manager (openrouter).
+-- Replaces: nothing (security.enrich_ai_fire_v1 and public.admin_jobs_pulse edited in place, md5-guarded)
 -- Retires: nothing
 
 create or replace function pg_temp.edit_once(p_sig text, p_md5 text, p_edits text[][]) returns void language plpgsql as $f$
@@ -17,21 +21,59 @@ begin
   execute v_def;
 end $f$;
 
-update pipeline.platform_toolset_settings set max_value = '2000', value = '1000'::jsonb, reason = 'Platform Admin 23 Oct 2026 18:45: keep incrementing to test the limits', updated_at = now()
- where toolset_key = 'pipeline' and key = 'jobs.per_lane_per_tick';
-insert into pipeline.admin_control_events(area, action, target, detail, actor)
-values ('toolsets', 'setting', 'pipeline.jobs.per_lane_per_tick',
-        jsonb_build_object('before', 40, 'after', 1000, 'range', '1 to 2000', 'reason', 'Platform Admin 23 Oct 2026 18:45: keep incrementing to test the limits; dry run 1,000 in 12.4 s, 2,000 in 25.2 s (migration 20261023021000)'),
-        '63ba56cb-48d4-4169-98c2-7c4d1f72925b');
+-- 1 settings ---------------------------------------------------------------------------------------------------------------------------
+update pipeline.platform_toolset_settings set max_value = '40', reason = 'Platform Admin 23 Oct 2026 19:27: test where OpenRouter becomes the bottleneck', updated_at = now(),
+       help = 'AI reader (Enrich fields) worker calls running at the same time. Each call reads Enrich fields: AI pages at once pages together, so requests reaching OpenRouter at once = this × that. Watch the OpenRouter line on Scheduled jobs › Task manager: lower this when calls are rate-limited (429) or answers slow down.'
+ where toolset_key = 'pipeline' and key = 'enrich.ai_calls_at_once';
+insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason)
+values ('pipeline', 'enrich.ai_pages_at_once', 'Enrich fields: AI pages at once',
+        'Course pages one AI reader call reads with OpenRouter at the same time (it was 3, fixed in the worker). Requests reaching OpenRouter at once = this × Enrich fields: AI calls at once.',
+        'number', '3'::jsonb, '1', '12', 'pages', 102, 'Job sizes', 'job admin-jobs (Enrich fields), worker coverage-sweep enrich_ai',
+        'Platform Admin 23 Oct 2026 19:27: make that settings configurable in ui')
+on conflict (toolset_key, key) do nothing;
+update pipeline.platform_toolset_settings set max_value = '16', reason = 'Platform Admin 23 Oct 2026 19:27: test where OpenRouter becomes the bottleneck', updated_at = now()
+ where toolset_key = 'pipeline' and key = 'fees.concurrency';
+insert into pipeline.admin_control_events(area, action, target, detail, actor) values
+ ('toolsets', 'setting', 'pipeline.enrich.ai_calls_at_once', jsonb_build_object('range_before', '1 to 6', 'range_after', '1 to 40', 'reason', 'Platform Admin 23 Oct 2026 19:27 (migration 20261023022000)'), '63ba56cb-48d4-4169-98c2-7c4d1f72925b'),
+ ('toolsets', 'setting', 'pipeline.enrich.ai_pages_at_once', jsonb_build_object('added', true, 'value', 3, 'range', '1 to 12', 'reason', 'Platform Admin 23 Oct 2026 19:27 (migration 20261023022000)'), '63ba56cb-48d4-4169-98c2-7c4d1f72925b'),
+ ('toolsets', 'setting', 'pipeline.fees.concurrency', jsonb_build_object('range_before', '1 to 8', 'range_after', '1 to 16', 'reason', 'Platform Admin 23 Oct 2026 19:27 (migration 20261023022000)'), '63ba56cb-48d4-4169-98c2-7c4d1f72925b');
 
-select pg_temp.edit_once('security.admin_jobs_tick_v1(integer)', '103c6596e1aea7a0096d2994ba782625', array[
-  array[$o$'jobs.per_lane_per_tick', 1)::int, 40));$o$, $n$'jobs.per_lane_per_tick', 1)::int, 2000));$n$]]);
-select pg_temp.edit_once('public.admin_jobs_pulse()', 'b840c8e6130a71203bc8a57605f631b6', array[
-  array[$o$'jobs.per_lane_per_tick', 1)::int, 40))$o$, $n$'jobs.per_lane_per_tick', 1)::int, 2000))$n$]]);
+-- 2 the worker is told how many pages to read at once ----------------------------------------------------------------------------------
+select pg_temp.edit_once('security.enrich_ai_fire_v1()', 'bea52a45b124e3e9d9b3fd17cb92620a', array[
+  array[$o$jsonb_build_object('mode', 'enrich_ai', 'limit', security.pipeline_num_v1('enrich.ai_items_per_call', 30)::int)$o$,
+        $n$jsonb_build_object('mode', 'enrich_ai', 'limit', security.pipeline_num_v1('enrich.ai_items_per_call', 30)::int,
+                                                                       'concurrency', security.pipeline_num_v1('enrich.ai_pages_at_once', 3)::int)$n$]]);
 
-do $d$ begin
-  raise exception 'DRYRUN OK setting % max %; tick cap %; pulse cap %', security.pipeline_num_v1('jobs.per_lane_per_tick', 1),
-    (select max_value from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'jobs.per_lane_per_tick'),
-    pg_get_functiondef('security.admin_jobs_tick_v1(integer)'::regprocedure) like '%1)::int, 2000));%',
-    pg_get_functiondef('public.admin_jobs_pulse()'::regprocedure) like '%1)::int, 2000))%';
+-- 3 OpenRouter in the Task manager pulse -----------------------------------------------------------------------------------------------
+create or replace function security.jsonb_or_null_v1(p text) returns jsonb language plpgsql immutable set search_path to '' as $f$
+begin return p::jsonb; exception when others then return null; end $f$;
+revoke execute on function security.jsonb_or_null_v1(text) from public, anon, authenticated;
+
+select pg_temp.edit_once('public.admin_jobs_pulse()', 'ce231f5687d6ecf2b5370f3c86716ca0', array[
+  array[$o$    'jobs', coalesce((select jsonb_object_agg(o.id,$o$,
+        $n$    -- 23 Oct 2026: how the AI readers' OpenRouter requests went in the last 15 minutes (worker v0.43.0 returns them with each call)
+    'openrouter', (select jsonb_build_object('worker_calls', count(*), 'worker_open', count(*) filter (where r.id is null),
+                          'worker_failed', count(*) filter (where r.id is not null and r.status_code is distinct from 200),
+                          'calls', coalesce(sum((z.x->>'calls')::int), 0), 'ok', coalesce(sum((z.x->>'ok')::int), 0),
+                          'http429', coalesce(sum((z.x->>'http429')::int), 0), 'http5xx', coalesce(sum((z.x->>'http5xx')::int), 0),
+                          'timeout', coalesce(sum((z.x->>'timeout')::int), 0), 'other', coalesce(sum((z.x->>'other')::int), 0),
+                          'ms_p50', (percentile_cont(0.5) within group (order by (z.x->>'ms_p50')::numeric))::int,
+                          'ms_p95', max((z.x->>'ms_p95')::int))
+                     from pipeline.edge_request_log l left join net._http_response r on r.id = l.request_id
+                     cross join lateral (select security.jsonb_or_null_v1(r.content)->'openrouter' x) z
+                    where l.function_name = 'coverage-sweep' and l.mode in ('enrich_ai', 'fee_ai') and l.created_at > now() - interval '15 minutes'),
+    'jobs', coalesce((select jsonb_object_agg(o.id,$n$]]);
+
+insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
+ ('function', 'security.jsonb_or_null_v1', 'Operations', 'Reads a worker answer as JSON, or nothing when it is not JSON', 'active', '{}', '20261023022000')
+on conflict (kind, name) do nothing;
+
+do $d$ declare p jsonb;
+begin
+  perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
+  perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
+  p := public.admin_jobs_pulse();
+  raise exception 'DRYRUN OK openrouter %; fire sends pages %; settings %', p->'openrouter',
+    pg_get_functiondef('security.enrich_ai_fire_v1()'::regprocedure) like '%enrich.ai_pages_at_once%',
+    (select jsonb_object_agg(key, min_value || '-' || max_value || '=' || value) from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key in ('enrich.ai_calls_at_once', 'enrich.ai_pages_at_once', 'fees.concurrency'));
 end $d$;
