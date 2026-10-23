@@ -56,6 +56,7 @@ export default function QueueWatch({onError}){
             {(q.tools_out||[]).length>0&&<small className="qw-sub">Tool out: {q.tools_out.join(', ')}</small>}
             {(q.tools_waiting||[]).length>0&&<small className="qw-sub">Budget used today: {q.tools_waiting.join(', ')}</small>}
             {q.since&&<small className="qw-sub">Since {fmtDateTime(q.since)}</small>}
+            {q.why_idle&&<small className="qw-sub" data-why-idle>{q.why_idle}</small>}
             {q.fix_at&&['stuck','failing','out_of_toolset','nothing_left'].includes(q.state)&&<a className="ph-fix" href={q.fix_at}>Go to the screen</a>}</td>
           <td className="num">{q.pending==null?'—':fmtNumber(q.pending)}</td>
           <td className="num">{q.per_hour==null?'—':fmtNumber(q.per_hour)}{Number(q.failed_window||0)>0&&<small className="qw-sub">{fmtNumber(q.failed_window)} failed in the hour</small>}</td>

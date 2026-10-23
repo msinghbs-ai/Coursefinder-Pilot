@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.266 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.339** (R1: empty-tick backoff cap, per-mode ledger, why-idle line, apply-time identity check; Platform Admin 24 Oct 09:55).
+  - Migration `20261024004000_cf247_r1_backoff_ledger_identity.sql`: setting `tick.backoff_max_minutes` (15, 1–60) caps the idle guard's trial wait (`flag_jobs_v1`, md5-guarded); `worker_mode_waiting_v1` gains a "work is waiting" test for every paused-prone lane (13 modes) so the 10-minute flag recheck wakes a lane as soon as its queue is fed; `pipeline.mode_outcome_ledger` + `public.svc_worker_report_v1` (one row per worker call) + `security.lane_queue_wait_v1` (queue wait p50/p90/max per lane) + job `ledger-retention` daily 03:37 UTC (also removes old zero-yield snapshots, which v2.15.338 left to a job that never did); `pipeline.queue_watch.upstream_key` + `security.lane_why_idle_v1` shown on the Work queues screen (`admin_queue_watch`, md5-guarded); 219 University of Sydney companion data files get their attempts back (count-guarded); `coverage_apply_course_v1` quarantines a fee whose bound page carries a proof the country's tuition policy refuses (`fee_quarantined_identity`, Layer 4 source `identity_basis_reverify`; manual exempt; md5-guarded).
+  - Worker `coverage-sweep-worker-v0.46.0`: every call reports to the ledger after its answer is built; a `.json` address that answers with HTML is read as the page. Test s93. SOPs 1.80.
+
 ## 0.1.265 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.338** (zero-yield page re-acquisition; Platform Admin 24 Oct 07:43).
