@@ -34,6 +34,6 @@ do $t$ declare v_job uuid; v_item bigint; t0 timestamptz := clock_timestamp(); n
               and not exists (select 1 from catalogue.course_english_requirements e where e.course_id = g.course_id) limit 15 loop
     insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state, source, value, quote)
     values (v_job, r.provider_id, r.course_id, 'english', 'ai', 'ai_stored', '{"overall":6.5,"band":6.0}', 'IELTS 6.5 overall') returning id into v_item;
-    if security.enrich_apply_v1(v_item) = 'filled' then n := n + 1; end if;
+    perform security.enrich_apply_v1(v_item);
   end loop;
-  raise exception 'DRYRUN OK %', jsonb_build_object('filled', n, 'seconds', extract(epoch from clock_timestamp() - t0)); end $t$;
+  raise exception 'DRYRUN OK %', jsonb_build_object('states', (select jsonb_agg(jsonb_build_object('s', state, 'r', left(reason,80), 'ib', (select identity_basis from pipeline.coverage_course_pages g where g.course_id = i.course_id))) from pipeline.field_enrich_items i where i.job_id = v_job and i.quote = 'IELTS 6.5 overall'), 'seconds', extract(epoch from clock_timestamp() - t0)); end $t$;
