@@ -76,6 +76,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'zero_yield.providers_per_run', 'Reset: providers a run', 'Flagged providers the nightly job resets in one run when automatic resets are on.', 'number', '5'::jsonb, '1', '100', 'providers', 709, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate'),
  ('pipeline', 'zero_yield.auto_reset', 'Reset: automatic', '1 lets the nightly job reset verified-wrong pages of flagged providers by itself; 0 only detects and reports (a person runs the reset). Off until the University of Auckland pilot is reviewed.', 'number', '0'::jsonb, '0', '1', 'on/off', 710, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate: activation is a separate step'),
  ('pipeline', 'zero_yield.urls_max_age_days', 'Re-acquire: refresh the provider''s pages after', 'When the provider''s known pages (Firecrawl map, site maps) are older than this, a reset also asks the source finder to look again.', 'number', '14'::jsonb, '1', '180', 'days', 711, 'Zero-yield pages', 'security.zero_yield_reset_v1', 'zero-yield mandate'),
+ ('pipeline', 'zero_yield.level_words', 'Verify: level words', 'Words that name a study level; an on-pattern candidate page whose address names a level the course title does not is never taken as the course''s page.', 'list', '["certificate","diploma","graduate","postgraduate","bachelor","bachelors","master","masters","doctor","doctorate","phd","honours","foundation","associate","apprenticeship","micro"]'::jsonb, null, null, 'words', 714, 'Zero-yield pages', 'security.zero_yield_pages_v1', 'zero-yield mandate'),
  ('pipeline', 'zero_yield.detect_providers_per_run', 'Detect: providers measured a run', 'Providers the hourly detect job measures in one run, those not measured in the last day first; the day covers every provider.', 'number', '150'::jsonb, '10', '2000', 'providers', 713, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate'),
  ('pipeline', 'retention.zero_yield_snapshots_days', 'Zero-yield snapshots kept', 'Snapshots older than this are removed by retention-worker.', 'number', '90'::jsonb, '30', '365', 'days', 712, 'Retention', 'job retention-worker', 'zero-yield mandate')
 on conflict (toolset_key, key) do nothing;
@@ -90,7 +91,8 @@ with s as (
          security.pipeline_num_v1('zero_yield.off_pattern_share_max', 0.35) off_max,
          security.pipeline_num_v1('zero_yield.candidate_overlap_min', 0.6) c_min,
          coalesce((select s.value #>> '{}' from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'zero_yield.listing_url_pattern'), '^$') listing_rx,
-         coalesce((select s.value #>> '{}' from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'zero_yield.not_found_pattern'), '^$') nf_rx),
+         coalesce((select s.value #>> '{}' from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'zero_yield.not_found_pattern'), '^$') nf_rx,
+         coalesce((select array(select jsonb_array_elements_text(s.value)) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'zero_yield.level_words'), '{}'::text[]) level_words),
 b as materialized (
   select p.course_id, p.provider_id, k.iso_alpha2::text country, p.url, p.evidence_id, p.identity_basis, p.basis, c.canonical_title, p.candidates->>'page_title' page_title,
          regexp_replace(p.url, '^(https?://[^/]+/(?:[^/]+/){0,3}).*$', '\1') pattern,
@@ -130,9 +132,11 @@ cand as materialized (
   select z.course_id, c.url, c.ov
     from z cross join s
     join lateral (
-      select u.url, (select count(*) filter (where t = any (u.title_tokens) or t = any (u.tokens))::numeric / greatest(1, cardinality(z.ttok)) from unnest(z.ttok) t) ov
+      select u.url, (select count(*) filter (where t = any (u.tokens))::numeric / greatest(1, cardinality(z.ttok)) from unnest(z.ttok) t) ov
         from purl u
-       where u.provider_id = z.provider_id and u.url <> z.url and u.title_tokens && z.ttok
+       where u.provider_id = z.provider_id and u.url <> z.url and u.tokens && z.ttok
+         -- a candidate naming a level the course does not (graduate diploma for a diploma, master for a bachelor) is not the course's page
+         and not exists (select 1 from unnest(u.tokens) w where w = any (s.level_words) and not (w = any (z.ttok)))
          and not exists (select 1 from pipeline.page_rejections r where r.course_id = z.course_id and r.url = u.url)
        order by ov desc, length(u.url) limit 1) c on true
    where z.pattern_share < s.off_max)
@@ -276,7 +280,6 @@ do $t$ declare u uuid; r jsonb; before jsonb; after jsonb; prep jsonb; t0 timest
   d := security.zero_yield_detect_v1();
   raise exception 'DRYRUN OK %', jsonb_build_object('uoa_before', before, 'reset', r, 'uoa_after', after,
     'rejections', (select jsonb_object_agg(reason, n) from (select reason, count(*) n from pipeline.page_rejections where provider_id=u group by 1) z),
-    'sample', (select jsonb_agg(jsonb_build_object('u', regexp_replace(url,'^https://(www\.|study\.)?auckland\.ac\.nz',''), 'cand', regexp_replace(signals->>'candidate_url','^https://(www\.|study\.)?auckland\.ac\.nz',''), 'ov', signals->>'candidate_overlap')) from (select * from pipeline.page_rejections where provider_id=u order by random() limit 4) q),
+    'sample', (select jsonb_agg(jsonb_build_object('c', left(c.canonical_title,32), 'u', regexp_replace(x.url,'^https://(www\.|study\.)?auckland\.ac\.nz',''), 'cand', regexp_replace(x.signals->>'candidate_url','^https://(www\.|study\.)?auckland\.ac\.nz/en/study/study-options/find-a-study-option/',''), 'ov', x.signals->>'candidate_overlap')) from (select * from pipeline.page_rejections where provider_id=u order by random() limit 6) x join catalogue.courses c on c.id=x.course_id),
     'prepare', prep, 'ready_for_uoa', (select count(*) from pipeline.coverage_ai_match q where q.provider_id=u and q.state='ready'),
-    'detect', d, 'detect_ms', round(extract(epoch from clock_timestamp()-t0)*1000),
-    'top25_flagged', (select jsonb_agg(jsonb_build_object('p', left(pr.canonical_name,22), 'cc', s.country, 'b', s.bound, 'z', s.zero_yield, 'w', s.verified_wrong)) from pipeline.zero_yield_snapshots s join catalogue.providers pr on pr.id=s.provider_id where s.flagged)); end $t$;
+    'detect', d, 'detect_ms', round(extract(epoch from clock_timestamp()-t0)*1000)); end $t$;
