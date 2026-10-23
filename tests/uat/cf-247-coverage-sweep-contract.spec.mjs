@@ -14,12 +14,15 @@ async function load() {
 test('identity needs the CRICOS course code on the page or the exact course title', async () => {
   const { identity, htmlToText } = await load()
   const page = '<html><head><title>Bachelor of Science | Example University</title></head><body><h1>Bachelor of Science</h1><p>CRICOS code: 058837J</p></body></html>'
-  expect(identity(page, htmlToText(page), 'Bachelor of Science', '058837J')).toBe('cricos_code')
-  expect(identity(page, htmlToText(page), 'Bachelor of Science', '000000A')).toBe('exact_title')
+  // identity-v0.6.0 (24 Oct 2026): a CRICOS proof is Australian; the same page from any other country is proved by its title only
+  expect(identity(page, htmlToText(page), 'Bachelor of Science', '058837J', false, 'AU')).toBe('cricos_code')
+  expect(identity(page, htmlToText(page), 'Bachelor of Science (Physics)', '058837J', false, 'NZ')).toBeNull()
+  expect(identity(page, htmlToText(page), 'Bachelor of Science', '058837J', false, 'CA')).toBe('exact_title')
+  expect(identity(page, htmlToText(page), 'Bachelor of Science', '000000A', false, 'AU')).toBe('exact_title')
   expect(identity(page, htmlToText(page), 'Bachelor of Science (Physics)', '000000A')).toBeNull()
   const other = '<title>Master of Science | Example</title><h1>Master of Science</h1>'
-  expect(identity(other, htmlToText(other), 'Bachelor of Science', '058837J')).toBeNull()
-  expect(identity(page, htmlToText(page), 'Bachelor of Science', '000000A', true)).toBeNull()
+  expect(identity(other, htmlToText(other), 'Bachelor of Science', '058837J', false, 'AU')).toBeNull()
+  expect(identity(page, htmlToText(page), 'Bachelor of Science', '000000A', true, 'AU')).toBeNull()
 })
 
 test('tuition, English and intake candidates', async () => {

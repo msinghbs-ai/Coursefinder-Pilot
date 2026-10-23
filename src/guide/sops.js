@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.336'
+export const SOP_REVIEWED_FOR = '2.15.337'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -179,7 +179,8 @@ export const SOPS = [
       { version: '1.74', date: '23 Oct 2026', release: '2.15.333', change: 'AI reader load settings (calls at once, pages at once); the Task manager shows how OpenRouter requests went in the last 15 minutes.' },
       { version: '1.75', date: '23 Oct 2026', release: '2.15.334', change: 'NZ transition register and daily re-check; Change website can move the course pages too; international fee floor per country quarantines low fees to Layer 4.' },
       { version: '1.76', date: '23 Oct 2026', release: '2.15.335', change: 'Read course pages: the lane takes up to 200 pages a call (it was 60 fixed in the worker) and the pages fetched at once is a setting (Settings › Pipeline settings › Job sizes).' },
-      { version: '1.77', date: '24 Oct 2026', release: '2.15.336', change: 'Official link filled from the course\'s proven own page (NZ first; Settings › Pipeline settings › Official link): nightly job with four guards; a link is taken back when the page is no longer bound.' }],
+      { version: '1.77', date: '24 Oct 2026', release: '2.15.336', change: 'Official link filled from the course\'s proven own page (NZ first; Settings › Pipeline settings › Official link): nightly job with four guards; a link is taken back when the page is no longer bound.' },
+      { version: '1.78', date: '24 Oct 2026', release: '2.15.337', change: 'CRICOS proofs are Australian only: a New Zealand page is proved by its NZQA programme code or title, a Canadian page by its title; 406 mislabelled NZ and CA bindings re-verified; the CRICOS fee column is hidden on NZ and CA course lists.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -307,7 +308,8 @@ export const SOPS = [
       { version: '1.74', date: '23 Oct 2026', release: '2.15.333', change: 'AI reader load settings (calls at once, pages at once); the Task manager shows how OpenRouter requests went in the last 15 minutes.' },
       { version: '1.75', date: '23 Oct 2026', release: '2.15.334', change: 'NZ transition register and daily re-check; Change website can move the course pages too; international fee floor per country quarantines low fees to Layer 4.' },
       { version: '1.76', date: '23 Oct 2026', release: '2.15.335', change: 'Read course pages: the lane takes up to 200 pages a call (it was 60 fixed in the worker) and the pages fetched at once is a setting (Settings › Pipeline settings › Job sizes).' },
-      { version: '1.77', date: '24 Oct 2026', release: '2.15.336', change: 'Official link filled from the course\'s proven own page (NZ first; Settings › Pipeline settings › Official link): nightly job with four guards; a link is taken back when the page is no longer bound.' }],
+      { version: '1.77', date: '24 Oct 2026', release: '2.15.336', change: 'Official link filled from the course\'s proven own page (NZ first; Settings › Pipeline settings › Official link): nightly job with four guards; a link is taken back when the page is no longer bound.' },
+      { version: '1.78', date: '24 Oct 2026', release: '2.15.337', change: 'CRICOS proofs are Australian only: a New Zealand page is proved by its NZQA programme code or title, a Canadian page by its title; 406 mislabelled NZ and CA bindings re-verified; the CRICOS fee column is hidden on NZ and CA course lists.' }],
   },
 ]
 

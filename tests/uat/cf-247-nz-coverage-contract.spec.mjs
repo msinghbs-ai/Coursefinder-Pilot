@@ -15,7 +15,7 @@ const pg = (title, h1, body) => `<html><head><title>${title}</title></head><body
 
 test('NZ identity: NZQA title with the same level, labelled NZQA number; Australia unchanged', async () => {
   const { identity, htmlToText } = await load()
-  const id = (html, title, code) => identity(html, htmlToText(html), title, code)
+  const id = (html, title, code, cc = '') => identity(html, htmlToText(html), title, code, false, cc)
   // heading without the level, page shows the same level
   expect(id(pg('Bachelor of Applied Information Technology | Wintec', 'Bachelor of Applied Information Technology', 'NZQA Level 7 degree'), 'Bachelor of Applied Information Technology (Level 7)', '3187')).toBe('title_level')
   // "+" for "and", and "NZ" for "New Zealand"
@@ -32,8 +32,9 @@ test('NZ identity: NZQA title with the same level, labelled NZQA number; Austral
   expect(id(pg('Some heading', 'Some heading', 'NZQA qualification number: 3187'), 'Bachelor of Something Else (Level 7)', '3187')).toBe('nzqa_code')
   // a bare 4-digit number is not enough
   expect(id(pg('Some heading', 'Some heading', 'Call 3187 today'), 'Bachelor of Something Else (Level 7)', '3187')).toBeNull()
-  // Australia: unchanged
-  expect(id(pg('Bachelor of Science | Uni', 'Bachelor of Science', 'CRICOS 058837J'), 'Bachelor of Science', '058837J')).toBe('cricos_code')
+  // Australia: unchanged (identity-v0.6.0: the CRICOS proof needs the page to be Australian; elsewhere the same page is proved by its title)
+  expect(id(pg('Bachelor of Science | Uni', 'Bachelor of Science', 'CRICOS 058837J'), 'Bachelor of Science', '058837J', 'AU')).toBe('cricos_code')
+  expect(id(pg('Bachelor of Science | Uni', 'Bachelor of Science', 'CRICOS 058837J'), 'Bachelor of Science', '058837J', 'NZ')).toBe('exact_title')
   expect(id(pg('Bachelor of Science | Uni', 'Bachelor of Science', ''), 'Bachelor of Science', '000000A')).toBe('exact_title')
 })
 

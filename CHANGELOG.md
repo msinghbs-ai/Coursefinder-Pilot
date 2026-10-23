@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.264 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.337** (CRICOS proofs Australian only; Platform Admin 24 Oct 07:32).
+  - Worker `coverage-sweep-worker-v0.45.0`, identity rule `identity-v0.6.0`: `cricos_code` only for AU pages; NZ code on page → `nzqa_code`; CA and others → title rules. `FC_TRUSTED_BASIS` gains `nzqa_code`, `adapter_code`.
+  - Migration `20261024002000_cf247_cricos_australia_only.sql`: `coverage_identity_allowed` refuses CRICOS proofs outside AU; `cricos_code` removed from every non-AU proof list; `svc_coverage_read_record` and `coverage_bind_v2` country-aware (md5-guarded); 406 mislabelled NZ/CA bindings re-verified (count-guarded); fee requests for the 149 quarantined courses.
+  - Courses list: CRICOS fee column hidden when the country filter is not AU. Tests s91 (new), s27 updated. SOPs 1.78.
+
 ## 0.1.263 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.336** (NZ brief item 5 Option A: official course link filled from the proven page; Platform Admin 23 Oct 20:42, built on the 24 Oct 00:35 mandate).

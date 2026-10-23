@@ -5,7 +5,7 @@ import fs from 'node:fs'
 const worker = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
 
 test('worker v0.21.5: Firecrawl reads only pages found by CRICOS code, listed by the university or entered by a person', () => {
-  expect(worker).toContain('const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"];')
+  expect(worker).toContain('const FC_TRUSTED_BASIS = ["cricos_search", "cricos_code", "cricos_code_on_page", "nzqa_code", "adapter_code", "title_match", "cms_path_public", "manual", "firecrawl_upgrade", "ai_match", "programme_list"];')
   // v0.38.1 (22 Oct 2026): pages the AI page match chose from the university's own list; v0.39.0: pages from the university's programme list
   for (const b of ['title_search', 'firecrawl_search', 'serper_search']) expect(worker).not.toMatch(new RegExp(`FC_TRUSTED_BASIS = \\[[^\\]]*"${b}"`))
   // v0.36.0 (Platform Admin 22 Oct 2026, NZ review fix 3): a page that needed a browser in pages.render_countries is also rendered (render_ok)

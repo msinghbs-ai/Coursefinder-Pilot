@@ -634,7 +634,8 @@ function Catalogue({type,onError,navigate,initialId='',completenessMode=false,ra
   useEffect(()=>{if(!typeCol||Number(rank)<5)return;let live=true;supabase.rpc('admin_provider_type_rules',{p_action:'list',p_args:{}}).then(({data,error})=>{if(error)throw error;if(live)setTypeOpts(data?.types||[])}).catch(e=>onError(e.message));return()=>{live=false}},[typeCol,rank])
   const setType=async(r,code)=>{setTypeBusy(String(r.id));try{const{data,error}=await supabase.rpc('admin_provider_set_type',{p_provider_id:r.id,p_type_code:code});if(error)throw error;setTypeOver(o=>({...o,[r.id]:data}))}catch(e){onError(e.message)}finally{setTypeBusy('')}}
   const typeCell={key:'provider_type_name',label:'Type',width:200,sortKey:'type',render:r=><TypeCell row={{...r,...(typeOver[r.id]||{})}} opts={typeOpts} can={Number(rank)>=5} busy={typeBusy===String(r.id)} onSet={code=>setType(r,code)}/>}
-  const baseCols=columns(type,completenessMode).flatMap(c=>type==='provider'&&!completenessMode&&c.key==='publication_status'?[pubCol]:typeCol&&c.key==='country_code'?[c,typeCell]:[c])
+  // v2.15.337 (Platform Admin 24 Oct 2026 07:32: CRICOS is Australian only): the registered CRICOS fee column is shown only when the list is Australian or has no country filter
+  const baseCols=columns(type,completenessMode).flatMap(c=>type==='provider'&&!completenessMode&&c.key==='publication_status'?[pubCol]:typeCol&&c.key==='country_code'?[c,typeCell]:[c]).filter(c=>!(type==='course'&&c.key==='fee_amount'&&filters.country&&String(filters.country).toUpperCase()!=='AU'))
   // v2.15.271 (Platform Admin, 14 Oct 2026): a visible Scholarship search flag on each provider row; Off rows are switched on in the provider panel
   const schCol=type==='provider'&&!completenessMode
   const[schStates,setSchStates]=useState({})
