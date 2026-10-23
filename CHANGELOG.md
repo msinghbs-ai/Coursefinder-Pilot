@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.256 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.329** (Read with AI links a campus the university already has). Read with AI on the University of Auckland diplomas (v0.42.3) read ["City","South Auckland"] but linked no campus: the campus list step kept only names given exactly, and a campus needed `enrich.campus_min_pages` (2) course pages while Read with AI reads one course.
+  - Worker `coverage-sweep-worker-v0.42.4`: a campus name found inside a name given as a list is kept. Migration `20261023018000_cf247_campus_list_existing_campus_one_page.sql`: `security.enrich_campus_list_apply_v1` links an active campus of the same name from one course page; a new campus still needs the setting's pages or a person. SOPs 1.70. Consumer API unchanged (Decision 266).
+
 ## 0.1.255 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.328** (Read with AI reads labelled page data items). Read with AI on the 12 University of Auckland diplomas (13:13) found no campus, length or delivery: the catalogue holds them as display items (P5_CAMPUS, P5_DURATION_FULL_TIME, P5_DELIVERY_MODE) outside the page's main text, which the reader dropped.

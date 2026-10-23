@@ -1,18 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.328'
-export const PACKAGE_VERSION='0.1.255'
+export const UI_VERSION='2.15.329'
+export const PACKAGE_VERSION='0.1.256'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'AI reader: labelled page data; only the course\'s own page',
-  changes:[
-    'Read with AI and the AI reader for every attribute also read the course facts a page holds as labelled data items outside its main text (the University of Auckland catalogue gives campus, full-time length, delivery and study mode only this way).'
-  ],
+  title:'Read with AI links a campus the university already has',
+  changes:[],
   bugFixes:[
-    'The AI reader for every attribute read a page already found to be another course\'s (for example the Diploma in Dance Studies took its delivery from the Master of Dance Studies page). It now reads only the course\'s own page, and the 3,371 values taken from other courses\' pages are taken back (kept in a list so each can be checked or restored); campus links from those pages go to the Platform Admin as a paste file.'
+    'Read with AI found the campus a course page names (University of Auckland: City, South Auckland) but linked none: a campus needed two course pages naming it, and Read with AI reads one course. A campus the university already has is now linked from one page; a new campus still needs two pages or a person. A campus named inside a list is kept.'
   ]
 }
 

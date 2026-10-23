@@ -571,7 +571,7 @@ test.describe('v2.15.328 Read with AI reads labelled page data items', () => {
     const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
     expect(x).toContain('export function pageDataItems(html: string)')
     expect(x).toContain('display[_-]only')
-    expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.42.3";')
+    expect(w).toContain('v0.42.3 (23 Oct 2026, Read with AI on the Auckland diplomas')
     expect(w).toContain('const raw = await readStored(pg.storage_path), data = pageDataItems(raw);')
     expect(w).toContain('(data ? `Page data fields:\\n${data}\\n\\n` : "") + mainText(raw)')
     expect(w).toContain("Page data fields at the top of the page text are the page's own labelled values")
@@ -591,5 +591,18 @@ test.describe('v2.15.328 the AI reader reads only the course\'s own page', () =>
     expect(m).toMatch(/^-- Retires: /m)
     expect(m).not.toMatch(/\b(drop|truncate)\s+(table|function|column|constraint|index|schema|view|trigger|type)?\b/i)
     expect(m).not.toMatch(/^\s*delete\s+from/im)
+  })
+})
+
+test.describe('v2.15.329 Read with AI links a campus the university already has', () => {
+  test('a campus inside a listed name is kept; an existing campus needs one page, a new one the setting', async () => {
+    const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+    expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.42.4";')
+    expect(w).toContain('names.some((n) => n === r || (flat(r).length >= 2 && flat(n).includes(flat(r))))')
+    const m = fs.readFileSync('supabase/migrations/20261023018000_cf247_campus_list_existing_campus_one_page.sql', 'utf8')
+    expect(m).toContain("'security.enrich_campus_list_apply_v1(bigint)', '2617420b455dea68f7cb2cbed8271088'")
+    expect(m).toContain("if v_pages < 1 or (v_pages < v_min and not exists (select 1 from catalogue.campuses ca where ca.id = v_cid and ca.status = 'active')) then")
+    expect(m).toMatch(/^-- Replaces: /m)
+    expect(m).toMatch(/^-- Retires: /m)
   })
 })
