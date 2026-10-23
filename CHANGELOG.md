@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.263 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.336** (NZ brief item 5 Option A: official course link filled from the proven page; Platform Admin 23 Oct 20:42, built on the 24 Oct 00:35 mandate).
+  - Migration `20261024001000_cf247_course_url_fill.sql`: table `pipeline.course_url_fills`, `security.course_url_fill_v1` (four guards), `security.course_url_retraction_30d_v1`, settings `course_url.fill_enabled`, `course_url.max_retraction_pct`, `batch.course_url_fill`, `course_url.fill_countries` (NZ), job `course-url-fill` daily 02:23 UTC. Dry run: NZ 1,874 fill (AU 16,887 and CA 1,836 would fill if the country list is widened); guard 3 proven (one unbind → one retraction, one emptied). SOPs 1.77.
+  - Test `tests/uat/cf-247-s90-course-url-fill-contract.spec.mjs`.
+
 ## 0.1.262 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.335** (read lane capacity from Settings; Platform Admin 22:57 and 23:13 "Go").

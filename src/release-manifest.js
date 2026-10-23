@@ -1,16 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.335'
-export const PACKAGE_VERSION='0.1.262'
+export const UI_VERSION='2.15.336'
+export const PACKAGE_VERSION='0.1.263'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'23 Oct 2026',
-  title:'Read course pages: capacity from Settings',
+  date:'24 Oct 2026',
+  title:'Official course link filled from the proven page (NZ first)',
   changes:[
-    'Settings › Pipeline settings › Job sizes: Read course pages (10 to 200 a call) now takes effect above 60 (the worker and the picker had capped it at 60), and the new Read course pages: pages fetched at once (1 to 32, was 8 fixed in the worker) sets how many pages one call fetches from the universities at the same time. Raise them in steps and watch fetch failures and blocked pages.',
-    'Worker coverage-sweep-worker-v0.44.0.'
+    'A course with no official link gets the address of its proven own page (bound, a proof the country accepts for the official link, stored copy) each night at 02:23 UTC, for the countries in Settings › Pipeline settings › Official link: countries filled (NZ first). A person-set or locked link is never touched; a filled link is taken back when the page is no longer bound or its copy changed, and filled again from the new binding; the job pauses itself when more than Official link: most taken back of the last 30 days\' fills were taken back. Each fill keeps the page copy as its proof.',
+    'Consumer API unchanged (Decision 266): course_url is an existing nullable field, now populated more often.'
   ],
   bugFixes:[]
 }
