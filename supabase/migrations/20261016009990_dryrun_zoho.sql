@@ -52,9 +52,11 @@ begin
       select r.provider_id, v_site, 'check', 'NZ transition re-check (' || r.risk || ', every ' || r.every || ' days)', t.decided_by
         from pipeline.provider_transitions t where t.provider_id = r.provider_id and t.decided_by is not null;
     end if;
-    insert into pipeline.source_find_runs as s (provider_id, state, work, next_try_at)
-    values (r.provider_id, 'queued', jsonb_build_object('again', true, 'reason', 'NZ transition re-check'), now())
-    on conflict (provider_id) do update set work = coalesce(s.work, '{}'::jsonb) || jsonb_build_object('again', true, 'reason', 'NZ transition re-check'), next_try_at = now();
+    -- the same "find again" as Course sources › Find again (admin_course_sources): a run row asked to look again
+    update pipeline.source_find_runs set next_try_at = now(), step = null, leased_until = null, work = jsonb_build_object('again', true, 'reason', 'NZ transition re-check')
+     where provider_id = r.provider_id;
+    insert into pipeline.source_find_runs(provider_id, state, next_try_at, work)
+    values (r.provider_id, 'none', now(), jsonb_build_object('again', true, 'reason', 'NZ transition re-check')) on conflict (provider_id) do nothing;
     update pipeline.provider_transitions set last_checked_at = now(), last_check = jsonb_build_object('at', now(), 'website', v_site, 'queued', true), updated_at = now()
      where provider_id = r.provider_id;
     v_n := v_n + 1;
