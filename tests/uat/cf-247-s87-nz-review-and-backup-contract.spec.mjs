@@ -547,3 +547,16 @@ test('20261023015000: CA fee proofs and CA fee reader, AU scraper, NZ adapter ti
   expect(m.indexOf("insert into pipeline.automation_catalogue(jobname")).toBeLessThan(m.indexOf("select cron.schedule('central-attach'"))
   expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
 })
+
+test.describe('v2.15.326 Courses list', () => {
+  test('shows the international fee with its year and the campus city', async ({ page }) => {
+    const { mockAdmin } = await import('./support/admin-mock.mjs')
+    await mockAdmin(page)
+    await page.goto('/#courses')
+    await expect(page.getByRole('columnheader', { name: 'International fee' })).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: 'City' })).toBeVisible()
+    await expect(page.getByText('(2027)')).toBeVisible()
+    const m = fs.readFileSync('supabase/migrations/20261023016000_cf247_course_list_international_fee_city.sql', 'utf8')
+    expect(m).toContain("ifee.amount intl_fee_amount,ifee.currency_code::text intl_fee_currency,ifee.fee_year intl_fee_year,gcity.city_names,")
+  })
+})

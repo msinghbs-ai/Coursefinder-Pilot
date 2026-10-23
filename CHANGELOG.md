@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.253 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.326** (Courses list: international fee and city). Platform Admin, 23 Oct 2026 12:52: "Still no city or fees on these."
+  - Migration `20261023016000_cf247_course_list_international_fee_city.sql`; worker `coverage-sweep-worker-v0.42.2`; `src/mature-main.jsx` columns.
+  - Consumer API unchanged (Decision 266). SOPs 1.67.
+
 ## 0.1.252 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.325** (the AI reader covers every attribute; why values are missing, every hour). Platform Admin, 23 Oct 2026 10:25: "cross check the gaps and accommodate the ai reader requiement. What is point of hourly reporting if you are not finding gaps and making the platform self sufficient."
