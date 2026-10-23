@@ -158,7 +158,7 @@ select security.gap_causes_snapshot_v1();
 select 'CA fees, AU scraper, NZ adapter title, university English rules found and approved automatically' ok;
 do $t$ begin
   raise exception 'DRYRUN OK %', jsonb_build_object(
-    'attached', (select jsonb_agg(left(p.display_name,20)||': '||left(f.url,70)) from pipeline.provider_fact_sources f join catalogue.providers p on p.id=f.provider_id where f.kind='english_policy' and f.status='found' and f.created_at > now() - interval '1 minute' and security.coverage_country(f.provider_id)='NZ'),
+    'attached_n', (select count(*) from pipeline.provider_fact_sources f where f.kind='english_policy' and f.status='found' and f.created_at > now() - interval '1 minute'),
     'adapter_title_fee', (select count(*) from pipeline.coverage_course_pages g where g.identity_basis='adapter_title' and security.coverage_country(g.provider_id)='NZ' and security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'tuition')),
     'au_adapter_title_english', (select count(*) filter (where security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'english')) || '/' || count(*) from pipeline.coverage_course_pages g where g.identity_basis='adapter_title' and security.coverage_country(g.provider_id)='AU'),
     'ca_exact_fee', (select count(*) from pipeline.coverage_course_pages g where g.identity_basis='exact_title' and security.coverage_country(g.provider_id)='CA' and security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'tuition')),
