@@ -76,6 +76,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'zero_yield.providers_per_run', 'Reset: providers a run', 'Flagged providers the nightly job resets in one run when automatic resets are on.', 'number', '5'::jsonb, '1', '100', 'providers', 709, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate'),
  ('pipeline', 'zero_yield.auto_reset', 'Reset: automatic', '1 lets the nightly job reset verified-wrong pages of flagged providers by itself; 0 only detects and reports (a person runs the reset). Off until the University of Auckland pilot is reviewed.', 'number', '0'::jsonb, '0', '1', 'on/off', 710, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate: activation is a separate step'),
  ('pipeline', 'zero_yield.urls_max_age_days', 'Re-acquire: refresh the provider''s pages after', 'When the provider''s known pages (Firecrawl map, site maps) are older than this, a reset also asks the source finder to look again.', 'number', '14'::jsonb, '1', '180', 'days', 711, 'Zero-yield pages', 'security.zero_yield_reset_v1', 'zero-yield mandate'),
+ ('pipeline', 'zero_yield.detect_providers_per_run', 'Detect: providers measured a run', 'Providers the hourly detect job measures in one run, those not measured in the last day first; the day covers every provider.', 'number', '150'::jsonb, '10', '2000', 'providers', 713, 'Zero-yield pages', 'job zero-yield-detect', 'zero-yield mandate'),
  ('pipeline', 'retention.zero_yield_snapshots_days', 'Zero-yield snapshots kept', 'Snapshots older than this are removed by retention-worker.', 'number', '90'::jsonb, '30', '365', 'days', 712, 'Retention', 'job retention-worker', 'zero-yield mandate')
 on conflict (toolset_key, key) do nothing;
 
@@ -197,9 +198,14 @@ create or replace function security.zero_yield_detect_v1() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare v_at timestamptz := date_trunc('minute', now()); v_min int := security.pipeline_num_v1('zero_yield.min_bound', 10)::int;
         v_rate numeric := security.pipeline_num_v1('zero_yield.flag_rate_pct', 25); v_auto boolean := security.pipeline_num_v1('zero_yield.auto_reset', 0) = 1;
-        v_per int := greatest(1, security.pipeline_num_v1('zero_yield.providers_per_run', 5)::int); r record; v_r jsonb; v_reset int := 0; v_prov int := 0; v_flag int := 0;
+        v_per int := greatest(1, security.pipeline_num_v1('zero_yield.providers_per_run', 5)::int); v_batch int := greatest(10, least(security.pipeline_num_v1('zero_yield.detect_providers_per_run', 150)::int, 2000));
+        r record; v_r jsonb; v_reset int := 0; v_prov int := 0; v_flag int := 0;
 begin
-  for r in select distinct p.provider_id from pipeline.coverage_course_pages p join pipeline.evidence_artifacts e on e.id = p.evidence_id and e.storage_path is not null where p.status = 'bound' and p.read_status = 'read' loop
+  -- providers not measured in the last day first, a bounded number a run (the job runs hourly, so every provider is measured each day)
+  for r in select x.provider_id from (select distinct p.provider_id from pipeline.coverage_course_pages p join pipeline.evidence_artifacts e on e.id = p.evidence_id and e.storage_path is not null where p.status = 'bound' and p.read_status = 'read') x
+            where not exists (select 1 from pipeline.zero_yield_snapshots s where s.provider_id = x.provider_id and s.at > now() - interval '23 hours')
+            order by (select count(*) from pipeline.coverage_course_pages p2 where p2.provider_id = x.provider_id and p2.status = 'bound') desc
+            limit v_batch loop
     insert into pipeline.zero_yield_snapshots(at, provider_id, country, bound, zero_yield, verified_wrong, rate_pct, flagged, detail)
     select v_at, z.provider_id, z.country, count(*), count(*) filter (where z.zero), count(*) filter (where z.verified_wrong),
            round(100.0 * count(*) filter (where z.zero) / count(*), 1),
@@ -210,18 +216,22 @@ begin
     v_prov := v_prov + 1;
   end loop;
   select count(*) into v_flag from pipeline.zero_yield_snapshots s where s.at = v_at and s.flagged;
+  -- resets (when switched on) consider every flagged provider measured in the last day, most affected first
   if v_auto then
-    for r in select s.provider_id from pipeline.zero_yield_snapshots s where s.at = v_at and s.flagged and s.verified_wrong > 0 order by s.verified_wrong desc limit v_per loop
+    for r in select distinct on (s.provider_id) s.provider_id, s.verified_wrong from pipeline.zero_yield_snapshots s where s.at > now() - interval '23 hours' and s.flagged and s.verified_wrong > 0
+               and not exists (select 1 from pipeline.admin_control_events d where d.action = 'zero_yield_reset' and d.target = s.provider_id::text and d.created_at > now() - interval '23 hours')
+             order by s.provider_id, s.at desc loop
       v_r := security.zero_yield_reset_v1(r.provider_id);
       v_reset := v_reset + coalesce((v_r->>'reset')::int, 0);
-      update pipeline.zero_yield_snapshots s set reset = coalesce((v_r->>'reset')::int, 0) where s.at = v_at and s.provider_id = r.provider_id;
+      update pipeline.zero_yield_snapshots s set reset = coalesce((v_r->>'reset')::int, 0) where s.provider_id = r.provider_id and s.at = (select max(at) from pipeline.zero_yield_snapshots where provider_id = r.provider_id);
+      exit when (select count(*) from pipeline.admin_control_events d where d.action = 'zero_yield_reset' and d.created_at > now() - interval '1 hour') >= v_per;
     end loop;
   end if;
   insert into pipeline.admin_control_events(area, action, target, detail, actor)
   values ('pipeline', 'zero_yield_detect', 'zero_yield_snapshots', jsonb_build_object('at', v_at, 'providers', v_prov, 'flagged', v_flag, 'auto_reset', v_auto, 'reset', v_reset), null);
   return jsonb_build_object('at', v_at, 'providers', v_prov, 'flagged', v_flag, 'auto_reset', v_auto, 'reset', v_reset);
 end $$;
-comment on function security.zero_yield_detect_v1() is 'nightly: writes the per-provider zero-yield snapshot, flags providers above the rate as systematic, and (only when zero_yield.auto_reset is 1) resets the verified-wrong pages of the most affected flagged providers';
+comment on function security.zero_yield_detect_v1() is 'hourly: writes the per-provider zero-yield snapshot, flags providers above the rate as systematic, and (only when zero_yield.auto_reset is 1) resets the verified-wrong pages of the most affected flagged providers';
 
 -- 6 the lanes consume the rejection list ------------------------------------------------------------------------------------------------
 select pg_temp.edit_n('public.svc_coverage_reidentify_next(integer,text)', 'ddd0fda00a869ce2bcfb2062502775eb', array[
@@ -237,10 +247,10 @@ select pg_temp.edit_n('security.coverage_ai_match_prepare_v1(integer,integer)', 
 -- 7 the job: catalogue row before the schedule --------------------------------------------------------------------------------------------
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
  ('zero-yield-detect', 'Course pages', 61, 'Zero-yield pages: detect and reset',
-  'Daily at 03:21 UTC: for every provider, counts bound course pages whose stored copy gave the readers nothing (zero-yield) and those verified wrong (listing or not-found page, title that does not match, or off the provider''s course-page pattern with a better page known); a provider above Zero-yield: rate that flags a provider is flagged as systematic. With Reset: automatic on, resets the verified-wrong pages of the most affected flagged providers (Reset: providers a run, Reset: pages a provider a run): the page goes back to "does not match", its official link is taken back, the AI page match finds a new page from the provider''s known pages with the rejected one excluded, and the readers fill the course from the new page.',
+  'Hourly at :21 (Detect: providers measured a run providers a run, every provider once a day): counts bound course pages whose stored copy gave the readers nothing (zero-yield) and those verified wrong (listing or not-found page, title that does not match, or off the provider''s course-page pattern with a better page known); a provider above Zero-yield: rate that flags a provider is flagged as systematic. With Reset: automatic on, resets the verified-wrong pages of the most affected flagged providers (Reset: providers a run, Reset: pages a provider a run): the page goes back to "does not match", its official link is taken back, the AI page match finds a new page from the provider''s known pages with the rejected one excluded, and the readers fill the course from the new page.',
   6, true, null)
 on conflict (jobname) do nothing;
-select cron.schedule('zero-yield-detect', '21 3 * * *', $$select security.zero_yield_detect_v1()$$);
+select cron.schedule('zero-yield-detect', '21 * * * *', $$select security.zero_yield_detect_v1()$$);
 
 -- 8 register ------------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
@@ -251,13 +261,14 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('function', 'security.zero_yield_detect_v1', 'Layer 2', 'nightly detect job', 'active', '{}', '20261024003000'),
  ('function', 'security.page_rejection_bonus_v1', 'Layer 2', 'one more AI page match after a rejection', 'active', '{}', '20261024003000'),
  ('function', 'security.page_match_bonus_v1', 'Layer 2', 'course-list or rejection bonus for the AI page match', 'active', '{}', '20261024003000'),
- ('job', 'zero-yield-detect', 'Layer 2', 'daily 03:21 UTC zero-yield detect (and reset when switched on)', 'active', '{}', '20261024003000')
+ ('job', 'zero-yield-detect', 'Layer 2', 'hourly zero-yield detect (and reset when switched on)', 'active', '{}', '20261024003000')
 on conflict (kind, name) do nothing;
 
 do $t$ declare u uuid; r jsonb; before jsonb; after jsonb; prep jsonb; t0 timestamptz := clock_timestamp(); d jsonb; begin
   select id into u from catalogue.providers where canonical_name='University of Auckland';
   select jsonb_build_object('bound', count(*), 'zero', count(*) filter (where zero), 'wrong', count(*) filter (where verified_wrong), 'off_pattern', count(*) filter (where pattern_share < 0.35), 'off_with_cand', count(*) filter (where pattern_share < 0.35 and candidate_overlap >= 0.6), 'ms', round(extract(epoch from clock_timestamp()-t0)*1000)) into before from security.zero_yield_pages_v1(u);
   update pipeline.platform_toolset_settings set value='200'::jsonb where toolset_key='pipeline' and key='zero_yield.reset_per_provider';
+  update pipeline.platform_toolset_settings set value='25'::jsonb where toolset_key='pipeline' and key='zero_yield.detect_providers_per_run';
   r := security.zero_yield_reset_v1(u);
   select jsonb_build_object('mismatch_now', count(*) filter (where status='mismatch'), 'bound_now', count(*) filter (where status='bound')) into after from pipeline.coverage_course_pages where provider_id=u;
   prep := security.coverage_ai_match_prepare_v1(1, 300);
@@ -268,4 +279,4 @@ do $t$ declare u uuid; r jsonb; before jsonb; after jsonb; prep jsonb; t0 timest
     'sample', (select jsonb_agg(jsonb_build_object('u', regexp_replace(url,'^https://(www\.|study\.)?auckland\.ac\.nz',''), 'cand', regexp_replace(signals->>'candidate_url','^https://(www\.|study\.)?auckland\.ac\.nz',''), 'ov', signals->>'candidate_overlap')) from (select * from pipeline.page_rejections where provider_id=u order by random() limit 4) q),
     'prepare', prep, 'ready_for_uoa', (select count(*) from pipeline.coverage_ai_match q where q.provider_id=u and q.state='ready'),
     'detect', d, 'detect_ms', round(extract(epoch from clock_timestamp()-t0)*1000),
-    'nz_flagged', (select jsonb_agg(jsonb_build_object('p', left(pr.canonical_name,22), 'b', s.bound, 'z', s.zero_yield, 'w', s.verified_wrong)) from pipeline.zero_yield_snapshots s join catalogue.providers pr on pr.id=s.provider_id where s.country='NZ' and s.flagged and s.bound>=20)); end $t$;
+    'top25_flagged', (select jsonb_agg(jsonb_build_object('p', left(pr.canonical_name,22), 'cc', s.country, 'b', s.bound, 'z', s.zero_yield, 'w', s.verified_wrong)) from pipeline.zero_yield_snapshots s join catalogue.providers pr on pr.id=s.provider_id where s.flagged)); end $t$;
