@@ -680,7 +680,7 @@ test.describe('v2.15.333 OpenRouter load: settings and the Task manager line', (
     await expect(page.locator('[data-task-openrouter]')).toHaveText('OpenRouter (15 min): 340 request(s) from 12 AI reader call(s) (2 running), 338 answered, typical 4.2 s, slowest 11.8 s · 0 rate-limited (429), 1 server error(s), 1 timed out.')
     await expect(page.locator('[data-task-pulse]')).toHaveAttribute('data-task-pulse-late', '0')
     const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-    expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.43.0";')
+    expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.4[3-9]\.\d+";/) // v0.43.0 or later keeps the load settings
     expect(w).toContain('await pool(w?.pages || [], Math.max(1, Math.min(Number(body.concurrency || 3), 12)), async (pg: any) => {  // fixed:')
     expect(w).toContain('openrouter: ors.summary()')
     const m = fs.readFileSync('supabase/migrations/20261023022000_cf247_openrouter_load_settings.sql', 'utf8')
