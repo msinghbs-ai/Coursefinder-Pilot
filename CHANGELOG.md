@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.255 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.328** (Read with AI reads labelled page data items). Read with AI on the 12 University of Auckland diplomas (13:13) found no campus, length or delivery: the catalogue holds them as display items (P5_CAMPUS, P5_DURATION_FULL_TIME, P5_DELIVERY_MODE) outside the page's main text, which the reader dropped.
+  - Worker `coverage-sweep-worker-v0.42.3`: `pageDataItems` (extract.ts) gives each short labelled item as "Label: value" ahead of the main text in enrich_ai. SOPs 1.69.
+  - Migration `20261023017000_cf247_ai_reader_bound_pages_only.sql`: `security.enrich_fields_slice_v1` gives the AI only the course's own page (bound, or ambiguous with an identity proof), never a page with status mismatch; 3,371 values filled from such pages since 14 Oct (1,875 delivery, 594 duration, 320 international, 1 intake, 581 campus) recorded in `pipeline.enrich_value_retractions` and taken back (Platform Admin 23 Oct 2026: "Take them all back"); 717 campus links removed by the admin-repo paste file `docs/platform/wrong-page-values/PASTE-20261023-wrong-page-campus-links.sql`. Consumer API shape unchanged (Decision 266).
+
 ## 0.1.254 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.327** (Courses list column names). Platform Admin, 23 Oct 2026 13:24: "change column name - CRICOS tuition to Tuition Only and Legacy presence - to completeness".

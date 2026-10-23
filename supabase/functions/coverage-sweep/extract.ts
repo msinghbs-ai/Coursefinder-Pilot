@@ -14,6 +14,26 @@ export function htmlToText(html: string) {
     .replace(/&#39;|&rsquo;|&lsquo;/gi, "'").replace(/&quot;|&ldquo;|&rdquo;/gi, '"').replace(/&ndash;|&mdash;/gi, "-"))
 }
 
+// 23 Oct 2026 (University of Auckland catalogue, an Oracle APEX app): a page can hold its course facts as labelled display items
+// outside the main text (<span id="P5_CAMPUS" class="display_only ...">["City","South Auckland"]</span>, P5_DURATION_FULL_TIME "1 Year",
+// P5_DELIVERY_MODE "Campus Experience"); the cards that show them are drawn in the browser. Each short item is given as "Label: value",
+// the label taken from the item's own name. Long text, record ids and true/false switches are left out.
+export function pageDataItems(html: string) {
+  const out: string[] = [], seen = new Set<string>();
+  for (const m of html.matchAll(/<(span|div|output|p)\b([^>]*)>([^<]{1,400})<\/\1>/gi)) {
+    const attrs = m[2];
+    if (!/\bclass="[^"]*(?:\bdisplay[_-]only\b|apex-item-display-only)/i.test(attrs)) continue;
+    const id = (attrs.match(/\bid="([^"]+)"/i) || [])[1];
+    if (!id) continue;
+    const label = id.replace(/^P\d+_/, "").replace(/[_-]+/g, " ").trim().toLowerCase();
+    const value = htmlToText(m[3]).replace(/\s+/g, " ").trim();
+    if (!label || !value || value.length > 120 || /^[0-9a-f]{16,}$/i.test(value) || /^(true|false)$/i.test(value) || /\bid$/.test(label) || seen.has(label)) continue;
+    seen.add(label);
+    out.push(`${label[0].toUpperCase()}${label.slice(1)}: ${value}`);
+  }
+  return out.join("\n");
+}
+
 export function titleOf(html: string) { const m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i); return m ? htmlToText(m[1]) : "" }
 export function h1Of(html: string) { const m = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i); return m ? htmlToText(m[1]) : "" }
 const norm = (s: string) => clean(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").trim()
