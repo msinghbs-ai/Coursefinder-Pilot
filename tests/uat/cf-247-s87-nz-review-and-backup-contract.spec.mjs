@@ -528,3 +528,10 @@ test('20261023013000 / v0.42.1: semesters to months from the approved calendar; 
   expect(w).toContain('(semester|trimester|term|quarter|block)\\s*(\\d|one|two|three|four)')
   expect(w).toContain('"the quote names no start month or semester"')
 })
+
+test('20261023014000: no per-value search refresh in enrich apply (worker calls timed out); one open request instead', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023014000_cf247_enrich_apply_no_per_item_refresh.sql', 'utf8')
+  expect(m).toContain("select pg_temp.edit_once('security.enrich_apply_v1(bigint)', 'b68fe542cd877eec1589e6a496690704'")
+  expect(m).toContain("insert into search.refresh_requests(requested_by) select 'AI reader (English, intakes)'")
+  expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+})
