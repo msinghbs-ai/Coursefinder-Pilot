@@ -1,16 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.336'
-export const PACKAGE_VERSION='0.1.263'
+export const UI_VERSION='2.15.337'
+export const PACKAGE_VERSION='0.1.264'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Oct 2026',
-  title:'Official course link filled from the proven page (NZ first)',
+  title:'CRICOS proofs are Australian only',
   changes:[
-    'A course with no official link gets the address of its proven own page (bound, a proof the country accepts for the official link, stored copy) each night at 02:23 UTC, for the countries in Settings › Pipeline settings › Official link: countries filled (NZ first). A person-set or locked link is never touched; a filled link is taken back when the page is no longer bound or its copy changed, and filled again from the new binding; the job pauses itself when more than Official link: most taken back of the last 30 days\' fills were taken back. Each fill keeps the page copy as its proof.',
-    'Consumer API unchanged (Decision 266): course_url is an existing nullable field, now populated more often.'
+    'A CRICOS code is an Australian proof and is accepted only for Australian providers, in the admission policy and in every proof list. A New Zealand course page is proved by its NZQA programme code on the page or by its title; a Canadian page by its title. The reader (worker v0.45.0, identity rule v0.6.0) no longer labels any non-Australian page with a CRICOS proof.',
+    '406 New Zealand and Canadian course pages that carried an Australian (or wrong-country) proof label were taken back to "page does not match" and are re-verified from their stored copies under the new rule; the 149 fees quarantined at 00:35 re-admit through the normal path once their page is re-bound.',
+    'Catalogue › Courses: the CRICOS registered fee column (Tuition Only) is shown only for Australian lists; New Zealand and Canadian lists show the provider\'s international fee.',
+    'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
 }

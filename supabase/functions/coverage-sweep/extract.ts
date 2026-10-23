@@ -47,9 +47,15 @@ const normNz = (s: string) => norm(clean(s).replace(/\+/g, " and ")).replace(/\b
 //  - "title_level": the NZQA title ends "(Level N)"; the page heading is that title without the level (or with the same
 //    level), no other level appears in the heading, and the page shows "Level N".
 export function identity(html: string, text: string, courseTitle: string, courseCode: string, codeOnly = false, country = "") {
-  const code = clean(courseCode).toUpperCase()
-  if (code.length >= 6 && new RegExp(`\\b${code}\\b`).test(text.toUpperCase())) return "cricos_code"
-  if (/^[0-9]{3,5}$/.test(code) && new RegExp(`(nzqa|qualification|programme|program)\\s*(number|code|id|ref(erence)?|no\\.?)?\\s*[:#]?\\s*${code}\\b`, "i").test(text)) return "nzqa_code"
+  const code = clean(courseCode).toUpperCase(), cc = String(country || "").toUpperCase()
+  // identity-v0.6.0 (24 Oct 2026, Platform Admin 07:32 "cricos is only applicable for au and no other country"): a CRICOS proof exists
+  // only in Australia. A New Zealand page that prints the course's own NZQA programme code is proved by that code (nzqa_code); a
+  // Canadian page, and any other country's, is proved by the title rules only: a code on the page proves nothing by itself there.
+  const codeOnPage = code.length >= 4 && new RegExp(`\\b${code}\\b`).test(text.toUpperCase())
+  if (cc === "AU" && code.length >= 6 && codeOnPage) return "cricos_code"
+  if (/^[0-9]{3,5}$/.test(code) && new RegExp(`(nzqa|qualification|programme|program)\\s*(number|code|id|ref(erence)?|no\\.?)?\\s*[:#]?\\s*${code}\\b`, "i").test(text)) return "nzqa_code" // the label itself names the NZ register
+  if (cc === "NZ" && /^[A-Z]{2,4}[0-9]{3,5}$/.test(code) && codeOnPage) return "nzqa_code" // an NZQA programme code (LI4245, AK3709), never a CRICOS-shaped one
+  // CA: a catalogue code on the page is not a proof on its own until Canada has its own register proof (8a); the title rules decide
   if (codeOnly) return null
   const t = norm(courseTitle), h1 = norm(h1Of(html)), title = norm(titleOf(html))
   if (t && (h1 === t || title === t || title.startsWith(t + " ") || h1.startsWith(t + " international"))) return "exact_title"

@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.336)  
+**Version:** 1.53 (reviewed for platform release v2.15.337)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -182,3 +182,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.75 | 23 Oct 2026 | v2.15.334 | NZ transition register and daily re-check; Change website can move the course pages too; international fee floor per country quarantines low fees to Layer 4. |
 | 1.76 | 23 Oct 2026 | v2.15.335 | Read course pages: the lane takes up to 200 pages a call (it was 60 fixed in the worker) and the pages fetched at once is a setting (Settings › Pipeline settings › Job sizes). |
 | 1.77 | 24 Oct 2026 | v2.15.336 | Official link filled from the course's proven own page (NZ first; Settings › Pipeline settings › Official link): nightly job with four guards; a link is taken back when the page is no longer bound. |
+| 1.78 | 24 Oct 2026 | v2.15.337 | CRICOS proofs are Australian only: a New Zealand page is proved by its NZQA programme code or title, a Canadian page by its title; 406 mislabelled NZ and CA bindings re-verified; the CRICOS fee column is hidden on NZ and CA course lists. |
