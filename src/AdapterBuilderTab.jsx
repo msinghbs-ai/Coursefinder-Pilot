@@ -56,12 +56,15 @@ function WebsiteStep({b,onChanged,onError}){
 const VERDICT={verified:['Verified','success'],likely:['Likely','warning'],failed:['Failed','danger']}
 const yes=v=>v===true?'yes':v===false?'no':'—'
 function WebsiteCheck({b,onChanged,onError}){
-  const[d,setD]=useState(null),[open,setOpen]=useState(false),[url,setUrl]=useState(''),[extra,setExtra]=useState(''),[reason,setReason]=useState(''),[busy,setBusy]=useState(false)
+  const[d,setD]=useState(null),[open,setOpen]=useState(false),[url,setUrl]=useState(''),[extra,setExtra]=useState(''),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[movePages,setMovePages]=useState(false),[moved,setMoved]=useState(null)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_provider_website_check',{p_action:'list',p_args:{provider_id:b.provider_id}});if(error)throw error;setD(data&&typeof data==='object'&&'checks' in data?data:null)}catch{setD(null)}} // quiet: the panel simply does not show
+  // v2.15.334 (NZ brief Release 1 item 2): after a website change is saved, the bound course pages can move to the new host too
+  const movePagesNow=async()=>{setBusy(true);try{const host=String(d?.website||'').replace(/^https?:\/\//,'').replace(/\/.*$/,'');const{data,error}=await supabase.rpc('admin_provider_domain_moved',{p_provider_id:b.provider_id,p_new_host:host,p_reason:ask(`Move the course pages of ${b.name} to ${host}`)});if(error)throw error;setMoved(data);onChanged?.()}catch(e){onError?.(errText(e))}finally{setBusy(false)}}
   useEffect(()=>{setD(null);load()},[b.provider_id])
   const last=d?.checks?.[0],running=Boolean(last&&last.state!=='done')
   useEffect(()=>{if(!running)return;const t=setTimeout(async()=>{await load();},5000);return()=>clearTimeout(t)},[d])
   useEffect(()=>{if(last?.applied)onChanged?.()},[last?.id,last?.applied])
+  useEffect(()=>{if(last?.applied&&last?.action==='change'&&movePages&&!moved){setMovePages(false);movePagesNow()}},[last?.id,last?.applied])
   const go=async(action)=>{setBusy(true);try{
       const args={provider_id:b.provider_id,...(action==='change'?{url:url.trim(),extra_site:extra.trim()||null,reason:reason.trim()||ask(`Change website of ${b.name} to ${url.trim()}`)}:{})}
       const{error}=await supabase.rpc('admin_provider_website_check',{p_action:action,p_args:args});if(error)throw error
@@ -79,9 +82,11 @@ function WebsiteCheck({b,onChanged,onError}){
       <input aria-label="New website" type="url" placeholder="https://www.provider.edu.au" value={url} disabled={busy} onChange={e=>setUrl(e.target.value)}/>
       <input aria-label="Other site of this provider (optional)" type="url" placeholder="Other site of this provider (optional)" value={extra} disabled={busy} onChange={e=>setExtra(e.target.value)}/>
       <input aria-label="Reason" type="text" placeholder="Reason (for the log)" value={reason} disabled={busy} onChange={e=>setReason(e.target.value)}/>
+      <label className="ab-muted" data-website-move-pages><input type="checkbox" checked={movePages} disabled={busy} onChange={e=>setMovePages(e.target.checked)}/> Move the course pages too (a domain move: bound pages keep their proof and are read again first in line)</label>
       <Button compact disabled={busy||!/^(https?:\/\/)?[^\s,;]+\.[^\s,;]+$/.test(url.trim())} onClick={()=>go('change')} data-website-change-save>Check and save</Button>
       <small className="ab-muted">The new address is checked first (its home page is read now; about 1 Firecrawl credit only if the site refuses a direct read) and saved only when Verified or Likely. Course-page searches, a stopped or held search, contacts and central pages then start again.</small>
     </div>}
+    {moved&&<p className="cf-chip tone-success" data-website-pages-moved>Course pages moved from {moved.from} to {moved.to}: {fmtNumber(moved.pages_moved)} page(s) and {fmtNumber(moved.lists_moved)} list(s), read again first in line.</p>}
     {last&&<div className="ab-checkresult" data-website-result={last.verdict||last.state}>
       <p className="ab-text">{last.action==='change'?'Change to':'Check of'} <strong>{last.url}</strong>{' · '}{fmtDateTime(last.checked_at||last.requested_at)}{' · '}
         {running?<span className="cf-chip tone-info">Checking…</span>:v?<span className={`cf-chip tone-${v[1]}`}>{v[0]}</span>:null}{last.why&&<span> {last.why}</span>}</p>
