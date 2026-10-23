@@ -1,38 +1,108 @@
--- CF-247 (23 Oct 2026). Read with AI on the University of Auckland diplomas still gave no campus (Platform Admin 12:52 "Still no city"):
--- the page names ["City","South Auckland"], and a campus list made from one course's page is never admitted, because a campus needs
--- enrich.campus_min_pages (2) course pages naming it, and Read with AI reads one course at a time. A campus the university already has
--- (active, same name) is now linked from one course page that names it; a new campus still needs enrich.campus_min_pages pages or a person.
--- Worker v0.42.4 keeps a campus name found inside a name given as a list.
--- Replaces: nothing (security.enrich_campus_list_apply_v1 edited in place, md5-guarded)
+-- CF-247 (23 Oct 2026). Platform Admin 16:02 decisions after the wrong-page take-back (migration 20261023017000):
+-- 1 "Take back 3,462, re-read 2,023": the take-back covered values read from the course's current page copy only. Values the AI reader
+--   took on 14 Oct from an earlier page that was later replaced were missed (the Diploma in Architectural Studies took "3 years" from the
+--   Bachelor of Architectural Studies page; the Diploma in Sport, Health and Physical Education from the Bachelor's page).
+--   a) a course whose page is now found to be another course's (status mismatch): every AI value from an earlier page is taken back;
+--   b) a course that now has its correct page (bound or ambiguous) but whose value came from a different page: the value is taken back
+--      and read again from the correct page (one Read with AI job per university, fields as taken back).
+--   Values from an older copy of the same page are kept. Each value is recorded in pipeline.enrich_value_retractions; campus links from
+--   those pages are removed by the admin-repo paste file docs/platform/wrong-page-values/PASTE-20261023-older-wrong-page-campus-links.sql.
+-- 2 "Add it, Auckland region": the University of Auckland's South Auckland campus (Te Papa Ako o Tai Tonga, 6 Osterley Way, Manukau,
+--   from the university's campus page), linked to the Diploma in Arts, whose page names it.
+-- Replaces: nothing
 -- Retires: nothing
 
-create or replace function pg_temp.edit_once(p_sig text, p_md5 text, p_edits text[][]) returns void language plpgsql as $f$
-declare v_def text := pg_get_functiondef(p_sig::regprocedure); i int;
-begin
-  if md5(v_def) <> p_md5 then raise exception 'live % differs from the definition this change edits (md5 %)', p_sig, md5(v_def); end if;
-  for i in 1 .. array_length(p_edits, 1) loop
-    if (length(v_def) - length(replace(v_def, p_edits[i][1], ''))) / length(p_edits[i][1]) <> 1 then raise exception '%: edit % must apply exactly once', p_sig, i; end if;
-    v_def := replace(v_def, p_edits[i][1], p_edits[i][2]);
-  end loop;
-  execute v_def;
-end $f$;
+-- 1 values from an earlier, different page, or any earlier page of a course now found to have another course's page ------------------
+create temp table _older on commit drop as
+select i.id, i.course_id, i.provider_id, i.field, i.value, i.quote, i.evidence_id, e.source_url, g.status cur_status,
+       case when g.status = 'mismatch' then 'take_back' else 'read_again' end act
+  from pipeline.field_enrich_items i
+  join pipeline.evidence_artifacts e on e.id = i.evidence_id
+  join pipeline.coverage_course_pages g on g.course_id = i.course_id
+ where i.source = 'ai_stored' and i.state = 'filled' and i.course_id is not null and i.evidence_id is distinct from g.evidence_id
+   and not exists (select 1 from pipeline.enrich_value_retractions r where r.item_id = i.id)
+   and (g.status = 'mismatch'
+        or (g.status in ('bound', 'ambiguous')
+            and lower(rtrim(e.source_url, '/')) not in (lower(rtrim(g.url, '/')), lower(rtrim(coalesce(g.candidates->>'final_url', ''), '/')))));
 
-select pg_temp.edit_once('security.enrich_campus_list_apply_v1(bigint)', '2617420b455dea68f7cb2cbed8271088', array[
-  array[$o$    if v_pages < v_min then v_review := v_review || (x || jsonb_build_object('pages', v_pages)); continue; end if;
-    select ca.id into v_cid from catalogue.campuses ca where ca.provider_id = i.provider_id and lower(ca.name) = lower(x->>'name') limit 1;$o$,
-        $n$    select ca.id into v_cid from catalogue.campuses ca where ca.provider_id = i.provider_id and lower(ca.name) = lower(x->>'name') limit 1;
-    -- 23 Oct 2026: a campus the university already has (active) is linked from one course page that names it; a new campus needs v_min pages
-    if v_pages < 1 or (v_pages < v_min and not exists (select 1 from catalogue.campuses ca where ca.id = v_cid and ca.status = 'active')) then
-      v_cid := null; v_review := v_review || (x || jsonb_build_object('pages', v_pages)); continue;
-    end if;$n$]]);
+insert into pipeline.enrich_value_retractions(item_id, course_id, provider_id, field, value, quote, evidence_id, page_url, page_heading, reason)
+select o.id, o.course_id, o.provider_id, o.field, o.value, o.quote, o.evidence_id, o.source_url, null,
+       case o.act when 'take_back' then 'read from an earlier page; the course''s page is now found to be another course''s; Platform Admin 23 Oct 2026 16:02: take back'
+                  else 'read from an earlier, different page; read again from the course''s own page; Platform Admin 23 Oct 2026 16:02: re-read' end
+  from _older o;
 
-do $d$ declare r jsonb; c jsonb;
-begin
-  update pipeline.field_enrich_items set value = jsonb_build_object('campuses', '[{"name":"City","raw":["City"],"city":"Auckland","street":null,"postcode":null},{"name":"South Auckland","raw":["South Auckland"],"city":"Auckland","street":null,"postcode":null}]'::jsonb), state = 'ai' where id = 172686;
-  update pipeline.field_enrich_items set state = 'waiting', reason = null where job_id = '915df9bd-1f99-405f-aa40-a2f113ceebd5' and field = 'campus';
-  r := security.enrich_campus_list_apply_v1(172686);
-  perform security.enrich_campus_link_v1('915df9bd-1f99-405f-aa40-a2f113ceebd5');
-  select jsonb_agg(jsonb_build_object('campus', k.name, 'city', k.city, 'mode', cc.delivery_mode)) into c from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where cc.course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576';
-  raise exception 'DRYRUN OK apply % | campus_item % | links %', r,
-    (select state || ' ' || coalesce(reason,'') || ' ' || coalesce(value::text,'') from pipeline.field_enrich_items where job_id = '915df9bd-1f99-405f-aa40-a2f113ceebd5' and field = 'campus'), c;
+update catalogue.courses c set delivery_mode = null, updated_at = now()
+  from _older o where o.field = 'delivery' and c.id = o.course_id and c.delivery_mode = o.value->>'mode';
+update catalogue.courses c set duration_value = null, duration_unit = null, updated_at = now()
+  from _older o where o.field = 'duration' and c.id = o.course_id and c.duration_value = (o.value->>'value')::numeric and c.duration_unit is not distinct from o.value->>'unit';
+update catalogue.courses c set open_to_international = null, updated_at = now()
+  from _older o where o.field = 'international' and c.id = o.course_id and c.open_to_international = (o.value->>'open')::boolean;
+update catalogue.course_intakes ci set status = 'withdrawn'
+  from _older o where o.field = 'intakes' and ci.course_id = o.course_id and ci.evidence_id = o.evidence_id and ci.status = 'active'
+   and ci.source_intake_key like o.course_id::text || ':ai:%';
+
+update pipeline.enrich_value_retractions r set cleared = true
+  from _older o join catalogue.courses c on c.id = o.course_id
+ where r.item_id = o.id and ((o.field = 'delivery' and nullif(btrim(c.delivery_mode), '') is null)
+     or (o.field = 'duration' and c.duration_value is null) or (o.field = 'international' and c.open_to_international is null)
+     or (o.field = 'intakes' and not exists (select 1 from catalogue.course_intakes ci where ci.course_id = o.course_id and ci.evidence_id = o.evidence_id
+                                              and ci.status = 'active' and ci.source_intake_key like o.course_id::text || ':ai:%')));
+
+update pipeline.field_enrich_items i set state = 'skipped', updated_at = now(),
+       reason = case o.act when 'take_back' then 'taken back: read from an earlier page; the course''s page is another course''s'
+                           else 'taken back: read from an earlier, different page; read again from the course''s own page' end
+  from _older o where o.id = i.id;
+
+-- read again from the course's own page: one Read with AI job per university, for the fields taken back
+create temp table _jobs on commit drop as
+select o.provider_id, gen_random_uuid() job_id, jsonb_agg(distinct o.course_id) course_ids, jsonb_agg(distinct o.field) fields, count(distinct o.course_id) n
+  from _older o where o.act = 'read_again' group by o.provider_id;
+
+insert into pipeline.admin_jobs(id, kind, lane, state, title, args, progress, requested_by, reason, scope)
+select j.job_id, 'enrich_fields', 'enrich', 'queued',
+       left('Read with AI again from the correct page · ' || coalesce(p.display_name, p.canonical_name), 200),
+       jsonb_build_object('read_now', true, 'countries', '[]'::jsonb, 'provider_ids', jsonb_build_array(j.provider_id), 'course_ids', j.course_ids,
+                          'fields', j.fields, 'ai', true, 'scraper', false),
+       jsonb_build_object('done', 0, 'total', 0), '63ba56cb-48d4-4169-98c2-7c4d1f72925b'::uuid,
+       'Platform Admin 23 Oct 2026 16:02: values read from an earlier, different page are read again from the course''s own page', j.n || ' courses'
+  from _jobs j join catalogue.providers p on p.id = j.provider_id;
+
+insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
+select distinct j.job_id, o.provider_id, o.course_id, o.field, 'queued'
+  from _older o join _jobs j on j.provider_id = o.provider_id where o.act = 'read_again'
+on conflict do nothing;
+insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
+select j.job_id, j.provider_id, null, 'campus_list', 'waiting' from _jobs j where j.fields ? 'campus'
+on conflict do nothing;
+
+insert into search.refresh_requests(requested_by) select 'Wrong-page values taken back'
+ where not exists (select 1 from search.refresh_requests q where q.processed_at is null and q.requested_by = 'Wrong-page values taken back');
+
+-- 2 the University of Auckland's South Auckland campus ------------------------------------------------------------------------------
+insert into catalogue.campuses(stable_key, provider_id, name, country_id, subdivision_id, city, address_line1, status, publication_status)
+select 'campus:studysearch:e096aba7-e1eb-4903-9a63-2bfb71e9a8b8:south-auckland', k.provider_id, 'South Auckland', k.country_id, k.subdivision_id,
+       'Auckland', '6 Osterley Way, Manukau', 'active', 'published'
+  from catalogue.campuses k where k.id = '767d87b9-9c21-454f-9516-6c1fbc975926'
+on conflict (stable_key) do nothing;
+
+insert into catalogue.course_campuses(course_id, campus_id, delivery_mode, is_primary, evidence_id)
+select 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576'::uuid, k.id, 'on_campus', false, 'c987937d-f777-4fa3-9d45-f76de648d368'::uuid
+  from catalogue.campuses k where k.stable_key = 'campus:studysearch:e096aba7-e1eb-4903-9a63-2bfb71e9a8b8:south-auckland'
+on conflict do nothing;
+
+insert into pipeline.admin_control_events(area, action, target, detail, actor)
+values ('catalogue', 'campus_added', 'campus:studysearch:e096aba7-e1eb-4903-9a63-2bfb71e9a8b8:south-auckland',
+        jsonb_build_object('reason', 'Platform Admin 23 Oct 2026 16:02: Add it, Auckland region', 'source', 'https://www.auckland.ac.nz/en/on-campus/our-campuses/campus-locations/south-auckland-campus.html'),
+        '63ba56cb-48d4-4169-98c2-7c4d1f72925b'::uuid);
+
+do $d$ begin
+  raise exception 'DRYRUN OK %', jsonb_build_object(
+    'taken', (select jsonb_object_agg(k, n) from (select case when reason like '%take back' then 'take_back' else 'read_again' end k, count(*) n from pipeline.enrich_value_retractions where reason like '%16:02%' group by 1) z),
+    'cleared', (select count(*) from pipeline.enrich_value_retractions where reason like '%16:02%' and cleared),
+    'jobs', (select count(*) from pipeline.admin_jobs where title like 'Read with AI again from the correct page%' and state = 'queued'),
+    'job_items', (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'Read with AI again from the correct page%'),
+    'arch_dur', (select duration_value from catalogue.courses where id = '65622186-70f7-46b8-bd08-7a6906e8c35f'),
+    'sport_dur', (select duration_value from catalogue.courses where id = 'e90f53ec-46ca-431c-822d-b4ca70c00856'),
+    'arts_campuses', (select string_agg(k.name, ', ') from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where cc.course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576'),
+    'campus_links_for_paste', (select count(*) from catalogue.course_campuses cc join pipeline.enrich_value_retractions r on r.field = 'campus' and cc.course_id = r.course_id and cc.evidence_id = r.evidence_id where r.reason like '%16:02%'));
 end $d$;
