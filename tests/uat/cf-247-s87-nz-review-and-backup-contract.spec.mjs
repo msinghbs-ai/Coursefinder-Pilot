@@ -516,3 +516,15 @@ test('v2.15.325 / v0.42.0: the AI reader covers English, intakes and campus regi
   expect(w).toContain('const strong = x.field === "english" ? /ielts/i.test(q)')
   expect(w).toContain('await pool(w?.regions || [], 2, async (u: any) => {')
 })
+
+test('20261023013000 / v0.42.1: semesters to months from the approved calendar; university rule state in why values are missing', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023013000_cf247_intake_periods_and_rule_causes.sql', 'utf8')
+  expect(m).toContain('create or replace function security.enrich_parse_intake_periods_v1(p_provider uuid, p_text text, p_quote text)')
+  expect(m).toContain("select pg_temp.edit_once('public.svc_enrich_ai_record(jsonb)', 'ff7e34b9c51241794f61c9c37e436a68'")
+  expect(m).toContain("select pg_temp.edit_once('security.gap_causes_snapshot_v1()', '8162f563d34d49bd8c76f585e59d5040'")
+  expect(m).toContain("'AI: page gives no IELTS; university English rule '")
+  expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+  const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+  expect(w).toContain('(semester|trimester|term|quarter|block)\\s*(\\d|one|two|three|four)')
+  expect(w).toContain('"the quote names no start month or semester"')
+})
