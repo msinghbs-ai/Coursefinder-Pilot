@@ -177,4 +177,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.70 | 23 Oct 2026 | v2.15.329 | Read with AI: a campus the university already has is linked from one course page. |
 | 1.71 | 23 Oct 2026 | v2.15.330 | AI values from an earlier page that was not the course's own are taken back or read again; University of Auckland South Auckland campus added. |
 | 1.72 | 23 Oct 2026 | v2.15.331 | Task manager: up to 40 tasks per lane move forward each minute; a live line shows the runner, what is waiting, running and finished, and each task's place in line. |
-| 1.73 | 23 Oct 2026 | v2.15.332 | Task manager: up to 100 tasks per lane move forward each minute. |
+| 1.73 | 23 Oct 2026 | v2.15.332 | Task manager: up to 2,000 tasks per lane move forward each minute (set to 1,000); lower it if the runner shows late. |

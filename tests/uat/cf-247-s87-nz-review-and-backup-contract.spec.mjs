@@ -658,12 +658,12 @@ test.describe('v2.15.331 Task manager shows it is alive', () => {
   })
 })
 
-test.describe('v2.15.332 up to 100 tasks per lane each minute', () => {
-  test('the setting and both functions allow 100; the 40-second stop stays', async () => {
+test.describe('v2.15.332 up to 2,000 tasks per lane each minute', () => {
+  test('the setting and both functions allow 2,000 (set to 1,000); the 40-second stop stays', async () => {
     const m = fs.readFileSync('supabase/migrations/20261023021000_cf247_tasks_per_lane_100.sql', 'utf8')
-    expect(m).toContain("set max_value = '100', value = '100'::jsonb")
-    expect(m).toContain("$n$'jobs.per_lane_per_tick', 1)::int, 100));$n$")
-    expect(m).toContain("$n$'jobs.per_lane_per_tick', 1)::int, 100))$n$")
+    expect(m).toContain("set max_value = '2000', value = '1000'::jsonb")
+    expect(m).toContain("$n$'jobs.per_lane_per_tick', 1)::int, 2000));$n$")
+    expect(m).toContain("$n$'jobs.per_lane_per_tick', 1)::int, 2000))$n$")
     expect(m).toMatch(/^-- Replaces: /m)
     expect(m).toMatch(/^-- Retires: /m)
     const a = fs.readFileSync('supabase/migrations/20261023020000_cf247_tasks_per_lane_per_minute.sql', 'utf8')

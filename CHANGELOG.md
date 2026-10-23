@@ -2,8 +2,8 @@
 
 ## 0.1.259 — 23 Oct 2026
 
-- Prepared visible PIM Admin release candidate **v2.15.332** (Task manager: up to 100 tasks a minute). Platform Admin, 23 Oct 2026 18:42: "We should try higher setting lets try 100".
-  - Migration `20261023021000_cf247_tasks_per_lane_100.sql`: `jobs.per_lane_per_tick` range 1 to 100, set to 100 (logged); `security.admin_jobs_tick_v1` and `public.admin_jobs_pulse` cap at 100. Dry run: 100 Read with AI tasks moved in 1.6 seconds (94 handed to the AI reader). SOPs 1.73. Consumer API unchanged (Decision 266).
+- Prepared visible PIM Admin release candidate **v2.15.332** (Task manager: up to 2,000 tasks a minute). Platform Admin, 23 Oct 2026 18:42: "We should try higher setting lets try 100"; 18:45: "Keep incrementing to higher i want to test the limits".
+  - Migration `20261023021000_cf247_tasks_per_lane_100.sql`: `jobs.per_lane_per_tick` range 1 to 2,000, set to 1,000 (logged); `security.admin_jobs_tick_v1` and `public.admin_jobs_pulse` cap at 2,000. Dry runs (one minute's run): 100 in 1.6 s, 250 in 3.5 s, 500 in 4.4 s, 1,000 in 12.4 s, 2,000 in 25.2 s. SOPs 1.73. Consumer API unchanged (Decision 266).
 
 ## 0.1.258 — 23 Oct 2026
 
