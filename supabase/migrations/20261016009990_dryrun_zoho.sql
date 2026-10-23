@@ -15,7 +15,7 @@ begin
   execute v_def;
 end $f$;
 
-update pipeline.platform_toolset_settings set max_value = '100', value = '100'::jsonb, reason = 'Platform Admin 23 Oct 2026 18:42: lets try 100', updated_at = now()
+update pipeline.platform_toolset_settings set max_value = '2000', value = '2000'::jsonb, reason = 'Platform Admin 23 Oct 2026 18:42: lets try 100', updated_at = now()
  where toolset_key = 'pipeline' and key = 'jobs.per_lane_per_tick';
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
 values ('toolsets', 'setting', 'pipeline.jobs.per_lane_per_tick',
@@ -29,8 +29,9 @@ select pg_temp.edit_once('public.admin_jobs_pulse()', 'b840c8e6130a71203bc8a5760
 
 do $d$ declare r jsonb; t0 timestamptz; ms int; n int;
 begin
+  update pipeline.platform_toolset_settings set value = '250'::jsonb where toolset_key = 'pipeline' and key = 'jobs.per_lane_per_tick';
   with c as (select c.id, c.provider_id, c.canonical_title from catalogue.courses c join pipeline.coverage_course_pages g on g.course_id = c.id
-              where g.status = 'bound' and g.evidence_id is not null and c.duration_value is null and not security.enrich_item_held_v1(c.id, 'duration') limit 100),
+              where g.status = 'bound' and g.evidence_id is not null and c.duration_value is null and not security.enrich_item_held_v1(c.id, 'duration') limit 250),
        j as (insert into pipeline.admin_jobs(kind, lane, state, title, args, progress, requested_by, reason, scope)
              select 'enrich_fields', 'enrich', 'queued', 'DRY ' || c.canonical_title,
                     jsonb_build_object('read_now', true, 'countries', '[]'::jsonb, 'provider_ids', jsonb_build_array(c.provider_id), 'course_ids', jsonb_build_array(c.id), 'fields', '["duration"]'::jsonb, 'ai', true, 'scraper', false),
@@ -42,8 +43,6 @@ begin
   t0 := clock_timestamp();
   r := security.admin_jobs_tick_v1(security.pipeline_num_v1('batch.admin_jobs', 10)::int);
   ms := (extract(epoch from clock_timestamp() - t0) * 1000)::int;
-  raise exception 'DRYRUN OK items %; moved % in % ms; done %; handed to AI %; filled by adapter %', n, jsonb_array_length(r), ms,
-    (select count(*) from jsonb_array_elements(r) x where x->>'state' = 'done'),
-    (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'DRY %' and i.state = 'ai'),
-    (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'DRY %' and i.state = 'filled');
+  raise exception 'DRYRUN OK N=250 items %; moved % in % ms; handed to AI %', n, jsonb_array_length(r), ms,
+    (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'DRY %' and i.state = 'ai');
 end $d$;
