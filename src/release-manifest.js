@@ -1,18 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.326'
-export const PACKAGE_VERSION='0.1.253'
+export const UI_VERSION='2.15.327'
+export const PACKAGE_VERSION='0.1.254'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Courses list shows the international fee and the campus city',
+  title:'Courses list column names: Tuition Only and Completeness',
   changes:[
-    'Courses list: International fee (the fee the provider publishes, with its year) and City (the course campus cities) columns, beside the CRICOS tuition column that New Zealand and Canada never have.',
-    'Read with AI asks the AI again even when the same page copy did not state a field before; the AI reader takes a campus or duration given only as a short data label on the page (University of Auckland catalogue).'
+    'Courses list: the CRICOS tuition column is named Tuition Only, and Legacy presence is named Completeness (how complete the course record is).'
   ],
-  bugFixes:['Courses list showed no fee for New Zealand courses that hold an international fee (only the CRICOS registered tuition was shown).']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

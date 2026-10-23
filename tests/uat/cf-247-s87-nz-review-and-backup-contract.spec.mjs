@@ -556,6 +556,10 @@ test.describe('v2.15.326 Courses list', () => {
     await expect(page.getByRole('columnheader', { name: 'International fee' })).toBeVisible()
     await expect(page.getByRole('columnheader', { name: 'City' })).toBeVisible()
     await expect(page.getByText('(2027)')).toBeVisible()
+    // v2.15.327 (Platform Admin 23 Oct 13:24): CRICOS tuition is named Tuition Only; Legacy presence is named Completeness
+    await expect(page.getByRole('columnheader', { name: 'Tuition Only' })).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: 'Completeness' })).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: 'Legacy presence' })).toHaveCount(0)
     const m = fs.readFileSync('supabase/migrations/20261023016000_cf247_course_list_international_fee_city.sql', 'utf8')
     expect(m).toContain("ifee.amount intl_fee_amount,ifee.currency_code::text intl_fee_currency,ifee.fee_year intl_fee_year,gcity.city_names,")
   })
