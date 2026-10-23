@@ -571,7 +571,7 @@ test.describe('v2.15.328 Read with AI reads labelled page data items', () => {
     const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
     expect(x).toContain('export function pageDataItems(html: string)')
     expect(x).toContain('display[_-]only')
-    expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.42.3";')
+    expect(w).toContain('v0.42.3 (23 Oct 2026, Read with AI on the Auckland diplomas')
     expect(w).toContain('const raw = await readStored(pg.storage_path), data = pageDataItems(raw);')
     expect(w).toContain('(data ? `Page data fields:\\n${data}\\n\\n` : "") + mainText(raw)')
     expect(w).toContain("Page data fields at the top of the page text are the page's own labelled values")
