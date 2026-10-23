@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.262 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.335** (read lane capacity from Settings; Platform Admin 22:57 and 23:13 "Go").
+  - Migration `20261023027000_cf247_read_lane_settings.sql`: setting `reading.pages_at_once` (1 to 32, 8); `svc_worker_settings_v1` returns `reading.*`; `svc_coverage_read_next` takes up to 200 pages a call (md5-guarded edits). Worker `coverage-sweep-worker-v0.44.0`: read mode up to 200 pages a call, `reading.pages_at_once` fetched at once (both were fixed at 60 and 8). SOPs 1.76. Live changes by the Platform Admin's "Go", logged: `pages.render_countries` + CA; job `coverage-read-2` on.
+  - Test `tests/uat/cf-247-s89-read-lane-settings-contract.spec.mjs`.
+
 ## 0.1.261 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.334** (NZ enrichment brief Release 1: items 1, 2, 4; Platform Admin decisions 20:42, addendum 20:52, flags 20:56).
