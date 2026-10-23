@@ -1,17 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.327'
-export const PACKAGE_VERSION='0.1.254'
+export const UI_VERSION='2.15.328'
+export const PACKAGE_VERSION='0.1.255'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Courses list column names; notice links open their settings',
+  title:'Read with AI reads a page\'s labelled data items',
   changes:[
-    'Courses list: the CRICOS tuition column is named Tuition Only, and Legacy presence is named Completeness (how complete the course record is).'
+    'Read with AI and the AI reader for every attribute also read the course facts a page holds as labelled data items outside its main text (the University of Auckland catalogue gives campus, full-time length, delivery and study mode only this way).'
   ],
-  bugFixes:['Notices: Go to OpenRouter settings (and every Go to on the screen it already showed) did nothing; each Go to now opens and scrolls to its card. The course-page search budget and website links pointed to retired screens.']
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

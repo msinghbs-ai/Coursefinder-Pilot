@@ -564,3 +564,16 @@ test.describe('v2.15.326 Courses list', () => {
     expect(m).toContain("ifee.amount intl_fee_amount,ifee.currency_code::text intl_fee_currency,ifee.fee_year intl_fee_year,gcity.city_names,")
   })
 })
+
+test.describe('v2.15.328 Read with AI reads labelled page data items', () => {
+  test('enrich_ai gives a page\'s short display items first, as Label: value', async () => {
+    const x = fs.readFileSync('supabase/functions/coverage-sweep/extract.ts', 'utf8')
+    const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+    expect(x).toContain('export function pageDataItems(html: string)')
+    expect(x).toContain('display[_-]only')
+    expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.42.3";')
+    expect(w).toContain('const raw = await readStored(pg.storage_path), data = pageDataItems(raw);')
+    expect(w).toContain('(data ? `Page data fields:\\n${data}\\n\\n` : "") + mainText(raw)')
+    expect(w).toContain("Page data fields at the top of the page text are the page's own labelled values")
+  })
+})
