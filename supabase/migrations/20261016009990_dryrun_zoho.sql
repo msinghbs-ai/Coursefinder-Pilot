@@ -116,14 +116,21 @@ z as (
          (coalesce(b.page_title, '') ~* s.nf_rx) not_found,
          (select coalesce(count(*) filter (where t = any (security.coverage_text_tokens(coalesce(b.page_title, '')))), 0)::numeric / greatest(1, cardinality(b.ttok)) from unnest(b.ttok) t) title_overlap
     from b join share sh on sh.provider_id = b.provider_id and sh.pattern = b.pattern cross join s),
+purl as (
+  -- the provider's known pages that sit on an accepted (on-pattern) address pattern, computed once
+  select u.provider_id, u.url, u.tokens, u.title_tokens
+    from pipeline.coverage_provider_urls u
+    join share sh on sh.provider_id = u.provider_id and sh.pattern = regexp_replace(u.url, '^(https?://[^/]+/(?:[^/]+/){0,3}).*$', '\1')
+    cross join s
+   where sh.sh >= s.off_max and u.url !~* s.listing_rx
+     and exists (select 1 from z where z.provider_id = u.provider_id and z.pattern_share < s.off_max)),
 cand as (
   select z.course_id, c.url, c.ov
     from z cross join s
     join lateral (
       select u.url, (select count(*) filter (where t = any (u.title_tokens) or t = any (u.tokens))::numeric / greatest(1, cardinality(z.ttok)) from unnest(z.ttok) t) ov
-        from pipeline.coverage_provider_urls u
-        join share sh on sh.provider_id = u.provider_id and sh.pattern = regexp_replace(u.url, '^(https?://[^/]+/(?:[^/]+/){0,3}).*$', '\1') and sh.sh >= s.off_max
-       where u.provider_id = z.provider_id and u.url <> z.url and u.url !~* s.listing_rx
+        from purl u
+       where u.provider_id = z.provider_id and u.url <> z.url and (u.tokens && z.ttok or u.title_tokens && z.ttok)
          and not exists (select 1 from pipeline.page_rejections r where r.course_id = z.course_id and r.url = u.url)
        order by ov desc, length(u.url) limit 1) c on true
    where z.pattern_share < s.off_max)
@@ -191,14 +198,16 @@ declare v_at timestamptz := date_trunc('minute', now()); v_min int := security.p
         v_rate numeric := security.pipeline_num_v1('zero_yield.flag_rate_pct', 25); v_auto boolean := security.pipeline_num_v1('zero_yield.auto_reset', 0) = 1;
         v_per int := greatest(1, security.pipeline_num_v1('zero_yield.providers_per_run', 5)::int); r record; v_r jsonb; v_reset int := 0; v_prov int := 0; v_flag int := 0;
 begin
-  insert into pipeline.zero_yield_snapshots(at, provider_id, country, bound, zero_yield, verified_wrong, rate_pct, flagged, detail)
-  select v_at, z.provider_id, z.country, count(*), count(*) filter (where z.zero), count(*) filter (where z.verified_wrong),
-         round(100.0 * count(*) filter (where z.zero) / count(*), 1),
-         (count(*) >= v_min and 100.0 * count(*) filter (where z.zero) / count(*) >= v_rate),
-         jsonb_build_object('listing', count(*) filter (where z.listing), 'not_found', count(*) filter (where z.not_found), 'off_pattern', count(*) filter (where z.pattern_share < security.pipeline_num_v1('zero_yield.off_pattern_share_max', 0.35)), 'manual', count(*) filter (where z.basis = 'manual'))
-    from security.zero_yield_pages_v1(null) z group by z.provider_id, z.country
-  on conflict (at, provider_id) do nothing;
-  get diagnostics v_prov = row_count;
+  for r in select distinct p.provider_id from pipeline.coverage_course_pages p join pipeline.evidence_artifacts e on e.id = p.evidence_id and e.storage_path is not null where p.status = 'bound' and p.read_status = 'read' loop
+    insert into pipeline.zero_yield_snapshots(at, provider_id, country, bound, zero_yield, verified_wrong, rate_pct, flagged, detail)
+    select v_at, z.provider_id, z.country, count(*), count(*) filter (where z.zero), count(*) filter (where z.verified_wrong),
+           round(100.0 * count(*) filter (where z.zero) / count(*), 1),
+           (count(*) >= v_min and 100.0 * count(*) filter (where z.zero) / count(*) >= v_rate),
+           jsonb_build_object('listing', count(*) filter (where z.listing), 'not_found', count(*) filter (where z.not_found), 'off_pattern', count(*) filter (where z.pattern_share < security.pipeline_num_v1('zero_yield.off_pattern_share_max', 0.35)), 'manual', count(*) filter (where z.basis = 'manual'))
+      from security.zero_yield_pages_v1(r.provider_id) z group by z.provider_id, z.country
+    on conflict (at, provider_id) do nothing;
+    v_prov := v_prov + 1;
+  end loop;
   select count(*) into v_flag from pipeline.zero_yield_snapshots s where s.at = v_at and s.flagged;
   if v_auto then
     for r in select s.provider_id from pipeline.zero_yield_snapshots s where s.at = v_at and s.flagged and s.verified_wrong > 0 order by s.verified_wrong desc limit v_per loop
@@ -244,17 +253,17 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('job', 'zero-yield-detect', 'Layer 2', 'daily 03:21 UTC zero-yield detect (and reset when switched on)', 'active', '{}', '20261024003000')
 on conflict (kind, name) do nothing;
 
-do $t$ declare u uuid; d jsonb; r jsonb; before jsonb; after jsonb; prep jsonb; begin
+do $t$ declare u uuid; r jsonb; before jsonb; after jsonb; prep jsonb; t0 timestamptz := clock_timestamp(); nz jsonb; begin
   select id into u from catalogue.providers where canonical_name='University of Auckland';
-  d := security.zero_yield_detect_v1();
-  select to_jsonb(s) - 'at' - 'provider_id' into before from pipeline.zero_yield_snapshots s where s.provider_id=u order by at desc limit 1;
+  select jsonb_build_object('bound', count(*), 'zero', count(*) filter (where zero), 'wrong', count(*) filter (where verified_wrong), 'off_pattern', count(*) filter (where pattern_share < 0.35), 'ms', extract(epoch from clock_timestamp()-t0)*1000) into before from security.zero_yield_pages_v1(u);
   update pipeline.platform_toolset_settings set value='200'::jsonb where toolset_key='pipeline' and key='zero_yield.reset_per_provider';
   r := security.zero_yield_reset_v1(u);
   select jsonb_build_object('mismatch_now', count(*) filter (where status='mismatch'), 'bound_now', count(*) filter (where status='bound')) into after from pipeline.coverage_course_pages where provider_id=u;
   prep := security.coverage_ai_match_prepare_v1(1, 300);
-  raise exception 'DRYRUN OK %', jsonb_build_object('detect', d, 'uoa_before', before, 'reset', r, 'uoa_after', after,
+  t0 := clock_timestamp();
+  select jsonb_agg(jsonb_build_object('p', left(pr.canonical_name,22), 'b', q.b, 'z', q.z, 'w', q.w)) into nz from (select z.provider_id, count(*) b, count(*) filter (where zero) z, count(*) filter (where verified_wrong) w from security.zero_yield_pages_v1(null) z join catalogue.providers pr0 on pr0.id=z.provider_id where z.country='NZ' group by 1 order by 4 desc limit 8) q join catalogue.providers pr on pr.id=q.provider_id;
+  raise exception 'DRYRUN OK %', jsonb_build_object('uoa_before', before, 'reset', r, 'uoa_after', after,
     'rejections', (select jsonb_object_agg(reason, n) from (select reason, count(*) n from pipeline.page_rejections where provider_id=u group by 1) z),
-    'sample', (select jsonb_agg(jsonb_build_object('u', regexp_replace(url,'^https://(www\.|study\.)?auckland\.ac\.nz',''), 'cand', regexp_replace(signals->>'candidate_url','^https://(www\.|study\.)?auckland\.ac\.nz',''), 'ov', signals->>'candidate_overlap')) from (select * from pipeline.page_rejections where provider_id=u order by random() limit 5) q),
+    'sample', (select jsonb_agg(jsonb_build_object('u', regexp_replace(url,'^https://(www\.|study\.)?auckland\.ac\.nz',''), 'cand', regexp_replace(signals->>'candidate_url','^https://(www\.|study\.)?auckland\.ac\.nz',''), 'ov', signals->>'candidate_overlap')) from (select * from pipeline.page_rejections where provider_id=u order by random() limit 4) q),
     'prepare', prep, 'ready_for_uoa', (select count(*) from pipeline.coverage_ai_match q where q.provider_id=u and q.state='ready'),
-    'nz_flagged', (select jsonb_agg(jsonb_build_object('p', left(pr.canonical_name,24), 'b', s.bound, 'z', s.zero_yield, 'w', s.verified_wrong, 'r', s.rate_pct)) from pipeline.zero_yield_snapshots s join catalogue.providers pr on pr.id=s.provider_id where s.country='NZ' and s.flagged),
-    'totals', (select jsonb_build_object('providers', count(*), 'flagged', count(*) filter (where flagged), 'verified_wrong', sum(verified_wrong), 'zero', sum(zero_yield)) from pipeline.zero_yield_snapshots)); end $t$;
+    'nz_all_ms', extract(epoch from clock_timestamp()-t0)*1000, 'nz_top', nz); end $t$;
