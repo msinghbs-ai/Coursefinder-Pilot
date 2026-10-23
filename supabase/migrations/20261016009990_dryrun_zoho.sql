@@ -156,7 +156,8 @@ on conflict (kind, name) do nothing;
 
 select 'provider domain moved action' ok;
 -- CF-247 (23 Oct 2026). NZ enrichment brief, Release 1 item 4 (Platform Admin decisions C3 and C4 at 20:42; F2 at 20:56).
--- An international fee on an annual basis below the country's floor is quarantined: the row is kept with status review and a Layer 4
+-- An international fee on an annual basis below the country's floor is quarantined: the row is kept with status unverified (an existing
+-- status the website never returns) and a Layer 4
 -- item carries the reason; it is not shown until a person decides. Never rejected, never dropped. The floor is a column per country on
 -- pipeline.coverage_admission_countries (NZ 8,000 NZD, AU 8,000 AUD, CA 8,000 CAD), shown and changed on Settings › Pipeline settings.
 -- The check runs where every fee is admitted (security.coverage_apply_course_v1), so the adapter path, the AI fee reader and the fee
@@ -212,10 +213,10 @@ select pg_temp.edit_once('security.coverage_apply_course_v1(uuid,uuid,uuid,text,
     do update set amount = excluded.amount, currency_code = excluded.currency_code, basis = excluded.basis, fee_year = excluded.fee_year,
                   evidence_id = excluded.evidence_id, confidence = 1, status = 'active', last_verified_at = now(), source_snapshot_at = now(), updated_at = now();
     v_fees := 1;$o$,
-        $n$            case when v_floor is not null then 'review' else 'active' end, now(), now(), now())
+        $n$            case when v_floor is not null then 'unverified' else 'active' end, now(), now(), now())
     on conflict (course_id, source_id, source_fee_key) where source_id is not null and source_fee_key is not null
     do update set amount = excluded.amount, currency_code = excluded.currency_code, basis = excluded.basis, fee_year = excluded.fee_year,
-                  evidence_id = excluded.evidence_id, confidence = 1, status = case when v_floor is not null then 'review' else 'active' end, last_verified_at = now(), source_snapshot_at = now(), updated_at = now();
+                  evidence_id = excluded.evidence_id, confidence = 1, status = case when v_floor is not null then 'unverified' else 'active' end, last_verified_at = now(), source_snapshot_at = now(), updated_at = now();
     if v_floor is not null then
       if not exists (select 1 from pipeline.layer4_review_items l where l.entity_type = 'course' and l.entity_id = p_course_id and l.field_code = 'provider_current_tuition' and l.status = 'pending') then
         insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
@@ -276,10 +277,10 @@ select 'course', x.course_id, 'provider_current_tuition', x.evidence_id, jsonb_b
        'international fee below the country floor (NZD 8,000 a year); kept live and flagged: short English-language course (Platform Admin 23 Oct 2026 C4)', 'CF-CHG-20260915-247 NZ brief C4'
   from _floor x where x.provider in ('New Zealand College of Chinese Medicine Limited', 'University of Waikato');
 -- withdraw to review (20): off the website until decided; restored on approval
-update catalogue.course_fees f set status = 'review', updated_at = now()
+update catalogue.course_fees f set status = 'unverified', updated_at = now()
   from _floor x where f.id = x.id and x.provider not in ('New Zealand College of Chinese Medicine Limited', 'University of Waikato');
 insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
-select 'course', x.course_id, 'provider_current_tuition', x.evidence_id, jsonb_build_object('amount', x.amount, 'status', 'active'), jsonb_build_object('amount', x.amount, 'status', 'review'), jsonb_build_object('source', 'fee floor', 'state', 'withdrawn'), '{}'::jsonb, 'pending',
+select 'course', x.course_id, 'provider_current_tuition', x.evidence_id, jsonb_build_object('amount', x.amount, 'status', 'active'), jsonb_build_object('amount', x.amount, 'status', 'unverified'), jsonb_build_object('source', 'fee floor', 'state', 'withdrawn'), '{}'::jsonb, 'pending',
        'withdrawn to review: international fee below the country floor (NZD 8,000 a year): NZD ' || to_char(x.amount, 'FM999,999,999.00') || ' (Platform Admin 23 Oct 2026 C4)', 'CF-CHG-20260915-247 NZ brief C4'
   from _floor x where x.provider not in ('New Zealand College of Chinese Medicine Limited', 'University of Waikato');
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
@@ -292,19 +293,8 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
 on conflict (kind, name) do nothing;
 
 select 'fee floor per country; below-floor fees quarantined; C4 pass applied' ok;
-do $d$ declare r jsonb; a jsonb; t record;
-begin
+do $t$ declare r jsonb; begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
-  r := security.transition_recheck_v1();
-  begin perform public.admin_provider_domain_moved('e096aba7-e1eb-4903-9a63-2bfb71e9a8b8', 'www.auckland.ac.nz', 'dry run'); a := '"no exception"'; exception when others then a := to_jsonb(sqlerrm); end;
-  r := r || jsonb_build_object('apply', security.coverage_apply_course_v1('de70ae44-8eda-418a-a271-fd82bf5008e2', (select id from pipeline.sources limit 1), '87f8ead6-f126-4ee2-b078-66e8dd673ebf', 'https://x', 'h', jsonb_build_object('fee_amount', 3000, 'fee_year', 2026, 'fee_basis', 'annual', 'currency_code', 'NZD')));
-  select status, amount into t from catalogue.course_fees where course_id = 'de70ae44-8eda-418a-a271-fd82bf5008e2' and amount = 3000;
-  raise exception 'DRYRUN OK recheck %; noop %; apply % -> row % %; l4 %; transitions %; floors %; c4 review rows %; settings read floor %',
-    r->'rechecked', a, r->'apply', t.status, t.amount,
-    (select escalation_reason from pipeline.layer4_review_items where entity_id = 'de70ae44-8eda-418a-a271-fd82bf5008e2' and layer2_state->>'state' = 'quarantined' limit 1),
-    (select count(*) from pipeline.provider_transitions),
-    (select jsonb_object_agg(k.iso_alpha2, c.min_annual_international) from pipeline.coverage_admission_countries c join ref.countries k on k.id = c.country_id),
-    (select count(*) from catalogue.course_fees f where f.status = 'review' and f.amount < 8000),
-    (public.admin_pipeline_settings_read()->'identity'->'NZ'->>'min_annual_international');
-end $d$;
+  r := security.admin_course_page_fast_base('{"provider_id":"e096aba7-e1eb-4903-9a63-2bfb71e9a8b8","query":"Diploma in","level_code":"diploma","limit":12}'::jsonb);
+  raise exception 'DRYRUN OK %', jsonb_build_object('items', (select jsonb_agg(jsonb_build_object('t', x->>'canonical_title', 'f', x->'intl_fee_amount', 'y', x->'intl_fee_year', 'c', x->'city_names')) from jsonb_array_elements(r->'items') x)); end $t$;
