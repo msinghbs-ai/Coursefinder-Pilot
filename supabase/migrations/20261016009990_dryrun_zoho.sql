@@ -6,7 +6,7 @@
 -- 2 public.svc_worker_settings_v1 also returns the reading.* keys to the worker (md5-guarded edit).
 -- 3 Already done live by the Platform Admin's "Go" (logged here for the record, not repeated): pages.render_countries gained CA;
 --   job coverage-read-2 switched on (a second read call every 30 seconds).
--- Replaces: nothing (public.svc_worker_settings_v1 edited in place, md5-guarded)
+-- Replaces: nothing (public.svc_worker_settings_v1 and public.svc_coverage_read_next edited in place, md5-guarded)
 -- Retires: nothing
 
 create or replace function pg_temp.edit_once(p_sig text, p_md5 text, p_edits text[][]) returns void language plpgsql as $f$
@@ -32,6 +32,12 @@ select pg_temp.edit_once('public.svc_worker_settings_v1()', '2b5b30d2c25bf540f76
         $n$or (s.toolset_key = 'pipeline' and (s.key like 'enrich.%' or s.key like 'reading.%'))$n$]
 ]);
 
+-- 4 public.svc_coverage_read_next also capped a call at 60 pages; it now takes up to the setting's maximum (200). -- fixed: 200 is batch.coverage_read's max_value
+select pg_temp.edit_once('public.svc_coverage_read_next(integer)', '8c70024ba4b6db0c02362d28c6e947d0', array[
+  array[$o$limit greatest(1,least(coalesce(p_limit,20),60))$o$,
+        $n$limit greatest(1,least(coalesce(p_limit,20),200))$n$]
+]);
+
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
 values ('toolsets', 'setting', 'pipeline.reading.pages_at_once',
         jsonb_build_object('before', '8 (fixed in the worker)', 'after', 8, 'range', '1 to 32', 'reason', 'Platform Admin 23 Oct 2026 23:13 "Go" (migration 20261023027000)'),
@@ -39,7 +45,8 @@ values ('toolsets', 'setting', 'pipeline.reading.pages_at_once',
 
 -- No component_register row: settings are registered in pipeline.platform_toolset_settings itself (kind check allows job, table, view, edge_function, screen, function).
 
-do $t$ declare r jsonb; s record; begin
-  select value, min_value, max_value, unit, section into s from pipeline.platform_toolset_settings where toolset_key='pipeline' and key='reading.pages_at_once';
+do $t$ declare r jsonb; s record; d text; begin
+  select value, min_value, max_value into s from pipeline.platform_toolset_settings where toolset_key='pipeline' and key='reading.pages_at_once';
   set role service_role; r := public.svc_worker_settings_v1(); reset role;
-  raise exception 'DRYRUN OK %', jsonb_build_object('setting', to_jsonb(s), 'worker_sees', r->'reading.pages_at_once', 'enrich_still', r ? 'enrich.ai_pages_at_once'); end $t$;
+  d := pg_get_functiondef('public.svc_coverage_read_next(integer)'::regprocedure);
+  raise exception 'DRYRUN OK %', jsonb_build_object('setting', to_jsonb(s), 'worker_sees', r->'reading.pages_at_once', 'picker_200', d like '%least(coalesce(p_limit,20),200)%', 'picker_60_gone', d not like '%,60))%'); end $t$;
