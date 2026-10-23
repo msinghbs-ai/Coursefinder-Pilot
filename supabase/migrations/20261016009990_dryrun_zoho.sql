@@ -29,22 +29,21 @@ select pg_temp.edit_once('public.admin_jobs_pulse()', 'b840c8e6130a71203bc8a5760
 
 do $d$ declare r jsonb; t0 timestamptz; ms int; n int;
 begin
-  -- 100 real one-course Read with AI tasks (delivery) on courses with a bound page and no delivery mode
   with c as (select c.id, c.provider_id, c.canonical_title from catalogue.courses c join pipeline.coverage_course_pages g on g.course_id = c.id
-              where g.status = 'bound' and g.evidence_id is not null and nullif(btrim(c.delivery_mode), '') is null limit 100),
+              where g.status = 'bound' and g.evidence_id is not null and c.duration_value is null and not security.enrich_item_held_v1(c.id, 'duration') limit 100),
        j as (insert into pipeline.admin_jobs(kind, lane, state, title, args, progress, requested_by, reason, scope)
              select 'enrich_fields', 'enrich', 'queued', 'DRY ' || c.canonical_title,
-                    jsonb_build_object('read_now', true, 'countries', '[]'::jsonb, 'provider_ids', jsonb_build_array(c.provider_id), 'course_ids', jsonb_build_array(c.id), 'fields', '["delivery"]'::jsonb, 'ai', true, 'scraper', false),
+                    jsonb_build_object('read_now', true, 'countries', '[]'::jsonb, 'provider_ids', jsonb_build_array(c.provider_id), 'course_ids', jsonb_build_array(c.id), 'fields', '["duration"]'::jsonb, 'ai', true, 'scraper', false),
                     jsonb_build_object('done', 0, 'total', 0), '63ba56cb-48d4-4169-98c2-7c4d1f72925b'::uuid, 'dry run', '1 course' from c
              returning id, args)
   insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
-  select j.id, (j.args->'provider_ids'->>0)::uuid, (j.args->'course_ids'->>0)::uuid, 'delivery', 'queued' from j;
+  select j.id, (j.args->'provider_ids'->>0)::uuid, (j.args->'course_ids'->>0)::uuid, 'duration', 'queued' from j;
   get diagnostics n = row_count;
   t0 := clock_timestamp();
   r := security.admin_jobs_tick_v1(security.pipeline_num_v1('batch.admin_jobs', 10)::int);
   ms := (extract(epoch from clock_timestamp() - t0) * 1000)::int;
-  raise exception 'DRYRUN OK created % tasks; moved % in % ms; done %; with AI %; setting %', n, jsonb_array_length(r), ms,
+  raise exception 'DRYRUN OK items %; moved % in % ms; done %; handed to AI %; filled by adapter %', n, jsonb_array_length(r), ms,
     (select count(*) from jsonb_array_elements(r) x where x->>'state' = 'done'),
     (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'DRY %' and i.state = 'ai'),
-    security.pipeline_num_v1('jobs.per_lane_per_tick', 1);
+    (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'DRY %' and i.state = 'filled');
 end $d$;
