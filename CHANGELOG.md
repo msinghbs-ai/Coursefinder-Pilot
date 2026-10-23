@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.254 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.327** (Courses list column names). Platform Admin, 23 Oct 2026 13:24: "change column name - CRICOS tuition to Tuition Only and Legacy presence - to completeness".
+  - `src/mature-main.jsx` column labels. `src/Toolsets.jsx`: every notice Go to opens and scrolls to its card, also when already on that screen (Platform Admin 13:26 "go to openrouter settings doesn't open"); course-page search budget and website links fixed. No database change. Consumer API unchanged (Decision 266). SOPs 1.68.
+
 ## 0.1.253 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.326** (Courses list: international fee and city). Platform Admin, 23 Oct 2026 12:52: "Still no city or fees on these."

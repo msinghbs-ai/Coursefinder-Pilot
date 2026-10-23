@@ -45,18 +45,20 @@ const go=(label,page,tab,card,at)=>({label,page,tab,card,at})
 const NEED={action:['Action needed','warning'],outside:['Action outside StudySearch','warning'],optional:['Optional','neutral'],info:['Nothing to do','success']}
 export function noticePlan(n){
   const k=`${n.toolset}:${n.kind}`,key=n.key||'',used=/^Used up/.test(n.detail||'')
-  const fc=go('Firecrawl settings',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl')
-  const or=go('OpenRouter settings',LIMITS.page,LIMITS.tab,'services.toolset.openrouter')
+  // v2.15.327 (Platform Admin 23 Oct 2026 13:26: "go to openrouter settings doesn't open, check rest of the link"): every Go to names the
+  // card it scrolls to (at); goToCard also opens the Toolsets and limits card the toolset cards sit in
+  const fc=go('Firecrawl settings',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl','services.toolset.firecrawl')
+  const or=go('OpenRouter settings',LIMITS.page,LIMITS.tab,'services.toolset.openrouter','services.toolset.openrouter')
   switch(k){
     case'firecrawl:daily_budget':return{need:'info',say:used?'Nothing to do: this work carries on by itself after midnight, Melbourne time.':'Nothing to do yet: this work stops for the day only if the share is used up.',
       go:go('Daily budget settings',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl','firecrawl:Daily budget')}
     case'firecrawl:search_stopped':return{need:'action',say:'Check each website below, then press Search again.',items:'resume',go:go('Credits by university',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl.credits','services.toolset.firecrawl.credits')}
     case'firecrawl:search_held':return{need:'action',say:'Check the adapter and website below, then press Search again.',items:'resume',go:go('Credits by university',LIMITS.page,LIMITS.tab,'services.toolset.firecrawl.credits','services.toolset.firecrawl.credits')}
-    case'firecrawl:no_official_site':return{need:'optional',say:'Enter a website below if you know it. Otherwise nothing to do.',items:'website',go:go('Websites to find','layer4','websites','','websites-to-find')}
+    case'firecrawl:no_official_site':return{need:'optional',say:'Enter a website below if you know it. Otherwise nothing to do.',items:'website',go:go('Layer 4 Inbox','layer4','inbox','','')}
     case'firecrawl:shared_site':return{need:'info',say:'Nothing to do, unless a college needs its own website (enter it on the provider).',go:go('Providers','providers','','','')}
     case'firecrawl:low_balance':return{need:'outside',say:'Top up the Firecrawl account. Work stops by itself at the reserve.',go:go('Firecrawl credits',LIMITS.page,LIMITS.tab,'services.firecrawl-credits','services.firecrawl-credits')}
     case'firecrawl:cap_reached':return key.startsWith('firecrawl:2:course_link_cap')
-      ?{need:'optional',say:'Raise the monthly cap if the search should carry on this month. Otherwise it carries on next month.',go:go('Course-page search budget','jobs','priority','','search-cap')}
+      ?{need:'optional',say:'Raise the monthly cap if the search should carry on this month. Otherwise it carries on next month.',go:go('Course-page search budget',LIMITS.page,LIMITS.tab,'','search-cap')}
       :{need:'optional',say:'Raise the scholarship cap if these pages should be read.',go:go('Scholarship credits','layer2','scholarships','','sch-credits')}
     case'openrouter:refused':return /:rate$/.test(key)?{need:'info',say:'Nothing to do: the pages are read again by themselves.',go:or}
       :{need:'outside',say:/:key_limit$/.test(key)?'Raise or clear the key’s limit at OpenRouter.':/:credit$/.test(key)?'Top up the OpenRouter balance.':'Check the key on Settings.',go:or}
@@ -76,9 +78,15 @@ export function noticePlan(n){
 // Opens the card (and any card it sits in) for this session and goes to the page; mature-main scrolls to `at`.
 export function goToCard(g){
   if(!g)return
-  for(const id of String(g.card||'').split(',').filter(Boolean))rememberOpen(id)
-  const params={};if(g.card)params.card=g.card;if(g.at)params.at=g.at
-  window.location.hash=hrefFor(g.page,g.tab,params).slice(1)
+  // v2.15.327: a toolset card sits inside Toolsets and limits, which is opened too; the card itself is scrolled to when no other place is named
+  let cards=String(g.card||'').split(',').filter(Boolean)
+  if(cards.some(c=>c.startsWith('services.toolset.'))&&!cards.includes('services.toolsets'))cards=['services.toolsets',...cards]
+  for(const id of cards)rememberOpen(id)
+  const params={};if(cards.length)params.card=cards.join(',');const at=g.at||cards[cards.length-1];if(at)params.at=at
+  const next=hrefFor(g.page,g.tab,params).slice(1)
+  // already on that address (the notice is on the same screen): the router is told again so it opens and scrolls
+  if(window.location.hash.replace(/^#/,'')===next)window.dispatchEvent(new HashChangeEvent('hashchange'))
+  else window.location.hash=next
 }
 
 export function LayerNotices({layer}){

@@ -58,3 +58,28 @@ test.describe('mocked browser', () => {
     await expect(page.locator('[data-toolset-section="firecrawl:Daily budget"]')).toBeInViewport()
   })
 })
+
+// v2.15.327 (Platform Admin 23 Oct 2026 13:26: "go to openrouter settings doesn't open, check rest of the link and streamline it")
+test.describe('v2.15.327 notice links', () => {
+  test('Go to OpenRouter settings on Toolsets and limits opens and scrolls to the OpenRouter card', async ({ page }) => {
+    await mockAdmin(page)
+    await page.goto('/#models-services?tab=limits')
+    await page.locator('[data-card="services.toolsets"] .cf-card-toggle').click()
+    await page.locator('[data-toolset-notices] [data-notice="openrouter:3:low_balance"] [data-notice-go]').click()
+    await expect(page).toHaveURL(/at=services\.toolset\.openrouter/)
+    await expect(page.locator('[data-card="services.toolset.openrouter"]')).toHaveAttribute('data-card-open', 'true')
+    await expect(page.locator('[data-card="services.toolset.openrouter"]')).toBeInViewport()
+    // the same link again (already on that address) still opens it
+    await page.locator('[data-card="services.toolset.openrouter"] .cf-card-toggle').click()
+    await page.locator('[data-toolset-notices] [data-notice="openrouter:3:low_balance"] [data-notice-go]').click()
+    await expect(page.locator('[data-card="services.toolset.openrouter"]')).toHaveAttribute('data-card-open', 'true')
+  })
+
+  test('every Go to target names a page, and every scroll target exists on screen code', () => {
+    const src = fs.readFileSync('src/Toolsets.jsx', 'utf8')
+    expect(src).not.toContain("'jobs','priority'")
+    expect(src).not.toContain("'layer4','websites'")
+    const all = fs.readdirSync('src').filter(f => /\.(jsx|js)$/.test(f)).map(f => fs.readFileSync('src/' + f, 'utf8')).join('\n')
+    for (const at of ['search-cap', 'sch-credits', 'settings-register', 'services.toolset.firecrawl.credits', 'services.firecrawl-credits']) expect(all).toContain(`"${at}"`)
+  })
+})

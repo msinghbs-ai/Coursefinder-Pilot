@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.326'
+export const SOP_REVIEWED_FOR = '2.15.327'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -169,7 +169,8 @@ export const SOPS = [
       { version: '1.64', date: '23 Oct 2026', release: '2.15.323', change: 'Fee reader (AI) also reads course pages that show an international fee for a course with no fee held (Settings: Fee reader: read course pages). Settings › Identify the page: every page proof can be ticked (Page bound by a person, University page, adapter proofs). New Zealand fees are admitted from pages proved by exact title, title with level or bound by a person.' },
       { version: '1.65', date: '23 Oct 2026', release: '2.15.324', change: 'Fee reader: run every, pages a run and pages read at once are on Settings › Pipeline settings with their ranges. Read with AI or a changed official page puts the course fee first in line for the AI fee reader.' },
       { version: '1.66', date: '23 Oct 2026', release: '2.15.325', change: 'Platform health › Work queues › Why values are missing: check it hourly; act on Needs a change. Enrich fields also reads English, intakes and campus regions with AI.' },
-      { version: '1.67', date: '23 Oct 2026', release: '2.15.326', change: 'Courses list: International fee and City columns; use Has fee to find courses without one.' }],
+      { version: '1.67', date: '23 Oct 2026', release: '2.15.326', change: 'Courses list: International fee and City columns; use Has fee to find courses without one.' },
+      { version: '1.68', date: '23 Oct 2026', release: '2.15.327', change: 'Courses list: CRICOS tuition is now Tuition Only and Legacy presence is now Completeness.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -287,7 +288,8 @@ export const SOPS = [
       { version: '1.64', date: '23 Oct 2026', release: '2.15.323', change: 'Reviewed: more New Zealand courses show an international fee. No operator steps changed.' },
       { version: '1.65', date: '23 Oct 2026', release: '2.15.324', change: 'Reviewed: Read with AI on a course also reads its fee first in line. No operator steps changed.' },
       { version: '1.66', date: '23 Oct 2026', release: '2.15.325', change: 'Reviewed: Enrich fields lists English, intakes and campus region. No operator steps changed.' },
-      { version: '1.67', date: '23 Oct 2026', release: '2.15.326', change: 'Reviewed: the Courses list shows the international fee and the city. No operator steps changed.' }],
+      { version: '1.67', date: '23 Oct 2026', release: '2.15.326', change: 'Reviewed: the Courses list shows the international fee and the city. No operator steps changed.' },
+      { version: '1.68', date: '23 Oct 2026', release: '2.15.327', change: 'Courses list: CRICOS tuition is now Tuition Only and Legacy presence is now Completeness.' }],
   },
 ]
 
