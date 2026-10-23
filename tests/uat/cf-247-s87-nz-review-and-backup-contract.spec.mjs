@@ -593,3 +593,16 @@ test.describe('v2.15.328 the AI reader reads only the course\'s own page', () =>
     expect(m).not.toMatch(/^\s*delete\s+from/im)
   })
 })
+
+test.describe('v2.15.329 Read with AI links a campus the university already has', () => {
+  test('a campus inside a listed name is kept; an existing campus needs one page, a new one the setting', async () => {
+    const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+    expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.42.4";')
+    expect(w).toContain('names.some((n) => n === r || (flat(r).length >= 2 && flat(n).includes(flat(r))))')
+    const m = fs.readFileSync('supabase/migrations/20261023018000_cf247_campus_list_existing_campus_one_page.sql', 'utf8')
+    expect(m).toContain("'security.enrich_campus_list_apply_v1(bigint)', '2617420b455dea68f7cb2cbed8271088'")
+    expect(m).toContain("if v_pages < 1 or (v_pages < v_min and not exists (select 1 from catalogue.campuses ca where ca.id = v_cid and ca.status = 'active')) then")
+    expect(m).toMatch(/^-- Replaces: /m)
+    expect(m).toMatch(/^-- Retires: /m)
+  })
+})
