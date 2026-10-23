@@ -293,8 +293,19 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
 on conflict (kind, name) do nothing;
 
 select 'fee floor per country; below-floor fees quarantined; C4 pass applied' ok;
-do $t$ declare r jsonb; begin
+do $d$ declare r jsonb; a jsonb; t record;
+begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
-  r := security.admin_course_page_fast_base('{"provider_id":"e096aba7-e1eb-4903-9a63-2bfb71e9a8b8","query":"Diploma in","level_code":"diploma","limit":12}'::jsonb);
-  raise exception 'DRYRUN OK %', jsonb_build_object('items', (select jsonb_agg(jsonb_build_object('t', x->>'canonical_title', 'f', x->'intl_fee_amount', 'y', x->'intl_fee_year', 'c', x->'city_names')) from jsonb_array_elements(r->'items') x)); end $t$;
+  r := security.transition_recheck_v1();
+  begin perform public.admin_provider_domain_moved('e096aba7-e1eb-4903-9a63-2bfb71e9a8b8', 'www.auckland.ac.nz', 'dry run'); a := '"no exception"'; exception when others then a := to_jsonb(sqlerrm); end;
+  r := r || jsonb_build_object('apply', security.coverage_apply_course_v1('de70ae44-8eda-418a-a271-fd82bf5008e2', (select id from pipeline.sources limit 1), '87f8ead6-f126-4ee2-b078-66e8dd673ebf', 'https://x', 'h', jsonb_build_object('fee_amount', 3000, 'fee_year', 2026, 'fee_basis', 'annual', 'currency_code', 'NZD')));
+  select status, amount into t from catalogue.course_fees where course_id = 'de70ae44-8eda-418a-a271-fd82bf5008e2' and amount = 3000;
+  raise exception 'DRYRUN OK recheck %; noop %; apply % -> row % %; l4 %; transitions %; floors %; c4 quarantined rows %; settings read floor %',
+    r->'rechecked', a, r->'apply', t.status, t.amount,
+    (select escalation_reason from pipeline.layer4_review_items where entity_id = 'de70ae44-8eda-418a-a271-fd82bf5008e2' and layer2_state->>'state' = 'quarantined' limit 1),
+    (select count(*) from pipeline.provider_transitions),
+    (select jsonb_object_agg(k.iso_alpha2, c.min_annual_international) from pipeline.coverage_admission_countries c join ref.countries k on k.id = c.country_id),
+    (select count(*) from catalogue.course_fees f where f.status = 'unverified' and f.amount < 8000),
+    (public.admin_pipeline_settings_read()->'identity'->'NZ'->>'min_annual_international');
+end $d$;
