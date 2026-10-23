@@ -29,9 +29,10 @@ select pg_temp.edit_once('security.enrich_campus_list_apply_v1(bigint)', '261742
 do $d$ declare r jsonb; c jsonb;
 begin
   update pipeline.field_enrich_items set value = jsonb_build_object('campuses', '[{"name":"City","raw":["City"],"city":"Auckland","street":null,"postcode":null},{"name":"South Auckland","raw":["South Auckland"],"city":"Auckland","street":null,"postcode":null}]'::jsonb), state = 'ai' where id = 172686;
+  update pipeline.field_enrich_items set state = 'waiting', reason = null where job_id = '915df9bd-1f99-405f-aa40-a2f113ceebd5' and field = 'campus';
   r := security.enrich_campus_list_apply_v1(172686);
   perform security.enrich_campus_link_v1('915df9bd-1f99-405f-aa40-a2f113ceebd5');
-  select jsonb_agg(jsonb_build_object('campus', k.name, 'mode', cc.delivery_mode)) into c from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where cc.course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576';
-  raise exception 'DRYRUN OK apply % list % campus_item % links %', r, (select state || ' ' || coalesce(reason,'') from pipeline.field_enrich_items where id = 172686),
-    (select state || ' ' || coalesce(reason,'') from pipeline.field_enrich_items where job_id = '915df9bd-1f99-405f-aa40-a2f113ceebd5' and field = 'campus'), c;
+  select jsonb_agg(jsonb_build_object('campus', k.name, 'city', k.city, 'mode', cc.delivery_mode)) into c from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where cc.course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576';
+  raise exception 'DRYRUN OK apply % | campus_item % | links %', r,
+    (select state || ' ' || coalesce(reason,'') || ' ' || coalesce(value::text,'') from pipeline.field_enrich_items where job_id = '915df9bd-1f99-405f-aa40-a2f113ceebd5' and field = 'campus'), c;
 end $d$;
