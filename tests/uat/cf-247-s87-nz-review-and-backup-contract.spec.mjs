@@ -577,3 +577,19 @@ test.describe('v2.15.328 Read with AI reads labelled page data items', () => {
     expect(w).toContain("Page data fields at the top of the page text are the page's own labelled values")
   })
 })
+
+test.describe('v2.15.328 the AI reader reads only the course\'s own page', () => {
+  test('a mismatched page is never given to the AI; wrong-page values are recorded and taken back', async () => {
+    const m = fs.readFileSync('supabase/migrations/20261023017000_cf247_ai_reader_bound_pages_only.sql', 'utf8')
+    expect(m).toContain("'security.enrich_fields_slice_v1(uuid,integer)', 'dc7176b941a17f0df7991c676ecd8ce1'")
+    expect(m).toContain("where g.course_id = it.course_id and g.status in ('bound', 'ambiguous') and (g.status = 'bound' or g.identity_basis is not null);")
+    expect(m).toContain("'no correct course page: the page found is for another course'")
+    expect(m).toContain('create table pipeline.enrich_value_retractions (')
+    expect(m).toContain('comment on table pipeline.enrich_value_retractions is')
+    expect(m).toContain("where i.source = 'ai_stored' and i.state = 'filled' and g.status = 'mismatch';")
+    expect(m).toMatch(/^-- Replaces: /m)
+    expect(m).toMatch(/^-- Retires: /m)
+    expect(m).not.toMatch(/\b(drop|truncate)\s+(table|function|column|constraint|index|schema|view|trigger|type)?\b/i)
+    expect(m).not.toMatch(/^\s*delete\s+from/im)
+  })
+})

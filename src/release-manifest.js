@@ -7,11 +7,13 @@ export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Read with AI reads a page\'s labelled data items',
+  title:'AI reader: labelled page data; only the course\'s own page',
   changes:[
     'Read with AI and the AI reader for every attribute also read the course facts a page holds as labelled data items outside its main text (the University of Auckland catalogue gives campus, full-time length, delivery and study mode only this way).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'The AI reader for every attribute read a page already found to be another course\'s (for example the Diploma in Dance Studies took its delivery from the Master of Dance Studies page). It now reads only the course\'s own page, and the 3,371 values taken from other courses\' pages are taken back (kept in a list so each can be checked or restored); campus links from those pages go to the Platform Admin as a paste file.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

@@ -171,7 +171,7 @@ export const SOPS = [
       { version: '1.66', date: '23 Oct 2026', release: '2.15.325', change: 'Platform health › Work queues › Why values are missing: check it hourly; act on Needs a change. Enrich fields also reads English, intakes and campus regions with AI.' },
       { version: '1.67', date: '23 Oct 2026', release: '2.15.326', change: 'Courses list: International fee and City columns; use Has fee to find courses without one.' },
       { version: '1.68', date: '23 Oct 2026', release: '2.15.327', change: 'Courses list: CRICOS tuition is now Tuition Only and Legacy presence is now Completeness.' },
-      { version: '1.69', date: '23 Oct 2026', release: '2.15.328', change: 'Read with AI: course facts a page holds as labelled data items (campus, length, delivery) are read too.' }],
+      { version: '1.69', date: '23 Oct 2026', release: '2.15.328', change: 'Read with AI: course facts a page holds as labelled data items (campus, length, delivery) are read too; only the course\'s own page is read, never another course\'s.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -291,7 +291,7 @@ export const SOPS = [
       { version: '1.66', date: '23 Oct 2026', release: '2.15.325', change: 'Reviewed: Enrich fields lists English, intakes and campus region. No operator steps changed.' },
       { version: '1.67', date: '23 Oct 2026', release: '2.15.326', change: 'Reviewed: the Courses list shows the international fee and the city. No operator steps changed.' },
       { version: '1.68', date: '23 Oct 2026', release: '2.15.327', change: 'Courses list: CRICOS tuition is now Tuition Only and Legacy presence is now Completeness.' },
-      { version: '1.69', date: '23 Oct 2026', release: '2.15.328', change: 'Read with AI: course facts a page holds as labelled data items (campus, length, delivery) are read too.' }],
+      { version: '1.69', date: '23 Oct 2026', release: '2.15.328', change: 'Read with AI: course facts a page holds as labelled data items (campus, length, delivery) are read too; only the course\'s own page is read, never another course\'s.' }],
   },
 ]
 
