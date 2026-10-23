@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.257 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.330** (values from an older wrong page; South Auckland campus). Platform Admin, 23 Oct 2026 16:02: "Take back 3,462, re-read 2,023" and "Add it, Auckland region".
+  - Migration `20261023019000_cf247_older_wrong_page_values_and_south_auckland.sql`: AI values from an earlier page that was not the course's own recorded in `pipeline.enrich_value_retractions` and taken back (3,462 on courses whose page is another course's; 2,023 read again from the course's own page in one Read with AI job per university, campus re-reads queued by the admin-repo paste file `docs/platform/wrong-page-values/PASTE-20261023-older-wrong-page-campus-links.sql` after the 1,572 old links are removed); University of Auckland South Auckland campus (6 Osterley Way, Manukau) added and linked to the Diploma in Arts. SOPs 1.71. Consumer API shape unchanged (Decision 266).
+
 ## 0.1.256 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.329** (Read with AI links a campus the university already has). Read with AI on the University of Auckland diplomas (v0.42.3) read ["City","South Auckland"] but linked no campus: the campus list step kept only names given exactly, and a campus needed `enrich.campus_min_pages` (2) course pages while Read with AI reads one course.

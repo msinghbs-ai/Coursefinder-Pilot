@@ -1,16 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.329'
-export const PACKAGE_VERSION='0.1.256'
+export const UI_VERSION='2.15.330'
+export const PACKAGE_VERSION='0.1.257'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Read with AI links a campus the university already has',
-  changes:[],
+  title:'Values from an older wrong page; South Auckland campus',
+  changes:[
+    'University of Auckland: South Auckland campus (Te Papa Ako o Tai Tonga, Manukau) added and linked to the Diploma in Arts.'
+  ],
   bugFixes:[
-    'Read with AI found the campus a course page names (University of Auckland: City, South Auckland) but linked none: a campus needed two course pages naming it, and Read with AI reads one course. A campus the university already has is now linked from one page; a new campus still needs two pages or a person. A campus named inside a list is kept.'
+    'AI values read on 14 Oct from an earlier page that was not the course\'s own (for example "3 years" for the Diploma in Architectural Studies, from the Bachelor\'s page) are taken back: 3,462 values on courses still without a correct page, and 2,023 values read again from the course\'s own page. Each is kept in a list so it can be checked or restored.'
   ]
 }
 
