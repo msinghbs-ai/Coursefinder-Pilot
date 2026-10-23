@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.338)  
+**Version:** 1.53 (reviewed for platform release v2.15.339)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -196,3 +196,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.77 | 24 Oct 2026 | v2.15.336 | Official link filled from the course's proven own page (NZ first; Settings › Pipeline settings › Official link): nightly job with four guards; a link is taken back when the page is no longer bound. |
 | 1.78 | 24 Oct 2026 | v2.15.337 | CRICOS proofs are Australian only: a New Zealand page is proved by its NZQA programme code or title, a Canadian page by its title; 406 mislabelled NZ and CA bindings re-verified; the CRICOS fee column is hidden on NZ and CA course lists. |
 | 1.79 | 24 Oct 2026 | v2.15.338 | Zero-yield pages: an hourly job measures bound pages whose stored copy gave the readers nothing, flags providers above the rate, and (when Reset: automatic is on) resets pages verified wrong so the AI page match finds the right page with the wrong one excluded (Settings › Pipeline settings › Zero-yield pages). |
+| 1.80 | 24 Oct 2026 | v2.15.339 | R1: an idle lane paused by the idle guard is tried again within Idle lane: tried again within (Settings › Pipeline settings › Waste rules) and the moment work waits for it; every worker call is written to the per-mode ledger; the Work queues screen says why each queue is idle; a fee from a page whose proof the country refuses is quarantined at the write. |
