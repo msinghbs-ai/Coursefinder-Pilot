@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.261 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.334** (NZ enrichment brief Release 1: items 1, 2, 4; Platform Admin decisions 20:42, addendum 20:52, flags 20:56).
+  - Migrations `20261023023000_cf247_nz_provider_transitions.sql` (table `pipeline.provider_transitions`, `security.transition_recheck_v1`, job `transition-recheck` daily 03:41, settings `transition.recheck_days` and `batch.transition_recheck`), `20261023024000_cf247_nz_provider_transitions_seed.sql` (17 rows, each with its Government source; C1 closed), `20261023025000_cf247_provider_domain_moved.sql` (`public.admin_provider_domain_moved`, same host refused), `20261023026000_cf247_fee_floor.sql` (`min_annual_international` per country, `security.fee_below_floor_v1`, md5-guarded edits to `coverage_apply_course_v1`, `svc_fee_ai_record`, `admin_pipeline_settings_read/write`; C4 pass: 20 NZ fees to `unverified`, 2 flagged; F2: NZ-only).
+  - `src/AdapterBuilderTab.jsx`: "Move the course pages too" on Change website. `src/PipelineSettings.jsx`: fee floor on the country row. SOPs 1.75. Consumer API unchanged (Decision 266): a quarantined fee has status `unverified`, which the website never returns.
+
 ## 0.1.260 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.333** (AI reader load settings; OpenRouter on the Task manager). Platform Admin, 23 Oct 2026 19:27: "Lets test openrouter where it goes bottleneck, and make that settings configurable in ui as well."

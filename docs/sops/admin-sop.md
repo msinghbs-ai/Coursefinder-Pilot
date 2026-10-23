@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.333)  
+**Version:** 1.53 (reviewed for platform release v2.15.334)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -191,3 +191,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.72 | 23 Oct 2026 | v2.15.331 | Task manager: up to 40 tasks per lane move forward each minute; a live line shows the runner, what is waiting, running and finished, and each task's place in line. |
 | 1.73 | 23 Oct 2026 | v2.15.332 | Task manager: up to 2,000 tasks per lane move forward each minute (set to 1,000); lower it if the runner shows late. |
 | 1.74 | 23 Oct 2026 | v2.15.333 | AI reader load settings (calls at once, pages at once); the Task manager shows how OpenRouter requests went in the last 15 minutes. |
+| 1.75 | 23 Oct 2026 | v2.15.334 | NZ transition register and daily re-check; Change website can move the course pages too; international fee floor per country quarantines low fees to Layer 4. |
