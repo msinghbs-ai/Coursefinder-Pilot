@@ -150,15 +150,11 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
 on conflict (kind, name) do nothing;
 
 do $t$ declare r jsonb; s jsonb; w jsonb; g jsonb; begin
-  -- what would fill per country if every country were allowed (information for the Platform Admin), then the real run (NZ only)
   select jsonb_object_agg(cc, n) into w from (select k.iso_alpha2 cc, count(*) n from catalogue.courses c join catalogue.providers pr on pr.id=c.provider_id join ref.countries k on k.id=pr.country_id join pipeline.coverage_course_pages p on p.course_id=c.id where c.lifecycle_status='active' and c.course_url is null and p.status='bound' and p.identity_basis is not null and p.read_status='read' and p.evidence_id is not null and coalesce(nullif(p.candidates->>'final_url',''),p.url) ~* '^https?://' and not exists (select 1 from pipeline.manual_locks m where m.entity='course' and m.entity_id=c.id and m.field='course_url') group by 1) z;
   update pipeline.platform_toolset_settings set value='5000'::jsonb where toolset_key='pipeline' and key='batch.course_url_fill';
   r := security.course_url_fill_v1();
-  select jsonb_agg(jsonb_build_object('course', c.canonical_title, 'provider', pr.canonical_name, 'basis', x.identity_basis, 'url', x.url)) into s
+  select jsonb_agg(jsonb_build_object('c', left(c.canonical_title,40), 'p', left(pr.canonical_name,24), 'b', x.identity_basis, 'u', left(x.url,70))) into s
     from (select * from pipeline.course_url_fills order by random() limit 10) x join catalogue.courses c on c.id=x.course_id join catalogue.providers pr on pr.id=c.provider_id;
-  -- guard 3 check: break one binding and run again
   update pipeline.coverage_course_pages set status='mismatch' where course_id = (select course_id from pipeline.course_url_fills limit 1);
   g := security.course_url_fill_v1();
-  raise exception 'DRYRUN OK %', jsonb_build_object('would_fill_all_countries', w, 'run', r, 'samples', s, 'second_run_after_one_unbind', g - 'rate',
-     'retraction_fn', security.course_url_retraction_30d_v1(), 'cron', (select count(*) from cron.job where jobname='course-url-fill'),
-     'nz_course_url_after', (select count(*) from catalogue.courses c join catalogue.providers pr on pr.id=c.provider_id join ref.countries k on k.id=pr.country_id where k.iso_alpha2='NZ' and c.lifecycle_status='active' and c.course_url is not null)); end $t$;
+  raise exception 'DRYRUN OK %', jsonb_build_object('all_countries', w, 'basis_mix', (select jsonb_object_agg(identity_basis, n) from (select identity_basis, count(*) n from pipeline.course_url_fills group by 1) z), 'samples', s, 'second_run', g - 'rate', 'nz_url_after', (select count(*) from catalogue.courses c join catalogue.providers pr on pr.id=c.provider_id join ref.countries k on k.id=pr.country_id where k.iso_alpha2='NZ' and c.lifecycle_status='active' and c.course_url is not null)); end $t$;
