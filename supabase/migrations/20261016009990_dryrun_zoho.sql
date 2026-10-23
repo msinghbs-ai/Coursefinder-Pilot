@@ -5,8 +5,9 @@
 --   a) a course whose page is now found to be another course's (status mismatch): every AI value from an earlier page is taken back;
 --   b) a course that now has its correct page (bound or ambiguous) but whose value came from a different page: the value is taken back
 --      and read again from the correct page (one Read with AI job per university, fields as taken back).
---   Values from an older copy of the same page are kept. Each value is recorded in pipeline.enrich_value_retractions; campus links from
---   those pages are removed by the admin-repo paste file docs/platform/wrong-page-values/PASTE-20261023-older-wrong-page-campus-links.sql.
+--   Values from an older copy of the same page are kept. Each value is recorded in pipeline.enrich_value_retractions. Campus links from
+--   those pages are removed by the admin-repo paste file docs/platform/wrong-page-values/PASTE-20261023-older-wrong-page-campus-links.sql,
+--   which then queues the campus re-reads (a re-read does not link a campus the course already has, so it must follow the removal).
 -- 2 "Add it, Auckland region": the University of Auckland's South Auckland campus (Te Papa Ako o Tai Tonga, 6 Osterley Way, Manukau,
 --   from the university's campus page), linked to the Diploma in Arts, whose page names it.
 -- Replaces: nothing
@@ -56,7 +57,7 @@ update pipeline.field_enrich_items i set state = 'skipped', updated_at = now(),
 -- read again from the course's own page: one Read with AI job per university, for the fields taken back
 create temp table _jobs on commit drop as
 select o.provider_id, gen_random_uuid() job_id, jsonb_agg(distinct o.course_id) course_ids, jsonb_agg(distinct o.field) fields, count(distinct o.course_id) n
-  from _older o where o.act = 'read_again' group by o.provider_id;
+  from _older o where o.act = 'read_again' and o.field <> 'campus' group by o.provider_id;
 
 insert into pipeline.admin_jobs(id, kind, lane, state, title, args, progress, requested_by, reason, scope)
 select j.job_id, 'enrich_fields', 'enrich', 'queued',
@@ -69,10 +70,7 @@ select j.job_id, 'enrich_fields', 'enrich', 'queued',
 
 insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
 select distinct j.job_id, o.provider_id, o.course_id, o.field, 'queued'
-  from _older o join _jobs j on j.provider_id = o.provider_id where o.act = 'read_again'
-on conflict do nothing;
-insert into pipeline.field_enrich_items(job_id, provider_id, course_id, field, state)
-select j.job_id, j.provider_id, null, 'campus_list', 'waiting' from _jobs j where j.fields ? 'campus'
+  from _older o join _jobs j on j.provider_id = o.provider_id where o.act = 'read_again' and o.field <> 'campus'
 on conflict do nothing;
 
 insert into search.refresh_requests(requested_by) select 'Wrong-page values taken back'
@@ -98,11 +96,9 @@ values ('catalogue', 'campus_added', 'campus:studysearch:e096aba7-e1eb-4903-9a63
 do $d$ begin
   raise exception 'DRYRUN OK %', jsonb_build_object(
     'taken', (select jsonb_object_agg(k, n) from (select case when reason like '%take back' then 'take_back' else 'read_again' end k, count(*) n from pipeline.enrich_value_retractions where reason like '%16:02%' group by 1) z),
-    'cleared', (select count(*) from pipeline.enrich_value_retractions where reason like '%16:02%' and cleared),
     'jobs', (select count(*) from pipeline.admin_jobs where title like 'Read with AI again from the correct page%' and state = 'queued'),
     'job_items', (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'Read with AI again from the correct page%'),
-    'arch_dur', (select duration_value from catalogue.courses where id = '65622186-70f7-46b8-bd08-7a6906e8c35f'),
-    'sport_dur', (select duration_value from catalogue.courses where id = 'e90f53ec-46ca-431c-822d-b4ca70c00856'),
-    'arts_campuses', (select string_agg(k.name, ', ') from catalogue.course_campuses cc join catalogue.campuses k on k.id = cc.campus_id where cc.course_id = 'ecae5b4f-0b13-4ef0-ad37-64f7ba208576'),
+    'campus_job_items', (select count(*) from pipeline.field_enrich_items i join pipeline.admin_jobs j on j.id = i.job_id where j.title like 'Read with AI again from the correct page%' and i.field in ('campus','campus_list')),
+    'campus_read_again', (select count(*) from pipeline.enrich_value_retractions where reason like '%16:02: re-read' and field = 'campus'),
     'campus_links_for_paste', (select count(*) from catalogue.course_campuses cc join pipeline.enrich_value_retractions r on r.field = 'campus' and cc.course_id = r.course_id and cc.evidence_id = r.evidence_id where r.reason like '%16:02%'));
 end $d$;
