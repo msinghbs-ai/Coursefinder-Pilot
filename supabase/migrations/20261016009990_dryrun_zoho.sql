@@ -5,8 +5,9 @@
 -- path already does; a course whose only page is another course's says so ("no correct course page"). The values already taken from
 -- such pages are taken back (Platform Admin 23 Oct 2026: "Take them all back"): each is recorded in pipeline.enrich_value_retractions with
 -- its value, quote and page, the course field is emptied only where it still holds that value (a field a person locked is kept), and the
--- item says why. The AI reads the field again once the course's own page is bound. Campus links read from those pages are removed by
--- the paste file docs/paste/20261023-cf247-wrong-page-campus-links.sql (no delete in a migration).
+-- item says why; intakes read from those pages are withdrawn. The AI reads the field again once the course's own page is bound.
+-- Campus links read from those pages are removed by the admin-repo paste file
+-- docs/platform/wrong-page-values/PASTE-20261023-wrong-page-campus-links.sql (no delete in a migration).
 -- Replaces: nothing (security.enrich_fields_slice_v1 edited in place, md5-guarded)
 -- Retires: nothing
 
@@ -67,11 +68,18 @@ update catalogue.courses c set open_to_international = null, updated_at = now()
   from pipeline.enrich_value_retractions r
  where r.field = 'international' and c.id = r.course_id and c.open_to_international = (r.value->>'open')::boolean;
 
+update catalogue.course_intakes ci set status = 'withdrawn'
+  from pipeline.enrich_value_retractions r
+ where r.field = 'intakes' and ci.course_id = r.course_id and ci.evidence_id = r.evidence_id and ci.status = 'active'
+   and ci.source_intake_key like r.course_id::text || ':ai:%';
+
 -- cleared where the field is now empty (a field a person locked keeps its value)
 update pipeline.enrich_value_retractions r set cleared = true
   from catalogue.courses c
  where c.id = r.course_id and ((r.field = 'delivery' and nullif(btrim(c.delivery_mode), '') is null)
-     or (r.field = 'duration' and c.duration_value is null) or (r.field = 'international' and c.open_to_international is null));
+     or (r.field = 'duration' and c.duration_value is null) or (r.field = 'international' and c.open_to_international is null)
+     or (r.field = 'intakes' and not exists (select 1 from catalogue.course_intakes ci where ci.course_id = r.course_id and ci.evidence_id = r.evidence_id
+                                              and ci.status = 'active' and ci.source_intake_key like r.course_id::text || ':ai:%')));
 
 update pipeline.field_enrich_items i set state = 'skipped', reason = 'taken back: the page read was another course''s page', updated_at = now()
   from pipeline.enrich_value_retractions r where r.item_id = i.id;
@@ -84,11 +92,9 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
 on conflict (kind, name) do nothing;
 
 do $d$
-declare v_def text := pg_get_functiondef('security.enrich_fields_slice_v1(uuid,integer)'::regprocedure);
 begin
-  if v_def not like '%g.status in (''bound'', ''ambiguous'') and (g.status = ''bound'' or g.identity_basis is not null)%' then raise exception 'edit missing'; end if;
-  raise exception 'DRYRUN OK %', (select jsonb_build_object('rows', count(*), 'cleared', count(*) filter (where cleared), 'by_field', (select jsonb_object_agg(field, n) from (select field, count(*) n from pipeline.enrich_value_retractions group by 1) z),
-     'dance_delivery', (select delivery_mode from catalogue.courses where id = '7a411649-40bb-4ee7-91e6-63793e81f4ef'),
-     'items_left_filled_on_mismatch', (select count(*) from pipeline.field_enrich_items i join pipeline.coverage_course_pages g on g.course_id=i.course_id and g.evidence_id=i.evidence_id where i.source='ai_stored' and i.state='filled' and g.status='mismatch'))
+  raise exception 'DRYRUN OK %', (select jsonb_build_object('rows', count(*), 'cleared', count(*) filter (where cleared), 'cleared_by_field', (select jsonb_object_agg(field, n) from (select field, count(*) filter (where cleared) n from pipeline.enrich_value_retractions group by 1) z),
+     'heke_active_ai_intakes', (select count(*) from catalogue.course_intakes where course_id='e6e5da6e-be7f-4e42-afb2-45d91b43bf36' and status='active' and source_intake_key like '%:ai:%'),
+     'campus_links_for_paste', (select count(*) from catalogue.course_campuses cc join pipeline.enrich_value_retractions r on r.field='campus' and cc.course_id=r.course_id and cc.evidence_id=r.evidence_id))
      from pipeline.enrich_value_retractions);
 end $d$;
