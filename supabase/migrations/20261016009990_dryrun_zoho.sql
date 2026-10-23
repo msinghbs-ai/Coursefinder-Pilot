@@ -49,5 +49,5 @@ select 'course list: international fee and campus cities; Read with AI asks agai
 do $t$ declare r jsonb; begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
-  r := security.admin_course_page_fast_base('{"search":"Diploma in Languages","limit":5}'::jsonb);
+  r := security.admin_course_page_fast_base('{"provider_id":"e096aba7-e1eb-4903-9a63-2bfb71e9a8b8","query":"Diploma in","level_code":"diploma","limit":12}'::jsonb);
   raise exception 'DRYRUN OK %', jsonb_build_object('items', (select jsonb_agg(jsonb_build_object('t', x->>'canonical_title', 'f', x->'intl_fee_amount', 'y', x->'intl_fee_year', 'c', x->'city_names')) from jsonb_array_elements(r->'items') x)); end $t$;
