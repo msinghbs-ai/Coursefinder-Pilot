@@ -7,11 +7,11 @@ export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Courses list column names: Tuition Only and Completeness',
+  title:'Courses list column names; notice links open their settings',
   changes:[
     'Courses list: the CRICOS tuition column is named Tuition Only, and Legacy presence is named Completeness (how complete the course record is).'
   ],
-  bugFixes:[]
+  bugFixes:['Notices: Go to OpenRouter settings (and every Go to on the screen it already showed) did nothing; each Go to now opens and scrolls to its card. The course-page search budget and website links pointed to retired screens.']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
