@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.265 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.338** (zero-yield page re-acquisition; Platform Admin 24 Oct 07:43).
+  - Migration `20261024003000_cf247_zero_yield_reacquisition.sql`: `pipeline.page_rejections` (S1 partial), `pipeline.zero_yield_snapshots`, `security.zero_yield_pages_v1` (predicate and signals), `security.zero_yield_reset_v1`, `security.zero_yield_detect_v1`, `page_rejection_bonus_v1` / `page_match_bonus_v1`; `svc_coverage_reidentify_next` and `coverage_ai_match_prepare_v1` skip rejected pages (md5-guarded); 14 settings; job `zero-yield-detect` hourly at :21. Automatic resets off by default. Test s92. SOPs 1.79.
+
 ## 0.1.264 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.337** (CRICOS proofs Australian only; Platform Admin 24 Oct 07:32).
