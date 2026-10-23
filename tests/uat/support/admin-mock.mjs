@@ -32,6 +32,7 @@ export async function mockAdmin(page, { rank = 6, healthMissing = false, courseD
     // v2.15.331: Task manager pulse
     admin_jobs_pulse: { now: '2026-10-23T05:50:00Z', runner: { last_run: '2026-10-23T05:49:48Z', status: 'succeeded', seconds_ago: 12 }, per_lane: 40, queued: 126, running: 1, paused: 0,
       finished_15m: 10, last_finished: '2026-10-23T05:47:00Z', ai_waiting: 3, ai_done_15m: 15,
+      openrouter: { worker_calls: 12, worker_open: 2, worker_failed: 0, calls: 340, ok: 338, http429: 0, http5xx: 1, timeout: 1, other: 0, ms_p50: 4200, ms_p95: 11800 },
       jobs: { 'job-run': { place: 1, items: { total: 0, queued: 0, with_ai: 0, done: 0, filled: 0 } } } },
     admin_gap_causes: { at: '2026-10-23T00:00:00Z', previous: '2026-10-22T23:00:00Z', countries: ['NZ'], rows: [
       { country: 'NZ', attribute: 'english', cause: 'not tried yet', action: 'AI reader (Fill the gaps, job field-gap-queue)', automatic: true, courses: 1049, change: -12 },

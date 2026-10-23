@@ -670,3 +670,22 @@ test.describe('v2.15.332 up to 2,000 tasks per lane each minute', () => {
     expect(a).toContain("exit when clock_timestamp() - v_t0 > interval '40 seconds';  -- fixed:")
   })
 })
+
+test.describe('v2.15.333 OpenRouter load: settings and the Task manager line', () => {
+  test('pages at once and calls at once are settings; the worker counts every OpenRouter request; the Task manager shows them', async ({ page }) => {
+    const { mockAdmin } = await import('./support/admin-mock.mjs')
+    await mockAdmin(page)
+    await page.goto('/#scheduled-jobs?tab=tasks')
+    await expect(page.locator('[data-task-openrouter]')).toHaveText('OpenRouter (15 min): 340 request(s) from 12 AI reader call(s) (2 running), 338 answered, typical 4.2 s, slowest 11.8 s · 0 rate-limited (429), 1 server error(s), 1 timed out.')
+    await expect(page.locator('[data-task-pulse]')).toHaveAttribute('data-task-pulse-late', '0')
+    const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
+    expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.43.0";')
+    expect(w).toContain('await pool(w?.pages || [], Math.max(1, Math.min(Number(body.concurrency || 3), 12)), async (pg: any) => {  // fixed:')
+    expect(w).toContain('openrouter: ors.summary()')
+    const m = fs.readFileSync('supabase/migrations/20261023022000_cf247_openrouter_load_settings.sql', 'utf8')
+    expect(m).toContain("values ('pipeline', 'enrich.ai_pages_at_once', 'Enrich fields: AI pages at once',")
+    expect(m).toContain("'concurrency', security.pipeline_num_v1('enrich.ai_pages_at_once', 3)::int)")
+    expect(m).toMatch(/^-- Replaces: /m)
+    expect(m).toMatch(/^-- Retires: /m)
+  })
+})
