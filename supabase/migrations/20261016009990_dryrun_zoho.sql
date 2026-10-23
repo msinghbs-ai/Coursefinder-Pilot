@@ -53,8 +53,10 @@ values ('pipeline', 'identity_lists', 'coverage_admission_countries.identities',
 
 -- 3 the read record: an ambiguous page auto-binds on a CRICOS label only where the policy allows it
 select pg_temp.edit_once('public.svc_coverage_read_record(uuid,text,integer,text,text,text,text,jsonb)', '8f84bea190b10b532399943a38695e20', array[
-  array[$o$when status='ambiguous' and p_identity_basis='cricos_code' then 'bound' else status end, basis=case when status='ambiguous' and p_identity_basis='cricos_code' then 'cricos_code_on_page' else basis end$o$,
-        $n$when status='ambiguous' and p_identity_basis='cricos_code' and security.coverage_identity_allowed(provider_id, 'cricos_code', 'official_url') then 'bound' else status end, basis=case when status='ambiguous' and p_identity_basis='cricos_code' and security.coverage_identity_allowed(provider_id, 'cricos_code', 'official_url') then 'cricos_code_on_page' else basis end$n$]]);
+  array[$o$when status='ambiguous' and p_identity_basis='cricos_code' then 'bound' else status end,$o$,
+        $n$when status='ambiguous' and p_identity_basis='cricos_code' and security.coverage_identity_allowed(provider_id, 'cricos_code', 'official_url') then 'bound' else status end,$n$],
+  array[$o$basis=case when status='ambiguous' and p_identity_basis='cricos_code' then 'cricos_code_on_page' else basis end$o$,
+        $n$basis=case when status='ambiguous' and p_identity_basis='cricos_code' and security.coverage_identity_allowed(provider_id, 'cricos_code', 'official_url') then 'cricos_code_on_page' else basis end$n$]]);
 
 -- 4 the binder: a code match is labelled by country
 select pg_temp.edit_once('security.coverage_bind_v2(uuid)', '847f5fb963493f637a056fed74366843', array[
