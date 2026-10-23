@@ -35,6 +35,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'central.auto_approve_english_all', 'Central pages: approve English rules for every university', 'On (true): an AI reading of a university''s central English page with every score quoted is approved automatically for every university, not only the focus list (readings most course pages disagree with still go to a person).', 'boolean', 'true'::jsonb, null, null, 'on/off', 131, 'Admission checks', 'security.policy_auto_approve_v1', 'Platform Admin 23 Oct 2026 12:40: "auto-approve when every score is quoted"'),
  ('pipeline', 'central.min_suggest_score', 'Central pages: attach suggestions from score', 'Central English pages suggested by the central-page search at or above this score are attached and read when the university has no approved English rule.', 'number', '4'::jsonb, '0', '10', 'score', 132, 'Admission checks', 'job central-attach', 'Platform Admin 23 Oct 2026 12:40'),
  ('pipeline', 'central.research_days', 'Central pages: search again after', 'A university with no approved English rule and no suggested central English page is searched again for central pages after this many days.', 'number', '7'::jsonb, '1', '90', 'days', 134, 'Admission checks', 'job central-attach', 'Platform Admin 23 Oct 2026 12:40'),
+ ('pipeline', 'central.research_per_run', 'Central pages: universities searched again a run', 'At most this many universities wait for a new central-page search at once (largest first); each search uses a few Firecrawl credits.', 'number', '30'::jsonb, '1', '500', 'universities', 135, 'Job sizes', 'job central-attach', 'Platform Admin 23 Oct 2026 12:40'),
  ('pipeline', 'central.attach_per_kind', 'Central pages: pages tried a university', 'The most central English pages attached for one university (each tried in turn until a rule is approved).', 'number', '3'::jsonb, '1', '10', 'pages', 133, 'Admission checks', 'job central-attach', 'Platform Admin 23 Oct 2026 12:40')
 on conflict (toolset_key, key) do nothing;
 
@@ -109,13 +110,18 @@ begin
   get diagnostics v_att = row_count;
   -- a university with no approved rule and no suggested central English page left is searched again (job central-find)
   update pipeline.provider_central_search s set state = 'queued', attempts = 0, leased_until = null, updated_at = now()
-   where s.state in ('done', 'failed') and s.updated_at < now() - make_interval(days => security.pipeline_num_v1('central.research_days', 7)::int)
-     and not exists (select 1 from pipeline.provider_policy_proposals pp where pp.provider_id = s.provider_id and pp.kind = 'english_policy' and pp.status in ('approved', 'proposed'))
-     and not exists (select 1 from jsonb_array_elements(coalesce(s.found, '[]'::jsonb)) e
-                      where e->>'kind' = 'english_policy' and coalesce((e->>'score')::numeric, 0) >= security.pipeline_num_v1('central.min_suggest_score', 4)
-                        and not exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = s.provider_id and f.kind = 'english_policy' and f.url = e->>'url'))
-     and not exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = s.provider_id and f.kind = 'english_policy' and f.status in ('found', 'reading'))
-     and exists (select 1 from catalogue.courses c where c.provider_id = s.provider_id and c.lifecycle_status = 'active');
+   where s.provider_id in (
+     select s2.provider_id from pipeline.provider_central_search s2
+      where s2.state in ('done', 'failed') and s2.updated_at < now() - make_interval(days => security.pipeline_num_v1('central.research_days', 7)::int)
+        and not exists (select 1 from pipeline.provider_policy_proposals pp where pp.provider_id = s2.provider_id and pp.kind = 'english_policy' and pp.status in ('approved', 'proposed'))
+        and not exists (select 1 from jsonb_array_elements(coalesce(s2.found, '[]'::jsonb)) e
+                         where e->>'kind' = 'english_policy' and coalesce((e->>'score')::numeric, 0) >= security.pipeline_num_v1('central.min_suggest_score', 4)
+                           and not exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = s2.provider_id and f.kind = 'english_policy' and f.url = e->>'url'))
+        and not exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = s2.provider_id and f.kind = 'english_policy' and f.status in ('found', 'reading'))
+        and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = s2.provider_id)
+        and exists (select 1 from catalogue.courses c where c.provider_id = s2.provider_id and c.lifecycle_status = 'active')
+      order by (select count(*) from catalogue.courses c2 where c2.provider_id = s2.provider_id and c2.lifecycle_status = 'active') desc
+      limit greatest(0, security.pipeline_num_v1('central.research_per_run', 30)::int - (select count(*) from pipeline.provider_central_search q where q.state in ('queued', 'leased'))::int));
   get diagnostics v_re = row_count;
   -- read central English pages go to the pinned AI (the database checks each quote; policy-auto-approve decides)
   for r in select distinct f.provider_id from pipeline.provider_fact_sources f
