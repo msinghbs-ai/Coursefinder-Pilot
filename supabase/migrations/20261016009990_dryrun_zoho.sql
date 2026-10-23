@@ -217,12 +217,12 @@ comment on function security.zero_yield_detect_v1() is 'nightly: writes the per-
 select pg_temp.edit_n('public.svc_coverage_reidentify_next(integer,text)', 'ddd0fda00a869ce2bcfb2062502775eb', array[
   array[$o$and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = p.course_id and d.evidence_id = p.evidence_id and d.rule = p_rule)$o$,
         $n$and not exists (select 1 from pipeline.coverage_reidentify_done d where d.course_id = p.course_id and d.evidence_id = p.evidence_id and d.rule = p_rule)
-          and not exists (select 1 from pipeline.page_rejections x where x.course_id = p.course_id and x.url = p.url) -- 24 Oct 2026: a rejected page is never re-bound$n$]], array[1]);
+          and not exists (select 1 from pipeline.page_rejections x where x.course_id = p.course_id and x.url = p.url) /* 24 Oct 2026: a rejected page is never re-bound */$n$]], array[1]);
 select pg_temp.edit_n('security.coverage_ai_match_prepare_v1(integer,integer)', '3d6d0e1d90e210aa02eef8a962906e12', array[
   array[$o$security.course_list_bonus_v1(co.id, co.provider_id)$o$, $n$security.page_match_bonus_v1(co.id, co.provider_id)$n$],
   array[$o$union select q.course_id, q.chosen_url from pipeline.coverage_ai_match q join c using (course_id) where q.chosen_url is not null)$o$,
         $n$union select q.course_id, q.chosen_url from pipeline.coverage_ai_match q join c using (course_id) where q.chosen_url is not null
-                union select x.course_id, x.url from pipeline.page_rejections x join c using (course_id)) -- 24 Oct 2026: rejected pages are never candidates$n$]], array[4, 1]);
+                union select x.course_id, x.url from pipeline.page_rejections x join c using (course_id) /* 24 Oct 2026: rejected pages are never candidates */)$n$]], array[4, 1]);
 
 -- 7 the job: catalogue row before the schedule --------------------------------------------------------------------------------------------
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
