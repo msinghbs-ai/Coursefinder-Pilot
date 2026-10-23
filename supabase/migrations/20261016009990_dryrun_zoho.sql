@@ -9,8 +9,8 @@
 --   "work is waiting" test, so the 10-minute flag-recheck wakes it as soon as its queue is fed (the event-driven reset). No worker change
 --   and no new counter: flag.empty_calls_to_pause stays the "after N empty ticks" setting the plan called tick.backoff_after_empty.
 -- Q4 (narrowed by the mandate): the companion-read failure and a "why idle" line. The University of Sydney's course data files
---   (.coredata.json) answer with the course page itself (HTML, 200) and the worker refused the body as not JSON (219 of 583 files,
---   attempts exhausted); worker v0.46.0 reads such an answer as the page, and the 219 get their attempts back here (count-guarded).
+--   (.coredata.json) answer with the course page itself (HTML, 200) and the worker refused the body as not JSON (219 of 583 files failed, 49 of them
+--   with every attempt used); worker v0.46.0 reads such an answer as the page, and the 219 get their attempts back here (count-guarded).
 --   Every queue on the Work queues screen now carries one plain line saying why it is idle (paused by the idle guard and when it is tried
 --   again; nothing waiting and which upstream lane feeds it; waiting with nothing finishing: a gate holds it; failing; nothing left).
 -- Q3 DURABLE PER-MODE LEDGER: pipeline.mode_outcome_ledger, one row per worker call, written by the worker through
@@ -239,10 +239,10 @@ select pg_temp.edit_n('public.admin_queue_watch(text,jsonb)', 'e2e9b8c9186590363
 -- the companion data files that answered with the course page: attempts back (count-guarded), re-read by worker v0.46.0
 do $g$ declare n int; begin
   select count(*) into n from pipeline.course_companion_pages p
-   where p.provider_id = '68022bdf-43e8-44b3-ac14-e9eed9f71e83' and p.status = 'failed' and p.http_status = 200 and p.fetched_via = 'direct' and p.url ~* '\.json$' and p.read_attempts >= 4;
-  if n <> 219 then raise exception 'expected 219 exhausted Sydney companion data files, found %', n; end if;
+   where p.provider_id = '68022bdf-43e8-44b3-ac14-e9eed9f71e83' and p.status = 'failed' and p.http_status = 200 and p.fetched_via = 'direct' and p.url ~* '\.json$' and p.read_attempts >= 3;
+  if n <> 219 then raise exception 'expected 219 failed Sydney companion data files (170 at 3 attempts, 49 at 4), found %', n; end if;
   update pipeline.course_companion_pages p set read_attempts = 0, next_read_at = now(), updated_at = now()
-   where p.provider_id = '68022bdf-43e8-44b3-ac14-e9eed9f71e83' and p.status = 'failed' and p.http_status = 200 and p.fetched_via = 'direct' and p.url ~* '\.json$' and p.read_attempts >= 4;
+   where p.provider_id = '68022bdf-43e8-44b3-ac14-e9eed9f71e83' and p.status = 'failed' and p.http_status = 200 and p.fetched_via = 'direct' and p.url ~* '\.json$' and p.read_attempts >= 3;
 end $g$;
 
 -- 5 apply-time identity check ----------------------------------------------------------------------------------------------------------
