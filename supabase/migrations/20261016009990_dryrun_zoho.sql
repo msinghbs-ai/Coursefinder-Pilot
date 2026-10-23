@@ -94,6 +94,7 @@ b as (
   select p.course_id, p.provider_id, k.iso_alpha2::text country, p.url, p.evidence_id, p.identity_basis, p.basis, c.canonical_title, p.candidates->>'page_title' page_title,
          regexp_replace(p.url, '^(https?://[^/]+/(?:[^/]+/){0,3}).*$', '\1') pattern,
          security.coverage_text_tokens(regexp_replace(c.canonical_title, '\(\s*level\s+\d+\s*\)', '', 'i')) ttok,
+         security.coverage_text_tokens(coalesce(p.candidates->>'page_title', '')) ptok,
          (exists (select 1 from catalogue.course_fees f where f.course_id = p.course_id and f.evidence_id = p.evidence_id)
           or exists (select 1 from catalogue.course_english_requirements e where e.course_id = p.course_id and e.evidence_id = p.evidence_id)
           or exists (select 1 from catalogue.course_intakes i where i.course_id = p.course_id and i.evidence_id = p.evidence_id)) admitted,
@@ -114,7 +115,7 @@ z as (
          (b.enrich_tried and not b.admitted and not b.enrich_stated and not b.fee_stated and not b.extract_stated) zero,
          (b.url ~* s.listing_rx) listing,
          (coalesce(b.page_title, '') ~* s.nf_rx) not_found,
-         (select coalesce(count(*) filter (where t = any (security.coverage_text_tokens(coalesce(b.page_title, '')))), 0)::numeric / greatest(1, cardinality(b.ttok)) from unnest(b.ttok) t) title_overlap
+         (select coalesce(count(*) filter (where t = any (b.ptok)), 0)::numeric / greatest(1, cardinality(b.ttok)) from unnest(b.ttok) t) title_overlap
     from b join share sh on sh.provider_id = b.provider_id and sh.pattern = b.pattern cross join s),
 purl as (
   -- the provider's known pages that sit on an accepted (on-pattern) address pattern, computed once
@@ -130,7 +131,7 @@ cand as (
     join lateral (
       select u.url, (select count(*) filter (where t = any (u.title_tokens) or t = any (u.tokens))::numeric / greatest(1, cardinality(z.ttok)) from unnest(z.ttok) t) ov
         from purl u
-       where u.provider_id = z.provider_id and u.url <> z.url and (u.tokens && z.ttok or u.title_tokens && z.ttok)
+       where u.provider_id = z.provider_id and u.url <> z.url and u.title_tokens && z.ttok
          and not exists (select 1 from pipeline.page_rejections r where r.course_id = z.course_id and r.url = u.url)
        order by ov desc, length(u.url) limit 1) c on true
    where z.pattern_share < s.off_max)
@@ -253,17 +254,18 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('job', 'zero-yield-detect', 'Layer 2', 'daily 03:21 UTC zero-yield detect (and reset when switched on)', 'active', '{}', '20261024003000')
 on conflict (kind, name) do nothing;
 
-do $t$ declare u uuid; r jsonb; before jsonb; after jsonb; prep jsonb; t0 timestamptz := clock_timestamp(); nz jsonb; begin
+do $t$ declare u uuid; r jsonb; before jsonb; after jsonb; prep jsonb; t0 timestamptz := clock_timestamp(); nz jsonb; d jsonb; begin
   select id into u from catalogue.providers where canonical_name='University of Auckland';
-  select jsonb_build_object('bound', count(*), 'zero', count(*) filter (where zero), 'wrong', count(*) filter (where verified_wrong), 'off_pattern', count(*) filter (where pattern_share < 0.35), 'ms', extract(epoch from clock_timestamp()-t0)*1000) into before from security.zero_yield_pages_v1(u);
+  select jsonb_build_object('bound', count(*), 'zero', count(*) filter (where zero), 'wrong', count(*) filter (where verified_wrong), 'off_pattern', count(*) filter (where pattern_share < 0.35), 'off_with_cand', count(*) filter (where pattern_share < 0.35 and candidate_overlap >= 0.6), 'ms', round(extract(epoch from clock_timestamp()-t0)*1000)) into before from security.zero_yield_pages_v1(u);
   update pipeline.platform_toolset_settings set value='200'::jsonb where toolset_key='pipeline' and key='zero_yield.reset_per_provider';
   r := security.zero_yield_reset_v1(u);
   select jsonb_build_object('mismatch_now', count(*) filter (where status='mismatch'), 'bound_now', count(*) filter (where status='bound')) into after from pipeline.coverage_course_pages where provider_id=u;
   prep := security.coverage_ai_match_prepare_v1(1, 300);
   t0 := clock_timestamp();
-  select jsonb_agg(jsonb_build_object('p', left(pr.canonical_name,22), 'b', q.b, 'z', q.z, 'w', q.w)) into nz from (select z.provider_id, count(*) b, count(*) filter (where zero) z, count(*) filter (where verified_wrong) w from security.zero_yield_pages_v1(null) z join catalogue.providers pr0 on pr0.id=z.provider_id where z.country='NZ' group by 1 order by 4 desc limit 8) q join catalogue.providers pr on pr.id=q.provider_id;
+  d := security.zero_yield_detect_v1();
   raise exception 'DRYRUN OK %', jsonb_build_object('uoa_before', before, 'reset', r, 'uoa_after', after,
     'rejections', (select jsonb_object_agg(reason, n) from (select reason, count(*) n from pipeline.page_rejections where provider_id=u group by 1) z),
     'sample', (select jsonb_agg(jsonb_build_object('u', regexp_replace(url,'^https://(www\.|study\.)?auckland\.ac\.nz',''), 'cand', regexp_replace(signals->>'candidate_url','^https://(www\.|study\.)?auckland\.ac\.nz',''), 'ov', signals->>'candidate_overlap')) from (select * from pipeline.page_rejections where provider_id=u order by random() limit 4) q),
     'prepare', prep, 'ready_for_uoa', (select count(*) from pipeline.coverage_ai_match q where q.provider_id=u and q.state='ready'),
-    'nz_all_ms', extract(epoch from clock_timestamp()-t0)*1000, 'nz_top', nz); end $t$;
+    'detect', d, 'detect_ms', round(extract(epoch from clock_timestamp()-t0)*1000),
+    'nz_flagged', (select jsonb_agg(jsonb_build_object('p', left(pr.canonical_name,22), 'b', s.bound, 'z', s.zero_yield, 'w', s.verified_wrong)) from pipeline.zero_yield_snapshots s join catalogue.providers pr on pr.id=s.provider_id where s.country='NZ' and s.flagged and s.bound>=20)); end $t$;
