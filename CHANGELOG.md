@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.258 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.331** (Task manager: 40 tasks a minute, and shows it is alive). Platform Admin, 23 Oct 2026 16:40: "Yes, maximise to speed it up" (145 Read with AI tasks moving one a minute); 16:43 "can you dry run 40 task in a minute"; 16:47 "i can't trust the task manager even after refreshing it nothing seems moving".
+  - Migration `20261023020000_cf247_tasks_per_lane_per_minute.sql`: setting `jobs.per_lane_per_tick` (1 to 40, set to 40, logged; dry run: 40 tasks moved in 1.3 seconds); `security.admin_jobs_tick_v1` moves up to that many tasks per lane each minute, oldest first, and stops taking more after 40 seconds (fixed: the runner is called each minute); `public.admin_jobs_pulse()` (read only, Operator or above). `src/AdminTasks.jsx`: live line (refreshed time, runner last run, red when late, waiting, running, finished in 15 minutes, AI reader backlog), each task's place in line and items. SOPs 1.72. Consumer API unchanged (Decision 266).
+
 ## 0.1.257 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.330** (values from an older wrong page; South Auckland campus). Platform Admin, 23 Oct 2026 16:02: "Take back 3,462, re-read 2,023" and "Add it, Auckland region".
