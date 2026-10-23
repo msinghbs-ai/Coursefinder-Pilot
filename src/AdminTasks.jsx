@@ -15,6 +15,7 @@
 import React,{useEffect,useRef,useState}from'react'
 import{ListChecks,Play,Pause,Square,RefreshCw,CheckCircle2,XCircle,AlertTriangle}from'lucide-react'
 import{supabase}from'./lib/supabase'
+import{fmtTime}from'./lib/format'
 import{ScholarshipJourney}from'./ScholarshipJourney'
 import{Button,Badge,Loading,SectionTitle,EmptyRow,fmtDateTime,fmtNumber}from'./ui-kit'
 import{Running as BackgroundJobs}from'./Progress'
@@ -35,7 +36,7 @@ const pct=p=>{const t=Number(p?.total||0),d=Number(p?.done||0);return t?Math.rou
 // when it was last refreshed, when the task runner last ran and how many tasks it moves a minute, what is waiting, running and finished
 // in the last 15 minutes, and for each task its place in line and its items (an Enrich fields task counts its items, not 0 of 0).
 const ord=n=>{const v=n%100;return n+(v>=11&&v<=13?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th'))}
-const timeOf=d=>{try{return new Date(d).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}catch{return ''}}
+const timeOf=d=>fmtTime(d)
 export function taskProgress(j,pj){const it=pj?.items;return it&&Number(it.total)>0?{done:Number(it.done||0),total:Number(it.total)}:j.progress}
 export function taskLine(j,pj,perLane){
   const it=pj?.items,p=taskProgress(j,pj),items=it&&Number(it.total)>0
