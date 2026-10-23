@@ -1,19 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.325'
-export const PACKAGE_VERSION='0.1.252'
+export const UI_VERSION='2.15.326'
+export const PACKAGE_VERSION='0.1.253'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'The AI reader covers every attribute; why values are missing, every hour',
+  title:'Courses list shows the international fee and the campus city',
   changes:[
-    'Enrich fields and the standing Fill the gaps task also read English requirements (IELTS overall and lowest band) and intakes (start months) from the stored course page with AI, each with its quote, admitted only where the page proof admits that field (Settings › Identify the page).',
-    'Campus region: the AI gives each campus city its region from the country\'s own list; the city keeps it, so every campus in that city gets it without asking again.',
-    'Platform health › Work queues › Why values are missing: every hour, for each country and attribute, how many courses miss the value, why, and what the platform does about it. Causes nothing automatic covers are listed under Needs a change.'
+    'Courses list: International fee (the fee the provider publishes, with its year) and City (the course campus cities) columns, beside the CRICOS tuition column that New Zealand and Canada never have.',
+    'Read with AI asks the AI again even when the same page copy did not state a field before; the AI reader takes a campus or duration given only as a short data label on the page (University of Auckland catalogue).'
   ],
-  bugFixes:['English requirements and intakes were never read by the AI fill; 50 of 75 NZ campuses had a city but no region.']
+  bugFixes:['Courses list showed no fee for New Zealand courses that hold an international fee (only the CRICOS registered tuition was shown).']
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

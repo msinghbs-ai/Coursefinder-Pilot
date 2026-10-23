@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.325)  
+**Version:** 1.53 (reviewed for platform release v2.15.326)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -183,3 +183,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.64 | 23 Oct 2026 | v2.15.323 | Fee reader (AI) also reads course pages that show an international fee for a course with no fee held (Settings: Fee reader: read course pages). Settings › Identify the page: every page proof can be ticked (Page bound by a person, University page, adapter proofs). New Zealand fees are admitted from pages proved by exact title, title with level or bound by a person. |
 | 1.65 | 23 Oct 2026 | v2.15.324 | Fee reader: run every, pages a run and pages read at once are on Settings › Pipeline settings with their ranges. Read with AI or a changed official page puts the course fee first in line for the AI fee reader. |
 | 1.66 | 23 Oct 2026 | v2.15.325 | Platform health › Work queues › Why values are missing: check it hourly; act on Needs a change. Enrich fields also reads English, intakes and campus regions with AI. |
+| 1.67 | 23 Oct 2026 | v2.15.326 | Courses list: International fee and City columns; use Has fee to find courses without one. |
