@@ -217,11 +217,11 @@ select pg_temp.edit_once('security.coverage_apply_course_v1(uuid,uuid,uuid,text,
     do update set amount = excluded.amount, currency_code = excluded.currency_code, basis = excluded.basis, fee_year = excluded.fee_year,
                   evidence_id = excluded.evidence_id, confidence = 1, status = case when v_floor is not null then 'review' else 'active' end, last_verified_at = now(), source_snapshot_at = now(), updated_at = now();
     if v_floor is not null then
-      if not exists (select 1 from pipeline.layer4_review_items l where l.entity_type = 'courses' and l.entity_id = p_course_id and l.field_code = 'provider_current_tuition' and l.status = 'pending') then
+      if not exists (select 1 from pipeline.layer4_review_items l where l.entity_type = 'course' and l.entity_id = p_course_id and l.field_code = 'provider_current_tuition' and l.status = 'pending') then
         insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
-        values ('courses', p_course_id, 'provider_current_tuition', p_evidence_id, null,
+        values ('course', p_course_id, 'provider_current_tuition', p_evidence_id, null,
                 jsonb_build_object('amount', (p_payload->>'fee_amount')::numeric, 'currency', v_cur, 'basis', nullif(btrim(p_payload->>'fee_basis'), ''), 'page', p_url),
-                'quarantined', 'none', 'pending',
+                jsonb_build_object('page', p_url, 'source', 'fee floor', 'state', 'quarantined'), '{}'::jsonb, 'pending',
                 'international fee below the country floor (' || v_cur || ' ' || to_char(v_floor, 'FM999,999,999') || ' a year): ' || v_cur || ' ' || to_char((p_payload->>'fee_amount')::numeric, 'FM999,999,999.00'),
                 'CF-CHG-20260915-247 NZ brief C3');
       end if;
@@ -272,14 +272,14 @@ do $d$ declare v int; begin
 end $d$;
 -- keep live, flagged (2): short English-language certificates, plausible
 insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
-select 'courses', x.course_id, 'provider_current_tuition', x.evidence_id, jsonb_build_object('amount', x.amount, 'status', 'active'), jsonb_build_object('amount', x.amount, 'status', 'active'), 'flagged', 'none', 'pending',
+select 'course', x.course_id, 'provider_current_tuition', x.evidence_id, jsonb_build_object('amount', x.amount, 'status', 'active'), jsonb_build_object('amount', x.amount, 'status', 'active'), jsonb_build_object('source', 'fee floor', 'state', 'flagged'), '{}'::jsonb, 'pending',
        'international fee below the country floor (NZD 8,000 a year); kept live and flagged: short English-language course (Platform Admin 23 Oct 2026 C4)', 'CF-CHG-20260915-247 NZ brief C4'
   from _floor x where x.provider in ('New Zealand College of Chinese Medicine Limited', 'University of Waikato');
 -- withdraw to review (20): off the website until decided; restored on approval
 update catalogue.course_fees f set status = 'review', updated_at = now()
   from _floor x where f.id = x.id and x.provider not in ('New Zealand College of Chinese Medicine Limited', 'University of Waikato');
 insert into pipeline.layer4_review_items(entity_type, entity_id, field_code, evidence_id, before_value, proposed_value, layer2_state, layer3_state, status, escalation_reason, change_control_ref)
-select 'courses', x.course_id, 'provider_current_tuition', x.evidence_id, jsonb_build_object('amount', x.amount, 'status', 'active'), jsonb_build_object('amount', x.amount, 'status', 'review'), 'withdrawn', 'none', 'pending',
+select 'course', x.course_id, 'provider_current_tuition', x.evidence_id, jsonb_build_object('amount', x.amount, 'status', 'active'), jsonb_build_object('amount', x.amount, 'status', 'review'), jsonb_build_object('source', 'fee floor', 'state', 'withdrawn'), '{}'::jsonb, 'pending',
        'withdrawn to review: international fee below the country floor (NZD 8,000 a year): NZD ' || to_char(x.amount, 'FM999,999,999.00') || ' (Platform Admin 23 Oct 2026 C4)', 'CF-CHG-20260915-247 NZ brief C4'
   from _floor x where x.provider not in ('New Zealand College of Chinese Medicine Limited', 'University of Waikato');
 insert into pipeline.admin_control_events(area, action, target, detail, actor)
@@ -296,16 +296,13 @@ do $d$ declare r jsonb; a jsonb; t record;
 begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
-  -- transitions
   r := security.transition_recheck_v1();
-  -- domain moved: no-op refusal on Auckland
   begin perform public.admin_provider_domain_moved('e096aba7-e1eb-4903-9a63-2bfb71e9a8b8', 'www.auckland.ac.nz', 'dry run'); a := '"no exception"'; exception when others then a := to_jsonb(sqlerrm); end;
-  -- fee floor: a sub-floor AI fee for the Diploma in Commerce through the apply path
   r := r || jsonb_build_object('apply', security.coverage_apply_course_v1('de70ae44-8eda-418a-a271-fd82bf5008e2', (select id from pipeline.sources limit 1), '87f8ead6-f126-4ee2-b078-66e8dd673ebf', 'https://x', 'h', jsonb_build_object('fee_amount', 3000, 'fee_year', 2026, 'fee_basis', 'annual', 'currency_code', 'NZD')));
   select status, amount into t from catalogue.course_fees where course_id = 'de70ae44-8eda-418a-a271-fd82bf5008e2' and amount = 3000;
   raise exception 'DRYRUN OK recheck %; noop %; apply % -> row % %; l4 %; transitions %; floors %; c4 review rows %; settings read floor %',
     r->'rechecked', a, r->'apply', t.status, t.amount,
-    (select escalation_reason from pipeline.layer4_review_items where entity_id = 'de70ae44-8eda-418a-a271-fd82bf5008e2' and layer2_state = 'quarantined' limit 1),
+    (select escalation_reason from pipeline.layer4_review_items where entity_id = 'de70ae44-8eda-418a-a271-fd82bf5008e2' and layer2_state->>'state' = 'quarantined' limit 1),
     (select count(*) from pipeline.provider_transitions),
     (select jsonb_object_agg(k.iso_alpha2, c.min_annual_international) from pipeline.coverage_admission_countries c join ref.countries k on k.id = c.country_id),
     (select count(*) from catalogue.course_fees f where f.status = 'review' and f.amount < 8000),
