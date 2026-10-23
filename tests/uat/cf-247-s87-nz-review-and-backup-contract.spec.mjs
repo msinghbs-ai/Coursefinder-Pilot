@@ -620,3 +620,16 @@ test.describe('v2.15.330 values from an older wrong page; South Auckland campus'
     expect(m).not.toMatch(/\b(drop|truncate)\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
   })
 })
+
+test.describe('v2.15.331 task manager runs several tasks per lane each minute', () => {
+  test('the runner takes up to jobs.per_lane_per_tick tasks per lane, stops after 40 seconds; the setting has a range', async () => {
+    const m = fs.readFileSync('supabase/migrations/20261023020000_cf247_tasks_per_lane_per_minute.sql', 'utf8')
+    expect(m).toContain("'security.admin_jobs_tick_v1(integer)', '865ed3c4a8b11aa9abe3368d7ee9cab1'")
+    expect(m).toContain("v_n int := greatest(1, least(security.pipeline_num_v1('jobs.per_lane_per_tick', 1)::int, 20));")
+    expect(m).toContain("order by (j.state = 'running') desc, j.created_at limit v_n for update skip locked loop")
+    expect(m).toContain("exit when clock_timestamp() - v_t0 > interval '40 seconds';  -- fixed:")
+    expect(m).toContain("values ('pipeline', 'jobs.per_lane_per_tick', 'Tasks moved per lane each minute',")
+    expect(m).toMatch(/^-- Replaces: /m)
+    expect(m).toMatch(/^-- Retires: /m)
+  })
+})

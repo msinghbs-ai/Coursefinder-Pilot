@@ -1,19 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.330'
-export const PACKAGE_VERSION='0.1.257'
+export const UI_VERSION='2.15.331'
+export const PACKAGE_VERSION='0.1.258'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'23 Oct 2026',
-  title:'Values from an older wrong page; South Auckland campus',
+  title:'Task manager runs up to 20 tasks per lane each minute',
   changes:[
-    'University of Auckland: South Auckland campus (Te Papa Ako o Tai Tonga, Manukau) added and linked to the Diploma in Arts.'
+    'Scheduled jobs › Task manager: tasks started by people move forward up to 20 per lane each minute instead of one (Settings › Pipeline settings › Tasks moved per lane each minute, 1 to 20). A minute\'s run stops taking more after 40 seconds.'
   ],
-  bugFixes:[
-    'AI values read on 14 Oct from an earlier page that was not the course\'s own (for example "3 years" for the Diploma in Architectural Studies, from the Bachelor\'s page) are taken back: 3,462 values on courses still without a correct page, and 2,023 values read again from the course\'s own page. Each is kept in a list so it can be checked or restored.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

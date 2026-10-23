@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.330'
+export const SOP_REVIEWED_FOR = '2.15.331'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -173,7 +173,8 @@ export const SOPS = [
       { version: '1.68', date: '23 Oct 2026', release: '2.15.327', change: 'Courses list: CRICOS tuition is now Tuition Only and Legacy presence is now Completeness.' },
       { version: '1.69', date: '23 Oct 2026', release: '2.15.328', change: 'Read with AI: course facts a page holds as labelled data items (campus, length, delivery) are read too; only the course\'s own page is read, never another course\'s.' },
       { version: '1.70', date: '23 Oct 2026', release: '2.15.329', change: 'Read with AI: a campus the university already has is linked from one course page.' },
-      { version: '1.71', date: '23 Oct 2026', release: '2.15.330', change: 'AI values from an earlier page that was not the course\'s own are taken back or read again; University of Auckland South Auckland campus added.' }],
+      { version: '1.71', date: '23 Oct 2026', release: '2.15.330', change: 'AI values from an earlier page that was not the course\'s own are taken back or read again; University of Auckland South Auckland campus added.' },
+      { version: '1.72', date: '23 Oct 2026', release: '2.15.331', change: 'Task manager: up to 20 tasks per lane move forward each minute (Tasks moved per lane each minute).' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -295,7 +296,8 @@ export const SOPS = [
       { version: '1.68', date: '23 Oct 2026', release: '2.15.327', change: 'Courses list: CRICOS tuition is now Tuition Only and Legacy presence is now Completeness.' },
       { version: '1.69', date: '23 Oct 2026', release: '2.15.328', change: 'Read with AI: course facts a page holds as labelled data items (campus, length, delivery) are read too; only the course\'s own page is read, never another course\'s.' },
       { version: '1.70', date: '23 Oct 2026', release: '2.15.329', change: 'Read with AI: a campus the university already has is linked from one course page.' },
-      { version: '1.71', date: '23 Oct 2026', release: '2.15.330', change: 'AI values from an earlier page that was not the course\'s own are taken back or read again; University of Auckland South Auckland campus added.' }],
+      { version: '1.71', date: '23 Oct 2026', release: '2.15.330', change: 'AI values from an earlier page that was not the course\'s own are taken back or read again; University of Auckland South Auckland campus added.' },
+      { version: '1.72', date: '23 Oct 2026', release: '2.15.331', change: 'Task manager: up to 20 tasks per lane move forward each minute (Tasks moved per lane each minute).' }],
   },
 ]
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.258 — 23 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.331** (task manager runs up to 20 tasks per lane each minute). Platform Admin, 23 Oct 2026 16:40: "Yes, maximise to speed it up" (145 Read with AI tasks moving one a minute).
+  - Migration `20261023020000_cf247_tasks_per_lane_per_minute.sql`: setting `jobs.per_lane_per_tick` (1 to 20, set to 20, logged); `security.admin_jobs_tick_v1` moves up to that many tasks per lane each minute, oldest first, and stops taking more after 40 seconds (fixed: the runner is called each minute). SOPs 1.72. Consumer API unchanged (Decision 266).
+
 ## 0.1.257 — 23 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.330** (values from an older wrong page; South Auckland campus). Platform Admin, 23 Oct 2026 16:02: "Take back 3,462, re-read 2,023" and "Add it, Auckland region".
