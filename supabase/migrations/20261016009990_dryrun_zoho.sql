@@ -7,7 +7,8 @@
 --   readings like an exact-title page, even where the university's adapter is not set to admit that field (new setting
 --   identity.adapter_title_countries, NZ). NZ tuition also lists adapter_title.
 -- 4 "AI finds and reads the central page; auto-approve when every score is quoted (Recommended)": the university English rule is
---   found and read without a person: job central-attach (hourly at :48) attaches the best suggested central English page not yet
+--   found and read without a person: job central-attach (hourly at :48) searches again (after central.research_days) a university
+--   with no rule and no suggested central English page left, attaches the best suggested central English page not yet
 --   tried for each university with no approved rule (from the central-page search, score at or above central.min_suggest_score, at
 --   most central.attach_per_kind pages), the provider-facts job reads it, the pinned AI reads it, and policy-auto-approve approves
 --   AI readings with every score quoted for every university (setting central.auto_approve_english_all), not only the AU focus list;
@@ -33,6 +34,7 @@ insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, ki
  ('pipeline', 'identity.adapter_title_countries', 'Identify the page: adapter title counts like exact title in', 'Countries where a page proved by the university adapter''s title match admits the fields its country list names, even where the adapter is not set to admit that field.', 'list', '["NZ"]'::jsonb, null, null, 'countries', 120, 'Admission checks', 'security.coverage_identity_allowed', 'Platform Admin 23 Oct 2026 12:40: "Yes, admit like exact title"'),
  ('pipeline', 'central.auto_approve_english_all', 'Central pages: approve English rules for every university', 'On (true): an AI reading of a university''s central English page with every score quoted is approved automatically for every university, not only the focus list (readings most course pages disagree with still go to a person).', 'boolean', 'true'::jsonb, null, null, 'on/off', 131, 'Admission checks', 'security.policy_auto_approve_v1', 'Platform Admin 23 Oct 2026 12:40: "auto-approve when every score is quoted"'),
  ('pipeline', 'central.min_suggest_score', 'Central pages: attach suggestions from score', 'Central English pages suggested by the central-page search at or above this score are attached and read when the university has no approved English rule.', 'number', '4'::jsonb, '0', '10', 'score', 132, 'Admission checks', 'job central-attach', 'Platform Admin 23 Oct 2026 12:40'),
+ ('pipeline', 'central.research_days', 'Central pages: search again after', 'A university with no approved English rule and no suggested central English page is searched again for central pages after this many days.', 'number', '7'::jsonb, '1', '90', 'days', 134, 'Admission checks', 'job central-attach', 'Platform Admin 23 Oct 2026 12:40'),
  ('pipeline', 'central.attach_per_kind', 'Central pages: pages tried a university', 'The most central English pages attached for one university (each tried in turn until a rule is approved).', 'number', '3'::jsonb, '1', '10', 'pages', 133, 'Admission checks', 'job central-attach', 'Platform Admin 23 Oct 2026 12:40')
 on conflict (toolset_key, key) do nothing;
 
@@ -86,7 +88,7 @@ create or replace function security.central_pages_attach_v1()
  security definer
  set search_path to ''
 as $function$
-declare v_att int := 0; v_q int := 0; v_max int := security.pipeline_num_v1('central.attach_per_kind', 3)::int; r record;
+declare v_att int := 0; v_q int := 0; v_re int := 0; v_max int := security.pipeline_num_v1('central.attach_per_kind', 3)::int; r record;
 begin
   -- a university with no approved English rule gets its best suggested central English page not yet tried
   insert into pipeline.provider_fact_sources(provider_id, kind, url, title, rank, found_via, status)
@@ -105,13 +107,23 @@ begin
      and not exists (select 1 from security.provider_hidden_v1 h where h.provider_id = x.provider_id)
   on conflict (provider_id, kind, url) do nothing;
   get diagnostics v_att = row_count;
+  -- a university with no approved rule and no suggested central English page left is searched again (job central-find)
+  update pipeline.provider_central_search s set state = 'queued', attempts = 0, leased_until = null, updated_at = now()
+   where s.state in ('done', 'failed') and s.updated_at < now() - make_interval(days => security.pipeline_num_v1('central.research_days', 7)::int)
+     and not exists (select 1 from pipeline.provider_policy_proposals pp where pp.provider_id = s.provider_id and pp.kind = 'english_policy' and pp.status in ('approved', 'proposed'))
+     and not exists (select 1 from jsonb_array_elements(coalesce(s.found, '[]'::jsonb)) e
+                      where e->>'kind' = 'english_policy' and coalesce((e->>'score')::numeric, 0) >= security.pipeline_num_v1('central.min_suggest_score', 4)
+                        and not exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = s.provider_id and f.kind = 'english_policy' and f.url = e->>'url'))
+     and not exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = s.provider_id and f.kind = 'english_policy' and f.status in ('found', 'reading'))
+     and exists (select 1 from catalogue.courses c where c.provider_id = s.provider_id and c.lifecycle_status = 'active');
+  get diagnostics v_re = row_count;
   -- read central English pages go to the pinned AI (the database checks each quote; policy-auto-approve decides)
   for r in select distinct f.provider_id from pipeline.provider_fact_sources f
             where f.kind = 'english_policy' and f.status in ('read', 'parsed', 'no_values')
               and not exists (select 1 from pipeline.provider_policy_proposals pp where pp.provider_id = f.provider_id and pp.kind = 'english_policy' and pp.status = 'approved') loop
     v_q := v_q + security.central_ai_enqueue_v1(r.provider_id);
   end loop;
-  return jsonb_build_object('attached', v_att, 'queued_for_ai', v_q);
+  return jsonb_build_object('attached', v_att, 'searched_again', v_re, 'queued_for_ai', v_q);
 end $function$;
 revoke execute on function security.central_pages_attach_v1() from public, anon, authenticated;
 
@@ -146,13 +158,17 @@ select pg_temp.edit_once('security.gap_causes_snapshot_v1()', 'f2edb55a463d98e16
   update _grule r set state = r.state || ' (central page being read)'
    where r.kind = 'english_policy' and r.state in ('not found', 'gives no values')
      and (exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = r.provider_id and f.kind = 'english_policy' and f.status in ('found', 'reading'))
-          or exists (select 1 from pipeline.central_ai_queue q where q.provider_id = r.provider_id and q.kind = 'english_policy' and q.state in ('queued', 'leased')));$n$],
+          or exists (select 1 from pipeline.central_ai_queue q where q.provider_id = r.provider_id and q.kind = 'english_policy' and q.state in ('queued', 'leased')));
+  update _grule r set state = r.state || ' (central page search queued)'
+   where r.kind = 'english_policy' and r.state in ('not found', 'gives no values')
+     and exists (select 1 from pipeline.provider_central_search s where s.provider_id = r.provider_id and s.state in ('queued', 'leased'));$n$],
   array[$o$           when z.cause like 'AI:%approved' then$o$,
-        $n$           when z.cause like 'AI:%(central page being read)' then 'central page read by AI and approved when every score is quoted (jobs provider-facts, central-ai, policy-auto-approve)'
+        $n$           when z.cause like 'AI:%(central page search queued)' then 'central page search, then AI reading and approval (jobs central-find, central-attach)'
+           when z.cause like 'AI:%(central page being read)' then 'central page read by AI and approved when every score is quoted (jobs provider-facts, central-ai, policy-auto-approve)'
            when z.cause like 'AI:%(more central pages to try)' then 'next suggested central page read by AI and approved when every score is quoted (jobs central-attach, central-ai, policy-auto-approve)'
            when z.cause like 'AI:%approved' then$n$],
   array[$o$              or (z.cause like 'AI:%' and (z.cause like '%approved' or$o$,
-        $n$              or (z.cause like 'AI:%' and z.cause not like '%(more central pages to try)' and z.cause not like '%(central page being read)' and (z.cause like '%approved' or$n$]]);
+        $n$              or (z.cause like 'AI:%' and z.cause not like '%(more central pages to try)' and z.cause not like '%(central page being read)' and z.cause not like '%(central page search queued)' and (z.cause like '%approved' or$n$]]);
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('function', 'security.central_pages_attach_v1', 'Layer 2', 'Job central-attach: next suggested central English page per university without a rule; read pages to the AI', 'active', '{}', '20261023015000')
@@ -163,7 +179,7 @@ select security.gap_causes_snapshot_v1();
 select 'CA fees, AU scraper, NZ adapter title, university English rules found and approved automatically' ok;
 do $t$ begin
   raise exception 'DRYRUN OK %', jsonb_build_object(
-    'attached_n', (select count(*) from pipeline.provider_fact_sources f where f.kind='english_policy' and f.status='found' and f.created_at > now() - interval '1 minute'),
+    're', (select count(*) from pipeline.provider_central_search where state='queued'), 'attached_n', (select count(*) from pipeline.provider_fact_sources f where f.kind='english_policy' and f.status='found' and f.created_at > now() - interval '1 minute'),
     'adapter_title_fee', (select count(*) from pipeline.coverage_course_pages g where g.identity_basis='adapter_title' and security.coverage_country(g.provider_id)='NZ' and security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'tuition')),
     'au_adapter_title_english', (select count(*) filter (where security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'english')) || '/' || count(*) from pipeline.coverage_course_pages g where g.identity_basis='adapter_title' and security.coverage_country(g.provider_id)='AU'),
     'ca_exact_fee', (select count(*) from pipeline.coverage_course_pages g where g.identity_basis='exact_title' and security.coverage_country(g.provider_id)='CA' and security.coverage_identity_allowed(g.provider_id, g.identity_basis, 'tuition')),
