@@ -535,3 +535,15 @@ test('20261023014000: no per-value search refresh in enrich apply (worker calls 
   expect(m).toContain("insert into search.refresh_requests(requested_by) select 'AI reader (English, intakes)'")
   expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
 })
+
+test('20261023015000: CA fee proofs and CA fee reader, AU scraper, NZ adapter title, university English rules found and approved automatically', () => {
+  const m = fs.readFileSync('supabase/migrations/20261023015000_cf247_gap_decisions_ca_fees_au_scraper_adapter_title_english_rules.sql', 'utf8')
+  expect(m).toContain("('CA', 'tuition', '[\"exact_title\", \"field_award\", \"manual\"]'::jsonb), ('NZ', 'tuition', '[\"adapter_title\"]'::jsonb)")
+  expect(m).toContain("('fees.countries', 'CA',")
+  expect(m).toContain("('pages.render_countries', 'AU',")
+  expect(m).toContain("'identity.adapter_title_countries'")
+  expect(m).toContain("'central.auto_approve_english_all'")
+  expect(m).toContain("select cron.schedule('central-attach', '48 * * * *', $$select security.central_pages_attach_v1()$$);")
+  expect(m.indexOf("insert into pipeline.automation_catalogue(jobname")).toBeLessThan(m.indexOf("select cron.schedule('central-attach'"))
+  expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
+})
