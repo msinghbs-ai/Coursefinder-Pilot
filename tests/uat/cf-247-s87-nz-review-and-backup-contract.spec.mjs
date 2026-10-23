@@ -486,7 +486,8 @@ test('v2.15.324 / v0.41.1: fee reader speed from settings (with ranges); a cours
   expect(m).toContain("case when v_page > 0 and f <> 'campus' then 'waiting' else 'queued' end")
   expect(m).not.toMatch(/\b(drop|delete|truncate)\b/i)
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toContain('await pool(items, Math.max(1, Math.min(Number(body.concurrency || 2), 8)), async (it) => {')
+  // v2.15.333 (worker v0.43.0): up to 16 pages at once (fees.concurrency 1 to 16)
+  expect(w).toContain('await pool(items, Math.max(1, Math.min(Number(body.concurrency || 2), 16)), async (it) => {  // fixed: the setting\'s upper bound (fees.concurrency)')
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(41\.1|4[2-9]\.\d+)";/)
   const ui = fs.readFileSync('src/CourseAudit.jsx', 'utf8')
   expect(ui).toContain('then the AI fee reader reads its fee first in line')
@@ -597,7 +598,7 @@ test.describe('v2.15.328 the AI reader reads only the course\'s own page', () =>
 test.describe('v2.15.329 Read with AI links a campus the university already has', () => {
   test('a campus inside a listed name is kept; an existing campus needs one page, a new one the setting', async () => {
     const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-    expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.42.4";')
+    expect(w).toContain('v0.42.4 (23 Oct 2026, Auckland diplomas: campus list empty)')
     expect(w).toContain('names.some((n) => n === r || (flat(r).length >= 2 && flat(n).includes(flat(r))))')
     const m = fs.readFileSync('supabase/migrations/20261023018000_cf247_campus_list_existing_campus_one_page.sql', 'utf8')
     expect(m).toContain("'security.enrich_campus_list_apply_v1(bigint)', '2617420b455dea68f7cb2cbed8271088'")
