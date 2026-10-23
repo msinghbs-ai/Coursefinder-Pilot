@@ -60,8 +60,8 @@ select pg_temp.edit_once('public.svc_coverage_read_record(uuid,text,integer,text
 
 -- 4 the binder: a code match is labelled by country
 select pg_temp.edit_once('security.coverage_bind_v2(uuid)', '847f5fb963493f637a056fed74366843', array[
-  array[$o$case when by_code then 'cricos_code' else 'title_match' end, case when mutual then 'bound' else 'ambiguous' end$o$,
-        $n$case when by_code then (case security.coverage_country(p_provider_id) when 'AU' then 'cricos_code' when 'NZ' then 'nzqa_code' else 'adapter_code' end) else 'title_match' end, case when mutual then 'bound' else 'ambiguous' end$n$]]);
+  array[$o$case when by_code then 'cricos_code' else 'title_match' end,$o$,
+        $n$case when by_code then (case security.coverage_country(p_provider_id) when 'AU' then 'cricos_code' when 'NZ' then 'nzqa_code' else 'adapter_code' end) else 'title_match' end,$n$]]);
 
 -- 5 re-verification of the mislabelled bindings (count-guarded)
 create temp table _wrong on commit drop as
