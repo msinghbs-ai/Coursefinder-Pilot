@@ -1,7 +1,8 @@
 -- CF-247 (23 Oct 2026). First run of the AI reader for every attribute (Enrich fields, NZ, 9,642 items, Platform Admin 10:25):
 -- 1 Intakes: 121 readings were refused because NZ course pages name semesters ("Semester One and Semester Two") rather than months.
 --   A semester, trimester or term the page names is now turned into its start month from the university's approved academic
---   calendar (Layer 4 › Attributes, kind intake_calendar), only when the quote names it.
+--   calendar (Layer 4 › Attributes, kind intake_calendar; the latest approved one; a period with several dates starts in its last month,
+--   e.g. Otago semester 1 lists the flat move-in in January and classes in March), only when the quote names it.
 -- 2 English: 1,416 NZ course pages give no IELTS at all; their value can only come from the university's English rule. Why values
 --   are missing now says, for English and intakes the page does not give, the state of the university rule: approved (applies by
 --   study level), waiting for approval, its central page gives no values, or no central page found; the last three are listed under
@@ -33,14 +34,16 @@ begin
   v_t := regexp_replace(regexp_replace(regexp_replace(regexp_replace(lower(coalesce(p_text, '')), '\mone\M|\mfirst\M', '1', 'g'), '\mtwo\M|\msecond\M', '2', 'g'), '\mthree\M|\mthird\M', '3', 'g'), '\s+', ' ', 'g');
   v_q := regexp_replace(regexp_replace(regexp_replace(regexp_replace(lower(coalesce(p_quote, '')), '\mone\M|\mfirst\M', '1', 'g'), '\mtwo\M|\msecond\M', '2', 'g'), '\mthree\M|\mthird\M', '3', 'g'), '\s+', ' ', 'g');
   for per in
-    select x from pipeline.provider_policy_proposals p, jsonb_array_elements(coalesce(p.proposal->'periods', '[]'::jsonb)) x
-     where p.provider_id = p_provider and p.kind = 'intake_calendar' and p.status = 'approved'
+    -- the latest approved calendar only
+    select x from (select p.proposal from pipeline.provider_policy_proposals p where p.provider_id = p_provider and p.kind = 'intake_calendar' and p.status = 'approved'
+                    order by p.decided_at desc nulls last, p.created_at desc limit 1) l, jsonb_array_elements(coalesce(l.proposal->'periods', '[]'::jsonb)) x
   loop
     v_name := lower(btrim(per->>'period'));
     continue when v_name !~ '^(semester|trimester|term|quarter|block) [0-9]$';
     v_rx := '\m' || split_part(v_name, ' ', 1) || '\s*' || split_part(v_name, ' ', 2) || '\M';
     if v_t ~ v_rx and v_q ~ v_rx then
-      v_months := v_months || array(select jsonb_array_elements_text(coalesce(per->'months', '[]'::jsonb))::int);
+      -- a period with several dates (move-in, orientation, classes) starts in its last month
+      v_months := v_months || (select max(m::int) from jsonb_array_elements_text(coalesce(per->'months', '[]'::jsonb)) m);
     end if;
   end loop;
   if cardinality(v_months) = 0 then return null; end if;
