@@ -15,7 +15,7 @@
 --   again; nothing waiting and which upstream lane feeds it; waiting with nothing finishing: a gate holds it; failing; nothing left).
 -- Q3 DURABLE PER-MODE LEDGER: pipeline.mode_outcome_ledger, one row per worker call, written by the worker through
 --   public.svc_worker_report_v1 at the end of every call (items, ok, failed, where the work landed, the call time); 90-day retention by
---   its own catalogued daily job. Queue wait per lane comes from security.lane_queue_wait_v1 (queue timestamps: queued → finished) until
+--   its own catalogued daily job (which also removes old zero-yield snapshots: v2.15.338 named retention-worker as their keeper, but that job never did). Queue wait per lane comes from security.lane_queue_wait_v1 (queue timestamps: queued → finished) until
 --   the pickers carry the wait themselves; the health report reads both.
 -- APPLY-TIME IDENTITY CHECK: security.coverage_apply_course_v1 (the common fee write) now refuses to admit a fee live when the course's
 --   bound page carries a proof the country's tuition policy does not accept: the fee is written unverified with one Layer 4 row
@@ -39,7 +39,7 @@ end $f$;
 -- 1 settings -------------------------------------------------------------------------------------------------------------------------
 insert into pipeline.platform_toolset_settings(toolset_key, key, label, help, kind, value, min_value, max_value, unit, sort, section, used_by, reason) values
  ('pipeline', 'tick.backoff_max_minutes', 'Idle lane: tried again within', 'A worker lane paused by the idle guard (its last runs found nothing to do) is tried again no later than this many minutes after the pause, and sooner the moment work waits for it. Keeps a drained lane from sleeping for hours while its queue fills.', 'number', '15'::jsonb, '1', '60', 'minutes', 770, 'Waste rules', 'security.flag_jobs_v1', 'R1 Q2 (Platform Admin 24 Oct 2026 09:55)'),
- ('pipeline', 'retention.mode_outcome_ledger_days', 'Worker ledger: kept for', 'Rows of the per-call worker ledger older than this are removed by the daily mode-ledger-retention job.', 'number', '90'::jsonb, '30', '365', 'days', 771, 'Platform upkeep', 'job mode-ledger-retention', 'R1 Q3')
+ ('pipeline', 'retention.mode_outcome_ledger_days', 'Worker ledger: kept for', 'Rows of the per-call worker ledger older than this are removed by the daily ledger-retention job.', 'number', '90'::jsonb, '30', '365', 'days', 771, 'Platform upkeep', 'job ledger-retention', 'R1 Q3')
 on conflict (toolset_key, key) do nothing;
 
 -- 2 Q2: the trial wait is capped; every paused-prone lane says when work waits ----------------------------------------------------------
@@ -127,7 +127,7 @@ create table if not exists pipeline.mode_outcome_ledger (
   worker text,
   detail jsonb
 );
-comment on table pipeline.mode_outcome_ledger is 'R1 Q3 (24 Oct 2026): one row per worker call — the mode, what it processed (items), how much succeeded and failed, where the work landed (the call''s tally), the call time and the worker version; written by public.svc_worker_report_v1 at the end of every call; 90-day retention (mode-ledger-retention)';
+comment on table pipeline.mode_outcome_ledger is 'R1 Q3 (24 Oct 2026): one row per worker call — the mode, what it processed (items), how much succeeded and failed, where the work landed (the call''s tally), the call time and the worker version; written by public.svc_worker_report_v1 at the end of every call; 90-day retention (ledger-retention)';
 create index if not exists mode_outcome_ledger_run_at_idx on pipeline.mode_outcome_ledger (run_at desc);
 create index if not exists mode_outcome_ledger_mode_run_at_idx on pipeline.mode_outcome_ledger (mode, run_at desc);
 alter table pipeline.mode_outcome_ledger enable row level security;
@@ -182,17 +182,22 @@ language sql stable security definer set search_path = '' as $$
 $$;
 comment on function security.lane_queue_wait_v1(int) is 'R1 Q3: queue wait (minutes, p50/p90/max) and rows waiting per reader lane over the last p_hours, from the queues'' timestamps';
 
-create or replace function security.mode_ledger_retention_v1() returns int
-language plpgsql security definer set search_path = '' as $$
-declare n int;
+create or replace function security.ledger_retention_v1() returns jsonb
+language plpgsql security definer set search_path = '' as $function$
+declare n_ledger int; n_zy int;
 begin
   delete from pipeline.mode_outcome_ledger where run_at < now() - make_interval(days => security.pipeline_num_v1('retention.mode_outcome_ledger_days', 90)::int);
-  get diagnostics n = row_count; return n;
-end $$;
+  get diagnostics n_ledger = row_count;
+  -- the zero-yield snapshots (v2.15.338) named retention-worker as their keeper but nothing removed them: this job does, by their own setting
+  delete from pipeline.zero_yield_snapshots where at < now() - make_interval(days => security.pipeline_num_v1('retention.zero_yield_snapshots_days', 90)::int);
+  get diagnostics n_zy = row_count;
+  return jsonb_build_object('mode_outcome_ledger', n_ledger, 'zero_yield_snapshots', n_zy);
+end $function$;
+comment on function security.ledger_retention_v1() is 'daily: removes worker-ledger rows and zero-yield snapshots older than their retention settings';
 insert into pipeline.automation_catalogue(jobname, area, sort, label, description, control_rank, batch_editable, layer23_stage) values
- ('mode-ledger-retention', 'Platform upkeep', 95, 'Worker ledger: retention', 'Daily at 03:37 UTC: removes rows of the per-call worker ledger (pipeline.mode_outcome_ledger) older than Worker ledger: kept for.', 6, false, null)
+ ('ledger-retention', 'Platform upkeep', 95, 'Ledgers: retention', 'Daily at 03:37 UTC: removes rows of the per-call worker ledger older than Worker ledger: kept for, and zero-yield snapshots older than Zero-yield snapshots kept.', 6, false, null)
 on conflict (jobname) do nothing;
-select cron.schedule('mode-ledger-retention', '37 3 * * *', $$select security.mode_ledger_retention_v1()$$);
+select cron.schedule('ledger-retention', '37 3 * * *', $$select security.ledger_retention_v1()$$);
 
 -- 4 Q4: why idle -------------------------------------------------------------------------------------------------------------------------
 alter table pipeline.queue_watch add column if not exists upstream_key text references pipeline.queue_watch(key);
@@ -290,9 +295,9 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('table', 'pipeline.mode_outcome_ledger', 'Layer 2', 'R1 Q3 per-call worker ledger (items, ok, failed, landed)', 'active', '{}', '20261024004000'),
  ('function', 'public.svc_worker_report_v1', 'Layer 2', 'worker call report into the ledger (service role)', 'active', '{}', '20261024004000'),
  ('function', 'security.lane_queue_wait_v1', 'Layer 2', 'queue wait percentiles per reader lane from queue timestamps', 'active', '{}', '20261024004000'),
- ('function', 'security.mode_ledger_retention_v1', 'Layer 2', 'ledger retention', 'active', '{}', '20261024004000'),
+ ('function', 'security.ledger_retention_v1', 'Layer 2', 'ledger and snapshot retention', 'active', '{}', '20261024004000'),
  ('function', 'security.lane_why_idle_v1', 'Layer 2', 'R1 Q4 why-idle line per work queue', 'active', '{}', '20261024004000'),
- ('job', 'mode-ledger-retention', 'Layer 2', 'daily ledger retention', 'active', '{}', '20261024004000')
+ ('job', 'ledger-retention', 'Layer 2', 'daily ledger and snapshot retention', 'active', '{}', '20261024004000')
 on conflict (kind, name) do nothing;
 
 do $t$ declare r jsonb; v_id bigint; n int; begin
@@ -311,5 +316,5 @@ do $t$ declare r jsonb; v_id bigint; n int; begin
     'apply_has_sentinel', position('fee_quarantined_identity' in pg_get_functiondef('security.coverage_apply_course_v1(uuid,uuid,uuid,text,text,jsonb)'::regprocedure)) > 0,
     'flag_jobs_capped', position('tick.backoff_max_minutes' in pg_get_functiondef('security.flag_jobs_v1()'::regprocedure)) > 0,
     'queue_watch_why', position('why_idle' in pg_get_functiondef('public.admin_queue_watch(text,jsonb)'::regprocedure)) > 0,
-    'job', (select count(*) from cron.job where jobname = 'mode-ledger-retention'));
+    'job', (select count(*) from cron.job where jobname = 'ledger-retention'));
   raise exception 'DRYRUN OK %', r; end $t$;
