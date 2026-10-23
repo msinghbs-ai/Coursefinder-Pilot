@@ -300,7 +300,7 @@ do $t$ declare r jsonb; v_id bigint; n int; begin
   select count(*) into n from pipeline.course_companion_pages where provider_id = '68022bdf-43e8-44b3-ac14-e9eed9f71e83' and read_attempts = 0 and status = 'failed';
   r := jsonb_build_object(
     'ledger', (select to_jsonb(l) - 'detail' from pipeline.mode_outcome_ledger l where l.id = v_id),
-    'waits', (select jsonb_agg(to_jsonb(w)) from security.lane_queue_wait_v1(24) w),
+
     'why_read', security.lane_why_idle_v1('course_page_read'),
     'why_fee', security.lane_why_idle_v1('fee_reader'),
     'why_search', security.lane_why_idle_v1('course_page_search'),
