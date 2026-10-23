@@ -142,12 +142,17 @@ select pg_temp.edit_once('security.gap_causes_snapshot_v1()', 'f2edb55a463d98e16
      and exists (select 1 from pipeline.provider_central_search s cross join lateral jsonb_array_elements(coalesce(s.found, '[]'::jsonb)) e
                   where s.provider_id = r.provider_id and e->>'kind' = 'english_policy' and coalesce((e->>'score')::numeric, 0) >= security.pipeline_num_v1('central.min_suggest_score', 4)
                     and not exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = s.provider_id and f.kind = 'english_policy' and f.url = e->>'url'))
-     and (select count(*) from pipeline.provider_fact_sources f where f.provider_id = r.provider_id and f.kind = 'english_policy') < security.pipeline_num_v1('central.attach_per_kind', 3);$n$],
+     and (select count(*) from pipeline.provider_fact_sources f where f.provider_id = r.provider_id and f.kind = 'english_policy') < security.pipeline_num_v1('central.attach_per_kind', 3);
+  update _grule r set state = r.state || ' (central page being read)'
+   where r.kind = 'english_policy' and r.state in ('not found', 'gives no values')
+     and (exists (select 1 from pipeline.provider_fact_sources f where f.provider_id = r.provider_id and f.kind = 'english_policy' and f.status in ('found', 'reading'))
+          or exists (select 1 from pipeline.central_ai_queue q where q.provider_id = r.provider_id and q.kind = 'english_policy' and q.state in ('queued', 'leased')));$n$],
   array[$o$           when z.cause like 'AI:%approved' then$o$,
-        $n$           when z.cause like 'AI:%(more central pages to try)' then 'next suggested central page read by AI and approved when every score is quoted (jobs central-attach, central-ai, policy-auto-approve)'
+        $n$           when z.cause like 'AI:%(central page being read)' then 'central page read by AI and approved when every score is quoted (jobs provider-facts, central-ai, policy-auto-approve)'
+           when z.cause like 'AI:%(more central pages to try)' then 'next suggested central page read by AI and approved when every score is quoted (jobs central-attach, central-ai, policy-auto-approve)'
            when z.cause like 'AI:%approved' then$n$],
   array[$o$              or (z.cause like 'AI:%' and (z.cause like '%approved' or$o$,
-        $n$              or (z.cause like 'AI:%' and z.cause not like '%(more central pages to try)' and (z.cause like '%approved' or$n$]]);
+        $n$              or (z.cause like 'AI:%' and z.cause not like '%(more central pages to try)' and z.cause not like '%(central page being read)' and (z.cause like '%approved' or$n$]]);
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('function', 'security.central_pages_attach_v1', 'Layer 2', 'Job central-attach: next suggested central English page per university without a rule; read pages to the AI', 'active', '{}', '20261023015000')
