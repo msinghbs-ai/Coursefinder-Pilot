@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.337'
-export const PACKAGE_VERSION='0.1.264'
+export const UI_VERSION='2.15.338'
+export const PACKAGE_VERSION='0.1.265'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Oct 2026',
-  title:'CRICOS proofs are Australian only',
+  title:'Zero-yield course pages: detect, verify, reset and re-acquire',
   changes:[
-    'A CRICOS code is an Australian proof and is accepted only for Australian providers, in the admission policy and in every proof list. A New Zealand course page is proved by its NZQA programme code on the page or by its title; a Canadian page by its title. The reader (worker v0.45.0, identity rule v0.6.0) no longer labels any non-Australian page with a CRICOS proof.',
-    '406 New Zealand and Canadian course pages that carried an Australian (or wrong-country) proof label were taken back to "page does not match" and are re-verified from their stored copies under the new rule; the 149 fees quarantined at 00:35 re-admit through the normal path once their page is re-bound.',
-    'Catalogue › Courses: the CRICOS registered fee column (Tuition Only) is shown only for Australian lists; New Zealand and Canadian lists show the provider\'s international fee.',
+    'A bound course page whose stored copy gave every reader nothing is zero-yield. An hourly job measures it per provider and flags a provider above the rate as systematic. A page is reset only when verified wrong (a listing or not-found page, a title that does not match the course, or a page off the provider\'s course-page pattern while a matching on-pattern page is known); the course then unbinds, its official link is taken back, the wrong page goes on the rejection list, and the AI page match finds the right page from the provider\'s known pages with rejected pages excluded. The readers fill the course from the new page. Settings › Pipeline settings › Zero-yield pages; automatic resets are off until switched on.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
