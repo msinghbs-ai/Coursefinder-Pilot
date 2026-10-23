@@ -47,8 +47,10 @@ begin
             limit security.pipeline_num_v1('batch.transition_recheck', 5)::int loop
     select (security.provider_website_list_v1(p.website))[1] into v_site from catalogue.providers p where p.id = r.provider_id;
     if v_site is not null and not exists (select 1 from pipeline.provider_website_checks w where w.provider_id = r.provider_id and w.state in ('queued', 'leased')) then
+      -- requested_by: the job runs as the platform; the row carries the Platform Admin who decided the transition (decided_by)
       insert into pipeline.provider_website_checks(provider_id, url, action, reason, requested_by)
-      values (r.provider_id, v_site, 'check', 'NZ transition re-check (' || r.risk || ', every ' || r.every || ' days)', null);
+      select r.provider_id, v_site, 'check', 'NZ transition re-check (' || r.risk || ', every ' || r.every || ' days)', t.decided_by
+        from pipeline.provider_transitions t where t.provider_id = r.provider_id and t.decided_by is not null;
     end if;
     insert into pipeline.source_find_runs as s (provider_id, state, work, next_try_at)
     values (r.provider_id, 'queued', jsonb_build_object('again', true, 'reason', 'NZ transition re-check'), now())
