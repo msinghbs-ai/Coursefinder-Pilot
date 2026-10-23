@@ -3,7 +3,7 @@
 -- docs/platform/nz-enrichment-brief/2026-10-23-nz-brief-decisions.md section 5.
 -- A course whose own page is proven gets that page's address in catalogue.courses.course_url when the field is empty, so the website
 -- and Zoho can show the link. No consumer API shape change (G3): a nullable field that is already read is populated more often.
--- The four guards: 1 proven binding only (status bound, identity_basis present, read_status read, a stored copy); 2 manual locks
+-- The four guards: 1 proven binding only (status bound, a proof the country's official_url policy allows, read_status read, a stored copy); 2 manual locks
 -- honoured (pipeline.manual_locks course/course_url, and only an empty course_url is written); 3 re-fill on binding change (a fill is
 -- taken back when the page is no longer bound or its copy changed, the address emptied only when it still equals the filled value,
 -- then filled again from the new binding when it qualifies); 4 30-day retraction-rate monitoring (above course_url.max_retraction_pct
@@ -104,6 +104,7 @@ begin
      where c.lifecycle_status = 'active' and c.course_url is null
        and p.status = 'bound' and p.identity_basis is not null and p.read_status = 'read' and p.evidence_id is not null
        and coalesce(nullif(p.candidates->>'final_url', ''), p.url) ~* '^https?://'
+       and security.coverage_identity_allowed(p.provider_id, p.identity_basis, 'official_url')  -- the country's own proofs for the official link (an NZ page labelled cricos_code waits for 8a)
        and k.iso_alpha2 in (select jsonb_array_elements_text(s.value) from pipeline.platform_toolset_settings s where s.toolset_key = 'pipeline' and s.key = 'course_url.fill_countries')
        and not exists (select 1 from pipeline.manual_locks m where m.entity = 'course' and m.entity_id = c.id and m.field = 'course_url')
        and not exists (select 1 from pipeline.course_url_fills x where x.course_id = c.id and x.retracted_at is null)
@@ -149,12 +150,10 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('job', 'course-url-fill', 'Catalogue', 'daily 02:23 UTC course_url fill', 'active', '{}', '20261024001000')
 on conflict (kind, name) do nothing;
 
-do $t$ declare r jsonb; s jsonb; w jsonb; g jsonb; begin
-  select jsonb_object_agg(cc, n) into w from (select k.iso_alpha2 cc, count(*) n from catalogue.courses c join catalogue.providers pr on pr.id=c.provider_id join ref.countries k on k.id=pr.country_id join pipeline.coverage_course_pages p on p.course_id=c.id where c.lifecycle_status='active' and c.course_url is null and p.status='bound' and p.identity_basis is not null and p.read_status='read' and p.evidence_id is not null and coalesce(nullif(p.candidates->>'final_url',''),p.url) ~* '^https?://' and not exists (select 1 from pipeline.manual_locks m where m.entity='course' and m.entity_id=c.id and m.field='course_url') group by 1) z;
+do $t$ declare r jsonb; w jsonb; g jsonb; begin
+  select jsonb_object_agg(cc, n) into w from (select k.iso_alpha2 cc, count(*) n from catalogue.courses c join catalogue.providers pr on pr.id=c.provider_id join ref.countries k on k.id=pr.country_id join pipeline.coverage_course_pages p on p.course_id=c.id where c.lifecycle_status='active' and c.course_url is null and p.status='bound' and p.identity_basis is not null and p.read_status='read' and p.evidence_id is not null and coalesce(nullif(p.candidates->>'final_url',''),p.url) ~* '^https?://' and security.coverage_identity_allowed(p.provider_id, p.identity_basis, 'official_url') and not exists (select 1 from pipeline.manual_locks m where m.entity='course' and m.entity_id=c.id and m.field='course_url') group by 1) z;
   update pipeline.platform_toolset_settings set value='5000'::jsonb where toolset_key='pipeline' and key='batch.course_url_fill';
   r := security.course_url_fill_v1();
-  select jsonb_agg(jsonb_build_object('c', left(c.canonical_title,40), 'p', left(pr.canonical_name,24), 'b', x.identity_basis, 'u', left(x.url,70))) into s
-    from (select * from pipeline.course_url_fills order by random() limit 10) x join catalogue.courses c on c.id=x.course_id join catalogue.providers pr on pr.id=c.provider_id;
   update pipeline.coverage_course_pages set status='mismatch' where course_id = (select course_id from pipeline.course_url_fills limit 1);
   g := security.course_url_fill_v1();
-  raise exception 'DRYRUN OK %', jsonb_build_object('all_countries', w, 'basis_mix', (select jsonb_object_agg(identity_basis, n) from (select identity_basis, count(*) n from pipeline.course_url_fills group by 1) z), 'samples', s, 'second_run', g - 'rate', 'nz_url_after', (select count(*) from catalogue.courses c join catalogue.providers pr on pr.id=c.provider_id join ref.countries k on k.id=pr.country_id where k.iso_alpha2='NZ' and c.lifecycle_status='active' and c.course_url is not null)); end $t$;
+  raise exception 'DRYRUN OK %', jsonb_build_object('all', w, 'run', r - 'rate', 'basis', (select jsonb_object_agg(identity_basis, n) from (select identity_basis, count(*) n from pipeline.course_url_fills group by 1) z), 'second', g - 'rate', 'nz_url_after', (select count(*) from catalogue.courses c join catalogue.providers pr on pr.id=c.provider_id join ref.countries k on k.id=pr.country_id where k.iso_alpha2='NZ' and c.lifecycle_status='active' and c.course_url is not null)); end $t$;
