@@ -254,8 +254,18 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('job', 'zero-yield-detect', 'Layer 2', 'daily 03:21 UTC zero-yield detect (and reset when switched on)', 'active', '{}', '20261024003000')
 on conflict (kind, name) do nothing;
 
-do $t$ declare r jsonb; begin
-  perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
-  perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
-  r := security.admin_course_page_fast_base('{"provider_id":"e096aba7-e1eb-4903-9a63-2bfb71e9a8b8","query":"Diploma in","level_code":"diploma","limit":12}'::jsonb);
-  raise exception 'DRYRUN OK %', jsonb_build_object('items', (select jsonb_agg(jsonb_build_object('t', x->>'canonical_title', 'f', x->'intl_fee_amount', 'y', x->'intl_fee_year', 'c', x->'city_names')) from jsonb_array_elements(r->'items') x)); end $t$;
+do $t$ declare u uuid; r jsonb; before jsonb; after jsonb; prep jsonb; t0 timestamptz := clock_timestamp(); d jsonb; begin
+  select id into u from catalogue.providers where canonical_name='University of Auckland';
+  select jsonb_build_object('bound', count(*), 'zero', count(*) filter (where zero), 'wrong', count(*) filter (where verified_wrong), 'off_pattern', count(*) filter (where pattern_share < 0.35), 'off_with_cand', count(*) filter (where pattern_share < 0.35 and candidate_overlap >= 0.6), 'ms', round(extract(epoch from clock_timestamp()-t0)*1000)) into before from security.zero_yield_pages_v1(u);
+  update pipeline.platform_toolset_settings set value='200'::jsonb where toolset_key='pipeline' and key='zero_yield.reset_per_provider';
+  r := security.zero_yield_reset_v1(u);
+  select jsonb_build_object('mismatch_now', count(*) filter (where status='mismatch'), 'bound_now', count(*) filter (where status='bound')) into after from pipeline.coverage_course_pages where provider_id=u;
+  prep := security.coverage_ai_match_prepare_v1(1, 300);
+  t0 := clock_timestamp();
+  d := security.zero_yield_detect_v1();
+  raise exception 'DRYRUN OK %', jsonb_build_object('uoa_before', before, 'reset', r, 'uoa_after', after,
+    'rejections', (select jsonb_object_agg(reason, n) from (select reason, count(*) n from pipeline.page_rejections where provider_id=u group by 1) z),
+    'sample', (select jsonb_agg(jsonb_build_object('u', regexp_replace(url,'^https://(www\.|study\.)?auckland\.ac\.nz',''), 'cand', regexp_replace(signals->>'candidate_url','^https://(www\.|study\.)?auckland\.ac\.nz',''), 'ov', signals->>'candidate_overlap')) from (select * from pipeline.page_rejections where provider_id=u order by random() limit 4) q),
+    'prepare', prep, 'ready_for_uoa', (select count(*) from pipeline.coverage_ai_match q where q.provider_id=u and q.state='ready'),
+    'detect', d, 'detect_ms', round(extract(epoch from clock_timestamp()-t0)*1000),
+    'nz_flagged', (select jsonb_agg(jsonb_build_object('p', left(pr.canonical_name,22), 'b', s.bound, 'z', s.zero_yield, 'w', s.verified_wrong)) from pipeline.zero_yield_snapshots s join catalogue.providers pr on pr.id=s.provider_id where s.country='NZ' and s.flagged and s.bound>=20)); end $t$;
