@@ -30,6 +30,10 @@ test('a Find course pages task forwards to the toolset on accept, on the same pa
     expect(edits).not.toContain(kept)
   }
   expect(m).not.toMatch(/update pipeline\.(course_link_search_settings|platform_toolset_settings)/)
+  // D-target_only (Platform Admin 13:55): a task the target-only rule holds is refused at start with the gate named; no task passes it
+  expect(m).toContain("raise exception 'Not started: this university is not a search target, and course page search is for target universities only (Toolsets & limits › targets).';")
+  expect(m).not.toMatch(/target_only[^\n]*v_person|v_person[^\n]*target_only/)
+  expect("Not started: this university is not a search target, and course page search is for target universities only (Toolsets & limits › targets).".length).toBeLessThanOrEqual(160)
   // the lane's wake-up test agrees with the picker
   expect(m).toContain("or (security.pipeline_num_v1('search.person_task_bypass', 1) >= 1 and security.link_search_person_task_v1(s.provider_id, s.course_id))))")
   // every edit is md5-guarded against the live definition

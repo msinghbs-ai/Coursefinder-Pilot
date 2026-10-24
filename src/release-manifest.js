@@ -11,6 +11,7 @@ export const RELEASE={
   changes:[
     'Scheduled jobs › Task manager: every running task shows when it last sent work to its tool and when the next attempt is; when nothing has moved for a minute (Tasks: blocked after) it says what is holding it and where to fix it.',
     'Coverage gaps name "web search stopped for this university" instead of counting those courses as queued.',
+    'Find course pages at a university that is not a search target is refused at start and says so (course page search is for target universities only).',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[

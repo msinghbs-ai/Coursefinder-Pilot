@@ -10,6 +10,8 @@
 --   person-asked bypass a second time. Gates, budgets and caps are NOT changed (constraint): a row of a person's running
 --   "Find course pages" task passes the stop and bulk checks only, behind setting search.person_task_bypass (on). Budget (day share,
 --   month cap), the target-only rule, hidden providers, directory sites and the skip list still apply to it.
+--   D-target_only (Platform Admin 24 Oct 2026 13:55): a Find course pages task at a university the target-only rule holds is refused at
+--   start with the gate named; no task passes target-only (its release is R2's audit decision).
 -- D3 THE STALL WAS INVISIBLE. The task watcher closed a blocked find task after 45 minutes as "the rest wait their turn"; the gap-cause
 --   taxonomy filed the same rows as "no page: web search queued" (automatic). Now: security.link_search_block_v1 walks the picker's
 --   gates in its order and names the first one that holds (the stall cause); security.admin_job_status_v1 gives every task its last
@@ -175,13 +177,23 @@ select pg_temp.edit_n('security.provider_task_fire_v1(text)', 'a972d06b948cf0db6
   end if;$n$]],
   array[1]);
 
+-- D-target_only (Platform Admin 24 Oct 2026 13:55): a task at a university the target-only rule holds is refused at start, the gate
+-- named at once; no task passes target-only (its release is R2's audit decision, not this hotfix). The check is the picker's own.
 select pg_temp.edit_n('security.provider_task_prepare_v1(text,jsonb)', '77d029207a8737f9e17adcc6670f1c6a', array[
+  array[$o$      raise exception 'no website is recorded for this provider yet, so there is nowhere to search; use Fill in from website first';
+    end if;$o$,
+        $n$      raise exception 'no website is recorded for this provider yet, so there is nowhere to search; use Fill in from website first';
+    end if;
+    if coalesce((security.firecrawl_setting('target_only') #>> '{}')::boolean, true)
+       and not exists (select 1 from pipeline.firecrawl_target_cache tc where tc.provider_id = v_pid and tc.included) then
+      raise exception 'Not started: this university is not a search target, and course page search is for target universities only (Toolsets & limits › targets).';
+    end if;$n$],
   array[$o$    get diagnostics v_n = row_count;
     return jsonb_build_object('provider_id', v_pid, 'course_ids', to_jsonb(v_ids), 'queued', v_n,$o$,
         $n$    get diagnostics v_n = row_count;
     perform security.provider_task_fire_v1('link_search');  -- hotfix D2: forwarded on accept, not at the next minute
     return jsonb_build_object('provider_id', v_pid, 'course_ids', to_jsonb(v_ids), 'queued', v_n,$n$]],
-  array[1]);
+  array[1, 1]);
 
 -- 5 the watcher names the gate when it closes a stalled find task; the Task manager reads every task's status --------------------------------
 select pg_temp.edit_n('security.admin_job_watch_v1(uuid)', '58a4ec23ee992b70a4cd8dd312cec2ef', array[
