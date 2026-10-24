@@ -37,11 +37,12 @@ export default function Dashboard({onError}){
   return <div className="m-page-stack db-home">
     <section className="m-panel" data-waiting>
       <SectionTitle icon={Inbox} title="Waiting for you" subtitle={inbox?(inboxRows.length?`${fmtNumber(inbox.total)} items at ${fmtNumber(inbox.universities)} universities need a person; ${fmtNumber(inbox.late)} are older than ${inbox.target_days} days. Oldest first is a good rule.`:'Nothing in the Inbox needs a person right now.'):'The Inbox opens for Curators and above.'} action={<Button compact onClick={load} disabled={busy}><RefreshCw size={14}/>{busy?'Updating…':'Refresh'}</Button>}/>
-      {inbox&&(inboxRows.length?<ul className="db-waiting" data-waiting-inbox>{inboxRows.map(([k,v])=><li key={k} data-queue={k} data-inbox-kind={k}>
+      {/* v2.15.343 (UI audit Phase 3): the per-kind rows live on Layer 4 Review › By kind (the one source); the Dashboard states the total and opens it */}
+      {inbox&&(inboxRows.length?<ul className="db-waiting" data-waiting-inbox><li data-queue="inbox" data-inbox-total>
         <span className="db-queue-icon" aria-hidden="true"><Inbox size={16}/></span>
-        <strong className="db-count">{fmtNumber(Number(v.n))}</strong>
-        <span className="db-label">{kinds[k]?.label||k}{v.oldest&&<small>oldest waiting {ago(v.oldest)}{Number(v.late)?` · ${fmtNumber(v.late)} late`:''}</small>}</span>
-        <Button compact onClick={()=>go(`#layer-4-review?kind=${encodeURIComponent(k)}`)} aria-label={`Open ${kinds[k]?.label||k} in the Inbox`}>Open<ArrowRight size={13}/></Button></li>)}</ul>:<p className="db-clear"><CheckCircle2 size={16}/>All clear.</p>)}
+        <strong className="db-count">{fmtNumber(Number(inbox.total||0))}</strong>
+        <span className="db-label">Inbox items across {fmtNumber(inboxRows.length)} kind{inboxRows.length===1?'':'s'}<small>{Number(inbox.late)?`${fmtNumber(inbox.late)} older than ${inbox.target_days} days · `:''}by kind and oldest first on Layer 4 Review</small></span>
+        <Button compact onClick={()=>go('#layer-4-review?view=kind')} aria-label="Open the Inbox by kind">Open<ArrowRight size={13}/></Button></li></ul>:<p className="db-clear"><CheckCircle2 size={16}/>All clear.</p>)}
       {open.length>0&&<><h4 className="db-also">Also</h4><ul className="db-waiting" data-waiting-also>{open.map(r=>{const Icon=QUEUE_ICON[r.key]||Inbox;return <li key={r.key} data-queue={r.key}>
         <span className="db-queue-icon" aria-hidden="true"><Icon size={16}/></span>
         <strong className="db-count">{fmtNumber(Number(r.count))}</strong>
@@ -52,7 +53,7 @@ export default function Dashboard({onError}){
     <div className="cf-metric-grid db-tiles">
       <button type="button" className="db-tile" onClick={()=>go('#providers')}><Metric label="Providers" value={fmtNumber(data?.providers||0)} detail="Every status and country" icon={Building2}/></button>
       <button type="button" className="db-tile" onClick={()=>go('#courses')}><Metric label="Courses" value={fmtNumber(data?.courses||0)} detail="Every status and country" icon={GraduationCap}/></button>
-      <button type="button" className="db-tile" onClick={()=>go('#scholarships')}><Metric label="Scholarships" value={fmtNumber(data?.scholarships||0)} detail="Every status" icon={Sparkles}/></button>
+      <button type="button" className="db-tile" onClick={()=>go('#scholarships')}><Metric label="Scholarships" value={fmtNumber(data?.scholarships_published??(data?.scholarships||0))} detail={data?.scholarships_active!=null?`published · ${fmtNumber(data.scholarships_active)} active · ${fmtNumber(Math.max(0,(data.scholarships||0)-(data.scholarships_active||0)))} retired`:'Every status'} icon={Sparkles}/></button>
       <button type="button" className="db-tile" onClick={()=>go('#layer-4-review')}><Metric label="Inbox" value={fmtNumber(reviewCount)} detail="Waiting for a person" icon={ClipboardCheck} tone={reviewCount?'warning':'success'}/></button>
     </div>
     {/* v2.15.266 (Platform Admin, 13 Oct 2026): the health strip, Layers and Recent activity are retired; how the platform is progressing,

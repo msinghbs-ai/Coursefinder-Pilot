@@ -18,8 +18,8 @@ const linkFor=(link,it)=>link==='builder'?hrefFor('layer2','builder',{provider:i
 const urlOf=v=>typeof v==='string'?v:Array.isArray(v)?urlOf(v[0]):v&&typeof v==='object'?(v.url||v.course_url||''):''
 
 export default function Layer4Inbox({onError,routeParams}){
-  const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||''
-  const[sum,setSum]=useState(null),[view,setView]=useState(want?'kind':'university'),[kind,setKind]=useState(want),[q,setQ]=useState('')
+  const want=routeParams?.get?.('kind')||'',wantProvider=routeParams?.get?.('provider')||'',wantView=routeParams?.get?.('view')||'' // v2.15.343: the Dashboard opens the Inbox by kind (?view=kind)
+  const[sum,setSum]=useState(null),[view,setView]=useState(want?'kind':wantView==='kind'?'kind':'university'),[kind,setKind]=useState(want),[q,setQ]=useState('')
   const[unis,setUnis]=useState(null),[offset,setOffset]=useState(0),[pick,setPick]=useState(null),[items,setItems]=useState(null),[note,setNote]=useState('')
   const kinds=sum?.kinds||{},order=useMemo(()=>Object.entries(kinds).sort((a,b)=>a[1].order-b[1].order).map(([k])=>k),[sum])
   const loadSum=()=>rpc('summary').then(setSum).catch(e=>onError?.(e.message))
