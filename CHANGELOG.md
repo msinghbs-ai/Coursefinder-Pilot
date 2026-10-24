@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.267 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.340** (R3: hourly health delta; Platform Admin 24 Oct 09:55).
+  - Migration `20261024005000_cf247_r3_health_hourly.sql`: `pipeline.health_snapshots`; `security.health_hourly_v1()` at :11 (job `health-hourly`) writes headline, fields_delta per country, lane_wait, ledger, idle, bound_empty, negative_movers and budget_burn from the 15-minute stats, the R1 ledger, the queue-wait function and the watchdog state; `security.health_latest_v1()` for the report; settings `health.*` (7) and `retention.health_snapshots_days`; `ledger_retention_v1` replaced (md5-checked) to keep health rows too; `stats.countries` setting (NZ, AU, CA) replaces the country list carried in the `stats-15m` job command. Test s94. SOPs 1.81.
+
 ## 0.1.266 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.339** (R1: empty-tick backoff cap, per-mode ledger, why-idle line, apply-time identity check; Platform Admin 24 Oct 09:55).
