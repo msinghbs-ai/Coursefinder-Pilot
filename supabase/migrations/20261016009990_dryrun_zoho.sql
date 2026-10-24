@@ -90,8 +90,10 @@ select pg_temp.edit_n('security.coverage_admission_apply_v1(integer,text,text[])
 
 -- 3 fully complete = every readable attribute admitted -----------------------------------------------------------------------------------
 select pg_temp.edit_n('security.course_completeness_build_v1()', '3de764fe1f20c99a96e3f867dd176dbd', array[
-  array[$o$select course_id, max(provider_id::text)::uuid, max(tier), count(*), count(*) filter (where state='admitted'),$o$,
-        $n$select course_id, max(provider_id::text)::uuid, max(tier), count(*) filter (where state<>'no_reader') /* 24 Oct 2026: attributes the platform can read; fully complete = all of them admitted */, count(*) filter (where state='admitted'),$n$]], array[1]);
+  array[$o$  select course_id, max(provider_id::text)::uuid, max(tier), count(*),
+         count(*) filter (where state='admitted'),$o$,
+        $n$  select course_id, max(provider_id::text)::uuid, max(tier), count(*) filter (where state<>'no_reader') /* 24 Oct 2026: attributes the platform can read; fully complete = all of them admitted */,
+         count(*) filter (where state='admitted'),$n$]], array[1]);
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('table', 'pipeline.ui_error_log', 'Layer 2', 'errors the admin app showed, by reference', 'active', '{}', '20261024006000'),
