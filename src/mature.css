@@ -597,3 +597,4 @@ header.cf-layer-header[data-layer-header] button{background:var(--cf-white);colo
 
 /* v2.15.331 Task manager pulse: an info notice when the runner is alive (red only when it is late) */
 .m-alert.tm-pulse-ok{border-color:color-mix(in srgb,var(--cf-info) 28%,transparent);background:var(--cf-info-soft);color:var(--cf-info-ink)}
+.tm-blocked{display:flex;align-items:center;gap:4px;margin-top:4px;padding:3px 6px;border-radius:var(--cf-radius-md);background:var(--cf-amber-50);color:var(--cf-amber-800);font-size:var(--cf-fs-sm)}

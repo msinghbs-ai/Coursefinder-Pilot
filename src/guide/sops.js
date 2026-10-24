@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.341'
+export const SOP_REVIEWED_FOR = '2.15.342'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -184,7 +184,8 @@ export const SOPS = [
       { version: '1.79', date: '24 Oct 2026', release: '2.15.338', change: 'Zero-yield pages: an hourly job measures bound pages whose stored copy gave the readers nothing, flags providers above the rate, and (when Reset: automatic is on) resets pages verified wrong so the AI page match finds the right page with the wrong one excluded (Settings › Pipeline settings › Zero-yield pages).' },
       { version: '1.80', date: '24 Oct 2026', release: '2.15.339', change: 'R1: an idle lane paused by the idle guard is tried again within Idle lane: tried again within (Settings › Pipeline settings › Waste rules) and the moment work waits for it; every worker call is written to the per-mode ledger; the Work queues screen says why each queue is idle; a fee from a page whose proof the country refuses is quarantined at the write.' },
       { version: '1.81', date: '24 Oct 2026', release: '2.15.340', change: 'Health hourly: at :11 the platform writes the hour\'s health rows (pages read and values admitted against the headline target, field changes per country, queue wait per lane, worker calls, idle lanes with why, bound-but-empty pages, negative movers, budget burn); the hourly report reads them; the 15-minute stats cover the countries in Settings › Pipeline settings › Health report.' },
-      { version: '1.82', date: '24 Oct 2026', release: '2.15.341', change: 'Errors show as one plain line with a short reference; the Platform Admin looks the reference up in the app error log. A newer release while a window is open brings a reload notice. Coverage › Fully complete counts readable attributes.' }],
+      { version: '1.82', date: '24 Oct 2026', release: '2.15.341', change: 'Errors show as one plain line with a short reference; the Platform Admin looks the reference up in the app error log. A newer release while a window is open brings a reload notice. Coverage › Fully complete counts readable attributes.' },
+      { version: '1.83', date: '24 Oct 2026', release: '2.15.342', change: 'Task manager: a running task shows last forwarded, next attempt and, when stalled, what holds it. Find course pages by a person runs at a university whose automatic search stopped. Layer 4: Enter another address on a held fee binds the page and reads it again.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -317,7 +318,8 @@ export const SOPS = [
       { version: '1.79', date: '24 Oct 2026', release: '2.15.338', change: 'Zero-yield pages: an hourly job measures bound pages whose stored copy gave the readers nothing, flags providers above the rate, and (when Reset: automatic is on) resets pages verified wrong so the AI page match finds the right page with the wrong one excluded (Settings › Pipeline settings › Zero-yield pages).' },
       { version: '1.80', date: '24 Oct 2026', release: '2.15.339', change: 'R1: an idle lane paused by the idle guard is tried again within Idle lane: tried again within (Settings › Pipeline settings › Waste rules) and the moment work waits for it; every worker call is written to the per-mode ledger; the Work queues screen says why each queue is idle; a fee from a page whose proof the country refuses is quarantined at the write.' },
       { version: '1.81', date: '24 Oct 2026', release: '2.15.340', change: 'Health hourly: at :11 the platform writes the hour\'s health rows (pages read and values admitted against the headline target, field changes per country, queue wait per lane, worker calls, idle lanes with why, bound-but-empty pages, negative movers, budget burn); the hourly report reads them; the 15-minute stats cover the countries in Settings › Pipeline settings › Health report.' },
-      { version: '1.82', date: '24 Oct 2026', release: '2.15.341', change: 'Errors show as one plain line with a short reference; the Platform Admin looks the reference up in the app error log. A newer release while a window is open brings a reload notice. Coverage › Fully complete counts readable attributes.' }],
+      { version: '1.82', date: '24 Oct 2026', release: '2.15.341', change: 'Errors show as one plain line with a short reference; the Platform Admin looks the reference up in the app error log. A newer release while a window is open brings a reload notice. Coverage › Fully complete counts readable attributes.' },
+      { version: '1.83', date: '24 Oct 2026', release: '2.15.342', change: 'Task manager: a running task shows last forwarded, next attempt and, when stalled, what holds it. Find course pages by a person runs at a university whose automatic search stopped. Layer 4: Enter another address on a held fee binds the page and reads it again.' }],
   },
 ]
 
