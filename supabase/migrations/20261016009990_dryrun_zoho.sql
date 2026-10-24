@@ -252,7 +252,7 @@ begin
   begin perform public.admin_layer4_inbox('decide', jsonb_build_object('kind','course_link','ref',v_item,'choice','use','reason','dry run test'));
   exception when others then r := r || jsonb_build_object('use_msg', sqlerrm); end;
   v := public.admin_layer4_inbox('decide', jsonb_build_object('kind','course_link','ref',v_item,'choice','enter','reason','dry run test','value','https://www.aut.ac.nz/courses/postgraduate-certificate-in-science'));
-  r := r || jsonb_build_object('enter', v,
+  r := r || jsonb_build_object('enter_ok', v->'result'->'ok',
     'item', (select status from pipeline.layer4_review_items where id = v_item),
     'page', (select jsonb_build_object('url', url, 'basis', basis, 'status', status, 'next_read_at_le_now', next_read_at <= now()) from pipeline.coverage_course_pages where course_id = v_course),
     'link', (select jsonb_agg(url) from catalogue.course_links where course_id = v_course and link_type = 'official_course' and status = 'active'),
