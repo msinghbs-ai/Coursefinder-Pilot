@@ -279,7 +279,8 @@ on conflict (kind, name) do nothing;
 --
 -- Count guards: the hotfix must be live; the rows to re-open must be no more than 1,549 at no more than these 24 universities (fewer is
 -- fine: some may have been searched since, e.g. by the Otago E2E task); a university that already has a waiting or running Find course
--- pages task is skipped and counted. Nova Institute of Technology is unpublished: its task starts and shows "Blocked: unpublished".
+-- pages task is skipped and counted. An unpublished or archived university is skipped and named (a task cannot start there): on 24 Oct
+-- that is Nova Institute of Technology (16 rows), so 1,533 rows at 23 universities are re-opened.
 
 do $p$
 declare
@@ -291,7 +292,7 @@ declare
     '9e46baf2-694b-4d79-889e-b956d144c930','131ef262-b6e4-40a3-b8bf-7e4d6098eba8','8e1adb6c-e069-43db-9584-bd054255e702','d3f9ed02-2cca-4370-8070-7e52f381d1ba',
     '72a15f12-f3ee-40d7-8edf-af648ee10e14','ef420a23-6e62-47d3-9ab0-fdc35ebe97a0','dce6f5a7-c912-4a07-b9c6-7cf230a0e13b','47c734fe-9c1d-403f-b7cc-c4c77ad742fd',
     'a886a995-0315-4c92-9a74-697a2d0e014f','719403bc-6957-4d21-af69-2b3b102df578','cffa9cab-0a3b-458b-8383-483ce622c9c3','fac03540-a412-4c76-a5ab-cd338d7760db']::uuid[];
-  v_rows int; v_provs int; r record; v jsonb; v_started int := 0; v_courses int := 0; v_skipped int := 0; v_failed text := '';
+  v_rows int; v_provs int; r record; v jsonb; v_started int := 0; v_courses int := 0; v_skipped int := 0; v_hidden text := ''; v_failed text := '';
 begin
   if to_regprocedure('security.link_search_person_task_v1(uuid,uuid)') is null
      or coalesce((select (value #>> '{}')::numeric from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'search.person_task_bypass'), 0) < 1 then
@@ -311,6 +312,9 @@ begin
             where s.state = 'queued' and s.requested_at is not null and s.provider_id = any (v_list)
               and s.provider_id in (select x.provider_id from security.fc_search_stopped_v1() x)
             group by s.provider_id loop
+    if exists (select 1 from security.provider_hidden_v1 h where h.provider_id = r.provider_id) then
+      v_hidden := v_hidden || (select coalesce(p.display_name, p.canonical_name) from catalogue.providers p where p.id = r.provider_id) || ' (' || cardinality(r.ids) || '); '; continue;
+    end if;
     if exists (select 1 from pipeline.admin_jobs j where j.kind = 'course_page_find' and j.state in ('queued', 'running') and j.args->>'provider_id' = r.provider_id::text) then
       v_skipped := v_skipped + 1; continue;
     end if;
@@ -323,9 +327,7 @@ begin
     end;
   end loop;
   if v_failed <> '' then raise exception 'not applied (rolled back): %', v_failed; end if;
-  raise notice 'Re-opened: % task(s), % course(s) (guard: % rows at % universities); % skipped (task already waiting or running)', v_started, v_courses, v_rows, v_provs, v_skipped;
+  raise exception 'DRYRUN OK Re-opened: % task(s), % course(s) (guard: % rows at % universities); % skipped (task already waiting or running); not started, unpublished: %', v_started, v_courses, v_rows, v_provs, v_skipped, coalesce(nullif(v_hidden, ''), 'none') || ' | picked now ' || jsonb_array_length(public.svc_course_link_search_next(200)) || ', tasks ' || (select count(*) from pipeline.admin_jobs where reason like '%Hotfix D-stopped%');
 end $p$;
 
 -- Check afterwards (expect the tasks running, rows moving from queued to sent within a few minutes):
-do $t$ begin raise exception 'DRYRUN OK %', (select jsonb_build_object('tasks', count(*), 'courses', sum(jsonb_array_length(args->'course_ids')), 'states', jsonb_agg(distinct state)) from pipeline.admin_jobs where kind='course_page_find' and reason like '%Hotfix D-stopped%')
-  || jsonb_build_object('picked', jsonb_array_length(public.svc_course_link_search_next(200))); end $t$;
