@@ -175,13 +175,23 @@ select pg_temp.edit_n('security.provider_task_fire_v1(text)', 'a972d06b948cf0db6
   end if;$n$]],
   array[1]);
 
+-- D-target_only (Platform Admin 24 Oct 2026 13:55): a task at a university the target-only rule holds is refused at start, the gate
+-- named at once; no task passes target-only (its release is R2's audit decision, not this hotfix). The check is the picker's own.
 select pg_temp.edit_n('security.provider_task_prepare_v1(text,jsonb)', '77d029207a8737f9e17adcc6670f1c6a', array[
+  array[$o$      raise exception 'no website is recorded for this provider yet, so there is nowhere to search; use Fill in from website first';
+    end if;$o$,
+        $n$      raise exception 'no website is recorded for this provider yet, so there is nowhere to search; use Fill in from website first';
+    end if;
+    if coalesce((security.firecrawl_setting('target_only') #>> '{}')::boolean, true)
+       and not exists (select 1 from pipeline.firecrawl_target_cache tc where tc.provider_id = v_pid and tc.included) then
+      raise exception 'Not started: this university is not a search target, and course page search is for target universities only (Toolsets & limits › targets).';
+    end if;$n$],
   array[$o$    get diagnostics v_n = row_count;
     return jsonb_build_object('provider_id', v_pid, 'course_ids', to_jsonb(v_ids), 'queued', v_n,$o$,
         $n$    get diagnostics v_n = row_count;
     perform security.provider_task_fire_v1('link_search');  -- hotfix D2: forwarded on accept, not at the next minute
     return jsonb_build_object('provider_id', v_pid, 'course_ids', to_jsonb(v_ids), 'queued', v_n,$n$]],
-  array[1]);
+  array[1, 1]);
 
 -- 5 the watcher names the gate when it closes a stalled find task; the Task manager reads every task's status --------------------------------
 select pg_temp.edit_n('security.admin_job_watch_v1(uuid)', '58a4ec23ee992b70a4cd8dd312cec2ef', array[
@@ -258,6 +268,9 @@ do $t$ declare r jsonb := '{}'; v jsonb; e text; v_job uuid := 'e43e47de-3f9e-40
 begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
+  begin perform public.admin_jobs('start', jsonb_build_object('kind', 'course_page_find', 'args', jsonb_build_object('provider_id', '01193db7-cc68-4d1e-9374-f6a72948ea6e'), 'reason', 'dry run: target-only'));
+        r := r || jsonb_build_object('non_target', 'STARTED (wrong)');
+  exception when others then r := r || jsonb_build_object('non_target', sqlerrm); end;
   -- accept: a person starts Find course pages for Otago (as the Platform Admin did at 12:38)
   v := public.admin_jobs('start', jsonb_build_object('kind', 'course_page_find', 'args', jsonb_build_object('provider_id', v_otago), 'reason', 'dry run: hotfix D2'));
   v_job := (v->>'id')::uuid;
@@ -290,4 +303,4 @@ begin
   -- taxonomy
   perform security.gap_causes_snapshot_v1();
   r := r || jsonb_build_object('gap_stopped', (select jsonb_build_object('n', sum(courses), 'auto', bool_or(automatic), 'action', min(action)) from pipeline.gap_cause_snapshots where at = date_trunc('hour', now()) and cause = 'no page: web search stopped for this university'));
-  raise exception 'DRYRUN OK %', r - 'gap_stopped' - 'block_bypass_off' - 'status_after' - 'offsite_msg' - 'page' - 'link' - 'locks' - 'use_msg' - 'http_msg' - 'item' - 'decision' - 'enter_ok' - 'status_on'; end $t$;
+  raise exception 'DRYRUN OK %', r - 'fired_on_accept' - 'jobs_read_has_status' - 'lane_wakes' - 'gap_stopped' - 'block_bypass_off' - 'status_after' - 'offsite_msg' - 'page' - 'link' - 'locks' - 'use_msg' - 'http_msg' - 'item' - 'decision' - 'enter_ok' - 'status_on'; end $t$;
