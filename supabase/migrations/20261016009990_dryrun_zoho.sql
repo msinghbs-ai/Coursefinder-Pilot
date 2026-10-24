@@ -234,6 +234,7 @@ do $t$ declare r jsonb := '{}'; v jsonb; e text; v_job uuid := 'e43e47de-3f9e-40
 begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
+  update pipeline.admin_jobs set state = 'running', finished_at = null, cursor = jsonb_build_object('last_done', 0, 'last_change_at', now() - interval '10 minutes') where id = v_job;  -- the task as it stood at 13:20
   -- D3 status before the fix runs: stall cause with the bypass off, then on
   update pipeline.platform_toolset_settings set value = '0'::jsonb where toolset_key = 'pipeline' and key = 'search.person_task_bypass';
   r := r || jsonb_build_object('block_bypass_off', security.link_search_block_v1(v_otago, array(select x::uuid from pipeline.admin_jobs j, jsonb_array_elements_text(j.args->'course_ids') x where j.id = v_job)));
