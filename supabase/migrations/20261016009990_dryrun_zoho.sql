@@ -57,20 +57,6 @@ select pg_temp.edit_n('security.link_search_block_v1(uuid,uuid[])', '8b891f73662
   end if;$n$]],
   array[1]);
 
-do $t$ declare v jsonb; c uuid; p uuid; r jsonb := '{}';
-begin
-  v := public.svc_course_link_search_next(50);
-  r := r || jsonb_build_object('picked_at_cap', jsonb_array_length(v), 'block_daily', (select security.link_search_block_v1(s.provider_id, null)->>'code' from pipeline.course_link_search s join pipeline.firecrawl_target_cache tc on tc.provider_id=s.provider_id and tc.included where s.state='queued' and not security.fc_search_stopped_for_v1(s.provider_id) limit 1));
-  update pipeline.platform_toolset_settings set value = '2000'::jsonb where toolset_key='pipeline' and key='search.daily_picked_cap';
-  -- one queued course gets six rejected pages
-  select s.course_id, s.provider_id into c, p from pipeline.course_link_search s join pipeline.firecrawl_target_cache tc on tc.provider_id=s.provider_id and tc.included
-   where s.state='queued' and s.requested_at is not null and not security.fc_search_stopped_for_v1(s.provider_id) order by s.requested_at limit 1;
-  insert into pipeline.page_rejections(course_id, url, provider_id, source, reason, rejected_at) select c, 'https://example.invalid/'||g, p, 'dry run', 'dry run', now() from generate_series(1,6) g;
-  v := public.svc_course_link_search_next(200);
-  r := r || jsonb_build_object('picked_after_raise', jsonb_array_length(v), 'stopped_course_picked', exists (select 1 from jsonb_array_elements(v) x where x->>'course_id' = c::text));
-  raise notice 'R %', r;
-  perform set_config('dry.r', r::text, true);
-end $t$;
 -- PASTE FILE — CF-247 target route, TRANCHE 1 (Platform Admin decision D1, 24 Oct 2026 19:23: staged (c)-then-(b))
 -- Record: docs/platform/nz-enrichment-brief/2026-10-24-target-only-audit.md (thread, section 3). FOR REVIEW BEFORE APPLYING.
 -- Applied by: the Platform Admin, Supabase SQL editor, project fxcwkweaxjtknorudmwp — AFTER R2 is live (the guard below checks).
@@ -150,5 +136,18 @@ begin
   raise notice 'Tranche 1: % override rows added; firecrawl-targets includes them within a minute', v_ins;
 end $p$;
 
-do $t$ begin perform security.firecrawl_targets_refresh_v1();
-  raise exception 'DRYRUN OK % | tranche included % of %', current_setting('dry.r'), (select count(*) filter (where tc.included) from pipeline.firecrawl_target_cache tc join pipeline.firecrawl_targets t using (provider_id) where t.reason like 'Tranche 1%'), (select count(*) from pipeline.firecrawl_targets t where t.reason like 'Tranche 1%'); end $t$;
+do $t$ declare v jsonb; c uuid; p uuid; r jsonb := '{}'; tp uuid[] := array(select provider_id from pipeline.firecrawl_targets where reason like 'Tranche 1%');
+begin
+  perform security.firecrawl_targets_refresh_v1();
+  r := r || jsonb_build_object('tranche_included', (select count(*) from pipeline.firecrawl_target_cache where included and provider_id = any(tp)));
+  v := public.svc_course_link_search_next(50);
+  r := r || jsonb_build_object('picked_at_cap', jsonb_array_length(v), 'block', security.link_search_block_v1(tp[1], null)->>'code');
+  update pipeline.platform_toolset_settings set value = '2000'::jsonb where toolset_key='pipeline' and key='search.daily_picked_cap';
+  select s.course_id, s.provider_id into c, p from pipeline.course_link_search s where s.state='queued' and s.provider_id = any(tp) order by s.requested_at limit 1;
+  insert into pipeline.page_rejections(course_id, url, provider_id, source, reason, rejected_at) select c, 'https://example.invalid/'||g, p, 'dry run', 'dry run', now() from generate_series(1,6) g;
+  v := public.svc_course_link_search_next(200);
+  r := r || jsonb_build_object('picked_after_raise', jsonb_array_length(v), 'tranche_picked', (select count(*) from jsonb_array_elements(v) x where (x->>'provider_id')::uuid = any(tp)),
+     'stopped_course_picked', exists (select 1 from jsonb_array_elements(v) x where x->>'course_id' = c::text),
+     'tai_poutini_picked', (select count(*) from jsonb_array_elements(v) x where x->>'provider_id' = (select id::text from catalogue.providers where stable_key='provider:nzqa:6024')));
+  raise exception 'DRYRUN OK %', r;
+end $t$;
