@@ -6,8 +6,9 @@
 import React,{useEffect,useState}from'react'
 import{Check,Link2,Search,Trophy,X}from'lucide-react'
 import{api}from'./lib/supabase'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const SYSTEM_LABEL={qs_wur:'QS World University Rankings',the_wur:'Times Higher Education'}
 
 export function RankingLinkPicker({row,onLinked,onClose}){

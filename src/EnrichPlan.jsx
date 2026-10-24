@@ -12,8 +12,9 @@ import Card from'./Card'
 import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import{hrefFor}from'./nav-map.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_enrich_plan',{p_action:action,p_args:args||{}});if(error)throw error;return data}
 const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 const GROUP={course_search:'Finding course pages',reads:'Reading pages',central:'Central pages',scholarships:'Scholarships',other:'Other'}

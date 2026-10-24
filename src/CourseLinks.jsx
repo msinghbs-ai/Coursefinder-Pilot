@@ -10,8 +10,9 @@ import React,{useEffect,useState}from'react'
 import{Check,ExternalLink,Link2,Lock,Pencil,Plus,Trash2,Unlock,Users,X}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export const CURRENCY_BY_COUNTRY={AU:'AUD',NZ:'NZD',CA:'CAD',GB:'GBP',US:'USD',IE:'EUR'}
 const YES_NO=[['true','Yes'],['false','No'],['','Not known']]
 const yn=v=>v===true?'Yes':v===false?'No':'Not known'

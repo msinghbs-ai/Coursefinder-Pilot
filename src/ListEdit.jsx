@@ -10,8 +10,9 @@ import{Check,Lock}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Loading}from'./ui-kit'
 import{fmtMoney}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const UNITS=['weeks','months','years']
 // v2.15.130: tuition, intakes and English in the list (migration 20261001140000_cf247_list_edit_course_facts).
 const BASIS=[['annual','per year'],['per_semester','per semester'],['per_trimester','per trimester'],['total_indicative','whole course']]

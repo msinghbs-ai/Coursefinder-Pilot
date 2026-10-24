@@ -18,6 +18,7 @@ import{supabase}from'./lib/supabase'
 import JobButton from'./JobButton'
 import{fmtDate,fmtMoney,fmtShare}from'./lib/format'
 import{Button,Empty,Loading,Pager,fmtDateTime,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
 export const ADAPTER={admitting:['Admitting','success'],testing:['Testing','warning'],off:['Switched off','neutral']}
 export const FIELD={intakes:'Intakes',english:'English',fee:'Fees',delivery:'Delivery',exit_awards:'Exit awards',host_pages:'Host pages'}
@@ -29,7 +30,7 @@ const POLICY={approved:['Approved','success'],proposed:['Waiting for approval','
 // Where a held value came from
 export const SOURCE={adapter:['Course page (adapter)','success'],central:['Central rule','info'],reader:['Course page (general reader)','neutral'],hand:['Entered by hand','violet'],other:['Other source','neutral'],missing:['Missing','danger'],catalogue:['Registered campus','info']}
 const SHOW=[['all','All courses'],['missing','Something missing'],['excluded','Excluded'],['adapter','Read by the adapter'],['central','From a central rule']]
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 // How a course's whole-course fee was worked out, and why a course was left out of the range
 const HOW={current_total:['Whole-course fee on the course page','success'],current_annual_x_years:['Annual fee x years','info'],register_total:['CRICOS registered total','neutral']}
 const LEFT_OUT={no_course_length:'No course length',other_currency:'Other currency (not converted)',under_one_year:'Under one year',below_floor:'Below the floor'}

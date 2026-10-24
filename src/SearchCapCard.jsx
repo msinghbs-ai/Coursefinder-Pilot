@@ -9,8 +9,9 @@ import{Search,Save}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,SectionTitle}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export default function SearchCapCard(){
   const[s,setS]=useState(null),[cap,setCap]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[saved,setSaved]=useState('')
   const load=async(arg=null)=>{setErr('');const{data,error}=await supabase.rpc('admin_course_link_search_settings',arg==null?{}:{p_monthly_credit_cap:arg});if(error)throw error;setS(data);setCap(String(data?.monthly_credit_cap??''));return data}

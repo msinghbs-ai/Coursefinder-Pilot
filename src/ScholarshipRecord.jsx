@@ -15,6 +15,7 @@ import{supabase}from'./lib/supabase'
 import{Button,EmptyInline,Loading,fmtDate,fmtDateTime,fmtNumber}from'./ui-kit'
 import{criterionLabel}from'./ScholarshipEligibility'
 import{ScholarshipReadAction}from'./ScholarshipActions'
+import{plainError}from'./lib/errors'
 
 const AUD={international:'International students',domestic:'Domestic students only',international_and_domestic:'International and domestic students',not_stated:'Not stated on the page'}
 const DURATION={one_off:'One-off payment',first_year:'First year only',annual:'Paid each year',annual_program_duration:'Each year, for the length of the course',program_duration:'For the length of the course',per_semester:'Paid each semester'}
@@ -24,7 +25,7 @@ const MONTHS=['January','February','March','April','May','June','July','August',
 const dateText=(v,prec)=>{if(!v)return '';if(prec==='month'){const[y,m]=String(v).split('-');return `${MONTHS[Number(m)-1]||''} ${y}`.trim()}return fmtDate(v)}
 const hitText=h=>h?(h.date?fmtDate(h.date):dateText(`${h.month}-01`,'month')):''
 const LINK_KIND={course_code:'Course code named on the page',course_title:'Course named on the page',levels_fields:'Study level or field stated on the page',english_course:'English language course scholarship'}
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const quote=t=>t?`Page: “${String(t).trim()}”`:''
 
 export default function ScholarshipRecord({id,onError,onChanged}){

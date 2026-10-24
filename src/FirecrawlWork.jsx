@@ -9,8 +9,9 @@ import{supabase}from'./lib/supabase'
 import JobButton from'./JobButton'
 import Card from'./Card'
 import{Button,Empty,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 export const USE_CASE={read_page:'Read pages',find_page:'Find pages'}
 const USE_HELP={read_page:'Course-like pages of target universities that need a browser or refused a plain read. Firecrawl reads them (proxy, wait and location from the settings). Each page then goes through the identity check.',

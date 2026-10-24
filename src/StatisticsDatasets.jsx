@@ -7,9 +7,10 @@ import React,{useEffect,useState}from'react'
 import{BarChart3,Plus,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,StatusChip}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
 const TYPE={statistics:'Statistics',ranking:'Ranking',index:'Index'}
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 
 export default function StatisticsDatasets({rank=0}){
   const[rows,setRows]=useState(null),[err,setErr]=useState(''),[busy,setBusy]=useState(''),[adding,setAdding]=useState(false)

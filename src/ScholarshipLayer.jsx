@@ -12,6 +12,7 @@ import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
 import{utcClockToMelbourne}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
 const REFUSAL={international_not_stated:'Page does not say international students can apply',no_named_title:'No scholarship name on the page',past_year_only:'Only past years mentioned',
   'not an Australian university provider':'Not a university','not a university provider in a scholarship country':'Not a university',not_a_scholarship:'Not a scholarship',domestic_only:'Domestic students only',
@@ -20,7 +21,7 @@ const READ={read:'Read',waiting:'Waiting',blocked:'Blocked by the site',too_thin
 const OUTCOME={admitted:'Added as a scholarship',rejected:'Refused',waiting:'Not read yet',not_decided:'Read, not decided',duplicate:'Already held',matched_existing:'Matched a scholarship we hold',matched_held:'Matched a held scholarship',withdrawn:'Withdrawn'}
 const DISC={mapped:'Searched — pages found',empty:'Searched — none found',failed:'Search failed',pending:'Waiting'}
 const MODE={scholarship_discover:'Find pages',scholarship_read:'Re-read pages',scholarship_inspect:'Inspect a page',scholarship_reextract:'Read again'}
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const human=v=>String(v??'').replace(/_/g,' ')
 
 // cron schedules are in UTC; shown in Melbourne clock time with daylight saving (shared helper in lib/format.js)

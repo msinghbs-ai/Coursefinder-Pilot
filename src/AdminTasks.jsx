@@ -19,8 +19,9 @@ import{fmtTime}from'./lib/format'
 import{ScholarshipJourney}from'./ScholarshipJourney'
 import{Button,Badge,Loading,SectionTitle,EmptyRow,fmtDateTime,fmtNumber}from'./ui-kit'
 import{Running as BackgroundJobs}from'./Progress'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const FIELDS=['intakes','fee','english','delivery']
 const FIELD_LABEL={intakes:'Intakes',fee:'Fee',english:'English',delivery:'Delivery'}

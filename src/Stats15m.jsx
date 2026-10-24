@@ -5,11 +5,12 @@ import React,{useEffect,useState}from'react'
 import{AlertTriangle,Gauge,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,fmtDateTime,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
 export const STAT_FIELDS=[['official_page','Official page'],['fee','Fee'],['english','English'],['intakes','Intakes'],['campus','Campus'],['delivery','Delivery'],['duration','Duration'],['level','Level'],['field_of_study','Field of study']]
 const pct=(n,d)=>d?`${Math.round(n*1000/d)/10}%`:'—'
 const signed=v=>v>0?`+${fmtNumber(v)}`:v<0?`−${fmtNumber(-v)}`:'0'
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 
 export default function Stats15m({onError}){
   const[d,setD]=useState(null)

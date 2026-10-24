@@ -25,6 +25,7 @@ import{STEP,STOP,Journey,ReasonAction,IN_PROGRESS}from'./ProviderOnboarding'
 import{StatusChip}from'./ui-kit'
 import{hrefFor}from'./nav-map'
 import'./layer23.css'
+import{plainError}from'./lib/errors'
 // v2.15.300 (Platform Admin, 20 Oct 2026, Layer 2/3 "Operations first"): with merged, this is Layer 2/3 › Universities: the Adapters rows plus
 // every university in onboarding (public.admin_layer23('universities')), each with its journey stage, why it stopped, its Inbox items and
 // Retry or Stop; the old Onboarding tab's list. Read-only explanations (how an adapter goes live, what each university needs next, the
@@ -36,7 +37,7 @@ function StageCell({row}){const o=row.onboarding,st=stepOf(o)
     {o?.status==='stopped'&&STOP[o.stop_reason]&&!needsPerson(o)&&<small className="l23-stop">{STOP[o.stop_reason][0]}</small>}
     {Number(row.inbox)>0&&<a className="cf-link l23-inbox-link" href={hrefFor('layer4','inbox',{provider:row.provider_id})} data-uni-inbox={row.inbox}>{fmtNumber(row.inbox)} in Inbox →</a>}</span>}
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const QFIELDS=['intakes','english','fee','delivery']
 const PAGE=50

@@ -1,18 +1,23 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.340'
-export const PACKAGE_VERSION='0.1.267'
+export const UI_VERSION='2.15.341'
+export const PACKAGE_VERSION='0.1.268'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Oct 2026',
-  title:'Zero-yield course pages: detect, verify, reset and re-acquire',
+  title:'Plain error messages, a steady version, honest completeness',
   changes:[
-    'A bound course page whose stored copy gave every reader nothing is zero-yield. An hourly job measures it per provider and flags a provider above the rate as systematic. A page is reset only when verified wrong (a listing or not-found page, a title that does not match the course, or a page off the provider\'s course-page pattern while a matching on-pattern page is known); the course then unbinds, its official link is taken back, the wrong page goes on the rejection list, and the AI page match finds the right page from the provider\'s known pages with rejected pages excluded. The readers fill the course from the new page. Settings › Pipeline settings › Zero-yield pages; automatic resets are off until switched on.',
+    'An error now shows as one plain line with a short reference (for example "The database took too long to answer… (ref AB3K7Q)"); the full detail is kept for the Platform Admin. A message belongs to the screen that raised it and no longer follows you to the next screen.',
+    'When a newer version has been released while this window was open, a notice offers a reload, so the top bar and the screens never disagree about the version.',
+    'Coverage › "Fully complete courses" counts the attributes the platform can read; the 20–24 Oct rows explain why they read 0.',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'The official-page admission job had failed on every run since 23 Oct because a rule tried to apply a plain http:// course address; such an address now waits for a person and the job runs again.',
+    'Raw database wording (function names, CONTEXT lines, vendor and job names) no longer appears in Platform health, Layer 2/3 or Scheduled jobs.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

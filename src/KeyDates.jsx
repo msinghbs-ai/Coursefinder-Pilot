@@ -8,8 +8,9 @@ import React,{useEffect,useRef,useState}from'react'
 import{CalendarClock,ExternalLink,History,Plus}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,StatusChip,fmtDateTime}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export const KINDS={course_application_deadline:'Course application deadline',provider_application_window:'University application window',intake_date:'Intake date',scholarship_window:'Scholarship window',regulatory_dataset_release:'Government data release',national_education_event:'National education event'}
 export const PRECISION={exact:'Exact date',date_range:'Date range',month:'Month only',term:'Term only',year:'Year only',source_vague:'Vague (keep the wording)'}
 const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}

@@ -7,8 +7,9 @@ import React,{useEffect,useState}from'react'
 import{Bot,ChevronDown,ChevronRight,History}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtMoney,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const READ={read:['Read','success'],identity_mismatch:['Wrong page (refused)','danger'],blocked:['Blocked by the site','warning'],needs_render:['Needs a browser','warning'],fetch_failed:['Could not be read','warning'],robots_disallowed:['Site does not allow reading','warning'],refused_host:['Not the university’s site','danger']}
 const FOUND={cricos_search:'CRICOS code search',cricos_code:'CRICOS code',title_search:'Web search by title',firecrawl_search:'Firecrawl search',serper_search:'Web search',ai_match:'AI page match',title_match:'University course list',cms_path_public:'University course list',manual:'Entered by a person',programme_list:'University programme list',firecrawl_upgrade:'Firecrawl'}
 const FILL={filled:['Filled','success'],skipped:['Skipped','neutral'],failed:['Failed','danger'],queued:['Waiting','info'],leased:['Running','info'],waiting:['Waiting','info']}

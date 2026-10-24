@@ -10,8 +10,9 @@ import{supabase}from'./lib/supabase'
 import'./settings.css'
 import{Metric,StatusChip,EmptyInline,fmtDateTime}from'./ui-kit'
 import{fmtNumber,fmtBytes,fmtPercent,fmtRelative}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const PLATFORMS=[{key:'zoho',label:'Zoho API v2',url:'zoho-api-v2'},{key:'website',label:'Website API v2',url:'website-api-v2'}]
 const PERIODS=[{key:'24h',label:'24 hours'},{key:'7d',label:'7 days'},{key:'30d',label:'30 days'}]
 const ms=v=>v==null?'—':`${fmtNumber(v)} ms`

@@ -6,8 +6,9 @@ import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,Metric,fmtNumber}from'./ui-kit'
 import{fmtBytes,fmtDateTime}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const change=(now,before)=>{if(before==null||now==null)return'—';const d=now-before;return d===0?'no change':`${d>0?'+':'−'}${fmtBytes(Math.abs(d))}`}
 
 export default function StorageSizes({onError}){

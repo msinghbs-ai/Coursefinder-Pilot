@@ -15,8 +15,9 @@ import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{Switch}from'./ModelsServices'
 import{ExpandList,Pill,XlField,XlToolbar}from'./ExpandList'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const HEALTH={healthy:'success',degraded:'warning',blocked:'danger',unverified:'neutral',retired:'neutral'}
 const COUNTRY={ALL:'All countries',AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 

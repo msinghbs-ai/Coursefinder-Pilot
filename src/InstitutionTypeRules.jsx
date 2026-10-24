@@ -8,8 +8,9 @@ import{Play,Tags}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,SectionTitle}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const PROFILE={vet:'offers VET courses',school_no_vet:'school courses only (no VET)',non_aqf_only:'English or foundation courses only'}
 const strip=p=>String(p||'').replace(/^\^\(?|\)?\$$/g,'').replace(/\|/g,' or ')
 export function ruleMatch(r){

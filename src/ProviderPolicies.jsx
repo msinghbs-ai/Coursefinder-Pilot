@@ -15,8 +15,9 @@ import{supabase}from'./lib/supabase'
 import{Button,Loading,SectionTitle,StatusChip}from'./ui-kit'
 import{fmtDateTime,fmtNumber}from'./lib/format.js'
 import{MONTHS}from'./RecordEditor'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export const POLICY_OUTCOME={write:'Will be added',agrees:'Already the same',differs:'Different score on record (not changed)',other_value:'Other tests on record (not changed)',
   set_by_hand:'Set by hand (not changed)',in_review:'English review open (not changed)',waiting:'Waiting for the course page or the AI check',held:'Held back'}
 export const POLICY_CAVEAT={level_not_stated:'The policy does not say which study levels this applies to',higher_unlisted:'Some courses need higher scores that the policy does not list',

@@ -10,14 +10,13 @@ import{AlarmClock,Pause,Play,RefreshCw,Save,Zap}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Badge,Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{EVERY,describeSchedule}from'./automation-schedule'
+import{plainError}from'./lib/errors'
 
 
 const STATUS={succeeded:['success','Succeeded'],failed:['danger','Failed'],running:['info','Running'],starting:['info','Starting']}
 const ACTION_LABEL={pause:'Paused',resume:'Resumed',pause_area:'Area paused',resume_area:'Area resumed',run_now:'Run now',set_every:'Frequency changed',set_batch:'Batch size changed'}
 
 // v2.15.131 (au-error-text): known database errors in plain words; the original text stays in the tooltip.
-const ERRORS=[[/statement timeout/i,'Took too long and was stopped by the database time limit'],[/deadlock/i,'Clashed with another job and was stopped; it will run again'],[/could not obtain lock|lock timeout/i,'Another job was using the same data; it will run again'],[/permission denied/i,'Not allowed to run: a permission is missing'],[/connection|network|fetch failed/i,'Could not connect; it will run again']]
-const plainError=m=>{const hit=ERRORS.find(([r])=>r.test(String(m||'')));return hit?hit[1]:String(m||'').replace(/^ERROR:\s*/i,'').slice(0,160)}
 export default function Automations({onError}){
   const[data,setData]=useState(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(''),[area,setArea]=useState('all'),[show,setShow]=useState('all'),[q,setQ]=useState('')
   const load=async()=>{setBusy(true);setFailed('');try{const{data:d,error}=await supabase.rpc('admin_automations_read');if(error)throw error;setData(d||{})}catch(e){setFailed(e.message||String(e))}finally{setBusy(false)}}
@@ -70,7 +69,7 @@ function JobRow({j,rank,busy,act}){
   return <tr className={j.active?'':'l3c-off'} data-job={j.job}>
     <td><strong>{j.label}</strong><span className="au-desc">{j.description}</span><span className="l3v-code">{j.job}</span>{j.catalogued===false&&<Badge tone="warning" data-uncatalogued-job>Not catalogued: no label or owner</Badge>}</td>
     <td>{s.text}{j.batch!=null&&<span className="l3v-code">{fmtNumber(j.batch)} per run</span>}</td>
-    <td>{last?<><StatusChip value={last.status} tone={st[0]} label={st[1]}/><span className="l3v-code">{fmtDateTime(last.at)}{last.seconds!=null&&` · ${last.seconds}s`}</span>{last.message&&<span className="au-error" title={last.message}>{plainError(last.message)}</span>}</>:'Not run yet'}</td>
+    <td>{last?<><StatusChip value={last.status} tone={st[0]} label={st[1]}/><span className="l3v-code">{fmtDateTime(last.at)}{last.seconds!=null&&` · ${last.seconds}s`}</span>{last.message&&<span className="au-error">{plainError(last.message)}</span>}</>:'Not run yet'}</td>
     <td className="num">{fmtNumber(j.runs_24h||0)} runs<span className={`l3v-code ${Number(j.failed_24h)>0?'l3v-bad':''}`}>{fmtNumber(j.failed_24h||0)} failed</span></td>
     <td><StatusChip value={j.active?'on':'paused'} tone={j.active?'success':'warning'} label={j.active?'Running':'Paused'}/></td>
     {rank>=5&&<td>{allowed?<div className="au-controls">

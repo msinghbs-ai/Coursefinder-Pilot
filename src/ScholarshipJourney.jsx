@@ -12,8 +12,9 @@ import{supabase}from'./lib/supabase'
 import{Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import{fmtTime}from'./lib/format.js'
 import{ExpandList,Pill}from'./ExpandList'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const OUTCOME={became_scholarship:['Became a scholarship','success'],new_record:['New record','success'],updated:['Updated','info'],unchanged:['Unchanged','neutral'],already_held:['Already held','neutral'],
   refused:['Refused','danger'],too_thin:['Too thin to read','warning'],skipped:['Skipped by a rule','neutral'],waiting:['Waiting','info'],not_read:['Not read','warning'],
   mapped:['Site mapped','info'],read:['Read','info'],failed:['Failed','danger']}

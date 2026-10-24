@@ -11,9 +11,10 @@ import{RotateCcw,Search}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,Pager,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{ARCHIVE_SOURCE}from'./RecordEditor'
+import{plainError}from'./lib/errors'
 
 const LIMIT=50
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 
 export default function ArchivedReview({onError,navigate}){
   const[section,setSection]=useState('providers'),[query,setQuery]=useState(''),[q,setQ]=useState(''),[offset,setOffset]=useState(0)

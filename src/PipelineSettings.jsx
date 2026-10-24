@@ -15,8 +15,9 @@ import{Button,Loading,SectionTitle,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import SettingsRegister from'./SettingsRegister'
 import InstitutionTypeRules from'./InstitutionTypeRules'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ATTRS=[['official_url','Official page'],['english','English'],['intakes','Intakes'],['tuition','Tuition']]
 const IDENTITIES=[['cricos_code','CRICOS code'],['nzqa_code','NZQA code'],['exact_title','Exact title'],['title_level','Title with level'],['field_award','Field and award'],['degree_name','Degree name'],['manual','Page bound by a person'],['host_page','University page'],['adapter_code','Adapter code'],['adapter_title','Adapter title']]
 

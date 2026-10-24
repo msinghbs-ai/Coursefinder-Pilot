@@ -10,8 +10,9 @@ import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_fee_reader',{p_action:action,p_args:args||{}});if(error)throw error;return data}
 const OUTCOME={admitted:['Admitted','success'],review:['To Layer 4','warning'],conflict:['Differs from held fee','warning'],same:['Same as held','neutral'],no_course:['No matching course','danger'],
   domestic:['Domestic (kept)','neutral'],not_yearly:['Not a yearly fee','neutral'],skipped:['Skipped','neutral'],replaced:['Replaced by a newer read','neutral']}

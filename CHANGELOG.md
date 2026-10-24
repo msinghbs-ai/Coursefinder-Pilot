@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.268 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.341** (UI audit Phase 0 — incidents; Platform Admin 24 Oct 11:27). Not merged without Platform Admin review.
+  - `src/lib/errors.js`: `plainError` / `scrubInternals` / `reportError` — one plain reading of any error, no `ERROR:`/`CONTEXT`/function signatures/vendor or job names; the global banner gets a reference and the full detail goes to `pipeline.ui_error_log` (`public.admin_ui_error_report`). Every panel's `errText` routes through it; Platform health titles/details and Automations' last-error use it; the banner is cleared on navigation (root cause of the banner following a person to Go-live, Users & roles and Guides).
+  - `DeployedVersionNotice`: reads `release-history.json` after sign-in, on navigation and every 5 minutes; offers a reload when the deployed version differs (root cause of v2.15.339 in the top bar vs v2.15.340 in a screen: a cached shell with new lazy chunks).
+  - Migration `20261024006000_cf247_ui_audit_phase0.sql`: `pipeline.ui_error_log` + `admin_ui_error_report` + `retention.ui_error_log_days`; `coverage_admission_apply_v1` never applies a plain `http://` address by rule (the job had failed every run since 23 Oct 11:40 UTC; 187 such rows now wait for a person); `course_completeness_build_v1` counts readable attributes for "fully complete" (5,660 → 0 on 20 Oct was three no-reader attributes joining the matrix); `ledger_retention_v1` replaced (md5-checked).
+  - Coverage panel: the trend table says why 20–24 Oct read 0. Release notes files for v2.15.339 and v2.15.340 (the pill had shown the v2.15.338 notes). Test s95. SOPs 1.82.
+
 ## 0.1.267 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.340** (R3: hourly health delta; Platform Admin 24 Oct 09:55).

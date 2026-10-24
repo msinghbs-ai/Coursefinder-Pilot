@@ -18,8 +18,9 @@ import{api,supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,StatusChip}from'./ui-kit'
 import{fmtNumber,fmtDateTime}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_field_coverage',{p_action:action,p_args:args||{}});if(error)throw error;return data}
 const COUNTRY={AU:'Australia',NZ:'New Zealand',CA:'Canada'}
 export const READER_LABEL={register:'Register',coverage:'Coverage pipeline',enrich:'Enrich fields (standing queue)',none:'No reader yet'}

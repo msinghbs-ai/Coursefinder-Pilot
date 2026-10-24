@@ -7,9 +7,10 @@ import React,{useEffect,useMemo,useState}from'react'
 import{SearchX,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
 export const GAP_ATTRS=[['official_page','Official page'],['fee','Fee'],['english','English'],['intakes','Intakes'],['campus','Campus'],['campus_region','Campus region'],['duration','Duration'],['delivery','Delivery'],['level','Level'],['field_of_study','Field of study'],['international','Open to international']]
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const signed=v=>v>0?`+${fmtNumber(v)}`:v<0?`−${fmtNumber(-v)}`:''
 
 export default function GapCauses({onError}){
