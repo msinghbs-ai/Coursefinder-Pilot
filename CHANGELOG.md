@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.272 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.345** (UI audit Phase 3 — dedupe and data-quality leaks; Platform Admin 24 Oct 11:27). Not merged without Platform Admin review; stacked on v2.15.344.
+  - Dashboard: one Inbox total (opens Layer 4 Review `?view=kind`), no per-kind duplicate; Scholarships tile reconciled (published · active · retired) from additive dashboard keys (migration `20261024008000`, md5-guarded edit of `admin_dashboard_maturity_compute`; snapshot refreshed). Provider contacts: duplicated header removed. Ranking imports kicker under its own screen. Unnamed register records ("N/A", "--") shown as "Unnamed on the register (code)". One campus city corrected (count-guarded). Test s97; dashboard contract updated. SOPs 1.86.
+
+
 ## 0.1.271 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.344** (UI audit Phase 2 — course list; Platform Admin 24 Oct 11:27). Not merged without Platform Admin review; stacked on v2.15.341.
