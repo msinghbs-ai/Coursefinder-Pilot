@@ -38,8 +38,8 @@ do $g$ declare n int; begin
   if n <> 1 then raise exception 'the Townsville campus was not corrected (% rows)', n; end if;
 end $g$;
 
--- the dashboard serves a snapshot; compute it once so the new figures show straight away
-select security.admin_dashboard_maturity_compute();
+-- the dashboard serves a 10-minute snapshot; refresh it so the new figures show straight away
+update security.admin_summary_snapshots set payload = security.admin_dashboard_maturity_compute(), computed_at = now() where snapshot_key = 'dashboard';
 
 do $t$ declare r jsonb; begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
