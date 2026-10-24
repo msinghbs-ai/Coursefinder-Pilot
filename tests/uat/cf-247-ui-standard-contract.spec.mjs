@@ -74,7 +74,7 @@ test('provider panel: pills and fact cards; no raw identifier or evidence lists'
   await expect(s.locator('[data-ds-pills]')).toContainText('CRICOS 00122A')
   await expect(s.locator('[data-ds-pills] .cf-chip.tone-success')).toHaveText('Published')
   await expect(s.locator('[data-ds-card="courses"]')).toContainText('509')
-  await expect(s.locator('[data-ds-card="campuses"] .cf-chip')).toHaveText('Melbourne · 439')
+  await expect(s.locator('[data-ds-card="campuses"] .cf-chip')).toHaveText('City · 439')  // 24 Oct 2026: the location name, not the city
   const drawer = page.locator('.m-drawer')
   await expect(drawer.locator('[data-provider-facts]')).toHaveCount(0)
   await expect(drawer.getByText('provider:cricos:00122a')).toHaveCount(0)

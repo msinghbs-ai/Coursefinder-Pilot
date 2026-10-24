@@ -59,6 +59,7 @@ export function ProviderSummary({data,navigate}){
   const reg=(data.registrations||data.identifiers||[]).find(x=>x.scheme==='cricos')
   const code=reg?.code||reg?.identifier
   const groups=Array.isArray(data.university_groups)?data.university_groups:[]
+  // 24 Oct 2026 (Platform Admin 18:27): each campus by its location name (as on the CRICOS institution page), city in the hover
   const campuses=data.campuses_page?.items||[]
   const contacts=data.international_contacts?.summary||{}
   const nContacts=Number(contacts.current_contacts||0)+Number(contacts.manual_contacts||0)||Number(contacts.first_party_contacts||0)+Number(contacts.enriched_contacts||0)
@@ -74,6 +75,6 @@ export function ProviderSummary({data,navigate}){
       <FactCard id="scholarships" label="Scholarships" value={fmtNumber(Number(data.scholarship_count||0))}/>
       <FactCard id="contacts" label="International contacts" value={fmtNumber(nContacts)}>{data.id&&<button type="button" className="m-secondary compact" onClick={()=>navigate?.('Provider Contacts',{provider_id:data.id})}><UsersRound size={12}/>View contacts</button>}</FactCard>
       <FactCard id="checked" label="Last checked" value={data.last_verified_at?fmtDate(data.last_verified_at):'—'} sub={data.website?<a className="cf-link" href={data.website} target="_blank" rel="noreferrer">{String(data.website).replace(/^https?:\/\//,'')} <ExternalLink size={11}/></a>:'No website yet'}/>
-      {campuses.length>0&&<FactCard id="campuses" wide label={`Campuses (${fmtNumber(Number(data.campuses_page?.total||campuses.length))})`}><Pills items={campuses.map(c=>({label:`${c.city||c.name}${c.course_count!=null?` · ${fmtNumber(c.course_count)}`:''}`,title:`${c.name}${c.course_count!=null?` — ${c.course_count} courses`:''}`,tone:'neutral'}))}/></FactCard>}
+      {campuses.length>0&&<FactCard id="campuses" wide label={`Campuses (${fmtNumber(Number(data.campuses_page?.total||campuses.length))})`}><Pills items={campuses.map(c=>({label:`${c.name||c.city}${c.course_count!=null?` · ${fmtNumber(c.course_count)}`:''}`,title:[c.city,c.subdivision_name].filter(Boolean).join(', ')+(c.course_count!=null?` — ${c.course_count} courses`:''),tone:'neutral'}))}/></FactCard>}
     </FactCards>
   </section>}

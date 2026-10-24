@@ -18,8 +18,8 @@ test.describe('M2.4.5 reconciled UI improvements contract',()=>{
   // Scholarship catalogue: bounded Provider filter and authoritative provider_id read.
   expect(shell).toContain("if(type==='scholarship')return <div className=\"m-filter-bar\"")
   expect(shell).toContain('<PagedFilterSelect kind="provider" label="Provider"')
-  expect(shell).toContain("if(type==='scholarship'&&filters.provider)a.provider_id=filters.provider")
-  expect(shell).toContain("if(['course','scholarship'].includes(type))n.provider=''")
+  expect(shell).toContain("if(['scholarship','campus'].includes(type)&&filters.provider)a.provider_id=filters.provider")
+  expect(shell).toContain("if(['course','scholarship','campus'].includes(type))n.provider=''")
   expect(shell).toContain("limit:10,offset")
   expect(shell).toContain("{key:'sch_name',label:'Scholarship',width:260,sortKey:'scholarship'},{key:'provider_name',label:'Provider',width:190,sortKey:'provider'},{key:'sch_type',label:'Type',width:150,sortKey:'type'},{key:'sch_who',label:'Who it is for',width:200,sortKey:'audience'},{key:'value_label',label:'Value',width:170,sortKey:'award'},{key:'sch_courses',label:'Courses',width:100,sortKey:'courses'},{key:'sch_closes',label:'Closes',width:130,sortKey:'close'}")
   expect(shell).toContain('m-fluid-table')

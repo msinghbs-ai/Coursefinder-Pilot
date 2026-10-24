@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.275 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.348** (Platform Admin 24 Oct 18:27, "Campus name and UI filter"). Presentation only, no migration: Campuses list gains a Provider filter (`provider_id`, already accepted by `admin_campus_page_fast`; reset with country or state), first column "Location name"; Provider details › Campuses pills show the location name with the course count (city in the hover); lists show a nameless provider as "Unnamed on the register". The stored names already equal the CRICOS location names (3,984 of 3,984). Test s100; ui-standard expectation updated. Release notes v2.15.347. SOPs 1.89.
+
 ## 0.1.274 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.347** (HOTFIX 3 — Task manager timed out, Platform Admin 24 Oct 15:51, ref 9F5R4H). Migration `20261024011000_cf247_hotfix3_task_status_speed.sql`: `security.link_search_block_v1` (md5-guarded) checks the stop for the one university (`fc_search_stopped_for_v1`, 0.09 s instead of 1.7 s), works out the month and day totals once per statement, and asks "a person's task?" in one query. Dry run on live: Task manager read 0.74 s (was over the 8 s limit). Gates, order and words unchanged. Test s99 (5th test). Release notes v2.15.346. SOPs 1.88.

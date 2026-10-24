@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.347'
-export const PACKAGE_VERSION='0.1.274'
+export const UI_VERSION='2.15.348'
+export const PACKAGE_VERSION='0.1.275'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Oct 2026',
-  title:'Hotfix 3: the Task manager opens with many tasks running',
+  title:'Campuses by their CRICOS location name, filtered by provider',
   changes:[
+    'Providers › Campuses: a Provider filter, so one university\'s locations read as one list, as on its CRICOS institution page; the first column is the location name.',
+    'Provider details › Campuses shows each campus by its location name with its course count (the city is in the hover).',
+    'A provider with no name on the register reads "Unnamed on the register" in lists instead of "N/A".',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[
-    'Scheduled jobs › Task manager could not be read ("the database took too long") when several Find course pages tasks were waiting at once; working out why a task waits now takes a fraction of a second, and the task runner is back to its usual pace.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
