@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.347'
+export const SOP_REVIEWED_FOR = '2.15.348'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -190,7 +190,8 @@ export const SOPS = [
       { version: '1.85', date: '24 Oct 2026', release: '2.15.344', change: 'Courses list: the international fee shows its basis and the International fee and City columns sort.' },
       { version: '1.86', date: '24 Oct 2026', release: '2.15.345', change: 'Dashboard states the Inbox once and opens Layer 4 Review by kind; the Scholarships tile states published, active and retired; unnamed register records show as such with their code.' },
       { version: '1.87', date: '24 Oct 2026', release: '2.15.346', change: 'Lists show names and plain words instead of internal keys and codes; support identifiers are in the detail under Identifiers (for support); vendor balances as figures for the Platform Admin only.' },
-      { version: '1.88', date: '24 Oct 2026', release: '2.15.347', change: 'Task manager opens quickly with many tasks waiting; why a task waits is worked out in a fraction of a second.' }],
+      { version: '1.88', date: '24 Oct 2026', release: '2.15.347', change: 'Task manager opens quickly with many tasks waiting; why a task waits is worked out in a fraction of a second.' },
+      { version: '1.89', date: '24 Oct 2026', release: '2.15.348', change: 'Campuses: filter by provider; campuses are listed and shown in Provider details by their CRICOS location name.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -329,7 +330,8 @@ export const SOPS = [
       { version: '1.85', date: '24 Oct 2026', release: '2.15.344', change: 'Courses list: the international fee shows its basis and the International fee and City columns sort.' },
       { version: '1.86', date: '24 Oct 2026', release: '2.15.345', change: 'Dashboard states the Inbox once and opens Layer 4 Review by kind; the Scholarships tile states published, active and retired; unnamed register records show as such with their code.' },
       { version: '1.87', date: '24 Oct 2026', release: '2.15.346', change: 'Lists show names and plain words instead of internal keys and codes; support identifiers are in the detail under Identifiers (for support); vendor balances as figures for the Platform Admin only.' },
-      { version: '1.88', date: '24 Oct 2026', release: '2.15.347', change: 'Task manager opens quickly with many tasks waiting; why a task waits is worked out in a fraction of a second.' }],
+      { version: '1.88', date: '24 Oct 2026', release: '2.15.347', change: 'Task manager opens quickly with many tasks waiting; why a task waits is worked out in a fraction of a second.' },
+      { version: '1.89', date: '24 Oct 2026', release: '2.15.348', change: 'Campuses: filter by provider; campuses are listed and shown in Provider details by their CRICOS location name.' }],
   },
 ]
 
