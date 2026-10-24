@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.346)  
+**Version:** 1.53 (reviewed for platform release v2.15.347)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -192,3 +192,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.85 | 24 Oct 2026 | v2.15.344 | Courses list: the international fee shows its basis and the International fee and City columns sort. |
 | 1.86 | 24 Oct 2026 | v2.15.345 | Dashboard states the Inbox once and opens Layer 4 Review by kind; the Scholarships tile states published, active and retired; unnamed register records show as such with their code. |
 | 1.87 | 24 Oct 2026 | v2.15.346 | Lists show names and plain words instead of internal keys and codes; support identifiers are in the detail under Identifiers (for support); vendor balances as figures for the Platform Admin only. |
+| 1.88 | 24 Oct 2026 | v2.15.347 | Task manager opens quickly with many tasks waiting; why a task waits is worked out in a fraction of a second. |

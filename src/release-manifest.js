@@ -1,20 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.346'
-export const PACKAGE_VERSION='0.1.273'
+export const UI_VERSION='2.15.347'
+export const PACKAGE_VERSION='0.1.274'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Oct 2026',
-  title:'Lists show names and plain words, not internal codes',
+  title:'Hotfix 3: the Task manager opens with many tasks running',
   changes:[
-    'Lists no longer print internal keys, record ids, hashes or raw codes under names: Courses, Providers, Campuses, Provider contacts, Evidence, Users & roles and Scheduled jobs show names and plain words. Support identifiers sit in a closed "Identifiers (for support)" block in the detail (Curator and above).',
-    'Reference data says what a site check found in words ("Reachable", "Refuses automated reads", "Page gone") instead of HTTP codes; Platform health shows schedules in words and links to screens by name; Evidence states read as "Not yet read", "Current copy", "File is stored".',
-    'Vendor account balances are shown as figures to the Platform Admin only; others see "Within budget", "Near the limit" or "Used up". Model lists show model names, with the exact identifier one click away.',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Scheduled jobs › Task manager could not be read ("the database took too long") when several Find course pages tasks were waiting at once; working out why a task waits now takes a fraction of a second, and the task runner is back to its usual pace.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

@@ -116,3 +116,15 @@ test('the credit check (svc_fc_spend) lets a person\'s Find course pages task pa
   expect(m2).toContain("'code', 'credit_refused'")
   expect(m2).toContain("'last_spent_at', v_spent")
 })
+
+// hotfix 3 (v2.15.347): the Task manager read timed out (8 s) when several Find course pages tasks stalled at once
+test('the stall cause stays cheap: one university\'s stop, month and day totals once per request, one person-task query', () => {
+  const m3 = fs.readFileSync('supabase/migrations/20261024011000_cf247_hotfix3_task_status_speed.sql', 'utf8')
+  expect(m3).toMatch(/pg_temp\.edit_n\('security\.link_search_block_v1\(uuid,uuid\[\]\)', '[0-9a-f]{32}'/)
+  expect(m3).toContain('if security.fc_search_stopped_for_v1(p_provider) and not (v_bypass and v_person) then')
+  expect(m3).toContain("perform set_config('cf.link_search_block_totals', statement_timestamp()::text")
+  expect(m3).toContain("j.args->'course_ids' ?| p_course_ids::text[]")
+  const newText = m3.split('$n$').filter((_, i) => i % 2 === 1).join('\n')
+  expect(newText).not.toContain('fc_search_stopped_v1()')
+  expect(m3).toMatch(/-- Replaces: .*\n-- Retires: nothing/)
+})
