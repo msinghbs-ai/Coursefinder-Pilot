@@ -101,3 +101,18 @@ test('Layer 4 "Enter another address" on a held-fee course-link item runs bind â
   fake.reader(feeItem.detail.course_id); fake.fee_reader()
   expect(db).toMatchObject({ page: { basis: 'manual', status: 'bound', read_status: 'read' }, locks: ['official_url', 'course_url'], fee: 'active', item: 'edited_approved' })
 })
+
+// hotfix 2 (v2.15.343): the worker's credit check carried a third copy of the stop; a person's task passes it there too, budgets unchanged
+test('the credit check (svc_fc_spend) lets a person\'s Find course pages task past the search stop, and nothing else', () => {
+  const m2 = fs.readFileSync('supabase/migrations/20261024010000_cf247_hotfix2_person_task_spend_gate.sql', 'utf8')
+  expect(m2).toMatch(/pg_temp\.edit_n\('public\.svc_fc_spend\(numeric,text,uuid,text\)', '[0-9a-f]{32}'/)
+  expect(m2).toContain("and not (security.pipeline_num_v1('search.person_task_bypass', 1) >= 1")
+  expect(m2).toContain("j.kind = 'course_page_find' and j.state in ('queued', 'running')")
+  for (const kept of ['fc_budget_left_v1', 'daily_budget_total', 'ondemand_credits_per_day', 'scholarship_cap_per_uni']) expect(m2).not.toContain(kept)
+  expect(m2).toMatch(/-- Replaces: .*\n-- Retires: nothing/)
+  // the task status follows credits spent, and a refusal since the task started is its blocking reason
+  expect(m2).toMatch(/pg_temp\.edit_n\('security\.admin_job_status_v1\(uuid\)', '[0-9a-f]{32}'/)
+  expect(m2).toContain("case when j.kind = 'course_page_find' then v_spent else v_fwd end")
+  expect(m2).toContain("'code', 'credit_refused'")
+  expect(m2).toContain("'last_spent_at', v_spent")
+})
