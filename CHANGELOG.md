@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.273 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.346** (UI audit Phase 1 — strip internals from list views; Platform Admin 24 Oct 11:27). Not merged without Platform Admin review; stacked on v2.15.345.
+  - Presentation layer only, no migration: stable keys, GUID course codes, hashes, UUID fragments, HTTP codes, raw cron and route text, job slugs, Decision references, raw state strings and vendor balances leave list views; every value stays reachable (detail "Identifiers (for support)" for Curator+, hover titles, `data-*`). `src/lib/viewer.js` (role context; balances as figures for Platform Admin, rank 6), `fmtPeriod` in `src/lib/format.js`. Test s98; five specs' expectations updated. SOPs 1.87. Release notes v2.15.345.
+
 ## 0.1.272 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.345** (UI audit Phase 3 — dedupe and data-quality leaks; Platform Admin 24 Oct 11:27). Not merged without Platform Admin review; stacked on v2.15.344.

@@ -180,6 +180,8 @@
 .ms-switch:disabled{cursor:not-allowed;opacity:.55}
 .ms-table tr.ms-off td:not(:last-child){opacity:.5}
 .ms-table td .cf-chip{margin:0 4px 4px 0}
+/* UI audit Phase 1: identifiers (model id, profile code, prompt hash) sit behind a small Show fold */
+.ms-ident,.ai-ident{margin-top:2px}.ms-ident summary,.ai-ident summary{cursor:pointer;color:var(--cf-text-2);font-size:var(--cf-fs-3xs)}.ms-ident code,.ai-ident code{font-size:var(--cf-fs-3xs);word-break:break-all}
 .ms-retired{margin-top:var(--cf-space-3)}.ms-retired summary{cursor:pointer;color:var(--cf-text-2);font-size:var(--cf-fs-sm)}
 .ms-events{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:var(--cf-fs-sm)}.ms-events .l3v-code{margin-left:8px}
 /* Edit in list (v2.15.120). */

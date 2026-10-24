@@ -20,6 +20,10 @@ import{plainError}from'./lib/errors'
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const HEALTH={healthy:'success',degraded:'warning',blocked:'danger',unverified:'neutral',retired:'neutral'}
 const COUNTRY={ALL:'All countries',AU:'Australia',NZ:'New Zealand',CA:'Canada'}
+// UI audit Phase 1 (24 Oct 2026): what the last check found, in words; the HTTP number stays on hover.
+export function httpWords(code){const n=Number(code);if(!Number.isFinite(n)||n<=0)return'Not checked';if(n>=200&&n<300)return'Reachable';if(n===401||n===403)return'Refuses automated reads';if(n===404||n===410)return'Page gone';if(n===429)return'Asked us to slow down';if(n>=500)return'Site error';return'Not checked'}
+// The "never a university website" rule stays; its chip reads "Not a university site".
+const USE_CHIP={not_provider_site:'Not a university site'}
 
 // v2.15.246 (Platform Admin bugs 11/10-3, Fix 7: "input field / explanation and list columns do not match up"): one list whose
 // filters sit in the same order as its columns (Site, Uses, Category, Country, Status, On). Each row opens in place with the same
@@ -43,16 +47,16 @@ export default function ReferenceSources({onError}){
   const countries=[...new Set(all.map(x=>x.country).filter(Boolean))]
   const columns=[
     {key:'site',label:'Site',width:'minmax(220px,2fr)',render:x=><span><strong>{x.name}</strong><span className="xl-sub">{x.domain||x.url}</span></span>},
-    {key:'uses',label:'Uses',width:'minmax(180px,2fr)',render:x=>(x.uses||[]).map(u=><Pill key={u} tone="violet">{useLabel[u]||u}</Pill>)},
+    {key:'uses',label:'Uses',width:'minmax(180px,2fr)',render:x=>(x.uses||[]).map(u=><Pill key={u} tone="violet" title={useLabel[u]||u}>{USE_CHIP[u]||useLabel[u]||u}</Pill>)},
     {key:'category',label:'Category',width:'minmax(140px,1.2fr)',render:x=><Pill>{catLabel[x.category]||x.category}</Pill>},
     {key:'country',label:'Country',width:'110px',render:x=><Pill>{COUNTRY[x.country]||x.country}</Pill>},
-    {key:'status',label:'Status',width:'minmax(130px,1fr)',render:x=>{const st=stateOf(x);return <><Pill tone={{reachable:'success',unreachable:'danger',retired:'neutral',checking:'info'}[st]||'warning'}>{{reachable:'Reachable',unreachable:'Not reachable',retired:'Retired',checking:'Checking…',unchecked:'Not checked yet'}[st]}</Pill>{x.checked_at&&<span className="xl-sub">{x.http?`HTTP ${x.http} · `:''}{fmtDateTime(x.checked_at)}</span>}</>}},
+    {key:'status',label:'Status',width:'minmax(130px,1fr)',render:x=>{const st=stateOf(x);return <><Pill tone={{reachable:'success',unreachable:'danger',retired:'neutral',checking:'info'}[st]||'warning'}>{{reachable:'Reachable',unreachable:'Not reachable',retired:'Retired',checking:'Checking…',unchecked:'Not checked yet'}[st]}</Pill>{x.checked_at&&<span className="xl-sub" title={x.http?`HTTP ${x.http}`:undefined} data-http={x.http||undefined}>{x.http?`${httpWords(x.http)} · `:''}{fmtDateTime(x.checked_at)}</span>}</>}},
     {key:'on',label:'On',width:'70px',align:'end',render:x=>x.retired?<Pill>Retired</Pill>:<Switch on={Boolean(x.enabled)} label={`${x.enabled?'Switch off':'Switch on'} ${x.name}`} disabled={!manage||busy} onChange={on=>save(x,{enabled:on},`Switch ${on?'on':'off'} ${x.name}?${on?'':' The platform will stop using it.'}`,true)}/>},
   ]
   return <>
     <div className="cf-metric-grid">
       <Metric label="Sites in use" value={fmtNumber(live.filter(x=>x.enabled).length)} detail={`${fmtNumber(live.filter(x=>!x.enabled).length)} switched off`} icon={Globe}/>
-      <Metric label="Never a university website" value={fmtNumber(live.filter(x=>x.enabled&&x.uses?.includes('not_provider_site')).length)} icon={Globe}/>
+      <Metric label="Not a university site" value={fmtNumber(live.filter(x=>x.enabled&&x.uses?.includes('not_provider_site')).length)} icon={Globe}/>
       <Metric label="Not checked yet or not reachable" value={fmtNumber(live.filter(x=>x.health!=='healthy').length)} detail={`${fmtNumber(live.filter(x=>x.health==='degraded').length)} not reachable`} icon={RefreshCw} tone={live.some(x=>x.health==='degraded')?'warning':'neutral'}/>
     </div>
     <section className="m-panel" data-reference-sources>

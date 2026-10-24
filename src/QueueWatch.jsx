@@ -10,6 +10,7 @@ import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber
 import Stats15m from'./Stats15m'
 import GapCauses from'./GapCauses'
 import{plainError}from'./lib/errors'
+import{ScreenLink}from'./PlatformHealth'
 
 export const QUEUE_STATES={
   moving:{label:'Moving',tone:'success',help:'Work is waiting and items are finishing.'},
@@ -58,7 +59,7 @@ export default function QueueWatch({onError}){
             {(q.tools_waiting||[]).length>0&&<small className="qw-sub">Budget used today: {q.tools_waiting.join(', ')}</small>}
             {q.since&&<small className="qw-sub">Since {fmtDateTime(q.since)}</small>}
             {q.why_idle&&<small className="qw-sub" data-why-idle>{q.why_idle}</small>}
-            {q.fix_at&&['stuck','failing','out_of_toolset','nothing_left'].includes(q.state)&&<a className="ph-fix" href={q.fix_at}>Go to the screen</a>}</td>
+            {q.fix_at&&['stuck','failing','out_of_toolset','nothing_left'].includes(q.state)&&<ScreenLink href={q.fix_at}/>}</td>
           <td className="num">{q.pending==null?'—':fmtNumber(q.pending)}</td>
           <td className="num">{q.per_hour==null?'—':fmtNumber(q.per_hour)}{Number(q.failed_window||0)>0&&<small className="qw-sub">{fmtNumber(q.failed_window)} failed in the hour</small>}</td>
           <td>{q.state==='moving'?hours(q.eta_hours):'—'}</td>

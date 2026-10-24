@@ -24,7 +24,8 @@ test('Dashboard: the Inbox is stated once and opens Layer 4 by kind; the Scholar
 
 test('Provider contacts has one header; the ranking-import kicker names its own screen; a register placeholder name is said plainly', () => {
   expect(pc).not.toContain('<h2>Provider Contacts</h2>')
-  expect(pc).toContain('<section className="pc-hero pc-hero-actions-only">')
+  expect(pc).not.toContain('pc-hero ') // Phase 1 (24 Oct 2026): the actions-only hero band became a plain toolbar
+  expect(pc).toContain('<div className="pc-toolbar" data-pc-toolbar>')
   expect(ui).toContain('<div className="m-section-kicker">Rankings &amp; statistics / Ranking imports</div>')
   expect(ui).not.toContain('Reference data / Ranking imports')
   expect(ui).toContain("const NO_NAME=/^(n\\/?a|-+|—|none|null|unknown)$/i")

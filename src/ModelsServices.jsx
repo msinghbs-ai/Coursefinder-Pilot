@@ -17,6 +17,13 @@ import{plainError}from'./lib/errors'
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const usd=v=>`US$${Number(v||0).toFixed(2)}`
 
+// UI audit Phase 1 (24 Oct 2026): a model identifier ("qwen/qwen3-30b-a3b-instruct-2507") reads as a name in lists; the identifier
+// sits behind the row's Show fold and on hover. Nothing about which model is called changes.
+const VENDOR={qwen:'Qwen',anthropic:'Anthropic',mistralai:'Mistral AI',google:'Google',openai:'OpenAI','meta-llama':'Meta','deepseek':'DeepSeek','x-ai':'xAI'}
+const WORD={gpt:'GPT',ai:'AI',llm:'LLM',vl:'VL',moe:'MoE'}
+export function modelLabel(id){const s=String(id||'').trim();if(!s)return'—';const name=s.split('/').pop().split(':')[0]
+  return name.split('-').filter(Boolean).map(w=>WORD[w.toLowerCase()]||(/^\d+(\.\d+)?[bBkKmM]$/.test(w)?w.toUpperCase():/^[a-z]\d+[a-z]$/i.test(w)?w.toUpperCase():/^\d/.test(w)?w:w.charAt(0).toUpperCase()+w.slice(1))).join(' ')}
+export function modelVendor(id){const s=String(id||'');const v=s.includes('/')?s.split('/')[0]:'';return VENDOR[v]||(v?v.charAt(0).toUpperCase()+v.slice(1):'')}
 export function Switch({on,label,disabled,onChange}){
   return <button type="button" role="switch" aria-checked={on} aria-label={label} className={`ms-switch${on?' on':''}`} disabled={disabled} onClick={()=>onChange(!on)}><span/></button>
 }
@@ -42,7 +49,7 @@ export default function ModelsServices({onError}){
     catch(e){onError?.(errText(e))}finally{setBusy(false)}
   }
   const modelRow=m=><tr key={m.id} className={m.enabled?'':'ms-off'} data-model={m.code}>
-    <td><strong>{m.model}</strong><span className="l3v-code">{m.provider}</span></td>
+    <td title={m.model}><strong>{modelLabel(m.model)}</strong><span className="l3v-code">{[modelVendor(m.model),m.provider].filter(Boolean).join(' · ')}</span><details className="ms-ident" data-model-id={m.model}><summary>Identifier</summary><code>{m.model}</code></details></td>
     <td>{(m.tasks||[]).length?(m.tasks||[]).map(t=><span key={t} className="ms-task">{humanLabel(t)}</span>):'—'}</td>
     <td>{(m.steps||[]).length?(m.steps||[]).map(s=><StatusChip key={s.task+s.step} value={s.active?'active':'off'} tone={s.active?'success':'neutral'} label={`${humanLabel(s.task)} · step ${s.step}`}/>):<span className="l3v-code">Not in a cascade</span>}</td>
     <td className="num">{fmtNumber(m.calls_7d||0)}<span className="l3v-code">{usd(m.cost_7d_usd)}</span></td>

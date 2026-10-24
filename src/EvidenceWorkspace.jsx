@@ -91,13 +91,13 @@ function EvidenceTable({rows,roles={},loading,selected,onSelect}){
   const cols=10
   return <div className="evidence-table-wrap"><table className="evidence-table"><thead><tr><th>Artifact</th><th>Source</th><th>Layer</th><th>Evidence type</th><th>Captured</th><th>Extraction</th><th>Freshness</th><th>Status</th><th>Job</th><th>Integrity</th></tr></thead><tbody>
     {loading&&!rows.length?Array.from({length:8}).map((_,i)=><tr key={i}>{Array.from({length:cols}).map((__,j)=><td key={j}><span className="evidence-skeleton"/></td>)}</tr>):rows.length?rows.map(r=><tr key={r.id} className={String(selected)===String(r.id)?'selected':''} onClick={()=>onSelect(r.id)}>
-      <td><span className="evidence-artifact"><FileCheck2 size={15}/><span><strong>{shortId(r.id)}</strong><small>{r.country_code?`${flag(r.country_code)} ${r.country_code}`:'No country'} · {r.mime_type||'Unknown MIME'}</small></span></span></td>
+      <td data-evidence-id={r.id}><span className="evidence-artifact"><FileCheck2 size={15}/><span><strong>{evidenceKind(r.evidence_type)}</strong><small>{r.country_code?`${flag(r.country_code)} ${r.country_code}`:'No country'} · {r.mime_type||'Unknown MIME'}</small></span></span></td>
       <td><strong>{r.source_label||'Unlinked source'}</strong><small>{r.source_type||r.source_status||'—'}</small><CopyRole role={roles[r.id]}/></td>
       <td><Badge value={r.layer}/></td><td><span className="evidence-type-cell"><strong>{human(r.evidence_type)}</strong><span className="evidence-format-badge">{formatOf(r.mime_type,r.evidence_type)}</span></span></td><td><strong>{dateTime(r.captured_at)}</strong><small>{relative(r.captured_at)}</small></td>
-      <td><State value={r.extraction_state}/><small>{fmt(r.observation_count)} observation{Number(r.observation_count)===1?'':'s'}{r.has_source_null?' · source-null':''}</small></td>
+      <td><State value={r.extraction_state}/><small>{fmt(r.observation_count)} observation{Number(r.observation_count)===1?'':'s'}{r.has_source_null?' · source gave no value':''}</small></td>
       <td><State value={r.freshness_state}/><small>{r.history_state?human(r.history_state):'—'}</small></td><td><State value={r.status}/>{r.unresolved_conflict&&<small className="danger-text">Unresolved conflict</small>}</td>
-      <td><strong>{r.job_type||'No job'}</strong><small>{r.job_status?human(r.job_status):r.job_id?shortId(r.job_id):'—'}</small></td>
-      <td><code>{r.content_hash?`${r.content_hash.slice(0,12)}…`:'—'}</code><small>{r.storage_available?'Private object present':'Metadata only'}</small></td>
+      <td data-job-id={r.job_id||undefined}><strong>{r.job_type?jobWords(r.job_type):'No job'}</strong><small>{r.job_status?human(r.job_status):'—'}</small></td>
+      <td data-content-hash={r.content_hash||undefined}><strong>{r.storage_available?'File is stored':'Details only'}</strong><small>{r.content_hash?'Checksum recorded':'No checksum'}</small></td>
     </tr>):<tr><td colSpan={cols}><Empty icon={Database} text="No stored pages match these filters."/></td></tr>}
   </tbody></table></div>
 }
@@ -181,7 +181,13 @@ function TextFilter({label,value,onChange,placeholder}){return <label className=
 function DateFilter({label,value,onChange}){return <label className="evidence-text-filter"><small>{label}</small><input type="date" value={value||''} onChange={e=>onChange(e.target.value)}/></label>}
 
 function Badge({value}){return /\d/.test(String(value??''))?<LayerBadge layer={value}/>:<KitBadge>{human(value||'unknown')}</KitBadge>}
-function State({value}){return <StatusChip value={String(value||'unknown').toLowerCase()} label={human(String(value||'unknown').toLowerCase())}/>}
+// UI audit Phase 1 (24 Oct 2026): raw state strings read as what they mean; anything unmapped is humanised as before
+const STATE_WORDS={missing_extraction:'Not yet read',has_extraction:'Read',extracted:'Read',no_policy:'No reading rule',current_or_unversioned:'Current copy',current:'Current copy',superseded:'Older copy',stale:'Needs re-reading',fresh:'Current',unversioned:'Current copy',versioned:'Versioned copy',unknown:'Unknown'}
+export const stateWords=v=>{const k=String(v||'unknown').toLowerCase().replace(/[\s-]+/g,'_');return STATE_WORDS[k]||human(k)}
+function State({value}){const k=String(value||'unknown').toLowerCase();return <StatusChip value={k} label={stateWords(k)} title={k!==stateWords(k).toLowerCase()?human(k):undefined}/>}
+// Job slugs read as what the job does ("provider_course_page_sweep" → "Course page sweep")
+const JOB_WORDS={provider_course_page_sweep:'Course page sweep',course_page_sweep:'Course page sweep',coverage_admit:'Coverage admit',coverage_read:'Coverage read',coverage_discover:'Coverage discover'}
+export const jobWords=v=>{const k=String(v||'').toLowerCase().replace(/[\s-]+/g,'_');return JOB_WORDS[k]||human(k.replace(/^provider_/,''))}
 
 function openCanonical(x,navigate){const page=ENTITY_PAGE[String(x.entity_type||'').toLowerCase()];if(!page||!navigate)return;const id=x.entity_id;if(id)navigate(page,{id})}
 function filtersFromRoute(params){const f={...EMPTY_FILTERS};if(!params?.get)return f;for(const[k,p]of Object.entries({country:'country',sourceId:'source_id',layer:'layer',entityType:'entity_type',entityId:'entity_id',providerId:'provider_id',jobId:'job_id',evidenceType:'evidence_type',mime:'mime',jobStatus:'job_status',status:'status',extractionState:'extraction_state',freshness:'freshness',verifiedFrom:'verified_from',verifiedTo:'verified_to',hash:'hash',unresolvedConflicts:'unresolved_conflicts'})){const v=params.get(p);if(v)f[k]=v}return f}
@@ -198,6 +204,5 @@ function dateTime(v){if(!v)return'—';const d=new Date(v);return Number.isNaN(+
 function relative(v){const d=new Date(v);if(Number.isNaN(+d))return'Unknown time';const s=Math.max(0,Math.round((Date.now()-d.getTime())/1000));if(s<60)return'Just now';if(s<3600)return`${Math.round(s/60)}m ago`;if(s<86400)return`${Math.round(s/3600)}h ago`;if(s<604800)return`${Math.round(s/86400)}d ago`;return dateTime(v)}
 function formatOf(mime,evidenceType=''){const m=String(mime||'').toLowerCase(),t=String(evidenceType||'').toLowerCase();if(m==='application/json'||m.endsWith('+json'))return'JSON';if(m==='text/html'||m==='application/xhtml+xml')return'HTML';if(m.startsWith('image/'))return t.includes('screenshot')?'SCREENSHOT':'IMAGE';if(m==='application/pdf')return'PDF';if(m==='text/csv')return'CSV';if(m.includes('spreadsheetml')||m.includes('ms-excel'))return'XLSX';if(m==='application/zip'||m.includes('zip'))return'ZIP';if(m==='text/plain')return'TEXT';return m?m.split('/').pop().toUpperCase():'UNKNOWN'}
 function fmtBytes(v){return formatBytes(v,'Unknown size')}
-function shortId(v){return v?`${String(v).slice(0,8)}…`:'—'}
 function flag(code){const c=String(code||'').toUpperCase();return c.length===2?String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt())):''}
 function safeUrl(v){try{const u=new URL(String(v||''));return['http:','https:'].includes(u.protocol)?u.toString():null}catch{return null}}

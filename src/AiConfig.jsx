@@ -15,13 +15,18 @@ import Card from'./Card'
 import{Button,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import{ScholarshipAiModels}from'./ScholarshipExtraction'
 import{plainError}from'./lib/errors'
+import{useIsPlatformAdmin,balanceWords}from'./lib/viewer'
+import{modelLabel}from'./ModelsServices'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const money=v=>v==null?'—':`US$${Number(v).toFixed(2)}`
+// UI audit Phase 1: a profile's code reads as words ("openrouter-provider-tuition-validation-mistral-small-3-2-v1" → the task it does); the code stays on hover and in Show
+const profileLabel=p=>p?.label||p?.name||String(p?.code||'').replace(/^openrouter-/,'').replace(/-v\d+$/,'').replace(/-/g,' ').replace(/^\w/,c=>c.toUpperCase())
 const SET_ON={scholarship_ai:'Scholarship models below',adapter_builder:'Model setting below',central_ai:'Choose below',course_match:'Fixed in the worker'}
 
 export default function AiConfig({onError}){
+  const admin=useIsPlatformAdmin()
   const[d,setD]=useState(null),[busy,setBusy]=useState(false),[guards,setGuards]=useState({}),[key,setKey]=useState(''),[msg,setMsg]=useState(''),[builder,setBuilder]=useState(null)
   const load=async()=>{try{const{data,error}=await supabase.rpc('admin_ai_config_read');if(error)throw error;setD(data||{})}catch(e){onError?.(errText(e))}}
   useEffect(()=>{load()},[])
@@ -33,12 +38,13 @@ export default function AiConfig({onError}){
   const verify=()=>run(async()=>{const{data:r,error}=await supabase.functions.invoke('layer3-provider-control',{body:{action:'verify_credential',profile_id:d.openrouter.key.profile_id}});if(error)throw error;setMsg(r?.ok?`Key verified: ${r.provider_model||''} answered.`:`Key not accepted: ${r?.message||r?.error||'no answer'}`)})
   if(!d)return <section className="m-panel"><Loading label="Loading AI settings…"/></section>
   const can=Boolean(d.can_manage)&&!busy,or=d.openrouter||{},b=or.balance||{},low=b.remaining_usd!=null&&Number(b.remaining_usd)<Number(or.credit_floor_usd||0)
+  const words=balanceWords(b.remaining_usd,or.credit_floor_usd) // UI audit Phase 1: figures for the Platform Admin, words for everyone else
   const central=(d.uses||[]).find(u=>u.use==='central_ai')?.models?.[0]||{},adapter=(d.uses||[]).find(u=>u.use==='adapter_builder')?.models?.[0]||{}
   return <div className="m-page-stack" data-ai-config>
     <Card id="services.ai.openrouter" title="OpenRouter account" subtitle="Every AI model is called through OpenRouter with one key. The balance is read every 15 minutes."
-      meta={<><span className={`cf-chip tone-${low?'danger':'success'}`}>{money(b.remaining_usd)} left</span><span className={`cf-chip tone-${or.mode==='observe'?'warning':'success'}`}>{or.mode==='observe'?'Observe only':'Stop at limits'}</span></>}>
+      meta={<><span className={`cf-chip tone-${low?'danger':'success'}`} data-balance={admin?'figure':'words'}>{admin?`${money(b.remaining_usd)} left`:words}</span><span className={`cf-chip tone-${or.mode==='observe'?'warning':'success'}`}>{or.mode==='observe'?'Observe only':'Stop at limits'}</span></>}>
       <div className="ai-grid" data-ai-openrouter>
-        <div><small>Balance</small><strong>{money(b.remaining_usd)}</strong><span>of {money(b.total_credits)} bought · read {b.observed_at?fmtDateTime(b.observed_at):'never'}</span></div>
+        <div><small>Balance</small><strong>{admin?money(b.remaining_usd):words}</strong><span>{admin?`of ${money(b.total_credits)} bought · `:''}read {b.observed_at?fmtDateTime(b.observed_at):'never'}</span></div>
         <div><small>Credit floor</small><strong>{money(or.credit_floor_usd)}</strong><span>warning below {money(or.low_balance_warn_usd)}</span></div>
         <div><small>Mode</small><strong>{or.mode==='observe'?'Observe only':'Stop at limits'}</strong><span>{or.mode==='observe'?'AI keeps running past guards and the floor; notices only':'AI stops at its daily guard or the credit floor'}</span></div>
       </div>
@@ -59,7 +65,7 @@ export default function AiConfig({onError}){
       <div className="cf-table-wrap"><table className="cf-table" data-ai-uses><thead><tr><th>AI use</th><th>Model</th><th className="num">Calls today</th><th className="num">Spent today</th><th>Daily guard</th><th>State</th></tr></thead><tbody>
         {(d.uses||[]).map(u=>{const gk=`guard_${u.use}`,gv=guards[gk]??String(u.guard??''),over=Number(u.guard)>0&&Number(u.spent_today)>=Number(u.guard)
           return <tr key={u.use} data-ai-use={u.use}><td><strong>{u.label}</strong></td>
-            <td>{(u.models||[]).map(m=><div key={m.model||m.code}><code>{m.model}</code>{m.enabled===false?' (off)':''}</div>)}{!(u.models||[]).length&&'—'}<small className="sl-sub">{SET_ON[u.use]}</small></td>
+            <td>{(u.models||[]).map(m=><div key={m.model||m.code} title={m.model}>{modelLabel(m.model)}{m.enabled===false?' (off)':''}</div>)}{!(u.models||[]).length&&'—'}<small className="sl-sub">{SET_ON[u.use]}</small></td>
             <td className="num">{fmtNumber(u.calls||0)}</td><td className="num">{money(u.spent_today)}</td>
             <td><span className="ai-row">US$<input aria-label={`Daily guard ${u.label}`} inputMode="decimal" value={gv} disabled={!can} onChange={e=>setGuards(x=>({...x,[gk]:e.target.value}))}/>
               {can&&gv!==String(u.guard??'')&&<Button compact variant="primary" onClick={()=>toolsets('setting',{toolset:'openrouter',key:gk,value:gv},`Change the daily guard of "${u.label}" to US$${gv}?`)}>Save</Button>}</span></td>
@@ -67,7 +73,7 @@ export default function AiConfig({onError}){
       </tbody></table></div>
       <div className="ai-row" data-ai-central><strong>Central pages model</strong>
         <select aria-label="Central pages model" value={central.code||''} disabled={!can} onChange={e=>{const c=(d.central_choices||[]).find(x=>x.code===e.target.value);if(c)ai('central_model',{code:c.code},`Read central pages with ${c.label}? Every result is still approved by a person.`)}}>
-          {(d.central_choices||[]).map(c=><option key={c.code} value={c.code}>{c.label} ({c.model})</option>)}</select>
+          {(d.central_choices||[]).map(c=><option key={c.code} value={c.code}>{c.label}</option>)}</select>
         <Button compact disabled={!can} onClick={()=>ai('central_on',{on:!central.enabled},central.enabled?'Switch central pages AI off?':'Switch central pages AI on?')}>{central.enabled?'Switch off':'Switch on'}</Button>
         <small className="sl-sub">{central.reason}{central.changed_at?` · ${fmtDateTime(central.changed_at)}`:''}</small></div>
       <div className="ai-row" data-ai-adapter><strong>Adapter proposal model</strong>
@@ -83,8 +89,8 @@ export default function AiConfig({onError}){
     <Card id="services.ai.profiles" title="Model profiles and prompts" subtitle="Every profile that is not retired, with its prompt version and hash. A prompt is never edited in place; a new version is tested first."
       meta={<span>{fmtNumber((d.profiles||[]).length)}</span>}>
       <div className="cf-table-wrap"><table className="cf-table" data-ai-profiles><thead><tr><th>Profile</th><th>Model</th><th>State</th><th>Prompt</th><th>Hash</th><th className="num">Requests a day</th><th>Holdout</th></tr></thead><tbody>
-        {(d.profiles||[]).map(p=><tr key={p.id} data-ai-profile={p.code}><td><code>{p.code}</code>{p.used_now&&<span className="cf-chip tone-info"> in use</span>}<small className="sl-sub">{(p.tasks||[]).join(', ')}</small></td><td>{p.model}</td>
-          <td>{p.enabled?p.paused?'Paused':'On':'Off'}</td><td>{p.prompt_version||'—'} · {fmtNumber(p.prompt_chars||0)} chars</td><td><code>{p.prompt_hash}</code></td>
+        {(d.profiles||[]).map(p=><tr key={p.id} data-ai-profile={p.code}><td title={p.code}><strong>{profileLabel(p)}</strong>{p.used_now&&<span className="cf-chip tone-info"> in use</span>}<small className="sl-sub">{(p.tasks||[]).join(', ')}</small></td><td title={p.model}>{modelLabel(p.model)}</td>
+          <td>{p.enabled?p.paused?'Paused':'On':'Off'}</td><td>{p.prompt_version||'—'} · {fmtNumber(p.prompt_chars||0)} chars</td><td><details className="ai-ident"><summary>Show</summary><code>{p.prompt_hash}</code><br/><code>{p.code}</code> · <code>{p.model}</code></details></td>
           <td className="num">{fmtNumber(p.requests_per_day||0)}</td><td>{p.holdout?`${p.holdout.right??p.holdout.correct??'?'} of ${p.holdout.cases??p.holdout.total??'?'} right`:'—'}</td></tr>)}
       </tbody></table></div>
     </Card>
