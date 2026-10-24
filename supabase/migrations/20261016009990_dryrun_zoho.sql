@@ -262,7 +262,7 @@ begin
   v := public.admin_jobs('start', jsonb_build_object('kind', 'course_page_find', 'args', jsonb_build_object('provider_id', v_otago), 'reason', 'dry run: hotfix D2'));
   v_job := (v->>'id')::uuid;
   update pipeline.admin_jobs set state = 'running', started_at = coalesce(started_at, now()) where id = v_job and state = 'queued';  -- the runner takes it at its next tick
-  r := r || jsonb_build_object('started', v ? 'id', 'fired_on_accept', (select count(*) from pipeline.edge_request_log l where l.function_name = 'coverage-sweep' and l.mode = 'link_search' and l.created_at = now()));
+  r := r || jsonb_build_object('started', v ? 'id', 'fired_on_accept', (select jsonb_agg(jsonb_build_object('mode', l.mode, 'at', l.created_at)) from pipeline.edge_request_log l where l.created_at >= now() - interval '2 seconds'), 'fire_again', security.provider_task_fire_v1('link_search'), 'prep_has_fire', pg_get_functiondef('security.provider_task_prepare_v1(text,jsonb)'::regprocedure) like '%provider_task_fire_v1(''link_search'')%');
   -- D3 status before the fix runs: stall cause with the bypass off, then on
   update pipeline.platform_toolset_settings set value = '0'::jsonb where toolset_key = 'pipeline' and key = 'search.person_task_bypass';
   r := r || jsonb_build_object('block_bypass_off', security.link_search_block_v1(v_otago, array(select x::uuid from pipeline.admin_jobs j, jsonb_array_elements_text(j.args->'course_ids') x where j.id = v_job)));
@@ -290,4 +290,4 @@ begin
   -- taxonomy
   perform security.gap_causes_snapshot_v1();
   r := r || jsonb_build_object('gap_stopped', (select jsonb_build_object('n', sum(courses), 'auto', bool_or(automatic), 'action', min(action)) from pipeline.gap_cause_snapshots where at = date_trunc('hour', now()) and cause = 'no page: web search stopped for this university'));
-  raise exception 'DRYRUN OK %', r - 'page' - 'link' - 'locks' - 'use_msg' - 'http_msg' - 'item' - 'decision' - 'enter_ok' - 'status_on'; end $t$;
+  raise exception 'DRYRUN OK %', r - 'gap_stopped' - 'block_bypass_off' - 'status_after' - 'offsite_msg' - 'page' - 'link' - 'locks' - 'use_msg' - 'http_msg' - 'item' - 'decision' - 'enter_ok' - 'status_on'; end $t$;
