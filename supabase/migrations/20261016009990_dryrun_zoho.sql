@@ -6,7 +6,7 @@
 -- Now: a separate column rule_reason says which condition of the targets rule a university fails (first failing condition, in rule
 -- order), worked out by the same minute refresh, so every rule exclusion carries its reason for good. override_reason keeps its meaning
 -- (an override set by hand). The rule itself, who is included and every setting are unchanged.
--- Replaces: nothing (security.firecrawl_targets_refresh_v1 edited in place, md5-guarded)
+-- Replaces: nothing (security.firecrawl_targets_refresh_v1, public.admin_firecrawl_read and public.admin_adapters edited in place, md5-guarded)
 -- Retires: nothing
 
 create or replace function pg_temp.edit_n(p_sig text, p_md5 text, p_edits text[][], p_times int[]) returns void language plpgsql as $f$
@@ -61,12 +61,25 @@ select pg_temp.edit_n('security.firecrawl_targets_refresh_v1()', '2d3661f1f5e903
     from security.firecrawl_target_rule_reasons_v1() r where r.provider_id = c.provider_id and c.rule_reason is distinct from r.reason;$n$]],
   array[1]);
 
+-- the two admin reads carry it (Models & services › Firecrawl targets; Adapter builder › Firecrawl target)
+select pg_temp.edit_n('public.admin_firecrawl_read()', 'f3b78a9f8496c4dd2570052bdccf1d58', array[
+  array[$o$'rule_match', t.rule_match, 'included', t.included, 'override_reason', t.override_reason)$o$,
+        $n$'rule_match', t.rule_match, 'included', t.included, 'override_reason', t.override_reason, 'rule_reason', t.rule_reason)$n$]],
+  array[1]);
+select pg_temp.edit_n('public.admin_adapters(text,jsonb)', 'c35b0bdac551a81588ffa4a9fa05dd4e', array[
+  array[$o$jsonb_build_object('included', t.included, 'rule_match', t.rule_match, 'override_reason', t.override_reason) end$o$,
+        $n$jsonb_build_object('included', t.included, 'rule_match', t.rule_match, 'override_reason', t.override_reason,
+                                                                                  'rule_reason', (select c.rule_reason from pipeline.firecrawl_target_cache c where c.provider_id = t.provider_id)) end$n$]],
+  array[1]);
+
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
  ('function', 'security.firecrawl_target_rule_reasons_v1', 'Layer 2', 'which Firecrawl targets rule condition each university fails', 'active', '{}', '20261024012000')
 on conflict (kind, name) do nothing;
 
-do $t$ declare t timestamptz := clock_timestamp(); begin perform security.firecrawl_targets_refresh_v1();
-  raise exception 'DRYRUN OK refresh %ms | excluded: % | included with a failing rule (overrides): % | sample: %', round(extract(epoch from clock_timestamp()-t)*1000),
-    (select jsonb_object_agg(k, n) from (select regexp_replace(rule_reason, ' \(.*$', '') k, count(*) n from pipeline.firecrawl_target_cache where not included group by 1) z),
-    (select count(*) from pipeline.firecrawl_target_cache where included and rule_reason is not null),
-    (select string_agg(name || ': ' || rule_reason, ' / ') from (select name, rule_reason from pipeline.firecrawl_target_cache where not included and country = 'AU' order by name limit 4) s); end $t$;
+do $t$ declare v jsonb; a jsonb; begin perform security.firecrawl_targets_refresh_v1();
+  perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
+  perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
+  v := public.admin_firecrawl_read();
+  a := public.admin_adapters('list', '{}'::jsonb);
+  raise exception 'DRYRUN OK fc targets with rule_reason: % | adapters target keys: %', (select count(*) from jsonb_array_elements(v->'targets') x where x->>'rule_reason' is not null),
+    (select string_agg(distinct k, ',') from jsonb_array_elements(a->'adapters') x, jsonb_object_keys(x->'target') k where jsonb_typeof(x->'target')='object'); end $t$;
