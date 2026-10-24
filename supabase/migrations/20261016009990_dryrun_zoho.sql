@@ -10,6 +10,8 @@
 --   person-asked bypass a second time. Gates, budgets and caps are NOT changed (constraint): a row of a person's running
 --   "Find course pages" task passes the stop and bulk checks only, behind setting search.person_task_bypass (on). Budget (day share,
 --   month cap), the target-only rule, hidden providers, directory sites and the skip list still apply to it.
+--   D-target_only (Platform Admin 24 Oct 2026 13:55): a Find course pages task at a university the target-only rule holds is refused at
+--   start with the gate named; no task passes target-only (its release is R2's audit decision).
 -- D3 THE STALL WAS INVISIBLE. The task watcher closed a blocked find task after 45 minutes as "the rest wait their turn"; the gap-cause
 --   taxonomy filed the same rows as "no page: web search queued" (automatic). Now: security.link_search_block_v1 walks the picker's
 --   gates in its order and names the first one that holds (the stall cause); security.admin_job_status_v1 gives every task its last
@@ -264,43 +266,66 @@ insert into pipeline.component_register(kind, name, layer, purpose, status, repl
  ('function', 'security.layer4_fee_item_rebind_v1', 'Layer 4', 'held-fee item: a person''s page address through the bind path', 'active', '{}', '20261024009000')
 on conflict (kind, name) do nothing;
 
-do $t$ declare r jsonb := '{}'; v jsonb; e text; v_job uuid := 'e43e47de-3f9e-4057-992c-cc622f48a784'; v_otago uuid := 'ab12c7f8-e368-453d-9dfe-4ab8bd744829'; v_item uuid := 'c62b431b-c5b2-4805-8468-8cc714fc624a'; v_course uuid := '4ec179da-2b86-4c5d-bcd6-0075520b529c';
+-- PASTE FILE — CF-247 HOTFIX v2.15.342, decision D-stopped (Platform Admin 24 Oct 2026 13:55)
+-- Applied by: the Platform Admin, in the Supabase SQL editor of project fxcwkweaxjtknorudmwp, AFTER v2.15.342 (PR #686) is merged and live.
+-- Record: docs/platform/ui-audit/2026-10-24-hotfix-manual-task-and-layer4-entry.md (section 11).
+--
+-- What it does: re-opens the person-requested course page searches that the search-stop list held (1,549 rows at 24 universities on
+-- 24 Oct 13:40) by starting ONE "Find course pages" task per university for exactly those courses, as the Platform Admin. A person's
+-- task passes the stop (search.person_task_bypass), so the rows go to the search; each task shows Last forwarded / Blocked in the Task
+-- manager. Budgets, the month cap and the day share still apply (about 2 credits a search; today's share is far above 3,100).
+-- It does NOT resume the universities' automatic search, change any gate, or delete anything.
+-- Interim handling until S1 (per-course stop + negative evidence) lands; S1 is the permanent fix.
+--
+-- Count guards: the hotfix must be live; the rows to re-open must be no more than 1,549 at no more than these 24 universities (fewer is
+-- fine: some may have been searched since, e.g. by the Otago E2E task); a university that already has a waiting or running Find course
+-- pages task is skipped and counted. Nova Institute of Technology is unpublished: its task starts and shows "Blocked: unpublished".
+
+do $p$
+declare
+  v_admin constant uuid := '63ba56cb-48d4-4169-98c2-7c4d1f72925b';  -- Platform Admin
+  v_list constant uuid[] := array[
+    '570ddbbd-f07e-4060-b52d-c5322dcdaa00','1b8f2f2f-d3d2-455e-a9fd-5a65744352ec','22657140-1cb0-4fa7-91df-90518ea8b35b','188103a5-1aba-4f99-bd3e-0416659086d3',
+    'bac82321-ded7-4e10-a71d-b18f3ae4d1c7','27349414-019b-4c0b-a38d-db92aaaf5e68','014118a6-54ea-4f36-ba05-a363b73b7979','0e1532b8-de30-4761-87fe-460684608633',
+    'ab12c7f8-e368-453d-9dfe-4ab8bd744829','2a97c91d-9340-49fa-a437-6c76ea01edd9','3f48840c-8038-42a0-805e-8f7974301b23','5d21e4d4-73b4-4ad6-b100-199264540e72',
+    '9e46baf2-694b-4d79-889e-b956d144c930','131ef262-b6e4-40a3-b8bf-7e4d6098eba8','8e1adb6c-e069-43db-9584-bd054255e702','d3f9ed02-2cca-4370-8070-7e52f381d1ba',
+    '72a15f12-f3ee-40d7-8edf-af648ee10e14','ef420a23-6e62-47d3-9ab0-fdc35ebe97a0','dce6f5a7-c912-4a07-b9c6-7cf230a0e13b','47c734fe-9c1d-403f-b7cc-c4c77ad742fd',
+    'a886a995-0315-4c92-9a74-697a2d0e014f','719403bc-6957-4d21-af69-2b3b102df578','cffa9cab-0a3b-458b-8383-483ce622c9c3','fac03540-a412-4c76-a5ab-cd338d7760db']::uuid[];
+  v_rows int; v_provs int; r record; v jsonb; v_started int := 0; v_courses int := 0; v_skipped int := 0; v_failed text := '';
 begin
-  perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
-  perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
-  begin perform public.admin_jobs('start', jsonb_build_object('kind', 'course_page_find', 'args', jsonb_build_object('provider_id', '01193db7-cc68-4d1e-9374-f6a72948ea6e'), 'reason', 'dry run: target-only'));
-        r := r || jsonb_build_object('non_target', 'STARTED (wrong)');
-  exception when others then r := r || jsonb_build_object('non_target', sqlerrm); end;
-  -- accept: a person starts Find course pages for Otago (as the Platform Admin did at 12:38)
-  v := public.admin_jobs('start', jsonb_build_object('kind', 'course_page_find', 'args', jsonb_build_object('provider_id', v_otago), 'reason', 'dry run: hotfix D2'));
-  v_job := (v->>'id')::uuid;
-  update pipeline.admin_jobs set state = 'running', started_at = coalesce(started_at, now()) where id = v_job and state = 'queued';  -- the runner takes it at its next tick
-  r := r || jsonb_build_object('started', v ? 'id', 'fired_on_accept', (select jsonb_agg(jsonb_build_object('mode', l.mode, 'at', l.created_at)) from pipeline.edge_request_log l where l.created_at >= now() - interval '2 seconds'), 'fire_again', security.provider_task_fire_v1('link_search'), 'prep_has_fire', pg_get_functiondef('security.provider_task_prepare_v1(text,jsonb)'::regprocedure) like '%provider_task_fire_v1(''link_search'')%');
-  -- D3 status before the fix runs: stall cause with the bypass off, then on
-  update pipeline.platform_toolset_settings set value = '0'::jsonb where toolset_key = 'pipeline' and key = 'search.person_task_bypass';
-  r := r || jsonb_build_object('block_bypass_off', security.link_search_block_v1(v_otago, array(select x::uuid from pipeline.admin_jobs j, jsonb_array_elements_text(j.args->'course_ids') x where j.id = v_job)));
-  update pipeline.platform_toolset_settings set value = '1'::jsonb where toolset_key = 'pipeline' and key = 'search.person_task_bypass';
-  r := r || jsonb_build_object('status_on', security.admin_job_status_v1(v_job), 'lane_wakes', security.worker_mode_waiting_v1('link_search'));
-  -- D2 the picker hands the Otago task's rows to Firecrawl
-  v := public.svc_course_link_search_next(200);
-  r := r || jsonb_build_object('picked', jsonb_array_length(v), 'picked_otago', (select count(*) from jsonb_array_elements(v) x where x->>'provider_id' = v_otago::text),
-                               'otago_sent_now', (select count(*) from pipeline.course_link_search where provider_id = v_otago and state = 'sent' and sent_at >= now() - interval '1 minute'));
-  r := r || jsonb_build_object('status_after', security.admin_job_status_v1(v_job) - 'runner_last_run', 'jobs_read_has_status', (select bool_and(x ? 'status') from jsonb_array_elements(public.admin_jobs('read', '{}'::jsonb)->'jobs') x));
-  -- D1 non-https, then use, then enter
-  begin perform public.admin_layer4_inbox('decide', jsonb_build_object('kind','course_link','ref',v_item,'choice','enter','reason','dry run test','value','http://www.aut.ac.nz/courses/postgraduate-certificate-in-science'));
-  exception when others then r := r || jsonb_build_object('http_msg', sqlerrm); end;
-  begin perform public.admin_layer4_inbox('decide', jsonb_build_object('kind','course_link','ref',v_item,'choice','enter','reason','dry run test','value','https://www.example.com/x'));
-  exception when others then r := r || jsonb_build_object('offsite_msg', sqlerrm); end;
-  begin perform public.admin_layer4_inbox('decide', jsonb_build_object('kind','course_link','ref',v_item,'choice','use','reason','dry run test'));
-  exception when others then r := r || jsonb_build_object('use_msg', sqlerrm); end;
-  v := public.admin_layer4_inbox('decide', jsonb_build_object('kind','course_link','ref',v_item,'choice','enter','reason','dry run test','value','https://www.aut.ac.nz/courses/postgraduate-certificate-in-science'));
-  r := r || jsonb_build_object('enter_ok', v->'result'->'ok',
-    'item', (select status from pipeline.layer4_review_items where id = v_item),
-    'page', (select jsonb_build_object('url', url, 'basis', basis, 'status', status, 'next_read_at_le_now', next_read_at <= now()) from pipeline.coverage_course_pages where course_id = v_course),
-    'link', (select jsonb_agg(url) from catalogue.course_links where course_id = v_course and link_type = 'official_course' and status = 'active'),
-    'locks', (select jsonb_agg(field) from pipeline.manual_locks where entity_id = v_course) ,
-    'decision', (select action from pipeline.layer4_decisions where review_item_id = v_item order by created_at desc limit 1));
-  -- taxonomy
-  perform security.gap_causes_snapshot_v1();
-  r := r || jsonb_build_object('gap_stopped', (select jsonb_build_object('n', sum(courses), 'auto', bool_or(automatic), 'action', min(action)) from pipeline.gap_cause_snapshots where at = date_trunc('hour', now()) and cause = 'no page: web search stopped for this university'));
-  raise exception 'DRYRUN OK %', r - 'fired_on_accept' - 'jobs_read_has_status' - 'lane_wakes' - 'gap_stopped' - 'block_bypass_off' - 'status_after' - 'offsite_msg' - 'page' - 'link' - 'locks' - 'use_msg' - 'http_msg' - 'item' - 'decision' - 'enter_ok' - 'status_on'; end $t$;
+  if to_regprocedure('security.link_search_person_task_v1(uuid,uuid)') is null
+     or coalesce((select (value #>> '{}')::numeric from pipeline.platform_toolset_settings where toolset_key = 'pipeline' and key = 'search.person_task_bypass'), 0) < 1 then
+    raise exception 'v2.15.342 is not live (or search.person_task_bypass is off): merge PR #686 first';
+  end if;
+  select count(*), count(distinct s.provider_id) into v_rows, v_provs
+    from pipeline.course_link_search s
+   where s.state = 'queued' and s.requested_at is not null and s.provider_id = any (v_list)
+     and s.provider_id in (select x.provider_id from security.fc_search_stopped_v1() x);
+  if v_rows > 1549 or v_provs > 24 then raise exception 'count guard: expected at most 1,549 rows at 24 universities, found % at %', v_rows, v_provs; end if;
+  if v_rows = 0 then raise exception 'count guard: nothing left to re-open (0 rows)'; end if;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', v_admin::text, true);
+  for r in select s.provider_id, array_agg(s.course_id) ids
+             from pipeline.course_link_search s
+            where s.state = 'queued' and s.requested_at is not null and s.provider_id = any (v_list)
+              and s.provider_id in (select x.provider_id from security.fc_search_stopped_v1() x)
+            group by s.provider_id loop
+    if exists (select 1 from pipeline.admin_jobs j where j.kind = 'course_page_find' and j.state in ('queued', 'running') and j.args->>'provider_id' = r.provider_id::text) then
+      v_skipped := v_skipped + 1; continue;
+    end if;
+    begin
+      v := public.admin_jobs('start', jsonb_build_object('kind', 'course_page_find',
+             'args', jsonb_build_object('provider_id', r.provider_id, 'course_ids', to_jsonb(r.ids)),
+             'reason', 'Hotfix D-stopped (24 Oct 2026): re-open the searches the stop list held'));
+      v_started := v_started + 1; v_courses := v_courses + cardinality(r.ids);
+    exception when others then v_failed := v_failed || r.provider_id || ': ' || sqlerrm || '; ';
+    end;
+  end loop;
+  if v_failed <> '' then raise exception 'not applied (rolled back): %', v_failed; end if;
+  raise notice 'Re-opened: % task(s), % course(s) (guard: % rows at % universities); % skipped (task already waiting or running)', v_started, v_courses, v_rows, v_provs, v_skipped;
+end $p$;
+
+-- Check afterwards (expect the tasks running, rows moving from queued to sent within a few minutes):
+do $t$ begin raise exception 'DRYRUN OK %', (select jsonb_build_object('tasks', count(*), 'courses', sum(jsonb_array_length(args->'course_ids')), 'states', jsonb_agg(distinct state)) from pipeline.admin_jobs where kind='course_page_find' and reason like '%Hotfix D-stopped%')
+  || jsonb_build_object('picked', jsonb_array_length(public.svc_course_link_search_next(200))); end $t$;
