@@ -1,12 +1,13 @@
--- CF-247 (24 Oct 2026). UI audit Phase 2 — the Courses list shows what the course blade already holds (Platform Admin 24 Oct 2026 11:27;
--- decision record: admin repo docs/platform/ui-audit/2026-10-24-ui-cleanup-mandate.md).
--- The list read path (security.admin_course_page_fast_base, behind public.admin_read 'courses_page') already returns the provider's
--- international fee (amount, currency, year), the CRICOS registered total, the campus cities and the state; the screen already has the
--- columns (v2.15.330). Two gaps closed here, both additive on the admin read path (not the website API, Decision 266):
---   1 the fee's basis (per year, per course, …) joins the row (intl_fee_basis) so the list shows it as the blade does;
---   2 the International fee and City columns become sortable (sort keys intl_fee and city): the sort runs on the filtered set with one
---     indexed lookup per course; the legacy 'fee' sort (ui_courses_decision_page) is untouched.
--- Replaces: nothing (admin_course_page_fast_base edited in place, md5-guarded)
+-- CF-247 (24 Oct 2026). UI audit Phase 3 — dedupe and data-quality leaks (Platform Admin 24 Oct 2026 11:27; decision record: admin repo
+-- docs/platform/ui-audit/2026-10-24-ui-cleanup-mandate.md section 4).
+-- 1 The Dashboard's Scholarships tile said 2,059 "every status" while the Scholarships screen said 1,106 published of 1,436 held: the
+--   2,059 counts 623 retired records too. The dashboard read gains the two figures the screen uses (additive keys on the admin read path)
+--   so both screens state the same three numbers.
+-- 2 One campus carries its street as its city ("1 Brazier Drive", Townsville Grammar School – Annandale Campus): corrected to Townsville
+--   (count-guarded: exactly one such row).
+-- Not here (data the register did not give, logged for Layer 1): 19 CRICOS providers named "N/A"/"NA" (the register's trading name) and one
+-- NZQA course titled "--"; the screens show them as unnamed with the register code until the register read keeps the legal name.
+-- Replaces: nothing (admin_dashboard_maturity_compute edited in place, md5-guarded)
 -- Retires: nothing
 
 create or replace function pg_temp.edit_n(p_sig text, p_md5 text, p_edits text[][], p_times int[]) returns void language plpgsql as $f$
@@ -21,29 +22,25 @@ begin
   execute v_def;
 end $f$;
 
-select pg_temp.edit_n('security.admin_course_page_fast_base(jsonb)', 'a828eb5404a7999c81c2336b09b5f366', array[
-  array[$o$    select * from numbered order by
-      case when v_sort='course' and v_dir='asc' then lower(canonical_title) end asc,$o$,
-        $n$    select * from numbered order by
-      -- 24 Oct 2026 (UI audit Phase 2): the International fee and City columns sort; one indexed lookup per filtered course
-      case when v_sort='intl_fee' and v_dir='asc' then (select cf.amount from catalogue.course_fees cf where cf.course_id=numbered.id and cf.fee_type='provider_current_tuition' and cf.audience='international' and cf.status='active' order by cf.fee_year desc nulls last, cf.updated_at desc limit 1) end asc nulls last,
-      case when v_sort='intl_fee' and v_dir='desc' then (select cf.amount from catalogue.course_fees cf where cf.course_id=numbered.id and cf.fee_type='provider_current_tuition' and cf.audience='international' and cf.status='active' order by cf.fee_year desc nulls last, cf.updated_at desc limit 1) end desc nulls last,
-      case when v_sort='city' and v_dir='asc' then (select min(lower(ca.city)) from catalogue.course_campuses cc join catalogue.campuses ca on ca.id=cc.campus_id where cc.course_id=numbered.id and nullif(btrim(ca.city),'') is not null) end asc nulls last,
-      case when v_sort='city' and v_dir='desc' then (select min(lower(ca.city)) from catalogue.course_campuses cc join catalogue.campuses ca on ca.id=cc.campus_id where cc.course_id=numbered.id and nullif(btrim(ca.city),'') is not null) end desc nulls last,
-      case when v_sort='course' and v_dir='asc' then lower(canonical_title) end asc,$n$],
-  array[$o$left join lateral (select cf.amount, cf.currency_code, cf.fee_year from catalogue.course_fees cf where cf.course_id=pg.id and cf.fee_type='provider_current_tuition'$o$,
-        $n$left join lateral (select cf.amount, cf.currency_code, cf.fee_year, cf.basis from catalogue.course_fees cf where cf.course_id=pg.id and cf.fee_type='provider_current_tuition'$n$],
-  array[$o$ifee.fee_year intl_fee_year,gcity.city_names,$o$, $n$ifee.fee_year intl_fee_year,ifee.basis intl_fee_basis,gcity.city_names,$n$]], array[1, 1, 1]);
+select pg_temp.edit_n('security.admin_dashboard_maturity_compute()', '240d606e62a4ae008712e0d18e99eba5', array[
+  array[$o$    'scholarships',(select count(*) from scholarship.scholarships),'jobs',(select count(*) from pipeline.jobs),$o$,
+        $n$    'scholarships',(select count(*) from scholarship.scholarships),'jobs',(select count(*) from pipeline.jobs),
+    /* 24 Oct 2026 (UI audit Phase 3): the figures the Scholarships screen states, so the Dashboard says the same */
+    'scholarships_active',(select count(*) from scholarship.scholarships where lifecycle_status='active'),
+    'scholarships_published',(select count(*) from scholarship.scholarships where lifecycle_status='active' and publication_status='published'),$n$]], array[1]);
 
-do $t$ declare r jsonb; t0 timestamptz; d1 jsonb; d2 jsonb; d3 jsonb; begin
+do $g$ declare n int; begin
+  select count(*) into n from catalogue.campuses where status = 'active' and city ~ '^\d+\s';
+  if n <> 1 then raise exception 'expected exactly one active campus with a street for a city, found %', n; end if;
+  update catalogue.campuses set city = 'Townsville', updated_at = now()
+   where status = 'active' and city ~ '^\d+\s' and name ilike 'Townsville Grammar School%';
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'the Townsville campus was not corrected (% rows)', n; end if;
+end $g$;
+
+do $t$ declare r jsonb; begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
-  t0 := clock_timestamp();
-  d1 := public.admin_read('courses_page', '{"limit":5,"country_code":"NZ","sort":"intl_fee","direction":"desc"}'::jsonb);
-  d2 := public.admin_read('courses_page', '{"limit":5,"country_code":"AU","sort":"city","direction":"asc"}'::jsonb);
-  d3 := public.admin_read('courses_page', '{"limit":3,"country_code":"CA","has_fee":true,"sort":"intl_fee","direction":"desc"}'::jsonb);
-  r := jsonb_build_object('ms', round(extract(epoch from clock_timestamp()-t0)*1000),
-    'nz_fee_desc', (select jsonb_agg(jsonb_build_object('t', left(x->>'canonical_title',30), 'fee', x->'intl_fee_amount', 'basis', x->'intl_fee_basis', 'y', x->'intl_fee_year')) from jsonb_array_elements(d1->'items') x),
-    'au_city_asc', (select jsonb_agg(jsonb_build_object('t', left(x->>'canonical_title',25), 'city', x->'city_names', 'st', x->'subdivision_name')) from jsonb_array_elements(d2->'items') x),
-    'ca_fee_desc', (select jsonb_agg(jsonb_build_object('t', left(x->>'canonical_title',25), 'fee', x->'intl_fee_amount', 'basis', x->'intl_fee_basis')) from jsonb_array_elements(d3->'items') x));
+  r := jsonb_build_object('dash', (select d - 'recent_activity' - 'operational' from (select public.admin_read('dashboard', '{}'::jsonb) d) z),
+    'campus', (select jsonb_build_object('city', city, 'name', name) from catalogue.campuses where id = '1c21aa97-9bed-41a3-b4c3-3d92d8d7df8f'));
   raise exception 'DRYRUN OK %', r; end $t$;
