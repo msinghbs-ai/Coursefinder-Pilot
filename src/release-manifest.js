@@ -1,22 +1,21 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.341'
-export const PACKAGE_VERSION='0.1.268'
+export const UI_VERSION='2.15.342'
+export const PACKAGE_VERSION='0.1.269'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Oct 2026',
-  title:'Plain error messages, a steady version, honest completeness',
+  title:'Hotfix: a person\'s course page search runs, a stalled task says why, a held fee takes a page address',
   changes:[
-    'An error now shows as one plain line with a short reference (for example "The database took too long to answer… (ref AB3K7Q)"); the full detail is kept for the Platform Admin. A message belongs to the screen that raised it and no longer follows you to the next screen.',
-    'When a newer version has been released while this window was open, a notice offers a reload, so the top bar and the screens never disagree about the version.',
-    'Coverage › "Fully complete courses" counts the attributes the platform can read; the 20–24 Oct rows explain why they read 0.',
+    'Scheduled jobs › Task manager: every running task shows when it last sent work to its tool and when the next attempt is; when nothing has moved for a minute (Tasks: blocked after) it says what is holding it and where to fix it.',
+    'Coverage gaps name "web search stopped for this university" instead of counting those courses as queued.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[
-    'The official-page admission job had failed on every run since 23 Oct because a rule tried to apply a plain http:// course address; such an address now waits for a person and the job runs again.',
-    'Raw database wording (function names, CONTEXT lines, vendor and job names) no longer appears in Platform health, Layer 2/3 or Scheduled jobs.'
+    'Find course pages started by a person waited for ever at a university whose automatic search had stopped (Otago, 0 of 50); a person\'s task now passes the stop and is sent to the search as soon as it is accepted (Course search: a person\'s task passes the stop). Budgets and the target-only rule still apply.',
+    'Layer 4: "Enter another address" on a held fee (identity re-check, fee floor) failed with a technical message; it now binds the page as a person\'s value, reads it again and re-admits the fee. https:// on the university\'s own site only; "Use the new page" no longer shows on a fee item.'
   ]
 }
 

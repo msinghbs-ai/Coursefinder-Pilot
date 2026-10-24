@@ -44,6 +44,18 @@ export function taskLine(j,pj,perLane){
   if(j.state==='queued'){const place=Number(pj?.place||0);const when=place&&perLane?(place<=perLane?'starts within a minute':`starts in about ${Math.ceil(place/perLane)} min`):'';return `Waiting${place?` · ${ord(place)} in line`:''}${when?` · ${when}`:''}${items?` · ${fmtNumber(it.total)} item(s)`:''}`}
   return `${fmtNumber(p?.done||0)} of ${fmtNumber(p?.total||0)}${items?' item(s)':''}${items&&Number(it.with_ai)>0?` · ${fmtNumber(it.with_ai)} with the AI reader`:''}${items&&Number(it.filled)>0?` · ${fmtNumber(it.filled)} filled`:''}`
 }
+// hotfix D3 (Platform Admin 24 Oct 2026 13:17: "a dead task looks alive"): every running task says when it last forwarded work to its
+// tool and when the next attempt is; once nothing has moved for tasks.stall_seconds it names the gate that holds it (admin_job_status_v1)
+export function taskStatusLine(st){
+  if(!st)return ''
+  const at=v=>v?fmtTime(v):'not yet'
+  return `Last forwarded ${at(st.last_forwarded_at)}${Number(st.forwarded)>0?` (${fmtNumber(st.forwarded)} sent)`:''} · next attempt ${at(st.next_attempt_at)}`
+}
+export function TaskBlocked({st}){
+  const b=st?.blocked
+  if(!b)return null
+  return <small className="tm-blocked" role="status" data-task-blocked={b.code}><AlertTriangle size={12}/> <b>Blocked:</b> {b.words}{b.fix?<> · {b.fix}</>:null}</small>
+}
 // v2.15.333 (Platform Admin 23 Oct 2026 19:27: "Lets test openrouter where it goes bottleneck"): how the AI readers' OpenRouter requests
 // went in the last 15 minutes (worker v0.43.0); rate-limited (429), server errors and timeouts say where OpenRouter pushes back.
 export function orLine(o){
@@ -127,7 +139,7 @@ export default function AdminTasks({rank=0,onError}){
         {(d.jobs||[]).map(j=><tr key={j.id} data-task-row={j.id} className={open===j.id?'tm-open':''}>
           <td><button type="button" className="tm-link" onClick={()=>setOpen(open===j.id?'':j.id)}>{j.title}</button><br/><small className="sl-sub">{label(j.kind)}</small></td>
           <td><Badge tone={STATE_TONE[j.state]||'neutral'}>{j.state}</Badge>{j.cancel_requested&&j.state==='running'&&<small className="sl-sub"> cancelling…</small>}{j.pause_requested&&j.state==='running'&&<small className="sl-sub"> pausing…</small>}</td>
-          <td className="tm-progress-cell"><Progress progress={taskProgress(j,pulse?.jobs?.[j.id])} state={j.state}/><small className="sl-sub" data-task-line>{taskLine(j,pulse?.jobs?.[j.id],Number(pulse?.per_lane||1))}</small></td>
+          <td className="tm-progress-cell"><Progress progress={taskProgress(j,pulse?.jobs?.[j.id])} state={j.state}/><small className="sl-sub" data-task-line>{taskLine(j,pulse?.jobs?.[j.id],Number(pulse?.per_lane||1))}</small>{j.state==='running'&&j.status&&<small className="sl-sub" data-task-status>{taskStatusLine(j.status)}</small>}<TaskBlocked st={j.status}/></td>
           <td>{SCH_KINDS.has(j.kind)?<>{j.result?.phase_detail||'Starting'}{j.result?.new_scholarships?` · ${fmtNumber(j.result.new_scholarships)} new`:''}{j.result?.credits!=null?` · ${fmtNumber(j.result.credits)} credit(s)`:''}</>:j.kind==='qualify_adapters'?<>{fmtNumber(j.result?.passing||0)} with a passing field</>:<>{fmtNumber(j.result?.passing||0)} admitted</>}{Number(j.result?.errors||0)>0&&<>, <span className="tm-err">{fmtNumber(j.result.errors)} error(s)</span></>}{j.error&&<><br/><span className="tm-err">{j.error}</span></>}</td>
           {/* v2.15.307: a task an enrichment plan started says so; automatic plans run as the Platform Admin who switched them on */}
           <td>{j.args?.plan_mode?<><span data-task-plan={j.args.plan_mode}>{j.args.plan_mode==='auto'?'Enrichment plan (automatic)':'Enrichment plan (Run now)'}</span><br/><small className="sl-sub">{j.args.plan_mode==='auto'?'runs as ':'by '}{j.requested_by_name}</small></>:j.requested_by_name}</td>
