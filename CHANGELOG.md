@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.271 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.344** (UI audit Phase 2 — course list; Platform Admin 24 Oct 11:27). Not merged without Platform Admin review; stacked on v2.15.341.
+  - Migration `20261024007000_cf247_ui_audit_phase2_course_list.sql` (md5-guarded edit of `admin_course_page_fast_base`): `intl_fee_basis` on the list row; sort keys `intl_fee` and `city`. Admin read path only.
+  - Courses list: International fee shows amount, year and basis; International fee and City sort. Test s96. SOPs 1.85.
+
+
 ## 0.1.270 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.343** (HOTFIX 2 — found in the v2.15.342 post-merge check). Migration `20261024010000_cf247_hotfix2_person_task_spend_gate.sql`: `public.svc_fc_spend` (md5-guarded) lets a person's waiting or running Find course pages task past the search stop, as the picker does (406 refusals for Otago on 24 Oct); `security.admin_job_status_v1` (md5-guarded): for Find course pages the stall clock follows credits spent and a credit refusal is the blocking reason (`credit_refused`). Budgets, caps and target-only unchanged. Test s99 (4th test). Release notes v2.15.342. SOPs 1.84.
