@@ -159,6 +159,30 @@ select pg_temp.edit_n('security.worker_mode_waiting_v1(text)', '781c1f7da4ebd4c3
                                      or (security.pipeline_num_v1('search.person_task_bypass', 1) >= 1 and security.link_search_person_task_v1(s.provider_id, s.course_id))))$n$]],
   array[1]);
 
+-- 4b accept → toolset at once: the task asks the same worker with the same body the minute job sends (one path), straight after commit,
+--    instead of waiting up to a minute for the next tick. A lane an operator paused stays paused; the idle guard's own pause does not hold it.
+select pg_temp.edit_n('security.provider_task_fire_v1(text)', 'a972d06b948cf0db6986c90614fc09b3', array[
+  array[$o$                         when 'central_find' then '{"mode":"central_find","limit":4}'::jsonb end;
+  if v_body is null then return 0; end if;$o$,
+        $n$                         when 'central_find' then '{"mode":"central_find","limit":4}'::jsonb
+                         -- hotfix D2 (24 Oct 2026): the body of job course-link-search-worker, word for word
+                         when 'link_search' then jsonb_build_object('mode', 'link_search', 'limit', security.pipeline_num_v1('batch.link_search_worker', 120)::int) end;
+  if v_body is null then return 0; end if;
+  if p_mode = 'link_search'
+     and not exists (select 1 from cron.job j where j.jobname = 'course-link-search-worker' and j.active)
+     and not exists (select 1 from pipeline.enrichment_flags f where f.entity = 'job' and f.entity_key = 'course-link-search-worker' and f.reason_code = 'idle_paused' and f.state = 'raised') then
+    return 0;
+  end if;$n$]],
+  array[1]);
+
+select pg_temp.edit_n('security.provider_task_prepare_v1(text,jsonb)', '77d029207a8737f9e17adcc6670f1c6a', array[
+  array[$o$    get diagnostics v_n = row_count;
+    return jsonb_build_object('provider_id', v_pid, 'course_ids', to_jsonb(v_ids), 'queued', v_n,$o$,
+        $n$    get diagnostics v_n = row_count;
+    perform security.provider_task_fire_v1('link_search');  -- hotfix D2: forwarded on accept, not at the next minute
+    return jsonb_build_object('provider_id', v_pid, 'course_ids', to_jsonb(v_ids), 'queued', v_n,$n$]],
+  array[1]);
+
 -- 5 the watcher names the gate when it closes a stalled find task; the Task manager reads every task's status --------------------------------
 select pg_temp.edit_n('security.admin_job_watch_v1(uuid)', '58a4ec23ee992b70a4cd8dd312cec2ef', array[
   array[$o$      'credits', (select coalesce(sum(u.units), 0) from pipeline.coverage_vendor_usage u where u.provider_id = v_pid and u.purpose = 'course_link_search' and u.at >= v_since));$o$,
@@ -234,7 +258,11 @@ do $t$ declare r jsonb := '{}'; v jsonb; e text; v_job uuid := 'e43e47de-3f9e-40
 begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
-  update pipeline.admin_jobs set state = 'running', finished_at = null, cursor = jsonb_build_object('last_done', 0, 'last_change_at', now() - interval '10 minutes') where id = v_job;  -- the task as it stood at 13:20
+  -- accept: a person starts Find course pages for Otago (as the Platform Admin did at 12:38)
+  v := public.admin_jobs('start', jsonb_build_object('kind', 'course_page_find', 'args', jsonb_build_object('provider_id', v_otago), 'reason', 'dry run: hotfix D2'));
+  v_job := (v->>'id')::uuid;
+  update pipeline.admin_jobs set state = 'running', started_at = coalesce(started_at, now()) where id = v_job and state = 'queued';  -- the runner takes it at its next tick
+  r := r || jsonb_build_object('started', v ? 'id', 'fired_on_accept', (select count(*) from pipeline.edge_request_log l where l.function_name = 'coverage-sweep' and l.mode = 'link_search' and l.created_at = now()));
   -- D3 status before the fix runs: stall cause with the bypass off, then on
   update pipeline.platform_toolset_settings set value = '0'::jsonb where toolset_key = 'pipeline' and key = 'search.person_task_bypass';
   r := r || jsonb_build_object('block_bypass_off', security.link_search_block_v1(v_otago, array(select x::uuid from pipeline.admin_jobs j, jsonb_array_elements_text(j.args->'course_ids') x where j.id = v_job)));
