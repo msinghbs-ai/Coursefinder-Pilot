@@ -9,6 +9,7 @@ import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import Stats15m from'./Stats15m'
 import GapCauses from'./GapCauses'
+import{plainError}from'./lib/errors'
 
 export const QUEUE_STATES={
   moving:{label:'Moving',tone:'success',help:'Work is waiting and items are finishing.'},
@@ -22,7 +23,7 @@ export const QUEUE_STATES={
 }
 const ORDER=['out_of_toolset','stuck','failing','waiting','moving','nothing_left','done','paused']
 export const stateOf=s=>QUEUE_STATES[s]||{label:s||'Not checked yet',tone:'neutral',help:''}
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const hours=h=>h==null?'—':h<1?`${Math.max(1,Math.round(h*60))} min`:h<48?`${fmtNumber(Math.round(h*10)/10)} h`:`${fmtNumber(Math.round(h/24))} days`
 
 export default function QueueWatch({onError}){

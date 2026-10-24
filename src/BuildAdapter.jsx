@@ -17,8 +17,9 @@ import{ArrowLeft,Hammer,Layers,ListChecks,RefreshCw,Search,ShieldCheck,X}from'lu
 import{supabase}from'./lib/supabase'
 import{hrefFor}from'./nav-map'
 import{Button,Empty,Loading,Pager,fmtDateTime,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_adapter_build',{p_action:action,p_args:args||{}});if(error)throw error;return data}
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const PAGE=50

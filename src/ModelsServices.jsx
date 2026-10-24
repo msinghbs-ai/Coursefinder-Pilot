@@ -12,8 +12,9 @@ import{BrainCircuit,Globe,History,Power,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,Metric,StatusChip,fmtDateTime,fmtNumber,humanLabel}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const usd=v=>`US$${Number(v||0).toFixed(2)}`
 
 export function Switch({on,label,disabled,onChange}){

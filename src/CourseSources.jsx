@@ -9,6 +9,7 @@ import React,{useEffect,useMemo,useState}from'react'
 import{CheckCircle2,Compass,Globe2,ListChecks,RefreshCw,Search,XCircle}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
 export const FINDER_STATES={
   found:{label:'Found',tone:'success',help:'The finder found a course source and added it.'},
@@ -17,7 +18,7 @@ export const FINDER_STATES={
   failed:{label:'Failed',tone:'danger',help:'The finder could not finish; it tries again later.'},
   leased:{label:'Looking now',tone:'info',help:'The finder is looking at this university now.'},
 }
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const finderOf=s=>FINDER_STATES[s]||{label:s||'Not looked at',tone:'neutral',help:''}
 const viaLabel=v=>v==='map'?'Firecrawl map':v==='sitemap'?'Site map':v==='firecrawl'?'Scraper':v==='direct'?'Direct':v||'—'
 

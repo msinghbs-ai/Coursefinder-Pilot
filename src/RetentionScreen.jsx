@@ -6,8 +6,9 @@ import{supabase}from'./lib/supabase'
 import{Button,Empty,Loading,fmtNumber}from'./ui-kit'
 import{fmtDateTime}from'./lib/format.js'
 import StorageSizes from'./StorageSizes'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const mb=b=>b==null?'—':b>=1e9?`${(b/1e9).toFixed(2)} GB`:`${Math.round(b/1e6)} MB`
 const when=t=>fmtDateTime(t)
 const TONE={done:'tone-success',failed:'tone-danger',stopped:'tone-neutral',running:'tone-info',queued:'tone-info'}

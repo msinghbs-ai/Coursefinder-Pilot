@@ -18,8 +18,9 @@ import FirecrawlWork from'./FirecrawlWork'
 import FirecrawlCredits from'./FirecrawlCredits'
 import Card,{rememberOpen}from'./Card'
 import{hrefFor}from'./nav-map'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const LAYER={0:'Platform',1:'Layer 1',2:'Layer 2',3:'Layer 3',4:'Layer 4'}
 const SEV={high:'danger',warning:'warning',info:'neutral'}

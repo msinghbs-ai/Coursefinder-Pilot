@@ -12,8 +12,9 @@ import{Button,Loading,Metric,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{Settings,ReasonAction,Approvals,estimate}from'./ProviderOnboarding'
 import{cronText}from'./Progress'
 import'./layer23.css'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const KIND={website_needed:'Website needed',site_down:'Website not answering',pages_not_found:'Course pages not found',too_few_pages:'Too few course pages',
   nothing_ready:'Adapter has nothing ready',onboarding_failed:'Adapter proposal failed',central_to_approve:'Central pages to approve',course_link:'Course link',
   fee_check:'Fee fails the check',not_offered:'Course not offered',not_on_site:"Course not on the university's site",counsellor_report:'Counsellor report',held_scholarship:'Held scholarship'}

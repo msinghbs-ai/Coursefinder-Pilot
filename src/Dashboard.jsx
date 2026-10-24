@@ -11,11 +11,12 @@ import React,{useEffect,useState}from'react'
 import{ArrowRight,Award,Building2,CalendarClock,CheckCircle2,ClipboardCheck,Globe,GraduationCap,Inbox,Link2,PauseCircle,RefreshCw,Sparkles,Workflow,XCircle}from'lucide-react'
 import{adminRead,supabase}from'./lib/supabase'
 import{Button,Loading,Metric,SectionTitle,fmtDate,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
 // v2.15.284 (Platform Admin, 16 Oct 2026: "Dashboard should display Icons"): an icon for each queue in Waiting for you
 const INBOX_ONLY=new Set(['review','onboarding_admit','onboarding_stopped'])
 const QUEUE_ICON={review:ClipboardCheck,onboarding_admit:Building2,onboarding_stopped:PauseCircle,scholarship_links:Link2,scholarships_ready:Award,reference:Globe,dates:CalendarClock,failed_jobs:XCircle,failed_automations:Workflow}
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ago=v=>{if(!v)return'';const d=Math.floor((Date.now()-new Date(v).getTime())/86400000);return d<=0?'today':d===1?'1 day':`${fmtNumber(d)} days`}
 
 export default function Dashboard({onError}){

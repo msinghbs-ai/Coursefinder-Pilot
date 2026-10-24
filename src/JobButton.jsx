@@ -8,8 +8,9 @@ import React,{useEffect,useRef,useState}from'react'
 import{Play,Square,Loader2,CheckCircle2,XCircle}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 // v2.15.247 (Platform Admin bugs 11/10-4, 11 Oct 2026: "it ask for reason which is not required and nothing happened afterwards"):
 // starting a task asks only to confirm; the log records the screen it was started from. Cancel still asks for a reason.

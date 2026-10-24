@@ -22,8 +22,9 @@ import{Button,Loading,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import{hrefFor}from'./nav-map'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export const IN_PROGRESS=['website','course_pages','capturing','proposing','applying','qualifying','scholarships']
 export const STEP={queued:['Queued','neutral'],website:['Website','info'],course_pages:['Course pages','info'],capturing:['Capturing samples','info'],proposing:['Proposing','info'],
   applying:['Applying','info'],qualifying:['Qualifying','info'],scholarships:['Scholarships','info'],waiting_admit:['Ready to admit','success'],waiting_courses:['Waiting for courses','warning'],

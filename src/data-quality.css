@@ -49,3 +49,4 @@
 .fc-decide{white-space:nowrap}.fc-decide button+button{margin-left:6px}
 .fc-top{display:block;margin-top:4px}
 .plan-run{border-top:1px solid var(--cf-slate-200);padding-top:8px;margin-top:8px}.sd-subhead{margin:16px 0 6px;font-size:var(--cf-fs-md)}
+.cc-note{margin:0 0 8px;color:var(--dq-muted);font-size:var(--cf-fs-xs);line-height:1.45}

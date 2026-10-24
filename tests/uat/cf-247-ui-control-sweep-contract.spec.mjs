@@ -72,7 +72,7 @@ test.describe('mocked browser', () => {
     await expect(read).toContainText('Read course pages')
     await expect(read).toContainText('Every 2 minutes')
     await expect(read).toContainText('60 per run')
-    await expect(page.locator('tr[data-job="coverage-discover"]')).toContainText('Took too long and was stopped by the database time limit')
+    await expect(page.locator('tr[data-job="coverage-discover"]')).toContainText('The database took too long to answer and stopped the request')
     await expect(page.locator('tr[data-job="course-completeness-build"]')).toContainText(`Daily at ${utcClockToMelbourne(20, 17).time}`)
     await expect(page.locator('tr[data-job="cron-history-retention"]')).toContainText('Top admin only')
     await read.getByRole('button', { name: 'Pause' }).click()

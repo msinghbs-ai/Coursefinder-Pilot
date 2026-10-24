@@ -7,8 +7,9 @@ import{supabase}from'./lib/supabase'
 import{Metric,Pager,StatusChip,EmptyInline,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
 import'./FlagsPanel.css'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=(action,args={})=>supabase.rpc('admin_flags',{p_action:action,p_args:args}).then(({data,error})=>{if(error)throw error;return data})
 export const REASONS={course_pages_not_found:'Course pages not found',
  enrich_no_value:'Page gives no value (Enrich fields)',outside_focus:'Outside the focus providers',page_not_found:'No course page found',

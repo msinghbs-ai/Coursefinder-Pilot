@@ -13,8 +13,9 @@ import{Button,Loading,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
 import ScholarshipLayer from'./ScholarshipLayer'
 import{ProviderRuns}from'./ScholarshipJourney'
 import{ProviderScholarshipAction,startProviderScans,useCanRunTasks}from'./ScholarshipActions'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const STATE={no_listing:['No listing page','neutral'],waiting:['Reading','info'],to_check:['To check','warning'],changed:['Changed since check','warning'],checked:['Checked','success']}
 const PUB={published:['Published','success'],unpublished:['Not published','neutral'],withdrawn:['Withdrawn','warning']}
 const HOLD_REASONS=['Not for international students','Not a scholarship (a sponsorship or general page)','Wrong provider','Value or details wrong on our record','Closed or no longer offered','Duplicate of another record']

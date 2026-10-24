@@ -40,6 +40,7 @@ import{LayerNotices}from'./Toolsets'
 import Layer4Intervention from'./Layer4Intervention'
 import{UI_VERSION}from'./release-manifest.js'
 import{ReleasePill,applyReleaseIdentity}from'./ReleaseNotes'
+import{reportError,plainError}from'./lib/errors'
 import'./styles.css'
 import'./mature.css'
 import'./admin-pages.css'
@@ -197,7 +198,7 @@ function App(){
     supabase.auth.getSession().then(({data})=>{setSession(data.session??null);setBooting(false)})
     const{data}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));return()=>data.subscription.unsubscribe()
   },[])
-  useEffect(()=>{if(!session){setContext(null);return}api.context().then(setContext).catch(e=>setError(e.message))},[session])
+  useEffect(()=>{if(!session){setContext(null);return}api.context().then(setContext).catch(e=>setError(reportError(e,'context')))},[session])
   useEffect(()=>{const h=()=>setRoute(routeFromHash());addEventListener('hashchange',h);return()=>removeEventListener('hashchange',h)},[])
   // v2.15.268: a notice's Go to opens its card (card=) and scrolls to the card, setting section or anchor (at=).
   useEffect(()=>focusTarget(String(route.params?.get?.('card')||'').split(',').filter(Boolean),String(route.params?.get?.('at')||'')),[route])
@@ -211,10 +212,12 @@ function App(){
   function go(target,params={}){
     const r=resolveTarget(target,new URLSearchParams(Object.entries(params||{}).filter(([,v])=>v!==''&&v!=null).map(([k,v])=>[k,String(v)])))
     const next=hrefFor(r.page,r.tab,Object.fromEntries(r.params))
-    setRoute(r);if(location.hash!==next)location.hash=next;setNavOpen(false);requestAnimationFrame(()=>{if(mainRef.current)mainRef.current.scrollTop=0})
+    setRoute(r);if(location.hash!==next)location.hash=next;setNavOpen(false);setError('');/* v2.15.341 (UI audit Phase 0): a banner belongs to the screen that raised it, never to the next one */requestAnimationFrame(()=>{if(mainRef.current)mainRef.current.scrollTop=0})
   }
+  // v2.15.341 (UI audit Phase 0): every error a screen raises is shown as one plain line with a reference; the full text is logged server-side
+  const report=m=>setError(m?reportError(m,route.page):'')
   if(booting)return <div className="m-boot"><div className="m-loader"/><span>Loading StudySearch Admin…</span></div>
-  if(!session)return <Login onError={setError} error={error}/>
+  if(!session)return <Login onError={m=>setError(m?plainError(m):'')} error={error}/>
   const pageKey=route.page,page=PAGES[pageKey]||PAGES.dashboard,tab=effectiveTab(pageKey,route.tab,rank)
   const tone=health===undefined?'unknown':healthTone(health?.overall)
   const healthLabel=health===undefined?'Checking platform health':HEALTH_WORDS[tone]
@@ -241,14 +244,24 @@ function App(){
         actions={<>{canOpen('health',rank)&&<button type="button" className="cf-health-link" onClick={()=>go('health')} title={`Platform health: ${healthLabel}`} aria-label={`Platform health: ${healthLabel}`}><StatusDot tone={tone} label={healthLabel}/><span className="cf-health-text">Health</span></button>}<ReleasePill/><span className="m-role-pill">{roleLabel(context?.role||'Loading')}</span></>}/>
       {/* v2.15.253 (Platform Admin, 12 Oct 2026): credit and limit notices on every page (Curator and above) */}
       <CreditBanner rank={rank} canOpenServices={canOpen('services',rank)}/>
-      {error&&<div className="m-alert"><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')}><X size={15}/></button></div>}
-      <WorkspaceErrorBoundary routeKey={`${pageKey}/${tab}?${route.params.toString()}`} onError={setError} onRecover={()=>go('dashboard')}>
-        <React.Suspense fallback={<div className="m-page-loading" role="status"><span className="m-spinner"/>Loading…</div>}><Page pageKey={pageKey} tab={tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={setError} navigate={go}/></React.Suspense>
+      <DeployedVersionNotice/>
+      {error&&<div className="m-alert" data-global-error><AlertTriangle size={16}/><span>{error}</span><button onClick={()=>setError('')} aria-label="Dismiss"><X size={15}/></button></div>}
+      <WorkspaceErrorBoundary routeKey={`${pageKey}/${tab}?${route.params.toString()}`} onError={report} onRecover={()=>go('dashboard')}>
+        <React.Suspense fallback={<div className="m-page-loading" role="status"><span className="m-spinner"/>Loading…</div>}><Page pageKey={pageKey} tab={tab} routeParams={route.params} rank={rank} actorId={String(context?.user_id||'')} onError={report} navigate={go}/></React.Suspense>
       </WorkspaceErrorBoundary>
     </main>
   </div>
 }
 
+// v2.15.341 (UI audit Phase 0, the v2.15.339/v2.15.340 mismatch): a release deploys new screen chunks while the shell a person already has open keeps the
+// old version, so the top bar and an inner screen can disagree. The shell reads the deployed version (public/release-history.json, written at every
+// build) after sign-in, on every navigation and every five minutes, and asks for a reload when it differs. Nothing reloads by itself.
+function DeployedVersionNotice(){
+  const[deployed,setDeployed]=useState('')
+  useEffect(()=>{let live=true;const read=()=>fetch(`/release-history.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(live&&j?.current)setDeployed(String(j.current))}).catch(()=>{});read();const t=setInterval(read,300000);const onHash=()=>read();window.addEventListener('hashchange',onHash);return()=>{live=false;clearInterval(t);window.removeEventListener('hashchange',onHash)}},[])
+  if(!deployed||deployed===UI_VERSION)return null
+  return <div className="m-alert compact" role="status" data-deployed-version={deployed}><AlertTriangle size={15}/><span>A newer version of PIM Admin (v{deployed}) has been released; this window is on v{UI_VERSION}. Reload to update.</span><button type="button" className="m-primary" onClick={()=>location.reload()}>Reload</button></div>
+}
 function Login({error,onError}){const[email,setEmail]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false);async function submit(e){e.preventDefault();setBusy(true);onError('');const{error:x}=await supabase.auth.signInWithPassword({email,password});if(x)onError(x.message);setBusy(false)}return <div className="m-login"><form className="m-login-card" onSubmit={submit}><div className="m-login-brand"><span className="m-brand-mark large">SS</span><div><strong>StudySearch Admin</strong><small>Governed operational workspace</small></div></div><div className="m-login-copy"><h1>Sign in</h1><p>Authorised staff access only. Canonical catalogue, provenance and pipeline operations.</p></div>{error&&<div className="m-alert compact"><AlertTriangle size={15}/><span>{error}</span></div>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="m-primary" disabled={busy}>{busy?'Signing in…':'Sign in'}</button><small className="m-login-version">PIM Admin v{UI_VERSION}</small></form></div>}
 
 // Every page renders inside the shell through PageLayout: optional tabs, then content. No page draws its own shell.

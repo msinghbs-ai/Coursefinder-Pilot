@@ -10,8 +10,9 @@ import{Check,ExternalLink,FileSpreadsheet,RefreshCw,X}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,SectionTitle,StatusChip}from'./ui-kit'
 import{fmtDateTime,fmtNumber}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 export const FEE_OUTCOME={new:'Will be added',same:'Already the same',differs:'Different fee on record (not changed)',in_review:'Waiting in review (not changed)',
   several_amounts:'Several amounts (not used)',basis_not_used:'Per semester or other basis (not used)',annual_used:'Total (annual used instead)',no_course:'No course with this code',per_unit_row:'Per-unit price (annual used instead)'}
 const money=(n,c)=>n==null?'—':`${c||''} ${fmtNumber(Number(n))}`.trim()

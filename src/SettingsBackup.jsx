@@ -9,8 +9,9 @@ import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,StatusChip,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_settings_backup',{p_action:action,p_args:args||{}});if(error)throw error;return data}
 const KIND={daily:'Daily',manual:'By hand',before_restore:'Before a restore'}
 const show=v=>v==null?'—':typeof v==='object'?JSON.stringify(v):String(v)

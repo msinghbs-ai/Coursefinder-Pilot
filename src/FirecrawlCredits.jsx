@@ -11,8 +11,9 @@ import{RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 export const FLAG={search_stopped:['Search stopped','danger'],no_pages:['No pages from 100+ credits','danger'],mostly_wrong:['Mostly wrong pages','warning'],scholarships_high:['High scholarship use','warning']}
 const WINDOWS=[[1,'Last hour'],[24,'Last 24 hours'],[168,'Last 7 days']]

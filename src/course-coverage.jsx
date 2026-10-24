@@ -114,7 +114,7 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
       <Metric icon={ListChecks} tone="success" label="Accounted for" value={score?fmtPercent(score.accounted_pct):'—'}
         detail="Admitted, awaiting a decision, or the source says nothing"/>
       <Metric icon={Layers} tone="violet" label="Fully complete courses" value={score?fmtNumber(score.fully_complete):'—'}
-        detail={score?`${fmtShare(score.fully_complete,score.courses)} of ${fmtNumber(score.courses)} courses have every attribute`:''}/>
+        detail={score?`${fmtShare(score.fully_complete,score.courses)} of ${fmtNumber(score.courses)} courses have every attribute the platform can read`:''}/>
       <Metric label="Courses accounted for" value={fmtNumber(data?.courses)} detail={`${fmtNumber(data?.providers)} providers · every course has a state for every attribute`}/>
     </section>
     </>}
@@ -214,6 +214,8 @@ export function CoverageView({view='all',onScope,belowFilters}={}){
     {view!=='attributes'&&<>
     <section className="cc-panel">
       <header><div><h2>Daily trend</h2><p>Course completeness score and admitted share per Layer 2 attribute, one row per day (kept from 29 Sep 2026){tier?'. The score columns are for all providers.':'.'}</p></div></header>
+      {/* v2.15.341 (UI audit Phase 0): the count read 0 from 20 to 24 Oct 2026 because three attributes nothing reads yet (deadline, academic entry, description) joined the matrix on 20 Oct and were counted as missing; from 24 Oct a course is fully complete when every attribute the platform can read is admitted. The completeness score still counts the unread attributes. */}
+      <p className="cc-note" data-fully-complete-note>Fully complete counts the attributes the platform can read. The 20–24 Oct rows show 0 because three attributes with no reader yet (application deadline, academic entry requirements, description) were added on 20 Oct and counted as missing until 24 Oct; the completeness score still counts them.</p>
       <div className="dq-table-wrap"><table className="dq-table cc-table"><thead><tr><th>Date</th><th className="num">Completeness</th><th className="num">Accounted for</th><th className="num">Fully complete</th>{l2.map(a=><th key={a.attribute}>{ATTR[a.attribute].label}</th>)}</tr></thead>
         <tbody>{trend.slice().reverse().map(([d,row])=>{const sc=scoreByDate[d];return <tr key={d}><td><strong>{fmtDate(d)}</strong></td>
           <td className="num">{sc?fmtPercent(sc.completeness):'—'}</td><td className="num">{sc?fmtPercent(sc.accounted_pct):'—'}</td><td className="num">{sc?fmtNumber(sc.fully_complete):'—'}</td>

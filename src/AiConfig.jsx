@@ -14,8 +14,9 @@ import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import{ScholarshipAiModels}from'./ScholarshipExtraction'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
 const money=v=>v==null?'—':`US$${Number(v).toFixed(2)}`
 const SET_ON={scholarship_ai:'Scholarship models below',adapter_builder:'Model setting below',central_ai:'Choose below',course_match:'Fixed in the worker'}

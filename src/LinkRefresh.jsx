@@ -7,8 +7,9 @@ import{CalendarClock,Check,Plus,RefreshCw,Trash2,X}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,SectionTitle,StatusChip}from'./ui-kit'
 import{fmtDateTime,fmtNumber}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const KIND={regulator:'Regulator',admission_centre:'Admission centre',government_portal:'Government portal',aggregator:'Course directory'}
 const APPLICANT={any:'All applicants',international:'International applicants',domestic:'Mostly domestic applicants'}
 const result=r=>r?[r.reread!=null&&`${fmtNumber(r.reread)} pages re-read`,r.searched_again!=null&&`${fmtNumber(r.searched_again)} searched again`,r.verified!=null&&`${fmtNumber(r.verified)} links re-confirmed`,r.unverified&&`${fmtNumber(r.unverified)} pages gone`,r.regulator_added&&`${fmtNumber(r.regulator_added)} regulator links added`].filter(Boolean).join(' · '):''

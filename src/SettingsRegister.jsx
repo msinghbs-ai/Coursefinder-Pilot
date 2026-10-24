@@ -12,8 +12,9 @@ import{supabase}from'./lib/supabase'
 import Card from'./Card'
 import{Button,Empty,Loading,fmtDateTime}from'./ui-kit'
 import{fmtNumber}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const slug=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')
 const SECTION_HELP={'Job sizes':'How much each scheduled job takes in a run. The job reads the value each time it runs.',
   'Re-read and retry':'How often pages are read again, and when failed work is tried again.',

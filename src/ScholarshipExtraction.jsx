@@ -11,8 +11,9 @@ import React,{useEffect,useState}from'react'
 import{CheckCircle2,ExternalLink,FileText,Play,RefreshCw,XCircle}from'lucide-react'
 import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtNumber}from'./ui-kit'
+import{plainError}from'./lib/errors'
 
-const errText=e=>String(e?.message||e||'').replace(/^.*?ERROR:\s*/,'')
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const VERDICT={scholarship:['Scholarship','success'],listing:['Lists several','info'],not_scholarship:['Not a scholarship','neutral'],unproven:['Name not proven','warning']}
 const AUD={international:'International',both:'International and domestic',domestic:'Domestic only',not_stated:'Not stated'}
 const host=u=>{try{const x=new URL(u);return x.hostname.replace(/^www\./,'')+x.pathname.replace(/\/$/,'')}catch{return u}}

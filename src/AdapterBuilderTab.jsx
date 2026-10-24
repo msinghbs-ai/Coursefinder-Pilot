@@ -11,8 +11,9 @@ import JobButton from'./JobButton'
 import{AdapterEditor,AdapterReview}from'./FirecrawlWork'
 import FeeSchedules from'./FeeSchedules'
 import ProviderPolicies from'./ProviderPolicies'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 // v2.15.232 (Platform Admin, 10 Oct 2026, Fix 5): no reason prompt. Each step writes a standard log line instead (the servers keep
 // requiring one). Steps that spend Firecrawl credits or the AI allowance still ask a plain yes/no first.
 const ask=(t,{confirm=false}={})=>{if(confirm&&!window.confirm(t))return null;return `Adapter builder: ${String(t).split('\n')[0].replace(/\?$/,'').slice(0,200)}`}

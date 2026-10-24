@@ -18,8 +18,9 @@ import{JOURNEY,ReasonAction,STOP}from'./ProviderOnboarding'
 import JobButton from'./JobButton'
 import{errorReading,errorSteps}from'./lib/workerErrors.js'
 import{fmtBytes}from'./lib/format.js'
+import{plainError}from'./lib/errors'
 
-const errText=e=>e?.message||String(e)
+const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 // v2.15.301 (Platform Admin, 20 Oct 2026, "Retire Running now and Levers"): two views. Running stays exported for Scheduled jobs › Task
 // manager (the same board); the pace settings are on Settings. Old ?view=running and ?view=levers addresses redirect (nav-map.js).
 export const VIEWS=[['overview','Overview'],['journeys','Journeys']]
