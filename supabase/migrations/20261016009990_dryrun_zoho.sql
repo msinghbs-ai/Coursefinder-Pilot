@@ -38,6 +38,9 @@ do $g$ declare n int; begin
   if n <> 1 then raise exception 'the Townsville campus was not corrected (% rows)', n; end if;
 end $g$;
 
+-- the dashboard serves a snapshot; compute it once so the new figures show straight away
+select security.admin_dashboard_maturity_compute();
+
 do $t$ declare r jsonb; begin
   perform set_config('request.jwt.claims', '{"sub":"63ba56cb-48d4-4169-98c2-7c4d1f72925b","role":"authenticated"}', true);
   perform set_config('request.jwt.claim.sub', '63ba56cb-48d4-4169-98c2-7c4d1f72925b', true);
