@@ -1,17 +1,15 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.348'
-export const PACKAGE_VERSION='0.1.275'
+export const UI_VERSION='2.15.349'
+export const PACKAGE_VERSION='0.1.276'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Oct 2026',
-  title:'Campuses by their CRICOS location name, filtered by provider',
+  title:'Firecrawl targets say why a university is not matched',
   changes:[
-    'Providers › Campuses: a Provider filter, so one university\'s locations read as one list, as on its CRICOS institution page; the first column is the location name.',
-    'Provider details › Campuses shows each campus by its location name with its course count (the city is in the hover).',
-    'A provider with no name on the register reads "Unnamed on the register" in lists instead of "N/A".',
+    'Models & services › Firecrawl targets and Adapter builder › Firecrawl target: a university the targets rule does not match now says which condition it fails (for example "name has an excluded word (college)" or "fewer than 100 active courses (21)"). Who is a target is unchanged.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]

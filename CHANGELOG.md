@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.276 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.349** (Platform Admin 24 Oct 19:23, D1.4: target rule reasons). Migration `20261024012000_cf247_target_rule_reason.sql`: column `pipeline.firecrawl_target_cache.rule_reason`; `security.firecrawl_target_rule_reasons_v1()` (first failing condition, rule order); md5-guarded edits to `firecrawl_targets_refresh_v1` (fills it each minute), `admin_firecrawl_read` and `admin_adapters` (carry it). Screens say why a university is not matched. Rule, inclusion and settings unchanged. Test s101. Release notes v2.15.348. SOPs 1.90.
+
 ## 0.1.275 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.348** (Platform Admin 24 Oct 18:27, "Campus name and UI filter"). Presentation only, no migration: Campuses list gains a Provider filter (`provider_id`, already accepted by `admin_campus_page_fast`; reset with country or state), first column "Location name"; Provider details › Campuses pills show the location name with the course count (city in the hover); lists show a nameless provider as "Unnamed on the register". The stored names already equal the CRICOS location names (3,984 of 3,984). Test s100; ui-standard expectation updated. Release notes v2.15.347. SOPs 1.89.

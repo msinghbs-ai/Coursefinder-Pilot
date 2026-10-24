@@ -171,7 +171,7 @@ function Row({row,settings,can,canQualify,picked,onPick,open,onOpen,onChanged,on
       </Block>
 
       <Block id="firecrawl" title="Firecrawl target" meta={row.target?(row.target.included?'In the targets':'Out of the targets'):'Not in the target list'}>
-        <p className="adp-note">{row.target?.included?'Firecrawl may be used for this university: pages that refuse a plain read, and searching its site for missing course pages.':'Firecrawl is not used for this university. Its pages are read plainly where they can be.'}{row.target?.override_reason?` Set by hand: ${row.target.override_reason}.`:row.target?.rule_match?' Matched by the targets rule.':''}</p>
+        <p className="adp-note">{row.target?.included?'Firecrawl may be used for this university: pages that refuse a plain read, and searching its site for missing course pages.':'Firecrawl is not used for this university. Its pages are read plainly where they can be.'}{row.target?.override_reason?` Set by hand: ${row.target.override_reason}.`:row.target?.rule_match?' Matched by the targets rule.':row.target?.rule_reason?` Not matched by the targets rule: ${row.target.rule_reason}.`:''}</p>
         {can&&<Button compact disabled={busy} onClick={()=>target(!row.target?.included)}>{row.target?.included?'Take out of the targets':'Add to the targets'}</Button>}
       </Block>
 
