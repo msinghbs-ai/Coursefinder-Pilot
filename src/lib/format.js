@@ -56,6 +56,19 @@ export function utcClockToMelbourne(utcHour, utcMinute, ref = new Date()) {
   return { time: clock(p.h, p.mi), dayShift: p.d === d.getUTCDate() ? 0 : 1 }
 }
 
+/** A date range as a reader says it (UI audit Phase 1): one calendar year → "2025"; whole months → "Jan 2025 – Jun 2025";
+ *  otherwise "1 Jan 2025 – 15 Jun 2025". One end missing → that date alone. */
+export function fmtPeriod(start, end, fallback = EMPTY) {
+  const a = toDate(start), b = toDate(end)
+  if (!a && !b) return fallback
+  if (!a || !b) return fmtDate(a || b, fallback)
+  const pa = cal(start, a), pb = cal(end, b)
+  const lastDay = new Date(pb.y, pb.mo + 1, 0).getDate()
+  if (pa.y === pb.y && pa.mo === 0 && pa.d === 1 && pb.mo === 11 && pb.d === 31) return String(pa.y)
+  if (pa.d === 1 && pb.d === lastDay) return `${MONTHS[pa.mo]} ${pa.y} – ${MONTHS[pb.mo]} ${pb.y}`
+  return `${fmtDate(a)} – ${fmtDate(b)}`
+}
+
 /** 29 Sep (charts and compact columns) */
 export function fmtDayMonth(value, fallback = EMPTY) {
   const d = toDate(value)

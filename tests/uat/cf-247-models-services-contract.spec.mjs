@@ -31,7 +31,7 @@ test.describe('mocked browser', () => {
     await openCards(page) // v2.15.200: cards start collapsed
     await expect(page.locator('[data-model="sonnet-english"]')).toHaveClass(/ms-off/)
     await expect(page.locator('[data-model="old-model"] [role="switch"]')).toHaveCount(0)
-    await expect(page.locator('.ms-retired summary')).toContainText('Retired models (1)')
+    await expect(page.locator('.ms-retired > summary')).toContainText('Retired models (1)') // Phase 1: each row also has an Identifier fold
     // v2.15.122: a model that has not passed its test cannot be switched on.
     await expect(page.getByRole('switch', { name: 'Switch on vendor/new-candidate' })).toBeDisabled()
     await expect(page.locator('[data-model="new-candidate"]')).toContainText('Pass its test first')

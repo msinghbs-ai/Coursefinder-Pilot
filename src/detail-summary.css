@@ -19,6 +19,8 @@
 .ds-more>summary{cursor:pointer;padding:10px 12px;font-size:var(--cf-fs-sm);font-weight:750;color:var(--cf-slate-700)}
 .ds-more[open]>summary{border-bottom:1px solid var(--cf-slate-150)}
 .ds-more>div{padding:0 12px 12px}
+/* UI audit Phase 1: identifiers (stable key, record id) sit closed at the foot of the drawer for Curators and above */
+.m-identifiers{display:grid;gap:8px;padding-top:10px}.m-identifiers>div{display:grid;gap:3px}.m-identifiers small{font-size:var(--cf-fs-3xs);text-transform:uppercase;letter-spacing:.04em;color:var(--cf-slate-400);font-weight:800}.m-identifiers code{justify-self:start;word-break:break-all}
 /* fee used, inside the Tuition card */
 .ds-card .cf-fee-used{padding:0;border:0;background:none;border-radius:0;margin:0;display:grid;gap:5px;font-size:var(--cf-fs-2xs);color:var(--cf-slate-500);line-height:1.4}
 .ds-card .cf-fee-used small{font-size:var(--cf-fs-2xs)}

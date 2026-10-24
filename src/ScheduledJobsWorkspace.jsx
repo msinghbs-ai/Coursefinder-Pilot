@@ -58,7 +58,7 @@ export default function ScheduledJobsWorkspace({onError}){
    task:<td key={id}><strong>{targetLabel(p)}</strong><br/><small>{p.dataset_domain?human(p.dataset_domain):p.acquisition_method?human(p.acquisition_method):'Governed scheduled work'}</small></td>,
    layer:<td key={id}>Layer {p.layer}</td>,
    country:<td key={id}>{p.country_code||'—'}</td>,
-   target:<td key={id}><strong>{targetLabel(p)}</strong><br/><small className="cf-scheduler-v2__technical">{technicalTarget(p)}</small></td>,
+   target:<td key={id} title={technicalTarget(p)} data-target={technicalTarget(p)}><strong>{targetLabel(p)}</strong>{targetLabel(p)===technicalTarget(p)?null:<><br/><small className="cf-scheduler-v2__technical">{Number(p.layer)===1?'Reference dataset':p.source_profile_id?'Source profile':p.entity_id?human(p.entity_type||'record'):'Source'}</small></>}</td>, // UI audit Phase 1: the id string sits on hover, not in the row
    pipeline:<td key={id}>{Number(p.layer)===1?'Layer 1 authoritative/reference':Number(p.layer)===2?'Layer 2 → conditional Layer 3 / Layer 4':'Layer 3 Evidence interpretation'}</td>,
    freshness:<td key={id}>{human(p.freshness_class)}</td>,
    cadence:<td key={id}>{p.cadence_interval||'Event driven'}</td>,

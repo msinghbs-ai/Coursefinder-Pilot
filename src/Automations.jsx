@@ -62,12 +62,14 @@ function AreaPanel({area,jobs,all,rank,busy,act}){
   </section>
 }
 
+// UI audit Phase 1 (24 Oct 2026): a decision reference "(Decision 262 …)" is for the change log, not the row; the full text stays on hover
+export const plainDescription=t=>String(t||'').replace(/\s*\((?:Decision|Decisions)\s+\d+[^)]*\)/gi,'').replace(/\s{2,}/g,' ').trim()
 function JobRow({j,rank,busy,act}){
   const s=describeSchedule(j.schedule),[batch,setBatch]=useState(j.batch==null?'':String(j.batch))
   useEffect(()=>setBatch(j.batch==null?'':String(j.batch)),[j.batch])
   const allowed=rank>=Number(j.control_rank||6),can=allowed&&!busy,last=j.last,st=STATUS[last?.status]||['neutral',last?.status||'—']
   return <tr className={j.active?'':'l3c-off'} data-job={j.job}>
-    <td><strong>{j.label}</strong><span className="au-desc">{j.description}</span><span className="l3v-code">{j.job}</span>{j.catalogued===false&&<Badge tone="warning" data-uncatalogued-job>Not catalogued: no label or owner</Badge>}</td>
+    <td title={j.job}><strong>{j.label||j.job}</strong><span className="au-desc" title={j.description||undefined}>{plainDescription(j.description)}</span>{j.catalogued===false&&<Badge tone="warning" data-uncatalogued-job>Not catalogued: no label or owner</Badge>}</td>
     <td>{s.text}{j.batch!=null&&<span className="l3v-code">{fmtNumber(j.batch)} per run</span>}</td>
     <td>{last?<><StatusChip value={last.status} tone={st[0]} label={st[1]}/><span className="l3v-code">{fmtDateTime(last.at)}{last.seconds!=null&&` · ${last.seconds}s`}</span>{last.message&&<span className="au-error">{plainError(last.message)}</span>}</>:'Not run yet'}</td>
     <td className="num">{fmtNumber(j.runs_24h||0)} runs<span className={`l3v-code ${Number(j.failed_24h)>0?'l3v-bad':''}`}>{fmtNumber(j.failed_24h||0)} failed</span></td>

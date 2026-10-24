@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.345'
+export const SOP_REVIEWED_FOR = '2.15.346'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -188,7 +188,8 @@ export const SOPS = [
       { version: '1.83', date: '24 Oct 2026', release: '2.15.342', change: 'Task manager: a running task shows last forwarded, next attempt and, when stalled, what holds it. Find course pages by a person runs at a university whose automatic search stopped. Layer 4: Enter another address on a held fee binds the page and reads it again.' },
       { version: '1.84', date: '24 Oct 2026', release: '2.15.343', change: 'Find course pages by a person at a university whose automatic search stopped now spends its search credits (the credit check lets the task through).' },
       { version: '1.85', date: '24 Oct 2026', release: '2.15.344', change: 'Courses list: the international fee shows its basis and the International fee and City columns sort.' },
-      { version: '1.86', date: '24 Oct 2026', release: '2.15.345', change: 'Dashboard states the Inbox once and opens Layer 4 Review by kind; the Scholarships tile states published, active and retired; unnamed register records show as such with their code.' }],
+      { version: '1.86', date: '24 Oct 2026', release: '2.15.345', change: 'Dashboard states the Inbox once and opens Layer 4 Review by kind; the Scholarships tile states published, active and retired; unnamed register records show as such with their code.' },
+      { version: '1.87', date: '24 Oct 2026', release: '2.15.346', change: 'Lists show names and plain words instead of internal keys and codes; support identifiers are in the detail under Identifiers (for support); vendor balances as figures for the Platform Admin only.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -325,7 +326,8 @@ export const SOPS = [
       { version: '1.83', date: '24 Oct 2026', release: '2.15.342', change: 'Task manager: a running task shows last forwarded, next attempt and, when stalled, what holds it. Find course pages by a person runs at a university whose automatic search stopped. Layer 4: Enter another address on a held fee binds the page and reads it again.' },
       { version: '1.84', date: '24 Oct 2026', release: '2.15.343', change: 'Find course pages by a person at a university whose automatic search stopped now spends its search credits (the credit check lets the task through).' },
       { version: '1.85', date: '24 Oct 2026', release: '2.15.344', change: 'Courses list: the international fee shows its basis and the International fee and City columns sort.' },
-      { version: '1.86', date: '24 Oct 2026', release: '2.15.345', change: 'Dashboard states the Inbox once and opens Layer 4 Review by kind; the Scholarships tile states published, active and retired; unnamed register records show as such with their code.' }],
+      { version: '1.86', date: '24 Oct 2026', release: '2.15.345', change: 'Dashboard states the Inbox once and opens Layer 4 Review by kind; the Scholarships tile states published, active and retired; unnamed register records show as such with their code.' },
+      { version: '1.87', date: '24 Oct 2026', release: '2.15.346', change: 'Lists show names and plain words instead of internal keys and codes; support identifiers are in the detail under Identifiers (for support); vendor balances as figures for the Platform Admin only.' }],
   },
 ]
 

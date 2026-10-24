@@ -32,7 +32,8 @@ test.describe('mocked browser', () => {
     for (const id of ['services.ai.openrouter', 'services.ai.uses', 'services.ai.scholarship-models', 'services.ai.profiles']) await t.locator(`[data-card="${id}"] .cf-card-toggle`).click()
     await expect(t.locator('[data-ai-openrouter]')).toContainText('US$29.25')
     await expect(t.locator('[data-ai-key]')).toContainText('shared by 55 model profiles')
-    await expect(t.locator('[data-ai-use="central_ai"]')).toContainText('openai/gpt-4.1-mini')
+    await expect(t.locator('[data-ai-use="central_ai"]')).toContainText('GPT 4.1 Mini') // UI audit Phase 1: the list names the model; the identifier is on hover
+    await expect(t.locator('[data-ai-use="central_ai"] [title="openai/gpt-4.1-mini"]')).toHaveCount(1)
     await t.locator('[data-ai-use="scholarship_ai"] input').fill('25')
     await t.locator('[data-ai-use="scholarship_ai"]').getByRole('button', { name: 'Save' }).click()
     await expect.poll(() => page.l3calls.find(c => c.toolsets === 'setting')?.args).toMatchObject({ toolset: 'openrouter', key: 'guard_scholarship_ai', value: '25', reason: 'Testing the AI tab' })

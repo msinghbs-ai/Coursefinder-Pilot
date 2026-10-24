@@ -29,8 +29,8 @@ test.describe('CF-097/226 ranking workflow, history and datasets @deployed',()=>
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
   const row=page.locator('.m-ranking-import-row').filter({hasText:'QS_WUR 2026'}).first()
   await expect(row).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT})
-  await expect(row).toContainText(/Latest Job:/)
-  await expect(row).toContainText(/Layer1 Ranking Etl/i)
+  await expect(row).toContainText(/Latest job:/i) // UI audit Phase 1: sentence case, job name in words
+  await expect(row).toContainText(/Ranking import/i)
   await expect(row.getByRole('button',{name:/Jobs/})).toBeVisible()
  }finally{await finish(testInfo,runtime)}})
 

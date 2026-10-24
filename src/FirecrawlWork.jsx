@@ -10,6 +10,7 @@ import JobButton from'./JobButton'
 import Card from'./Card'
 import{Button,Empty,Loading,fmtDateTime,fmtNumber}from'./ui-kit'
 import{plainError}from'./lib/errors'
+import{useIsPlatformAdmin,balanceWords}from'./lib/viewer'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -50,10 +51,11 @@ function useFirecrawl(onError){
 }
 function Waiting({failed,load,what}){return failed?<><Empty text={`${what} could not be loaded: ${failed}`}/><Button compact onClick={load}><RefreshCw size={14}/>Try again</Button></>:<Loading label={`Loading ${what.toLowerCase()}…`}/>}
 function Plan({d}){
+  const admin=useIsPlatformAdmin() // UI audit Phase 1: credit figures for the Platform Admin; words for everyone else
   const v=d.plan?.vendor,b=d.plan?.budget||{}
   return <div className="tn-plan" data-firecrawl-plan>
-    <div className="tn-plan-row">{v?<><strong>{fmtNumber(v.remaining)} of {fmtNumber(v.plan_credits)} credits left</strong><span>as Firecrawl reports it, period {fmtDateTime(v.period_start)} to {fmtDateTime(v.period_end)}, read {fmtDateTime(v.observed_at)}</span></>:<span>No reading from Firecrawl yet.</span>}
-      <span>{fmtNumber(b.stop_at_remaining_units)} kept back · the platform stops Firecrawl work there</span>
+    <div className="tn-plan-row" data-balance={admin?'figure':'words'}>{v?<><strong>{admin?`${fmtNumber(v.remaining)} of ${fmtNumber(v.plan_credits)} credits left`:`Credits: ${balanceWords(v.remaining,b.stop_at_remaining_units)}`}</strong><span>as Firecrawl reports it, period {fmtDateTime(v.period_start)} to {fmtDateTime(v.period_end)}, read {fmtDateTime(v.observed_at)}</span></>:<span>No reading from Firecrawl yet.</span>}
+      {admin&&<span>{fmtNumber(b.stop_at_remaining_units)} kept back · the platform stops Firecrawl work there</span>}
       {b.allowed===false&&<span className="cf-chip tone-danger">At the reserve — Firecrawl work has stopped</span>}</div>
   </div>
 }
@@ -97,10 +99,10 @@ export function FirecrawlTargets({onError,onOpen}){
 
 // Platform settings › Models & services, after the Firecrawl toolset: the credits left and the support report.
 export default function FirecrawlWork({onError}){
-  const{d,failed,load}=useFirecrawl(onError)
+  const{d,failed,load}=useFirecrawl(onError),admin=useIsPlatformAdmin()
   return <>
     <Card id="services.firecrawl-credits" title="Firecrawl credits" subtitle="What Firecrawl reports as left this period, and the reserve where the platform stops Firecrawl work. Runs, targets and university adapters are on Layer 2 › Adapters."
-      meta={d?.plan?.vendor?<span>{fmtNumber(d.plan.vendor.remaining)} of {fmtNumber(d.plan.vendor.plan_credits)} left</span>:null} data-firecrawl-credits>
+      meta={d?.plan?.vendor?<span>{admin?`${fmtNumber(d.plan.vendor.remaining)} of ${fmtNumber(d.plan.vendor.plan_credits)} left`:balanceWords(d.plan.vendor.remaining,d.plan?.budget?.stop_at_remaining_units)}</span>:null} data-firecrawl-credits>
       {d?<><Plan d={d}/><p className="sl-sub"><a className="cf-link" href="#layer-2-discovery?tab=universities">Firecrawl runs, targets and university adapters: Layer 2 › Adapters</a></p></>:<Waiting failed={failed} load={load} what="Firecrawl credits"/>}
     </Card>
     <SupportReport onError={onError}/>

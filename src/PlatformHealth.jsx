@@ -11,10 +11,23 @@ import{AlertTriangle,CheckCircle2,Info,RefreshCw,ShieldAlert}from'lucide-react'
 import{adminRead}from'./lib/supabase'
 import{Button,Empty,Loading,Metric,SectionTitle,StatusChip,StatusDot,fmtDate,fmtDateTime,fmtDayMonth,fmtNumber}from'./ui-kit'
 import{scrubInternals}from'./lib/errors'
+import{PAGES,resolveTarget}from'./nav-map'
+import{describeSchedule}from'./automation-schedule'
+
+// UI audit Phase 1 (24 Oct 2026): an internal address ("#layer-2-discovery?tab=operations") is never printed as text — it becomes
+// a link named after the screen; a cron expression ("*/10 * * * *") reads as plain schedule words.
+const ROUTE_RE=/^#[a-z0-9][a-z0-9-]*(\?[^\s]*)?$/i
+const CRON_RE=/^(\S+\s+){4}\S+$/
+export function isRouteFragment(v){return typeof v==='string'&&ROUTE_RE.test(v.trim())}
+export function screenName(href){try{const raw=String(href||'').trim().replace(/^#/,''),[slug,qs='']=raw.split('?'),r=resolveTarget(slug,new URLSearchParams(qs)),page=PAGES[r?.page],tab=page?.tabs?.find(t=>t.key===r?.tab);return page?`${page.label}${tab&&tab.key!==page.tabs?.[0]?.key?` › ${tab.label}`:''}`:'the screen'}catch{return'the screen'}}
+export function ScreenLink({href,prefix='Go to '}){return <a className="ph-fix" href={href} data-screen-link>{prefix}{screenName(href)}</a>}
+const looksCron=v=>typeof v==='string'&&CRON_RE.test(v.trim())&&/[*\/]/.test(v)
 
 export function isHealthContract(h){return Boolean(h&&typeof h.overall==='string'&&Array.isArray(h.checks))}
 export function healthTone(overall){return overall==='ok'?'ok':overall==='warning'?'warning':overall==='critical'?'critical':'unknown'}
 export const HEALTH_WORDS={ok:'All checks passing',warning:'Needs attention',critical:'Something is broken',unknown:'Health checks not available yet'}
+// The page heading says what to do next, so it does not repeat the health dot's sentence (UI audit Phase 1)
+const PAGE_WORDS={ok:'Every check passed',warning:'Some checks need attention',critical:'Fix the critical checks first',unknown:'The checks have not run yet'}
 const SEVERITY_ORDER={critical:0,warning:1,info:2}
 const SEVERITY_TONE={critical:'danger',warning:'warning',info:'info'}
 const CHECK_TONE={ok:'success',warning:'warning',critical:'danger',skipped:'neutral'}
@@ -23,7 +36,7 @@ const CHECK_TONE={ok:'success',warning:'warning',critical:'danger',skipped:'neut
 export async function readPlatformHealth(){try{const h=await adminRead('platform_health',{});return isHealthContract(h)?h:null}catch{return null}}
 
 function human(v){return String(v??'').replaceAll('_',' ').replace(/^\w/,c=>c.toUpperCase())}
-function scalar(k,v){if(v==null||v==='')return'—';if(typeof v==='number')return fmtNumber(v);if(typeof v==='boolean')return v?'yes':'no';if(/(_at|since|_end)$/.test(k)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);if(typeof v==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);return scrubInternals(String(v))} // v2.15.341: raw ISO stamps become dates, raw errors become plain words
+function scalar(k,v){if(v==null||v==='')return'—';if(typeof v==='number')return fmtNumber(v);if(typeof v==='boolean')return v?'yes':'no';if(/(_at|since|_end)$/.test(k)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);if(typeof v==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)&&!Number.isNaN(Date.parse(v)))return fmtDateTime(v);if(isRouteFragment(v))return screenName(v);if(looksCron(v))return describeSchedule(v).text;return scrubInternals(String(v))} // v2.15.341: raw ISO stamps become dates, raw errors become plain words
 /** Detail text or object → short readable lines. Nested objects are summarised one level deep. */
 // v2.15.131 (hc-details-text, hc-actions): plain names for detail keys, and where to go to fix each check.
 const KEY_LABEL={layer3_stuck_over_1h:'Layer 3 items stuck over 1 hour',stuck_over_2h:'Stuck over 2 hours',openrouter_daily_ceiling_usd:'OpenRouter daily limit (US$)',openrouter_spend_24h_usd:'OpenRouter spend, last 24 h (US$)',
@@ -34,10 +47,11 @@ export const FIX_AT={field_stalled:['#coverage?tab=attributes','Coverage › Att
   scholarship_queues:['#scholarships?tab=coverage','Scholarships › Coverage'],scholarship_review:['#scholarships?tab=coverage','Scholarships › Coverage'] /* v2.15.253: Layer 4 Scholarship publishing retired */,layer_queues:['#layer-4-review','Layer 4 Review'],budgets:['#models-services','Models & services'] /* v2.15.252: Layer 3 Control retired */,db_capacity:['#platform-health?tab=readiness','Capacity'],queue_watch:['#platform-health?tab=queues','Platform health › Work queues']}
 export function DetailText({value}){
   if(value==null||value==='')return null
-  if(typeof value!=='object')return <span className="ph-detail">{scrubInternals(String(value))}</span>
+  if(isRouteFragment(value))return <span className="ph-detail"><ScreenLink href={String(value).trim()}/></span>
+  if(typeof value!=='object')return <span className="ph-detail">{scalar('',value)}</span>
   const entries=Object.entries(value).filter(([,v])=>v!=null&&v!=='')
   if(!entries.length)return null
-  return <span className="ph-detail">{entries.slice(0,6).map(([k,v])=><span key={k}><b>{keyLabel(k)}:</b> {Array.isArray(v)?(v.length&&typeof v[0]!=='object'?v.join(', '):`${fmtNumber(v.length)} item${v.length===1?'':'s'}`):typeof v==='object'?Object.entries(v).slice(0,4).map(([a,b])=>`${keyLabel(a)} ${scalar(a,b)}`).join(' · '):scalar(k,v)}</span>)}</span>
+  return <span className="ph-detail">{entries.slice(0,6).map(([k,v])=><span key={k}><b>{keyLabel(k)}:</b> {isRouteFragment(v)?<ScreenLink href={String(v).trim()} prefix=""/>:Array.isArray(v)?(v.length&&typeof v[0]!=='object'?v.join(', '):`${fmtNumber(v.length)} item${v.length===1?'':'s'}`):typeof v==='object'?Object.entries(v).slice(0,4).map(([a,b])=>`${keyLabel(a)} ${scalar(a,b)}`).join(' · '):scalar(k,v)}</span>)}</span>
 }
 
 export default function PlatformHealth({onError}){
@@ -55,7 +69,7 @@ export default function PlatformHealth({onError}){
   const checks=[...(data.checks||[])].sort((a,b)=>({critical:0,warning:1,ok:2,skipped:3}[a.status]??9)-({critical:0,warning:1,ok:2,skipped:3}[b.status]??9)||String(a.area).localeCompare(String(b.area)))
   return <>
     <section className={`m-panel ph-overall tone-${tone}`}>
-      <div className="ph-overall-head"><StatusDot tone={tone} label={HEALTH_WORDS[tone]}/><div><h2>{HEALTH_WORDS[tone]}</h2><p>Checked {fmtDateTime(data.generated_at)} · {fmtNumber(checks.length)} checks</p></div><Button compact onClick={load} disabled={state==='loading'}><RefreshCw size={14}/>Check again</Button></div>
+      <div className="ph-overall-head"><StatusDot tone={tone} label={HEALTH_WORDS[tone]}/><div><h2 data-health-heading>{PAGE_WORDS[tone]}</h2><p>Checked {fmtDateTime(data.generated_at)} · {fmtNumber(checks.length)} checks</p></div><Button compact onClick={load} disabled={state==='loading'}><RefreshCw size={14}/>Check again</Button></div>
       <div className="cf-metric-grid">
         <Metric label="Critical" value={Number(counts.critical||0)} icon={ShieldAlert} tone={counts.critical?'danger':'neutral'} detail="Broken now; fix first"/>
         <Metric label="Warning" value={Number(counts.warning||0)} icon={AlertTriangle} tone={counts.warning?'warning':'neutral'} detail="Needs attention soon"/>

@@ -19,6 +19,7 @@ import FirecrawlCredits from'./FirecrawlCredits'
 import Card,{rememberOpen}from'./Card'
 import{hrefFor}from'./nav-map'
 import{plainError}from'./lib/errors'
+import{useIsPlatformAdmin,balanceWords}from'./lib/viewer'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const ask=t=>{const r=window.prompt(`${t}\n\nReason (kept in the log):`);return r&&r.trim().length>=4?r.trim():null}
@@ -184,13 +185,14 @@ function Toolset({t,d,can,write}){
 
 // The key in use and the limits of its plan: replace the key on Settings, then enter the new plan here.
 function KeyPlan({t}){
+  const admin=useIsPlatformAdmin() // UI audit Phase 1: credit figures for the Platform Admin; words for everyone else
   const p=t.plan||{},pct=p.credits?Math.min(100,Math.round(100*Number(p.used||0)/Number(p.credits))):0
   return <div className="tn-plan" data-toolset-key={t.key}>
     <div className="tn-plan-row"><span className={`cf-chip tone-${t.key_saved?'success':'warning'}`}>{t.key_saved?'Key saved in the vault':'No key saved'}</span>
       <span className={`cf-chip tone-${t.switched_on?'success':'neutral'}`}>{t.switched_on?'Switched on in Models & services':'Switched off in Models & services'}</span>
       <a href="#environment">{t.key_saved?'Replace the key':'Save the key'} on Settings</a></div>
-    <div className="tn-plan-row" data-toolset-plan={t.key}><strong>{p.name||'Plan not named'}</strong><span>{fmtNumber(p.used)} of {fmtNumber(p.credits)} credits used{p.counted_from?` since ${p.counted_from}`:''}{p.renews_monthly?' (renews monthly)':''}</span>
-      <span>{fmtNumber(p.left)} left · {fmtNumber(p.reserve)} kept back · up to {fmtNumber(p.max_concurrency)} calls at once</span>
+    <div className="tn-plan-row" data-toolset-plan={t.key}><strong>{p.name||'Plan not named'}</strong><span data-balance={admin?'figure':'words'}>{admin?`${fmtNumber(p.used)} of ${fmtNumber(p.credits)} credits used`:balanceWords(p.left,p.reserve)}{p.counted_from?` since ${p.counted_from}`:''}{p.renews_monthly?' (renews monthly)':''}</span>
+      <span>{admin?`${fmtNumber(p.left)} left · ${fmtNumber(p.reserve)} kept back · `:''}up to {fmtNumber(p.max_concurrency)} calls at once</span>
       {p.at_reserve&&<span className="cf-chip tone-danger">At its reserve — work using this key has stopped</span>}</div>
     <div className="sl-credit-bar" aria-hidden><span style={{width:`${pct}%`}}/></div>
     <small className="sl-sub">When you move to a production key: save the new key on Settings, then set its plan name, credits, renewal, “Count credits from” (the day you changed it) and calls at once below. Nothing else changes.</small>
@@ -215,9 +217,10 @@ function Settings({title,t,rows,can,write}){
 // v2.15.258 (bug 12/10-01): the AI uses that run now (Layer 3 retired), spend today against each daily guard, and the credit floor.
 // Guards and the floor are edited in "Daily guards" below; the mode (Observe only / Stop at limits) is the switch above.
 function OpenRouter({or}){
+  const admin=useIsPlatformAdmin()
   const b=or.balance||{},floor=Number(or.credit_floor_usd||0),low=b.remaining_usd!=null&&Number(b.remaining_usd)<floor
   return <div className="tn-or" data-openrouter>
-    <p><strong>Balance {money(b.remaining_usd)}</strong> of {money(b.total_credits)} bought · read {b.observed_at?fmtDateTime(b.observed_at):'never'} (every 15 minutes) · credit floor {money(floor)}{low&&<span className="cf-chip tone-danger"> Below the floor</span>}</p>
+    <p data-balance={admin?'figure':'words'}>{admin?<><strong>Balance {money(b.remaining_usd)}</strong> of {money(b.total_credits)} bought · </>:<><strong>Credit: {balanceWords(b.remaining_usd,floor)}</strong> · </>}read {b.observed_at?fmtDateTime(b.observed_at):'never'} (every 15 minutes){admin?<> · credit floor {money(floor)}</>:null}{low&&<span className="cf-chip tone-danger"> Below the floor</span>}</p>
     <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>AI use</th><th className="num">Calls today (UTC)</th><th className="num">Spent today</th><th className="num">Daily guard</th><th>State</th></tr></thead><tbody>
       {(or.uses||[]).map(g=>{const over=Number(g.guard)>0&&Number(g.spent_today)>=Number(g.guard)
         return <tr key={g.use} data-or-use={g.use}><td>{g.label}</td><td className="num">{fmtNumber(g.calls||0)}</td><td className="num">{money(g.spent_today)}</td><td className="num">{money(g.guard)}</td>
