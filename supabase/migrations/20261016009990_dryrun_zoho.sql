@@ -80,4 +80,4 @@ begin
 end $p$;
 
 do $t$ begin perform security.firecrawl_targets_refresh_v1();
-  raise exception 'DRYRUN OK %', (select jsonb_build_object('tranche_included', count(*) filter (where tc.included), 'tranche_rows', count(*)) from pipeline.firecrawl_target_cache tc join pipeline.firecrawl_targets t using (provider_id) where t.reason like 'Tranche 1%'); end $t$;
+  raise exception 'DRYRUN OK included % of %', (select count(*) filter (where tc.included) from pipeline.firecrawl_target_cache tc join pipeline.firecrawl_targets t using (provider_id) where t.reason like 'Tranche 1%'), (select count(*) from pipeline.firecrawl_targets t where t.reason like 'Tranche 1%'); end $t$;
