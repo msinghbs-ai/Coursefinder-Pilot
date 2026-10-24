@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.343'
+export const SOP_REVIEWED_FOR = '2.15.344'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -186,7 +186,8 @@ export const SOPS = [
       { version: '1.81', date: '24 Oct 2026', release: '2.15.340', change: 'Health hourly: at :11 the platform writes the hour\'s health rows (pages read and values admitted against the headline target, field changes per country, queue wait per lane, worker calls, idle lanes with why, bound-but-empty pages, negative movers, budget burn); the hourly report reads them; the 15-minute stats cover the countries in Settings › Pipeline settings › Health report.' },
       { version: '1.82', date: '24 Oct 2026', release: '2.15.341', change: 'Errors show as one plain line with a short reference; the Platform Admin looks the reference up in the app error log. A newer release while a window is open brings a reload notice. Coverage › Fully complete counts readable attributes.' },
       { version: '1.83', date: '24 Oct 2026', release: '2.15.342', change: 'Task manager: a running task shows last forwarded, next attempt and, when stalled, what holds it. Find course pages by a person runs at a university whose automatic search stopped. Layer 4: Enter another address on a held fee binds the page and reads it again.' },
-      { version: '1.84', date: '24 Oct 2026', release: '2.15.343', change: 'Find course pages by a person at a university whose automatic search stopped now spends its search credits (the credit check lets the task through).' }],
+      { version: '1.84', date: '24 Oct 2026', release: '2.15.343', change: 'Find course pages by a person at a university whose automatic search stopped now spends its search credits (the credit check lets the task through).' },
+      { version: '1.85', date: '24 Oct 2026', release: '2.15.344', change: 'Courses list: the international fee shows its basis and the International fee and City columns sort.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -321,7 +322,8 @@ export const SOPS = [
       { version: '1.81', date: '24 Oct 2026', release: '2.15.340', change: 'Health hourly: at :11 the platform writes the hour\'s health rows (pages read and values admitted against the headline target, field changes per country, queue wait per lane, worker calls, idle lanes with why, bound-but-empty pages, negative movers, budget burn); the hourly report reads them; the 15-minute stats cover the countries in Settings › Pipeline settings › Health report.' },
       { version: '1.82', date: '24 Oct 2026', release: '2.15.341', change: 'Errors show as one plain line with a short reference; the Platform Admin looks the reference up in the app error log. A newer release while a window is open brings a reload notice. Coverage › Fully complete counts readable attributes.' },
       { version: '1.83', date: '24 Oct 2026', release: '2.15.342', change: 'Task manager: a running task shows last forwarded, next attempt and, when stalled, what holds it. Find course pages by a person runs at a university whose automatic search stopped. Layer 4: Enter another address on a held fee binds the page and reads it again.' },
-      { version: '1.84', date: '24 Oct 2026', release: '2.15.343', change: 'Find course pages by a person at a university whose automatic search stopped now spends its search credits (the credit check lets the task through).' }],
+      { version: '1.84', date: '24 Oct 2026', release: '2.15.343', change: 'Find course pages by a person at a university whose automatic search stopped now spends its search credits (the credit check lets the task through).' },
+      { version: '1.85', date: '24 Oct 2026', release: '2.15.344', change: 'Courses list: the international fee shows its basis and the International fee and City columns sort.' }],
   },
 ]
 

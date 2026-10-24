@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.343)  
+**Version:** 1.53 (reviewed for platform release v2.15.344)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -189,3 +189,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.82 | 24 Oct 2026 | v2.15.341 | Errors show as one plain line with a short reference; the Platform Admin looks the reference up in the app error log. A newer release while a window is open brings a reload notice. Coverage › Fully complete counts readable attributes. |
 | 1.83 | 24 Oct 2026 | v2.15.342 | Task manager: a running task shows last forwarded, next attempt and, when stalled, what holds it. Find course pages by a person runs at a university whose automatic search stopped. Layer 4: Enter another address on a held fee binds the page and reads it again. |
 | 1.84 | 24 Oct 2026 | v2.15.343 | Find course pages by a person at a university whose automatic search stopped now spends its search credits (the credit check lets the task through). |
+| 1.85 | 24 Oct 2026 | v2.15.344 | Courses list: the international fee shows its basis and the International fee and City columns sort. |
