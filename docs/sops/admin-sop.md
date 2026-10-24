@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.348)  
+**Version:** 1.53 (reviewed for platform release v2.15.349)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -206,3 +206,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.87 | 24 Oct 2026 | v2.15.346 | Lists show names and plain words instead of internal keys and codes; support identifiers are in the detail under Identifiers (for support); vendor balances as figures for the Platform Admin only. |
 | 1.88 | 24 Oct 2026 | v2.15.347 | Task manager opens quickly with many tasks waiting; why a task waits is worked out in a fraction of a second. |
 | 1.89 | 24 Oct 2026 | v2.15.348 | Campuses: filter by provider; campuses are listed and shown in Provider details by their CRICOS location name. |
+| 1.90 | 24 Oct 2026 | v2.15.349 | Firecrawl targets: a university the targets rule does not match shows which condition it fails. |
