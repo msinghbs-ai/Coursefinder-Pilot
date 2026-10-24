@@ -262,4 +262,4 @@ begin
   -- taxonomy
   perform security.gap_causes_snapshot_v1();
   r := r || jsonb_build_object('gap_stopped', (select jsonb_build_object('n', sum(courses), 'auto', bool_or(automatic), 'action', min(action)) from pipeline.gap_cause_snapshots where at = date_trunc('hour', now()) and cause = 'no page: web search stopped for this university'));
-  raise exception 'DRYRUN OK %', r; end $t$;
+  raise exception 'DRYRUN OK %', r - 'page' - 'link' - 'locks' - 'use_msg' - 'http_msg' - 'item' - 'decision' - 'enter_ok' - 'status_on'; end $t$;
