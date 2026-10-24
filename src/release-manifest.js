@@ -1,15 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.349'
-export const PACKAGE_VERSION='0.1.276'
+export const UI_VERSION='2.15.350'
+export const PACKAGE_VERSION='0.1.277'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'24 Oct 2026',
-  title:'Firecrawl targets say why a university is not matched',
+  title:'Course page search: a daily cap and a per-course stop',
   changes:[
-    'Models & services › Firecrawl targets and Adapter builder › Firecrawl target: a university the targets rule does not match now says which condition it fails (for example "name has an excluded word (college)" or "fewer than 100 active courses (21)"). Who is a target is unchanged.',
+    'Course page search takes no more than 100 courses a day (Settings › Pipeline settings › Course search: courses a day). A person\'s running Find course pages task is counted but not held by it. The cap is raised on the week\'s correct-page rate.',
+    'A course with 6 different pages rejected as wrong is not searched again (Course search: stop a course after); the university-wide stop stays behind it.',
+    'When the cap holds a task, the Task manager says "Today\'s course search cap is reached".',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]

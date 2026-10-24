@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.277 — 24 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.350** (R2 / C-Q1; O10 approved 24 Oct). Migration `20261024013000_cf247_r2_daily_cap_course_stop.sql`: settings `search.daily_picked_cap` (100, 10–2,000 a UTC day) and `search.stop_per_course_after` (6, 3–20); index on `course_link_search.sent_at`; md5-guarded edits to `svc_course_link_search_next` (cap counted from today's picks; a person's running task counted but not held; per-course stop from `page_rejections`) and `link_search_block_v1` (stall cause `daily_cap`). Tranche 1 (25 override rows) is applied after the deploy by its paste file. Test s102. Release notes v2.15.349. SOPs 1.91.
+
 ## 0.1.276 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.349** (Platform Admin 24 Oct 19:23, D1.4: target rule reasons). Migration `20261024012000_cf247_target_rule_reason.sql`: column `pipeline.firecrawl_target_cache.rule_reason`; `security.firecrawl_target_rule_reasons_v1()` (first failing condition, rule order); md5-guarded edits to `firecrawl_targets_refresh_v1` (fills it each minute), `admin_firecrawl_read` and `admin_adapters` (carry it). Screens say why a university is not matched. Rule, inclusion and settings unchanged. Test s101. Release notes v2.15.348. SOPs 1.90.
