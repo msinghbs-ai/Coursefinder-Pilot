@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.240 (S3, S5): Scholarships › Coverage (each provider against its own listing page;
 // CF-247 v2.15.240 (S3, S5): Scholarships › Coverage (each provider against its own listing page; watch list; sign-off; review of
 // automatic publishing; settings and jobs on screen) and bulk restore on Providers › Archived. Platform Admin, 11 Oct 2026.
 import { test, expect } from '@playwright/test'

@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.233 (R2): Platform Admin bug list of 10 Oct 2026 — Fix 1, Feature 1, Feature 3.
 // CF-247 v2.15.233 (R2): Platform Admin bug list of 10 Oct 2026 — Fix 1, Feature 1, Feature 3. Only the provider's own website, the
 // regulator, or a value entered by hand may be a provider's website, course finder or course page. Hotcourses stays for logos only.
 import { test, expect } from '@playwright/test'

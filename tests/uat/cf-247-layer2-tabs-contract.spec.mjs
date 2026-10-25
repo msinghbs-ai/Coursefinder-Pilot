@@ -1,3 +1,4 @@
+// Guards: CF-247 layer2 tabs: v2.15.128 Layer 2 split into tabs: Overview, Fetch an area, History, Source profiles.
 // v2.15.128 Layer 2 split into tabs: Overview, Fetch an area, History, Source profiles. Duplicate panels removed.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

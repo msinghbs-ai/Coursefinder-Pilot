@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.245 (S11): Platform Admin bugs 11/10-2. Consumer searches build the blocked list once (Fix 7);
 // CF-247 v2.15.245 (S11): Platform Admin bugs 11/10-2. Consumer searches build the blocked list once (Fix 7); the Adapters list
 // styles no longer start with "ad-" (ad blockers hid them, Fix 1); verified websites go on the provider record and every provider
 // without one is searched (Fix 3, Features 2-3); central pages found by Firecrawl (Feature 4); the builder is numbered 1.x/2.x/3.x/4

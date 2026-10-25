@@ -1,3 +1,4 @@
+// Guards: CF-215 gives QS and THE independent ranking edition selectors
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

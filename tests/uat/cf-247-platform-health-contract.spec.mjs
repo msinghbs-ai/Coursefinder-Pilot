@@ -1,3 +1,4 @@
+// Guards: CF-247 platform health contract
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 

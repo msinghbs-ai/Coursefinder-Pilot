@@ -1,3 +1,4 @@
+// Guards: CF-247 admin simplify: v2.15.107 admin simplification: one menu map, one page layout, old links redirect, Platform health, Layer 3 tabs and sources side by side.
 // v2.15.107 admin simplification: one menu map, one page layout, old links redirect,
 // Platform health, Layer 3 tabs and sources side by side. Source checks plus a mocked browser run
 // against the local dev server (no real backend).

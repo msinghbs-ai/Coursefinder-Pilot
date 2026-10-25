@@ -1,3 +1,4 @@
+// Guards: CF-247 university groups admin: admin university group migration is checksum-guarded and anchor-checked
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

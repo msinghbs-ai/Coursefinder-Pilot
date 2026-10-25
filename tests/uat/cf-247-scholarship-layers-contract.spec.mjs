@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.173 (Decision 251, Platform Admin 4 Oct 2026 01:24): scholarships shown and controlled at each layer — sources per country and their use (Layer 1), discovery and…
 // CF-247 v2.15.173 (Decision 251, Platform Admin 4 Oct 2026 01:24): scholarships shown and controlled at each layer —
 // sources per country and their use (Layer 1), discovery and reading with the per-run limits (Layer 2), the AI check
 // (Layer 3) and the jobs after publishing (Layer 4).

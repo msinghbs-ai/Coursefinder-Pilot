@@ -1,3 +1,4 @@
+// Guards: CF-209 deployed Scheduler and Jobs operations acceptance
 import{test,expect}from'@playwright/test'
 import{attachRuntimeEvidence,assertNoServerErrors,clickPrimaryNav,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment,DETERMINISTIC_UI_TIMEOUT}from'./support/runtime-evidence.mjs'
 

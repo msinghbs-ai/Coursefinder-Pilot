@@ -1,3 +1,4 @@
+// Guards: CF-247 (S69) Phase 3, 19 Oct 2026 (Platform Admin 09:29 "every function and database change deploys through the workflow";
 // CF-247 (S69) Phase 3, 19 Oct 2026 (Platform Admin 09:29 "every function and database change deploys through the workflow"; the
 // consumer API is not affected).
 import { test, expect } from '@playwright/test'

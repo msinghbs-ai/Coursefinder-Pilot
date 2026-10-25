@@ -1,3 +1,4 @@
+// Guards: CF-247 course coverage: coverage model, schedule and governed read
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

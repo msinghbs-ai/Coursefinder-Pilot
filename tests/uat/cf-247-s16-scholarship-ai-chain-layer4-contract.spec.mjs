@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.250 (S16): Platform Admin 11 Oct 2026, "Qwen 3 then GPT-4.1 mini then to Layer 4.
 // CF-247 v2.15.250 (S16): Platform Admin 11 Oct 2026, "Qwen 3 then GPT-4.1 mini then to Layer 4. Layer 4 review the current parked items:
 // reroute to adapters or the new scholarship mechanism." GPT takes over only when Qwen's reply fails or a fact it states is not proven
 // on the page; a page no model settles goes to Layer 4 › AI could not decide, where a person's decision is kept as an exception.

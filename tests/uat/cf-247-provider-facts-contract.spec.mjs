@@ -1,3 +1,4 @@
+// Guards: CF-247 provider facts: Decision 205: institution-level sources (fee schedules, English policies, academic calendars).
 // Decision 205: institution-level sources (fee schedules, English policies, academic calendars). Nothing is written to
 // the catalogue by the worker; fee rows need the course code and the amount on the same row and a basis from the heading.
 import { test, expect } from '@playwright/test'

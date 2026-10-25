@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.246 (S12): Platform Admin bugs 11/10-3. A register run is one row in Jobs with its batches and evidence (Fix 1);
 // CF-247 v2.15.246 (S12): Platform Admin bugs 11/10-3. A register run is one row in Jobs with its batches and evidence (Fix 1);
 // a register whose file changes on every read but yields no change is not rerun every few hours (Fix 2); the Task manager shows
 // everything using resources now and in the last 15 minutes, and never hides an error (Fix 3); the Automations read is fast

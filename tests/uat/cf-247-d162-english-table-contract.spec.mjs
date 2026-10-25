@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 162: UQ Table 1: programs, shared blocks, wrapped names and component bands
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import os from 'node:os'

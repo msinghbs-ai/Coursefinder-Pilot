@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.243 (S9, Platform Admin 11 Oct 2026): scholarships read through the scraper only;
 // CF-247 v2.15.243 (S9, Platform Admin 11 Oct 2026): scholarships read through the scraper only; dates, course links with proof,
 // the Evidence & extraction journey; Study Australia and national registers retired; legacy scholarship screens removed.
 import { test, expect } from '@playwright/test'

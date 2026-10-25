@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.232 (R1): Platform Admin bug list of 10 Oct 2026 — Fix 3 (course finder address entered by hand), Fix 4 (find course pages says what happens), Fix 5 (no reason…
 // CF-247 v2.15.232 (R1): Platform Admin bug list of 10 Oct 2026 — Fix 3 (course finder address entered by hand), Fix 4 (find course
 // pages says what happens), Fix 5 (no reason prompts in the adapter builder), Feature 2 (course page entered by hand as a sample).
 import { test, expect } from '@playwright/test'

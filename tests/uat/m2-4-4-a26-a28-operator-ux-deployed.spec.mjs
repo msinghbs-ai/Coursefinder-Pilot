@@ -1,3 +1,4 @@
+// Guards: M2.4.4 A26-A28 operator UX
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'

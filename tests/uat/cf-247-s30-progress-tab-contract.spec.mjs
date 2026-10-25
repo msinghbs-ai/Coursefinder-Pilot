@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.266 (S30): Coverage & completeness › Progress. Platform Admin, 13 Oct 2026: "Show the adapter and scholarship journey and progress I can follow on the UI ...
 // CF-247 v2.15.266 (S30): Coverage & completeness › Progress. Platform Admin, 13 Oct 2026: "Show the adapter and scholarship journey and
 // progress I can follow on the UI ... what is running, and where we can tweak or run on demand ... make sure redundant UI screens and
 // controls are retired." Mock-up approved; "proceed with Progress tab, as v2.15.266".

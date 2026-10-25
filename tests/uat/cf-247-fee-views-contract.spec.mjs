@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 223 (v2.15.150): course-page fees follow the page's own domestic or international view;
 // CF-247 Decision 223 (v2.15.150): course-page fees follow the page's own domestic or international view; course
 // totals and part-year fees are not annual fees; re-extraction reads each page in its country's currency; Layer 4
 // reviews already answered by the recorded fee are closed; the retired pipeline's fee feed is paused.

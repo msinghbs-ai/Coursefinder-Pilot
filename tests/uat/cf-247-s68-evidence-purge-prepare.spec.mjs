@@ -1,3 +1,4 @@
+// Guards: CF-247 (S68) 19 Oct 2026: prepare removal of replaced course-page snapshots ("Archive, then remove");
 // CF-247 (S68) 19 Oct 2026: prepare removal of replaced course-page snapshots ("Archive, then remove"); nothing is removed by the change.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

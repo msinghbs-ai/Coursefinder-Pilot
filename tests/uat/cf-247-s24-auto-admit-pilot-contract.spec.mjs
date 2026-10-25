@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.259 (S24): Platform Admin, 12 Oct 2026 17:43: "Automate step 4 and onwards, or at least pick 100 universities across AU, NZ and CA to prove the mechanism, with…
 // CF-247 v2.15.259 (S24): Platform Admin, 12 Oct 2026 17:43: "Automate step 4 and onwards, or at least pick 100 universities across AU, NZ
 // and CA to prove the mechanism, with hourly updates and a summary table of data completeness". Answers: "Auto-admit everything that
 // passes"; pilot 60 AU / 25 NZ / 15 CA, 48 hours.

@@ -1,3 +1,4 @@
+// Guards: CF-247 layer2 discovery carry forward: New profile versions with unchanged discovery settings inherit discovered course URLs
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

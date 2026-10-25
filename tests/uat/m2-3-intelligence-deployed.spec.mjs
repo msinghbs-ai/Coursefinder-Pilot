@@ -1,3 +1,4 @@
+// Guards: M2.3: CourseFinder deployed M2.3 intelligence acceptance on canonical routes
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment, clickPrimaryNav } from './support/runtime-evidence.mjs'
 import { openRetiredLayer3, openLayer4 } from './support/navigation.mjs'

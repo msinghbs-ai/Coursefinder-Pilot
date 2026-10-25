@@ -1,3 +1,4 @@
+// Guards: CF-247 platform resources: Platform resources panel: mounted, governed reads, admin-only cost edits, unique refresh name
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

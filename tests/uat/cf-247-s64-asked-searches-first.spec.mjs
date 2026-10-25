@@ -1,3 +1,4 @@
+// Guards: CF-247 (S64) v2.15.290: course-page searches a person asked for run for any provider and go first (Platform Admin 18 Oct 2026 22:25 "proceed with recommended choice");
 // CF-247 (S64) v2.15.290: course-page searches a person asked for run for any provider and go first (Platform Admin 18 Oct 2026 22:25
 // "proceed with recommended choice"); the Adapter builder guide reads whether they will run.
 import { test, expect } from '@playwright/test'

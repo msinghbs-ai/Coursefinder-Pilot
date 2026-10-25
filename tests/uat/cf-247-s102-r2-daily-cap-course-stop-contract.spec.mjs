@@ -1,3 +1,4 @@
+// Guards: CF-247 R2 (v2.15.350; throughput record section 3.3, O10 approved 24 Oct 2026): daily picked-courses cap and per-course stop.
 // CF-247 R2 (v2.15.350; throughput record section 3.3, O10 approved 24 Oct 2026): daily picked-courses cap and per-course stop.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

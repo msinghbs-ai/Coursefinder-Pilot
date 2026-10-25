@@ -1,3 +1,4 @@
+// Guards: M2.5 platform readiness foundation
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 

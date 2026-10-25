@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.268 (S31): Platform Admin, 13 Oct 2026 14:56: "these notification are asking for cant be fixed and if followed the link its doesnt open the specific card to adjust…
 // CF-247 v2.15.268 (S31): Platform Admin, 13 Oct 2026 14:56: "these notification are asking for cant be fixed and if followed the link
 // its doesnt open the specific card to adjust the values if required". Chose all four: each notice opens its exact card or setting, says
 // plainly whether anything needs doing, lists the universities with the fix in place, and information-only notices stay on Toolsets and limits.

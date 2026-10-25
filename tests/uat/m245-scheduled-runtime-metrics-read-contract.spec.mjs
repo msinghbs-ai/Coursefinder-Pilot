@@ -1,3 +1,4 @@
+// Guards: M2.4.5: Scheduled Tasks runtime metrics read is rank-4, derived and secret-free
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 

@@ -1,3 +1,4 @@
+// Guards: CF-247 HOTFIX (Platform Admin 24 Oct 2026 13:17): a person's Find course pages task reaches Firecrawl on accept and on the same path as the scheduled search;
 // CF-247 HOTFIX (Platform Admin 24 Oct 2026 13:17): a person's Find course pages task reaches Firecrawl on accept and on the same path
 // as the scheduled search; a stalled task names its blocking reason; Layer 4 "Enter another address" on a held-fee item goes through the
 // standard bind path. Record: admin repo docs/platform/ui-audit/2026-10-24-hotfix-manual-task-and-layer4-entry.md.

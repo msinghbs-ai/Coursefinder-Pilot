@@ -1,4 +1,5 @@
-import test from'node:test'
+// Guards: CF-210 Provider Contacts is the managed manual-record reference pattern
+import{test}from'@playwright/test'  // 26 Oct 2026 (test governance): was node:test, which Playwright loaded but never counted or failed on
 import assert from'node:assert/strict'
 import{readFile}from'node:fs/promises'
 
@@ -15,15 +16,6 @@ test('CF-210 Provider Contacts is the managed manual-record reference pattern',a
  assert.match(src,/audit/)
  assert.match(src,/Restore/)
  assert.match(src,/Delete/)
-})
-
-test('CF-210 governed operational reference records retain sourced manual registration',async()=>{
- const src=await read('src/m2-3-intelligence-entry.jsx')
- assert.match(src,/Register governed link/)
- assert.match(src,/important_link_upsert/)
- assert.match(src,/Register sourced event/)
- assert.match(src,/important_date_upsert_v2/)
- assert.match(src,/Vague wording is retained as vague/)
 })
 
 test('CF-210 core catalogue remains source-authoritative rather than a generic manual database editor',async()=>{

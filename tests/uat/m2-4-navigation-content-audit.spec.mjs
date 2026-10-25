@@ -1,3 +1,4 @@
+// Guards: M2.4 navigation/content audit
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'

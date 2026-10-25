@@ -1,3 +1,4 @@
+// Guards: CF-061 QILT PRISMS comparison experience
 import{test,expect}from'@playwright/test'
 import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
 import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment,DETERMINISTIC_UI_TIMEOUT}from'./support/runtime-evidence.mjs'

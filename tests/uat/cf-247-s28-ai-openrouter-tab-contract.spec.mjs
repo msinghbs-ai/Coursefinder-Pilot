@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.264 (S28): Platform Admin, 13 Oct 2026 00:09: "Layer 3 has removed the configuration of OpenAI and access to toolsets and limits;
 // CF-247 v2.15.264 (S28): Platform Admin, 13 Oct 2026 00:09: "Layer 3 has removed the configuration of OpenAI and access to toolsets
 // and limits; restore them as a tab in Models & services." Decisions: three tabs; scholarship AI models editable in the AI tab.
 import { test, expect } from '@playwright/test'

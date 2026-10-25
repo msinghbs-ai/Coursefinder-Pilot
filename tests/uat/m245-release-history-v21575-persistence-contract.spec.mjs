@@ -1,3 +1,4 @@
+// Guards: Release contract: version pill, release history and manifest move together (every release)
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 

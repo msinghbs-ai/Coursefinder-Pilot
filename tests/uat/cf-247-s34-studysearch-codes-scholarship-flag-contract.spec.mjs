@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.271 (S34): Platform Admin, 14 Oct 2026 08:33. Course codes: "fill the real program code and if missing generate the studysearch code, create something not too long…
 // CF-247 v2.15.271 (S34): Platform Admin, 14 Oct 2026 08:33.
 // Course codes: "fill the real program code and if missing generate the studysearch code, create something not too long and meaningful
 // with uni/campus/Degree based, it will be applicable to upcoming countries as well".

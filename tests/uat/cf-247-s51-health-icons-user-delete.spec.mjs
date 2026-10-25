@@ -1,3 +1,4 @@
+// Guards: CF-247 (S51): Platform Admin 16 Oct 2026 15:25: "Platform health: CRITICAL, with 5 critical issues and 1 warning.
 // CF-247 (S51): Platform Admin 16 Oct 2026 15:25: "Platform health: CRITICAL, with 5 critical issues and 1 warning. Most are stale or
 // mis-labelled. The real one is scholarships: none published or read for two days." "Dashboard should display Icons" "Platform Users -
 // can't be deleted, only disabled (only Platform admin should be able to delete the user from UI, Platform admins roles user can't be

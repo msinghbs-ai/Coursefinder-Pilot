@@ -1,3 +1,4 @@
+// Guards: CF-247 (S60) v2.15.287, Decision 267: Layer 2 › Build adapter (Platform Admin 18 Oct 2026 11:58 "Keep Adapter builder too";
 // CF-247 (S60) v2.15.287, Decision 267: Layer 2 › Build adapter (Platform Admin 18 Oct 2026 11:58 "Keep Adapter builder too"; 14:05).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

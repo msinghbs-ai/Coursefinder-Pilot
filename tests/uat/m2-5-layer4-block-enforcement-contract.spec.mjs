@@ -1,3 +1,4 @@
+// Guards: M2.5 universal Layer 4 block enforcement contract
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { writeRunEnvironment } from './support/runtime-evidence.mjs'

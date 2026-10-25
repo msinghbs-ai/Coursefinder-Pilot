@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.241 (S6): the platform is renamed StudySearch (customer request, 11 Oct 2026).
 // CF-247 v2.15.241 (S6): the platform is renamed StudySearch (customer request, 11 Oct 2026). Visible text only; identifiers,
 // saved-settings keys, Wix/Zoho contract names and the repositories are unchanged until production.
 import { test, expect } from '@playwright/test'

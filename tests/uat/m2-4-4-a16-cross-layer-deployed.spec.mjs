@@ -1,3 +1,4 @@
+// Guards: M2.4.4 A16 cross-layer contact + Layer 4 intervention
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import {

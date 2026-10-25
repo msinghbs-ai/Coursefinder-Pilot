@@ -1,3 +1,4 @@
+// Guards: M2.4.4: A25 Evidence type-aware preview and screenshot lineage
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 

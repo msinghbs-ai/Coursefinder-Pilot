@@ -1,3 +1,4 @@
+// Guards: CF-247 production readiness phase 4 (10 Oct 2026): the live schema baseline is held in git and the rebuild test can never target the Pilot.
 // CF-247 production readiness phase 4 (10 Oct 2026): the live schema baseline is held in git and the
 // rebuild test can never target the Pilot.
 import { test, expect } from '@playwright/test'

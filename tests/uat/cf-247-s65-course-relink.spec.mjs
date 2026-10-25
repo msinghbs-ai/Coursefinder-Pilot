@@ -1,3 +1,4 @@
+// Guards: CF-247 (S65) relink of refused course pages (Platform Admin 18 Oct 2026 22:44 "Lets start on point 5";
 // CF-247 (S65) relink of refused course pages (Platform Admin 18 Oct 2026 22:44 "Lets start on point 5"; choice "A+B, then D (Recommended)").
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

@@ -1,3 +1,4 @@
+// Guards: CF-247 record editing: v2.15.114 record editing (Decision 179, CRUD first): values entered by hand always win over automation.
 // v2.15.114 record editing (Decision 179, CRUD first): values entered by hand always win over automation.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

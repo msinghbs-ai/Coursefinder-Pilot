@@ -1,3 +1,4 @@
+// Guards: CF-247 api developer fixes: consumer API update for the website developer: names, regional class, English summary, place names
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

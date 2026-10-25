@@ -1,3 +1,4 @@
+// Guards: CF-247 (S49): Zoho API v2 on its own URL and keys. Platform Admin, 16 Oct 2026 09:43: "create separate API URL and Key for Zoho V2 API and keep it separate from Website API URL ...
 // CF-247 (S49): Zoho API v2 on its own URL and keys. Platform Admin, 16 Oct 2026 09:43: "create separate API URL and Key for Zoho V2 API and
 // keep it separate from Website API URL ... with summary and stat collection as well"; 09:55: "a separate URL for each API version going
 // forward ... not with contracts calling in the URL". Decisions: keys "Creator + CRM sync"; "CSV seed + sync feed"; "Public + named contacts".

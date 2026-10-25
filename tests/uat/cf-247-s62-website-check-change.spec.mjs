@@ -1,3 +1,4 @@
+// Guards: CF-247 (S62) v2.15.288, bug 18/10-01: check or change a university's website in the Adapter builder (Platform Admin 18 Oct 2026 20:35: "add to bug/fix: Website - should have to…
 // CF-247 (S62) v2.15.288, bug 18/10-01: check or change a university's website in the Adapter builder (Platform Admin 18 Oct 2026 20:35:
 // "add to bug/fix: Website - should have to feature to validate or change the website in the adapter builder").
 import { test, expect } from '@playwright/test'

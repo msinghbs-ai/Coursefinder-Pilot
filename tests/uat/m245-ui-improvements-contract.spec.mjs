@@ -1,3 +1,4 @@
+// Guards: M2.4.5 reconciled UI improvements contract
 import fs from'node:fs/promises'
 import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'

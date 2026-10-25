@@ -1,3 +1,4 @@
+// Guards: CF-090 ranking import recovery
 import{test,expect}from'@playwright/test'
 import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,DETERMINISTIC_UI_TIMEOUT,writeRunEnvironment}from'./support/runtime-evidence.mjs'
 

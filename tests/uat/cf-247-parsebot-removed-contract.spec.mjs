@@ -1,3 +1,4 @@
+// Guards: CF-247 parsebot removed: v2.15.119: Parse.bot removed completely (Platform Admin, 1 Oct 2026).
 // v2.15.119: Parse.bot removed completely (Platform Admin, 1 Oct 2026). Ranking imports are file upload only.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

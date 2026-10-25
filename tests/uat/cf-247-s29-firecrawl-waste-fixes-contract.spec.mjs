@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.265 (S29): Platform Admin, 13 Oct 2026: credit waste by university.
 // CF-247 v2.15.265 (S29): Platform Admin, 13 Oct 2026: credit waste by university. "Block directory sites", "Universities only",
 // "Refusals per university", "Reset cap for top-50"; course search "Australia and 30+ courses first", "Flag Victoria Uni and Adelaide Uni",
 // "Never search directory sites", "CRICOS code before title"; "use training.gov.au or ASQA ... CRICOS/RTO code, flag the exceptions".

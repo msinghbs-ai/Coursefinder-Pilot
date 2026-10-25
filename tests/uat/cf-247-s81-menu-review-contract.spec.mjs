@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.301 (Platform Admin, 20 Oct 2026 19:23 "Ask me nav menu wise and its tab wise questions ...
 // CF-247 v2.15.301 (Platform Admin, 20 Oct 2026 19:23 "Ask me nav menu wise and its tab wise questions ... keep, move or retire";
 // answers 19:2x; 19:31 "Go"): the menu decisions. Moves keep their role gates; every old address opens the new place.
 import { test, expect } from '@playwright/test'

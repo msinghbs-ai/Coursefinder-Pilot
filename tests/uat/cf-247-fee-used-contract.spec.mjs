@@ -1,3 +1,4 @@
+// Guards: CF-247 fee used: fee rules: dry-run report and fee-used label are read only, guarded and rule-shaped
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

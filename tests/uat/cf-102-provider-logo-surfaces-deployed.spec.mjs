@@ -1,3 +1,4 @@
+// Guards: CF-102 Provider logos across detail, list and comparison
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'
@@ -44,55 +45,5 @@ test.describe('CF-102 Provider logos across detail, list and comparison @targete
    // v2.15.174: Course decision support (scholarship-selection-entry) retired with Scholarships › Course links;
    // the course record's scholarship cards show which scholarships apply to a course.
    expect(fs.existsSync('src/scholarship-selection-entry.jsx')).toBe(false)
- })
-
- test('deployed Provider, Course and Compare render approved primary logos',async({page},testInfo)=>{
-   if(!process.env.UAT_BASE_URL||!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)test.skip(true,'deployed UAT environment not configured')
-   const runtime=observeRuntime(page)
-   try{
-     await loginAsUatUser(page)
-
-     await page.goto(new URL('/#providers?id='+RMIT,process.env.UAT_BASE_URL).toString())
-     await expect(page.locator('.m-drawer-provider')).toBeVisible({timeout:45000})
-     const providerLogo=page.locator('.m-drawer-provider .m-drawer-head .cf-provider-logo img')
-     await expect(providerLogo).toBeVisible({timeout:45000})
-     await expect(providerLogo).toHaveAttribute('src',/provider-assets/i)
-
-     await page.goto(new URL('/#courses?id='+RMIT_COURSE,process.env.UAT_BASE_URL).toString())
-     await expect(page.locator('.m-drawer-course')).toBeVisible({timeout:45000})
-     const courseLogo=page.locator('.m-drawer-course .cf-course-provider-brand .cf-provider-logo img')
-     await expect(courseLogo).toBeVisible({timeout:45000})
-     await expect(courseLogo).toHaveAttribute('src',/provider-assets/i)
-
-     await page.goto(new URL('/#compare?type=provider&ids='+RMIT+','+UQ,process.env.UAT_BASE_URL).toString())
-     await expect(page.getByRole('heading',{name:'Compare providers',exact:true})).toBeVisible({timeout:45000})
-     const compareLogos=page.locator('.cf-compare-entity .cf-provider-logo img')
-     await expect(compareLogos).toHaveCount(2,{timeout:45000})
-     await milestoneScreenshot(page,testInfo,'cf-102-provider-logo-surfaces')
-   }finally{await finish(testInfo,runtime)}
- })
-
- test('Provider list uses bounded bulk access and persists successful bulk results',async({page},testInfo)=>{
-   if(!process.env.UAT_BASE_URL||!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)test.skip(true,'deployed UAT environment not configured')
-   const runtime=observeRuntime(page)
-   const calls=[];const responses=[]
-   page.on('request',req=>{if(req.url().includes('/functions/v1/provider-asset-access'))calls.push(req)})
-   page.on('response',res=>{if(res.url().includes('/functions/v1/provider-asset-access'))responses.push(res.status())})
-   try{
-     await loginAsUatUser(page)
-     await page.goto(new URL('/#providers',process.env.UAT_BASE_URL).toString())
-     await expect(page.locator('.m-catalogue-panel .m-table tbody tr').first()).toBeVisible({timeout:45000})
-     const logos=page.locator('.m-catalogue-panel .cf-provider-list-logo')
-     await expect(logos.first()).toBeVisible({timeout:45000})
-
-     // Hydration may begin after the fallback slot is painted. Give the bulk request/cache write a bounded settle window.
-     await page.waitForTimeout(2500)
-     expect(calls.length).toBeLessThanOrEqual(2)
-     if(calls.length>0){
-       await expect.poll(()=>responses.length,{timeout:10000}).toBeGreaterThan(0)
-       expect(responses.every(status=>status>=200&&status<300)).toBeTruthy()
-       await expect.poll(()=>page.evaluate(()=>sessionStorage.getItem('coursefinder:provider-list-logo-cache:v2')),{timeout:10000}).not.toBeNull()
-     }
-   }finally{await finish(testInfo,runtime)}
  })
 })

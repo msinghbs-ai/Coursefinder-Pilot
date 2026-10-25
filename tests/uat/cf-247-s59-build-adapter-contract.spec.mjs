@@ -1,3 +1,4 @@
+// Guards: CF-247 (S59) Decision 267: Build adapter, one click per university (Platform Admin 17 Oct 18:56;
 // CF-247 (S59) Decision 267: Build adapter, one click per university (Platform Admin 17 Oct 18:56; 18 Oct 11:58 and 12:43).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

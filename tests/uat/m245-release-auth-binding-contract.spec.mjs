@@ -1,3 +1,4 @@
+// Guards: M2.4.5: release pill opens the notes by click, Enter or Space and returns focus on close
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 // v2.15.291: the pill is part of the signed-in shell React draws, so it works however late sign-in finishes; nothing binds it

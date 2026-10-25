@@ -1,3 +1,4 @@
+// Guards: M2.4.5: independent ranking edition selectors include multi-year
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 const source=()=>fs.readFileSync('src/ComparisonWorkspace.jsx','utf8')

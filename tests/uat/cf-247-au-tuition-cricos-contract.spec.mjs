@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 225 (v2.15.152): tuition comes from the regulator where it publishes it (Australia: CRICOS);
 // CF-247 Decision 225 (v2.15.152): tuition comes from the regulator where it publishes it (Australia: CRICOS);
 // provider-page tuition is chased only for countries whose regulator publishes none, for international students.
 import fs from 'node:fs/promises'

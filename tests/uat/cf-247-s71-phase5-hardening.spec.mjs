@@ -1,3 +1,4 @@
+// Guards: CF-247 (S71) Phase 5, 19 Oct 2026 (Platform Admin 09:29 "Phase 5: hardening, plus retiring the leftovers";
 // CF-247 (S71) Phase 5, 19 Oct 2026 (Platform Admin 09:29 "Phase 5: hardening, plus retiring the leftovers"; "keep in mind the Consumer
 // API wont get affected").
 import { test, expect } from '@playwright/test'

@@ -1,3 +1,4 @@
+// Guards: CF-247 UI audit Phase 0 (Platform Admin 24 Oct 2026 11:27): errors shown to a person are plain, referenced and logged;
 // CF-247 UI audit Phase 0 (Platform Admin 24 Oct 2026 11:27): errors shown to a person are plain, referenced and logged; a banner
 // never follows a person to the next screen; a deployed-version change brings a reload notice; the incident fixes are in place.
 import { test, expect } from '@playwright/test'

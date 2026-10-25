@@ -1,3 +1,4 @@
+// Guards: screen-state-persistence-deployed: CourseFinder PIM v2.15.3 per-user screen state
 import { test, expect } from '@playwright/test'
 import {
   attachRuntimeEvidence,

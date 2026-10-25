@@ -1,3 +1,4 @@
+// Guards: CF-247 adapter builder tab: mocked browser
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

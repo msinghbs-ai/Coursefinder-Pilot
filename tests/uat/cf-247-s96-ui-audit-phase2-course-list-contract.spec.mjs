@@ -1,3 +1,4 @@
+// Guards: CF-247 UI audit Phase 2 (Platform Admin 24 Oct 2026 11:27): the Courses list shows the fee with its basis and the campus city/state, both sortable.
 // CF-247 UI audit Phase 2 (Platform Admin 24 Oct 2026 11:27): the Courses list shows the fee with its basis and the campus city/state, both sortable.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

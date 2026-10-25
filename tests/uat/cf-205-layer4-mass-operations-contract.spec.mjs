@@ -1,4 +1,5 @@
-import test from'node:test'
+// Guards: CF-205 Layer 4 mass operations is loaded and release current
+import{test}from'@playwright/test'  // 26 Oct 2026 (test governance): was node:test, which Playwright loaded but never counted or failed on
 import assert from'node:assert/strict'
 import{readFile}from'node:fs/promises'
 

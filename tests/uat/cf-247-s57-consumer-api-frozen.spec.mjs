@@ -1,3 +1,4 @@
+// Guards: G3 (CLAUDE.md, Decision 266): the consumer API is frozen
 // CF-247 (S57) Decision 266: the consumer API is frozen. Platform Admin 18 Oct 2026 11:58: "From here on, make sure the consumer api are not
 // affected by any decision or design"; choice "Frozen-surface guard (Recommended)".
 import { test, expect } from '@playwright/test'

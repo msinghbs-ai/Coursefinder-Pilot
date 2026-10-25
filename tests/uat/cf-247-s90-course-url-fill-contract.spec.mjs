@@ -1,3 +1,4 @@
+// Guards: CF-247 NZ brief item 5, Option A (Platform Admin 23 Oct 2026 20:42;
 // CF-247 NZ brief item 5, Option A (Platform Admin 23 Oct 2026 20:42; built on the 24 Oct 2026 00:35 mandate): course_url filled from a
 // proven course-page binding, with the four guards. Contracts on the migration source.
 import { test, expect } from '@playwright/test'

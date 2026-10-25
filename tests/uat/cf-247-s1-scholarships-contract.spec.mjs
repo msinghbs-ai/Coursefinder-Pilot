@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.239 (S1, S2, S4): scholarship completeness, Platform Admin decisions of 11 Oct 2026 — "Published only, always", "Link all intl courses, marked", "Auto-publish,…
 // CF-247 v2.15.239 (S1, S2, S4): scholarship completeness, Platform Admin decisions of 11 Oct 2026 — "Published only, always",
 // "Link all intl courses, marked", "Auto-publish, list for morning review".
 import { test, expect } from '@playwright/test'

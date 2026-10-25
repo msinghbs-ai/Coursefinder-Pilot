@@ -1,3 +1,4 @@
+// Guards: CF-247 (S74), 19 Oct 2026. Platform Admin 19:04: "how do we simplify evidence collection ...
 // CF-247 (S74), 19 Oct 2026. Platform Admin 19:04: "how do we simplify evidence collection ... and store them efficiently without bloating
 // the DB"; 20:33: "refresh plan for evidence, plan and execute the next steps".
 import { test, expect } from '@playwright/test'

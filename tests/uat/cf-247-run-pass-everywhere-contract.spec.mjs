@@ -1,3 +1,4 @@
+// Guards: CF-247 run pass everywhere: Decision 216: every background function signs in with one-time run passes;
 // Decision 216: every background function signs in with one-time run passes; the old automation key is accepted nowhere.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

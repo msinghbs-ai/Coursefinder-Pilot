@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.249 (S15): Platform Admin bugs 11/10-6. "Just like courses adapter i need scholarship to be read by code using Firecrawl but then use AI to extract attributes.
 // CF-247 v2.15.249 (S15): Platform Admin bugs 11/10-6. "Just like courses adapter i need scholarship to be read by code using
 // Firecrawl but then use AI to extract attributes. Simple code extraction fields are making too many mistakes and rejecting the
 // values. I can't validate and check every page." Decisions: AI reads every page; qualify two models and keep the better; AI-admitted

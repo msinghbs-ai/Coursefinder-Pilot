@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.273 (S36): Platform Admin, 14 Oct 2026 10:41: "create a job to enrich data for specific or multiple fields across uni or countries using scraper and ai in layer 2…
 // CF-247 v2.15.273 (S36): Platform Admin, 14 Oct 2026 10:41: "create a job to enrich data for specific or multiple fields across uni or
 // countries using scraper and ai in layer 2 and layer 3. Keep it simple"; decisions: build the full job first, campus lists admitted when
 // the AI list and the course pages agree, international by the institution rule.

@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.227 (Platform Admin, 9 Oct 2026: "every page, in stages"), stage 1: every table resizes the same way as the catalogue lists;
 // CF-247 v2.15.227 (Platform Admin, 9 Oct 2026: "every page, in stages"), stage 1: every table resizes the same way as
 // the catalogue lists; plain dropdowns and inputs share one look; Evidence and Jobs lose their repeated headers.
 import { test, expect } from '@playwright/test'

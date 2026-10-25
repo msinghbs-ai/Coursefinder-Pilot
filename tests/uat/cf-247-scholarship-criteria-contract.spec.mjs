@@ -1,3 +1,4 @@
+// Guards: CF-247 scholarship criteria: Decision 211: scholarship eligibility criteria and award scope from the provider page;
 // Decision 211: scholarship eligibility criteria and award scope from the provider page; old course-link candidates retired.
 import { test, expect } from '@playwright/test'
 import os from 'node:os'

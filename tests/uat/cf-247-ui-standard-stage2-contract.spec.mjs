@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.229, UI stage 2 (Layer 1 register, Layer 2, Coverage, Sources, Platform health): boxed filters keep their shape under the standard control style;
 // CF-247 v2.15.229, UI stage 2 (Layer 1 register, Layer 2, Coverage, Sources, Platform health): boxed filters keep their
 // shape under the standard control style; repeated headers and jargon replaced with plain wording.
 import { test, expect } from '@playwright/test'

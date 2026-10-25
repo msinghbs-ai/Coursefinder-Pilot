@@ -1,3 +1,4 @@
+// Guards: CF-067 QS THE Layer 1 ranking ingestion contract
 import fs from'node:fs/promises'
 import{test,expect}from'@playwright/test'
 import{writeRunEnvironment}from'./support/runtime-evidence.mjs'

@@ -1,3 +1,4 @@
+// Guards: CF-247 calendar by hand: Start months by hand (v2.15.161, Decision 228, rapid admission plan step 1): a Platform Admin enters the month each study period starts;
 // Start months by hand (v2.15.161, Decision 228, rapid admission plan step 1): a Platform Admin enters the month each
 // study period starts; the job answers the waiting reviews. Nothing is written without a confirmation; only the
 // backed functions are called.

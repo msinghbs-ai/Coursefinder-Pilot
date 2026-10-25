@@ -1,3 +1,4 @@
+// Guards: CF-247 bug (11 Oct 2026, Platform Admin screenshot): the Scholarships list timed out.
 // CF-247 bug (11 Oct 2026, Platform Admin screenshot): the Scholarships list timed out. Migration 20261011008300.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

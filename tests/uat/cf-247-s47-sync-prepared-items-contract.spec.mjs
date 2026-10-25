@@ -1,3 +1,4 @@
+// Guards: CF-247 (S47): Platform Admin 15 Oct 2026 17:46: "How can we burst it for wix";
 // CF-247 (S47): Platform Admin 15 Oct 2026 17:46: "How can we burst it for wix"; decision "Prepared items + bigger pages". The change check keeps
 // the item it built (its hash is of that copy); sync serves it and fills a page by size; pages hold up to 200 items.
 import { test, expect } from '@playwright/test'

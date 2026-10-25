@@ -1,3 +1,4 @@
+// Guards: M2.4.5 v2.15.74 release currentness
 import{test,expect}from'@playwright/test'
 import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
 import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,DETERMINISTIC_UI_TIMEOUT,writeRunEnvironment}from'./support/runtime-evidence.mjs'

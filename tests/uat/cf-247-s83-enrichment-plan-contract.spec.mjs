@@ -1,3 +1,4 @@
+// Guards: CF-247 S83: plan steps, estimates from use, runs and jobs
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

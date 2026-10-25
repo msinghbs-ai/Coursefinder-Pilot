@@ -1,3 +1,4 @@
+// Guards: CF-247 S87: v2.15.326 Courses list
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

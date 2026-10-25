@@ -1,3 +1,4 @@
+// Guards: CF-247 nz coverage: Decision 217: New Zealand course pages, search and tuition; fee schedules follow the Coverage country.
 // Decision 217: New Zealand course pages, search and tuition; fee schedules follow the Coverage country.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

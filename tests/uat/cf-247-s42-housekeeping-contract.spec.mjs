@@ -1,3 +1,4 @@
+// Guards: Housekeeping (Decision 260) with G1: Replaces/Retires lines, table purposes, every job catalogued, nothing dropped by a migration
 // CF-247 v2.15.280 (S42): housekeeping standard (Decision 260). Platform Admin, 15 Oct 2026: "always keep the snapshot/documentation what
 // corresponds to what and decommission as we create new approach. outcome is code/platform and database are always streamlined and secure".
 // From 20261015030000 on, every migration says what it replaces and what it retires, every new table states its purpose, every new job is

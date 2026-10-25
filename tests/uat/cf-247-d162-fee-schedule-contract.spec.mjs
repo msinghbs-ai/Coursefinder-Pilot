@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 162: Fee schedule worker is deterministic and bounded to registered schedules on university hosts
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

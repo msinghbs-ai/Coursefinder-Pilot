@@ -1,3 +1,4 @@
+// Guards: CF-247 evidence page fast path: migration 1870 gives the default Evidence view a fast path, guarded on the live definition
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

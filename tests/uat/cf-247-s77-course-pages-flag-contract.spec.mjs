@@ -1,3 +1,4 @@
+// Guards: CF-247 (S77) v2.15.296. Platform Admin, 20 Oct 2026 06:33: "flag the failed one with reason so they dont get tried again, only operator and above can unflag them".
 // CF-247 (S77) v2.15.296. Platform Admin, 20 Oct 2026 06:33: "flag the failed one with reason so they dont get tried again, only operator and
 // above can unflag them". A provider held for "course pages not found" is out of page search, discovery, AI matching and Build adapter;
 // a Pipeline Operator or above may release it, which starts its onboarding again.

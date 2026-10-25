@@ -1,3 +1,4 @@
+// Guards: CF-247 list edit campus scholarship: v2.15.130 Campuses and scholarships can be corrected by hand in the list (screen review cmp-readonly, sch-no-edit).
 // v2.15.130 Campuses and scholarships can be corrected by hand in the list (screen review cmp-readonly, sch-no-edit).
 // A person's entry always wins: a guard keeps locked columns on every automated update (migration 20261001150000).
 import { test, expect } from '@playwright/test'

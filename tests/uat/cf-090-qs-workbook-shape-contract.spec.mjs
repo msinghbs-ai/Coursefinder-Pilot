@@ -1,3 +1,4 @@
+// Guards: CF-090 QS workbook retains full indicator/category detail through ingest while dataset stays overall-focused
 import fs from 'node:fs'
 import {test,expect} from '@playwright/test'
 

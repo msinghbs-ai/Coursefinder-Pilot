@@ -1,3 +1,4 @@
+// Guards: CF-247 (S75) v2.15.294. Platform Admin, 19 Oct 2026 22:13 (captures of the Evidence list for one course and its panel): "evidence still duplicated";
 // CF-247 (S75) v2.15.294. Platform Admin, 19 Oct 2026 22:13 (captures of the Evidence list for one course and its panel): "evidence still
 // duplicated"; "tried opening view page and error Preview_not_allowed". Each row says what it is (copy n of m, in use, older copy whose values
 // are in use, provider facts page, register file); View page opens the saved page here, unpacked, in a sandboxed frame.

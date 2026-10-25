@@ -1,3 +1,4 @@
+// Guards: Website API v2 is additive only (Decisions 257, 258)
 // CF-247 Website API v2 (website-search-v2), Decision 257. Live on Pilot since 8 Oct 2026, extended 14 Oct 2026.
 // The nine 8 Oct migrations were applied live before the 10 Oct baseline (which holds their objects) and are kept in the
 // archive, byte-identical to the live migration history. The 14 Oct changes are normal migrations after the baseline. This file guards the contract: opt-in on the same key, v1 untouched, service-only functions, signed

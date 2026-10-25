@@ -1,3 +1,4 @@
+// Guards: CF-247 R1 (Platform Admin 24 Oct 2026 09:55 "R1, for real this time"): Q2 backoff cap and per-lane waiting tests, Q3 per-mode ledger, Q4 why-idle line and the companion…
 // CF-247 R1 (Platform Admin 24 Oct 2026 09:55 "R1, for real this time"): Q2 backoff cap and per-lane waiting tests, Q3 per-mode
 // ledger, Q4 why-idle line and the companion data-file fix, the apply-time identity check. Contracts on the migration, worker and screen.
 import { test, expect } from '@playwright/test'

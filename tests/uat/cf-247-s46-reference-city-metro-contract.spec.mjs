@@ -1,3 +1,4 @@
+// Guards: CF-247 (S46): found while refreshing the website developer pack (15 Oct 2026): the reference reply listed Sydney under Brisbane.
 // CF-247 (S46): found while refreshing the website developer pack (15 Oct 2026): the reference reply listed Sydney under Brisbane. A city's
 // metro area is now the one most of its campuses have, and a campus whose register state disagrees with its postcode takes the postcode's
 // state when its address names it.

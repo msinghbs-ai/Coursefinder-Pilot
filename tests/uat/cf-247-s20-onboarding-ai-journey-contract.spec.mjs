@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.255 (S20): Platform Admin, 12 Oct 2026 11:15: "Will this create the adapter automatically, start the scholarships as well, and can I monitor the journey from the…
 // CF-247 v2.15.255 (S20): Platform Admin, 12 Oct 2026 11:15: "Will this create the adapter automatically, start the scholarships as well,
 // and can I monitor the journey from the UI?" The AI proposes again when no field passes (an old adapter included); nothing ready after
 // that is "Needs a person", not Ready to admit; each university opens its journey; new scholarships are counted live.

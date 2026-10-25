@@ -1,3 +1,4 @@
+// Guards: M2.5 Jobs workspace deployed
 import{test,expect}from'@playwright/test'
 import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
 import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,clickPrimaryNav,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'

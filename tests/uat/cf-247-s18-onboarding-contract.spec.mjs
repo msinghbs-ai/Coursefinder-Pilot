@@ -1,3 +1,4 @@
+// Guards: CF-247 S18: v2.15.253 (Platform Admin, 12 Oct 2026): universities are onboarded automatically up to Ready to admit (admitting stays a person's step);
 // v2.15.253 (Platform Admin, 12 Oct 2026): universities are onboarded automatically up to Ready to admit (admitting stays a person's
 // step); central page approvals moved to the Adapter builder (1.3) and Providers › Onboarding; Layer 4 Flagged values, Fee rules,
 // Attributes, Scholarship publishing and Blocks retired; a credit and limit banner on every page.

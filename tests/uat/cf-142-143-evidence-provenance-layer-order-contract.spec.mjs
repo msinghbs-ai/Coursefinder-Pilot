@@ -1,3 +1,4 @@
+// Guards: CF-142/143 targeted source contract — Evidence acquisition provenance and stable L1→L4 navigation.
 // CF-142/143 targeted source contract — Evidence acquisition provenance and stable L1→L4 navigation.
 import fs from'node:fs/promises'
 import{execFileSync}from'node:child_process'

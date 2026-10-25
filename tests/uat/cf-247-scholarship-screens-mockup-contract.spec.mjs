@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.171 (Platform Admin, 3 Oct 2026 23:27 and 23:30): the live scholarship screens follow the mockup — the list (columns, status pills, courses line), the record…
 // CF-247 v2.15.171 (Platform Admin, 3 Oct 2026 23:27 and 23:30): the live scholarship screens follow the mockup —
 // the list (columns, status pills, courses line), the record drawer (one row per fact, source, Change, hand back),
 // Scholarship publishing (four tiles, reasons with what they mean) and the course drawer's scholarship cards.

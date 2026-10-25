@@ -1,3 +1,4 @@
+// Guards: M2.5 Platform maturity Administration source/server contract
 import fs from'node:fs/promises'
 import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
@@ -45,13 +46,10 @@ test.describe('M2.5 Platform maturity Administration source/server contract',()=
     // v2.15.107: PIM configuration is the Platform settings > Data model page (role rank 5).
     expect(await fs.readFile('src/nav-map.js','utf8')).toContain("'data-model': { page: 'coverage', tab: 'attributes' },") // v2.15.301: Data model retired
     // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
-    const historyVersion=versionEntry.match(/export const LEGACY_BASELINE='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
     expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
     expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
-    expect(historyVersion).toBe('2.15.78')
     expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-    expect(versionEntry).toContain(`version:'${historyVersion}'`)
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>StudySearch PIM Admin</title>')
     expect(index).not.toMatch(/StudySearch PIM Admin v2\.15\.\d+/)

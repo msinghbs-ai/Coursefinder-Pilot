@@ -1,3 +1,4 @@
+// Guards: CF-247 live activity: Decision 214 (Live activity) → v2.15.266: the Live activity page is retired (Platform Admin, 13 Oct 2026);
 // Decision 214 (Live activity) → v2.15.266: the Live activity page is retired (Platform Admin, 13 Oct 2026); Coverage & completeness ›
 // Progress › Running now shows every scheduled job by journey stage, its state, its last result and the universities it works on.
 import { test, expect } from '@playwright/test'

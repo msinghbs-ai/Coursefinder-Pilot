@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 220 (v2.15.147): the old Layer 2 pipeline is retired (its 7 jobs paused, nothing removed);
 // CF-247 Decision 220 (v2.15.147): the old Layer 2 pipeline is retired (its 7 jobs paused, nothing removed); Layer 2
 // Overview lists only actionable items with buttons; History shows daily progress by country; Canada is admitted like
 // New Zealand (site found by name, checked by DLI number or the name on its own .ca home page; exact title; CAD).

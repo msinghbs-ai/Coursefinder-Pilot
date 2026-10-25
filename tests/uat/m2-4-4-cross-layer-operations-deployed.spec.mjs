@@ -1,3 +1,4 @@
+// Guards: M2.4.4 cross-layer operations and housekeeping
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 

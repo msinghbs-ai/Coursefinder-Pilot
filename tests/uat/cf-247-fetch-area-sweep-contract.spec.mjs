@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 222 (v2.15.149): Fetch an area works on the course-page sweep;
 // CF-247 Decision 222 (v2.15.149): Fetch an area works on the course-page sweep; Websites to find in Layer 4; worker
 // errors say what to do; the AI tuition check is called with a 5-minute wait; the tuition hand-off picks pages faster.
 import fs from 'node:fs/promises'

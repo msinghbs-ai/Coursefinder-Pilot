@@ -1,3 +1,4 @@
+// Guards: CF-247 regions flag bulk: Decision 219: New Zealand regions and a country-named state filter;
 // Decision 219: New Zealand regions and a country-named state filter; bulk decisions on flagged values.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

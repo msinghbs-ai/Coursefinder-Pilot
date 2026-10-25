@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.349 (Platform Admin 24 Oct 2026 19:23, D1.4): the targets rule reports which condition each university fails, kept with the cache row (rule_reason) so it survives…
 // CF-247 v2.15.349 (Platform Admin 24 Oct 2026 19:23, D1.4): the targets rule reports which condition each university fails, kept with
 // the cache row (rule_reason) so it survives the minute refresh; override_reason keeps its meaning (set by hand).
 import { test, expect } from '@playwright/test'

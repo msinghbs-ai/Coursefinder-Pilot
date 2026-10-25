@@ -1,3 +1,4 @@
+// Guards: CF-247 list edit: v2.15.120 Edit in list: Courses and Providers edited in place, one cell at a time, using the same guarded edits.
 // v2.15.120 Edit in list: Courses and Providers edited in place, one cell at a time, using the same guarded edits.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

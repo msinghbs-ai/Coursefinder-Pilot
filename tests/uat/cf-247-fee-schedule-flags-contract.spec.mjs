@@ -1,3 +1,4 @@
+// Guards: CF-247 fee schedule flags: Decision 210: an approved fee schedule settles flagged fees it answers;
 // Decision 210: an approved fee schedule settles flagged fees it answers; the rest show the schedule's fee.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

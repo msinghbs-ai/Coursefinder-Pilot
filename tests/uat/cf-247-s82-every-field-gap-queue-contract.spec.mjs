@@ -1,3 +1,4 @@
+// Guards: CF-247 S82: field register holds every course and provider field with a target
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

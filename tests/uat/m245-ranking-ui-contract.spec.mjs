@@ -1,3 +1,4 @@
+// Guards: M2.4.5 ranking dataset and compare-period UI contract
 import{test,expect}from'@playwright/test'
 import{readFile}from'node:fs/promises'
 

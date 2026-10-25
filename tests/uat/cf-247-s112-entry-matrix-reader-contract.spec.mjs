@@ -1,3 +1,4 @@
+// Guards: CF-247 Track C, entry requirements step A (s112): the matrix reader's admission rules, tested on the Part 1 quotes byte-checked against the raw pages on 25 Oct 2026…
 // CF-247 Track C, entry requirements step A (s112): the matrix reader's admission rules, tested on the Part 1 quotes byte-checked
 // against the raw pages on 25 Oct 2026 (tests/fixtures/entry-matrix/part1-quotes.json): 17 exact, 6 after whitespace, 2 corrected
 // (EIT: no final full stop; NMIT: first letter split in markup), 7 not reachable (not pass/fail cases).

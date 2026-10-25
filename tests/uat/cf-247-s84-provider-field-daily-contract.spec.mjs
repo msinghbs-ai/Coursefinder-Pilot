@@ -1,3 +1,4 @@
+// Guards: CF-247 S84: daily field counts per provider: table, job, retention setting, seeds
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

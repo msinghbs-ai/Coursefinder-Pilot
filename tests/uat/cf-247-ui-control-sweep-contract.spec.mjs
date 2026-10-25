@@ -1,3 +1,4 @@
+// Guards: CF-247 ui control sweep: v2.15.110 UI control sweep: every scheduled automation and scholarship publishing are operated from the admin UI (moving review items back to the AI retired with Layer 3 in…
 // v2.15.110 UI control sweep: every scheduled automation and scholarship publishing are operated from the admin UI
 // (moving review items back to the AI retired with Layer 3 in v2.15.252). Source checks plus a mocked browser run against the local dev server.
 import { test, expect } from '@playwright/test'

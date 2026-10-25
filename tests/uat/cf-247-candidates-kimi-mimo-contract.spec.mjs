@@ -1,3 +1,4 @@
+// Guards: CF-247 (2 Oct 2026): Kimi K2 0905 and MiMo v2.6 Pro are candidate profiles only — paused, pinned, not in any cascade.
 // CF-247 (2 Oct 2026): Kimi K2 0905 and MiMo v2.6 Pro are candidate profiles only — paused, pinned, not in any cascade.
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'

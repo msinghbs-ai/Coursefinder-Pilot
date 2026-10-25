@@ -1,3 +1,4 @@
+// Guards: admin-navigation-deployed: CourseFinder canonical Administration and Operations navigation
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, clickPrimaryNav, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 import { openLayer1, openLayer2, openLayer2Tab, openRetiredLayer3, openLayer4, openLayer2Advanced } from './support/navigation.mjs'

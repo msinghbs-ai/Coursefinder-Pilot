@@ -1,3 +1,4 @@
+// Guards: CF-247 (S48): usage audit decisions D6, D7, D9 and D10. Platform Admin, 15 Oct 2026 22:12: "Proceed with D6, D7, D9 and D10." Live jobs move off the retired Layer 3 tables and…
 // CF-247 (S48): usage audit decisions D6, D7, D9 and D10. Platform Admin, 15 Oct 2026 22:12: "Proceed with D6, D7, D9 and D10."
 // Live jobs move off the retired Layer 3 tables and the empty layer2_scope_wave_items; the rows nothing live uses are exported to the
 // private Storage bucket (read back and checked) before a paste file purges or drops them. Rows still used are kept.

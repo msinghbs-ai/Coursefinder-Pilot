@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.225 (Platform Admin, 9 Oct 2026): lists fill the page width and their columns resize;
 // CF-247 v2.15.225 (Platform Admin, 9 Oct 2026): lists fill the page width and their columns resize; course and provider
 // detail panels open on coloured pills and fact cards; evidence, regulatory and operational blocks are gone from them.
 import { test, expect } from '@playwright/test'

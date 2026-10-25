@@ -1,3 +1,4 @@
+// Guards: CourseFinder deployed Course Detail PIM v2.15.x standardised operator UX
 import { test, expect } from '@playwright/test'
 import {
   attachRuntimeEvidence,

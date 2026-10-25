@@ -1,3 +1,4 @@
+// Guards: CF-247 compare datasets default on: Compare datasets are on by default and only switched off by the user
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
