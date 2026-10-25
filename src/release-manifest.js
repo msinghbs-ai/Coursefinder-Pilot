@@ -9,7 +9,7 @@ export const RELEASE={
   date:'25 Oct 2026',
   title:'Entry requirements: tables and reader ready (off)',
   changes:[
-    'The tables for academic entry requirements by country of prior education, and the reader that fills them from providers' own entry-requirements pages, are in place. The reader is switched off until the next release that needs it; nothing is read or shown yet.',
+    'The tables for academic entry requirements by country of prior education, and the reader that fills them from the providers\' own entry-requirements pages, are in place. The reader is switched off until the next release that needs it; nothing is read or shown yet.',
     'When it runs, every row carries the sentence it was read from, and the first reading for each provider goes to Layer 4 before anything is admitted.',
     'Consumer API unchanged (Decision 266).'
   ],
