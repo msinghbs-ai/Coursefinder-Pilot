@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.355)  
+**Version:** 1.53 (reviewed for platform release v2.15.356)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -201,3 +201,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.94 | 25 Oct 2026 | v2.15.353 | Course pages: courses with no page published by the provider and conjoint degrees are decided once per provider in Layer 4 and then leave the web search; Firecrawl refusals are named. |
 | 1.95 | 26 Oct 2026 | v2.15.354 | Course pages: no-page and conjoint first runs open only while fewer than the set number wait in Layer 4. |
 | 1.96 | 26 Oct 2026 | v2.15.355 | Entry requirements: tables and reader in place, switched off; first reading per provider goes to Layer 4. |
+| 1.97 | 26 Oct 2026 | v2.15.356 | Layer 4: no-page and conjoint first runs with a verified course list, a confirmed sample and an already-approved list shape are admitted automatically; new shapes and one in ten stay with a person. |
