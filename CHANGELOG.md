@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.281 — 26 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.354** (SP-1.1). Migration `20261025004000_cf247_sp1_1_no_page_pending_cap.sql`: `security.no_page_propose_v1` opens a first run only while fewer than `bind.no_page_pending_max` (60) wait in Layer 4 (md5-guarded). Test s118.
+
 ## 0.1.280 — 25 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.353** (speed programme SP-1). Merge queue: #694 gate consolidation → SP-1 → #695. Not merged without Platform Admin review.
