@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.279 — 25 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.352** (Track A: S1 part 1 — negative evidence and gate consolidation). Not merged without Platform Admin review.
+  - Migration `20261025002000_cf247_s1_negative_evidence_and_stop_gate.sql`: `security.page_refused_v1` (page_rejections ∪ course_page_blocks) asked by `svc_course_link_search_record`, `course_link_bind_v1`, `coverage_bind_v2`, `coverage_ai_match_prepare_v1`, `svc_coverage_reidentify_next`; `security.search_stop_gate_v1` used by `svc_course_link_search_next`, `svc_fc_spend`, `link_search_block_v1` (md5-guarded edits). Live dry run: gate parity 0 of 1,822 queued rows; a planted rejection is skipped by the search result and refused by the binder. Test s116. Release notes v2.15.351. SOPs 1.93.
+
 ## 0.1.278 — 25 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.351** (HOTFIX — consolidated mandate 25 Oct, Part A). Not merged without Platform Admin review.
