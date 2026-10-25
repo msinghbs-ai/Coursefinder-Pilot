@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.350'
+export const SOP_REVIEWED_FOR = '2.15.351'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -193,7 +193,8 @@ export const SOPS = [
       { version: '1.88', date: '24 Oct 2026', release: '2.15.347', change: 'Task manager opens quickly with many tasks waiting; why a task waits is worked out in a fraction of a second.' },
       { version: '1.89', date: '24 Oct 2026', release: '2.15.348', change: 'Campuses: filter by provider; campuses are listed and shown in Provider details by their CRICOS location name.' },
       { version: '1.90', date: '24 Oct 2026', release: '2.15.349', change: 'Firecrawl targets: a university the targets rule does not match shows which condition it fails.' },
-      { version: '1.91', date: '24 Oct 2026', release: '2.15.350', change: 'Course page search: no more than 100 courses a day (a person\'s running task is counted, not held); a course with 6 wrong pages is not searched again.' }],
+      { version: '1.91', date: '24 Oct 2026', release: '2.15.350', change: 'Course page search: no more than 100 courses a day (a person\'s running task is counted, not held); a course with 6 wrong pages is not searched again.' },
+      { version: '1.92', date: '25 Oct 2026', release: '2.15.351', change: 'Courses: International fee and City show on every sort, including Completeness and Tuition Only.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -335,7 +336,8 @@ export const SOPS = [
       { version: '1.88', date: '24 Oct 2026', release: '2.15.347', change: 'Task manager opens quickly with many tasks waiting; why a task waits is worked out in a fraction of a second.' },
       { version: '1.89', date: '24 Oct 2026', release: '2.15.348', change: 'Campuses: filter by provider; campuses are listed and shown in Provider details by their CRICOS location name.' },
       { version: '1.90', date: '24 Oct 2026', release: '2.15.349', change: 'Firecrawl targets: a university the targets rule does not match shows which condition it fails.' },
-      { version: '1.91', date: '24 Oct 2026', release: '2.15.350', change: 'Course page search: no more than 100 courses a day (a person\'s running task is counted, not held); a course with 6 wrong pages is not searched again.' }],
+      { version: '1.91', date: '24 Oct 2026', release: '2.15.350', change: 'Course page search: no more than 100 courses a day (a person\'s running task is counted, not held); a course with 6 wrong pages is not searched again.' },
+      { version: '1.92', date: '25 Oct 2026', release: '2.15.351', change: 'Courses: International fee and City show on every sort, including Completeness and Tuition Only.' }],
   },
 ]
 
