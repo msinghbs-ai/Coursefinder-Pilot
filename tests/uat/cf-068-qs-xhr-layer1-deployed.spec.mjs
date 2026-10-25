@@ -18,7 +18,7 @@ async function validate(page,read,source){
 test.describe('CF-068 QS direct XHR Layer 1 acquisition @deployed',()=>{
  test.beforeAll(async()=>{if(!process.env.UAT_BASE_URL||!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)throw new Error('deployed UAT environment required');await writeRunEnvironment({suite:'cf-068-qs-xhr-layer1',change_control:'CF-CHG-20260902-068'})})
 
- test('QS 2026 validates 1501 publisher rows from retained direct XHR JSON',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
+ test('QS 2026 validates 1501 publisher rows from retained direct XHR JSON @live-acting',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const dialog=await openLayer1(page)
   // v2.15.246: Layer 1 › Sources list (filters Country and Type; a row opens in place)
   const country=dialog.locator('.xl-field').filter({hasText:'Country'}).locator('select');await country.selectOption('GLOBAL')
@@ -39,7 +39,7 @@ test.describe('CF-068 QS direct XHR Layer 1 acquisition @deployed',()=>{
   await milestoneScreenshot(page,testInfo,'cf-068-qs-2026-xhr-validated')
  }finally{await finish(testInfo,runtime)}})
 
- test('QS 2027 reports publisher endpoint challenge without bypassing it',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
+ test('QS 2027 reports publisher endpoint challenge without bypassing it @live-acting',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
   await loginAsUatUser(page);const dialog=await openLayer1(page);const read=await layer1Read(page,dialog),source=(read.data?.sources||[]).find(s=>s.source_system==='QS'&&Number(s.edition_year)===2027)
   expect(source?.source_id).toBeTruthy();expect(source?.acquisition_mode).toBe('publisher_rest_json_qualification_with_manual_fallback')
   const result=await validate(page,read,source)
