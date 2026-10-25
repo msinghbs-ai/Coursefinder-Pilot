@@ -17,7 +17,7 @@ test('scraper only: no direct read, no fallback, robots.txt not consulted for sc
   expect(fn).not.toContain('robotsAllows(')
   expect(worker).toContain('const pg = await readSch(it.url, it.provider_id);') // scholarship pages and candidates
   expect(worker).toContain('const pg = await readSch(r.url, r.provider_id);') // listing pages
-  expect(worker).toContain('if (await useFc("sch_map", p.provider_id, site.origin, true)) {') // site maps through the scraper
+  expect(worker).toContain('const gm = await useFcWhy("sch_map", p.provider_id, site.origin, true);') // site maps through the scraper
   expect(worker).not.toContain('svc_scholarship_search_next') // register search phase retired
   expect(m84).toContain("when p_read_status='waiting_scraper' then now()+interval '1 hour'")
 })

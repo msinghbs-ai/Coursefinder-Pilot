@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.352)  
+**Version:** 1.53 (reviewed for platform release v2.15.353)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -198,3 +198,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.91 | 24 Oct 2026 | v2.15.350 | Course page search: no more than 100 courses a day (a person's running task is counted, not held); a course with 6 wrong pages is not searched again. |
 | 1.92 | 25 Oct 2026 | v2.15.351 | Courses: International fee and City show on every sort, including Completeness and Tuition Only. |
 | 1.93 | 25 Oct 2026 | v2.15.352 | Course search: refused pages (rejected or blocked) are never bound again by any automatic path; one stop rule for search, credits and the Task manager. |
+| 1.94 | 25 Oct 2026 | v2.15.353 | Course pages: courses with no page published by the provider and conjoint degrees are decided once per provider in Layer 4 and then leave the web search; Firecrawl refusals are named. |

@@ -1,16 +1,18 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.352'
-export const PACKAGE_VERSION='0.1.279'
+export const UI_VERSION='2.15.353'
+export const PACKAGE_VERSION='0.1.280'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'25 Oct 2026',
-  title:'Course search: one stop rule and one list of refused pages',
+  title:'Courses with no page: recorded, not searched forever',
   changes:[
-    'A page rejected or blocked for a course is never bound to it again by any automatic path: the web search result, the site-map binder, the AI page match and the re-check all ask the same list. A person\'s own binding is not affected.',
-    'The course-search stop (a university whose search stopped, a person\'s task passing it, a course with too many rejected pages) is one rule used by the search, the credit check and the Task manager\'s blocking reason. Nothing about who is searched changes.',
+    'A course whose provider publishes no page for it (the page match found none in a fresh copy of the provider\'s site, twice) is shown to a person once per provider in Layer 4 with a sample. When at least 60% of the sample is confirmed, the provider\'s later cases are recorded without a person. Recorded courses leave the web search; any page found later brings them back. Nothing is deleted.',
+    'Conjoint and double degrees: one Layer 4 decision per provider. Approved, they leave the web search and show their own reason in the gaps.',
+    'A provider whose courses are on another website can be given that course website; discovery reads it.',
+    'Firecrawl refusals are named: a provider outside the target list shows "target list refused", not "budget".',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
