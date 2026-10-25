@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.282 — 26 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.355** (Track C entry requirements step A). Migration `20261026001000_cf247_entry_matrix_step_a.sql`: `catalogue.provider_entry_matrix`, `catalogue.course_entry_requirements`, `pipeline.entry_matrix_sources`, `pipeline.entry_matrix_runs`; `entry.*` settings (reader off); job `entry-matrix-read` (catalogued, inactive); Layer 4 `entry_matrix_first_run` / `entry_matrix_change`; AI spend line `entry_matrix`. Worker v0.48.0 mode `entry_ai`; central.ts page type `entry_requirements`. Tests s111, s112 with the byte-checked Part 1 quotes.
+
 ## 0.1.281 — 26 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.354** (SP-1.1). Migration `20261025004000_cf247_sp1_1_no_page_pending_cap.sql`: `security.no_page_propose_v1` opens a first run only while fewer than `bind.no_page_pending_max` (60) wait in Layer 4 (md5-guarded). Test s118.
