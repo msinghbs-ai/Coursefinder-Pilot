@@ -50,7 +50,7 @@ test('apply-time identity check: the common fee write quarantines a fee from a p
 })
 
 test('worker v0.46.0: every call reports to the ledger after the answer is built; a .json address answering with HTML is read as the page', () => {
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.46.0";')
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[6-9]|[5-9]\d)\.\d+";/) // v0.46.0 or later
   expect(w).toContain('const res = await handle(req);')
   expect(w).toContain('await cr.rpc("svc_worker_report_v1", { p_mode: modeOf, p_status: res.status, p_ms: Date.now() - tStart, p_body: body, p_worker: WORKER });')
   expect(w).toContain('async function handle(req: Request): Promise<Response> {')

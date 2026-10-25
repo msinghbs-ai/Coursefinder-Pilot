@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.280 — 25 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.353** (speed programme SP-1). Merge queue: #694 gate consolidation → SP-1 → #695. Not merged without Platform Admin review.
+  - Migration `20261025003000_cf247_sp1_no_page_conjoint_domains_mislabel.sql`: `pipeline.course_no_page`, `pipeline.no_page_trust`, `pipeline.provider_extra_domains`, `pipeline.bind_match_scope`; job `no-page-propose` (inert until `bind.no_page_on`); Layer 4 first runs `no_page_first_run` / `conjoint_rule_first_run` (60% rule); the one stop gate returns `no_page_by_provider`; AI page match widened (AU tranche + top 100); gap causes; `svc_fc_refusal_note_v1`. Worker v0.47.0 names every Firecrawl refusal and maps extra course domains. Test s117.
+
 ## 0.1.279 — 25 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.352** (Track A: S1 part 1 — negative evidence and gate consolidation). Not merged without Platform Admin review.
