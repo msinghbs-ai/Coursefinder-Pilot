@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.283 — 26 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.356** (SP-2a, Platform Admin decision 26 Oct 2026 08:25). Migration `20261026002000_cf247_sp2a_layer4_auto_admit_first_runs.sql`: `pipeline.layer4_auto_admissions`; `security.course_list_check_v1`, `security.no_page_sample_check_v1`, `security.no_page_auto_admit_v1`; `layer4.auto_admit_*` settings (on 1, audit 1 in 10, sample 0.8, list recall 0.7); job `layer4-auto-admit` (catalogued, hourly at :47). Auto-admissions written to `pipeline.layer4_decisions` (system account) and the Inbox Decided list as "Auto: <reason>". Test s119.
+
 ## 0.1.282 — 26 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.355** (Track C entry requirements step A). Migration `20261026001000_cf247_entry_matrix_step_a.sql`: `catalogue.provider_entry_matrix`, `catalogue.course_entry_requirements`, `pipeline.entry_matrix_sources`, `pipeline.entry_matrix_runs`; `entry.*` settings (reader off); job `entry-matrix-read` (catalogued, inactive); Layer 4 `entry_matrix_first_run` / `entry_matrix_change`; AI spend line `entry_matrix`. Worker v0.48.0 mode `entry_ai`; central.ts page type `entry_requirements`. Tests s111, s112 with the byte-checked Part 1 quotes.

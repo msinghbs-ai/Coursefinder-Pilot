@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.355'
-export const PACKAGE_VERSION='0.1.282'
+export const UI_VERSION='2.15.356'
+export const PACKAGE_VERSION='0.1.283'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'25 Oct 2026',
-  title:'Entry requirements: tables and reader ready (off)',
+  date:'26 Oct 2026',
+  title:'Layer 4: proven first runs admitted automatically',
   changes:[
-    'The tables for academic entry requirements by country of prior education, and the reader that fills them from the providers\' own entry-requirements pages, are in place. The reader is switched off until the next release that needs it; nothing is read or shown yet.',
-    'When it runs, every row carries the sentence it was read from, and the first reading for each provider goes to Layer 4 before anything is admitted.',
+    'A provider\'s first check of courses with no page of their own (or its conjoint rule) is approved without a person when its own course list is current and verified, at least 4 in 5 of the sample are confirmed not on that list, and a person has already approved a provider whose list has the same shape.',
+    'New list shapes still come to Layer 4, and one in ten first runs that pass is kept for a person as an audit (Settings, Layer 4).',
+    'Every automatic approval appears in Decided as "Auto:" with its reason and evidence; nothing is deleted, and any page found later re-opens a course.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
