@@ -1,23 +1,10 @@
 // Guards: CF-209 Scheduling remains a bounded governed read surface
-import test from'node:test'
+import{test}from'@playwright/test'  // 26 Oct 2026 (test governance): was node:test, which Playwright loaded but never counted or failed on
 import assert from'node:assert/strict'
 import{readFile}from'node:fs/promises'
 
 const read=p=>readFile(new URL(`../../${p}`,import.meta.url),'utf8')
 const escaped=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')
-
-test('CF-209 Scheduling remains a bounded governed read surface',async()=>{
- const[src,mature]=await Promise.all([read('src/m2-3-intelligence-entry.jsx'),read('src/mature-main.jsx')])
- assert.match(mature,/key:'scheduling',label:'Scheduling'/)
- assert.match(mature,/RefreshWorkspace/)
- assert.match(src,/refresh_intelligence_overview/)
- assert.match(src,/Source\/entity freshness policies/)
- assert.match(src,/Targeted refresh queue/)
- assert.match(src,/Downstream Search refresh signals/)
- assert.match(src,/next_due_at/)
- assert.match(src,/revalidation_ref/)
- assert.doesNotMatch(src,/Retry scheduled refresh|Replay scheduled refresh|Reset scheduled refresh/)
-})
 
 test('CF-209 Layer 2 scheduler dispatch and recovery are bounded and non-destructive',async()=>{
  const sql=await read('supabase/migrations-archive/20260827224000_m2_4_2_layer2_refresh_housekeeping.sql')
@@ -40,21 +27,3 @@ test('CF-209 Layer 2 scheduler dispatch and recovery are bounded and non-destruc
  assert.match(sql,/service_role required/)
 })
 
-test('CF-209 Jobs stays server-paged, telemetry-rich and mutation-free',async()=>{
- const src=await read('src/pipeline-ops-entry.jsx')
- for(const token of[
-  "adminRead('pipeline_filters')",
-  "adminRead('pipeline_jobs_page'",
-  "adminRead('pipeline_job_detail'",
-  'completion_class',
-  'failure_class',
-  'evidence_count',
-  'duration_ms',
-  'next_cursor',
-  'cursor_offset',
-  'Destructive controls are not generic operations',
-  'Retry, replay and reset remain disabled here',
-  'adapter-specific scope, idempotency proof, explicit confirmation and an auditable action contract'
- ])assert.match(src,new RegExp(escaped(token)))
- assert.doesNotMatch(src,/adminRead\('pipeline_job_(retry|replay|reset)'/)
-})

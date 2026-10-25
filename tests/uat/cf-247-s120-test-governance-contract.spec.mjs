@@ -21,6 +21,8 @@ test('nothing carried skipped: no unconditional skip, fixme or only; a skip for 
     const src = fs.readFileSync(`${DIR}/${s.file}`, 'utf8')
     expect(src, `${s.file}: test.skip(...) / test.fixme(...) as a test`).not.toMatch(/(?<![\w.])test\.(skip|fixme|only)\(\s*['"`]/)
     expect(src, `${s.file}: test.skip(true, ...)`).not.toMatch(/test\.skip\(\s*true\b/)
+    // a spec on node:test is loaded by Playwright but never counted or failed on (6 such tests were red unseen until 26 Oct 2026)
+    expect(src, `${s.file}: uses node:test`).not.toMatch(/from\s*['"]node:test['"]/)
     if (/test\.skip\(/.test(src) && /UAT_BASE_URL/.test(src)) expect(s.deployed, `${s.file}: skips without the deployed environment but is not @deployed`).toBe(true)
   }
 })
