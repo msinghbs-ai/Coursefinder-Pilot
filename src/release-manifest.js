@@ -1,19 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.351'
-export const PACKAGE_VERSION='0.1.278'
+export const UI_VERSION='2.15.352'
+export const PACKAGE_VERSION='0.1.279'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'25 Oct 2026',
-  title:'Hotfix: the course list shows International fee and City on every sort',
+  title:'Course search: one stop rule and one list of refused pages',
   changes:[
+    'A page rejected or blocked for a course is never bound to it again by any automatic path: the web search result, the site-map binder, the AI page match and the re-check all ask the same list. A person\'s own binding is not affected.',
+    'The course-search stop (a university whose search stopped, a person\'s task passing it, a course with too many rejected pages) is one rule used by the search, the credit check and the Task manager\'s blocking reason. Nothing about who is searched changes.',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[
-    'Courses: sorted by Completeness or Tuition Only, the list showed "—" for International fee and City on every row while the course\'s details showed the fee and campus. Every sort now shows them, from the same fee and campus records the details use.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
