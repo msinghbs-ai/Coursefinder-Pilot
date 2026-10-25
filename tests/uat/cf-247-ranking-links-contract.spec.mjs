@@ -1,3 +1,4 @@
+// Guards: CF-247 ranking links: Decision 208: QS and THE — filters by country, state, provider and link;
 // Decision 208: QS and THE — filters by country, state, provider and link; linked providers open their record;
 // a Curator links a ranked university with no provider; links are kept automatically (job ranking-link).
 import { test, expect } from '@playwright/test'

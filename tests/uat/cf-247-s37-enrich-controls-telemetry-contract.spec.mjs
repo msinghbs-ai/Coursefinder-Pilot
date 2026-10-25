@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.275 (S37): Platform Admin, 14 Oct 2026 12:04: "make sure all config and limits can be controlled through UI ...
 // CF-247 v2.15.275 (S37): Platform Admin, 14 Oct 2026 12:04: "make sure all config and limits can be controlled through UI ... maintain
 // stats and telemetry. raise and use the scraper and AI accordingly."
 import { test, expect } from '@playwright/test'

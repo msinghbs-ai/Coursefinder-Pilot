@@ -1,3 +1,4 @@
+// Guards: CF-068 QS direct XHR Layer 1 acquisition
 import{test,expect}from'@playwright/test'
 import{attachRuntimeEvidence,assertNoServerErrors,DETERMINISTIC_UI_TIMEOUT,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'
 import{openLayer1}from'./support/navigation.mjs'

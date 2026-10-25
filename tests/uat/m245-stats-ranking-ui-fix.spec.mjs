@@ -1,3 +1,4 @@
+// Guards: M2.4.5: Statistics ranking cards expose independent edition selectors and no import controls
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 const shell=()=>fs.readFileSync('src/mature-main.jsx','utf8')

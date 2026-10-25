@@ -1,3 +1,4 @@
+// Guards: CF-247 dashboard waiting: v2.15.125 Dashboard "Today": what is waiting for a person comes first, each row opens the place to act.
 // v2.15.125 Dashboard "Today": what is waiting for a person comes first, each row opens the place to act.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

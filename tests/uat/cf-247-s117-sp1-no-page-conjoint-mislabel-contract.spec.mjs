@@ -1,3 +1,4 @@
+// Guards: CF-247 SP-1 (speed programme release 1; Platform Admin 25 Oct 2026 22:05 / 22:27 / 22:34): "no page published by the provider" gap cause and the conjoint rule (Layer 4 first…
 // CF-247 SP-1 (speed programme release 1; Platform Admin 25 Oct 2026 22:05 / 22:27 / 22:34): "no page published by the provider" gap cause
 // and the conjoint rule (Layer 4 first run per provider, then the 60% rule; re-opened by any page found; never deleted), universities
 // first, extra course domains, the AI page match widened over existing inventories, and the S4-3 mislabel fix (target_list_refused).

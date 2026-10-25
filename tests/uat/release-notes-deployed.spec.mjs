@@ -1,3 +1,4 @@
+// Guards: Release contract: the deployed site serves the release that was merged
 import { test, expect } from '@playwright/test'
 import { UI_VERSION, RELEASE } from '../../src/release-manifest.js'
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'

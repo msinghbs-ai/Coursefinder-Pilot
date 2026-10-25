@@ -1,3 +1,4 @@
+// Guards: CF-247 SP-2a (Platform Admin 26 Oct 2026 08:25): no-page / conjoint first runs are admitted without a person only when the course list is verified, the sample is confirmed and…
 // CF-247 SP-2a (Platform Admin 26 Oct 2026 08:25): no-page / conjoint first runs are admitted without a person only when the course list
 // is verified, the sample is confirmed and the list shape is already person-approved; 1 in layer4.auto_admit_sample_rate is audited.
 import { test, expect } from '@playwright/test'

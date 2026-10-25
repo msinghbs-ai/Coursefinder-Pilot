@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.260 (S25): Platform Admin, 12 Oct 2026 20:00: "Increase the limit to read course pages if found.
 // CF-247 v2.15.260 (S25): Platform Admin, 12 Oct 2026 20:00: "Increase the limit to read course pages if found. Keep moving to the next
 // wave if a course page is not found. ... the same mechanism ... using Firecrawl in finding course pages and not burned by direct HTTP."
 import { test, expect } from '@playwright/test'

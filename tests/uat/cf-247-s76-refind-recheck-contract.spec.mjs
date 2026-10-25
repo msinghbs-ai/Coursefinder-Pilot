@@ -1,3 +1,4 @@
+// Guards: CF-247 (S76) v2.15.295. Platform Admin, 19 Oct 2026 22:47: "finish unis without adapter in waves, following scholarship and data enrichment";
 // CF-247 (S76) v2.15.295. Platform Admin, 19 Oct 2026 22:47: "finish unis without adapter in waves, following scholarship and data
 // enrichment"; choices "20+ and 5-19 re-find; 1-4 CRICOS-only", "AI re-check, then finish", "Check CRICOS, keep with soft flag",
 // "Daily figure on Live activity".

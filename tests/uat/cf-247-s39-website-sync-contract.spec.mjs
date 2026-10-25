@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.277 (S39): Platform Admin, 14 Oct 2026 20:43: "For ranking, we can pass it on v2 api and for logos we can pass it on as file links to be stored in wix platform…
 // CF-247 v2.15.277 (S39): Platform Admin, 14 Oct 2026 20:43: "For ranking, we can pass it on v2 api and for logos we can pass it on as file
 // links to be stored in wix platform with maximun validity. And subsequent api requests only pass changed data unless queried for full load."
 // Decisions: approved to display; logo links 1 year, renewed in the delta; a new sync action with a cursor. Website API v2 is additive only.

@@ -1,3 +1,4 @@
+// Guards: CF-247 (S58) 18 Oct 2026: Providers › Logos & assets kept; the earlier logo-discovery leftovers retired (Platform Admin 12:43).
 // CF-247 (S58) 18 Oct 2026: Providers › Logos & assets kept; the earlier logo-discovery leftovers retired (Platform Admin 12:43).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

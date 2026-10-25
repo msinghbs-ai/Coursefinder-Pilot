@@ -1,3 +1,4 @@
+// Guards: CF-247 platform guide: Decision 209: the Platform guide lives in the app (Help › Platform guide) and is reviewed every release.
 // Decision 209: the Platform guide lives in the app (Help › Platform guide) and is reviewed every release.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

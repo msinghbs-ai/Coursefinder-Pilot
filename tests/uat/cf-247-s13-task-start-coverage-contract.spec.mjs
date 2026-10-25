@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.247 (S13): Platform Admin bugs 11/10-4. "On demand run for scholarship never runs, it ask for reason which is not required and nothing happened afterwards."…
 // CF-247 v2.15.247 (S13): Platform Admin bugs 11/10-4. "On demand run for scholarship never runs, it ask for reason which is not
 // required and nothing happened afterwards." Starting a task asks only to confirm and records the screen (Fix 1); every outcome is
 // shown and running providers show Finding… (Fix 2); two providers of one name show their CRICOS codes (Fix 3).

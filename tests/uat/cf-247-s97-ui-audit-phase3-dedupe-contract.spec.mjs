@@ -1,3 +1,4 @@
+// Guards: CF-247 UI audit Phase 3 (Platform Admin 24 Oct 2026 11:27): one source for the Inbox counts, reconciled scholarship figures, one header on Provider contacts, the ranking-import…
 // CF-247 UI audit Phase 3 (Platform Admin 24 Oct 2026 11:27): one source for the Inbox counts, reconciled scholarship figures,
 // one header on Provider contacts, the ranking-import kicker under its own screen, unnamed register records said plainly.
 import { test, expect } from '@playwright/test'

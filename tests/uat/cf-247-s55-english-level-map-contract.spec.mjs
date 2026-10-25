@@ -1,3 +1,4 @@
+// Guards: CF-247 (S55) Decision 264: English levels named on course pages.
 // CF-247 (S55) Decision 264: English levels named on course pages. Platform Admin 17 Oct 2026 ("Band reader (Recommended)"; 18:56 "Proceed
 // with band reader"; "Level map first (Recommended)"). A course page names a level ("Band 2", "higher ELC requirements"); the approved policy
 // gives that level's scores. Written-out policies are proposed only; a Platform Admin approves them.

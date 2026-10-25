@@ -1,3 +1,4 @@
+// Guards: CF-247 scholarship publishing rules: Decision 212: domestic-only scholarships are not published; "up to" values are maxima;
 // Decision 212: domestic-only scholarships are not published; "up to" values are maxima; savings per year from the
 // provider's annual international tuition fee.
 import { test, expect } from '@playwright/test'

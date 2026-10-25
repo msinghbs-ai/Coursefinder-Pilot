@@ -1,3 +1,4 @@
+// Guards: CF-247 qs official parser: QS official parser picks the real country column and refuses region-like country columns
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

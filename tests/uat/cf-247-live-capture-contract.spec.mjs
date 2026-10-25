@@ -1,3 +1,4 @@
+// Guards: CF-247 production readiness phase 1 (10 Oct 2026): live-only website code is held in git.
 // CF-247 production readiness phase 1 (10 Oct 2026): live-only website code is held in git.
 import { test, expect } from '@playwright/test'
 import { readFileSync, readdirSync } from 'node:fs'

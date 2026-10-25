@@ -1,3 +1,4 @@
+// Guards: CF-205 Layer 4 mass operations is loaded and release current
 import test from'node:test'
 import assert from'node:assert/strict'
 import{readFile}from'node:fs/promises'

@@ -1,3 +1,4 @@
+// Guards: CF-245 stored Evidence replay contract
 import{test,expect}from'@playwright/test'
 import fs from'node:fs/promises'
 

@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 149: Decision 149: register codes mirrored into country-scoped identifier tables
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

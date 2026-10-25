@@ -1,3 +1,4 @@
+// Guards: CF-247 b2 ui uniformity: one token set: colour literals live only in tokens.css, loaded first
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'

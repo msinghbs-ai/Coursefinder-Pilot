@@ -1,3 +1,4 @@
+// Guards: CF-097/226 ranking workflow, history and datasets
 import{test,expect}from'@playwright/test'
 import{UI_VERSION}from'../../src/release-manifest.js'
 import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,DETERMINISTIC_UI_TIMEOUT,writeRunEnvironment}from'./support/runtime-evidence.mjs'

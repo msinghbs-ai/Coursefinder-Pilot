@@ -1,3 +1,4 @@
+// Guards: M2.5 Evidence lineage classification and duplicate prevention contract
 import fs from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { writeRunEnvironment } from './support/runtime-evidence.mjs'

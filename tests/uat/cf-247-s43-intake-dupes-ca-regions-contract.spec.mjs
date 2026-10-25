@@ -1,3 +1,4 @@
+// Guards: CF-247 (S43): Platform Admin, 15 Oct 2026 12:31: "Bug/Fix: intake are duplicated and state is not listed for CA courses." Writers key a course's intakes differently, so the…
 // CF-247 (S43): Platform Admin, 15 Oct 2026 12:31: "Bug/Fix: intake are duplicated and state is not listed for CA courses."
 // Writers key a course's intakes differently, so the same month was stored twice (410 courses); a guard on the table now keeps one active
 // row per course, month, year, campus and start date, whichever writer sends it. Canadian courses with no campus take the provider's province

@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.256 (S21): Platform Admin status review, 12 Oct 2026 13:06.
 // CF-247 v2.15.256 (S21): Platform Admin status review, 12 Oct 2026 13:06. Fixes agreed: 1 one targets refresh at a time; 2 a third,
 // stronger pinned model before Layer 4 (qualified first; a person adds it to the order); 3 onboarding falls back to the university's
 // central pages read with AI, proposed for a person to approve; 4 onboarding waits for found course pages; 5 catalogue cleanup (paste file).

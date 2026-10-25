@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.234 (R3): Platform Admin bug list of 10 Oct 2026 — Fix 2.
 // CF-247 v2.15.234 (R3): Platform Admin bug list of 10 Oct 2026 — Fix 2. Public phone and email from the provider's own site (filled
 // automatically, never over a value entered by hand); the CRICOS Principal Executive Officer held as an internal contact, never published.
 import { test, expect } from '@playwright/test'

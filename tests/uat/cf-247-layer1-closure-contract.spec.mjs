@@ -1,3 +1,4 @@
+// Guards: CF-247 layer1 closure: Register departures: CRICOS plan finish and NZQA seen tracking, same hold and audit
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

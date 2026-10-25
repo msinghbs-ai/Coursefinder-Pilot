@@ -1,3 +1,4 @@
+// Guards: CF-247 clean-up of the old system (Platform Admin, 9 Oct 2026).
 // CF-247 clean-up of the old system (Platform Admin, 9 Oct 2026). Each batch removes only what is switched off or unused.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

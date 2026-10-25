@@ -1,3 +1,4 @@
+// Guards: CF-093 Scheduled Tasks runtime health contract
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 

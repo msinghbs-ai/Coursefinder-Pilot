@@ -1,3 +1,4 @@
+// Guards: Website API v2 is additive only (Decisions 257, 258): institution type
 // CF-247 v2.15.276 (14 Oct 2026), Decision 258: institution type from the registers.
 // Platform Admin choices (multiple choice, 14 Oct): types mirror the registers; Australian universities from the TEQSA National
 // Register (data.gov.au); a CRICOS Government provider offering VET is TAFE; NZ from NZQA; Canada empty; training.gov.au later.

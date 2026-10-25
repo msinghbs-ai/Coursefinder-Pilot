@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.279 (S41): central pages for the top providers, and fee admission after a cross-check.
 // CF-247 v2.15.279 (S41): central pages for the top providers, and fee admission after a cross-check. Platform Admin decisions, 15 Oct 2026:
 // "Central pages, per course group"; "Clear the >=90% ones"; "Auto-approve checked AI proposals", "Double degrees take the shared default",
 // "Research degrees need a research default", "Keep the other holds".

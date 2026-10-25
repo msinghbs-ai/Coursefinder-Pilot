@@ -1,3 +1,4 @@
+// Guards: CF-075 compact multi-year ranking datasets
 import fs from'node:fs/promises'
 import{test,expect}from'@playwright/test'
 

@@ -1,3 +1,4 @@
+// Guards: CF-247 evidence filters window: migration 1860 widens the Evidence filter snapshot window to 150 minutes to cover the 2-hourly refresh, guarded on the live definition
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

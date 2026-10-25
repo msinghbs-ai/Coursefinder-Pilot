@@ -1,3 +1,4 @@
+// Guards: CF-093 fresh terminal negatives remain governed and non-queueable
 import { readFileSync } from 'node:fs'
 import { test, expect } from '@playwright/test'
 

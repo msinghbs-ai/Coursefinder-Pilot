@@ -1,3 +1,4 @@
+// Guards: CF-247 (S56) Decision 265: English for the last four universities.
 // CF-247 (S56) Decision 265: English for the last four universities. Platform Admin 18 Oct 2026 09:27 "Help resolve 'still to do for english'";
 // choices: Melbourne "Yes, build and read"; Wollongong and Torrens "Check CRICOS first"; ACU "Yes, UAC for ACU".
 import { test, expect } from '@playwright/test'

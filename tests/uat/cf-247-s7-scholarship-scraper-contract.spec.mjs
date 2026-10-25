@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.242 (S7): scholarship pages and listing pages are read through the scraper first (Platform Admin, 11 Oct 2026: "Always use scraper for Scholarships ...
 // CF-247 v2.15.242 (S7): scholarship pages and listing pages are read through the scraper first (Platform Admin, 11 Oct 2026:
 // "Always use scraper for Scholarships ... This can be controlled via ui"). Worker coverage-sweep v0.17.40; migration 20261011008200.
 import { test, expect } from '@playwright/test'

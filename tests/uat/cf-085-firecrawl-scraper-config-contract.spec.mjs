@@ -1,3 +1,4 @@
+// Guards: CF-085 Firecrawl scraper configuration contract
 import fs from'node:fs/promises'
 import{test,expect}from'@playwright/test'
 

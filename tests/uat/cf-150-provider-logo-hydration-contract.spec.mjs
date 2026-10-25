@@ -1,3 +1,4 @@
+// Guards: CF-150 de-duplicates Provider logo requests and removes reset hydration loop
 import{readFileSync}from'node:fs'
 import{test,expect}from'@playwright/test'
 

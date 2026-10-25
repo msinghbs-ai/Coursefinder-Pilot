@@ -1,3 +1,4 @@
+// Guards: CF-247 S85: non-course pages are refused by setting, existing ones marked and their links set inactive (nothing deleted)
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

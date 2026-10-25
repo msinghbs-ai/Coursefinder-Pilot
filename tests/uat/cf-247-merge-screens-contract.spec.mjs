@@ -1,3 +1,4 @@
+// Guards: CF-247 merge screens: Screen review package 3 (v2.15.123): duplicate screens merged;
 // Screen review package 3 (v2.15.123): duplicate screens merged; nothing a person used is lost.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

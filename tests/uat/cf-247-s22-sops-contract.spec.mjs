@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.257 (S22): Platform Admin 12 Oct 2026: "SOPs for Platform Admin and operators ...
 // CF-247 v2.15.257 (S22): Platform Admin 12 Oct 2026: "SOPs for Platform Admin and operators ... under Guides in the UI and as versioned docs,
 // kept up to date with the UI and the data admission mechanism". One source (src/guide/sops.js) for the in-app guides and docs/sops/*.md.
 import { test, expect } from '@playwright/test'

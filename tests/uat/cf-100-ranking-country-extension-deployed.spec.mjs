@@ -1,3 +1,4 @@
+// Guards: CF-100 multi-country same-edition ranking scope
 import{test,expect}from'@playwright/test'
 import { UI_VERSION } from '../../src/release-manifest.js' // pill shows the current release, not a pinned one
 import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,DETERMINISTIC_UI_TIMEOUT,writeRunEnvironment}from'./support/runtime-evidence.mjs'

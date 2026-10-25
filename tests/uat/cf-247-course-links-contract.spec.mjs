@@ -1,3 +1,4 @@
+// Guards: CF-247 course links: v2.15.133 (Decisions 200–203): course links of every kind, who can apply, link refresh schedules, and admission rules per country (NZ programme code or exact title in NZD;
 // v2.15.133 (Decisions 200–203): course links of every kind, who can apply, link refresh schedules, and admission rules
 // per country (NZ programme code or exact title in NZD; AU exact title for links and intakes).
 import { test, expect } from '@playwright/test'

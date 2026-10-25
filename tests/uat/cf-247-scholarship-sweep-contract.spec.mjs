@@ -1,3 +1,4 @@
+// Guards: CF-247 scholarship sweep: scholarship facts: value, levels, fields, deadline, main content only
 import { test, expect } from '@playwright/test'
 import os from 'node:os'
 import path from 'node:path'

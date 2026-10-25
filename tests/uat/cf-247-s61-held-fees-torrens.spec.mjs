@@ -1,3 +1,4 @@
+// Guards: CF-247 (S61) 18 Oct 2026: held fees split by group; Torrens doctorates from their own pages (Platform Admin 18:53 choices).
 // CF-247 (S61) 18 Oct 2026: held fees split by group; Torrens doctorates from their own pages (Platform Admin 18:53 choices).
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

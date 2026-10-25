@@ -1,3 +1,4 @@
+// Guards: layer2-provider-deployed: CourseFinder deployed Layer 2 acquisition-provider acceptance
 import { test, expect } from '@playwright/test'
 // Clean-up batch 2 (9 Oct 2026): per-source routing and the test fetch were retired with Source profiles; the provider registry checks stay.
 import { attachRuntimeEvidence, assertNoServerErrors, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'

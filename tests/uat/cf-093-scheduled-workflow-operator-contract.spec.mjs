@@ -1,3 +1,4 @@
+// Guards: CF-093 Scheduled Tasks operator contract
 import{test,expect}from'@playwright/test'
 import fs from'node:fs/promises'
 

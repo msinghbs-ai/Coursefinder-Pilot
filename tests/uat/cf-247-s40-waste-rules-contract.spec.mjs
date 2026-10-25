@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.278 (S40): waste rules for data enrichment. Platform Admin, 15 Oct 2026 09:18: "If we are wasting resources on multiple tries then tighten rules around it,…
 // CF-247 v2.15.278 (S40): waste rules for data enrichment. Platform Admin, 15 Oct 2026 09:18: "If we are wasting resources on multiple tries
 // then tighten rules around it, recording, flagging and moving on, rather getting stuck an wasting resources." Decisions: "Auto-pause idle jobs",
 // "Yield-based retry cap", "No repeat reads unchanged", "Run admit jobs on new input"; approach "Top 50 by adapter, flag the tail".

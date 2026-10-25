@@ -1,3 +1,4 @@
+// Guards: CF-247 UI audit Phase 1 (Platform Admin 24 Oct 2026): list views carry no internals.
 // CF-247 UI audit Phase 1 (Platform Admin 24 Oct 2026): list views carry no internals. Stable keys, record ids, hashes, job slugs,
 // model identifiers, cron text and route fragments leave the rows; every value stays reachable behind the detail, a hover title or a
 // closed fold. Vendor balances are figures for the Platform Admin (rank 6) and words for everyone else; the Go-live checklist is

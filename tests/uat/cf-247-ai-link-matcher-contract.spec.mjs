@@ -1,3 +1,4 @@
+// Guards: CF-247 (2 Oct 2026 overnight): map-first AI link matcher, identity v0.5.7, re-identify, directory capture (hints only), AI page-identity check (qualification only, never…
 // CF-247 (2 Oct 2026 overnight): map-first AI link matcher, identity v0.5.7, re-identify, directory capture (hints only),
 // AI page-identity check (qualification only, never switched on).
 import fs from 'node:fs/promises'

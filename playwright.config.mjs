@@ -31,8 +31,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1100 } },
     },
     {
+      // Test governance (Platform Admin 26 Oct 2026): the phone viewport runs only tests that check behaviour at phone width
+      // (@responsive) and the deployed track's mobile gate (@deployed). Source contracts and desktop browser tests run once.
       name: 'chromium-mobile',
       use: { ...devices['Pixel 7'] },
+      grep: /@responsive|@deployed/,
     },
   ],
   webServer: deployedBaseUrl ? undefined : {

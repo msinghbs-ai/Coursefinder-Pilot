@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.238 (R5): Platform Admin bug list of 10 Oct 2026 — Features 5, 6 and 7;
 // CF-247 v2.15.238 (R5): Platform Admin bug list of 10 Oct 2026 — Features 5, 6 and 7; decision "New 'archived' status".
 // Archive is a clean-up workflow with a checklist; Layer 1 departures archive (and restore) providers automatically; Providers › Archived
 // lists archived providers and courses that are not active, with why, and Restore.

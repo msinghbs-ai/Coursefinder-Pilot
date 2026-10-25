@@ -1,3 +1,4 @@
+// Guards: CF-247 field coverage panel: per-field 80% coverage panel and its hourly snapshot are wired end to end
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

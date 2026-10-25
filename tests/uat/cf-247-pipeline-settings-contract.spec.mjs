@@ -1,3 +1,4 @@
+// Guards: CF-247 pipeline settings: Settings page (v2.15.160, Decision 238): every throttle, budget and page-identity proof editable by a Platform Admin from one page;
 // Settings page (v2.15.160, Decision 238): every throttle, budget and page-identity proof editable by a Platform Admin
 // from one page; numbers apply at once and are logged; prompts are listed, never edited in place.
 import { test, expect } from '@playwright/test'

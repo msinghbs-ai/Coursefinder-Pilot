@@ -1,3 +1,4 @@
+// Guards: performance-deployed: M1 performance and responsiveness
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'

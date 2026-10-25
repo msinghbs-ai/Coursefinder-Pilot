@@ -1,3 +1,4 @@
+// Guards: CF-247 (S78) v2.15.297. Platform Admin, 20 Oct 2026 07:02 (Layer 4 capture): "there is no Approve button";
 // CF-247 (S78) v2.15.297. Platform Admin, 20 Oct 2026 07:02 (Layer 4 capture): "there is no Approve button"; "Reset filter button is
 // misplaced". Course-link items say what each choice does and show the page held beside the new page; Reset filters sits in the chips.
 import { test, expect } from '@playwright/test'

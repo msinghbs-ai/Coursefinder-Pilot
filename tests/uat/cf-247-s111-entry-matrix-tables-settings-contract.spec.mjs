@@ -1,3 +1,4 @@
+// Guards: CF-247 Track C, entry requirements step A (s111): tables, settings, Layer 4 first-run routing, the inactive job, and the declared file boundary (Platform Admin 25 Oct 2026…
 // CF-247 Track C, entry requirements step A (s111): tables, settings, Layer 4 first-run routing, the inactive job, and the declared
 // file boundary (Platform Admin 25 Oct 2026 18:54: nothing in the search picker, stop gates, course_events or the blade).
 import { test, expect } from '@playwright/test'

@@ -1,3 +1,4 @@
+// Guards: CF-247 (S50): API console for both API version URLs. Platform Admin, 16 Oct 2026 14:31: "Create me a ui to check stats on Both APIs with relevant metrics/API calls or…
 // CF-247 (S50): API console for both API version URLs. Platform Admin, 16 Oct 2026 14:31: "Create me a ui to check stats on Both APIs with
 // relevant metrics/API calls or statistics, success & failure, last login, full sync, delta sync, bandwidth, load size etc. be able to rotate
 // their keys. and on Demand fresh statistics by pressing a button, otherwise get refresh daily basis."

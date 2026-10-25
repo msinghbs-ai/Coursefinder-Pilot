@@ -1,3 +1,4 @@
+// Guards: CF-247 (S54): Layer 4 approvals for English and course links.
 // CF-247 (S54): Layer 4 approvals for English and course links. Platform Admin 17 Oct 2026 16:19: "Bring everything from layer 4 and assess
 // either for rule or ai extraction and proceed or give me recomemded choices". Found: an English item could never be approved; a course link
 // proposed as course_url could not be approved.

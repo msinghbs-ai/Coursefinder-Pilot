@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.237 (R4 part 2): Platform Admin bug list of 10 Oct 2026 — Feature 4, decision "Hide and pause work".
 // CF-247 v2.15.237 (R4 part 2): Platform Admin bug list of 10 Oct 2026 — Feature 4, decision "Hide and pause work". Automatic
 // background work skips providers that are unpublished or not active; work started by hand is not blocked.
 import { test, expect } from '@playwright/test'

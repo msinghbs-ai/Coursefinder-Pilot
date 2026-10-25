@@ -1,3 +1,4 @@
+// Guards: CF-247 evidence link index: Decision 215: the evidence link job signs in with one-time run passes, reads compressed saved pages, and Live activity lists worker error replies (a scheduled run "succeeds"…
 // Decision 215: the evidence link job signs in with one-time run passes, reads compressed saved pages, and Live activity
 // lists worker error replies (a scheduled run "succeeds" even when the worker refuses the work).
 import { test, expect } from '@playwright/test'

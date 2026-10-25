@@ -1,3 +1,4 @@
+// Guards: CF-247 per-field coverage panel
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, assertNoServerErrors, DETERMINISTIC_UI_TIMEOUT, loginAsUatUser, milestoneScreenshot, observeRuntime, writeRunEnvironment, clickPrimaryNav } from './support/runtime-evidence.mjs'
 

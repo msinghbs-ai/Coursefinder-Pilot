@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.236 (R4): Platform Admin bug list of 10 Oct 2026 — Feature 4.
 // CF-247 v2.15.236 (R4): Platform Admin bug list of 10 Oct 2026 — Feature 4. Publication becomes a real gate: unpublished (and archived)
 // providers, with their courses, campuses and scholarships, are not served to Wix, Zoho or the website. A Published switch in the
 // provider list (PIM Operator and above, no reason asked). Every active provider is published by default.

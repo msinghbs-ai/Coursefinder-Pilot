@@ -1,3 +1,4 @@
+// Guards: M2.5 Pilot deployment currentness
 import { test, expect } from '@playwright/test'
 import {
   attachRuntimeEvidence,

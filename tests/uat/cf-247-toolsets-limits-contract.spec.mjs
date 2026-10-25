@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.177 (Decision 252, Platform Admin 4 Oct 2026 13:37): OpenRouter observed, not capped by the platform;
 // CF-247 v2.15.177 (Decision 252, Platform Admin 4 Oct 2026 13:37): OpenRouter observed, not capped by the platform;
 // a notice on each layer when a toolset it depends on hits a limit or times out; Serper and ScrapingBee saials across
 // every country; every variable a setting the Platform Admin changes in the UI.

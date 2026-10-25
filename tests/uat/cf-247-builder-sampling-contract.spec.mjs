@@ -1,3 +1,4 @@
+// Guards: CF-247 builder sampling: mocked browser
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

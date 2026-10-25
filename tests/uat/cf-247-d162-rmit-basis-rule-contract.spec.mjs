@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 162: RMIT basis rule matches only the printed fee panel pattern and keeps totals as totals
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

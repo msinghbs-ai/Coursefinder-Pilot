@@ -1,3 +1,4 @@
+// Guards: data-quality-deployed: CourseFinder deployed Data Quality acceptance
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 import {

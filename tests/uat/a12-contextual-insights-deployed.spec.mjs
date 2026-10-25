@@ -1,3 +1,4 @@
+// Guards: A12 contextual insights on catalogue detail blades
 import fs from'node:fs/promises'
 import{test,expect}from'@playwright/test'
 import{attachRuntimeEvidence,assertNoServerErrors,loginAsUatUser,milestoneScreenshot,observeRuntime,writeRunEnvironment}from'./support/runtime-evidence.mjs'

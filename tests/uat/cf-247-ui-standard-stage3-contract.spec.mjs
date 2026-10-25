@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.230, UI stage 3 (Rankings, Reference data, Settings, Models and services, Go-live, other admin pages): settings rows and the Go-live/Capacity headers use the…
 // CF-247 v2.15.230, UI stage 3 (Rankings, Reference data, Settings, Models and services, Go-live, other admin pages):
 // settings rows and the Go-live/Capacity headers use the standard text sizes.
 import { test, expect } from '@playwright/test'

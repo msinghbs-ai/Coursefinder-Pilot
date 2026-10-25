@@ -1,3 +1,4 @@
+// Guards: CF-247 register adapter: register adapter: spec stored switched off, replay is read only, reference is a copy of Layer 1
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

@@ -1,3 +1,4 @@
+// Guards: CF-247 scholarship provider match: migration 1810 limits study-level and field scholarship scopes to the scholarship\
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

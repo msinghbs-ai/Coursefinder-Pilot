@@ -1,3 +1,4 @@
+// Guards: CF-247 zero-yield page re-acquisition (Platform Admin 24 Oct 2026 07:43).
 // CF-247 zero-yield page re-acquisition (Platform Admin 24 Oct 2026 07:43). Contracts on the migration source.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

@@ -1,3 +1,4 @@
+// Guards: CF-247 (S63) v2.15.289: Adapter builder guide (Platform Admin 18 Oct 2026 22:03: "flow was not clear ...
 // CF-247 (S63) v2.15.289: Adapter builder guide (Platform Admin 18 Oct 2026 22:03: "flow was not clear ... no movement or clear indication
 // for next step ... find course pages are running 0-4 without me pressing anything. this has to be intutive").
 import { test, expect } from '@playwright/test'

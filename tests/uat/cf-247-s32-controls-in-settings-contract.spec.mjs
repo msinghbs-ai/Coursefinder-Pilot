@@ -1,3 +1,4 @@
+// Guards: G2 (CLAUDE.md, Decision of 13 Oct 2026): no operational value written into code; every tunable is a setting
 // CF-247 v2.15.269 (S32): Platform Admin, 13 Oct 2026 21:43: "Bring all controls to UI and make sure in future it's not getting hard coded.
 // All controls need to be reflected and control in UI. Use current recommended settings and choices."
 // The register, the jobs and functions that read it, the worker settings, and the guards that stop new fixed values: this file checks every

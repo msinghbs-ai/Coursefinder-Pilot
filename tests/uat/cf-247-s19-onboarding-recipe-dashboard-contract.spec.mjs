@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.254 (S19): onboarding follow-ups. A course-page search switched off because it was built from another domain no longer blocks onboarding with a misleading error;
 // CF-247 v2.15.254 (S19): onboarding follow-ups. A course-page search switched off because it was built from another domain no
 // longer blocks onboarding with a misleading error; one switched off for the same website stops with a plain reason for a person.
 // Dashboard "Waiting for you" drops the retired Flagged values and Fee rules and adds the onboarding rows.

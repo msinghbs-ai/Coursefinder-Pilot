@@ -1,3 +1,4 @@
+// Guards: CF-247 (S72) v2.15.292: counsellor reports from Zoho. Platform Admin, 19 Oct 2026 14:51: "Can I add some control for counsellor in zohoncreator or crm to flag or comment to…
 // CF-247 (S72) v2.15.292: counsellor reports from Zoho. Platform Admin, 19 Oct 2026 14:51: "Can I add some control for counsellor in zohoncreator
 // or crm to flag or comment to pass on to studsearch platform admin for specific record"; choice "Approve all (Recommended)" (consumer API change
 // approved, additive only).

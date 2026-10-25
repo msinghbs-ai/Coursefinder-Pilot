@@ -1,3 +1,4 @@
+// Guards: CF-208 Scholarship PIM catalogue is wired through the mature governed shell
 import test from'node:test'
 import assert from'node:assert/strict'
 import{readFile}from'node:fs/promises'

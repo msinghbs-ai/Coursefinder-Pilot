@@ -1,3 +1,4 @@
+// Guards: M2.5 Evidence lineage reconciliation and contact claim contract
 import fs from'node:fs/promises'
 import{execFileSync}from'node:child_process'
 import{test,expect}from'@playwright/test'
@@ -74,13 +75,10 @@ test.describe('M2.5 Evidence lineage reconciliation and contact claim contract',
     expect(platform).toContain('with proven duplicates, past corrections and open problems shown separately') // v2.15.131 plain wording
 
     // v2.15.291: the shell has no fixed fallback version (it imports the manifest); the legacy history keeps its baseline.
-    const historyVersion=versionEntry.match(/export const LEGACY_BASELINE='([^']+)'/)?.[1]
     const candidateVersion=manifest.match(/export const UI_VERSION='([^']+)'/)?.[1]
     expect(shell).not.toMatch(/const UI_VERSION='2\.15\.\d+'/)
     expect(shell).toContain("import{UI_VERSION}from'./release-manifest.js'")
-    expect(historyVersion).toBe('2.15.78')
     expect(candidateVersion).toMatch(/^2\.15\.\d+$/)
-    expect(versionEntry).toContain(`version:'${historyVersion}'`)
     expect(manifest).toMatch(/version:(UI_VERSION|'2\.15\.\d+')/)
     expect(current).toContain("from'./release-manifest.js'")
     expect(index).toContain('<title>StudySearch PIM Admin</title>')

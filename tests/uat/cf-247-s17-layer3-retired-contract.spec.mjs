@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.252 (S17): Platform Admin, 12 Oct 2026 — Layer 3 AI validation is retired.
 // CF-247 v2.15.252 (S17): Platform Admin, 12 Oct 2026 — Layer 3 AI validation is retired. University adapters (Layer 2)
 // admit intakes, English requirements and fees, so the AI cascade (intake, English and tuition checks), its screens
 // (Layer 3 Control and Work queue, Layer 4 › Send back to AI) and its edge functions are removed. Old addresses still land:

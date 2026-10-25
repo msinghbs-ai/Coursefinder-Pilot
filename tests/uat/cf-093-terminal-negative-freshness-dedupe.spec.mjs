@@ -1,3 +1,4 @@
+// Guards: CF-093 terminal discovery freshness remains current-version and evidence-basis governed
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'

@@ -1,3 +1,4 @@
+// Guards: CF-247 coverage countries fee review: Decision 213: course-page pattern requests retired; fee schedules approved in bulk, reviewed row by row, closable when there is nothing to add;
 // Decision 213: course-page pattern requests retired; fee schedules approved in bulk, reviewed row by row, closable when
 // there is nothing to add; Coverage & completeness by country and university.
 import { test, expect } from '@playwright/test'

@@ -1,3 +1,4 @@
+// Guards: CF-211 H5 source-backed candidates cannot directly write canonical or publish
 import test from'node:test'
 import assert from'node:assert/strict'
 import{readFile}from'node:fs/promises'

@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 254 (6 Oct 2026, Platform Admin 15:25 to 15:39): Layer 2 › Adapters, the adapter lifecycle in one place, collapsed cards remembered for the browser session, and…
 // CF-247 Decision 254 (6 Oct 2026, Platform Admin 15:25 to 15:39): Layer 2 › Adapters, the adapter lifecycle in one place,
 // collapsed cards remembered for the browser session, and the retired screens.
 import { test, expect } from '@playwright/test'

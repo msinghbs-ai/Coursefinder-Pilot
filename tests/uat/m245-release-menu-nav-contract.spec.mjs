@@ -1,3 +1,4 @@
+// Guards: M2.4.5: breadcrumb navigation and release pill use maintained dialog authority
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 test('breadcrumb navigation and release pill use maintained dialog authority',()=>{

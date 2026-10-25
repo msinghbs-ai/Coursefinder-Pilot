@@ -1,3 +1,4 @@
+// Guards: CF-093 exact-scope finalizer preserves narrow authority and closes Codex runtime gaps
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 

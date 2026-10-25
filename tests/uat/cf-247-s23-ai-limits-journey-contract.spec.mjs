@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.258 (S23): Platform Admin bug 12/10-01, 12 Oct 2026: "Model and Services are missing Layer 3 Limits functionality.
 // CF-247 v2.15.258 (S23): Platform Admin bug 12/10-01, 12 Oct 2026: "Model and Services are missing Layer 3 Limits functionality.
 // Provider onboarding should be in Layer 2/3 as a tab, mass automatic adapter creation is not there — if I press Onboard all without an
 // adapter, what will happen? Prepare the journey milestones". Agreed: seven journey stages, scholarships after courses are enriched,

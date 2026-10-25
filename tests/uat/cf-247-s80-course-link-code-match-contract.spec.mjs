@@ -1,3 +1,4 @@
+// Guards: CF-247 (S80) v2.15.299. Platform Admin, 20 Oct 2026 09:41: "on right of the Course name display the Cricos code ...
 // CF-247 (S80) v2.15.299. Platform Admin, 20 Oct 2026 09:41: "on right of the Course name display the Cricos code ... the course name is
 // align to course url, there should be no confusion. What we hold is correct."
 import { test, expect } from '@playwright/test'

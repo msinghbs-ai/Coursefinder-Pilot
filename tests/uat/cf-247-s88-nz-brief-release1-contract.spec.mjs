@@ -1,3 +1,4 @@
+// Guards: CF-247 NZ enrichment brief, Release 1 (Platform Admin decisions 23 Oct 2026 20:42, 20:52, 20:56): transition register, domain-moved action, fee floor and the C4 pass.
 // CF-247 NZ enrichment brief, Release 1 (Platform Admin decisions 23 Oct 2026 20:42, 20:52, 20:56): transition register, domain-moved
 // action, fee floor and the C4 pass. Contracts on the migrations and the UI source.
 import { test, expect } from '@playwright/test'

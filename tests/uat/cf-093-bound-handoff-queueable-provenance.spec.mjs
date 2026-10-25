@@ -1,3 +1,4 @@
+// Guards: CF-093 exact Preview provenance is limited to the discovery subset at handoff
 import{test,expect}from'@playwright/test'
 import fs from'node:fs'
 

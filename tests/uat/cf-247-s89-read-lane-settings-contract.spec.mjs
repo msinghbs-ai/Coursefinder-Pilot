@@ -1,3 +1,4 @@
+// Guards: CF-247 read lane capacity (Platform Admin 23 Oct 2026 22:57 "How do increase the capacity ...
 // CF-247 read lane capacity (Platform Admin 23 Oct 2026 22:57 "How do increase the capacity ... configured by UI?", 23:13 "Go").
 // Contracts: the worker and the picker take up to the setting's maximum (200) instead of a 60 fixed in code; pages fetched at once
 // is a setting (reading.pages_at_once, 1 to 32) the worker reads through svc_worker_settings_v1.

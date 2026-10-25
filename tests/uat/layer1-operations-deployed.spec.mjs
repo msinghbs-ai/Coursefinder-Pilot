@@ -1,3 +1,4 @@
+// Guards: layer1-operations-deployed: v2.15.246: Layer 1 › Sources list (tab Sources, not Runs). v2.15.246: Layer 1 › Sources list.
 // v2.15.246: Layer 1 › Sources list (tab Sources, not Runs).
 // v2.15.246: Layer 1 › Sources list.
 import { test, expect } from '@playwright/test'
@@ -63,9 +64,6 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
   }finally{await finish(testInfo,runtime)}})
 
   test('authorised Layer 1 operator performs real CRICOS authority, shape and active-count validation',async({page},testInfo)=>{
-    // Suspended (Platform Admin 21 Oct 2026 19:58, "Suspend cricos check"): data.gov.au is under maintenance until 22 Oct 2026 and the
-    // CRICOS sources are paused on Layer 1. The skip ends by itself at the end of 22 Oct 2026 (Melbourne).
-    test.skip(Date.now()<Date.parse('2026-10-22T13:00:00Z'),'data.gov.au maintenance until 22 Oct 2026 (CRICOS check suspended)')
     test.setTimeout(180000);const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');const result=await validateSource(page,dialog,s=>s.country_code==='AU'&&s.source_type!=='government_scholarship_program'&&/^CRICOS Providers, Courses and Locations/i.test(s.source_label||''),'CRICOS')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('AU');expect(result?.validation?.discovered?.active).toBeGreaterThan(25000);expect(result?.validation?.discovered?.total).toBeGreaterThanOrEqual(result.validation.discovered.active);expect(result?.validation?.count_basis).toContain('active CRICOS course rows');expect(result?.validation?.worker_version).toMatch(/^layer1-operations-control-v1\./)

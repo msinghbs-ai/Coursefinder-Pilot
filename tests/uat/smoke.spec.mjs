@@ -1,3 +1,4 @@
+// Guards: smoke: CourseFinder local browser smoke
 import { test, expect } from '@playwright/test'
 import { attachRuntimeEvidence, observeRuntime, writeRunEnvironment } from './support/runtime-evidence.mjs'
 

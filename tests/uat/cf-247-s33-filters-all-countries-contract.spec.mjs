@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.270 (S33): Platform Admin, 14 Oct 2026 07:13: "Bug/fix: Courses > state filter is not showing options for nz and Canada.
 // CF-247 v2.15.270 (S33): Platform Admin, 14 Oct 2026 07:13: "Bug/fix: Courses > state filter is not showing options for nz and Canada.
 // Cross check all filters across all pages and report all relevant drop down options are visible."
 // A course's region falls back to its provider's region when no campus region is recorded (all NZ and Canadian courses); delivery reads the

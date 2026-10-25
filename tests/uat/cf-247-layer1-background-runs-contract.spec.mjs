@@ -1,3 +1,4 @@
+// Guards: CF-247 layer1 background runs: Layer 1 background runs: driver-safe control, live card status, readable failures
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { readFileSync as __rf } from 'node:fs'

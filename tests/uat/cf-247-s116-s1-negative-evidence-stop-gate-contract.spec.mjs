@@ -1,3 +1,4 @@
+// Guards: CF-247 S1 part 1 (v2.15.352): one negative-evidence predicate asked by every automatic binding path, one course-search stop gate.
 // CF-247 S1 part 1 (v2.15.352): one negative-evidence predicate asked by every automatic binding path, one course-search stop gate.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

@@ -1,3 +1,4 @@
+// Guards: CF-076 compact ranking import UX
 import fs from'node:fs/promises'
 import{test,expect}from'@playwright/test'
 import{loginAsUatUser,observeRuntime,attachRuntimeEvidence,assertNoServerErrors,DETERMINISTIC_UI_TIMEOUT,writeRunEnvironment}from'./support/runtime-evidence.mjs'

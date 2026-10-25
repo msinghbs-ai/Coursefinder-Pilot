@@ -1,3 +1,4 @@
+// Guards: CF-247 (S67) 19 Oct 2026: calendar intakes for universities' undergraduate courses;
 // CF-247 (S67) 19 Oct 2026: calendar intakes for universities' undergraduate courses; re-find a provider's pages on its current website.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

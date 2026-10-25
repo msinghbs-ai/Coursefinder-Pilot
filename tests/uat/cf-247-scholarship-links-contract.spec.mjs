@@ -1,3 +1,4 @@
+// Guards: CF-247 scholarship links: v2.15.115 scholarship course links: one decision per scholarship (all, matching courses, none).
 // v2.15.115 scholarship course links: one decision per scholarship (all, matching courses, none).
 // v2.15.174 (Platform Admin, 4 Oct 2026 01:57): the Course links tab is retired; links come from each scholarship's
 // page (Layer 2). The database decisions already made stay in force (the decision guard is unchanged).

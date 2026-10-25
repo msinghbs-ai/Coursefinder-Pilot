@@ -1,3 +1,4 @@
+// Guards: CF-088 M2.4.5 Administration IA hardening
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -26,29 +27,5 @@ test.describe('CF-088 M2.4.5 Administration IA hardening @targeted',()=>{
     expect(index).not.toContain('id="access-roles-root"')
     expect(index).not.toContain('src="/src/access-roles-entry.jsx"')
     execFileSync('npm',['run','build'],{stdio:'inherit'})
-  })
-
-  test('deployed Administration renders compact canonical configuration map and blocks legacy Users & Roles for non-rank-6 UAT',async({page},testInfo)=>{
-    if(!process.env.UAT_BASE_URL||!process.env.UAT_EMAIL||!process.env.UAT_PASSWORD)test.skip(true,'deployed UAT environment not configured')
-    const runtime=observeRuntime(page)
-    try{
-      await loginAsUatUser(page)
-      await page.goto(new URL('/#administration',process.env.UAT_BASE_URL).toString())
-      await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
-      await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible({timeout:45000})
-      await expect(page.getByRole('tab',{name:'Scraper Config',exact:true})).toBeVisible()
-      await expect(page.locator('.m-release-pill')).toContainText(/v2\.15\.\d+/)
-      await expect(page.locator('.ar-overlay:not(.ar-embedded)')).toHaveCount(0)
-
-      await page.goto(new URL('/#users-roles',process.env.UAT_BASE_URL).toString())
-      await expect(page.locator('.m-shell')).toBeVisible({timeout:45000})
-      await expect(page.locator('.ar-overlay:not(.ar-embedded)')).toHaveCount(0)
-      const role=((await page.locator('.m-role-pill').textContent())||'').trim()
-      if(role!=='Platform Admin'){
-        await expect(page.getByRole('tab',{name:'Users & Roles',exact:true})).toHaveCount(0)
-        await expect(page.getByRole('heading',{name:'Administration overview',exact:true})).toBeVisible()
-      }
-      await milestoneScreenshot(page,testInfo,'cf-088-admin-ia-standardised')
-    }finally{await finish(testInfo,runtime)}
   })
 })

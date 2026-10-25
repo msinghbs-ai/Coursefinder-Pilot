@@ -1,3 +1,4 @@
+// Guards: CF-247 Phase 3 (Platform Admin 9 Oct 2026): the merged adapter step runs side by side with Layer 3 and admits nothing.
 // CF-247 Phase 3 (Platform Admin 9 Oct 2026): the merged adapter step runs side by side with Layer 3 and admits nothing.
 // v2.15.252 (Platform Admin, 12 Oct 2026): Layer 3 retired; layer3-model-routing and _shared/cf247-adapter-shadow.ts were
 // deleted, so the checks that read them were removed. The archived migrations are still checked.

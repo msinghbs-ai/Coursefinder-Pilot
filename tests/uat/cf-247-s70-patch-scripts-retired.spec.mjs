@@ -1,3 +1,4 @@
+// Guards: Release contract: legacy release history frozen at 2.15.78; patch scripts retired
 // CF-247 (S70) v2.15.291, Phase 5 "retire the leftovers" (Platform Admin): the scripts index.html loaded after React drew the page,
 // each patching the page with a MutationObserver, are retired. What they still showed is drawn by React; the version and release
 // history come from one place (release-manifest.js, and public/release-history.json built from docs, the manifest and the legacy list).

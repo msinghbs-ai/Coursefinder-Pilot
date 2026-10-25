@@ -1,3 +1,4 @@
+// Guards: CF-247 university groups api: university groups: official memberships and consumer API alignment
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 const m = (f) => fs.readFileSync(`supabase/migrations-archive/${f}`, 'utf8')

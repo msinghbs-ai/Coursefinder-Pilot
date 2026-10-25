@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.272 (S35): Platform Admin, 14 Oct 2026 10:14 "Proceed" (settings audit 1.2 correction).
 // CF-247 v2.15.272 (S35): Platform Admin, 14 Oct 2026 10:14 "Proceed" (settings audit 1.2 correction). The automatic publication flag
 // changed nothing, so the Layer 4 publish preview stops reading it; the table is retired by a paste file, never by a migration.
 import { test, expect } from '@playwright/test'

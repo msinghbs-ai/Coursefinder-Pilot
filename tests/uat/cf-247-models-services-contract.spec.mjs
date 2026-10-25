@@ -1,3 +1,4 @@
+// Guards: CF-247 models services: v2.15.118 Platform settings › Models & services: on/off switch for every AI model and page-fetching service.
 // v2.15.118 Platform settings › Models & services: on/off switch for every AI model and page-fetching service.
 import { test, expect } from '@playwright/test'
 import { openCards } from './support/cards.mjs'

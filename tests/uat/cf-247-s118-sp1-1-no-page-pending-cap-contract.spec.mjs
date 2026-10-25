@@ -1,3 +1,4 @@
+// Guards: CF-247 SP-1.1: a new no-page / conjoint first run opens only while fewer than bind.no_page_pending_max are waiting in Layer 4.
 // CF-247 SP-1.1: a new no-page / conjoint first run opens only while fewer than bind.no_page_pending_max are waiting in Layer 4.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

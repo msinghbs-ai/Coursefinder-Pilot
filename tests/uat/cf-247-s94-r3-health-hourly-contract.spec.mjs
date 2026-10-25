@@ -1,3 +1,4 @@
+// Guards: CF-247 R3 (Platform Admin 24 Oct 2026 09:55): the hourly health rollup.
 // CF-247 R3 (Platform Admin 24 Oct 2026 09:55): the hourly health rollup. Contracts on the migration source.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

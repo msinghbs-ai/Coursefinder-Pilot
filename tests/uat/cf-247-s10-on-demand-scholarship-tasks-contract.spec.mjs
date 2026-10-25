@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.244 (S10): on-demand scholarship tasks and Task manager › Running now (Platform Admin, 11 Oct 2026: "fire manually ...
 // CF-247 v2.15.244 (S10): on-demand scholarship tasks and Task manager › Running now (Platform Admin, 11 Oct 2026: "fire
 // manually ... gather uni based scholarships or check from provider or course ... registered as job and visible under task
 // manager. All background jobs using resources at any given time should be visible under task manager, with the controls").

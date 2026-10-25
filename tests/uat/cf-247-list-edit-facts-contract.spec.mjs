@@ -1,3 +1,4 @@
+// Guards: CF-247 list edit facts: v2.15.130 Edit in list for Courses covers tuition, intakes and English (screen review crs-listedit-fields).
 // v2.15.130 Edit in list for Courses covers tuition, intakes and English (screen review crs-listedit-fields).
 // Saves reuse admin_course_edit set_tuition / set_intakes / set_english; start dates and sub-scores already held are kept.
 import { test, expect } from '@playwright/test'

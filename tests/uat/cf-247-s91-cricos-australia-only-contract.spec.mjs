@@ -1,3 +1,4 @@
+// Guards: CF-247 (Platform Admin 24 Oct 2026 07:32): "cricos is only applicable for au and no other country.
 // CF-247 (Platform Admin 24 Oct 2026 07:32): "cricos is only applicable for au and no other country. Cricos code should not be in any
 // logic to admit data other than au." Contracts on the worker identity rule, the migration and the Courses list.
 import { test, expect } from '@playwright/test'

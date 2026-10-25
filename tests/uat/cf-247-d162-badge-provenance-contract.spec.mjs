@@ -1,3 +1,4 @@
+// Guards: CF-247 Decision 162: Field states read stored provenance and only await layers that really have work
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

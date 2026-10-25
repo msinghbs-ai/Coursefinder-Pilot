@@ -1,3 +1,4 @@
+// Guards: CF-247 fee period live errors: Decision 218: fee periods settled by the automatic period check;
 // Decision 218: fee periods settled by the automatic period check; Live activity names the job behind each worker error
 // and an operator can mark an error as seen.
 import { test, expect } from '@playwright/test'

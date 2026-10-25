@@ -1,3 +1,4 @@
+// Guards: CF-247 (S53): developer requests R22 (fewer full-load calls) and R18 (Duolingo English Test).
 // CF-247 (S53): developer requests R22 (fewer full-load calls) and R18 (Duolingo English Test). Platform Admin 16 Oct 2026 23:44: "Start planning
 // developer latest request & create feature number for each of them"; 17 Oct 2026 00:29: "Proceed with next steps".
 import { test, expect } from '@playwright/test'

@@ -1,3 +1,4 @@
+// Guards: CF-093 uses Firecrawl/ZenRows and parks only unresolved bounded exhaustion into Layer 3/Layer 4
 import {test,expect} from '@playwright/test'
 import fs from 'node:fs'
 

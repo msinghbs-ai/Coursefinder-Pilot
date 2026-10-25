@@ -1,3 +1,4 @@
+// Guards: CF-247 v2.15.276, website requirements register O1 (Platform Admin, 14 Oct 2026 18:44).
 // CF-247 v2.15.276, website requirements register O1 (Platform Admin, 14 Oct 2026 18:44). Decisions: "Clear unproven NZ, keep CA" and
 // "Refresh + delivery fix". The website reads campus regions and the search projection; nothing inferred (null = not held), additive only.
 import { test, expect } from '@playwright/test'

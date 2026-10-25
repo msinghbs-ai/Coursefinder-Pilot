@@ -1,3 +1,4 @@
+// Guards: CF-247 (S44): Platform Admin, 15 Oct 2026 12:55: "Bug/fix: i'm unable to upload Uni Logos or request to find it".
 // CF-247 (S44): Platform Admin, 15 Oct 2026 12:55: "Bug/fix: i'm unable to upload Uni Logos or request to find it". Decisions: "make it
 // background Job to find and attached + Plus admin to upload by clicking on logo from provider details blade or list editing"; upload by the
 // Platform Admin. The logo is made clickable by the screen itself (a page watcher missed panels whose details arrived late).

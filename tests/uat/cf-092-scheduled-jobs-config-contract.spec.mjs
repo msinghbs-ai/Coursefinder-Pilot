@@ -1,3 +1,4 @@
+// Guards: CF-092 Scheduled Tasks configuration contract
 import fs from 'node:fs'
 import { test, expect } from '@playwright/test'
 

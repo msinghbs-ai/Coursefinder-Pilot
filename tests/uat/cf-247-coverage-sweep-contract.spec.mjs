@@ -1,3 +1,4 @@
+// Guards: CF-247 coverage sweep: identity needs the CRICOS course code on the page or the exact course title
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import os from 'node:os'

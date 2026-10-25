@@ -1,3 +1,4 @@
+// Guards: CF-247 hotfix v2.15.351 (consolidated mandate 25 Oct 2026, Part A): the course list shows International fee and City on every sort.
 // CF-247 hotfix v2.15.351 (consolidated mandate 25 Oct 2026, Part A): the course list shows International fee and City on every sort.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'

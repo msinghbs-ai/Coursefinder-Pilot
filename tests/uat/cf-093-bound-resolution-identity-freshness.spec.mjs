@@ -1,3 +1,4 @@
+// Guards: CF-093 bound resolver only consumes selected candidates from the exact Preview token
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 

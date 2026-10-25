@@ -1,3 +1,4 @@
+// Guards: CF-247 layer1 schedule: Layer 1 schedule choice is Platform Admin only and logged; ranking years run two years ahead
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
