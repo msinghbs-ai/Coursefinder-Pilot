@@ -27,7 +27,9 @@
 --
 -- Status vocabulary deviation (recorded): rows waiting for the first-run review are 'proposed' (the design listed active / inactive /
 -- superseded / unverified only; a row cannot be active before a person approves it).
--- Replaces: nothing. Retires: nothing. Nothing dropped or deleted. The consumer API is not touched in step A (the additive entry
+-- Replaces: nothing
+-- Retires: nothing
+-- Nothing dropped or deleted. The consumer API is not touched in step A (the additive entry
 -- fields ship with the consumer API step, under the 14:36 approval).
 
 create or replace function pg_temp.edit_n(p_sig text, p_md5 text, p_edits text[][], p_times int[]) returns void language plpgsql as $f$

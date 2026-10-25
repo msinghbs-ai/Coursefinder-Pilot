@@ -41,7 +41,7 @@ test('Layer 4: the first run goes to a person; approve admits, anything else qua
   expect(m).toContain("for each row when (old.status = 'pending' and new.status <> 'pending' and new.field_code in ('entry_matrix_first_run', 'entry_matrix_change'))")
   expect(m).toContain("set status = 'inactive', status_reason = 'quarantined (' || p_action || '): '")
   expect(m).not.toMatch(/delete\s+from|drop\s+(table|function|schema|view|constraint|index|trigger)|truncate/i)
-  expect(m).toMatch(/-- Replaces: nothing\. Retires: nothing\./)
+  expect(m).toMatch(/^-- Replaces: nothing\n-- Retires: nothing$/m)
 })
 
 test('stored first, robots respected, inside the AI stop', () => {
