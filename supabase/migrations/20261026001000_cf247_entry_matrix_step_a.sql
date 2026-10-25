@@ -1,5 +1,5 @@
--- CF-247 Track C, entry requirements Step A (drafted 25 Oct 2026 overnight; merge position fixed by the Platform Admin 18:54:
--- Track A S1 (#694) → Track B release 1 → this). Design: admin repo docs/platform/ENTRY-REQUIREMENTS.md 1.1 and
+-- CF-247 Track C, entry requirements Step A (drafted 25 Oct 2026 overnight; merge position fixed by the Platform Admin 18:54, amended 22:27:
+-- #694 gate consolidation → SP-1 (#696) → this; extraction runs start after Track B release 1). Design: admin repo docs/platform/ENTRY-REQUIREMENTS.md 1.1 and
 -- docs/platform/ENTRY-REQUIREMENTS-IMPLEMENTATION.md Part 2 (2.1 tables, 2.2 matrix reader, 2.5 step A), decisions 25 Oct 14:50 (7–10).
 --
 -- Declared file boundary (outcomes record 25 Oct 19:02): the matrix and course-requirement tables, the new reader (worker mode entry_ai,
@@ -481,7 +481,7 @@ create trigger layer4_review_items_entry_matrix after update of status on pipeli
   for each row when (old.status = 'pending' and new.status <> 'pending' and new.field_code in ('entry_matrix_first_run', 'entry_matrix_change'))
   execute function security.entry_matrix_review_trg_v1();
 
-select pg_temp.edit_n('security.layer4_review_decide_impl(uuid,text,text,jsonb)', 'cd2ef4b97a3a88a78703f8aa53acc8b9', array[
+select pg_temp.edit_n('security.layer4_review_decide_impl(uuid,text,text,jsonb)', 'd9d8d79e7b78229eb5d49addfcada178', array[
   array[$o$    elsif v_item.entity_type='scholarship' and v_item.field_code='scope_resolution' then$o$,
         $n$    elsif v_item.entity_type='provider' and v_item.field_code in ('entry_matrix_first_run','entry_matrix_change') then
       -- CF-247 Track C: approving an entry matrix run admits its rows (edit-and-approve may exclude rows); reject etc. quarantine by trigger
@@ -489,7 +489,7 @@ select pg_temp.edit_n('security.layer4_review_decide_impl(uuid,text,text,jsonb)'
       v_scalar_id:=null;
     elsif v_item.entity_type='scholarship' and v_item.field_code='scope_resolution' then$n$]], array[1]);
 
-select pg_temp.edit_n('security.layer4_review_desk_v1_impl(text,integer)', 'e93e9aea6d150000ff00a4b18559cd4d', array[
+select pg_temp.edit_n('security.layer4_review_desk_v1_impl(text,integer)', '049688a9f32dca45f7131be17f9eee41', array[
   array[$o$      else b.entity_type='course' end,false),$o$,
         $n$      when b.field_code in ('entry_matrix_first_run','entry_matrix_change') then jsonb_typeof(b.proposed_value)='object'
       else b.entity_type='course' end,false),$n$]], array[1]);
