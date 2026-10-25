@@ -1,15 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.354'
-export const PACKAGE_VERSION='0.1.281'
+export const UI_VERSION='2.15.355'
+export const PACKAGE_VERSION='0.1.282'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'25 Oct 2026',
-  title:'Layer 4 is never flooded with first runs',
+  title:'Entry requirements: tables and reader ready (off)',
   changes:[
-    'Checks of courses with no page (and conjoint degrees) open in Layer 4 only while fewer than 60 are waiting for a person (setting: No page published: first runs waiting at most). Universities still come first.',
+    'The tables for academic entry requirements by country of prior education, and the reader that fills them from providers' own entry-requirements pages, are in place. The reader is switched off until the next release that needs it; nothing is read or shown yet.',
+    'When it runs, every row carries the sentence it was read from, and the first reading for each provider goes to Layer 4 before anything is admitted.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
