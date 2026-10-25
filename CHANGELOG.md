@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.278 — 25 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.351** (HOTFIX — consolidated mandate 25 Oct, Part A). Not merged without Platform Admin review.
+  - Migration `20261025001000_cf247_list_columns_on_every_sort.sql`: md5-guarded edit to `security.admin_course_page_search_state` (used only by the Completeness / Tuition Only sort branch of `admin_course_page_fast_base`) adds `intl_fee_*`, `city_names`, `display_code`, `code_kind`, `open_to_*` from the same rows as the normal list path. Live dry run: NZ sorted by Completeness 0 → 50 of 50 rows with a fee, 0 → 49 with a city. Test s103. Release notes v2.15.350. SOPs 1.92.
+
 ## 0.1.277 — 24 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.350** (R2 / C-Q1; O10 approved 24 Oct). Migration `20261024013000_cf247_r2_daily_cap_course_stop.sql`: settings `search.daily_picked_cap` (100, 10–2,000 a UTC day) and `search.stop_per_course_after` (6, 3–20); index on `course_link_search.sent_at`; md5-guarded edits to `svc_course_link_search_next` (cap counted from today's picks; a person's running task counted but not held; per-course stop from `page_rejections`) and `link_search_block_v1` (stall cause `daily_cap`). Tranche 1 (25 override rows) is applied after the deploy by its paste file. Test s102. Release notes v2.15.349. SOPs 1.91.

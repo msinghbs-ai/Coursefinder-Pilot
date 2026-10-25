@@ -1,20 +1,19 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.350'
-export const PACKAGE_VERSION='0.1.277'
+export const UI_VERSION='2.15.351'
+export const PACKAGE_VERSION='0.1.278'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'24 Oct 2026',
-  title:'Course page search: a daily cap and a per-course stop',
+  date:'25 Oct 2026',
+  title:'Hotfix: the course list shows International fee and City on every sort',
   changes:[
-    'Course page search takes no more than 100 courses a day (Settings › Pipeline settings › Course search: courses a day). A person\'s running Find course pages task is counted but not held by it. The cap is raised on the week\'s correct-page rate.',
-    'A course with 6 different pages rejected as wrong is not searched again (Course search: stop a course after); the university-wide stop stays behind it.',
-    'When the cap holds a task, the Task manager says "Today\'s course search cap is reached".',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'Courses: sorted by Completeness or Tuition Only, the list showed "—" for International fee and City on every row while the course\'s details showed the fee and campus. Every sort now shows them, from the same fee and campus records the details use.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.
