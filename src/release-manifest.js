@@ -1,20 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.358'
-export const PACKAGE_VERSION='0.1.285'
+export const UI_VERSION='2.15.359'
+export const PACKAGE_VERSION='0.1.286'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'26 Oct 2026',
-  title:'CRICOS end dates: deregistered providers told apart',
+  title:'Hotfix: one identity check for every fee write',
   changes:[
-    'Each CRICOS course registration no longer on the latest register edition carries an end date: the last date the register listed it.',
-    'A provider none of whose courses is on the register has its CRICOS registration marked ended; a provider that comes back is restored. Nothing is ended when a register file looks incomplete (Settings, Register).',
-    'Daily job "Register end dates (CRICOS)" keeps the dates current. Course retirement is unchanged and stays a Platform Admin approval.',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[]
+  bugFixes:[
+    'An international fee is checked against the country\'s accepted course-page proofs when it is stored, whichever part of the platform wrote it; a fee that fails is kept for review (Layer 4), not shown (Settings, Admission checks).',
+    'The university adapter checks a fee\'s proof before replacing the course\'s current fee, so a refused reading never leaves a course without its fee.'
+  ]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

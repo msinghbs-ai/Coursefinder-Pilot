@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.286 — 26 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.359** (gate hotfix, Platform Admin 26 Oct 2026 19:27). Migration `20261026006000_cf247_fee_identity_gate_all_writers.sql`: trigger `course_fee_identity_gate` on `catalogue.course_fees` (`security.course_fee_identity_gate_tg`, setting `fees.identity_gate_on`) puts every international provider fee write through the country tuition identity check; `security.adapter_overwrite_v1` fee branch checks tuition identity first (md5-guarded). Test s125.
+
 ## 0.1.285 — 26 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.358** (AU completion week step 1, Platform Admin 26 Oct 2026 17:01). Migration `20261026004000_cf247_au_register_end_dates.sql`: `security.layer1_register_end_dates_v1` (CRICOS course `valid_to` = last date listed; provider registration `ended` when none of its courses is listed; restore when listed again; guard `layer1.register_end_dates_min_share` 0.9), `pipeline.register_end_date_runs`, read-only `security.au_publish_eligibility_v1` (`publish.eligible_min_current_courses`, `publish.eligible_min_site_pages`), job `layer1-register-end-dates` (catalogued, daily 04:41 UTC). Test s123.
