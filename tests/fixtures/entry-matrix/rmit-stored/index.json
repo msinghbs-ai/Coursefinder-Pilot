@@ -1,0 +1,257 @@
+{
+ "source": "RMIT country-equivalency pages: <title>, <h1> and <table> markup of the stored copies (entry_inspect, 27 Oct 2026 06:00 AEDT, worker v0.48.5); html_md5 checked against the database copy",
+ "pages": {
+  "colombia": {
+   "source_id": "002b3f44-3591-4c27-93d5-c63a98b30bcf",
+   "content_hash": "3ffc314e2e1fd596606124222eddf4686b7d19badc245d61d71e86faafad9f92",
+   "stored_sha256": "3ffc314e2e1fd596606124222eddf4686b7d19badc245d61d71e86faafad9f92",
+   "html_md5": "d3ed5d658cdc60b3039d0531730c296f",
+   "tables": 1
+  },
+  "denmark": {
+   "source_id": "c9970277-6626-453f-83b6-53e902165945",
+   "content_hash": "0d0af90853f5a8c3de4671b0715a07caf0d3be5c1b1c5c0c92c33c79b646e142",
+   "stored_sha256": "0d0af90853f5a8c3de4671b0715a07caf0d3be5c1b1c5c0c92c33c79b646e142",
+   "html_md5": "51ae2faaffb7815123fb167ac3eb9a4d",
+   "tables": 1
+  },
+  "indonesia": {
+   "source_id": "bb9b9986-fdba-4225-a1d6-f46ad9a2f509",
+   "content_hash": "f67ec5eb16b526c200ad4337721e4bb6e98576b097a9eea60218067532d29fd7",
+   "stored_sha256": "f67ec5eb16b526c200ad4337721e4bb6e98576b097a9eea60218067532d29fd7",
+   "html_md5": "b2525c48b2faeef47b953127bcecc250",
+   "tables": 1
+  },
+  "kuwait": {
+   "source_id": "a09357cf-f10a-4ebc-8c9b-aab276fe0b0a",
+   "content_hash": "28408bd0c5c85098b0e8155ecd781e6bc16d27d025e7779aecd2e8f454a8ad81",
+   "stored_sha256": "28408bd0c5c85098b0e8155ecd781e6bc16d27d025e7779aecd2e8f454a8ad81",
+   "html_md5": "1a8c950118cd5baa0a40722c5e3ec869",
+   "tables": 1
+  },
+  "mexico": {
+   "source_id": "e7d90060-2a7f-4f7f-8556-d4df47eb3145",
+   "content_hash": "22503ee621f42a5ae6a8515187ca7cecc87e53f17859e886c54d5c6b122ec23f",
+   "stored_sha256": "22503ee621f42a5ae6a8515187ca7cecc87e53f17859e886c54d5c6b122ec23f",
+   "html_md5": "4fb5d012a65a8baa49f0544716ac9401",
+   "tables": 1
+  },
+  "nepal": {
+   "source_id": "d4119f97-7fd0-468f-8bb0-7cfca5d0e5c3",
+   "content_hash": "f1672d17b30682bbbd997db474f19ca982e9187a75c14a62227ec4740354b225",
+   "stored_sha256": "f1672d17b30682bbbd997db474f19ca982e9187a75c14a62227ec4740354b225",
+   "html_md5": "192d27734412842620a4a25b6611c79d",
+   "tables": 1
+  },
+  "nigeria": {
+   "source_id": "7f2e15d3-e713-45ee-ac89-dfbc4d22675c",
+   "content_hash": "e2aaa79961b3d9e608b5d3f1eedb3adb24a0ec497b62dac66eb46a2763688334",
+   "stored_sha256": "e2aaa79961b3d9e608b5d3f1eedb3adb24a0ec497b62dac66eb46a2763688334",
+   "html_md5": "0884061c914c4b092c5a65a9ddb85918",
+   "tables": 1
+  },
+  "norway": {
+   "source_id": "28a5471d-c63a-469a-ac67-eec9af3764fd",
+   "content_hash": "a57b6192bc5519ef3b019cdf5970eefd520df82234aad60d024df3aaaeeaa126",
+   "stored_sha256": "a57b6192bc5519ef3b019cdf5970eefd520df82234aad60d024df3aaaeeaa126",
+   "html_md5": "82556f39f41c9b8e76442cd6bf4b21a7",
+   "tables": 1
+  },
+  "pakistan": {
+   "source_id": "6c4351b3-8939-4dd5-b492-3aff40ab34ba",
+   "content_hash": "6d08f1d0e1fd571632cd03710a9bcd929a3daccb81e60f507427e8f47947e55c",
+   "stored_sha256": "6d08f1d0e1fd571632cd03710a9bcd929a3daccb81e60f507427e8f47947e55c",
+   "html_md5": "451e325244218dbedaa5ec95422ed2c2",
+   "tables": 1
+  },
+  "philippines": {
+   "source_id": "44dc513a-8479-46c7-9758-ef8eb6cb7b8e",
+   "content_hash": "06cc7f04585131f817b0f9b3dd6150e09a2224b607d7ba0d66e81b1b89a1c719",
+   "stored_sha256": "06cc7f04585131f817b0f9b3dd6150e09a2224b607d7ba0d66e81b1b89a1c719",
+   "html_md5": "d9eebfc1779154d33ab9c48d549c9011",
+   "tables": 1
+  },
+  "bangladesh": {
+   "source_id": "2544db5c-5473-4aa3-a672-ffb709847b97",
+   "content_hash": "00eb23e2e7044bbca5238c8ea29bc0f13a81549f9e5f23ffd4b260afc597d532",
+   "stored_sha256": "00eb23e2e7044bbca5238c8ea29bc0f13a81549f9e5f23ffd4b260afc597d532",
+   "html_md5": "a1caf9af448272af90bdcc8f7cc1d43c",
+   "tables": 1
+  },
+  "cambodia": {
+   "source_id": "424a9906-324e-4331-b7a1-5212a1db1a1a",
+   "content_hash": "41afda716d602b1241da4cbd92884200c9d51c835e95db5201c4cd5953208223",
+   "stored_sha256": "41afda716d602b1241da4cbd92884200c9d51c835e95db5201c4cd5953208223",
+   "html_md5": "3283d2d62fe4c34dd331baefe0a886b3",
+   "tables": 1
+  },
+  "canada": {
+   "source_id": "db45e48a-5535-48c8-882f-8f9da77fe2cb",
+   "content_hash": "15c5cec9386d7df530684850173ca5aa0dc4cd2c4b863c0a2ac28d0d900d785e",
+   "stored_sha256": "15c5cec9386d7df530684850173ca5aa0dc4cd2c4b863c0a2ac28d0d900d785e",
+   "html_md5": "1511f42b842ce5f1f9866dcc3d4e5714",
+   "tables": 1
+  },
+  "china-peoples-republic-of": {
+   "source_id": "22b9454f-b5e4-4cfa-b196-2d2990ad1e2e",
+   "content_hash": "75f37d67ca964fb254c152679a9a3684ec2035a3bb47181c8914ffd09c27bb8a",
+   "stored_sha256": "75f37d67ca964fb254c152679a9a3684ec2035a3bb47181c8914ffd09c27bb8a",
+   "html_md5": "3b0496de6f8ba63bcf3cefb5750e14dc",
+   "tables": 1
+  },
+  "germany": {
+   "source_id": "5a8e49a6-1fc4-4ad0-a83a-1aefd4473bdd",
+   "content_hash": "1d349a90978337846811d0c5ace7e2c0f203f8fb0558f848139cd7bc8889311b",
+   "stored_sha256": "1d349a90978337846811d0c5ace7e2c0f203f8fb0558f848139cd7bc8889311b",
+   "html_md5": "b531a41e1ef4683e929345bf17f78e55",
+   "tables": 1
+  },
+  "hong-kong-sar-of-the-peoples-republic-of-china": {
+   "source_id": "2f87f00d-3519-46fd-94b1-3d689cca082c",
+   "content_hash": "df34ed466496352f2ddd472b880aae4757ca1f69b819982ad164a2b4fae0ce28",
+   "stored_sha256": "df34ed466496352f2ddd472b880aae4757ca1f69b819982ad164a2b4fae0ce28",
+   "html_md5": "e3000545b08f22181817123b18cfe1b1",
+   "tables": 1
+  },
+  "india": {
+   "source_id": "b35e2947-32d4-48fe-9149-e243fce65f74",
+   "content_hash": "78d946958eaa30e7c726eb42f4eb17b2d7808faa91ea7ea64af4e876ca576321",
+   "stored_sha256": "78d946958eaa30e7c726eb42f4eb17b2d7808faa91ea7ea64af4e876ca576321",
+   "html_md5": "30d2eb5932065d82c0ea4045285ce5b0",
+   "tables": 1
+  },
+  "japan": {
+   "source_id": "b2e13076-38f2-4deb-85f6-4fe788ff3fa7",
+   "content_hash": "a4b117edc1d833413d85de92b0e2edcee6784092a60b09df60e0b1447fd4bcc3",
+   "stored_sha256": "a4b117edc1d833413d85de92b0e2edcee6784092a60b09df60e0b1447fd4bcc3",
+   "html_md5": "70dd312e12128b2422a05a16ac4d03d8",
+   "tables": 1
+  },
+  "kenya": {
+   "source_id": "31b87c3e-bb58-407f-b9b8-018ccfaae0c3",
+   "content_hash": "07c01aa7423106ff2cd7390f73176076ac50e02506afacbb8794bb4d3077daba",
+   "stored_sha256": "07c01aa7423106ff2cd7390f73176076ac50e02506afacbb8794bb4d3077daba",
+   "html_md5": "8e93e34f85ba9d139b7707b0d9cae426",
+   "tables": 1
+  },
+  "malaysia": {
+   "source_id": "83a38bdf-e7b5-4b7e-966a-98c5366643c1",
+   "content_hash": "15ae195d5a2d8c2f99cdf8ce5bd5d0f4770f2eb6bd2c3aee8c2b70806c312889",
+   "stored_sha256": "15ae195d5a2d8c2f99cdf8ce5bd5d0f4770f2eb6bd2c3aee8c2b70806c312889",
+   "html_md5": "9c8eca325a55dbbd9ffe5dfb0af4f3f8",
+   "tables": 1
+  },
+  "mauritius": {
+   "source_id": "f2ec662e-232e-4da1-ba42-6232173b5177",
+   "content_hash": "e6586390aa7376f511e6015a4f9cb3bff2bc8ef86d50e6dd29a0f7d1dc8c1380",
+   "stored_sha256": "e6586390aa7376f511e6015a4f9cb3bff2bc8ef86d50e6dd29a0f7d1dc8c1380",
+   "html_md5": "0748d6459ac7653099ccefb98a3e7699",
+   "tables": 1
+  },
+  "new-zealand": {
+   "source_id": "d98bcba9-ff05-4e4e-9cef-5a1c32a2e433",
+   "content_hash": "4a5624b20a762662ed11cfdf3f0e76bfa2303c11e60e1426ba56b7b660612ed0",
+   "stored_sha256": "4a5624b20a762662ed11cfdf3f0e76bfa2303c11e60e1426ba56b7b660612ed0",
+   "html_md5": "25472c3af98d768d17a43b4aff33f196",
+   "tables": 1
+  },
+  "foundation-equivalencies": {
+   "source_id": "cd6d825e-5385-4545-b4f8-32e2fe94f2c2",
+   "content_hash": "9fdf87cfc1132855e82c4815d475c614ef53b16490c6740891ff4fbdb11f0595",
+   "stored_sha256": "9fdf87cfc1132855e82c4815d475c614ef53b16490c6740891ff4fbdb11f0595",
+   "html_md5": "4982f3f54bbd9cd924ccf11ffd428a29",
+   "tables": 27
+  },
+  "global-assessment-certificate": {
+   "source_id": "f024a5f8-4647-4d54-987c-92c84920f198",
+   "content_hash": "c84ef491562d2764caf364652453572badd9b7786d1d98ff6e65648aceecf7c7",
+   "stored_sha256": "c84ef491562d2764caf364652453572badd9b7786d1d98ff6e65648aceecf7c7",
+   "html_md5": "c49c3c6fbdf89f12e4ff1753af7c100b",
+   "tables": 1
+  },
+  "international-baccalaureate": {
+   "source_id": "1c526315-19c4-4c52-b5d4-5b97e0d7df9d",
+   "content_hash": "ad35cfa6d37e4bf78ae2fa119a55a1f1170e5e5ead5dd2c2565b860838400b42",
+   "stored_sha256": "ad35cfa6d37e4bf78ae2fa119a55a1f1170e5e5ead5dd2c2565b860838400b42",
+   "html_md5": "6ab6ac2106cdf005e4589b27768498e8",
+   "tables": 1
+  },
+  "qatar": {
+   "source_id": "cb87a00a-45c2-4fc7-ba61-01615352d493",
+   "content_hash": "64edc4fef4173cc19e11da05ed4f4b71586167320e8fd192261feae76c62160c",
+   "stored_sha256": "64edc4fef4173cc19e11da05ed4f4b71586167320e8fd192261feae76c62160c",
+   "html_md5": "578fda2eb51c0f6f307e580947cd757b",
+   "tables": 1
+  },
+  "saudi-arabia": {
+   "source_id": "4303606f-8a95-4371-be47-060f119836a4",
+   "content_hash": "3a1aef8db78f7d04713fe75b1cbf03241f67795b5e61e554dd97a6fa7e30ce7b",
+   "stored_sha256": "3a1aef8db78f7d04713fe75b1cbf03241f67795b5e61e554dd97a6fa7e30ce7b",
+   "html_md5": "af9c48c27d462086bb8841c37e1621b0",
+   "tables": 1
+  },
+  "singapore": {
+   "source_id": "6239160c-ea4a-42bb-9047-e06bc31b8461",
+   "content_hash": "ee46bc863b36976da94580056063561c1177c0f58f8c9bee688aab6f215607bd",
+   "stored_sha256": "ee46bc863b36976da94580056063561c1177c0f58f8c9bee688aab6f215607bd",
+   "html_md5": "09429ce5e1231c3afa9db31fea0f54cb",
+   "tables": 1
+  },
+  "south-korea": {
+   "source_id": "a8512c76-d29a-48cf-a432-c5db6f0eff29",
+   "content_hash": "de3fc8945f20c56b78c9f622a0aa35404e1dd9f6dfb60a07abd4c2844b64ffae",
+   "stored_sha256": "de3fc8945f20c56b78c9f622a0aa35404e1dd9f6dfb60a07abd4c2844b64ffae",
+   "html_md5": "0281b53d4562bdabe3f1ff730e539861",
+   "tables": 1
+  },
+  "sri-lanka": {
+   "source_id": "70ba0aff-6a2d-44be-bb13-3eb444981093",
+   "content_hash": "bd95d59dbf01720cbc34046bc9a13ce6f3011cd9398dcad9d106e24c9d1042fc",
+   "stored_sha256": "bd95d59dbf01720cbc34046bc9a13ce6f3011cd9398dcad9d106e24c9d1042fc",
+   "html_md5": "bbf53383150a29ce12828fbbcf6d3a1a",
+   "tables": 1
+  },
+  "taiwan": {
+   "source_id": "e7798e32-5533-4b6b-b29a-962413b65f04",
+   "content_hash": "dd460a51286412bdc34a8b3ca68844099baa7c6fc56b38345f241974f0533956",
+   "stored_sha256": "dd460a51286412bdc34a8b3ca68844099baa7c6fc56b38345f241974f0533956",
+   "html_md5": "5cd148a2464ff0b0e54852674ff2af31",
+   "tables": 1
+  },
+  "thailand": {
+   "source_id": "32563686-26d0-464c-9497-6755b379fb0f",
+   "content_hash": "c48c73f01148e02e04c376ccc41f80752a29afea7c5b49c0303903cc1edb0134",
+   "stored_sha256": "c48c73f01148e02e04c376ccc41f80752a29afea7c5b49c0303903cc1edb0134",
+   "html_md5": "5fcf700c640f02787713534232569e5b",
+   "tables": 1
+  },
+  "united-arab-emirates": {
+   "source_id": "cb659e79-08eb-4bd5-902a-67e7266a8aa2",
+   "content_hash": "a5b711bfbf9a4909bb83b6d10826ab8bdda29b0c4bb2e8ab4694b584938c5599",
+   "stored_sha256": "a5b711bfbf9a4909bb83b6d10826ab8bdda29b0c4bb2e8ab4694b584938c5599",
+   "html_md5": "2454b5d5898939ebe701e2ae3dadd514",
+   "tables": 1
+  },
+  "united-kingdom": {
+   "source_id": "9a9774dc-cb55-44a2-ac74-8f52d14146b3",
+   "content_hash": "485b02e5d4042d3446d9cd733008e8e65f37ed2734e392f58605aa369c513261",
+   "stored_sha256": "485b02e5d4042d3446d9cd733008e8e65f37ed2734e392f58605aa369c513261",
+   "html_md5": "4c15bc29e1cf3ee72b146d9e2ed6345d",
+   "tables": 2
+  },
+  "usa": {
+   "source_id": "9134b618-9a7a-4cec-a98d-5d95997134e8",
+   "content_hash": "18d1706bc3a99dc89526a44363e98ec757134d490a4dee8b66b429db713d783a",
+   "stored_sha256": "18d1706bc3a99dc89526a44363e98ec757134d490a4dee8b66b429db713d783a",
+   "html_md5": "4617369e92c872a6e1baded251b0ad97",
+   "tables": 1
+  },
+  "vietnam": {
+   "source_id": "b59be528-75c7-4620-b468-a4cd5f3eb58b",
+   "content_hash": "1766157bac7d8c2f2b273f8327779cf827e21192a45e0a8e24f0c93748d956b0",
+   "stored_sha256": "1766157bac7d8c2f2b273f8327779cf827e21192a45e0a8e24f0c93748d956b0",
+   "html_md5": "40499b72a54208c3fa9285048ccba907",
+   "tables": 2
+  }
+ }
+}

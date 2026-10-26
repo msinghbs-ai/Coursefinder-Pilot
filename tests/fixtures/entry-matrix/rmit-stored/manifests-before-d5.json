@@ -1,0 +1,221 @@
+{
+ "source": "entryManifest and page text of each stored RMIT page under worker v0.48.5 (before D5), md5 of JSON.stringify(manifest) and of the page text",
+ "pages": {
+  "bangladesh": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "0990e848ae9e11571ccce69209ed75b1",
+   "text_md5": "016b1cfc7fea03c95b106cc488220fe6"
+  },
+  "cambodia": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "d6b872a4b2dd4e97ff1096dfa8b060a2",
+   "text_md5": "ec59f418bf10c836c450f4afcf62e507"
+  },
+  "canada": {
+   "status": "ok",
+   "entries": 24,
+   "manifest_md5": "d4dde53a74cbbd4d7c09f4d98c136e56",
+   "text_md5": "c9b175e2347d597d680392902e8fa262"
+  },
+  "china-peoples-republic-of": {
+   "status": "ok",
+   "entries": 22,
+   "manifest_md5": "7a66dfd211383224c3cadb94797e621a",
+   "text_md5": "b90a43441896d47506f6c8833ba09517"
+  },
+  "colombia": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "274b3452bc73c7d3d7ddbe5ca3b9769e",
+   "text_md5": "a71905ee96867b43de31a682db87b1e1"
+  },
+  "denmark": {
+   "status": "ok",
+   "entries": 22,
+   "manifest_md5": "73e6e0040fb4ba71b6ae3118ff15c9d2",
+   "text_md5": "2357766958f9337fa560cb9a1ad5e0db"
+  },
+  "foundation-equivalencies": {
+   "status": "ok",
+   "entries": 24,
+   "manifest_md5": "2c5524e8ce39228ee6a50fdc216e2033",
+   "text_md5": "36d7f5e69cfe3784f949247106607aea"
+  },
+  "germany": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "420cb40f5cfa03b9badb391edcba2c96",
+   "text_md5": "d9bb56792bb4b1c61c7ba84c7d3da3fb"
+  },
+  "global-assessment-certificate": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "aced2a938ebd759c8059d4a43588b84d",
+   "text_md5": "764fe30b92febda55c4be6f29ee0bb40"
+  },
+  "hong-kong-sar-of-the-peoples-republic-of-china": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "b64dc3526fbb48549bd8c5ad98370615",
+   "text_md5": "06117faf49536a0715d4c55bf9ce9a9f"
+  },
+  "india": {
+   "status": "ok",
+   "entries": 33,
+   "manifest_md5": "feee9623cf37508b92496c5883c01147",
+   "text_md5": "ba4a69f75085dbe9779c20fc539f8523"
+  },
+  "indonesia": {
+   "status": "ok",
+   "entries": 25,
+   "manifest_md5": "58da25bb6e5a503e65b3b4a168117525",
+   "text_md5": "7c2fd17b1138ffbc34b4bd51bed890cc"
+  },
+  "international-baccalaureate": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "cb57137674959692f61f8982e135e84a",
+   "text_md5": "55693184023a882046ada23d8cfd761d"
+  },
+  "japan": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "144179bfcb4508bdeb33c442552f3e11",
+   "text_md5": "20e28845191415fc9616b6e288fcd7eb"
+  },
+  "kenya": {
+   "status": "ok",
+   "entries": 9,
+   "manifest_md5": "a096d24725ea128c489439e51dcbdd17",
+   "text_md5": "e0dc2a744135582925c8fc34d2db4ce1"
+  },
+  "kuwait": {
+   "status": "unparsed",
+   "entries": 0,
+   "manifest_md5": "62d076fb2d2881ea41e2550c57d523f2",
+   "text_md5": "3039eb86ce589a67d048c8db942ca4f3"
+  },
+  "malaysia": {
+   "status": "ok",
+   "entries": 22,
+   "manifest_md5": "b4d0dfe1afa4a62c0ebd255ba0391ae7",
+   "text_md5": "e87144a166dcc962962e625f1bf481f4"
+  },
+  "mauritius": {
+   "status": "ok",
+   "entries": 13,
+   "manifest_md5": "b4450257f97da6e6d78b683bc66b9207",
+   "text_md5": "311e5861c4f42bc08d69fef46aa0338c"
+  },
+  "mexico": {
+   "status": "unparsed",
+   "entries": 0,
+   "manifest_md5": "d2696ddceb778bd6b26d1d85db0483b3",
+   "text_md5": "2cee14524eb7581acd8ad6edd429521a"
+  },
+  "nepal": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "3d04c5a69eec01c7f4485fc0a45e81a5",
+   "text_md5": "704e5e6f0d25dcd705544027e4e896d6"
+  },
+  "new-zealand": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "01419059841199bec7edb24ddcfc064b",
+   "text_md5": "29d768eeed77ccc079cfef15475dcb32"
+  },
+  "nigeria": {
+   "status": "ok",
+   "entries": 17,
+   "manifest_md5": "991cf7c5608356095de8a8376a233a61",
+   "text_md5": "4d631977dbe4d15e1293085b981afa6f"
+  },
+  "norway": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "15b56d0a9659a37d8642534be7e08b39",
+   "text_md5": "3c39534416012366da953eae35fa7745"
+  },
+  "pakistan": {
+   "status": "ok",
+   "entries": 5,
+   "manifest_md5": "896d5c2ec000d93d701a4f30ff6023e2",
+   "text_md5": "7b46bdeb692637a3afbd551473553cbe"
+  },
+  "philippines": {
+   "status": "ok",
+   "entries": 7,
+   "manifest_md5": "1915bb36ffaec64ba772071fdb361e71",
+   "text_md5": "9a8ff88a0a0fc788e60e117ad24d7554"
+  },
+  "qatar": {
+   "status": "ok",
+   "entries": 2,
+   "manifest_md5": "16d3eddc9066fa33512238e279d676e5",
+   "text_md5": "78a236614724e701baebbbfc865ae5e2"
+  },
+  "saudi-arabia": {
+   "status": "ok",
+   "entries": 2,
+   "manifest_md5": "b7a24cb9268836734c3c1a67eb17ca53",
+   "text_md5": "6930574dbd5faa89011c2a32dc7ea130"
+  },
+  "singapore": {
+   "status": "ok",
+   "entries": 11,
+   "manifest_md5": "87599cd322240eceaf229d839e33c527",
+   "text_md5": "4725220b3c5e14e3c3d09d4f3a5ae016"
+  },
+  "south-korea": {
+   "status": "ok",
+   "entries": 22,
+   "manifest_md5": "309dc7753a75a220590ceb887a8227de",
+   "text_md5": "57df958df13372a3affd129002767547"
+  },
+  "sri-lanka": {
+   "status": "ok",
+   "entries": 13,
+   "manifest_md5": "759e978ee1c080529fbcc320c573bddb",
+   "text_md5": "422aaa53e735c4ba6476dcd4aaeb9679"
+  },
+  "taiwan": {
+   "status": "ok",
+   "entries": 26,
+   "manifest_md5": "064b9dc5187931eeb58916936c8bca51",
+   "text_md5": "969a0734a7dbd9175da2c60e94a70c7a"
+  },
+  "thailand": {
+   "status": "ok",
+   "entries": 13,
+   "manifest_md5": "372a3008cc064533aa9c7eb666847bcf",
+   "text_md5": "a8d446387cf3bf9cc83eb02031110695"
+  },
+  "united-arab-emirates": {
+   "status": "ok",
+   "entries": 2,
+   "manifest_md5": "7c2bb513aaefb3b1d84789f07ff29b75",
+   "text_md5": "dc0bad0f1c481023e3742dd3469fafdc"
+  },
+  "united-kingdom": {
+   "status": "ok",
+   "entries": 31,
+   "manifest_md5": "90d334f3ebb61c955d18cf9c0250de5f",
+   "text_md5": "0061d2236ae2959023efbef6b1423213"
+  },
+  "usa": {
+   "status": "ok",
+   "entries": 24,
+   "manifest_md5": "1bceb983fd629f0c8a9062defa0a8658",
+   "text_md5": "ae2721bd8e7403e643beb41bf94c51ba"
+  },
+  "vietnam": {
+   "status": "ok",
+   "entries": 31,
+   "manifest_md5": "690ebdc057811de2ed60eded4ce525c1",
+   "text_md5": "29a0132b78aa493452fff9eb31ffaee8"
+  }
+ }
+}
