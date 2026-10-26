@@ -1,16 +1,17 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.357'
-export const PACKAGE_VERSION='0.1.284'
+export const UI_VERSION='2.15.358'
+export const PACKAGE_VERSION='0.1.285'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'26 Oct 2026',
-  title:'Layer 4: first runs show under their university',
+  title:'CRICOS end dates: deregistered providers told apart',
   changes:[
-    'Hotfix: a university\'s first check of courses with no page of their own, and of its conjoint or double degrees, now shows under that university in Layer 4 (By university), with its sample of courses.',
-    'The card offers Approve, Approve except the courses that have a page (tick them in the sample) and Reject; conjoint degrees can be approved with their shared page.',
+    'Each CRICOS course registration no longer on the latest register edition carries an end date: the last date the register listed it.',
+    'A provider none of whose courses is on the register has its CRICOS registration marked ended; a provider that comes back is restored. Nothing is ended when a register file looks incomplete (Settings, Register).',
+    'Daily job "Register end dates (CRICOS)" keeps the dates current. Course retirement is unchanged and stays a Platform Admin approval.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]

@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.357)  
+**Version:** 1.53 (reviewed for platform release v2.15.358)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -215,3 +215,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.96 | 26 Oct 2026 | v2.15.355 | Entry requirements: tables and reader in place, switched off; first reading per provider goes to Layer 4. |
 | 1.97 | 26 Oct 2026 | v2.15.356 | Layer 4: no-page and conjoint first runs with a verified course list, a confirmed sample and an already-approved list shape are admitted automatically; new shapes and one in ten stay with a person. |
 | 1.98 | 26 Oct 2026 | v2.15.357 | Layer 4: no-page and conjoint first runs show under their university, with their sample and Approve / Approve except / Reject. |
+| 1.99 | 26 Oct 2026 | v2.15.358 | Register: CRICOS course and provider registrations no longer on the register carry an end date; a provider with no course on the register is marked ended (daily job Register end dates). |
