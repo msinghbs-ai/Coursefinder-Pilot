@@ -78,7 +78,8 @@ test('Layer 4 "Enter another address" on a held-fee course-link item runs bind â
   // the screen: no "Use the new page" on a fee item, https only, the address box starts empty
   expect(inbox).toContain("const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use'))")
   expect(inbox).toContain("(open.input==='url'&&!urlOk(value,fee))")
-  expect(inbox).toContain("c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):''")
+  // v2.15.357: the same prefill rule; the conjoint first-run kind prefills its shared page after it (S122)
+  expect(inbox).toContain("c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?")
   // the server: a fee item no longer reaches layer4_review_decide (whose scalar fall-through refused it)
   expect(m).toContain("if v_kind = 'course_link' and v_det->>'field_code' = 'provider_current_tuition' and v_choice in ('use', 'enter') then")
   expect(m).toContain("v_r := security.layer4_fee_item_rebind_v1(v_ref::uuid, v_value, v_reason);")
