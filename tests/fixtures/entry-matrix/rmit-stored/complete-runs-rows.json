@@ -1,0 +1,3449 @@
+{
+"source": "Proposed rows of the 12 RMIT runs complete under the guard (catalogue.provider_entry_matrix, status proposed), 27 Oct 2026 06:0x AEDT; used to prove D5 keeps their verdicts without re-reading",
+"pages": {
+"india": [
+{
+"quote": "Bachelor degrees | 65% | Minimum average of 65% | Minimum average of 65% | Minimum average of 70%",
+"row_hash": "d3e427df7387647299e384bca54349b129a297b8105a312f67dded8918a066c6",
+"min_grade": "Minimum average of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "65%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Bachelor degrees | 65% | Minimum average of 65% | Minimum average of 65% | Minimum average of 70%",
+"row_hash": "9c625591c20c744129360d5ea8802a9284773ab25ab5472450fb27a384fa2f07",
+"min_grade": "Minimum average of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "65%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Bachelor degrees | 65% | Minimum average of 65% | Minimum average of 65% | Minimum average of 70%",
+"row_hash": "1b8e752bab97a36f1474a833488e75842bdfe813c6cc47669c11f5e63e064b39",
+"min_grade": "Minimum average of 70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "65%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Bachelor degrees | 70% | Minimum average of 70% | Minimum average of 70% | Minimum average of 75%",
+"row_hash": "156b33555c14a83d1e9d23cec3c3f140df73e294f639f9e96ea538d758dbff71",
+"min_grade": "Minimum average of 70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "70%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Bachelor degrees | 70% | Minimum average of 70% | Minimum average of 70% | Minimum average of 75%",
+"row_hash": "d360fb37b19992b3ca4825a95a5b84a087b25fd8c7465f86f133ca2eac0e6c9c",
+"min_grade": "Minimum average of 70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "70%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Bachelor degrees | 70% | Minimum average of 70% | Minimum average of 70% | Minimum average of 75%",
+"row_hash": "95d87899ea920bd3275c88fcef561f308b0af2b87f8b7e37c69a5f2296bd160b",
+"min_grade": "Minimum average of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "70%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Bachelor degrees | 75% | Minimum average of 75% | Minimum average of 75% | Minimum average of 80%",
+"row_hash": "778482bab4179d4d1554dd7cd6aeab829dce361e4194829bdc0b4f36cdb0c0ef",
+"min_grade": "Minimum average of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "75%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Bachelor degrees | 75% | Minimum average of 75% | Minimum average of 75% | Minimum average of 80%",
+"row_hash": "a42dd3edb9b7d0c58a7f1645096e1ce6a80f316cadfd4e4ec02c1bc219ab03fa",
+"min_grade": "Minimum average of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "75%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Bachelor degrees | 75% | Minimum average of 75% | Minimum average of 75% | Minimum average of 80%",
+"row_hash": "9e84626bebd948dd3f5b67ec1db7f704a7bcc0d9887dbc0244f49793433fa40c",
+"min_grade": "Minimum average of 80%",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "75%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Bachelor degrees | 80% | Minimum average of 80% | Minimum average of 80% | Minimum average of 85%",
+"row_hash": "450fa8cd9eff80a407594cc233b0f00d69040a12a30ce96669a788404ae2ec3c",
+"min_grade": "Minimum average of 80%",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "80%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Bachelor degrees | 80% | Minimum average of 80% | Minimum average of 80% | Minimum average of 85%",
+"row_hash": "60e782d44a98a0e6e45960ca89e9163f04d1a21928935e55902cc6ca540030f8",
+"min_grade": "Minimum average of 80%",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "80%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Bachelor degrees | 80% | Minimum average of 80% | Minimum average of 80% | Minimum average of 85%",
+"row_hash": "56fdca580f1a3b5a82875d20fffde6c143c5a0e2b755b0b28adb8233d5c40328",
+"min_grade": "Minimum average of 85%",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "80%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Bachelor degrees | 85% | Minimum average of 85% | Minimum average of 85% | Minimum average of 90%",
+"row_hash": "6d12b80cb30610d6991abad21a2d9f39ae91fb46af2b853c18ee41f7f7d883f7",
+"min_grade": "Minimum average of 85%",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "85%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Bachelor degrees | 85% | Minimum average of 85% | Minimum average of 85% | Minimum average of 90%",
+"row_hash": "c7578bc5888cd1c7826a9a47ed71d93bdb0b108e1c34ba3c80167ac9681aacea",
+"min_grade": "Minimum average of 85%",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "85%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Bachelor degrees | 85% | Minimum average of 85% | Minimum average of 85% | Minimum average of 90%",
+"row_hash": "a596bb614e386a1fd024c4f24b0194cb6bcbb34929d980162ca95341e7b1c5e0",
+"min_grade": "Minimum average of 90%",
+"min_value": 90,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "85%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Bachelor degrees | 90% | Minimum average of 90% | Minimum average of 90% | Minimum average of 95%",
+"row_hash": "60fd51ab81e26f9377770595ef426179090fa064e2f13628124a0e58cb0820b6",
+"min_grade": "Minimum average of 90%",
+"min_value": 90,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "90%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Bachelor degrees | 90% | Minimum average of 90% | Minimum average of 90% | Minimum average of 95%",
+"row_hash": "95ad5a51ed663193d5b838e6ec89a30913c728a8177529080d82826609cd67f3",
+"min_grade": "Minimum average of 90%",
+"min_value": 90,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "90%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Bachelor degrees | 90% | Minimum average of 90% | Minimum average of 90% | Minimum average of 95%",
+"row_hash": "4cb6101b5bc983835f5fdf40de4d37421673d56621633de6ec97c184289030d4",
+"min_grade": "Minimum average of 95%",
+"min_value": 95,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "IN",
+"benchmark_band": "90%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "5a278b6c3335273d10df8435a5db2e79f3924e7f02e8ad43ade35cda61a3a754",
+"min_grade": "Minimum average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "50%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "18f3821fd5da5ed3c2aa6e0ea98e8e10ad10249673ff83339de95bfe507e7dbf",
+"min_grade": "Minimum average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "50%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "601ac69f0bb765b7d90ee7a74795217b1fb8b05907e05aecbe746f0c1d303727",
+"min_grade": "Minimum average of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "50%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "cf136ac7e332edea089dca3dc0f6e5c240c7c65a610218393a91bd588bd8411d",
+"min_grade": "Minimum average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "55%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "b84ac5bd2049dd23ff5235280f28cee1a6f7ced37d20e5caf66b9f7706c99792",
+"min_grade": "Minimum average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "55%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "1c1f6b2117097f9bc6ca97c98c2334acdfbb531cccd17eb23caab9939df530b4",
+"min_grade": "Minimum average of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "55%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "b8c242448e20858f798003617f8498a90057328a2db05b2981436b3e650e9136",
+"min_grade": "Minimum average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "60%",
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+2"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "2807228f854d02bddd0136350ab313f1c4423e1c31e922c3792b4ab002ee5d9f",
+"min_grade": "Minimum average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "60%",
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Minimum average of 60% | Minimum average of 60% | Minimum average of 65%",
+"row_hash": "f699659ca0b90caed67d41aa4cea8f9e1d70d960d8988a9b5e6c215acea945f1",
+"min_grade": "Minimum average of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "IN",
+"benchmark_band": "60%",
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "Foundation Studies | Not applicable | (10+1) with at least 60% average | (10+1) with at least 60% average | Completion of Year 11 with average of 65%",
+"row_hash": "82bd87e85e12473e658825dbd3ac0b79b88af51d861f490578d9839982cd3e63",
+"min_grade": "at least 60% average",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "IN",
+"benchmark_band": null,
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+1"
+},
+{
+"quote": "Foundation Studies | Not applicable | (10+1) with at least 60% average | (10+1) with at least 60% average | Completion of Year 11 with average of 65%",
+"row_hash": "01bc19d91b93779d859897b786185af776beefc62d6464b89d11a72d41cafa20",
+"min_grade": "at least 60% average",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "IN",
+"benchmark_band": null,
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "Foundation Studies | Not applicable | (10+1) with at least 60% average | (10+1) with at least 60% average | Completion of Year 11 with average of 65%",
+"row_hash": "585fc8c9879f65c67e788fbd9bb800d017854ec77984271a831000a9d41226ed",
+"min_grade": "average of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "IN",
+"benchmark_band": null,
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | (10+1) with at least 80% average | (10+1) with at least 80% average | Completion of Year 11 with average of 85%",
+"row_hash": "00a0928833e0866b7d8976e907df9c0b799e735e38849e13cb32cd771f6822bc",
+"min_grade": "at least 80% average",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "IN",
+"benchmark_band": null,
+"qualification_name": "All India Senior School Certificate (AISSC) – 10+1"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | (10+1) with at least 80% average | (10+1) with at least 80% average | Completion of Year 11 with average of 85%",
+"row_hash": "afc230a6a3e9f92d8a35576ef30e8f72dfd524897945e6c484582e6ae653c072",
+"min_grade": "at least 80% average",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "IN",
+"benchmark_band": null,
+"qualification_name": "Indian School Certificate (ISC)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | (10+1) with at least 80% average | (10+1) with at least 80% average | Completion of Year 11 with average of 85%",
+"row_hash": "0dc002dfae2f57e148e26d176bba7962cd9326170a81af786cc7e6aa84c6d232",
+"min_grade": "average of 85%",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "IN",
+"benchmark_band": null,
+"qualification_name": "State Boards of Education (Higher Secondary Certificate, HSC)"
+}
+],
+"japan": [
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Not applicable | 3",
+"row_hash": "a7c67295879e50a12b3e2a2cb27c83bfc21a3fec5b0c0d917e0fb00c1bc43568",
+"min_grade": "3",
+"min_value": 3,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "JP",
+"benchmark_band": "65%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Not applicable | 3.5",
+"row_hash": "fbe7e6515c577d40e1870fc2de6b9c879d57f440a71ae662f080a91ba9dd9dad",
+"min_grade": "3.5",
+"min_value": 3.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "JP",
+"benchmark_band": "70%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Not applicable | 4",
+"row_hash": "5b07c0a47ae56cab236431e2077d3cb4e6d20636e73ed1cc7639e80c7a07c979",
+"min_grade": "4",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "JP",
+"benchmark_band": "75%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Not applicable | 4.5",
+"row_hash": "40693d67da1374e77e63bc507ef508e36a8a154cf9952f8c02b2cd73a8dd5433",
+"min_grade": "4.5",
+"min_value": 4.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "JP",
+"benchmark_band": "80%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Not applicable | 4.5",
+"row_hash": "99d0785015e78d7b583caaa508ba04922254a836b303848fd9a1b59a89f719be",
+"min_grade": "4.5",
+"min_value": 4.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "JP",
+"benchmark_band": "85%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Not applicable | 5.0",
+"row_hash": "2bf26465565ca0b5a32583f968bcd745955fe0e4479e5ccd24d102da33aca79c",
+"min_grade": "5.0",
+"min_value": 5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "JP",
+"benchmark_band": "90%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Not applicable | 2",
+"row_hash": "db48ccb49c1f615c210007d7c17327b34a99639c4f2cc3fcb53c209a96a3f862",
+"min_grade": "2",
+"min_value": 2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "JP",
+"benchmark_band": "50%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Not applicable | 2",
+"row_hash": "8fa009fc56423e60bab4a11d728a636b4081249ebef5f9bf4e83062e623bf1e3",
+"min_grade": "2",
+"min_value": 2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "JP",
+"benchmark_band": "55%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Not applicable | 2.5",
+"row_hash": "b50ac9b8f2d588bdb31f2ec3833e85edb3e6cafaaf61ce50348f0387d5b1f056",
+"min_grade": "2.5",
+"min_value": 2.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "JP",
+"benchmark_band": "60%",
+"qualification_name": "Kotogakko Sotsugyo Shosho (Upper Secondary School Certificate of Graduation)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Not applicable | 3 | Not applicable",
+"row_hash": "657c93ee7a0a10213df5b534d56d0c3b4a0ea8dbededcc59ebb2d4be7f36f229",
+"min_grade": "3",
+"min_value": 3,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Foundation Studies",
+"country_code": "JP",
+"benchmark_band": null,
+"qualification_name": "Completion of Year 2 of Upper Secondary School (Kotogakko)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Not applicable | 4.0 | Not applicable",
+"row_hash": "39ec4485cb7b8c6b04880570de45afb6d687aa52e6c50382b8392215d6980653",
+"min_grade": "4.0",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "University Pathways Fast Track",
+"country_code": "JP",
+"benchmark_band": null,
+"qualification_name": "Completion of Year 2 of Upper Secondary School (Kotogakko)"
+}
+],
+"kenya": [
+{
+"quote": "Bachelor Degrees | 65% | Mean Grade B",
+"row_hash": "47a64bc459c76efa60c55770955bd5a335305b2d29b2a31928582aa5dfebedd0",
+"min_grade": "Mean Grade B",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Bachelor Degrees",
+"country_code": "KE",
+"benchmark_band": "65%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+},
+{
+"quote": "Bachelor Degrees | 70% | Mean Grade B+",
+"row_hash": "0159c36ee2195982ee0e8dbdd7d7baaf23808db93c143d602465cad880812758",
+"min_grade": "Mean Grade B+",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Bachelor Degrees",
+"country_code": "KE",
+"benchmark_band": "70%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+},
+{
+"quote": "Bachelor Degrees | 75% | Mean Grade A-",
+"row_hash": "6ad9bf345171e406c613ee690259407ea8d960a9f113391d62b594e3de958649",
+"min_grade": "Mean Grade A-",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Bachelor Degrees",
+"country_code": "KE",
+"benchmark_band": "75%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+},
+{
+"quote": "Bachelor Degrees | 80% | Mean Grade A",
+"row_hash": "915cc81b7f7410ed0ec19cdc3e5a934b905633173645d813f49f690165b4f999",
+"min_grade": "Mean Grade A",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Bachelor Degrees",
+"country_code": "KE",
+"benchmark_band": "80%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+},
+{
+"quote": "Bachelor Degrees | 85% | Mean Grade A",
+"row_hash": "3755bf09e6ed07804540badcd6cb140d6ff7b009c601480317f5dcd1532b3e7c",
+"min_grade": "Mean Grade A",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Bachelor Degrees",
+"country_code": "KE",
+"benchmark_band": "85%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+},
+{
+"quote": "Bachelor Degrees | 90% | Mean Grade A",
+"row_hash": "3a7816f671afc1b29e130cb27f9d72fe1d2cb3beecb9d16f07e5e66b128d9667",
+"min_grade": "Mean Grade A",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Bachelor Degrees",
+"country_code": "KE",
+"benchmark_band": "90%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+},
+{
+"quote": "Diploma / Associate Degrees | 50% | Mean Grade C",
+"row_hash": "8e24871455a94c380249c12a2e956cb904e905a05bde994c1c6f2ae36a9e4cb6",
+"min_grade": "Mean Grade C",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Diploma / Associate Degrees",
+"country_code": "KE",
+"benchmark_band": "50%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+},
+{
+"quote": "Diploma / Associate Degrees | 55% | Mean Grade C+",
+"row_hash": "0e38ee08556cccf39a66360476ff17f601a8b243e779ab1681772bcb493db575",
+"min_grade": "Mean Grade C+",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Diploma / Associate Degrees",
+"country_code": "KE",
+"benchmark_band": "55%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+},
+{
+"quote": "Diploma / Associate Degrees | 60% | Mean Grade C+",
+"row_hash": "62a3885a851969546a2268eb7e9f73035fcdcfc4da9dee5f4800e8045c8a0730",
+"min_grade": "Mean Grade C+",
+"min_value": null,
+"conditions": {
+"best_n": 7,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "English",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Kiswahili",
+"min_grade": "included in mean grade"
+},
+{
+"subject": "Mathematics",
+"min_grade": "included in mean grade"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Diploma / Associate Degrees",
+"country_code": "KE",
+"benchmark_band": "60%",
+"qualification_name": "Completion of Kenya Certificate of Secondary Education (KCSE)"
+}
+],
+"canada": [
+{
+"quote": "Bachelor degrees | 65% | Not applicable | 65% | 65%",
+"row_hash": "b3f6f4f089e47ea453c4f7fe68e77f971054b842576bab4c208b5eee1688ce00",
+"min_grade": "65%",
+"min_value": 65,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "65%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | 65% | 65%",
+"row_hash": "c54fa141cb3fbc0d9c9455788d06fd9398be9b791c4b1e15db09ec2de5be0557",
+"min_grade": "65%",
+"min_value": 65,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "65%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | 70% | 70%",
+"row_hash": "0a3fb17317bcaba687b1daecf2f53272cbdcbe60df1fa019e0b2ebcaa616cc4e",
+"min_grade": "70%",
+"min_value": 70,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "70%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | 70% | 70%",
+"row_hash": "d7d81cba6054aea754197ad4963a8ce6fc7c46c8a10420f8e57137cce33065d1",
+"min_grade": "70%",
+"min_value": 70,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "70%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | 75% | 75%",
+"row_hash": "3edcda99da9e08adecf78abf3cca79bec14eceb306748860c0c80656d6caa264",
+"min_grade": "75%",
+"min_value": 75,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "75%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | 75% | 75%",
+"row_hash": "e978def34f57ce8d0bc5adcabbb4dff1db4b07ec81cd0af0403e4ab5f6c133d6",
+"min_grade": "75%",
+"min_value": 75,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "75%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | 80% | 80%",
+"row_hash": "51d983787cd728c593a7c8e5e73e42acdd2900c7595990bbd71ea0d3e48dcdb2",
+"min_grade": "80%",
+"min_value": 80,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "80%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | 80% | 80%",
+"row_hash": "00b1fb99a4fb407ea3e235e65a1ee05f8ab3ca88cefed5146e160bb998752fc6",
+"min_grade": "80%",
+"min_value": 80,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "80%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | 85% | 85%",
+"row_hash": "31dea45f9e03f298be9f15faa394e025fafe0625cb79adba66458813edc202a4",
+"min_grade": "85%",
+"min_value": 85,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "85%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | 85% | 85%",
+"row_hash": "6ad5ea7618348e84b4f73d753f45586609e82d052d7dfeb97837d1a74c8ce9cf",
+"min_grade": "85%",
+"min_value": 85,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "85%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | 90% | 90%",
+"row_hash": "0b4a55e656e8c2c877de48f3f7d5d4d9a433a065ba53ab906b2bd47d2243c158",
+"min_grade": "90%",
+"min_value": 90,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "90%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | 90% | 90%",
+"row_hash": "902958463b954c4cdd86ce25688e228ceaac03bd8513cc9a8be3da438cfdec9d",
+"min_grade": "90%",
+"min_value": 90,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CA",
+"benchmark_band": "90%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | 50% | 50%",
+"row_hash": "a8d479535210269a9b0ed8ec234ff2bf6fef0be4425ebd605fe1465544244e1b",
+"min_grade": "50%",
+"min_value": 50,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CA",
+"benchmark_band": "50%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | 50% | 50%",
+"row_hash": "4b54babe66616b161809e04f6b37b29fcaebf64501f1a770a766c734f4620c58",
+"min_grade": "50%",
+"min_value": 50,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CA",
+"benchmark_band": "50%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | 55% | 55%",
+"row_hash": "569c01da9526d6808aec828cf8861dee6728b63b60ac639cc4f1e3f7fd41853d",
+"min_grade": "55%",
+"min_value": 55,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CA",
+"benchmark_band": "55%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | 55% | 55%",
+"row_hash": "3bced835d6818a7c09e9507785ef6adcb6069f487c23dab798d0492e84027b8d",
+"min_grade": "55%",
+"min_value": 55,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CA",
+"benchmark_band": "55%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | 60% | 60%",
+"row_hash": "9f453052c604a711f71c5ec452e1d2ee58d35bde559d1d78ca09d70c50823d34",
+"min_grade": "60%",
+"min_value": 60,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CA",
+"benchmark_band": "60%",
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | 60% | 60%",
+"row_hash": "6e9674afdb942357b26cd24a8a20e42780580e94813b5e3cd36d12b64bff3e0e",
+"min_grade": "60%",
+"min_value": 60,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CA",
+"benchmark_band": "60%",
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Completion of Year 11 with 50% or pass average (whichever is higher) | Completion of Ontario Secondary School Diploma | Completion of British Columbia Certificate of Graduation",
+"row_hash": "d28fb15252b2cb22c118ecebf4d42ede20ebbb93f1d602717067f0f73e60b72e",
+"min_grade": "Completion of British Columbia Certificate of Graduation",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "none",
+"study_level": "Foundation Studies",
+"country_code": "CA",
+"benchmark_band": null,
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "Foundation Studies | Not applicable | Completion of Year 11 with 50% or pass average (whichever is higher) | Completion of Ontario Secondary School Diploma | Completion of British Columbia Certificate of Graduation",
+"row_hash": "442186edc01656ef1bcfd7d9426f045fee4b568cbea1ac814650b18c1028740c",
+"min_grade": "Completion of Ontario Secondary School Diploma",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "none",
+"study_level": "Foundation Studies",
+"country_code": "CA",
+"benchmark_band": null,
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Completion of Year 11 with 50% or pass average (whichever is higher) | Completion of Ontario Secondary School Diploma | Completion of British Columbia Certificate of Graduation",
+"row_hash": "5c6e92e3cf912e685dba2f6503b6b99a2a7ed3fd7b9e0c8c061ec02a20206eab",
+"min_grade": "Completion of Year 11 with 50% or pass average (whichever is higher)",
+"min_value": 50,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "CA",
+"benchmark_band": null,
+"qualification_name": "Year 11"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Completion of Year 11 with 70% (based on 50% passing grade) | Completion of Ontario Secondary School Diploma | Completion of British Columbia Certificate of Graduation",
+"row_hash": "d3a6d387b8837b39586f5fc6780db4f54f857424103b30430269bda3f89ad916",
+"min_grade": "Completion of British Columbia Certificate of Graduation",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "none",
+"study_level": "University Pathways Fast Track",
+"country_code": "CA",
+"benchmark_band": null,
+"qualification_name": "British Columbia Certificate of Graduation"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Completion of Year 11 with 70% (based on 50% passing grade) | Completion of Ontario Secondary School Diploma | Completion of British Columbia Certificate of Graduation",
+"row_hash": "6beceba58d839e78af932aae76fea5274d8662b55efdcb9212cc26b4844830ec",
+"min_grade": "Completion of Ontario Secondary School Diploma",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "none",
+"study_level": "University Pathways Fast Track",
+"country_code": "CA",
+"benchmark_band": null,
+"qualification_name": "Ontario Secondary School Diploma (OSSD)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Completion of Year 11 with 70% (based on 50% passing grade) | Completion of Ontario Secondary School Diploma | Completion of British Columbia Certificate of Graduation",
+"row_hash": "b99a2a96f77dc78ff436053ab599bea602c51f0e0e60f5849714289986202825",
+"min_grade": "Completion of Year 11 with 70% (based on 50% passing grade)",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "CA",
+"benchmark_band": null,
+"qualification_name": "Year 11"
+}
+],
+"germany": [
+{
+"quote": "Bachelor degrees | 65% | 3.2",
+"row_hash": "204fd46cd9913bb692656724be5d2ac335bf5c7db641a65f3d8ed475a17181c7",
+"min_grade": "3.2",
+"min_value": 3.2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DE",
+"benchmark_band": "65%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Bachelor degrees | 70% | 3",
+"row_hash": "042716515b6d436aeee6594256d3d7c43533ad9ff4a66e0e04312e7e9987a07e",
+"min_grade": "3",
+"min_value": 3,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DE",
+"benchmark_band": "70%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Bachelor degrees | 75% | 2.7",
+"row_hash": "3cb034b1834b084cc204628f7d137c02ec91de11cf4bc33b6dad90a89f651dcd",
+"min_grade": "2.7",
+"min_value": 2.7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DE",
+"benchmark_band": "75%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Bachelor degrees | 80% | 2.5",
+"row_hash": "440921281d6c1ccccbdb4d4dd53bf45fa375dd93d378759cb9eecbfc79055cc4",
+"min_grade": "2.5",
+"min_value": 2.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DE",
+"benchmark_band": "80%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Bachelor degrees | 85% | 2.2",
+"row_hash": "59130abe4e1746bdebba4b8c1275a02bf531bcdccbddeae4102dcdd9c45b795b",
+"min_grade": "2.2",
+"min_value": 2.2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DE",
+"benchmark_band": "85%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Bachelor degrees | 90% | 2.0",
+"row_hash": "70ef022d9f8ced096cc28ad40e36cdf51e6f7dfedf94bc48fb85460fce8a4c3d",
+"min_grade": "2.0",
+"min_value": 2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DE",
+"benchmark_band": "90%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | 4",
+"row_hash": "53ff40de8f3b190a7be77bebeb8d667d46fdbf3bc1096a4913ef463945388cec",
+"min_grade": "4",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "DE",
+"benchmark_band": "50%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | 3.7",
+"row_hash": "b623bdef54c02c8f8670f2ffa3a078957265f0eb0d85e3fb6485f755d163951f",
+"min_grade": "3.7",
+"min_value": 3.7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "DE",
+"benchmark_band": "55%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | 3.5",
+"row_hash": "c8029c0fa4b80a2efbaf5bc5c64830eb9572cd58248322c2e1ca560b376f79bc",
+"min_grade": "3.5",
+"min_value": 3.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "DE",
+"benchmark_band": "60%",
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "Foundation Studies | Not applicable | 6",
+"row_hash": "add07c013e96e988b64302cdb920fa357bc35dc872e7858607093064e04ae098",
+"min_grade": "6",
+"min_value": 6,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Foundation Studies",
+"country_code": "DE",
+"benchmark_band": null,
+"qualification_name": "Abitur/Fachhochschulreife"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | 4",
+"row_hash": "908489d993a05bc23adf6f351b10025394d4494aa51c86e309e995098ddf24a2",
+"min_grade": "4",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "University Pathways Fast Track",
+"country_code": "DE",
+"benchmark_band": null,
+"qualification_name": "Abitur/Fachhochschulreife"
+}
+],
+"cambodia": [
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "5999c33b004a06809851f93ed0baf0e3e7643fbf45b29a99b76fc5458c8a96c9",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Bachelor degrees",
+"country_code": "KH",
+"benchmark_band": "65%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "eab4721f4ef733dabd2af4d89a6f28b62d29730a664406ef0484f8ad63e65c85",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Bachelor degrees",
+"country_code": "KH",
+"benchmark_band": "70%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "4db71b49bb023af7f8e49b518ea02f76600201168a3f3316d0768581b1d2b8aa",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Bachelor degrees",
+"country_code": "KH",
+"benchmark_band": "75%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "41da4f5f5c4a64e6b5b188a82988bda2e2e7fcd1a89d0d18c0c5793307c6acbc",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Bachelor degrees",
+"country_code": "KH",
+"benchmark_band": "80%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "875dc4385b73dc2cb0f70941caf632b9cb53b03e170220aea03cda63aa471dfb",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Bachelor degrees",
+"country_code": "KH",
+"benchmark_band": "85%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "864f44ba848b4db44a6f48d5ccf3ef093091a901f6a652668b0abb8efa0dbebd",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Bachelor degrees",
+"country_code": "KH",
+"benchmark_band": "90%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "62f6b66ba25c7d1e2fce8a8c7df36818cf0ebe34047dfba2e30375fab2380236",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Diploma/Associate degrees",
+"country_code": "KH",
+"benchmark_band": "50%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "34b5f61c2f66022746ff7166a9cdcf38ba3ccb0cf420cae15ef174a7728e070a",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Diploma/Associate degrees",
+"country_code": "KH",
+"benchmark_band": "55%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Not applicable | Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"row_hash": "6d0b322b50b922f5f27109c918be6d08d40c3a211c5b55fad580e42e26587701",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "Assessed on a case-by-case basis. Requires a minimum of C grade average in first year of university for consideration.",
+"min_grade": "C grade average"
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"grade_scale": "letter",
+"study_level": "Diploma/Associate degrees",
+"country_code": "KH",
+"benchmark_band": "60%",
+"qualification_name": "Diploma of Upper Secondary School + Completion of first year at a recognised university"
+},
+{
+"quote": "Foundation Studies | Not applicable | Not applicable | Completion with E grade average | Not applicable",
+"row_hash": "e47fe0468c61d49793731b18bc67a84ace76259007db18d9b0304ee244d4b27d",
+"min_grade": "E grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "letter",
+"study_level": "Foundation Studies",
+"country_code": "KH",
+"benchmark_band": null,
+"qualification_name": "Diploma of Upper Secondary School"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Not applicable | Completion with C grade average | Not applicable",
+"row_hash": "89c62ba0a97a6634614dedefa7dc578e7812b16ef43d971a2a2230420fb288ff",
+"min_grade": "C grade average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "letter",
+"study_level": "University Pathways Fast Track",
+"country_code": "KH",
+"benchmark_band": null,
+"qualification_name": "Diploma of Upper Secondary School"
+}
+],
+"malaysia": [
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Minimum average GPA of 2.33 (C+ average) | Minimum average GPA of 2.20 (B4 average)",
+"row_hash": "c88c391417f377a34166c135ea66a8939fb74b55b52ebd5534337edb1695ae3b",
+"min_grade": "Minimum average GPA of 2.33 (C+ average)",
+"min_value": 2.33,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "65%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Minimum average GPA of 2.33 (C+ average) | Minimum average GPA of 2.20 (B4 average)",
+"row_hash": "a5ac5d959185b99cfb4a09c547181c0372c6ccbf3e58ad5f0eb837049621560e",
+"min_grade": "Minimum average GPA of 2.20 (B4 average)",
+"min_value": 2.2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "65%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Minimum average GPA of 2.67 (B- average) | Minimum average GPA of 2.50 (B3 average)",
+"row_hash": "3ecd1240c785c9d1c80d198658e4ea94d9bc95317b0fa010652110fcccd2809b",
+"min_grade": "Minimum average GPA of 2.67 (B- average)",
+"min_value": 2.67,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "70%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Minimum average GPA of 2.67 (B- average) | Minimum average GPA of 2.50 (B3 average)",
+"row_hash": "a194a223a6ffc40b50941218a560628d004066a17e35724c91a4dd7f0d51cc31",
+"min_grade": "Minimum average GPA of 2.50 (B3 average)",
+"min_value": 2.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "70%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Minimum average GPA of 3.00 (B average) | Minimum average GPA of 2.80 (A2 average)",
+"row_hash": "dd0e312d72b0af47253ff699fc62ef56d939650f483cfcd9f0ad7c66acac8a61",
+"min_grade": "Minimum average GPA of 3.00 (B average)",
+"min_value": 3,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "75%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Minimum average GPA of 3.00 (B average) | Minimum average GPA of 2.80 (A2 average)",
+"row_hash": "af817862db3b952679f49c0f0d429b607f7eeede7e6bfad45c873ded130e672f",
+"min_grade": "Minimum average GPA of 2.80 (A2 average)",
+"min_value": 2.8,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "75%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Minimum average GPA of 3.00 (B average) | Minimum average GPA of 3.10 (A2 average)",
+"row_hash": "64ed48a09012a6446e505263b405ae68c0d95a81059230c851385e90a51b4ecd",
+"min_grade": "Minimum average GPA of 3.00 (B average)",
+"min_value": 3,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "80%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Minimum average GPA of 3.00 (B average) | Minimum average GPA of 3.10 (A2 average)",
+"row_hash": "aec3fc414d4d23ca726804d9f48f9acfcef20bc4eb37f75e4c62329c71b6bead",
+"min_grade": "Minimum average GPA of 3.10 (A2 average)",
+"min_value": 3.1,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "80%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Minimum average GPA of 3.33 (B+ average) | Minimum average GPA of 3.40 (A2 average)",
+"row_hash": "b57166c83c98daca9cf2efaba32733222c8436b1a2f79084219251bc34e7c222",
+"min_grade": "Minimum average GPA of 3.33 (B+ average)",
+"min_value": 3.33,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "85%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Minimum average GPA of 3.33 (B+ average) | Minimum average GPA of 3.40 (A2 average)",
+"row_hash": "445f341cb2d923d9f76c204f93edd72e9f15c899364fe914e5d396bbd0017c83",
+"min_grade": "Minimum average GPA of 3.40 (A2 average)",
+"min_value": 3.4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "85%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Minimum average GPA of 3.67 (A- average) | Minimum average GPA of 3.70 (A2 average)",
+"row_hash": "d59232dba765187e5e85c2fe18093a28b12ea4209f6f58ea5f8319cef75e3531",
+"min_grade": "Minimum average GPA of 3.67 (A- average)",
+"min_value": 3.67,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "90%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Minimum average GPA of 3.67 (A- average) | Minimum average GPA of 3.70 (A2 average)",
+"row_hash": "182ba6d1be61d6db3bc2705ab72690871076e11523aa5628cd572aabee728fca",
+"min_grade": "Minimum average GPA of 3.70 (A2 average)",
+"min_value": 3.7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "MY",
+"benchmark_band": "90%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Minimum average GPA of 1.33 (D+ average) | Minimum average GPA of 1.30 (C7 average)",
+"row_hash": "163d121d0f0e484fb99da339a48e0def943c1213255f1b4cf8887954c3704399",
+"min_grade": "Minimum average GPA of 1.33 (D+ average)",
+"min_value": 1.33,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MY",
+"benchmark_band": "50%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Minimum average GPA of 1.33 (D+ average) | Minimum average GPA of 1.30 (C7 average)",
+"row_hash": "abffaba6f1019be0650cfd878a1ecac7d7935aa3d910583502e964dfc2684511",
+"min_grade": "Minimum average GPA of 1.30 (C7 average)",
+"min_value": 1.3,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MY",
+"benchmark_band": "50%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Minimum average GPA of 1.67 (C- average) | Minimum average GPA of 1.60 (B6 average)",
+"row_hash": "3164bab10fa3545936597a1c8ec9010acb85b977b5f87def336405316caa46bc",
+"min_grade": "Minimum average GPA of 1.67 (C- average)",
+"min_value": 1.67,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MY",
+"benchmark_band": "55%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Minimum average GPA of 1.67 (C- average) | Minimum average GPA of 1.60 (B6 average)",
+"row_hash": "cda51d1f74f1f0d99562ac4386eb76859d005c56bbda7721bb54fcff99fd80cf",
+"min_grade": "Minimum average GPA of 1.60 (B6 average)",
+"min_value": 1.6,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MY",
+"benchmark_band": "55%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Minimum average GPA of 2.00 (C average) | Minimum average GPA of 2.00 (B5 average)",
+"row_hash": "6fa92b9574007005773ce5be1b470abb75e05e968cbe419f9dbd4a0aada024d1",
+"min_grade": "Minimum average GPA of 2.00 (C average)",
+"min_value": 2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MY",
+"benchmark_band": "60%",
+"qualification_name": "SijilTinggi Persekolahan Malaysia (STPM)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Minimum average GPA of 2.00 (C average) | Minimum average GPA of 2.00 (B5 average)",
+"row_hash": "8f7aa32c15346fe9dd8792dd4b344081cbdbd7d7219e4c37e68f4367fb0fca99",
+"min_grade": "Minimum average GPA of 2.00 (B5 average)",
+"min_value": 2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MY",
+"benchmark_band": "60%",
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "Foundation Studies | Not applicable | At least 5 passes at D grade | Not applicable | Average of 60% at the Senior Middle 2 level",
+"row_hash": "01fbe55e707bd63e42e1ef3fb9f471f3352b09a71f915df5aab12c51dc14b93b",
+"min_grade": "At least 5 passes at D grade",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "Foundation Studies",
+"country_code": "MY",
+"benchmark_band": null,
+"qualification_name": "Sijil Pelajaran Malaysia (SPM)(Forecast Results acceptable)"
+},
+{
+"quote": "Foundation Studies | Not applicable | At least 5 passes at D grade | Not applicable | Average of 60% at the Senior Middle 2 level",
+"row_hash": "440ef38b66696c0e6dfbd9cff7f9da0d1a80048ec978817497dc56f74244d32b",
+"min_grade": "Average of 60% at the Senior Middle 2 level",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "MY",
+"benchmark_band": null,
+"qualification_name": "Unified Examination Certificate (UEC)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | At least 5 passes at B grade | Not applicable | Average of 80% at the Senior Middle 2 level",
+"row_hash": "fbb0ff5cdc6b6baa16c600f045aba64acce6042efcaaad6c2b09ce832d150c25",
+"min_grade": "At least 5 passes at B grade",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "letter",
+"study_level": "University Pathways Fast Track",
+"country_code": "MY",
+"benchmark_band": null,
+"qualification_name": "Sijil Pelajaran Malaysia (SPM)(Forecast Results acceptable)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | At least 5 passes at B grade | Not applicable | Average of 80% at the Senior Middle 2 level",
+"row_hash": "fee310adb0730a953ddfc47aa2a8ccf7867b5da328f952c4c2590b7da2d0c9b5",
+"min_grade": "Average of 80% at the Senior Middle 2 level",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "MY",
+"benchmark_band": null,
+"qualification_name": "Unified Examination Certificate (UEC)"
+}
+],
+"mauritius": [
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Minimum 7 points for 3 A Level subjects. i.e. CDD",
+"row_hash": "d7557ff1271208a2a9910112c14b3165e34a1064cc0225e7bebca75794144d89",
+"min_grade": "Minimum 7 points for 3 A Level subjects. i.e. CDD",
+"min_value": 7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "MU",
+"benchmark_band": "65%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Minimum 8 points for 3 A Level subjects. i.e. CCD",
+"row_hash": "54cb47e7ef3d4e1c4d62331cae61b4a439812e34de1cec2813110f81e75430d0",
+"min_grade": "Minimum 8 points for 3 A Level subjects. i.e. CCD",
+"min_value": 8,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "MU",
+"benchmark_band": "70%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Minimum 9 points for 3 Level subjects. i.e. CCC",
+"row_hash": "4bcaebed9910286558da93175907b5af2abdf0fe6fb5432f8cbd8ae91cfc13de",
+"min_grade": "Minimum 9 points for 3 Level subjects. i.e. CCC",
+"min_value": 9,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "MU",
+"benchmark_band": "75%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Minimum 10 points for 3 Level subjects. i.e. CCB",
+"row_hash": "79a48565795b31b950f69dc9ff4ac357ca10848d428b81b24a46389d3fb0113a",
+"min_grade": "Minimum 10 points for 3 Level subjects. i.e. CCB",
+"min_value": 10,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "MU",
+"benchmark_band": "80%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Minimum 11 points for 3 Level subjects. i.e. CBB",
+"row_hash": "e3ae06d7755ec9944143051ac81f992e40bf83904dacf3ee7bbd5f91e3d03a08",
+"min_grade": "Minimum 11 points for 3 Level subjects. i.e. CBB",
+"min_value": 11,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "MU",
+"benchmark_band": "85%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Minimum 12 points for 3 Level subjects. i.e. BBB",
+"row_hash": "5d5d88978ecb5151aeeac615533a2fbc9e760fc2c5018e055b2c77dd7c4dc3a4",
+"min_grade": "Minimum 12 points for 3 Level subjects. i.e. BBB",
+"min_value": 12,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "MU",
+"benchmark_band": "90%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Minimum 4 points for 2 A Level and 1 AS Level subjects.i.e. DE/E",
+"row_hash": "c0b72dee8239ec2208243e38638c521c06a42195124277622fadc8a35c6ac549",
+"min_grade": "Minimum 4 points for 2 A Level and 1 AS Level subjects.i.e. DE/E",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MU",
+"benchmark_band": "50%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Minimum 5 points for 2 A Level and 1 AS Level subjects. i.e. DD/E",
+"row_hash": "5296c28817c3d41229b3042a3e077eee40a057f5bd20fa720c3c6bb26adaa4b0",
+"min_grade": "Minimum 5 points for 2 A Level and 1 AS Level subjects. i.e. DD/E",
+"min_value": 5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MU",
+"benchmark_band": "55%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Minimum 6 points for 3 A Level subjects. i.e. DDD",
+"row_hash": "5e9c2e0182b26206274b2673f0cc2d0585718b6390345d2730a76677074f5145",
+"min_grade": "Minimum 6 points for 3 A Level subjects. i.e. DDD",
+"min_value": 6,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "MU",
+"benchmark_band": "60%",
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Foundation Studies | Not applicable | Minimum of three subjects with C average | Minimum 1 A Level or equivalent.",
+"row_hash": "88d36a8de6ecac020cf43c134a0108c9aab9bb970af26aa332bbbad1972805cf",
+"min_grade": "Minimum 1 A Level or equivalent.",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Foundation Studies",
+"country_code": "MU",
+"benchmark_band": null,
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "Foundation Studies | Not applicable | Minimum of three subjects with C average | Minimum 1 A Level or equivalent.",
+"row_hash": "0f7f134ec2f39948eab2c1e4114106808376aca04c931c3b7955e46be249dd1c",
+"min_grade": "Minimum of three subjects with C average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Foundation Studies",
+"country_code": "MU",
+"benchmark_band": null,
+"qualification_name": "Cambridge GCSE ‘O’ Levels"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Minimum of three subjects with B average | Minimum 2 A Level or equivalent.",
+"row_hash": "1fa2e3c751a5337e990c732a4a386fd45ba816c9fe3291006da2026ff911cb1f",
+"min_grade": "Minimum 2 A Level or equivalent.",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "University Pathways Fast Track",
+"country_code": "MU",
+"benchmark_band": null,
+"qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Minimum of three subjects with B average | Minimum 2 A Level or equivalent.",
+"row_hash": "9011b3e4d1ce66482f668770379bd9026a24df5d9ef41fae1cc81012485d6507",
+"min_grade": "Minimum of three subjects with B average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "University Pathways Fast Track",
+"country_code": "MU",
+"benchmark_band": null,
+"qualification_name": "Cambridge GCSE ‘O’ Levels"
+}
+],
+"bangladesh": [
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Minimum CGPA of 4.1",
+"row_hash": "952c20d834c52c3fdc1e67e6a425b40aa9b3e7f179b3290f8f6377c079a11dff",
+"min_grade": "Minimum CGPA of 4.1",
+"min_value": 4.1,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "BD",
+"benchmark_band": "65%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Minimum CGPA of 4.2",
+"row_hash": "87b744918445d357b2cf51ab27c65b3edeeb0fa9a0d2490e0ec0d0935f6fdc17",
+"min_grade": "Minimum CGPA of 4.2",
+"min_value": 4.2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "BD",
+"benchmark_band": "70%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Minimum CGPA of 4.4",
+"row_hash": "4b684e2ee40b408fb1c87809cc41a9cefe3efa33a717997bc854ef747ec3f133",
+"min_grade": "Minimum CGPA of 4.4",
+"min_value": 4.4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "BD",
+"benchmark_band": "75%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Minimum CGPA of 4.6",
+"row_hash": "8924b3ff9ec814697a36d7ad265e237613f9d4cfb7c76476b462222b5d585327",
+"min_grade": "Minimum CGPA of 4.6",
+"min_value": 4.6,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "BD",
+"benchmark_band": "80%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Minimum CGPA of 4.8",
+"row_hash": "bace3e8ebd3b9f8a1ba20360074b8adba6b2a5907b8ca362ec6dda44497b1ece",
+"min_grade": "Minimum CGPA of 4.8",
+"min_value": 4.8,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "BD",
+"benchmark_band": "85%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Minimum CGPA of 5.0",
+"row_hash": "5a741cdce6142c9771d6f21abe0fe86e1019e577602e7154708d674bf2d7785e",
+"min_grade": "Minimum CGPA of 5.0",
+"min_value": 5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "BD",
+"benchmark_band": "90%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Minimum CGPA of 3.5",
+"row_hash": "3d13a54adf75854ddc6c01186e6f5ed6f2401f072b1decea8b0dd867991b1dbf",
+"min_grade": "Minimum CGPA of 3.5",
+"min_value": 3.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "BD",
+"benchmark_band": "50%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Minimum CGPA of 3.7",
+"row_hash": "785fbe80b14c3979aac9f80ccae2678db1209dd411f7ebdeb1aa0cff31142633",
+"min_grade": "Minimum CGPA of 3.7",
+"min_value": 3.7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "BD",
+"benchmark_band": "55%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Minimum CGPA of 3.9",
+"row_hash": "bda9c6f2434b8c301b798678c76795bf9ee5e4e11b049f29671fea9276057812",
+"min_grade": "Minimum CGPA of 3.9",
+"min_value": 3.9,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "BD",
+"benchmark_band": "60%",
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Not applicable | Min Completion of Year 11 with CGPA of 3.5 (60%).",
+"row_hash": "cd3f7901a44fd46ba4af6a76e94edc5bbcd75bea2d0bc18ebc026d09b5fdda01",
+"min_grade": "Min Completion of Year 11 with CGPA of 3.5 (60%).",
+"min_value": 3.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "Foundation Studies",
+"country_code": "BD",
+"benchmark_band": null,
+"qualification_name": "Higher School Certificate (HSC)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Not applicable | Min Completion of Year 11 with CGPA of 4.0 (70%).",
+"row_hash": "3b9be7aebd0ffe36666678aa6e12cf83b60c550e0f5c4e0246ed128433642a4e",
+"min_grade": "Min Completion of Year 11 with CGPA of 4.0 (70%).",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"grade_scale": "gpa",
+"study_level": "University Pathways Fast Track",
+"country_code": "BD",
+"benchmark_band": null,
+"qualification_name": "Higher School Certificate (HSC)"
+}
+],
+"new-zealand": [
+{
+"quote": "Bachelor degrees | 65% | Achieved NCEA Level 3 with Merit average",
+"row_hash": "e60754b29215e3568ca6754a1d266feafcf3a8c4fc5b62be9270480dd63c799b",
+"min_grade": "Achieved NCEA Level 3 with Merit average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "NZ",
+"benchmark_band": "65%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Bachelor degrees | 70% | Achieved NCEA Level 3 with Excellence average",
+"row_hash": "9d65ba5e0861e1a23dcef5e43857e245cb3f22ec14c4b2d76197015cd869ac6f",
+"min_grade": "Achieved NCEA Level 3 with Excellence average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "NZ",
+"benchmark_band": "70%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Bachelor degrees | 75% | Achieved NCEA Level 3 with Excellence average",
+"row_hash": "4bf27b39a63d5f368db16aff0dbd0c93e1bda200b199ba73c97f65fa9fcb87ec",
+"min_grade": "Achieved NCEA Level 3 with Excellence average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "NZ",
+"benchmark_band": "75%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Bachelor degrees | 80% | Achieved NCEA Level 3 with Excellence average",
+"row_hash": "abe3d9fda3adbfdd4b3b59f46e38d8c016f8bbdba2b1076c7d740c3a4cde491f",
+"min_grade": "Achieved NCEA Level 3 with Excellence average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "NZ",
+"benchmark_band": "80%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Bachelor degrees | 85% | Achieved NCEA Level 3 with Excellence average",
+"row_hash": "a64ef659c94e25a808a9ef018880f4b147e41a73139db551dd2c59a9e5ddbb65",
+"min_grade": "Achieved NCEA Level 3 with Excellence average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "NZ",
+"benchmark_band": "85%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Bachelor degrees | 90% | Achieved NCEA Level 3 with Excellence average",
+"row_hash": "921a72e4934b3877315bb7d06c46169cf946fb0fd98f58be4b14a30ccde00f9d",
+"min_grade": "Achieved NCEA Level 3 with Excellence average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "NZ",
+"benchmark_band": "90%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Achieved NCEA Level 3",
+"row_hash": "17dfe3dee051489a8ff83f0443f2d411f7126879ab60dde16b78c02bc480fb0c",
+"min_grade": "Achieved NCEA Level 3",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NZ",
+"benchmark_band": "50%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Achieved NCEA Level 3",
+"row_hash": "ac2499934a599cabaee1c4e282bda5b30585f6373bfdb315b9448b64f81216df",
+"min_grade": "Achieved NCEA Level 3",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NZ",
+"benchmark_band": "55%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Achieved NCEA Level 3 with Merit average",
+"row_hash": "fb5fb0a874bdff34a95f4a11cc6774f31aaf17950ff531819d2e20b47695348d",
+"min_grade": "Achieved NCEA Level 3 with Merit average",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NZ",
+"benchmark_band": "60%",
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Achieved NCEA Level 2",
+"row_hash": "9bd07b37ee8aec1ea91896b59a531c752bcbae41b02d8b453ecb370718e0eea2",
+"min_grade": "Achieved NCEA Level 2",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "Foundation Studies",
+"country_code": "NZ",
+"benchmark_band": null,
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Achieved NCEA Level 2 with Merit",
+"row_hash": "8e41ed891715e7536dc6771fff6b92a6b508b0361af979a63bc534be95a90e08",
+"min_grade": "Achieved NCEA Level 2 with Merit",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "none",
+"study_level": "University Pathways Fast Track",
+"country_code": "NZ",
+"benchmark_band": null,
+"qualification_name": "National Certificate of Educational Achievement (NCEA)"
+}
+],
+"china-peoples-republic-of": [
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Average of 75% | 441",
+"row_hash": "ea03622777ca0bb065cdd62d392d228c18aed92159150f5f7522f0af02f93b30",
+"min_grade": "441",
+"min_value": 441,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "65%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Average of 75% | 441",
+"row_hash": "b8c3ed6b77013e6dce98c0431cd2a87af529385bdb28adae8e7d9d8623830aa1",
+"min_grade": "Average of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "65%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Average of 80% | 454",
+"row_hash": "9d258b6ec9a659e897cf8f86cfee5d2070e4c7a78a4236765aac190af663bb50",
+"min_grade": "454",
+"min_value": 454,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "70%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Average of 80% | 454",
+"row_hash": "65b90a357d18527b0897d4de5add77b348bb73a0eee2012f4f7f0e66d380870d",
+"min_grade": "Average of 80%",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "70%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Average of 85% | 467",
+"row_hash": "841a4266df0e3f63609583daed04382ef6e5ec0cba441e3a97e089e183741542",
+"min_grade": "467",
+"min_value": 467,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "75%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Average of 85% | 467",
+"row_hash": "497caeafdf65a84a93244ca61c11c383e5c15d1d749268eb0a01612cceaff260",
+"min_grade": "Average of 85%",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "75%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Average of 85% | 480",
+"row_hash": "2577450c4e98e6b689f08926e3bf1c004da3952ca7b0665760dba679912786c3",
+"min_grade": "480",
+"min_value": 480,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "80%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Average of 85% | 480",
+"row_hash": "6e9e8b57cfbf3d7b6485a3033d0056894d4cd68795f9eee774d235434e4d265e",
+"min_grade": "Average of 85%",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "80%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Average of 90% | 493",
+"row_hash": "10cf3fd0605e7442f1b66491b96d579bca0b93541605ffba6fed97fa1483a742",
+"min_grade": "493",
+"min_value": 493,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "85%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Average of 90% | 493",
+"row_hash": "2ba7e4229612feee8a2a403bee72c22bf9a127f6791c1362417f99f6d83aa212",
+"min_grade": "Average of 90%",
+"min_value": 90,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "85%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Average of 95% | 506",
+"row_hash": "dbbfc8306ffa70dc80abac5e6de1d471f688e8b7128e859a13146d7c6d90b8c5",
+"min_grade": "506",
+"min_value": 506,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "90%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Average of 95% | 506",
+"row_hash": "7cf6379778e77b6c807ddb4a88d483c025a444f8d273eb7187303e885025dc40",
+"min_grade": "Average of 95%",
+"min_value": 95,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "CN",
+"benchmark_band": "90%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Average of 70% | 375",
+"row_hash": "e4a7c236061185c2e20badde1f86aaab3540055449dab9c9dd77cf6453e7e671",
+"min_grade": "375",
+"min_value": 375,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CN",
+"benchmark_band": "50%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Average of 70% | 375",
+"row_hash": "32ad3d40ae7dd92976ca6e8ba7a469a7a687a509283b764e1a0ba3d6da06971b",
+"min_grade": "Average of 70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CN",
+"benchmark_band": "50%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Average of 70% | 397",
+"row_hash": "961316b084bd21ced21959e0cb1e71f60714b4e815fb51d608516fc4c579f408",
+"min_grade": "397",
+"min_value": 397,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CN",
+"benchmark_band": "55%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Average of 70% | 397",
+"row_hash": "45f1006d9b06b5af42294a247113c87fc57b60ede98558b3fdea6e5fd273c4eb",
+"min_grade": "Average of 70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CN",
+"benchmark_band": "55%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Average of 75% | 419",
+"row_hash": "071bc53049802a8cf6e804cbc1caa5a3f3ab310ccb7fb56a527d547a3e1d052c",
+"min_grade": "419",
+"min_value": 419,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CN",
+"benchmark_band": "60%",
+"qualification_name": "Gao Kao (National College Entrance Examination, NCEE) - Beijing"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Average of 75% | 419",
+"row_hash": "dc7696787d3c1064c6fe5d228fd0b925a8472c65097f1c4611eb31accc98c50c",
+"min_grade": "Average of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "CN",
+"benchmark_band": "60%",
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Minimum average of 60% | Minimum average of 50% | Not applicable",
+"row_hash": "287602db421aad6fd66f71e53c0d986c438752b37bbb07235405a3efc422762b",
+"min_grade": "Minimum average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "CN",
+"benchmark_band": null,
+"qualification_name": "Gao Er (Senior Middle 2) (Year11)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Minimum average of 60% | Minimum average of 50% | Not applicable",
+"row_hash": "d6c6222e2bdc20f976f4424e973957c062bae21635dacc893b5405bc7981d1a7",
+"min_grade": "Minimum average of 50%",
+"min_value": 50,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "CN",
+"benchmark_band": null,
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Minimum average of 75% | Minimum average of 60% | Not applicable",
+"row_hash": "22f3195536c990476b350ede27c2ab1e6f8c8ce296ef9f967f3228a5195d0cca",
+"min_grade": "Minimum average of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "CN",
+"benchmark_band": null,
+"qualification_name": "Gao Er (Senior Middle 2) (Year11)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Minimum average of 75% | Minimum average of 60% | Not applicable",
+"row_hash": "91537766974d1069ea39b0f17f15e9e6cb1974b539d3b761e75280d5293567e5",
+"min_grade": "Minimum average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "CN",
+"benchmark_band": null,
+"qualification_name": "Gao San (Senior Middle 3)(Year 12)"
+}
+],
+"hong-kong-sar-of-the-peoples-republic-of-china": [
+{
+"quote": "Bachelor degrees | 65% | Minimum 15 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "cd464c93f7d1ee1e46c3a0c6b358a7cfec0ce190e5e6482666d7f873a6bc8d42",
+"min_grade": "Minimum 15 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 15,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 3 for any Category A prerequisite"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "HK",
+"benchmark_band": "65%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Bachelor degrees | 70% | Minimum 16 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "9a5f3dfb74a39693bea6eebb65f3bb8fa2c70bde7834ea7bfea7867b0502024a",
+"min_grade": "Minimum 16 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 16,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 3 for any Category A prerequisite"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "HK",
+"benchmark_band": "70%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Bachelor degrees | 75% | Minimum 17 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "367995aed7585a6422472879b7f971bb5e3640b046805da5458726f4792ebdb1",
+"min_grade": "Minimum 17 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 17,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 3 for any Category A prerequisite"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "HK",
+"benchmark_band": "75%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Bachelor degrees | 80% | Minimum 18 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "ba644ec29c45451a264b71ecb9e7bc2ff9be583b827638ab647d89d0c09b8511",
+"min_grade": "Minimum 18 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 18,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 3 for any Category A prerequisite"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "HK",
+"benchmark_band": "80%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Bachelor degrees | 85% | Minimum 19 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "177b33b74bf52d044fc610dc9cb1be44c5920e69aaffd093fe629173ce9de843",
+"min_grade": "Minimum 19 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 19,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 3 for any Category A prerequisite"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "HK",
+"benchmark_band": "85%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Bachelor degrees | 90% | Minimum 20 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "03c8b24216a186cb4fc0dfb47e2ca2d59247b4e4e780f77cde12c718bd729965",
+"min_grade": "Minimum 20 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 20,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 3 for any Category A prerequisite"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "HK",
+"benchmark_band": "90%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Minimum 10 points from best 5 subjects including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "952958927450f0a4b6fa2ec2d75eb3d59e187d48cb85771b1e5cc72ecf6e61e4",
+"min_grade": "Minimum 10 points from best 5 subjects including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 10,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 2 for all other subjects (core and Category A elective), minimum level 3 for any Category A prerequisite for Bachelor Degree and level 2 for Category A prerequisite for Associate Degree"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "HK",
+"benchmark_band": "50%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Minimum 11 points from best 5 subjects including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "b8d316abca4fda272d553a34cdb45052e6044c3824ba69869baeff8e140ca624",
+"min_grade": "Minimum 11 points from best 5 subjects including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 11,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 2 for all other subjects (core and Category A elective), minimum level 3 for any Category A prerequisite for Bachelor Degree and level 2 for Category A prerequisite for Associate Degree"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "HK",
+"benchmark_band": "55%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Minimum 13 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"row_hash": "c61149f1ba6dbcf96012b3f47148074e33503425a2bd4637b743cef5c4e71c0c",
+"min_grade": "Minimum 13 points from best 5 subjects, including 3 cores subjects, plus any prerequisite as applicable",
+"min_value": 13,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": [
+{
+"subject": "3 core subjects",
+"min_grade": "minimum level 2 for all other subjects (core and Category A elective), minimum level 3 for any Category A prerequisite for Bachelor Degree and level 2 for Category A prerequisite for Associate Degree"
+}
+]
+},
+"confidence": 1,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "HK",
+"benchmark_band": "60%",
+"qualification_name": "HKDSE"
+},
+{
+"quote": "Foundation Studies | Not applicable | Secondary 5 with minimum 50% average for best 5 subjects",
+"row_hash": "c6cb27bc9f7b001a7fe97e04c848eabf04e3e95464b114f4986c12ea463658a0",
+"min_grade": "Secondary 5 with minimum 50% average for best 5 subjects",
+"min_value": 50,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "HK",
+"benchmark_band": null,
+"qualification_name": "HKDSE"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Secondary 5 with minimum 65% average for best 5 subjects",
+"row_hash": "3fc0825dad49fdeef78a61334ae360ba9929ab5ad50bd64c165ba3a9e2942c56",
+"min_grade": "Secondary 5 with minimum 65% average for best 5 subjects",
+"min_value": 65,
+"conditions": {
+"best_n": 5,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "HK",
+"benchmark_band": null,
+"qualification_name": "HKDSE"
+}
+]
+}
+}

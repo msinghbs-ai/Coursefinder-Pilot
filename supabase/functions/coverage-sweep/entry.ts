@@ -73,12 +73,14 @@ export function entryPageText(html: string, toText: (h: string) => string): stri
 export type EntryBandLine = { line: string; band: string | null };
 export const ENTRY_BAND_HEADER = /\baustralian standard\b/i;
 export const NA_BAND = /^(not applicable|n\/a|na|-|–|—)$/i;  // the page's own words for "no band" in a band column
-export function entryTables(html: string, toText: (h: string) => string): { text: string; lines: EntryBandLine[]; grids: string[][][] } {
-  const all: EntryBandLine[] = [], grids: string[][][] = [];
+export function entryTables(html: string, toText: (h: string) => string): { text: string; lines: EntryBandLine[]; grids: string[][][]; covered: boolean[][] } {
+  // covered (v0.48.6, D5): per table and row, whether a merged cell from an earlier row still spans a column past the end of this row
+  // (the carry stops at the first gap), so a short row there is not simply a row whose trailing cells were left out
+  const all: EntryBandLine[] = [], grids: string[][][] = [], covered: boolean[][] = [];
   const cellText = (h: string) => toText(h).replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim();
   const tables: string[] = [];
   const marked = String(html || "").replace(/<table\b[\s\S]*?<\/table>/gi, (table) => {
-    const grid: string[][] = [], carry: { left: number; text: string }[] = [];
+    const grid: string[][] = [], carry: { left: number; text: string }[] = [], cov: boolean[] = [];
     for (const tr of table.match(/<tr\b[\s\S]*?(?=<tr\b|<\/table>)/gi) || []) {
       const row: string[] = []; let col = 0;
       const take = () => { while (carry[col]?.left > 0) { row[col] = carry[col].text; carry[col].left--; col++ } };
@@ -90,7 +92,8 @@ export function entryTables(html: string, toText: (h: string) => string): { text
         for (let k = 0; k < cs; k++) { row[col] = t; if (span > 1) carry[col] = { left: span - 1, text: t }; col++ }
       }
       take();
-      if (row.some((x) => x)) grid.push(row);
+      const beyond = carry.some((x, j) => j >= row.length && x?.left > 0);
+      if (row.some((x) => x)) { grid.push(row); cov.push(beyond) }
     }
     if (!grid.length) return table;
     let label = "", bandCol = -1;
@@ -106,10 +109,10 @@ export function entryTables(html: string, toText: (h: string) => string): { text
       all.push({ line, band: b && !/^(not applicable|n\/a|-|–)$/i.test(b) ? b : null });
       return line;
     });
-    tables.push(lines.join("\n")); grids.push(carried);
+    tables.push(lines.join("\n")); grids.push(carried); covered.push(cov);
     return `<p>ZZENTRYTABLE${tables.length - 1}ZZ</p>`;  // a placeholder the page text keeps; the rows replace it after
   });
-  return { text: toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all, grids };
+  return { text: toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all, grids, covered };
 }
 
 // letters and digits compared, case and spacing ignored, so words split by markup ("S enior", NMIT 25 Oct byte-check) still match
@@ -172,10 +175,10 @@ const words = (s: string) => new Set(String(s || "").toLowerCase().normalize("NF
 export function entryManifest(html: string, toText: (h: string) => string): EntryManifest {
   const h1 = (String(html || "").match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1], title = (String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
   const heading = [h1, title].filter(Boolean).map((x) => toText(String(x)).replace(/\s+/g, " ").trim()).join(" | ");
-  const { grids } = entryTables(html, toText);
+  const { grids, covered } = entryTables(html, toText);
   const entries: EntryManifestEntry[] = [], columns: string[] = [], footnotes: string[] = [];
   let found = 0;
-  for (const g of grids) {
+  for (const [gi, g] of grids.entries()) {
     const hi = g.findIndex((r) => r.some((c, j) => j > 0 && ENTRY_BAND_HEADER.test(c)));
     if (hi < 0) continue;
     found++;
@@ -184,11 +187,25 @@ export function entryManifest(html: string, toText: (h: string) => string): Entr
     if (!qual.length) return { status: "unparsed", reason: "a band table has no qualification column", heading, entries: [], columns: [], footnotes: [] };
     const body = g.slice(hi + 1);
     if (!body.length) return { status: "unparsed", reason: "a band table has no rows", heading, entries: [], columns: [], footnotes: [] };
-    for (const r of body) {
-      const line = r.join(" | ");
-      if (r.length !== header.length) return { status: "unparsed", reason: `a row has ${r.length} cells, the header ${header.length}: ${line.slice(0, 80)}`, heading, entries: [], columns: [], footnotes: [] };
+    for (const [bi, r0] of body.entries()) {
+      const line = r0.join(" | ");
+      // v0.48.6 (D5, 27 Oct 2026): a grading or calculation row is a footnote whatever its width (Kuwait: one cell spans the columns,
+      // colspan 3 under a three-column header); it publishes no minimum
+      if (r0[0] && FOOTNOTE_ROW.test(r0[0])) { footnotes.push(line); continue }
+      if (r0.length > header.length) return { status: "unparsed", reason: `a row has ${r0.length} cells, the header ${header.length}: ${line.slice(0, 80)}`, heading, entries: [], columns: [], footnotes: [] };
+      // a data row whose trailing cells were left out of the markup (Mexico 80%: the other rows carry an empty cell there) is read with
+      // those cells blank, which publish nothing; when a merged cell from an earlier row still spans one of them, the row is not
+      // understood and the table stays unparsed (padding there would drop a published minimum)
+      if (r0.length < header.length && covered[gi]?.[hi + 1 + bi]) return { status: "unparsed", reason: `a short row under a merged cell: ${line.slice(0, 80)}`, heading, entries: [], columns: [], footnotes: [] };
+      const r = r0.length < header.length ? [...r0, ...Array(header.length - r0.length).fill("")] : r0;
+      // a browser shows a short row's cells from the left, so a cell missing in the middle shifts the others: a padded row whose band
+      // cell is not blank, "Not applicable" or the same shape as the band cells of the table's full rows ("80%") is not understood
+      if (r0.length < header.length) {
+        const shape = (x: string) => String(x || "").trim().replace(/\d+(?:\.\d+)?/g, "9");
+        const b = String(r[bandCol] || "").trim(), full = new Set(body.filter((x) => x.length === header.length && x[bandCol] && !NA.test(String(x[bandCol]).trim())).map((x) => shape(x[bandCol])));
+        if (b && !NA.test(b) && !full.has(shape(b))) return { status: "unparsed", reason: `a short row whose band cell does not read as a band: ${line.slice(0, 80)}`, heading, entries: [], columns: [], footnotes: [] };
+      }
       if (!r[0]) return { status: "unparsed", reason: `a row has no level label: ${line.slice(0, 80)}`, heading, entries: [], columns: [], footnotes: [] };
-      if (FOOTNOTE_ROW.test(r[0])) { footnotes.push(line); continue }
       const b = String(r[bandCol] || "").trim(), band = b && !NA.test(b) ? b : null;
       for (const { j, c } of qual) {
         const cell = String(r[j] || "").trim();
