@@ -136,7 +136,7 @@ test('worker: manifest before the AI read, verdict on every result, held reads g
   expect(w).toContain('const completeness = entryCompleteness(stored.manifest, rows);')
   expect(w).toContain('if (it.completeness_required === true && completeness.status !== "complete") {')
   expect(w).toContain('await rec({ p_error: `held_incomplete: ${completeness.reason || completeness.status}`.slice(0, 400), p_result: result, p_cost: c1 });')
-  expect(ENTRY_PROMPT_VERSION).toBe('entry-matrix-v0.1.3')
+  expect(ENTRY_PROMPT_VERSION).toMatch(/^entry-matrix-v0\.1\.([3-9]|[1-9][0-9])$/)  // v0.1.4 (s134) adds the cell list
   expect(ENTRY_PROMPT).toContain("Read every qualification column of such a table")
   expect(ENTRY_PROMPT).toContain("never the cell alone")
 })

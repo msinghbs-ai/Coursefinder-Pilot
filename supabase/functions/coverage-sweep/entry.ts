@@ -3,11 +3,11 @@
 // rows as published. Every row carries a verbatim quote; a row is kept only when its quote is on the page, a number has a scale and is in
 // the quote, and a grade is in the quote. English-test rows are left out (they belong to the English requirement). The database proposes
 // the rows and a person admits them in Layer 4 (first run per provider). Design: admin docs/platform/ENTRY-REQUIREMENTS.md 1.1.
-export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.3";
+export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.4";
 
 export const ENTRY_SCALES = ["percentage", "points", "aggregate", "gpa", "letter", "rank", "none"] as const;
 
-export const ENTRY_PROMPT = "You read one university or polytechnic web page that lists the academic entry requirements for international applicants by country of prior education (an equivalence or entry-requirements table). Report one row for each minimum the page publishes: the country of the applicant's prior education (ISO 3166-1 alpha-2 code and its name as written), the study level it applies to as the page labels it (Foundation, Diploma, Bachelor, Degree, Masters, Cert L4 and similar; null if the page gives one minimum for all levels), the qualification as published (for example \"All India Senior School Certificate (CBSE)\"), the minimum grade exactly as published (\"75%\", \"CDD\", \"B average\", \"ATAR 70\"; null when the page says assessment on application, case by case or gives the qualification only), the numeric value of that minimum only when it is a single number, and its scale (percentage, points, aggregate, gpa, letter, rank; none when there is no grade). If the provider converts a benchmark band (for example \"65%\", \"ATAR 60\", \"rank 70\", \"group 2\") instead of a level, give that band. If a row belongs to one named course, give the course name. Put subject minimums (\"minimum 60% in English\"), best-N rules (\"best four subjects\") and alternative routes into conditions. Give your confidence (0 to 1) that the row is read correctly. Each table row on the page is given as one line with its cells separated by \" | \" (a level named once for a group of rows is repeated on each row of the group). When a table has an \"Australian standard\" column (the Australian score each row is equivalent to, such as \"70%\"), that cell on the row is the row's benchmark band: give it exactly as printed, keep the level too, and give one row per band. Read every qualification column of such a table: one row for each cell that gives a minimum, and quote the cell's whole table line (it begins with the level), never the cell alone. For every row copy the exact sentence or the whole table line from the page that contains it, with the qualification and the grade (quote, at most 300 characters). Leave out English language test scores (IELTS, TOEFL, PTE and similar), fees, dates and domestic-only rows. Never infer a row from another page or from general knowledge; return an empty list if the page publishes no minimums. Also give the edition or intake year the page names, if any.";
+export const ENTRY_PROMPT = "You read one university or polytechnic web page that lists the academic entry requirements for international applicants by country of prior education (an equivalence or entry-requirements table). Report one row for each minimum the page publishes: the country of the applicant's prior education (ISO 3166-1 alpha-2 code and its name as written), the study level it applies to as the page labels it (Foundation, Diploma, Bachelor, Degree, Masters, Cert L4 and similar; null if the page gives one minimum for all levels), the qualification as published (for example \"All India Senior School Certificate (CBSE)\"), the minimum grade exactly as published (\"75%\", \"CDD\", \"B average\", \"ATAR 70\"; null when the page says assessment on application, case by case or gives the qualification only), the numeric value of that minimum only when it is a single number, and its scale (percentage, points, aggregate, gpa, letter, rank; none when there is no grade). If the provider converts a benchmark band (for example \"65%\", \"ATAR 60\", \"rank 70\", \"group 2\") instead of a level, give that band. If a row belongs to one named course, give the course name. Put subject minimums (\"minimum 60% in English\"), best-N rules (\"best four subjects\") and alternative routes into conditions. Give your confidence (0 to 1) that the row is read correctly. Each table row on the page is given as one line with its cells separated by \" | \" (a level named once for a group of rows is repeated on each row of the group). When a table has an \"Australian standard\" column (the Australian score each row is equivalent to, such as \"70%\"), that cell on the row is the row's benchmark band: give it exactly as printed, keep the level too, and give one row per band. Read every qualification column of such a table: one row for each cell that gives a minimum, and quote the cell's whole table line (it begins with the level), never the cell alone. When the message lists the published cells of a table, give exactly one row for each listed cell, in the listed order, and no row for any other cell of that table: that cell's column as the qualification, its level and band as listed, the cell as the grade, and the listed line as the quote; a value repeated from the row above is still its own row. For every row copy the exact sentence or the whole table line from the page that contains it, with the qualification and the grade (quote, at most 300 characters). Leave out English language test scores (IELTS, TOEFL, PTE and similar), fees, dates and domestic-only rows. Never infer a row from another page or from general knowledge; return an empty list if the page publishes no minimums. Also give the edition or intake year the page names, if any.";
 
 const cond = {
   type: "object", additionalProperties: false, required: ["subject_minimums", "best_n", "alternatives"],
@@ -33,11 +33,11 @@ export const ENTRY_SCHEMA = {
   },
 };
 
-export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string }) {
+export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string; cells?: string }) {
   return { model, temperature: 0, max_tokens: 8000, provider: { require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "entry_matrix", strict: true, schema: ENTRY_SCHEMA } },
     messages: [{ role: "system", content: ENTRY_PROMPT },
-      { role: "user", content: `Provider: ${p.provider}\nPage address: ${p.url}${p.slice ? `\nPart of the page: ${p.slice}` : ""}\n\nPage text:\n${p.text}` }] };
+      { role: "user", content: `Provider: ${p.provider}\nPage address: ${p.url}${p.slice ? `\nPart of the page: ${p.slice}` : ""}\n\nPage text:\n${p.text}${p.cells ? `\n\nPublished cells of the band table(s), in printed order (one row for each):\n${p.cells}` : ""}` }] };
 }
 
 // a large one-page table is read in slices of at most maxRows lines (and maxChars characters); a markdown table's header row is
@@ -172,7 +172,12 @@ export type EntryManifest = { status: "ok" | "none" | "unparsed"; reason: string
 const NA = /^(not applicable|n\/a|-|–|—)$/i;
 const FOOTNOTE_ROW = /^(grading|calculation|note|notes|\*)|\b(grading|calculation system)\b/i;
 const words = (s: string) => new Set(String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").split(" ").filter((w) => w.length > 1 && !/^(of|the|and|or|in|at|a)$/.test(w)));
-export function entryManifest(html: string, toText: (h: string) => string): EntryManifest {
+export function entryManifest(html: string, toText: (h: string) => string): EntryManifest { return entryManifestDetail(html, toText).manifest }
+// v0.48.7 (D4): the manifest plus the band tables' data lines that publish no minimum (every qualification cell blank or "Not applicable"),
+// kept apart so the manifest itself (and its recorded fingerprints) is unchanged
+export function entryManifestDetail(html: string, toText: (h: string) => string): { manifest: EntryManifest; emptyLines: string[] } {
+  const emptyLines: string[] = [];
+  const manifest = ((): EntryManifest => {
   const h1 = (String(html || "").match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1], title = (String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
   const heading = [h1, title].filter(Boolean).map((x) => toText(String(x)).replace(/\s+/g, " ").trim()).join(" | ");
   const { grids, covered } = entryTables(html, toText);
@@ -207,6 +212,7 @@ export function entryManifest(html: string, toText: (h: string) => string): Entr
       }
       if (!r[0]) return { status: "unparsed", reason: `a row has no level label: ${line.slice(0, 80)}`, heading, entries: [], columns: [], footnotes: [] };
       const b = String(r[bandCol] || "").trim(), band = b && !NA.test(b) ? b : null;
+      if (qual.every(({ j }) => { const x = String(r[j] || "").trim(); return !x || NA.test(x) })) emptyLines.push(line);
       for (const { j, c } of qual) {
         const cell = String(r[j] || "").trim();
         if (!cell || NA.test(cell)) continue;
@@ -220,6 +226,8 @@ export function entryManifest(html: string, toText: (h: string) => string): Entr
   if (!found) return { status: "none", reason: "no table with an Australian standard column", heading, entries, columns, footnotes };
   if (!entries.length) return { status: "unparsed", reason: "the band tables publish no minimum", heading, entries, columns, footnotes };
   return { status: "ok", reason: null, heading, entries, columns, footnotes };
+  })();
+  return { manifest, emptyLines: manifest.status === "ok" ? emptyLines : [] };
 }
 
 // v0.48.4 (D2, 27 Oct 2026, Platform Admin 04:58 "hold them as non-country/unreadable sources without further automatic retries"): an
@@ -286,4 +294,26 @@ export function entryCompleteness(man: EntryManifest, rows: any[]): EntryComplet
   const complete = !omitted.length && !unexplained.length;
   return { ...base, status: complete ? "complete" : "incomplete", matched: taken.size, omitted, omitted_columns, unexplained,
     reason: complete ? null : [omitted_columns.length ? `column left out: ${omitted_columns.join("; ")}` : "", omitted.length ? `${omitted.length} of ${man.entries.length} published minimums not read` : "", unexplained.length ? `${unexplained.length} rows not explained (${[...new Set(unexplained.map((x) => x.reason))].join(", ")})` : ""].filter(Boolean).join("; ") };
+}
+
+// v0.48.7 (D4, 27 Oct 2026, Platform Admin 05:46: "Drive behaviour from table structure and source evidence"): the reader is given the band
+// tables' published cells, taken from the manifest in printed order, so it reads every cell once (a value repeated in the row above, a
+// merged case-by-case cell, the right printed column) and none that publishes nothing. The guard still checks the read independently.
+export function entryCellList(man: EntryManifest): string {
+  if (man.status !== "ok" || !man.entries.length) return "";
+  return man.entries.map((e, i) => `[${i + 1}] level: ${e.level} | band: ${e.band ?? "none"} | column: ${e.header} | cell: ${e.cell}\n    line: ${e.line}`).join("\n");
+}
+// a row whose quoted table line publishes no minimum (every qualification cell blank or "Not applicable") is not a minimum: dropped before
+// the guard (Pakistan, Philippines: Bachelor lines that are all "Not applicable")
+export function entryDropNoMinimum(man: EntryManifest, emptyLines: string[], rows: any[]): { rows: any[]; dropped: EntryDrop[] } {
+  if (man.status !== "ok" || !emptyLines.length) return { rows, dropped: [] };
+  const E = emptyLines.map(flat), P = man.entries.map((e) => flat(e.line)), keep: any[] = [], dropped: EntryDrop[] = [];
+  for (const x of rows) {
+    const Q = flat(x?.quote || "");
+    const onEmpty = E.some((l) => l.includes(Q) || (Q.length >= l.length && Q.includes(l)));
+    const onPublished = P.some((l) => l.includes(Q) || (Q.length >= l.length && Q.includes(l)));
+    if (Q && onEmpty && !onPublished) dropped.push({ reason: "no_minimum_published", country: String(x?.country_code || ""), quote: String(x?.quote || "").slice(0, 120) });
+    else keep.push(x);
+  }
+  return { rows: keep, dropped };
 }
