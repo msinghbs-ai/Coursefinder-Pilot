@@ -1,0 +1,1779 @@
+{
+"source": "Latest held read (rows kept by the reader checks) of each D4 page, from pipeline.entry_matrix_runs.previous_results, 27 Oct 2026 06:3x AEDT; replayed through the D4 filter and the completeness guard",
+"pages": {
+"nepal": [
+{
+"quote": "Foundation Studies | Not applicable | 60% or CGPA 2.8 | Not applicable",
+"min_grade": "60% or CGPA 2.8",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "NP",
+"country_name": "Nepal",
+"benchmark_band": null,
+"qualification_name": "Completion of Nepal Higher Secondary Certificate (HSC)or School Leaving Certificate Examination (Grade XI and XII) or Proficiency Certificate (PC)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | 70% or CGPA 3.2 | Not applicable",
+"min_grade": "70% or CGPA 3.2",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "NP",
+"country_name": "Nepal",
+"benchmark_band": null,
+"qualification_name": "Completion of Nepal Higher Secondary Certificate (HSC) or School Leaving Certificate Examination (Grade XI and XII) or Proficiency Certificate (PC)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | 70% or CGPA 3.2 | Not applicable",
+"min_grade": "70% or CGPA 3.2",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NP",
+"country_name": "Nepal",
+"benchmark_band": "50%",
+"qualification_name": "Completion of Nepal Higher Secondary Certificate (HSC) or School Leaving Certificate Examination (Grade XI and XII) or Proficiency Certificate (PC)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | 70% or CGPA 3.2 | Not applicable",
+"min_grade": "70% or CGPA 3.2",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NP",
+"country_name": "Nepal",
+"benchmark_band": "55%",
+"qualification_name": "Completion of Nepal Higher Secondary Certificate (HSC) or School Leaving Certificate Examination (Grade XI and XII) or Proficiency Certificate (PC)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | 70% or CGPA 3.2 | Not applicable",
+"min_grade": "70% or CGPA 3.2",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NP",
+"country_name": "Nepal",
+"benchmark_band": "60%",
+"qualification_name": "Completion of Nepal Higher Secondary Certificate (HSC) or School Leaving Certificate Examination (Grade XI and XII) or Proficiency Certificate (PC)"
+}
+],
+"norway": [
+{
+"quote": "Diploma/Associate degrees | 50% | 2.0",
+"min_grade": "50%",
+"min_value": 50,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "50%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | 2.5",
+"min_grade": "55%",
+"min_value": 55,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "55%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | 3",
+"min_grade": "60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "60%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+},
+{
+"quote": "Bachelor degrees | 65% | 3.5",
+"min_grade": "65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "65%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+},
+{
+"quote": "Bachelor degrees | 70% | 3.7",
+"min_grade": "70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "70%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+},
+{
+"quote": "Bachelor degrees | 75% | 4",
+"min_grade": "75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "75%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+},
+{
+"quote": "Bachelor degrees | 80% | 4.2",
+"min_grade": "80%",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "80%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+},
+{
+"quote": "Bachelor degrees | 85% | 4.5",
+"min_grade": "85%",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "85%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+},
+{
+"quote": "Bachelor degrees | 90% | 5.0",
+"min_grade": "90%",
+"min_value": 90,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "NO",
+"country_name": "Norway",
+"benchmark_band": "90%",
+"qualification_name": "Vitnemal fra den videregaende skolen / Vitnemal for videregaende opplaering"
+}
+],
+"denmark": [
+{
+"quote": "Foundation Studies | Not applicable | Average of 7 or better | Average of 4 or better | Not applicable | Not applicable",
+"min_grade": "Average of 7 or better",
+"min_value": 7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Foundation Studies",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": null,
+"qualification_name": "Folkeskolens 10 Klasseprøve (formerly Folkeskolens Afgangsprøve) (10th form advanced leaving examination)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Average of 7 or better | Average of 4 or better | Not applicable | Not applicable",
+"min_grade": "Average of 4 or better",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Foundation Studies",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": null,
+"qualification_name": "Bevis for Højere Handelseksamen (HHX); OR Bevis for Højere Teknisk Eksamen (HTX)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Average of 10 or better | Average of 7 or better | Not applicable | Not applicable",
+"min_grade": "Average of 10 or better",
+"min_value": 10,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "University Pathways Fast Track",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": null,
+"qualification_name": "Folkeskolens 10 Klasseprøve (formerly Folkeskolens Afgangsprøve) (10th form advanced leaving examination)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Average of 10 or better | Average of 7 or better | Not applicable | Not applicable",
+"min_grade": "Average of 7 or better",
+"min_value": 7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "University Pathways Fast Track",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": null,
+"qualification_name": "Bevis for Højere Handelseksamen (HHX); OR Bevis for Højere Teknisk Eksamen (HTX)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Not applicable | Average of 2 | Average of 2",
+"min_grade": "Average of 2",
+"min_value": 2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "50%",
+"qualification_name": "Studentereksamen (stx)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Not applicable | Average of 2 | Average of 2",
+"min_grade": "Average of 2",
+"min_value": 2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "50%",
+"qualification_name": "Hojere Forberedelseseksamen (hf)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Not applicable | Average of 4 | Average of 4",
+"min_grade": "Average of 4",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "60%",
+"qualification_name": "Studentereksamen (stx)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Not applicable | Average of 4 | Average of 4",
+"min_grade": "Average of 4",
+"min_value": 4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Diploma/Associate degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "60%",
+"qualification_name": "Hojere Forberedelseseksamen (hf)"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Not applicable | Average of 7 | Average of 7",
+"min_grade": "Average of 7",
+"min_value": 7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "65%",
+"qualification_name": "Studentereksamen (stx)"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Not applicable | Average of 7 | Average of 7",
+"min_grade": "Average of 7",
+"min_value": 7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "65%",
+"qualification_name": "Hojere Forberedelseseksamen (hf)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Not applicable | Average of 10 | Average of 10",
+"min_grade": "Average of 10",
+"min_value": 10,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "80%",
+"qualification_name": "Studentereksamen (stx)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Not applicable | Average of 10 | Average of 10",
+"min_grade": "Average of 10",
+"min_value": 10,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "80%",
+"qualification_name": "Hojere Forberedelseseksamen (hf)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Not applicable | Average of 12 | Average of 12",
+"min_grade": "Average of 12",
+"min_value": 12,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "90%",
+"qualification_name": "Studentereksamen (stx)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Not applicable | Average of 12 | Average of 12",
+"min_grade": "Average of 12",
+"min_value": 12,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Bachelor degrees",
+"country_code": "DK",
+"country_name": "Denmark",
+"benchmark_band": "90%",
+"qualification_name": "Hojere Forberedelseseksamen (hf)"
+}
+],
+"nigeria": [
+{
+"quote": "Foundation Studies | Not applicable | Average of 7 from best 6 subjects | Not applicable",
+"min_grade": "Average of 7 from best 6 subjects",
+"min_value": null,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Foundation Studies",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": null,
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Average of 3 from best 6 subjects | Not applicable",
+"min_grade": "Average of 3 from best 6 subjects",
+"min_value": null,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "University Pathways Fast Track",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": null,
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Diploma / Associate Degrees | 50% | Average of 3 from best 6 subjects | Not applicable",
+"min_grade": "Average of 3 from best 6 subjects",
+"min_value": null,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Diploma / Associate Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "50%",
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Diploma / Associate Degrees | 55% | Average of 3 from best 6 subjects | Not applicable",
+"min_grade": "Average of 3 from best 6 subjects",
+"min_value": null,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Diploma / Associate Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "55%",
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Diploma / Associate Degrees | 60% | Average of 3 from best 6 subjects | Not applicable",
+"min_grade": "Average of 3 from best 6 subjects",
+"min_value": null,
+"conditions": {
+"best_n": 6,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "points",
+"study_level": "Diploma / Associate Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "60%",
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Bachelor Degrees | 65% | This qualification does not give you entry to this program. | Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration.",
+"min_grade": "This qualification does not give you entry to this program.",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "completion of first year at a recognised university or tertiary institution",
+"min_grade": "Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration."
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "65%",
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Bachelor Degrees | 70% | This qualification does not give you entry to this program. | Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration.",
+"min_grade": "This qualification does not give you entry to this program.",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "completion of first year at a recognised university or tertiary institution",
+"min_grade": "Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration."
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "70%",
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Bachelor Degrees | 75% | This qualification does not give you entry to this program. | Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration.",
+"min_grade": "This qualification does not give you entry to this program.",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "completion of first year at a recognised university or tertiary institution",
+"min_grade": "Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration."
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "75%",
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Bachelor Degrees | 80% | This qualification does not give you entry to this program. | Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration.",
+"min_grade": "This qualification does not give you entry to this program.",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "completion of first year at a recognised university or tertiary institution",
+"min_grade": "Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration."
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "80%",
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Bachelor Degrees | 85% | This qualification does not give you entry to this program. | Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration.",
+"min_grade": "This qualification does not give you entry to this program.",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "completion of first year at a recognised university or tertiary institution",
+"min_grade": "Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration."
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "85%",
+"qualification_name": "Senior School Certificate (SSC)"
+},
+{
+"quote": "Bachelor Degrees | 90% | This qualification does not give you entry to this program. | Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration.",
+"min_grade": "This qualification does not give you entry to this program.",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [
+{
+"route": "completion of first year at a recognised university or tertiary institution",
+"min_grade": "Assessed on a case-by-case basis. Requires a minimum average of 60% or B or GPA of 3.5 (out of 5.0) in first year of university or tertiary institution for consideration."
+}
+],
+"subject_minimums": []
+},
+"confidence": 0.9,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor Degrees",
+"country_code": "NG",
+"country_name": "Nigeria",
+"benchmark_band": "90%",
+"qualification_name": "Senior School Certificate (SSC)"
+}
+],
+"colombia": [
+{
+"quote": "Foundation Studies | Not applicable | 50% or greater | Not applicable",
+"min_grade": "50% or greater",
+"min_value": 50,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "CO",
+"country_name": "Colombia",
+"benchmark_band": null,
+"qualification_name": "Bachillerato / Bachiller"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | 70% or greater | Not applicable",
+"min_grade": "70% or greater",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "CO",
+"country_name": "Colombia",
+"benchmark_band": null,
+"qualification_name": "Bachillerato / Bachiller"
+}
+],
+"pakistan": [
+{
+"quote": "Foundation Studies | Not applicable | Average percentage of 55%",
+"min_grade": "Average percentage of 55%",
+"min_value": 55,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": null,
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Average percentage of 65%",
+"min_grade": "Average percentage of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": null,
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Average percentage of 65%",
+"min_grade": "Average percentage of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "50%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Average percentage of 70%",
+"min_grade": "Average percentage of 70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "55%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Average percentage of 75%",
+"min_grade": "Average percentage of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "60%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable",
+"min_grade": null,
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "65%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable",
+"min_grade": null,
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "70%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable",
+"min_grade": null,
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "75%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable",
+"min_grade": null,
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "80%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable",
+"min_grade": null,
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "85%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable",
+"min_grade": null,
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PK",
+"country_name": "Pakistan",
+"benchmark_band": "90%",
+"qualification_name": "Higher Secondary School Certificate (Year 12)"
+}
+],
+"indonesia": [
+{
+"quote": "Foundation Studies | Not applicable | Average of 65% | Average of 50% | Not applicable | Not applicable",
+"min_grade": "Average of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": null,
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Average of 65% | Average of 50% | Not applicable | Not applicable",
+"min_grade": "Average of 50%",
+"min_value": 50,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": null,
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the third year results of Sekolah Menengah Atas (SMA3 or Year 12)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Average of 75% | Average of 50% | Not applicable | Not applicable",
+"min_grade": "Average of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": null,
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Average of 75% | Average of 50% | Not applicable | Not applicable",
+"min_grade": "Average of 50%",
+"min_value": 50,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": null,
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the third year results of Sekolah Menengah Atas (SMA3 or Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Average of 60% | Average of 60% | CGPA 1.30",
+"min_grade": "50%",
+"min_value": 50,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "50%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Average of 65% | Average of 60% | CGPA 1.6",
+"min_grade": "55%",
+"min_value": 55,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "55%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Average of 65% | Average of 60% | CGPA 1.6",
+"min_grade": "Average of 65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "55%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the third year results of Sekolah Menengah Atas (SMA3 or Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Average of 65% | Average of 60% | CGPA 1.6",
+"min_grade": "Average of 60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "55%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the final results of Senior High School Examination (Ujian Sekolah)"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Average of 65% | Average of 60% | CGPA 1.6",
+"min_grade": "CGPA 1.6",
+"min_value": 1.6,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "55%",
+"qualification_name": "Completion of the first year of a Bachelor the degree / Sarjana (S1)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Average of 70% | Average of 70% | CGPA 1.9",
+"min_grade": "60%",
+"min_value": 60,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "60%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Average of 70% | Average of 70% | CGPA 1.9",
+"min_grade": "Average of 70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "60%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the third year results of Sekolah Menengah Atas (SMA3 or Year 12)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Average of 70% | Average of 70% | CGPA 1.9",
+"min_grade": "Average of 70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "60%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the final results of Senior High School Examination (Ujian Sekolah)"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Average of 70% | Average of 70% | CGPA 1.9",
+"min_grade": "CGPA 1.9",
+"min_value": 1.9,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "gpa",
+"study_level": "Diploma/Associate degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "60%",
+"qualification_name": "Completion of the first year of a Bachelor the degree / Sarjana (S1)"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Not applicable | Average of 80% | CGPA of 2.2",
+"min_grade": "65%",
+"min_value": 65,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "65%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Not applicable | Average of 80% | CGPA of 2.2",
+"min_grade": "Average of 80%",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "65%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the final results of Senior High School Examination (Ujian Sekolah)"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Not applicable | Average of 80% | CGPA of 2.2",
+"min_grade": "CGPA of 2.2",
+"min_value": 2.2,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "65%",
+"qualification_name": "Completion of the first year of a Bachelor the degree / Sarjana (S1)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Not applicable | Average of 80% | CGPA of 2.5",
+"min_grade": "70%",
+"min_value": 70,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "70%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Not applicable | Average of 80% | CGPA of 2.5",
+"min_grade": "Average of 80%",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "70%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the final results of Senior High School Examination (Ujian Sekolah)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Not applicable | Average of 80% | CGPA of 2.5",
+"min_grade": "CGPA of 2.5",
+"min_value": 2.5,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "70%",
+"qualification_name": "Completion of the first year of a Bachelor the degree / Sarjana (S1)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Not applicable | Average of 90% | CGPA 2.8",
+"min_grade": "75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "75%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Not applicable | Average of 90% | CGPA 2.8",
+"min_grade": "Average of 90%",
+"min_value": 90,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "75%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the final results of Senior High School Examination (Ujian Sekolah)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Not applicable | Average of 90% | CGPA 2.8",
+"min_grade": "CGPA 2.8",
+"min_value": 2.8,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "75%",
+"qualification_name": "Completion of the first year of a Bachelor the degree / Sarjana (S1)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Not applicable | Average of 90% | CGPA 3.10",
+"min_grade": "80%",
+"min_value": 80,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "80%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Not applicable | Average of 90% | CGPA 3.10",
+"min_grade": "Average of 90%",
+"min_value": 90,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "80%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the final results of Senior High School Examination (Ujian Sekolah)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Not applicable | Average of 90% | CGPA 3.10",
+"min_grade": "CGPA 3.10",
+"min_value": 3.1,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "80%",
+"qualification_name": "Completion of the first year of a Bachelor the degree / Sarjana (S1)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Not applicable | Average of 100% | CGPA 3.40",
+"min_grade": "85%",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "85%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Not applicable | Average of 100% | CGPA 3.40",
+"min_grade": "Average of 100%",
+"min_value": 100,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "85%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the final results of Senior High School Examination (Ujian Sekolah)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Not applicable | Average of 100% | CGPA 3.40",
+"min_grade": "CGPA 3.40",
+"min_value": 3.4,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "85%",
+"qualification_name": "Completion of the first year of a Bachelor the degree / Sarjana (S1)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Not applicable | Average of 100% | CGPA 3.70",
+"min_grade": "90%",
+"min_value": 90,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "90%",
+"qualification_name": "Second year of Sekolah Menengah Atas (SMA2 or Year 11)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Not applicable | Average of 100% | CGPA 3.70",
+"min_grade": "Average of 100%",
+"min_value": 100,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "90%",
+"qualification_name": "Ijazah - Sekolah Menengah ATAS (Certificate of Graduation) And the final results of Senior High School Examination (Ujian Sekolah)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Not applicable | Average of 100% | CGPA 3.70",
+"min_grade": "CGPA 3.70",
+"min_value": 3.7,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 0.95,
+"course_name": null,
+"grade_scale": "gpa",
+"study_level": "Bachelor degrees",
+"country_code": "ID",
+"country_name": "Indonesia",
+"benchmark_band": "90%",
+"qualification_name": "Completion of the first year of a Bachelor the degree / Sarjana (S1)"
+}
+],
+"philippines": [
+{
+"quote": "Foundation Studies | Not applicable | Minimum completion of Year 11 with 75% average | Completion of High School Diploma (Year 12) – Academic Track",
+"min_grade": "Minimum completion of Year 11 with 75% average",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Foundation Studies",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": null,
+"qualification_name": "Year 11 (Academic Track)"
+},
+{
+"quote": "Foundation Studies | Not applicable | Minimum completion of Year 11 with 75% average | Completion of High School Diploma (Year 12) – Academic Track",
+"min_grade": "Completion of High School Diploma (Year 12) – Academic Track",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Foundation Studies",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": null,
+"qualification_name": "High School Diploma (Year 12) – Academic Track"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Minimum completion of Year 11 with 85% average | Completion of High School Diploma (Year 12) – Academic Track",
+"min_grade": "Minimum completion of Year 11 with 85% average",
+"min_value": 85,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "University Pathways Fast Track",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": null,
+"qualification_name": "Year 11 (Academic Track)"
+},
+{
+"quote": "University Pathways Fast Track | Not applicable | Minimum completion of Year 11 with 85% average | Completion of High School Diploma (Year 12) – Academic Track",
+"min_grade": "Completion of High School Diploma (Year 12) – Academic Track",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "University Pathways Fast Track",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": null,
+"qualification_name": "High School Diploma (Year 12) – Academic Track"
+},
+{
+"quote": "Diploma/Associate degrees | 50% | Not applicable | Average percentage of 75%",
+"min_grade": "Average percentage of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "50%",
+"qualification_name": "High School Diploma (Year 12) – Academic Track"
+},
+{
+"quote": "Diploma/Associate degrees | 55% | Not applicable | Average percentage of 75%",
+"min_grade": "Average percentage of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "55%",
+"qualification_name": "High School Diploma (Year 12) – Academic Track"
+},
+{
+"quote": "Diploma/Associate degrees | 60% | Not applicable | Average percentage of 75%",
+"min_grade": "Average percentage of 75%",
+"min_value": 75,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "percentage",
+"study_level": "Diploma/Associate degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "60%",
+"qualification_name": "High School Diploma (Year 12) – Academic Track"
+},
+{
+"quote": "Bachelor degrees | 65% | Not applicable | Not applicable",
+"min_grade": "Not applicable",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "65%",
+"qualification_name": "Year 11 (Academic Track)"
+},
+{
+"quote": "Bachelor degrees | 70% | Not applicable | Not applicable",
+"min_grade": "Not applicable",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "70%",
+"qualification_name": "Year 11 (Academic Track)"
+},
+{
+"quote": "Bachelor degrees | 75% | Not applicable | Not applicable",
+"min_grade": "Not applicable",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "75%",
+"qualification_name": "Year 11 (Academic Track)"
+},
+{
+"quote": "Bachelor degrees | 80% | Not applicable | Not applicable",
+"min_grade": "Not applicable",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "80%",
+"qualification_name": "Year 11 (Academic Track)"
+},
+{
+"quote": "Bachelor degrees | 85% | Not applicable | Not applicable",
+"min_grade": "Not applicable",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "85%",
+"qualification_name": "Year 11 (Academic Track)"
+},
+{
+"quote": "Bachelor degrees | 90% | Not applicable | Not applicable",
+"min_grade": "Not applicable",
+"min_value": null,
+"conditions": {
+"best_n": null,
+"alternatives": [],
+"subject_minimums": []
+},
+"confidence": 1,
+"course_name": null,
+"grade_scale": "none",
+"study_level": "Bachelor degrees",
+"country_code": "PH",
+"country_name": "Philippines",
+"benchmark_band": "90%",
+"qualification_name": "Year 11 (Academic Track)"
+}
+]
+}
+}
