@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.285 — 26 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.358** (AU completion week step 1, Platform Admin 26 Oct 2026 17:01). Migration `20261026004000_cf247_au_register_end_dates.sql`: `security.layer1_register_end_dates_v1` (CRICOS course `valid_to` = last date listed; provider registration `ended` when none of its courses is listed; restore when listed again; guard `layer1.register_end_dates_min_share` 0.9), `pipeline.register_end_date_runs`, read-only `security.au_publish_eligibility_v1` (`publish.eligible_min_current_courses`, `publish.eligible_min_site_pages`), job `layer1-register-end-dates` (catalogued, daily 04:41 UTC). Test s123.
+
 ## 0.1.284 — 26 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.357** (hotfix, Platform Admin 26 Oct 2026 12:50). Migration `20261026003000_cf247_hotfix_l4_first_runs_inbox.sql` (md5-guarded): `security.layer4_inbox_items_v1` gives provider-entity first runs their university and the kinds `no_page_first_run` / `conjoint_first_run`; `security.layer4_inbox_kinds_v1` adds their approve / edit / reject choices; `public.admin_layer4_inbox` routes them to `layer4_review_decide`. `Layer4Inbox.jsx` shows the sample and ticks the courses that have a page. Test s122.
