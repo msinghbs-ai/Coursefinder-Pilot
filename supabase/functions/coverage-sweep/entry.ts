@@ -3,11 +3,11 @@
 // rows as published. Every row carries a verbatim quote; a row is kept only when its quote is on the page, a number has a scale and is in
 // the quote, and a grade is in the quote. English-test rows are left out (they belong to the English requirement). The database proposes
 // the rows and a person admits them in Layer 4 (first run per provider). Design: admin docs/platform/ENTRY-REQUIREMENTS.md 1.1.
-export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.0";
+export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.1";
 
 export const ENTRY_SCALES = ["percentage", "points", "aggregate", "gpa", "letter", "rank", "none"] as const;
 
-export const ENTRY_PROMPT = "You read one university or polytechnic web page that lists the academic entry requirements for international applicants by country of prior education (an equivalence or entry-requirements table). Report one row for each minimum the page publishes: the country of the applicant's prior education (ISO 3166-1 alpha-2 code and its name as written), the study level it applies to as the page labels it (Foundation, Diploma, Bachelor, Degree, Masters, Cert L4 and similar; null if the page gives one minimum for all levels), the qualification as published (for example \"All India Senior School Certificate (CBSE)\"), the minimum grade exactly as published (\"75%\", \"CDD\", \"B average\", \"ATAR 70\"; null when the page says assessment on application, case by case or gives the qualification only), the numeric value of that minimum only when it is a single number, and its scale (percentage, points, aggregate, gpa, letter, rank; none when there is no grade). If the provider converts a benchmark band (for example \"65%\", \"ATAR 60\", \"rank 70\", \"group 2\") instead of a level, give that band. If a row belongs to one named course, give the course name. Put subject minimums (\"minimum 60% in English\"), best-N rules (\"best four subjects\") and alternative routes into conditions. Give your confidence (0 to 1) that the row is read correctly. For every row copy the exact sentence or the whole table row from the page that contains it, with the qualification and the grade (quote, at most 300 characters). Leave out English language test scores (IELTS, TOEFL, PTE and similar), fees, dates and domestic-only rows. Never infer a row from another page or from general knowledge; return an empty list if the page publishes no minimums. Also give the edition or intake year the page names, if any.";
+export const ENTRY_PROMPT = "You read one university or polytechnic web page that lists the academic entry requirements for international applicants by country of prior education (an equivalence or entry-requirements table). Report one row for each minimum the page publishes: the country of the applicant's prior education (ISO 3166-1 alpha-2 code and its name as written), the study level it applies to as the page labels it (Foundation, Diploma, Bachelor, Degree, Masters, Cert L4 and similar; null if the page gives one minimum for all levels), the qualification as published (for example \"All India Senior School Certificate (CBSE)\"), the minimum grade exactly as published (\"75%\", \"CDD\", \"B average\", \"ATAR 70\"; null when the page says assessment on application, case by case or gives the qualification only), the numeric value of that minimum only when it is a single number, and its scale (percentage, points, aggregate, gpa, letter, rank; none when there is no grade). If the provider converts a benchmark band (for example \"65%\", \"ATAR 60\", \"rank 70\", \"group 2\") instead of a level, give that band. If a row belongs to one named course, give the course name. Put subject minimums (\"minimum 60% in English\"), best-N rules (\"best four subjects\") and alternative routes into conditions. Give your confidence (0 to 1) that the row is read correctly. Each table row on the page is given as one line with its cells separated by \" | \" (a level named once for a group of rows is repeated on each row of the group). For every row copy the exact sentence or the whole table line from the page that contains it, with the qualification and the grade (quote, at most 300 characters). Leave out English language test scores (IELTS, TOEFL, PTE and similar), fees, dates and domestic-only rows. Never infer a row from another page or from general knowledge; return an empty list if the page publishes no minimums. Also give the edition or intake year the page names, if any.";
 
 const cond = {
   type: "object", additionalProperties: false, required: ["subject_minimums", "best_n", "alternatives"],
@@ -56,6 +56,44 @@ export function entrySlices(text: string, maxRows: number, maxChars = 24000): st
   }
   if (cur.join("").trim()) out.push(cur.join("\n"));
   return out.length ? out : [""];
+}
+
+// v0.48.1 (26 Oct 2026, AER v1.1 first runs: RMIT band ladders dropped as quote_not_on_page): an equivalency table names its level once
+// for a group of rows (a merged cell, rowspan, or the label left blank on the rows below). Read as plain text, the lower rows of the group
+// have no level, so the model's whole-row quote ("Bachelor degrees 70% Not applicable Minimum CGPA of 4.2") is not on the page. Each table
+// row is given as one line, cells joined by " | ", with a merged cell repeated on the rows it spans and a blank first cell taking the label
+// above it inside the same table. Only the first column is carried down from a blank cell; other cells are given as published. The page
+// outside tables is unchanged (htmlToText). Quotes are checked against this same text, so the model sees what the check sees.
+export const ENTRY_TABLE_BASIS = "table-rows-v1";
+export function entryPageText(html: string, toText: (h: string) => string): string {
+  const cellText = (h: string) => toText(h).replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim();
+  const tables: string[] = [];
+  const marked = String(html || "").replace(/<table\b[\s\S]*?<\/table>/gi, (table) => {
+    const grid: string[][] = [], carry: { left: number; text: string }[] = [];
+    for (const tr of table.match(/<tr\b[\s\S]*?(?=<tr\b|<\/table>)/gi) || []) {
+      const row: string[] = []; let col = 0;
+      const take = () => { while (carry[col]?.left > 0) { row[col] = carry[col].text; carry[col].left--; col++ } };
+      for (const m of tr.matchAll(/<(td|th)\b([^>]*)>([\s\S]*?)(?=<\/?(?:td|th|tr)\b|<\/table>|$)/gi)) {
+        take();
+        const span = Math.max(1, Math.min(Number((m[2].match(/\browspan\s*=\s*["']?(\d+)/i) || [])[1] || 1), 200));  // fixed: guard against a malformed rowspan
+        const cs = Math.max(1, Math.min(Number((m[2].match(/\bcolspan\s*=\s*["']?(\d+)/i) || [])[1] || 1), 50));  // fixed: guard against a malformed colspan
+        const t = cellText(m[3]);
+        for (let k = 0; k < cs; k++) { row[col] = t; if (span > 1) carry[col] = { left: span - 1, text: t }; col++ }
+      }
+      take();
+      if (row.some((x) => x)) grid.push(row);
+    }
+    if (!grid.length) return table;
+    let label = "";
+    const lines = grid.map((r, i) => {
+      const cells = Array.from({ length: r.length }, (_, j) => r[j] ?? "");
+      if (cells[0]) label = cells[0]; else if (i > 0 && label && cells.slice(1).some((x) => x)) cells[0] = label;
+      return cells.join(" | ");
+    });
+    tables.push(lines.join("\n"));
+    return `<p>ZZENTRYTABLE${tables.length - 1}ZZ</p>`;  // a placeholder the page text keeps; the rows replace it after
+  });
+  return toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`);
 }
 
 // letters and digits compared, case and spacing ignored, so words split by markup ("S enior", NMIT 25 Oct byte-check) still match
