@@ -3,11 +3,11 @@
 // rows as published. Every row carries a verbatim quote; a row is kept only when its quote is on the page, a number has a scale and is in
 // the quote, and a grade is in the quote. English-test rows are left out (they belong to the English requirement). The database proposes
 // the rows and a person admits them in Layer 4 (first run per provider). Design: admin docs/platform/ENTRY-REQUIREMENTS.md 1.1.
-export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.2";
+export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.3";
 
 export const ENTRY_SCALES = ["percentage", "points", "aggregate", "gpa", "letter", "rank", "none"] as const;
 
-export const ENTRY_PROMPT = "You read one university or polytechnic web page that lists the academic entry requirements for international applicants by country of prior education (an equivalence or entry-requirements table). Report one row for each minimum the page publishes: the country of the applicant's prior education (ISO 3166-1 alpha-2 code and its name as written), the study level it applies to as the page labels it (Foundation, Diploma, Bachelor, Degree, Masters, Cert L4 and similar; null if the page gives one minimum for all levels), the qualification as published (for example \"All India Senior School Certificate (CBSE)\"), the minimum grade exactly as published (\"75%\", \"CDD\", \"B average\", \"ATAR 70\"; null when the page says assessment on application, case by case or gives the qualification only), the numeric value of that minimum only when it is a single number, and its scale (percentage, points, aggregate, gpa, letter, rank; none when there is no grade). If the provider converts a benchmark band (for example \"65%\", \"ATAR 60\", \"rank 70\", \"group 2\") instead of a level, give that band. If a row belongs to one named course, give the course name. Put subject minimums (\"minimum 60% in English\"), best-N rules (\"best four subjects\") and alternative routes into conditions. Give your confidence (0 to 1) that the row is read correctly. Each table row on the page is given as one line with its cells separated by \" | \" (a level named once for a group of rows is repeated on each row of the group). When a table has an \"Australian standard\" column (the Australian score each row is equivalent to, such as \"70%\"), that cell on the row is the row's benchmark band: give it exactly as printed, keep the level too, and give one row per band. For every row copy the exact sentence or the whole table line from the page that contains it, with the qualification and the grade (quote, at most 300 characters). Leave out English language test scores (IELTS, TOEFL, PTE and similar), fees, dates and domestic-only rows. Never infer a row from another page or from general knowledge; return an empty list if the page publishes no minimums. Also give the edition or intake year the page names, if any.";
+export const ENTRY_PROMPT = "You read one university or polytechnic web page that lists the academic entry requirements for international applicants by country of prior education (an equivalence or entry-requirements table). Report one row for each minimum the page publishes: the country of the applicant's prior education (ISO 3166-1 alpha-2 code and its name as written), the study level it applies to as the page labels it (Foundation, Diploma, Bachelor, Degree, Masters, Cert L4 and similar; null if the page gives one minimum for all levels), the qualification as published (for example \"All India Senior School Certificate (CBSE)\"), the minimum grade exactly as published (\"75%\", \"CDD\", \"B average\", \"ATAR 70\"; null when the page says assessment on application, case by case or gives the qualification only), the numeric value of that minimum only when it is a single number, and its scale (percentage, points, aggregate, gpa, letter, rank; none when there is no grade). If the provider converts a benchmark band (for example \"65%\", \"ATAR 60\", \"rank 70\", \"group 2\") instead of a level, give that band. If a row belongs to one named course, give the course name. Put subject minimums (\"minimum 60% in English\"), best-N rules (\"best four subjects\") and alternative routes into conditions. Give your confidence (0 to 1) that the row is read correctly. Each table row on the page is given as one line with its cells separated by \" | \" (a level named once for a group of rows is repeated on each row of the group). When a table has an \"Australian standard\" column (the Australian score each row is equivalent to, such as \"70%\"), that cell on the row is the row's benchmark band: give it exactly as printed, keep the level too, and give one row per band. Read every qualification column of such a table: one row for each cell that gives a minimum, and quote the cell's whole table line (it begins with the level), never the cell alone. For every row copy the exact sentence or the whole table line from the page that contains it, with the qualification and the grade (quote, at most 300 characters). Leave out English language test scores (IELTS, TOEFL, PTE and similar), fees, dates and domestic-only rows. Never infer a row from another page or from general knowledge; return an empty list if the page publishes no minimums. Also give the edition or intake year the page names, if any.";
 
 const cond = {
   type: "object", additionalProperties: false, required: ["subject_minimums", "best_n", "alternatives"],
@@ -72,8 +72,8 @@ export function entryPageText(html: string, toText: (h: string) => string): stri
 // printed in that column on that row (blank and "Not applicable" are no band), so the reader's band can be checked against the page.
 export type EntryBandLine = { line: string; band: string | null };
 export const ENTRY_BAND_HEADER = /\baustralian standard\b/i;
-export function entryTables(html: string, toText: (h: string) => string): { text: string; lines: EntryBandLine[] } {
-  const all: EntryBandLine[] = [];
+export function entryTables(html: string, toText: (h: string) => string): { text: string; lines: EntryBandLine[]; grids: string[][][] } {
+  const all: EntryBandLine[] = [], grids: string[][][] = [];
   const cellText = (h: string) => toText(h).replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim();
   const tables: string[] = [];
   const marked = String(html || "").replace(/<table\b[\s\S]*?<\/table>/gi, (table) => {
@@ -93,9 +93,11 @@ export function entryTables(html: string, toText: (h: string) => string): { text
     }
     if (!grid.length) return table;
     let label = "", bandCol = -1;
+    const carried: string[][] = [];
     const lines = grid.map((r, i) => {
       const cells = Array.from({ length: r.length }, (_, j) => r[j] ?? "");
       if (cells[0]) label = cells[0]; else if (i > 0 && label && cells.slice(1).some((x) => x)) cells[0] = label;
+      carried.push(cells);
       const line = cells.join(" | ");
       const h = cells.findIndex((c) => ENTRY_BAND_HEADER.test(c));
       if (bandCol < 0 && h > 0) { bandCol = h; all.push({ line, band: null }); return line }  // the header row names the band column
@@ -103,10 +105,10 @@ export function entryTables(html: string, toText: (h: string) => string): { text
       all.push({ line, band: b && !/^(not applicable|n\/a|-|–)$/i.test(b) ? b : null });
       return line;
     });
-    tables.push(lines.join("\n"));
+    tables.push(lines.join("\n")); grids.push(carried);
     return `<p>ZZENTRYTABLE${tables.length - 1}ZZ</p>`;  // a placeholder the page text keeps; the rows replace it after
   });
-  return { text: toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all };
+  return { text: toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all, grids };
 }
 
 // letters and digits compared, case and spacing ignored, so words split by markup ("S enior", NMIT 25 Oct byte-check) still match
@@ -148,4 +150,94 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryBandLine
       conditions: x?.conditions ?? {}, confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
   }
   return { rows, dropped, edition: a?.edition ?? null, intake_year: Number.isInteger(a?.intake_year) ? a.intake_year : null };
+}
+
+// v0.48.3 (26 Oct 2026, Platform Admin 23:16 "source-anchored completeness guard"): a read of 13 of 22 China rows (the whole Gao Kao column
+// left out) was proposed with nothing dropped. The stored page is the source of truth: entryManifest lists every minimum an equivalency
+// table publishes (each row of a table with an "Australian standard" column, for each qualification column, the cell the row carries after
+// merged cells and carried-down level labels; "Not applicable" and blank cells publish nothing; a grading or calculation row is a footnote,
+// not a minimum). entryCompleteness matches each row the reader kept to exactly one manifest entry: its quote must be the entry's table line
+// (so it shows the level, and the band when the line has one), its grade must be in the entry's own cell, its level and band must be the
+// line's, and its qualification must name the entry's column. The read is complete only when every entry is matched once and every kept
+// row is explained; otherwise it is held whole (never proposed in part). A page whose tables cannot be read this way is "unparsed".
+export type EntryManifestEntry = { line: string; level: string; band: string | null; col: number; header: string; cell: string };
+export type EntryManifest = { status: "ok" | "none" | "unparsed"; reason: string | null; heading: string; entries: EntryManifestEntry[]; columns: string[]; footnotes: string[] };
+const NA = /^(not applicable|n\/a|-|–|—)$/i;
+const FOOTNOTE_ROW = /^(grading|calculation|note|notes|\*)|\b(grading|calculation system)\b/i;
+const words = (s: string) => new Set(String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").split(" ").filter((w) => w.length > 1 && !/^(of|the|and|or|in|at|a)$/.test(w)));
+export function entryManifest(html: string, toText: (h: string) => string): EntryManifest {
+  const h1 = (String(html || "").match(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || [])[1], title = (String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1];
+  const heading = [h1, title].filter(Boolean).map((x) => toText(String(x)).replace(/\s+/g, " ").trim()).join(" | ");
+  const { grids } = entryTables(html, toText);
+  const entries: EntryManifestEntry[] = [], columns: string[] = [], footnotes: string[] = [];
+  let found = 0;
+  for (const g of grids) {
+    const hi = g.findIndex((r) => r.some((c, j) => j > 0 && ENTRY_BAND_HEADER.test(c)));
+    if (hi < 0) continue;
+    found++;
+    const header = g[hi], bandCol = header.findIndex((c, j) => j > 0 && ENTRY_BAND_HEADER.test(c));
+    const qual = header.map((c, j) => ({ j, c })).filter(({ j, c }) => j > 0 && j !== bandCol && c.trim());
+    if (!qual.length) return { status: "unparsed", reason: "a band table has no qualification column", heading, entries: [], columns: [], footnotes: [] };
+    const body = g.slice(hi + 1);
+    if (!body.length) return { status: "unparsed", reason: "a band table has no rows", heading, entries: [], columns: [], footnotes: [] };
+    for (const r of body) {
+      const line = r.join(" | ");
+      if (r.length !== header.length) return { status: "unparsed", reason: `a row has ${r.length} cells, the header ${header.length}: ${line.slice(0, 80)}`, heading, entries: [], columns: [], footnotes: [] };
+      if (!r[0]) return { status: "unparsed", reason: `a row has no level label: ${line.slice(0, 80)}`, heading, entries: [], columns: [], footnotes: [] };
+      if (FOOTNOTE_ROW.test(r[0])) { footnotes.push(line); continue }
+      const b = String(r[bandCol] || "").trim(), band = b && !NA.test(b) ? b : null;
+      for (const { j, c } of qual) {
+        const cell = String(r[j] || "").trim();
+        if (!cell || NA.test(cell)) continue;
+        // a table repeated on the page (a second copy for small screens) publishes the same minimum once
+        if (entries.some((e) => e.line === line && e.header === c)) continue;
+        entries.push({ line, level: r[0], band, col: j, header: c, cell });
+      }
+    }
+    for (const { c } of qual) if (!columns.includes(c)) columns.push(c);
+  }
+  if (!found) return { status: "none", reason: "no table with an Australian standard column", heading, entries, columns, footnotes };
+  if (!entries.length) return { status: "unparsed", reason: "the band tables publish no minimum", heading, entries, columns, footnotes };
+  return { status: "ok", reason: null, heading, entries, columns, footnotes };
+}
+
+export type EntryCompleteness = { status: "complete" | "incomplete" | "unparsed" | "not_applicable"; basis: string; expected: number; matched: number;
+  omitted_columns: string[]; omitted: { level: string; band: string | null; column: string; cell: string }[]; unexplained: { reason: string; quote: string; country: string }[]; reason: string | null };
+export const ENTRY_COMPLETENESS_BASIS = "manifest-v1";
+export function entryCompleteness(man: EntryManifest, rows: any[]): EntryCompleteness {
+  const base = { basis: ENTRY_COMPLETENESS_BASIS, expected: man.entries.length, matched: 0, omitted_columns: [] as string[], omitted: [] as any[], unexplained: [] as any[], reason: man.reason };
+  if (man.status === "none") return { ...base, status: "not_applicable" };
+  if (man.status === "unparsed") return { ...base, status: "unparsed" };
+  const taken = new Map<number, number>(), unexplained: { reason: string; quote: string; country: string }[] = [];
+  const H = flat(man.heading);
+  rows.forEach((x, ri) => {
+    const quote = String(x?.quote || ""), Q = flat(quote), u = (reason: string) => unexplained.push({ reason, quote: quote.slice(0, 120), country: String(x?.country_code || "") });
+    const cn = flat(x?.country_name || "");
+    if (!cn || !(H.includes(cn) || (cn.length >= 4 && [...words(x?.country_name)].some((w) => w.length >= 4 && H.includes(flat(w)))))) return u("country_not_evidenced");
+    const onLine = man.entries.map((e, i) => ({ e, i })).filter(({ e }) => flat(e.line).includes(Q));
+    if (!onLine.length) return u("not_a_table_row");
+    const withLevel = onLine.filter(({ e }) => Q.includes(flat(e.level)) && (!e.band || Q.includes(flat(e.band))));
+    if (!withLevel.length) return u("level_not_evidenced");  // a cell-only quote does not prove its level (or band)
+    const grade = x?.min_grade == null ? "" : flat(x.min_grade);
+    const inCell = withLevel.filter(({ e }) => (grade ? flat(e.cell).includes(grade) : true) && Q.includes(flat(e.cell)));
+    if (!inCell.length) return u("grade_not_in_cell");
+    // the qualification must name one column of the table better than every other column, and that column must hold the grade
+    const qw = words(x?.qualification_name), score = (h: string) => { const hw = words(h); let n = 0; for (const w of qw) if (hw.has(w)) n++; return n / Math.max(1, new Set([...qw, ...hw]).size) };
+    const cols = [...new Set(man.entries.filter((e) => e.line === inCell[0].e.line || inCell.some((c) => c.e.line === e.line)).map((e) => e.header))].map((h) => ({ h, s: score(h) })).sort((a, b) => b.s - a.s);
+    if (!cols.length || !cols[0].s || (cols[1] && cols[1].s === cols[0].s)) return u("qualification_not_resolved");
+    const best = inCell.filter((c) => c.e.header === cols[0].h);
+    if (!best.length) return u("wrong_column");  // the named column does not hold this grade on this line
+    if (new Set(best.map((c) => c.e.line)).size > 1) return u("line_ambiguous");
+    const e = best[0].e, idx = best[0].i;
+    if (flat(x?.study_level || "") !== flat(e.level)) return u("wrong_level");
+    if (flat(x?.benchmark_band || "") !== flat(e.band || "")) return u("wrong_band");
+    if (taken.has(idx)) return u("duplicate_row");
+    taken.set(idx, ri);
+  });
+  const omittedIdx = man.entries.map((_, i) => i).filter((i) => !taken.has(i));
+  const omitted = omittedIdx.map((i) => ({ level: man.entries[i].level, band: man.entries[i].band, column: man.entries[i].header, cell: man.entries[i].cell }));
+  const omitted_columns = man.columns.filter((c) => man.entries.some((e) => e.header === c) && man.entries.every((e, i) => e.header !== c || !taken.has(i)));
+  const complete = !omitted.length && !unexplained.length;
+  return { ...base, status: complete ? "complete" : "incomplete", matched: taken.size, omitted, omitted_columns, unexplained,
+    reason: complete ? null : [omitted_columns.length ? `column left out: ${omitted_columns.join("; ")}` : "", omitted.length ? `${omitted.length} of ${man.entries.length} published minimums not read` : "", unexplained.length ? `${unexplained.length} rows not explained (${[...new Set(unexplained.map((x) => x.reason))].join(", ")})` : ""].filter(Boolean).join("; ") };
 }
