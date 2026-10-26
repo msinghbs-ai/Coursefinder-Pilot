@@ -72,6 +72,7 @@ export function entryPageText(html: string, toText: (h: string) => string): stri
 // printed in that column on that row (blank and "Not applicable" are no band), so the reader's band can be checked against the page.
 export type EntryBandLine = { line: string; band: string | null };
 export const ENTRY_BAND_HEADER = /\baustralian standard\b/i;
+export const NA_BAND = /^(not applicable|n\/a|na|-|–|—)$/i;  // the page's own words for "no band" in a band column
 export function entryTables(html: string, toText: (h: string) => string): { text: string; lines: EntryBandLine[]; grids: string[][][] } {
   const all: EntryBandLine[] = [], grids: string[][][] = [];
   const cellText = (h: string) => toText(h).replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim();
@@ -141,10 +142,13 @@ export function entryMatrixParsed(a: any, page: string, bandLines: EntryBandLine
     const published = [...new Set(bandLines.filter((l) => l.band && flat(l.band) && Q.includes(flat(l.band)) && (flat(l.line).includes(Q) || Q.includes(flat(l.line))))
       .map((l) => String(l.band)))];
     if (published.length > 1) { d("band_ambiguous"); continue }
-    if (published.length === 1 && !given) { d("band_missing"); continue }
-    if (given && !Q.includes(flat(given))) { d("band_not_in_quote"); continue }
-    if (given && published.length === 1 && flat(given) !== flat(published[0])) { d("band_mismatch"); continue }
-    const band = published.length === 1 ? published[0] : given;
+    // v0.48.4 (D1, 27 Oct 2026): a band given as the page's own "Not applicable" (or a dash) is no band when the quoted line prints none in
+    // its band column; on a line that prints a band it is a missing band. The quote keeps the source text either way.
+    const givenNA = !!given && NA_BAND.test(given);
+    if (published.length === 1 && (!given || givenNA)) { d("band_missing"); continue }
+    if (given && !givenNA && !Q.includes(flat(given))) { d("band_not_in_quote"); continue }
+    if (given && !givenNA && published.length === 1 && flat(given) !== flat(published[0])) { d("band_mismatch"); continue }
+    const band = published.length === 1 ? published[0] : (givenNA ? null : given);
     rows.push({ country_code: cc, country_name: String(x?.country_name || ""), study_level: x?.study_level ?? null, qualification_name: String(x?.qualification_name || "").trim(),
       min_grade: grade, min_value: value, grade_scale: scale, benchmark_band: band, course_name: x?.course_name ?? null,
       conditions: x?.conditions ?? {}, confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
@@ -201,11 +205,36 @@ export function entryManifest(html: string, toText: (h: string) => string): Entr
   return { status: "ok", reason: null, heading, entries, columns, footnotes };
 }
 
-export type EntryCompleteness = { status: "complete" | "incomplete" | "unparsed" | "not_applicable"; basis: string; expected: number; matched: number;
+// v0.48.4 (D2, 27 Oct 2026, Platform Admin 04:58 "hold them as non-country/unreadable sources without further automatic retries"): an
+// equivalency page under the guard must be one country's table. Two shapes are not: a table whose columns are requirement types (English
+// requirement, academic requirement, prerequisites: RMIT "Foundation equivalencies"), and a page whose heading names a qualification, not a
+// country (RMIT "International Baccalaureate", "Global Assessment Certificate"). The page's heading (h1 and title) must name a country of
+// the reference list: its name, official name, the name before a comma ("Korea" of "Korea, Republic of") or its alpha-3 code as a word.
+export type EntryCountryRef = { a2: string; a3: string; name: string; official: string | null };
+const REQUIREMENT_COLUMN = /\b(english|prerequisites?|academic requirement|requirement \d|entry requirement)\b/i;
+export function entryPageCountry(heading: string, countries: EntryCountryRef[]): string | null {
+  // the longest name the heading contains wins ("Nigeria" over "Niger"); an alpha-3 code must stand as its own word ("USA")
+  const H = flat(heading), W = new Set(String(heading || "").split(/[^A-Za-z]+/).filter(Boolean));
+  let best: string | null = null, len = 0;
+  for (const c of countries || []) {
+    const names = [c.name, c.official || "", String(c.name || "").split(",")[0]].map(flat).filter((n) => n.length >= 4 && H.includes(n));
+    const l = Math.max(0, ...names.map((n) => n.length), c.a3 && W.has(String(c.a3).toUpperCase()) ? 3 : 0);
+    if (l > len) { best = c.a2; len = l }
+  }
+  return best;
+}
+export function entryNonCountryShape(man: EntryManifest, countries: EntryCountryRef[]): string | null {
+  const req = man.columns.filter((c) => REQUIREMENT_COLUMN.test(c));
+  if (req.length) return `requirement-type columns, not qualifications (${req.join("; ")})`.slice(0, 300);
+  if (!entryPageCountry(man.heading, countries)) return `no country named in the page heading ("${man.heading.slice(0, 120)}")`;
+  return null;
+}
+
+export type EntryCompleteness = { status: "complete" | "incomplete" | "unparsed" | "not_applicable"; basis: string; heading?: string; expected: number; matched: number;
   omitted_columns: string[]; omitted: { level: string; band: string | null; column: string; cell: string }[]; unexplained: { reason: string; quote: string; country: string }[]; reason: string | null };
 export const ENTRY_COMPLETENESS_BASIS = "manifest-v1";
 export function entryCompleteness(man: EntryManifest, rows: any[]): EntryCompleteness {
-  const base = { basis: ENTRY_COMPLETENESS_BASIS, expected: man.entries.length, matched: 0, omitted_columns: [] as string[], omitted: [] as any[], unexplained: [] as any[], reason: man.reason };
+  const base = { basis: ENTRY_COMPLETENESS_BASIS, heading: man.heading.slice(0, 200), expected: man.entries.length, matched: 0, omitted_columns: [] as string[], omitted: [] as any[], unexplained: [] as any[], reason: man.reason };
   if (man.status === "none") return { ...base, status: "not_applicable" };
   if (man.status === "unparsed") return { ...base, status: "unparsed" };
   const taken = new Map<number, number>(), unexplained: { reason: string; quote: string; country: string }[] = [];

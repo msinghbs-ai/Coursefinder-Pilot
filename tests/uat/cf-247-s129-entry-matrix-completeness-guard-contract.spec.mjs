@@ -131,8 +131,8 @@ test('database: the verdict is enforced at record and at approval; held reads ar
 })
 
 test('worker: manifest before the AI read, verdict on every result, held reads go to the database whole', () => {
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.48.3"')
-  expect(w).toContain('if (it.completeness_required === true && stored.manifest.status !== "ok") {')
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.48\.([3-9]|[1-9][0-9])"/)
+  expect(w).toContain('if (it.completeness_required === true && (stored.manifest.status !== "ok" || nonCountry)) {')  // v0.48.4 (s131) adds the non-country shapes
   expect(w).toContain('const completeness = entryCompleteness(stored.manifest, rows);')
   expect(w).toContain('if (it.completeness_required === true && completeness.status !== "complete") {')
   expect(w).toContain('await rec({ p_error: `held_incomplete: ${completeness.reason || completeness.status}`.slice(0, 400), p_result: result, p_cost: c1 });')
