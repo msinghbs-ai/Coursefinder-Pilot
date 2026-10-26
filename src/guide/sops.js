@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.356'
+export const SOP_REVIEWED_FOR = '2.15.357'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -199,7 +199,8 @@ export const SOPS = [
       { version: '1.94', date: '25 Oct 2026', release: '2.15.353', change: 'Course pages: courses with no page published by the provider and conjoint degrees are decided once per provider in Layer 4 and then leave the web search; Firecrawl refusals are named.' },
       { version: '1.95', date: '26 Oct 2026', release: '2.15.354', change: 'Course pages: no-page and conjoint first runs open only while fewer than the set number wait in Layer 4.' },
       { version: '1.96', date: '26 Oct 2026', release: '2.15.355', change: 'Entry requirements: tables and reader in place, switched off; first reading per provider goes to Layer 4.' },
-      { version: '1.97', date: '26 Oct 2026', release: '2.15.356', change: 'Layer 4: no-page and conjoint first runs with a verified course list, a confirmed sample and an already-approved list shape are admitted automatically; new shapes and one in ten stay with a person.' }],
+      { version: '1.97', date: '26 Oct 2026', release: '2.15.356', change: 'Layer 4: no-page and conjoint first runs with a verified course list, a confirmed sample and an already-approved list shape are admitted automatically; new shapes and one in ten stay with a person.' },
+      { version: '1.98', date: '26 Oct 2026', release: '2.15.357', change: 'Layer 4: no-page and conjoint first runs show under their university, with their sample and Approve / Approve except / Reject.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -347,7 +348,8 @@ export const SOPS = [
       { version: '1.94', date: '25 Oct 2026', release: '2.15.353', change: 'Course pages: courses with no page published by the provider and conjoint degrees are decided once per provider in Layer 4 and then leave the web search; Firecrawl refusals are named.' },
       { version: '1.95', date: '26 Oct 2026', release: '2.15.354', change: 'Course pages: no-page and conjoint first runs open only while fewer than the set number wait in Layer 4.' },
       { version: '1.96', date: '26 Oct 2026', release: '2.15.355', change: 'Entry requirements: tables and reader in place, switched off; first reading per provider goes to Layer 4.' },
-      { version: '1.97', date: '26 Oct 2026', release: '2.15.356', change: 'Layer 4: no-page and conjoint first runs with a verified course list, a confirmed sample and an already-approved list shape are admitted automatically; new shapes and one in ten stay with a person.' }],
+      { version: '1.97', date: '26 Oct 2026', release: '2.15.356', change: 'Layer 4: no-page and conjoint first runs with a verified course list, a confirmed sample and an already-approved list shape are admitted automatically; new shapes and one in ten stay with a person.' },
+      { version: '1.98', date: '26 Oct 2026', release: '2.15.357', change: 'Layer 4: no-page and conjoint first runs show under their university, with their sample and Approve / Approve except / Reject.' }],
   },
 ]
 

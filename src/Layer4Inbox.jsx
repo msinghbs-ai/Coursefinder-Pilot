@@ -75,7 +75,12 @@ function Item({it,k,showProvider,rank,onDone,onError}){
   // "Enter another address" binds a person's page (https:// on the provider's own site), which is read again and re-admits the fee
   const fee=isFeeItem(it)
   const choices=(k.choices||[]).filter(c=>!(fee&&c.key==='use'))
-  const choose=c=>{setErr('');if(c.link){window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):'')}
+  const choose=c=>{setErr('');if(c.link){window.location.hash=linkFor(c.link,it).replace(/^#/,'');return}setOpen(c);setReason(c.reason||'');setValue(c.input==='url'&&it.kind==='course_link'&&!fee?urlOf(d.proposed):c.input==='url'&&it.kind==='conjoint_first_run'?(d.proposed?.parent_url||''):c.input==='courses'?'[]':'')}
+  // hotfix 26 Oct 2026: a university's first run (no page published / conjoint rule) shows its sample; "has a page" ticks courses from it
+  const firstRun=it.kind==='no_page_first_run'||it.kind==='conjoint_first_run'
+  const sample=Array.isArray(d.proposed?.sample)?d.proposed.sample:[]
+  const ticked=(()=>{try{return JSON.parse(value||'[]')}catch{return[]}})()
+  const tick=id=>setValue(JSON.stringify(ticked.includes(id)?ticked.filter(x=>x!==id):[...ticked,id]))
   const go=async()=>{setBusy(true);setErr('');try{const r=await rpc('decide',{kind:it.kind,ref:it.ref,choice:open.key,reason,value});setOpen(null);onDone?.(r)}catch(e){setErr(e.message)}finally{setBusy(false)}}
   return <article className={`l4i-item${it.late?' late':''}`} data-l4-item={it.kind}>
     <header><StatusChip value={it.kind} tone={it.late?'warning':'info'} label={k.label}/>{showProvider&&it.provider&&<strong className="l4i-prov">{it.provider}</strong>}{it.subject&&<span className="l4i-subj">{it.subject}</span>}{d.course_code&&<span className="l4i-code" title="CRICOS code" data-l4-code>CRICOS {d.course_code}</span>}<small>{fmtDate(it.created_at)} · {days(it.created_at)} d</small></header>
@@ -83,6 +88,11 @@ function Item({it,k,showProvider,rank,onDone,onError}){
     {it.kind==='course_link'&&!fee&&(urlOf(d.before)||urlOf(d.proposed))&&<dl className="l4i-dl"><dt>Page we hold</dt><dd data-l4-held><PageLink u={urlOf(d.before)} title={it.subject}/></dd><dt>New page</dt><dd data-l4-new><PageLink u={urlOf(d.proposed)} title={it.subject}/></dd></dl>}
     {fee&&<p className="l4i-why" data-l4-fee-item><small>A held fee: enter the course's own page (https://, on the university's website) and it is read again, or keep the page we hold.</small></p>}
     {it.kind==='counsellor_report'&&<dl className="l4i-dl" data-l4-report>{d.issue&&<><dt>Issue</dt><dd>{String(d.issue).replace(/_/g,' ')}</dd></>}{d.field&&<><dt>Field</dt><dd>{d.field}</dd></>}{d.suggested_value&&<><dt>Suggested</dt><dd>{d.suggested_value}</dd></>}{d.source_url&&<><dt>Source</dt><dd><a href={d.source_url} target="_blank" rel="noreferrer">{d.source_url} <ExternalLink size={11}/></a></dd></>}{d.reporter&&<><dt>Reported by</dt><dd>{[d.reporter.name,d.reporter.email].filter(Boolean).join(' · ')}</dd></>}</dl>}
+    {firstRun&&<div className="l4i-dl" data-l4-first-run>
+      <p><small>{it.kind==='no_page_first_run'?`${d.before?.courses_proposed??sample.length} course(s) found no page after the AI page match. Check the sample against the university's website.`:`${d.before?.conjoint_courses_without_page??sample.length} conjoint or double degree(s) without a page of their own.`}</small></p>
+      {it.kind==='conjoint_first_run'&&d.proposed?.parent_url&&<p><small>Conjoint page found: <PageLink u={d.proposed.parent_url}/></small></p>}
+      {sample.length>0&&<ul className="l4i-sample" data-l4-sample>{sample.map(x=><li key={x.course_id}>{open?.input==='courses'?<label><input type="checkbox" checked={ticked.includes(x.course_id)} onChange={()=>tick(x.course_id)} data-l4-sample-tick={x.course_code||x.code||x.course_id}/> {x.title}{x.code?` (${x.code})`:''} has its own page</label>:<>{x.title}{x.code?` (${x.code})`:''}</>}</li>)}</ul>}
+    </div>}
     {it.kind==='provider_departure'&&d.note&&<p className="l4i-why" data-l4-departure><small>{d.note}</small></p>}
     {it.kind==='held_scholarship'&&<dl className="l4i-dl">{d.url&&<><dt>Page</dt><dd><a href={d.url} target="_blank" rel="noreferrer">{d.url} <ExternalLink size={11}/></a></dd></>}{it.suggestion&&<><dt>AI re-check</dt><dd>{it.suggestion}</dd></>}{d.audience_quote&&<><dt>Who</dt><dd><q>{d.audience_quote}</q></dd></>}{d.value_quote&&<><dt>Value</dt><dd><q>{d.value_quote}</q></dd></>}</dl>}
     <div className="l4i-choices">{choices.map(c=>{const low=c.rank&&rank<c.rank;return <button key={c.key} type="button" className={`${open?.key===c.key?'on':''}${c.link?' link':''}`} disabled={low} title={low?'Your role cannot make this choice':c.returns} onClick={()=>choose(c)} data-l4-choice={c.key}>{c.label}{c.link&&<ArrowRight size={12}/>}</button>})}</div>
@@ -91,7 +101,7 @@ function Item({it,k,showProvider,rank,onDone,onError}){
       {open.input==='url'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="https://…" aria-label="Web address"/>}
       {open.input==='provider'&&<input value={value} onChange={e=>setValue(e.target.value)} placeholder="Successor: its exact name, or its CRICOS or NZQA code" aria-label="Successor provider"/>}
       <input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why (kept with the decision)" aria-label="Reason"/>
-      <Button compact variant="primary" disabled={busy||reason.trim().length<4||(open.input==='url'&&!urlOk(value,fee))||(open.input==='provider'&&value.trim().length<3)} onClick={go} data-l4-confirm>{busy?'Saving…':open.label}</Button>
+      <Button compact variant="primary" disabled={busy||reason.trim().length<4||(open.input==='url'&&!urlOk(value,fee))||(open.input==='provider'&&value.trim().length<3)||(open.input==='courses'&&ticked.length===0)} onClick={go} data-l4-confirm>{busy?'Saving…':open.label}</Button>
       <Button compact onClick={()=>setOpen(null)}>Cancel</Button>
       {err&&<p className="l4i-err" role="alert">{err}</p>}
     </div>}

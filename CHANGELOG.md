@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.284 — 26 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.357** (hotfix, Platform Admin 26 Oct 2026 12:50). Migration `20261026003000_cf247_hotfix_l4_first_runs_inbox.sql` (md5-guarded): `security.layer4_inbox_items_v1` gives provider-entity first runs their university and the kinds `no_page_first_run` / `conjoint_first_run`; `security.layer4_inbox_kinds_v1` adds their approve / edit / reject choices; `public.admin_layer4_inbox` routes them to `layer4_review_decide`. `Layer4Inbox.jsx` shows the sample and ticks the courses that have a page. Test s122.
+
 ## 0.1.283 — 26 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.356** (SP-2a, Platform Admin decision 26 Oct 2026 08:25). Migration `20261026002000_cf247_sp2a_layer4_auto_admit_first_runs.sql`: `pipeline.layer4_auto_admissions`; `security.course_list_check_v1`, `security.no_page_sample_check_v1`, `security.no_page_auto_admit_v1`; `layer4.auto_admit_*` settings (on 1, audit 1 in 10, sample 0.8, list recall 0.7); job `layer4-auto-admit` (catalogued, hourly at :47). Auto-admissions written to `pipeline.layer4_decisions` (system account) and the Inbox Decided list as "Auto: <reason>". Test s119.
