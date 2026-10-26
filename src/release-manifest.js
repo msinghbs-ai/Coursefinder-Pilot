@@ -1,17 +1,16 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.356'
-export const PACKAGE_VERSION='0.1.283'
+export const UI_VERSION='2.15.357'
+export const PACKAGE_VERSION='0.1.284'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
   date:'26 Oct 2026',
-  title:'Layer 4: proven first runs admitted automatically',
+  title:'Layer 4: first runs show under their university',
   changes:[
-    'A provider\'s first check of courses with no page of their own (or its conjoint rule) is approved without a person when its own course list is current and verified, at least 4 in 5 of the sample are confirmed not on that list, and a person has already approved a provider whose list has the same shape.',
-    'New list shapes still come to Layer 4, and one in ten first runs that pass is kept for a person as an audit (Settings, Layer 4).',
-    'Every automatic approval appears in Decided as "Auto:" with its reason and evidence; nothing is deleted, and any page found later re-opens a course.',
+    'Hotfix: a university\'s first check of courses with no page of their own, and of its conjoint or double degrees, now shows under that university in Layer 4 (By university), with its sample of courses.',
+    'The card offers Approve, Approve except the courses that have a page (tick them in the sample) and Reject; conjoint degrees can be approved with their shared page.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[]
