@@ -44,11 +44,11 @@ test('the whole-row quote is admitted against the row text and was not against p
 })
 
 test('the worker reads stored HTML through the row text, says so, and the prompt describes the lines', () => {
-  expect(w).toContain('entryPageText(t, htmlToText) : t')
+  expect(w).toContain('entryTables(t, htmlToText) : { text: t, lines: [] }')  // v0.48.2 (s128) keeps the same row text
   expect(w).toContain('page_basis: ENTRY_TABLE_BASIS')
-  expect(w).toContain('const WORKER = "coverage-sweep-worker-v0.48.1"')
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.48\.[1-9]"/)
   expect(ENTRY_TABLE_BASIS).toBe('table-rows-v1')
-  expect(ENTRY_PROMPT_VERSION).toBe('entry-matrix-v0.1.1')
+  expect(ENTRY_PROMPT_VERSION).toMatch(/^entry-matrix-v0\.1\.[1-9]$/)
   expect(ENTRY_PROMPT).toContain('Each table row on the page is given as one line with its cells separated by " | "')
 })
 

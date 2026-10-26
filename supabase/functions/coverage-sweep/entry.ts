@@ -3,11 +3,11 @@
 // rows as published. Every row carries a verbatim quote; a row is kept only when its quote is on the page, a number has a scale and is in
 // the quote, and a grade is in the quote. English-test rows are left out (they belong to the English requirement). The database proposes
 // the rows and a person admits them in Layer 4 (first run per provider). Design: admin docs/platform/ENTRY-REQUIREMENTS.md 1.1.
-export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.1";
+export const ENTRY_PROMPT_VERSION = "entry-matrix-v0.1.2";
 
 export const ENTRY_SCALES = ["percentage", "points", "aggregate", "gpa", "letter", "rank", "none"] as const;
 
-export const ENTRY_PROMPT = "You read one university or polytechnic web page that lists the academic entry requirements for international applicants by country of prior education (an equivalence or entry-requirements table). Report one row for each minimum the page publishes: the country of the applicant's prior education (ISO 3166-1 alpha-2 code and its name as written), the study level it applies to as the page labels it (Foundation, Diploma, Bachelor, Degree, Masters, Cert L4 and similar; null if the page gives one minimum for all levels), the qualification as published (for example \"All India Senior School Certificate (CBSE)\"), the minimum grade exactly as published (\"75%\", \"CDD\", \"B average\", \"ATAR 70\"; null when the page says assessment on application, case by case or gives the qualification only), the numeric value of that minimum only when it is a single number, and its scale (percentage, points, aggregate, gpa, letter, rank; none when there is no grade). If the provider converts a benchmark band (for example \"65%\", \"ATAR 60\", \"rank 70\", \"group 2\") instead of a level, give that band. If a row belongs to one named course, give the course name. Put subject minimums (\"minimum 60% in English\"), best-N rules (\"best four subjects\") and alternative routes into conditions. Give your confidence (0 to 1) that the row is read correctly. Each table row on the page is given as one line with its cells separated by \" | \" (a level named once for a group of rows is repeated on each row of the group). For every row copy the exact sentence or the whole table line from the page that contains it, with the qualification and the grade (quote, at most 300 characters). Leave out English language test scores (IELTS, TOEFL, PTE and similar), fees, dates and domestic-only rows. Never infer a row from another page or from general knowledge; return an empty list if the page publishes no minimums. Also give the edition or intake year the page names, if any.";
+export const ENTRY_PROMPT = "You read one university or polytechnic web page that lists the academic entry requirements for international applicants by country of prior education (an equivalence or entry-requirements table). Report one row for each minimum the page publishes: the country of the applicant's prior education (ISO 3166-1 alpha-2 code and its name as written), the study level it applies to as the page labels it (Foundation, Diploma, Bachelor, Degree, Masters, Cert L4 and similar; null if the page gives one minimum for all levels), the qualification as published (for example \"All India Senior School Certificate (CBSE)\"), the minimum grade exactly as published (\"75%\", \"CDD\", \"B average\", \"ATAR 70\"; null when the page says assessment on application, case by case or gives the qualification only), the numeric value of that minimum only when it is a single number, and its scale (percentage, points, aggregate, gpa, letter, rank; none when there is no grade). If the provider converts a benchmark band (for example \"65%\", \"ATAR 60\", \"rank 70\", \"group 2\") instead of a level, give that band. If a row belongs to one named course, give the course name. Put subject minimums (\"minimum 60% in English\"), best-N rules (\"best four subjects\") and alternative routes into conditions. Give your confidence (0 to 1) that the row is read correctly. Each table row on the page is given as one line with its cells separated by \" | \" (a level named once for a group of rows is repeated on each row of the group). When a table has an \"Australian standard\" column (the Australian score each row is equivalent to, such as \"70%\"), that cell on the row is the row's benchmark band: give it exactly as printed, keep the level too, and give one row per band. For every row copy the exact sentence or the whole table line from the page that contains it, with the qualification and the grade (quote, at most 300 characters). Leave out English language test scores (IELTS, TOEFL, PTE and similar), fees, dates and domestic-only rows. Never infer a row from another page or from general knowledge; return an empty list if the page publishes no minimums. Also give the edition or intake year the page names, if any.";
 
 const cond = {
   type: "object", additionalProperties: false, required: ["subject_minimums", "best_n", "alternatives"],
@@ -65,7 +65,15 @@ export function entrySlices(text: string, maxRows: number, maxChars = 24000): st
 // above it inside the same table. Only the first column is carried down from a blank cell; other cells are given as published. The page
 // outside tables is unchanged (htmlToText). Quotes are checked against this same text, so the model sees what the check sees.
 export const ENTRY_TABLE_BASIS = "table-rows-v1";
-export function entryPageText(html: string, toText: (h: string) => string): string {
+export function entryPageText(html: string, toText: (h: string) => string): string { return entryTables(html, toText).text }
+
+// v0.48.2 (26 Oct 2026, AER v1.1 RMIT re-read: 59 rows, benchmark band empty on all, rows collapsed onto shared identities): a table whose
+// header names an "Australian standard" column (RMIT's band ladder) publishes a benchmark band on each row. Each table line keeps the band
+// printed in that column on that row (blank and "Not applicable" are no band), so the reader's band can be checked against the page.
+export type EntryBandLine = { line: string; band: string | null };
+export const ENTRY_BAND_HEADER = /\baustralian standard\b/i;
+export function entryTables(html: string, toText: (h: string) => string): { text: string; lines: EntryBandLine[] } {
+  const all: EntryBandLine[] = [];
   const cellText = (h: string) => toText(h).replace(/\s*\n\s*/g, " ").replace(/\s+/g, " ").trim();
   const tables: string[] = [];
   const marked = String(html || "").replace(/<table\b[\s\S]*?<\/table>/gi, (table) => {
@@ -84,16 +92,21 @@ export function entryPageText(html: string, toText: (h: string) => string): stri
       if (row.some((x) => x)) grid.push(row);
     }
     if (!grid.length) return table;
-    let label = "";
+    let label = "", bandCol = -1;
     const lines = grid.map((r, i) => {
       const cells = Array.from({ length: r.length }, (_, j) => r[j] ?? "");
       if (cells[0]) label = cells[0]; else if (i > 0 && label && cells.slice(1).some((x) => x)) cells[0] = label;
-      return cells.join(" | ");
+      const line = cells.join(" | ");
+      const h = cells.findIndex((c) => ENTRY_BAND_HEADER.test(c));
+      if (bandCol < 0 && h > 0) { bandCol = h; all.push({ line, band: null }); return line }  // the header row names the band column
+      const b = bandCol > 0 ? String(cells[bandCol] || "").trim() : "";
+      all.push({ line, band: b && !/^(not applicable|n\/a|-|–)$/i.test(b) ? b : null });
+      return line;
     });
     tables.push(lines.join("\n"));
     return `<p>ZZENTRYTABLE${tables.length - 1}ZZ</p>`;  // a placeholder the page text keeps; the rows replace it after
   });
-  return toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`);
+  return { text: toText(marked).replace(/ZZENTRYTABLE(\d+)ZZ/g, (_, n) => `\n${tables[Number(n)]}\n`), lines: all };
 }
 
 // letters and digits compared, case and spacing ignored, so words split by markup ("S enior", NMIT 25 Oct byte-check) still match
@@ -101,7 +114,11 @@ const flat = (s: string) => String(s || "").toLowerCase().normalize("NFKD").repl
 const ENGLISH_TEST = /\b(ielts|toefl|pte|duolingo|cambridge english|oet)\b/i;
 
 export type EntryDrop = { reason: string; country?: string; quote?: string };
-export function entryMatrixParsed(a: any, page: string) {
+// v0.48.2: bandLines (from entryTables) are the page's table lines with the band each publishes. A row whose quote is such a line and shows
+// its band must give that band (band_missing otherwise); a band given must be in the quote (band_not_in_quote) and be the one the line
+// publishes (band_mismatch); lines that match the quote with different bands leave it unproven (band_ambiguous). The band kept is the one
+// printed on the page, never inferred.
+export function entryMatrixParsed(a: any, page: string, bandLines: EntryBandLine[] = []) {
   const P = flat(page), on = (q: string) => flat(q).length >= 6 && P.includes(flat(q));
   const numIn = (n: number, q: string) => [String(n), String(n).replace(/\.0$/, ""), n.toFixed(1), n.toFixed(2)].some((d) => String(q || "").includes(d));
   const rows: any[] = [], dropped: EntryDrop[] = [];
@@ -118,8 +135,16 @@ export function entryMatrixParsed(a: any, page: string) {
     if (value != null && !numIn(value, quote)) { d("value_not_in_quote"); continue }
     const grade = x?.min_grade == null ? null : String(x.min_grade).trim() || null;
     if (grade && !flat(quote).includes(flat(grade))) { d("grade_not_in_quote"); continue }
+    const Q = flat(quote), given = x?.benchmark_band == null ? null : String(x.benchmark_band).trim() || null;
+    const published = [...new Set(bandLines.filter((l) => l.band && flat(l.band) && Q.includes(flat(l.band)) && (flat(l.line).includes(Q) || Q.includes(flat(l.line))))
+      .map((l) => String(l.band)))];
+    if (published.length > 1) { d("band_ambiguous"); continue }
+    if (published.length === 1 && !given) { d("band_missing"); continue }
+    if (given && !Q.includes(flat(given))) { d("band_not_in_quote"); continue }
+    if (given && published.length === 1 && flat(given) !== flat(published[0])) { d("band_mismatch"); continue }
+    const band = published.length === 1 ? published[0] : given;
     rows.push({ country_code: cc, country_name: String(x?.country_name || ""), study_level: x?.study_level ?? null, qualification_name: String(x?.qualification_name || "").trim(),
-      min_grade: grade, min_value: value, grade_scale: scale, benchmark_band: x?.benchmark_band ?? null, course_name: x?.course_name ?? null,
+      min_grade: grade, min_value: value, grade_scale: scale, benchmark_band: band, course_name: x?.course_name ?? null,
       conditions: x?.conditions ?? {}, confidence: Number(x?.confidence ?? 0), quote: quote.slice(0, 300) });
   }
   return { rows, dropped, edition: a?.edition ?? null, intake_year: Number.isInteger(a?.intake_year) ? a.intake_year : null };
