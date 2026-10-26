@@ -57,20 +57,20 @@ test.describe('M2.4.1 Layer 1 regulatory operations @deployed',()=>{
     await milestoneScreenshot(page,testInfo,'cf-067-layer1-source-settings-role-boundary')
   }finally{await finish(testInfo,runtime)}})
 
-  test('authorised Layer 1 operator performs real NZQA authority and count validation',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
+  test('authorised Layer 1 operator performs real NZQA authority and count validation @live-acting',async({page},testInfo)=>{test.setTimeout(120000);const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'NZ');const result=await validateSource(page,dialog,s=>s.country_code==='NZ'&&s.source_type!=='government_scholarship_program'&&/^NZQA Education Organisations/i.test(s.source_label||''),'NZQA')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('NZ');expect(result?.validation?.discovered?.providers).toBeGreaterThan(300);expect(result?.validation?.discovered?.pages).toBe(5);expect(result?.validation?.worker_version).toMatch(/^layer1-operations-control-v1\./)
     await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'NZ');const nz=dialog.locator('[data-l1-source]').filter({hasText:'NZQA Education Organisations'}).first();await expect(nz).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});const body=await openRow(dialog,nz);await expect(body).toContainText(Number(result.validation.discovered.providers).toLocaleString('en-AU'),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-nz-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
-  test('authorised Layer 1 operator performs real CRICOS authority, shape and active-count validation',async({page},testInfo)=>{
+  test('authorised Layer 1 operator performs real CRICOS authority, shape and active-count validation @live-acting',async({page},testInfo)=>{
     test.setTimeout(180000);const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');const result=await validateSource(page,dialog,s=>s.country_code==='AU'&&s.source_type!=='government_scholarship_program'&&/^CRICOS Providers, Courses and Locations/i.test(s.source_label||''),'CRICOS')
     expect(result?.ok).toBe(true);expect(result?.validation?.country_code).toBe('AU');expect(result?.validation?.discovered?.active).toBeGreaterThan(25000);expect(result?.validation?.discovered?.total).toBeGreaterThanOrEqual(result.validation.discovered.active);expect(result?.validation?.count_basis).toContain('active CRICOS course rows');expect(result?.validation?.worker_version).toMatch(/^layer1-operations-control-v1\./)
     await dialog.getByRole('button',{name:'Refresh'}).click();await chooseCountry(dialog,'AU');const au=dialog.locator('[data-l1-source]').filter({hasText:'CRICOS Providers, Courses and Locations'}).first();await expect(au).toBeVisible({timeout:DETERMINISTIC_UI_TIMEOUT});const body=await openRow(dialog,au);await expect(body).toContainText(Number(result.validation.discovered.active).toLocaleString('en-AU'),{timeout:DETERMINISTIC_UI_TIMEOUT});await milestoneScreenshot(page,testInfo,'m2-4-1-au-source-validated')
   }finally{await finish(testInfo,runtime)}})
 
-  test('AU Statistics filter exposes QILT and PRISMS as governed runnable sources',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
+  test('AU Statistics filter exposes QILT and PRISMS as governed runnable sources @live-acting',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
     await loginAsUatUser(page);const dialog=await openLayer1(page);await chooseCountry(dialog,'AU');await chooseType(dialog,'statistics')
     // v2.15.246: each QILT survey and PRISMS is its own row in the one Sources list
     const rows=dialog.locator('[data-l1-source]');await expect(rows).toHaveCount(5,{timeout:DETERMINISTIC_UI_TIMEOUT})

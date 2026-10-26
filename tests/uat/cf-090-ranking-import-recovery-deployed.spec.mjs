@@ -7,7 +7,7 @@ async function finish(testInfo,runtime){await attachRuntimeEvidence(testInfo,run
 test.describe('CF-090 ranking import recovery @deployed',()=>{
  test.beforeAll(async()=>{await writeRunEnvironment({suite:'cf-090-ranking-import-recovery',change_control:'CF-CHG-20260903-090'})})
 
- test('recovers uploaded THE 2026 import, validates and applies accepted edition',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
+ test('recovers uploaded THE 2026 import, validates and applies accepted edition @live-acting',async({page},testInfo)=>{test.setTimeout(180000);const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
   const row=page.locator('.m-ranking-import-row').filter({hasText:'THE_year2026.txt'}).first()

@@ -16,6 +16,12 @@ on:
         default: targeted
         type: choice
         options: [targeted, integration, acceptance]
+      live_acting:
+        description: Also run the specs that act on the live site (@live-acting); default off (Platform Admin 26 Oct 2026)
+        required: true
+        default: "off"
+        type: choice
+        options: ["off", "on"]
 
 permissions:
   contents: read
@@ -34,6 +40,8 @@ jobs:
       UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
       UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
       UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+      # specs tagged @live-acting change live data or the UAT user's saved settings; they run only when switched on
+      LIVE_GREP: ${{ inputs.live_acting == 'on' && '.*' || '@live-acting' }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout
@@ -357,7 +365,7 @@ jobs:
         shell: bash
         run: |
           mapfile -t specs < /tmp/uat-specs.txt
-          npx playwright test "${specs[@]}" --project=chromium-desktop --reporter=list,github
+          if [ "$LIVE_GREP" = ".*" ]; then npx playwright test "${specs[@]}" --project=chromium-desktop --reporter=list,github; else npx playwright test "${specs[@]}" --grep-invert @live-acting --pass-with-no-tests --project=chromium-desktop --reporter=list,github; fi
 
       - name: Run deployed governed validation — mobile gate
         id: mobile_uat
@@ -365,7 +373,7 @@ jobs:
         shell: bash
         run: |
           mapfile -t specs < /tmp/uat-specs.txt
-          npx playwright test "${specs[@]}" --project=chromium-mobile --reporter=list,github
+          if [ "$LIVE_GREP" = ".*" ]; then npx playwright test "${specs[@]}" --project=chromium-mobile --reporter=list,github; else npx playwright test "${specs[@]}" --grep-invert @live-acting --pass-with-no-tests --project=chromium-mobile --reporter=list,github; fi
 
       - name: Save npm and Playwright cache after run
         if: always() && steps.uat_cache.outputs.cache-hit != 'true'

@@ -1,0 +1,105 @@
+# Weekly deployed run (Platform Admin 26 Oct 2026 10:49, approved). Every @deployed spec runs against the live site, desktop and phone.
+# Specs that act on the live site are tagged @live-acting (register column "Acts on live"). They run only when the live-acting switch is
+# on: the dispatch input, or the repository variable DEPLOYED_WEEKLY_LIVE_ACTING = on. The default is OFF. The results go to the branch
+# deployed-weekly-results (weekly/LATEST.md and a dated JSON file) for the Monday line, which reports the safe specs that ran and the
+# live-acting specs held as two separate counts.
+name: Deployed weekly run
+
+on:
+  schedule:
+    - cron: "17 18 * * 0"   # Monday 05:17 AEDT, before the Monday line
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed CourseFinder Admin URL
+        required: true
+        default: https://coursefinder-pilot.techm.workers.dev
+        type: string
+      live_acting:
+        description: Also run the specs that act on the live site (@live-acting)
+        required: true
+        default: "off"
+        type: choice
+        options: ["off", "on"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coursefinder-deployed-weekly
+  cancel-in-progress: false
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      UAT_BASE_URL: ${{ inputs.base_url || 'https://coursefinder-pilot.techm.workers.dev' }}
+      UAT_EMAIL: ${{ secrets.COURSEFINDER_UAT_EMAIL }}
+      UAT_PASSWORD: ${{ secrets.COURSEFINDER_UAT_PASSWORD }}
+      LIVE_ACTING: ${{ inputs.live_acting || vars.DEPLOYED_WEEKLY_LIVE_ACTING || 'off' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies and Chromium
+        run: |
+          npm install --ignore-scripts --prefer-offline --no-audit --no-fund
+          npx playwright install chromium
+      - name: Preflight
+        shell: bash
+        run: |
+          if [ -z "$UAT_EMAIL" ] || [ -z "$UAT_PASSWORD" ]; then echo "::error::Actions secrets COURSEFINDER_UAT_EMAIL / COURSEFINDER_UAT_PASSWORD are missing"; exit 1; fi
+          case "$UAT_BASE_URL" in https://*) ;; *) echo "::error::UAT_BASE_URL must use HTTPS"; exit 1 ;; esac
+          case "$LIVE_ACTING" in on|off) ;; *) echo "::error::live-acting switch must be on or off (got $LIVE_ACTING)"; exit 1 ;; esac
+          echo "Live-acting switch: $LIVE_ACTING" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Run deployed specs — desktop
+        id: desktop
+        continue-on-error: true
+        shell: bash
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/desktop.json
+        run: |
+          if [ "$LIVE_ACTING" = on ]; then npx playwright test --grep @deployed --project=chromium-desktop --reporter=list,json
+          else npx playwright test --grep @deployed --grep-invert @live-acting --project=chromium-desktop --reporter=list,json; fi
+      - name: Run deployed specs — phone
+        id: phone
+        continue-on-error: true
+        shell: bash
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/phone.json
+        run: |
+          if [ "$LIVE_ACTING" = on ]; then npx playwright test --grep @deployed --project=chromium-mobile --reporter=list,json
+          else npx playwright test --grep @deployed --grep-invert @live-acting --project=chromium-mobile --reporter=list,json; fi
+      - name: Summarise for the Monday line
+        shell: bash
+        env:
+          TMP: ${{ runner.temp }}
+        run: |
+          held=0
+          if [ "$LIVE_ACTING" != on ]; then held=$(npx playwright test --list --grep @live-acting --project=chromium-desktop 2>/dev/null | sed -n 's/^Total: \([0-9]*\) test.*/\1/p'); fi
+          HELD="${held:-0}" node scripts/deployed-weekly-summary.mjs "$TMP/desktop.json" "$TMP/phone.json" > "$TMP/LATEST.md"
+          cat "$TMP/LATEST.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit the results branch
+        shell: bash
+        env:
+          TMP: ${{ runner.temp }}
+        run: |
+          d=$(TZ=Australia/Melbourne date +%Y-%m-%d)
+          git config user.name "deployed-weekly"; git config user.email "deployed-weekly@users.noreply.github.com"
+          git fetch origin deployed-weekly-results || true
+          git checkout -B deployed-weekly-results origin/deployed-weekly-results 2>/dev/null || git checkout --orphan deployed-weekly-results
+          git rm -rq --cached . 2>/dev/null || true
+          mkdir -p weekly
+          cp "$TMP/LATEST.md" weekly/LATEST.md; cp "$TMP/LATEST.md" "weekly/$d.md"
+          [ -f "$TMP/desktop.json" ] && cp "$TMP/desktop.json" "weekly/$d-desktop.json"
+          [ -f "$TMP/phone.json" ] && cp "$TMP/phone.json" "weekly/$d-phone.json"
+          git add weekly
+          git commit -m "Deployed weekly run $d (live-acting $LIVE_ACTING)" || echo "No change"
+          git push -f origin deployed-weekly-results
+      - name: Fail on any failure
+        if: steps.desktop.outcome != 'success' || steps.phone.outcome != 'success'
+        run: |
+          echo "::error::Deployed weekly run had failures (desktop ${{ steps.desktop.outcome }}, phone ${{ steps.phone.outcome }})"
+          exit 1

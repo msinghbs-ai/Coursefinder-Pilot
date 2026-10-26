@@ -27,8 +27,10 @@ export default defineConfig({
   },
   projects: [
     {
+      // @responsive tests check phone width only, so they run on the phone project alone (Platform Admin 26 Oct 2026 10:49)
       name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1100 } },
+      grepInvert: /@responsive/,
     },
     {
       // Test governance (Platform Admin 26 Oct 2026): the phone viewport runs only tests that check behaviour at phone width

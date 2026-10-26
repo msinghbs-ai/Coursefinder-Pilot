@@ -79,7 +79,7 @@ test.describe('CourseFinder deployed Course Detail PIM v2.15.x standardised oper
     }finally{await finish(testInfo,runtime)}
   })
 
-  test('Course decision-card order persists for the signed-in user and can be restored',async({page},testInfo)=>{
+  test('Course decision-card order persists for the signed-in user and can be restored @live-acting',async({page},testInfo)=>{
     const runtime=observeRuntime(page)
     try{
       await loginAsUatUser(page);await clearCourseLayoutPreference(page);await page.goto(`${process.env.UAT_BASE_URL}/#courses?id=${ARTS_ID}`)

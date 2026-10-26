@@ -28,7 +28,7 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
   const box=await page.locator('.m-ranking-import-compact').boundingBox();expect(box?.height||9999).toBeLessThan(520)
  }finally{await finish(testInfo,runtime)}})
 
- test('existing uploaded ranking import can be parsed and records a governed job',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test('existing uploaded ranking import can be parsed and records a governed job @live-acting',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=sources-imports',process.env.UAT_BASE_URL).toString())
   const row=page.locator('.m-ranking-import-row').filter({hasText:'THE 2015'}).first()
@@ -41,7 +41,7 @@ test.describe('CF-076 compact ranking import UX @deployed',()=>{
   await expect(page.locator('body')).toContainText(/ranking_import_validate|Ranking/i,{timeout:DETERMINISTIC_UI_TIMEOUT})
  }finally{await finish(testInfo,runtime)}})
 
- test('Layer 1 source settings recognises the selected retained ranking edition and can validate it',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
+ test('Layer 1 source settings recognises the selected retained ranking edition and can validate it @live-acting',async({page},testInfo)=>{const runtime=observeRuntime(page);try{
   await loginAsUatUser(page)
   await page.goto(new URL('/#administration?section=layer1-sources&country=GLOBAL',process.env.UAT_BASE_URL).toString())
   const card=page.locator('.l1s-card').filter({hasText:'Times Higher Education World University Rankings'}).first()

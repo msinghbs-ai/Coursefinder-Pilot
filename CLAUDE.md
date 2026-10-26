@@ -26,7 +26,8 @@ These rules come from the Platform Admin and apply to every change.
   - A rule change that obsoletes tests retires them in the same PR, with the reason in the register's retirement log.
   - A rule with a central guard is not re-asserted in per-change specs: G2 is `s32`, G3 is `s57`, housekeeping and G1 are `s42`, the release contract is `m245`/`s70`.
   - Nothing is carried skipped or red. A skip for a missing environment belongs only to an `@deployed` spec, and the suite has no "known failures".
-  - The phone viewport runs only `@responsive` tests and the deployed gate. Tag a test `@responsive` only when it checks behaviour at phone width.
+  - The phone viewport runs only `@responsive` tests and the deployed gate; `@responsive` tests run on the phone project only and first assert they are at phone width. The screens operated from a phone (Course catalogue list, Course detail blade, Layer 4 Review) are guarded by `s121` (Platform Admin 26 Oct 2026 10:49).
+  - A deployed test that changes live data or the UAT user's saved settings is tagged `@live-acting` (the register's "Acts on live" column). It runs only when the live-acting switch is on (weekly run: input or repository variable `DEPLOYED_WEEKLY_LIVE_ACTING`; `deployed-uat`: input). The switch is off by default. The weekly deployed run (`deployed-weekly.yml`, Monday 05:17) reports the safe specs run and the live-acting specs held separately.
   - `tests/uat/cf-247-s120-test-governance-contract.spec.mjs` fails the build otherwise. Quarterly prune with the docs budget; tests added, retired and net go in the Monday line.
 - **Nothing is dropped or deleted by an applied migration.** Drops and deletes go to the Platform Admin as a paste file.
 - **A passing qualification never switches anything on by itself.**
