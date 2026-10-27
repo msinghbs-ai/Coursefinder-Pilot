@@ -1,19 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.359'
-export const PACKAGE_VERSION='0.1.286'
+export const UI_VERSION='2.15.360'
+export const PACKAGE_VERSION='0.1.287'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'26 Oct 2026',
-  title:'Hotfix: one identity check for every fee write',
+  date:'27 Oct 2026',
+  title:'Governed actions: approve operations in the admin UI',
   changes:[
+    'Layer 2/3 › Operations › Governed actions (Platform Admin): an operation is previewed against the live system (each precondition expected and now, a dry run that is rolled back, when the approval expires) and runs once on approval with a reason. A repeated click runs nothing; a refusal or failure changes nothing and says why (Decision 268).',
+    'First and only action: close the AER PR A recovery. It shows the six runs\' outcomes, the proposed, active and quarantined counts, the cost and the reading scope, and on approval takes RMIT out of the entry-requirements reading scope. It admits nothing.',
     'Consumer API unchanged (Decision 266).'
   ],
   bugFixes:[
-    'An international fee is checked against the country\'s accepted course-page proofs when it is stored, whichever part of the platform wrote it; a fee that fails is kept for review (Layer 4), not shown (Settings, Admission checks).',
-    'The university adapter checks a fee\'s proof before replacing the course\'s current fee, so a refused reading never leaves a course without its fee.'
+    'Edit in list: a duration or fee change is saved once; leaving the cell while it saves no longer saves it a second time.'
   ]
 }
 

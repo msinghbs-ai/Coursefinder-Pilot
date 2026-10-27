@@ -134,11 +134,13 @@ export default function ListEdit({type,rows,onError}){
 const shortUrl=u=>{try{const x=new URL(u);const p=x.pathname.replace(/\/$/,'');return x.host.replace(/^www\./,'')+(p.length>28?'/…'+p.slice(-24):p)}catch{return String(u||'')}}
 
 function Cell({field,value,can,busy,ok,locked,label,onSave}){
-  const[edit,setEdit]=useState(false),[draft,setDraft]=useState(value),ref=useRef(null)
+  const[edit,setEdit]=useState(false),[draft,setDraft]=useState(value),ref=useRef(null),saving=useRef(false)
   useEffect(()=>{if(!edit)setDraft(field.kind==='duration'?{...value,unit:value.unit||'weeks'}:field.kind==='tuition'?{...value,basis:value.basis||'annual'}:value)},[JSON.stringify(value),edit])
   useEffect(()=>{if(edit)ref.current?.focus()},[edit])
   const shown=field.kind==='duration'?(value.value?`${value.value} ${value.unit||''}`.trim():''):field.kind==='tuition'?tuitionText(value.amount?value:null):field.kind==='url'?shortUrl(value):String(value||'')
-  const commit=async()=>{if(await onSave(['duration','tuition'].includes(field.kind)?draft:String(draft).trim()))setEdit(false)}
+  // v2.15.360: one save at a time per cell. Disabling the inputs while saving blurs the focused one in current Chromium, which committed a second
+  // time (the duration was saved twice); a commit while a save is in flight is ignored.
+  const commit=async()=>{if(saving.current)return;saving.current=true;try{if(await onSave(['duration','tuition'].includes(field.kind)?draft:String(draft).trim()))setEdit(false)}finally{saving.current=false}}
   const key=e=>{if(e.key==='Escape'){setEdit(false)}if(e.key==='Enter'){e.preventDefault();commit()}}
   const blur=e=>{if(!e.currentTarget.contains(e.relatedTarget))commit()}
   if(!can)return <span className="le-view">{shown||'—'}{locked&&<Lock size={11} className="le-lock" aria-label="Entered by hand"/>}</span>

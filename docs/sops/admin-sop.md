@@ -1,6 +1,6 @@
 # StudySearch – Platform Admin SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.359)  
+**Version:** 1.54 (reviewed for platform release v2.15.360)  
 **Audience:** Platform Admin (role rank 6)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Platform Admin SOP.
@@ -96,7 +96,8 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | Credit or limit bar (amber or red) | Top up the account named, or raise the allowance in Models & services; then check the stopped work resumes. | Models & services |
 | A new AI model or new AI instructions | Qualify on the sample, compare scores, then make active or add to the order as a separate step with a reason. A new instructions version switches AI admission off until the models are qualified again. | Scholarships › Extraction |
 | A wrong website for a provider | Adapter builder 1.1: Check website to see what the home page shows; then Change website with the official address and a reason (checked first, saved only when Verified or Likely). Course-page searches, a stopped or held search, contacts and central pages start again by themselves; follow them in the guide at the top of the builder. A second site of the same provider goes in Other site. | Layer 2/3 › Universities › Builder |
-| A paste file from a change (anything that drops or deletes) | Read it, run it in the Supabase SQL editor for project fxcwkweaxjtknorudmwp, check the expected counts it states. | Supabase SQL editor |
+| A governed action ready to review (Decision 268) | Preview it against the live system: read each precondition (expected and now), the dry run and the outcomes it shows; then Approve and run, with a reason. It runs once; a repeated click runs nothing. A refusal or failure changes nothing and says why; preview again when the live state has moved. | Layer 2/3 › Operations › Governed actions |
+| Break-glass only: a change that drops or deletes, or an operation no governed action covers (Decision 268) | Run SQL in the Supabase SQL editor for project fxcwkweaxjtknorudmwp only when the change control names it as break-glass; check the expected counts it states. Routine operations are governed actions, not SQL. | Supabase SQL editor (break-glass) |
 
 ## 8. What to pay attention to
 
@@ -217,3 +218,4 @@ How the Platform Admin runs StudySearch day to day: the approvals only you can g
 | 1.98 | 26 Oct 2026 | v2.15.357 | Layer 4: no-page and conjoint first runs show under their university, with their sample and Approve / Approve except / Reject. |
 | 1.99 | 26 Oct 2026 | v2.15.358 | Register: CRICOS course and provider registrations no longer on the register carry an end date; a provider with no course on the register is marked ended (daily job Register end dates). |
 | 2.00 | 26 Oct 2026 | v2.15.359 | Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review. |
+| 2.01 | 27 Oct 2026 | v2.15.360 | Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery. |
