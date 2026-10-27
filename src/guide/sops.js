@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.359'
+export const SOP_REVIEWED_FOR = '2.15.360'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -44,7 +44,7 @@ const step = (o) => o
 
 export const SOPS = [
   {
-    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.53', audience: 'Platform Admin (role rank 6)',
+    id: 'admin-sop', title: 'Platform Admin SOP', version: '1.54', audience: 'Platform Admin (role rank 6)',
     purpose: 'How the Platform Admin runs StudySearch day to day: the approvals only you can give, the budgets and models you own, and the checks that keep automatic admission trustworthy.',
     owns: ['Admitting university adapters (Layer 2/3 › Universities)', 'Approving central pages: fee schedules, English policies, academic calendars', 'AI models, their order, AI admission and the AI allowances', 'Firecrawl and OpenRouter budgets and service keys', 'Onboarding settings, Retry and Stop', 'Users and roles; new countries; go-live'],
     schedule: [
@@ -90,7 +90,8 @@ export const SOPS = [
       { trigger: 'Credit or limit bar (amber or red)', action: 'Top up the account named, or raise the allowance in Models & services; then check the stopped work resumes.', where: 'Models & services' },
       { trigger: 'A new AI model or new AI instructions', action: 'Qualify on the sample, compare scores, then make active or add to the order as a separate step with a reason. A new instructions version switches AI admission off until the models are qualified again.', where: 'Scholarships › Extraction' },
       { trigger: 'A wrong website for a provider', action: 'Adapter builder 1.1: Check website to see what the home page shows; then Change website with the official address and a reason (checked first, saved only when Verified or Likely). Course-page searches, a stopped or held search, contacts and central pages start again by themselves; follow them in the guide at the top of the builder. A second site of the same provider goes in Other site.', where: 'Layer 2/3 › Universities › Builder' },
-      { trigger: 'A paste file from a change (anything that drops or deletes)', action: 'Read it, run it in the Supabase SQL editor for project fxcwkweaxjtknorudmwp, check the expected counts it states.', where: 'Supabase SQL editor' },
+      { trigger: 'A governed action ready to review (Decision 268)', action: 'Preview it against the live system: read each precondition (expected and now), the dry run and the outcomes it shows; then Approve and run, with a reason. It runs once; a repeated click runs nothing. A refusal or failure changes nothing and says why; preview again when the live state has moved.', where: 'Layer 2/3 › Operations › Governed actions' },
+      { trigger: 'Break-glass only: a change that drops or deletes, or an operation no governed action covers (Decision 268)', action: 'Run SQL in the Supabase SQL editor for project fxcwkweaxjtknorudmwp only when the change control names it as break-glass; check the expected counts it states. Routine operations are governed actions, not SQL.', where: 'Supabase SQL editor (break-glass)' },
     ],
     watch: [
       'The credit and limit bar on every page.',
@@ -202,7 +203,8 @@ export const SOPS = [
       { version: '1.97', date: '26 Oct 2026', release: '2.15.356', change: 'Layer 4: no-page and conjoint first runs with a verified course list, a confirmed sample and an already-approved list shape are admitted automatically; new shapes and one in ten stay with a person.' },
       { version: '1.98', date: '26 Oct 2026', release: '2.15.357', change: 'Layer 4: no-page and conjoint first runs show under their university, with their sample and Approve / Approve except / Reject.' },
       { version: '1.99', date: '26 Oct 2026', release: '2.15.358', change: 'Register: CRICOS course and provider registrations no longer on the register carry an end date; a provider with no course on the register is marked ended (daily job Register end dates).' },
-      { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' }],
+      { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
+      { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' }],
   },
   {
     id: 'operator-sop', title: 'Operator SOP', version: '1.53', audience: 'Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)',
@@ -353,7 +355,8 @@ export const SOPS = [
       { version: '1.97', date: '26 Oct 2026', release: '2.15.356', change: 'Layer 4: no-page and conjoint first runs with a verified course list, a confirmed sample and an already-approved list shape are admitted automatically; new shapes and one in ten stay with a person.' },
       { version: '1.98', date: '26 Oct 2026', release: '2.15.357', change: 'Layer 4: no-page and conjoint first runs show under their university, with their sample and Approve / Approve except / Reject.' },
       { version: '1.99', date: '26 Oct 2026', release: '2.15.358', change: 'Register: CRICOS course and provider registrations no longer on the register carry an end date; a provider with no course on the register is marked ended (daily job Register end dates).' },
-      { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' }],
+      { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
+      { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' }],
   },
 ]
 

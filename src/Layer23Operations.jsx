@@ -4,6 +4,7 @@
 // (each kind opens Layer 4 › Inbox on that kind), and the scheduled jobs behind it (pause, resume, run now). Onboarding is switched and
 // paced here. Reads public.admin_layer23('operations') and admin_progress_read('running'); controls admin_automation_control and
 // admin_provider_onboarding (Platform Admin, with a reason).
+// v2.15.360 (Decision 268): Governed actions (Platform Admin): operations approved here instead of run as SQL; reads and runs admin_governed_action.
 import React,{useEffect,useMemo,useState}from'react'
 import{ChevronDown,ChevronRight,RefreshCw}from'lucide-react'
 import{supabase}from'./lib/supabase'
@@ -13,6 +14,7 @@ import{Settings,ReasonAction,Approvals,estimate}from'./ProviderOnboarding'
 import{cronText}from'./Progress'
 import'./layer23.css'
 import{plainError}from'./lib/errors'
+import GovernedActions from'./GovernedActions'
 
 const errText=e=>plainError(e) // v2.15.341 (UI audit Phase 0): one plain reading, no internals
 const KIND={website_needed:'Website needed',site_down:'Website not answering',pages_not_found:'Course pages not found',too_few_pages:'Too few course pages',
@@ -71,6 +73,7 @@ export default function Layer23Operations({rank=0,actorId='',onError}){
       <div className="sd-actions"><ReasonAction label={`Onboard universities not yet queued (${fmtNumber(ob.not_queued??0)})`} variant="primary" testid="start-all" disabled={!Number(ob.not_queued)} onDo={r=>act('start',{scope:'no_adapter',reason:r},'Queued, largest universities first. Universities already in onboarding are not queued twice.')}/></div>
       <Settings s={ob.settings} actorId={actorId} act={act}/>
     </section>}
+    {rank>=6&&<GovernedActions onError={onError}/>}
     <small className="sd-desc">Each university's own journey, adapter and actions are on <a className="cf-link" href={hrefFor('layer2','universities')}>Universities</a>. Every scheduled job is on <a className="cf-link" href={hrefFor('jobs','automations')}>Scheduled jobs</a>.</small>
   </div>
 }

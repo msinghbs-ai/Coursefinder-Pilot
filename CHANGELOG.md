@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.287 — 27 Oct 2026
+
+- Prepared visible PIM Admin release candidate **v2.15.360** (Decision 268, Platform Admin 27 Oct 2026 21:57 and 22:00). Migration `20261027003000_cf247_governed_action_aer_recovery_close.sql`: `public.admin_governed_action` (read / preview with a rolled-back dry run / approve once under an idempotency key, post-checks, audit; Platform Admin only; one allowlisted action) and `security.governed_aer_close_snapshot_v1`; task kind `governed_action` (rows written done, failed or cancelled, never queued); unique idempotency index; settings `governed.approval_minutes`, `governed.max_attempts`. `GovernedActions.jsx` on Layer 2/3 › Operations. Admin SOP 1.54: the paste duty becomes governed actions, SQL break-glass only. Test s138. Fix: `ListEdit.jsx` commits one save at a time per cell (a blur while saving saved a duration twice; surfaced by the list-edit spec on current Chromium).
+
 ## 0.1.286 — 26 Oct 2026
 
 - Prepared visible PIM Admin release candidate **v2.15.359** (gate hotfix, Platform Admin 26 Oct 2026 19:27). Migration `20261026006000_cf247_fee_identity_gate_all_writers.sql`: trigger `course_fee_identity_gate` on `catalogue.course_fees` (`security.course_fee_identity_gate_tg`, setting `fees.identity_gate_on`) puts every international provider fee write through the country tuition identity check; `security.adapter_overwrite_v1` fee branch checks tuition identity first (md5-guarded). Test s125.
