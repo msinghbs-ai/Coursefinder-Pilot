@@ -171,6 +171,7 @@ export type EntryManifestEntry = { line: string; level: string; band: string | n
 export type EntryManifest = { status: "ok" | "none" | "unparsed"; reason: string | null; heading: string; entries: EntryManifestEntry[]; columns: string[]; footnotes: string[] };
 const NA = /^(not applicable|n\/a|-|–|—)$/i;
 const FOOTNOTE_ROW = /^(grading|calculation|note|notes|\*)|\b(grading|calculation system)\b/i;
+const allWords = (s: string) => new Set(String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").split(" ").filter(Boolean));
 const words = (s: string) => new Set(String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").split(" ").filter((w) => w.length > 1 && !/^(of|the|and|or|in|at|a)$/.test(w)));
 export function entryManifest(html: string, toText: (h: string) => string): EntryManifest { return entryManifestDetail(html, toText).manifest }
 // v0.48.7 (D4): the manifest plus the band tables' data lines that publish no minimum (every qualification cell blank or "Not applicable"),
@@ -194,6 +195,9 @@ export function entryManifestDetail(html: string, toText: (h: string) => string)
     if (!body.length) return { status: "unparsed", reason: "a band table has no rows", heading, entries: [], columns: [], footnotes: [] };
     for (const [bi, r0] of body.entries()) {
       const line = r0.join(" | ");
+      // v0.48.8 (PR A, P2, 27 Oct 2026): the table's header row printed again inside the body (Singapore: "Level of study | Australian
+      // standard | Completion of Secondary School ... |") is a header, not a row of minimums: every non-blank cell is its column's heading
+      if (ENTRY_BAND_HEADER.test(String(r0[bandCol] || "")) && r0.every((c, j) => !String(c || "").trim() || flat(c) === flat(header[j] || ""))) continue;
       // v0.48.6 (D5, 27 Oct 2026): a grading or calculation row is a footnote whatever its width (Kuwait: one cell spans the columns,
       // colspan 3 under a three-column header); it publishes no minimum
       if (r0[0] && FOOTNOTE_ROW.test(r0[0])) { footnotes.push(line); continue }
@@ -255,6 +259,20 @@ export function entryNonCountryShape(man: EntryManifest, countries: EntryCountry
   return null;
 }
 
+// v0.48.8 (PR A, R2, 27 Oct 2026, Platform Admin 14:35 "preserve the printed numeric scale so bare numbers are not admitted without scale"):
+// a qualification column whose every published cell is a bare number ("1", "2.0" ... "5.0": Norway) has no scale unless the page prints one
+// (a "scale", "out of", "maximum" or "/n" in the page heading, the column heading, a cell or a grading/calculation row). Such a column cannot be
+// admitted as numbers, and its numbers mean nothing as text without the scale, so the page is held as a source hold before any AI read.
+const SCALE_PRINTED = /\b(scale|out of|maximum|max\.?)\b|\/\s*\d/i;
+export function entryUnscaledColumns(man: EntryManifest): string[] {
+  if (man.status !== "ok") return [];
+  if (SCALE_PRINTED.test(man.heading) || man.footnotes.some((f) => SCALE_PRINTED.test(f))) return [];
+  return man.columns.filter((c) => {
+    const cells = man.entries.filter((e) => e.header === c).map((e) => e.cell.trim());
+    return cells.length > 0 && !SCALE_PRINTED.test(c) && cells.every((x) => /^\d+(?:[.,]\d+)?$/.test(x));
+  });
+}
+
 export type EntryCompleteness = { status: "complete" | "incomplete" | "unparsed" | "not_applicable"; basis: string; heading?: string; expected: number; matched: number;
   omitted_columns: string[]; omitted: { level: string; band: string | null; column: string; cell: string }[]; unexplained: { reason: string; quote: string; country: string }[]; reason: string | null };
 export const ENTRY_COMPLETENESS_BASIS = "manifest-v1";
@@ -277,7 +295,16 @@ export function entryCompleteness(man: EntryManifest, rows: any[]): EntryComplet
     if (!inCell.length) return u("grade_not_in_cell");
     // the qualification must name one column of the table better than every other column, and that column must hold the grade
     const qw = words(x?.qualification_name), score = (h: string) => { const hw = words(h); let n = 0; for (const w of qw) if (hw.has(w)) n++; return n / Math.max(1, new Set([...qw, ...hw]).size) };
-    const cols = [...new Set(man.entries.filter((e) => e.line === inCell[0].e.line || inCell.some((c) => c.e.line === e.line)).map((e) => e.header))].map((h) => ({ h, s: score(h) })).sort((a, b) => b.s - a.s);
+    let cols = [...new Set(man.entries.filter((e) => e.line === inCell[0].e.line || inCell.some((c) => c.e.line === e.line)).map((e) => e.header))].map((h) => ({ h, s: score(h) })).sort((a, b) => b.s - a.s);
+    // v0.48.8 (PR A, G1, 27 Oct 2026): two columns that differ only by a one-character word ("Sri Lanka O Levels" / "A Levels", "Matayom 5" /
+    // "6", Scottish Higher "(3 subjects)" / "(4 subjects)") tie on the word score; the tie is broken by the same score over every word, single
+    // characters included, and only when that gives one column strictly the best. A tie that remains is still not resolved.
+    if (cols.length > 1 && cols[0].s && cols[1].s === cols[0].s) {
+      const tw = allWords(x?.qualification_name), score2 = (h: string) => { const hw = allWords(h); let n = 0; for (const w of tw) if (hw.has(w)) n++; return n / Math.max(1, new Set([...tw, ...hw]).size) };
+      const tied = cols.filter((c) => c.s === cols[0].s).map((c) => ({ h: c.h, s: score2(c.h) })).sort((a, b) => b.s - a.s);
+      if (!(tied[0].s > 0 && tied[0].s > tied[1].s)) return u("qualification_not_resolved");
+      cols = [{ h: tied[0].h, s: 1 }];  // resolved by the tie-break: the one column strictly best over every word
+    }
     if (!cols.length || !cols[0].s || (cols[1] && cols[1].s === cols[0].s)) return u("qualification_not_resolved");
     const best = inCell.filter((c) => c.e.header === cols[0].h);
     if (!best.length) return u("wrong_column");  // the named column does not hold this grade on this line

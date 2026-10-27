@@ -1,0 +1,1185 @@
+{
+ "source": "pipeline.entry_matrix_runs.previous_results: the last held read of each run (openai/gpt-4.1-mini, 26 Oct 2026), exported read-only 27 Oct 2026 for AER PR A",
+ "pages": {
+  "singapore": {
+   "run": "b4aecc1c-47a5-495d-9a9b-5d19c6854209",
+   "content_hash": "ee46bc863b36976da94580056063561c1177c0f58f8c9bee688aab6f215607bd",
+   "reason": "held_incomplete: 2 of 11 published minimums not read",
+   "rows": [
+    {
+     "quote": "Foundation Studies | Not applicable | Maximum 28 points from best four subjects from Secondary 4 Express; or, maximum 21 points for best three subjects from GCE ‘O’ Level | Completion of NITEC | Minimum 1 point at either H1 or H2 level",
+     "min_grade": "Maximum 28 points from best four subjects from Secondary 4 Express; or, maximum 21 points for best three subjects from GCE ‘O’ Level",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Foundation Studies",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Completion of Secondary School or Singapore-Cambridge GCE ‘O’ Level (Forecast Results acceptable)"
+    },
+    {
+     "quote": "Foundation Studies | Not applicable | Maximum 28 points from best four subjects from Secondary 4 Express; or, maximum 21 points for best three subjects from GCE ‘O’ Level | Completion of NITEC | Minimum 1 point at either H1 or H2 level",
+     "min_grade": "Completion of NITEC",
+     "min_value": null,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "none",
+     "study_level": "Foundation Studies",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Completion of National ITE Certificate (NITEC)"
+    },
+    {
+     "quote": "Foundation Studies | Not applicable | Maximum 28 points from best four subjects from Secondary 4 Express; or, maximum 21 points for best three subjects from GCE ‘O’ Level | Completion of NITEC | Minimum 1 point at either H1 or H2 level",
+     "min_grade": "Minimum 1 point at either H1 or H2 level",
+     "min_value": 1,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Foundation Studies",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Singapore-Cambridge GCE ‘A’ Levels"
+    },
+    {
+     "quote": "University Pathways Fast Track | Not applicable | Maximum 16 points from best four subjects from Secondary 4 Express; or, maximum 12 points for best three subjects from GCE ‘O’ Level | Completion of NITEC | Minimum 2 points for 1 H2 subject and 1 H1 subjects",
+     "min_grade": "Maximum 16 points from best four subjects from Secondary 4 Express; or, maximum 12 points for best three subjects from GCE ‘O’ Level",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "University Pathways Fast Track",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Completion of Secondary School or Singapore-Cambridge GCE ‘O’ Level (Forecast Results acceptable)"
+    },
+    {
+     "quote": "University Pathways Fast Track | Not applicable | Maximum 16 points from best four subjects from Secondary 4 Express; or, maximum 12 points for best three subjects from GCE ‘O’ Level | Completion of NITEC | Minimum 2 points for 1 H2 subject and 1 H1 subjects",
+     "min_grade": "Completion of NITEC",
+     "min_value": null,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "none",
+     "study_level": "University Pathways Fast Track",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Completion of National ITE Certificate (NITEC)"
+    },
+    {
+     "quote": "University Pathways Fast Track | Not applicable | Maximum 16 points from best four subjects from Secondary 4 Express; or, maximum 12 points for best three subjects from GCE ‘O’ Level | Completion of NITEC | Minimum 2 points for 1 H2 subject and 1 H1 subjects",
+     "min_grade": "Minimum 2 points for 1 H2 subject and 1 H1 subjects",
+     "min_value": 2,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "University Pathways Fast Track",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Singapore-Cambridge GCE ‘A’ Levels"
+    },
+    {
+     "quote": "Diploma | Not applicable | Not applicable | Not applicable | Minimum 3 points for 1 H2 subject and 2 H1 subjects",
+     "min_grade": "Minimum 3 points for 1 H2 subject and 2 H1 subjects",
+     "min_value": 3,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Diploma",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Singapore-Cambridge GCE ‘A’ Levels"
+    },
+    {
+     "quote": "Associate degrees | Not applicable | Not applicable | Not applicable | Minimum 3 points for 2 H2 subjects and 1 H1 subject",
+     "min_grade": "Minimum 3 points for 2 H2 subjects and 1 H1 subject",
+     "min_value": 3,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Associate degrees",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Singapore-Cambridge GCE ‘A’ Levels"
+    },
+    {
+     "quote": "Bachelor degrees | Not applicable | Not applicable | Not applicable | Minimum 3 points for 3 H2 subjects",
+     "min_grade": "Minimum 3 points for 3 H2 subjects",
+     "min_value": 3,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 0.95,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "SG",
+     "country_name": "Singapore",
+     "benchmark_band": null,
+     "qualification_name": "Singapore-Cambridge GCE ‘A’ Levels"
+    }
+   ]
+  },
+  "sri-lanka": {
+   "run": "10995ef9-c95e-4cf1-9d83-a1deb2857344",
+   "content_hash": "bd95d59dbf01720cbc34046bc9a13ce6f3011cd9398dcad9d106e24c9d1042fc",
+   "reason": "held_incomplete: column left out: Sri Lanka O Levels; 4 of 13 published minimums not read; 4 rows not explained (qualification_not_resolved)",
+   "rows": [
+    {
+     "quote": "Foundation Studies | Not applicable | Minimum 9 points for three O Level subjects. i.e. CCC | Minimum of C in 2 A Level subjects",
+     "min_grade": "Minimum 9 points for three O Level subjects. i.e. CCC",
+     "min_value": 9,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Foundation Studies",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": null,
+     "qualification_name": "Sri Lanka O Levels"
+    },
+    {
+     "quote": "Foundation Studies | Not applicable | Minimum 9 points for three O Level subjects. i.e. CCC | Minimum of C in 2 A Level subjects",
+     "min_grade": "Minimum of C in 2 A Level subjects",
+     "min_value": null,
+     "conditions": {
+      "best_n": 2,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Foundation Studies",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": null,
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "University Pathways Fast Track | Not applicable | Minimum 12 points for three O Level subjects. i.e. BBB | Minimum of C in 2 A Level subjects",
+     "min_grade": "Minimum 12 points for three O Level subjects. i.e. BBB",
+     "min_value": 12,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "University Pathways Fast Track",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": null,
+     "qualification_name": "Sri Lanka O Levels"
+    },
+    {
+     "quote": "University Pathways Fast Track | Not applicable | Minimum 12 points for three O Level subjects. i.e. BBB | Minimum of C in 2 A Level subjects",
+     "min_grade": "Minimum of C in 2 A Level subjects",
+     "min_value": null,
+     "conditions": {
+      "best_n": 2,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "University Pathways Fast Track",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": null,
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 50% | Not applicable | Minimum 3 points for 3 A Level subjects. i.e. SSS",
+     "min_grade": "Minimum 3 points for 3 A Level subjects. i.e. SSS",
+     "min_value": 3,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "50%",
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 55% | Not applicable | Minimum 5 points for 3 A Level subjects. i.e. SSC",
+     "min_grade": "Minimum 5 points for 3 A Level subjects. i.e. SSC",
+     "min_value": 5,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "55%",
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 60% | Not applicable | Minimum 7 points for 3 A Level subjects. i.e. SCC",
+     "min_grade": "Minimum 7 points for 3 A Level subjects. i.e. SCC",
+     "min_value": 7,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "60%",
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Bachelor degrees | 65% | Not applicable | Minimum 9 points for 3 A Level subjects. i.e. CCC",
+     "min_grade": "Minimum 9 points for 3 A Level subjects. i.e. CCC",
+     "min_value": 9,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "65%",
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Bachelor degrees | 70% | Not applicable | Minimum 9 points for 3 A Level subjects. i.e. CCC",
+     "min_grade": "Minimum 9 points for 3 A Level subjects. i.e. CCC",
+     "min_value": 9,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "70%",
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Bachelor degrees | 75% | Not applicable | Minimum 10 points for 3 A Level subjects. i.e. BCC",
+     "min_grade": "Minimum 10 points for 3 A Level subjects. i.e. BCC",
+     "min_value": 10,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "75%",
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Bachelor degrees | 80% | Not applicable | Minimum 11 points for 3 A Level subjects. i.e. BBC",
+     "min_grade": "Minimum 11 points for 3 A Level subjects. i.e. BBC",
+     "min_value": 11,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "80%",
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Bachelor degrees | 85% | Not applicable | Minimum 12 points for 3 A Level subjects. i.e. BBB",
+     "min_grade": "Minimum 12 points for 3 A Level subjects. i.e. BBB",
+     "min_value": 12,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "85%",
+     "qualification_name": "Sri Lanka A Levels"
+    },
+    {
+     "quote": "Bachelor degrees | 90% | Not applicable | Minimum 13 points for 3 A Level subjects. i.e. ABB",
+     "min_grade": "Minimum 13 points for 3 A Level subjects. i.e. ABB",
+     "min_value": 13,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "LK",
+     "country_name": "Sri Lanka",
+     "benchmark_band": "90%",
+     "qualification_name": "Sri Lanka A Levels"
+    }
+   ]
+  },
+  "thailand": {
+   "run": "494bcd84-9914-43f1-8c0e-8f59c6baafc3",
+   "content_hash": "c48c73f01148e02e04c376ccc41f80752a29afea7c5b49c0303903cc1edb0134",
+   "reason": "held_incomplete: column left out: Matayom 5; 4 of 13 published minimums not read; 4 rows not explained (qualification_not_resolved)",
+   "rows": [
+    {
+     "quote": "Foundation Studies | Not applicable | CGPA = 2.5 | CGPA = 1.5",
+     "min_grade": "CGPA = 2.5",
+     "min_value": 2.5,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Foundation Studies",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": null,
+     "qualification_name": "Matayom 5"
+    },
+    {
+     "quote": "Foundation Studies | Not applicable | CGPA = 2.5 | CGPA = 1.5",
+     "min_grade": "CGPA = 1.5",
+     "min_value": 1.5,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Foundation Studies",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": null,
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "University Pathways Fast Track | Not applicable | CGPA = 3.0 | CGPA = 1.5",
+     "min_grade": "CGPA = 3.0",
+     "min_value": 3,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "University Pathways Fast Track",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": null,
+     "qualification_name": "Matayom 5"
+    },
+    {
+     "quote": "University Pathways Fast Track | Not applicable | CGPA = 3.0 | CGPA = 1.5",
+     "min_grade": "CGPA = 1.5",
+     "min_value": 1.5,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "University Pathways Fast Track",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": null,
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 50% | Not applicable | CGPA = 2.0",
+     "min_grade": "CGPA = 2.0",
+     "min_value": 2,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "50%",
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 55% | Not applicable | CGPA = 2.3",
+     "min_grade": "CGPA = 2.3",
+     "min_value": 2.3,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "55%",
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 60% | Not applicable | CGPA = 2.7",
+     "min_grade": "CGPA = 2.7",
+     "min_value": 2.7,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "60%",
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Bachelor degrees | 65% | Not applicable | CGPA = 3.0",
+     "min_grade": "CGPA = 3.0",
+     "min_value": 3,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Bachelor degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "65%",
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Bachelor degrees | 70% | Not applicable | CGPA = 3.2",
+     "min_grade": "CGPA = 3.2",
+     "min_value": 3.2,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Bachelor degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "70%",
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Bachelor degrees | 75% | Not applicable | CGPA = 3.4",
+     "min_grade": "CGPA = 3.4",
+     "min_value": 3.4,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Bachelor degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "75%",
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Bachelor degrees | 80% | Not applicable | CGPA = 3.6",
+     "min_grade": "CGPA = 3.6",
+     "min_value": 3.6,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Bachelor degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "80%",
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Bachelor degrees | 85% | Not applicable | CGPA = 3.8",
+     "min_grade": "CGPA = 3.8",
+     "min_value": 3.8,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Bachelor degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "85%",
+     "qualification_name": "Matayom 6"
+    },
+    {
+     "quote": "Bachelor degrees | 90% | Not applicable | CGPA = 4.0",
+     "min_grade": "CGPA = 4.0",
+     "min_value": 4,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "gpa",
+     "study_level": "Bachelor degrees",
+     "country_code": "TH",
+     "country_name": "Thailand",
+     "benchmark_band": "90%",
+     "qualification_name": "Matayom 6"
+    }
+   ]
+  },
+  "united-kingdom": {
+   "run": "04349c2b-2192-4a9f-9865-0611870d8c3d",
+   "content_hash": "485b02e5d4042d3446d9cd733008e8e65f37ed2734e392f58605aa369c513261",
+   "reason": "held_incomplete: column left out: Scottish Qualifications Certificate - Higher (3 subjects); Scottish Qualifications Certificate - Higher (4 subjects); 20 of 31 published minimums not read; 18 rows not explained (qualification_not_resolved)",
+   "rows": [
+    {
+     "quote": "Foundation Studies | Not applicable | Minimum of three subjects with C average (based on A* - G grades) or a total of 12 points (based on 9-1 grades) | Minimum 1 A Level or equivalent.",
+     "min_grade": "Minimum of three subjects with C average (based on A* - G grades) or a total of 12 points (based on 9-1 grades)",
+     "min_value": null,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Foundation Studies",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": null,
+     "qualification_name": "Cambridge GCSE ‘O’ Levels / Pearson IGCSE / Oxford IGCSE / LRN IGCSE and Ofqual accredited GCSE / O Levels qualifications (Forecast Results may be acceptable)"
+    },
+    {
+     "quote": "University Pathways Fast Track | Not applicable | Minimum of three subjects with B average (based on A* - G grades) or a total of 17 points (based on 9-1 grades) | Minimum 2 A Level or equivalent.",
+     "min_grade": "Minimum of three subjects with B average (based on A* - G grades) or a total of 17 points (based on 9-1 grades)",
+     "min_value": null,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "University Pathways Fast Track",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": null,
+     "qualification_name": "Cambridge GCSE ‘O’ Levels / Pearson IGCSE / Oxford IGCSE / LRN IGCSE and Ofqual accredited GCSE / O Levels qualifications (Forecast Results may be acceptable)"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 50% | Not applicable | Minimum 4 points for 2 A Level and 1 AS Level subjects.i.e. DE/E",
+     "min_grade": "Minimum 4 points for 2 A Level and 1 AS Level subjects.i.e. DE/E",
+     "min_value": 4,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "50%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 55% | Not applicable | Minimum 5 points for 2 A Level and 1 AS Level subjects. i.e. DD/E",
+     "min_grade": "Minimum 5 points for 2 A Level and 1 AS Level subjects. i.e. DD/E",
+     "min_value": 5,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "55%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 60% | Not applicable | Minimum 6 points for 3 A Level subjects. i.e. DDD",
+     "min_grade": "Minimum 6 points for 3 A Level subjects. i.e. DDD",
+     "min_value": 6,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "60%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Bachelor degrees | 65% | Not applicable | Minimum 7 points for 3 A Level subjects. i.e. CDD",
+     "min_grade": "Minimum 7 points for 3 A Level subjects. i.e. CDD",
+     "min_value": 7,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "65%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Bachelor degrees | 70% | Not applicable | Minimum 8 points for 3 A Level subjects. i.e. CCD",
+     "min_grade": "Minimum 8 points for 3 A Level subjects. i.e. CCD",
+     "min_value": 8,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "70%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Bachelor degrees | 75% | Not applicable | Minimum 9 points for 3 A Level subjects. i.e. CCC",
+     "min_grade": "Minimum 9 points for 3 A Level subjects. i.e. CCC",
+     "min_value": 9,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "75%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Bachelor degrees | 80% | Not applicable | Minimum 10 points for 3 A Level subjects. i.e. CCB",
+     "min_grade": "Minimum 10 points for 3 A Level subjects. i.e. CCB",
+     "min_value": 10,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "80%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Bachelor degrees | 85% | Not applicable | Minimum 11 points for 3 A Level subjects. i.e. BBC",
+     "min_grade": "Minimum 11 points for 3 A Level subjects. i.e. BBC",
+     "min_value": 11,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "85%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Bachelor degrees | 90% | Not applicable | Minimum 12 points for 3 A Level subjects. i.e. BBB",
+     "min_grade": "Minimum 12 points for 3 A Level subjects. i.e. BBB",
+     "min_value": 12,
+     "conditions": {
+      "best_n": null,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "points",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "90%",
+     "qualification_name": "Cambridge GCE ‘A’ Levels / Pearson International Advanced Levels / Oxford International A Levels / LRN International A Levels and Ofqual accredited Advance Levels qualifications"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 50% | CCC | CCDD",
+     "min_grade": "CCC",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "50%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 50% | CCC | CCDD",
+     "min_grade": "CCDD",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "50%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 55% | BCC | CCDD",
+     "min_grade": "BCC",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "55%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 55% | BCC | CCDD",
+     "min_grade": "CCDD",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "55%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 60% | BBB | CCCD",
+     "min_grade": "BBB",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "60%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Diploma/Associate degrees | 60% | BBB | CCCD",
+     "min_grade": "CCCD",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Diploma/Associate degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "60%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 65% | ABB | CCCC",
+     "min_grade": "ABB",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "65%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 65% | ABB | CCCC",
+     "min_grade": "CCCC",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "65%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 70% | AAB | BCCC",
+     "min_grade": "AAB",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "70%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 70% | AAB | BCCC",
+     "min_grade": "BCCC",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "70%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 75% | AAA | BBCC",
+     "min_grade": "AAA",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "75%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 75% | AAA | BBCC",
+     "min_grade": "BBCC",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "75%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 80% | AAA | BBBC",
+     "min_grade": "AAA",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "80%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 80% | AAA | BBBC",
+     "min_grade": "BBBC",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "80%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 85% | AAA | BBBB",
+     "min_grade": "AAA",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "85%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 85% | AAA | BBBB",
+     "min_grade": "BBBB",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "85%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 90% | AAA | ABBB",
+     "min_grade": "AAA",
+     "min_value": null,
+     "conditions": {
+      "best_n": 3,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "90%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (3 subjects)"
+    },
+    {
+     "quote": "Bachelor degrees | 90% | AAA | ABBB",
+     "min_grade": "ABBB",
+     "min_value": null,
+     "conditions": {
+      "best_n": 4,
+      "alternatives": [],
+      "subject_minimums": []
+     },
+     "confidence": 1,
+     "course_name": null,
+     "grade_scale": "letter",
+     "study_level": "Bachelor degrees",
+     "country_code": "GB",
+     "country_name": "United Kingdom",
+     "benchmark_band": "90%",
+     "qualification_name": "Scottish Qualifications Certificate - Higher (4 subjects)"
+    }
+   ]
+  }
+ }
+}

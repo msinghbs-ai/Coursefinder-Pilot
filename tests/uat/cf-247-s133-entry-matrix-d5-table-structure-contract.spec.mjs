@@ -81,16 +81,17 @@ test('on the D5 pages a short read, an omitted column, an omitted band or an und
   expect(entryCompleteness(km, [...verdict('kuwait', kr).p.rows, { ...verdict('kuwait', kr).p.rows[0], study_level: 'Grading / Calculation System', quote: km.footnotes[0] }]).status).toBe('incomplete')
 })
 
-test('every other stored page keeps its manifest and page text byte for byte (34 pages)', () => {
+test('every other stored page keeps its manifest and page text byte for byte (32 pages; Singapore and Foundation equivalencies in s135)', () => {
   let same = 0
   for (const [slug, b] of Object.entries(BEFORE)) {
     const h = page(slug), m = entryManifest(h, htmlToText)
     if (slug === 'kuwait' || slug === 'mexico') { expect(b.status, slug).toBe('unparsed'); expect(m.status, slug).toBe('ok'); continue }
+    if (slug === 'singapore' || slug === 'foundation-equivalencies') continue  // v0.48.8 (s135, P2): a repeated header row is no longer read as a row; asserted there
     expect(md5(JSON.stringify(m)), slug).toBe(b.manifest_md5)
     expect(md5(entryTables(h, htmlToText).text), slug).toBe(b.text_md5)
     same++
   }
-  expect(same).toBe(34)
+  expect(same).toBe(32)
 })
 
 test('the 12 runs complete under the guard stay complete with their own proposed rows, one identity per row (no re-read)', () => {
