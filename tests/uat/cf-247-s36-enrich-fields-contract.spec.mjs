@@ -39,7 +39,7 @@ test('worker v0.22.0: every AI value must quote the stored page; the scraper rea
   expect(worker).toMatch(/const proven = val != null && on\(page, q\) && strong( && !feeLine)?;/)  // v0.23.2 adds the fee-line rule for duration
   expect(worker).toContain('if (!(await useFc("enrich_address", p.provider_id, p.website, true)))')
   expect(worker).toContain('const up = await c.storage.from("evidence").upload(path, await gzip(text)')
-  expect(worker).toContain('if (d?.model && !String(d.model).startsWith(model))')
+  expect(worker).toContain('if (d?.model && !String(d.model).startsWith(mdl))')
   // v0.22.1: stored copies read whether gzip or plain; v0.22.2: international needs a quote about the course's students or fees (not a site footer)
   expect(worker).toContain('if (buf[0] === 0x1f && buf[1] === 0x8b)')
   expect(worker).toContain('"only a site-wide line mentions international"')

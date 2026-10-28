@@ -1,6 +1,6 @@
 # StudySearch – Operator SOP
 
-**Version:** 1.53 (reviewed for platform release v2.15.360)  
+**Version:** 1.53 (reviewed for platform release v2.15.361)  
 **Audience:** Curator (rank 3), Pipeline Operator (rank 4), PIM Admin (rank 5)  
 **Change control:** CF-247  
 **Rule:** this SOP is reviewed with every release; a change to a screen, an automation or where a person decides changes it, raises its version and is recorded below. The in-app copy is Guides › Operator SOP.
@@ -206,3 +206,4 @@ How operators keep the data flowing and decide what automation cannot: the revie
 | 1.99 | 26 Oct 2026 | v2.15.358 | Register: CRICOS course and provider registrations no longer on the register carry an end date; a provider with no course on the register is marked ended (daily job Register end dates). |
 | 2.00 | 26 Oct 2026 | v2.15.359 | Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review. |
 | 2.01 | 27 Oct 2026 | v2.15.360 | Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery. |
+| 2.02 | 28 Oct 2026 | v2.15.361 | Reviewed: the Provider drawer and the Course detail blade show academic entry requirements (read only); course entry reads wait in Layer 4 as Course entry first read for the Platform Admin. |

@@ -74,7 +74,7 @@ test('database: level label is a condition key of the existing identity; approva
 test('worker and prompt: band lines reach the check; the reader is told where the band is', () => {
   expect(w).toContain('const stored = await storedText(it.storage_path, it.mime), page = stored.text;')
   expect(w).toContain('entryMatrixParsed(JSON.parse(content), page, stored.lines)')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.48\.[2-9]"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(48\.[2-9]|49\.\d+)"/)
   expect(ENTRY_PROMPT_VERSION).toMatch(/^entry-matrix-v0\.1\.[2-9]$/)
   expect(ENTRY_PROMPT).toContain('When a table has an "Australian standard" column')
   expect(ENTRY_PROMPT).toContain('give it exactly as printed')
