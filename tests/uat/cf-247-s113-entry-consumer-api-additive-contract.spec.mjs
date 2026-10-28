@@ -1,7 +1,7 @@
 // Guards: CF-247 Track C Step B decision 28 Oct 2026 section 7 (approval Platform Admin 25 Oct 2026 14:36/14:50, decision 7; plan ENTRY-REQUIREMENTS-IMPLEMENTATION.md 2.4): the consumer entry fields are additive keys on the EXISTING course and provider payloads (entry, entry_matrix) with an optional edu_country; no existing key renamed, removed or retyped; no separate AER function; the change is approved in its migration and re-takes the baseline (G3 itself is guarded by s57)
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-const m = fs.readFileSync('supabase/migrations/20261028002000_cf247_entry_step_b_consumer_api.sql', 'utf8')
+const m = fs.readFileSync('supabase/migrations/20261028005000_cf247_entry_step_b_consumer_api.sql', 'utf8')
 const code = m.split('\n').filter(l => !/^\s*--/.test(l)).join('\n')
 const edge = fs.readFileSync('supabase/functions/website-api-v2/index.ts', 'utf8')
 

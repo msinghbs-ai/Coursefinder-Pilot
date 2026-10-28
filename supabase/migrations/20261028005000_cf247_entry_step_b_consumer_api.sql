@@ -104,8 +104,8 @@ grant execute on function public.website_v2_provider(text, text) to service_role
 comment on function public.website_v2_provider(text, text) is 'CF-247 Track C Step B (B3): the provider payload with entry_matrix narrowed to the student''s country of prior education (edu_country).';
 
 insert into pipeline.component_register(kind, name, layer, purpose, status, replaces, introduced_in) values
- ('function', 'security.entry_course_payload_v1', 'Search and API', 'Track C Step B (B2): course payload entry object', 'active', '{}', '20261028002000'),
- ('function', 'security.entry_matrix_payload_v1', 'Search and API', 'Track C Step B (B2): provider payload entry_matrix', 'active', '{}', '20261028002000')
+ ('function', 'security.entry_course_payload_v1', 'Search and API', 'Track C Step B (B2): course payload entry object', 'active', '{}', '20261028005000'),
+ ('function', 'security.entry_matrix_payload_v1', 'Search and API', 'Track C Step B (B2): provider payload entry_matrix', 'active', '{}', '20261028005000')
 on conflict do nothing;
 
 -- ---------------------------------------------------------------- 4: the consumer baseline re-taken (approved change)
