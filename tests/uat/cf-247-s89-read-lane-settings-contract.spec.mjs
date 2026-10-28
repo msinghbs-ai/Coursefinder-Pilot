@@ -19,7 +19,7 @@ test('migration: reading.pages_at_once setting with a range; worker settings inc
 
 test('worker v0.44.0 and later: read mode takes up to 200 pages a call and fetches reading.pages_at_once at the same time (no 60 or 8 fixed)', () => {
   const w = read('supabase/functions/coverage-sweep/index.ts')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.4[4-9]\.\d+";/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[4-9]|5\d)\.\d+";/)
   expect(w).toContain('await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 200) });')
   expect(w).not.toContain('await rpc("svc_coverage_read_next", { p_limit: Math.min(Number(body.limit || 24), 60) });')
   expect(w).toContain('await pool(items, Math.min(Math.max(1, wsNum("reading.pages_at_once", 8)), 32), async (it) => {')

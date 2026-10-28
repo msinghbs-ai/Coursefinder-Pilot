@@ -256,7 +256,7 @@ test('Canadian colleges: level required (ca-intl-college-plus-v2), credential re
   const mig = fs.readFileSync('supabase/migrations/20261022034000_cf247_ca_college_scope.sql', 'utf8')
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('if (mode === "credential_read") {')
-  expect(w).toMatch(/coverage-sweep-worker-v0\.(3[89]|4\d)\.\d/)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(3[89]|4\d|5\d)\.\d/)
   expect(mig).toContain("'c25496f235831a85b3a3efe00c9aee0d'")
   expect(mig).toContain('AND NOT security.course_in_country_scope_v1(c.id)')
   expect(mig).toContain("('CA', 'diploma', 'ca-intl-college-plus-v2'")
@@ -326,7 +326,7 @@ test('v0.40.0 course source finder: the platform finds each university\'s course
   const m = fs.readFileSync('supabase/migrations/20261022044000_cf247_course_source_finder.sql', 'utf8')
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   expect(w).toContain('if (mode === "source_find") {')
-  expect(w).toMatch(/coverage-sweep-worker-v0\.(40|4[1-9])\.\d/)
+  expect(w).toMatch(/coverage-sweep-worker-v0\.(40|4[1-9]|5\d)\.\d/)
   expect(w).toContain('await rpc("svc_source_find_record", { p_provider_id: it.provider_id, p_result: result, p_test: test });')
   expect(m.indexOf("('source-find', 'Enrichment'")).toBeLessThan(m.indexOf("select cron.schedule('source-find'"))
   expect(m).toContain("select cron.alter_job((select jobid from cron.job where jobname = 'source-find'), active := false);")
@@ -437,7 +437,7 @@ test('v2.15.323: identity settings accept every proof the gate reads; NZ fees ad
 
 test('v0.40.9: the newer-version link is found inside escaped markup and page items', async () => {
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[1-9]|40\.9)/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[1-9]|40\.9|5\d)/)
   const i = w.indexOf('export function newestVersionUrl'), j = w.indexOf('\n}\n', i) + 3
   const src = w.slice(i, j).replace('export function', 'function').replace(/: string \| null/, '').replace('(html: string, url: string)', '(html, url)')
     .replace('let base: URL', 'let base').replace('let best: { url: string; year: number } | null', 'let best').replace('let u: URL', 'let u').replace(/\(k: string\)/g, '(k)')
@@ -489,7 +489,7 @@ test('v2.15.324 / v0.41.1: fee reader speed from settings (with ranges); a cours
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
   // v2.15.333 (worker v0.43.0): up to 16 pages at once (fees.concurrency 1 to 16)
   expect(w).toContain('await pool(items, Math.max(1, Math.min(Number(body.concurrency || 2), 16)), async (it) => {  // fixed: the setting\'s upper bound (fees.concurrency)')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(41\.1|4[2-9]\.\d+)";/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(41\.1|4[2-9]\.\d+|5\d\.\d+)";/)
   const ui = fs.readFileSync('src/CourseAudit.jsx', 'utf8')
   expect(ui).toContain('then the AI fee reader reads its fee first in line')
 })
@@ -514,7 +514,7 @@ test('v2.15.325 / v0.42.0: the AI reader covers English, intakes and campus regi
   expect(m.indexOf("insert into pipeline.automation_catalogue(jobname")).toBeLessThan(m.indexOf("select cron.schedule('gap-causes'"))
   expect(m).not.toMatch(/\bdrop\s+(table|function|column|constraint|index|schema|view|trigger|type)\b/i)
   const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[2-9])\.\d+";/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[2-9]|5\d)\.\d+";/)
   expect(w).toContain('const strong = x.field === "english" ? /ielts/i.test(q)')
   expect(w).toContain('await pool(w?.regions || [], 2, async (u: any) => {')
 })
@@ -681,7 +681,7 @@ test.describe('v2.15.333 OpenRouter load: settings and the Task manager line', (
     await expect(page.locator('[data-task-openrouter]')).toHaveText('OpenRouter (15 min): 340 request(s) from 12 AI reader call(s) (2 running), 338 answered, typical 4.2 s, slowest 11.8 s · 0 rate-limited (429), 1 server error(s), 1 timed out.')
     await expect(page.locator('[data-task-pulse]')).toHaveAttribute('data-task-pulse-late', '0')
     const w = fs.readFileSync('supabase/functions/coverage-sweep/index.ts', 'utf8')
-    expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.4[3-9]\.\d+";/) // v0.43.0 or later keeps the load settings
+    expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[3-9]|5\d)\.\d+";/) // v0.43.0 or later keeps the load settings
     expect(w).toContain('await pool(w?.pages || [], Math.max(1, Math.min(Number(body.concurrency || 3), 12)), async (pg: any) => {  // fixed:')
     expect(w).toContain('openrouter: ors.summary()')
     const m = fs.readFileSync('supabase/migrations/20261023022000_cf247_openrouter_load_settings.sql', 'utf8')

@@ -12,7 +12,7 @@ test('worker identity-v0.6.0: a CRICOS proof only for Australian pages; NZ code 
   expect(x).not.toMatch(/^\s*if \(code\.length >= 6 && new RegExp\(`\\\\b\$\{code\}\\\\b`\)\.test\(text\.toUpperCase\(\)\)\) return "cricos_code"/m)
   const w = read('supabase/functions/coverage-sweep/index.ts')
   expect(w).toContain('const IDENTITY_RULE = "identity-v0.6.0";')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.4[5-9]\.\d+";/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(4[5-9]|5\d)\.\d+";/)
   expect(w).toContain('"cricos_code_on_page", "nzqa_code", "adapter_code", "title_match"')
 })
 

@@ -100,5 +100,5 @@ test('the request carries the cell list only when given; the worker gives it to 
   expect(w).toContain('cells: slices.length === 1 ? entryCellList(stored.manifest) : undefined')
   expect(w).toContain('const nm = entryDropNoMinimum(stored.manifest, stored.emptyLines, parsed.rows);')
   expect(w.indexOf('const nm = entryDropNoMinimum(')).toBeLessThan(w.indexOf('const completeness = entryCompleteness(stored.manifest, rows);'))
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(48\.([7-9]|[1-9][0-9])|49\.\d+)"/)  // v0.48.7 or later (v0.48.8: s135)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(48\.([7-9]|[1-9][0-9])|49\.\d+|5\d\.\d+)"/)  // v0.48.7 or later (v0.48.8: s135)
 })

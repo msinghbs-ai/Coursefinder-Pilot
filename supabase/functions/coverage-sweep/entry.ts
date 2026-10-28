@@ -35,11 +35,13 @@ export const ENTRY_SCHEMA = {
 
 // v0.49.2 (29 Oct 2026, AER programme Wave H: two large pages cut off mid-answer): the answer's length limit comes from the setting
 // entry.matrix_max_tokens (8000 when not given)
-export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string; cells?: string }, maxTokens = 8000) {
+// v0.50.0 (Step B): a PDF table's lines name each cell by its column header; told so with the page (the prompt itself is unchanged)
+export const PDF_NOTE = "This page is a PDF table rebuilt from its drawn cells. Each table row is one line; each cell is given as its column header, a colon and the cell (\"Header: cell\"); a line beginning with § is a heading (a country or group) for the lines below it, and a row that begins with that heading belongs to it. Read the study level or qualification from the column header the cell is named by, never from its position. Quote the whole line or the part of it that holds the cell with its header.";
+export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string; cells?: string; note?: string }, maxTokens = 8000) {
   return { model, temperature: 0, max_tokens: maxTokens, provider: { require_parameters: true },
     response_format: { type: "json_schema", json_schema: { name: "entry_matrix", strict: true, schema: ENTRY_SCHEMA } },
     messages: [{ role: "system", content: ENTRY_PROMPT },
-      { role: "user", content: `Provider: ${p.provider}\nPage address: ${p.url}${p.slice ? `\nPart of the page: ${p.slice}` : ""}\n\nPage text:\n${p.text}${p.cells ? `\n\nPublished cells of the band table(s), in printed order (one row for each):\n${p.cells}` : ""}` }] };
+      { role: "user", content: `Provider: ${p.provider}\nPage address: ${p.url}${p.slice ? `\nPart of the page: ${p.slice}` : ""}${p.note ? `\n\n${p.note}` : ""}\n\nPage text:\n${p.text}${p.cells ? `\n\nPublished cells of the band table(s), in printed order (one row for each):\n${p.cells}` : ""}` }] };
 }
 
 // a large one-page table is read in slices of at most maxRows lines (and maxChars characters); a markdown table's header row is
