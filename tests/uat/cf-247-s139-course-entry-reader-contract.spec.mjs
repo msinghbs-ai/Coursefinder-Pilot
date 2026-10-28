@@ -71,3 +71,11 @@ test('v0.49.1 follow-up: a read releases the field\'s earlier no-value hold and 
   expect(f).not.toMatch(/^\s*perform security\.course_entry_read_enqueue_v1/m)  // no read enqueued here: it waits for the v0.49.1 worker
   expect(f).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
 })
+
+test('the slice read once more, after v0.49.1 is live: count-guarded, at most two items ever', () => {
+  const f = fs.readFileSync('supabase/migrations/20261028004000_cf247_entry_step_b_slice_reread.sql', 'utf8')
+  expect(f).toContain("if (select count(*) from pipeline.field_enrich_items where field = 'entry_requirements') = 1")
+  expect(f).toContain("and state = 'skipped' and reason = 'the page does not state it') then")
+  expect(f).toContain("raise exception 'slice guard: more than two entry_requirements items would exist';")
+  expect(f).not.toMatch(/^\s*(drop|delete|truncate)\b/im)
+})
