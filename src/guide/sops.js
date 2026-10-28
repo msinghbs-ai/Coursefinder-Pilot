@@ -8,7 +8,7 @@
 // When a release changes a screen, an automation or where a person decides: change the steps here, raise the SOP's version, add a line
 // to its changes, run `node scripts/export-sops.mjs`, and copy docs/sops/ to the admin repo with the change-control entry.
 
-export const SOP_REVIEWED_FOR = '2.15.362'
+export const SOP_REVIEWED_FOR = '2.15.363'
 
 // The data admission mechanism in one table: what runs by itself, and where a person decides. Shared by both SOPs.
 export const AUTOMATION = [
@@ -91,7 +91,8 @@ export const SOPS = [
       { trigger: 'A new AI model or new AI instructions', action: 'Qualify on the sample, compare scores, then make active or add to the order as a separate step with a reason. A new instructions version switches AI admission off until the models are qualified again.', where: 'Scholarships › Extraction' },
       { trigger: 'A wrong website for a provider', action: 'Adapter builder 1.1: Check website to see what the home page shows; then Change website with the official address and a reason (checked first, saved only when Verified or Likely). Course-page searches, a stopped or held search, contacts and central pages start again by themselves; follow them in the guide at the top of the builder. A second site of the same provider goes in Other site.', where: 'Layer 2/3 › Universities › Builder' },
       { trigger: 'Layer 4: Course entry first read (academic entry requirements read from a course page)', action: 'Compare each proposed row with its quote and the course page: minimum score with its printed basis, prerequisites, selection tasks. Approve admits the whole read; Approve except leaves out rows; Reject or More evidence makes them inactive. A band is admitted only where the page prints it; never infer one from an ATAR.', where: 'Layer 4 Review' },
-      { trigger: 'A course whose academic entry requirements should be read (Track C Step B)', action: 'Open the course, Academic entry requirements, Read from the stored page with a reason (one course; AU only). The rows wait in Layer 4. Use the country selector to see what a student from that country is shown.', where: 'Catalogue › Courses › course' },
+      { trigger: 'A course whose academic entry requirements should be read (Track C Step B)', action: 'Open the course, Academic entry requirements, Read from the stored page with a reason (one course; AU only). The rows wait in Layer 4. Use Resolution inspection to see what a student from a country is shown.', where: 'Catalogue › Courses › course; Catalogue › Entry requirements › Resolution inspection' },
+      { trigger: 'An entry requirements source held, failed or read with many rows not kept (v2.15.363)', action: 'Open Catalogue › Entry requirements › Sources, reads and holds, filter Read state Held, and read the reason. A source held as unreadable waits for a reader change under change control. For one read again after a fix, press Read again with a reason; its rows go to Layer 4.', where: 'Catalogue › Entry requirements › Sources, reads and holds' },
       { trigger: 'A governed action ready to review (Decision 268)', action: 'Preview it against the live system: read each precondition (expected and now), the dry run and the outcomes it shows; then Approve and run, with a reason. It runs once; a repeated click runs nothing. A refusal or failure changes nothing and says why; preview again when the live state has moved.', where: 'Layer 2/3 › Operations › Governed actions' },
       { trigger: 'Break-glass only: a change that drops or deletes, or an operation no governed action covers (Decision 268)', action: 'Run SQL in the Supabase SQL editor for project fxcwkweaxjtknorudmwp only when the change control names it as break-glass; check the expected counts it states. Routine operations are governed actions, not SQL.', where: 'Supabase SQL editor (break-glass)' },
     ],
@@ -208,6 +209,7 @@ export const SOPS = [
       { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
       { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' },
       { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Academic entry requirements (Track C Step B): the Provider drawer and the Course detail blade show the published entry rows and what applies to a student from a chosen country; Platform Admin reads one course from its stored page and admits the rows in Layer 4 (Course entry first read).' },
+      { version: '2.04', date: '29 Oct 2026', release: '2.15.363', change: 'Catalogue › Entry requirements: a workspace to filter, inspect, correct, add, withdraw, re-read and resolve academic entry requirements, with a reason and history for every change; Layer 4 stays the only approval of AI rows.' },
       { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Academic entry requirements (AER programme): the Provider drawer lists each source with its latest read, so a held PDF, a refused page or a page with no row is visible with its reason; first reads of new providers wait in Layer 4 as Entry matrix (first run).' }],
   },
   {
@@ -246,6 +248,7 @@ export const SOPS = [
       { trigger: 'Layer 4 Review item', action: 'Decide from the stored evidence, with a reason; correct the value if the page shows another.', where: 'Layer 4 › Inbox (Course link)' },
       { trigger: 'Held scholarship in the Inbox', action: 'Publish or refuse it with a reason, using the AI re-check; never admit a scholarship that does not say it is open to international students.', where: 'Layer 4 › Inbox (Held scholarship)' },
       { trigger: 'Website to find', action: 'Search the official site, confirm the university\'s name on its home page, enter and save it.', where: 'Layer 4 › Inbox (Website needed)' },
+      { trigger: 'An entry requirement that is wrong, missing or no longer published (v2.15.363)', action: 'Catalogue › Entry requirements: filter to the row and open it to read its quote and stored copy. Correct an active row with Edit in list (give the reason first); add a missing one with Add requirement from the provider\'s own source and its stored copy; Withdraw a row no longer published, or Quarantine one whose evidence is in doubt, with a reason. A waiting row is decided in Layer 4, not here.', where: 'Catalogue › Entry requirements' },
       { trigger: 'Automation failing three runs in a row', action: 'Pause it with a note and raise it with the Platform Admin (Pipeline Operator and above).', where: 'Scheduled jobs › Automations' },
       { trigger: 'A value on a record is wrong', action: 'Correct it on the record: it is kept as entered by hand and automation will not overwrite it until released.', where: 'Courses or Providers record' },
       { trigger: 'An admitted value that looks wrong on a course (Admitted automatically)', action: 'Correct it on the course record (kept as entered by hand) and tell the Platform Admin the university, field and course, so the adapter can be fixed or its Admit switched off.', where: 'Courses record; Layer 2/3 › Universities' },
@@ -362,7 +365,8 @@ export const SOPS = [
       { version: '2.00', date: '26 Oct 2026', release: '2.15.359', change: 'Fees: every international fee write passes the country tuition identity check at the table; a failing fee is kept for review.' },
       { version: '2.01', date: '27 Oct 2026', release: '2.15.360', change: 'Governed actions (Decision 268): routine operations are approved on Layer 2/3 › Operations › Governed actions instead of run as SQL; SQL is break-glass only. First action: close the AER PR A recovery.' },
       { version: '2.02', date: '28 Oct 2026', release: '2.15.361', change: 'Reviewed: the Provider drawer and the Course detail blade show academic entry requirements (read only); course entry reads wait in Layer 4 as Course entry first read for the Platform Admin.' },
-      { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Reviewed: the Provider drawer lists each academic entry requirements source with its latest read (read only).' }],
+      { version: '2.03', date: '29 Oct 2026', release: '2.15.362', change: 'Reviewed: the Provider drawer lists each academic entry requirements source with its latest read (read only).' },
+      { version: '2.04', date: '29 Oct 2026', release: '2.15.363', change: 'Catalogue › Entry requirements: correct an active entry requirement in the list, add one from the provider\'s own source, or withdraw, quarantine and restore one, each with a reason (Curator and above).' }],
   },
 ]
 

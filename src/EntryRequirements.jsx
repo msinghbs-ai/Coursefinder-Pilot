@@ -6,6 +6,8 @@
 // in Layer 4. Nothing here edits a row or admits anything: admission stays in Layer 4.
 // AER programme (29 Oct 2026): the provider section also lists its sources and each one's latest read (rows, rows not kept, a hold and its
 // reason, cost, Layer 4 item), so a source held or refused is visible, not only one that gave rows.
+// v2.15.363 (AER operations workspace, decision W2): these sections stay read-only and are shortcuts into Catalogue › Entry requirements,
+// where rows are filtered, corrected, added, withdrawn, re-read and resolved. There is one editing implementation, in the workspace.
 // Server: public.admin_entry_requirements(action, args).
 import React,{useEffect,useState}from'react'
 import{GraduationCap,RefreshCw}from'lucide-react'
@@ -13,6 +15,7 @@ import{supabase}from'./lib/supabase'
 import{Button,StatusChip,Pager,fmtDate,fmtNumber}from'./ui-kit'
 import{ReasonAction}from'./ProviderOnboarding'
 import{plainError}from'./lib/errors'
+import{hrefFor}from'./nav-map'
 
 const call=async(action,args)=>{const{data,error}=await supabase.rpc('admin_entry_requirements',{p_action:action,p_args:args});if(error)throw error;return data}
 const OUTCOME={minimum_published:'A minimum is published',case_by_case:'This qualification is considered case by case',contact_provider:'Requirements for this qualification aren’t published — contact the provider'}
@@ -31,7 +34,7 @@ export function ProviderEntryMatrix({providerId}){
   const set=(k,v)=>{setOffset(0);setF(x=>({...x,[k]:v}))}
   const sources=d.sources||[]
   return <section className="rl-provider" data-entry-matrix>
-    <h4><GraduationCap size={14}/>Academic entry requirements</h4>
+    <h4><GraduationCap size={14}/>Academic entry requirements <a className="cf-link" href={hrefFor('entry','',{provider:providerId})} data-entry-workspace-link>Open in Entry requirements</a></h4>
     {sources.length>0&&<details data-entry-sources open={!total}><summary>Sources and reads ({fmtNumber(d.sources_total||sources.length)})</summary>
       <div className="cf-table-wrap"><table className="cf-table"><thead><tr><th>Source</th><th>Fetch</th><th>Latest read</th><th>Rows</th><th>Not kept</th><th>Hold or error</th><th>Layer 4</th></tr></thead>
         <tbody>{sources.map(x=><tr key={x.id} data-entry-source={x.status}>
@@ -70,7 +73,7 @@ export function CourseEntryRequirements({courseId,onError}){
   const read=async reason=>{setBusy(true);try{await call('read',{course_id:courseId,reason});setMsg('Asked. The rows wait in Layer 4 for a person before any is used.');await load()}catch(e){onError?.(plainError(e));throw e}finally{setBusy(false)}}
   if(!d)return null
   return <section className="rl-provider" data-course-entry>
-    <h4><GraduationCap size={14}/>Academic entry requirements <Button compact onClick={load} disabled={busy}><RefreshCw size={13}/>Refresh</Button></h4>
+    <h4><GraduationCap size={14}/>Academic entry requirements <Button compact onClick={load} disabled={busy}><RefreshCw size={13}/>Refresh</Button> <a className="cf-link" href={hrefFor('entry','course',{course:courseId})} data-entry-workspace-link>Open in Entry requirements</a> <a className="cf-link" href={hrefFor('entry','resolve',{course:courseId})}>Inspect resolution</a></h4>
     {(d.rows||[]).length===0?<small>Nothing read from this course's page yet.</small>:
     <div className="cf-table-wrap"><table className="cf-table" data-course-entry-rows><thead><tr><th>Kind</th><th>Requirement</th><th>Score and basis</th><th>Band</th><th>For</th><th>Quote</th><th>Source</th><th>As at</th><th>Status</th></tr></thead>
       <tbody>{d.rows.map(r=><tr key={r.id} data-course-entry-row={r.status}><td>{r.kind.replaceAll('_',' ')}</td><td>{r.description}</td>

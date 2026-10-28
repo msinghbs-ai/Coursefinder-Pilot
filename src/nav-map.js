@@ -30,6 +30,15 @@ export const PAGES = {
     // v2.15.174 (Platform Admin, 4 Oct 2026 01:57): Course links retired — links come from each scholarship's page (Layer 2)
     // v2.15.169 (Decision 249): Publishing moved to Layer 4 Review; v2.15.253: that tab retired, publishing is on Coverage
   ] },
+  // v2.15.363 (AER operations workspace, Platform Admin mandate 29 Oct 2026 08:06, decision W1): academic entry requirements as a managed
+  // data module beside Scholarships. Reading for every role; editing (Curator and above) and re-reading (Platform Admin) are checked on the
+  // server (public.admin_aer). Admission of AI rows stays in Layer 4.
+  entry: { label: 'Entry requirements', slug: 'entry-requirements', icon: 'entry', subtitle: 'Academic entry requirements by country of prior education: provider tables, course requirements, their sources and how a course resolves.', tabs: [
+    { key: 'matrix', label: 'Provider entry matrix', min: 1 },
+    { key: 'course', label: 'Course entry requirements', min: 1 },
+    { key: 'sources', label: 'Sources, reads and holds', min: 1 },
+    { key: 'resolve', label: 'Resolution inspection', min: 1 },
+  ] },
   rankings: { label: 'Rankings & statistics', slug: 'statistics-rankings', icon: 'chart', subtitle: 'QILT, PRISMS, QS and THE data, and side-by-side comparison.', tabs: [
     { key: 'overview', label: 'Overview', min: 1 },
     { key: 'compare', label: 'Compare', min: 1 },
@@ -150,7 +159,7 @@ export const PAGES = {
 
 export const SECTIONS = [
   { label: '', pages: ['dashboard'] },
-  { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'rankings', 'reference'] },
+  { label: 'Catalogue', pages: ['courses', 'providers', 'contacts', 'scholarships', 'entry', 'rankings', 'reference'] },
   { label: 'Data pipeline', pages: ['coverage', 'layer1', 'layer2', 'layer4'] },
   { label: 'Operations', pages: ['health', 'jobs', 'evidence'] },
   { label: 'Platform settings', pages: ['environment', 'services', 'migration'] },
