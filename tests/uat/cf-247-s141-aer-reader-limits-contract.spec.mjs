@@ -17,7 +17,7 @@ test('answer length and slice size are settings with a range, a unit and the fun
 
 test('worker v0.49.2 uses them and names a cut-off answer', () => {
   expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(49\.([2-9]|\d{2,})|5\d\.\d+)"/)
-  expect(e).toContain('export function entryMatrixRequest(model: string, p: { provider: string; url: string; text: string; slice?: string; cells?: string }, maxTokens = 8000)')
+  expect(e).toMatch(/export function entryMatrixRequest\(model: string, p: \{ provider: string; url: string; text: string; slice\?: string; cells\?: string(; note\?: string)? \}, maxTokens = 8000\)/)
   expect(e).toContain('return { model, temperature: 0, max_tokens: maxTokens,')
   expect(ai).toContain('entrySlices(page, Number(it.max_rows) || 400, Number(it.slice_chars) || 24000)')
   expect(ai).toContain('Number(it.max_tokens) || 8000)), signal: AbortSignal.timeout(90000) });')

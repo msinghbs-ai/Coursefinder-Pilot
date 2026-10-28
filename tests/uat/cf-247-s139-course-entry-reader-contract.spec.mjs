@@ -20,7 +20,7 @@ test('the existing lane, a new field outside the registry, stored page only, str
 })
 
 test('worker: own call with the pinned entry model; every row quoted on the page; no band from a score; no English tests', () => {
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.49\.[1-9]\d*";/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(49\.[1-9]\d*|5\d\.\d+)";/)
   expect(entry).toContain('htmlToText(raw.replace(/<(nav|header|footer)\\b[\\s\\S]*?<\\/\\1>/gi, " "))')  // v0.49.1: the whole page, not only <main>
   expect(entry).toContain('const em = String(w?.entry?.model || ""), chars = Number(w?.entry?.page_chars || 0);')
   expect(entry).toContain('if (!on(text, q)) { dropped.push({ reason: "quote_not_on_page"')

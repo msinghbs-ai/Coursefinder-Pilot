@@ -84,7 +84,7 @@ test('R2: the worker holds such a page before any AI read, as "held_unparsed" (t
   expect(i).toBeLessThan(w.indexOf('const slices = entrySlices(page, Number(it.max_rows) || 400'))
   expect(w).toContain('if (it.completeness_required === true && (stored.manifest.status !== "ok" || nonCountry || unscaled.length)) {')
   expect(w).toContain('`no printed scale: bare numbers in ${unscaled.join("; ")}`')
-  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(48\.([8-9]|[1-9][0-9])|49\.\d+)"/)
+  expect(w).toMatch(/const WORKER = "coverage-sweep-worker-v0\.(48\.([8-9]|[1-9][0-9])|49\.\d+|5\d\.\d+)"/)
 })
 
 test('every page PR A does not target keeps its manifest byte for byte (32 pages)', () => {
