@@ -1,21 +1,20 @@
 // Canonical browser-visible release and recovery authority.
 // New releases must change this file rather than defining competing current-version literals elsewhere.
-export const UI_VERSION='2.15.360'
-export const PACKAGE_VERSION='0.1.287'
+export const UI_VERSION='2.15.361'
+export const PACKAGE_VERSION='0.1.288'
 export const RELEASE_STATE='candidate'
 export const RELEASE={
   version:UI_VERSION,
   packageVersion:PACKAGE_VERSION,
-  date:'27 Oct 2026',
-  title:'Governed actions: approve operations in the admin UI',
+  date:'28 Oct 2026',
+  title:'Academic entry requirements: course reading, resolution and admin views',
   changes:[
-    'Layer 2/3 › Operations › Governed actions (Platform Admin): an operation is previewed against the live system (each precondition expected and now, a dry run that is rolled back, when the approval expires) and runs once on approval with a reason. A repeated click runs nothing; a refusal or failure changes nothing and says why (Decision 268).',
-    'First and only action: close the AER PR A recovery. It shows the six runs\' outcomes, the proposed, active and quarantined counts, the cost and the reading scope, and on approval takes RMIT out of the entry-requirements reading scope. It admits nothing.',
+    'Provider drawer › Academic entry requirements: the provider\'s published entry rows by country, level and status (50 a page), each with its quote, source, stored copy, as-at date and the read that produced it.',
+    'Course detail › Academic entry requirements: the course\'s own requirement rows (minimum score with its printed basis, prerequisites, selection tasks), and the requirement that applies to a student from a chosen country, worked out in a fixed order: course rule, course row for the country, course band, provider minimum, otherwise contact the provider. Case by case stays case by case.',
+    'Platform Admin: read one course\'s entry requirements from its stored page. The rows wait in Layer 4 (Course entry first read) until a person admits them.',
     'Consumer API unchanged (Decision 266).'
   ],
-  bugFixes:[
-    'Edit in list: a duration or fee change is saved once; leaving the cell while it saves no longer saves it a second time.'
-  ]
+  bugFixes:[]
 }
 
 // Ordered accepted releases. The first item is the only recovery baseline for a new candidate.

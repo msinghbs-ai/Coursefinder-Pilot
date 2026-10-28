@@ -11,6 +11,7 @@ import{supabase}from'./lib/supabase'
 import{Button,Loading,StatusChip,fmtDateTime,fmtMoney,fmtNumber}from'./ui-kit'
 import{CourseLinks,CURRENCY_BY_COUNTRY,ProviderApplicants}from'./CourseLinks'
 import CourseAudit from'./CourseAudit'
+import{CourseEntryRequirements}from'./EntryRequirements'
 import{plainError}from'./lib/errors'
 
 export const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -157,6 +158,8 @@ export function CourseEditor({courseId,onChanged,onError,inline=false}){
       <HistoryList rows={data.history}/>
       {/* v2.15.322: what happened to this course, and Read with AI */}
       <CourseAudit courseId={courseId} onChanged={onChanged} onError={onError}/>
+      {/* v2.15.361 Track C Step B (B5): the course's academic entry requirements and their resolution for a country */}
+      <CourseEntryRequirements courseId={courseId} onError={onError}/>
     </div>}
   </section>
 }
